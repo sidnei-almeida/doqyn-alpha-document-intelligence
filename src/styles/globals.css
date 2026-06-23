@@ -1,0 +1,115 @@
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: var(--font-family-sans);
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    background: var(--bg-app);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: var(--bg-app);
+    color: var(--text-primary);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 0.875rem;
+  }
+}
+
+.font-logo {
+  font-family: var(--font-family-logo);
+}
+
+.form-error {
+  @apply text-xs text-doqyn-danger;
+}
+
+@layer components {
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-doqyn-text;
+  }
+
+  .page-description {
+    @apply mt-1 text-sm text-doqyn-muted;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold text-doqyn-text;
+  }
+
+  .card-title {
+    @apply text-sm font-semibold text-doqyn-text;
+  }
+
+  .form-label {
+    @apply text-xs font-medium text-doqyn-muted;
+  }
+
+  .muted-text {
+    @apply text-sm text-doqyn-muted;
+  }
+
+  .subtle-text {
+    @apply text-xs text-doqyn-subtle;
+  }
+
+  .table-text {
+    @apply text-[13px] text-doqyn-text;
+  }
+
+  .badge-text {
+    @apply text-[10px] font-semibold uppercase tracking-[0.04em];
+  }
+
+  .eyebrow-text {
+    @apply text-[10px] font-medium uppercase tracking-[0.1em] text-doqyn-subtle;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -1,0 +1,1 @@
+export { LoginNeuralAccent } from './LoginNeuralAccent';

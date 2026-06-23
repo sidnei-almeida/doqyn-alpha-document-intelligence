@@ -1,0 +1,118 @@
+/**
+ * DOQYN — design tokens (dark + light)
+ * Copiado/adaptado de doqyn-internal — grayscale-first, cor só para semântica.
+ */
+
+[data-theme='dark'] {
+  --bg-app: #0e0e0e;
+  --bg-sidebar: #0a0a0a;
+  --bg-surface: #111111;
+  --bg-surface-2: #161616;
+  --bg-surface-3: #1e1e1e;
+
+  --border-subtle: #1c1c1c;
+  --border-default: #242424;
+  --border-strong: #2e2e2e;
+
+  --text-primary: #f0f0f0;
+  --text-secondary: #888888;
+  --text-tertiary: #444444;
+  --text-disabled: #2e2e2e;
+
+  --accent-active: #ffffff;
+  --accent-active-bg: #161616;
+
+  --status-ok-bg: #0e1a10;
+  --status-ok-text: #3a6b3e;
+  --status-ok-border: #1a2e1c;
+
+  --status-danger-bg: #1a0e0e;
+  --status-danger-text: #8b3a3a;
+  --status-danger-border: #2e1a1a;
+
+  --status-warn-bg: #1a160a;
+  --status-warn-text: #7a5e2a;
+  --status-warn-border: #2e2410;
+
+  --text-hint: var(--text-tertiary);
+}
+
+[data-theme='light'] {
+  --bg-app: #fafafa;
+  --bg-sidebar: #f5f5f5;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f9f9f9;
+  --bg-surface-3: #f2f2f2;
+
+  --border-subtle: #e8e8e8;
+  --border-default: #e0e0e0;
+  --border-strong: #cccccc;
+
+  --text-primary: #0f0f0f;
+  --text-secondary: #4a4a4a;
+  --text-tertiary: #7a7a7a;
+  --text-disabled: #b0b0b0;
+  --text-hint: #9a9a9a;
+
+  --accent-active: #0f0f0f;
+  --accent-active-bg: #eeeeee;
+
+  --status-ok-bg: #f0f7f1;
+  --status-ok-text: #3a6b3e;
+  --status-ok-border: #c8e0cb;
+
+  --status-danger-bg: #fdf0f0;
+  --status-danger-text: #8b3a3a;
+  --status-danger-border: #f0cccc;
+
+  --status-warn-bg: #fdf8ee;
+  --status-warn-text: #7a5e2a;
+  --status-warn-border: #e8d9b0;
+}
+
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  --logo-text: var(--text-primary);
+  --logo-muted: var(--text-secondary);
+  --overlay-hover: var(--bg-surface-2);
+  --overlay-active: var(--bg-surface-3);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  --font-family-sans:
+    'Geist Variable', 'Geist Sans', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-logo: var(--font-family-sans);
+  --font-family-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
+
+  --font-size-xs: 0.625rem;
+  --line-height-xs: 0.875rem;
+  --font-size-sm: 0.75rem;
+  --line-height-sm: 1.125rem;
+  --font-size-base: 0.8125rem;
+  --line-height-base: 1.25rem;
+  --font-size-md: 0.875rem;
+  --line-height-md: 1.375rem;
+  --font-size-lg: 1rem;
+  --line-height-lg: 1.5rem;
+  --font-size-xl: 1.25rem;
+  --line-height-xl: 1.75rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+[data-theme='light'] {
+  --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Fallback dark antes do script de tema */
+:root:not([data-theme]) {
+  color-scheme: dark;
+}
