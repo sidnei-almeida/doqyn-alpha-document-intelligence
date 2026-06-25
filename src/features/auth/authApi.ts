@@ -1,4 +1,7 @@
 import type { AuthUser } from './types';
+import { authFetch } from '@/auth/apiAuth';
+import { mapMeSessionToAuthUser } from '@/auth/mapMeSession';
+import type { MeSession } from '@/auth/sessionTypes';
 
 type LoginInput = {
   email: string;
@@ -10,10 +13,14 @@ type AuthResponse = {
   user: AuthUser;
 };
 
+type MeApiResponse = MeSession & {
+  legacyUser?: AuthUser;
+};
+
 async function parseError(response: Response) {
   try {
     const data = await response.json();
-    return data?.error || 'Erro inesperado';
+    return data?.message || data?.error || 'Erro inesperado';
   } catch {
     return 'Erro inesperado';
   }
@@ -39,9 +46,8 @@ export async function loginRequest(input: LoginInput): Promise<AuthUser> {
 }
 
 export async function meRequest(): Promise<AuthUser | null> {
-  const response = await fetch('/api/auth/me', {
+  const response = await authFetch('/api/auth/me', {
     method: 'GET',
-    credentials: 'include',
   });
 
   if (response.status === 401) {
@@ -52,9 +58,17 @@ export async function meRequest(): Promise<AuthUser | null> {
     throw new Error(await parseError(response));
   }
 
-  const data = (await response.json()) as AuthResponse;
+  const data = (await response.json()) as MeApiResponse;
 
-  return data.user;
+  if (data.legacyUser) {
+    return data.legacyUser;
+  }
+
+  if (data.user && data.tenant && data.membership) {
+    return mapMeSessionToAuthUser(data);
+  }
+
+  return (data as unknown as AuthResponse).user ?? null;
 }
 
 export async function logoutRequest(): Promise<void> {

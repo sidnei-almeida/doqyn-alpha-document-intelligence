@@ -1,6 +1,10 @@
-import { connectMongo } from '../db/mongo.js';
-import { ProcessingJobModel } from '../models/ProcessingJob.js';
+import { nanoid } from 'nanoid';
+import { isMongoNativeConfigured } from '../db/mongoClient.js';
+import type { MongoProcessingJob } from '../db/types.js';
 import { logger } from '../utils/logger.js';
+import { getTenantCollections } from '../tenancy/getTenantCollections.js';
+import { withTenantFields } from '../tenancy/tenantQuery.js';
+import { ServiceError } from '../utils/serviceErrors.js';
 
 const PROCESSING_STEPS = [
   'upload_received',
@@ -14,42 +18,81 @@ export async function createProcessingJob(input: {
   documentId: string;
   versionId: string;
 }) {
-  await connectMongo();
+  if (!input.tenantId?.trim()) {
+    throw new ServiceError('tenantId é obrigatório.', 'TENANT_REQUIRED', 400);
+  }
 
-  if (!process.env.MONGODB_URI) {
-    logger.info('Job de processamento simulado', input);
+  if (!isMongoNativeConfigured()) {
+    logger.info('Job de processamento simulado', {
+      tenantId: input.tenantId,
+      documentId: input.documentId,
+      versionId: input.versionId,
+    });
     return { id: 'sim-job', status: 'in_progress' };
   }
 
-  const job = await ProcessingJobModel.create({
-    tenantId: input.tenantId,
+  const { processingJobs } = await getTenantCollections(input.tenantId);
+  const jobId = `job_${nanoid(12)}`;
+  const now = new Date();
+
+  const job = withTenantFields(input.tenantId, {
+    _id: jobId,
     documentId: input.documentId,
     versionId: input.versionId,
-    status: 'in_progress',
-    steps: PROCESSING_STEPS.map((name) => ({ name, status: 'pending' })),
+    type: 'legacy_upload',
+    status: 'completed' as const,
+    steps: PROCESSING_STEPS.map((name) => ({
+      key: name,
+      label: name,
+      status: 'pending' as const,
+      createdAt: now,
+    })),
+    error: null,
+    createdBy: 'system',
+    createdAt: now,
+    updatedAt: now,
+    completedAt: null,
   });
 
-  // Future: dispatch to Google Document AI / Cloud Vision
-  simulateProcessing(job._id.toString());
+  await processingJobs.insertOne(job as unknown as MongoProcessingJob);
 
-  return { id: job._id.toString(), status: job.status };
+  simulateProcessing(input.tenantId, jobId).catch((error) => {
+    logger.warn('Falha ao simular processamento', {
+      tenantId: input.tenantId,
+      jobId,
+      error: error instanceof Error ? error.message : 'unknown',
+    });
+  });
+
+  return { id: jobId, status: 'processing' };
 }
 
-async function simulateProcessing(jobId: string) {
-  if (!process.env.MONGODB_URI) return;
+async function simulateProcessing(tenantId: string, jobId: string) {
+  if (!isMongoNativeConfigured()) return;
 
-  for (let i = 0; i < 4; i++) {
+  const { processingJobs } = await getTenantCollections(tenantId);
+
+  for (let i = 0; i < PROCESSING_STEPS.length; i++) {
     await new Promise((r) => setTimeout(r, 500));
-    await ProcessingJobModel.findByIdAndUpdate(jobId, {
-      $set: { [`steps.${i}.status`]: 'completed', [`steps.${i}.completedAt`]: new Date() },
-    });
+    await processingJobs.updateOne(
+      { _id: jobId },
+      {
+        $set: {
+          [`steps.${i}.status`]: 'completed',
+          [`steps.${i}.completedAt`]: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    );
   }
 
-  await ProcessingJobModel.findByIdAndUpdate(jobId, { status: 'completed' });
+  await processingJobs.updateOne(
+    { _id: jobId },
+    { $set: { status: 'completed', completedAt: new Date(), updatedAt: new Date() } },
+  );
 }
 
 export async function documentProcessingService(documentId: string) {
   logger.info('documentProcessingService invoked', { documentId });
-  // Future: Google Document AI integration point
   return { status: 'simulated', documentId };
 }

@@ -6,7 +6,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { id, search, status, type, area, tenantId } = req.query;
 
     if (id && typeof id === 'string') {
-      const document = await getDocument(id);
+      const tenant = typeof tenantId === 'string' ? tenantId : undefined;
+      const document = await getDocument(id, tenant);
       if (!document) return res.status(404).json({ message: 'Documento não encontrado' });
       return res.status(200).json({ document });
     }

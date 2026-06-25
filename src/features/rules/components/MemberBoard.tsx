@@ -11,6 +11,8 @@ import {
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm/ConfirmProvider';
 import { buildRemoveFromGroupConfirm } from '@/components/confirm/confirmMessages';
+import { Card, CardContent } from '@/components/ui/Card';
+import { SectionHeader } from '@/components/ui/Tabs';
 import type { AuditEvent, CompanyMember, DocumentCategory, Group, PendingApproval } from '@/types/rules';
 import {
   AVAILABLE_DROP_ID,
@@ -53,7 +55,7 @@ export function MemberBoard({
   onDeleteGroup,
 }: MemberBoardProps) {
   const confirm = useConfirm();
-  const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>('mbr_carlos');
+  const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
   const [activeMember, setActiveMember] = useState<CompanyMember | null>(null);
 
   const sensors = useSensors(
@@ -82,7 +84,7 @@ export function MemberBoard({
     const member = members.find((m) => m.id === data.memberId);
     if (!member) return;
 
-    if (member.status === 'pending' || member.status === 'suspended') {
+    if (member.status === 'pending' || member.status === 'blocked') {
       toast.error('Este usuário precisa ser aprovado antes de receber permissões.');
       return;
     }
@@ -108,7 +110,7 @@ export function MemberBoard({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PendingApprovalsPanel
         items={pendingApprovals}
         isAdmin={isAdmin}
@@ -116,52 +118,70 @@ export function MemberBoard({
         onReject={onReject}
       />
 
-      <div className="grid items-start gap-4 min-[1400px]:grid-cols-[1fr_260px]">
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={(e) => void handleDragEnd(e)}
-        >
-          <div className="overflow-x-auto pb-2">
-            <div className="flex min-w-max gap-3">
-              <AvailableUsersColumn
-                members={members}
-                groups={groups}
-                selectedMemberId={selectedMemberId}
-                isAdmin={isAdmin}
-                onSelectMember={(m) => setSelectedMemberId(m.id)}
-              />
-              {groups.map((group) => (
-                <GroupColumn
-                  key={group.id}
-                  group={group}
-                  members={members}
-                  allGroups={groups}
-                  memberCount={groupMemberCounts[group.id] ?? 0}
-                  selectedMemberId={selectedMemberId}
-                  isAdmin={isAdmin}
-                  onSelectMember={(m) => setSelectedMemberId(m.id)}
-                  onRemoveMember={(memberId) => onRemoveMemberFromGroup(memberId, group.id)}
-                  onDeleteGroup={onDeleteGroup}
-                />
-              ))}
-            </div>
-          </div>
+      <section>
+        <SectionHeader
+          title="Organização por grupos"
+          description={
+            isAdmin
+              ? 'Arraste membros entre colunas para definir permissões. Clique em um membro para ver o resumo abaixo.'
+              : 'Visualize a distribuição de membros por grupo. Clique em um membro para ver o resumo de acesso.'
+          }
+        />
+        <Card className="overflow-hidden border-doqyn-border bg-doqyn-surface">
+          <CardContent className="p-0">
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={(e) => void handleDragEnd(e)}
+            >
+              <div className="overflow-x-auto p-4 scrollbar-thin">
+                <div className="flex min-w-max gap-3">
+                  <AvailableUsersColumn
+                    members={members}
+                    groups={groups}
+                    selectedMemberId={selectedMemberId}
+                    isAdmin={isAdmin}
+                    onSelectMember={(m) => setSelectedMemberId(m.id)}
+                  />
+                  {groups.map((group) => (
+                    <GroupColumn
+                      key={group.id}
+                      group={group}
+                      members={members}
+                      allGroups={groups}
+                      memberCount={groupMemberCounts[group.id] ?? 0}
+                      selectedMemberId={selectedMemberId}
+                      isAdmin={isAdmin}
+                      onSelectMember={(m) => setSelectedMemberId(m.id)}
+                      onRemoveMember={(memberId) => onRemoveMemberFromGroup(memberId, group.id)}
+                      onDeleteGroup={onDeleteGroup}
+                    />
+                  ))}
+                </div>
+              </div>
 
-          <DragOverlay dropAnimation={null}>
-            {activeMember ? <UserCardOverlay member={activeMember} /> : null}
-          </DragOverlay>
-        </DndContext>
+              <DragOverlay dropAnimation={null}>
+                {activeMember ? <UserCardOverlay member={activeMember} /> : null}
+              </DragOverlay>
+            </DndContext>
+          </CardContent>
+        </Card>
+      </section>
 
-        <div className="space-y-4">
-          <AccessSummaryPanel
-            member={selectedMember}
-            groups={groups}
-            categories={categories}
-          />
+      <section>
+        <SectionHeader
+          title="Resumo do membro"
+          description={
+            selectedMember
+              ? `Detalhes de acesso de ${selectedMember.name}`
+              : 'Selecione um membro no quadro acima'
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <AccessSummaryPanel member={selectedMember} groups={groups} categories={categories} />
           <AuditPreview events={auditEvents} />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

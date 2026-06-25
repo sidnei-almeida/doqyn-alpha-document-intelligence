@@ -9,16 +9,27 @@ dist-ssr/
 *.local
 .vercel
 
-# Environment
+# Environment & secrets
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
+*.pem
+*.key
+credentials.json
+secrets.json
 
-# Editor
+# Internal docs, audit reports, local runbooks (não versionar)
+docs/
+
+# Editor / IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
+.cursor/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
@@ -26,12 +37,21 @@ dist-ssr/
 *.sw?
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
 
 # Testing
 coverage/
+
+# Cache / temp
+.cache/
+.turbo/
+tmp/
+temp/

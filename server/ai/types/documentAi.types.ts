@@ -1,0 +1,112 @@
+export type FieldType = 'string' | 'date' | 'currency' | 'number' | 'boolean';
+
+export type DocumentRuleField = {
+  key: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  description?: string;
+  aliases?: string[];
+  examples?: string[];
+};
+
+export type DocumentClassRule = {
+  id: string;
+  name: string;
+  description: string;
+  keywords: string[];
+  negativeKeywords?: string[];
+  fields: DocumentRuleField[];
+  namingTemplate: string;
+};
+
+export type EvidenceSnippet = {
+  pageNumber?: number;
+  snippet: string;
+};
+
+export type ClassificationResult = {
+  classId: string | null;
+  className: string | null;
+  confidence: number;
+  requiresReview: boolean;
+  reason: string;
+  evidence: EvidenceSnippet[];
+  /** Código interno para diagnóstico (ex.: GROQ_RATE_LIMIT). */
+  errorCode?: string;
+  /** Motivo de revisão legível para UI/logs. */
+  reviewReason?: string;
+};
+
+export type ExtractedMetadataField = {
+  label: string;
+  value: string | number | null;
+  normalizedValue?: string | number | null;
+  confidence: number;
+  source: 'document_text' | 'no_ai';
+  evidence?: EvidenceSnippet;
+  currency?: string;
+};
+
+export type MetadataExtractionResult = {
+  documentType: string | null;
+  version: string;
+  metadata: Record<string, ExtractedMetadataField>;
+  missingFields: string[];
+  requiresReview: boolean;
+  reviewReasons: string[];
+};
+
+export type ProcessingLogItem = {
+  title: string;
+  description: string;
+  status: 'done' | 'active' | 'pending' | 'error';
+};
+
+export type AnalyzePdfResponse = {
+  jobId: string;
+  status: 'completed' | 'requires_review' | 'ai_unavailable' | 'failed';
+  originalFileName: string;
+  fileHash: string;
+  fileSizeBytes: number;
+  recommendedFileName: string | null;
+  textExtraction: {
+    status: 'completed' | 'failed';
+    pageCount?: number;
+    charCount: number;
+    truncated: boolean;
+  };
+  classification: ClassificationResult;
+  extraction: MetadataExtractionResult | null;
+  logs: ProcessingLogItem[];
+  /** Código de erro da análise quando aplicável. */
+  errorCode?: string;
+};
+
+export type PdfPageText = {
+  pageNumber: number;
+  text: string;
+};
+
+export type ExtractedPdfText = {
+  text: string;
+  pages: PdfPageText[];
+  pageCount?: number;
+  charCount: number;
+  truncated: boolean;
+};
+
+export type DocumentChunk = {
+  id: string;
+  pageNumber?: number;
+  chunkIndex: number;
+  text: string;
+  charStart?: number;
+  charEnd?: number;
+};
+
+export type RetrievedChunk = DocumentChunk & {
+  score: number;
+  matchedTerms: string[];
+  reason: string;
+};

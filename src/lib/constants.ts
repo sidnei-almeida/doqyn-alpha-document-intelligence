@@ -1,5 +1,12 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'DOQYN';
+export const AUTH_PROVIDER = import.meta.env.VITE_AUTH_PROVIDER ?? '';
 export const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? 'temporary';
+
+export const AUTH_PROVIDER_LABELS: Record<string, string> = {
+  keycloak: 'SSO Keycloak',
+  mock: 'Desenvolvimento (mock)',
+  temporary: 'Acesso por credenciais',
+};
 
 export const AUTH_MODE_LABELS: Record<string, string> = {
   temporary: 'Acesso por credenciais',
@@ -56,6 +63,7 @@ export const NAV_ITEMS_PRIMARY = [
 
 export const NAV_ITEMS_ADMIN = [
   { label: 'Regras', path: '/rules', icon: 'Scale' },
+  { label: 'Usuários', path: '/users', icon: 'Users', managerOnly: true },
   { label: 'Auditoria', path: '/audit', icon: 'Shield' },
   { label: 'Configurações', path: '/settings', icon: 'Settings' },
 ] as const;

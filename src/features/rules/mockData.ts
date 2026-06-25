@@ -1,3 +1,7 @@
+/**
+ * Dados de referência para desenvolvimento/storybook.
+ * NÃO é fonte de dados do fluxo real — a tela Regras usa MongoDB via rulesApi.
+ */
 import type {
   AuditEvent,
   CompanyMember,
@@ -16,6 +20,7 @@ export const INITIAL_GROUPS: Group[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Jurídico',
     color: 'blue',
+    active: true,
     createdAt: '2026-05-01T10:00:00Z',
   },
   {
@@ -23,6 +28,7 @@ export const INITIAL_GROUPS: Group[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Financeiro',
     color: 'green',
+    active: true,
     createdAt: '2026-05-01T10:01:00Z',
   },
   {
@@ -30,6 +36,7 @@ export const INITIAL_GROUPS: Group[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'RH',
     color: 'amber',
+    active: true,
     createdAt: '2026-05-01T10:02:00Z',
   },
   {
@@ -37,6 +44,7 @@ export const INITIAL_GROUPS: Group[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Compras',
     color: 'red',
+    active: true,
     createdAt: '2026-05-01T10:03:00Z',
   },
   {
@@ -44,6 +52,7 @@ export const INITIAL_GROUPS: Group[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Diretoria',
     color: 'purple',
+    active: true,
     createdAt: '2026-05-01T10:04:00Z',
   },
 ];
@@ -150,8 +159,12 @@ export const INITIAL_CATEGORIES: DocumentCategory[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Contrato',
     icon: 'file-text',
+    active: true,
     accessGroupIds: ['grp_juridico', 'grp_financeiro'],
     notifyGroupIds: ['grp_juridico', 'grp_financeiro'],
+    notifyOnUpdate: true,
+    keywords: [],
+    negativeKeywords: [],
     createdAt: '2026-05-01T10:10:00Z',
   },
   {
@@ -159,8 +172,12 @@ export const INITIAL_CATEGORIES: DocumentCategory[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Nota Fiscal',
     icon: 'receipt',
+    active: true,
     accessGroupIds: ['grp_financeiro'],
     notifyGroupIds: ['grp_financeiro'],
+    notifyOnUpdate: true,
+    keywords: [],
+    negativeKeywords: [],
     createdAt: '2026-05-01T10:11:00Z',
   },
   {
@@ -168,8 +185,12 @@ export const INITIAL_CATEGORIES: DocumentCategory[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Política Interna',
     icon: 'shield-check',
+    active: true,
     accessGroupIds: ['grp_rh', 'grp_diretoria'],
     notifyGroupIds: ['grp_rh'],
+    notifyOnUpdate: true,
+    keywords: [],
+    negativeKeywords: [],
     createdAt: '2026-05-01T10:12:00Z',
   },
   {
@@ -177,8 +198,12 @@ export const INITIAL_CATEGORIES: DocumentCategory[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Boleto',
     icon: 'file-invoice',
+    active: true,
     accessGroupIds: ['grp_financeiro'],
     notifyGroupIds: ['grp_financeiro'],
+    notifyOnUpdate: true,
+    keywords: [],
+    negativeKeywords: [],
     createdAt: '2026-05-01T10:13:00Z',
   },
   {
@@ -186,8 +211,12 @@ export const INITIAL_CATEGORIES: DocumentCategory[] = [
     companyId: CURRENT_COMPANY_ID,
     name: 'Proposta Comercial',
     icon: 'file-text',
+    active: true,
     accessGroupIds: ['grp_compras', 'grp_diretoria'],
     notifyGroupIds: ['grp_compras'],
+    notifyOnUpdate: true,
+    keywords: [],
+    negativeKeywords: [],
     createdAt: '2026-05-01T10:14:00Z',
   },
 ];

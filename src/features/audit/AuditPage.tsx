@@ -1,14 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { FilterToolbar } from '@/components/layout/FilterToolbar';
+import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AuditEventItem } from '@/components/ui/AuditEventItem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
 import { AUDIT_ACTION_LABELS } from '@/types/audit';
+import { ScrollText } from 'lucide-react';
 
 const AUDIT_RESULT_LABELS: Record<AuditEvent['result'], string> = {
   success: 'Sucesso',
@@ -115,7 +119,10 @@ export function AuditPage() {
     const matchesSearch =
       !search ||
       evt.description.toLowerCase().includes(search.toLowerCase()) ||
-      evt.actorName.toLowerCase().includes(search.toLowerCase());
+      evt.actorName.toLowerCase().includes(search.toLowerCase()) ||
+      (AUDIT_ACTION_LABELS[evt.action] ?? evt.action)
+        .toLowerCase()
+        .includes(search.toLowerCase());
     return matchesDoc && matchesSearch;
   });
 
@@ -127,74 +134,102 @@ export function AuditPage() {
         description="Histórico completo de ações, acessos e alterações em documentos."
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          <Input
-            placeholder="Buscar por ação, usuário ou descrição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {filterDocId && (
+        <p className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-sm text-doqyn-muted">
+          Exibindo eventos do documento{' '}
+          <span className="font-mono text-doqyn-text">{filterDocId}</span>
+        </p>
+      )}
 
-          <div className="space-y-2">
-            {events.map((event) => (
-              <AuditEventItem
-                key={event.id}
-                event={event}
-                isSelected={selectedEvent?.id === event.id}
-                onClick={() => setSelectedEvent(event)}
+      <ListDetailLayout
+        toolbar={
+          <FilterToolbar>
+            <div className="min-w-[220px] flex-1">
+              <Input
+                id="audit-search"
+                label="Buscar eventos"
+                placeholder="Ação, usuário ou descrição..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
-            ))}
-          </div>
-        </div>
-
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Detalhes do evento</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedEvent ? (
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-xs text-doqyn-muted">Ação</p>
-                  <p className="font-medium text-doqyn-text">
-                    {AUDIT_ACTION_LABELS[selectedEvent.action]}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-doqyn-muted">Descrição</p>
-                  <p className="text-doqyn-text">{selectedEvent.description}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+            </div>
+            <p className="pb-0.5 text-xs text-doqyn-muted">
+              {events.length} {events.length === 1 ? 'evento' : 'eventos'}
+            </p>
+          </FilterToolbar>
+        }
+        list={
+          events.length === 0 ? (
+            <EmptyState
+              icon={<ScrollText className="h-5 w-5" />}
+              title="Nenhum evento encontrado"
+              description="Ajuste a busca ou aguarde novas ações no sistema."
+            />
+          ) : (
+            <div className="space-y-2">
+              {events.map((event) => (
+                <AuditEventItem
+                  key={event.id}
+                  event={event}
+                  isSelected={selectedEvent?.id === event.id}
+                  onClick={() => setSelectedEvent(event)}
+                />
+              ))}
+            </div>
+          )
+        }
+        detail={
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Detalhes do evento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedEvent ? (
+                <div className="space-y-3 text-sm">
                   <div>
-                    <p className="text-xs text-doqyn-muted">Usuário</p>
-                    <p className="text-doqyn-text">{selectedEvent.actorName}</p>
+                    <p className="text-xs text-doqyn-muted">Ação</p>
+                    <p className="font-medium text-doqyn-text">
+                      {AUDIT_ACTION_LABELS[selectedEvent.action]}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs text-doqyn-muted">Área</p>
-                    <p className="text-doqyn-text">{selectedEvent.area}</p>
+                    <p className="text-xs text-doqyn-muted">Descrição</p>
+                    <p className="text-doqyn-text">{selectedEvent.description}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-doqyn-muted">Usuário</p>
+                      <p className="text-doqyn-text">{selectedEvent.actorName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-doqyn-muted">Área</p>
+                      <p className="text-doqyn-text">{selectedEvent.area}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-doqyn-muted">Resultado</p>
+                      <p className="text-doqyn-text">
+                        {AUDIT_RESULT_LABELS[selectedEvent.result]}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-doqyn-muted">Data/hora</p>
+                      <p className="text-doqyn-text">{formatDate(selectedEvent.createdAt)}</p>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-xs text-doqyn-muted">Resultado</p>
-                    <p className="text-doqyn-text">{AUDIT_RESULT_LABELS[selectedEvent.result]}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-doqyn-muted">Data/hora</p>
-                    <p className="text-doqyn-text">{formatDate(selectedEvent.createdAt)}</p>
+                    <p className="text-xs text-doqyn-muted">Documento</p>
+                    <p className="font-mono text-xs text-doqyn-muted">{selectedEvent.documentId}</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-doqyn-muted">Documento</p>
-                  <p className="font-mono text-xs text-doqyn-muted">{selectedEvent.documentId}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-doqyn-muted">
-                Selecione um evento para ver os detalhes completos
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              ) : (
+                <p className="text-sm text-doqyn-muted">
+                  Selecione um evento na lista para ver os detalhes completos.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        }
+      />
     </div>
   );
 }

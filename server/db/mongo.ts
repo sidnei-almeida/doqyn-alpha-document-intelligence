@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { env, isMongoConfigured } from '../utils/env.js';
+import { getMongoDatabaseName } from './database.js';
+import { isMongoConfigured } from '../utils/env.js';
 import { logger } from '../utils/logger.js';
 
 interface MongoCache {
@@ -24,14 +25,15 @@ export async function connectMongo(): Promise<typeof mongoose | null> {
   if (cache.conn) return cache.conn;
 
   if (!cache.promise) {
-    cache.promise = mongoose.connect(env.MONGODB_URI!, {
-      dbName: env.MONGODB_DB_NAME,
+    const dbName = getMongoDatabaseName();
+    cache.promise = mongoose.connect(process.env.MONGODB_URI!, {
+      dbName,
     });
   }
 
   try {
     cache.conn = await cache.promise;
-    logger.info('Conectado ao MongoDB', { db: env.MONGODB_DB_NAME });
+    logger.info('Conectado ao MongoDB', { db: getMongoDatabaseName() });
     return cache.conn;
   } catch (error) {
     cache.promise = null;

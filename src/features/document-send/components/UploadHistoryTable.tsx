@@ -98,7 +98,7 @@ export function UploadHistoryTable({ items, className }: UploadHistoryTableProps
                   {item.uploadedAt}
                 </div>
                 <div role="cell" className="px-3 text-xs text-doqyn-muted">
-                  {item.lastActionAt}
+                  {item.lastActionLabel ?? item.lastActionAt}
                 </div>
                 <div role="cell" className="flex justify-center pl-3">
                   <button

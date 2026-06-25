@@ -2,24 +2,30 @@ import { useState } from 'react';
 import { Plus, UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Tabs } from '@/components/ui/Tabs';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Tabs, SectionHeader } from '@/components/ui/Tabs';
+import { useAuth } from '@/features/auth/useAuth';
 import { CategoryAccessBoard } from './components/CategoryAccessBoard';
 import { CategoryModal } from './components/CategoryModal';
+import { ExtractionConfigDrawer } from './components/ExtractionConfigDrawer';
 import { GroupModal } from './components/GroupModal';
 import { InviteMemberModal } from './components/InviteMemberModal';
 import { MemberBoard } from './components/MemberBoard';
 import { useRules } from './hooks/useRules';
-import { CURRENT_USER_ROLE } from './mockData';
+import type { DocumentCategory } from '@/types/rules';
 
 type RulesTab = 'categories' | 'members';
 
 export function RulesPage() {
+  const { user, hasAnyRole } = useAuth();
   const [activeTab, setActiveTab] = useState<RulesTab>('categories');
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [extractionCategory, setExtractionCategory] = useState<DocumentCategory | null>(null);
 
-  const isAdmin = CURRENT_USER_ROLE === 'admin';
+  const isAdmin =
+    hasAnyRole(['doqyn_admin', 'company_admin']) || user?.role === 'admin';
 
   const {
     groups,
@@ -28,6 +34,9 @@ export function RulesPage() {
     pendingApprovals,
     auditEvents,
     groupMemberCounts,
+    loading,
+    error,
+    reload,
     createGroup,
     deleteGroup,
     createCategory,
@@ -40,7 +49,38 @@ export function RulesPage() {
     rejectMember,
     addMemberToGroup,
     removeMemberFromGroup,
-  } = useRules();
+    saveExtractionRule,
+    getRuleForClass,
+  } = useRules(user?.name ?? 'Usuário');
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-doqyn-muted">Carregando regras…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          eyebrow="Governança"
+          title="Regras de acesso"
+          description="Organize membros, grupos e categorias."
+        />
+        <EmptyState
+          title="Não foi possível carregar as regras agora."
+          description="Verifique sua conexão e tente novamente."
+          action={
+            <Button type="button" onClick={() => void reload()}>
+              Tentar novamente
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-auto w-full space-y-6">
@@ -78,6 +118,20 @@ export function RulesPage() {
         />
 
         {activeTab === 'categories' ? (
+          <SectionHeader
+            className="mt-2"
+            title="Acesso por categoria"
+            description="Defina quais grupos podem acessar cada tipo de documento da empresa."
+          />
+        ) : (
+          <SectionHeader
+            className="mt-2"
+            title="Membros e grupos"
+            description="Distribua usuários nos grupos para controlar permissões de forma visual."
+          />
+        )}
+
+        {activeTab === 'categories' ? (
           <CategoryAccessBoard
             categories={categories}
             groups={groups}
@@ -88,6 +142,7 @@ export function RulesPage() {
             onToggleNotifications={toggleAllNotifications}
             onDelete={isAdmin ? deleteCategory : undefined}
             onDeleteGroup={isAdmin ? deleteGroup : undefined}
+            onConfigureExtraction={isAdmin ? (cat) => setExtractionCategory(cat) : undefined}
           />
         ) : (
           <MemberBoard
@@ -124,6 +179,13 @@ export function RulesPage() {
             groups={groups}
             onClose={() => setInviteModalOpen(false)}
             onInvite={inviteMember}
+          />
+          <ExtractionConfigDrawer
+            open={extractionCategory !== null}
+            category={extractionCategory}
+            rule={extractionCategory ? getRuleForClass(extractionCategory.id) : null}
+            onClose={() => setExtractionCategory(null)}
+            onSave={saveExtractionRule}
           />
         </>
       )}

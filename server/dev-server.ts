@@ -6,15 +6,101 @@ import { URL } from 'node:url';
 
 type ApiHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
 
-const routes: Record<string, () => Promise<{ default: ApiHandler }>> = {
+type RouteMatch = {
+  loader: () => Promise<{ default: ApiHandler }>;
+  params: Record<string, string>;
+};
+
+const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/auth/login': () => import('../api/auth/login.js'),
   '/api/auth/me': () => import('../api/auth/me.js'),
+  '/api/me': () => import('../api/me.js'),
   '/api/auth/logout': () => import('../api/auth/logout.js'),
   '/api/documents': () => import('../api/documents/index.js'),
   '/api/documents/upload': () => import('../api/documents/upload.js'),
+  '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
+  '/api/document-rules/active': () => import('../api/document-rules/active.js'),
+  '/api/document-rules': () => import('../api/document-rules/index.js'),
+  '/api/access-groups': () => import('../api/access-groups/index.js'),
+  '/api/auth/access-requests': () => import('../api/auth/access-requests.js'),
+  '/api/company-members': () => import('../api/company-members/index.js'),
+  '/api/company-members/invite': () => import('../api/company-members/invite.js'),
+  '/api/document-classes': () => import('../api/document-classes/index.js'),
   '/api/audit': () => import('../api/audit/index.js'),
+  '/api/ai/analyze-pdf': () => import('../api/ai/analyze-pdf.js'),
 };
+
+function resolveRoute(pathname: string): RouteMatch | null {
+  const exact = staticRoutes[pathname];
+  if (exact) {
+    return { loader: exact, params: {} };
+  }
+
+  const patterns: Array<{ regex: RegExp; loader: RouteMatch['loader'] }> = [
+    {
+      regex: /^\/api\/access-groups\/([^/]+)\/toggle-active$/,
+      loader: () => import('../api/access-groups/toggle-active.js'),
+    },
+    { regex: /^\/api\/access-groups\/([^/]+)$/, loader: () => import('../api/access-groups/item.js') },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/approve$/,
+      loader: () => import('../api/company-members/approve.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/reject$/,
+      loader: () => import('../api/company-members/reject.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/block$/,
+      loader: () => import('../api/company-members/block.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/activate$/,
+      loader: () => import('../api/company-members/activate.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/access$/,
+      loader: () => import('../api/company-members/access.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/status$/,
+      loader: () => import('../api/company-members/status.js'),
+    },
+    {
+      regex: /^\/api\/company-members\/([^/]+)\/groups$/,
+      loader: () => import('../api/company-members/groups.js'),
+    },
+    { regex: /^\/api\/company-members\/([^/]+)$/, loader: () => import('../api/company-members/item.js') },
+    {
+      regex: /^\/api\/document-classes\/([^/]+)\/toggle-active$/,
+      loader: () => import('../api/document-classes/toggle-active.js'),
+    },
+    {
+      regex: /^\/api\/document-classes\/([^/]+)\/permissions$/,
+      loader: () => import('../api/document-classes/permissions.js'),
+    },
+    {
+      regex: /^\/api\/document-classes\/([^/]+)\/notifications$/,
+      loader: () => import('../api/document-classes/notifications.js'),
+    },
+    { regex: /^\/api\/document-classes\/([^/]+)$/, loader: () => import('../api/document-classes/item.js') },
+    {
+      regex: /^\/api\/document-rules\/([^/]+)\/toggle-active$/,
+      loader: () => import('../api/document-rules/toggle-active.js'),
+    },
+    { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
+  ];
+
+  for (const pattern of patterns) {
+    const match = pathname.match(pattern.regex);
+    if (match) {
+      return { loader: pattern.loader, params: { id: match[1], memberId: match[1] } };
+    }
+  }
+
+  return null;
+}
 
 async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -25,12 +111,11 @@ async function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-function toVercelReq(req: IncomingMessage, body?: unknown): IncomingMessage & { query: Record<string, string>; body?: unknown } {
-  const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
-  const query: Record<string, string> = {};
-  url.searchParams.forEach((v, k) => {
-    query[k] = v;
-  });
+function toVercelReq(
+  req: IncomingMessage,
+  query: Record<string, string>,
+  body?: unknown,
+): IncomingMessage & { query: Record<string, string>; body?: unknown } {
   return Object.assign(req, { query, body });
 }
 
@@ -55,8 +140,8 @@ createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
   const pathname = url.pathname;
 
-  const loader = routes[pathname];
-  if (!loader) {
+  const route = resolveRoute(pathname);
+  if (!route) {
     res.statusCode = 404;
     res.end(JSON.stringify({ message: 'Not found' }));
     return;
@@ -64,17 +149,26 @@ createServer(async (req, res) => {
 
   try {
     let body: unknown;
+    const query: Record<string, string> = { ...route.params };
+    url.searchParams.forEach((v, k) => {
+      query[k] = v;
+    });
 
-    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+    const contentType = req.headers['content-type'] ?? '';
+    const isMultipart = contentType.includes('multipart/form-data');
+
+    if (
+      !isMultipart &&
+      (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')
+    ) {
       const raw = await readBody(req);
       if (raw) {
-        const contentType = req.headers['content-type'] ?? '';
         body = contentType.includes('application/json') ? JSON.parse(raw) : raw;
       }
     }
 
-    const mod = await loader();
-    const vercelReq = toVercelReq(req, body);
+    const mod = await route.loader();
+    const vercelReq = toVercelReq(req, query, body);
     const vercelRes = toVercelRes(res);
     await mod.default(vercelReq as unknown as VercelRequest, vercelRes as unknown as VercelResponse);
   } catch (error) {

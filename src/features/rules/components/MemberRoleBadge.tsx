@@ -4,6 +4,7 @@ import { ROLE_LABELS } from '@/utils/rulesHelpers';
 
 const ROLE_VARIANT: Record<UserRole, 'info' | 'default' | 'primary'> = {
   admin: 'info',
+  manager: 'info',
   member: 'default',
   auditor: 'primary',
 };

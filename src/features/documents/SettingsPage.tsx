@@ -1,9 +1,11 @@
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { AUTH_MODE, AUTH_MODE_LABELS, isKeycloakConfigured } from '@/lib/constants';
+import { getAuthProviderType } from '@/auth/authConfig';
+import { AUTH_MODE_LABELS, AUTH_PROVIDER_LABELS, isKeycloakConfigured } from '@/lib/constants';
 
 export function SettingsPage() {
-  const authLabel = AUTH_MODE_LABELS[AUTH_MODE] ?? AUTH_MODE;
+  const authProvider = getAuthProviderType();
+  const authLabel = AUTH_PROVIDER_LABELS[authProvider] ?? AUTH_MODE_LABELS[authProvider] ?? authProvider;
   const keycloakReady = isKeycloakConfigured();
 
   return (
@@ -26,18 +28,23 @@ export function SettingsPage() {
           <div className="flex justify-between gap-4">
             <span className="text-doqyn-muted">Keycloak (SSO)</span>
             <span className="text-doqyn-text">
-              {AUTH_MODE === 'keycloak'
+              {authProvider === 'keycloak'
                 ? keycloakReady
                   ? 'Ativo e configurado'
                   : 'Modo ativo — variáveis pendentes'
                 : keycloakReady
-                  ? 'Configurado — ative com VITE_AUTH_MODE=keycloak'
-                  : 'Disponível na próxima fase'}
+                  ? 'Configurado — use VITE_AUTH_PROVIDER=keycloak'
+                  : 'Inativo'}
             </span>
           </div>
-          {AUTH_MODE === 'temporary' && (
+          {authProvider === 'temporary' && (
             <p className="text-xs text-doqyn-subtle">
               Desenvolvimento: login por credenciais via API com sessão segura em cookie.
+            </p>
+          )}
+          {authProvider === 'mock' && (
+            <p className="text-xs text-doqyn-subtle">
+              Modo mock: usuário de desenvolvimento em memória, sem Keycloak.
             </p>
           )}
         </CardContent>
