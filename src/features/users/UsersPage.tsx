@@ -138,8 +138,8 @@ export function UsersPage() {
   });
 
   const groupsQuery = useQuery({
-    queryKey: ['access-groups'],
-    queryFn: getAccessGroups,
+    queryKey: ['access-groups', effectiveCompanyId],
+    queryFn: () => getAccessGroups(effectiveCompanyId || undefined),
   });
 
   const invalidate = () => {
@@ -173,11 +173,11 @@ export function UsersPage() {
   const approveMutation = useMutation({
     mutationFn: () => {
       if (!approvingMember) throw new Error('Membro não selecionado.');
-      return usersApi.approve(approvingMember.id, accessForm);
+      return usersApi.approve(approvingMember.id, accessForm, effectiveCompanyId || undefined);
     },
     onSuccess: (data) => {
       toast.success('Solicitação aprovada.');
-      if (data.temporaryPassword) {
+      if ('temporaryPassword' in data && data.temporaryPassword) {
         toast.info(`Senha temporária (dev): ${data.temporaryPassword}`, { duration: 15000 });
       }
       setApprovingMember(null);
@@ -187,7 +187,7 @@ export function UsersPage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (memberId: string) => usersApi.reject(memberId),
+    mutationFn: (memberId: string) => usersApi.reject(memberId, undefined, effectiveCompanyId || undefined),
     onSuccess: () => {
       toast.success('Solicitação rejeitada.');
       invalidate();
@@ -196,7 +196,7 @@ export function UsersPage() {
   });
 
   const blockMutation = useMutation({
-    mutationFn: (memberId: string) => usersApi.block(memberId),
+    mutationFn: (memberId: string) => usersApi.block(memberId, effectiveCompanyId || undefined),
     onSuccess: () => {
       toast.success('Usuário bloqueado.');
       invalidate();
@@ -205,7 +205,7 @@ export function UsersPage() {
   });
 
   const activateMutation = useMutation({
-    mutationFn: (memberId: string) => usersApi.activate(memberId),
+    mutationFn: (memberId: string) => usersApi.activate(memberId, effectiveCompanyId || undefined),
     onSuccess: () => {
       toast.success('Usuário reativado.');
       invalidate();
@@ -216,7 +216,7 @@ export function UsersPage() {
   const updateAccessMutation = useMutation({
     mutationFn: () => {
       if (!editingMember) throw new Error('Membro não selecionado.');
-      return usersApi.updateAccess(editingMember.id, accessForm);
+      return usersApi.updateAccess(editingMember.id, accessForm, effectiveCompanyId || undefined);
     },
     onSuccess: () => {
       toast.success('Acesso atualizado.');

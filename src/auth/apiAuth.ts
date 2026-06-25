@@ -1,4 +1,4 @@
-import { usesKeycloakAuth } from './authConfig';
+import { usesDoqynAuth, usesKeycloakAuth } from './authConfig';
 
 type TokenGetter = () => string | null;
 
@@ -45,3 +45,5 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
     headers: withAuthHeaders(init?.headers, { json: !isFormData }),
   });
 }
+
+export { usesDoqynAuth };

@@ -8,18 +8,13 @@ import {
 } from 'react';
 import { AUTH_MODE } from '@/lib/constants';
 import type { AuthUser } from '@/features/auth/types';
-import { loginRequest, logoutRequest, meRequest } from '@/features/auth/authApi';
-import {
-  getAuthProviderType,
-  usesKeycloakAuth,
-} from '@/auth/authConfig';
+import { loginRequest, logoutRequest, doqynMeRequest } from '@/features/auth/authApi';
 import { registerAuthTokenGetter } from '@/auth/apiAuth';
 import {
-  getKeycloak,
-  getKeycloakLogoutRedirectUri,
-  initKeycloak,
-  resetKeycloakClient,
-} from '@/auth/keycloakClient';
+  getAuthProviderType,
+  usesDoqynAuth,
+  usesKeycloakAuth,
+} from '@/auth/authConfig';
 import { AccessGateScreen } from '@/auth/AccessGateScreen';
 import { mapMeSessionToAuthUser, resolveAccessGate } from '@/auth/mapMeSession';
 import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
@@ -131,8 +126,9 @@ function applyMeSession(
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const authProvider = getAuthProviderType();
+  const isDoqynAuth = usesDoqynAuth();
   const isApiAuth = authProvider === 'temporary';
-  const isKeycloak = authProvider === 'keycloak';
+  const isKeycloak = usesKeycloakAuth();
   const isMock = authProvider === 'mock';
 
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -172,13 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const loadKeycloakSession = useCallback(async () => {
-    const keycloak = await initKeycloak();
-    const accessToken = keycloak.token ?? null;
-
-    registerAuthTokenGetter(() => accessToken);
-    setToken(accessToken);
-
+  const loadDoqynSession = useCallback(async () => {
     try {
       const session = await getCurrentSession();
       applyMeSession(session, sessionSetters);
@@ -186,32 +176,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       clearSession();
 
-      if (err instanceof SessionApiError && err.code === 'MEMBER_NOT_LINKED') {
-        setAccessGate('not_linked');
-        setError(null);
-        logSessionLoaded({
-          authProvider: 'keycloak',
-          meOk: false,
-          membershipStatus: 'not_linked',
-        });
-        return;
+      if (err instanceof SessionApiError) {
+        if (err.code === 'NO_ACTIVE_MEMBERSHIP') {
+          setAccessGate('no_membership');
+          setError(null);
+          return;
+        }
+        if (err.statusCode === 401) {
+          setError(null);
+          return;
+        }
       }
 
       throw err;
     }
   }, [clearSession, sessionSetters]);
 
+  const loadKeycloakSession = useCallback(async () => {
+    throw new Error('Keycloak foi descontinuado. Use VITE_AUTH_PROVIDER=doqyn_auth.');
+  }, []);
+
   const refreshToken = useCallback(async () => {
-    if (!isKeycloak) return;
-
-    const keycloak = getKeycloak();
-    if (!keycloak) return;
-
-    await keycloak.updateToken(30);
-    const accessToken = keycloak.token ?? null;
-    registerAuthTokenGetter(() => accessToken);
-    setToken(accessToken);
-  }, [isKeycloak]);
+    // Token refresh não aplicável em doqyn_auth (cookie HttpOnly).
+  }, []);
 
   const refreshUser = useCallback(async () => {
     setIsLoading(true);
@@ -219,6 +206,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessGate(null);
 
     try {
+      if (isDoqynAuth) {
+        if (isPublicUnauthenticatedPath()) {
+          clearSession();
+          return;
+        }
+        await loadDoqynSession();
+        return;
+      }
+
       if (isKeycloak) {
         if (isPublicUnauthenticatedPath()) {
           clearSession();
@@ -246,20 +242,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (isApiAuth) {
-        const currentUser = await meRequest();
-        if (currentUser) {
-          setUser(currentUser);
-          setTenant({
-            tenantId: currentUser.companyId,
-            tenantType: 'business',
-            displayName: currentUser.companyName,
-            status: 'active',
-          });
-          setMembership({
-            status: 'active',
-            tenantRoles: currentUser.roles ?? [],
-            accessGroupIds: currentUser.groups,
-          });
+        const session = await doqynMeRequest().catch(() => null);
+        if (session) {
+          applyMeSession(session, sessionSetters);
         } else {
           clearSession();
         }
@@ -274,14 +259,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [clearSession, isApiAuth, isKeycloak, isMock, loadKeycloakSession]);
+  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, loadKeycloakSession]);
 
   const login = useCallback(
     async (email: string, password: string, rememberMe = false) => {
       if (isKeycloak) {
-        const keycloak = getKeycloak();
-        await keycloak?.login();
-        return;
+        throw new Error('Keycloak descontinuado. Configure VITE_AUTH_PROVIDER=doqyn_auth.');
       }
 
       if (isMock) {
@@ -289,33 +272,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (isApiAuth) {
-        const loggedUser = await loginRequest({ email, password, rememberMe });
-        setUser(loggedUser);
+      if (isDoqynAuth || isApiAuth) {
+        await loginRequest({ email, password, rememberMe });
+        if (isDoqynAuth) {
+          await loadDoqynSession();
+        } else {
+          const session = await doqynMeRequest();
+          if (session) applyMeSession(session, sessionSetters);
+        }
         return;
       }
     },
-    [isApiAuth, isKeycloak, isMock],
+    [isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession],
   );
 
   const loginWithSSO = useCallback(async () => {
-    if (isKeycloak) {
-      await getKeycloak()?.login();
-      return;
-    }
-
-    if (isApiAuth) {
-      throw new Error('SSO disponível apenas com VITE_AUTH_PROVIDER=keycloak.');
-    }
-  }, [isApiAuth, isKeycloak]);
+    throw new Error('SSO Keycloak descontinuado. Use login por e-mail e senha.');
+  }, []);
 
   const logout = useCallback(async () => {
     if (isKeycloak) {
-      const keycloak = getKeycloak();
       clearSession();
-      resetKeycloakClient();
-      registerAuthTokenGetter(null);
-      await keycloak?.logout({ redirectUri: getKeycloakLogoutRedirectUri() });
       return;
     }
 
@@ -324,12 +301,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (isApiAuth) {
+    if (isDoqynAuth || isApiAuth) {
       await logoutRequest();
     }
 
     clearSession();
-  }, [clearSession, isApiAuth, isKeycloak, isMock]);
+  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock]);
 
   const hasRole = useCallback((role: string) => roles.includes(role), [roles]);
 
@@ -339,11 +316,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const retryAuth = useCallback(() => {
-    if (isKeycloak) {
-      resetKeycloakClient();
-    }
     setInitAttempt((value) => value + 1);
-  }, [isKeycloak]);
+  }, []);
 
   useEffect(() => {
     registerAuthTokenGetter(() => (usesKeycloakAuth() ? token : null));
@@ -354,7 +328,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refreshUser();
   }, [refreshUser, initAttempt]);
 
-  const supportsSso = isKeycloak || AUTH_MODE === 'keycloak';
+  const supportsSso = false;
   const isAuthenticated = Boolean(user) && !accessGate;
 
   const value = useMemo<AuthContextValue>(

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import type {
   AuditEvent,
@@ -74,6 +75,8 @@ function handleApiError(error: unknown, fallback: string) {
 }
 
 export function useRules(actorName: string) {
+  const { tenant } = useAuth();
+  const tenantId = tenant?.tenantId;
   const [groups, setGroups] = useState<Group[]>([]);
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [members, setMembers] = useState<CompanyMember[]>([]);
@@ -102,7 +105,7 @@ export function useRules(actorName: string) {
     setError(null);
     try {
       const [rawGroups, rawClasses, rawMembers, rawRules] = await Promise.all([
-        getAccessGroups(),
+        getAccessGroups(tenantId),
         getDocumentClasses(),
         getCompanyMembers(),
         getDocumentRules(),
@@ -118,7 +121,7 @@ export function useRules(actorName: string) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
     void reload();
@@ -137,7 +140,7 @@ export function useRules(actorName: string) {
   const createGroup = useCallback(
     async (name: string, color: GroupColor) => {
       try {
-        const created = await createAccessGroup({ name, color });
+        const created = await createAccessGroup({ name, color }, tenantId);
         const mapped = mapApiGroup(created);
         setGroups((prev) => [...prev, mapped]);
         addAuditEvent(`${actorName} criou o grupo ${name.trim()}`, name.trim());

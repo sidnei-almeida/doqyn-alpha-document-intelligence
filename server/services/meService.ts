@@ -2,6 +2,7 @@ import type { AuthUser } from '../auth/types.js';
 import type { VerifiedKeycloakAuth } from '../auth/keycloakJwtVerifier.js';
 import { mapMemberToAuthUser } from '../auth/memberAuth.js';
 import { getTenantIdFromUser } from '../auth/tenantContext.js';
+import type { DoqynVerifiedSession } from '../auth/providers/doqynAuthProvider.js';
 import { getTenantById } from './tenantsService.js';
 import {
   findActiveTenantMember,
@@ -12,22 +13,27 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 
 export type MeResponse = {
+  ok?: boolean;
+  authProvider?: string;
   user: {
+    id?: string;
     keycloakUserId?: string;
     email: string;
     username?: string;
     firstName?: string;
     lastName?: string;
+    status?: string;
   };
   tenant: {
     tenantId: string;
     tenantType: string;
-    taxIdType: string;
+    taxIdType?: string;
     displayName: string;
     status: string;
     taxIdMasked?: string;
   };
   membership: {
+    membershipId?: string;
     status: string;
     tenantRoles: string[];
     accessGroupIds: string[];
@@ -128,4 +134,63 @@ export async function resolveMeFromKeycloakClaims(
   );
 
   return resolveMeResponse(authUser, claims);
+}
+
+export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeResponse {
+  const { user, activeMembership } = session;
+
+  if (!activeMembership) {
+    throw new ServiceError(
+      'Nenhuma membership ativa selecionada.',
+      'NO_ACTIVE_MEMBERSHIP',
+      403,
+    );
+  }
+
+  return {
+    ok: true,
+    authProvider: 'doqyn_auth',
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName ?? undefined,
+      lastName: user.lastName ?? undefined,
+      status: user.status,
+    },
+    tenant: {
+      tenantId: activeMembership.tenantId,
+      tenantType: activeMembership.tenantType,
+      displayName: activeMembership.tenantDisplayName ?? activeMembership.tenantId,
+      status: 'active',
+    },
+    membership: {
+      membershipId: activeMembership.membershipId,
+      status: activeMembership.status,
+      tenantRoles: [...activeMembership.roles],
+      accessGroupIds: [...activeMembership.accessGroupIds],
+    },
+    legacyUser: {
+      id: user.id,
+      email: user.email,
+      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
+      firstName: user.firstName ?? undefined,
+      lastName: user.lastName ?? undefined,
+      companyId: activeMembership.tenantId,
+      tenantId: activeMembership.tenantId,
+      companyName: activeMembership.tenantDisplayName ?? activeMembership.tenantId,
+      role: activeMembership.roles.includes('doqyn_admin')
+        ? 'admin'
+        : activeMembership.roles.includes('company_admin')
+          ? 'manager'
+          : 'user',
+      area: '',
+      groups: activeMembership.accessGroupIds,
+      memberId: activeMembership.membershipId,
+      membershipId: activeMembership.membershipId,
+      platformRoles: activeMembership.roles,
+      membershipStatus: activeMembership.status,
+      tenantType: activeMembership.tenantType,
+      authProvider: 'doqyn_auth',
+    },
+  };
 }

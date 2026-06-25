@@ -1,5 +1,7 @@
 import type { VercelRequest } from '@vercel/node';
 import { DEV_TENANT_ID } from '../db/constants.js';
+import { usesDoqynAuth } from './authConfig.js';
+import { getDoqynSessionTokenFromRequest } from './providers/doqynAuthProvider.js';
 import { getSessionFromRequest } from './session.js';
 import type { AuthUser } from './types.js';
 
@@ -39,6 +41,21 @@ export function resolveCompanyId(sessionCompanyId?: string): string {
 }
 
 export async function getCurrentTenantId(req: VercelRequest): Promise<string> {
+  if (usesDoqynAuth()) {
+    const token = getDoqynSessionTokenFromRequest(req);
+    if (token) {
+      const { verifyDoqynAuthSession } = await import('./providers/doqynAuthProvider.js');
+      try {
+        const session = await verifyDoqynAuthSession(req);
+        if (session?.activeMembership) {
+          return session.activeMembership.tenantId;
+        }
+      } catch {
+        // fallback abaixo
+      }
+    }
+  }
+
   const user = await getSessionFromRequest(req);
   if (user) {
     return getTenantIdFromUser(user);

@@ -15,6 +15,14 @@ const GATE_COPY = {
     title: 'Acesso bloqueado',
     message: 'Seu acesso ao DOQYN está bloqueado. Entre em contato com o administrador.',
   },
+  removed: {
+    title: 'Acesso removido',
+    message: 'Seu vínculo com esta empresa foi removido. Solicite novo acesso se necessário.',
+  },
+  no_membership: {
+    title: 'Empresa não selecionada',
+    message: 'Selecione uma empresa ativa ou entre em contato com o administrador.',
+  },
 } as const;
 
 export function AccessGateScreen({
