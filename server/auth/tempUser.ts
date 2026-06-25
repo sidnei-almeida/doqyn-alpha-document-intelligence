@@ -1,3 +1,4 @@
+import { DEV_TENANT_ID } from '../db/constants.js';
 import type { AuthRole, AuthUser } from './types';
 
 function requiredEnv(name: string): string {
@@ -25,7 +26,8 @@ export function getTemporaryUser(): AuthUser {
     email,
     name: process.env.TEMP_ADMIN_NAME || 'Administrador DOQYN',
 
-    companyId: process.env.TEMP_COMPANY_ID || 'doqyn-alpha',
+    companyId: process.env.TEMP_COMPANY_ID?.trim() || DEV_TENANT_ID,
+    tenantId: process.env.TEMP_COMPANY_ID?.trim() || DEV_TENANT_ID,
     companyName: process.env.TEMP_COMPANY_NAME || 'DOQYN Alpha',
 
     role,

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfirmProvider } from '@/components/confirm/ConfirmProvider';
 import { AppToaster } from '@/components/ui/AppToaster';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/features/auth/AuthProvider';
+import { AuthProvider } from '@/auth/AuthProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {

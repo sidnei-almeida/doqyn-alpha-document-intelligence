@@ -70,6 +70,7 @@ export async function verifySessionToken(token: string): Promise<AuthUser> {
     name: String(session.name),
 
     companyId: String(session.companyId),
+    tenantId: String(session.tenantId ?? session.companyId),
     companyName: String(session.companyName),
 
     role: (session.role || 'admin') as AuthRole,

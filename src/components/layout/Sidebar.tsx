@@ -6,11 +6,12 @@ import {
   Settings,
   Shield,
   Upload,
+  Users,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useAuth } from '@/features/auth/useAuth';
+import { useAuth } from '@/auth/useAuth';
 import { NAV_ITEMS_ADMIN, NAV_ITEMS_PRIMARY } from '@/lib/constants';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ const ICON_MAP = {
   LayoutDashboard,
   Upload,
   Scale,
+  Users,
   Shield,
   Settings,
 } as const;
@@ -53,7 +55,12 @@ function NavItem({
 }
 
 export function Sidebar({ className }: SidebarProps) {
-  const { user, logout } = useAuth();
+  const { user, roles, tenant, logout, hasAnyRole } = useAuth();
+  const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
+
+  const adminNavItems = NAV_ITEMS_ADMIN.filter(
+    (item) => !('managerOnly' in item && item.managerOnly) || canManageUsers,
+  );
 
   const { data: health } = useQuery({
     queryKey: ['health'],
@@ -85,7 +92,7 @@ export function Sidebar({ className }: SidebarProps) {
           Administração
         </p>
         <div className="space-y-0.5">
-          {NAV_ITEMS_ADMIN.map((item) => (
+          {adminNavItems.map((item) => (
             <NavItem key={item.path} item={item} />
           ))}
         </div>
@@ -102,7 +109,15 @@ export function Sidebar({ className }: SidebarProps) {
         <div className="mb-2 px-2">
           <p className="truncate text-xs font-medium text-doqyn-text">{user?.name}</p>
           <p className="truncate text-[11px] text-doqyn-muted">{user?.email}</p>
-          {user?.companyName && (
+          {roles.length > 0 && (
+            <p className="mt-1 truncate text-[10px] text-doqyn-subtle">
+              {roles.slice(0, 3).join(' · ')}
+            </p>
+          )}
+          {tenant?.displayName && (
+            <p className="mt-0.5 truncate text-[10px] text-doqyn-subtle">{tenant.displayName}</p>
+          )}
+          {!tenant?.displayName && user?.companyName && (
             <p className="mt-0.5 truncate text-[10px] text-doqyn-subtle">{user.companyName}</p>
           )}
         </div>

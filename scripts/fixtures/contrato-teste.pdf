@@ -1,0 +1,48 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 892 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td (CONTRATO DE PRESTACAO DE SERVICOS) Tj
+0 -16 Td (CONTRATANTE: Empresa Alpha Ltda) Tj
+0 -16 Td (CNPJ: 12.345.678/0001-90) Tj
+0 -16 Td (CONTRATADA: Fornecedor Beta Servicos Ltda) Tj
+0 -16 Td (CNPJ: 98.765.432/0001-10) Tj
+0 -16 Td (OBJETO: Prestacao de servicos de consultoria empresarial.) Tj
+0 -16 Td (VIGENCIA: 01/01/2026 a 31/12/2026) Tj
+0 -16 Td (VALOR MENSAL: R$ 27.500,00) Tj
+0 -16 Td (FORMA DE PAGAMENTO: transferencia bancaria ate o dia 10.) Tj
+0 -16 Td (CLAUSULA PRIMEIRA: O presente contrato tem por objeto a prestacao) Tj
+0 -16 Td (de servicos especializados conforme descrito no anexo I.) Tj
+0 -16 Td (CLAUSULA SEGUNDA: As partes comprometem-se a cumprir as obrigacoes) Tj
+0 -16 Td (estabelecidas neste instrumento durante toda a vigencia contratual.) Tj
+0 -16 Td (ASSINATURA: Sao Paulo, 15 de janeiro de 2026.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000244 00000 n 
+0000001186 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1255
+%%EOF

@@ -1,12 +1,12 @@
+import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+
 const API_BASE = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+  const response = await authFetch(`${API_BASE}${path}`, {
     ...options,
+    credentials: options?.credentials ?? getFetchCredentials(),
+    headers: withAuthHeaders(options?.headers),
   });
 
   if (!response.ok) {
@@ -27,7 +27,11 @@ export const api = {
     },
     get: (id: string) => request<{ document: unknown }>(`/documents?id=${id}`),
     upload: (formData: FormData) =>
-      fetch(`${API_BASE}/documents/upload`, { method: 'POST', body: formData }).then(async (res) => {
+      authFetch(`${API_BASE}/documents/upload`, {
+        method: 'POST',
+        credentials: getFetchCredentials(),
+        body: formData,
+      }).then(async (res) => {
         if (!res.ok) {
           const error = await res.json().catch(() => ({ message: 'Erro no envio' }));
           throw new Error(error.message);

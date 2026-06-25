@@ -4,6 +4,9 @@ export type AuthUser = {
   id: string;
   email: string;
   name: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
 
   companyId: string;
   companyName: string;
@@ -11,4 +14,6 @@ export type AuthUser = {
   role: AuthRole;
   area: string;
   groups: string[];
+  /** Roles do realm Keycloak ou equivalente em mock. */
+  roles?: string[];
 };

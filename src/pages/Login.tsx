@@ -161,6 +161,11 @@ export function Login() {
           <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
           Ambiente corporativo seguro
         </p>
+        <p className="mt-3 text-center text-sm">
+          <a href="/solicitar-acesso" className="text-doqyn-accent hover:underline">
+            Solicitar acesso ao DOQYN
+          </a>
+        </p>
       </div>
     </main>
   );

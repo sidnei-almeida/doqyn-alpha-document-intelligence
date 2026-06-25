@@ -72,6 +72,7 @@ export function computeGroupMemberCounts(
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
+  manager: 'Gestor',
   member: 'Membro',
   auditor: 'Auditor',
 };
@@ -79,7 +80,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const STATUS_LABELS: Record<MemberStatus, string> = {
   active: 'Ativo',
   pending: 'Pendente',
-  suspended: 'Suspenso',
+  blocked: 'Bloqueado',
 };
 
 export const GROUP_COLOR_STYLES: Record<

@@ -1,36 +1,44 @@
-import { connectMongo } from '../db/mongo.js';
-import { AuditEventModel } from '../models/AuditEvent.js';
+import { isMongoNativeConfigured } from '../db/mongoClient.js';
+import type { MongoAuditLog } from '../db/types.js';
+import { getTenantCollections } from '../tenancy/getTenantCollections.js';
+import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import { ServiceError } from '../utils/serviceErrors.js';
+import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 
 export async function listAuditEvents(filters: {
   tenantId?: string;
   documentId?: string;
   limit?: number;
 }) {
-  await connectMongo();
+  if (!filters.tenantId?.trim()) {
+    throw new ServiceError('tenantId é obrigatório.', 'TENANT_REQUIRED', 400);
+  }
 
-  if (!process.env.MONGODB_URI) {
+  const tenantId = filters.tenantId.trim();
+
+  if (!isMongoNativeConfigured()) {
     return { events: [], total: 0 };
   }
 
-  const query: Record<string, unknown> = {};
-  if (filters.tenantId) query.tenantId = filters.tenantId;
+  const { auditLogs } = await getTenantCollections(tenantId);
+  const query: Record<string, unknown> = { ...tenantScopeFilter(tenantId) };
   if (filters.documentId) query.documentId = filters.documentId;
 
   const limit = filters.limit ?? 50;
-  const events = await AuditEventModel.find(query).sort({ createdAt: -1 }).limit(limit).lean();
-  const total = await AuditEventModel.countDocuments(query);
+  const events = await auditLogs.find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  const total = await auditLogs.countDocuments(query);
 
   return {
     events: events.map((e) => ({
       id: String(e._id),
-      tenantId: e.tenantId,
+      tenantId: e.tenantId ?? e.companyId,
       documentId: e.documentId,
-      actorUserId: e.actorUserId,
-      actorName: e.actorName,
+      actorUserId: e.actor?.userId,
+      actorName: e.actor?.name,
       action: e.action,
       description: e.description,
-      area: e.area,
-      result: e.result,
+      area: (e as Record<string, unknown>).area,
+      result: (e as Record<string, unknown>).result,
       createdAt: e.createdAt,
       metadata: e.metadata,
     })),
@@ -49,10 +57,22 @@ export async function createAuditEvent(input: {
   result?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await connectMongo();
+  if (!isMongoNativeConfigured()) return null;
 
-  if (!process.env.MONGODB_URI) return null;
+  const { auditLogs } = await getTenantCollections(input.tenantId);
+  const now = new Date();
+  const event = withTenantFields(input.tenantId, {
+    _id: `audit_${Date.now()}`,
+    documentId: input.documentId,
+    actor: { userId: input.actorUserId, name: input.actorName, role: 'user' },
+    action: input.action,
+    description: input.description,
+    area: input.area,
+    result: input.result ?? 'success',
+    metadata: sanitizeAuditMetadata(input.metadata ?? {}),
+    createdAt: now,
+  });
 
-  const event = await AuditEventModel.create(input);
-  return { id: event._id.toString(), ...input, createdAt: event.createdAt };
+  await auditLogs.insertOne(event as unknown as MongoAuditLog);
+  return { id: event._id, ...input, createdAt: now };
 }

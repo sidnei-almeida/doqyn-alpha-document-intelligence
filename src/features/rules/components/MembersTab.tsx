@@ -159,7 +159,7 @@ export function MembersTab({
                 { value: 'all', label: 'Status: Todos' },
                 { value: 'active', label: STATUS_LABELS.active },
                 { value: 'pending', label: STATUS_LABELS.pending },
-                { value: 'suspended', label: STATUS_LABELS.suspended },
+                { value: 'blocked', label: STATUS_LABELS.blocked },
               ]}
               className="w-[160px]"
             />

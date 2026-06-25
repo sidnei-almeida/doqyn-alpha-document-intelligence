@@ -1,4 +1,11 @@
-export type UploadMode = 'single' | 'bulk';
+export type SendFlowPhase =
+  | 'idle'
+  | 'analyzing'
+  | 'completing'
+  | 'completed'
+  | 'saving'
+  | 'saved'
+  | 'error';
 
 export type ProcessingStatus =
   | 'waiting'
@@ -18,6 +25,8 @@ export type HistoryStatus =
   | 'error';
 
 export type ExtractedMetadata = {
+  jobId?: string;
+  originalFileName?: string;
   suggestedName: string;
   documentType: string;
   responsible?: string;
@@ -26,6 +35,34 @@ export type ExtractedMetadata = {
   value?: string;
   suggestedVersion: string;
   confidenceScore: number;
+  analysisStatus: 'completed' | 'requires_review' | 'ai_unavailable' | 'failed';
+  missingFields?: string[];
+  reviewReasons?: string[];
+  savedDocumentId?: string;
+  savedVersionId?: string;
+  documentCode?: string;
+  storageStatus?: 'pending' | 'stored' | 'failed' | 'skipped';
+  extractedFields?: {
+    key: string;
+    label: string;
+    value: string;
+    confidence?: number;
+    evidence?: {
+      snippet: string;
+      pageNumber?: number;
+    };
+  }[];
+  classificationEvidence?: {
+    snippet: string;
+    pageNumber?: number;
+  }[];
+  classificationReason?: string;
+  textExtraction?: {
+    status: 'completed' | 'failed';
+    pageCount?: number;
+    charCount: number;
+    truncated: boolean;
+  };
 };
 
 export type UploadedDocument = {
@@ -51,7 +88,13 @@ export type DocumentHistoryItem = {
   confidenceScore: number;
   version: string;
   uploadedAt: string;
+  uploadedAtIso?: string;
   lastActionAt: string;
+  lastActionLabel?: string;
+  fileSize?: number;
+  metadata?: ExtractedMetadata;
+  logs?: ProcessingLogItem[];
+  errorMessage?: string;
 };
 
 export type MetadataField = {

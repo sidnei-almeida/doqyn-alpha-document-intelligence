@@ -1,27 +1,43 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type {
   AuditEvent,
   CompanyMember,
   DocumentCategory,
+  DocumentExtractionRule,
   Group,
   GroupColor,
   PendingApproval,
   UserRole,
 } from '@/types/rules';
+import { computeGroupMemberCounts, extractDomain, generateId } from '@/utils/rulesHelpers';
 import {
-  extractDomain,
-  generateId,
-  getIconForCategoryName,
-} from '@/utils/rulesHelpers';
+  createAccessGroup,
+  createCompanyMember,
+  createDocumentClass,
+  createDocumentRule,
+  getAccessGroups,
+  getCompanyMembers,
+  getDocumentClasses,
+  getDocumentRules,
+  RulesApiError,
+  toggleAccessGroup,
+  toggleDocumentClass,
+  toExtractionRule,
+  updateCompanyMemberGroups,
+  updateCompanyMemberStatus,
+  updateDocumentClass,
+  updateDocumentClassNotifications,
+  updateDocumentClassPermissions,
+  updateDocumentRule,
+} from '../api/rulesApi';
 import {
-  CURRENT_COMPANY_ID,
-  CURRENT_USER_NAME,
-  INITIAL_AUDIT_EVENTS,
-  INITIAL_CATEGORIES,
-  INITIAL_GROUPS,
-  INITIAL_MEMBERS,
-  INITIAL_PENDING_APPROVALS,
-} from '../mockData';
+  filterActiveCategories,
+  filterActiveGroups,
+  mapApiDocumentClass,
+  mapApiGroup,
+  mapApiMember,
+} from '../api/mappers';
 
 export type InviteMemberInput = {
   name: string;
@@ -32,424 +48,478 @@ export type InviteMemberInput = {
   message?: string;
 };
 
-// API endpoints futuros:
-// GET    /api/companies/:companyId/groups
-// GET    /api/companies/:companyId/members
-// POST   /api/companies/:companyId/members/invite
-// PATCH  /api/companies/:companyId/members/:memberId/groups
-// PATCH  /api/companies/:companyId/members/:memberId/approve
-// PATCH  /api/companies/:companyId/members/:memberId/reject
-// PATCH  /api/companies/:companyId/members/:memberId/suspend
-// DELETE /api/companies/:companyId/members/:memberId
-// GET    /api/companies/:companyId/pending-approvals
-// GET    /api/companies/:companyId/audit-events
-
-function filterByCompany<T extends { companyId: string }>(items: T[]): T[] {
-  return items.filter((item) => item.companyId === CURRENT_COMPANY_ID);
+function memberToPendingApproval(member: CompanyMember): PendingApproval {
+  return {
+    id: member.id,
+    companyId: member.companyId,
+    name: member.name,
+    email: member.email,
+    domain: extractDomain(member.email),
+    requestedAt: new Date(member.createdAt).toLocaleString('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    method: 'access_request',
+    requestedGroups: [],
+    position: member.position,
+    role: member.role,
+  };
 }
 
-export function useRules() {
-  const [groups, setGroups] = useState<Group[]>(() => filterByCompany(INITIAL_GROUPS));
-  const [categories, setCategories] = useState<DocumentCategory[]>(() =>
-    filterByCompany(INITIAL_CATEGORIES),
-  );
-  const [members, setMembers] = useState<CompanyMember[]>(() => filterByCompany(INITIAL_MEMBERS));
-  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(() =>
-    filterByCompany(INITIAL_PENDING_APPROVALS),
-  );
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(() =>
-    filterByCompany(INITIAL_AUDIT_EVENTS),
-  );
+function handleApiError(error: unknown, fallback: string) {
+  const message = error instanceof RulesApiError ? error.message : fallback;
+  toast.error(message);
+}
 
-  const addAuditEvent = useCallback((action: string, target: string) => {
-    const event: AuditEvent = {
-      id: generateId('aud'),
-      companyId: CURRENT_COMPANY_ID,
-      action,
-      actor: CURRENT_USER_NAME,
-      target,
-      createdAt: new Date().toISOString(),
-    };
-    setAuditEvents((prev) => [event, ...prev]);
-  }, []);
+export function useRules(actorName: string) {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [categories, setCategories] = useState<DocumentCategory[]>([]);
+  const [members, setMembers] = useState<CompanyMember[]>([]);
+  const [rules, setRules] = useState<DocumentExtractionRule[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const createGroup = useCallback(
-    (name: string, color: GroupColor) => {
-      const newGroup: Group = {
-        id: generateId('grp'),
-        companyId: CURRENT_COMPANY_ID,
-        name: name.trim(),
-        color,
+  const addAuditEvent = useCallback(
+    (action: string, target: string) => {
+      const event: AuditEvent = {
+        id: generateId('aud'),
+        companyId: members[0]?.companyId ?? '',
+        action,
+        actor: actorName,
+        target,
         createdAt: new Date().toISOString(),
       };
-      setGroups((prev) => [...prev, newGroup]);
-      addAuditEvent(`${CURRENT_USER_NAME} criou o grupo ${name.trim()}`, name.trim());
+      setAuditEvents((prev) => [event, ...prev]);
     },
-    [addAuditEvent],
+    [actorName, members],
+  );
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [rawGroups, rawClasses, rawMembers, rawRules] = await Promise.all([
+        getAccessGroups(),
+        getDocumentClasses(),
+        getCompanyMembers(),
+        getDocumentRules(),
+      ]);
+
+      setGroups(filterActiveGroups(rawGroups.map(mapApiGroup)));
+      setCategories(filterActiveCategories(rawClasses.map(mapApiDocumentClass)));
+      setMembers(rawMembers.map(mapApiMember));
+      setRules(rawRules.map(toExtractionRule));
+    } catch (err) {
+      console.error('Falha ao carregar regras:', err);
+      setError('Não foi possível carregar as regras agora.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const pendingApprovals = useMemo(
+    () => members.filter((m) => m.status === 'pending').map(memberToPendingApproval),
+    [members],
+  );
+
+  const groupMemberCounts = useMemo(
+    () => computeGroupMemberCounts(groups, members),
+    [groups, members],
+  );
+
+  const createGroup = useCallback(
+    async (name: string, color: GroupColor) => {
+      try {
+        const created = await createAccessGroup({ name, color });
+        const mapped = mapApiGroup(created);
+        setGroups((prev) => [...prev, mapped]);
+        addAuditEvent(`${actorName} criou o grupo ${name.trim()}`, name.trim());
+        toast.success('Grupo criado.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível criar o grupo.');
+      }
+    },
+    [actorName, addAuditEvent],
   );
 
   const deleteGroup = useCallback(
-    (groupId: string) => {
+    async (groupId: string) => {
       const group = groups.find((g) => g.id === groupId);
-      setGroups((prev) => prev.filter((g) => g.id !== groupId));
-      setCategories((prev) =>
-        prev.map((cat) => ({
-          ...cat,
-          accessGroupIds: cat.accessGroupIds.filter((id) => id !== groupId),
-          notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
-        })),
-      );
-      setMembers((prev) =>
-        prev.map((m) => ({
-          ...m,
-          groupIds: m.groupIds.filter((id) => id !== groupId),
-        })),
-      );
-      if (group) {
-        addAuditEvent(`${CURRENT_USER_NAME} removeu o grupo ${group.name}`, group.name);
+      try {
+        await toggleAccessGroup(groupId);
+        setGroups((prev) => prev.filter((g) => g.id !== groupId));
+        setCategories((prev) =>
+          prev.map((cat) => ({
+            ...cat,
+            accessGroupIds: cat.accessGroupIds.filter((id) => id !== groupId),
+            notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
+          })),
+        );
+        if (group) {
+          addAuditEvent(`${actorName} desativou o grupo ${group.name}`, group.name);
+        }
+        toast.success('Grupo desativado.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível desativar o grupo.');
       }
     },
-    [addAuditEvent, groups],
+    [actorName, addAuditEvent, groups],
   );
 
   const createCategory = useCallback(
-    (name: string) => {
+    async (name: string) => {
       const trimmed = name.trim();
       if (!trimmed) return;
 
-      const newCategory: DocumentCategory = {
-        id: generateId('cat'),
-        companyId: CURRENT_COMPANY_ID,
-        name: trimmed,
-        icon: getIconForCategoryName(trimmed),
-        accessGroupIds: [],
-        notifyGroupIds: [],
-        createdAt: new Date().toISOString(),
-      };
-      setCategories((prev) => [...prev, newCategory]);
-      addAuditEvent(`${CURRENT_USER_NAME} criou a categoria ${trimmed}`, trimmed);
+      try {
+        const created = await createDocumentClass({ name: trimmed });
+        const mapped = mapApiDocumentClass(created);
+        setCategories((prev) => [...prev, mapped]);
+        addAuditEvent(`${actorName} criou a categoria ${trimmed}`, trimmed);
+        toast.success('Categoria criada.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível criar a categoria.');
+      }
     },
-    [addAuditEvent],
+    [actorName, addAuditEvent],
   );
 
   const deleteCategory = useCallback(
-    (categoryId: string) => {
+    async (categoryId: string) => {
       const category = categories.find((c) => c.id === categoryId);
-      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
-      if (category) {
-        addAuditEvent(`${CURRENT_USER_NAME} removeu a categoria ${category.name}`, category.name);
+      try {
+        await toggleDocumentClass(categoryId);
+        setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+        if (category) {
+          addAuditEvent(`${actorName} desativou a categoria ${category.name}`, category.name);
+        }
+        toast.success('Categoria desativada.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível desativar a categoria.');
       }
     },
-    [addAuditEvent, categories],
+    [actorName, addAuditEvent, categories],
   );
 
   const assignGroupToCategory = useCallback(
-    (categoryId: string, groupId: string) => {
-      const group = groups.find((g) => g.id === groupId);
+    async (categoryId: string, groupId: string) => {
       const category = categories.find((c) => c.id === categoryId);
+      const group = groups.find((g) => g.id === groupId);
+      if (!category || category.accessGroupIds.includes(groupId)) return;
 
-      setCategories((prev) =>
-        prev.map((cat) => {
-          if (cat.id !== categoryId) return cat;
-          if (cat.accessGroupIds.includes(groupId)) return cat;
-          return {
-            ...cat,
-            accessGroupIds: [...cat.accessGroupIds, groupId],
-            notifyGroupIds: [...cat.notifyGroupIds, groupId],
-          };
-        }),
-      );
-
-      if (group && category) {
-        addAuditEvent(
-          `${CURRENT_USER_NAME} liberou a categoria ${category.name} para o grupo ${group.name}`,
-          category.name,
-        );
+      const viewGroupIds = [...category.accessGroupIds, groupId];
+      try {
+        const updated = await updateDocumentClassPermissions(categoryId, viewGroupIds);
+        const mapped = mapApiDocumentClass(updated);
+        setCategories((prev) => prev.map((c) => (c.id === categoryId ? mapped : c)));
+        if (group && category) {
+          addAuditEvent(
+            `${actorName} liberou a categoria ${category.name} para o grupo ${group.name}`,
+            category.name,
+          );
+        }
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar permissões.');
       }
     },
-    [addAuditEvent, categories, groups],
+    [actorName, addAuditEvent, categories, groups],
   );
 
   const removeGroupFromCategory = useCallback(
-    (categoryId: string, groupId: string) => {
-      const group = groups.find((g) => g.id === groupId);
+    async (categoryId: string, groupId: string) => {
       const category = categories.find((c) => c.id === categoryId);
+      const group = groups.find((g) => g.id === groupId);
+      if (!category) return;
 
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === categoryId
-            ? {
-                ...cat,
-                accessGroupIds: cat.accessGroupIds.filter((id) => id !== groupId),
-                notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
-              }
-            : cat,
-        ),
-      );
+      const viewGroupIds = category.accessGroupIds.filter((id) => id !== groupId);
+      const notifyGroups = category.notifyGroupIds.filter((id) => id !== groupId);
 
-      if (group && category) {
-        addAuditEvent(
-          `${CURRENT_USER_NAME} removeu o acesso do grupo ${group.name} à categoria ${category.name}`,
-          category.name,
-        );
+      try {
+        const [perms, notif] = await Promise.all([
+          updateDocumentClassPermissions(categoryId, viewGroupIds),
+          updateDocumentClassNotifications(categoryId, {
+            notifyOnUpdate: category.notifyOnUpdate && notifyGroups.length > 0,
+            notifyGroups,
+          }),
+        ]);
+        const mapped = mapApiDocumentClass({
+          ...notif,
+          permissions: perms.permissions,
+        });
+        setCategories((prev) => prev.map((c) => (c.id === categoryId ? mapped : c)));
+        if (group && category) {
+          addAuditEvent(
+            `${actorName} removeu o acesso do grupo ${group.name} à categoria ${category.name}`,
+            category.name,
+          );
+        }
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar permissões.');
       }
     },
-    [addAuditEvent, categories, groups],
+    [actorName, addAuditEvent, categories, groups],
   );
 
-  const toggleAllNotifications = useCallback((categoryId: string, active: boolean) => {
-    setCategories((prev) =>
-      prev.map((cat) => {
-        if (cat.id !== categoryId) return cat;
-        return {
-          ...cat,
-          notifyGroupIds: active ? [...cat.accessGroupIds] : [],
-        };
-      }),
-    );
-  }, []);
+  const toggleAllNotifications = useCallback(
+    async (categoryId: string, active: boolean) => {
+      const category = categories.find((c) => c.id === categoryId);
+      if (!category) return;
+
+      const notifyGroups = active ? [...category.accessGroupIds] : [];
+      try {
+        const updated = await updateDocumentClassNotifications(categoryId, {
+          notifyOnUpdate: active,
+          notifyGroups,
+        });
+        const mapped = mapApiDocumentClass(updated);
+        setCategories((prev) => prev.map((c) => (c.id === categoryId ? mapped : c)));
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar notificações.');
+      }
+    },
+    [categories],
+  );
 
   const inviteMember = useCallback(
-    (input: InviteMemberInput) => {
+    async (input: InviteMemberInput) => {
       const trimmedName = input.name.trim();
       const trimmedEmail = input.email.trim().toLowerCase();
       if (!trimmedName || !trimmedEmail.includes('@')) return;
 
-      const pending: PendingApproval = {
-        id: generateId('pend'),
-        companyId: CURRENT_COMPANY_ID,
-        name: trimmedName,
-        email: trimmedEmail,
-        domain: extractDomain(trimmedEmail),
-        requestedAt: new Date().toLocaleString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          day: 'numeric',
-          month: 'short',
-        }),
-        method: 'invite',
-        requestedGroups: input.groupIds,
-        position: input.position,
-        role: input.role,
-      };
-
-      setPendingApprovals((prev) => [pending, ...prev]);
-
-      const existingMember = members.find((m) => m.email === trimmedEmail);
-      if (!existingMember) {
-        const newMember: CompanyMember = {
-          id: generateId('mbr'),
-          companyId: CURRENT_COMPANY_ID,
+      try {
+        const created = await createCompanyMember({
           name: trimmedName,
           email: trimmedEmail,
-          position: input.position,
           role: input.role,
           status: 'pending',
+          position: input.position,
           groupIds: [],
-          createdAt: new Date().toISOString(),
-        };
-        setMembers((prev) => [...prev, newMember]);
+        });
+        setMembers((prev) => [...prev, mapApiMember(created)]);
+        addAuditEvent(`${actorName} convidou ${trimmedName}`, trimmedName);
+        toast.success('Convite registrado.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível convidar o membro.');
       }
-
-      addAuditEvent(`${CURRENT_USER_NAME} convidou ${trimmedName}`, trimmedName);
     },
-    [addAuditEvent, members],
+    [actorName, addAuditEvent],
   );
 
   const approveMember = useCallback(
-    (approvalId: string) => {
-      const approval = pendingApprovals.find((p) => p.id === approvalId);
-      if (!approval) return;
+    async (approvalId: string) => {
+      const member = members.find((m) => m.id === approvalId);
+      if (!member) return;
 
-      setPendingApprovals((prev) => prev.filter((p) => p.id !== approvalId));
-
-      const existing = members.find((m) => m.email === approval.email);
-      const now = new Date().toISOString();
-
-      if (existing) {
-        setMembers((prev) =>
-          prev.map((m) =>
-            m.email === approval.email
-              ? {
-                  ...m,
-                  status: 'active',
-                  groupIds: [],
-                  role: approval.role ?? m.role,
-                  position: approval.position ?? m.position,
-                  approvedBy: CURRENT_USER_NAME,
-                  approvedAt: now,
-                }
-              : m,
-          ),
-        );
-      } else {
-        const newMember: CompanyMember = {
-          id: generateId('mbr'),
-          companyId: CURRENT_COMPANY_ID,
-          name: approval.name,
-          email: approval.email,
-          position: approval.position,
-          role: approval.role ?? 'member',
-          status: 'active',
-          groupIds: [],
-          createdAt: now,
-          approvedBy: CURRENT_USER_NAME,
-          approvedAt: now,
-        };
-        setMembers((prev) => [...prev, newMember]);
+      try {
+        const updated = await updateCompanyMemberStatus(approvalId, 'active');
+        setMembers((prev) => prev.map((m) => (m.id === approvalId ? mapApiMember(updated) : m)));
+        addAuditEvent(`${actorName} aprovou ${member.name}`, member.name);
+        toast.success('Membro aprovado.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível aprovar o membro.');
       }
-
-      addAuditEvent(`${CURRENT_USER_NAME} aprovou ${approval.name}`, approval.name);
     },
-    [addAuditEvent, members, pendingApprovals],
+    [actorName, addAuditEvent, members],
   );
 
   const rejectMember = useCallback(
-    (approvalId: string) => {
-      const approval = pendingApprovals.find((p) => p.id === approvalId);
-      if (!approval) return;
+    async (approvalId: string) => {
+      const member = members.find((m) => m.id === approvalId);
+      if (!member) return;
 
-      setPendingApprovals((prev) => prev.filter((p) => p.id !== approvalId));
-      setMembers((prev) => prev.filter((m) => m.email !== approval.email || m.status !== 'pending'));
-
-      addAuditEvent(`${CURRENT_USER_NAME} recusou ${approval.name}`, approval.name);
+      try {
+        const updated = await updateCompanyMemberStatus(approvalId, 'blocked');
+        setMembers((prev) => prev.map((m) => (m.id === approvalId ? mapApiMember(updated) : m)));
+        addAuditEvent(`${actorName} recusou ${member.name}`, member.name);
+        toast.success('Solicitação recusada.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível recusar o membro.');
+      }
     },
-    [addAuditEvent, pendingApprovals],
+    [actorName, addAuditEvent, members],
+  );
+
+  const persistMemberGroups = useCallback(
+    async (memberId: string, groupIds: string[]) => {
+      const updated = await updateCompanyMemberGroups(memberId, groupIds);
+      setMembers((prev) => prev.map((m) => (m.id === memberId ? mapApiMember(updated) : m)));
+      return mapApiMember(updated);
+    },
+    [],
   );
 
   const addMemberToGroup = useCallback(
-    (memberId: string, groupId: string) => {
+    async (memberId: string, groupId: string) => {
       const member = members.find((m) => m.id === memberId);
       const group = groups.find((g) => g.id === groupId);
       if (!member || !group) return;
       if (member.status !== 'active') return;
       if (member.groupIds.includes(groupId)) return;
 
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === memberId ? { ...m, groupIds: [...m.groupIds, groupId] } : m,
-        ),
-      );
-
-      addAuditEvent(
-        `${CURRENT_USER_NAME} adicionou ${member.name} ao grupo ${group.name}`,
-        member.name,
-      );
+      try {
+        await persistMemberGroups(memberId, [...member.groupIds, groupId]);
+        addAuditEvent(
+          `${actorName} adicionou ${member.name} ao grupo ${group.name}`,
+          member.name,
+        );
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar grupos do membro.');
+      }
     },
-    [addAuditEvent, groups, members],
+    [actorName, addAuditEvent, groups, members, persistMemberGroups],
   );
 
   const removeMemberFromGroup = useCallback(
-    (memberId: string, groupId: string) => {
+    async (memberId: string, groupId: string) => {
       const member = members.find((m) => m.id === memberId);
       const group = groups.find((g) => g.id === groupId);
       if (!member || !group) return;
       if (!member.groupIds.includes(groupId)) return;
 
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === memberId
-            ? { ...m, groupIds: m.groupIds.filter((id) => id !== groupId) }
-            : m,
-        ),
-      );
-
-      addAuditEvent(
-        `${CURRENT_USER_NAME} removeu ${member.name} do grupo ${group.name}`,
-        member.name,
-      );
+      try {
+        await persistMemberGroups(
+          memberId,
+          member.groupIds.filter((id) => id !== groupId),
+        );
+        addAuditEvent(
+          `${actorName} removeu ${member.name} do grupo ${group.name}`,
+          member.name,
+        );
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar grupos do membro.');
+      }
     },
-    [addAuditEvent, groups, members],
+    [actorName, addAuditEvent, groups, members, persistMemberGroups],
   );
 
   const updateMemberGroups = useCallback(
-    (memberId: string, groupIds: string[]) => {
+    async (memberId: string, groupIds: string[]) => {
       const member = members.find((m) => m.id === memberId);
       if (!member) return;
 
-      const prevGroups = member.groupIds
-        .map((id) => groups.find((g) => g.id === id)?.name)
-        .filter(Boolean);
-      const newGroups = groupIds.map((id) => groups.find((g) => g.id === id)?.name).filter(Boolean);
-
-      setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, groupIds } : m)),
-      );
-
-      addAuditEvent(
-        `${CURRENT_USER_NAME} alterou grupos de ${member.name} (${prevGroups.join(', ')} → ${newGroups.join(', ')})`,
-        member.name,
-      );
+      try {
+        await persistMemberGroups(memberId, groupIds);
+        addAuditEvent(`${actorName} alterou grupos de ${member.name}`, member.name);
+        toast.success('Grupos atualizados.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar grupos.');
+      }
     },
-    [addAuditEvent, groups, members],
+    [actorName, addAuditEvent, members, persistMemberGroups],
   );
 
-  const updateMemberRole = useCallback(
-    (memberId: string, role: UserRole) => {
+  const blockMember = useCallback(
+    async (memberId: string) => {
       const member = members.find((m) => m.id === memberId);
       if (!member) return;
 
-      setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role } : m)),
-      );
-
-      addAuditEvent(
-        `${CURRENT_USER_NAME} alterou perfil de ${member.name} para ${role}`,
-        member.name,
-      );
+      try {
+        const updated = await updateCompanyMemberStatus(memberId, 'blocked');
+        setMembers((prev) => prev.map((m) => (m.id === memberId ? mapApiMember(updated) : m)));
+        addAuditEvent(`${actorName} bloqueou acesso de ${member.name}`, member.name);
+        toast.success('Acesso bloqueado.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível bloquear o membro.');
+      }
     },
-    [addAuditEvent, members],
+    [actorName, addAuditEvent, members],
   );
 
-  const suspendMember = useCallback(
-    (memberId: string) => {
-      const member = members.find((m) => m.id === memberId);
-      if (!member) return;
-
-      setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, status: 'suspended' } : m)),
-      );
-
-      addAuditEvent(`${CURRENT_USER_NAME} suspendeu acesso de ${member.name}`, member.name);
-    },
-    [addAuditEvent, members],
-  );
-
-  const removeMember = useCallback(
-    (memberId: string) => {
-      const member = members.find((m) => m.id === memberId);
-      if (!member) return;
-
-      setMembers((prev) => prev.filter((m) => m.id !== memberId));
-      setPendingApprovals((prev) => prev.filter((p) => p.email !== member.email));
-
-      addAuditEvent(`${CURRENT_USER_NAME} removeu ${member.name} da empresa`, member.name);
-    },
-    [addAuditEvent, members],
-  );
-
-  const groupMemberCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    groups.forEach((g) => {
-      counts[g.id] = 0;
-    });
-    members
-      .filter((m) => m.status === 'active')
-      .forEach((member) => {
-        member.groupIds.forEach((groupId) => {
-          if (counts[groupId] !== undefined) counts[groupId]++;
+  const saveExtractionRule = useCallback(
+    async (
+      classId: string,
+      payload: {
+        description?: string;
+        keywords: string[];
+        negativeKeywords: string[];
+        fields: DocumentExtractionRule['fields'];
+        namingTemplate: string;
+        minimumConfidence: number;
+        active: boolean;
+      },
+    ) => {
+      try {
+        await updateDocumentClass(classId, {
+          description: payload.description,
+          keywords: payload.keywords,
+          negativeKeywords: payload.negativeKeywords,
         });
-      });
-    return counts;
-  }, [groups, members]);
+
+        const existing = rules.find((r) => r.classId === classId);
+        let savedRule: DocumentExtractionRule;
+
+        if (existing) {
+          const updated = await updateDocumentRule(existing.id, {
+            fields: payload.fields,
+            namingTemplate: payload.namingTemplate,
+            minimumConfidence: payload.minimumConfidence,
+            active: payload.active,
+          });
+          savedRule = toExtractionRule(updated);
+          setRules((prev) => prev.map((r) => (r.id === existing.id ? savedRule : r)));
+        } else {
+          const created = await createDocumentRule({
+            classId,
+            version: 1,
+            active: payload.active,
+            fields: payload.fields,
+            namingTemplate: payload.namingTemplate,
+            minimumConfidence: payload.minimumConfidence,
+          });
+          savedRule = toExtractionRule(created);
+          setRules((prev) => [...prev, savedRule]);
+        }
+
+        setCategories((prev) =>
+          prev.map((c) =>
+            c.id === classId
+              ? {
+                  ...c,
+                  description: payload.description,
+                  keywords: payload.keywords,
+                  negativeKeywords: payload.negativeKeywords,
+                }
+              : c,
+          ),
+        );
+
+        addAuditEvent(
+          `${actorName} atualizou configuração de extração`,
+          categories.find((c) => c.id === classId)?.name ?? classId,
+        );
+        toast.success('Configuração salva.');
+        return savedRule;
+      } catch (err) {
+        handleApiError(err, 'Não foi possível salvar a configuração.');
+        return null;
+      }
+    },
+    [actorName, addAuditEvent, categories, rules],
+  );
+
+  const getRuleForClass = useCallback(
+    (classId: string) => rules.find((r) => r.classId === classId) ?? null,
+    [rules],
+  );
 
   return {
     groups,
     categories,
     members,
+    rules,
     pendingApprovals,
     auditEvents,
     groupMemberCounts,
+    loading,
+    error,
+    reload,
     createGroup,
     deleteGroup,
     createCategory,
@@ -463,8 +533,8 @@ export function useRules() {
     addMemberToGroup,
     removeMemberFromGroup,
     updateMemberGroups,
-    updateMemberRole,
-    suspendMember,
-    removeMember,
+    blockMember,
+    saveExtractionRule,
+    getRuleForClass,
   };
 }

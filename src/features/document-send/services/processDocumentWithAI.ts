@@ -63,6 +63,7 @@ export async function processDocumentWithAI(file: File): Promise<ExtractedMetada
     value,
     suggestedVersion,
     confidenceScore,
+    analysisStatus: level === 'low' ? 'requires_review' : 'completed',
   };
 
   const suggestedName = generateDocumentNameFromExtracted(

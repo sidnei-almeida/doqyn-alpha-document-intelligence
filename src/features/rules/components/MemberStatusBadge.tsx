@@ -5,7 +5,7 @@ import { STATUS_LABELS } from '@/utils/rulesHelpers';
 const STATUS_VARIANT: Record<MemberStatus, 'success' | 'warning' | 'danger'> = {
   active: 'success',
   pending: 'warning',
-  suspended: 'danger',
+  blocked: 'danger',
 };
 
 interface MemberStatusBadgeProps {

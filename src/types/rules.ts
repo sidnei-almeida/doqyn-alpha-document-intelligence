@@ -1,10 +1,8 @@
-// Modelo conceitual futuro (por empresa):
-// companies, members, groups, document_categories, access_rules, pending_approvals, audit_logs
-// Todos os registros devem incluir companyId para isolamento.
+// Modelo da tela Regras — alinhado ao MongoDB (Etapa 4).
 
-export type UserRole = 'admin' | 'member' | 'auditor';
+export type UserRole = 'admin' | 'manager' | 'member' | 'auditor';
 
-export type MemberStatus = 'active' | 'pending' | 'suspended';
+export type MemberStatus = 'active' | 'pending' | 'blocked';
 
 export type GroupColor = 'blue' | 'green' | 'amber' | 'red' | 'purple';
 
@@ -13,6 +11,7 @@ export interface Group {
   companyId: string;
   name: string;
   color: GroupColor;
+  active: boolean;
   createdAt: string;
 }
 
@@ -29,9 +28,17 @@ export interface DocumentCategory {
   id: string;
   companyId: string;
   name: string;
+  slug?: string;
+  description?: string;
   icon: DocumentIcon;
+  iconKey?: string;
+  color?: string;
+  active: boolean;
   accessGroupIds: string[];
   notifyGroupIds: string[];
+  notifyOnUpdate: boolean;
+  keywords: string[];
+  negativeKeywords: string[];
   createdAt: string;
 }
 
@@ -74,10 +81,32 @@ export interface AuditEvent {
   createdAt: string;
 }
 
+export type FieldType = 'string' | 'date' | 'number' | 'currency' | 'boolean';
+
+export interface ExtractionField {
+  key: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  aliases?: string[];
+  description?: string;
+}
+
+export interface DocumentExtractionRule {
+  id: string;
+  classId: string;
+  version: number;
+  active: boolean;
+  fields: ExtractionField[];
+  namingTemplate: string;
+  minimumConfidence: number;
+}
+
 export interface RulesState {
   groups: Group[];
   categories: DocumentCategory[];
   members: CompanyMember[];
   pendingApprovals: PendingApproval[];
   auditEvents: AuditEvent[];
+  rules: DocumentExtractionRule[];
 }

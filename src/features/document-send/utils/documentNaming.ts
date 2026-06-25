@@ -86,19 +86,55 @@ export function generateDocumentNameFromExtracted(
 }
 
 export function metadataToFields(metadata: ExtractedMetadata): { label: string; value: string }[] {
-  return [
+  const statusLabel =
+    metadata.analysisStatus === 'completed'
+      ? 'Análise concluída'
+      : metadata.analysisStatus === 'requires_review'
+        ? 'Requer revisão'
+        : 'Erro na análise';
+
+  const fields: { label: string; value: string }[] = [
+    { label: 'Nome original', value: metadata.originalFileName ?? '—' },
     { label: 'Nome sugerido', value: metadata.suggestedName },
-    { label: 'Tipo do documento', value: metadata.documentType },
-    ...(metadata.responsible ? [{ label: 'Responsável', value: metadata.responsible }] : []),
-    ...(metadata.supplier ? [{ label: 'Fornecedor', value: metadata.supplier }] : []),
-    ...(metadata.documentDate ? [{ label: 'Data do documento', value: metadata.documentDate }] : []),
-    ...(metadata.value ? [{ label: 'Valor', value: metadata.value }] : []),
-    { label: 'Versão sugerida', value: metadata.suggestedVersion },
+    { label: 'Classe identificada', value: metadata.documentType },
+    { label: 'Status da análise', value: statusLabel },
     {
-      label: 'Confiança da extração',
+      label: 'Confiança da classificação',
       value: `${Math.round(metadata.confidenceScore * 100)}%`,
     },
   ];
+
+  if (metadata.classificationReason) {
+    fields.push({ label: 'Justificativa', value: metadata.classificationReason });
+  }
+
+  if (metadata.missingFields && metadata.missingFields.length > 0) {
+    fields.push({
+      label: 'Campos ausentes',
+      value: metadata.missingFields.join(', '),
+    });
+  }
+
+  fields.push({ label: 'Versão sugerida', value: metadata.suggestedVersion });
+
+  if (metadata.textExtraction) {
+    fields.push({
+      label: 'Texto extraído',
+      value: metadata.textExtraction.truncated
+        ? `${metadata.textExtraction.charCount} caracteres (truncado)`
+        : `${metadata.textExtraction.charCount} caracteres`,
+    });
+  }
+
+  if (metadata.savedDocumentId) {
+    fields.push({ label: 'Status de persistência', value: 'Metadados confirmados' });
+  }
+
+  if (import.meta.env.DEV && metadata.storageStatus === 'pending') {
+    fields.push({ label: 'Armazenamento de arquivo', value: 'Pendente' });
+  }
+
+  return fields;
 }
 
 export function getConfidenceLevel(score: number): 'high' | 'review' | 'low' {
