@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const companyId = getCompanyIdFromUser(user);
-    const payload = await getActiveRulesPayload(companyId);
+    const payload = await getActiveRulesPayload(companyId, { ownerUserId: user.id });
 
     logger.info('document-rules/active request completed', {
       requestId: ctx.requestId,

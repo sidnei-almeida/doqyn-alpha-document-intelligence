@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/document-classes/:id/notifications',
-    handler: async ({ companyId, requestId, params }) => {
+    handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
         return { status: 400, body: { message: 'ID da classe é obrigatório.', code: 'MISSING_ID' } };
@@ -24,10 +24,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
       }
 
-      const docClass = await updateDocumentClassNotifications(companyId, id, {
-        notifyOnUpdate: body.notifyOnUpdate,
-        notifyGroups: body.notifyGroups,
-      });
+      const docClass = await updateDocumentClassNotifications(
+        companyId,
+        id,
+        {
+          notifyOnUpdate: body.notifyOnUpdate,
+          notifyGroups: body.notifyGroups,
+        },
+        { ownerUserId: user.id },
+      );
       logger.info('document class notifications updated', {
         requestId,
         companyId,

@@ -1,7 +1,10 @@
-import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilter } from '../tenancy/tenantQuery.js';
+import { fetchTenantAccessGroupsFromAuth } from '../integrations/authAccessGroups.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
+/**
+ * Valida IDs de grupos contra o auth-service/Postgres (fonte de verdade).
+ * Mongo access_groups_* não é mais usado em runtime.
+ */
 export async function assertGroupIdsExist(
   tenantId: string,
   groupIds: string[],
@@ -10,27 +13,17 @@ export async function assertGroupIdsExist(
   if (!groupIds.length) return;
 
   const unique = [...new Set(groupIds)];
-  const tenantCollections = await getTenantCollections(tenantId);
+  const groups = await fetchTenantAccessGroupsFromAuth(tenantId);
+  const requireActive = options?.requireActive !== false;
 
-  if (!tenantCollections.accessGroups) {
-    throw new ServiceError(
-      'Grupos de acesso não disponíveis para este tipo de cliente.',
-      'TENANT_COLLECTION_UNAVAILABLE',
-      400,
-    );
-  }
+  const validIds = new Set(
+    groups
+      .filter((g) => !requireActive || g.status === 'active')
+      .map((g) => g.groupId),
+  );
 
-  const filter: Record<string, unknown> = {
-    ...tenantScopeFilter(tenantId),
-    _id: { $in: unique },
-  };
-  if (options?.requireActive !== false) {
-    filter.active = true;
-  }
-
-  const found = await tenantCollections.accessGroups.countDocuments(filter);
-
-  if (found !== unique.length) {
+  const missing = unique.filter((id) => !validIds.has(id));
+  if (missing.length > 0) {
     throw new ServiceError(
       'Um ou mais grupos informados não existem ou estão inativos.',
       'INVALID_GROUP_IDS',

@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { lookup } from 'mime-types';
 import { uploadDocument } from '../../server/services/documentService.js';
+import { requireDocumentRequestContext } from '../../server/tenancy/documentRequestContext.js';
+import { isServiceError } from '../../server/utils/serviceErrors.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -61,6 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
+  const ctx = await requireDocumentRequestContext(req, res);
+  if (!ctx) return;
+
   try {
     const { fields, file } = await parseMultipart(req);
 
@@ -69,9 +74,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const displayName = originalFileName.replace(/\.[^.]+$/, '');
 
     const result = await uploadDocument({
-      tenantId: fields.tenantId ?? 'tenant-001',
-      ownerUserId: fields.ownerUserId ?? 'user-001',
-      ownerName: fields.ownerName ?? 'Usuário',
+      tenantId: ctx.tenantId,
+      ownerUserId: ctx.userId,
+      ownerName: fields.ownerName ?? ctx.collections.tenant.displayName ?? 'Usuário',
       originalFileName,
       displayName,
       documentType: fields.documentType ?? 'Outro',
@@ -84,6 +89,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(201).json(result);
   } catch (error) {
+    if (isServiceError(error)) {
+      return res.status(error.statusCode).json({ message: error.message, code: error.code });
+    }
     return res.status(500).json({
       message: error instanceof Error ? error.message : 'Erro no envio do documento',
     });

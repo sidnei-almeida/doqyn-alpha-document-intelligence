@@ -198,6 +198,7 @@ export type MongoDocumentClass = {
   permissions: MongoDocumentClassPermissions;
   notifyOnUpdate: boolean;
   notifyGroups: string[];
+  scope?: 'global' | 'tenant';
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -224,6 +225,7 @@ export type MongoDocumentRule = {
   namingTemplate: string;
   minimumConfidence: number;
   onLowConfidence: 'requires_review';
+  scope?: 'global' | 'tenant';
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -263,6 +265,8 @@ export type MongoDocument = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: TenantType;
+  ownerTenantId?: string;
   ownerUserId?: string;
   documentCode: string;
   currentVersionId: string;
@@ -289,6 +293,8 @@ export type MongoDocumentVersion = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: TenantType;
+  ownerTenantId?: string;
   ownerUserId?: string;
   documentId: string;
   versionNumber: number;

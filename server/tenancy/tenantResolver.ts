@@ -3,7 +3,7 @@ import type { MongoTenant, TenantIsolationStrategy } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { isUnsafeCollectionPrefix } from './collectionGuard.js';
-import { buildIndividualPoolPrefix } from './taxId.js';
+import { SHARED_INDIVIDUAL_COLLECTION_PREFIX, LEGACY_INDIVIDUAL_POOL_PREFIX } from './taxId.js';
 
 export type TenantCollectionBaseKey =
   | 'documents'
@@ -41,7 +41,10 @@ function resolvePrefixedName(base: string, prefix: string): string {
 export function resolveTenantCollectionPrefix(tenant: MongoTenant): string {
   if (tenant.tenantType === 'individual' && tenant.isolation.strategy === 'shared_individual_pool') {
     const configured = tenant.isolation.collectionPrefix?.trim();
-    return configured || buildIndividualPoolPrefix();
+    if (configured === LEGACY_INDIVIDUAL_POOL_PREFIX || !configured) {
+      return SHARED_INDIVIDUAL_COLLECTION_PREFIX;
+    }
+    return configured;
   }
 
   const prefix = tenant.isolation.collectionPrefix.trim();
@@ -79,7 +82,11 @@ export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenan
     };
   }
 
-  return core;
+  return {
+    ...core,
+    documentClasses: resolvePrefixedName(BASE_COLLECTION_NAMES.documentClasses, prefix),
+    documentRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentRules, prefix),
+  };
 }
 
 export function assertTenantIsolationStrategy(

@@ -27,7 +27,8 @@
     "test:groq:smoke": "tsx scripts/test-groq-smoke.mjs",
     "test:groq:fixture": "tsx scripts/test-groq-fixture.mjs",
     "test:groq:pdf": "tsx scripts/test-groq-pdf.mjs",
-    "test:no-ai": "tsx scripts/test-no-ai.mjs"
+    "test:no-ai": "tsx scripts/test-no-ai.mjs",
+    "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -2,8 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { ExtractedMetadataField, MetadataExtractionResult } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
-import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
+import {
+  buildDocumentOwnershipFilter,
+  withTenantFieldsFromContext,
+} from '../tenancy/tenantQuery.js';
 import type {
   MongoAuditLog,
   MongoDocument,
@@ -180,10 +183,10 @@ function buildDocumentTitle(className: string, metadata: Record<string, MongoVer
   return className;
 }
 
-async function generateDocumentCode(tenantId: string): Promise<string> {
-  const { documents } = await getTenantCollections(tenantId);
+async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string> {
+  const { documents } = ctx.collections;
   const year = new Date().getFullYear();
-  const count = await documents.countDocuments(tenantScopeFilter(tenantId));
+  const count = await documents.countDocuments(buildDocumentOwnershipFilter(ctx.storage));
   return `DOQYN-${year}-${String(count + 1).padStart(6, '0')}`;
 }
 
@@ -233,7 +236,7 @@ function buildProcessingSteps(input: ConfirmAnalysisInput, persistedAt: Date) {
 export async function confirmAnalysisPersistence(input: {
   payload: ConfirmAnalysisInput;
   user: AuthUser;
-  companyId: string;
+  ctx: DocumentRequestContext;
   requestId?: string;
 }): Promise<{
   documentId: string;
@@ -242,7 +245,7 @@ export async function confirmAnalysisPersistence(input: {
   documentCode: string;
   storageStatus: 'pending';
 }> {
-  const tenantId = input.companyId;
+  const tenantId = input.ctx.tenantId;
   const data = confirmAnalysisSchema.parse(input.payload);
 
   if (!data.classification.classId) {
@@ -276,6 +279,7 @@ export async function confirmAnalysisPersistence(input: {
     companyId: tenantId,
     classId: data.classification.classId,
     className: data.classification.className,
+    ownerUserId: input.ctx.userId,
   });
 
   logger.info('Validando classe e regra antes de persistir documento.', {
@@ -294,6 +298,7 @@ export async function confirmAnalysisPersistence(input: {
   const classAndRule = await getMongoClassAndRule({
     companyId: tenantId,
     classId: data.classification.classId,
+    ownerUserId: input.ctx.userId,
   });
 
   if (!classAndRule) {
@@ -345,7 +350,7 @@ export async function confirmAnalysisPersistence(input: {
     data.extraction.metadata as Record<string, ExtractedMetadataField>,
     rule.fields,
   );
-  const documentCode = await generateDocumentCode(tenantId);
+  const documentCode = await generateDocumentCode(input.ctx);
   const sha256 = data.fileHash;
 
   const versionLabel = data.extraction.version || 'v1.0';
@@ -365,8 +370,8 @@ export async function confirmAnalysisPersistence(input: {
     ? 'Documento salvo após revisão manual dos metadados extraídos.'
     : 'Documento criado a partir da análise automática confirmada pelo usuário.';
 
-  const document = withTenantFields(
-    tenantId,
+  const document = withTenantFieldsFromContext(
+    input.ctx.storage,
     {
       _id: documentId,
       documentCode,
@@ -392,8 +397,8 @@ export async function confirmAnalysisPersistence(input: {
     input.user.id,
   ) as MongoDocument;
 
-  const version = withTenantFields(
-    tenantId,
+  const version = withTenantFieldsFromContext(
+    input.ctx.storage,
     {
       _id: versionId,
       documentId,
@@ -437,42 +442,49 @@ export async function confirmAnalysisPersistence(input: {
     input.user.id,
   ) as MongoDocumentVersion;
 
-  const processingJob = withTenantFields(tenantId, {
-    _id: jobId,
-    documentId,
-    versionId,
-    type: 'pdf_analysis',
-    status: 'completed',
-    steps: buildProcessingSteps(data, now),
-    error: null,
-    createdBy: input.user.id,
-    createdAt: now,
-    completedAt: now,
-  }) as MongoProcessingJob;
-
-  const auditLog = withTenantFields(tenantId, {
-    _id: auditId,
-    documentId,
-    versionId,
-    actor: {
-      userId: input.user.id,
-      name: input.user.name,
-      role: input.user.role,
+  const processingJob = withTenantFieldsFromContext(
+    input.ctx.storage,
+    {
+      _id: jobId,
+      documentId,
+      versionId,
+      type: 'pdf_analysis',
+      status: 'completed',
+      steps: buildProcessingSteps(data, now),
+      error: null,
+      createdBy: input.user.id,
+      createdAt: now,
+      completedAt: now,
     },
-    action: auditAction,
-    description: auditDescription,
-    metadata: sanitizeAuditMetadata({
-      className: docClass.name,
-      classId: docClass._id,
-      versionLabel,
-      hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
-      hasDocumentCode: Boolean(documentCode),
-    }),
-    createdAt: now,
-  }) as MongoAuditLog;
+    input.user.id,
+  ) as MongoProcessingJob;
 
-  const { documents, documentVersions, processingJobs, auditLogs } =
-    await getTenantCollections(tenantId);
+  const auditLog = withTenantFieldsFromContext(
+    input.ctx.storage,
+    {
+      _id: auditId,
+      documentId,
+      versionId,
+      actor: {
+        userId: input.user.id,
+        name: input.user.name,
+        role: input.user.role,
+      },
+      action: auditAction,
+      description: auditDescription,
+      metadata: sanitizeAuditMetadata({
+        className: docClass.name,
+        classId: docClass._id,
+        versionLabel,
+        hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
+        hasDocumentCode: Boolean(documentCode),
+      }),
+      createdAt: now,
+    },
+    input.user.id,
+  ) as MongoAuditLog;
+
+  const { documents, documentVersions, processingJobs, auditLogs } = input.ctx.collections;
 
   await documents.insertOne(document);
   await documentVersions.insertOne(version);
@@ -480,19 +492,23 @@ export async function confirmAnalysisPersistence(input: {
   await auditLogs.insertOne(auditLog);
 
   await auditLogs.insertOne(
-    withTenantFields(tenantId, {
-      _id: `audit_${randomUUID()}`,
-      documentId,
-      versionId,
-      actor: auditLog.actor,
-      action: 'document.created',
-      description: 'Documento lógico criado no sistema.',
-      metadata: sanitizeAuditMetadata({
-        classId: docClass._id,
-        hasDocumentCode: Boolean(documentCode),
-      }),
-      createdAt: new Date(now.getTime() + 1),
-    }) as MongoAuditLog,
+    withTenantFieldsFromContext(
+      input.ctx.storage,
+      {
+        _id: `audit_${randomUUID()}`,
+        documentId,
+        versionId,
+        actor: auditLog.actor,
+        action: 'document.created',
+        description: 'Documento lógico criado no sistema.',
+        metadata: sanitizeAuditMetadata({
+          classId: docClass._id,
+          hasDocumentCode: Boolean(documentCode),
+        }),
+        createdAt: new Date(now.getTime() + 1),
+      },
+      input.user.id,
+    ) as MongoAuditLog,
   );
 
   return {

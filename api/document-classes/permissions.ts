@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/document-classes/:id/permissions',
-    handler: async ({ companyId, requestId, params }) => {
+    handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
         return { status: 400, body: { message: 'ID da classe é obrigatório.', code: 'MISSING_ID' } };
@@ -18,7 +18,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const body = (req.body ?? {}) as { viewGroupIds?: string[] };
       const viewGroupIds = body.viewGroupIds ?? [];
-      const docClass = await updateDocumentClassPermissions(companyId, id, viewGroupIds);
+      const docClass = await updateDocumentClassPermissions(companyId, id, viewGroupIds, {
+        ownerUserId: user.id,
+      });
       logger.info('document class permissions updated', {
         requestId,
         companyId,

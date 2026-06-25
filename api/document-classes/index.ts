@@ -10,8 +10,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     return withAdminMongoApi(req, res, {
       endpoint: '/api/document-classes',
-      handler: async ({ companyId, requestId }) => {
-        const classes = await listDocumentClasses(companyId);
+      handler: async ({ companyId, requestId, user }) => {
+        const classes = await listDocumentClasses(companyId, { ownerUserId: user.id });
         logger.info('document classes listed', {
           requestId,
           companyId,

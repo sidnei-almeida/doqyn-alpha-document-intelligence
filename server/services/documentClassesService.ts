@@ -3,8 +3,19 @@ import type { MongoDocumentClass, MongoDocumentClassPermissions } from '../db/ty
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { classIdFromSlug, slugifyName } from '../utils/slugify.js';
-import { requireBusinessAdminCollections } from '../tenancy/requireBusinessCollections.js';
-import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
+import { requireTenantDocumentCollections } from '../tenancy/requireTenantDocumentCollections.js';
+import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
+
+type ClassServiceOpts = { ownerUserId?: string };
+
+async function resolveClassContext(tenantId: string, opts?: ClassServiceOpts) {
+  const collections = await requireTenantDocumentCollections(tenantId, {
+    userId: opts?.ownerUserId,
+  });
+  const scope = buildClassRuleOwnershipFilter(collections.storage);
+  return { collections, scope, storage: collections.storage };
+}
 
 function emptyPermissions(): MongoDocumentClassPermissions {
   return { view: [], download: [], update: [], audit: [], share: [] };
@@ -26,16 +37,17 @@ function serializeDocumentClass(docClass: MongoDocumentClass) {
     permissions: docClass.permissions,
     notifyOnUpdate: docClass.notifyOnUpdate,
     notifyGroups: docClass.notifyGroups,
+    scope: (docClass as Record<string, unknown>).scope,
     createdBy: docClass.createdBy,
     createdAt: docClass.createdAt.toISOString(),
     updatedAt: docClass.updatedAt.toISOString(),
   };
 }
 
-export async function listDocumentClasses(tenantId: string) {
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const classes = await collection
-    .find(tenantScopeFilter(tenantId))
+export async function listDocumentClasses(tenantId: string, opts?: ClassServiceOpts) {
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const classes = await collections.documentClasses
+    .find(scope)
     .sort({ name: 1 })
     .toArray();
 
@@ -53,6 +65,7 @@ export async function createDocumentClass(
     iconKey?: string;
     color?: string;
     slug?: string;
+    scope?: 'global' | 'tenant';
   },
 ) {
   const name = input.name?.trim();
@@ -65,10 +78,9 @@ export async function createDocumentClass(
     throw new ServiceError('Slug inválido.', 'VALIDATION_ERROR', 400);
   }
 
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
+  const { collections, scope, storage } = await resolveClassContext(tenantId, { ownerUserId: userId });
 
-  const duplicateSlug = await collection.findOne({
+  const duplicateSlug = await collections.documentClasses.findOne({
     ...scope,
     slug,
   } as Record<string, unknown>);
@@ -78,7 +90,7 @@ export async function createDocumentClass(
   }
 
   let id = classIdFromSlug(slug);
-  const existingId = await collection.findOne({
+  const existingId = await collections.documentClasses.findOne({
     ...scope,
     _id: id,
   } as Record<string, unknown>);
@@ -88,25 +100,30 @@ export async function createDocumentClass(
   }
 
   const now = new Date();
-  const docClass = withTenantFields(tenantId, {
-    _id: id,
-    name,
-    slug,
-    description: input.description?.trim() || '',
-    active: true,
-    iconKey: input.iconKey?.trim() || 'file-text',
-    color: input.color?.trim() || 'neutral',
-    keywords: input.keywords ?? [],
-    negativeKeywords: input.negativeKeywords ?? [],
-    permissions: emptyPermissions(),
-    notifyOnUpdate: false,
-    notifyGroups: [],
-    createdBy: userId,
-    createdAt: now,
-    updatedAt: now,
-  }) as MongoDocumentClass;
+  const docClass = withClassRuleFieldsFromContext(
+    storage,
+    {
+      _id: id,
+      name,
+      slug,
+      description: input.description?.trim() || '',
+      active: true,
+      iconKey: input.iconKey?.trim() || 'file-text',
+      color: input.color?.trim() || 'neutral',
+      keywords: input.keywords ?? [],
+      negativeKeywords: input.negativeKeywords ?? [],
+      permissions: emptyPermissions(),
+      notifyOnUpdate: false,
+      notifyGroups: [],
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    },
+    userId,
+    { scope: input.scope },
+  ) as MongoDocumentClass;
 
-  await collection.insertOne(docClass as Record<string, unknown>);
+  await collections.documentClasses.insertOne(docClass as Record<string, unknown>);
 
   return serializeDocumentClass(docClass);
 }
@@ -123,10 +140,10 @@ export async function updateDocumentClass(
     color?: string;
     active?: boolean;
   },
+  opts?: ClassServiceOpts,
 ) {
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const existing = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -152,11 +169,11 @@ export async function updateDocumentClass(
   if (input.color !== undefined) patch.color = input.color.trim() || 'neutral';
   if (input.active !== undefined) patch.active = input.active;
 
-  await collection.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: patch,
   });
 
-  const updated = await collection.findOne({
+  const updated = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -164,10 +181,13 @@ export async function updateDocumentClass(
   return serializeDocumentClass(updated as MongoDocumentClass);
 }
 
-export async function toggleDocumentClassActive(tenantId: string, classId: string) {
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+export async function toggleDocumentClassActive(
+  tenantId: string,
+  classId: string,
+  opts?: ClassServiceOpts,
+) {
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const existing = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -177,7 +197,7 @@ export async function toggleDocumentClassActive(tenantId: string, classId: strin
   }
 
   const active = !(existing as MongoDocumentClass).active;
-  await collection.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: { active, updatedAt: new Date() },
   });
 
@@ -188,12 +208,12 @@ export async function updateDocumentClassPermissions(
   tenantId: string,
   classId: string,
   viewGroupIds: string[],
+  opts?: ClassServiceOpts,
 ) {
   await assertGroupIdsExist(tenantId, viewGroupIds);
 
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const existing = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -210,11 +230,11 @@ export async function updateDocumentClassPermissions(
     share: (existing as MongoDocumentClass).permissions?.share ?? [],
   };
 
-  await collection.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: { permissions, updatedAt: new Date() },
   });
 
-  const updated = await collection.findOne({
+  const updated = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -226,13 +246,13 @@ export async function updateDocumentClassNotifications(
   tenantId: string,
   classId: string,
   input: { notifyOnUpdate: boolean; notifyGroups?: string[] },
+  opts?: ClassServiceOpts,
 ) {
   const notifyGroups = input.notifyGroups ?? [];
   await assertGroupIdsExist(tenantId, notifyGroups);
 
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const existing = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -241,7 +261,7 @@ export async function updateDocumentClassNotifications(
     throw new ServiceError('Classe documental não encontrada.', 'NOT_FOUND', 404);
   }
 
-  await collection.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: {
       notifyOnUpdate: input.notifyOnUpdate,
       notifyGroups,
@@ -249,7 +269,7 @@ export async function updateDocumentClassNotifications(
     },
   });
 
-  const updated = await collection.findOne({
+  const updated = await collections.documentClasses.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -257,10 +277,14 @@ export async function updateDocumentClassNotifications(
   return serializeDocumentClass(updated as MongoDocumentClass);
 }
 
-export async function assertDocumentClassExists(tenantId: string, classId: string) {
-  const { documentClasses: collection } = await requireBusinessAdminCollections(tenantId);
-  const docClass = await collection.findOne({
-    ...tenantScopeFilter(tenantId),
+export async function assertDocumentClassExists(
+  tenantId: string,
+  classId: string,
+  opts?: ClassServiceOpts,
+) {
+  const { collections, scope } = await resolveClassContext(tenantId, opts);
+  const docClass = await collections.documentClasses.findOne({
+    ...scope,
     _id: classId,
   } as Record<string, unknown>);
 

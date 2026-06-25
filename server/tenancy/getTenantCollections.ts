@@ -15,10 +15,12 @@ import {
   resolveTenantCollectionNames,
   type ResolvedTenantCollectionNames,
 } from './tenantResolver.js';
+import { resolveTenantStorageContext, type TenantStorageContext } from './tenantStorage.js';
 
 export type TenantCollections = {
   tenant: MongoTenant;
   names: ResolvedTenantCollectionNames;
+  storage: TenantStorageContext;
   documents: Collection<MongoDocument>;
   documentVersions: Collection<MongoDocumentVersion>;
   processingJobs: Collection<MongoProcessingJob>;
@@ -39,35 +41,48 @@ export type TenantDbCollections = {
 };
 
 /** Resolve handles de coleção a partir de um tenant já carregado (sem I/O extra). */
-export function getTenantDbCollections(db: Db, tenant: MongoTenant): TenantDbCollections {
-  const names = resolveTenantCollectionNames(tenant);
+export function getTenantDbCollections(
+  db: Db,
+  tenant: MongoTenant,
+  names?: ResolvedTenantCollectionNames,
+): TenantDbCollections {
+  const resolvedNames = names ?? resolveTenantCollectionNames(tenant);
 
   return {
-    documents: db.collection<MongoDocument>(names.documents),
-    documentVersions: db.collection<MongoDocumentVersion>(names.documentVersions),
-    processingJobs: db.collection<MongoProcessingJob>(names.processingJobs),
-    auditLogs: db.collection<MongoAuditLog>(names.auditLogs),
-    accessGroups: names.accessGroups
-      ? db.collection<MongoAccessGroup>(names.accessGroups)
+    documents: db.collection<MongoDocument>(resolvedNames.documents),
+    documentVersions: db.collection<MongoDocumentVersion>(resolvedNames.documentVersions),
+    processingJobs: db.collection<MongoProcessingJob>(resolvedNames.processingJobs),
+    auditLogs: db.collection<MongoAuditLog>(resolvedNames.auditLogs),
+    accessGroups: resolvedNames.accessGroups
+      ? db.collection<MongoAccessGroup>(resolvedNames.accessGroups)
       : undefined,
-    documentClasses: names.documentClasses
-      ? db.collection<MongoDocumentClass>(names.documentClasses)
+    documentClasses: resolvedNames.documentClasses
+      ? db.collection<MongoDocumentClass>(resolvedNames.documentClasses)
       : undefined,
-    documentRules: names.documentRules
-      ? db.collection<MongoDocumentRule>(names.documentRules)
+    documentRules: resolvedNames.documentRules
+      ? db.collection<MongoDocumentRule>(resolvedNames.documentRules)
       : undefined,
   };
 }
 
-export async function getTenantCollections(tenantId: string): Promise<TenantCollections> {
+export async function getTenantCollections(
+  tenantId: string,
+  opts?: { userId?: string; membershipId?: string },
+): Promise<TenantCollections> {
   const tenant = await resolveActiveTenant(tenantId);
-  const names = resolveTenantCollectionNames(tenant);
+  const storage = resolveTenantStorageContext({
+    tenant,
+    userId: opts?.userId,
+    membershipId: opts?.membershipId,
+  });
+  const names = storage.collections;
   const db = await getDb();
-  const collections = getTenantDbCollections(db, tenant);
+  const collections = getTenantDbCollections(db, tenant, names);
 
   return {
     tenant,
     names,
+    storage,
     ...collections,
   };
 }

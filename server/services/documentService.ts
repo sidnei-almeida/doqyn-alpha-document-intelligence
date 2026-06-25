@@ -4,7 +4,11 @@ import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoAuditLog, MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import { logger } from '../utils/logger.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import {
+  assertCanAccessDocument,
+  tenantScopeFilterFromContext,
+  withTenantFieldsFromContext,
+} from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { createProcessingJob } from './processingService.js';
@@ -66,11 +70,15 @@ export async function uploadDocument(input: UploadInput) {
     return { document: simulatedDoc, versionId };
   }
 
-  const { documents, documentVersions, auditLogs } = await getTenantCollections(tenantId);
+  const { documents, documentVersions, auditLogs, storage } = await getTenantCollections(tenantId, {
+    userId: input.ownerUserId,
+  });
   const metadata = await extractMetadata(input);
   const classification = await classifyDocument(input.documentType, metadata);
 
-  const document = withTenantFields(tenantId, {
+  const document = withTenantFieldsFromContext(
+    storage,
+    {
     _id: documentId,
     documentCode: `UP-${documentId.slice(0, 8).toUpperCase()}`,
     originalFileName: input.originalFileName,
@@ -101,11 +109,15 @@ export async function uploadDocument(input: UploadInput) {
     createdBy: input.ownerUserId,
     createdAt: now,
     updatedAt: now,
-  });
+  },
+    input.ownerUserId,
+  );
 
   await documents.insertOne(document as unknown as MongoDocument);
 
-  const version = withTenantFields(tenantId, {
+  const version = withTenantFieldsFromContext(
+    storage,
+    {
     _id: versionId,
     documentId,
     versionNumber: 1,
@@ -140,12 +152,16 @@ export async function uploadDocument(input: UploadInput) {
     createdBy: input.ownerUserId,
     createdAt: now,
     updatedAt: now,
-  });
+  },
+    input.ownerUserId,
+  );
 
   await documentVersions.insertOne(version as unknown as MongoDocumentVersion);
 
   await auditLogs.insertOne(
-    withTenantFields(tenantId, {
+    withTenantFieldsFromContext(
+      storage,
+      {
       _id: `audit_${nanoid(12)}`,
       documentId,
       versionId,
@@ -156,13 +172,16 @@ export async function uploadDocument(input: UploadInput) {
       result: 'success',
       metadata: sanitizeAuditMetadata({ source: 'upload_legacy' }),
       createdAt: now,
-    }) as unknown as MongoAuditLog,
+    },
+      input.ownerUserId,
+    ) as unknown as MongoAuditLog,
   );
 
   await createProcessingJob({
     tenantId,
     documentId,
     versionId,
+    ownerUserId: input.ownerUserId,
   });
 
   return {
@@ -190,6 +209,7 @@ export async function uploadDocument(input: UploadInput) {
 
 export async function listDocuments(filters: {
   tenantId?: string;
+  ownerUserId?: string;
   search?: string;
   status?: string;
   type?: string;
@@ -201,9 +221,11 @@ export async function listDocuments(filters: {
     return { documents: [], total: 0 };
   }
 
-  const { documents } = await getTenantCollections(tenantId);
+  const { documents, storage } = await getTenantCollections(tenantId, {
+    userId: filters.ownerUserId,
+  });
   const query: Record<string, unknown> = {
-    ...tenantScopeFilter(tenantId),
+    ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
   };
   if (filters.status) query.status = filters.status;
@@ -243,18 +265,22 @@ export async function listDocuments(filters: {
   };
 }
 
-export async function getDocument(id: string, tenantId?: string) {
+export async function getDocument(id: string, tenantId?: string, ownerUserId?: string) {
   const resolvedTenantId = requireTenantId(tenantId);
 
   if (!isMongoNativeConfigured()) return null;
 
-  const { documents } = await getTenantCollections(resolvedTenantId);
+  const { documents, storage } = await getTenantCollections(resolvedTenantId, {
+    userId: ownerUserId,
+  });
   const doc = await documents.findOne({
     _id: id,
-    ...tenantScopeFilter(resolvedTenantId),
+    ...tenantScopeFilterFromContext(storage),
   } as Record<string, unknown>);
 
   if (!doc) return null;
+
+  assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
   return {
     id: String(doc._id),

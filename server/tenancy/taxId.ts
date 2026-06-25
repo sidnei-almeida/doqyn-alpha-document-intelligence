@@ -37,8 +37,13 @@ export function validateTaxId(value: string, expectedType: TaxIdType): boolean {
   return digits.length === 14;
 }
 
+export const SHARED_INDIVIDUAL_COLLECTION_PREFIX = 'compartilhado';
+
+/** @deprecated Use SHARED_INDIVIDUAL_COLLECTION_PREFIX */
+export const LEGACY_INDIVIDUAL_POOL_PREFIX = 'individual_pool';
+
 export function buildIndividualPoolPrefix(): string {
-  return 'individual_pool';
+  return SHARED_INDIVIDUAL_COLLECTION_PREFIX;
 }
 
 export function buildBusinessCollectionPrefix(tenantId: string): string {

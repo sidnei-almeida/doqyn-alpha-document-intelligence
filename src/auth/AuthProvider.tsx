@@ -20,7 +20,12 @@ import { mapMeSessionToAuthUser, resolveAccessGate } from '@/auth/mapMeSession';
 import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 
-const PUBLIC_UNAUTHENTICATED_PATHS = ['/solicitar-acesso'];
+const PUBLIC_UNAUTHENTICATED_PATHS = [
+  '/acesso',
+  '/solicitar-acesso',
+  '/criar-empresa',
+  '/criar-acesso-cpf',
+];
 
 function isPublicUnauthenticatedPath(): boolean {
   if (typeof window === 'undefined') return false;

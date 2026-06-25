@@ -11,8 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     return withAdminMongoApi(req, res, {
       endpoint: '/api/document-rules',
-      handler: async ({ companyId, requestId }) => {
-        const rules = await listDocumentRules(companyId);
+      handler: async ({ companyId, requestId, user }) => {
+        const rules = await listDocumentRules(companyId, { ownerUserId: user.id });
         logger.info('document rules listed', {
           requestId,
           companyId,
