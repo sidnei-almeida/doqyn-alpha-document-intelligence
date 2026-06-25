@@ -8,6 +8,8 @@ import type {
 } from '@/types/rules';
 
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { usesDoqynAuth } from '@/auth/authConfig';
+import { authServiceJson } from '@/auth/authServiceClient';
 
 const API_BASE = '/api';
 
@@ -116,12 +118,67 @@ function unwrap<T>(data: Record<string, unknown>, keys: string[]): T {
 
 // --- Groups ---
 
-export async function getAccessGroups(): Promise<ApiGroup[]> {
+export async function getAccessGroups(tenantId?: string): Promise<ApiGroup[]> {
+  if (usesDoqynAuth()) {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const data = await authServiceJson<{
+      groups: Array<{
+        groupId: string;
+        name: string;
+        slug: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    }>(`/admin/access-groups${query}`);
+    return (data.groups ?? []).map((g) => ({
+      id: g.groupId,
+      companyId: tenantId ?? '',
+      name: g.name,
+      slug: g.slug,
+      color: 'blue',
+      active: g.status === 'active',
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt,
+    }));
+  }
+
   const data = await request<{ groups: ApiGroup[] }>('/access-groups');
   return data.groups ?? [];
 }
 
-export async function createAccessGroup(payload: { name: string; color?: string }): Promise<ApiGroup> {
+export async function createAccessGroup(
+  payload: { name: string; color?: string },
+  tenantId?: string,
+): Promise<ApiGroup> {
+  if (usesDoqynAuth()) {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const slug = payload.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const data = await authServiceJson<{ group: { groupId: string; name: string; slug: string; status: string; createdAt: string; updatedAt: string } }>(
+      `/admin/access-groups${query}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ slug, name: payload.name }),
+      },
+    );
+    const g = data.group;
+    return {
+      id: g.groupId,
+      companyId: tenantId ?? '',
+      name: g.name,
+      slug: g.slug,
+      color: payload.color ?? 'blue',
+      active: g.status === 'active',
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt,
+    };
+  }
+
   const data = await request<{ group: ApiGroup }>('/access-groups', {
     method: 'POST',
     body: JSON.stringify(payload),

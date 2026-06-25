@@ -7,6 +7,8 @@ export type AuthUser = {
   email: string;
   name: string;
   username?: string;
+  firstName?: string;
+  lastName?: string;
 
   companyId: string;
   /** Tenant canônico — igual a companyId durante migração */
@@ -18,6 +20,11 @@ export type AuthUser = {
   groups: string[];
 
   memberId?: string;
+  membershipId?: string;
+  membershipStatus?: string;
+  tenantType?: string;
+  tenantStatus?: string;
+  authProvider?: 'doqyn_auth' | 'temporary' | 'keycloak';
   keycloakUserId?: string;
   platformRoles?: PlatformRole[];
   keycloakRoles?: string[];

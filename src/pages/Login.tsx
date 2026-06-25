@@ -20,7 +20,8 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSsoLoading, setIsSsoLoading] = useState(false);
 
-  const showCredentialForm = AUTH_MODE === 'temporary' || AUTH_MODE === 'mock';
+  const showCredentialForm =
+    AUTH_MODE === 'temporary' || AUTH_MODE === 'mock' || import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/upload';
 

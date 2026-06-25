@@ -1,4 +1,6 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { usesDoqynAuth } from '@/auth/authConfig';
+import { doqynUsersApi } from './doqynUsersApi';
 
 const API_BASE = '/api';
 
@@ -84,6 +86,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const usersApi = {
   list: (companyId?: string) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.list(companyId).then((members) => ({ members }));
+    }
     const query = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
     return request<{ members: CompanyMemberDto[] }>(`/company-members${query}`);
   },
@@ -95,11 +100,15 @@ export const usersApi = {
     lastName: string;
     platformRoles: PlatformRole[];
     accessGroupIds: string[];
-  }) =>
-    request<{ member: CompanyMemberDto; temporaryPassword?: string }>('/company-members/invite', {
+  }) => {
+    if (usesDoqynAuth()) {
+      return Promise.reject(new Error('Convite de usuário ainda não disponível via auth-service.'));
+    }
+    return request<{ member: CompanyMemberDto; temporaryPassword?: string }>('/company-members/invite', {
       method: 'POST',
       body: JSON.stringify(input),
-    }),
+    });
+  },
 
   approve: (
     memberId: string,
@@ -108,8 +117,12 @@ export const usersApi = {
       accessGroupIds: string[];
       notificationPreferences?: NotificationPreferencesDto;
     },
-  ) =>
-    request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
+    tenantId?: string,
+  ) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.approve(memberId, input, tenantId);
+    }
+    return request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
       `/company-members/${memberId}/approve`,
       {
         method: 'POST',
@@ -119,25 +132,39 @@ export const usersApi = {
           notificationPreferences: input.notificationPreferences,
         }),
       },
-    ),
+    );
+  },
 
-  reject: (memberId: string, reason?: string) =>
-    request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/reject`, {
+  reject: (memberId: string, reason?: string, tenantId?: string) => {
+    if (usesDoqynAuth()) {
+      void reason;
+      return doqynUsersApi.reject(memberId, tenantId);
+    }
+    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
-    }),
+    });
+  },
 
-  block: (memberId: string) =>
-    request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/block`, {
+  block: (memberId: string, tenantId?: string) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.block(memberId, tenantId);
+    }
+    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/block`, {
       method: 'POST',
       body: JSON.stringify({}),
-    }),
+    });
+  },
 
-  activate: (memberId: string) =>
-    request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/activate`, {
+  activate: (memberId: string, tenantId?: string) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.activate(memberId, tenantId);
+    }
+    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/activate`, {
       method: 'POST',
       body: JSON.stringify({}),
-    }),
+    });
+  },
 
   updateAccess: (
     memberId: string,
@@ -146,15 +173,20 @@ export const usersApi = {
       accessGroupIds: string[];
       notificationPreferences?: NotificationPreferencesDto;
     },
-  ) =>
-    request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/access`, {
+    tenantId?: string,
+  ) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.updateAccess(memberId, input, tenantId);
+    }
+    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/access`, {
       method: 'PATCH',
       body: JSON.stringify({
         tenantRoles: input.platformRoles,
         accessGroupIds: input.accessGroupIds,
         notificationPreferences: input.notificationPreferences,
       }),
-    }),
+    });
+  },
 };
 
 export function suggestGroupsFromDepartment(

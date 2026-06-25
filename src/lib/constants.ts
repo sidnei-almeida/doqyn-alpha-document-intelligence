@@ -3,9 +3,10 @@ export const AUTH_PROVIDER = import.meta.env.VITE_AUTH_PROVIDER ?? '';
 export const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? 'temporary';
 
 export const AUTH_PROVIDER_LABELS: Record<string, string> = {
-  keycloak: 'SSO Keycloak',
+  doqyn_auth: 'doqyn-auth-service',
+  keycloak: 'SSO Keycloak (legado)',
   mock: 'Desenvolvimento (mock)',
-  temporary: 'Acesso por credenciais',
+  temporary: 'Acesso por credenciais (legado)',
 };
 
 export const AUTH_MODE_LABELS: Record<string, string> = {

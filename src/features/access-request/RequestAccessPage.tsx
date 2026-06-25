@@ -90,6 +90,7 @@ export function RequestAccessPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [departmentText, setDepartmentText] = useState('');
@@ -110,6 +111,7 @@ export function RequestAccessPage() {
         firstName,
         lastName,
         email,
+        password,
         whatsapp,
         jobTitle,
         departmentText,
@@ -122,7 +124,7 @@ export function RequestAccessPage() {
 
       if (import.meta.env.DEV && result.dev?.temporaryPassword) {
         toast.message('Senha temporária (dev)', {
-          description: 'Use no login Keycloak após aprovação do admin.',
+          description: 'Use no login após aprovação do admin.',
         });
         console.info('[access-request] dev credentials', {
           memberId: result.dev.memberId,
@@ -253,6 +255,18 @@ export function RequestAccessPage() {
                 placeholder="seu.email@empresa.com"
                 autoComplete="email"
                 required
+              />
+
+              <Input
+                id="password"
+                label="Senha de acesso"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+                required
+                minLength={8}
               />
 
               <Input

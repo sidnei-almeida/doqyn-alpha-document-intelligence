@@ -1,5 +1,5 @@
 import type { AuthUser, AuthRole } from '@/features/auth/types';
-import type { MeMembership, MeSession } from './sessionTypes';
+import type { MeMembership, MeSession, AccessGateReason } from './sessionTypes';
 
 function mapTenantRolesToAuthRole(roles: string[]): AuthRole {
   if (roles.includes('doqyn_admin')) return 'admin';
@@ -17,7 +17,7 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
     user.email;
 
   return {
-    id: user.keycloakUserId ?? user.email,
+    id: user.id ?? user.keycloakUserId ?? user.email,
     email: user.email,
     name: displayName,
     username: user.username,
@@ -32,9 +32,12 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
   };
 }
 
-export function resolveAccessGate(membership: MeMembership | null): 'pending' | 'blocked' | null {
-  if (!membership) return null;
+export function resolveAccessGate(
+  membership: MeMembership | null,
+): AccessGateReason | null {
+  if (!membership) return 'no_membership';
   if (membership.status === 'pending') return 'pending';
   if (membership.status === 'blocked') return 'blocked';
+  if (membership.status === 'removed') return 'removed';
   return null;
 }
