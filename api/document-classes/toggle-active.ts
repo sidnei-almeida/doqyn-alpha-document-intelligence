@@ -10,13 +10,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/document-classes/:id/toggle-active',
-    handler: async ({ companyId, requestId, params }) => {
+    handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
         return { status: 400, body: { message: 'ID da classe é obrigatório.', code: 'MISSING_ID' } };
       }
 
-      const result = await toggleDocumentClassActive(companyId, id);
+      const result = await toggleDocumentClassActive(companyId, id, { ownerUserId: user.id });
       logger.info('document class toggle-active', {
         requestId,
         companyId,

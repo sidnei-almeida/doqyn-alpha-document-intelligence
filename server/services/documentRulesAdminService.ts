@@ -2,10 +2,21 @@ import { randomUUID } from 'node:crypto';
 import type { MongoDocumentRule, MongoRuleField } from '../db/types.js';
 import { assertDocumentClassExists } from './documentClassesService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import { requireBusinessAdminCollections } from '../tenancy/requireBusinessCollections.js';
-import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
+import { requireTenantDocumentCollections } from '../tenancy/requireTenantDocumentCollections.js';
+import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
 
 const ALLOWED_FIELD_TYPES = new Set(['string', 'date', 'number', 'currency', 'boolean']);
+
+type RuleServiceOpts = { ownerUserId?: string };
+
+async function resolveRuleContext(tenantId: string, opts?: RuleServiceOpts) {
+  const collections = await requireTenantDocumentCollections(tenantId, {
+    userId: opts?.ownerUserId,
+  });
+  const scope = buildClassRuleOwnershipFilter(collections.storage);
+  return { collections, scope, storage: collections.storage };
+}
 
 function serializeDocumentRule(rule: MongoDocumentRule) {
   return {
@@ -47,10 +58,10 @@ function validateFields(fields: MongoRuleField[], active: boolean) {
   }
 }
 
-export async function listDocumentRules(tenantId: string) {
-  const { documentRules: collection } = await requireBusinessAdminCollections(tenantId);
-  const rules = await collection
-    .find(tenantScopeFilter(tenantId))
+export async function listDocumentRules(tenantId: string, opts?: RuleServiceOpts) {
+  const { collections, scope } = await resolveRuleContext(tenantId, opts);
+  const rules = await collections.documentRules
+    .find(scope)
     .sort({ classId: 1, version: -1 })
     .toArray();
 
@@ -68,9 +79,10 @@ export async function createDocumentRule(
     namingTemplate: string;
     minimumConfidence?: number;
     onLowConfidence?: 'requires_review';
+    scope?: 'global' | 'tenant';
   },
 ) {
-  await assertDocumentClassExists(tenantId, input.classId);
+  await assertDocumentClassExists(tenantId, input.classId, { ownerUserId: userId });
 
   const namingTemplate = input.namingTemplate?.trim();
   if (!namingTemplate) {
@@ -86,11 +98,10 @@ export async function createDocumentRule(
     throw new ServiceError('minimumConfidence deve estar entre 0 e 1.', 'VALIDATION_ERROR', 400);
   }
 
-  const { documentRules: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
+  const { collections, scope, storage } = await resolveRuleContext(tenantId, { ownerUserId: userId });
 
   let id = `rule_${input.classId.replace(/^class_/, '')}_v${version}`;
-  const existingId = await collection.findOne({
+  const existingId = await collections.documentRules.findOne({
     ...scope,
     _id: id,
   } as Record<string, unknown>);
@@ -100,21 +111,26 @@ export async function createDocumentRule(
   }
 
   const now = new Date();
-  const rule = withTenantFields(tenantId, {
-    _id: id,
-    classId: input.classId,
-    version,
-    active,
-    fields: input.fields,
-    namingTemplate,
-    minimumConfidence,
-    onLowConfidence: 'requires_review',
-    createdBy: userId,
-    createdAt: now,
-    updatedAt: now,
-  }) as MongoDocumentRule;
+  const rule = withClassRuleFieldsFromContext(
+    storage,
+    {
+      _id: id,
+      classId: input.classId,
+      version,
+      active,
+      fields: input.fields,
+      namingTemplate,
+      minimumConfidence,
+      onLowConfidence: 'requires_review' as const,
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    },
+    userId,
+    { scope: input.scope },
+  ) as MongoDocumentRule;
 
-  await collection.insertOne(rule as Record<string, unknown>);
+  await collections.documentRules.insertOne(rule as Record<string, unknown>);
 
   return serializeDocumentRule(rule);
 }
@@ -129,10 +145,10 @@ export async function updateDocumentRule(
     active?: boolean;
     onLowConfidence?: 'requires_review';
   },
+  opts?: RuleServiceOpts,
 ) {
-  const { documentRules: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+  const { collections, scope } = await resolveRuleContext(tenantId, opts);
+  const existing = await collections.documentRules.findOne({
     ...scope,
     _id: ruleId,
   } as Record<string, unknown>);
@@ -172,11 +188,11 @@ export async function updateDocumentRule(
     throw new ServiceError('Regra ativa precisa de ao menos um campo.', 'VALIDATION_ERROR', 400);
   }
 
-  await collection.updateOne({ ...scope, _id: ruleId } as Record<string, unknown>, {
+  await collections.documentRules.updateOne({ ...scope, _id: ruleId } as Record<string, unknown>, {
     $set: patch,
   });
 
-  const updated = await collection.findOne({
+  const updated = await collections.documentRules.findOne({
     ...scope,
     _id: ruleId,
   } as Record<string, unknown>);
@@ -184,10 +200,13 @@ export async function updateDocumentRule(
   return serializeDocumentRule(updated as MongoDocumentRule);
 }
 
-export async function toggleDocumentRuleActive(tenantId: string, ruleId: string) {
-  const { documentRules: collection } = await requireBusinessAdminCollections(tenantId);
-  const scope = tenantScopeFilter(tenantId);
-  const existing = await collection.findOne({
+export async function toggleDocumentRuleActive(
+  tenantId: string,
+  ruleId: string,
+  opts?: RuleServiceOpts,
+) {
+  const { collections, scope } = await resolveRuleContext(tenantId, opts);
+  const existing = await collections.documentRules.findOne({
     ...scope,
     _id: ruleId,
   } as Record<string, unknown>);
@@ -202,7 +221,7 @@ export async function toggleDocumentRuleActive(tenantId: string, ruleId: string)
     throw new ServiceError('Regra ativa precisa de ao menos um campo.', 'VALIDATION_ERROR', 400);
   }
 
-  await collection.updateOne({ ...scope, _id: ruleId } as Record<string, unknown>, {
+  await collections.documentRules.updateOne({ ...scope, _id: ruleId } as Record<string, unknown>, {
     $set: { active, updatedAt: new Date() },
   });
 

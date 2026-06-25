@@ -5,7 +5,7 @@ import type { MongoDocumentClass, MongoDocumentRule } from '../db/types.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilter } from '../tenancy/tenantQuery.js';
+import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { logger } from '../utils/logger.js';
 
 export class DocumentRulesNotSeededError extends Error {
@@ -85,6 +85,7 @@ function mapMongoRules(
 
 export async function loadActiveDocumentClassRules(
   companyId: string = DEV_TENANT_ID,
+  opts?: { ownerUserId?: string },
 ): Promise<DocumentRulesLoadResult> {
   const tenantId = companyId;
   const database = getMongoDatabaseName();
@@ -108,14 +109,16 @@ export async function loadActiveDocumentClassRules(
     };
   }
 
-  const { documentClasses, documentRules } = await getTenantCollections(tenantId);
+  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
+    userId: opts?.ownerUserId,
+  });
   if (!documentClasses || !documentRules) {
     throw new DocumentRulesNotSeededError(
       'Regras documentais não disponíveis para este tipo de cliente.',
     );
   }
 
-  const scope = tenantScopeFilter(tenantId);
+  const scope = buildClassRuleOwnershipFilter(storage);
   const classes = await documentClasses
     .find({ ...scope, active: true })
     .toArray();
@@ -156,12 +159,16 @@ export async function loadActiveDocumentClassRules(
 
 export async function getActiveDocumentClassRules(
   companyId: string = DEV_TENANT_ID,
+  opts?: { ownerUserId?: string },
 ): Promise<DocumentClassRule[]> {
-  const loaded = await loadActiveDocumentClassRules(companyId);
+  const loaded = await loadActiveDocumentClassRules(companyId, opts);
   return loaded.rules;
 }
 
-export async function getActiveRulesPayload(companyId: string = DEV_TENANT_ID) {
+export async function getActiveRulesPayload(
+  companyId: string = DEV_TENANT_ID,
+  opts?: { ownerUserId?: string },
+) {
   const tenantId = companyId;
   if (!isMongoNativeConfigured()) {
     return {
@@ -174,7 +181,9 @@ export async function getActiveRulesPayload(companyId: string = DEV_TENANT_ID) {
     };
   }
 
-  const { documentClasses, documentRules } = await getTenantCollections(tenantId);
+  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
+    userId: opts?.ownerUserId,
+  });
   if (!documentClasses || !documentRules) {
     return {
       companyId: tenantId,
@@ -187,7 +196,7 @@ export async function getActiveRulesPayload(companyId: string = DEV_TENANT_ID) {
     };
   }
 
-  const scope = tenantScopeFilter(tenantId);
+  const scope = buildClassRuleOwnershipFilter(storage);
   const database = getMongoDatabaseName();
   const classes = await documentClasses
     .find({ ...scope, active: true })
@@ -235,6 +244,7 @@ export async function diagnoseClassAndRuleLookup(input: {
   companyId: string;
   classId: string;
   className?: string | null;
+  ownerUserId?: string;
 }): Promise<ClassRuleDiagnostics> {
   const tenantId = input.companyId;
   const database = getMongoDatabaseName();
@@ -252,7 +262,9 @@ export async function diagnoseClassAndRuleLookup(input: {
     };
   }
 
-  const { documentClasses, documentRules } = await getTenantCollections(tenantId);
+  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
+    userId: input.ownerUserId,
+  });
   if (!documentClasses || !documentRules) {
     return {
       companyId: tenantId,
@@ -266,7 +278,7 @@ export async function diagnoseClassAndRuleLookup(input: {
     };
   }
 
-  const scope = tenantScopeFilter(tenantId);
+  const scope = buildClassRuleOwnershipFilter(storage);
   const activeClassesCount = await documentClasses.countDocuments({ ...scope, active: true });
   const activeRulesCount = await documentRules.countDocuments({ ...scope, active: true });
 
@@ -302,12 +314,15 @@ export async function diagnoseClassAndRuleLookup(input: {
 export async function getMongoClassAndRule(input: {
   companyId: string;
   classId: string;
+  ownerUserId?: string;
 }): Promise<{ docClass: MongoDocumentClass; rule: MongoDocumentRule } | null> {
   const tenantId = input.companyId;
-  const { documentClasses, documentRules } = await getTenantCollections(tenantId);
+  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
+    userId: input.ownerUserId,
+  });
   if (!documentClasses || !documentRules) return null;
 
-  const scope = tenantScopeFilter(tenantId);
+  const scope = buildClassRuleOwnershipFilter(storage);
   const docClass = await documentClasses.findOne({
     ...scope,
     _id: input.classId,

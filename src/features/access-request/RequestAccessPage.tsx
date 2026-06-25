@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { usesDoqynAuth } from '@/auth/authConfig';
 import { cn } from '@/lib/utils';
 import { submitAccessRequest } from './api/accessRequestApi';
 
@@ -84,6 +85,7 @@ function FormSection({
 }
 
 export function RequestAccessPage() {
+  const employeeFlow = usesDoqynAuth();
   const [personType, setPersonType] = useState<PersonType>('business');
   const [taxId, setTaxId] = useState('');
   const [tenantDisplayName, setTenantDisplayName] = useState('');
@@ -91,6 +93,7 @@ export function RequestAccessPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [departmentText, setDepartmentText] = useState('');
@@ -101,13 +104,19 @@ export function RequestAccessPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    if (employeeFlow && password !== confirmPassword) {
+      toast.error('As senhas não conferem.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const result = await submitAccessRequest({
-        personType,
+        personType: employeeFlow ? 'business' : personType,
         taxId,
-        tenantDisplayName,
+        tenantDisplayName: employeeFlow ? undefined : tenantDisplayName,
         firstName,
         lastName,
         email,
@@ -154,8 +163,9 @@ export function RequestAccessPage() {
           <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
             <h1 className="text-base font-semibold text-doqyn-text">Solicitação enviada</h1>
             <p className="mt-2 text-sm text-doqyn-muted">
-              Seu acesso será analisado pelo administrador responsável. Você receberá notificações
-              quando houver atualização.
+              {employeeFlow
+                ? 'Sua solicitação foi enviada. Um administrador da empresa precisará aprovar seu acesso.'
+                : 'Seu acesso será analisado pelo administrador responsável. Você receberá notificações quando houver atualização.'}
             </p>
             <Link
               to="/login"
@@ -182,10 +192,16 @@ export function RequestAccessPage() {
 
       <div className="w-full max-w-2xl flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Solicitação de acesso" />
+          <DoqynLogo
+            size="lg"
+            align="center"
+            showSubtitle
+            subtitle={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitação de acesso'}
+          />
           <p className="mt-4 max-w-md text-sm text-doqyn-muted">
-            Preencha os dados abaixo para solicitar acesso à plataforma. Um administrador revisará
-            seu pedido e definirá seus grupos de acesso.
+            {employeeFlow
+              ? 'Use esta opção se sua empresa já utiliza o DOQYN e você precisa que um administrador aprove seu acesso.'
+              : 'Preencha os dados abaixo para solicitar acesso à plataforma. Um administrador revisará seu pedido e definirá seus grupos de acesso.'}
           </p>
         </div>
 
@@ -195,33 +211,43 @@ export function RequestAccessPage() {
         >
           <div className="space-y-8">
             <FormSection
-              title="Dados do cliente"
-              description="Identificação da pessoa física ou jurídica que será vinculada ao acesso."
+              title={employeeFlow ? 'Empresa' : 'Dados do cliente'}
+              description={
+                employeeFlow
+                  ? 'Informe o CNPJ da empresa que já utiliza o DOQYN.'
+                  : 'Identificação da pessoa física ou jurídica que será vinculada ao acesso.'
+              }
             >
-              <div className="flex flex-col gap-2">
-                <span className="form-label block">Tipo de cliente</span>
-                <PersonTypeSegment value={personType} onChange={setPersonType} />
-              </div>
+              {!employeeFlow && (
+                <div className="flex flex-col gap-2">
+                  <span className="form-label block">Tipo de cliente</span>
+                  <PersonTypeSegment value={personType} onChange={setPersonType} />
+                </div>
+              )}
 
               <Input
                 id="taxId"
-                label={personType === 'business' ? 'CNPJ' : 'CPF'}
+                label={employeeFlow || personType === 'business' ? 'CNPJ da empresa' : 'CPF'}
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
-                placeholder={personType === 'business' ? '00.000.000/0000-00' : '000.000.000-00'}
-                required
-              />
-
-              <Input
-                id="tenantDisplayName"
-                label={personType === 'business' ? 'Razão social' : 'Nome completo do cliente'}
-                value={tenantDisplayName}
-                onChange={(e) => setTenantDisplayName(e.target.value)}
                 placeholder={
-                  personType === 'business' ? 'Empresa Exemplo Ltda.' : 'Nome completo'
+                  employeeFlow || personType === 'business' ? '00.000.000/0000-00' : '000.000.000-00'
                 }
                 required
               />
+
+              {!employeeFlow && (
+                <Input
+                  id="tenantDisplayName"
+                  label={personType === 'business' ? 'Razão social' : 'Nome completo do cliente'}
+                  value={tenantDisplayName}
+                  onChange={(e) => setTenantDisplayName(e.target.value)}
+                  placeholder={
+                    personType === 'business' ? 'Empresa Exemplo Ltda.' : 'Nome completo'
+                  }
+                  required
+                />
+              )}
             </FormSection>
 
             <div className="h-px bg-doqyn-border-subtle" />
@@ -268,6 +294,19 @@ export function RequestAccessPage() {
                 required
                 minLength={8}
               />
+
+              {employeeFlow && (
+                <Input
+                  id="confirmPassword"
+                  label="Confirmar senha"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                />
+              )}
 
               <Input
                 id="whatsapp"
@@ -329,10 +368,10 @@ export function RequestAccessPage() {
 
           <div className="mt-8 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
             <Link
-              to="/login"
+              to={employeeFlow ? '/acesso' : '/login'}
               className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
             >
-              Já tenho conta
+              {employeeFlow ? 'Voltar' : 'Já tenho conta'}
             </Link>
             <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
               {submitting ? 'Enviando...' : 'Solicitar acesso'}

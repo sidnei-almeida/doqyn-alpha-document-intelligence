@@ -1,12 +1,13 @@
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoAuditLog } from '../db/types.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilter, withTenantFields } from '../tenancy/tenantQuery.js';
+import { tenantScopeFilterFromContext, withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 
 export async function listAuditEvents(filters: {
   tenantId?: string;
+  ownerUserId?: string;
   documentId?: string;
   limit?: number;
 }) {
@@ -20,8 +21,10 @@ export async function listAuditEvents(filters: {
     return { events: [], total: 0 };
   }
 
-  const { auditLogs } = await getTenantCollections(tenantId);
-  const query: Record<string, unknown> = { ...tenantScopeFilter(tenantId) };
+  const { auditLogs, storage } = await getTenantCollections(tenantId, {
+    userId: filters.ownerUserId,
+  });
+  const query: Record<string, unknown> = { ...tenantScopeFilterFromContext(storage) };
   if (filters.documentId) query.documentId = filters.documentId;
 
   const limit = filters.limit ?? 50;
@@ -48,6 +51,7 @@ export async function listAuditEvents(filters: {
 
 export async function createAuditEvent(input: {
   tenantId: string;
+  ownerUserId?: string;
   documentId: string;
   actorUserId: string;
   actorName: string;
@@ -59,9 +63,13 @@ export async function createAuditEvent(input: {
 }) {
   if (!isMongoNativeConfigured()) return null;
 
-  const { auditLogs } = await getTenantCollections(input.tenantId);
+  const { auditLogs, storage } = await getTenantCollections(input.tenantId, {
+    userId: input.ownerUserId ?? input.actorUserId,
+  });
   const now = new Date();
-  const event = withTenantFields(input.tenantId, {
+  const event = withTenantFieldsFromContext(
+    storage,
+    {
     _id: `audit_${Date.now()}`,
     documentId: input.documentId,
     actor: { userId: input.actorUserId, name: input.actorName, role: 'user' },
@@ -71,7 +79,9 @@ export async function createAuditEvent(input: {
     result: input.result ?? 'success',
     metadata: sanitizeAuditMetadata(input.metadata ?? {}),
     createdAt: now,
-  });
+  },
+    input.actorUserId,
+  );
 
   await auditLogs.insertOne(event as unknown as MongoAuditLog);
   return { id: event._id, ...input, createdAt: now };

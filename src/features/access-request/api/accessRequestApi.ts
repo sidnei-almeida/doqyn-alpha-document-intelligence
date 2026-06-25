@@ -3,7 +3,7 @@ import { usesDoqynAuth, getAuthBasePath } from '@/auth/authConfig';
 export type PublicAccessRequestInput = {
   personType: 'individual' | 'business';
   taxId: string;
-  tenantDisplayName: string;
+  tenantDisplayName?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -50,6 +50,7 @@ export async function submitAccessRequest(
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: usesDoqynAuth() ? 'include' : 'same-origin',
     body: JSON.stringify(body),
   });
 

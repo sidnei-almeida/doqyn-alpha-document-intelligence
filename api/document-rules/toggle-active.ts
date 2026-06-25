@@ -10,13 +10,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/document-rules/:id/toggle-active',
-    handler: async ({ companyId, requestId, params }) => {
+    handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
         return { status: 400, body: { message: 'ID da regra é obrigatório.', code: 'MISSING_ID' } };
       }
 
-      const result = await toggleDocumentRuleActive(companyId, id);
+      const result = await toggleDocumentRuleActive(companyId, id, { ownerUserId: user.id });
       logger.info('document rule toggle-active', {
         requestId,
         companyId,

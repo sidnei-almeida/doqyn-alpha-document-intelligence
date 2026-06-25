@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/document-rules/:id',
-    handler: async ({ companyId, requestId, params }) => {
+    handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
         return { status: 400, body: { message: 'ID da regra é obrigatório.', code: 'MISSING_ID' } };
@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         active?: boolean;
       };
 
-      const rule = await updateDocumentRule(companyId, id, body);
+      const rule = await updateDocumentRule(companyId, id, body, { ownerUserId: user.id });
       logger.info('document rule updated', {
         requestId,
         companyId,

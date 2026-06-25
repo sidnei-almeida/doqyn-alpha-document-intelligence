@@ -118,6 +118,7 @@ export async function analyzePdfBuffer(input: {
   originalFileName: string;
   mimeType: string;
   companyId: string;
+  ownerUserId?: string;
   requestContext?: AnalyzeRequestContext;
 }): Promise<AnalyzePdfResponse> {
   assertAiModeAllowed();
@@ -210,7 +211,9 @@ export async function analyzePdfBuffer(input: {
 
   let rulesLoad;
   try {
-    rulesLoad = await loadActiveDocumentClassRules(input.companyId);
+    rulesLoad = await loadActiveDocumentClassRules(input.companyId, {
+      ownerUserId: input.ownerUserId,
+    });
   } catch (error) {
     if (isDocumentRulesNotSeededError(error)) {
       throw new AiAnalysisError(AI_ERROR_MESSAGES.rulesNotSeeded, error.code, error.statusCode);

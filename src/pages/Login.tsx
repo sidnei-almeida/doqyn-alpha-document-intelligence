@@ -1,6 +1,6 @@
 import { KeyRound, Lock, Shield } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -163,9 +163,9 @@ export function Login() {
           Ambiente corporativo seguro
         </p>
         <p className="mt-3 text-center text-sm">
-          <a href="/solicitar-acesso" className="text-doqyn-accent hover:underline">
-            Solicitar acesso ao DOQYN
-          </a>
+          <Link to="/acesso" className="text-doqyn-accent hover:underline">
+            Não tem acesso ainda?
+          </Link>
         </p>
       </div>
     </main>

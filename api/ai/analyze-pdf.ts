@@ -70,6 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       originalFileName: file.filename,
       mimeType: file.mimeType,
       companyId,
+      ownerUserId: user.id,
       requestContext: {
         requestId: ctx.requestId,
         batchId: ctx.batchId,
