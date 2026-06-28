@@ -9,6 +9,7 @@ import { buildDocumentRequestContext } from '../../server/tenancy/documentReques
 import { requireAuth } from '../../server/auth/requireAuth.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
+import { sendWorkflowError } from '../../server/utils/workflowErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -86,6 +87,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         message: error.message,
         durationMs: Date.now() - startedAt,
       });
+      if (error.code === 'CLASS_OR_RULE_NOT_FOUND') {
+        sendWorkflowError(res, error.statusCode, {
+          code: error.code,
+          message: error.message,
+          technicalDetail: error.message,
+          requestId: reqCtx.requestId,
+        });
+        return;
+      }
       return res.status(error.statusCode).json({
         message: error.message,
         code: error.code,

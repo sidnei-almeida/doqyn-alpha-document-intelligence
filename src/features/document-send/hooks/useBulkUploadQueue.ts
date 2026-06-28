@@ -30,6 +30,10 @@ import {
   NON_EXTRACTABLE_TEXT_MESSAGE,
   validateBulkQueueFile,
 } from '../utils/bulkFileValidation';
+import {
+  buildWorkflowErrorLogDetails,
+  parseWorkflowErrorPayload,
+} from '../utils/workflowErrors';
 
 const IN_FLIGHT_STATUSES: BulkUploadItemStatus[] = ['analyzing', 'saving', 'auto_countdown'];
 
@@ -397,7 +401,12 @@ export function useBulkUploadQueue({
   );
 
   const markItemAnalysisError = useCallback(
-    (itemId: string, message: string, details?: Record<string, unknown>) => {
+    (
+      itemId: string,
+      message: string,
+      details?: Record<string, unknown>,
+      options?: { toastMessage?: string },
+    ) => {
       patchItem(itemId, {
         status: 'error',
         errorMessage: message,
@@ -406,10 +415,10 @@ export function useBulkUploadQueue({
       workflow.logItem(itemId, getItemById(itemId)?.originalFileName, {
         level: 'error',
         stage: 'error',
-        message,
+        message: typeof details?.friendlyTitle === 'string' ? details.friendlyTitle : message,
         details,
       });
-      appendItemMessage(itemId, message);
+      appendItemMessage(itemId, options?.toastMessage ?? message);
       finishQueueItem(itemId);
     },
     [appendItemMessage, finishQueueItem, getItemById, patchItem, workflow],
@@ -993,33 +1002,63 @@ export function useBulkUploadQueue({
           return 'break';
         }
 
-        const message = error instanceof Error ? error.message : 'Erro ao analisar documento';
-        const code = error instanceof AnalyzePdfRequestError ? error.code : undefined;
+        const workflowError =
+          error instanceof AnalyzePdfRequestError
+            ? error.workflowError
+            : parseWorkflowErrorPayload(
+                null,
+                error instanceof Error ? error.message : 'Erro ao analisar documento',
+              );
+        workflowError.requestId = requestId;
+        workflowError.endpoint = '/api/ai/analyze-pdf';
+
         const itemDurationMs = itemStartedAtRef.current.get(next.id)
           ? Date.now() - itemStartedAtRef.current.get(next.id)!
           : undefined;
 
-        if (isNonExtractablePdfError({ message, code })) {
+        const logDetails = buildWorkflowErrorLogDetails(workflowError, {
+          stage: 'Análise',
+          endpoint: workflowError.endpoint,
+        });
+
+        if (isNonExtractablePdfError({ message: workflowError.message, code: workflowError.code })) {
           workflow.logItem(next.id, next.originalFileName, {
             level: 'warning',
             stage: 'analysis',
             message: NON_EXTRACTABLE_TEXT_MESSAGE,
-            details: { code, durationMs: itemDurationMs, tipo: 'texto_nao_extraivel' },
+            details: { code: workflowError.code, durationMs: itemDurationMs, tipo: 'texto_nao_extraivel' },
           });
           markItemReview(next.id, NON_EXTRACTABLE_TEXT_MESSAGE);
           return 'continue';
         }
 
-        if (code === 'RULES_NOT_SEEDED') {
-          markItemAnalysisError(next.id, message, {
-            code,
-            tipo: 'seed_ausente',
+        if (
+          workflowError.code === 'DOCUMENT_RULES_NOT_CONFIGURED' ||
+          workflowError.code === 'RULES_NOT_SEEDED'
+        ) {
+          markItemAnalysisError(next.id, workflowError.message, {
+            ...logDetails,
+            code: workflowError.code,
             durationMs: itemDurationMs,
-          });
+            tipo: 'configuracao_documental',
+            actionLabel: workflowError.action?.label,
+            actionHref: workflowError.action?.href,
+          }, { toastMessage: workflowError.toastMessage });
           return 'continue';
         }
 
-        markItemAnalysisError(next.id, message, { requestId, tipo: 'erro_analise', code });
+        markItemAnalysisError(
+          next.id,
+          workflowError.message,
+          {
+            ...logDetails,
+            requestId,
+            code: workflowError.code,
+            durationMs: itemDurationMs,
+            tipo: 'erro_analise',
+          },
+          { toastMessage: workflowError.toastMessage },
+        );
         return 'continue';
       }
     },

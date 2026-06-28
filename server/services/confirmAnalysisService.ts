@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { ExtractedMetadataField, MetadataExtractionResult } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
+import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import {
   buildDocumentOwnershipFilter,
@@ -24,6 +25,14 @@ import {
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
+import {
+  deleteAnalysisStaging,
+  getStorageProvider,
+  isStorageConfigured,
+  loadAnalysisStaging,
+} from '../storage/index.js';
+import { storeUploadedDocumentFile } from './documentFileService.js';
+import { ServiceError } from '../utils/serviceErrors.js';
 
 const evidenceSchema = z.object({
   pageNumber: z.number().optional(),
@@ -190,23 +199,87 @@ async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string
   return `DOQYN-${year}-${String(count + 1).padStart(6, '0')}`;
 }
 
-function buildStoragePlaceholders() {
+function buildStoragePlaceholders(): MongoDocumentVersion['storage'] {
   return {
     primary: {
-      provider: 'aws_s3' as const,
-      status: 'pending' as const,
+      provider: 'aws_s3',
+      status: 'pending',
       objectKey: null,
       bucketAlias: null,
       storedAt: null,
     },
     backup: {
-      provider: 'cloudflare_r2' as const,
-      status: 'pending' as const,
+      provider: 'cloudflare_r2',
+      status: 'pending',
       objectKey: null,
       bucketAlias: null,
       storedAt: null,
     },
   };
+}
+
+async function persistConfirmedVersionFile(input: {
+  tenantId: string;
+  ownerUserId: string;
+  documentId: string;
+  versionId: string;
+  jobId?: string;
+  fileHash: string;
+  fileSizeBytes: number;
+  originalFileName: string;
+}): Promise<MongoDocumentVersion['storage']> {
+  if (!isStorageConfigured()) {
+    return buildStoragePlaceholders();
+  }
+
+  if (!input.jobId?.trim()) {
+    throw new ConfirmAnalysisError(
+      'Identificador da análise ausente. Refaça a análise do documento.',
+      'STAGING_JOB_REQUIRED',
+      400,
+    );
+  }
+
+  const buffer = await loadAnalysisStaging({
+    tenantId: input.tenantId,
+    ownerUserId: input.ownerUserId,
+    jobId: input.jobId,
+    expectedSha256: input.fileHash,
+    mimeType: 'application/pdf',
+    originalFileName: input.originalFileName,
+  }).catch((error: unknown) => {
+    if (error instanceof ServiceError) {
+      throw new ConfirmAnalysisError(error.message, error.code, error.statusCode);
+    }
+    throw error;
+  });
+
+  if (buffer.length !== input.fileSizeBytes) {
+    throw new ConfirmAnalysisError(
+      'Tamanho do arquivo não confere. Refaça a análise.',
+      'STAGING_SIZE_MISMATCH',
+      400,
+    );
+  }
+
+  const storage = await storeUploadedDocumentFile({
+    tenantId: input.tenantId,
+    documentId: input.documentId,
+    versionId: input.versionId,
+    buffer,
+    mimeType: 'application/pdf',
+    originalFileName: input.originalFileName,
+  });
+
+  await deleteAnalysisStaging({
+    tenantId: input.tenantId,
+    ownerUserId: input.ownerUserId,
+    jobId: input.jobId,
+    mimeType: 'application/pdf',
+    originalFileName: input.originalFileName,
+  });
+
+  return storage;
 }
 
 function buildProcessingSteps(input: ConfirmAnalysisInput, persistedAt: Date) {
@@ -243,7 +316,7 @@ export async function confirmAnalysisPersistence(input: {
   versionId: string;
   status: 'saved';
   documentCode: string;
-  storageStatus: 'pending';
+  storageStatus: 'stored' | 'pending';
 }> {
   const tenantId = input.ctx.tenantId;
   const data = confirmAnalysisSchema.parse(input.payload);
@@ -329,7 +402,22 @@ export async function confirmAnalysisPersistence(input: {
 
   const { docClass, rule } = classAndRule;
 
-  if (!canConfirmDocuments(input.user, docClass.permissions.update)) {
+  const categoryAccess = await resolveCategoryAccessGroupIds(tenantId, docClass._id, {
+    ownerUserId: input.ctx.userId,
+  });
+
+  const legacyPermissions =
+    'permissions' in docClass && docClass.permissions
+      ? docClass.permissions
+      : {
+          view: categoryAccess.viewGroupIds,
+          download: categoryAccess.downloadGroupIds,
+          update: categoryAccess.updateGroupIds,
+          audit: categoryAccess.auditGroupIds,
+          share: categoryAccess.shareGroupIds,
+        };
+
+  if (!canConfirmDocuments(input.user, legacyPermissions.update)) {
     throw new ConfirmAnalysisError(
       'Você não tem permissão para confirmar metadados desta classe de documento.',
       'FORBIDDEN',
@@ -370,6 +458,36 @@ export async function confirmAnalysisPersistence(input: {
     ? 'Documento salvo após revisão manual dos metadados extraídos.'
     : 'Documento criado a partir da análise automática confirmada pelo usuário.';
 
+  let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
+  let persistedObjectKey: string | null = null;
+
+  try {
+    versionStorage = await persistConfirmedVersionFile({
+      tenantId,
+      ownerUserId: input.ctx.userId,
+      documentId,
+      versionId,
+      jobId: data.jobId,
+      fileHash: sha256,
+      fileSizeBytes: data.fileSizeBytes,
+      originalFileName: data.originalFileName,
+    });
+    persistedObjectKey = versionStorage.primary.objectKey;
+  } catch (error) {
+    if (error instanceof ConfirmAnalysisError) {
+      throw error;
+    }
+    logger.error('confirm-analysis storage persistence failed', {
+      requestId: input.requestId,
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+    throw new ConfirmAnalysisError(
+      'Não foi possível persistir o arquivo do documento.',
+      'STORAGE_PERSISTENCE_FAILED',
+      500,
+    );
+  }
+
   const document = withTenantFieldsFromContext(
     input.ctx.storage,
     {
@@ -383,11 +501,11 @@ export async function confirmAnalysisPersistence(input: {
       status: 'active',
       processingStatus: needsReview ? 'processed_with_review' : 'processed',
       access: {
-        viewGroupIds: docClass.permissions.view,
-        downloadGroupIds: docClass.permissions.download,
-        updateGroupIds: docClass.permissions.update,
-        auditGroupIds: docClass.permissions.audit,
-        shareGroupIds: docClass.permissions.share,
+        viewGroupIds: legacyPermissions.view,
+        downloadGroupIds: legacyPermissions.download,
+        updateGroupIds: legacyPermissions.update,
+        auditGroupIds: legacyPermissions.audit,
+        shareGroupIds: legacyPermissions.share,
       },
       currentMetadataPreview: buildMetadataPreview(versionMetadata),
       createdBy: input.user.id,
@@ -429,7 +547,7 @@ export async function confirmAnalysisPersistence(input: {
       },
       metadata: versionMetadata,
       metadataIndex,
-      storage: buildStoragePlaceholders(),
+      storage: versionStorage,
       review: {
         required: needsReview,
         reasons: needsReview ? reviewReasons : [],
@@ -486,37 +604,47 @@ export async function confirmAnalysisPersistence(input: {
 
   const { documents, documentVersions, processingJobs, auditLogs } = input.ctx.collections;
 
-  await documents.insertOne(document);
-  await documentVersions.insertOne(version);
-  await processingJobs.insertOne(processingJob);
-  await auditLogs.insertOne(auditLog);
+  try {
+    await documents.insertOne(document);
+    await documentVersions.insertOne(version);
+    await processingJobs.insertOne(processingJob);
+    await auditLogs.insertOne(auditLog);
 
-  await auditLogs.insertOne(
-    withTenantFieldsFromContext(
-      input.ctx.storage,
-      {
-        _id: `audit_${randomUUID()}`,
-        documentId,
-        versionId,
-        actor: auditLog.actor,
-        action: 'document.created',
-        description: 'Documento lógico criado no sistema.',
-        metadata: sanitizeAuditMetadata({
-          classId: docClass._id,
-          hasDocumentCode: Boolean(documentCode),
-        }),
-        createdAt: new Date(now.getTime() + 1),
-      },
-      input.user.id,
-    ) as MongoAuditLog,
-  );
+    await auditLogs.insertOne(
+      withTenantFieldsFromContext(
+        input.ctx.storage,
+        {
+          _id: `audit_${randomUUID()}`,
+          documentId,
+          versionId,
+          actor: auditLog.actor,
+          action: 'document.created',
+          description: 'Documento lógico criado no sistema.',
+          metadata: sanitizeAuditMetadata({
+            classId: docClass._id,
+            hasDocumentCode: Boolean(documentCode),
+            storageStatus: versionStorage.primary.status,
+          }),
+          createdAt: new Date(now.getTime() + 1),
+        },
+        input.user.id,
+      ) as MongoAuditLog,
+    );
+  } catch (error) {
+    if (persistedObjectKey) {
+      await getStorageProvider()
+        ?.deleteDocumentVersion(persistedObjectKey)
+        .catch(() => undefined);
+    }
+    throw error;
+  }
 
   return {
     documentId,
     versionId,
     status: 'saved',
     documentCode,
-    storageStatus: 'pending',
+    storageStatus: versionStorage.primary.status === 'stored' ? 'stored' : 'pending',
   };
 }
 

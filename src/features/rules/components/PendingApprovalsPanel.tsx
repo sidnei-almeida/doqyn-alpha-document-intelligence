@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { useConfirm } from '@/components/confirm/ConfirmProvider';
+import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildRejectApprovalConfirm } from '@/components/confirm/confirmMessages';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';

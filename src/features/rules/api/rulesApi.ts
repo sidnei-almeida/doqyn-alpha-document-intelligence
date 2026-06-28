@@ -51,9 +51,13 @@ type ApiGroup = {
   id: string;
   companyId: string;
   name: string;
-  slug: string;
+  slug?: string;
+  description?: string | null;
   color: string;
   active: boolean;
+  memberCount?: number;
+  linkedClassCount?: number;
+  linkedCategoryCount?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -116,89 +120,78 @@ function unwrap<T>(data: Record<string, unknown>, keys: string[]): T {
   return data as T;
 }
 
-// --- Groups ---
+// --- Grupos documentais (MongoDB) ---
 
-export async function getAccessGroups(tenantId?: string): Promise<ApiGroup[]> {
-  if (usesDoqynAuth()) {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    const data = await authServiceJson<{
-      groups: Array<{
-        groupId: string;
-        name: string;
-        slug: string;
-        status: string;
-        createdAt: string;
-        updatedAt: string;
-      }>;
-    }>(`/admin/access-groups${query}`);
-    return (data.groups ?? []).map((g) => ({
-      id: g.groupId,
-      companyId: tenantId ?? '',
-      name: g.name,
-      slug: g.slug,
-      color: 'blue',
-      active: g.status === 'active',
-      createdAt: g.createdAt,
-      updatedAt: g.updatedAt,
-    }));
-  }
-
-  const data = await request<{ groups: ApiGroup[] }>('/access-groups');
+export async function getAccessGroups(): Promise<ApiGroup[]> {
+  const data = await request<{ groups: ApiGroup[] }>('/document-groups');
   return data.groups ?? [];
 }
 
 export async function createAccessGroup(
-  payload: { name: string; color?: string },
-  tenantId?: string,
+  payload: { name: string; description?: string; color?: string },
 ): Promise<ApiGroup> {
-  if (usesDoqynAuth()) {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    const slug = payload.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-    const data = await authServiceJson<{ group: { groupId: string; name: string; slug: string; status: string; createdAt: string; updatedAt: string } }>(
-      `/admin/access-groups${query}`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ slug, name: payload.name }),
-      },
-    );
-    const g = data.group;
-    return {
-      id: g.groupId,
-      companyId: tenantId ?? '',
-      name: g.name,
-      slug: g.slug,
-      color: payload.color ?? 'blue',
-      active: g.status === 'active',
-      createdAt: g.createdAt,
-      updatedAt: g.updatedAt,
-    };
-  }
-
-  const data = await request<{ group: ApiGroup }>('/access-groups', {
+  const data = await request<{ group: ApiGroup }>('/document-groups', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ name: payload.name, description: payload.description }),
   });
-  return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
+  return { ...unwrap<ApiGroup>(data as Record<string, unknown>, ['group']), color: payload.color ?? 'blue' };
 }
 
 export async function updateAccessGroup(
   id: string,
-  payload: { name?: string; color?: string; active?: boolean },
+  payload: { name?: string; description?: string | null; active?: boolean },
 ): Promise<ApiGroup> {
-  const data = await request<{ group: ApiGroup }>(`/access-groups/${id}`, {
-    method: 'PUT',
+  const data = await request<{ group: ApiGroup }>(`/document-groups/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
   return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
 export async function toggleAccessGroup(id: string): Promise<{ id: string; active: boolean }> {
-  return request(`/access-groups/${id}/toggle-active`, { method: 'PATCH' });
+  const group = await updateAccessGroup(id, { active: false });
+  return { id: group.id, active: group.active };
+}
+
+export async function deleteAccessGroup(id: string): Promise<void> {
+  await request(`/document-groups/${id}`, { method: 'DELETE' });
+}
+
+export type AuthGroupMember = {
+  membershipId: string;
+  userId: string;
+  displayName?: string;
+  email?: string;
+};
+
+export async function getGroupMembers(groupId: string): Promise<AuthGroupMember[]> {
+  const data = await request<{ members: AuthGroupMember[] }>(`/document-groups/${groupId}/members`);
+  return data.members ?? [];
+}
+
+export async function addMemberToAccessGroup(
+  groupId: string,
+  membershipId: string,
+  member: { userId: string; displayName?: string; email?: string },
+): Promise<void> {
+  await request(`/document-groups/${groupId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({
+      membershipId,
+      userId: member.userId,
+      displayName: member.displayName,
+      email: member.email,
+    }),
+  });
+}
+
+export async function removeMemberFromAccessGroup(
+  groupId: string,
+  membershipId: string,
+): Promise<void> {
+  await request(`/document-groups/${groupId}/members?membershipId=${encodeURIComponent(membershipId)}`, {
+    method: 'DELETE',
+  });
 }
 
 // --- Members ---
@@ -254,7 +247,36 @@ export async function updateCompanyMemberStatus(
 export async function updateCompanyMemberGroups(
   id: string,
   groupIds: string[],
+  tenantId?: string,
 ): Promise<ApiMember> {
+  if (usesDoqynAuth()) {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const data = await authServiceJson<{
+      membership: {
+        membershipId: string;
+        tenantId: string;
+        status: MemberStatus;
+        roles: string[];
+        accessGroupIds: string[];
+      };
+    }>(`/admin/members/${encodeURIComponent(id)}/access-groups${query}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ accessGroupIds: groupIds }),
+    });
+    const membership = data.membership;
+    return {
+      id: membership.membershipId,
+      companyId: membership.tenantId,
+      name: membership.membershipId.slice(0, 8),
+      email: '',
+      role: membership.roles[0] ?? 'user',
+      status: membership.status,
+      groupIds: membership.accessGroupIds,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
   const data = await request<{ member: ApiMember }>(`/company-members/${id}/groups`, {
     method: 'PUT',
     body: JSON.stringify({ groupIds }),
@@ -265,8 +287,12 @@ export async function updateCompanyMemberGroups(
 // --- Document classes ---
 
 export async function getDocumentClasses(): Promise<ApiDocumentClass[]> {
-  const data = await request<{ classes: ApiDocumentClass[] }>('/document-classes');
-  return data.classes ?? [];
+  const data = await request<{ categories: ApiDocumentClass[] }>('/document-categories');
+  const categories = data.categories ?? [];
+  return categories.map((c) => ({
+    ...c,
+    permissions: c.permissions ?? { view: [], download: [], update: [], audit: [], share: [] },
+  }));
 }
 
 export async function createDocumentClass(payload: {
@@ -277,11 +303,15 @@ export async function createDocumentClass(payload: {
   iconKey?: string;
   color?: string;
 }): Promise<ApiDocumentClass> {
-  const data = await request<{ class: ApiDocumentClass }>('/document-classes', {
+  const data = await request<{ category: ApiDocumentClass }>('/document-categories', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
+  const category = unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['category']);
+  return {
+    ...category,
+    permissions: { view: [], download: [], update: [], audit: [], share: [] },
+  };
 }
 
 export async function updateDocumentClass(
@@ -293,21 +323,29 @@ export async function updateDocumentClass(
     negativeKeywords?: string[];
     iconKey?: string;
     color?: string;
+    active?: boolean;
   },
 ): Promise<ApiDocumentClass> {
-  const data = await request<{ class: ApiDocumentClass }>(`/document-classes/${id}`, {
-    method: 'PUT',
+  const data = await request<{ category: ApiDocumentClass }>(`/document-categories/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
-  return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
+  const category = unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['category']);
+  return {
+    ...category,
+    permissions: category.permissions ?? { view: [], download: [], update: [], audit: [], share: [] },
+  };
 }
 
 export async function toggleDocumentClass(id: string): Promise<ApiDocumentClass> {
-  const data = await request<{ class: ApiDocumentClass }>(
-    `/document-classes/${id}/toggle-active`,
+  const data = await request<{ id: string; active: boolean }>(
+    `/document-categories/${id}/toggle-active`,
     { method: 'PATCH' },
   );
-  return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
+  const classes = await getDocumentClasses();
+  const found = classes.find((c) => c.id === data.id);
+  if (!found) throw new RulesApiError('Categoria não encontrada.', 404);
+  return { ...found, active: data.active };
 }
 
 export async function updateDocumentClassPermissions(
@@ -335,24 +373,28 @@ export async function updateDocumentClassNotifications(
   return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
 }
 
-// --- Document rules ---
+// --- Regras de extração IA ---
 
 export async function getDocumentRules(): Promise<ApiDocumentRule[]> {
-  const data = await request<{ rules: ApiDocumentRule[] }>('/document-rules');
+  const data = await request<{ rules: ApiDocumentRule[] }>('/document-extraction-rules');
   return data.rules ?? [];
 }
 
 export async function createDocumentRule(payload: {
   classId: string;
+  categoryId?: string;
   version?: number;
   active?: boolean;
   fields: ExtractionField[];
   namingTemplate: string;
   minimumConfidence?: number;
 }): Promise<ApiDocumentRule> {
-  const data = await request<{ rule: ApiDocumentRule }>('/document-rules', {
+  const data = await request<{ rule: ApiDocumentRule }>('/document-extraction-rules', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      categoryId: payload.categoryId ?? payload.classId,
+    }),
   });
   return unwrap<ApiDocumentRule>(data as Record<string, unknown>, ['rule']);
 }
@@ -367,18 +409,95 @@ export async function updateDocumentRule(
     version?: number;
   },
 ): Promise<ApiDocumentRule> {
-  const data = await request<{ rule: ApiDocumentRule }>(`/document-rules/${id}`, {
-    method: 'PUT',
+  const data = await request<{ rule: ApiDocumentRule }>(`/document-extraction-rules/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
   return unwrap<ApiDocumentRule>(data as Record<string, unknown>, ['rule']);
 }
 
 export async function toggleDocumentRule(id: string): Promise<ApiDocumentRule> {
-  const data = await request<{ rule: ApiDocumentRule }>(`/document-rules/${id}/toggle-active`, {
-    method: 'PATCH',
+  return updateDocumentRule(id, { active: false });
+}
+
+export type DocumentAccessPermissions = {
+  view: boolean;
+  download: boolean;
+  upload: boolean;
+  share: boolean;
+  manage: boolean;
+};
+
+export type DocumentAccessMatrix = {
+  categories: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    active: boolean;
+    linkedGroupCount: number;
+  }>;
+  groups: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    active: boolean;
+    memberCount: number;
+    linkedCategoryCount: number;
+  }>;
+  rules: Array<{
+    id: string;
+    groupId: string;
+    categoryId: string;
+    permissions: DocumentAccessPermissions;
+    active: boolean;
+  }>;
+  extractionRules: ApiDocumentRule[];
+  /** @deprecated use categories */
+  classes?: DocumentAccessMatrix['categories'];
+  /** @deprecated use rules */
+  links?: Array<{
+    groupId: string;
+    classId: string;
+    categoryId?: string;
+    permissions: DocumentAccessPermissions;
+  }>;
+};
+
+export async function getDocumentAccessMatrix(): Promise<DocumentAccessMatrix> {
+  const matrix = await request<DocumentAccessMatrix>('/document-rules/matrix');
+  const rules = matrix.rules ?? [];
+  return {
+    ...matrix,
+    classes: matrix.categories,
+    links: rules.map((rule) => ({
+      groupId: rule.groupId,
+      classId: rule.categoryId,
+      categoryId: rule.categoryId,
+      permissions: rule.permissions,
+    })),
+  };
+}
+
+export async function updateDocumentAccessMatrixCell(input: {
+  groupId: string;
+  classId: string;
+  categoryId?: string;
+  permissions: DocumentAccessPermissions;
+}): Promise<{ groupId: string; classId: string; permissions: DocumentAccessPermissions }> {
+  const categoryId = input.categoryId ?? input.classId;
+  const result = await request<{
+    groupId: string;
+    categoryId: string;
+    permissions: DocumentAccessPermissions;
+  }>('/document-rules/matrix', {
+    method: 'PUT',
+    body: JSON.stringify({
+      groupId: input.groupId,
+      categoryId,
+      permissions: input.permissions,
+    }),
   });
-  return unwrap<ApiDocumentRule>(data as Record<string, unknown>, ['rule']);
+  return { groupId: result.groupId, classId: result.categoryId, permissions: result.permissions };
 }
 
 export type { ApiGroup, ApiMember, ApiDocumentClass, ApiDocumentRule };

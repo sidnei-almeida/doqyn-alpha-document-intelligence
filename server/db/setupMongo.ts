@@ -2,13 +2,14 @@ import 'dotenv/config';
 import { DEV_TENANT_ID, REGISTRY_COLLECTIONS } from './constants.js';
 import { getMongoDatabaseName } from './database.js';
 import { closeMongoConnection, getDb } from './mongoClient.js';
-import { SEED_ACCESS_GROUPS } from './seed/accessGroupsSeed.js';
 import { SEED_COMPANY_MEMBERS } from './seed/companyMembersSeed.js';
 import {
-  getDocumentClassPresentationBackfill,
-  SEED_DOCUMENT_CLASSES,
-  SEED_DOCUMENT_RULES,
-} from './seed/documentRulesSeed.js';
+  buildGovernanceMemberSeeds,
+  SEED_GOVERNANCE_ACCESS_RULES,
+  SEED_GOVERNANCE_CATEGORIES,
+  SEED_GOVERNANCE_EXTRACTION_RULES,
+  SEED_GOVERNANCE_GROUPS,
+} from './seed/documentGovernanceSeed.js';
 import { ensureDevTenantSeed } from '../services/tenantsService.js';
 import { ensureSidneiDevTenantMember } from '../services/tenantMembersService.js';
 import {
@@ -17,11 +18,12 @@ import {
 } from '../tenancy/tenantResolver.js';
 
 type SeedCounts = {
-  accessGroups: number;
-  companyMembers: number;
-  documentClasses: number;
+  documentCategories: number;
+  documentGroups: number;
+  documentGroupMembers: number;
   documentRules: number;
-  documentRulesActive: number;
+  documentExtractionRules: number;
+  companyMembers: number;
 };
 
 async function upsertSeed<T extends { _id: string; tenantId?: string; companyId: string }>(
@@ -87,26 +89,39 @@ async function ensureRegistryIndexes() {
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
   const db = await getDb();
 
-  if (names.accessGroups) {
-    await db.collection(names.accessGroups).createIndexes([
+  if (names.documentCategories) {
+    await db.collection(names.documentCategories).createIndexes([
       { key: { tenantId: 1, active: 1 } },
-      { key: { companyId: 1, active: 1 } },
       { key: { tenantId: 1, slug: 1 }, unique: true },
     ]);
   }
 
-  if (names.documentClasses) {
-    await db.collection(names.documentClasses).createIndexes([
+  if (names.documentGroups) {
+    await db.collection(names.documentGroups).createIndexes([
       { key: { tenantId: 1, active: 1 } },
-      { key: { tenantId: 1, name: 1 }, unique: true },
       { key: { tenantId: 1, slug: 1 }, unique: true },
+    ]);
+  }
+
+  if (names.documentGroupMembers) {
+    await db.collection(names.documentGroupMembers).createIndexes([
+      { key: { tenantId: 1, groupId: 1, active: 1 } },
+      { key: { tenantId: 1, membershipId: 1, active: 1 } },
+      { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
     ]);
   }
 
   if (names.documentRules) {
     await db.collection(names.documentRules).createIndexes([
-      { key: { tenantId: 1, classId: 1, active: 1 } },
-      { key: { tenantId: 1, classId: 1, version: -1 } },
+      { key: { tenantId: 1, groupId: 1, categoryId: 1 }, unique: true },
+      { key: { tenantId: 1, active: 1 } },
+    ]);
+  }
+
+  if (names.documentExtractionRules) {
+    await db.collection(names.documentExtractionRules).createIndexes([
+      { key: { tenantId: 1, categoryId: 1, active: 1 } },
+      { key: { tenantId: 1, categoryId: 1, version: -1 } },
     ]);
   }
 
@@ -132,109 +147,44 @@ async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
   ]);
 }
 
-async function seedDocumentClasses(collectionName: string) {
-  const db = await getDb();
-  const collection = db.collection(collectionName);
-  let inserted = 0;
-  let existing = 0;
-  let backfilled = 0;
-
-  for (const docClass of SEED_DOCUMENT_CLASSES) {
-    const result = await collection.updateOne(
-      {
-        _id: docClass._id,
-        $or: [{ tenantId: DEV_TENANT_ID }, { companyId: DEV_TENANT_ID }],
-      } as Record<string, unknown>,
-      { $setOnInsert: docClass },
-      { upsert: true },
-    );
-
-    if (result.upsertedCount > 0) {
-      inserted += 1;
-      continue;
-    }
-
-    existing += 1;
-
-    const backfillResult = await collection.updateOne(
-      {
-        _id: docClass._id,
-        $or: [{ tenantId: DEV_TENANT_ID }, { companyId: DEV_TENANT_ID }],
-        slug: { $exists: false },
-      } as Record<string, unknown>,
-      { $set: getDocumentClassPresentationBackfill(docClass) },
-    );
-
-    if (backfillResult.modifiedCount > 0) {
-      backfilled += 1;
-    }
-  }
-
-  return { inserted, existing, backfilled };
-}
-
 async function getSeedCounts(names: ResolvedTenantCollectionNames): Promise<SeedCounts> {
   const db = await getDb();
   const tenantFilter = { $or: [{ tenantId: DEV_TENANT_ID }, { companyId: DEV_TENANT_ID }] };
 
-  const [accessGroups, companyMembers, documentClasses, documentRules, documentRulesActive] =
-    await Promise.all([
-      names.accessGroups
-        ? db.collection(names.accessGroups).countDocuments(tenantFilter)
-        : Promise.resolve(0),
-      db.collection(REGISTRY_COLLECTIONS.companyMembers).countDocuments(tenantFilter),
-      names.documentClasses
-        ? db.collection(names.documentClasses).countDocuments(tenantFilter)
-        : Promise.resolve(0),
-      names.documentRules
-        ? db.collection(names.documentRules).countDocuments(tenantFilter)
-        : Promise.resolve(0),
-      names.documentRules
-        ? db
-            .collection(names.documentRules)
-            .countDocuments({ ...tenantFilter, active: true })
-        : Promise.resolve(0),
-    ]);
+  const [
+    documentCategories,
+    documentGroups,
+    documentGroupMembers,
+    documentRules,
+    documentExtractionRules,
+    companyMembers,
+  ] = await Promise.all([
+    names.documentCategories
+      ? db.collection(names.documentCategories).countDocuments(tenantFilter)
+      : Promise.resolve(0),
+    names.documentGroups
+      ? db.collection(names.documentGroups).countDocuments(tenantFilter)
+      : Promise.resolve(0),
+    names.documentGroupMembers
+      ? db.collection(names.documentGroupMembers).countDocuments(tenantFilter)
+      : Promise.resolve(0),
+    names.documentRules
+      ? db.collection(names.documentRules).countDocuments({ ...tenantFilter, active: true })
+      : Promise.resolve(0),
+    names.documentExtractionRules
+      ? db.collection(names.documentExtractionRules).countDocuments({ ...tenantFilter, active: true })
+      : Promise.resolve(0),
+    db.collection(REGISTRY_COLLECTIONS.companyMembers).countDocuments(tenantFilter),
+  ]);
 
   return {
-    accessGroups,
-    companyMembers,
-    documentClasses,
+    documentCategories,
+    documentGroups,
+    documentGroupMembers,
     documentRules,
-    documentRulesActive,
+    documentExtractionRules,
+    companyMembers,
   };
-}
-
-async function verifyNdaSeed(database: string, names: ResolvedTenantCollectionNames) {
-  const db = await getDb();
-  const tenantFilter = { $or: [{ tenantId: DEV_TENANT_ID }, { companyId: DEV_TENANT_ID }] };
-
-  const docClass = names.documentClasses
-    ? await db.collection(names.documentClasses).findOne({
-        _id: 'class_confidentiality_agreement',
-        ...tenantFilter,
-        active: true,
-      } as Record<string, unknown>)
-    : null;
-
-  const rule = names.documentRules
-    ? await db.collection(names.documentRules).findOne({
-        _id: 'rule_confidentiality_agreement_v1',
-        ...tenantFilter,
-        classId: 'class_confidentiality_agreement',
-        active: true,
-      } as Record<string, unknown>)
-    : null;
-
-  console.log('Validação NDA:', {
-    database,
-    tenantId: DEV_TENANT_ID,
-    classFound: Boolean(docClass),
-    className: docClass?.name ?? null,
-    ruleFound: Boolean(rule),
-    ruleId: rule?._id ?? null,
-    collections: names,
-  });
 }
 
 async function main() {
@@ -249,34 +199,59 @@ async function main() {
   console.log(
     `tenant_members (sidnei): vinculado ao tenant ${sidneiMember.tenantId} (${sidneiMember.status}).`,
   );
+
   const collectionNames = resolveTenantCollectionNames(tenant);
   await ensureTenantDataIndexes(collectionNames);
   console.log('Índices tenant-aware criados/verificados.', collectionNames);
 
-  const groups = collectionNames.accessGroups
-    ? await upsertSeed(collectionNames.accessGroups, SEED_ACCESS_GROUPS)
-    : { inserted: 0, existing: 0 };
-  console.log(`access_groups: ${groups.inserted} inserido(s), ${groups.existing} já existente(s).`);
-
   const members = await upsertSeed(REGISTRY_COLLECTIONS.companyMembers, SEED_COMPANY_MEMBERS);
   console.log(`company_members: ${members.inserted} inserido(s), ${members.existing} já existente(s).`);
 
-  const classes = collectionNames.documentClasses
-    ? await seedDocumentClasses(collectionNames.documentClasses)
-    : { inserted: 0, existing: 0, backfilled: 0 };
-  console.log(
-    `document_classes: ${classes.inserted} inserido(s), ${classes.existing} já existente(s), ${classes.backfilled} backfill.`,
-  );
+  if (collectionNames.documentCategories) {
+    const categories = await upsertSeed(collectionNames.documentCategories, SEED_GOVERNANCE_CATEGORIES);
+    console.log(
+      `document_categories: ${categories.inserted} inserido(s), ${categories.existing} já existente(s).`,
+    );
+  }
 
-  const rules = collectionNames.documentRules
-    ? await upsertSeed(collectionNames.documentRules, SEED_DOCUMENT_RULES)
-    : { inserted: 0, existing: 0 };
-  console.log(`document_rules: ${rules.inserted} inserido(s), ${rules.existing} já existente(s).`);
+  if (collectionNames.documentGroups) {
+    const groups = await upsertSeed(collectionNames.documentGroups, SEED_GOVERNANCE_GROUPS);
+    console.log(`document_groups: ${groups.inserted} inserido(s), ${groups.existing} já existente(s).`);
+  }
+
+  if (collectionNames.documentRules) {
+    const rules = await upsertSeed(collectionNames.documentRules, SEED_GOVERNANCE_ACCESS_RULES);
+    console.log(`document_rules: ${rules.inserted} inserido(s), ${rules.existing} já existente(s).`);
+  }
+
+  if (collectionNames.documentExtractionRules) {
+    const extraction = await upsertSeed(
+      collectionNames.documentExtractionRules,
+      SEED_GOVERNANCE_EXTRACTION_RULES,
+    );
+    console.log(
+      `document_extraction_rules: ${extraction.inserted} inserido(s), ${extraction.existing} já existente(s).`,
+    );
+  }
+
+  if (collectionNames.documentGroupMembers) {
+    const memberSeeds = buildGovernanceMemberSeeds({
+      membershipId: sidneiMember.memberId,
+      userId: sidneiMember.keycloakUserId ?? sidneiMember.memberId,
+      displayName: [sidneiMember.firstName, sidneiMember.lastName].filter(Boolean).join(' ') || undefined,
+      email: sidneiMember.email,
+    });
+
+    const groupMembers = await upsertSeed(collectionNames.documentGroupMembers, memberSeeds);
+    console.log(
+      `document_group_members: ${groupMembers.inserted} inserido(s), ${groupMembers.existing} já existente(s).`,
+    );
+  } else {
+    console.warn('document_group_members indisponível para este tenant — grupos criados sem membros seed.');
+  }
 
   const counts = await getSeedCounts(collectionNames);
   console.log('Totais no database:', { database, tenantId: DEV_TENANT_ID, ...counts });
-
-  await verifyNdaSeed(database, collectionNames);
 }
 
 main()

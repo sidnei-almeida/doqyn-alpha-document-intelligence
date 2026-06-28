@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { toggleDocumentRuleActive } from '../../server/services/documentRulesAdminService.js';
+import { deactivateAccessRuleById } from '../../server/services/documentAccessRulesService.js';
 import { withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { logger } from '../../server/utils/logger.js';
 
@@ -16,8 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return { status: 400, body: { message: 'ID da regra é obrigatório.', code: 'MISSING_ID' } };
       }
 
-      const result = await toggleDocumentRuleActive(companyId, id, { ownerUserId: user.id });
-      logger.info('document rule toggle-active', {
+      const result = await deactivateAccessRuleById(companyId, id, { ownerUserId: user.id });
+      logger.info('document access rule toggle-active', {
         requestId,
         companyId,
         resource: 'document_rules',

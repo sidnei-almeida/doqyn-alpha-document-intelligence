@@ -8,6 +8,13 @@ import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
 import { parseMultipart } from '../../server/utils/parseMultipart.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
+import {
+  getStorageConfig,
+  isLocalStorageEnabled,
+} from '../../server/storage/storageConfig.js';
+import { storeAnalysisStaging } from '../../server/storage/index.js';
+import { isServiceError } from '../../server/utils/serviceErrors.js';
+import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -63,6 +70,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: AI_ERROR_MESSAGES.emptyFile });
     }
 
+    if (isLocalStorageEnabled()) {
+      const storageConfig = getStorageConfig();
+      if (file.size > storageConfig.maxUploadBytes) {
+        logger.warn('analyze-pdf validation failed', {
+          requestId: ctx.requestId,
+          reason: 'file_too_large',
+          fileSizeBytes: file.size,
+          maxUploadBytes: storageConfig.maxUploadBytes,
+          durationMs: Date.now() - startedAt,
+        });
+        return res.status(413).json({
+          message: `Arquivo excede o limite de ${Math.floor(storageConfig.maxUploadBytes / (1024 * 1024))} MB.`,
+          code: 'FILE_TOO_LARGE',
+        });
+      }
+    }
+
     const companyId = getCompanyIdFromUser(user);
 
     const result = await analyzePdfBuffer({
@@ -78,6 +102,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fileName: file.filename,
       },
     });
+
+    if (isLocalStorageEnabled()) {
+      try {
+        await storeAnalysisStaging({
+          tenantId: companyId,
+          ownerUserId: user.id,
+          jobId: result.jobId,
+          buffer: file.buffer,
+          mimeType: file.mimeType,
+          originalFileName: file.filename,
+        });
+      } catch (stagingError) {
+        if (isServiceError(stagingError)) {
+          logger.warn('analyze-pdf staging failed', {
+            requestId: ctx.requestId,
+            code: stagingError.code,
+            message: stagingError.message,
+            durationMs: Date.now() - startedAt,
+          });
+          const { statusCode, body } = workflowErrorFromUnknown(stagingError, {
+            requestId: ctx.requestId,
+            defaultCode: stagingError.code,
+          });
+          return res.status(statusCode).json(body);
+        }
+        throw stagingError;
+      }
+    }
 
     logger.info('analyze-pdf request completed', {
       requestId: ctx.requestId,
@@ -108,7 +160,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         message: error.message,
         durationMs: Date.now() - startedAt,
       });
-      return res.status(error.statusCode).json({ message: error.message, code: error.code });
+      const { statusCode, body } = workflowErrorFromUnknown(error, {
+        requestId: ctx.requestId,
+      });
+      res.setHeader('X-DOQYN-Request-Id', ctx.requestId);
+      return res.status(statusCode).json(body);
     }
 
     logger.error('analyze-pdf unexpected error', {

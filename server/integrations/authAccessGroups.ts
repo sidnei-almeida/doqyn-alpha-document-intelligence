@@ -6,6 +6,8 @@ export type AuthServiceAccessGroup = {
   name: string;
   slug: string;
   status: string;
+  description?: string | null;
+  memberCount?: number;
 };
 
 export async function fetchTenantAccessGroupsFromAuth(

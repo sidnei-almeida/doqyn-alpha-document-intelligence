@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { lookup } from 'mime-types';
 import { uploadDocument } from '../../server/services/documentService.js';
+import { getStorageConfig } from '../../server/storage/storageConfig.js';
 import { requireDocumentRequestContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
@@ -68,6 +69,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { fields, file } = await parseMultipart(req);
+
+    if (file) {
+      const { maxUploadBytes } = getStorageConfig();
+      if (file.size > maxUploadBytes) {
+        return res.status(413).json({
+          message: `Arquivo excede o limite de ${Math.floor(maxUploadBytes / (1024 * 1024))} MB.`,
+          code: 'FILE_TOO_LARGE',
+        });
+      }
+    }
 
     const accessGroups = fields.accessGroups ? JSON.parse(fields.accessGroups) : [];
     const originalFileName = file?.filename ?? fields.fileName ?? 'documento.pdf';

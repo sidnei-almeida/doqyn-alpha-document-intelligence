@@ -139,7 +139,7 @@ export function UsersPage() {
 
   const groupsQuery = useQuery({
     queryKey: ['access-groups', effectiveCompanyId],
-    queryFn: () => getAccessGroups(effectiveCompanyId || undefined),
+    queryFn: () => getAccessGroups(),
   });
 
   const invalidate = () => {

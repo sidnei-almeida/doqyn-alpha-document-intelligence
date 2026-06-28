@@ -1,4 +1,5 @@
-export { AuthProvider, AuthContext, type AuthContextValue } from './AuthProvider';
+export { AuthProvider } from './AuthProvider';
+export { AuthContext, type AuthContextValue } from './authContext';
 export { useAuth } from './useAuth';
 export { getCurrentSession, SessionApiError } from './sessionApi';
 export type { MeSession, MeTenant, MeMembership, AccessGateReason } from './sessionTypes';

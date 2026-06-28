@@ -31,8 +31,11 @@ export function mapApiGroup(group: ApiGroup): Group {
     id: group.id,
     companyId: group.companyId,
     name: group.name,
+    description: group.description ?? null,
     color: toGroupColor(group.color),
     active: group.active,
+    memberCount: group.memberCount ?? 0,
+    linkedClassCount: group.linkedClassCount ?? group.linkedCategoryCount ?? 0,
     createdAt: group.createdAt,
   };
 }
@@ -51,6 +54,13 @@ export function mapApiDocumentClass(docClass: ApiDocumentClass): DocumentCategor
     accessGroupIds: docClass.permissions?.view ?? [],
     notifyGroupIds: docClass.notifyGroups ?? [],
     notifyOnUpdate: docClass.notifyOnUpdate ?? false,
+    permissions: {
+      view: docClass.permissions?.view ?? [],
+      download: docClass.permissions?.download ?? [],
+      update: docClass.permissions?.update ?? [],
+      audit: docClass.permissions?.audit ?? [],
+      share: docClass.permissions?.share ?? [],
+    },
     keywords: docClass.keywords ?? [],
     negativeKeywords: docClass.negativeKeywords ?? [],
     createdAt: docClass.createdAt,

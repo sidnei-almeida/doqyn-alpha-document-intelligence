@@ -29,7 +29,7 @@ export const AI_ERROR_MESSAGES = {
   insufficientText:
     'Texto insuficiente ou não extraível. O documento pode ser escaneado ou baseado em imagem.',
   rulesNotSeeded:
-    'Classes e regras ativas não encontradas no MongoDB. Execute npm run db:setup para popular o banco.',
+    'Não há classes e regras de documentos configuradas para esta empresa.',
   analysisFailed: 'A análise automática falhou. Tente novamente.',
   classificationFailed:
     'Não foi possível concluir a classificação automática. O documento foi separado para revisão.',

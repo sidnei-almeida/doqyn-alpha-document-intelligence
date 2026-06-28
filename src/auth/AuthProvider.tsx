@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -19,6 +18,7 @@ import { AccessGateScreen } from '@/auth/AccessGateScreen';
 import { mapMeSessionToAuthUser, resolveAccessGate } from '@/auth/mapMeSession';
 import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
+import { AuthContext, type AuthContextValue } from '@/auth/authContext';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
@@ -44,32 +44,6 @@ const MOCK_DEV_USER: AuthUser = {
   groups: ['admin', 'juridico', 'financeiro'],
   roles: ['doqyn_admin', 'company_admin', 'user'],
 };
-
-export type AuthContextValue = {
-  user: AuthUser | null;
-  tenant: MeTenant | null;
-  membership: MeMembership | null;
-  token: string | null;
-  roles: string[];
-  accessGroupIds: string[];
-  accessGate: AccessGateReason | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  authMode: string;
-  authProvider: ReturnType<typeof getAuthProviderType>;
-  supportsSso: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  loginWithSSO: () => Promise<void>;
-  logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-  refreshToken: () => Promise<void>;
-  hasRole: (role: string) => boolean;
-  hasAnyRole: (checkRoles: string[]) => boolean;
-  retryAuth: () => void;
-};
-
-export const AuthContext = createContext<AuthContextValue | null>(null);
 
 function logSessionLoaded(input: {
   authProvider: string;
@@ -264,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, loadKeycloakSession]);
+  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, loadKeycloakSession, sessionSetters]);
 
   const login = useCallback(
     async (email: string, password: string, rememberMe = false) => {
@@ -288,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
     },
-    [isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession],
+    [isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, sessionSetters],
   );
 
   const loginWithSSO = useCallback(async () => {

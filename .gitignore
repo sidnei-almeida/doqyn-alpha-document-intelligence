@@ -55,3 +55,6 @@ coverage/
 .turbo/
 tmp/
 temp/
+
+# MongoDB cleanup backups (nunca commitar)
+backups/

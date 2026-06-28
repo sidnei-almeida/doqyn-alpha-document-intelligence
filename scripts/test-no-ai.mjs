@@ -4,6 +4,9 @@
  */
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MongoClient } from 'mongodb';
@@ -13,6 +16,12 @@ import { getAiMode } from '../server/ai/utils/aiMode.ts';
 import { DEV_COMPANY_ID } from '../server/db/constants.ts';
 import { getMongoDatabaseName } from '../server/db/database.ts';
 import { closeMongoConnection } from '../server/db/mongoClient.ts';
+import { buildDocumentRequestContext } from '../server/tenancy/documentRequestContext.ts';
+import {
+  resetStorageProviderCache,
+  storeAnalysisStaging,
+} from '../server/storage/index.ts';
+import { resolveStorageAbsolutePath } from '../server/storage/storageKeys.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PDF_PATH = resolve(__dirname, '..', 'NDA - ACORDO DE CONFIDENCIALIDADE (2).pdf');
@@ -44,10 +53,17 @@ async function main() {
     process.exit(1);
   }
 
+  const storageRoot = await mkdtemp(path.join(tmpdir(), 'doqyn-no-ai-storage-'));
+  process.env.STORAGE_PROVIDER = 'local';
+  process.env.LOCAL_STORAGE_ROOT = storageRoot;
+  process.env.MAX_UPLOAD_MB = '25';
+  resetStorageProviderCache();
+
   console.log('=== Teste AI_MODE=no_ai ===\n');
   console.log('AI_MODE:', getAiMode());
   console.log('database:', getMongoDatabaseName());
   console.log('companyId:', DEV_COMPANY_ID);
+  console.log('LOCAL_STORAGE_ROOT:', storageRoot);
 
   const buf = readFileSync(PDF_PATH);
   const analyzeStarted = Date.now();
@@ -56,6 +72,7 @@ async function main() {
     originalFileName: 'nda-no-ai-teste.pdf',
     mimeType: 'application/pdf',
     companyId: DEV_COMPANY_ID,
+    ownerUserId: MOCK_USER.id,
     requestContext: { requestId: 'test-no-ai' },
   });
 
@@ -81,6 +98,18 @@ async function main() {
   if (noAiLog) pass('log modo desenvolvimento', noAiLog.title);
   else fail('log modo desenvolvimento');
 
+  await storeAnalysisStaging({
+    tenantId: DEV_COMPANY_ID,
+    ownerUserId: MOCK_USER.id,
+    jobId: analysis.jobId,
+    buffer: buf,
+    mimeType: 'application/pdf',
+    originalFileName: analysis.originalFileName,
+  });
+  pass('staging local', analysis.jobId);
+
+  const docCtx = await buildDocumentRequestContext(MOCK_USER);
+
   const confirmStarted = Date.now();
   const confirm = await confirmAnalysisPersistence({
     payload: {
@@ -103,7 +132,7 @@ async function main() {
       manualReviewConfirmed: false,
     },
     user: MOCK_USER,
-    companyId: DEV_COMPANY_ID,
+    ctx: docCtx,
     requestId: 'test-no-ai-confirm',
   });
 
@@ -112,8 +141,11 @@ async function main() {
   console.log('documentId:', confirm.documentId);
   console.log('versionId:', confirm.versionId);
   console.log('documentCode:', confirm.documentCode);
+  console.log('storageStatus:', confirm.storageStatus);
 
   pass('confirm-analysis', confirm.documentId);
+  if (confirm.storageStatus === 'stored') pass('storageStatus', 'stored');
+  else fail('storageStatus', confirm.storageStatus);
 
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -153,6 +185,25 @@ async function main() {
     else fail('metadataIndex');
     const metaKeys = Object.keys(ver.metadata ?? {});
     pass('document_versions.metadata', `${metaKeys.length} campos`);
+    if (ver.storage?.primary?.provider === 'local') pass('storage.primary.provider', 'local');
+    else fail('storage.primary.provider', ver.storage?.primary?.provider ?? 'null');
+    if (ver.storage?.primary?.status === 'stored') pass('storage.primary.status', 'stored');
+    else fail('storage.primary.status', ver.storage?.primary?.status ?? 'null');
+    const objectKey = ver.storage?.primary?.objectKey;
+    if (objectKey && !objectKey.startsWith('/')) pass('storage.primary.objectKey relativa', objectKey);
+    else fail('storage.primary.objectKey', objectKey ?? 'null');
+    if (objectKey && !objectKey.includes(ver.recommendedFileName ?? '')) {
+      pass('nome sugerido não está no path', ver.recommendedFileName);
+    }
+    if (objectKey) {
+      const absolute = resolveStorageAbsolutePath(storageRoot, objectKey);
+      try {
+        readFileSync(absolute);
+        pass('arquivo no disco', absolute);
+      } catch {
+        fail('arquivo no disco', absolute);
+      }
+    }
   } else fail('document_versions');
 
   if (job) pass('processing_jobs', job._id);
@@ -166,6 +217,7 @@ async function main() {
   else fail('documentId', confirm.documentId);
 
   await client.close();
+  await rm(storageRoot, { recursive: true, force: true });
   console.log('\n=== Fim teste no_ai ===');
 }
 

@@ -12,7 +12,7 @@ import { UploadCard } from './components/UploadCard';
 import { WorkflowSessionPanel } from './components/WorkflowSessionPanel';
 import { UploadResultPanel } from './components/UploadResultPanel';
 import { generateDocumentId } from './mockData';
-import { analyzePdf, type AnalyzePdfResponse } from './services/analyzePdf';
+import { analyzePdf, AnalyzePdfRequestError, type AnalyzePdfResponse } from './services/analyzePdf';
 import { confirmAnalysis } from './services/confirmAnalysis';
 import {
   clampAutoDelaySeconds,
@@ -38,12 +38,17 @@ import type {
   UploadedDocument,
 } from './types';
 import type { WorkflowLogFilter } from './types/workflowLog';
+import type { WorkflowErrorDisplay } from './types/workflowError';
 import {
   buildAnalysisDecision,
   createRequestId,
   formatDurationMs,
   mapProcessingLogsToWorkflowEvents,
 } from './utils/workflowLogHelpers';
+import {
+  buildWorkflowErrorLogDetails,
+  parseWorkflowErrorPayload,
+} from './utils/workflowErrors';
 import { canAutoConfirm } from './utils/autoConfirm';
 import { formatHistoryDate } from './utils/historyFormat';
 
@@ -162,6 +167,7 @@ export function DocumentSendPage() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [manualReviewChecked, setManualReviewChecked] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<WorkflowErrorDisplay | null>(null);
   const [logFilter, setLogFilter] = useState<WorkflowLogFilter>('all');
   const [showDebugLogs, setShowDebugLogs] = useState(false);
 
@@ -281,6 +287,7 @@ export function DocumentSendPage() {
     setManualReviewChecked(false);
     setCurrentDocId(null);
     setIsConfirming(false);
+    setAnalysisError(null);
   }, [clearCompletingTimer]);
 
   const processFile = useCallback(async (file: File) => {
@@ -306,6 +313,7 @@ export function DocumentSendPage() {
     setCurrentDocId(docId);
     filesByDocIdRef.current.set(docId, file);
     setLogs(createInitialLogs());
+    setAnalysisError(null);
     setHistory((prev) => [createAnalyzingHistoryItem(docId, file), ...prev]);
 
     workflow.logItem(docId, file.name, {
@@ -465,12 +473,21 @@ export function DocumentSendPage() {
     } catch (error) {
       if (controller.signal.aborted || generation !== analysisGenerationRef.current) return;
 
-      const message = error instanceof Error ? error.message : 'Erro ao analisar documento';
+      const workflowError =
+        error instanceof AnalyzePdfRequestError
+          ? error.workflowError
+          : parseWorkflowErrorPayload(
+              null,
+              error instanceof Error ? error.message : 'Erro ao analisar documento',
+            );
+
+      setAnalysisError(workflowError);
+
       const errorLogs: ProcessingLogItem[] = [
         {
           id: 'log-error',
-          title: 'Erro ao analisar documento',
-          description: message,
+          title: workflowError.title,
+          description: workflowError.message,
           time: formatNow(),
           status: 'error',
         },
@@ -479,15 +496,23 @@ export function DocumentSendPage() {
       setActiveMetadata(createErrorMetadata(file));
       setFlowPhase('error');
 
+      const logDetails = buildWorkflowErrorLogDetails(workflowError, {
+        stage: 'Análise',
+        endpoint: workflowError.endpoint,
+        showDebug: showDebugLogs,
+      });
+
       workflow.logItem(docId, file.name, {
         level: 'error',
         stage: 'analysis',
-        message,
+        message: workflowError.title,
+        details: logDetails,
       });
       workflow.logItem(docId, file.name, {
         level: 'error',
         stage: 'history',
         message: 'Histórico atualizado com erro.',
+        details: { category: workflowError.category },
       });
 
       setHistory((prev) =>
@@ -500,7 +525,7 @@ export function DocumentSendPage() {
                 category: 'Indefinido',
                 metadata: createErrorMetadata(file),
                 logs: errorLogs,
-                errorMessage: message,
+                errorMessage: workflowError.message,
               }
             : item,
         ),
@@ -512,9 +537,9 @@ export function DocumentSendPage() {
         fileName: file.name,
         fileSize: file.size,
       };
-      toast.error(message);
+      toast.error(workflowError.toastMessage);
     }
-  }, [autoMode, clearCompletingTimer, workflow]);
+  }, [autoMode, clearCompletingTimer, showDebugLogs, workflow]);
 
   const handleFilesSelected = useCallback(
     (files: File[], invalidItems: Array<{ file: File; error: string }>) => {
@@ -833,6 +858,7 @@ export function DocumentSendPage() {
     (flowPhase === 'completed' || flowPhase === 'saving') && activeMetadata && currentDocId;
 
   const errorMessage =
+    analysisError?.message ??
     logs.find((log) => log.status === 'error')?.description ??
     logs.at(-1)?.description ??
     'Ocorreu um erro inesperado. Tente novamente.';
@@ -945,7 +971,20 @@ export function DocumentSendPage() {
                       className="min-h-0 flex-1"
                       fileName={displayFileName}
                       fileSize={displayFileSize}
+                      title={analysisError?.title}
                       message={errorMessage}
+                      suggestion={analysisError?.suggestion}
+                      action={analysisError?.action}
+                      devHint={analysisError?.devHint}
+                      showDebug={showDebugLogs}
+                      debugDetails={
+                        analysisError
+                          ? buildWorkflowErrorLogDetails(analysisError, {
+                              endpoint: analysisError.endpoint,
+                              showDebug: showDebugLogs,
+                            })
+                          : undefined
+                      }
                       onRetry={handleReprocess}
                       onChooseAnother={resetToIdle}
                     />
