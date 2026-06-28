@@ -252,33 +252,48 @@ export function useRules(actorName: string) {
     [],
   );
 
-  const addMemberToAuthGroup = useCallback(
-    async (groupId: string, membershipId: string) => {
+  const addMemberToDocumentGroup = useCallback(
+    async (
+      groupId: string,
+      membershipId: string,
+    ): Promise<'added' | 'duplicate' | 'failed'> => {
+      const member = members.find((item) => item.id === membershipId);
+      if (!member) return 'failed';
+      if (member.status !== 'active') {
+        toast.error('Este usuário precisa estar ativo para entrar em um grupo.');
+        return 'failed';
+      }
+      if (member.groupIds.includes(groupId)) {
+        return 'duplicate';
+      }
+
       try {
-        const member = members.find((item) => item.id === membershipId);
         await addMemberToAccessGroup(groupId, membershipId, {
-          userId: member?.id ?? membershipId,
-          displayName: member?.name,
-          email: member?.email,
+          userId: member.id,
+          displayName: member.name,
+          email: member.email,
         });
-        if (member && !member.groupIds.includes(groupId)) {
-          setMembers((prev) =>
-            prev.map((item) =>
-              item.id === membershipId
-                ? { ...item, groupIds: [...item.groupIds, groupId] }
-                : item,
-            ),
-          );
-        }
-        toast.success('Membro adicionado ao grupo.');
+        setMembers((prev) =>
+          prev.map((item) =>
+            item.id === membershipId
+              ? { ...item, groupIds: [...item.groupIds, groupId] }
+              : item,
+          ),
+        );
+        addAuditEvent(
+          `${actorName} adicionou ${member.name} ao grupo ${groups.find((g) => g.id === groupId)?.name ?? groupId}`,
+          member.name,
+        );
+        return 'added';
       } catch (err) {
         handleApiError(err, 'Não foi possível adicionar membro ao grupo.');
+        return 'failed';
       }
     },
-    [members],
+    [actorName, addAuditEvent, groups, members],
   );
 
-  const removeMemberFromAuthGroup = useCallback(
+  const removeMemberFromDocumentGroup = useCallback(
     async (groupId: string, membershipId: string) => {
       try {
         await removeMemberFromAccessGroup(groupId, membershipId);
@@ -306,6 +321,23 @@ export function useRules(actorName: string) {
         toast.success('Permissões atualizadas.');
       } catch (err) {
         handleApiError(err, 'Não foi possível atualizar permissões.');
+      }
+    },
+    [],
+  );
+
+  const updateCategory = useCallback(
+    async (categoryId: string, input: { name?: string; description?: string }) => {
+      try {
+        await updateDocumentClass(categoryId, input);
+        const [rawClasses, matrix] = await Promise.all([
+          getDocumentClasses(),
+          getDocumentAccessMatrix(),
+        ]);
+        setCategories(filterActiveCategories(enrichCategoriesFromMatrix(rawClasses, matrix)));
+        toast.success('Categoria atualizada.');
+      } catch (err) {
+        handleApiError(err, 'Não foi possível atualizar a categoria.');
       }
     },
     [],
@@ -664,9 +696,10 @@ export function useRules(actorName: string) {
     deleteGroup,
     updateGroup,
     loadGroupMemberIds,
-    addMemberToAuthGroup,
-    removeMemberFromAuthGroup,
+    addMemberToDocumentGroup,
+    removeMemberFromDocumentGroup,
     updateGroupClassPermissions,
+    updateCategory,
     createCategory,
     deleteCategory,
     assignGroupToCategory,
