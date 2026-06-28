@@ -1,7 +1,8 @@
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { getAuthProviderType } from '@/auth/authConfig';
+import { getAuthProviderType, usesDoqynAuth } from '@/auth/authConfig';
 import { AUTH_MODE_LABELS, AUTH_PROVIDER_LABELS, isKeycloakConfigured } from '@/lib/constants';
+import { ChangePasswordForm } from '@/features/settings/components/ChangePasswordForm';
 
 export function SettingsPage() {
   const authProvider = getAuthProviderType();
@@ -54,11 +55,23 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>Segurança e conformidade</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <p className="text-sm text-doqyn-muted">
             Todas as ações são registradas para auditoria. Documentos e versões são preservados
             permanentemente no histórico da plataforma.
           </p>
+
+          {usesDoqynAuth() && (
+            <div className="space-y-3 border-t border-doqyn-border pt-6">
+              <div>
+                <h3 className="text-sm font-medium text-doqyn-text">Alterar senha</h3>
+                <p className="mt-1 text-xs text-doqyn-subtle">
+                  Atualize a senha da sua conta. Outras sessões ativas serão encerradas.
+                </p>
+              </div>
+              <ChangePasswordForm />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -20,6 +20,19 @@ function resolvePrefixedName(base: string, prefix: string): string {
   return `${base}_${prefix}`;
 }
 
+function resolveGovernanceCollections(prefix: string): Pick<
+  ResolvedTenantCollectionNames,
+  'documentCategories' | 'documentGroups' | 'documentGroupMembers' | 'documentRules' | 'documentExtractionRules'
+> {
+  return {
+    documentCategories: resolvePrefixedName(COLLECTIONS.documentCategories, prefix),
+    documentGroups: resolvePrefixedName(COLLECTIONS.documentGroups, prefix),
+    documentGroupMembers: resolvePrefixedName(COLLECTIONS.documentGroupMembers, prefix),
+    documentRules: resolvePrefixedName(COLLECTIONS.documentRules, prefix),
+    documentExtractionRules: resolvePrefixedName(COLLECTIONS.documentExtractionRules, prefix),
+  };
+}
+
 function resolveBusinessCollections(prefix: string): ResolvedTenantCollectionNames {
   return {
     documents: resolvePrefixedName(COLLECTIONS.documents, prefix),
@@ -28,7 +41,7 @@ function resolveBusinessCollections(prefix: string): ResolvedTenantCollectionNam
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
     accessGroups: resolvePrefixedName(COLLECTIONS.accessGroups, prefix),
     documentClasses: resolvePrefixedName(COLLECTIONS.documentClasses, prefix),
-    documentRules: resolvePrefixedName(COLLECTIONS.documentRules, prefix),
+    ...resolveGovernanceCollections(prefix),
   };
 }
 
@@ -40,7 +53,7 @@ function resolveSharedIndividualCollections(): ResolvedTenantCollectionNames {
     processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
     documentClasses: resolvePrefixedName(COLLECTIONS.documentClasses, prefix),
-    documentRules: resolvePrefixedName(COLLECTIONS.documentRules, prefix),
+    ...resolveGovernanceCollections(prefix),
   };
 }
 

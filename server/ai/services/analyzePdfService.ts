@@ -242,8 +242,8 @@ export async function analyzePdfBuffer(input: {
   } else {
     logAnalyzeStage('analyze-pdf regras carregadas do MongoDB', context, {
       database: rulesLoad.database,
-      activeClassesCount: rulesLoad.activeClassesCount,
-      activeRulesCount: rulesLoad.activeRulesCount,
+      activeClassesCount: rulesLoad.activeCategoriesCount,
+      activeRulesCount: rulesLoad.activeExtractionRulesCount,
       rulesSource: rulesLoad.source,
     });
   }

@@ -10,8 +10,11 @@ export interface Group {
   id: string;
   companyId: string;
   name: string;
+  description?: string | null;
   color: GroupColor;
   active: boolean;
+  memberCount?: number;
+  linkedClassCount?: number;
   createdAt: string;
 }
 
@@ -37,6 +40,13 @@ export interface DocumentCategory {
   accessGroupIds: string[];
   notifyGroupIds: string[];
   notifyOnUpdate: boolean;
+  permissions?: {
+    view: string[];
+    download: string[];
+    update: string[];
+    audit: string[];
+    share: string[];
+  };
   keywords: string[];
   negativeKeywords: string[];
   createdAt: string;

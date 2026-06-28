@@ -1,6 +1,8 @@
 import type { WorkflowRequestContext } from '../types/workflowLog';
+import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/workflowError';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
+import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 
 type EvidenceSnippet = {
@@ -70,11 +72,13 @@ export type AnalyzePdfOptions = {
 
 export class AnalyzePdfRequestError extends Error {
   readonly code?: string;
+  readonly workflowError: WorkflowErrorDisplay;
 
-  constructor(message: string, code?: string) {
-    super(message);
+  constructor(workflowError: WorkflowErrorDisplay) {
+    super(workflowError.message);
     this.name = 'AnalyzePdfRequestError';
-    this.code = code;
+    this.code = workflowError.code;
+    this.workflowError = workflowError;
   }
 }
 
@@ -199,19 +203,16 @@ export async function analyzePdf(
 
   const payload = (await response.json().catch(() => null)) as
     | AnalyzePdfResponse
-    | { message?: string }
+    | WorkflowErrorApiResponse
     | null;
 
   if (!response.ok) {
-    const message =
-      payload && 'message' in payload && payload.message
-        ? payload.message
-        : 'Erro ao analisar documento';
-    const code =
-      payload && 'code' in payload && typeof payload.code === 'string'
-        ? payload.code
-        : undefined;
-    throw new AnalyzePdfRequestError(message, code);
+    const errorPayload: WorkflowErrorApiResponse | null =
+      payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
+    const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+    workflowError.requestId = workflowError.requestId ?? requestId;
+    workflowError.endpoint = '/api/ai/analyze-pdf';
+    throw new AnalyzePdfRequestError(workflowError);
   }
 
   if (!payload || !('jobId' in payload)) {

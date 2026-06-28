@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { Trash2 } from 'lucide-react';
-import { useConfirm } from '@/components/confirm/ConfirmProvider';
+import { useConfirm } from '@/components/confirm/useConfirm';
 import {
   buildDeleteCategoryConfirm,
   buildDeleteGroupConfirm,

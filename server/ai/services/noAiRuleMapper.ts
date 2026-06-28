@@ -1,9 +1,17 @@
 import type { DocumentClassRule } from '../types/documentAi.types.js';
-import type { MongoDocumentClass, MongoDocumentRule } from '../../db/types.js';
+import type {
+  MongoDocumentCategory,
+  MongoDocumentClass,
+  MongoDocumentExtractionRule,
+  MongoDocumentRule,
+} from '../../db/types.js';
+
+type CategoryLike = MongoDocumentClass | MongoDocumentCategory;
+type RuleLike = MongoDocumentRule | MongoDocumentExtractionRule;
 
 export function mapMongoToDocumentClassRule(
-  docClass: MongoDocumentClass,
-  rule: MongoDocumentRule,
+  docClass: CategoryLike,
+  rule: RuleLike,
 ): DocumentClassRule {
   return {
     id: docClass._id,

@@ -1,15 +1,21 @@
 import type { DocumentClassRule } from '../ai/types/documentAi.types.js';
 import { DOCUMENT_CLASS_RULES } from '../ai/mocks/documentRules.mock.js';
 import { DEV_TENANT_ID } from '../db/constants.js';
-import type { MongoDocumentClass, MongoDocumentRule } from '../db/types.js';
+import type {
+  MongoDocumentCategory,
+  MongoDocumentClass,
+  MongoDocumentExtractionRule,
+  MongoDocumentRule,
+} from '../db/types.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
+import { countActiveAccessRules } from './documentAccessRulesService.js';
 import { logger } from '../utils/logger.js';
 
 export class DocumentRulesNotSeededError extends Error {
-  readonly code = 'RULES_NOT_SEEDED';
+  readonly code = 'DOCUMENT_RULES_NOT_CONFIGURED';
   readonly statusCode = 503;
 
   constructor(message: string) {
@@ -23,8 +29,9 @@ export type DocumentRulesLoadResult = {
   source: 'mongodb' | 'mock';
   companyId: string;
   database: string;
-  activeClassesCount: number;
-  activeRulesCount: number;
+  activeCategoriesCount: number;
+  activeExtractionRulesCount: number;
+  activeAccessRulesCount: number;
   usedMockFallback: boolean;
   mockFallbackReason?: string;
 };
@@ -40,16 +47,16 @@ export type ClassRuleDiagnostics = {
   activeRulesCount: number;
 };
 
-function mapMongoToDocumentClassRule(
-  docClass: MongoDocumentClass,
-  rule: MongoDocumentRule,
+function mapToDocumentClassRule(
+  category: MongoDocumentCategory | MongoDocumentClass,
+  rule: MongoDocumentExtractionRule | MongoDocumentRule,
 ): DocumentClassRule {
   return {
-    id: docClass._id,
-    name: docClass.name,
-    description: docClass.description,
-    keywords: docClass.keywords,
-    negativeKeywords: docClass.negativeKeywords,
+    id: category._id,
+    name: category.name,
+    description: category.description,
+    keywords: category.keywords,
+    negativeKeywords: category.negativeKeywords,
     fields: rule.fields.map((field) => ({
       key: field.key,
       label: field.label,
@@ -63,24 +70,112 @@ function mapMongoToDocumentClassRule(
   };
 }
 
-function mapMongoRules(
-  classes: MongoDocumentClass[],
-  rules: MongoDocumentRule[],
+function mapCategoryExtractionRules(
+  categories: Array<MongoDocumentCategory | MongoDocumentClass>,
+  extractionRules: Array<MongoDocumentExtractionRule | MongoDocumentRule>,
 ): DocumentClassRule[] {
-  const latestRuleByClass = new Map<string, MongoDocumentRule>();
-  for (const rule of rules) {
-    if (!latestRuleByClass.has(rule.classId)) {
-      latestRuleByClass.set(rule.classId, rule);
+  const latestRuleByCategory = new Map<string, MongoDocumentExtractionRule | MongoDocumentRule>();
+  for (const rule of extractionRules) {
+    const categoryId = 'categoryId' in rule ? rule.categoryId : rule.classId;
+    if (!latestRuleByCategory.has(categoryId)) {
+      latestRuleByCategory.set(categoryId, rule);
     }
   }
 
-  return classes
-    .map((docClass) => {
-      const rule = latestRuleByClass.get(docClass._id);
+  return categories
+    .map((category) => {
+      const rule = latestRuleByCategory.get(category._id);
       if (!rule) return null;
-      return mapMongoToDocumentClassRule(docClass, rule);
+      return mapToDocumentClassRule(category, rule);
     })
     .filter((item): item is DocumentClassRule => Boolean(item));
+}
+
+async function loadFromGovernanceCollections(
+  tenantId: string,
+  opts?: { ownerUserId?: string },
+) {
+  const collections = await getTenantCollections(tenantId, { userId: opts?.ownerUserId });
+  if (
+    !collections.documentCategories ||
+    !collections.documentExtractionRules ||
+    !collections.documentRules
+  ) {
+    return null;
+  }
+
+  const scope = buildClassRuleOwnershipFilter(collections.storage);
+  const categories = await collections.documentCategories
+    .find({ ...scope, active: true })
+    .toArray();
+
+  const extractionRules = await collections.documentExtractionRules
+    .find({ ...scope, active: true })
+    .sort({ categoryId: 1, version: -1 })
+    .toArray();
+
+  const activeAccessRulesCount = await countActiveAccessRules(tenantId, {
+    ownerUserId: opts?.ownerUserId,
+  });
+
+  return {
+    categories: categories as MongoDocumentCategory[],
+    extractionRules: extractionRules as MongoDocumentExtractionRule[],
+    activeAccessRulesCount,
+  };
+}
+
+async function loadFromLegacyCollections(tenantId: string, opts?: { ownerUserId?: string }) {
+  const collections = await getTenantCollections(tenantId, { userId: opts?.ownerUserId });
+  if (!collections.documentClasses) return null;
+
+  const scope = buildClassRuleOwnershipFilter(collections.storage);
+  const categories = await collections.documentClasses
+    .find({ ...scope, active: true })
+    .toArray();
+
+  const legacyRulesCollectionName = collections.names.documentRules?.replace(
+    'document_rules',
+    'document_extraction_rules',
+  );
+
+  let extractionRules: MongoDocumentRule[] = [];
+  if (legacyRulesCollectionName && collections.names.documentClasses) {
+    const db = (await import('../db/mongoClient.js')).getDb;
+    const dbHandle = await db();
+    const legacyExtraction = await dbHandle
+      .collection<MongoDocumentRule>(legacyRulesCollectionName)
+      .find({ ...scope, active: true })
+      .sort({ classId: 1, version: -1 })
+      .toArray();
+    extractionRules = legacyExtraction;
+  }
+
+  if (!extractionRules.length && collections.names.documentClasses) {
+    const db = (await import('../db/mongoClient.js')).getDb;
+    const dbHandle = await db();
+    const oldRulesName = collections.names.documentClasses.replace(
+      'document_classes',
+      'document_rules',
+    );
+    extractionRules = await dbHandle
+      .collection<MongoDocumentRule>(oldRulesName)
+      .find({ ...scope, active: true })
+      .sort({ classId: 1, version: -1 })
+      .toArray();
+  }
+
+  return {
+    categories: categories as MongoDocumentClass[],
+    extractionRules,
+    activeAccessRulesCount: categories.some((c) =>
+      Object.values((c as MongoDocumentClass).permissions ?? {}).some(
+        (ids) => Array.isArray(ids) && ids.length > 0,
+      ),
+    )
+      ? 1
+      : 0,
+  };
 }
 
 export async function loadActiveDocumentClassRules(
@@ -102,47 +197,43 @@ export async function loadActiveDocumentClassRules(
       source: 'mock',
       companyId: tenantId,
       database,
-      activeClassesCount: DOCUMENT_CLASS_RULES.length,
-      activeRulesCount: DOCUMENT_CLASS_RULES.length,
+      activeCategoriesCount: DOCUMENT_CLASS_RULES.length,
+      activeExtractionRulesCount: DOCUMENT_CLASS_RULES.length,
+      activeAccessRulesCount: DOCUMENT_CLASS_RULES.length,
       usedMockFallback: true,
       mockFallbackReason: 'mongodb_not_configured',
     };
   }
 
-  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
-    userId: opts?.ownerUserId,
-  });
-  if (!documentClasses || !documentRules) {
+  const governance = await loadFromGovernanceCollections(tenantId, opts);
+  const loaded =
+    governance && governance.categories.length > 0
+      ? governance
+      : await loadFromLegacyCollections(tenantId, opts);
+
+  if (!loaded) {
     throw new DocumentRulesNotSeededError(
-      'Regras documentais não disponíveis para este tipo de cliente.',
+      'Governança documental não disponível para este tipo de cliente.',
     );
   }
 
-  const scope = buildClassRuleOwnershipFilter(storage);
-  const classes = await documentClasses
-    .find({ ...scope, active: true })
-    .toArray();
+  const mapped = mapCategoryExtractionRules(loaded.categories, loaded.extractionRules);
+  const activeCategoriesCount = loaded.categories.length;
+  const activeExtractionRulesCount = loaded.extractionRules.length;
+  const activeAccessRulesCount = loaded.activeAccessRulesCount;
 
-  const rules = await documentRules
-    .find({ ...scope, active: true })
-    .sort({ classId: 1, version: -1 })
-    .toArray();
-
-  const activeClassesCount = classes.length;
-  const activeRulesCount = rules.length;
-  const mapped = mapMongoRules(classes, rules);
-
-  if (!activeClassesCount || !mapped.length) {
-    logger.error('Classes/regras ativas ausentes no MongoDB.', {
+  if (!activeCategoriesCount || !mapped.length || !activeAccessRulesCount) {
+    logger.error('Categorias/regras ativas ausentes no MongoDB.', {
       companyId: tenantId,
       database,
-      activeClassesCount,
-      activeRulesCount,
+      activeCategoriesCount,
+      activeExtractionRulesCount,
+      activeAccessRulesCount,
       mappedRulesCount: mapped.length,
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Classes e regras ativas não encontradas no MongoDB. Execute npm run db:setup para popular o banco.',
+      'Nenhuma categoria, grupo ou regra de acesso ativa encontrada para esta empresa.',
     );
   }
 
@@ -151,8 +242,9 @@ export async function loadActiveDocumentClassRules(
     source: 'mongodb',
     companyId: tenantId,
     database,
-    activeClassesCount,
-    activeRulesCount,
+    activeCategoriesCount,
+    activeExtractionRulesCount,
+    activeAccessRulesCount,
     usedMockFallback: false,
   };
 }
@@ -181,63 +273,28 @@ export async function getActiveRulesPayload(
     };
   }
 
-  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
-    userId: opts?.ownerUserId,
-  });
-  if (!documentClasses || !documentRules) {
+  try {
+    const loaded = await loadActiveDocumentClassRules(tenantId, opts);
+    return {
+      companyId: tenantId,
+      database: getMongoDatabaseName(),
+      source: 'mongodb' as const,
+      activeClassesCount: loaded.activeCategoriesCount,
+      activeRulesCount: loaded.activeExtractionRulesCount,
+      activeAccessRulesCount: loaded.activeAccessRulesCount,
+      classes: loaded.rules,
+    };
+  } catch {
     return {
       companyId: tenantId,
       database: getMongoDatabaseName(),
       source: 'empty' as const,
       activeClassesCount: 0,
       activeRulesCount: 0,
-      setupHint: 'Regras documentais indisponíveis para este tipo de cliente.',
+      setupHint: 'Configure categorias, grupos e regras de acesso em /rules.',
       classes: [],
     };
   }
-
-  const scope = buildClassRuleOwnershipFilter(storage);
-  const database = getMongoDatabaseName();
-  const classes = await documentClasses
-    .find({ ...scope, active: true })
-    .project({ _id: 1, name: 1, description: 1, keywords: 1, negativeKeywords: 1, permissions: 1 })
-    .toArray();
-
-  const rules = await documentRules
-    .find({ ...scope, active: true })
-    .sort({ classId: 1, version: -1 })
-    .toArray();
-
-  const latestRules = new Map<string, MongoDocumentRule>();
-  for (const rule of rules) {
-    if (!latestRules.has(rule.classId)) {
-      latestRules.set(rule.classId, rule);
-    }
-  }
-
-  if (!classes.length) {
-    return {
-      companyId: tenantId,
-      database,
-      source: 'empty' as const,
-      activeClassesCount: 0,
-      activeRulesCount: rules.length,
-      setupHint: 'Execute npm run db:setup para popular classes e regras.',
-      classes: [],
-    };
-  }
-
-  return {
-    companyId: tenantId,
-    database,
-    source: 'mongodb' as const,
-    activeClassesCount: classes.length,
-    activeRulesCount: rules.length,
-    classes: classes.map((docClass) => ({
-      ...docClass,
-      rule: latestRules.get(docClass._id) ?? null,
-    })),
-  };
 }
 
 export async function diagnoseClassAndRuleLookup(input: {
@@ -262,10 +319,8 @@ export async function diagnoseClassAndRuleLookup(input: {
     };
   }
 
-  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
-    userId: input.ownerUserId,
-  });
-  if (!documentClasses || !documentRules) {
+  const governance = await loadFromGovernanceCollections(tenantId, { ownerUserId: input.ownerUserId });
+  if (!governance) {
     return {
       companyId: tenantId,
       classId: input.classId,
@@ -278,36 +333,18 @@ export async function diagnoseClassAndRuleLookup(input: {
     };
   }
 
-  const scope = buildClassRuleOwnershipFilter(storage);
-  const activeClassesCount = await documentClasses.countDocuments({ ...scope, active: true });
-  const activeRulesCount = await documentRules.countDocuments({ ...scope, active: true });
-
-  const docClass = await documentClasses.findOne({
-    ...scope,
-    _id: input.classId,
-    active: true,
-  } as Record<string, unknown>);
-
-  const rule = docClass
-    ? await documentRules.findOne(
-        {
-          ...scope,
-          classId: input.classId,
-          active: true,
-        },
-        { sort: { version: -1 } },
-      )
-    : null;
+  const category = governance.categories.find((c) => c._id === input.classId);
+  const rule = governance.extractionRules.find((r) => r.categoryId === input.classId);
 
   return {
     companyId: tenantId,
     classId: input.classId,
-    className: input.className ?? null,
+    className: input.className ?? category?.name ?? null,
     database,
-    documentClassFound: Boolean(docClass),
+    documentClassFound: Boolean(category),
     documentRuleFound: Boolean(rule),
-    activeClassesCount,
-    activeRulesCount,
+    activeClassesCount: governance.categories.length,
+    activeRulesCount: governance.extractionRules.length,
   };
 }
 
@@ -315,34 +352,28 @@ export async function getMongoClassAndRule(input: {
   companyId: string;
   classId: string;
   ownerUserId?: string;
-}): Promise<{ docClass: MongoDocumentClass; rule: MongoDocumentRule } | null> {
-  const tenantId = input.companyId;
-  const { documentClasses, documentRules, storage } = await getTenantCollections(tenantId, {
-    userId: input.ownerUserId,
+}): Promise<{
+  docClass: MongoDocumentCategory | MongoDocumentClass;
+  rule: MongoDocumentExtractionRule | MongoDocumentRule;
+} | null> {
+  const governance = await loadFromGovernanceCollections(input.companyId, {
+    ownerUserId: input.ownerUserId,
   });
-  if (!documentClasses || !documentRules) return null;
 
-  const scope = buildClassRuleOwnershipFilter(storage);
-  const docClass = await documentClasses.findOne({
-    ...scope,
-    _id: input.classId,
-    active: true,
-  } as Record<string, unknown>);
+  if (governance) {
+    const docClass = governance.categories.find((c) => c._id === input.classId && c.active);
+    const rule = governance.extractionRules.find((r) => r.categoryId === input.classId && r.active);
+    if (docClass && rule) return { docClass, rule };
+  }
 
-  if (!docClass) return null;
+  const legacy = await loadFromLegacyCollections(input.companyId, { ownerUserId: input.ownerUserId });
+  if (!legacy) return null;
 
-  const rule = await documentRules.findOne(
-    {
-      ...scope,
-      classId: input.classId,
-      active: true,
-    },
-    { sort: { version: -1 } },
-  );
+  const docClass = legacy.categories.find((c) => c._id === input.classId && c.active);
+  const rule = legacy.extractionRules.find((r) => r.classId === input.classId && r.active);
+  if (!docClass || !rule) return null;
 
-  if (!rule) return null;
-
-  return { docClass: docClass as MongoDocumentClass, rule: rule as MongoDocumentRule };
+  return { docClass, rule };
 }
 
 export function getDocumentClassRuleById(

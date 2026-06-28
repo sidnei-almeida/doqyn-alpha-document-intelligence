@@ -4,8 +4,12 @@ import type {
   MongoAccessGroup,
   MongoAuditLog,
   MongoDocument,
+  MongoDocumentAccessRule,
+  MongoDocumentCategory,
   MongoDocumentClass,
-  MongoDocumentRule,
+  MongoDocumentExtractionRule,
+  MongoDocumentGroup,
+  MongoDocumentGroupMember,
   MongoDocumentVersion,
   MongoProcessingJob,
   MongoTenant,
@@ -26,21 +30,29 @@ export type TenantCollections = {
   processingJobs: Collection<MongoProcessingJob>;
   auditLogs: Collection<MongoAuditLog>;
   accessGroups?: Collection<MongoAccessGroup>;
+  /** @deprecated legado */
   documentClasses?: Collection<MongoDocumentClass>;
-  documentRules?: Collection<MongoDocumentRule>;
+  documentCategories?: Collection<MongoDocumentCategory>;
+  documentGroups?: Collection<MongoDocumentGroup>;
+  documentGroupMembers?: Collection<MongoDocumentGroupMember>;
+  documentRules?: Collection<MongoDocumentAccessRule>;
+  documentExtractionRules?: Collection<MongoDocumentExtractionRule>;
 };
 
 export type TenantDbCollections = {
   accessGroups: Collection<MongoAccessGroup> | undefined;
   documentClasses: Collection<MongoDocumentClass> | undefined;
-  documentRules: Collection<MongoDocumentRule> | undefined;
+  documentCategories: Collection<MongoDocumentCategory> | undefined;
+  documentGroups: Collection<MongoDocumentGroup> | undefined;
+  documentGroupMembers: Collection<MongoDocumentGroupMember> | undefined;
+  documentRules: Collection<MongoDocumentAccessRule> | undefined;
+  documentExtractionRules: Collection<MongoDocumentExtractionRule> | undefined;
   documents: Collection<MongoDocument>;
   documentVersions: Collection<MongoDocumentVersion>;
   processingJobs: Collection<MongoProcessingJob>;
   auditLogs: Collection<MongoAuditLog>;
 };
 
-/** Resolve handles de coleção a partir de um tenant já carregado (sem I/O extra). */
 export function getTenantDbCollections(
   db: Db,
   tenant: MongoTenant,
@@ -59,8 +71,20 @@ export function getTenantDbCollections(
     documentClasses: resolvedNames.documentClasses
       ? db.collection<MongoDocumentClass>(resolvedNames.documentClasses)
       : undefined,
+    documentCategories: resolvedNames.documentCategories
+      ? db.collection<MongoDocumentCategory>(resolvedNames.documentCategories)
+      : undefined,
+    documentGroups: resolvedNames.documentGroups
+      ? db.collection<MongoDocumentGroup>(resolvedNames.documentGroups)
+      : undefined,
+    documentGroupMembers: resolvedNames.documentGroupMembers
+      ? db.collection<MongoDocumentGroupMember>(resolvedNames.documentGroupMembers)
+      : undefined,
     documentRules: resolvedNames.documentRules
-      ? db.collection<MongoDocumentRule>(resolvedNames.documentRules)
+      ? db.collection<MongoDocumentAccessRule>(resolvedNames.documentRules)
+      : undefined,
+    documentExtractionRules: resolvedNames.documentExtractionRules
+      ? db.collection<MongoDocumentExtractionRule>(resolvedNames.documentExtractionRules)
       : undefined,
   };
 }

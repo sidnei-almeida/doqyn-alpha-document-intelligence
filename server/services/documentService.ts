@@ -14,6 +14,7 @@ import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { createProcessingJob } from './processingService.js';
 import { extractMetadata } from './metadataService.js';
 import { classifyDocument } from './documentClassificationService.js';
+import { storeUploadedDocumentFile } from './documentFileService.js';
 
 export interface UploadInput {
   tenantId: string;
@@ -115,6 +116,27 @@ export async function uploadDocument(input: UploadInput) {
 
   await documents.insertOne(document as unknown as MongoDocument);
 
+  let versionStorage: MongoDocumentVersion['storage'] = {
+    primary: { provider: 'aws_s3', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
+    backup: { provider: 'cloudflare_r2', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
+  };
+
+  if (input.fileBuffer && input.fileBuffer.length > 0) {
+    try {
+      versionStorage = await storeUploadedDocumentFile({
+        tenantId,
+        documentId,
+        versionId,
+        buffer: input.fileBuffer,
+        mimeType: input.mimeType,
+        originalFileName: input.originalFileName,
+      });
+    } catch (error) {
+      await documents.deleteOne({ _id: documentId } as Record<string, unknown>);
+      throw error;
+    }
+  }
+
   const version = withTenantFieldsFromContext(
     storage,
     {
@@ -142,10 +164,7 @@ export async function uploadDocument(input: UploadInput) {
     rule: { ruleId: 'none', ruleVersion: 0 },
     metadata: {},
     metadataIndex: [],
-    storage: {
-      primary: { provider: 'aws_s3', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
-      backup: { provider: 'cloudflare_r2', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
-    },
+    storage: versionStorage,
     review: { required: true, reasons: ['upload_legacy'], reviewedBy: null, reviewedAt: null },
     changeNotes: input.notes,
     uploadedBy: input.ownerName,

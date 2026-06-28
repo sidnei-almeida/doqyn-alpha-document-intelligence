@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GripVertical, Trash2 } from 'lucide-react';
-import { useConfirm } from '@/components/confirm/ConfirmProvider';
+import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildDeleteGroupConfirm } from '@/components/confirm/confirmMessages';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types/rules';

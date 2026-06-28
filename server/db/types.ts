@@ -231,8 +231,104 @@ export type MongoDocumentRule = {
   updatedAt: Date;
 };
 
+/** Categoria/tipo documental para classificação IA e governança. */
+export type MongoDocumentCategory = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  name: string;
+  slug: string;
+  description: string;
+  active: boolean;
+  keywords: string[];
+  negativeKeywords?: string[];
+  examples?: string[];
+  iconKey?: string;
+  color?: string;
+  sortOrder?: number;
+  notifyOnUpdate?: boolean;
+  notifyGroups?: string[];
+  scope?: 'global' | 'tenant';
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** Grupo documental (membros + permissões sobre categorias). */
+export type MongoDocumentGroup = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  name: string;
+  slug: string;
+  description: string;
+  active: boolean;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  scope?: 'global' | 'tenant';
+};
+
+export type MongoDocumentGroupMember = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  groupId: string;
+  membershipId: string;
+  userId: string;
+  displayName?: string;
+  email?: string;
+  active: boolean;
+  addedBy: string;
+  addedAt: Date;
+  scope?: 'global' | 'tenant';
+};
+
+export type MongoDocumentAccessPermissions = {
+  view: boolean;
+  download: boolean;
+  upload: boolean;
+  share: boolean;
+  manage: boolean;
+};
+
+/** Regra de acesso: grupo × categoria. */
+export type MongoDocumentAccessRule = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  groupId: string;
+  categoryId: string;
+  permissions: MongoDocumentAccessPermissions;
+  active: boolean;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  scope?: 'global' | 'tenant';
+};
+
+/** Regra de extração IA vinculada a uma categoria. */
+export type MongoDocumentExtractionRule = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  categoryId: string;
+  /** @deprecated alias de categoryId */
+  classId?: string;
+  version: number;
+  active: boolean;
+  fields: MongoRuleField[];
+  namingTemplate: string;
+  minimumConfidence: number;
+  onLowConfidence: 'requires_review';
+  scope?: 'global' | 'tenant';
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type MongoStorageSlot = {
-  provider: 'aws_s3' | 'cloudflare_r2';
+  provider: 'aws_s3' | 'cloudflare_r2' | 'local';
   status: StoragePlaceholderStatus;
   objectKey: string | null;
   bucketAlias: string | null;

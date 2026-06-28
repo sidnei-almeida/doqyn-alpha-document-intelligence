@@ -16,8 +16,15 @@ export const REGISTRY_COLLECTIONS = {
 
 export const COLLECTIONS = {
   accessGroups: 'access_groups',
+  /** @deprecated Legado — preferir documentCategories */
   documentClasses: 'document_classes',
+  documentCategories: 'document_categories',
+  documentGroups: 'document_groups',
+  documentGroupMembers: 'document_group_members',
+  /** Regras de acesso grupo×categoria */
   documentRules: 'document_rules',
+  /** Regras de extração IA por categoria */
+  documentExtractionRules: 'document_extraction_rules',
   documents: 'documents',
   documentVersions: 'document_versions',
   processingJobs: 'processing_jobs',

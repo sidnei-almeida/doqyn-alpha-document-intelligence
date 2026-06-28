@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useRef,
   useState,
   type ReactNode,
@@ -10,17 +8,8 @@ import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
-
-export type ConfirmVariant = 'danger' | 'warning';
-
-export type ConfirmOptions = {
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: ConfirmVariant;
-  confirmationText?: string;
-};
+import { ConfirmContext } from './confirmContext';
+import type { ConfirmOptions } from './confirmTypes';
 
 type ConfirmState = ConfirmOptions & { open: boolean };
 
@@ -29,10 +18,6 @@ const defaultState: ConfirmState = {
   title: '',
   description: '',
 };
-
-type ConfirmContextValue = (options: ConfirmOptions) => Promise<boolean>;
-
-const ConfirmContext = createContext<ConfirmContextValue | null>(null);
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>(defaultState);
@@ -135,12 +120,4 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       )}
     </ConfirmContext.Provider>
   );
-}
-
-export function useConfirm() {
-  const ctx = useContext(ConfirmContext);
-  if (!ctx) {
-    throw new Error('useConfirm deve ser usado dentro de ConfirmProvider');
-  }
-  return ctx;
 }

@@ -12,7 +12,11 @@ export type TenantCollectionBaseKey =
   | 'auditLogs'
   | 'accessGroups'
   | 'documentClasses'
-  | 'documentRules';
+  | 'documentCategories'
+  | 'documentGroups'
+  | 'documentGroupMembers'
+  | 'documentRules'
+  | 'documentExtractionRules';
 
 const BASE_COLLECTION_NAMES: Record<TenantCollectionBaseKey, string> = {
   documents: COLLECTIONS.documents,
@@ -21,7 +25,11 @@ const BASE_COLLECTION_NAMES: Record<TenantCollectionBaseKey, string> = {
   auditLogs: COLLECTIONS.auditLogs,
   accessGroups: COLLECTIONS.accessGroups,
   documentClasses: COLLECTIONS.documentClasses,
+  documentCategories: COLLECTIONS.documentCategories,
+  documentGroups: COLLECTIONS.documentGroups,
+  documentGroupMembers: COLLECTIONS.documentGroupMembers,
   documentRules: COLLECTIONS.documentRules,
+  documentExtractionRules: COLLECTIONS.documentExtractionRules,
 };
 
 export type ResolvedTenantCollectionNames = {
@@ -30,8 +38,13 @@ export type ResolvedTenantCollectionNames = {
   processingJobs: string;
   auditLogs: string;
   accessGroups?: string;
+  /** @deprecated legado */
   documentClasses?: string;
+  documentCategories?: string;
+  documentGroups?: string;
+  documentGroupMembers?: string;
   documentRules?: string;
+  documentExtractionRules?: string;
 };
 
 function resolvePrefixedName(base: string, prefix: string): string {
@@ -63,6 +76,19 @@ export function resolveTenantCollectionPrefix(tenant: MongoTenant): string {
   return prefix;
 }
 
+function resolveGovernanceCollections(prefix: string): Pick<
+  ResolvedTenantCollectionNames,
+  'documentCategories' | 'documentGroups' | 'documentGroupMembers' | 'documentRules' | 'documentExtractionRules'
+> {
+  return {
+    documentCategories: resolvePrefixedName(BASE_COLLECTION_NAMES.documentCategories, prefix),
+    documentGroups: resolvePrefixedName(BASE_COLLECTION_NAMES.documentGroups, prefix),
+    documentGroupMembers: resolvePrefixedName(BASE_COLLECTION_NAMES.documentGroupMembers, prefix),
+    documentRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentRules, prefix),
+    documentExtractionRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentExtractionRules, prefix),
+  };
+}
+
 export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenantCollectionNames {
   const prefix = resolveTenantCollectionPrefix(tenant);
 
@@ -73,19 +99,21 @@ export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenan
     auditLogs: resolvePrefixedName(BASE_COLLECTION_NAMES.auditLogs, prefix),
   };
 
+  const governance = resolveGovernanceCollections(prefix);
+
   if (tenant.tenantType === 'business') {
     return {
       ...core,
+      ...governance,
       accessGroups: resolvePrefixedName(BASE_COLLECTION_NAMES.accessGroups, prefix),
       documentClasses: resolvePrefixedName(BASE_COLLECTION_NAMES.documentClasses, prefix),
-      documentRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentRules, prefix),
     };
   }
 
   return {
     ...core,
+    ...governance,
     documentClasses: resolvePrefixedName(BASE_COLLECTION_NAMES.documentClasses, prefix),
-    documentRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentRules, prefix),
   };
 }
 

@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react';
-import { useConfirm } from '@/components/confirm/ConfirmProvider';
+import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildDeleteGroupConfirm, buildRemoveFromGroupConfirm } from '@/components/confirm/confirmMessages';
 import { cn } from '@/lib/utils';
 import type { CompanyMember, Group } from '@/types/rules';

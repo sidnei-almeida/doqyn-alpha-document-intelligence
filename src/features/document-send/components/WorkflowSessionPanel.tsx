@@ -135,7 +135,7 @@ export function WorkflowSessionPanel({
           ) : (
             <ol className="space-y-2 px-4 py-3">
               {events.map((event) => (
-                <WorkflowLogRow key={event.id} event={event} />
+                <WorkflowLogRow key={event.id} event={event} showDebug={showDebug} />
               ))}
             </ol>
           )

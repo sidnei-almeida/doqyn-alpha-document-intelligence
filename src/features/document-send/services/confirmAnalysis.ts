@@ -8,7 +8,7 @@ export type ConfirmAnalysisResponse = {
   versionId: string;
   status: 'saved';
   documentCode: string;
-  storageStatus: 'pending';
+  storageStatus: 'stored' | 'pending';
 };
 
 export type ConfirmAnalysisOptions = {

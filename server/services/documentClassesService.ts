@@ -4,13 +4,13 @@ import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { classIdFromSlug, slugifyName } from '../utils/slugify.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
-import { requireTenantDocumentCollections } from '../tenancy/requireTenantDocumentCollections.js';
+import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
 import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
 
 type ClassServiceOpts = { ownerUserId?: string };
 
 async function resolveClassContext(tenantId: string, opts?: ClassServiceOpts) {
-  const collections = await requireTenantDocumentCollections(tenantId, {
+  const collections = await requireTenantGovernanceCollections(tenantId, {
     userId: opts?.ownerUserId,
   });
   const scope = buildClassRuleOwnershipFilter(collections.storage);
@@ -46,7 +46,7 @@ function serializeDocumentClass(docClass: MongoDocumentClass) {
 
 export async function listDocumentClasses(tenantId: string, opts?: ClassServiceOpts) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const classes = await collections.documentClasses
+  const classes = await collections.documentCategories
     .find(scope)
     .sort({ name: 1 })
     .toArray();
@@ -80,7 +80,7 @@ export async function createDocumentClass(
 
   const { collections, scope, storage } = await resolveClassContext(tenantId, { ownerUserId: userId });
 
-  const duplicateSlug = await collections.documentClasses.findOne({
+  const duplicateSlug = await collections.documentCategories.findOne({
     ...scope,
     slug,
   } as Record<string, unknown>);
@@ -90,7 +90,7 @@ export async function createDocumentClass(
   }
 
   let id = classIdFromSlug(slug);
-  const existingId = await collections.documentClasses.findOne({
+  const existingId = await collections.documentCategories.findOne({
     ...scope,
     _id: id,
   } as Record<string, unknown>);
@@ -123,7 +123,7 @@ export async function createDocumentClass(
     { scope: input.scope },
   ) as MongoDocumentClass;
 
-  await collections.documentClasses.insertOne(docClass as Record<string, unknown>);
+  await collections.documentCategories.insertOne(docClass as Record<string, unknown>);
 
   return serializeDocumentClass(docClass);
 }
@@ -143,7 +143,7 @@ export async function updateDocumentClass(
   opts?: ClassServiceOpts,
 ) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const existing = await collections.documentClasses.findOne({
+  const existing = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -169,11 +169,11 @@ export async function updateDocumentClass(
   if (input.color !== undefined) patch.color = input.color.trim() || 'neutral';
   if (input.active !== undefined) patch.active = input.active;
 
-  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: patch,
   });
 
-  const updated = await collections.documentClasses.findOne({
+  const updated = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -187,7 +187,7 @@ export async function toggleDocumentClassActive(
   opts?: ClassServiceOpts,
 ) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const existing = await collections.documentClasses.findOne({
+  const existing = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -197,7 +197,7 @@ export async function toggleDocumentClassActive(
   }
 
   const active = !(existing as MongoDocumentClass).active;
-  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: { active, updatedAt: new Date() },
   });
 
@@ -213,7 +213,7 @@ export async function updateDocumentClassPermissions(
   await assertGroupIdsExist(tenantId, viewGroupIds);
 
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const existing = await collections.documentClasses.findOne({
+  const existing = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -230,11 +230,11 @@ export async function updateDocumentClassPermissions(
     share: (existing as MongoDocumentClass).permissions?.share ?? [],
   };
 
-  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: { permissions, updatedAt: new Date() },
   });
 
-  const updated = await collections.documentClasses.findOne({
+  const updated = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -252,7 +252,7 @@ export async function updateDocumentClassNotifications(
   await assertGroupIdsExist(tenantId, notifyGroups);
 
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const existing = await collections.documentClasses.findOne({
+  const existing = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -261,7 +261,7 @@ export async function updateDocumentClassNotifications(
     throw new ServiceError('Classe documental não encontrada.', 'NOT_FOUND', 404);
   }
 
-  await collections.documentClasses.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
+  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
     $set: {
       notifyOnUpdate: input.notifyOnUpdate,
       notifyGroups,
@@ -269,7 +269,7 @@ export async function updateDocumentClassNotifications(
     },
   });
 
-  const updated = await collections.documentClasses.findOne({
+  const updated = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);
@@ -283,7 +283,7 @@ export async function assertDocumentClassExists(
   opts?: ClassServiceOpts,
 ) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const docClass = await collections.documentClasses.findOne({
+  const docClass = await collections.documentCategories.findOne({
     ...scope,
     _id: classId,
   } as Record<string, unknown>);

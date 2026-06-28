@@ -1,5 +1,5 @@
 import { Check, Eye, MoreHorizontal, Pencil, UserX } from 'lucide-react';
-import { useConfirm } from '@/components/confirm/ConfirmProvider';
+import { useConfirm } from '@/components/confirm/useConfirm';
 import {
   buildRejectApprovalConfirm,
   buildRemoveMemberConfirm,

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { WorkflowLogEvent } from '../types/workflowLog';
 import { WORKFLOW_STAGE_LABELS, formatDurationMs } from '../utils/workflowLogHelpers';
@@ -14,9 +15,30 @@ const LEVEL_STYLES: Record<WorkflowLogEvent['level'], string> = {
 interface WorkflowLogRowProps {
   event: WorkflowLogEvent;
   compact?: boolean;
+  showDebug?: boolean;
 }
 
-export function WorkflowLogRow({ event, compact = false }: WorkflowLogRowProps) {
+function readDetail(details: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = details?.[key];
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+export function WorkflowLogRow({ event, compact = false, showDebug = false }: WorkflowLogRowProps) {
+  const details = event.details;
+  const friendlyTitle = readDetail(details, 'friendlyTitle');
+  const friendlyMessage = readDetail(details, 'friendlyMessage');
+  const suggestion = readDetail(details, 'suggestion');
+  const detail = readDetail(details, 'detail');
+  const errorType = readDetail(details, 'errorType');
+  const actionLabel = readDetail(details, 'actionLabel');
+  const actionHref = readDetail(details, 'actionHref');
+  const devHint = readDetail(details, 'devHint');
+  const code = readDetail(details, 'code');
+  const requestId = readDetail(details, 'requestId');
+  const endpoint = readDetail(details, 'endpoint');
+
+  const displayMessage = friendlyTitle ?? event.message;
+
   return (
     <li
       className={cn(
@@ -35,6 +57,11 @@ export function WorkflowLogRow({ event, compact = false }: WorkflowLogRowProps) 
             {levelLabel(event.level)}
           </span>
         )}
+        {errorType && (
+          <span className="rounded bg-doqyn-bg/50 px-1.5 py-0.5 text-[10px] text-doqyn-text">
+            {errorType}
+          </span>
+        )}
         {event.fileName && (
           <span className="truncate font-medium text-doqyn-text" title={event.fileName}>
             {event.fileName}
@@ -42,11 +69,44 @@ export function WorkflowLogRow({ event, compact = false }: WorkflowLogRowProps) 
         )}
       </div>
       <p className={cn('mt-0.5 text-doqyn-text', event.level === 'debug' && 'opacity-80')}>
-        {event.message}
+        {displayMessage}
       </p>
-      {typeof event.details?.durationMs === 'number' && (
+      {friendlyMessage && friendlyMessage !== displayMessage && (
+        <p className="mt-0.5 text-doqyn-muted">{friendlyMessage}</p>
+      )}
+      {detail && (
+        <p className="mt-0.5 text-doqyn-muted">
+          <span className="font-medium text-doqyn-text">Detalhe:</span> {detail}
+        </p>
+      )}
+      {suggestion && (
+        <p className="mt-0.5 text-doqyn-muted">
+          <span className="font-medium text-doqyn-text">Ação sugerida:</span> {suggestion}
+        </p>
+      )}
+      {actionLabel && actionHref && (
+        <p className="mt-1">
+          <Link
+            to={actionHref}
+            className="text-[11px] font-medium text-doqyn-primary underline-offset-2 hover:underline"
+          >
+            {actionLabel}
+          </Link>
+        </p>
+      )}
+      {devHint && showDebug && (
+        <p className="mt-1 text-[10px] italic text-doqyn-muted">{devHint}</p>
+      )}
+      {showDebug && (code || requestId || endpoint) && (
+        <div className="mt-1 space-y-0.5 font-mono text-[10px] text-doqyn-muted">
+          {code && <p>código: {code}</p>}
+          {endpoint && <p>endpoint: {endpoint}</p>}
+          {requestId && <p>requestId: {requestId}</p>}
+        </div>
+      )}
+      {typeof details?.durationMs === 'number' && (
         <p className="mt-0.5 text-[10px] opacity-70">
-          Processado em {formatDurationMs(event.details.durationMs)}
+          Processado em {formatDurationMs(details.durationMs)}
         </p>
       )}
     </li>
