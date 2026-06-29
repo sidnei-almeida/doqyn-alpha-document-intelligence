@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { listAuditEvents } from '../../server/services/auditService.js';
+import { getAuditOverview } from '../../server/services/auditService.js';
 import {
   assertQueryTenantMatchesSession,
   requireDocumentRequestContext,
@@ -14,26 +14,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ctx = await requireDocumentRequestContext(req, res);
   if (!ctx) return;
 
-  const { tenantId, documentId, q, type, severity, actorId, from, to, limit, cursor } = req.query;
+  const { tenantId } = req.query;
 
   try {
     assertQueryTenantMatchesSession(typeof tenantId === 'string' ? tenantId : undefined, ctx);
 
-    const result = await listAuditEvents({
+    const overview = await getAuditOverview({
       tenantId: ctx.tenantId,
       ownerUserId: ctx.userId,
-      documentId: typeof documentId === 'string' ? documentId : undefined,
-      q: typeof q === 'string' ? q : undefined,
-      type: typeof type === 'string' ? type : undefined,
-      severity: typeof severity === 'string' ? severity : undefined,
-      actorId: typeof actorId === 'string' ? actorId : undefined,
-      from: typeof from === 'string' ? from : undefined,
-      to: typeof to === 'string' ? to : undefined,
-      limit: typeof limit === 'string' ? Number(limit) : undefined,
-      cursor: typeof cursor === 'string' ? cursor : undefined,
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+      pendingCount: 0,
+      pendingUsersCount: 0,
+      ...overview,
+    });
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });

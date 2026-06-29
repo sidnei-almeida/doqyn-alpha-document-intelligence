@@ -43,7 +43,15 @@ export const api = {
   audit: {
     list: (params?: Record<string, string>) => {
       const query = params ? `?${new URLSearchParams(params)}` : '';
-      return request<{ events: unknown[]; total: number }>(`/audit${query}`);
+      return request<{ events: unknown[]; total: number; nextCursor?: string | null }>(`/audit${query}`);
     },
+    overview: () =>
+      request<{
+        pendingCount: number;
+        pendingUsersCount: number;
+        todayEventsCount: number;
+        criticalEventsCount: number;
+        totalEventsCount?: number;
+      }>('/audit/overview'),
   },
 };
