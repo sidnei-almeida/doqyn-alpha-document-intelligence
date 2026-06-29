@@ -1,5 +1,5 @@
 import { cn, formatDate } from '@/lib/utils';
-import { AUDIT_ACTION_LABELS, type AuditEvent } from '@/types/audit';
+import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, type AuditEvent } from '@/types/audit';
 import { Badge } from './Badge';
 
 const RESULT_VARIANTS = {
@@ -7,14 +7,8 @@ const RESULT_VARIANTS = {
   warning: 'warning',
   error: 'danger',
   info: 'info',
+  critical: 'danger',
 } as const;
-
-const RESULT_LABELS: Record<keyof typeof RESULT_VARIANTS, string> = {
-  success: 'Sucesso',
-  warning: 'Atenção',
-  error: 'Erro',
-  info: 'Informação',
-};
 
 interface AuditEventItemProps {
   event: AuditEvent;
@@ -23,6 +17,8 @@ interface AuditEventItemProps {
 }
 
 export function AuditEventItem({ event, isSelected, onClick }: AuditEventItemProps) {
+  const severity = event.severity ?? event.result ?? 'info';
+
   return (
     <button
       type="button"
@@ -41,12 +37,18 @@ export function AuditEventItem({ event, isSelected, onClick }: AuditEventItemPro
           </p>
           <p className="mt-0.5 truncate text-xs text-doqyn-muted">{event.description}</p>
         </div>
-        <Badge variant={RESULT_VARIANTS[event.result]}>{RESULT_LABELS[event.result]}</Badge>
+        <Badge variant={RESULT_VARIANTS[severity as keyof typeof RESULT_VARIANTS] ?? 'info'}>
+          {AUDIT_SEVERITY_LABELS[severity as keyof typeof AUDIT_SEVERITY_LABELS] ?? severity}
+        </Badge>
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs text-doqyn-muted">
-        <span>{event.actorName}</span>
-        <span>·</span>
-        <span>{event.area}</span>
+        <span>{event.actorName ?? 'Sistema'}</span>
+        {event.area && (
+          <>
+            <span>·</span>
+            <span>{event.area}</span>
+          </>
+        )}
         <span>·</span>
         <span>{formatDate(event.createdAt)}</span>
       </div>

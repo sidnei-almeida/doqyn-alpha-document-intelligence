@@ -34,6 +34,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/document-groups': () => import('../api/document-groups/index.js'),
   '/api/document-extraction-rules': () => import('../api/document-extraction-rules/index.js'),
   '/api/audit': () => import('../api/audit/index.js'),
+  '/api/audit/overview': () => import('../api/audit/overview.js'),
   '/api/ai/analyze-pdf': () => import('../api/ai/analyze-pdf.js'),
 };
 
