@@ -5,8 +5,8 @@ export { getCurrentSession, SessionApiError } from './sessionApi';
 export type { MeSession, MeTenant, MeMembership, AccessGateReason } from './sessionTypes';
 export {
   getAuthProviderType,
-  usesKeycloakAuth,
   usesMockAuth,
   usesApiAuth,
+  usesDoqynAuth,
 } from './authConfig';
 export { authFetch, getAccessToken, withAuthHeaders, getFetchCredentials } from './apiAuth';

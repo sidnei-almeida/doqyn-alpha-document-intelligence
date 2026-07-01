@@ -460,6 +460,7 @@ export async function confirmAnalysisPersistence(input: {
 
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
+  let persistedBucketAlias: string | null = null;
 
   try {
     versionStorage = await persistConfirmedVersionFile({
@@ -473,6 +474,7 @@ export async function confirmAnalysisPersistence(input: {
       originalFileName: data.originalFileName,
     });
     persistedObjectKey = versionStorage.primary.objectKey;
+    persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
     if (error instanceof ConfirmAnalysisError) {
       throw error;
@@ -633,7 +635,7 @@ export async function confirmAnalysisPersistence(input: {
   } catch (error) {
     if (persistedObjectKey) {
       await getStorageProvider()
-        ?.deleteDocumentVersion(persistedObjectKey)
+        ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
     }
     throw error;

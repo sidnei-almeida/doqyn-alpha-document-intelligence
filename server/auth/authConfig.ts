@@ -1,11 +1,8 @@
-export type AuthProviderName = 'doqyn_auth' | 'temporary' | 'keycloak';
+export type AuthProviderName = 'doqyn_auth' | 'temporary';
 
 export function getAuthProvider(): AuthProviderName {
   const provider = process.env.AUTH_PROVIDER?.trim().toLowerCase();
-
   if (provider === 'doqyn_auth') return 'doqyn_auth';
-  if (provider === 'keycloak') return 'keycloak';
-
   return 'temporary';
 }
 

@@ -12,7 +12,6 @@
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"api/**/*.ts\" \"server/**/*.ts\"",
     "db:setup": "tsx server/db/setupMongo.ts",
-    "db:keycloak-checkpoint": "tsx scripts/verify-keycloak-checkpoint.ts",
     "audit:mongodb-schema": "tsx scripts/audit-mongodb-schema.ts",
     "audit:collection-usage": "tsx scripts/audit-collection-usage.ts",
     "mongo:audit": "node scripts/mongo-audit.mjs",
@@ -34,9 +33,11 @@
     "test:no-ai": "tsx scripts/test-no-ai.mjs",
     "env:audit": "node scripts/r2-env-check.mjs",
     "r2:env-check": "node scripts/r2-env-check.mjs",
+    "r2:smoke": "tsx scripts/r2-smoke-test.ts",
     "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1077.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/geist": "^5.2.9",

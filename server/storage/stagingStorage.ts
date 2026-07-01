@@ -1,13 +1,6 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { getStorageConfig, isLocalStorageEnabled } from './storageConfig.js';
-import { createLocalStorageProvider } from './localStorageProvider.js';
-import {
-  buildAnalysisStagingKey,
-  resolveStorageAbsolutePath,
-  sanitizeFileExtension,
-} from './storageKeys.js';
+import { getStorageProvider } from './getStorageProvider.js';
+import { isStagingCapableProvider } from './storageProvider.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 export type StoreAnalysisStagingInput = {
@@ -20,45 +13,19 @@ export type StoreAnalysisStagingInput = {
 };
 
 export async function storeAnalysisStaging(input: StoreAnalysisStagingInput): Promise<string> {
-  if (!isLocalStorageEnabled()) {
+  const provider = getStorageProvider();
+  if (!provider || !isStagingCapableProvider(provider)) {
     return '';
   }
 
-  const config = getStorageConfig();
-  const provider = createLocalStorageProvider(config);
-  await provider.ensureReady();
-
-  if (input.buffer.length > config.maxUploadBytes) {
-    throw new ServiceError(
-      `Arquivo excede o limite de ${Math.floor(config.maxUploadBytes / (1024 * 1024))} MB.`,
-      'FILE_TOO_LARGE',
-      413,
-    );
-  }
-
-  const extension = sanitizeFileExtension({
-    extension: input.originalFileName?.split('.').pop(),
-    mimeType: input.mimeType,
-  });
-
-  const stagingKey = buildAnalysisStagingKey({
+  return provider.storeStagingFile({
     tenantId: input.tenantId,
-    ownerUserId: input.ownerUserId,
     jobId: input.jobId,
-    extension,
+    buffer: input.buffer,
+    mimeType: input.mimeType,
+    originalFileName: input.originalFileName,
+    ownerUserId: input.ownerUserId,
   });
-
-  const absolutePath = resolveStorageAbsolutePath(config.localRoot, stagingKey);
-  await mkdir(path.dirname(absolutePath), { recursive: true });
-
-  try {
-    await writeFile(absolutePath, input.buffer);
-  } catch (error) {
-    await rm(absolutePath, { force: true }).catch(() => undefined);
-    throw error;
-  }
-
-  return stagingKey;
 }
 
 export async function loadAnalysisStaging(input: {
@@ -69,36 +36,28 @@ export async function loadAnalysisStaging(input: {
   mimeType?: string;
   originalFileName?: string;
 }): Promise<Buffer> {
-  if (!isLocalStorageEnabled()) {
+  const provider = getStorageProvider();
+  if (!provider || !isStagingCapableProvider(provider)) {
     throw new ServiceError(
-      'Storage local não configurado.',
+      'Storage não configurado.',
       'STORAGE_NOT_CONFIGURED',
       503,
     );
   }
 
-  const config = getStorageConfig();
-  const provider = createLocalStorageProvider(config);
-  await provider.ensureReady();
-
-  const extension = sanitizeFileExtension({
-    extension: input.originalFileName?.split('.').pop(),
-    mimeType: input.mimeType ?? 'application/pdf',
-  });
-
-  const stagingKey = buildAnalysisStagingKey({
-    tenantId: input.tenantId,
-    ownerUserId: input.ownerUserId,
-    jobId: input.jobId,
-    extension,
-  });
-
-  const absolutePath = resolveStorageAbsolutePath(config.localRoot, stagingKey);
-
   let buffer: Buffer;
   try {
-    buffer = await readFile(absolutePath);
-  } catch {
+    buffer = await provider.loadStagingFile({
+      tenantId: input.tenantId,
+      jobId: input.jobId,
+      mimeType: input.mimeType,
+      originalFileName: input.originalFileName,
+      ownerUserId: input.ownerUserId,
+    });
+  } catch (error) {
+    if (error instanceof ServiceError && error.code === 'STAGING_FILE_NOT_FOUND') {
+      throw error;
+    }
     throw new ServiceError(
       'Arquivo original não encontrado. Refaça a análise e confirme novamente.',
       'STAGING_FILE_NOT_FOUND',
@@ -125,23 +84,16 @@ export async function deleteAnalysisStaging(input: {
   mimeType?: string;
   originalFileName?: string;
 }): Promise<void> {
-  if (!isLocalStorageEnabled()) {
+  const provider = getStorageProvider();
+  if (!provider || !isStagingCapableProvider(provider)) {
     return;
   }
 
-  const config = getStorageConfig();
-  const extension = sanitizeFileExtension({
-    extension: input.originalFileName?.split('.').pop(),
-    mimeType: input.mimeType ?? 'application/pdf',
-  });
-
-  const stagingKey = buildAnalysisStagingKey({
+  await provider.deleteStagingFile({
     tenantId: input.tenantId,
-    ownerUserId: input.ownerUserId,
     jobId: input.jobId,
-    extension,
+    mimeType: input.mimeType,
+    originalFileName: input.originalFileName,
+    ownerUserId: input.ownerUserId,
   });
-
-  const absolutePath = resolveStorageAbsolutePath(config.localRoot, stagingKey);
-  await rm(absolutePath, { force: true }).catch(() => undefined);
 }

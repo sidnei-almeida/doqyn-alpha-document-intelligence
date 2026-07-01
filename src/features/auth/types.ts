@@ -14,6 +14,6 @@ export type AuthUser = {
   role: AuthRole;
   area: string;
   groups: string[];
-  /** Roles do realm Keycloak ou equivalente em mock. */
+  /** Roles da plataforma ou equivalente em mock. */
   roles?: string[];
 };

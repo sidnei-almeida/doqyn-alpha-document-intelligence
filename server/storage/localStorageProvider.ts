@@ -3,18 +3,19 @@ import path from 'node:path';
 import type { StorageConfig } from './storageConfig.js';
 import {
   buildDocumentVersionStorageKey,
+  buildLegacyAnalysisStagingKey,
   resolveStorageAbsolutePath,
   sanitizeFileExtension,
 } from './storageKeys.js';
 import type {
   ReadDocumentVersionResult,
-  StorageProvider,
+  StagingCapableStorageProvider,
   StoreDocumentVersionInput,
   StoredDocumentVersion,
 } from './storageProvider.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
-export class LocalStorageProvider implements StorageProvider {
+export class LocalStorageProvider implements StagingCapableStorageProvider {
   readonly name = 'local' as const;
   private config: StorageConfig;
 
@@ -98,7 +99,13 @@ export class LocalStorageProvider implements StorageProvider {
     };
   }
 
-  async readDocumentVersion(storageKey: string): Promise<ReadDocumentVersionResult> {
+  async readDocumentVersion(
+    storageKey: string,
+    tenantId?: string,
+    bucketAlias?: string | null,
+  ): Promise<ReadDocumentVersionResult> {
+    void tenantId;
+    void bucketAlias;
     await this.ensureReady();
     const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
     const buffer = await readFile(absolutePath);
@@ -110,10 +117,121 @@ export class LocalStorageProvider implements StorageProvider {
     };
   }
 
-  async deleteDocumentVersion(storageKey: string): Promise<void> {
+  async deleteDocumentVersion(
+    storageKey: string,
+    tenantId?: string,
+    bucketAlias?: string | null,
+  ): Promise<void> {
+    void tenantId;
+    void bucketAlias;
     await this.ensureReady();
     const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
     await rm(absolutePath, { force: true });
+  }
+
+  async storeStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    buffer: Buffer;
+    mimeType: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<string> {
+    await this.ensureReady();
+
+    if (input.buffer.length > this.config.maxUploadBytes) {
+      throw new ServiceError(
+        `Arquivo excede o limite de ${Math.floor(this.config.maxUploadBytes / (1024 * 1024))} MB.`,
+        'FILE_TOO_LARGE',
+        413,
+      );
+    }
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType,
+    });
+
+    const ownerUserId = input.ownerUserId?.trim() || 'unknown';
+    const stagingKey = buildLegacyAnalysisStagingKey({
+      tenantId: input.tenantId,
+      ownerUserId,
+      jobId: input.jobId,
+      extension,
+    });
+
+    const absolutePath = resolveStorageAbsolutePath(this.root, stagingKey);
+    await mkdir(path.dirname(absolutePath), { recursive: true });
+
+    try {
+      await writeFile(absolutePath, input.buffer);
+    } catch (error) {
+      await rm(absolutePath, { force: true }).catch(() => undefined);
+      throw error;
+    }
+
+    return stagingKey;
+  }
+
+  async loadStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<Buffer> {
+    await this.ensureReady();
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType ?? 'application/pdf',
+    });
+
+    const ownerUserId = input.ownerUserId?.trim() || 'unknown';
+    const stagingKey = buildLegacyAnalysisStagingKey({
+      tenantId: input.tenantId,
+      ownerUserId,
+      jobId: input.jobId,
+      extension,
+    });
+
+    const absolutePath = resolveStorageAbsolutePath(this.root, stagingKey);
+
+    try {
+      return await readFile(absolutePath);
+    } catch {
+      throw new ServiceError(
+        'Arquivo original não encontrado. Refaça a análise e confirme novamente.',
+        'STAGING_FILE_NOT_FOUND',
+        400,
+      );
+    }
+  }
+
+  async deleteStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<void> {
+    await this.ensureReady();
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType ?? 'application/pdf',
+    });
+
+    const ownerUserId = input.ownerUserId?.trim() || 'unknown';
+    const stagingKey = buildLegacyAnalysisStagingKey({
+      tenantId: input.tenantId,
+      ownerUserId,
+      jobId: input.jobId,
+      extension,
+    });
+
+    const absolutePath = resolveStorageAbsolutePath(this.root, stagingKey);
+    await rm(absolutePath, { force: true }).catch(() => undefined);
   }
 }
 

@@ -1,12 +1,4 @@
 import {
-  createUser,
-  findUserByEmail,
-  generateTemporaryPassword,
-  setTemporaryPassword,
-  syncRealmRoles,
-} from '../auth/keycloakAdminService.js';
-import { isKeycloakAdminConfigured } from '../utils/keycloakEnv.js';
-import {
   CONSENT_TEXT_VERSION,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MongoTenantMember,
@@ -43,49 +35,6 @@ function genericSuccessResponse() {
     ok: true,
     message:
       'Solicitação enviada com sucesso. Seu acesso será analisado pelo administrador responsável.',
-  };
-}
-
-async function ensureKeycloakUserForPublicRequest(input: {
-  email: string;
-  firstName: string;
-  lastName: string;
-  memberId: string;
-  tenantId: string;
-}): Promise<{ keycloakUserId?: string; temporaryPassword?: string }> {
-  if (!isKeycloakAdminConfigured()) {
-    logger.warn('Keycloak admin não configurado — solicitação sem usuário Keycloak.');
-    return {};
-  }
-
-  const email = normalizeEmail(input.email);
-  let keycloakUserId = (await findUserByEmail(email))?.id;
-
-  if (!keycloakUserId) {
-    keycloakUserId = await createUser({
-      email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      enabled: true,
-    });
-
-    await createUserAuditLog({
-      tenantId: input.tenantId,
-      actor: PUBLIC_ACTOR,
-      action: 'KEYCLOAK_USER_CREATED',
-      description: 'Usuário criado no Keycloak durante solicitação pública.',
-      memberId: input.memberId,
-      metadata: { email },
-    });
-  }
-
-  const temporaryPassword = generateTemporaryPassword();
-  await setTemporaryPassword(keycloakUserId, temporaryPassword);
-  await syncRealmRoles(keycloakUserId, ['user']);
-
-  return {
-    keycloakUserId,
-    temporaryPassword: isDevelopmentEnv() ? temporaryPassword : undefined,
   };
 }
 
@@ -187,20 +136,12 @@ export async function submitPublicAccessRequest(input: PublicAccessRequestInput)
   }
 
   const memberId = await createUniqueMemberId(email, tenantId);
-  const { keycloakUserId, temporaryPassword } = await ensureKeycloakUserForPublicRequest({
-    email,
-    firstName,
-    lastName,
-    memberId,
-    tenantId,
-  });
 
   const member: MongoTenantMember = {
     _id: memberId,
     memberId,
     tenantId,
     companyId: tenantId,
-    keycloakUserId,
     username: email,
     email,
     emailNormalized: email,
@@ -265,18 +206,6 @@ export async function submitPublicAccessRequest(input: PublicAccessRequestInput)
   });
 
   const response = genericSuccessResponse();
-
-  if (isDevelopmentEnv() && temporaryPassword) {
-    return {
-      ...response,
-      dev: {
-        memberId,
-        tenantId,
-        temporaryPassword,
-      },
-    };
-  }
-
   return response;
 }
 

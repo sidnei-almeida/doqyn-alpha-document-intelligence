@@ -47,6 +47,8 @@ describe('r2 storage config', () => {
     process.env.R2_REGION = 'auto';
     process.env.R2_ACCESS_KEY_ID = 'runtime-key';
     process.env.R2_SECRET_ACCESS_KEY = 'runtime-secret';
+    process.env.R2_ADMIN_ACCESS_KEY_ID = 'admin-key';
+    process.env.R2_ADMIN_SECRET_ACCESS_KEY = 'admin-secret';
 
     const config = getStorageConfig();
     assert.equal(config.provider, 'r2');

@@ -9,11 +9,7 @@ import { AUTH_MODE } from '@/lib/constants';
 import type { AuthUser } from '@/features/auth/types';
 import { loginRequest, logoutRequest, doqynMeRequest } from '@/features/auth/authApi';
 import { registerAuthTokenGetter } from '@/auth/apiAuth';
-import {
-  getAuthProviderType,
-  usesDoqynAuth,
-  usesKeycloakAuth,
-} from '@/auth/authConfig';
+import { getAuthProviderType, usesDoqynAuth } from '@/auth/authConfig';
 import { AccessGateScreen } from '@/auth/AccessGateScreen';
 import { mapMeSessionToAuthUser, resolveAccessGate } from '@/auth/mapMeSession';
 import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
@@ -56,27 +52,6 @@ function logSessionLoaded(input: {
   console.info('[auth] sessão carregada', input);
 }
 
-function AuthErrorScreen({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-doqyn-bg px-6 text-center">
-      <p className="max-w-md text-sm text-doqyn-muted">{message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-md bg-doqyn-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-      >
-        Tentar novamente
-      </button>
-    </div>
-  );
-}
-
 function applyMeSession(
   session: Awaited<ReturnType<typeof getCurrentSession>>,
   setters: {
@@ -107,14 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authProvider = getAuthProviderType();
   const isDoqynAuth = usesDoqynAuth();
   const isApiAuth = authProvider === 'temporary';
-  const isKeycloak = usesKeycloakAuth();
   const isMock = authProvider === 'mock';
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [tenant, setTenant] = useState<MeTenant | null>(null);
   const [membership, setMembership] = useState<MeMembership | null>(null);
   const [accessGate, setAccessGate] = useState<AccessGateReason | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initAttempt, setInitAttempt] = useState(0);
@@ -134,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTenant(null);
     setMembership(null);
     setAccessGate(null);
-    setToken(null);
   }, []);
 
   const sessionSetters = useMemo(
@@ -171,10 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearSession, sessionSetters]);
 
-  const loadKeycloakSession = useCallback(async () => {
-    throw new Error('Keycloak foi descontinuado. Use VITE_AUTH_PROVIDER=doqyn_auth.');
-  }, []);
-
   const refreshToken = useCallback(async () => {
     // Token refresh não aplicável em doqyn_auth (cookie HttpOnly).
   }, []);
@@ -194,15 +162,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (isKeycloak) {
-        if (isPublicUnauthenticatedPath()) {
-          clearSession();
-          return;
-        }
-        await loadKeycloakSession();
-        return;
-      }
-
       if (isMock) {
         setUser(MOCK_DEV_USER);
         setTenant({
@@ -216,7 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           tenantRoles: MOCK_DEV_USER.roles ?? [],
           accessGroupIds: MOCK_DEV_USER.groups,
         });
-        setToken(null);
         return;
       }
 
@@ -227,7 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           clearSession();
         }
-        setToken(null);
         return;
       }
 
@@ -238,14 +195,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, loadKeycloakSession, sessionSetters]);
+  }, [clearSession, isApiAuth, isDoqynAuth, isMock, loadDoqynSession, sessionSetters]);
 
   const login = useCallback(
     async (email: string, password: string, rememberMe = false) => {
-      if (isKeycloak) {
-        throw new Error('Keycloak descontinuado. Configure VITE_AUTH_PROVIDER=doqyn_auth.');
-      }
-
       if (isMock) {
         setUser({ ...MOCK_DEV_USER, email });
         return;
@@ -259,22 +212,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const session = await doqynMeRequest();
           if (session) applyMeSession(session, sessionSetters);
         }
-        return;
       }
     },
-    [isApiAuth, isDoqynAuth, isKeycloak, isMock, loadDoqynSession, sessionSetters],
+    [isApiAuth, isDoqynAuth, isMock, loadDoqynSession, sessionSetters],
   );
 
   const loginWithSSO = useCallback(async () => {
-    throw new Error('SSO Keycloak descontinuado. Use login por e-mail e senha.');
+    throw new Error('SSO não disponível. Use login por e-mail e senha.');
   }, []);
 
   const logout = useCallback(async () => {
-    if (isKeycloak) {
-      clearSession();
-      return;
-    }
-
     if (isMock) {
       clearSession();
       return;
@@ -285,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     clearSession();
-  }, [clearSession, isApiAuth, isDoqynAuth, isKeycloak, isMock]);
+  }, [clearSession, isApiAuth, isDoqynAuth, isMock]);
 
   const hasRole = useCallback((role: string) => roles.includes(role), [roles]);
 
@@ -299,9 +246,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    registerAuthTokenGetter(() => (usesKeycloakAuth() ? token : null));
+    registerAuthTokenGetter(null);
     return () => registerAuthTokenGetter(null);
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     void refreshUser();
@@ -315,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       tenant,
       membership,
-      token,
+      token: null,
       roles,
       accessGroupIds,
       accessGate,
@@ -338,7 +285,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       tenant,
       membership,
-      token,
       roles,
       accessGroupIds,
       accessGate,
@@ -377,10 +323,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         />
       </AuthContext.Provider>
     );
-  }
-
-  if (error && isKeycloak) {
-    return <AuthErrorScreen message={error} onRetry={retryAuth} />;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

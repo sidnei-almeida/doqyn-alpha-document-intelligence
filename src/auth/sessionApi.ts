@@ -19,7 +19,7 @@ type MeApiErrorBody = {
 };
 
 /**
- * Carrega a sessão oficial do usuário via GET /api/me (Bearer quando Keycloak).
+ * Carrega a sessão oficial do usuário via GET /api/me.
  */
 export async function getCurrentSession(): Promise<MeSession> {
   const response = await authFetch('/api/me', { method: 'GET' });

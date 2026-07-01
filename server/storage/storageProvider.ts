@@ -1,3 +1,5 @@
+export type StorageProviderName = 'local' | 'r2';
+
 export type StoreDocumentVersionInput = {
   tenantId: string;
   documentId: string;
@@ -10,19 +12,67 @@ export type StoreDocumentVersionInput = {
 export type StoredDocumentVersion = {
   storageKey: string;
   sizeBytes: number;
-  provider: 'local';
+  provider: StorageProviderName;
+  bucket?: string;
+  etag?: string;
+  contentType?: string;
 };
 
 export type ReadDocumentVersionResult = {
   buffer: Buffer;
   storageKey: string;
   sizeBytes: number;
+  bucket?: string;
+  etag?: string;
+  contentType?: string;
 };
 
 export interface StorageProvider {
-  readonly name: 'local';
+  readonly name: StorageProviderName;
   ensureReady(): Promise<void>;
   storeDocumentVersion(input: StoreDocumentVersionInput): Promise<StoredDocumentVersion>;
-  readDocumentVersion(storageKey: string): Promise<ReadDocumentVersionResult>;
-  deleteDocumentVersion(storageKey: string): Promise<void>;
+  readDocumentVersion(
+    storageKey: string,
+    tenantId: string,
+    bucketAlias?: string | null,
+  ): Promise<ReadDocumentVersionResult>;
+  deleteDocumentVersion(
+    storageKey: string,
+    tenantId: string,
+    bucketAlias?: string | null,
+  ): Promise<void>;
+}
+
+export interface StagingCapableStorageProvider extends StorageProvider {
+  storeStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    buffer: Buffer;
+    mimeType: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<string>;
+  loadStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<Buffer>;
+  deleteStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    ownerUserId?: string;
+  }): Promise<void>;
+}
+
+export function isStagingCapableProvider(
+  provider: StorageProvider,
+): provider is StagingCapableStorageProvider {
+  return (
+    typeof (provider as StagingCapableStorageProvider).storeStagingFile === 'function' &&
+    typeof (provider as StagingCapableStorageProvider).loadStagingFile === 'function'
+  );
 }

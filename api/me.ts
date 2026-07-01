@@ -1,13 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { usesDoqynAuth } from '../server/auth/authConfig.js';
-import { readBearerToken, verifyKeycloakAccessToken } from '../server/auth/keycloakJwtVerifier.js';
 import { requireAuth } from '../server/auth/requireAuth.js';
 import { verifyDoqynAuthSession } from '../server/auth/providers/doqynAuthProvider.js';
-import {
-  resolveMeFromDoqynAuth,
-  resolveMeFromKeycloakClaims,
-  resolveMeResponse,
-} from '../server/services/meService.js';
+import { resolveMeFromDoqynAuth, resolveMeResponse } from '../server/services/meService.js';
 import { isServiceError } from '../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -26,14 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const payload = resolveMeFromDoqynAuth(session);
-      return res.status(200).json(payload);
-    }
-
-    const bearer = readBearerToken(req);
-
-    if (bearer) {
-      const claims = await verifyKeycloakAccessToken(bearer);
-      const payload = await resolveMeFromKeycloakClaims(claims);
       return res.status(200).json(payload);
     }
 

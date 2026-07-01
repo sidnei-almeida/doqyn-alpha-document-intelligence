@@ -112,6 +112,8 @@ export function isR2StorageConfigured(): boolean {
   return Boolean(
     r2.runtimeAccessKeyId &&
       r2.runtimeSecretAccessKey &&
+      r2.adminAccessKeyId &&
+      r2.adminSecretAccessKey &&
       validateR2Endpoint(r2.endpoint, r2.accountId) &&
       r2.defaultBucket,
   );
