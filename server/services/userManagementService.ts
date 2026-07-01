@@ -19,6 +19,8 @@ import type { VerifiedKeycloakAuth } from '../auth/keycloakJwtVerifier.js';
 import type { MongoTenantMember, NotificationPreferences, PlatformRole } from '../db/types.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { sanitizeRejectionReason, maskEmail } from '../utils/maskSensitiveData.js';
+import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { requireActiveTenantMember } from './tenantMembersService.js';
 import { assertActiveTenant, getTenantById } from './tenantsService.js';
 import { createUserAuditLog } from './userAuditService.js';
@@ -302,12 +304,19 @@ export async function rejectCompanyMember(
     throw new ServiceError('Somente solicitações pendentes podem ser rejeitadas.', 'INVALID_STATUS', 400);
   }
 
+  let sanitizedReason: string;
+  try {
+    sanitizedReason = sanitizeRejectionReason(input?.reason);
+  } catch {
+    throw new ServiceError('Informe o motivo da rejeição.', 'REJECTION_REASON_REQUIRED', 400);
+  }
+
   const now = new Date();
   const updated = await updateTenantMemberFields(memberId, tenantId, {
     status: 'rejected',
     rejectedBy: actor.memberId ?? actor.id,
     rejectedAt: now,
-    rejectedReason: input?.reason?.trim() || undefined,
+    rejectedReason: sanitizedReason,
   });
 
   if (member.keycloakUserId) {
@@ -320,7 +329,11 @@ export async function rejectCompanyMember(
     action: 'USER_REJECTED',
     description: 'Solicitação de acesso rejeitada.',
     memberId,
-    metadata: input?.reason ? { reason: input.reason.trim() } : undefined,
+    metadata: sanitizeAuditMetadata({
+      targetMembershipId: memberId,
+      targetEmailMasked: maskEmail(member.email),
+      reason: sanitizedReason,
+    }),
   });
 
   return { member: serializeTenantMember(updated) };

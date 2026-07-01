@@ -32,6 +32,8 @@
     "test:groq:fixture": "tsx scripts/test-groq-fixture.mjs",
     "test:groq:pdf": "tsx scripts/test-groq-pdf.mjs",
     "test:no-ai": "tsx scripts/test-no-ai.mjs",
+    "env:audit": "node scripts/r2-env-check.mjs",
+    "r2:env-check": "node scripts/r2-env-check.mjs",
     "test": "tsx --test tests/**/*.test.ts"
   },
   "dependencies": {

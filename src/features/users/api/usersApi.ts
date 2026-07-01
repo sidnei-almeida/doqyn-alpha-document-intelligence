@@ -119,15 +119,13 @@ export const usersApi = {
     },
     tenantId?: string,
   ) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.approve(memberId, input, tenantId);
-    }
+    void tenantId;
     return request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
       `/company-members/${memberId}/approve`,
       {
         method: 'POST',
         body: JSON.stringify({
-          tenantRoles: input.platformRoles,
+          platformRoles: input.platformRoles,
           accessGroupIds: input.accessGroupIds,
           notificationPreferences: input.notificationPreferences,
         }),
@@ -136,10 +134,7 @@ export const usersApi = {
   },
 
   reject: (memberId: string, reason?: string, tenantId?: string) => {
-    if (usesDoqynAuth()) {
-      void reason;
-      return doqynUsersApi.reject(memberId, tenantId);
-    }
+    void tenantId;
     return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ reason }),

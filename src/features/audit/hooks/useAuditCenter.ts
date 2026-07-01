@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/useAuth';
@@ -10,7 +10,13 @@ import {
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
 import { listPendingApprovals, type PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { buildAuditEventsQuery, isAuditAdmin } from '../utils/auditDisplay';
+import {
+  buildAuditEventsQuery,
+  dedupeAuditEvents,
+  isAuditAdmin,
+  resolveEventFiltersForTab,
+  type AuditTabId,
+} from '../utils/auditDisplay';
 
 const EMPTY_OVERVIEW: AuditOverview = {
   pendingCount: 0,
@@ -20,6 +26,8 @@ const EMPTY_OVERVIEW: AuditOverview = {
   totalEventsCount: 0,
 };
 
+const EVENTS_PAGE_SIZE = 50;
+
 export function useAuditCenter(documentId?: string) {
   const { user, roles, hasRole } = useAuth();
   const queryClient = useQueryClient();
@@ -27,13 +35,19 @@ export function useAuditCenter(documentId?: string) {
   const isDoqynAdmin = hasRole('doqyn_admin');
   const tenantId = user?.companyId;
 
+  const [eventsTab, setEventsTab] = useState<Exclude<AuditTabId, 'pending'>>('events');
   const [eventFilters, setEventFilters] = useState<AuditEventFilters>({
     documentId,
   });
 
+  const resolvedEventFilters = useMemo(
+    () => resolveEventFiltersForTab(eventsTab, { ...eventFilters, documentId }),
+    [documentId, eventFilters, eventsTab],
+  );
+
   const eventQueryParams = useMemo(
-    () => buildAuditEventsQuery({ ...eventFilters, documentId }),
-    [documentId, eventFilters],
+    () => buildAuditEventsQuery(resolvedEventFilters),
+    [resolvedEventFilters],
   );
 
   const overviewQuery = useQuery({
@@ -48,9 +62,16 @@ export function useAuditCenter(documentId?: string) {
     enabled: Boolean(tenantId) && isAdmin,
   });
 
-  const eventsQuery = useQuery({
-    queryKey: ['audit-events', tenantId, eventQueryParams],
-    queryFn: () => auditApi.listEvents(eventQueryParams),
+  const eventsQuery = useInfiniteQuery({
+    queryKey: ['audit-events', tenantId, eventsTab, eventQueryParams],
+    queryFn: ({ pageParam }) =>
+      auditApi.listEvents({
+        ...resolvedEventFilters,
+        limit: EVENTS_PAGE_SIZE,
+        cursor: typeof pageParam === 'string' ? pageParam : undefined,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: Boolean(tenantId),
   });
 
@@ -112,7 +133,25 @@ export function useAuditCenter(documentId?: string) {
     pendingUsersCount: pendingCount,
   };
 
-  const events = (eventsQuery.data?.events ?? []) as AuditEvent[];
+  const events = useMemo(
+    () =>
+      dedupeAuditEvents(
+        (eventsQuery.data?.pages.flatMap((page) => page.events) ?? []) as AuditEvent[],
+      ),
+    [eventsQuery.data?.pages],
+  );
+
+  const eventsTotal = eventsQuery.data?.pages[0]?.total ?? 0;
+  const hasMoreEvents = Boolean(eventsQuery.hasNextPage);
+
+  const loadMoreEvents = () => {
+    if (!eventsQuery.hasNextPage || eventsQuery.isFetchingNextPage) return;
+    void eventsQuery.fetchNextPage();
+  };
+
+  const updateEventFilters = (filters: AuditEventFilters) => {
+    setEventFilters(filters);
+  };
 
   return {
     isAdmin,
@@ -124,11 +163,16 @@ export function useAuditCenter(documentId?: string) {
     pendingLoading: pendingQuery.isLoading,
     pendingError: pendingQuery.isError,
     events,
-    eventsTotal: eventsQuery.data?.total ?? 0,
+    eventsTotal,
     eventsLoading: eventsQuery.isLoading,
+    eventsFetchingMore: eventsQuery.isFetchingNextPage,
     eventsError: eventsQuery.isError,
+    hasMoreEvents,
+    loadMoreEvents,
+    eventsTab,
+    setEventsTab,
     eventFilters,
-    setEventFilters,
+    setEventFilters: updateEventFilters,
     groups: groupsQuery.data ?? [],
     approveMutation,
     rejectMutation,

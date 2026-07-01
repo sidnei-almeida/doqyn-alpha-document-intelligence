@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs } from '@/components/ui/Tabs';
+import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApproveApprovalDialog } from './components/ApproveApprovalDialog';
@@ -17,14 +18,13 @@ import { RejectApprovalDialog } from './components/RejectApprovalDialog';
 import { useAuditCenter } from './hooks/useAuditCenter';
 import type { PendingApprovalItem } from './api/pendingApprovalsApi';
 import type { AuditEvent } from '@/types/audit';
-
-type AuditTab = 'pending' | 'events';
+import type { AuditTabId } from './utils/auditDisplay';
 
 export function AuditPage() {
   const location = useLocation();
   const { user } = useAuth();
   const filterDocId = (location.state as { documentId?: string })?.documentId;
-  const [activeTab, setActiveTab] = useState<AuditTab>('pending');
+  const [activeTab, setActiveTab] = useState<AuditTabId>('pending');
   const [reviewItem, setReviewItem] = useState<PendingApprovalItem | null>(null);
   const [approveItem, setApproveItem] = useState<PendingApprovalItem | null>(null);
   const [rejectItem, setRejectItem] = useState<PendingApprovalItem | null>(null);
@@ -41,7 +41,11 @@ export function AuditPage() {
     events,
     eventsTotal,
     eventsLoading,
+    eventsFetchingMore,
     eventsError,
+    hasMoreEvents,
+    loadMoreEvents,
+    setEventsTab,
     eventFilters,
     setEventFilters,
     groups,
@@ -57,9 +61,22 @@ export function AuditPage() {
         badge: isAdmin ? overview.pendingCount : undefined,
       },
       { id: 'events', label: 'Eventos' },
+      { id: 'security', label: 'Segurança' },
+      { id: 'all', label: 'Todos' },
     ],
     [isAdmin, overview.pendingCount],
   );
+
+  const showEventFilters = activeTab === 'events';
+  const showEventsPanel = activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
+
+  const handleTabChange = (tabId: string) => {
+    const nextTab = tabId as AuditTabId;
+    setActiveTab(nextTab);
+    if (nextTab === 'security' || nextTab === 'events' || nextTab === 'all') {
+      setEventsTab(nextTab);
+    }
+  };
 
   if (!isAdmin && !user) {
     return null;
@@ -86,11 +103,7 @@ export function AuditPage() {
         </p>
       )}
 
-      <Tabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChange={(tabId) => setActiveTab(tabId as AuditTab)}
-      />
+      <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
 
       {activeTab === 'pending' && (
         <Card className="border-doqyn-border bg-doqyn-surface/60">
@@ -121,18 +134,29 @@ export function AuditPage() {
         </Card>
       )}
 
-      {activeTab === 'events' && (
+      {showEventsPanel && (
         <div className="space-y-4">
-          <AuditFilters
-            filters={eventFilters}
-            onChange={(filters) => setEventFilters({ ...filters, documentId: filterDocId })}
-          />
+          {activeTab === 'security' && (
+            <p className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-xs text-doqyn-muted">
+              Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no tenant.
+            </p>
+          )}
+
+          {showEventFilters && (
+            <AuditFilters
+              filters={eventFilters}
+              onChange={(filters) => setEventFilters({ ...filters, documentId: filterDocId })}
+            />
+          )}
 
           <div className="flex items-center justify-between text-xs text-doqyn-muted">
             <span>
               {eventsTotal} {eventsTotal === 1 ? 'evento' : 'eventos'}
+              {events.length < eventsTotal ? ` · exibindo ${events.length}` : ''}
             </span>
-            {eventsError && <span className="text-doqyn-danger">Não foi possível carregar eventos.</span>}
+            {eventsError && (
+              <span className="text-doqyn-danger">Não foi possível carregar eventos.</span>
+            )}
           </div>
 
           <AuditEventsList
@@ -140,6 +164,23 @@ export function AuditPage() {
             loading={eventsLoading}
             onOpenDetails={setSelectedEvent}
           />
+
+          {hasMoreEvents && (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={loadMoreEvents}
+                disabled={eventsFetchingMore}
+              >
+                {eventsFetchingMore ? 'Carregando...' : 'Carregar mais'}
+              </Button>
+            </div>
+          )}
+
+          {!eventsLoading && events.length > 0 && !hasMoreEvents && (
+            <p className="text-center text-xs text-doqyn-muted">Fim do histórico disponível.</p>
+          )}
         </div>
       )}
 

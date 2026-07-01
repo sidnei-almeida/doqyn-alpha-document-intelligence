@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { rejectCompanyMember } from '../../server/services/userManagementService.js';
+import { rejectMembershipDecision } from '../../server/services/membershipDecisionService.js';
 import { withUserManagementApi } from '../../server/utils/userManagementApi.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     handler: async ({ user, params }) => {
       const memberId = params.memberId ?? params.id;
       const body = (req.body ?? {}) as { reason?: string };
-      return rejectCompanyMember(user, memberId, { reason: body.reason });
+      return rejectMembershipDecision(req, user, memberId, body.reason);
     },
   });
 }

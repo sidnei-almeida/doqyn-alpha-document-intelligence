@@ -98,11 +98,12 @@ export const doqynUsersApi = {
     ).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 
-  reject(membershipId: string, tenantId?: string) {
+  reject(membershipId: string, reason: string, tenantId?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    return authServiceJson(`/admin/members/${membershipId}/reject${query}`, { method: 'POST' }).then(
-      async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }),
-    );
+    return authServiceJson(`/admin/members/${membershipId}/reject${query}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 
   block(membershipId: string, tenantId?: string) {

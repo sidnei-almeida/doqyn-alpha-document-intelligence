@@ -187,13 +187,23 @@ export function UsersPage() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (memberId: string) => usersApi.reject(memberId, undefined, effectiveCompanyId || undefined),
+    mutationFn: ({ memberId, reason }: { memberId: string; reason: string }) =>
+      usersApi.reject(memberId, reason, effectiveCompanyId || undefined),
     onSuccess: () => {
       toast.success('Solicitação rejeitada.');
       invalidate();
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const handleRejectMember = (memberId: string) => {
+    const reason = window.prompt('Informe o motivo da rejeição:');
+    if (!reason?.trim()) {
+      toast.error('Informe o motivo da rejeição.');
+      return;
+    }
+    rejectMutation.mutate({ memberId, reason: reason.trim() });
+  };
 
   const blockMutation = useMutation({
     mutationFn: (memberId: string) => usersApi.block(memberId, effectiveCompanyId || undefined),
@@ -375,7 +385,7 @@ export function UsersPage() {
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => rejectMutation.mutate(member.id)}
+                                  onClick={() => handleRejectMember(member.id)}
                                 >
                                   Rejeitar
                                 </Button>

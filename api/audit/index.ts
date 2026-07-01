@@ -14,7 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ctx = await requireDocumentRequestContext(req, res);
   if (!ctx) return;
 
-  const { tenantId, documentId, q, type, severity, actorId, from, to, limit, cursor } = req.query;
+  const { tenantId, documentId, q, type, severity, actorId, from, to, limit, cursor, category } =
+    req.query;
 
   try {
     assertQueryTenantMatchesSession(typeof tenantId === 'string' ? tenantId : undefined, ctx);
@@ -31,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       to: typeof to === 'string' ? to : undefined,
       limit: typeof limit === 'string' ? Number(limit) : undefined,
       cursor: typeof cursor === 'string' ? cursor : undefined,
+      category: category === 'security' ? 'security' : undefined,
     });
 
     return res.status(200).json(result);
