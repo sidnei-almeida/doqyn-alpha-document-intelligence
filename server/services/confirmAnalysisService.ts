@@ -4,6 +4,7 @@ import type { ExtractedMetadataField, MetadataExtractionResult } from '../ai/typ
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import {
   buildDocumentOwnershipFilter,
   withTenantFieldsFromContext,
@@ -227,6 +228,7 @@ async function persistConfirmedVersionFile(input: {
   fileHash: string;
   fileSizeBytes: number;
   originalFileName: string;
+  storageScope: TenantStorageScope;
 }): Promise<MongoDocumentVersion['storage']> {
   if (!isStorageConfigured()) {
     return buildStoragePlaceholders();
@@ -247,6 +249,7 @@ async function persistConfirmedVersionFile(input: {
     expectedSha256: input.fileHash,
     mimeType: 'application/pdf',
     originalFileName: input.originalFileName,
+    storageScope: input.storageScope,
   }).catch((error: unknown) => {
     if (error instanceof ServiceError) {
       throw new ConfirmAnalysisError(error.message, error.code, error.statusCode);
@@ -269,6 +272,7 @@ async function persistConfirmedVersionFile(input: {
     buffer,
     mimeType: 'application/pdf',
     originalFileName: input.originalFileName,
+    storageScope: input.storageScope,
   });
 
   await deleteAnalysisStaging({
@@ -277,6 +281,7 @@ async function persistConfirmedVersionFile(input: {
     jobId: input.jobId,
     mimeType: 'application/pdf',
     originalFileName: input.originalFileName,
+    storageScope: input.storageScope,
   });
 
   return storage;
@@ -472,6 +477,7 @@ export async function confirmAnalysisPersistence(input: {
       fileHash: sha256,
       fileSizeBytes: data.fileSizeBytes,
       originalFileName: data.originalFileName,
+      storageScope: input.ctx.storageScope,
     });
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;

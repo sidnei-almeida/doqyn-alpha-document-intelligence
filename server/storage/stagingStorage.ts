@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { getStorageProvider } from './getStorageProvider.js';
 import { isStagingCapableProvider } from './storageProvider.js';
 import { ServiceError } from '../utils/serviceErrors.js';
@@ -10,6 +11,7 @@ export type StoreAnalysisStagingInput = {
   buffer: Buffer;
   mimeType: string;
   originalFileName?: string;
+  storageScope?: TenantStorageScope;
 };
 
 export async function storeAnalysisStaging(input: StoreAnalysisStagingInput): Promise<string> {
@@ -25,6 +27,7 @@ export async function storeAnalysisStaging(input: StoreAnalysisStagingInput): Pr
     mimeType: input.mimeType,
     originalFileName: input.originalFileName,
     ownerUserId: input.ownerUserId,
+    storageScope: input.storageScope,
   });
 }
 
@@ -35,6 +38,7 @@ export async function loadAnalysisStaging(input: {
   expectedSha256: string;
   mimeType?: string;
   originalFileName?: string;
+  storageScope?: TenantStorageScope;
 }): Promise<Buffer> {
   const provider = getStorageProvider();
   if (!provider || !isStagingCapableProvider(provider)) {
@@ -53,6 +57,7 @@ export async function loadAnalysisStaging(input: {
       mimeType: input.mimeType,
       originalFileName: input.originalFileName,
       ownerUserId: input.ownerUserId,
+      storageScope: input.storageScope,
     });
   } catch (error) {
     if (error instanceof ServiceError && error.code === 'STAGING_FILE_NOT_FOUND') {
@@ -83,6 +88,7 @@ export async function deleteAnalysisStaging(input: {
   jobId: string;
   mimeType?: string;
   originalFileName?: string;
+  storageScope?: TenantStorageScope;
 }): Promise<void> {
   const provider = getStorageProvider();
   if (!provider || !isStagingCapableProvider(provider)) {
@@ -95,5 +101,6 @@ export async function deleteAnalysisStaging(input: {
     mimeType: input.mimeType,
     originalFileName: input.originalFileName,
     ownerUserId: input.ownerUserId,
+    storageScope: input.storageScope,
   });
 }

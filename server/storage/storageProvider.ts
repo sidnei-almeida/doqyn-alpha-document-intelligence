@@ -1,3 +1,5 @@
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
+
 export type StorageProviderName = 'local' | 'r2';
 
 export type StoreDocumentVersionInput = {
@@ -7,6 +9,7 @@ export type StoreDocumentVersionInput = {
   buffer: Buffer;
   mimeType: string;
   extension?: string;
+  storageScope?: TenantStorageScope;
 };
 
 export type StoredDocumentVersion = {
@@ -51,6 +54,7 @@ export interface StagingCapableStorageProvider extends StorageProvider {
     mimeType: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<string>;
   loadStagingFile(input: {
     tenantId: string;
@@ -58,6 +62,7 @@ export interface StagingCapableStorageProvider extends StorageProvider {
     mimeType?: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<Buffer>;
   deleteStagingFile(input: {
     tenantId: string;
@@ -65,6 +70,7 @@ export interface StagingCapableStorageProvider extends StorageProvider {
     mimeType?: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<void>;
 }
 

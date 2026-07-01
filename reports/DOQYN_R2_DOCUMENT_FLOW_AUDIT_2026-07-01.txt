@@ -1,0 +1,741 @@
+================================================================================
+DOQYN Alpha Document Intelligence
+AUDITORIA DE FLUXO: UPLOAD, IA/RAG, R2, VERSIONAMENTO E PREVIEW FUTURO
+Data: 2026-07-01
+Projeto: ~/Documents/GitHub/doqyn-alpha-document-intelligence
+Tipo: Análise somente leitura — nenhum código, .env, banco ou storage alterado
+================================================================================
+
+1. RESUMO EXECUTIVO
+--------------------------------------------------------------------------------
+
+O fluxo principal de produção (envio de documentos com IA) está implementado no
+backend e segue a sequência:
+
+  upload multipart -> análise IA em memória -> staging temporário -> confirmação
+  -> persistência do original no storage -> gravação MongoDB
+
+Com STORAGE_PROVIDER=r2 e credenciais válidas, o caminho feliz cobre:
+  upload -> IA/RAG -> metadata + nome sugerido -> R2 (original intacto) -> Mongo.
+
+Pontos fortes confirmados no código:
+  - Object keys R2 opacas (documentId/versionId, sem nome original/sugerido)
+  - Bucket por tenant opaco (doqyn-t-<hash12>)
+  - Staging em tmp/{jobId}/original.{ext}
+  - Hash SHA-256 verificado entre analyze e confirm
+  - Download apenas via backend (/api/documents/download)
+  - Sem VITE_R2_* e sem @aws-sdk no frontend
+  - Sem presigned URL no código analisado
+  - Documentos legados provider=local retornam LEGACY_LOCAL_STORAGE (410)
+
+Lacunas relevantes em relação ao produto desejado:
+  - Preview otimizado + marca d'água DOQYN: NÃO implementado
+  - Versionamento real de nova versão em documento existente: UI mock, sem API
+  - Listagem/download no frontend principal ainda usa MOCK_DOCUMENTS em partes
+  - Provider Mongo grava "cloudflare_r2" (não literal "r2") em storage.primary
+  - Staging ocorre DEPOIS da análise IA (risco se staging falhar após IA ok)
+  - Upload direto (/api/documents/upload) é fluxo legado paralelo ao fluxo IA
+  - slot backup (aws_s3) permanece "pending" — placeholder arquitetural
+  - Auditoria de storage R2 (Put/Get/Delete/provision) não tem eventos dedicados
+  - Migração local -> R2: não implementada; apenas erro controlado no download
+
+Validações executadas nesta auditoria (sem r2:smoke):
+  - npm run r2:env-check ............... OK
+  - npm test ......................... 90/90 OK
+  - npm run build .................... OK
+  - npm run lint ..................... OK
+  - npx tsc --noEmit ................. OK
+  - npm run r2:smoke ................. NÃO EXECUTADO (conforme instrução)
+
+
+2. FLUXO ATUAL REAL PONTA A PONTA
+--------------------------------------------------------------------------------
+
+FLUXO A — Principal (Document Send / Bulk Upload) — RECOMENDADO
+
+  Frontend:
+    src/features/document-send/DocumentSendPage.tsx
+    src/features/document-send/hooks/useBulkUploadQueue.ts
+      -> analyzePdf()  POST /api/ai/analyze-pdf
+      -> confirmAnalysis()  POST /api/documents/confirm-analysis
+
+  Backend analyze-pdf (api/ai/analyze-pdf.ts):
+    1. requireAuth (doqyn_auth cookie)
+    2. parseMultipart -> buffer em memória
+    3. analyzePdfBuffer() — IA/RAG em memória (ANTES do staging)
+    4. se isStorageConfigured(): storeAnalysisStaging() — tmp no R2/local
+    5. retorna AnalyzePdfResponse (jobId, fileHash, recommendedFileName, etc.)
+
+  Backend confirm-analysis (api/documents/confirm-analysis.ts):
+    1. requireAuth + Mongo configurado
+    2. confirmAnalysisPersistence() em server/services/confirmAnalysisService.ts
+    3. loadAnalysisStaging() com verificação SHA-256
+    4. storeUploadedDocumentFile() -> R2 PutObject (original)
+    5. deleteAnalysisStaging()
+    6. insert documents + documentVersions + processingJobs + auditLogs
+    7. retorna documentId, versionId, storageStatus
+
+  Download (quando usado):
+    GET /api/documents/download?documentId=&versionId=
+    -> readDocumentVersionFile() -> provider.readDocumentVersion() -> buffer HTTP
+
+FLUXO B — Upload direto legado (api/documents/upload.ts)
+
+  POST /api/documents/upload (multipart)
+    -> documentService.uploadDocument()
+    -> storeUploadedDocumentFile() direto (sem analyze-pdf)
+    -> classificação/metadata simplificada (upload_legacy)
+  Não passa por staging tmp/{jobId}.
+  Usado como caminho alternativo; não é o fluxo Document Send.
+
+FLUXO C — Versionamento (frontend)
+
+  src/features/versioning/VersioningPage.tsx
+    -> MOCK_DOCUMENTS + MOCK_VERSIONS
+    -> toast "Nova versão registrada" sem chamada API
+  Versionamento real no Mongo só ocorre na criação inicial (confirm-analysis
+  cria versionNumber=1). Nova versão de documento existente: NÃO confirmado.
+
+
+3. FLUXO ESPERADO DO PRODUTO
+--------------------------------------------------------------------------------
+
+  1. Upload
+  2. Backend recebe arquivo
+  3. Original staged com hash verificável
+  4. IA/RAG analisa
+  5. Classifica tipo/categoria
+  6. Extrai metadados
+  7. Sugere nome padronizado (metadata only)
+  8. Nome sugerido NÃO vira objectKey
+  9. Confirmado -> R2 original intacto
+  10. Mongo com provider, bucket, objectKey, contentType, size, status stored
+  11. [FUTURO] Preview otimizado com marca d'água DOQYN
+  12. [FUTURO] Frontend usa preview leve por padrão
+  13. Download oficial via backend (original)
+
+
+4. DIVERGÊNCIAS ENCONTRADAS
+--------------------------------------------------------------------------------
+
+| Esperado                          | Atual no código                          | Severidade |
+|-----------------------------------|------------------------------------------|------------|
+| Staging antes ou junto do upload  | Staging DEPOIS da análise IA             | Média      |
+| provider "r2" no Mongo            | storage.primary.provider="cloudflare_r2" | Baixa      |
+| Preview otimizado                 | Ausente                                  | Planejado  |
+| Versionamento real                | UI mock; sem endpoint nova versão        | Alta       |
+| Frontend lista docs reais         | DocumentsPage/Dashboard usam mocks       | Média      |
+| storage.backup ativo              | Sempre pending (aws_s3 placeholder)      | Baixa      |
+| Nome sugerido só metadata         | Confirmado — não entra no objectKey      | OK         |
+| Original intacto no R2            | PutObject com buffer do staging (byte)   | OK         |
+| Sem fallback silencioso local     | Com STORAGE_PROVIDER=r2, local só se     | OK         |
+|                                   | STORAGE_PROVIDER=local explicitamente    |            |
+| Auditoria storage dedicada        | Apenas storageStatus em audit metadata   | Média      |
+
+
+5. UPLOAD E STAGING
+--------------------------------------------------------------------------------
+
+5.1 Endpoints
+
+  | Endpoint                        | Arquivo                              | Função                    |
+  |---------------------------------|--------------------------------------|---------------------------|
+  | POST /api/ai/analyze-pdf        | api/ai/analyze-pdf.ts                | Análise + staging         |
+  | POST /api/documents/confirm-analysis | api/documents/confirm-analysis.ts | Persistência final        |
+  | POST /api/documents/upload      | api/documents/upload.ts              | Upload direto legado      |
+  | GET  /api/documents/download    | api/documents/download.ts            | Download via backend      |
+  | GET  /api/documents             | api/documents/index.ts               | Listagem/detalhe Mongo    |
+
+  Delete/removal de arquivo no storage:
+    - Rollback em confirm-analysis se insert Mongo falhar (deleteObject)
+    - upload legado deleta documento Mongo se storage falhar
+    - Não há endpoint público de delete de versão/documento confirmado
+
+5.2 Onde o arquivo é recebido
+
+  - analyze-pdf: server/utils/parseMultipart.ts via api/ai/analyze-pdf.ts
+  - upload direto: parseMultipart inline em api/documents/upload.ts
+  - Buffer permanece em memória durante a request
+
+5.3 Onde é temporariamente armazenado (staging)
+
+  Com STORAGE_PROVIDER=r2:
+    - Key: tmp/{jobId}/original.{ext}
+    - Bucket: doqyn-t-<hash12> (per_tenant) via ensureTenantBucket()
+    - Implementação: server/storage/r2/r2StorageProvider.ts (storeStagingFile)
+    - Orquestração: server/storage/stagingStorage.ts
+
+  Com STORAGE_PROVIDER=local (legado/testes):
+    - Key legada: staging/{tenantId}/{ownerUserId}/{jobId}/original.{ext}
+    - Disco: LOCAL_STORAGE_ROOT
+
+  IMPORTANTE: staging só ocorre se isStorageConfigured() === true.
+  Se storage mal configurado, analyze retorna sucesso mas confirm falhará
+  por ausência de staging (STAGING_FILE_NOT_FOUND ou STORAGE_NOT_CONFIGURED).
+
+5.4 Onde o hash é calculado
+
+  - Primeira vez: server/ai/services/analyzePdfService.ts linha ~128
+    fileHash = SHA-256(buffer) no início de analyzePdfBuffer()
+  - Modo no_ai: server/ai/services/noAiAnalyzer.ts (mesmo padrão)
+  - Verificação no confirm: server/storage/stagingStorage.ts loadAnalysisStaging()
+    recalcula SHA-256 e compara com expectedSha256 (payload.fileHash)
+  - Upload direto: documentService.uploadDocument() calcula sha256 do buffer
+
+5.5 Onde o documento é confirmado
+
+  - API: api/documents/confirm-analysis.ts
+  - Serviço: server/services/confirmAnalysisService.ts
+    função confirmAnalysisPersistence()
+  - Arquivo físico: persistConfirmedVersionFile() ->
+    loadAnalysisStaging -> storeUploadedDocumentFile -> deleteAnalysisStaging
+
+5.6 Onde storage.primary é montado
+
+  - server/storage/index.ts buildVersionStorage(stored)
+    R2: provider=cloudflare_r2, status=stored, objectKey, bucketAlias, storedAt
+    Local: provider=local
+  - Chamado por documentFileService.storeUploadedDocumentFile()
+
+5.7 Onde Mongo é atualizado
+
+  confirmAnalysisPersistence() insere em:
+    - documents (MongoDocument)
+    - documentVersions (MongoDocumentVersion) com storage, metadata, file, etc.
+    - processingJobs (MongoProcessingJob)
+    - auditLogs (2 eventos: metadata.confirmed + document.created)
+
+5.8 Onde o download lê o arquivo
+
+  - api/documents/download.ts
+  - server/services/documentFileService.ts readDocumentVersionFile()
+    1. Busca version no Mongo (objectKey, bucketAlias, provider)
+    2. Se provider=local e R2 ativo -> LEGACY_LOCAL_STORAGE (410)
+    3. getStorageProvider().readDocumentVersion(key, tenantId, bucketAlias)
+    4. Retorna buffer + finalFileName/originalFileName para Content-Disposition
+
+5.9 Frontend envolvido
+
+  - DocumentSendPage.tsx, useBulkUploadQueue.ts
+  - services/analyzePdf.ts, services/confirmAnalysis.ts
+  - authFetch com credentials:include (cookie doqyn_auth)
+  - NÃO há chamada frontend a /api/documents/download no src/ analisado
+    (download API existe no backend; UI de listagem ainda mock)
+
+
+6. ANÁLISE IA/RAG
+--------------------------------------------------------------------------------
+
+6.1 Onde ocorre
+
+  Entrada: server/ai/services/analyzePdfService.ts analyzePdfBuffer()
+
+  Pipeline (modo groq, AI_MODE != no_ai):
+    1. validatePdfUpload
+    2. extractTextFromPdf (pdf-parse)
+    3. loadActiveDocumentClassRules (Mongo regras/classes)
+    4. createDocumentChunks + retrievalProvider (modo "hybrid" in-memory)
+    5. classifyDocumentWithRules (LLM Groq via documentClassifierAgent)
+    6. extractMetadataWithRule (LLM Groq via metadataExtractorAgent)
+    7. generateRecommendedFileName (documentNaming.ts — template da regra)
+
+  Modo no_ai: server/ai/services/noAiAnalyzer.ts (sem LLM, template fixo)
+
+6.2 RAG atual
+
+  - server/services/retrievalProvider.ts — modo "hybrid" apenas
+  - Scoring em memória (hybridChunkRetriever.ts), NÃO vector DB externo
+  - Comentários indicam futuro: faiss, atlas_vector, google Document AI
+
+6.3 Dados extraídos
+
+  AnalyzePdfResponse inclui:
+    - classification: classId, className, confidence, requiresReview, evidence
+    - extraction: metadata (campos por regra), version, missingFields, reviewReasons
+    - recommendedFileName (gerado por template + metadados)
+    - textExtraction: pageCount, charCount, truncated
+    - fileHash, fileSizeBytes, jobId, logs
+
+6.4 O arquivo é salvo antes ou depois da análise?
+
+  DEPOIS da análise.
+  Ordem em api/ai/analyze-pdf.ts:
+    analyzePdfBuffer() -> storeAnalysisStaging()
+  A IA opera sobre buffer em memória; staging é persistência pós-análise.
+
+6.5 A análise depende do arquivo em staging?
+
+  NÃO. Depende apenas do buffer em memória durante a request.
+  O confirm-analysis depende do staging (ou falha).
+
+6.6 Nome sugerido é só metadata?
+
+  SIM para objectKey físico.
+  - generateRecommendedFileName() produz string para recommendedFileName
+  - confirm grava: recommendedFileName, finalFileName, currentFileName (documento)
+  - objectKey R2: documents/{documentId}/versions/{versionId}/original.pdf
+  - Testes confirmam: nome sugerido não aparece no path (document-storage-flow.test.ts)
+
+6.7 Classificação vira categoria do documento?
+
+  SIM no fluxo confirm:
+    - document.classId / className da regra Mongo
+    - version.classification persistida
+    - Governança usa document_classes + document_rules
+
+6.8 Fallback quando IA falha
+
+  - AiAnalysisError com códigos: EMPTY_FILE, FILE_TOO_LARGE, INSUFFICIENT_TEXT,
+    TEXT_EXTRACTION_FAILED, AI_RATE_LIMIT, CLASS_OR_RULE_NOT_FOUND, etc.
+  - status requires_review / ai_unavailable / failed no response
+  - no_ai mode para dev sem Groq
+  - Se classe fora das regras: requiresReview=true, extraction=null
+
+6.9 Metadados no Mongo (versão)
+
+  version.metadata: Record<string, MongoVersionMetadataField>
+  version.metadataIndex: array indexável (string/number/date)
+  document.currentMetadataPreview: preview simplificado
+
+
+7. SUGESTÃO DE NOME E METADADOS
+--------------------------------------------------------------------------------
+
+Geração:
+  server/ai/services/documentNaming.ts generateRecommendedFileName()
+  - Usa namingTemplate da DocumentClassRule
+  - Placeholders {campo} e {version}
+  - sanitizeFileNameSegment, ensurePdfExtension, limitFileNameLength
+  - Valores de metadados podem conter texto de negócio no NOME LÓGICO,
+    mas não no objectKey R2
+
+Persistência:
+  MongoDocumentVersion.recommendedFileName
+  MongoDocumentVersion.finalFileName (= recommendedFileName no confirm)
+  MongoDocument.originalFileName (nome do upload original)
+  MongoDocument.currentFileName (= recommendedFileName)
+
+Risco de vazamento para path:
+  BAIXO — buildDocumentVersionObjectKey usa apenas documentId, versionId, ext.
+
+
+8. STORAGE R2
+--------------------------------------------------------------------------------
+
+8.1 Arquivos e responsabilidades
+
+  | Arquivo                              | Responsabilidade                         |
+  |--------------------------------------|------------------------------------------|
+  | server/storage/r2/r2Clients.ts       | S3Client runtime vs admin                |
+  | server/storage/r2/r2BucketNaming.ts  | doqyn-t-<hash12> opaco                  |
+  | server/storage/r2/r2BucketProvisioner| HeadBucket/CreateBucket (admin)          |
+  | server/storage/r2/r2StorageProvider.ts| Put/Get/Delete + staging               |
+  | server/storage/getStorageProvider.ts | Factory com cache                      |
+  | server/storage/storageKeys.ts        | Object key builders                    |
+  | server/storage/stagingStorage.ts     | Orquestra staging load/store/delete    |
+  | server/storage/index.ts              | buildVersionStorage, isStorageConfigured|
+  | server/services/documentFileService.ts| store/read + LEGACY_LOCAL_STORAGE       |
+  | server/services/confirmAnalysisService.ts| persistConfirmedVersionFile          |
+
+8.2 Tokens
+
+  Admin (R2_ADMIN_ACCESS_KEY_ID / R2_ADMIN_SECRET_ACCESS_KEY):
+    - HeadBucket, CreateBucket em r2BucketProvisioner.ts
+    - Chamado via ensureTenantBucket() antes de operações por tenant
+
+  Runtime (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY):
+    - PutObject, GetObject, DeleteObject em r2StorageProvider.ts
+    - Staging tmp/* também usa runtime client
+
+  CLOUDFLARE_R2_ADMIN_API_TOKEN:
+    - Presente no .env / env-check
+    - NÃO usado no código de storage analisado (S3 API apenas)
+
+8.3 Bucket naming
+
+  Modo per_tenant (R2_BUCKET_MODE=per_tenant):
+    doqyn-t-<sha256(tenantId).slice(0,12)>
+    Exemplo determinístico: tenant "company_dev" -> hash fixo (ver testes r2-storage)
+
+  Modo shared: R2_DEFAULT_BUCKET
+
+  Sem PII no nome (r2BucketNaming.ts documentado e testado)
+
+8.4 Object key
+
+  Confirmado / versão:
+    {R2_KEY_PREFIX}/{documentId}/versions/{versionId}/original.{ext}
+    Default prefix: documents/...
+
+  Staging:
+    tmp/{jobId}/original.{ext}
+
+  Extensão: sanitizeFileExtension (MIME ou ext validada, nunca nome original)
+
+8.5 Provider R2 realmente usado?
+
+  SIM quando STORAGE_PROVIDER=r2 e config.r2 presente:
+    getStorageProvider() -> createR2StorageProvider()
+  isStorageConfigured() usa isR2StorageConfigured() (exige credenciais admin+runtime)
+
+8.6 Fallback local
+
+  STORAGE_PROVIDER=local -> createLocalStorageProvider() explicitamente
+  STORAGE_PROVIDER=r2 -> NÃO cai em local no getStorageProvider()
+  Risco silencioso: se STORAGE_PROVIDER=r2 mas isR2StorageConfigured() false,
+    isStorageConfigured() false -> staging skipped, storage pending no confirm
+    (não grava em disco local sem perceber, mas também não grava no R2)
+
+8.7 Original intacto
+
+  PutObject envia buffer do staging sem transformação
+  Nenhuma compressão/re-encode no pipeline confirmado
+  Preview futuro deve ser objeto separado (não sobrescrever original)
+
+
+9. MONGODB METADATA
+--------------------------------------------------------------------------------
+
+9.1 storage.primary (MongoStorageSlot)
+
+  Campos: provider, status, objectKey, bucketAlias, storedAt
+  provider valores: 'aws_s3' | 'cloudflare_r2' | 'local'
+  R2 ativo grava: cloudflare_r2 + stored + objectKey + bucketAlias
+
+9.2 storage.backup
+
+  Placeholder aws_s3/cloudflare_r2 com status pending
+  Não implementado como réplica real
+
+9.3 Campos de arquivo/nome (MongoDocumentVersion)
+
+  | Campo              | Uso atual              | Classificação              |
+  |--------------------|------------------------|----------------------------|
+  | originalFileName   | Nome do upload         | usado atualmente           |
+  | recommendedFileName| Nome IA sugerido       | usado atualmente           |
+  | finalFileName      | Nome para download UI  | usado atualmente           |
+  | file.mimeType      | application/pdf etc.   | usado atualmente           |
+  | file.extension     | pdf                    | usado atualmente           |
+  | file.sizeBytes     | tamanho                | usado atualmente           |
+  | file.sha256        | integridade            | usado atualmente           |
+  | file.pageCount     | extração PDF           | usado atualmente           |
+
+9.4 Metadados legados / dívida técnica
+
+  | Campo / padrão           | Classificação                    |
+  |--------------------------|----------------------------------|
+  | keycloakUserId (members) | legado tolerável — dados Mongo   |
+  | KEYCLOAK_* audit actions | legado tolerável — logs antigos  |
+  | companyId + tenantId     | duplicado migração — tolerável   |
+  | ownerTenantId/ownerUserId | usado isolamento individual   |
+  | storage backup pending   | candidato migração / limpeza     |
+  | upload_legacy path       | legado — upload direto           |
+  | provider local antigo    | candidato migração R2            |
+  | VersioningPage mocks     | candidato implementação futura   |
+  | DocumentsPage mocks      | candidato integração API real    |
+
+  Nenhum campo sensível (CPF/CNPJ/email) confirmado em objectKey R2.
+
+
+10. SEGURANÇA E EXPOSIÇÃO DE DADOS
+--------------------------------------------------------------------------------
+
+  [OK] Nenhuma variável VITE_R2_* no .env (r2:env-check)
+  [OK] Nenhuma referência VITE_*R2* no código (r2-env-check scan)
+  [OK] @aws-sdk/client-s3 apenas server-side (package.json dependencies)
+  [OK] Logs de bucket em r2BucketProvisioner: apenas bucketName opaco + status
+  [OK] sanitizeAuditMetadata usado em confirm-analysis
+  [OK] Download: Cache-Control private, no-store; sem URL pública R2
+  [OK] Sem getSignedUrl / presigned no repositório analisado
+  [OK] auth-service não recebe variáveis R2 (fora do escopo deste repo)
+
+  Atenção:
+  - analyze-pdf logs incluem fileName do request context (pode ser nome original)
+  - Download Content-Disposition usa finalFileName (metadata, não objectKey)
+
+
+11. LOCAL STORAGE LEGADO
+--------------------------------------------------------------------------------
+
+  Comportamento:
+  - STORAGE_PROVIDER=local ainda funciona (testes unitários)
+  - STORAGE_PROVIDER=r2: documentos antigos com storage.primary.provider=local
+    -> readDocumentVersionFile retorna 410 LEGACY_LOCAL_STORAGE
+  - Listagem Mongo: NÃO quebra (metadados permanecem)
+  - Download: quebra com erro controlado para provider local
+
+  Migração local -> R2:
+  - NÃO implementada
+  - Campos necessários para migrar: objectKey atual, tenantId, documentId,
+    versionId, buffer source (disco), novo bucketAlias, atualizar provider
+
+  Plano necessário: SIM (script offline futuro, fora do escopo atual)
+
+
+12. KEYCLOAK / METADADOS LEGADOS
+--------------------------------------------------------------------------------
+
+  Keycloak removido do fluxo de auth ativo (doqyn_auth).
+  Resíduos toleráveis identificados:
+  - keycloakUserId em tenant_members / tipos Mongo
+  - Ações de auditoria KEYCLOAK_USER_* em tipos (logs históricos)
+  - Índices Mongo em keycloakUserId (setupMongo, ensure-mongodb-indexes)
+
+  Classificação: dívida técnica futura — renomear/migrar campo para authUserId
+  Não impacta fluxo R2 de documentos.
+
+
+13. PREVIEW FUTURO COM MARCA D'ÁGUA DOQYN
+--------------------------------------------------------------------------------
+
+  Estado atual: NÃO IMPLEMENTADO (nenhum código de preview/watermark/thumbnail)
+
+  Proposta arquitetural (recomendada):
+
+  13.1 Quando gerar
+    - APÓS confirm-analysis persistir original com sucesso (storage.primary stored)
+    - Job assíncrono (processingJobs ou fila dedicada preview_jobs)
+
+  13.2 Object keys sugeridas
+    documents/{documentId}/versions/{versionId}/preview/preview.pdf
+    documents/{documentId}/versions/{versionId}/preview/thumbnail.webp
+    documents/{documentId}/versions/{versionId}/extracted/ocr.json (opcional)
+    documents/{documentId}/versions/{versionId}/extracted/metadata.json (opcional)
+
+  13.3 Mongo — estender storage ou slot dedicado
+    Opção A: storage.preview: { provider, status, objectKey, bucketAlias, storedAt }
+    Opção B: storage.primary mantém original; storage.derivatives.preview = {...}
+    status sugeridos: pending | processing | ready | failed
+
+  13.4 Frontend
+    - Visualização inline: GET /api/documents/preview?documentId=&versionId=
+      (backend faz GetObject do preview, nunca URL R2 direta)
+    - Se preview.status != ready: UI "Preview em processamento"
+    - Download oficial: continua /api/documents/download (original)
+    - Nunca carregar PDF 60MB no browser para visualização
+
+  13.5 Marca d'água DOQYN
+    - Aplicar no worker de preview (PDF->PDF otimizado ou rasterize+overlay)
+    - Original em .../original.pdf permanece sem watermark
+    - Biblioteca sugerida: avaliar pdf-lib, ghostscript, ou serviço dedicado
+
+  13.6 Regeneração
+    - Endpoint admin POST /api/documents/regenerate-preview
+    - Idempotente: sobrescreve preview/ mantendo original
+
+  13.7 Falhas
+    - preview.status=failed + processingJob error
+    - Auditoria PREVIEW_FAILED (recomendado, ver seção 14)
+
+
+14. AUDITORIA / LOGS
+--------------------------------------------------------------------------------
+
+  Eventos atuais no fluxo confirm:
+  - document.metadata.confirmed | document.metadata.reviewed_confirmed
+  - document.created (metadata inclui storageStatus: stored|pending)
+  - processingJobs com steps do analyze (persisted, etc.)
+
+  Upload legado:
+  - document.created com metadata source=upload_legacy
+
+  O que NÃO está auditado explicitamente:
+  - STORAGE_OBJECT_CREATED / DELETED
+  - BUCKET_PROVISIONED (apenas logger.info em r2BucketProvisioner)
+  - Falhas PutObject/GetObject R2 (apenas logs de erro genéricos)
+  - PREVIEW_GENERATED / PREVIEW_FAILED
+
+  Recomendação futura (não implementar agora):
+  - STORAGE_OBJECT_CREATED ao PutObject confirmado
+  - STORAGE_OBJECT_DELETED no rollback/delete
+  - BUCKET_PROVISIONED quando created=true (sem secrets)
+  - PREVIEW_* quando preview existir
+  - Incluir em metadata: provider, status, documentId, versionId (sem objectKey
+    completo se política exigir — ou hash curto do key)
+
+
+15. RISCOS
+--------------------------------------------------------------------------------
+
+  ALTO
+  - Versionamento UI mock: usuários podem achar que nova versão funciona
+  - Frontend listagem mock: desconexão entre docs reais e UI
+
+  MÉDIO
+  - Staging pós-IA: análise ok + staging fail = retrabalho do usuário
+  - storage pending se misconfig: documento Mongo sem arquivo
+  - Sem eventos audit storage: difícil investigar falhas R2
+  - DocumentsPage sem download integrado apesar de API existir
+
+  BAIXO
+  - provider cloudflare_r2 vs "r2" (semântica)
+  - backup slot pending permanente
+  - Metadados keycloakUserId legados
+
+
+16. RECOMENDAÇÕES
+--------------------------------------------------------------------------------
+
+  Curto prazo:
+  1. Integrar DocumentsPage com GET /api/documents (dados reais)
+  2. Adicionar botão download via /api/documents/download
+  3. Documentar ordem staging pós-IA ou mover staging antes da IA
+  4. Incluir storageProvider e bucketAlias em audit metadata do confirm
+  5. Alertar no confirm se storageStatus=pending
+
+  Médio prazo:
+  6. API de nova versão (reusar analyze+confirm com previousVersionId)
+  7. Implementar VersioningPage com backend real
+  8. Script migração local->R2 (manual, idempotente)
+  9. Eventos audit STORAGE_*
+
+  Longo prazo:
+  10. Pipeline preview assíncrono + watermark DOQYN
+  11. Endpoint preview backend + thumbnail
+  12. Vector RAG (faiss/atlas) se necessário escala
+
+
+17. PLANO DE IMPLEMENTAÇÃO FUTURA EM ETAPAS
+--------------------------------------------------------------------------------
+
+  Etapa 1 — Consistência produto/storage
+    - UI docs reais + download
+    - Validação storageStatus no confirm response
+    - Testes E2E analyze->confirm->download com R2 mock
+
+  Etapa 2 — Versionamento
+    - POST /api/documents/{id}/versions (analyze+confirm adaptado)
+    - VersioningPage integrada
+
+  Etapa 3 — Migração legado
+    - Relatório docs provider=local
+    - Script migração opcional
+    - Manter LEGACY_LOCAL_STORAGE até migração completa
+
+  Etapa 4 — Preview
+    - Worker preview pós-confirm
+    - Mongo storage.preview
+    - GET /api/documents/preview
+    - UI estados: ready / processing / unavailable
+
+  Etapa 5 — Auditoria storage
+    - Eventos STORAGE_OBJECT_*, BUCKET_PROVISIONED, PREVIEW_*
+
+
+18. COMANDOS EXECUTADOS E RESULTADOS
+--------------------------------------------------------------------------------
+
+  Data execução: 2026-07-01
+
+  npm run r2:env-check
+    Resultado: OK (todas variáveis R2 presentes; sem VITE_R2; provider implementado)
+
+  npm test
+    Resultado: OK — 90 testes, 24 suites, 0 falhas
+
+  npm run build
+    Resultado: OK — tsc -b && vite build concluído
+
+  npm run lint
+    Resultado: OK — eslint sem erros
+
+  npx tsc --noEmit
+    Resultado: OK
+
+  npm run r2:smoke
+    Resultado: NÃO EXECUTADO (instrução da auditoria — evita bucket/objeto real)
+
+
+19. ARQUIVOS ANALISADOS
+--------------------------------------------------------------------------------
+
+  API
+    api/ai/analyze-pdf.ts
+    api/documents/confirm-analysis.ts
+    api/documents/upload.ts
+    api/documents/download.ts
+    api/documents/index.ts
+
+  Storage
+    server/storage/getStorageProvider.ts
+    server/storage/index.ts
+    server/storage/storageConfig.ts
+    server/storage/storageKeys.ts
+    server/storage/storageProvider.ts
+    server/storage/stagingStorage.ts
+    server/storage/localStorageProvider.ts
+    server/storage/r2/r2Clients.ts
+    server/storage/r2/r2BucketNaming.ts
+    server/storage/r2/r2BucketProvisioner.ts
+    server/storage/r2/r2StorageProvider.ts
+
+  Serviços
+    server/services/confirmAnalysisService.ts
+    server/services/documentFileService.ts
+    server/services/documentService.ts
+    server/services/meService.ts (não no fluxo docs)
+    server/services/retrievalProvider.ts
+
+  IA
+    server/ai/services/analyzePdfService.ts
+    server/ai/services/documentNaming.ts
+    server/ai/services/noAiAnalyzer.ts
+    server/ai/services/pdfTextExtractor.ts
+    server/ai/services/documentClassifierAgent.ts
+    server/ai/services/metadataExtractorAgent.ts
+
+  DB
+    server/db/types.ts
+
+  Frontend
+    src/features/document-send/DocumentSendPage.tsx
+    src/features/document-send/hooks/useBulkUploadQueue.ts
+    src/features/document-send/services/analyzePdf.ts
+    src/features/document-send/services/confirmAnalysis.ts
+    src/features/documents/DocumentsPage.tsx
+    src/features/versioning/VersioningPage.tsx
+
+  Scripts/validação
+    scripts/r2-env-check.mjs
+    tests/document-storage-flow.test.ts
+    tests/r2-storage.test.ts
+    tests/r2-storage-config.test.ts
+
+  Config
+    package.json
+    server/dev-server.ts
+
+
+20. PENDÊNCIAS
+--------------------------------------------------------------------------------
+
+  [ ] Integrar UI de documentos com API real (hoje mocks em várias telas)
+  [ ] Implementar versionamento real (backend + VersioningPage)
+  [ ] Pipeline preview + marca d'água DOQYN
+  [ ] Migração documentos local -> R2
+  [ ] Eventos audit dedicados para storage R2
+  [ ] Avaliar ordem staging vs análise IA
+  [ ] Executar npm run r2:smoke manualmente quando desejado (cria objeto real)
+  [ ] Limpar/migrar metadados keycloakUserId (dívida técnica auth, não storage)
+
+================================================================================
+CONCLUSÃO
+================================================================================
+
+O fluxo atual COM STORAGE_PROVIDER=r2 IMPLEMENTA o pipeline central:
+
+  upload -> IA/RAG (memória) -> staging tmp -> confirm -> R2 original -> Mongo
+
+O nome sugerido pela IA permanece em metadata Mongo e NÃO contamina objectKey.
+
+FALTA para o produto completo:
+  - preview otimizado com marca d'água DOQYN (não iniciado)
+  - versionamento real de documentos existentes (UI mock)
+  - integração frontend listagem/download com APIs reais
+  - migração e auditoria storage ampliada
+
+Nenhuma alteração de código foi feita nesta auditoria além da criação deste arquivo.
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

@@ -96,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fileSize: file?.size ?? 0,
       mimeType: file?.mimeType ?? 'application/octet-stream',
       fileBuffer: file?.buffer,
+      storageScope: ctx.storageScope,
     });
 
     return res.status(201).json(result);
