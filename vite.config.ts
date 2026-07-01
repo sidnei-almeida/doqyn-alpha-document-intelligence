@@ -9,6 +9,36 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (
+            id.includes('/react-dom/') ||
+            id.includes('/react/') ||
+            id.includes('react-router') ||
+            id.includes('scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+
+          if (id.includes('@tanstack/react-query')) {
+            return 'vendor-query';
+          }
+
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons';
+          }
+
+          if (id.includes('@dnd-kit/')) {
+            return 'vendor-dnd';
+          }
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {

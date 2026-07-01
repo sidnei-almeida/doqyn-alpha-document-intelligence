@@ -2,25 +2,26 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Login } from '@/pages/Login';
 import { ProtectedRoute, PublicRoute } from '@/features/auth/ProtectedRoute';
-import { AuditPage } from '@/features/audit/AuditPage';
-import { DashboardPage } from '@/features/documents/DashboardPage';
-import { DocumentsPage } from '@/features/documents/DocumentsPage';
-import { SettingsPage } from '@/features/documents/SettingsPage';
-import { DocumentSendPage } from '@/features/document-send/DocumentSendPage';
-import { RulesPage } from '@/features/rules/RulesPage';
-import { UserManagementRoute } from '@/features/users/UserManagementRoute';
-import { VersioningPage } from '@/features/versioning/VersioningPage';
-
-import { RequestAccessPage } from '@/features/access-request/RequestAccessPage';
-import { AccessChoicePage } from '@/features/access-request/AccessChoicePage';
-import { CompanySignupPage } from '@/features/company-signup/CompanySignupPage';
-import { IndividualSignupPage } from '@/features/individual-signup/IndividualSignupPage';
+import {
+  AccessChoiceRoute,
+  AuditRoute,
+  CompanySignupRoute,
+  DashboardRoute,
+  DocumentSendRoute,
+  DocumentsRoute,
+  IndividualSignupRoute,
+  RequestAccessRoute,
+  RulesRoute,
+  SettingsRoute,
+  UserManagementRouteLazy,
+  VersioningRoute,
+} from '@/app/lazyRoutes';
 
 export const router = createBrowserRouter([
-  { path: '/acesso', element: <AccessChoicePage /> },
-  { path: '/solicitar-acesso', element: <RequestAccessPage /> },
-  { path: '/criar-empresa', element: <CompanySignupPage /> },
-  { path: '/criar-acesso-cpf', element: <IndividualSignupPage /> },
+  { path: '/acesso', element: <AccessChoiceRoute /> },
+  { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
+  { path: '/criar-empresa', element: <CompanySignupRoute /> },
+  { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
   {
     element: <PublicRoute />,
     children: [{ path: '/login', element: <Login /> }],
@@ -31,14 +32,14 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/dashboard', element: <DashboardPage /> },
-          { path: '/upload', element: <DocumentSendPage /> },
-          { path: '/rules', element: <RulesPage /> },
-          { path: '/users', element: <UserManagementRoute /> },
-          { path: '/documents', element: <DocumentsPage /> },
-          { path: '/versioning', element: <VersioningPage /> },
-          { path: '/audit', element: <AuditPage /> },
-          { path: '/settings', element: <SettingsPage /> },
+          { path: '/dashboard', element: <DashboardRoute /> },
+          { path: '/upload', element: <DocumentSendRoute /> },
+          { path: '/rules', element: <RulesRoute /> },
+          { path: '/users', element: <UserManagementRouteLazy /> },
+          { path: '/documents', element: <DocumentsRoute /> },
+          { path: '/versioning', element: <VersioningRoute /> },
+          { path: '/audit', element: <AuditRoute /> },
+          { path: '/settings', element: <SettingsRoute /> },
         ],
       },
     ],
