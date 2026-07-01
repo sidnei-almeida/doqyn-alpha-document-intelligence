@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCompanyIdFromUser } from '../../server/auth/companyContext.js';
 import { canAnalyzeDocuments } from '../../server/auth/permissions.js';
 import { requireAuth } from '../../server/auth/requireAuth.js';
+import { resolveTenantStorageScopeFromAuthUser } from '../../server/tenancy/documentRequestContext.js';
 import { analyzePdfBuffer } from '../../server/ai/services/analyzePdfService.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
@@ -102,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (isStorageConfigured()) {
       try {
+        const storageScope = resolveTenantStorageScopeFromAuthUser(user);
         await storeAnalysisStaging({
           tenantId: companyId,
           ownerUserId: user.id,
@@ -109,6 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           buffer: file.buffer,
           mimeType: file.mimeType,
           originalFileName: file.filename,
+          storageScope,
         });
       } catch (stagingError) {
         if (isServiceError(stagingError)) {

@@ -56,29 +56,41 @@ export function buildDocumentVersionStorageKey(input: {
   return `documents/${input.tenantId}/${input.documentId}/versions/${input.versionId}/original.${extension}`;
 }
 
-/** Object key R2 — sem tenant no path (bucket já é por tenant). */
+function joinStorageKeyParts(...parts: string[]): string {
+  return parts
+    .map((part) => part.replace(/^\/+|\/+$/g, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
+/** Object key R2 — business sem basePrefix; individual com basePrefix opaco. */
 export function buildDocumentVersionObjectKey(input: {
   documentId: string;
   versionId: string;
   extension: string;
   keyPrefix?: string;
+  basePrefix?: string;
 }): string {
   assertSafeStorageSegment(input.documentId, 'documentId');
   assertSafeStorageSegment(input.versionId, 'versionId');
 
   const extension = sanitizeFileExtension({ extension: input.extension });
-  const prefix = (input.keyPrefix || 'documents').replace(/\/+$/, '');
-  return `${prefix}/${input.documentId}/versions/${input.versionId}/original.${extension}`;
+  const keyPrefix = (input.keyPrefix || 'documents').replace(/\/+$/, '');
+  const objectPath = `${keyPrefix}/${input.documentId}/versions/${input.versionId}/original.${extension}`;
+
+  return joinStorageKeyParts(input.basePrefix ?? '', objectPath);
 }
 
 /** Staging temporário entre analyze-pdf e confirm-analysis. */
 export function buildAnalysisStagingKey(input: {
   jobId: string;
   extension: string;
+  basePrefix?: string;
 }): string {
   assertSafeStorageSegment(input.jobId, 'jobId');
   const extension = sanitizeFileExtension({ extension: input.extension });
-  return `tmp/${input.jobId}/original.${extension}`;
+  const stagingPath = `tmp/${input.jobId}/original.${extension}`;
+  return joinStorageKeyParts(input.basePrefix ?? '', stagingPath);
 }
 
 /** @deprecated legado local — mantido para paths antigos em disco. */

@@ -1,3 +1,4 @@
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import {
@@ -40,6 +41,7 @@ export async function storeUploadedDocumentFile(input: {
   buffer: Buffer;
   mimeType: string;
   originalFileName: string;
+  storageScope?: TenantStorageScope;
 }): Promise<MongoDocumentVersion['storage']> {
   const provider = getStorageProvider();
   if (!provider || input.buffer.length === 0) {
@@ -54,6 +56,7 @@ export async function storeUploadedDocumentFile(input: {
     buffer: input.buffer,
     mimeType: input.mimeType,
     extension,
+    storageScope: input.storageScope,
   });
 
   if (!stored) {

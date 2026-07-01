@@ -49,6 +49,29 @@ export async function createTenantBucket(client: S3Client, bucket: string): Prom
   }
 }
 
+export type EnsureSharedBucketInput = {
+  bucketName: string;
+  config: R2Config;
+  adminClient?: S3Client;
+};
+
+export async function ensureSharedBucket(
+  input: EnsureSharedBucketInput,
+): Promise<{ bucket: string; created: boolean }> {
+  const bucket = input.bucketName.trim();
+  const adminClient = input.adminClient ?? createR2AdminClient(input.config);
+
+  const exists = await headTenantBucket(adminClient, bucket);
+  if (exists) {
+    logger.info('r2 shared bucket ready', { bucket, status: 'exists' });
+    return { bucket, created: false };
+  }
+
+  await createTenantBucket(adminClient, bucket);
+  logger.info('r2 shared bucket ready', { bucket, status: 'created' });
+  return { bucket, created: true };
+}
+
 export async function ensureTenantBucket(
   input: EnsureTenantBucketInput,
 ): Promise<{ bucket: string; created: boolean }> {
@@ -64,4 +87,30 @@ export async function ensureTenantBucket(
   await createTenantBucket(adminClient, bucket);
   logger.info('r2 bucket ready', { bucket, status: 'created' });
   return { bucket, created: true };
+}
+
+export type EnsureBucketForScopeInput = {
+  bucketMode: 'per_tenant' | 'shared';
+  bucketName: string;
+  tenantId: string;
+  config: R2Config;
+  adminClient?: S3Client;
+};
+
+export async function ensureBucketForStorageScope(
+  input: EnsureBucketForScopeInput,
+): Promise<{ bucket: string; created: boolean }> {
+  if (input.bucketMode === 'shared') {
+    return ensureSharedBucket({
+      bucketName: input.bucketName,
+      config: input.config,
+      adminClient: input.adminClient,
+    });
+  }
+
+  return ensureTenantBucket({
+    tenantId: input.tenantId,
+    config: input.config,
+    adminClient: input.adminClient,
+  });
 }

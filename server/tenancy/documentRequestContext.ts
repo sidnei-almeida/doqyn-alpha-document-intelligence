@@ -4,8 +4,13 @@ import { getTenantIdFromUser } from '../auth/tenantContext.js';
 import { usesDoqynAuth } from '../auth/authConfig.js';
 import { verifyDoqynAuthSession } from '../auth/providers/doqynAuthProvider.js';
 import { requireAuth } from '../auth/requireAuth.js';
+import type { TenantType } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { getTenantCollections, type TenantCollections } from './getTenantCollections.js';
+import {
+  resolveTenantStorageScope,
+  type TenantStorageScope,
+} from './resolveTenantStorageScope.js';
 import type { TenantStorageContext } from './tenantStorage.js';
 
 export type DocumentRequestContext = {
@@ -14,8 +19,43 @@ export type DocumentRequestContext = {
   membershipId?: string;
   tenantType?: string;
   storage: TenantStorageContext;
+  storageScope: TenantStorageScope;
   collections: TenantCollections;
 };
+
+function normalizeTenantType(value: string | undefined): TenantType {
+  return value === 'individual' ? 'individual' : 'business';
+}
+
+function buildStorageScope(input: {
+  tenantId: string;
+  tenantType: TenantType;
+  userId: string;
+}): TenantStorageScope {
+  return resolveTenantStorageScope({
+    tenantId: input.tenantId,
+    tenantType: input.tenantType,
+    ownerUserId: input.userId,
+  });
+}
+
+export function resolveTenantStorageScopeFromAuthUser(user: AuthUser): TenantStorageScope {
+  const tenantId = getTenantIdFromUser(user);
+  const userId = user.id?.trim();
+  if (!userId) {
+    throw new ServiceError(
+      'Contexto de usuário incompleto.',
+      'OWNER_CONTEXT_REQUIRED',
+      400,
+    );
+  }
+
+  return buildStorageScope({
+    tenantId,
+    tenantType: normalizeTenantType(user.tenantType),
+    userId,
+  });
+}
 
 export function resolveDocumentContextFromUser(user: AuthUser): {
   tenantId: string;
@@ -53,6 +93,11 @@ export async function buildDocumentRequestContext(
     ...base,
     tenantType: collections.tenant.tenantType,
     storage: collections.storage,
+    storageScope: buildStorageScope({
+      tenantId: base.tenantId,
+      tenantType: collections.tenant.tenantType,
+      userId: base.userId,
+    }),
     collections,
   };
 }
@@ -83,6 +128,11 @@ export async function requireDocumentRequestContext(
       membershipId: activeMembership.membershipId,
       tenantType: activeMembership.tenantType,
       storage: collections.storage,
+      storageScope: buildStorageScope({
+        tenantId: activeMembership.tenantId,
+        tenantType: normalizeTenantType(activeMembership.tenantType),
+        userId: user.id,
+      }),
       collections,
     };
   }

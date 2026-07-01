@@ -1,0 +1,859 @@
+================================================================================
+DOQYN Alpha Document Intelligence + doqyn_auth
+AUDITORIA COMPLEMENTAR: LOGIN → SESSÃO → MEMBERSHIP → TENANT → BUCKET R2
+Data: 2026-07-01
+Projeto principal: ~/Documents/GitHub/doqyn-alpha-document-intelligence
+Auth-service:      ~/Documents/GitHub/doqyn-auth-service
+Tipo: Análise somente leitura — nenhum código, .env, banco ou storage alterado
+================================================================================
+
+1. RESUMO EXECUTIVO
+--------------------------------------------------------------------------------
+
+Esta auditoria cobre exclusivamente a cadeia:
+
+  login → sessão doqyn_auth → membership ativa → tenant (company/individual)
+  → resolução de bucket R2
+
+Conclusão principal:
+  - O isolamento lógico de documentos (Mongo) está bem modelado: CNPJ/empresa usa
+    collections dedicadas por tenantId; CPF/pessoa física usa pool compartilhado
+    com ownerUserId obrigatório.
+  - A resolução de bucket R2 NÃO distingue company vs individual: com
+    R2_BUCKET_MODE=per_tenant, cada tenantId (incluindo cada CPF cadastrado)
+    recebe bucket próprio doqyn-t-<hash12>. Isso é efeito colateral da fórmula
+    atual, não uma decisão arquitetural explícita para CPF.
+  - Não existe função central resolveTenantStorageScope(session) que una sessão,
+    tenantKind, bucketMode, bucketName e keyPrefix.
+  - O frontend não escolhe tenantId/bucket; o backend resolve a partir da sessão.
+  - Provisionamento R2 é lazy (primeiro upload/operação), sem status persistido.
+
+Recomendação arquitetural:
+  a) CNPJ (business)  → manter bucket próprio por tenant (comportamento atual OK)
+  b) CPF (individual) → bucket compartilhado + prefixo opaco por tenant no object key
+
+Validações executadas nesta auditoria (sem r2:smoke):
+  - npm run r2:env-check ............... OK
+  - npm test ......................... 90/90 OK
+  - npm run build .................... OK
+  - npm run lint ..................... OK
+  - npx tsc --noEmit ................. OK
+  - npm run r2:smoke ................. NÃO EXECUTADO (conforme instrução)
+
+
+2. LOGIN E SESSÃO
+--------------------------------------------------------------------------------
+
+2.1 Como o app principal valida a sessão
+----------------------------------------
+
+Fluxo doqyn_auth (provider oficial):
+
+  1. Cookie de sessão lido do request (nome configurável via authConfig)
+  2. server/auth/providers/doqynAuthProvider.ts
+     → POST {DOQYN_AUTH_BASE_URL}/internal/sessions/verify
+     → Authorization: Bearer {DOQYN_INTERNAL_API_KEY}
+     → body: { sessionToken }
+  3. Auth-service valida token, usuário, membership ativa e tenant
+  4. Retorno: { ok, user, activeMembership, memberships }
+
+Em caso de falha:
+  - Códigos: INVALID_SESSION, USER_NOT_ACTIVE, TENANT_NOT_ACTIVE,
+    MEMBERSHIP_NOT_ACTIVE
+  - HTTP mapeado em VERIFY_CODE_TO_HTTP (401/403)
+  - Falha de rede → 502 AUTH_SERVICE_UNAVAILABLE
+
+Legado JWT temporário ainda suportado em requireAuth quando usesDoqynAuth()=false,
+mas produção usa doqyn_auth.
+
+2.2 Endpoints que usam requireAuth / memberAuth / contexto documental
+---------------------------------------------------------------------
+
+requireAuth (server/auth/requireAuth.ts):
+  - Exige sessão válida + activeMembership não nula (modo doqyn_auth)
+  - Mapeia sessão → AuthUser via mapDoqynSessionToAuthUser
+
+requireDocumentRequestContext (server/tenancy/documentRequestContext.ts):
+  - Revalida sessão via verifyDoqynAuthSession
+  - Resolve tenantId/userId/membershipId diretamente de activeMembership
+  - Carrega collections Mongo + TenantStorageContext
+
+memberAuth (server/auth/memberAuth.ts):
+  - NÃO é middleware de autenticação
+  - Helpers RBAC: userIsDoqynAdmin, userCanManageUsers, resolveTargetCompanyId,
+    assertCanManageCompany, getMemberPlatformRoles, etc.
+  - Usado em gestão de membros e APIs administrativas
+
+Tabela de endpoints API (app principal):
+
+  Endpoint                              Auth
+  ------------------------------------  ------------------------------------------
+  GET  /api/me                          verifyDoqynAuthSession (doqyn) ou requireAuth
+  POST /api/ai/analyze-pdf              requireAuth
+  POST /api/documents/confirm-analysis  requireAuth + buildDocumentRequestContext
+  GET  /api/documents                   requireDocumentRequestContext
+  POST /api/documents/upload            requireDocumentRequestContext
+  GET  /api/documents/download          requireDocumentRequestContext
+  GET  /api/audit                       requireDocumentRequestContext
+  GET  /api/audit/overview              requireDocumentRequestContext
+  GET  /api/document-rules/active       requireAuth
+  POST /api/internal/tenants/provision  assertAppInternalApiKey (sem sessão usuário)
+
+Demais rotas de governança (document-classes, document-categories, document-groups,
+document-rules, document-extraction-rules, company-members/*) usam withAdminMongoApi,
+que internamente chama requireAuth e resolve tenantId via getTenantIdFromUser(user).
+
+Rotas públicas/auth proxy: /api/auth/login, logout, access-requests (proxy auth-service).
+
+2.3 O /api/me retorna tenant ativo?
+-----------------------------------
+
+SIM, quando há activeMembership.
+
+Modo doqyn_auth (resolveMeFromDoqynAuth em server/services/meService.ts):
+  - tenant.tenantId      ← activeMembership.tenantId
+  - tenant.tenantType    ← activeMembership.tenantType ('individual' | 'business')
+  - tenant.displayName   ← activeMembership.tenantDisplayName
+  - membership.*         ← roles, accessGroupIds, status, membershipId
+  - legacyUser           ← compatibilidade (tenantId, tenantType, platformRoles)
+
+Observação: /api/me NÃO retorna a lista memberships[] — apenas o tenant ativo.
+A lista completa está em GET /auth/session no auth-service.
+
+taxIdType/taxIdMasked: presentes no resolveMeResponse (caminho legado Mongo),
+mas ausentes no resolveMeFromDoqynAuth (apenas tenantType do auth-service).
+
+2.4 O auth-service retorna activeMembership?
+--------------------------------------------
+
+SIM, em múltiplos pontos:
+
+  POST /internal/sessions/verify  → activeMembership + memberships
+  GET  /auth/session              → activeMembership + memberships
+  POST /auth/select-tenant        → activeMembership atualizada
+  POST /auth/company-signups      → activeMembership no signup
+  POST /auth/individual-signups   → activeMembership no signup
+
+Schema PublicMembership (memberships.schemas.ts):
+  membershipId, tenantId, tenantType, tenantDisplayName, status,
+  roles[], accessGroupIds[]
+
+Persistência: authSession.activeMembershipId (Postgres/Prisma).
+
+2.5 O usuário pode ter múltiplos tenants?
+-----------------------------------------
+
+SIM.
+
+  - Um authUser pode ter N authMemberships em tenants distintos
+  - sessionContext.service.ts lista todas via listUserMemberships
+  - memberships[] retornado na verificação de sessão
+
+2.6 Como o tenant ativo é escolhido?
+------------------------------------
+
+Auth-service (sessionContext.service.ts + auth.service.ts):
+
+  1. Login: se exatamente 1 membership status=active → auto-grava
+     activeMembershipId na sessão
+  2. Se 0 ou >1 memberships ativas → activeMembership = null até seleção
+  3. POST /auth/select-tenant { tenantId?, membershipId? }
+     → setSessionActiveMembership → atualiza authSession.activeMembershipId
+  4. buildSessionContext valida membership usável + tenant ativo
+
+App principal:
+  - requireAuth bloqueia se activeMembership ausente (403 NO_ACTIVE_MEMBERSHIP)
+  - requireDocumentRequestContext usa activeMembership.tenantId diretamente
+  - assertQueryTenantMatchesSession rejeita ?tenantId= diferente da sessão (403)
+
+Frontend:
+  - AuthProvider consome /api/me; AccessGateScreen para pending/blocked/no_membership
+  - Seleção de tenant: via auth-service /auth/select-tenant (não via header/body
+    arbitrário no app principal)
+
+
+3. TENANT COMPANY VS INDIVIDUAL
+--------------------------------------------------------------------------------
+
+3.1 Onde o sistema diferencia empresa/CNPJ de pessoa física/CPF?
+----------------------------------------------------------------
+
+Auth-service (fonte primária de identidade):
+  - authTenant.tenantType: 'business' | 'individual' (Prisma enum TenantType)
+  - authTenant.taxIdType, taxIdHash, taxIdMasked
+  - Signup empresa: companySignups.service.ts → tenantType: 'business'
+  - Signup individual: individualSignups.service.ts → tenantType: 'individual'
+  - tenantId gerado: generateBusinessTenantId / generateIndividualTenantId
+    (nunca contém CPF/CNPJ — utils/tenantId.ts)
+
+App principal (fonte operacional documental):
+  - Mongo registry tenants: tenantType, taxIdType ('CPF'|'CNPJ')
+  - isolation.strategy:
+      business   → 'collection_prefix' (prefixo = tenantId)
+      individual → 'shared_individual_pool' (prefixo = 'compartilhado')
+  - resolveActiveTenant (tenantResolver.ts) valida coerência tipo × taxId × strategy
+
+3.2 Qual campo indica isso?
+---------------------------
+
+  Camada          Campo principal        Valores
+  --------------  -------------------  ---------------------------
+  Auth Postgres   tenantType           individual | business
+  Auth Postgres   taxIdType            CPF | CNPJ (implícito no signup)
+  Sessão          activeMembership     .tenantType
+  Mongo tenant    tenantType           individual | business
+  Mongo tenant    taxIdType            CPF | CNPJ
+  Mongo tenant    isolation.strategy   shared_individual_pool | collection_prefix
+
+3.3 Esse campo vem do auth-service/Postgres?
+--------------------------------------------
+
+SIM para sessão e signup. O app principal recebe tenantType no provisionamento
+interno (POST /api/internal/tenants/provision) chamado por
+auth-service/integrations/appProvisioning.ts após signup/aprovação.
+
+3.4 É persistido/refletido no Mongo do app principal?
+-----------------------------------------------------
+
+SIM.
+
+  tenantProvisionService.ts grava em REGISTRY_COLLECTIONS.tenants:
+    tenantType, taxIdType, isolation.strategy, isolation.collectionPrefix,
+    displayName, status, taxIdHash (placeholder no provision automático)
+
+  getTenantCollections → resolveActiveTenant → valida tipo antes de operar
+
+3.5 O app principal sabe com segurança se o tenant é company ou individual?
+-----------------------------------------------------------------------------
+
+PARCIALMENTE — com ressalvas:
+
+  CORRETO:
+    - Endpoints documentais usam getTenantCollections → resolveActiveTenant
+      que cruza Mongo tenantType + taxIdType + isolation.strategy
+    - requireDocumentRequestContext expõe tenantType da sessão E carrega
+      collections validadas do Mongo
+    - documentOwnership.ts aplica filtros distintos por storageMode
+
+  GAP:
+    - tenantType na sessão (auth-service) não é revalidado contra Mongo em
+      cada request de governança que usa apenas requireAuth + getTenantIdFromUser
+    - /api/me (doqyn) confia em activeMembership.tenantType sem ler Mongo
+    - R2 bucket naming ignora tenantType completamente (usa só tenantId)
+
+  Risco baixo hoje porque tenantId é UUID-like opaco gerado no signup e
+  provisionamento sincroniza tipos; risco aumenta se houver divergência manual
+  entre Postgres e Mongo.
+
+
+4. UPLOAD/DOWNLOAD E ISOLAMENTO
+--------------------------------------------------------------------------------
+
+4.1 Upload usa tenantId resolvido no backend?
+---------------------------------------------
+
+SIM. Nenhum fluxo principal aceita tenantId/bucket do frontend como fonte de verdade.
+
+  analyze-pdf:
+    requireAuth → getCompanyIdFromUser(user) [= getTenantIdFromUser da sessão]
+    staging R2: storeAnalysisStaging({ tenantId: companyId, ... })
+
+  confirm-analysis:
+    requireAuth → buildDocumentRequestContext(user)
+    ctx.tenantId da activeMembership → persistência Mongo + R2
+
+  upload legado (/api/documents/upload):
+    requireDocumentRequestContext → ctx.tenantId
+
+4.2 Download usa tenantId da sessão?
+--------------------------------------
+
+SIM.
+
+  requireDocumentRequestContext → ctx.tenantId + ctx.userId
+  readDocumentVersionFile({ tenantId, ownerUserId, documentId, versionId })
+  Mongo query com tenantScopeFilterFromContext + assertCanAccessDocument
+  R2 read com tenantId da sessão + bucketAlias gravado na versão
+
+4.3 Pessoa física exige ownerUserId?
+--------------------------------------
+
+SIM.
+
+  documentOwnership.ts:
+    - buildDocumentOwnershipFilter: ownerTenantId + ownerUserId
+    - applyDocumentOwnershipOnInsert: ownerUserId obrigatório
+    - assertCanAccessDocument: valida ownerUserId === context.userId
+
+  Testes: tests/individual-isolation.test.ts, tests/tenant-storage.test.ts
+
+4.4 Empresa usa tenantId isolado?
+---------------------------------
+
+SIM.
+
+  - Collections dedicadas: documentos_{tenantId}, etc.
+  - Filtro Mongo: tenantId / companyId
+  - Bucket R2 próprio (per_tenant): doqyn-t-<hash12(tenantId)>
+
+4.5 Risco de acesso cross-tenant via documentId/versionId?
+------------------------------------------------------------
+
+BAIXO no fluxo atual, desde que Mongo esteja íntegro.
+
+  Cenário atacante informa documentId de outro tenant:
+    1. getTenantCollections usa tenantId DA SESSÃO (não do query para escopo)
+    2. findOne com tenantScopeFilterFromContext → documento não encontrado
+    3. assertCanAccessDocument nunca alcançado com doc alheio
+    4. R2 objectKey só obtido após passar Mongo
+
+  Cenário atacante individual A tenta doc de individual B (mesmo pool Mongo):
+    - Filtro ownerUserId impede leitura (testado)
+
+  Risco residual:
+    - Se bucketAlias/objectKey vazarem por outro canal, readDocumentVersion
+      usa bucketAlias da versão Mongo — ainda precisa passar query Mongo primeiro
+    - Endpoints com requireAuth sem ownerUserId (ex.: document-rules/active)
+      não expõem binário, mas podem vazar metadados se mal implementados no futuro
+    - doqyn_admin com resolveTargetCompanyId pode operar outro tenantId via query
+      (by design para admin global)
+
+
+5. BUCKET R2 ATUAL
+--------------------------------------------------------------------------------
+
+5.1 Como o bucket é calculado hoje?
+-----------------------------------
+
+  server/storage/r2/r2BucketNaming.ts → getTenantBucketName(tenantId, options)
+
+  Se R2_BUCKET_MODE=per_tenant (valor atual no .env auditado):
+    hash = SHA-256(tenantId.trim().toLowerCase()).hex.slice(0, 12)
+    bucket = sanitize("{R2_BUCKET_PREFIX}-t-{hash}")
+    Exemplo: doqyn-t-73dcc57ebaf7
+
+  Se R2_BUCKET_MODE=shared:
+    bucket = R2_DEFAULT_BUCKET (ex.: doqyn-alpha)
+
+5.2 Quais campos entram no cálculo?
+-----------------------------------
+
+  ENTRAM:
+    - tenantId (string opaca, ex. company_acme_a1b2c3 ou individual_maria_d4e5f6)
+    - R2_BUCKET_PREFIX (env, ex. "doqyn")
+    - R2_BUCKET_MODE (env)
+
+  NÃO ENTRAM:
+    - tenantUuid, displayName, legalName, companyName
+    - CPF, CNPJ, e-mail, nome de usuário
+    - tenantType (individual/business)
+
+  Object keys R2 (buildDocumentVersionObjectKey):
+    {R2_KEY_PREFIX}/{documentId}/versions/{versionId}/original.{ext}
+    Sem tenantId no path — isolamento assumido pelo bucket (per_tenant).
+
+5.3 Bucket salvo no Mongo ou recalculado?
+-----------------------------------------
+
+  AMBOS:
+    - Após upload: storage.primary.bucketAlias = nome do bucket efetivo
+    - Na leitura: usa bucketAlias da versão se presente; senão recalcula via
+      resolveTenantBucketName(tenantId, config) ou defaultBucket (modo shared)
+
+5.4 Existe collection tenant_storage_configs?
+---------------------------------------------
+
+  NÃO. Não há registro central de decisões de storage por tenant.
+
+5.5 Recomendação de estrutura tenant_storage_configs
+----------------------------------------------------
+
+  Collection sugerida: tenant_storage_configs (registry, index tenantId unique)
+
+  Documento exemplo:
+  {
+    tenantId: "company_acme_a1b2c3",
+    tenantType: "business",
+    provider: "cloudflare_r2",
+    bucketMode: "per_tenant",
+    bucketName: "doqyn-t-abc123def456",
+    basePrefix: "",                    // vazio para business
+    keyPrefix: "documents",            // R2_KEY_PREFIX efetivo
+    provisionStatus: "ready",          // pending | provisioning | ready | failed
+    provisionedAt: ISODate(...),
+    lastError: null,
+    updatedAt: ISODate(...)
+  }
+
+  Para individual (arquitetura alvo):
+  {
+    tenantId: "individual_maria_d4e5f6",
+    tenantType: "individual",
+    provider: "cloudflare_r2",
+    bucketMode: "shared",
+    bucketName: "doqyn-individual",    // bucket compartilhado PF
+    basePrefix: "t/a1b2c3d4e5f6",      // prefixo opaco por tenant (hash)
+    keyPrefix: "documents",
+    ownerUserId: "<uuid>",             // referência, não usado no path R2
+    provisionStatus: "ready"
+  }
+
+
+6. CPF VS CNPJ — ANÁLISE E RECOMENDAÇÃO
+--------------------------------------------------------------------------------
+
+6.1 Com R2_BUCKET_MODE=per_tenant, CPF também ganha bucket próprio?
+---------------------------------------------------------------------
+
+SIM.
+
+  Cada signup individual cria tenantId único (individual_{slug}_{suffix}).
+  getTenantBucketName hasheia esse tenantId → bucket distinto por pessoa física.
+
+6.2 Isso é intencional ou efeito colateral?
+-------------------------------------------
+
+EFEITO COLATERAL.
+
+  A intenção documentada em r2BucketNaming.ts é opacidade (não vazar PII).
+  A intenção de produto (contexto desta auditoria) é:
+    - CNPJ → isolamento forte por bucket
+    - CPF  → pool compartilhado para evitar explosão de buckets Cloudflare
+
+  Mongo já implementa pool compartilhado para PF; R2 ainda não espelha isso.
+
+6.3 Arquitetura recomendada
+---------------------------
+
+  a) company / CNPJ → bucket próprio
+     - Manter R2_BUCKET_MODE=per_tenant para tenantType=business
+     - bucket = doqyn-t-<hash12(tenantId)> (atual)
+     - object key sem tenant no path (atual)
+
+  b) individual / CPF → bucket compartilhado + prefixo opaco
+     - bucket = R2_DEFAULT_BUCKET ou bucket dedicado "doqyn-individual"
+     - basePrefix = hash opaco do tenantId (ex. sha256(tenantId).slice(0,16))
+     - object key = {basePrefix}/{keyPrefix}/{documentId}/versions/.../original.ext
+     - staging: {basePrefix}/tmp/{jobId}/original.ext
+     - ownerUserId continua obrigatório no Mongo (isolamento lógico)
+
+6.4 Impacto da mudança no código
+--------------------------------
+
+  Arquivos a alterar (futuro — NÃO implementado nesta auditoria):
+
+  NOVO:
+    - server/tenancy/resolveTenantStorageScope.ts (função central)
+    - server/db/types.ts → TenantStorageConfig
+    - Opcional: server/services/tenantStorageConfigService.ts
+
+  ALTERAR:
+    - server/storage/r2/r2BucketNaming.ts
+        → aceitar tenantType + bucketMode por tipo
+    - server/storage/r2/r2StorageProvider.ts
+        → resolveBucket(scope) em vez de só tenantId
+        → compor object key com basePrefix quando individual
+    - server/storage/storageKeys.ts
+        → buildDocumentVersionObjectKey com basePrefix opcional
+    - server/storage/index.ts / confirmAnalysisService.ts
+        → persistir bucketAlias + basePrefix em storage.primary
+    - server/services/documentFileService.ts
+        → passar scope completo na leitura
+    - server/services/tenantProvisionService.ts
+        → criar registro tenant_storage_configs no provision Mongo
+    - tests/r2-storage.test.ts, tests/individual-isolation.test.ts
+        → cenários shared bucket + prefix
+
+  ENV:
+    - Possível R2_INDIVIDUAL_BUCKET ou reutilizar R2_DEFAULT_BUCKET
+    - R2_BUCKET_MODE pode evoluir para per_tenant_business | shared_individual
+      ou lógica hardcoded por tenantType
+
+  MIGRAÇÃO:
+    - Documentos PF já em buckets per_tenant precisariam copy + atualização
+      bucketAlias/objectKey no Mongo (script one-off)
+    - Buckets órfãos PF podem ser removidos após migração
+
+
+7. STORAGE SCOPE CENTRAL
+--------------------------------------------------------------------------------
+
+7.1 Existe resolveTenantStorageScope(session)?
+--------------------------------------------
+
+NÃO.
+
+  Existe parcialmente:
+    - resolveTenantStorageContext (tenantStorage.ts) — só Mongo collections
+    - resolveTenantBucketName (r2BucketProvisioner.ts) — só bucket por tenantId
+    - getTenantIdFromUser / mapDoqynSessionToAuthUser — sessão → tenantId
+
+  Nenhum módulo une sessão + tenantKind + bucket + prefixos R2.
+
+7.2 Contrato recomendado
+------------------------
+
+  resolveTenantStorageScope(session: DoqynVerifiedSession): TenantStorageScope
+
+  Retorno:
+  {
+    tenantId: string,
+    tenantKind: 'company' | 'individual',  // alias de tenantType business|individual
+    ownerUserId?: string,                  // obrigatório quando individual
+    provider: 'r2',
+    bucketMode: 'per_tenant' | 'shared',
+    bucketName: string,
+    basePrefix: string,                    // '' para company; hash para individual
+    keyPrefix: string,                     // env R2_KEY_PREFIX
+  }
+
+7.3 Onde criar
+--------------
+
+  Arquivo sugerido: server/tenancy/resolveTenantStorageScope.ts
+
+  Integração:
+    - requireDocumentRequestContext → chamar scope e anexar ao DocumentRequestContext
+    - r2StorageProvider.resolveBucket → receber TenantStorageScope
+    - confirmAnalysisService / documentFileService → usar scope.bucketName/basePrefix
+
+  Cache opcional: ler tenant_storage_configs antes de calcular; gravar após
+  ensureTenantBucket bem-sucedido.
+
+
+8. PROVISIONAMENTO R2
+--------------------------------------------------------------------------------
+
+8.1 Quando ensureTenantBucket é chamado?
+----------------------------------------
+
+  Lazy, no primeiro uso por tenantId em r2StorageProvider:
+    - storeDocumentVersion → resolveBucket → ensureTenantBucket
+    - storeStagingFile / loadStagingFile / deleteStagingFile → idem
+    - read/delete versão: recalcula bucket (ensure não chamado se bucketAlias salvo)
+
+  Implementação: r2BucketProvisioner.ts
+    HeadBucket → CreateBucket se 404 → log "r2 bucket ready"
+
+8.2 Bucket criado no primeiro upload?
+-------------------------------------
+
+  SIM (lazy provisioning). Não há criação no signup/aprovação.
+
+8.3 Existe status de provisionamento?
+-------------------------------------
+
+  NÃO para R2.
+
+  Mongo tenant provision (tenantProvisionService) tem status 'active' no tenant
+  registry e audit log TENANT_PROVISIONED, mas isso é collections/indexes —
+  não bucket R2.
+
+  Auth-service tem estados pending_provisioning / provisioning_failed para tenant
+  no Postgres, referentes ao provisionamento Mongo via app principal — não R2.
+
+8.4 Falhas são persistidas?
+---------------------------
+
+  NÃO.
+
+  Falha em CreateBucket → exceção propagada ao request; sem gravação em
+  tenant_storage_configs nem flag no Mongo tenant.
+
+  Apenas log estruturado: { bucket, status: 'created'|'exists' }
+
+8.5 Recomendação: lazy agora vs provisionamento pós-signup
+---------------------------------------------------------
+
+  CURTO PRAZO (manter lazy):
+    - Menor complexidade; adequado para volume atual
+    - Adicionar tenant_storage_configs com provisionStatus atualizado no
+      ensureTenantBucket (ready/failed + lastError)
+    - Métrica/alerta em falha de CreateBucket
+
+  MÉDIO PRAZO (híbrido recomendado):
+    - CNPJ: provisionar bucket no provisionTenantEnvironment (após Mongo OK)
+      via chamada admin ensureTenantBucket — falha não bloqueia signup, mas
+      registra provisioning_failed em tenant_storage_configs
+    - CPF: não provisionar bucket (shared já existe); apenas gravar basePrefix
+      em tenant_storage_configs no signup
+
+  LONGO PRAZO:
+    - Fila assíncrona (job) pós-aprovação membership
+    - Reconciliador periódico bucket ↔ tenant_storage_configs
+
+
+9. O QUE JÁ ESTÁ CORRETO
+--------------------------------------------------------------------------------
+
+  [OK] Sessão validada server-side via auth-service internal API (não JWT no frontend)
+  [OK] activeMembership obrigatória para operações autenticadas
+  [OK] tenantId nunca vem do frontend como fonte de verdade nos fluxos documentais
+  [OK] assertQueryTenantMatchesSession impede spoof de ?tenantId=
+  [OK] Diferenciação business/individual no Mongo com validação resolveActiveTenant
+  [OK] CPF: pool Mongo compartilhado + ownerUserId (testes de isolamento)
+  [OK] CNPJ: collections dedicadas por tenantId
+  [OK] Bucket name opaco (hash de tenantId, sem CPF/CNPJ/nome)
+  [OK] Object keys opacas (documentId/versionId, sem nome de arquivo)
+  [OK] bucketAlias persistido após upload para leitura determinística
+  [OK] Separação credenciais R2 runtime vs admin
+  [OK] Sem variáveis VITE_R2_* no frontend
+  [OK] Download apenas via backend autenticado
+  [OK] tenantId gerado no auth-service nunca é CPF/CNPJ literal
+
+
+10. PARCIALMENTE IMPLEMENTADO
+--------------------------------------------------------------------------------
+
+  [~] tenantType na sessão vs Mongo — confiança alta mas sem reconciliação explícita
+  [~] /api/me — tenant ativo sim, lista memberships não
+  [~] R2 alinhado com isolamento Mongo para CNPJ, desalinhado para CPF
+  [~] tenantProvisionService — provisiona Mongo, não R2 nem tenant_storage_configs
+  [~] resolveTenantStorageContext — Mongo only, sem bucket/basePrefix
+  [~] Staging R2 por tenantId — PF deveria usar basePrefix em bucket compartilhado
+  [~] Auditoria — sem eventos BUCKET_PROVISIONED / STORAGE_SCOPE_RESOLVED
+
+
+11. RISCOS DE SEGURANÇA
+--------------------------------------------------------------------------------
+
+  SEVERIDADE MÉDIA:
+    - CPF com bucket próprio: superfície de isolamento depende só do hash do
+      tenantId; se tenantId vazar, bucket é derivável (mesmo sem PII no nome).
+      Mitigação futura: shared bucket + prefix + IAM prefix-scoped se possível.
+    - Divergência auth tenantType vs Mongo tenantType não detectada em runtime.
+
+  SEVERIDADE BAIXA:
+    - doqyn_admin pode cruzar tenants via query companyId (intencional).
+    - bucketAlias gravado na versão: se Mongo comprometido, aponta para bucket
+      correto; ainda exige sessão válida no fluxo normal.
+    - confirm-analysis usa requireAuth (não requireDocumentRequestContext direto),
+      mas buildDocumentRequestContext usa mesma fonte de tenantId — OK hoje.
+
+  MITIGADO:
+    - Cross-tenant documentId/versionId via API padrão (filtros Mongo + ownership).
+    - Frontend não escolhe bucket.
+
+
+12. RISCOS OPERACIONAIS
+--------------------------------------------------------------------------------
+
+  - Explosão de buckets R2 com crescimento de cadastros CPF (1 bucket/PF hoje)
+  - Limites Cloudflare R2 de buckets por conta
+  - Lazy provisioning: primeiro upload mais lento; falha tardia para o usuário
+  - Sem tenant_storage_configs: difícil auditar qual bucket cada tenant usa
+  - Migração PF → shared bucket exigirá script de relocação de objetos
+  - Buckets criados e abandonados se signup falhar após primeiro upload
+  - Modo per_tenant + staging tmp/{jobId}/ sem prefixo PF complica cleanup
+
+
+13. RECOMENDAÇÃO FINAL — CNPJ (EMPRESA)
+--------------------------------------------------------------------------------
+
+  MANTER arquitetura atual:
+    - 1 tenant business = 1 bucket doqyn-t-<hash12(tenantId)>
+    - Collections Mongo dedicadas
+    - Provisionamento lazy aceitável; evoluir para eager após provision Mongo
+
+  Próximos passos:
+    1. Gravar tenant_storage_configs no provisionTenantEnvironment (business)
+    2. Opcional: ensureTenantBucket no fim do provision interno
+    3. Auditoria BUCKET_PROVISIONED em auditLogs do tenant
+
+
+14. RECOMENDAÇÃO FINAL — CPF (PESSOA FÍSICA)
+--------------------------------------------------------------------------------
+
+  ADOTAR bucket compartilhado + prefixo opaco por tenant:
+    - bucketName fixo (ex. doqyn-individual ou R2_DEFAULT_BUCKET)
+    - basePrefix = hash(tenantId) — nunca CPF
+    - Manter ownerUserId no Mongo como gate de autorização
+    - Object keys: {basePrefix}/documents/{documentId}/versions/...
+
+  Não criar bucket por CPF.
+
+  Migração: planejar script para objetos existentes em buckets doqyn-t-* de
+  tenants individual_* antes de desligar per_tenant para PF.
+
+
+15. PLANO DE IMPLEMENTAÇÃO EM ETAPAS
+--------------------------------------------------------------------------------
+
+  Fase 1 — Fundação (baixo risco)
+    1. Criar resolveTenantStorageScope(session) + tipos
+    2. Criar collection tenant_storage_configs + índices
+    3. Integrar em requireDocumentRequestContext (campo storageScope)
+    4. Testes unitários scope company vs individual
+
+  Fase 2 — R2 por tipo de tenant
+    1. Alterar r2BucketNaming para ramificar por tenantKind
+    2. Alterar storageKeys + r2StorageProvider (basePrefix)
+    3. Atualizar confirmAnalysisService / documentFileService
+    4. Testes integração PF em shared bucket
+
+  Fase 3 — Provisionamento
+    1. Gravar tenant_storage_configs no tenantProvisionService
+    2. ensureTenantBucket eager para business (opcional async)
+    3. PF: apenas registrar basePrefix, sem CreateBucket
+    4. Persistir provisionStatus / lastError
+
+  Fase 4 — Migração e cleanup
+    1. Inventariar buckets doqyn-t-* de tenants individual_*
+    2. Script copy objetos → shared + atualizar Mongo bucketAlias/objectKey
+    3. Remover buckets PF órfãos após validação
+    4. Documentar runbook operacional
+
+  Fase 5 — Observabilidade
+    1. Eventos auditoria STORAGE_SCOPE_RESOLVED, BUCKET_PROVISIONED
+    2. Dashboard métricas buckets por tipo
+    3. Alertas falha provisionamento
+
+
+16. DIAGRAMA DE FLUXO (ESTADO ATUAL)
+--------------------------------------------------------------------------------
+
+  [Browser cookie sessão]
+         |
+         v
+  [App: verifyDoqynAuthSession]
+         | POST /internal/sessions/verify
+         v
+  [Auth-service Postgres]
+    authSession.activeMembershipId
+    → activeMembership { tenantId, tenantType, roles, ... }
+         |
+         v
+  [requireAuth / requireDocumentRequestContext]
+    tenantId := activeMembership.tenantId
+    userId   := user.id
+         |
+         +--> [getTenantCollections] --> Mongo resolveActiveTenant
+         |         business: collections_{tenantId}
+         |         individual: compartilhado_* + ownerUserId filter
+         |
+         +--> [R2 resolveBucket(tenantId)]  *** ignora tenantType ***
+               per_tenant → doqyn-t-<hash12(tenantId)>
+               Put/Get objectKey sem prefixo tenant no path
+
+
+17. DIAGRAMA DE FLUXO (ALVO RECOMENDADO)
+--------------------------------------------------------------------------------
+
+  resolveTenantStorageScope(session)
+         |
+         +-- tenantKind=company --> bucket próprio, basePrefix=""
+         |
+         +-- tenantKind=individual --> bucket compartilhado,
+                                       basePrefix=hash(tenantId)
+
+  objectKey = {basePrefix}/{keyPrefix}/{documentId}/versions/{versionId}/original.ext
+
+
+18. ARQUIVOS ANALISADOS
+--------------------------------------------------------------------------------
+
+  App principal — auth/sessão:
+    server/auth/providers/doqynAuthProvider.ts
+    server/auth/requireAuth.ts
+    server/auth/memberAuth.ts
+    server/auth/tenantContext.ts
+    server/auth/companyContext.ts
+    server/auth/authConfig.ts
+    server/services/meService.ts
+    api/me.ts
+    api/auth/login.ts
+
+  App principal — tenancy/isolamento:
+    server/tenancy/documentRequestContext.ts
+    server/tenancy/getTenantCollections.ts
+    server/tenancy/tenantResolver.ts
+    server/tenancy/tenantStorage.ts
+    server/tenancy/documentOwnership.ts
+    server/tenancy/tenantQuery.ts
+    server/tenancy/taxId.ts
+
+  App principal — documentos/storage:
+    api/ai/analyze-pdf.ts
+    api/documents/confirm-analysis.ts
+    api/documents/upload.ts
+    api/documents/download.ts
+    api/documents/index.ts
+    server/services/confirmAnalysisService.ts
+    server/services/documentFileService.ts
+    server/services/documentService.ts
+    server/services/tenantProvisionService.ts
+    server/storage/storageConfig.ts
+    server/storage/storageKeys.ts
+    server/storage/index.ts
+    server/storage/r2/r2BucketNaming.ts
+    server/storage/r2/r2BucketProvisioner.ts
+    server/storage/r2/r2StorageProvider.ts
+    server/storage/r2/r2Clients.ts
+    server/utils/apiHttp.ts
+    server/db/types.ts
+    api/internal/tenants/provision.ts
+
+  App principal — testes:
+    tests/individual-isolation.test.ts
+    tests/tenant-storage.test.ts
+    tests/r2-storage.test.ts
+    tests/r2-storage-config.test.ts
+
+  Auth-service:
+    src/modules/internal/internal.routes.ts
+    src/modules/internal/internal.service.ts
+    src/modules/auth/auth.routes.ts
+    src/modules/auth/auth.service.ts
+    src/modules/memberships/sessionContext.service.ts
+    src/modules/memberships/memberships.schemas.ts
+    src/modules/individual-signups/individualSignups.service.ts
+    src/modules/company-signups/companySignups.service.ts
+    src/integrations/appProvisioning.ts
+    src/utils/tenantId.ts
+    prisma/schema.prisma
+
+
+19. COMANDOS EXECUTADOS
+--------------------------------------------------------------------------------
+
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+
+  npm run r2:env-check
+    → OK (STORAGE_PROVIDER=r2, R2_BUCKET_MODE=per_tenant, credenciais presentes)
+
+  npm test
+    → 90 testes, 24 suites, 0 falhas
+
+  npm run build
+    → tsc -b && vite build OK
+
+  npm run lint
+    → eslint . OK
+
+  npx tsc --noEmit
+    → OK (executado após build no mesmo pipeline)
+
+  npm run r2:smoke
+    → NÃO EXECUTADO (conforme instrução)
+
+
+20. CONCLUSÃO
+--------------------------------------------------------------------------------
+
+A cadeia login → sessão → membership → tenant está coerente e segura para
+resolução de tenantId no backend. O isolamento documental Mongo reflete corretamente
+o modelo CNPJ (dedicado) vs CPF (compartilhado + ownerUserId).
+
+O desalinhamento crítico está na camada R2: com R2_BUCKET_MODE=per_tenant, cada
+pessoa física recebe bucket próprio, contradizendo o pool compartilhado do Mongo
+e gerando risco operacional de proliferação de buckets.
+
+Ação priorizada: implementar resolveTenantStorageScope e ramificar política de
+bucket — per_tenant para business, shared+basePrefix para individual — antes de
+escala de cadastros CPF.
+
+Nenhuma alteração de código foi feita nesta auditoria.
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

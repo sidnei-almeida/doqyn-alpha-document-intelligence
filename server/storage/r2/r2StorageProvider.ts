@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
+import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import type { StorageConfig } from '../storageConfig.js';
 import {
   buildAnalysisStagingKey,
@@ -18,7 +19,11 @@ import type {
 } from '../storageProvider.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { createR2RuntimeClient } from './r2Clients.js';
-import { ensureTenantBucket, resolveTenantBucketName } from './r2BucketProvisioner.js';
+import {
+  ensureBucketForStorageScope,
+  ensureTenantBucket,
+  resolveTenantBucketName,
+} from './r2BucketProvisioner.js';
 import type { R2Config } from '../storageConfig.js';
 
 async function streamToBuffer(body: unknown): Promise<Buffer> {
@@ -36,6 +41,7 @@ async function streamToBuffer(body: unknown): Promise<Buffer> {
 export type R2StorageProviderDeps = {
   runtimeClient?: S3Client;
   ensureBucket?: typeof ensureTenantBucket;
+  ensureBucketForScope?: typeof ensureBucketForStorageScope;
 };
 
 export class R2StorageProvider implements StagingCapableStorageProvider {
@@ -44,6 +50,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
   private r2: R2Config;
   private runtimeClient: S3Client;
   private ensureBucketFn: typeof ensureTenantBucket;
+  private ensureBucketForScopeFn: typeof ensureBucketForStorageScope;
 
   constructor(config: StorageConfig, deps: R2StorageProviderDeps = {}) {
     if (!config.r2) {
@@ -53,6 +60,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     this.r2 = config.r2;
     this.runtimeClient = deps.runtimeClient ?? createR2RuntimeClient(this.r2);
     this.ensureBucketFn = deps.ensureBucket ?? ensureTenantBucket;
+    this.ensureBucketForScopeFn = deps.ensureBucketForScope ?? ensureBucketForStorageScope;
   }
 
   async ensureReady(): Promise<void> {
@@ -65,12 +73,43 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     }
   }
 
+  /** @deprecated legado — preferir resolveBucketFromScope */
   private async resolveBucket(tenantId: string): Promise<string> {
     const { bucket } = await this.ensureBucketFn({
       tenantId,
       config: this.r2,
     });
     return bucket;
+  }
+
+  private async resolveBucketFromScope(scope: TenantStorageScope): Promise<string> {
+    const { bucket } = await this.ensureBucketForScopeFn({
+      bucketMode: scope.bucketMode,
+      bucketName: scope.bucketName,
+      tenantId: scope.tenantId,
+      config: this.r2,
+    });
+    return bucket;
+  }
+
+  private resolveReadBucket(
+    tenantId: string,
+    bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
+  ): string {
+    if (bucketAlias?.trim()) {
+      return bucketAlias.trim();
+    }
+
+    if (storageScope) {
+      return storageScope.bucketName;
+    }
+
+    if (this.r2.bucketMode === 'shared') {
+      return this.r2.defaultBucket;
+    }
+
+    return resolveTenantBucketName(tenantId, this.r2);
   }
 
   async storeDocumentVersion(input: StoreDocumentVersionInput): Promise<StoredDocumentVersion> {
@@ -89,14 +128,21 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       mimeType: input.mimeType,
     });
 
+    const scope = input.storageScope;
+    const keyPrefix = scope?.keyPrefix ?? this.r2.keyPrefix;
+    const basePrefix = scope?.basePrefix;
+
     const storageKey = buildDocumentVersionObjectKey({
       documentId: input.documentId,
       versionId: input.versionId,
       extension,
-      keyPrefix: this.r2.keyPrefix,
+      keyPrefix,
+      basePrefix,
     });
 
-    const bucket = await this.resolveBucket(input.tenantId);
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
 
     const result = await this.runtimeClient.send(
       new PutObjectCommand({
@@ -121,14 +167,11 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     storageKey: string,
     tenantId: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<ReadDocumentVersionResult> {
     await this.ensureReady();
 
-    const bucket =
-      bucketAlias?.trim() ||
-      (this.r2.bucketMode === 'shared'
-        ? this.r2.defaultBucket
-        : resolveTenantBucketName(tenantId, this.r2));
+    const bucket = this.resolveReadBucket(tenantId, bucketAlias, storageScope);
 
     const result = await this.runtimeClient.send(
       new GetObjectCommand({
@@ -153,14 +196,11 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     storageKey: string,
     tenantId: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<void> {
     await this.ensureReady();
 
-    const bucket =
-      bucketAlias?.trim() ||
-      (this.r2.bucketMode === 'shared'
-        ? this.r2.defaultBucket
-        : resolveTenantBucketName(tenantId, this.r2));
+    const bucket = this.resolveReadBucket(tenantId, bucketAlias, storageScope);
 
     await this.runtimeClient.send(
       new DeleteObjectCommand({
@@ -177,6 +217,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     mimeType: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<string> {
     await this.ensureReady();
 
@@ -193,8 +234,16 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       mimeType: input.mimeType,
     });
 
-    const stagingKey = buildAnalysisStagingKey({ jobId: input.jobId, extension });
-    const bucket = await this.resolveBucket(input.tenantId);
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
 
     await this.runtimeClient.send(
       new PutObjectCommand({
@@ -214,6 +263,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     mimeType?: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<Buffer> {
     await this.ensureReady();
 
@@ -222,8 +272,16 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       mimeType: input.mimeType ?? 'application/pdf',
     });
 
-    const stagingKey = buildAnalysisStagingKey({ jobId: input.jobId, extension });
-    const bucket = await this.resolveBucket(input.tenantId);
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
 
     const result = await this.runtimeClient.send(
       new GetObjectCommand({
@@ -241,6 +299,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     mimeType?: string;
     originalFileName?: string;
     ownerUserId?: string;
+    storageScope?: TenantStorageScope;
   }): Promise<void> {
     await this.ensureReady();
 
@@ -249,8 +308,16 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       mimeType: input.mimeType ?? 'application/pdf',
     });
 
-    const stagingKey = buildAnalysisStagingKey({ jobId: input.jobId, extension });
-    const bucket = await this.resolveBucket(input.tenantId);
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
 
     await this.runtimeClient.send(
       new DeleteObjectCommand({

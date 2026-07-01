@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { createHash } from 'node:crypto';
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoAuditLog, MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import { logger } from '../utils/logger.js';
@@ -28,6 +29,7 @@ export interface UploadInput {
   fileSize: number;
   mimeType: string;
   fileBuffer?: Buffer;
+  storageScope?: TenantStorageScope;
 }
 
 function requireTenantId(tenantId?: string): string {
@@ -130,6 +132,7 @@ export async function uploadDocument(input: UploadInput) {
         buffer: input.fileBuffer,
         mimeType: input.mimeType,
         originalFileName: input.originalFileName,
+        storageScope: input.storageScope,
       });
     } catch (error) {
       await documents.deleteOne({ _id: documentId } as Record<string, unknown>);
