@@ -34,6 +34,24 @@ const CRITICAL_ACTION_PATTERNS = [
   'revoke',
 ];
 
+export const SECURITY_ACTION_PATTERNS = [
+  'USER_BLOCKED',
+  'USER_REJECTED',
+  'KEYCLOAK_USER_DISABLED',
+  'login.failed',
+  'login_failed',
+  'access_denied',
+  'permission_denied',
+  'password',
+  'session.revoked',
+  'session_revoked',
+  'blocked',
+  'denied',
+  'forbidden',
+  'revoke',
+  'suspicious',
+];
+
 const USER_AUDIT_PREFIXES = ['USER_', 'KEYCLOAK_', 'NOTIFICATION_'];
 
 export function resolveAuditSeverity(
@@ -148,6 +166,7 @@ export async function listAuditEvents(filters: {
   to?: string;
   limit?: number;
   cursor?: string;
+  category?: 'security';
 }) {
   if (!filters.tenantId?.trim()) {
     throw new ServiceError('tenantId é obrigatório.', 'TENANT_REQUIRED', 400);
@@ -182,6 +201,18 @@ export async function listAuditEvents(filters: {
   }
 
   buildTextSearch(query, filters.q);
+
+  if (filters.category === 'security') {
+    query.$and = [
+      ...(Array.isArray(query.$and) ? query.$and : []),
+      {
+        action: {
+          $regex: SECURITY_ACTION_PATTERNS.join('|'),
+          $options: 'i',
+        },
+      },
+    ];
+  }
 
   const severityFilter = buildSeverityFilter(filters.severity);
   if (severityFilter) {

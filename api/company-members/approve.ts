@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { approveCompanyMember } from '../../server/services/userManagementService.js';
+import { approveMembershipDecision } from '../../server/services/membershipDecisionService.js';
 import { withUserManagementApi } from '../../server/utils/userManagementApi.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         notificationPreferences?: Record<string, boolean>;
       };
 
-      return approveCompanyMember(user, memberId, {
+      return approveMembershipDecision(req, user, memberId, {
         platformRoles: body.platformRoles,
         tenantRoles: body.tenantRoles,
         accessGroupIds: body.accessGroupIds ?? [],

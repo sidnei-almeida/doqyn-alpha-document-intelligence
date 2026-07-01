@@ -1,3 +1,5 @@
+import type { AuditEvent, AuditEventFilters } from '@/types/audit';
+
 const FORBIDDEN_KEY_PATTERNS = [
   /password/i,
   /senha/i,
@@ -77,6 +79,7 @@ export function buildAuditEventsQuery(filters: {
   to?: string;
   documentId?: string;
   cursor?: string;
+  category?: 'security';
 }): Record<string, string> {
   const params: Record<string, string> = {};
   if (filters.q?.trim()) params.q = filters.q.trim();
@@ -87,5 +90,37 @@ export function buildAuditEventsQuery(filters: {
   if (filters.to?.trim()) params.to = filters.to.trim();
   if (filters.documentId?.trim()) params.documentId = filters.documentId.trim();
   if (filters.cursor?.trim()) params.cursor = filters.cursor.trim();
+  if (filters.category === 'security') params.category = 'security';
   return params;
+}
+
+export function dedupeAuditEvents(events: AuditEvent[]): AuditEvent[] {
+  const seen = new Set<string>();
+  return events.filter((event) => {
+    if (seen.has(event.id)) return false;
+    seen.add(event.id);
+    return true;
+  });
+}
+
+export type AuditTabId = 'pending' | 'events' | 'security' | 'all';
+
+export function resolveEventFiltersForTab(
+  tab: AuditTabId,
+  baseFilters: AuditEventFilters,
+): AuditEventFilters {
+  if (tab === 'security') {
+    return { ...baseFilters, category: 'security', type: undefined };
+  }
+  if (tab === 'all') {
+    return {
+      documentId: baseFilters.documentId,
+      from: baseFilters.from,
+      to: baseFilters.to,
+      limit: baseFilters.limit,
+    };
+  }
+  const { category, ...rest } = baseFilters;
+  void category;
+  return rest;
 }

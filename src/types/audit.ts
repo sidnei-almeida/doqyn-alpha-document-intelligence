@@ -70,6 +70,7 @@ export type AuditEventFilters = {
   documentId?: string;
   limit?: number;
   cursor?: string;
+  category?: 'security';
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
