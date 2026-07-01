@@ -19,7 +19,7 @@ Validar o fluxo principal da plataforma:
 | Frontend | React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form, Zod, Zustand, Sonner |
 | Backend | Node.js, TypeScript, API serverless (`/api`), Mongoose, Zod |
 | Banco | MongoDB Atlas (metadados apenas) |
-| Auth | Autenticação temporária (JWT + cookie httpOnly), preparada para Keycloak/OIDC |
+| Auth | doqyn-auth-service (`doqyn_auth`) — cookie HttpOnly + `/api/me` |
 
 ## Início rápido
 
@@ -45,9 +45,22 @@ npm run dev
 
 Acesse [http://localhost:5173](http://localhost:5173) e faça login com o e-mail e senha configurados em `.env` (`TEMP_ADMIN_EMAIL` + senha usada no hash).
 
-## Temporary Auth
+## Autenticação (doqyn_auth)
 
-Esta versão alpha usa autenticação temporária enquanto o Keycloak não está disponível.
+O provider oficial é `doqyn_auth`, via doqyn-auth-service. Keycloak foi removido.
+
+Variáveis principais:
+
+- `AUTH_PROVIDER=doqyn_auth`
+- `VITE_AUTH_PROVIDER=doqyn_auth`
+- `DOQYN_AUTH_BASE_URL=http://127.0.0.1:4100`
+- `VITE_AUTH_BASE_PATH=/auth`
+
+Consulte `.env.example` para a lista completa.
+
+## Temporary Auth (legado)
+
+Modo `temporary` permanece disponível apenas para desenvolvimento local sem auth-service.
 
 Variáveis obrigatórias (backend — **sem** prefixo `VITE_`):
 
@@ -74,8 +87,6 @@ Em desenvolvimento local, use `AUTH_COOKIE_SECURE=false`. Na Vercel, configure `
 
 A sessão usa cookie **httpOnly** — o JWT não fica no frontend nem no `localStorage`.
 
-A autenticação será substituída por Keycloak/OIDC no futuro.
-
 ## Estrutura do projeto
 
 ```
@@ -97,7 +108,7 @@ Consulte `.env.example`. Variáveis com prefixo `VITE_` são públicas no fronte
 
 ## Telas disponíveis
 
-- **Login** — autenticação temporária + botão SSO/Keycloak (desabilitado)
+- **Login** — autenticação via doqyn-auth-service
 - **Visão Geral** — dashboard com métricas
 - **Enviar documento** — upload com drag & drop
 - **Documentos** — listagem, filtros e detalhes
@@ -125,8 +136,5 @@ Consulte `.env.example`. Variáveis com prefixo `VITE_` são públicas no fronte
 
 ## Próximas etapas
 
-- Integração real com Keycloak
-- Google Document AI / Cloud Vision
-- Storage em AWS S3 e Cloudflare R2
 - Regras de acesso avançadas
 - RAG com Groq

@@ -1,12 +1,9 @@
 import type { AuthUser } from '../auth/types.js';
-import type { VerifiedKeycloakAuth } from '../auth/keycloakJwtVerifier.js';
-import { mapMemberToAuthUser } from '../auth/memberAuth.js';
 import { getTenantIdFromUser } from '../auth/tenantContext.js';
 import type { DoqynVerifiedSession } from '../auth/providers/doqynAuthProvider.js';
 import { getTenantById } from './tenantsService.js';
 import {
   findActiveTenantMember,
-  findTenantMemberByIdentity,
   getMemberAccessGroups,
   getTenantRoles,
 } from './tenantMembersService.js';
@@ -17,7 +14,6 @@ export type MeResponse = {
   authProvider?: string;
   user: {
     id?: string;
-    keycloakUserId?: string;
     email: string;
     username?: string;
     firstName?: string;
@@ -42,10 +38,7 @@ export type MeResponse = {
   legacyUser?: AuthUser;
 };
 
-export async function resolveMeResponse(
-  user: AuthUser,
-  keycloak?: VerifiedKeycloakAuth,
-): Promise<MeResponse> {
+export async function resolveMeResponse(user: AuthUser): Promise<MeResponse> {
   const tenantId = getTenantIdFromUser(user);
   const tenant = await getTenantById(tenantId);
 
@@ -53,23 +46,20 @@ export async function resolveMeResponse(
     throw new ServiceError('Cliente não encontrado para o usuário autenticado.', 'TENANT_NOT_FOUND', 404);
   }
 
-  const membership =
-    keycloak &&
-    (await findActiveTenantMember({
-      keycloakUserId: keycloak.keycloakUserId,
-      email: keycloak.email,
-    }));
+  const membership = await findActiveTenantMember({
+    email: user.email,
+  });
 
   const tenantRoles = membership ? getTenantRoles(membership) : (user.platformRoles ?? ['user']);
   const accessGroupIds = membership ? getMemberAccessGroups(membership) : (user.groups ?? []);
 
   return {
     user: {
-      keycloakUserId: user.keycloakUserId ?? keycloak?.keycloakUserId,
+      id: user.id,
       email: user.email,
-      username: user.username ?? keycloak?.username,
-      firstName: keycloak?.firstName ?? membership?.firstName,
-      lastName: keycloak?.lastName ?? membership?.lastName,
+      username: user.username,
+      firstName: user.firstName ?? membership?.firstName,
+      lastName: user.lastName ?? membership?.lastName,
     },
     tenant: {
       tenantId: tenant.tenantId,
@@ -80,60 +70,13 @@ export async function resolveMeResponse(
       taxIdMasked: tenant.taxIdMasked,
     },
     membership: {
+      membershipId: membership?.memberId,
       status: membership?.status ?? 'active',
       tenantRoles: [...tenantRoles],
       accessGroupIds,
     },
     legacyUser: user,
   };
-}
-
-export async function resolveMeFromKeycloakClaims(
-  claims: VerifiedKeycloakAuth,
-): Promise<MeResponse> {
-  const membership = await findTenantMemberByIdentity({
-    keycloakUserId: claims.keycloakUserId,
-    email: claims.email,
-  });
-
-  if (!membership) {
-    throw new ServiceError(
-      'Seu usuário ainda não está vinculado a um cliente ativo no DOQYN.',
-      'MEMBER_NOT_LINKED',
-      403,
-    );
-  }
-
-  const tenant = await getTenantById(membership.tenantId);
-  if (!tenant) {
-    throw new ServiceError('Cliente não encontrado.', 'TENANT_NOT_FOUND', 404);
-  }
-
-  const authUser = mapMemberToAuthUser(
-    {
-      _id: membership.memberId,
-      tenantId: membership.tenantId,
-      companyId: membership.tenantId,
-      userId: membership.keycloakUserId ?? membership.memberId,
-      name: [membership.firstName, membership.lastName].filter(Boolean).join(' ') || membership.email,
-      email: membership.email,
-      firstName: membership.firstName,
-      lastName: membership.lastName,
-      username: membership.username,
-      keycloakUserId: membership.keycloakUserId,
-      role: 'member',
-      platformRoles: membership.tenantRoles,
-      status: membership.status,
-      groupIds: membership.accessGroupIds,
-      accessGroupIds: membership.accessGroupIds,
-      createdAt: membership.createdAt,
-      updatedAt: membership.updatedAt,
-    },
-    claims,
-    tenant.displayName,
-  );
-
-  return resolveMeResponse(authUser, claims);
 }
 
 export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeResponse {

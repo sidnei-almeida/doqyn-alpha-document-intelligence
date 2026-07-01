@@ -4,28 +4,14 @@ export const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? 'temporary';
 
 export const AUTH_PROVIDER_LABELS: Record<string, string> = {
   doqyn_auth: 'doqyn-auth-service',
-  keycloak: 'SSO Keycloak (legado)',
   mock: 'Desenvolvimento (mock)',
   temporary: 'Acesso por credenciais (legado)',
 };
 
 export const AUTH_MODE_LABELS: Record<string, string> = {
   temporary: 'Acesso por credenciais',
-  keycloak: 'SSO corporativo',
   mock: 'Demonstração',
 };
-
-export const KEYCLOAK_CONFIG = {
-  url: import.meta.env.VITE_KEYCLOAK_URL ?? '',
-  realm: import.meta.env.VITE_KEYCLOAK_REALM ?? '',
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? '',
-};
-
-export function isKeycloakConfigured(): boolean {
-  return Boolean(
-    KEYCLOAK_CONFIG.url && KEYCLOAK_CONFIG.realm && KEYCLOAK_CONFIG.clientId,
-  );
-}
 
 export const ACCESS_GROUPS = ['Financeiro', 'Frete', 'Jurídico', 'RH'] as const;
 

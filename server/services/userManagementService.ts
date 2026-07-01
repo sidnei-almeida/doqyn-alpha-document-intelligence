@@ -1,28 +1,16 @@
 import type { AuthUser } from '../auth/types.js';
 import {
-  createUser,
-  disableUser,
-  enableUser,
-  findUserByEmail,
-  generateTemporaryPassword,
-  setTemporaryPassword,
-  syncRealmRoles,
-} from '../auth/keycloakAdminService.js';
-import {
   assertCanManageCompany,
-  mapMemberToAuthUser,
   resolveTargetCompanyId,
   sanitizeAssignablePlatformRoles,
   userIsDoqynAdmin,
 } from '../auth/memberAuth.js';
-import type { VerifiedKeycloakAuth } from '../auth/keycloakJwtVerifier.js';
 import type { MongoTenantMember, NotificationPreferences, PlatformRole } from '../db/types.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeRejectionReason, maskEmail } from '../utils/maskSensitiveData.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
-import { requireActiveTenantMember } from './tenantMembersService.js';
-import { assertActiveTenant, getTenantById } from './tenantsService.js';
+import { assertActiveTenant } from './tenantsService.js';
 import { createUserAuditLog } from './userAuditService.js';
 import { serializeTenantMember } from './memberSerialize.js';
 import {
@@ -31,16 +19,9 @@ import {
   getTenantMemberById,
   listTenantMembers,
   saveTenantMember,
-  tenantMemberToCompanyMember,
   updateTenantMemberFields,
 } from './tenantMemberRepository.js';
 import { mergeNotificationPreferences } from './accessRequestService.js';
-
-const APP_ENV = process.env.APP_ENV?.trim() || process.env.NODE_ENV || 'development';
-
-function isDevelopmentEnv(): boolean {
-  return APP_ENV !== 'production';
-}
 
 async function getMemberOrThrowForActor(actor: AuthUser, memberId: string): Promise<MongoTenantMember> {
   const member = await getTenantMemberById(memberId);
@@ -63,62 +44,6 @@ function resolvePlatformRoles(input: {
   tenantRoles?: string[];
 }): PlatformRole[] {
   return (input.tenantRoles ?? input.platformRoles ?? ['user']) as PlatformRole[];
-}
-
-async function ensureKeycloakUser(input: {
-  email: string;
-  firstName: string;
-  lastName: string;
-  platformRoles: PlatformRole[];
-  actor: AuthUser;
-  memberId: string;
-  companyId: string;
-}): Promise<{ keycloakUserId: string; temporaryPassword?: string }> {
-  const email = input.email.trim().toLowerCase();
-  let keycloakUserId = (await findUserByEmail(email))?.id;
-
-  if (!keycloakUserId) {
-    keycloakUserId = await createUser({
-      email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      enabled: true,
-    });
-    await createUserAuditLog({
-      companyId: input.companyId,
-      actor: input.actor,
-      action: 'KEYCLOAK_USER_CREATED',
-      description: 'Usuário criado no Keycloak.',
-      memberId: input.memberId,
-      metadata: { email },
-    });
-  }
-
-  const temporaryPassword = generateTemporaryPassword();
-  await setTemporaryPassword(keycloakUserId, temporaryPassword);
-  await syncRealmRoles(keycloakUserId, input.platformRoles);
-  await createUserAuditLog({
-    companyId: input.companyId,
-    actor: input.actor,
-    action: 'KEYCLOAK_ROLE_ASSIGNED',
-    description: 'Roles globais sincronizadas no Keycloak.',
-    memberId: input.memberId,
-    metadata: { platformRoles: input.platformRoles },
-  });
-
-  return {
-    keycloakUserId,
-    temporaryPassword: isDevelopmentEnv() ? temporaryPassword : undefined,
-  };
-}
-
-export async function resolveAuthUserFromKeycloak(
-  claims: VerifiedKeycloakAuth,
-): Promise<AuthUser> {
-  const membership = await requireActiveTenantMember(claims);
-  const tenant = await getTenantById(membership.tenantId);
-  const legacyMember = tenantMemberToCompanyMember(membership);
-  return mapMemberToAuthUser(legacyMember, claims, tenant?.displayName ?? 'DOQYN');
 }
 
 export async function listManagedTenantMembers(actor: AuthUser, requestedTenantId?: string) {
@@ -156,22 +81,12 @@ export async function inviteCompanyMember(
 
   const now = new Date();
   const id = await createUniqueMemberId(email, tenantId);
-  const { keycloakUserId, temporaryPassword } = await ensureKeycloakUser({
-    email,
-    firstName,
-    lastName,
-    platformRoles: tenantRoles,
-    actor,
-    memberId: id,
-    companyId: tenantId,
-  });
 
   const member: MongoTenantMember = {
     _id: id,
     memberId: id,
     tenantId,
     companyId: tenantId,
-    keycloakUserId,
     username: email,
     email,
     emailNormalized: email,
@@ -202,7 +117,7 @@ export async function inviteCompanyMember(
 
   return {
     member: serializeTenantMember(member),
-    temporaryPassword,
+    temporaryPassword: undefined,
   };
 }
 
@@ -229,23 +144,9 @@ export async function approveCompanyMember(
 
   await assertGroupIdsExist(tenantId, accessGroupIds, { requireActive: true });
 
-  const firstName = member.firstName ?? 'Usuário';
-  const lastName = member.lastName ?? 'DOQYN';
-
-  const { keycloakUserId, temporaryPassword } = await ensureKeycloakUser({
-    email: member.email,
-    firstName,
-    lastName,
-    platformRoles: tenantRoles,
-    actor,
-    memberId,
-    companyId: tenantId,
-  });
-
   const now = new Date();
   const updated = await updateTenantMemberFields(memberId, tenantId, {
     status: 'active',
-    keycloakUserId,
     tenantRoles,
     accessGroupIds,
     notificationPreferences,
@@ -288,7 +189,7 @@ export async function approveCompanyMember(
 
   return {
     member: serializeTenantMember(updated),
-    temporaryPassword,
+    temporaryPassword: undefined,
   };
 }
 
@@ -318,10 +219,6 @@ export async function rejectCompanyMember(
     rejectedAt: now,
     rejectedReason: sanitizedReason,
   });
-
-  if (member.keycloakUserId) {
-    await disableUser(member.keycloakUserId);
-  }
 
   await createUserAuditLog({
     tenantId,
@@ -354,17 +251,6 @@ export async function blockCompanyMember(actor: AuthUser, memberId: string) {
     blockedAt: now,
   });
 
-  if (member.keycloakUserId) {
-    await disableUser(member.keycloakUserId);
-    await createUserAuditLog({
-      tenantId,
-      actor,
-      action: 'KEYCLOAK_USER_DISABLED',
-      description: 'Usuário desativado no Keycloak.',
-      memberId,
-    });
-  }
-
   await createUserAuditLog({
     tenantId,
     actor,
@@ -384,10 +270,6 @@ export async function activateCompanyMember(actor: AuthUser, memberId: string) {
   delete rest.blockedBy;
   delete rest.blockedAt;
   const updated = await saveTenantMember(rest);
-
-  if (member.keycloakUserId) {
-    await enableUser(member.keycloakUserId);
-  }
 
   await createUserAuditLog({
     tenantId,
@@ -419,10 +301,6 @@ export async function updateMemberAccess(
     : member.notificationPreferences;
 
   await assertGroupIdsExist(tenantId, accessGroupIds, { requireActive: true });
-
-  if (member.keycloakUserId) {
-    await syncRealmRoles(member.keycloakUserId, tenantRoles);
-  }
 
   const updated = await updateTenantMemberFields(memberId, tenantId, {
     tenantRoles,

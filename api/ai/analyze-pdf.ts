@@ -8,11 +8,8 @@ import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
 import { parseMultipart } from '../../server/utils/parseMultipart.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
-import {
-  getStorageConfig,
-  isLocalStorageEnabled,
-} from '../../server/storage/storageConfig.js';
-import { storeAnalysisStaging } from '../../server/storage/index.js';
+import { getStorageConfig } from '../../server/storage/storageConfig.js';
+import { isStorageConfigured, storeAnalysisStaging } from '../../server/storage/index.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
 
@@ -70,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: AI_ERROR_MESSAGES.emptyFile });
     }
 
-    if (isLocalStorageEnabled()) {
+    if (isStorageConfigured()) {
       const storageConfig = getStorageConfig();
       if (file.size > storageConfig.maxUploadBytes) {
         logger.warn('analyze-pdf validation failed', {
@@ -103,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    if (isLocalStorageEnabled()) {
+    if (isStorageConfigured()) {
       try {
         await storeAnalysisStaging({
           tenantId: companyId,

@@ -24,10 +24,9 @@ export type AuthUser = {
   membershipStatus?: string;
   tenantType?: string;
   tenantStatus?: string;
-  authProvider?: 'doqyn_auth' | 'temporary' | 'keycloak';
+  authProvider?: 'doqyn_auth' | 'temporary';
   keycloakUserId?: string;
   platformRoles?: PlatformRole[];
-  keycloakRoles?: string[];
 };
 
 export type SessionPayload = AuthUser & {

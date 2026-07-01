@@ -4,33 +4,37 @@ import {
   loadAnalysisStaging,
   storeAnalysisStaging,
 } from './stagingStorage.js';
-import { getStorageConfig, isLocalStorageEnabled } from './storageConfig.js';
-import { createLocalStorageProvider } from './localStorageProvider.js';
-import type { StorageProvider, StoreDocumentVersionInput, StoredDocumentVersion } from './storageProvider.js';
+import {
+  isLocalStorageEnabled,
+  isR2StorageConfigured,
+} from './storageConfig.js';
+import { getStorageProvider, resetStorageProviderCache } from './getStorageProvider.js';
+import type { StoreDocumentVersionInput, StoredDocumentVersion } from './storageProvider.js';
 
-let cachedProvider: StorageProvider | null | undefined;
+export { getStorageProvider, resetStorageProviderCache };
 
-export function getStorageProvider(): StorageProvider | null {
-  if (cachedProvider !== undefined) {
-    return cachedProvider;
-  }
-
-  const config = getStorageConfig();
-  if (config.provider === 'local') {
-    cachedProvider = createLocalStorageProvider(config);
-    return cachedProvider;
-  }
-
-  cachedProvider = null;
-  return null;
-}
-
-export function resetStorageProviderCache(): void {
-  cachedProvider = undefined;
-}
-
-export function buildLocalVersionStorage(stored: StoredDocumentVersion): MongoDocumentVersion['storage'] {
+export function buildVersionStorage(stored: StoredDocumentVersion): MongoDocumentVersion['storage'] {
   const now = new Date();
+
+  if (stored.provider === 'r2') {
+    return {
+      primary: {
+        provider: 'cloudflare_r2',
+        status: 'stored',
+        objectKey: stored.storageKey,
+        bucketAlias: stored.bucket ?? null,
+        storedAt: now,
+      },
+      backup: {
+        provider: 'aws_s3',
+        status: 'pending',
+        objectKey: null,
+        bucketAlias: null,
+        storedAt: null,
+      },
+    };
+  }
+
   return {
     primary: {
       provider: 'local',
@@ -49,6 +53,9 @@ export function buildLocalVersionStorage(stored: StoredDocumentVersion): MongoDo
   };
 }
 
+/** @deprecated use buildVersionStorage */
+export const buildLocalVersionStorage = buildVersionStorage;
+
 export async function persistDocumentVersionFile(
   input: StoreDocumentVersionInput,
 ): Promise<StoredDocumentVersion | null> {
@@ -61,6 +68,9 @@ export async function persistDocumentVersionFile(
 }
 
 export function isStorageConfigured(): boolean {
+  if (isR2StorageConfigured()) {
+    return true;
+  }
   return isLocalStorageEnabled();
 }
 

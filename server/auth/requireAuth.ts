@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { usesDoqynAuth } from './authConfig.js';
 import { getSessionFromRequest } from './session.js';
-import { readBearerToken, verifyKeycloakAccessToken } from './keycloakJwtVerifier.js';
-import { resolveAuthUserFromKeycloak } from '../services/userManagementService.js';
 import {
   mapDoqynSessionToAuthUser,
   verifyDoqynAuthSession,
@@ -55,40 +53,6 @@ export async function requireAuth(req: VercelRequest, res: VercelResponse): Prom
     }
   }
 
-  const bearer = readBearerToken(req);
-
-  if (bearer) {
-    try {
-      const claims = await verifyKeycloakAccessToken(bearer);
-      const user = await resolveAuthUserFromKeycloak(claims);
-      (req as VercelRequest & { auth?: AuthUser }).auth = user;
-      return user;
-    } catch (error) {
-      if (isServiceError(error)) {
-        const status = error.statusCode;
-        res.status(status).json({
-          error: status === 403 ? 'Forbidden' : 'Unauthorized',
-          message: error.message,
-          code: error.code,
-        });
-        return null;
-      }
-
-      const message =
-        error instanceof Error ? error.message : 'Token de autenticação inválido.';
-      logger.warn('Bearer auth failed', {
-        message,
-        hasBearerToken: true,
-      });
-      res.status(401).json({
-        error: 'Unauthorized',
-        message,
-        code: 'INVALID_BEARER_TOKEN',
-      });
-      return null;
-    }
-  }
-
   const user = await getSessionFromRequest(req);
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
@@ -100,7 +64,7 @@ export async function requireAuth(req: VercelRequest, res: VercelResponse): Prom
 }
 
 export function requireAnyRole(user: AuthUser, roles: string[], res: VercelResponse): boolean {
-  const userRoles = new Set([...(user.platformRoles ?? []), ...(user.keycloakRoles ?? [])]);
+  const userRoles = new Set<string>(user.platformRoles ?? []);
   const ok = roles.some((role) => userRoles.has(role));
   if (!ok) {
     res.status(403).json({

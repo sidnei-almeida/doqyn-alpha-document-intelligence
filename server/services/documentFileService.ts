@@ -1,10 +1,11 @@
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import {
-  buildLocalVersionStorage,
+  buildVersionStorage,
   getStorageProvider,
   persistDocumentVersionFile,
 } from '../storage/index.js';
+import { isR2StorageEnabled } from '../storage/storageConfig.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import {
   assertCanAccessDocument,
@@ -59,7 +60,7 @@ export async function storeUploadedDocumentFile(input: {
     return buildPendingStorage();
   }
 
-  return buildLocalVersionStorage(stored);
+  return buildVersionStorage(stored);
 }
 
 export async function readDocumentVersionFile(input: {
@@ -103,9 +104,20 @@ export async function readDocumentVersionFile(input: {
     throw new ServiceError('Versão não encontrada.', 'VERSION_NOT_FOUND', 404);
   }
 
-  const storageKey = (version as MongoDocumentVersion).storage?.primary?.objectKey;
+  const versionDoc = version as MongoDocumentVersion;
+  const primaryStorage = versionDoc.storage?.primary;
+  const storageKey = primaryStorage?.objectKey;
+
   if (!storageKey) {
     throw new ServiceError('Arquivo ainda não disponível.', 'FILE_NOT_STORED', 404);
+  }
+
+  if (primaryStorage?.provider === 'local' && isR2StorageEnabled()) {
+    throw new ServiceError(
+      'Documento armazenado em provider legado/local não disponível após migração para R2.',
+      'LEGACY_LOCAL_STORAGE',
+      410,
+    );
   }
 
   const provider = getStorageProvider();
@@ -113,12 +125,15 @@ export async function readDocumentVersionFile(input: {
     throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
   }
 
-  const file = await provider.readDocumentVersion(storageKey);
-  const versionDoc = version as MongoDocumentVersion;
+  const file = await provider.readDocumentVersion(
+    storageKey,
+    input.tenantId,
+    primaryStorage?.bucketAlias,
+  );
 
   return {
     buffer: file.buffer,
-    mimeType: versionDoc.file?.mimeType ?? 'application/octet-stream',
+    mimeType: versionDoc.file?.mimeType ?? file.contentType ?? 'application/octet-stream',
     fileName: versionDoc.finalFileName || versionDoc.originalFileName || 'documento',
     storageKey,
   };

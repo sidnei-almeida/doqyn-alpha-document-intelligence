@@ -56,8 +56,33 @@ export function buildDocumentVersionStorageKey(input: {
   return `documents/${input.tenantId}/${input.documentId}/versions/${input.versionId}/original.${extension}`;
 }
 
-/** Staging temporário entre analyze-pdf e confirm-analysis (não expor ao frontend). */
+/** Object key R2 — sem tenant no path (bucket já é por tenant). */
+export function buildDocumentVersionObjectKey(input: {
+  documentId: string;
+  versionId: string;
+  extension: string;
+  keyPrefix?: string;
+}): string {
+  assertSafeStorageSegment(input.documentId, 'documentId');
+  assertSafeStorageSegment(input.versionId, 'versionId');
+
+  const extension = sanitizeFileExtension({ extension: input.extension });
+  const prefix = (input.keyPrefix || 'documents').replace(/\/+$/, '');
+  return `${prefix}/${input.documentId}/versions/${input.versionId}/original.${extension}`;
+}
+
+/** Staging temporário entre analyze-pdf e confirm-analysis. */
 export function buildAnalysisStagingKey(input: {
+  jobId: string;
+  extension: string;
+}): string {
+  assertSafeStorageSegment(input.jobId, 'jobId');
+  const extension = sanitizeFileExtension({ extension: input.extension });
+  return `tmp/${input.jobId}/original.${extension}`;
+}
+
+/** @deprecated legado local — mantido para paths antigos em disco. */
+export function buildLegacyAnalysisStagingKey(input: {
   tenantId: string;
   ownerUserId: string;
   jobId: string;

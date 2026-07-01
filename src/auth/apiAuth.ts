@@ -1,4 +1,4 @@
-import { usesDoqynAuth, usesKeycloakAuth } from './authConfig';
+import { usesDoqynAuth } from './authConfig';
 
 type TokenGetter = () => string | null;
 
@@ -22,18 +22,11 @@ export function withAuthHeaders(
     merged.set('Content-Type', 'application/json');
   }
 
-  if (usesKeycloakAuth()) {
-    const token = getAccessToken();
-    if (token) {
-      merged.set('Authorization', `Bearer ${token}`);
-    }
-  }
-
   return merged;
 }
 
 export function getFetchCredentials(): RequestCredentials {
-  return usesKeycloakAuth() ? 'same-origin' : 'include';
+  return 'include';
 }
 
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {

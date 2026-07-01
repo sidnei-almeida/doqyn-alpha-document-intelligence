@@ -33,9 +33,7 @@ export class MockAuthProvider implements AuthProvider {
   }
 
   loginWithSSO(): Promise<AuthSession> {
-    return Promise.reject(
-      new Error('SSO não configurado. Defina VITE_AUTH_MODE=keycloak e configure o Keycloak.'),
-    );
+    return Promise.reject(new Error('SSO não disponível. Use login por e-mail e senha.'));
   }
 
   logout(): Promise<void> {

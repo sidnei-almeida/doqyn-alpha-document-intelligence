@@ -1,6 +1,5 @@
 import type { PlatformRole, MongoCompanyMember } from '../db/types.js';
 import type { AuthUser } from './types.js';
-import type { VerifiedKeycloakAuth } from './keycloakJwtVerifier.js';
 
 const GLOBAL_ADMIN_ROLE: PlatformRole = 'doqyn_admin';
 const COMPANY_ADMIN_ROLE: PlatformRole = 'company_admin';
@@ -25,7 +24,6 @@ export function mapLegacyRoleFromPlatformRoles(roles: PlatformRole[]): MongoComp
 
 export function mapMemberToAuthUser(
   member: MongoCompanyMember,
-  keycloak?: VerifiedKeycloakAuth,
   companyName = 'DOQYN Alpha',
 ): AuthUser {
   const platformRoles = getMemberPlatformRoles(member);
@@ -34,8 +32,8 @@ export function mapMemberToAuthUser(
   return {
     id: member.keycloakUserId ?? member.userId ?? member._id,
     email: member.email,
-    name: member.name || keycloak?.name || member.email,
-    username: member.username ?? keycloak?.username,
+    name: member.name || member.email,
+    username: member.username,
     companyId: member.tenantId ?? member.companyId,
     tenantId: member.tenantId ?? member.companyId,
     companyName,
@@ -46,22 +44,17 @@ export function mapMemberToAuthUser(
     area: member.position ?? '',
     groups,
     memberId: member._id,
-    keycloakUserId: member.keycloakUserId ?? keycloak?.keycloakUserId,
+    keycloakUserId: member.keycloakUserId,
     platformRoles,
-    keycloakRoles: keycloak?.roles ?? platformRoles,
   };
 }
 
 export function userIsDoqynAdmin(user: AuthUser): boolean {
-  return user.platformRoles?.includes(GLOBAL_ADMIN_ROLE) ?? user.keycloakRoles?.includes(GLOBAL_ADMIN_ROLE) ?? false;
+  return user.platformRoles?.includes(GLOBAL_ADMIN_ROLE) ?? false;
 }
 
 export function userIsCompanyAdmin(user: AuthUser): boolean {
-  return (
-    userIsDoqynAdmin(user) ||
-    user.platformRoles?.includes(COMPANY_ADMIN_ROLE) === true ||
-    user.keycloakRoles?.includes(COMPANY_ADMIN_ROLE) === true
-  );
+  return userIsDoqynAdmin(user) || user.platformRoles?.includes(COMPANY_ADMIN_ROLE) === true;
 }
 
 export function userCanManageUsers(user: AuthUser): boolean {

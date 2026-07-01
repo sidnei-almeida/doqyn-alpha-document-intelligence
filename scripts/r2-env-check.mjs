@@ -164,7 +164,11 @@ function main() {
   if (!runtimeOk || !adminOk) exitCode = 1;
 
   console.log('\nBackend:');
-  console.log('INFO: provider R2 ainda não implementado em server/storage — apenas config/validação.');
+  const providerImplemented = existsSync('server/storage/r2/r2StorageProvider.ts');
+  console.log(
+    `${providerImplemented ? 'OK' : 'MISSING'}: provider R2 implementado em server/storage/r2/`,
+  );
+  if (!providerImplemented) exitCode = 1;
 
   process.exit(exitCode);
 }

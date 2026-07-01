@@ -1,7 +1,6 @@
 import { DEV_TENANT_ID, REGISTRY_COLLECTIONS } from '../db/constants.js';
 import type { MongoCompanyMember, MongoTenantMember } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
-import type { VerifiedKeycloakAuth } from '../auth/keycloakJwtVerifier.js';
 import { getMemberAccessGroupIds, getMemberPlatformRoles } from '../auth/memberAuth.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
@@ -122,25 +121,6 @@ export async function findTenantMemberByIdentity(input: {
   return legacy ? mapLegacyMemberToTenantMember(legacy) : null;
 }
 
-export async function requireActiveTenantMember(
-  claims: VerifiedKeycloakAuth,
-): Promise<MongoTenantMember> {
-  const member = await findActiveTenantMember({
-    keycloakUserId: claims.keycloakUserId,
-    email: claims.email,
-  });
-
-  if (!member) {
-    throw new ServiceError(
-      'Seu usuário ainda não está vinculado a um cliente ativo no DOQYN.',
-      'MEMBER_NOT_LINKED',
-      403,
-    );
-  }
-
-  return member;
-}
-
 export function getTenantRoles(member: MongoTenantMember) {
   return member.tenantRoles?.length ? member.tenantRoles : (['user'] as const);
 }
@@ -149,8 +129,8 @@ export function getMemberAccessGroups(member: MongoTenantMember): string[] {
   return member.accessGroupIds ?? [];
 }
 
-/** Usuário Keycloak validado no checkpoint de integração (desenvolvimento). */
-export const SIDNEI_DEV_KEYCLOAK_USER_ID = '2806775c-c73d-4882-8a55-4f39d14a25ae';
+/** Usuário de desenvolvimento usado em seeds locais. */
+export const SIDNEI_DEV_USER_ID = '2806775c-c73d-4882-8a55-4f39d14a25ae';
 const SIDNEI_DEV_EMAIL = 'sidnei.almeida1806@gmail.com';
 const SIDNEI_DEV_MEMBER_ID = 'member_sidnei';
 
@@ -167,7 +147,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
   const members = db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers);
 
   const existing =
-    (await members.findOne({ keycloakUserId: SIDNEI_DEV_KEYCLOAK_USER_ID } as Record<string, unknown>)) ??
+    (await members.findOne({ keycloakUserId: SIDNEI_DEV_USER_ID } as Record<string, unknown>)) ??
     (await members.findOne({ emailNormalized, tenantId } as Record<string, unknown>));
 
   const memberId = existing?._id ?? SIDNEI_DEV_MEMBER_ID;
@@ -177,7 +157,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
     memberId,
     tenantId,
     companyId: tenantId,
-    keycloakUserId: SIDNEI_DEV_KEYCLOAK_USER_ID,
+    keycloakUserId: SIDNEI_DEV_USER_ID,
     username: 'sidnei',
     email: SIDNEI_DEV_EMAIL,
     emailNormalized,
@@ -200,7 +180,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
   await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).updateOne(
     {
       $or: [
-        { keycloakUserId: SIDNEI_DEV_KEYCLOAK_USER_ID },
+        { keycloakUserId: SIDNEI_DEV_USER_ID },
         { email: emailNormalized, companyId: tenantId },
       ],
     } as Record<string, unknown>,
@@ -209,8 +189,8 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
       $set: {
         tenantId,
         companyId: tenantId,
-        userId: SIDNEI_DEV_KEYCLOAK_USER_ID,
-        keycloakUserId: SIDNEI_DEV_KEYCLOAK_USER_ID,
+        userId: SIDNEI_DEV_USER_ID,
+        keycloakUserId: SIDNEI_DEV_USER_ID,
         username: 'sidnei',
         name: 'Sidnei Almeida',
         email: SIDNEI_DEV_EMAIL,
