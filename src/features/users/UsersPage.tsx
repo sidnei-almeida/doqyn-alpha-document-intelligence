@@ -1,24 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageShell } from '@/components/layout/PageShell';
+import { PromptDialog } from '@/components/ui/PromptDialog';
+import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/auth/useAuth';
-import { getAccessGroups } from '@/features/rules/api/rulesApi';
 import {
   type CompanyMemberDto,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MemberStatus,
-  type NotificationPreferencesDto,
   type PlatformRole,
   suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
-
-const PLATFORM_ROLES: PlatformRole[] = ['doqyn_admin', 'company_admin', 'user'];
+import { cloneAccessFormState, type AccessFormState } from './accessFormState';
+import {
+  AccessGroupsSection,
+  DocumentGroupsSection,
+  NotificationsSection,
+  PlatformRolesSection,
+} from './components/AccessFormSections';
+import { AccessRequestDetailsPanel } from './components/AccessRequestDetailsPanel';
+import { BlockAccessDialog } from './components/BlockAccessDialog';
+import { EditAccessDialog } from './components/EditAccessDialog';
+import { UnblockAccessDialog } from './components/UnblockAccessDialog';
+import { formatPlatformRoles } from './platformRoleLabels';
+import { invalidateUserManagementQueries } from './userManagementQueries';
 
 const STATUS_LABELS: Record<MemberStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
   active: { label: 'Ativo', variant: 'success' },
@@ -34,74 +44,15 @@ function memberDisplayName(member: CompanyMemberDto): string {
   return member.name ?? member.email;
 }
 
-function RoleCheckboxes({
-  value,
-  onChange,
-  canAssignDoqynAdmin,
-}: {
-  value: PlatformRole[];
-  onChange: (roles: PlatformRole[]) => void;
-  canAssignDoqynAdmin: boolean;
-}) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {PLATFORM_ROLES.map((role) => {
-        const disabled = role === 'doqyn_admin' && !canAssignDoqynAdmin;
-        const checked = value.includes(role);
-        return (
-          <label key={role} className="flex items-center gap-2 text-sm text-doqyn-text">
-            <input
-              type="checkbox"
-              checked={checked}
-              disabled={disabled}
-              onChange={() => {
-                if (checked) {
-                  onChange(value.filter((r) => r !== role));
-                } else {
-                  onChange([...value, role]);
-                }
-              }}
-            />
-            {role}
-          </label>
-        );
-      })}
-    </div>
-  );
-}
-
-function GroupCheckboxes({
-  groups,
-  value,
-  onChange,
-}: {
-  groups: Array<{ id: string; name: string }>;
-  value: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      {groups.map((group) => {
-        const checked = value.includes(group.id);
-        return (
-          <label key={group.id} className="flex items-center gap-2 text-sm text-doqyn-text">
-            <input
-              type="checkbox"
-              checked={checked}
-              onChange={() => {
-                if (checked) {
-                  onChange(value.filter((id) => id !== group.id));
-                } else {
-                  onChange([...value, group.id]);
-                }
-              }}
-            />
-            {group.name}
-          </label>
-        );
-      })}
-    </div>
-  );
+function memberToAccessForm(member: CompanyMemberDto): AccessFormState {
+  return {
+    platformRoles: member.platformRoles.length ? [...member.platformRoles] : ['user'],
+    accessGroupIds: [...member.accessGroupIds],
+    documentGroupIds: [...(member.documentGroupIds ?? member.groupIds ?? [])],
+    notificationPreferences: {
+      ...(member.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFERENCES),
+    },
+  };
 }
 
 export function UsersPage() {
@@ -114,7 +65,11 @@ export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<CompanyMemberDto | null>(null);
+  const [editAccessBaseline, setEditAccessBaseline] = useState<AccessFormState | null>(null);
   const [approvingMember, setApprovingMember] = useState<CompanyMemberDto | null>(null);
+  const [blockingMember, setBlockingMember] = useState<CompanyMemberDto | null>(null);
+  const [unblockingMember, setUnblockingMember] = useState<CompanyMemberDto | null>(null);
+  const [rejectingMember, setRejectingMember] = useState<CompanyMemberDto | null>(null);
 
   const [inviteForm, setInviteForm] = useState({
     email: '',
@@ -124,9 +79,10 @@ export function UsersPage() {
     accessGroupIds: [] as string[],
   });
 
-  const [accessForm, setAccessForm] = useState({
-    platformRoles: ['user'] as PlatformRole[],
-    accessGroupIds: [] as string[],
+  const [accessForm, setAccessForm] = useState<AccessFormState>({
+    platformRoles: ['user'],
+    accessGroupIds: [],
+    documentGroupIds: [],
     notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
   });
 
@@ -135,15 +91,23 @@ export function UsersPage() {
   const membersQuery = useQuery({
     queryKey: ['company-members', effectiveCompanyId],
     queryFn: () => usersApi.list(isDoqynAdmin ? effectiveCompanyId : undefined),
+    enabled: !isDoqynAdmin || Boolean(effectiveCompanyId),
   });
 
   const groupsQuery = useQuery({
-    queryKey: ['access-groups', effectiveCompanyId],
-    queryFn: () => getAccessGroups(),
+    queryKey: ['auth-access-groups', effectiveCompanyId],
+    queryFn: () => usersApi.listAccessGroups(effectiveCompanyId || undefined),
+    enabled: !isDoqynAdmin || Boolean(effectiveCompanyId),
   });
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['company-members'] });
+  const documentGroupsQuery = useQuery({
+    queryKey: ['document-groups', effectiveCompanyId],
+    queryFn: () => usersApi.listDocumentGroups(),
+    enabled: !isDoqynAdmin || Boolean(effectiveCompanyId),
+  });
+
+  const invalidate = async () => {
+    await invalidateUserManagementQueries(queryClient, effectiveCompanyId || undefined);
   };
 
   const inviteMutation = useMutation({
@@ -153,9 +117,14 @@ export function UsersPage() {
         ...inviteForm,
       }),
     onSuccess: (data) => {
-      toast.success('Usuário convidado com sucesso.');
+      showAppToast({ type: 'success', title: 'Usuário convidado com sucesso.' });
       if (data.temporaryPassword) {
-        toast.info(`Senha temporária (dev): ${data.temporaryPassword}`, { duration: 15000 });
+        showAppToast({
+          type: 'info',
+          title: 'Senha temporária (dev)',
+          message: data.temporaryPassword,
+          duration: 15000,
+        });
       }
       setInviteOpen(false);
       setInviteForm({
@@ -167,7 +136,7 @@ export function UsersPage() {
       });
       invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
   const approveMutation = useMutation({
@@ -175,65 +144,86 @@ export function UsersPage() {
       if (!approvingMember) throw new Error('Membro não selecionado.');
       return usersApi.approve(approvingMember.id, accessForm, effectiveCompanyId || undefined);
     },
-    onSuccess: (data) => {
-      toast.success('Solicitação aprovada.');
+    onSuccess: async (data) => {
+      showAppToast({ type: 'success', title: 'Solicitação aprovada.' });
       if ('temporaryPassword' in data && data.temporaryPassword) {
-        toast.info(`Senha temporária (dev): ${data.temporaryPassword}`, { duration: 15000 });
+        showAppToast({
+          type: 'info',
+          title: 'Senha temporária (dev)',
+          message: data.temporaryPassword,
+          duration: 15000,
+        });
       }
       setApprovingMember(null);
-      invalidate();
+      await invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ memberId, reason }: { memberId: string; reason: string }) =>
       usersApi.reject(memberId, reason, effectiveCompanyId || undefined),
     onSuccess: () => {
-      toast.success('Solicitação rejeitada.');
+      showAppToast({ type: 'success', title: 'Solicitação rejeitada.' });
+      setRejectingMember(null);
       invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
-  const handleRejectMember = (memberId: string) => {
-    const reason = window.prompt('Informe o motivo da rejeição:');
-    if (!reason?.trim()) {
-      toast.error('Informe o motivo da rejeição.');
-      return;
-    }
-    rejectMutation.mutate({ memberId, reason: reason.trim() });
+  const handleRejectMember = (member: CompanyMemberDto) => {
+    setRejectingMember(member);
   };
 
   const blockMutation = useMutation({
-    mutationFn: (memberId: string) => usersApi.block(memberId, effectiveCompanyId || undefined),
-    onSuccess: () => {
-      toast.success('Usuário bloqueado.');
-      invalidate();
+    mutationFn: ({ memberId, reason }: { memberId: string; reason?: string }) =>
+      usersApi.block(memberId, effectiveCompanyId || undefined, reason),
+    onSuccess: async () => {
+      showAppToast({ type: 'success', title: 'Acesso bloqueado com sucesso.' });
+      setBlockingMember(null);
+      await invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
   const activateMutation = useMutation({
     mutationFn: (memberId: string) => usersApi.activate(memberId, effectiveCompanyId || undefined),
-    onSuccess: () => {
-      toast.success('Usuário reativado.');
-      invalidate();
+    onSuccess: async () => {
+      showAppToast({ type: 'success', title: 'Acesso desbloqueado com sucesso.' });
+      setUnblockingMember(null);
+      await invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
+  const tenantDisplayName =
+    user?.companyName ?? effectiveCompanyId ?? user?.companyId ?? 'Empresa atual';
+
   const updateAccessMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async (form: AccessFormState) => {
       if (!editingMember) throw new Error('Membro não selecionado.');
-      return usersApi.updateAccess(editingMember.id, accessForm, effectiveCompanyId || undefined);
+      await usersApi.updateAccess(
+        editingMember.id,
+        {
+          platformRoles: form.platformRoles,
+          accessGroupIds: form.accessGroupIds,
+          notificationPreferences: form.notificationPreferences,
+        },
+        effectiveCompanyId || undefined,
+      );
+      await usersApi.updateDocumentGroups(
+        editingMember.id,
+        form.documentGroupIds,
+        effectiveCompanyId || undefined,
+      );
     },
-    onSuccess: () => {
-      toast.success('Acesso atualizado.');
+    onSuccess: async () => {
+      showAppToast({ type: 'success', title: 'Acesso atualizado.' });
       setEditingMember(null);
-      invalidate();
+      setEditAccessBaseline(null);
+      await invalidate();
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => showApiErrorToast(err),
   });
 
   const members = useMemo(() => {
@@ -242,72 +232,35 @@ export function UsersPage() {
     return list.filter((m) => m.status === statusFilter);
   }, [membersQuery.data?.members, statusFilter]);
 
-  const groups = groupsQuery.data ?? [];
+  const accessGroups = groupsQuery.data ?? [];
+  const documentGroups = documentGroupsQuery.data ?? [];
 
   const openApprove = (member: CompanyMemberDto) => {
-    const suggested = suggestGroupsFromDepartment(member.requestedAccess?.departmentText, groups);
+    const suggested = suggestGroupsFromDepartment(member.requestedAccess?.departmentText, accessGroups);
     setApprovingMember(member);
     setAccessForm({
       platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
       accessGroupIds: suggested.length ? suggested : member.accessGroupIds,
+      documentGroupIds: [],
       notificationPreferences: member.notificationPreferences ?? { ...DEFAULT_NOTIFICATION_PREFERENCES },
     });
   };
 
   const openEditAccess = (member: CompanyMemberDto) => {
+    const baseline = memberToAccessForm(member);
     setEditingMember(member);
-    setAccessForm({
-      platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
-      accessGroupIds: member.accessGroupIds,
-      notificationPreferences: member.notificationPreferences ?? { ...DEFAULT_NOTIFICATION_PREFERENCES },
-    });
+    setEditAccessBaseline(cloneAccessFormState(baseline));
   };
 
-  function NotificationCheckboxes({
-    value,
-    onChange,
-  }: {
-    value: NotificationPreferencesDto;
-    onChange: (value: NotificationPreferencesDto) => void;
-  }) {
-    const entries: Array<[keyof NotificationPreferencesDto, string]> = [
-      ['email', 'E-mail'],
-      ['whatsapp', 'WhatsApp'],
-      ['documentCreated', 'Documento criado'],
-      ['documentUpdated', 'Documento atualizado'],
-      ['documentRequiresSignature', 'Assinatura necessária'],
-      ['accessApproved', 'Acesso aprovado'],
-      ['accessRejected', 'Acesso rejeitado'],
-    ];
-
-    return (
-      <div className="grid gap-2 sm:grid-cols-2">
-        {entries.map(([key, label]) => (
-          <label key={key} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={value[key]}
-              onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
-            />
-            {label}
-          </label>
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Usuários"
-        description="Convide, aprove e gerencie acessos da empresa."
-        actions={
-          <Button onClick={() => setInviteOpen(true)}>Convidar usuário</Button>
-        }
-      />
-
+    <PageShell
+      title="Usuários"
+      description="Convide, aprove e gerencie acessos da empresa."
+      actions={<Button onClick={() => setInviteOpen(true)}>Convidar usuário</Button>}
+      bodyClassName="min-h-0"
+    >
       {isDoqynAdmin && (
-        <Card>
+        <Card className="shrink-0">
           <CardContent className="flex flex-wrap items-end gap-4 p-4">
             <div className="min-w-[200px] flex-1">
               <label className="mb-1 block text-xs text-doqyn-muted">Empresa (companyId)</label>
@@ -321,7 +274,7 @@ export function UsersPage() {
         </Card>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap gap-2">
         {(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => (
           <Button
             key={status}
@@ -334,12 +287,16 @@ export function UsersPage() {
         ))}
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <Card className="flex min-h-[420px] flex-1 flex-col">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           {membersQuery.isLoading ? (
-            <p className="p-6 text-sm text-doqyn-muted">Carregando usuários...</p>
+            <p className="flex flex-1 items-center justify-center p-6 text-sm text-doqyn-muted">
+              Carregando usuários...
+            </p>
           ) : members.length === 0 ? (
-            <p className="p-6 text-sm text-doqyn-muted">Nenhum usuário encontrado.</p>
+            <p className="flex flex-1 items-center justify-center p-6 text-sm text-doqyn-muted">
+              Nenhum usuário encontrado.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -349,7 +306,8 @@ export function UsersPage() {
                     <th className="px-4 py-3">E-mail</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Roles</th>
-                    <th className="px-4 py-3">Grupos</th>
+                    <th className="px-4 py-3">Grupos de acesso</th>
+                    <th className="px-4 py-3">Grupos documentais</th>
                     <th className="px-4 py-3 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -364,15 +322,28 @@ export function UsersPage() {
                           <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                         </td>
                         <td className="px-4 py-3 text-xs text-doqyn-muted">
-                          {member.platformRoles.join(', ') || '—'}
+                          {formatPlatformRoles(member.platformRoles)}
                         </td>
                         <td className="px-4 py-3 text-xs text-doqyn-muted">
                           {member.requestedAccess?.departmentText && member.status === 'pending' ? (
                             <span title={member.requestedAccess.reason}>
                               {member.requestedAccess.departmentText}
                             </span>
+                          ) : member.accessGroupIds.length ? (
+                            member.accessGroupIds
+                              .map((id) => accessGroups.find((g) => g.id === id)?.name ?? id)
+                              .join(', ')
                           ) : (
-                            member.accessGroupIds.length || '—'
+                            '—'
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-doqyn-muted">
+                          {(member.documentGroupIds ?? member.groupIds).length ? (
+                            (member.documentGroupIds ?? member.groupIds)
+                              .map((id) => documentGroups.find((g) => g.id === id)?.name ?? id)
+                              .join(', ')
+                          ) : (
+                            '—'
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -385,7 +356,7 @@ export function UsersPage() {
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => handleRejectMember(member.id)}
+                                  onClick={() => handleRejectMember(member)}
                                 >
                                   Rejeitar
                                 </Button>
@@ -399,20 +370,25 @@ export function UsersPage() {
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => blockMutation.mutate(member.id)}
+                                  onClick={() => setBlockingMember(member)}
                                 >
-                                  Bloquear
+                                  Bloquear acesso
                                 </Button>
                               </>
                             )}
                             {member.status === 'blocked' && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => activateMutation.mutate(member.id)}
-                              >
-                                Reativar
-                              </Button>
+                              <>
+                                <Button size="sm" variant="secondary" onClick={() => openEditAccess(member)}>
+                                  Editar acesso
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setUnblockingMember(member)}
+                                >
+                                  Desbloquear acesso
+                                </Button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -427,7 +403,7 @@ export function UsersPage() {
       </Card>
 
       {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-lg">
             <CardContent className="space-y-4 p-6">
               <h2 className="text-lg font-medium">Convidar usuário</h2>
@@ -448,28 +424,22 @@ export function UsersPage() {
                   onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
                 />
               </div>
-              <div>
-                <p className="mb-2 text-xs text-doqyn-muted">Roles globais</p>
-                <RoleCheckboxes
-                  value={inviteForm.platformRoles}
-                  onChange={(platformRoles) => setInviteForm((f) => ({ ...f, platformRoles }))}
-                  canAssignDoqynAdmin={canAssignDoqynAdmin}
-                />
-              </div>
-              <div>
-                <p className="mb-2 text-xs text-doqyn-muted">Grupos de acesso</p>
-                <GroupCheckboxes
-                  groups={groups}
-                  value={inviteForm.accessGroupIds}
-                  onChange={(accessGroupIds) => setInviteForm((f) => ({ ...f, accessGroupIds }))}
-                />
-              </div>
+              <PlatformRolesSection
+                value={inviteForm.platformRoles}
+                onChange={(platformRoles) => setInviteForm((f) => ({ ...f, platformRoles }))}
+                canAssignDoqynAdmin={canAssignDoqynAdmin}
+              />
+              <AccessGroupsSection
+                groups={accessGroups}
+                value={inviteForm.accessGroupIds}
+                onChange={(accessGroupIds) => setInviteForm((f) => ({ ...f, accessGroupIds }))}
+              />
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setInviteOpen(false)}>
                   Cancelar
                 </Button>
                 <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending}>
-                  Convidar
+                  {inviteMutation.isPending ? 'Convidando…' : 'Convidar'}
                 </Button>
               </div>
             </CardContent>
@@ -478,64 +448,60 @@ export function UsersPage() {
       )}
 
       {approvingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="w-full max-w-lg">
-            <CardContent className="space-y-4 p-6">
-              <h2 className="text-lg font-medium">Aprovar {memberDisplayName(approvingMember)}</h2>
-              {approvingMember.requestedAccess && (
-                <div className="rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs text-doqyn-muted">
-                  <p>
-                    Cliente: {approvingMember.requestedAccess.tenantDisplayName ?? '—'} (
-                    {approvingMember.requestedAccess.taxIdType})
-                  </p>
-                  <p>Cargo: {approvingMember.requestedAccess.jobTitle ?? '—'}</p>
-                  <p>Setor informado: {approvingMember.requestedAccess.departmentText ?? '—'}</p>
-                  <p>Motivo: {approvingMember.requestedAccess.reason ?? '—'}</p>
-                  {approvingMember.whatsapp && <p>WhatsApp: {approvingMember.whatsapp}</p>}
-                  {suggestGroupsFromDepartment(
-                    approvingMember.requestedAccess.departmentText,
-                    groups,
-                  ).length > 0 && (
-                    <p className="mt-2 text-doqyn-text">
-                      Sugestão: talvez corresponda ao grupo{' '}
-                      {groups
-                        .filter((g) =>
-                          suggestGroupsFromDepartment(
-                            approvingMember.requestedAccess?.departmentText,
-                            groups,
-                          ).includes(g.id),
-                        )
-                        .map((g) => g.name)
-                        .join(', ')}
-                    </p>
-                  )}
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto">
+            <CardContent className="space-y-1 p-6">
+              <h2 className="mb-4 text-lg font-medium">Aprovar {memberDisplayName(approvingMember)}</h2>
+              <AccessRequestDetailsPanel
+                member={approvingMember}
+                className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
+              />
+              {suggestGroupsFromDepartment(
+                approvingMember.requestedAccess?.departmentText,
+                accessGroups,
+              ).length > 0 && (
+                <p className="mb-4 text-xs text-doqyn-muted">
+                  Sugestão: talvez corresponda ao grupo{' '}
+                  {accessGroups
+                    .filter((g) =>
+                      suggestGroupsFromDepartment(
+                        approvingMember.requestedAccess?.departmentText,
+                        accessGroups,
+                      ).includes(g.id),
+                    )
+                    .map((g) => g.name)
+                    .join(', ')}
+                </p>
               )}
-              <RoleCheckboxes
+              <PlatformRolesSection
                 value={accessForm.platformRoles}
                 onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
                 canAssignDoqynAdmin={canAssignDoqynAdmin}
               />
-              <GroupCheckboxes
-                groups={groups}
+              <AccessGroupsSection
+                groups={accessGroups}
                 value={accessForm.accessGroupIds}
                 onChange={(accessGroupIds) => setAccessForm((f) => ({ ...f, accessGroupIds }))}
               />
-              <div>
-                <p className="mb-2 text-xs text-doqyn-muted">Notificações futuras</p>
-                <NotificationCheckboxes
-                  value={accessForm.notificationPreferences}
-                  onChange={(notificationPreferences) =>
-                    setAccessForm((f) => ({ ...f, notificationPreferences }))
-                  }
-                />
-              </div>
-              <div className="flex justify-end gap-2">
+              <DocumentGroupsSection
+                groups={documentGroups}
+                value={accessForm.documentGroupIds}
+                onChange={(documentGroupIds) =>
+                  setAccessForm((f) => ({ ...f, documentGroupIds }))
+                }
+              />
+              <NotificationsSection
+                value={accessForm.notificationPreferences}
+                onChange={(notificationPreferences) =>
+                  setAccessForm((f) => ({ ...f, notificationPreferences }))
+                }
+              />
+              <div className="flex justify-end gap-2 border-t border-doqyn-border-subtle pt-4">
                 <Button variant="secondary" onClick={() => setApprovingMember(null)}>
                   Cancelar
                 </Button>
                 <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
-                  Aprovar
+                  {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
                 </Button>
               </div>
             </CardContent>
@@ -543,45 +509,65 @@ export function UsersPage() {
         </div>
       )}
 
-      {editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="w-full max-w-lg">
-            <CardContent className="space-y-4 p-6">
-              <h2 className="text-lg font-medium">Editar acesso — {memberDisplayName(editingMember)}</h2>
-              <RoleCheckboxes
-                value={accessForm.platformRoles}
-                onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
-                canAssignDoqynAdmin={canAssignDoqynAdmin}
-              />
-              <GroupCheckboxes
-                groups={groups}
-                value={accessForm.accessGroupIds}
-                onChange={(accessGroupIds) => setAccessForm((f) => ({ ...f, accessGroupIds }))}
-              />
-              <div>
-                <p className="mb-2 text-xs text-doqyn-muted">Notificações futuras</p>
-                <NotificationCheckboxes
-                  value={accessForm.notificationPreferences}
-                  onChange={(notificationPreferences) =>
-                    setAccessForm((f) => ({ ...f, notificationPreferences }))
-                  }
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={() => setEditingMember(null)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => updateAccessMutation.mutate()}
-                  disabled={updateAccessMutation.isPending}
-                >
-                  Salvar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {editingMember && editAccessBaseline && (
+        <EditAccessDialog
+          member={editingMember}
+          memberName={memberDisplayName(editingMember)}
+          initialForm={editAccessBaseline}
+          accessGroups={accessGroups}
+          documentGroups={documentGroups}
+          canAssignDoqynAdmin={canAssignDoqynAdmin}
+          saving={updateAccessMutation.isPending}
+          onClose={() => {
+            setEditingMember(null);
+            setEditAccessBaseline(null);
+          }}
+          onSave={(form) => updateAccessMutation.mutate(form)}
+        />
       )}
-    </div>
+
+      {blockingMember && (
+        <BlockAccessDialog
+          member={blockingMember}
+          memberName={memberDisplayName(blockingMember)}
+          tenantDisplayName={tenantDisplayName}
+          blocking={blockMutation.isPending}
+          onClose={() => setBlockingMember(null)}
+          onConfirm={(reason) =>
+            blockMutation.mutate({ memberId: blockingMember.id, reason })
+          }
+        />
+      )}
+
+      {unblockingMember && (
+        <UnblockAccessDialog
+          member={unblockingMember}
+          memberName={memberDisplayName(unblockingMember)}
+          tenantDisplayName={tenantDisplayName}
+          unblocking={activateMutation.isPending}
+          onClose={() => setUnblockingMember(null)}
+          onConfirm={() => activateMutation.mutate(unblockingMember.id)}
+        />
+      )}
+
+      <PromptDialog
+        open={Boolean(rejectingMember)}
+        title="Rejeitar solicitação"
+        description={
+          rejectingMember
+            ? `${memberDisplayName(rejectingMember)} · ${rejectingMember.email}`
+            : undefined
+        }
+        label="Motivo da rejeição"
+        placeholder="Descreva o motivo para o solicitante..."
+        confirmLabel="Confirmar rejeição"
+        saving={rejectMutation.isPending}
+        onClose={() => setRejectingMember(null)}
+        onConfirm={(reason) => {
+          if (!rejectingMember) return;
+          rejectMutation.mutate({ memberId: rejectingMember.id, reason });
+        }}
+      />
+    </PageShell>
   );
 }

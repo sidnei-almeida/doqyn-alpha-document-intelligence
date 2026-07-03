@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { resolveTargetCompanyId, userCanManageUsers, userIsDoqynAdmin } from '../../server/auth/memberAuth.js';
-import { listManagedTenantMembers } from '../../server/services/userManagementService.js';
+import { listGovernanceMembers } from '../../server/services/governanceMembersService.js';
 import { withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { logger } from '../../server/utils/logger.js';
 
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ? resolveTargetCompanyId(user, queryCompanyId ?? companyId)
           : companyId;
 
-        const members = await listManagedTenantMembers(user, queryCompanyId ?? companyId);
+        const members = await listGovernanceMembers(req, user, queryCompanyId ?? companyId);
         logger.info('tenant members listed', {
           requestId,
           companyId: effectiveCompanyId,

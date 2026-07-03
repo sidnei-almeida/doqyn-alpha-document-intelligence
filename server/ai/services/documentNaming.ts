@@ -4,6 +4,7 @@ import {
   limitFileNameLength,
   sanitizeFileNameSegment,
 } from '../utils/sanitizeFileName.js';
+import { stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore } from '../../../shared/storageFileName.js';
 import { normalizeDate } from './documentValidators.js';
 
 function getFieldDisplayValue(
@@ -47,11 +48,17 @@ function normalizeVersion(version: string): string {
   return cleaned ? cleaned.replace('.', '_') : '1';
 }
 
+/** Remove CPF/CNPJ (11 ou 14 dígitos) de segmentos de nome de arquivo. */
+export function stripSensitiveIdentifiersFromFileName(fileName: string): string {
+  return stripSensitiveIdentifiersFromFileNameCore(fileName);
+}
+
 export function generateRecommendedFileName(input: {
   originalFileName: string;
   selectedClass: DocumentClassRule;
   metadata: Record<string, ExtractedMetadataField>;
   version: string;
+  preventSensitiveDataInFileName?: boolean;
 }): string {
   const versionToken = normalizeVersion(input.version);
   let name = input.selectedClass.namingTemplate;
@@ -74,5 +81,9 @@ export function generateRecommendedFileName(input: {
     .join('_');
 
   const fileName = ensurePdfExtension(`${name}.pdf`.replace(/\.pdf\.pdf$/i, '.pdf'));
-  return limitFileNameLength(fileName);
+  const limited = limitFileNameLength(fileName);
+  if (input.preventSensitiveDataInFileName === false) {
+    return limited;
+  }
+  return limitFileNameLength(stripSensitiveIdentifiersFromFileName(limited));
 }

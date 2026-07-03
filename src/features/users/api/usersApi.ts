@@ -1,4 +1,4 @@
-import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
 import { usesDoqynAuth } from '@/auth/authConfig';
 import { doqynUsersApi } from './doqynUsersApi';
 
@@ -29,6 +29,18 @@ export type RequestedAccessDto = {
   source?: string;
 };
 
+export type MemberConsentDto = {
+  textVersion?: string;
+  acceptedAt?: string;
+  operationalNotificationsConsent?: boolean;
+};
+
+export type MemberTermsDto = {
+  accepted?: boolean;
+  version?: string | null;
+  acceptedAt?: string;
+};
+
 export type CompanyMemberDto = {
   id: string;
   companyId: string;
@@ -44,8 +56,13 @@ export type CompanyMemberDto = {
   tenantRoles?: PlatformRole[];
   status: MemberStatus;
   accessGroupIds: string[];
+  /** Grupos documentais do app principal (Mongo). */
+  documentGroupIds: string[];
+  /** @deprecated use documentGroupIds */
   groupIds: string[];
   requestedAccess?: RequestedAccessDto;
+  consent?: MemberConsentDto;
+  terms?: MemberTermsDto;
   notificationPreferences?: NotificationPreferencesDto;
   createdAt: string;
   updatedAt: string;
@@ -64,10 +81,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesDto = {
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await authFetch(`${API_BASE}${path}`, {
     credentials: getFetchCredentials(),
-    headers: withAuthHeaders({
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    }),
     ...options,
   });
 
@@ -84,13 +97,59 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
+type GovernanceMemberApi = {
+  id: string;
+  companyId: string;
+  tenantId?: string;
+  email: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  whatsapp?: string;
+  platformRoles?: PlatformRole[];
+  status: MemberStatus;
+  accessGroupIds?: string[];
+  documentGroupIds?: string[];
+  groupIds?: string[];
+  requestedAccess?: RequestedAccessDto;
+  consent?: MemberConsentDto;
+  terms?: MemberTermsDto;
+  notificationPreferences?: NotificationPreferencesDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function mapGovernanceMember(member: GovernanceMemberApi): CompanyMemberDto {
+  const documentGroupIds = member.documentGroupIds ?? member.groupIds ?? [];
+  return {
+    id: member.id,
+    companyId: member.companyId,
+    tenantId: member.tenantId ?? member.companyId,
+    email: member.email,
+    name: member.name,
+    firstName: member.firstName,
+    lastName: member.lastName,
+    whatsapp: member.whatsapp,
+    platformRoles: member.platformRoles ?? ['user'],
+    tenantRoles: member.platformRoles ?? ['user'],
+    status: member.status,
+    accessGroupIds: member.accessGroupIds ?? [],
+    documentGroupIds,
+    groupIds: documentGroupIds,
+    requestedAccess: member.requestedAccess,
+    consent: member.consent,
+    terms: member.terms,
+    notificationPreferences: member.notificationPreferences,
+    createdAt: member.createdAt,
+    updatedAt: member.updatedAt,
+  };
+}
+
 export const usersApi = {
-  list: (companyId?: string) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.list(companyId).then((members) => ({ members }));
-    }
+  list: async (companyId?: string) => {
     const query = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
-    return request<{ members: CompanyMemberDto[] }>(`/company-members${query}`);
+    const data = await request<{ members: GovernanceMemberApi[] }>(`/company-members${query}`);
+    return { members: (data.members ?? []).map(mapGovernanceMember) };
   },
 
   invite: (input: {
@@ -115,6 +174,7 @@ export const usersApi = {
     input: {
       platformRoles: PlatformRole[];
       accessGroupIds: string[];
+      documentGroupIds?: string[];
       notificationPreferences?: NotificationPreferencesDto;
     },
     tenantId?: string,
@@ -127,6 +187,7 @@ export const usersApi = {
         body: JSON.stringify({
           platformRoles: input.platformRoles,
           accessGroupIds: input.accessGroupIds,
+          documentGroupIds: input.documentGroupIds ?? [],
           notificationPreferences: input.notificationPreferences,
         }),
       },
@@ -141,13 +202,15 @@ export const usersApi = {
     });
   },
 
-  block: (memberId: string, tenantId?: string) => {
+  block: (memberId: string, tenantId?: string, reason?: string) => {
     if (usesDoqynAuth()) {
-      return doqynUsersApi.block(memberId, tenantId);
+      return doqynUsersApi.block(memberId, tenantId, reason);
     }
+    const body: Record<string, string> = {};
+    if (reason?.trim()) body.reason = reason.trim();
     return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/block`, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify(body),
     });
   },
 
@@ -181,6 +244,45 @@ export const usersApi = {
         notificationPreferences: input.notificationPreferences,
       }),
     });
+  },
+
+  listAccessGroups: (tenantId?: string) => {
+    if (usesDoqynAuth()) {
+      return doqynUsersApi.listAccessGroups(tenantId);
+    }
+    return request<{ groups: Array<{ id: string; name: string }> }>('/access-groups').then(
+      (data) => data.groups ?? [],
+    );
+  },
+
+  listDocumentGroups: async (): Promise<
+    Array<{ id: string; name: string; description?: string; memberCount?: number }>
+  > => {
+    const data = await request<{
+      groups: Array<{ id: string; name: string; description?: string; memberCount?: number }>;
+    }>('/document-groups');
+    return (data.groups ?? []).map((group) => ({
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      memberCount: group.memberCount ?? 0,
+    }));
+  },
+
+  updateDocumentGroups: async (
+    memberId: string,
+    documentGroupIds: string[],
+    tenantId?: string,
+  ): Promise<CompanyMemberDto> => {
+    void tenantId;
+    const data = await request<{ member: GovernanceMemberApi }>(
+      `/company-members/${memberId}/groups`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ documentGroupIds }),
+      },
+    );
+    return mapGovernanceMember(data.member);
   },
 };
 

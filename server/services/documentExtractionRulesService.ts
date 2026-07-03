@@ -170,6 +170,15 @@ export async function updateDocumentExtractionRule(
   return serializeExtractionRule(updated as MongoDocumentExtractionRule);
 }
 
+/**
+ * Cria regra de extração mínima v1 para uma categoria recém-criada no tenant atual.
+ * Escopo: somente o tenantId informado — não cria em outros tenants nem catálogo global.
+ * Não roda no provisionamento de empresa nova; só ao criar categoria via API/UI.
+ *
+ * TODO: Futuro — regras de extração devem ser configuradas explicitamente por classe
+ * documental do tenant. A regra default criada junto da categoria é apenas um rascunho
+ * inicial do tenant, não catálogo global.
+ */
 export async function createDefaultExtractionRuleForCategory(
   tenantId: string,
   userId: string,

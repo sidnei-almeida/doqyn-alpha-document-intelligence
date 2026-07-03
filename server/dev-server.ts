@@ -11,6 +11,12 @@ type RouteMatch = {
   params: Record<string, string>;
 };
 
+type RoutePattern = {
+  regex: RegExp;
+  loader: RouteMatch['loader'];
+  paramKeys?: string[];
+};
+
 const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/auth/login': () => import('../api/auth/login.js'),
@@ -20,7 +26,9 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents': () => import('../api/documents/index.js'),
   '/api/documents/upload': () => import('../api/documents/upload.js'),
   '/api/documents/download': () => import('../api/documents/download.js'),
+  '/api/documents/preview': () => import('../api/documents/preview.js'),
   '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
+  '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
   '/api/document-rules/active': () => import('../api/document-rules/active.js'),
   '/api/document-rules': () => import('../api/document-rules/index.js'),
   '/api/document-rules/matrix': () => import('../api/document-rules/matrix.js'),
@@ -35,6 +43,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/document-extraction-rules': () => import('../api/document-extraction-rules/index.js'),
   '/api/audit': () => import('../api/audit/index.js'),
   '/api/audit/overview': () => import('../api/audit/overview.js'),
+  '/api/tracking/document-events': () => import('../api/tracking/document-events.js'),
   '/api/ai/analyze-pdf': () => import('../api/ai/analyze-pdf.js'),
 };
 
@@ -44,7 +53,7 @@ function resolveRoute(pathname: string): RouteMatch | null {
     return { loader: exact, params: {} };
   }
 
-  const patterns: Array<{ regex: RegExp; loader: RouteMatch['loader'] }> = [
+  const patterns: RoutePattern[] = [
     {
       regex: /^\/api\/access-groups\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/access-groups/toggle-active.js'),
@@ -111,12 +120,66 @@ function resolveRoute(pathname: string): RouteMatch | null {
       loader: () => import('../api/document-rules/toggle-active.js'),
     },
     { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/manifest$/,
+      loader: () => import('../api/documents/preview-manifest.js'),
+      paramKeys: ['documentId', 'versionId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/pages\/([^/]+)$/,
+      loader: () => import('../api/documents/preview-page.js'),
+      paramKeys: ['documentId', 'versionId', 'page'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/thumbnails\/([^/]+)$/,
+      loader: () => import('../api/documents/preview-thumbnail.js'),
+      paramKeys: ['documentId', 'versionId', 'page'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/image$/,
+      loader: () => import('../api/documents/preview-image.js'),
+      paramKeys: ['documentId', 'versionId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/timeline$/,
+      loader: () => import('../api/documents/timeline.js'),
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)$/,
+      loader: () => import('../api/documents/item.js'),
+    },
+    {
+      regex: /^\/api\/tracking\/document-events\/([^/]+)$/,
+      loader: () => import('../api/tracking/document-events-item.js'),
+    },
   ];
 
   for (const pattern of patterns) {
     const match = pathname.match(pattern.regex);
     if (match) {
-      return { loader: pattern.loader, params: { id: match[1], memberId: match[1] } };
+      const params: Record<string, string> = {};
+      const keys = pattern.paramKeys ?? ['id'];
+      keys.forEach((key, index) => {
+        const value = match[index + 1];
+        if (value) params[key] = value;
+      });
+
+      if (!pattern.paramKeys) {
+        const captured = match[1] ?? '';
+        params.id = captured;
+        params.memberId = captured;
+        if (pattern.regex.source.includes('document-groups')) {
+          params.groupId = captured;
+        }
+        if (pattern.regex.source.includes('documents')) {
+          params.documentId = captured;
+        }
+        if (pattern.regex.source.includes('tracking')) {
+          params.eventId = captured;
+        }
+      }
+
+      return { loader: pattern.loader, params };
     }
   }
 
@@ -151,6 +214,9 @@ function toVercelRes(res: ServerResponse) {
         res.setHeader('Content-Type', 'application/json');
       }
       res.end(JSON.stringify(data));
+    },
+    send(data: string | Buffer | Uint8Array) {
+      res.end(data);
     },
   });
 }

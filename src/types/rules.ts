@@ -55,6 +55,7 @@ export interface DocumentCategory {
 export interface CompanyMember {
   id: string;
   companyId: string;
+  userId?: string;
   name: string;
   email: string;
   position?: string;

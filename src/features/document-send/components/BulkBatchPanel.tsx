@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   CheckCircle2,
   Copy,
@@ -14,22 +13,24 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { BulkBatchPhase, BulkUploadItem } from '../types/bulk';
-import type { WorkflowLogEvent } from '../types/workflowLog';
+import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
+import { policyRequiresPerItemChoice } from '../utils/reviewWorkflowSettings';
 import { canBulkManualConfirm, computeBulkStats } from '../utils/bulkEligibility';
 import { formatFileSize } from '../utils/validateUpload';
 import { BulkQueueItemRow } from './BulkQueueItemRow';
-import { WorkflowLogRow } from './WorkflowLogRow';
+import { DocumentNamingSection } from './DocumentNamingSection';
 
 interface BulkBatchPanelProps {
   items: BulkUploadItem[];
-  batchLogs: WorkflowLogEvent[];
   batchPhase: BulkBatchPhase;
   currentItem: BulkUploadItem | null;
   autoCountdown: number | null;
   manualGate: boolean;
   statusMessage: string | null;
-  autoMode: boolean;
+  reviewSettings: WorkflowReviewSettings;
   isAuthenticated: boolean;
+  onPerItemNamingChange: (choice: PerItemNamingChoice) => void;
+  onCancelAuto?: () => void;
   onConfirmContinue: () => void;
   onSkip: () => void;
   onReprocess: () => void;
@@ -79,14 +80,15 @@ function BatchSummaryBar({ items }: { items: BulkUploadItem[] }) {
 
 export function BulkBatchPanel({
   items,
-  batchLogs,
   batchPhase,
   currentItem,
   autoCountdown,
   manualGate,
   statusMessage,
-  autoMode,
+  reviewSettings,
   isAuthenticated,
+  onPerItemNamingChange,
+  onCancelAuto,
   onConfirmContinue,
   onSkip,
   onReprocess,
@@ -99,7 +101,6 @@ export function BulkBatchPanel({
   onSelectItem,
   className,
 }: BulkBatchPanelProps) {
-  const [activeTab, setActiveTab] = useState<'fila' | 'logs'>('fila');
   const stats = computeBulkStats(items);
   const isCompleted = batchPhase === 'completed' || batchPhase === 'cancelled';
   const processedCount =
@@ -115,7 +116,15 @@ export function BulkBatchPanel({
       isAuthenticated,
       metadata: currentItem.metadata ?? null,
       rawAnalysis: currentItem.result ?? null,
+      settings: reviewSettings,
+      perItem: currentItem.perItemNaming,
     });
+
+  const showNamingGate =
+    manualGate &&
+    Boolean(currentItem?.result) &&
+    (policyRequiresPerItemChoice(reviewSettings.defaultNamingPolicy) ||
+      reviewSettings.defaultNamingPolicy === 'manual_required');
 
   const copySummary = async () => {
     const text = [
@@ -144,7 +153,7 @@ export function BulkBatchPanel({
               {isCompleted
                 ? `${stats.total} arquivos no lote`
                 : `${processedCount} de ${stats.total} documentos processados`}
-              {!isCompleted && autoMode && ' · Auto ligado'}
+              {!isCompleted && reviewSettings.autoReviewEnabled && ' · Auto ligado'}
             </p>
           </div>
           {batchPhase === 'running' && (
@@ -160,47 +169,10 @@ export function BulkBatchPanel({
           </p>
         )}
 
-        <div className="flex gap-1 border-b border-doqyn-border">
-          <button
-            type="button"
-            onClick={() => setActiveTab('fila')}
-            className={cn(
-              'border-b-2 px-3 py-2 text-xs font-medium transition-colors',
-              activeTab === 'fila'
-                ? 'border-doqyn-primary text-doqyn-text'
-                : 'border-transparent text-doqyn-muted hover:text-doqyn-text',
-            )}
-          >
-            Fila
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('logs')}
-            className={cn(
-              'border-b-2 px-3 py-2 text-xs font-medium transition-colors',
-              activeTab === 'logs'
-                ? 'border-doqyn-primary text-doqyn-text'
-                : 'border-transparent text-doqyn-muted hover:text-doqyn-text',
-            )}
-          >
-            Logs do lote
-          </button>
-        </div>
       </CardHeader>
 
       <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-        {activeTab === 'logs' ? (
-          <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 py-4 scrollbar-thin">
-            {batchLogs.length === 0 ? (
-              <li className="rounded-md border border-doqyn-border-subtle bg-doqyn-bg/30 px-4 py-6 text-center text-xs text-doqyn-muted">
-                Nenhum evento do lote ainda. Os logs aparecerão aqui durante o processamento.
-              </li>
-            ) : (
-              batchLogs.map((log) => <WorkflowLogRow key={log.id} event={log} compact />)
-            )}
-          </ol>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4 scrollbar-thin">
               {currentItem && !isCompleted && (
                 <div className="flow-enter rounded-lg border border-doqyn-primary/30 bg-doqyn-primary/5 p-4">
@@ -227,13 +199,40 @@ export function BulkBatchPanel({
                         </p>
                       )}
                       {autoCountdown !== null && autoCountdown > 0 && (
-                        <p className="mt-2 text-xs font-medium text-doqyn-text">
-                          Auto ativo: salvando em {autoCountdown}s...
-                        </p>
+                        <div className="mt-2 space-y-2">
+                          <p className="text-xs font-medium text-doqyn-text">
+                            Auto ativo: salvando em {autoCountdown}s...
+                          </p>
+                          {onCancelAuto && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={onCancelAuto}
+                              className="h-7 px-2 text-xs text-doqyn-muted"
+                            >
+                              Cancelar auto
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
+              )}
+
+              {showNamingGate && currentItem?.result && (
+                <DocumentNamingSection
+                  settings={reviewSettings}
+                  originalFileName={currentItem.result.originalFileName}
+                  aiSuggestedFileName={
+                    currentItem.result.recommendedFileName ?? currentItem.result.originalFileName
+                  }
+                  perItemChoice={
+                    currentItem.perItemNaming ?? { namingMode: 'ai_suggested' }
+                  }
+                  onPerItemChoiceChange={onPerItemNamingChange}
+                />
               )}
 
               {isCompleted && (
@@ -318,7 +317,6 @@ export function BulkBatchPanel({
               )}
             </div>
           </div>
-        )}
       </CardContent>
     </Card>
   );

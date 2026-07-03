@@ -1,6 +1,7 @@
 import type { VercelResponse } from '@vercel/node';
 import { AiAnalysisError } from '../ai/utils/errors.js';
 import { isDocumentRulesNotSeededError } from '../services/documentRulesService.js';
+import { isServiceError } from './serviceErrors.js';
 
 export type WorkflowErrorCategory =
   | 'configuration'
@@ -48,14 +49,43 @@ export function isDevelopmentEnvironment(): boolean {
 
 export function buildDocumentRulesNotConfiguredError(
   technicalDetail?: string,
+  reason?: 'governance_unavailable' | 'no_categories' | 'no_extraction_rules',
 ): WorkflowErrorBody {
+  const messageByReason: Record<
+    NonNullable<typeof reason> | 'default',
+    { message: string; suggestion: string }
+  > = {
+    no_categories: {
+      message:
+        'Crie ao menos uma categoria documental com critérios de classificação antes de analisar documentos.',
+      suggestion:
+        'Em /rules, crie uma categoria (ex.: Jurídico e Contratos) e configure palavras-chave de classificação.',
+    },
+    no_extraction_rules: {
+      message:
+        'Configure ao menos uma regra de classificação/extração ativa para a categoria antes de analisar documentos.',
+      suggestion:
+        'Abra a categoria em /rules e salve a configuração de extração (campos e template de nome).',
+    },
+    governance_unavailable: {
+      message: 'Governança documental indisponível para este tenant.',
+      suggestion: 'Verifique se o tenant está provisionado corretamente.',
+    },
+    default: {
+      message:
+        'Não há classes e regras de documentos configuradas para esta empresa. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
+      suggestion: 'Cadastre ao menos uma classe documental e uma regra ativa.',
+    },
+  };
+
+  const copy = messageByReason[reason ?? 'default'] ?? messageByReason.default;
+
   return {
     code: 'DOCUMENT_RULES_NOT_CONFIGURED',
     category: 'configuration',
     title: 'Configuração documental incompleta',
-    message:
-      'Não há classes e regras de documentos configuradas para esta empresa. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
-    suggestion: 'Cadastre ao menos uma classe documental e uma regra ativa.',
+    message: copy.message,
+    suggestion: copy.suggestion,
     action: {
       label: 'Ir para Regras',
       href: RULES_ADMIN_HREF,
@@ -82,8 +112,17 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
   },
   GROQ_NOT_CONFIGURED: {
     category: 'ai',
-    title: 'Análise automática indisponível',
-    message: 'O serviço de inteligência artificial não está configurado no servidor.',
+    title: 'Provedor de IA não configurado',
+    message: 'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
+    suggestion: 'Entre em contato com o administrador do sistema.',
+    devHint: isDevelopmentEnvironment()
+      ? 'Ambiente de desenvolvimento: configure GROQ_API_KEY no servidor.'
+      : undefined,
+  },
+  AI_PROVIDER_NOT_CONFIGURED: {
+    category: 'ai',
+    title: 'Provedor de IA não configurado',
+    message: 'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
     suggestion: 'Entre em contato com o administrador do sistema.',
     devHint: isDevelopmentEnvironment()
       ? 'Ambiente de desenvolvimento: configure GROQ_API_KEY no servidor.'
@@ -101,6 +140,12 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
     message: 'Sua sessão não é mais válida.',
     suggestion: 'Faça login novamente para continuar.',
   },
+  TENANT_REQUIRED: {
+    category: 'authentication',
+    title: 'Empresa/tenant ativo obrigatório',
+    message: 'Não foi possível identificar a empresa/tenant ativo da sessão.',
+    suggestion: 'Selecione uma empresa ou faça login novamente.',
+  },
   FORBIDDEN: {
     category: 'permission',
     title: 'Sem permissão',
@@ -109,8 +154,8 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
   },
   MONGODB_NOT_CONFIGURED: {
     category: 'database',
-    title: 'Persistência indisponível',
-    message: 'O banco de dados não está configurado no servidor.',
+    title: 'Regras documentais indisponíveis',
+    message: 'O armazenamento de regras documentais não está configurado.',
     suggestion: 'Tente novamente mais tarde ou contate o suporte.',
     devHint: isDevelopmentEnvironment()
       ? 'Ambiente de desenvolvimento: configure MONGODB_URI no servidor.'
@@ -230,7 +275,7 @@ export function workflowErrorFromUnknown(
   }
 
   if (isDocumentRulesNotSeededError(error)) {
-    const body = buildDocumentRulesNotConfiguredError(error.message);
+    const body = buildDocumentRulesNotConfiguredError(error.message, error.reason);
     return {
       statusCode: error.statusCode,
       body: {
@@ -239,6 +284,18 @@ export function workflowErrorFromUnknown(
         error: stripDevOnlyFields(body),
         ...(context?.requestId ? { requestId: context.requestId } : {}),
       },
+    };
+  }
+
+  if (isServiceError(error)) {
+    return {
+      statusCode: error.statusCode,
+      body: buildWorkflowErrorApiResponse({
+        code: error.code,
+        message: error.message,
+        technicalDetail: error.message,
+        requestId: context?.requestId,
+      }),
     };
   }
 

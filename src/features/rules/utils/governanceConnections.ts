@@ -9,6 +9,16 @@ export type GovernanceConnection = {
   permissions: DocumentAccessPermissions;
 };
 
+/** Relação visual categoria → grupo documental para o mapa de governança. */
+export type GovernanceEdge = {
+  id: string;
+  sourceType: 'category';
+  sourceId: string;
+  targetType: 'documentGroup';
+  targetId: string;
+  permissions: DocumentAccessPermissions;
+};
+
 export function listGovernanceConnections(
   categories: DocumentCategory[],
   groups: Group[],
@@ -31,6 +41,31 @@ export function listGovernanceConnections(
   }
 
   return connections;
+}
+
+export function listGovernanceEdges(
+  categories: DocumentCategory[],
+  groups: Group[],
+): GovernanceEdge[] {
+  return listGovernanceConnections(categories, groups).map((connection) => ({
+    id: connection.key,
+    sourceType: 'category' as const,
+    sourceId: connection.categoryId,
+    targetType: 'documentGroup' as const,
+    targetId: connection.groupId,
+    permissions: connection.permissions,
+  }));
+}
+
+export function connectionToEdge(connection: GovernanceConnection): GovernanceEdge {
+  return {
+    id: connection.key,
+    sourceType: 'category',
+    sourceId: connection.categoryId,
+    targetType: 'documentGroup',
+    targetId: connection.groupId,
+    permissions: connection.permissions,
+  };
 }
 
 export function countActivePermissions(permissions: DocumentAccessPermissions): number {

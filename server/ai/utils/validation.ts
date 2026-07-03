@@ -11,6 +11,7 @@ import type {
   MetadataExtractionResult,
 } from '../types/documentAi.types.js';
 import type { DocumentRuleField } from '../types/documentAi.types.js';
+import { isConfidentialityClassRule } from './documentClassHeuristics.js';
 import {
   normalizeCurrency,
   normalizeCpf,
@@ -94,10 +95,6 @@ export function validateClassificationResult(
   };
 }
 
-function isNdaClass(selectedClass: DocumentClassRule): boolean {
-  return selectedClass.id === 'class_confidentiality_agreement';
-}
-
 function applyFieldNormalization(
   field: DocumentRuleField,
   value: string | number | null,
@@ -147,7 +144,7 @@ export function validateMetadataResult(
   const metadata: Record<string, ExtractedMetadataField> = {};
   const missingFields: string[] = [];
   const reviewReasons: string[] = [];
-  const ndaClass = isNdaClass(selectedClass);
+  const ndaClass = isConfidentialityClassRule(selectedClass);
 
   for (const fieldDef of selectedClass.fields) {
     const key = fieldDef.key;

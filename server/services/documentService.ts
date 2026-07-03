@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import { createHash } from 'node:crypto';
 import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
-import type { MongoAuditLog, MongoDocument, MongoDocumentVersion } from '../db/types.js';
+import type { MongoDocument, MongoDocumentVersion, MongoVersionMetadataField } from '../db/types.js';
 import { logger } from '../utils/logger.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import {
@@ -12,10 +12,28 @@ import {
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { createDocumentAuditLog } from '../audit/documentAuditLogService.js';
+import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import { createProcessingJob } from './processingService.js';
 import { extractMetadata } from './metadataService.js';
 import { classifyDocument } from './documentClassificationService.js';
 import { storeUploadedDocumentFile } from './documentFileService.js';
+import { resolveStorageFileNames } from '../utils/resolveStorageFileNames.js';
+import type { AuthUser } from '../auth/types.js';
+import type { MongoPreviewStorageSlot } from '../db/types.js';
+import {
+  canUserListDocument,
+  loadMemberDocumentGroupIds,
+  resolveDocumentPermissions,
+} from '../tenancy/documentAccess.js';
+import { canViewDocumentTracking } from '../auth/permissions.js';
+
+export type DocumentListItemPermissions = {
+  canPreview: boolean;
+  canDownload: boolean;
+  canViewTracking: boolean;
+  canEditMetadata: boolean;
+};
 
 export interface UploadInput {
   tenantId: string;
@@ -73,11 +91,29 @@ export async function uploadDocument(input: UploadInput) {
     return { document: simulatedDoc, versionId };
   }
 
-  const { documents, documentVersions, auditLogs, storage } = await getTenantCollections(tenantId, {
+  const { documents, documentVersions, storage } = await getTenantCollections(tenantId, {
     userId: input.ownerUserId,
   });
   const metadata = await extractMetadata(input);
   const classification = await classifyDocument(input.documentType, metadata);
+
+  const resolvedNames = resolveStorageFileNames({
+    originalFileName: input.originalFileName,
+    aiSuggestedFileName: input.displayName,
+    namingMode: 'original',
+    finalFileName: input.displayName !== input.originalFileName ? input.displayName : undefined,
+    documentId,
+    versionLabel: 'v1',
+  });
+
+  const skippedPreviewSlot: MongoDocumentVersion['storage']['preview'] = {
+    provider: 'cloudflare_r2',
+    status: 'skipped',
+    bucketAlias: null,
+    objectKey: null,
+    errorCode: 'PREVIEW_NOT_GENERATED',
+    errorMessage: 'Preview não gerado no upload legado.',
+  };
 
   const document = withTenantFieldsFromContext(
     storage,
@@ -87,8 +123,8 @@ export async function uploadDocument(input: UploadInput) {
     originalFileName: input.originalFileName,
     displayName: input.displayName,
     documentType: input.documentType,
-    title: input.displayName,
-    currentFileName: input.originalFileName,
+    title: resolvedNames.finalFileName,
+    currentFileName: resolvedNames.finalFileName,
     classId: 'unclassified',
     className: input.documentType,
     status: 'active',
@@ -132,6 +168,7 @@ export async function uploadDocument(input: UploadInput) {
         buffer: input.fileBuffer,
         mimeType: input.mimeType,
         originalFileName: input.originalFileName,
+        storageFileName: resolvedNames.storageFileName,
         storageScope: input.storageScope,
       });
     } catch (error) {
@@ -139,6 +176,11 @@ export async function uploadDocument(input: UploadInput) {
       throw error;
     }
   }
+
+  versionStorage = {
+    ...versionStorage,
+    preview: skippedPreviewSlot,
+  };
 
   const version = withTenantFieldsFromContext(
     storage,
@@ -149,8 +191,13 @@ export async function uploadDocument(input: UploadInput) {
     versionLabel: 'v1',
     previousVersionId: null,
     originalFileName: input.originalFileName,
-    recommendedFileName: input.displayName,
-    finalFileName: input.displayName,
+    recommendedFileName: resolvedNames.aiSuggestedFileName || input.displayName,
+    aiSuggestedFileName: resolvedNames.aiSuggestedFileName || input.displayName,
+    finalFileName: resolvedNames.finalFileName,
+    namingMode: resolvedNames.namingMode,
+    storageFileName: resolvedNames.storageFileName,
+    previewStorageFileName: resolvedNames.previewStorageFileName,
+    selectedFileName: resolvedNames.selectedFileName,
     file: {
       mimeType: input.mimeType,
       extension: input.originalFileName.split('.').pop() ?? '',
@@ -180,23 +227,41 @@ export async function uploadDocument(input: UploadInput) {
 
   await documentVersions.insertOne(version as unknown as MongoDocumentVersion);
 
-  await auditLogs.insertOne(
-    withTenantFieldsFromContext(
-      storage,
-      {
-      _id: `audit_${nanoid(12)}`,
+  const uploadNameSnapshot = buildDocumentNameSnapshot({
+    finalFileName: input.displayName,
+    originalFileName: input.displayName,
+  });
+
+  await createDocumentAuditLog(
+    {
+      tenantId,
+      tenantType: storage.tenantType === 'individual' ? 'individual' : 'business',
+      collectionPrefix: storage.collectionPrefix,
+      ownerTenantId: storage.tenantId,
+      ownerUserId: input.ownerUserId,
+      actorUserId: input.ownerUserId,
+      actorDisplayName: input.ownerName,
+    },
+    {
+      action: 'document.upload_completed',
+      description: `${input.displayName} enviado para análise`,
       documentId,
       versionId,
-      actor: { userId: input.ownerUserId, name: input.ownerName, role: 'user' },
-      action: 'document.created',
-      description: `${input.displayName} enviado para análise`,
       area,
-      result: 'success',
-      metadata: sanitizeAuditMetadata({ source: 'upload_legacy' }),
-      createdAt: now,
+      target: {
+        type: 'document',
+        id: documentId,
+        nameSnapshot: uploadNameSnapshot,
+      },
+      metadata: sanitizeAuditMetadata({
+        documentName: uploadNameSnapshot,
+        mimeType: input.mimeType,
+        sizeBytes: input.fileSize,
+        checksumSha256: hash,
+        source: 'upload_legacy',
+      }),
+      occurredAt: now,
     },
-      input.ownerUserId,
-    ) as unknown as MongoAuditLog,
   );
 
   await createProcessingJob({
@@ -229,18 +294,108 @@ export async function uploadDocument(input: UploadInput) {
   };
 }
 
+function mapPreviewStatus(
+  preview?: MongoPreviewStorageSlot | null,
+): 'ready' | 'failed' | 'skipped' | 'missing' {
+  if (!preview) return 'missing';
+  if (preview.status === 'ready') return 'ready';
+  if (preview.status === 'failed') return 'failed';
+  if (
+    preview.status === 'skipped' ||
+    preview.status === 'pending' ||
+    preview.status === 'processing'
+  ) {
+    return 'skipped';
+  }
+  return 'missing';
+}
+
+function flattenVersionMetadata(
+  metadata?: Record<string, MongoVersionMetadataField>,
+): Record<string, unknown> {
+  if (!metadata) return {};
+  const flat: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(metadata)) {
+    flat[field.label?.trim() || key] = field.value ?? field.normalizedValue ?? null;
+  }
+  return flat;
+}
+
+function mapDocumentListItem(
+  doc: MongoDocument,
+  versionMeta?: {
+    versionLabel?: string;
+    preview?: MongoPreviewStorageSlot | null;
+    hasOriginal?: boolean;
+    hasPreview?: boolean;
+  },
+  permissions?: DocumentListItemPermissions,
+) {
+  const record = doc as Record<string, unknown>;
+  return {
+    documentId: String(doc._id),
+    id: String(doc._id),
+    tenantId: doc.tenantId ?? doc.companyId,
+    currentFileName: doc.currentFileName ?? doc.title,
+    categoryId: doc.classId,
+    categoryName: doc.className ?? (record.documentType as string | undefined),
+    status: doc.status,
+    latestVersionId: doc.currentVersionId,
+    currentVersionId: doc.currentVersionId,
+    versionLabel: versionMeta?.versionLabel,
+    originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
+    displayName:
+      (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
+    documentType: (record.documentType as string | undefined) ?? doc.className,
+    version: (record.version as number | undefined) ?? 1,
+    ownerUserId: doc.ownerUserId,
+    ownerName: (record.ownerName as string | undefined),
+    area: (record.area as string | undefined),
+    accessGroups: (record.accessGroups as string[] | undefined) ?? doc.access?.viewGroupIds,
+    metadata: record.metadata,
+    processingStatus: doc.processingStatus ?? (record.processingStatusLegacy as string | undefined),
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    createdBy: {
+      userId: doc.ownerUserId,
+      displayName: (record.ownerName as string | undefined) ?? undefined,
+      email: undefined,
+    },
+    preview: {
+      status: mapPreviewStatus(versionMeta?.preview),
+    },
+    storage: {
+      hasOriginal: versionMeta?.hasOriginal ?? false,
+      hasPreview: versionMeta?.hasPreview ?? false,
+    },
+    permissions: permissions ?? {
+      canPreview: true,
+      canDownload: true,
+      canViewTracking: false,
+      canEditMetadata: false,
+    },
+  };
+}
+
 export async function listDocuments(filters: {
   tenantId?: string;
   ownerUserId?: string;
+  membershipId?: string;
+  user?: AuthUser;
   search?: string;
   status?: string;
   type?: string;
   area?: string;
+  categoryId?: string;
+  from?: string;
+  to?: string;
+  cursor?: string;
+  limit?: number;
 }) {
   const tenantId = requireTenantId(filters.tenantId);
 
   if (!isMongoNativeConfigured()) {
-    return { documents: [], total: 0 };
+    return { documents: [], items: [], total: 0, pagination: { nextCursor: null } };
   }
 
   const { documents, storage } = await getTenantCollections(tenantId, {
@@ -257,33 +412,213 @@ export async function listDocuments(filters: {
     query.$or = [
       { displayName: { $regex: filters.search, $options: 'i' } },
       { title: { $regex: filters.search, $options: 'i' } },
+      { currentFileName: { $regex: filters.search, $options: 'i' } },
       { documentType: { $regex: filters.search, $options: 'i' } },
+      { className: { $regex: filters.search, $options: 'i' } },
     ];
   }
+  if (filters.categoryId) query.classId = filters.categoryId;
 
-  const docs = await documents.find(query).sort({ updatedAt: -1 }).limit(50).toArray();
-  const total = await documents.countDocuments(query);
+  if (filters.from?.trim() || filters.to?.trim()) {
+    const createdAt: Record<string, Date> = {};
+    if (filters.from?.trim()) {
+      createdAt.$gte = new Date(filters.from.trim());
+    }
+    if (filters.to?.trim()) {
+      const end = new Date(filters.to.trim());
+      end.setHours(23, 59, 59, 999);
+      createdAt.$lte = end;
+    }
+    query.createdAt = createdAt;
+  }
+
+  const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
+
+  const docs = await documents.find(query).sort({ updatedAt: -1 }).limit(limit).toArray();
+  const memberGroupIds =
+    filters.user && filters.ownerUserId
+      ? await loadMemberDocumentGroupIds({
+          tenantId,
+          userId: filters.ownerUserId,
+          membershipId: filters.membershipId,
+        })
+      : [];
+
+  const versionIds = docs
+    .map((doc) => doc.currentVersionId)
+    .filter((id): id is string => Boolean(id));
+  const versionMap = new Map<
+    string,
+    {
+      preview: MongoPreviewStorageSlot | null;
+      versionLabel?: string;
+      hasOriginal: boolean;
+      hasPreview: boolean;
+    }
+  >();
+
+  if (versionIds.length) {
+    const { documentVersions } = await getTenantCollections(tenantId, {
+      userId: filters.ownerUserId,
+      membershipId: filters.membershipId,
+    });
+    const versions = await documentVersions
+      .find({ _id: { $in: versionIds } } as Record<string, unknown>)
+      .project({ storage: 1, versionLabel: 1 })
+      .toArray();
+    for (const version of versions) {
+      const primary = version.storage?.primary;
+      const preview = version.storage?.preview ?? null;
+      versionMap.set(String(version._id), {
+        preview,
+        versionLabel: version.versionLabel,
+        hasOriginal: primary?.status === 'stored' && Boolean(primary.objectKey),
+        hasPreview: preview?.status === 'ready' && Boolean(preview.objectKey),
+      });
+    }
+  }
+
+  const visibleDocs = filters.user
+    ? docs.filter((doc) => canUserListDocument(filters.user!, doc, memberGroupIds))
+    : docs;
+
+  const items = visibleDocs.map((doc) => {
+    const perms = filters.user
+      ? resolveDocumentPermissions(filters.user, doc as MongoDocument, memberGroupIds)
+      : { canPreview: true, canDownload: true, canEditMetadata: false };
+    const permissions: DocumentListItemPermissions = {
+      ...perms,
+      canViewTracking: filters.user ? canViewDocumentTracking(filters.user) : false,
+    };
+    return mapDocumentListItem(doc as MongoDocument, versionMap.get(doc.currentVersionId ?? ''), permissions);
+  });
 
   return {
-    documents: docs.map((d) => ({
-      id: String(d._id),
-      tenantId: d.tenantId ?? d.companyId,
-      originalFileName: (d as Record<string, unknown>).originalFileName as string | undefined ?? d.currentFileName,
-      displayName: (d as Record<string, unknown>).displayName as string | undefined ?? d.title,
-      documentType: (d as Record<string, unknown>).documentType as string | undefined ?? d.className,
-      status: d.status,
-      version: (d as Record<string, unknown>).version as number | undefined ?? 1,
-      currentVersionId: d.currentVersionId,
-      ownerUserId: d.ownerUserId,
-      ownerName: (d as Record<string, unknown>).ownerName as string | undefined,
-      area: (d as Record<string, unknown>).area as string | undefined,
-      accessGroups: (d as Record<string, unknown>).accessGroups as string[] | undefined ?? d.access?.viewGroupIds,
-      metadata: (d as Record<string, unknown>).metadata,
-      processingStatus: d.processingStatus ?? (d as Record<string, unknown>).processingStatusLegacy,
-      createdAt: d.createdAt,
-      updatedAt: d.updatedAt,
-    })),
-    total,
+    items,
+    documents: items,
+    total: items.length,
+    pagination: {
+      nextCursor: null,
+    },
+  };
+}
+
+export async function getDocumentDetail(
+  id: string,
+  tenantId: string | undefined,
+  ownerUserId: string | undefined,
+  user: AuthUser,
+  membershipId?: string,
+) {
+  const resolvedTenantId = requireTenantId(tenantId);
+
+  if (!isMongoNativeConfigured()) return null;
+
+  const { documents, documentVersions, storage } = await getTenantCollections(resolvedTenantId, {
+    userId: ownerUserId,
+    membershipId,
+  });
+  const doc = await documents.findOne({
+    _id: id,
+    ...tenantScopeFilterFromContext(storage),
+  } as Record<string, unknown>);
+
+  if (!doc) return null;
+
+  assertCanAccessDocument(doc as Record<string, unknown>, storage);
+
+  const memberGroupIds = await loadMemberDocumentGroupIds({
+    tenantId: resolvedTenantId,
+    userId: user.id,
+    membershipId,
+  });
+  const perms = resolveDocumentPermissions(user, doc as MongoDocument, memberGroupIds);
+  const permissions = {
+    ...perms,
+    canViewTracking: canViewDocumentTracking(user),
+  };
+
+  if (!permissions.canPreview && !permissions.canDownload) {
+    throw new ServiceError(
+      'Você não tem permissão para visualizar este documento.',
+      'DOCUMENT_ACCESS_DENIED',
+      403,
+    );
+  }
+
+  const versions = await documentVersions
+    .find({
+      documentId: id,
+      ...tenantScopeFilterFromContext(storage),
+    } as Record<string, unknown>)
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  const mappedVersions = versions.map((version) => ({
+    versionId: String(version._id),
+    versionLabel: version.versionLabel,
+    finalFileName: version.finalFileName ?? version.originalFileName,
+    originalFileName: version.originalFileName,
+    createdAt: version.createdAt,
+    previewStatus: mapPreviewStatus(version.storage?.preview ?? null),
+    preview: {
+      status: mapPreviewStatus(version.storage?.preview ?? null),
+    },
+  }));
+
+  const latestVersionRaw =
+    versions.find((version) => String(version._id) === doc.currentVersionId) ?? versions[0] ?? null;
+
+  const latestVersion = latestVersionRaw
+    ? {
+        versionId: String(latestVersionRaw._id),
+        versionLabel: latestVersionRaw.versionLabel,
+        finalFileName: latestVersionRaw.finalFileName ?? latestVersionRaw.originalFileName,
+        storageFileName: latestVersionRaw.storageFileName ?? latestVersionRaw.finalFileName,
+        previewStorageFileName:
+          latestVersionRaw.previewStorageFileName ??
+          (latestVersionRaw.finalFileName
+            ? `${latestVersionRaw.finalFileName.replace(/\.pdf$/i, '')}_preview.pdf`
+            : undefined),
+        previewStatus: mapPreviewStatus(latestVersionRaw.storage?.preview ?? null),
+        originalFileName: latestVersionRaw.originalFileName,
+        createdAt: latestVersionRaw.createdAt,
+        preview: {
+          status: mapPreviewStatus(latestVersionRaw.storage?.preview ?? null),
+        },
+      }
+    : mappedVersions[0] ?? null;
+
+  const latestPreview = latestVersionRaw?.storage?.preview ?? null;
+  const latestPrimary = latestVersionRaw?.storage?.primary;
+
+  const document = mapDocumentListItem(
+    doc as MongoDocument,
+    latestVersionRaw
+      ? {
+          versionLabel: latestVersionRaw.versionLabel,
+          preview: latestPreview,
+          hasOriginal: latestPrimary?.status === 'stored' && Boolean(latestPrimary.objectKey),
+          hasPreview: latestPreview?.status === 'ready' && Boolean(latestPreview.objectKey),
+        }
+      : undefined,
+    permissions,
+  );
+
+  const record = doc as Record<string, unknown>;
+  const versionMetadata = latestVersionRaw
+    ? flattenVersionMetadata(latestVersionRaw.metadata)
+    : {};
+
+  return {
+    document,
+    latestVersion,
+    versions: mappedVersions,
+    metadata:
+      Object.keys(versionMetadata).length > 0
+        ? versionMetadata
+        : ((record.metadata as Record<string, unknown> | undefined) ?? {}),
+    permissions,
   };
 }
 

@@ -6,20 +6,28 @@ import {
   type NotificationPreferencesDto,
   type PlatformRole,
 } from '@/features/users/api/usersApi';
+import {
+  AccessGroupsSection,
+  DocumentGroupsSection,
+  PlatformRolesSection,
+  type AccessGroupOption,
+  type DocumentGroupOption,
+} from '@/features/users/components/AccessFormSections';
+import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-
-const PLATFORM_ROLES: PlatformRole[] = ['doqyn_admin', 'company_admin', 'user'];
 
 type ApproveApprovalDialogProps = {
   open: boolean;
   item: PendingApprovalItem | null;
-  groups: Array<{ id: string; name: string }>;
+  accessGroups: AccessGroupOption[];
+  documentGroups: DocumentGroupOption[];
   saving?: boolean;
   canAssignDoqynAdmin?: boolean;
   onClose: () => void;
   onConfirm: (input: {
     platformRoles: PlatformRole[];
     accessGroupIds: string[];
+    documentGroupIds: string[];
     notificationPreferences: NotificationPreferencesDto;
   }) => void;
 };
@@ -27,7 +35,8 @@ type ApproveApprovalDialogProps = {
 export function ApproveApprovalDialog({
   open,
   item,
-  groups,
+  accessGroups,
+  documentGroups,
   saving,
   canAssignDoqynAdmin = false,
   onClose,
@@ -36,11 +45,13 @@ export function ApproveApprovalDialog({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>(['user']);
   const [accessGroupIds, setAccessGroupIds] = useState<string[]>([]);
+  const [documentGroupIds, setDocumentGroupIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       setPlatformRoles(['user']);
       setAccessGroupIds([]);
+      setDocumentGroupIds([]);
     }
   }, [open, item?.id]);
 
@@ -63,7 +74,7 @@ export function ApproveApprovalDialog({
         if (event.target === overlayRef.current) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl">
         <div className="flex items-start justify-between border-b border-doqyn-border px-5 py-4">
           <div>
             <h2 className="text-base font-semibold text-doqyn-text">Aprovar solicitação</h2>
@@ -81,60 +92,31 @@ export function ApproveApprovalDialog({
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4 text-sm">
-          <div>
-            <p className="mb-2 text-xs font-medium text-doqyn-muted">Papéis</p>
-            <div className="flex flex-wrap gap-3">
-              {PLATFORM_ROLES.map((role) => {
-                const disabled = role === 'doqyn_admin' && !canAssignDoqynAdmin;
-                const checked = platformRoles.includes(role);
-                return (
-                  <label key={role} className="flex items-center gap-2 text-doqyn-text">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled}
-                      onChange={() => {
-                        if (checked) {
-                          setPlatformRoles(platformRoles.filter((value) => value !== role));
-                        } else {
-                          setPlatformRoles([...platformRoles, role]);
-                        }
-                      }}
-                    />
-                    {role}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {groups.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-medium text-doqyn-muted">Grupos de acesso</p>
-              <div className="flex max-h-40 flex-col gap-2 overflow-y-auto">
-                {groups.map((group) => {
-                  const checked = accessGroupIds.includes(group.id);
-                  return (
-                    <label key={group.id} className="flex items-center gap-2 text-doqyn-text">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          if (checked) {
-                            setAccessGroupIds(accessGroupIds.filter((id) => id !== group.id));
-                          } else {
-                            setAccessGroupIds([...accessGroupIds, group.id]);
-                          }
-                        }}
-                      />
-                      {group.name}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        <div className="space-y-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+          <AccessRequestDetailsPanel
+            member={item.member}
+            requestedAccess={item.requestedAccess}
+            whatsapp={item.member?.whatsapp}
+            consent={item.member?.consent}
+            terms={item.member?.terms}
+            notificationPreferences={item.member?.notificationPreferences}
+            className="mb-4 rounded-lg border border-doqyn-border bg-doqyn-card/40 p-3"
+          />
+          <PlatformRolesSection
+            value={platformRoles}
+            onChange={setPlatformRoles}
+            canAssignDoqynAdmin={canAssignDoqynAdmin}
+          />
+          <AccessGroupsSection
+            groups={accessGroups}
+            value={accessGroupIds}
+            onChange={setAccessGroupIds}
+          />
+          <DocumentGroupsSection
+            groups={documentGroups}
+            value={documentGroupIds}
+            onChange={setDocumentGroupIds}
+          />
         </div>
 
         <div className="flex justify-end gap-2 border-t border-doqyn-border px-5 py-4">
@@ -147,12 +129,13 @@ export function ApproveApprovalDialog({
               onConfirm({
                 platformRoles: platformRoles.length > 0 ? platformRoles : ['user'],
                 accessGroupIds,
+                documentGroupIds,
                 notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
               })
             }
             disabled={saving}
           >
-            Confirmar aprovação
+            {saving ? 'Aprovando…' : 'Confirmar aprovação'}
           </Button>
         </div>
       </div>

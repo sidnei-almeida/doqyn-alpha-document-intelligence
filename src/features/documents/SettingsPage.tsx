@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { getAuthProviderType, usesDoqynAuth } from '@/auth/authConfig';
 import { AUTH_MODE_LABELS, AUTH_PROVIDER_LABELS } from '@/lib/constants';
@@ -9,14 +9,14 @@ export function SettingsPage() {
   const authLabel = AUTH_PROVIDER_LABELS[authProvider] ?? AUTH_MODE_LABELS[authProvider] ?? authProvider;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Administração"
-        title="Configurações"
-        description="Preferências do sistema e informações de acesso."
-      />
-
-      <Card>
+    <PageShell
+      eyebrow="Administração"
+      title="Configurações"
+      description="Preferências do sistema e informações de acesso."
+      bodyClassName="min-h-0"
+    >
+      <div className="grid flex-1 gap-6 lg:grid-cols-2">
+      <Card className="min-h-[200px]">
         <CardHeader>
           <CardTitle>Autenticação</CardTitle>
         </CardHeader>
@@ -43,7 +43,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="min-h-[200px]">
         <CardHeader>
           <CardTitle>Segurança e conformidade</CardTitle>
         </CardHeader>
@@ -66,6 +66,7 @@ export function SettingsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageShell>
   );
 }

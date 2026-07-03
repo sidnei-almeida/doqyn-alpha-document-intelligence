@@ -51,7 +51,14 @@ const LazyIndividualSignupPage = lazyNamed(
   () => import('@/features/individual-signup/IndividualSignupPage'),
   'IndividualSignupPage',
 );
+const LazyTermsPage = lazyNamed(() => import('@/pages/TermsPage'), 'TermsPage');
 
+const LazyTrackingRoute = lazyNamed(
+  () => import('@/features/tracking/TrackingRoute'),
+  'TrackingRoute',
+);
+
+export const TrackingRoute = withRouteSuspense(LazyTrackingRoute);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesPage);
 export const DocumentsRoute = withRouteSuspense(LazyDocumentsPage);
@@ -64,3 +71,4 @@ export const RequestAccessRoute = withRouteSuspense(LazyRequestAccessPage);
 export const AccessChoiceRoute = withRouteSuspense(LazyAccessChoicePage);
 export const CompanySignupRoute = withRouteSuspense(LazyCompanySignupPage);
 export const IndividualSignupRoute = withRouteSuspense(LazyIndividualSignupPage);
+export const TermsRoute = withRouteSuspense(LazyTermsPage);

@@ -1,0 +1,283 @@
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { Users } from 'lucide-react';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { cn } from '@/lib/utils';
+import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
+import {
+  ASSIGNABLE_PLATFORM_ROLES,
+  PLATFORM_ROLE_LABELS,
+} from '../platformRoleLabels';
+
+export type AccessGroupOption = { id: string; name: string };
+export type DocumentGroupOption = {
+  id: string;
+  name: string;
+  description?: string;
+  memberCount?: number;
+};
+
+export function AccessFormSection({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn('space-y-3 border-t border-doqyn-border-subtle pt-4 first:border-t-0 first:pt-0', className)}>
+      <header>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-doqyn-muted">{title}</h3>
+        {description ? <p className="mt-1 text-xs text-doqyn-subtle">{description}</p> : null}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+export function GroupsEmptyState({
+  title,
+  description,
+  ctaLabel,
+  ctaHref,
+}: {
+  title: string;
+  description: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-dashed border-doqyn-border bg-doqyn-bg/50 px-4 py-5 text-center">
+      <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-doqyn-surface text-doqyn-muted">
+        <Users className="h-4 w-4" aria-hidden />
+      </div>
+      <p className="text-sm text-doqyn-text">{title}</p>
+      <p className="mt-1 text-xs text-doqyn-muted">{description}</p>
+      {ctaLabel && ctaHref ? (
+        <Link
+          to={ctaHref}
+          className="mt-3 inline-block text-xs font-medium text-doqyn-primary hover:underline"
+        >
+          {ctaLabel}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+export function PlatformRolesSection({
+  value,
+  onChange,
+  canAssignDoqynAdmin,
+}: {
+  value: PlatformRole[];
+  onChange: (roles: PlatformRole[]) => void;
+  canAssignDoqynAdmin: boolean;
+}) {
+  const showsDoqynAdminWarning = value.includes('doqyn_admin');
+
+  return (
+    <AccessFormSection
+      title="Roles do sistema"
+      description="Defina o nível administrativo deste usuário na plataforma."
+    >
+      <div className="space-y-2">
+        {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
+          const meta =
+            PLATFORM_ROLE_LABELS[role as keyof typeof PLATFORM_ROLE_LABELS] ?? {
+              label: role,
+              description: 'Role da plataforma.',
+            };
+          const disabled = role === 'doqyn_admin' && !canAssignDoqynAdmin;
+          const checked = value.includes(role);
+
+          return (
+            <div
+              key={role}
+              className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2.5"
+            >
+              <Checkbox
+                checked={checked}
+                disabled={disabled}
+                onChange={() => {
+                  if (checked) {
+                    onChange(value.filter((item) => item !== role));
+                  } else {
+                    onChange([...value, role]);
+                  }
+                }}
+                label={meta.label}
+                description={
+                  <>
+                    {meta.description}
+                    <span className="mt-1 block font-mono text-[10px] text-doqyn-subtle">{role}</span>
+                  </>
+                }
+              />
+            </div>
+          );
+        })}
+      </div>
+      {showsDoqynAdminWarning && (
+        <p className="rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+          Essa role concede permissões administrativas globais. Use apenas para administradores da
+          plataforma.
+        </p>
+      )}
+    </AccessFormSection>
+  );
+}
+
+export function AccessGroupsSection({
+  groups,
+  value,
+  onChange,
+}: {
+  groups: AccessGroupOption[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  return (
+    <AccessFormSection
+      title="Grupos de acesso (auth-service)"
+      description="Controlam permissões de autenticação e acesso ao tenant."
+    >
+      {groups.length === 0 ? (
+        <GroupsEmptyState
+          title="Nenhum grupo de acesso criado ainda."
+          description="Crie grupos de acesso em Usuários antes de atribuí-los."
+          ctaLabel="Gerenciar em Usuários"
+          ctaHref="/users"
+        />
+      ) : (
+        <div className="max-h-40 space-y-2 overflow-y-auto pr-1 scrollbar-thin">
+          {groups.map((group) => {
+            const checked = value.includes(group.id);
+            return (
+              <div
+                key={group.id}
+                className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2"
+              >
+                <Checkbox
+                  checked={checked}
+                  onChange={() => {
+                    if (checked) {
+                      onChange(value.filter((id) => id !== group.id));
+                    } else {
+                      onChange([...value, group.id]);
+                    }
+                  }}
+                  label={group.name}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </AccessFormSection>
+  );
+}
+
+export function DocumentGroupsSection({
+  groups,
+  value,
+  onChange,
+}: {
+  groups: DocumentGroupOption[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  return (
+    <AccessFormSection
+      title="Grupos documentais (governança)"
+      description="Definem quais grupos documentais este usuário integra no mapa de regras."
+    >
+      {groups.length === 0 ? (
+        <GroupsEmptyState
+          title="Nenhum grupo documental criado ainda."
+          description="Crie grupos documentais na tela Regras e volte aqui para atribuir membros."
+          ctaLabel="Abrir Regras"
+          ctaHref="/rules"
+        />
+      ) : (
+        <div className="max-h-48 space-y-2 overflow-y-auto pr-1 scrollbar-thin">
+          {groups.map((group) => {
+            const checked = value.includes(group.id);
+            const memberCount = group.memberCount ?? 0;
+
+            return (
+              <div
+                key={group.id}
+                className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2.5"
+              >
+                <Checkbox
+                  checked={checked}
+                  onChange={() => {
+                    if (checked) {
+                      onChange(value.filter((id) => id !== group.id));
+                    } else {
+                      onChange([...value, group.id]);
+                    }
+                  }}
+                  label={group.name}
+                  description={
+                    <>
+                      {group.description?.trim() || 'Grupo documental de governança'}
+                      <span className="mt-1 block text-[10px] text-doqyn-subtle">
+                        {memberCount} {memberCount === 1 ? 'membro' : 'membros'}
+                      </span>
+                    </>
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </AccessFormSection>
+  );
+}
+
+const NOTIFICATION_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
+  ['email', 'E-mail'],
+  ['whatsapp', 'WhatsApp'],
+  ['documentCreated', 'Documento criado'],
+  ['documentUpdated', 'Documento atualizado'],
+  ['documentRequiresSignature', 'Assinatura necessária'],
+  ['accessApproved', 'Acesso aprovado'],
+  ['accessRejected', 'Acesso rejeitado'],
+];
+
+export function NotificationsSection({
+  value,
+  onChange,
+}: {
+  value: NotificationPreferencesDto;
+  onChange: (value: NotificationPreferencesDto) => void;
+}) {
+  return (
+    <AccessFormSection
+      title="Notificações"
+      description="Escolha quais eventos este usuário poderá receber futuramente."
+    >
+      <div className="grid gap-2 sm:grid-cols-2">
+        {NOTIFICATION_OPTIONS.map(([key, label]) => (
+          <div
+            key={key}
+            className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2"
+          >
+            <Checkbox
+              checked={value[key]}
+              onChange={(event) => onChange({ ...value, [key]: event.target.checked })}
+              label={label}
+            />
+          </div>
+        ))}
+      </div>
+    </AccessFormSection>
+  );
+}

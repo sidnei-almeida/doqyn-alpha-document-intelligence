@@ -3,7 +3,8 @@ import { ExternalLink, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
+import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 
@@ -16,6 +17,24 @@ type PendingApprovalReviewDialogProps = {
   onApprove: (item: PendingApprovalItem) => void;
   onReject: (item: PendingApprovalItem) => void;
 };
+
+function OrganizationValue({ tenantName, tenantId }: { tenantName?: string; tenantId: string }) {
+  const primary = tenantName?.trim() || tenantId;
+  const showSecondary = Boolean(tenantName?.trim() && tenantName.trim() !== tenantId);
+
+  return (
+    <div className="min-w-0">
+      <p className="break-words text-sm font-medium text-doqyn-text" title={primary}>
+        {primary}
+      </p>
+      {showSecondary && (
+        <p className="mt-0.5 truncate text-[11px] text-doqyn-muted" title={tenantId}>
+          {tenantId}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function PendingApprovalReviewDialog({
   open,
@@ -40,8 +59,6 @@ export function PendingApprovalReviewDialog({
 
   if (!open || !item) return null;
 
-  const access = item.requestedAccess;
-
   return (
     <div
       ref={overlayRef}
@@ -55,10 +72,10 @@ export function PendingApprovalReviewDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="pending-review-title"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl"
       >
-        <div className="flex items-start justify-between border-b border-doqyn-border px-5 py-4">
-          <div>
+        <div className="flex items-start justify-between gap-4 border-b border-doqyn-border px-5 py-4">
+          <div className="min-w-0">
             <h2 id="pending-review-title" className="text-base font-semibold text-doqyn-text">
               Revisar solicitação
             </h2>
@@ -67,7 +84,7 @@ export function PendingApprovalReviewDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
+            className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
             aria-label="Fechar"
           >
             <X className="h-4 w-4" />
@@ -75,24 +92,30 @@ export function PendingApprovalReviewDialog({
         </div>
 
         <div className="space-y-4 px-5 py-4 text-sm">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-doqyn-muted">Solicitante</p>
-              <p className="font-medium text-doqyn-text">{item.name}</p>
+          <dl className="detail-grid grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3">
+            <div className="detail-item min-w-0">
+              <dt className="text-xs text-doqyn-muted">Solicitante</dt>
+              <dd className="detail-value mt-0.5 break-words font-medium text-doqyn-text">
+                {item.name}
+              </dd>
             </div>
-            <div>
-              <p className="text-xs text-doqyn-muted">E-mail</p>
-              <p className="text-doqyn-text">{item.email}</p>
+            <div className="detail-item min-w-0">
+              <dt className="text-xs text-doqyn-muted">E-mail</dt>
+              <dd className="detail-value mt-0.5 break-all text-doqyn-text">{item.email}</dd>
             </div>
-            <div>
-              <p className="text-xs text-doqyn-muted">Organização</p>
-              <p className="text-doqyn-text">{item.tenantName ?? item.tenantId}</p>
+            <div className="detail-item min-w-0">
+              <dt className="text-xs text-doqyn-muted">Organização</dt>
+              <dd className="mt-0.5">
+                <OrganizationValue tenantName={item.tenantName} tenantId={item.tenantId} />
+              </dd>
             </div>
-            <div>
-              <p className="text-xs text-doqyn-muted">Data</p>
-              <p className="text-doqyn-text">{formatDate(item.requestedAt)}</p>
+            <div className="detail-item min-w-0">
+              <dt className="text-xs text-doqyn-muted">Data</dt>
+              <dd className="detail-value mt-0.5 whitespace-nowrap text-doqyn-text">
+                {formatDate(item.requestedAt)}
+              </dd>
             </div>
-          </div>
+          </dl>
 
           <div>
             <p className="text-xs text-doqyn-muted">Status</p>
@@ -101,45 +124,15 @@ export function PendingApprovalReviewDialog({
             </Badge>
           </div>
 
-          {access && (
-            <div className="rounded-lg border border-doqyn-border bg-doqyn-card/50 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-doqyn-muted">
-                Detalhes da solicitação
-              </p>
-              <dl className="grid grid-cols-2 gap-2 text-sm">
-                {access.jobTitle && (
-                  <>
-                    <dt className="text-doqyn-muted">Cargo</dt>
-                    <dd className="text-doqyn-text">{access.jobTitle}</dd>
-                  </>
-                )}
-                {access.departmentText && (
-                  <>
-                    <dt className="text-doqyn-muted">Departamento</dt>
-                    <dd className="text-doqyn-text">{access.departmentText}</dd>
-                  </>
-                )}
-                {access.tenantDisplayName && (
-                  <>
-                    <dt className="text-doqyn-muted">Empresa informada</dt>
-                    <dd className="text-doqyn-text">{access.tenantDisplayName}</dd>
-                  </>
-                )}
-                {access.taxIdMasked && (
-                  <>
-                    <dt className="text-doqyn-muted">Documento</dt>
-                    <dd className="text-doqyn-text">{access.taxIdMasked}</dd>
-                  </>
-                )}
-                {access.reason && (
-                  <>
-                    <dt className="col-span-2 text-doqyn-muted">Motivo</dt>
-                    <dd className="col-span-2 text-doqyn-text">{access.reason}</dd>
-                  </>
-                )}
-              </dl>
-            </div>
-          )}
+          <AccessRequestDetailsPanel
+            member={item.member}
+            requestedAccess={item.requestedAccess}
+            whatsapp={item.member?.whatsapp}
+            consent={item.member?.consent}
+            terms={item.member?.terms}
+            notificationPreferences={item.member?.notificationPreferences}
+            className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+          />
 
           <Link
             to="/users"

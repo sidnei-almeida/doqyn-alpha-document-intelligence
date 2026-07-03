@@ -9,4 +9,5 @@ export {
   usesApiAuth,
   usesDoqynAuth,
 } from './authConfig';
-export { authFetch, getAccessToken, withAuthHeaders, getFetchCredentials } from './apiAuth';
+export { authFetch, getAccessToken, getFetchCredentials, registerAuthTokenGetter } from './apiAuth';
+export { shouldSetJsonContentType, withAuthHeaders } from './httpHeaders';

@@ -25,6 +25,7 @@ export const DOCUMENT_TYPES = [
 ] as const;
 
 export const DOCUMENT_STATUSES = {
+  active: { label: 'Ativo', variant: 'success' as const },
   processed: { label: 'Processado', variant: 'success' as const },
   analyzing: { label: 'Em análise', variant: 'info' as const },
   updated: { label: 'Atualizado', variant: 'success' as const },
@@ -45,6 +46,7 @@ export const PROCESSING_STEPS = [
 
 export const NAV_ITEMS_PRIMARY = [
   { label: 'Visão Geral', path: '/dashboard', icon: 'LayoutDashboard' },
+  { label: 'Documentos', path: '/documents', icon: 'FileText' },
   { label: 'Envio de Documentos', path: '/upload', icon: 'Upload' },
 ] as const;
 
@@ -52,6 +54,7 @@ export const NAV_ITEMS_ADMIN = [
   { label: 'Regras', path: '/rules', icon: 'Scale' },
   { label: 'Usuários', path: '/users', icon: 'Users', managerOnly: true },
   { label: 'Auditoria', path: '/audit', icon: 'Shield' },
+  { label: 'Tracking', path: '/tracking', icon: 'Activity', trackingOnly: true },
   { label: 'Configurações', path: '/settings', icon: 'Settings' },
 ] as const;
 

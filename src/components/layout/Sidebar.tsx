@@ -7,21 +7,26 @@ import {
   Shield,
   Upload,
   Users,
+  Activity,
+  FileText,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/auth/useAuth';
 import { NAV_ITEMS_ADMIN, NAV_ITEMS_PRIMARY } from '@/lib/constants';
+import { canViewDocumentTracking } from '@/features/tracking/utils/trackingAccess';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const ICON_MAP = {
   LayoutDashboard,
+  FileText,
   Upload,
   Scale,
   Users,
   Shield,
+  Activity,
   Settings,
 } as const;
 
@@ -55,12 +60,15 @@ function NavItem({
 }
 
 export function Sidebar({ className }: SidebarProps) {
-  const { user, roles, tenant, logout, hasAnyRole } = useAuth();
+  const { user, roles, tenant, logout, hasAnyRole, membership } = useAuth();
   const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
+  const canViewTracking = canViewDocumentTracking(roles, user?.role, membership?.status);
 
-  const adminNavItems = NAV_ITEMS_ADMIN.filter(
-    (item) => !('managerOnly' in item && item.managerOnly) || canManageUsers,
-  );
+  const adminNavItems = NAV_ITEMS_ADMIN.filter((item) => {
+    if ('managerOnly' in item && item.managerOnly && !canManageUsers) return false;
+    if ('trackingOnly' in item && item.trackingOnly && !canViewTracking) return false;
+    return true;
+  });
 
   const { data: health } = useQuery({
     queryKey: ['health'],
@@ -71,7 +79,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-screen w-[200px] min-w-[200px] shrink-0 flex-col overflow-y-auto border-r border-doqyn-border bg-doqyn-sidebar scrollbar-thin',
+        'flex min-h-dvh w-[200px] min-w-[200px] shrink-0 flex-col self-stretch overflow-y-auto border-r border-doqyn-border bg-doqyn-sidebar scrollbar-thin',
         className,
       )}
     >

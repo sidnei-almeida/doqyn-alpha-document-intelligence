@@ -89,18 +89,28 @@ describe('isolamento CPF A vs B', () => {
     assert.equal(doc.tenantType, 'individual');
   });
 
-  it('classes privadas: filtro A não retorna escopo de B', () => {
-    const filterA = buildClassRuleOwnershipFilter(ctxA);
-    assert.deepEqual(filterA.$or?.[1], {
+  it('classes PF não incluem scope global no filtro', () => {
+    const filter = buildClassRuleOwnershipFilter(ctxA);
+    assert.equal(filter.scope, undefined);
+    assert.equal(filter.$or, undefined);
+    assert.deepEqual(filter, {
       tenantType: 'individual',
       ownerTenantId: TENANT_A,
       ownerUserId: USER_A,
     });
   });
 
-  it('classes globais permitidas no filtro', () => {
-    const filter = buildClassRuleOwnershipFilter(ctxA);
-    assert.deepEqual(filter.$or?.[0], { scope: 'global' });
+  it('filtro PF A não corresponde a registro da PF B', () => {
+    const filterA = buildClassRuleOwnershipFilter(ctxA);
+    const recordB = {
+      tenantType: 'individual',
+      ownerTenantId: TENANT_B,
+      ownerUserId: USER_B,
+      scope: 'tenant',
+      name: 'NDA',
+    };
+    assert.notEqual(recordB.ownerTenantId, filterA.ownerTenantId);
+    assert.notEqual(recordB.ownerUserId, filterA.ownerUserId);
   });
 
   it('insert de classe individual grava scope tenant', () => {

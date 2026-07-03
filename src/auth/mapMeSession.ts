@@ -38,6 +38,27 @@ export function resolveAccessGate(
   if (!membership) return 'no_membership';
   if (membership.status === 'pending') return 'pending';
   if (membership.status === 'blocked') return 'blocked';
+  if (membership.status === 'rejected') return 'rejected';
   if (membership.status === 'removed') return 'removed';
   return null;
+}
+
+export function accessCodeToGate(code: string): AccessGateReason | null {
+  switch (code) {
+    case 'NO_ACTIVE_MEMBERSHIP':
+      return 'no_membership';
+    case 'MEMBERSHIP_PENDING':
+      return 'pending';
+    case 'MEMBERSHIP_BLOCKED':
+      return 'blocked';
+    case 'MEMBERSHIP_REJECTED':
+      return 'rejected';
+    case 'MEMBERSHIP_REMOVED':
+      return 'removed';
+    case 'NO_ACTIVE_TENANT':
+    case 'TENANT_REQUIRED':
+      return 'no_membership';
+    default:
+      return null;
+  }
 }

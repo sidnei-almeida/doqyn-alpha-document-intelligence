@@ -12,8 +12,7 @@ import {
 } from '../../services/documentRulesService.js';
 import type { AnalyzePdfResponse, ProcessingLogItem } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
-import { assertAiModeAllowed, isNoAiMode } from '../utils/aiMode.js';
-import { analyzePdfWithNoAi } from './noAiAnalyzer.js';
+import { assertAiProviderConfigured } from '../utils/aiProvider.js';
 import { classifyDocumentWithRules } from './documentClassifierAgent.js';
 import { createDocumentChunks } from './documentChunker.js';
 import { extractMetadataWithRule } from './metadataExtractorAgent.js';
@@ -121,7 +120,7 @@ export async function analyzePdfBuffer(input: {
   ownerUserId?: string;
   requestContext?: AnalyzeRequestContext;
 }): Promise<AnalyzePdfResponse> {
-  assertAiModeAllowed();
+  assertAiProviderConfigured();
 
   const jobId = `job_${randomUUID()}`;
   const logs: ProcessingLogItem[] = [];
@@ -133,19 +132,6 @@ export async function analyzePdfBuffer(input: {
   };
 
   validatePdfUpload(input);
-
-  if (isNoAiMode()) {
-    return analyzePdfWithNoAi({
-      buffer: input.buffer,
-      originalFileName: input.originalFileName,
-      mimeType: input.mimeType,
-      companyId: input.companyId,
-      jobId,
-      fileHash,
-      fileSizeBytes,
-      requestContext: context,
-    });
-  }
 
   const timer = createStageTimer();
   let groqCalled = false;
@@ -216,10 +202,19 @@ export async function analyzePdfBuffer(input: {
     });
   } catch (error) {
     if (isDocumentRulesNotSeededError(error)) {
-      throw new AiAnalysisError(AI_ERROR_MESSAGES.rulesNotSeeded, error.code, error.statusCode);
+      const userMessage =
+        error.reason === 'no_extraction_rules'
+          ? AI_ERROR_MESSAGES.rulesNoExtraction
+          : error.reason === 'no_categories'
+            ? AI_ERROR_MESSAGES.rulesNoCategories
+            : AI_ERROR_MESSAGES.rulesNotSeeded;
+      throw new AiAnalysisError(userMessage, error.code, error.statusCode);
     }
     throw error;
   }
+
+  const documentClassRules = rulesLoad.rules;
+  timer.mark('rulesLoad');
 
   if (rulesLoad.usedMockFallback) {
     logger.warn('Usando fallback mock de regras porque MongoDB não retornou classes ativas.', {
@@ -242,14 +237,14 @@ export async function analyzePdfBuffer(input: {
   } else {
     logAnalyzeStage('analyze-pdf regras carregadas do MongoDB', context, {
       database: rulesLoad.database,
-      activeClassesCount: rulesLoad.activeCategoriesCount,
+      activeCategoriesCount: rulesLoad.activeCategoriesCount,
       activeRulesCount: rulesLoad.activeExtractionRulesCount,
+      activeAccessRulesCount: rulesLoad.activeAccessRulesCount,
+      collectionsConsulted: rulesLoad.collectionsConsulted,
       rulesSource: rulesLoad.source,
-    });
+      mappedRulesCount: documentClassRules.length,
+    }    );
   }
-
-  const documentClassRules = rulesLoad.rules;
-  timer.mark('rulesLoad');
 
   const chunks = createDocumentChunks(extracted);
   chunksCount = chunks.length;

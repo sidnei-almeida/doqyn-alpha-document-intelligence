@@ -1,19 +1,10 @@
 import { usesDoqynAuth, getAuthBasePath } from '@/auth/authConfig';
+import {
+  buildPublicAccessRequestBody,
+  type PublicAccessRequestInput,
+} from '../buildAccessRequestBody';
 
-export type PublicAccessRequestInput = {
-  personType: 'individual' | 'business';
-  taxId: string;
-  tenantDisplayName?: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  whatsapp: string;
-  password?: string;
-  jobTitle: string;
-  departmentText: string;
-  reason: string;
-  operationalNotificationsConsent: boolean;
-};
+export type { PublicAccessRequestInput };
 
 export type PublicAccessRequestResponse = {
   ok: boolean;
@@ -30,22 +21,7 @@ export async function submitAccessRequest(
 ): Promise<PublicAccessRequestResponse> {
   const url = usesDoqynAuth() ? `${getAuthBasePath()}/access-requests` : '/api/auth/access-requests';
 
-  const body = usesDoqynAuth()
-    ? {
-        personType: input.personType,
-        taxId: input.taxId,
-        tenantDisplayName: input.tenantDisplayName,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
-        whatsapp: input.whatsapp,
-        password: input.password ?? '',
-        jobTitle: input.jobTitle,
-        departmentText: input.departmentText,
-        reason: input.reason,
-        operationalNotificationsConsent: input.operationalNotificationsConsent,
-      }
-    : input;
+  const body = buildPublicAccessRequestBody(input, usesDoqynAuth() ? 'doqyn_auth' : 'legacy');
 
   const response = await fetch(url, {
     method: 'POST',

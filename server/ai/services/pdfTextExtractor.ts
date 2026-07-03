@@ -1,15 +1,20 @@
 import { PDFParse } from 'pdf-parse';
-import { MAX_TEXT_CHARS } from '../constants.js';
 import type { ExtractedPdfText, PdfPageText } from '../types/documentAi.types.js';
+import {
+  getPdfAnalysisMaxInputChars,
+  getPdfAnalysisMaxPages,
+} from '../utils/aiConfig.js';
 import { normalizeDocumentText } from '../utils/textNormalization.js';
+import { logger } from '../../utils/logger.js';
 
 function truncatePages(pages: PdfPageText[]): { pages: PdfPageText[]; text: string; truncated: boolean } {
+  const maxChars = getPdfAnalysisMaxInputChars();
   let totalChars = 0;
   const result: PdfPageText[] = [];
   let truncated = false;
 
   for (const page of pages) {
-    const remaining = MAX_TEXT_CHARS - totalChars;
+    const remaining = maxChars - totalChars;
     if (remaining <= 0) {
       truncated = true;
       break;
@@ -34,6 +39,14 @@ function truncatePages(pages: PdfPageText[]): { pages: PdfPageText[]; text: stri
   return { pages: result, text, truncated };
 }
 
+function limitPages(pages: PdfPageText[]): { pages: PdfPageText[]; pagesTruncated: boolean } {
+  const maxPages = getPdfAnalysisMaxPages();
+  if (pages.length <= maxPages) {
+    return { pages, pagesTruncated: false };
+  }
+  return { pages: pages.slice(0, maxPages), pagesTruncated: true };
+}
+
 export async function extractTextFromPdf(fileBuffer: Buffer): Promise<ExtractedPdfText> {
   const parser = new PDFParse({ data: fileBuffer });
 
@@ -55,14 +68,28 @@ export async function extractTextFromPdf(fileBuffer: Buffer): Promise<ExtractedP
 
     const nonEmptyPages = pages.filter((page) => page.text.length > 0);
     const sourcePages = nonEmptyPages.length > 0 ? nonEmptyPages : pages;
-    const { pages: finalPages, text, truncated } = truncatePages(sourcePages);
+    const { pages: limitedPages, pagesTruncated } = limitPages(sourcePages);
+    const { pages: finalPages, text, truncated } = truncatePages(limitedPages);
+    const textTruncated = truncated || pagesTruncated;
+
+    if (textTruncated) {
+      logger.info('pdf text extraction truncated for cost guardrails', {
+        inputPages: sourcePages.length,
+        outputPages: finalPages.length,
+        charCount: text.length,
+        maxInputChars: getPdfAnalysisMaxInputChars(),
+        maxPages: getPdfAnalysisMaxPages(),
+        pagesTruncated,
+        charsTruncated: truncated,
+      });
+    }
 
     return {
       text,
       pages: finalPages,
       pageCount: textResult.total || finalPages.length,
       charCount: text.length,
-      truncated,
+      truncated: textTruncated,
     };
   } finally {
     await parser.destroy();

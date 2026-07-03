@@ -2,6 +2,7 @@ import { access, constants, mkdir, readFile, rm, writeFile } from 'node:fs/promi
 import path from 'node:path';
 import type { StorageConfig } from './storageConfig.js';
 import {
+  buildDocumentPreviewObjectKey,
   buildDocumentVersionStorageKey,
   buildLegacyAnalysisStagingKey,
   resolveStorageAbsolutePath,
@@ -10,9 +11,13 @@ import {
 import type {
   ReadDocumentVersionResult,
   StagingCapableStorageProvider,
+  StoreDocumentPreviewInput,
   StoreDocumentVersionInput,
+  StorePreviewAssetInput,
+  StoredDocumentPreview,
   StoredDocumentVersion,
 } from './storageProvider.js';
+import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 export class LocalStorageProvider implements StagingCapableStorageProvider {
@@ -68,16 +73,11 @@ export class LocalStorageProvider implements StagingCapableStorageProvider {
       );
     }
 
-    const extension = sanitizeFileExtension({
-      extension: input.extension,
-      mimeType: input.mimeType,
-    });
-
     const storageKey = buildDocumentVersionStorageKey({
       tenantId: input.tenantId,
       documentId: input.documentId,
       versionId: input.versionId,
-      extension,
+      storageFileName: input.storageFileName,
     });
 
     const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
@@ -103,9 +103,11 @@ export class LocalStorageProvider implements StagingCapableStorageProvider {
     storageKey: string,
     tenantId?: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<ReadDocumentVersionResult> {
     void tenantId;
     void bucketAlias;
+    void storageScope;
     await this.ensureReady();
     const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
     const buffer = await readFile(absolutePath);
@@ -117,13 +119,80 @@ export class LocalStorageProvider implements StagingCapableStorageProvider {
     };
   }
 
+  async storeDocumentPreview(input: StoreDocumentPreviewInput): Promise<StoredDocumentPreview> {
+    await this.ensureReady();
+
+    const scope = input.storageScope;
+    const storageKey = buildDocumentPreviewObjectKey({
+      documentId: input.documentId,
+      versionId: input.versionId,
+      previewStorageFileName: input.previewStorageFileName,
+      keyPrefix: scope?.keyPrefix,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
+    const directory = path.dirname(absolutePath);
+
+    await mkdir(directory, { recursive: true });
+
+    try {
+      await writeFile(absolutePath, input.buffer);
+    } catch (error) {
+      await rm(absolutePath, { force: true }).catch(() => undefined);
+      throw error;
+    }
+
+    return {
+      storageKey,
+      sizeBytes: input.buffer.length,
+      provider: 'local',
+      contentType: 'application/pdf',
+    };
+  }
+
+  async storePreviewAsset(input: StorePreviewAssetInput): Promise<StoredDocumentPreview> {
+    await this.ensureReady();
+
+    const storageKey = input.objectKey;
+    const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
+    const directory = path.dirname(absolutePath);
+
+    await mkdir(directory, { recursive: true });
+
+    try {
+      await writeFile(absolutePath, input.buffer);
+    } catch (error) {
+      await rm(absolutePath, { force: true }).catch(() => undefined);
+      throw error;
+    }
+
+    return {
+      storageKey,
+      sizeBytes: input.buffer.length,
+      provider: 'local',
+      contentType: input.contentType,
+    };
+  }
+
+  async readDocumentPreview(
+    storageKey: string,
+    tenantId?: string,
+    bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
+  ): Promise<ReadDocumentVersionResult> {
+    return this.readDocumentVersion(storageKey, tenantId, bucketAlias, storageScope);
+  }
+
   async deleteDocumentVersion(
     storageKey: string,
     tenantId?: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<void> {
     void tenantId;
     void bucketAlias;
+    void storageScope;
     await this.ensureReady();
     const absolutePath = resolveStorageAbsolutePath(this.root, storageKey);
     await rm(absolutePath, { force: true });

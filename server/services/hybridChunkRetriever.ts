@@ -15,6 +15,7 @@ import {
   MAX_CHUNKS_FOR_EXTRACTION,
   MAX_CHUNKS_PER_FIELD,
 } from '../ai/constants.js';
+import { extraRetrievalTermsForClass } from '../ai/utils/documentClassHeuristics.js';
 import type {
   DocumentChunk,
   DocumentClassRule,
@@ -50,35 +51,6 @@ const LEGAL_COMMERCIAL_TERMS = [
   'nota fiscal',
   'ordem de compra',
 ];
-
-const NDA_CONFIDENTIALITY_TERMS = [
-  'nda',
-  'acordo de confidencialidade',
-  'não divulgação',
-  'nao divulgacao',
-  'não concorrência',
-  'nao concorrencia',
-  'não aliciamento',
-  'nao aliciamento',
-  'parte reveladora',
-  'parte receptora',
-  'revelador',
-  'receptor',
-  'multa',
-  'infração',
-  'infracao',
-  'vigência',
-  'vigencia',
-  'sigilo',
-  'informações confidenciais',
-  'informacoes confidenciais',
-  'segredo comercial',
-];
-
-const CLASS_EXTRA_TERMS: Record<string, string[]> = {
-  class_confidentiality_agreement: NDA_CONFIDENTIALITY_TERMS,
-  class_contract_supplier: ['fornecedor', 'prestação de serviços', 'prestacao de servicos'],
-};
 
 function uniqueTerms(terms: string[]): string[] {
   const seen = new Set<string>();
@@ -274,7 +246,7 @@ export function retrieveChunksForClassification(input: {
       docClass.name,
       docClass.description,
       ...docClass.keywords,
-      ...(CLASS_EXTRA_TERMS[docClass.id] ?? []),
+      ...extraRetrievalTermsForClass(docClass),
     ]);
     const negativeTerms = docClass.negativeKeywords ?? [];
 

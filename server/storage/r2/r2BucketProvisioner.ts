@@ -1,28 +1,24 @@
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  type S3Client,
-} from '@aws-sdk/client-s3';
 import type { R2Config } from '../storageConfig.js';
 import { logger } from '../../utils/logger.js';
 import { createR2AdminClient } from './r2Clients.js';
-import { getTenantBucketName } from './r2BucketNaming.js';
+import { buildLegacyTenantBucketName } from './r2BucketNaming.js';
 
 export type EnsureTenantBucketInput = {
   tenantId: string;
+  bucketName?: string;
   config: R2Config;
-  adminClient?: S3Client;
+  adminClient?: import('@aws-sdk/client-s3').S3Client;
 };
 
 export function resolveTenantBucketName(tenantId: string, config: R2Config): string {
-  return getTenantBucketName(tenantId, {
-    bucketPrefix: config.bucketPrefix,
-    bucketMode: config.bucketMode,
-    defaultBucket: config.defaultBucket,
-  });
+  return buildLegacyTenantBucketName(tenantId, config.bucketPrefix);
 }
 
-export async function headTenantBucket(client: S3Client, bucket: string): Promise<boolean> {
+export async function headTenantBucket(
+  client: import('@aws-sdk/client-s3').S3Client,
+  bucket: string,
+): Promise<boolean> {
+  const { HeadBucketCommand } = await import('@aws-sdk/client-s3');
   try {
     await client.send(new HeadBucketCommand({ Bucket: bucket }));
     return true;
@@ -36,7 +32,11 @@ export async function headTenantBucket(client: S3Client, bucket: string): Promis
   }
 }
 
-export async function createTenantBucket(client: S3Client, bucket: string): Promise<void> {
+export async function createTenantBucket(
+  client: import('@aws-sdk/client-s3').S3Client,
+  bucket: string,
+): Promise<void> {
+  const { CreateBucketCommand } = await import('@aws-sdk/client-s3');
   try {
     await client.send(new CreateBucketCommand({ Bucket: bucket }));
   } catch (error) {
@@ -52,7 +52,7 @@ export async function createTenantBucket(client: S3Client, bucket: string): Prom
 export type EnsureSharedBucketInput = {
   bucketName: string;
   config: R2Config;
-  adminClient?: S3Client;
+  adminClient?: import('@aws-sdk/client-s3').S3Client;
 };
 
 export async function ensureSharedBucket(
@@ -72,10 +72,12 @@ export async function ensureSharedBucket(
   return { bucket, created: true };
 }
 
-export async function ensureTenantBucket(
-  input: EnsureTenantBucketInput,
-): Promise<{ bucket: string; created: boolean }> {
-  const bucket = resolveTenantBucketName(input.tenantId, input.config);
+export async function ensureTenantBucketByName(input: {
+  bucketName: string;
+  config: R2Config;
+  adminClient?: import('@aws-sdk/client-s3').S3Client;
+}): Promise<{ bucket: string; created: boolean }> {
+  const bucket = input.bucketName.trim();
   const adminClient = input.adminClient ?? createR2AdminClient(input.config);
 
   const exists = await headTenantBucket(adminClient, bucket);
@@ -89,12 +91,25 @@ export async function ensureTenantBucket(
   return { bucket, created: true };
 }
 
+/** @deprecated Prefer ensureTenantBucketByName com bucketName explícito do registry. */
+export async function ensureTenantBucket(
+  input: EnsureTenantBucketInput,
+): Promise<{ bucket: string; created: boolean }> {
+  const bucket =
+    input.bucketName?.trim() || resolveTenantBucketName(input.tenantId, input.config);
+  return ensureTenantBucketByName({
+    bucketName: bucket,
+    config: input.config,
+    adminClient: input.adminClient,
+  });
+}
+
 export type EnsureBucketForScopeInput = {
   bucketMode: 'per_tenant' | 'shared';
   bucketName: string;
   tenantId: string;
   config: R2Config;
-  adminClient?: S3Client;
+  adminClient?: import('@aws-sdk/client-s3').S3Client;
 };
 
 export async function ensureBucketForStorageScope(
@@ -108,8 +123,8 @@ export async function ensureBucketForStorageScope(
     });
   }
 
-  return ensureTenantBucket({
-    tenantId: input.tenantId,
+  return ensureTenantBucketByName({
+    bucketName: input.bucketName,
     config: input.config,
     adminClient: input.adminClient,
   });

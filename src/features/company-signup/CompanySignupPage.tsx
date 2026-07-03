@@ -1,19 +1,28 @@
 import { Building2, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DoqynLogo } from '@/components/brand';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
+import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
+import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
+import { TaxIdInput } from '@/components/ui/TaxIdInput';
+import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/features/auth/useAuth';
 import { submitCompanySignup } from './api/companySignupApi';
+import {
+  buildCompanySignupPayload,
+  buildCompanySignupReviewSections,
+  COMPANY_SIGNUP_REVIEW_COPY,
+  validateCompanySignupForm,
+  type CompanySignupFormValues,
+} from './companySignupReview';
 
-const TERMS_TEXT =
-  'Declaro que li e aceito os termos de uso e política de privacidade do DOQYN para criação do ambiente corporativo.';
-
-const CHECKBOX_CLASS =
-  'mt-0.5 h-4 w-4 shrink-0 rounded border-doqyn-border-strong bg-doqyn-bg accent-doqyn-text';
+const COMPANY_AUTHORIZATION_TEXT =
+  'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
 
 export function CompanySignupPage() {
   const navigate = useNavigate();
@@ -27,39 +36,89 @@ export function CompanySignupPage() {
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [companyAuthorization, setCompanyAuthorization] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [authorizationError, setAuthorizationError] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
+  const formValues = useMemo<CompanySignupFormValues>(
+    () => ({
+      companyName,
+      taxId,
+      firstName,
+      lastName,
+      email,
+      whatsapp,
+      password,
+      confirmPassword,
+      acceptedTerms,
+      companyAuthorization,
+    }),
+    [
+      companyName,
+      taxId,
+      firstName,
+      lastName,
+      email,
+      whatsapp,
+      password,
+      confirmPassword,
+      acceptedTerms,
+      companyAuthorization,
+    ],
+  );
+
+  const reviewSections = useMemo(
+    () => buildCompanySignupReviewSections(formValues),
+    [formValues],
+  );
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError('As senhas não conferem.');
+    const form = event.currentTarget;
+    if (!form.checkValidity()) {
+      form.reportValidity();
       return;
     }
 
-    if (!termsAccepted) {
-      setError('É necessário aceitar os termos.');
+    const validation = validateCompanySignupForm(formValues);
+    setTermsError(null);
+    setAuthorizationError(null);
+
+    if (!validation.valid) {
+      if (validation.field === 'acceptedTerms') {
+        setTermsError(validation.error ?? null);
+      }
+      if (validation.field === 'companyAuthorization') {
+        setAuthorizationError(validation.error ?? null);
+      }
+      setError(validation.error ?? 'Revise os campos do formulário.');
+      return;
+    }
+
+    setReviewOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (submitting || !formValues.acceptedTerms) {
+      if (!formValues.acceptedTerms) {
+        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+      }
       return;
     }
 
     setSubmitting(true);
+    setError(null);
 
     try {
-      const result = await submitCompanySignup({
-        companyName,
-        taxId,
-        firstName,
-        lastName,
-        email,
-        whatsapp,
-        password,
-        confirmPassword,
-        termsAccepted,
-      });
+      const result = await submitCompanySignup(buildCompanySignupPayload(formValues));
 
+      setReviewOpen(false);
       toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
       await refreshUser();
       navigate('/upload', { replace: true });
@@ -103,12 +162,12 @@ export function CompanySignupPage() {
               onChange={(e) => setCompanyName(e.target.value)}
               required
             />
-            <Input
+            <TaxIdInput
               id="taxId"
+              kind="CNPJ"
               label="CNPJ"
               value={taxId}
-              onChange={(e) => setTaxId(e.target.value)}
-              placeholder="00.000.000/0000-00"
+              onChange={setTaxId}
               required
             />
 
@@ -137,11 +196,11 @@ export function CompanySignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <Input
+            <WhatsappInput
               id="whatsapp"
               label="WhatsApp"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={setWhatsapp}
               required
             />
             <Input
@@ -163,16 +222,36 @@ export function CompanySignupPage() {
               required
             />
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3">
-              <input
-                type="checkbox"
-                className={CHECKBOX_CLASS}
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                required
-              />
-              <span className="text-sm leading-relaxed text-doqyn-muted">{TERMS_TEXT}</span>
-            </label>
+            <TermsAcceptanceCheckbox
+              checked={acceptedTerms}
+              onChange={(value) => {
+                setAcceptedTerms(value);
+                if (value) setTermsError(null);
+              }}
+              error={termsError}
+              privacyHref={undefined}
+              required
+            />
+
+            <Checkbox
+              checked={companyAuthorization}
+              onChange={(event) => {
+                setCompanyAuthorization(event.target.checked);
+                if (event.target.checked) setAuthorizationError(null);
+              }}
+              required
+              wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+              label={
+                <span className="text-sm leading-relaxed text-doqyn-muted">
+                  {COMPANY_AUTHORIZATION_TEXT}
+                </span>
+              }
+              description={
+                authorizationError ? (
+                  <span className="form-error text-xs">{authorizationError}</span>
+                ) : undefined
+              }
+            />
           </div>
 
           {error && <p className="form-error mt-4 text-center">{error}</p>}
@@ -181,11 +260,28 @@ export function CompanySignupPage() {
             <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
               Voltar
             </Link>
-            <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-              {submitting ? 'Cadastrando...' : 'Cadastrar empresa'}
+            <Button type="submit" className="w-full sm:w-auto">
+              Cadastrar empresa
             </Button>
           </div>
         </form>
+
+        <ReviewBeforeSubmitDialog
+          open={reviewOpen}
+          title={COMPANY_SIGNUP_REVIEW_COPY.title}
+          description={COMPANY_SIGNUP_REVIEW_COPY.description}
+          attentionMessage={COMPANY_SIGNUP_REVIEW_COPY.attentionMessage}
+          sections={reviewSections}
+          submitting={submitting}
+          confirmLabel={COMPANY_SIGNUP_REVIEW_COPY.confirmLabel}
+          onCancel={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onEdit={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onConfirm={handleConfirmSubmit}
+        />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
           <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />

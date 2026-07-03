@@ -2,12 +2,22 @@ import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
 import type { AnalyzePdfResponse } from '../services/analyzePdf';
 import type { ExtractedMetadata } from '../types';
 import type { BulkUploadItem } from '../types/bulk';
+import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
+import {
+  canAutoAcceptWithSettings,
+  DEFAULT_WORKFLOW_REVIEW_SETTINGS,
+  policyRequiresPerItemChoice,
+  resolveEffectiveNamingForItem,
+} from './reviewWorkflowSettings';
 
 export function getBulkAutoSaveBlockers(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
   rawAnalysis: AnalyzePdfResponse | null;
+  settings?: WorkflowReviewSettings;
+  perItem?: PerItemNamingChoice | null;
 }): string[] {
+  const settings = params.settings ?? DEFAULT_WORKFLOW_REVIEW_SETTINGS;
   const blockers: string[] = [];
   const { isAuthenticated, metadata, rawAnalysis } = params;
 
@@ -16,6 +26,15 @@ export function getBulkAutoSaveBlockers(params: {
     blockers.push('Análise indisponível.');
     return blockers;
   }
+
+  if (policyRequiresPerItemChoice(settings.defaultNamingPolicy) && !params.perItem?.namingMode) {
+    blockers.push('Escolha de nome por arquivo necessária.');
+  }
+
+  if (settings.defaultNamingPolicy === 'manual_required' && !params.perItem?.manualName?.trim()) {
+    blockers.push('Nome manual obrigatório.');
+  }
+
   if (metadata.analysisStatus !== 'completed') {
     blockers.push('Análise marcada como revisão pela API.');
   }
@@ -25,7 +44,7 @@ export function getBulkAutoSaveBlockers(params: {
   if (rawAnalysis.classification.requiresReview) {
     blockers.push('Classificação marcada para revisão.');
   }
-  if (rawAnalysis.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE) {
+  if (settings.pauseOnLowConfidence && rawAnalysis.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE) {
     blockers.push(
       `Confiança abaixo do mínimo (${Math.round(rawAnalysis.classification.confidence * 100)}%).`,
     );
@@ -33,19 +52,30 @@ export function getBulkAutoSaveBlockers(params: {
   if (!rawAnalysis.classification.classId) {
     blockers.push('Classe não retornada pela análise.');
   }
-  if (!rawAnalysis.recommendedFileName?.trim()) {
+
+  const effectiveMode = resolveEffectiveNamingForItem(settings, params.perItem);
+  if (settings.aiRenameEnabled && effectiveMode === 'ai_suggested' && !rawAnalysis.recommendedFileName?.trim()) {
     blockers.push('Nome sugerido ausente.');
+  }
+  if (!settings.aiRenameEnabled && !rawAnalysis.originalFileName?.trim()) {
+    blockers.push('Nome original ausente.');
   }
   if (!rawAnalysis.extraction) {
     blockers.push('Metadados não extraídos.');
   }
-  if (rawAnalysis.extraction?.requiresReview) {
+  if (settings.pauseOnLowConfidence && rawAnalysis.extraction?.requiresReview) {
     blockers.push('Metadados marcados para revisão.');
   }
 
   const missingFields = rawAnalysis.extraction?.missingFields ?? metadata.missingFields ?? [];
-  if (missingFields.length > 0) {
+  if (settings.pauseOnMissingFields && missingFields.length > 0) {
     blockers.push(`Campos ausentes: ${missingFields.join(', ')}.`);
+  }
+
+  if (!canAutoAcceptWithSettings(settings, { ...params, autoPaused: false, saved: false })) {
+    if (blockers.length === 0) {
+      blockers.push('Documento não elegível para salvamento automático.');
+    }
   }
 
   return blockers;
@@ -55,6 +85,8 @@ export function canBulkAutoSave(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
   rawAnalysis: AnalyzePdfResponse | null;
+  settings?: WorkflowReviewSettings;
+  perItem?: PerItemNamingChoice | null;
 }): boolean {
   return getBulkAutoSaveBlockers(params).length === 0;
 }
@@ -63,13 +95,26 @@ export function canBulkManualConfirm(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
   rawAnalysis: AnalyzePdfResponse | null;
+  settings?: WorkflowReviewSettings;
+  perItem?: PerItemNamingChoice | null;
 }): boolean {
   if (!params.isAuthenticated) return false;
 
+  const settings = params.settings ?? DEFAULT_WORKFLOW_REVIEW_SETTINGS;
   const { metadata, rawAnalysis } = params;
   if (!metadata || !rawAnalysis) return false;
   if (metadata.analysisStatus === 'failed' || rawAnalysis.status === 'failed') return false;
-  if (!rawAnalysis.classification.classId || !rawAnalysis.recommendedFileName?.trim()) return false;
+  if (!rawAnalysis.classification.classId) return false;
+
+  const effectiveMode = resolveEffectiveNamingForItem(settings, params.perItem);
+  if (settings.aiRenameEnabled && effectiveMode === 'ai_suggested' && !rawAnalysis.recommendedFileName?.trim()) {
+    return false;
+  }
+  if (!settings.aiRenameEnabled && !rawAnalysis.originalFileName?.trim()) return false;
+  if (effectiveMode === 'manual') {
+    const resolved = params.perItem?.manualName?.trim();
+    if (!resolved) return false;
+  }
   if (!rawAnalysis.extraction) return false;
 
   if (metadata.analysisStatus === 'completed' && rawAnalysis.status === 'completed') {
@@ -139,7 +184,10 @@ export function resolveBulkItemStatusAfterAnalysis(
   return 'analyzed';
 }
 
-export function getBulkReviewReason(item: BulkUploadItem): string {
+export function getBulkReviewReason(
+  item: BulkUploadItem,
+  settings: WorkflowReviewSettings = DEFAULT_WORKFLOW_REVIEW_SETTINGS,
+): string {
   if (item.errorMessage) return item.errorMessage;
 
   const raw = item.result;
@@ -150,6 +198,8 @@ export function getBulkReviewReason(item: BulkUploadItem): string {
     isAuthenticated: true,
     metadata,
     rawAnalysis: raw,
+    settings,
+    perItem: item.perItemNaming,
   });
 
   if (blockers.length > 0) {

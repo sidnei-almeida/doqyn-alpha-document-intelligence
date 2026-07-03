@@ -13,6 +13,7 @@ import {
 } from '../server/storage/index.js';
 import { resolveStorageAbsolutePath } from '../server/storage/storageKeys.js';
 import { storeUploadedDocumentFile } from '../server/services/documentFileService.js';
+import { resolveStorageFileNames } from '../server/utils/resolveStorageFileNames.js';
 
 const TENANT = 'company_dev';
 const USER = 'user_test_flow';
@@ -20,6 +21,11 @@ const JOB_ID = 'job_test_staging_001';
 const DOCUMENT_ID = 'doc_flow_001';
 const VERSION_ID = 'ver_flow_001';
 const RECOMMENDED_NAME = 'NDA_Confidencial_Recomendado.pdf';
+const RESOLVED_RECOMMENDED = resolveStorageFileNames({
+  originalFileName: 'entrada.pdf',
+  aiSuggestedFileName: RECOMMENDED_NAME,
+  namingMode: 'ai_suggested',
+}).storageFileName;
 
 describe('fluxo documento — staging e confirm', () => {
   let tempRoot = '';
@@ -81,6 +87,7 @@ describe('fluxo documento — staging e confirm', () => {
       buffer,
       mimeType: 'application/pdf',
       originalFileName: 'entrada.pdf',
+      storageFileName: 'entrada.pdf',
     });
 
     const storage = await storeUploadedDocumentFile({
@@ -97,6 +104,7 @@ describe('fluxo documento — staging e confirm', () => {
       }),
       mimeType: 'application/pdf',
       originalFileName: 'entrada.pdf',
+      storageFileName: 'entrada.pdf',
     });
 
     await deleteAnalysisStaging({
@@ -105,6 +113,7 @@ describe('fluxo documento — staging e confirm', () => {
       jobId: JOB_ID,
       mimeType: 'application/pdf',
       originalFileName: 'entrada.pdf',
+      storageFileName: 'entrada.pdf',
     });
 
     assert.equal(storage.primary.provider, 'local');
@@ -128,6 +137,7 @@ describe('fluxo documento — staging e confirm', () => {
       buffer,
       mimeType: 'application/pdf',
       originalFileName: 'doc.pdf',
+      storageFileName: 'doc.pdf',
     });
 
     const firstStorage = await storeUploadedDocumentFile({
@@ -144,6 +154,7 @@ describe('fluxo documento — staging e confirm', () => {
       }),
       mimeType: 'application/pdf',
       originalFileName: 'doc.pdf',
+      storageFileName: 'doc.pdf',
     });
 
     const objectKey = firstStorage.primary.objectKey;
@@ -155,7 +166,7 @@ describe('fluxo documento — staging e confirm', () => {
     assert.deepEqual(read.buffer, buffer);
   });
 
-  it('nome sugerido pela IA não vira path físico', async () => {
+  it('nome final sanitizado compõe path físico no storage', async () => {
     const buffer = Buffer.from('nome-logico-apenas');
 
     const storage = await storeUploadedDocumentFile({
@@ -164,13 +175,14 @@ describe('fluxo documento — staging e confirm', () => {
       versionId: VERSION_ID,
       buffer,
       mimeType: 'application/pdf',
-      originalFileName: RECOMMENDED_NAME,
+      originalFileName: 'original.pdf',
+      storageFileName: RESOLVED_RECOMMENDED,
     });
 
     const objectKey = storage.primary.objectKey!;
-    assert.match(objectKey, /\/original\.pdf$/);
-    assert.equal(objectKey.includes('NDA_Confidencial'), false);
-    assert.equal(objectKey.includes(RECOMMENDED_NAME), false);
+    assert.match(objectKey, new RegExp(`/original/${RESOLVED_RECOMMENDED.replace('.', '\\.')}$`));
+    assert.ok(objectKey.includes('NDA_Confidencial_Recomendado'));
+    assert.ok(!objectKey.endsWith('/original.pdf'));
   });
 
   it('upload direto cria storage.primary stored com STORAGE_PROVIDER=local', async () => {
@@ -181,6 +193,7 @@ describe('fluxo documento — staging e confirm', () => {
       buffer: Buffer.from('%PDF upload-direto'),
       mimeType: 'application/pdf',
       originalFileName: 'contrato.pdf',
+      storageFileName: 'contrato.pdf',
     });
 
     assert.equal(storage.primary.provider, 'local');
@@ -199,6 +212,7 @@ describe('fluxo documento — staging e confirm', () => {
       buffer: Buffer.from('temp'),
       mimeType: 'application/pdf',
       originalFileName: 'x.pdf',
+      storageFileName: 'x.pdf',
     });
 
     const objectKey = storage.primary.objectKey!;
@@ -219,6 +233,7 @@ describe('fluxo documento — staging e confirm', () => {
       buffer: payload,
       mimeType: 'application/pdf',
       originalFileName: 'ok.pdf',
+      storageFileName: 'ok.pdf',
     });
 
     const read = await provider!.readDocumentVersion(storage.primary.objectKey!);

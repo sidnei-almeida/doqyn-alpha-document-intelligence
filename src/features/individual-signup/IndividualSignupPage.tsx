@@ -1,19 +1,24 @@
 import { Shield, User } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DoqynLogo } from '@/components/brand';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
+import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
+import { TaxIdInput } from '@/components/ui/TaxIdInput';
+import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/features/auth/useAuth';
 import { submitIndividualSignup } from './api/individualSignupApi';
-
-const TERMS_TEXT =
-  'Declaro que li e aceito os termos de uso e política de privacidade do DOQYN para acesso como pessoa física.';
-
-const CHECKBOX_CLASS =
-  'mt-0.5 h-4 w-4 shrink-0 rounded border-doqyn-border-strong bg-doqyn-bg accent-doqyn-text';
+import {
+  buildIndividualSignupPayload,
+  buildIndividualSignupReviewSections,
+  INDIVIDUAL_SIGNUP_REVIEW_COPY,
+  validateIndividualSignupForm,
+  type IndividualSignupFormValues,
+} from './individualSignupReview';
 
 export function IndividualSignupPage() {
   const navigate = useNavigate();
@@ -26,38 +31,70 @@ export function IndividualSignupPage() {
   const [taxId, setTaxId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
+  const formValues = useMemo<IndividualSignupFormValues>(
+    () => ({
+      firstName,
+      lastName,
+      email,
+      whatsapp,
+      taxId,
+      password,
+      confirmPassword,
+      acceptedTerms,
+    }),
+    [firstName, lastName, email, whatsapp, taxId, password, confirmPassword, acceptedTerms],
+  );
+
+  const reviewSections = useMemo(
+    () => buildIndividualSignupReviewSections(formValues),
+    [formValues],
+  );
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError('As senhas não conferem.');
+    const form = event.currentTarget;
+    if (!form.checkValidity()) {
+      form.reportValidity();
       return;
     }
 
-    if (!termsAccepted) {
-      setError('É necessário aceitar os termos.');
+    const validation = validateIndividualSignupForm(formValues);
+    setTermsError(null);
+
+    if (!validation.valid) {
+      if (validation.field === 'acceptedTerms') {
+        setTermsError(validation.error ?? null);
+      }
+      setError(validation.error ?? 'Revise os campos do formulário.');
+      return;
+    }
+
+    setReviewOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (submitting || !formValues.acceptedTerms) {
+      if (!formValues.acceptedTerms) {
+        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+      }
       return;
     }
 
     setSubmitting(true);
+    setError(null);
 
     try {
-      const result = await submitIndividualSignup({
-        firstName,
-        lastName,
-        email,
-        whatsapp,
-        taxId,
-        password,
-        confirmPassword,
-        termsAccepted,
-      });
+      const result = await submitIndividualSignup(buildIndividualSignupPayload(formValues));
 
+      setReviewOpen(false);
       toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
       await refreshUser();
       navigate('/upload', { replace: true });
@@ -119,19 +156,19 @@ export function IndividualSignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <Input
+            <WhatsappInput
               id="whatsapp"
               label="WhatsApp"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={setWhatsapp}
               required
             />
-            <Input
+            <TaxIdInput
               id="taxId"
+              kind="CPF"
               label="CPF"
               value={taxId}
-              onChange={(e) => setTaxId(e.target.value)}
-              placeholder="000.000.000-00"
+              onChange={setTaxId}
               required
             />
             <Input
@@ -153,16 +190,16 @@ export function IndividualSignupPage() {
               required
             />
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3">
-              <input
-                type="checkbox"
-                className={CHECKBOX_CLASS}
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                required
-              />
-              <span className="text-sm leading-relaxed text-doqyn-muted">{TERMS_TEXT}</span>
-            </label>
+            <TermsAcceptanceCheckbox
+              checked={acceptedTerms}
+              onChange={(value) => {
+                setAcceptedTerms(value);
+                if (value) setTermsError(null);
+              }}
+              error={termsError}
+              privacyHref={undefined}
+              required
+            />
           </div>
 
           {error && <p className="form-error mt-4 text-center">{error}</p>}
@@ -171,11 +208,28 @@ export function IndividualSignupPage() {
             <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
               Voltar
             </Link>
-            <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-              {submitting ? 'Criando acesso...' : 'Criar acesso CPF'}
+            <Button type="submit" className="w-full sm:w-auto">
+              Criar acesso CPF
             </Button>
           </div>
         </form>
+
+        <ReviewBeforeSubmitDialog
+          open={reviewOpen}
+          title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
+          description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
+          attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+          sections={reviewSections}
+          submitting={submitting}
+          confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+          onCancel={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onEdit={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onConfirm={handleConfirmSubmit}
+        />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
           <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />

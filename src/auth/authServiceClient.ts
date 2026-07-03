@@ -1,5 +1,6 @@
 import { getAuthBasePath, usesDoqynAuth } from '@/auth/authConfig';
 import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
+import { ApiError, parseApiError } from '@/lib/apiErrors';
 
 export async function authServiceFetch(
   path: string,
@@ -11,10 +12,6 @@ export async function authServiceFetch(
   return authFetch(url, {
     credentials: getFetchCredentials(),
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
   });
 }
 
@@ -23,19 +20,16 @@ export async function authServiceJson<T>(
   options?: RequestInit,
 ): Promise<T> {
   const response = await authServiceFetch(path, options);
-  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message =
-      typeof (data as { message?: string }).message === 'string'
-        ? (data as { message: string }).message
-        : 'Erro na requisição ao auth-service.';
-    throw new Error(message);
+    throw await parseApiError(response);
   }
 
-  return data as T;
+  return (await response.json()) as T;
 }
 
 export function isDoqynAuthMode(): boolean {
   return usesDoqynAuth();
 }
+
+export { ApiError };

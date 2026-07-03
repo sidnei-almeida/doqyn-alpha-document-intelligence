@@ -31,7 +31,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(payload);
   } catch (error) {
     if (isServiceError(error)) {
-      return res.status(error.statusCode).json({ message: error.message, code: error.code });
+      return res.status(error.statusCode).json({
+        ok: false,
+        message: error.message,
+        code: error.code,
+        ...(error.details ? { details: error.details } : {}),
+        ...(error.payload ?? {}),
+      });
     }
     return res.status(500).json({ message: 'Não foi possível resolver o contexto do usuário.' });
   }

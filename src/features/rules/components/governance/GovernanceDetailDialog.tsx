@@ -1,21 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { cn } from '@/lib/utils';
-import type { CompanyMember, DocumentCategory, Group } from '@/types/rules';
+import type { DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 import { PERMISSION_LABELS, readGroupClassPermissions } from '../../utils/groupClassPermissions';
 import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections';
 import { CategoryIcon } from '../categoryIcons';
-import { MemberRoleBadge } from '../MemberRoleBadge';
-import { MemberStatusBadge } from '../MemberStatusBadge';
 
 export type GovernanceEntitySelection =
   | { type: 'category'; id: string }
   | { type: 'group'; id: string }
-  | { type: 'member'; id: string }
   | { type: 'connection'; categoryId: string; groupId: string };
 
 /** @deprecated use GovernanceEntitySelection */
@@ -26,7 +25,7 @@ type GovernanceDetailDialogProps = {
   selection: GovernanceEntitySelection | null;
   categories: DocumentCategory[];
   groups: Group[];
-  members: CompanyMember[];
+  groupMemberCounts: Record<string, number>;
   isAdmin: boolean;
   onClose: () => void;
   onSaveCategory: (
@@ -36,15 +35,14 @@ type GovernanceDetailDialogProps = {
   onSaveGroup: (groupId: string, input: { name: string; description?: string }) => Promise<void>;
   onDeleteCategory?: (categoryId: string) => Promise<void>;
   onDeactivateGroup?: (groupId: string) => Promise<void>;
-  onRemoveMemberFromGroup?: (groupId: string, membershipId: string) => Promise<void>;
   onPermissionChange: (
     groupId: string,
     categoryId: string,
     permissions: DocumentAccessPermissions,
   ) => Promise<void>;
+  onDisconnect?: (groupId: string, categoryId: string) => Promise<void>;
   onConfigureExtraction?: (category: DocumentCategory) => void;
   onStartConnectMode?: (groupId: string) => void;
-  onOpenAddMemberModal?: (options: { groupId?: string; memberId?: string }) => void;
 };
 
 const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS) as Array<keyof DocumentAccessPermissions>;
@@ -54,18 +52,17 @@ export function GovernanceDetailDialog({
   selection,
   categories,
   groups,
-  members,
+  groupMemberCounts,
   isAdmin,
   onClose,
   onSaveCategory,
   onSaveGroup,
   onDeleteCategory,
   onDeactivateGroup,
-  onRemoveMemberFromGroup,
   onPermissionChange,
+  onDisconnect,
   onConfigureExtraction,
   onStartConnectMode,
-  onOpenAddMemberModal,
 }: GovernanceDetailDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -88,24 +85,17 @@ export function GovernanceDetailDialog({
         ? groups.find((item) => item.id === selection.groupId)
         : null;
 
-  const member = selection?.type === 'member' ? members.find((item) => item.id === selection.id) : null;
-
   const connectedGroups =
     category?.accessGroupIds
       .map((id) => groups.find((item) => item.id === id))
       .filter((item): item is Group => Boolean(item)) ?? [];
 
-  const membersInGroup =
-    group && selection?.type === 'group'
-      ? members.filter(
-          (item) => item.status === 'active' && item.groupIds.includes(group.id),
-        )
-      : [];
-
   const connectedCategories =
     group && selection?.type === 'group'
       ? categories.filter((item) => item.accessGroupIds.includes(group.id))
       : [];
+
+  const memberCount = group ? (groupMemberCounts[group.id] ?? group.memberCount ?? 0) : 0;
 
   useEffect(() => {
     if (!open || !selection) return;
@@ -172,9 +162,7 @@ export function GovernanceDetailDialog({
       ? 'Categoria documental'
       : selection.type === 'group'
         ? 'Grupo documental'
-        : selection.type === 'member'
-          ? 'Membro'
-          : 'Regra de acesso';
+        : 'Regra de acesso';
 
   const titleId = 'governance-detail-dialog-title';
 
@@ -291,24 +279,18 @@ export function GovernanceDetailDialog({
                   <p className="text-sm text-doqyn-muted">{group.description || 'Sem descrição.'}</p>
                 </>
               )}
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                  Membros
+              <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-3">
+                <p className="text-sm text-doqyn-text">
+                  <span className="font-medium">{memberCount}</span>{' '}
+                  {memberCount === 1 ? 'membro' : 'membros'}
                 </p>
-                {membersInGroup.length === 0 ? (
-                  <p className="text-sm text-doqyn-muted">Nenhum membro neste grupo.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {membersInGroup.map((item) => (
-                      <li
-                        key={item.id}
-                        className="rounded-lg border border-doqyn-border px-3 py-2 text-sm text-doqyn-text"
-                      >
-                        {item.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <p className="mt-1 text-xs text-doqyn-muted">
+                  Gerencie membros deste grupo na tela{' '}
+                  <Link to="/users" className="font-medium text-doqyn-primary hover:underline">
+                    Usuários
+                  </Link>
+                  .
+                </p>
               </div>
               <div>
                 <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
@@ -332,52 +314,6 @@ export function GovernanceDetailDialog({
             </>
           )}
 
-          {selection.type === 'member' && member && (
-            <>
-              <div>
-                <p className="font-medium text-doqyn-text">{member.name}</p>
-                <p className="text-sm text-doqyn-muted">{member.email}</p>
-                {member.position && <p className="text-xs text-doqyn-muted">{member.position}</p>}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <MemberStatusBadge status={member.status} />
-                <MemberRoleBadge role={member.role} />
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                  Grupos documentais
-                </p>
-                {member.groupIds.length === 0 ? (
-                  <p className="text-sm text-doqyn-muted">Nenhum grupo atribuído.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {member.groupIds.map((groupId) => {
-                      const assignedGroup = groups.find((item) => item.id === groupId);
-                      if (!assignedGroup) return null;
-                      return (
-                        <li
-                          key={groupId}
-                          className="flex items-center justify-between rounded-lg border border-doqyn-border px-3 py-2"
-                        >
-                          <span className="text-sm text-doqyn-text">{assignedGroup.name}</span>
-                          {isAdmin && onRemoveMemberFromGroup && (
-                            <button
-                              type="button"
-                              className="text-xs text-doqyn-muted hover:text-doqyn-danger"
-                              onClick={() => void onRemoveMemberFromGroup(groupId, member.id)}
-                            >
-                              Remover
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </>
-          )}
-
           {selection.type === 'connection' && category && group && (
             <>
               <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 p-3">
@@ -389,24 +325,19 @@ export function GovernanceDetailDialog({
               </div>
               <div className="space-y-2">
                 {PERMISSION_KEYS.map((key) => (
-                  <label
+                  <Checkbox
                     key={key}
-                    className={cn(
-                      'flex items-center justify-between rounded-lg border border-doqyn-border px-3 py-2',
+                    checked={permissions[key]}
+                    disabled={!isAdmin}
+                    onChange={(event) =>
+                      setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
+                    }
+                    label={PERMISSION_LABELS[key]}
+                    wrapperClassName={cn(
+                      'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
                       !isAdmin && 'opacity-70',
                     )}
-                  >
-                    <span className="text-sm text-doqyn-text">{PERMISSION_LABELS[key]}</span>
-                    <input
-                      type="checkbox"
-                      checked={permissions[key]}
-                      disabled={!isAdmin}
-                      onChange={(event) =>
-                        setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
-                      }
-                      className="h-4 w-4 rounded border-doqyn-border-strong accent-doqyn-action"
-                    />
-                  </label>
+                  />
                 ))}
               </div>
             </>
@@ -415,47 +346,17 @@ export function GovernanceDetailDialog({
 
         {isAdmin && (
           <div className="space-y-2 border-t border-doqyn-border px-5 py-4">
-            {selection.type === 'group' && group && (
-              <>
-                {onStartConnectMode && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => {
-                      onStartConnectMode(group.id);
-                      onClose();
-                    }}
-                  >
-                    Conectar categoria
-                  </Button>
-                )}
-                {onOpenAddMemberModal && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => {
-                      onOpenAddMemberModal({ groupId: group.id });
-                      onClose();
-                    }}
-                  >
-                    Adicionar membro ao grupo
-                  </Button>
-                )}
-              </>
-            )}
-            {selection.type === 'member' && member && onOpenAddMemberModal && (
+            {selection.type === 'group' && group && onStartConnectMode && (
               <Button
                 type="button"
                 variant="secondary"
                 className="w-full"
                 onClick={() => {
-                  onOpenAddMemberModal({ memberId: member.id });
+                  onStartConnectMode(group.id);
                   onClose();
                 }}
               >
-                Adicionar a grupo
+                Conectar categoria
               </Button>
             )}
             {selection.type === 'category' && onConfigureExtraction && category && (
@@ -482,14 +383,36 @@ export function GovernanceDetailDialog({
               </Button>
             )}
             {selection.type === 'connection' && (
-              <Button
-                type="button"
-                className="w-full"
-                disabled={saving}
-                onClick={() => void savePermissions()}
-              >
-                Salvar permissões
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={saving}
+                  onClick={() => void savePermissions()}
+                >
+                  Salvar permissões
+                </Button>
+                {onDisconnect && category && group && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full text-doqyn-danger"
+                    disabled={saving}
+                    aria-label={`Desconectar categoria ${category.name} do grupo ${group.name}`}
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        await onDisconnect(selection.groupId, selection.categoryId);
+                        onClose();
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                  >
+                    Desconectar
+                  </Button>
+                )}
+              </>
             )}
             {selection.type === 'category' && onDeleteCategory && (
               <Button

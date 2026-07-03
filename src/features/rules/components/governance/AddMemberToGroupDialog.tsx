@@ -44,12 +44,15 @@ export function AddMemberToGroupDialog({
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return activeMembers;
-    return activeMembers.filter(
+    const available = groupId
+      ? activeMembers.filter((member) => !member.groupIds.includes(groupId))
+      : activeMembers;
+    if (!query) return available;
+    return available.filter(
       (member) =>
         member.name.toLowerCase().includes(query) || member.email.toLowerCase().includes(query),
     );
-  }, [activeMembers, search]);
+  }, [activeMembers, groupId, search]);
 
   const preselectedMember = useMemo(
     () =>
@@ -214,6 +217,12 @@ export function AddMemberToGroupDialog({
               >
                 Precisa cadastrar um novo usuário? Acesse Usuários.
               </Link>
+            </div>
+          ) : filteredMembers.length === 0 && groupId ? (
+            <div className="rounded-lg border border-dashed border-doqyn-border px-4 py-8 text-center">
+              <p className="text-sm text-doqyn-muted">
+                Todos os membros ativos desta organização já pertencem a este grupo documental.
+              </p>
             </div>
           ) : (
             <>

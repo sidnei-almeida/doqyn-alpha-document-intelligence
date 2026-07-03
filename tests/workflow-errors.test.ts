@@ -36,14 +36,14 @@ describe('workflowErrors backend', () => {
   });
 
   it('workflowErrorFromUnknown mapeia DocumentRulesNotSeededError', () => {
-    const error = new DocumentRulesNotSeededError('detalhe interno');
+    const error = new DocumentRulesNotSeededError('detalhe interno', 'no_categories');
     const { statusCode, body } = workflowErrorFromUnknown(error, { requestId: 'req_test' });
 
     assert.equal(statusCode, 503);
     assert.equal(body.code, 'DOCUMENT_RULES_NOT_CONFIGURED');
     assert.equal(body.error.title, 'Configuração documental incompleta');
     assert.equal(body.requestId, 'req_test');
-    assert.match(body.message, /classes e regras/);
+    assert.match(body.message, /categoria documental/i);
   });
 
   it('workflowErrorFromUnknown mapeia AiAnalysisError com código conhecido', () => {

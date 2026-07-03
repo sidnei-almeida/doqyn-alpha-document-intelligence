@@ -58,3 +58,6 @@ temp/
 
 # MongoDB cleanup backups (nunca commitar)
 backups/
+
+# Demo seed (manifest e relatório local do auth-service)
+.generated/

@@ -68,7 +68,16 @@ export function PendingApprovalsList({
           key: 'tenant',
           header: 'Organização',
           render: (item) => (
-            <span className="text-sm text-doqyn-text">{item.tenantName ?? item.tenantId}</span>
+            <div className="min-w-0 max-w-[220px]">
+              <p className="truncate text-sm text-doqyn-text" title={item.tenantName ?? item.tenantId}>
+                {item.tenantName ?? item.tenantId}
+              </p>
+              {item.tenantName && item.tenantName !== item.tenantId && (
+                <p className="truncate text-[11px] text-doqyn-muted" title={item.tenantId}>
+                  {item.tenantId}
+                </p>
+              )}
+            </div>
           ),
         },
         {

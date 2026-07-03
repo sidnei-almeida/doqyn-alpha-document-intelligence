@@ -15,6 +15,7 @@ const TENANT_BUSINESS = 'company_dev';
 const TENANT_INDIVIDUAL = 'individual_maria_ab12cd';
 const DOCUMENT_ID = 'doc_abc123';
 const VERSION_ID = 'ver_xyz789';
+const STORAGE_FILE_NAME = 'documento.pdf';
 
 describe('local storage provider', () => {
   let tempRoot = '';
@@ -56,11 +57,12 @@ describe('local storage provider', () => {
       buffer,
       mimeType: 'application/pdf',
       extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
     });
 
     assert.match(
       stored.storageKey,
-      /^documents\/company_dev\/doc_abc123\/versions\/ver_xyz789\/original\.pdf$/,
+      /^documents\/company_dev\/doc_abc123\/versions\/ver_xyz789\/original\/documento\.pdf$/,
     );
     assert.equal(stored.storageKey.includes('/var/'), false);
 
@@ -75,15 +77,16 @@ describe('local storage provider', () => {
       documentId: DOCUMENT_ID,
       versionId: VERSION_ID,
       buffer: Buffer.from('hello'),
-      mimeType: 'text/plain',
-      extension: 'txt',
+      mimeType: 'application/pdf',
+      extension: 'pdf',
+      storageFileName: 'hello.pdf',
     });
 
     const key = buildDocumentVersionStorageKey({
       tenantId: TENANT_INDIVIDUAL,
       documentId: DOCUMENT_ID,
       versionId: VERSION_ID,
-      extension: 'txt',
+      storageFileName: 'hello.pdf',
     });
     const absolute = resolveStorageAbsolutePath(tempRoot, key);
     await access(path.dirname(absolute), constants.F_OK);
@@ -117,6 +120,7 @@ describe('local storage provider', () => {
           versionId: VERSION_ID,
           buffer: tooLarge,
           mimeType: 'application/pdf',
+          storageFileName: STORAGE_FILE_NAME,
         }),
       (error: ServiceError) => error.code === 'FILE_TOO_LARGE',
     );
@@ -174,6 +178,7 @@ describe('local storage provider', () => {
       versionId: VERSION_ID,
       buffer: Buffer.from('data'),
       mimeType: 'application/pdf',
+      storageFileName: STORAGE_FILE_NAME,
     });
 
     assert.ok(!path.isAbsolute(stored.storageKey));
@@ -189,6 +194,7 @@ describe('local storage provider', () => {
       versionId: VERSION_ID,
       buffer: Buffer.from('b'),
       mimeType: 'application/pdf',
+      storageFileName: STORAGE_FILE_NAME,
     });
 
     const individual = await provider.storeDocumentVersion({
@@ -197,10 +203,14 @@ describe('local storage provider', () => {
       versionId: 'ver_ind_1',
       buffer: Buffer.from('i'),
       mimeType: 'application/pdf',
+      storageFileName: STORAGE_FILE_NAME,
     });
 
     for (const key of [business.storageKey, individual.storageKey]) {
-      assert.match(key, /^documents\/[a-z][a-z0-9_]+\/[a-zA-Z0-9_-]+\/versions\/[a-zA-Z0-9_-]+\/original\.[a-z0-9]+$/);
+      assert.match(
+        key,
+        /^documents\/[a-z][a-z0-9_]+\/[a-zA-Z0-9_-]+\/versions\/[a-zA-Z0-9_-]+\/original\/[a-zA-Z0-9_.-]+\.pdf$/,
+      );
       assert.ok(!/\d{11}|\d{14}/.test(key));
     }
   });
@@ -215,6 +225,7 @@ describe('local storage provider', () => {
       versionId: VERSION_ID,
       buffer: payload,
       mimeType: 'application/pdf',
+      storageFileName: STORAGE_FILE_NAME,
     });
 
     const read = await provider.readDocumentVersion(stored.storageKey);

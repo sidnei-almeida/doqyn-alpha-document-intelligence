@@ -6,13 +6,22 @@ interface EmptyStateProps {
   description?: string;
   action?: React.ReactNode;
   className?: string;
+  stretch?: boolean;
 }
 
-export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className,
+  stretch = false,
+}: EmptyStateProps) {
   return (
     <div
       className={cn(
         'flex flex-col items-center justify-center rounded-lg border border-doqyn-border bg-doqyn-surface px-6 py-12 text-center',
+        stretch && 'min-h-[360px] flex-1',
         className,
       )}
     >

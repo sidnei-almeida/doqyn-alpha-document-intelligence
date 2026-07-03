@@ -30,6 +30,12 @@ export const AI_ERROR_MESSAGES = {
     'Texto insuficiente ou não extraível. O documento pode ser escaneado ou baseado em imagem.',
   rulesNotSeeded:
     'Não há classes e regras de documentos configuradas para esta empresa.',
+  rulesNoCategories:
+    'Crie ao menos uma categoria documental com critérios de classificação antes de analisar documentos.',
+  rulesNoExtraction:
+    'Configure ao menos uma regra de classificação/extração ativa para a categoria antes de analisar documentos.',
+  rulesNoAccessConnections:
+    'Conecte a categoria a um grupo documental e salve as alterações no mapa antes de analisar documentos.',
   analysisFailed: 'A análise automática falhou. Tente novamente.',
   classificationFailed:
     'Não foi possível concluir a classificação automática. O documento foi separado para revisão.',
@@ -37,15 +43,15 @@ export const AI_ERROR_MESSAGES = {
     'Limite temporário da análise automática atingido. Aguarde alguns minutos e tente novamente.',
   aiUnavailableReviewReason:
     'Limite temporário da IA atingido. Tente novamente mais tarde.',
-  noAiProductionBlocked: 'AI_MODE=no_ai is not allowed in production.',
-  noAiClassRuleNotFound:
-    'Classe ou regra de desenvolvimento não encontrada. Rode npm run db:setup.',
   invalidAiResponse:
     'A resposta da IA veio em formato inválido. O documento foi marcado para revisão.',
-  groqNotConfigured: 'Análise automática indisponível. Configure GROQ_API_KEY no servidor.',
+  aiProviderNotConfigured:
+    'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
+  groqNotConfigured:
+    'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
 } as const;
 
-export const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
+export { DEFAULT_GROQ_MODEL } from './utils/aiConfig.js';
 
 /**
  * Modo de retrieval ativo nesta etapa do projeto.

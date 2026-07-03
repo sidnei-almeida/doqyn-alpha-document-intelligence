@@ -23,9 +23,16 @@ export const api = {
   documents: {
     list: (params?: Record<string, string>) => {
       const query = params ? `?${new URLSearchParams(params)}` : '';
-      return request<{ documents: unknown[]; total: number }>(`/documents${query}`);
+      return request<import('@/types/document-library').DocumentListResponse>(`/documents${query}`);
     },
-    get: (id: string) => request<{ document: unknown }>(`/documents?id=${id}`),
+    get: (id: string) =>
+      request<import('@/types/document-library').DocumentDetailResponse>(`/documents/${id}`),
+    timeline: (documentId: string, params?: Record<string, string>) => {
+      const query = params ? `?${new URLSearchParams(params)}` : '';
+      return request<import('@/types/document-audit').DocumentTimelineResponse>(
+        `/documents/${documentId}/timeline${query}`,
+      );
+    },
     upload: (formData: FormData) =>
       authFetch(`${API_BASE}/documents/upload`, {
         method: 'POST',

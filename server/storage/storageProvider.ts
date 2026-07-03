@@ -9,6 +9,7 @@ export type StoreDocumentVersionInput = {
   buffer: Buffer;
   mimeType: string;
   extension?: string;
+  storageFileName: string;
   storageScope?: TenantStorageScope;
 };
 
@@ -30,6 +31,33 @@ export type ReadDocumentVersionResult = {
   contentType?: string;
 };
 
+export type StoreDocumentPreviewInput = {
+  tenantId: string;
+  documentId: string;
+  versionId: string;
+  buffer: Buffer;
+  previewStorageFileName: string;
+  storageScope?: TenantStorageScope;
+};
+
+export type StorePreviewAssetInput = {
+  tenantId: string;
+  objectKey: string;
+  buffer: Buffer;
+  contentType: string;
+  bucketAlias?: string | null;
+  storageScope?: TenantStorageScope;
+};
+
+export type StoredDocumentPreview = {
+  storageKey: string;
+  sizeBytes: number;
+  provider: StorageProviderName;
+  bucket?: string;
+  etag?: string;
+  contentType: string;
+};
+
 export interface StorageProvider {
   readonly name: StorageProviderName;
   ensureReady(): Promise<void>;
@@ -38,12 +66,22 @@ export interface StorageProvider {
     storageKey: string,
     tenantId: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<ReadDocumentVersionResult>;
   deleteDocumentVersion(
     storageKey: string,
     tenantId: string,
     bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
   ): Promise<void>;
+  storeDocumentPreview(input: StoreDocumentPreviewInput): Promise<StoredDocumentPreview>;
+  storePreviewAsset(input: StorePreviewAssetInput): Promise<StoredDocumentPreview>;
+  readDocumentPreview(
+    storageKey: string,
+    tenantId: string,
+    bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
+  ): Promise<ReadDocumentVersionResult>;
 }
 
 export interface StagingCapableStorageProvider extends StorageProvider {

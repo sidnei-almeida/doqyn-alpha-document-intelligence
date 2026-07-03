@@ -14,6 +14,7 @@ import { validateClassificationResult } from '../utils/validation.js';
 import { logger } from '../../utils/logger.js';
 import { completeJsonPrompt, getGroqClassifierModel, type GroqPromptContext } from './groqClient.js';
 import { AiAnalysisError } from '../utils/errors.js';
+import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
 
 export type ClassifierContext = GroqPromptContext & {
   classesAvailableCount?: number;
@@ -75,7 +76,7 @@ export async function classifyDocumentWithRules(input: {
     classesAvailableCount: input.classes.length,
     classIds: allowedClassIds,
   };
-  const hasNdaClass = allowedClassIds.includes('class_confidentiality_agreement');
+  const hasConfidentialityClass = input.classes.some((item) => isConfidentialityClassRule(item));
 
   const { prompt, compactChunks, compactClasses } = buildCompactClassifierPrompt(
     input.chunks,
@@ -96,7 +97,7 @@ export async function classifyDocumentWithRules(input: {
     classesAvailableCount: context.classesAvailableCount,
     classesSentCount,
     classIds: context.classIds,
-    hasNdaClass,
+    hasConfidentialityClass,
     selectedChunksCount,
     totalContextChars,
     emptyChunks: selectedChunksCount === 0,

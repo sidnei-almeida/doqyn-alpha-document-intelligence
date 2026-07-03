@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/useAuth';
+import { canViewDocumentTracking } from '@/features/tracking/utils/trackingAccess';
 import { BulkBatchPanel } from './components/BulkBatchPanel';
-import { AutoModeToggle } from './components/AutoModeToggle';
+import { ReviewWorkflowSettingsPanel } from './components/ReviewWorkflowSettingsPanel';
 import { ProcessingCard } from './components/ProcessingCard';
 import { ProcessingErrorCard } from './components/ProcessingErrorCard';
 import { SavedFeedbackCard } from './components/SavedFeedbackCard';
 import { UploadCard } from './components/UploadCard';
-import { WorkflowSessionPanel } from './components/WorkflowSessionPanel';
+import { UploadProgressSummary } from './components/UploadProgressSummary';
 import { UploadResultPanel } from './components/UploadResultPanel';
 import { generateDocumentId } from './mockData';
 import { analyzePdf, AnalyzePdfRequestError, type AnalyzePdfResponse } from './services/analyzePdf';
 import { confirmAnalysis } from './services/confirmAnalysis';
-import {
-  clampAutoDelaySeconds,
-} from './uploadConstants';
 import { useBulkUploadQueue, type BulkHistoryPayload, type BulkTerminalPayload } from './hooks/useBulkUploadQueue';
 import { useWorkflowLogger } from './hooks/useWorkflowLogger';
 import {
@@ -24,11 +22,14 @@ import {
   useSimulatedStepIndex,
 } from './hooks/useProcessingProgress';
 import {
-  loadAutoDelaySeconds,
-  loadAutoMode,
-  saveAutoDelaySeconds,
-  saveAutoMode,
-} from './utils/autoDelayStorage';
+  loadReviewWorkflowSettings,
+  saveReviewWorkflowSettings,
+  canAutoAcceptWithSettings,
+  resolveEffectiveNamingForItem,
+  resolveFinalFileNameForConfirm,
+  shouldPauseForReview,
+} from './utils/reviewWorkflowSettings';
+import type { PerItemNamingChoice, WorkflowReviewSettings } from './types/reviewWorkflowSettings';
 import type {
   DocumentHistoryItem,
   ExtractedMetadata,
@@ -37,7 +38,11 @@ import type {
   SendFlowPhase,
   UploadedDocument,
 } from './types';
-import type { WorkflowLogFilter } from './types/workflowLog';
+import {
+  buildTrackingHref,
+  deriveBulkUploadProgressState,
+  deriveSingleFileUploadProgressState,
+} from './utils/uploadProgress';
 import type { WorkflowErrorDisplay } from './types/workflowError';
 import {
   buildAnalysisDecision,
@@ -49,7 +54,6 @@ import {
   buildWorkflowErrorLogDetails,
   parseWorkflowErrorPayload,
 } from './utils/workflowErrors';
-import { canAutoConfirm } from './utils/autoConfirm';
 import { formatHistoryDate } from './utils/historyFormat';
 
 type AnalysisSnapshot = {
@@ -143,7 +147,12 @@ function createErrorMetadata(file: File): ExtractedMetadata {
 }
 
 export function DocumentSendPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, roles, user, membership } = useAuth();
+  const canShowWorkflowDebug = canViewDocumentTracking(
+    roles,
+    user?.role,
+    membership?.status,
+  );
   const abortRef = useRef<AbortController | null>(null);
   const analysisGenerationRef = useRef(0);
   const autoConfirmTriggeredRef = useRef(false);
@@ -152,8 +161,10 @@ export function DocumentSendPage() {
   const completingTimerRef = useRef<number | null>(null);
 
   const [flowPhase, setFlowPhase] = useState<SendFlowPhase>('idle');
-  const [autoMode, setAutoMode] = useState(loadAutoMode);
-  const [autoDelaySeconds, setAutoDelaySeconds] = useState(loadAutoDelaySeconds);
+  const [reviewSettings, setReviewSettings] = useState(loadReviewWorkflowSettings);
+  const [perItemNaming, setPerItemNaming] = useState<PerItemNamingChoice>({
+    namingMode: 'ai_suggested',
+  });
   const [autoPaused, setAutoPaused] = useState(false);
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
   const [lastAutoSaved, setLastAutoSaved] = useState(false);
@@ -168,8 +179,6 @@ export function DocumentSendPage() {
   const [manualReviewChecked, setManualReviewChecked] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<WorkflowErrorDisplay | null>(null);
-  const [logFilter, setLogFilter] = useState<WorkflowLogFilter>('all');
-  const [showDebugLogs, setShowDebugLogs] = useState(false);
 
   const workflow = useWorkflowLogger();
   const itemStartedAtRef = useRef<number | null>(null);
@@ -240,33 +249,27 @@ export function DocumentSendPage() {
   }, [workflow]);
 
   const bulkQueue = useBulkUploadQueue({
-    autoMode,
-    autoDelaySeconds,
+    reviewSettings,
+    onReviewSettingsChange: setReviewSettings,
     isAuthenticated,
     workflow,
     onItemSaved: handleBulkItemSaved,
     onItemTerminal: handleBulkItemTerminal,
   });
 
-  const handleAutoModeChange = useCallback((enabled: boolean) => {
-    setAutoMode(enabled);
-    saveAutoMode(enabled);
+  const handleReviewSettingsChange = useCallback((next: WorkflowReviewSettings) => {
+    setReviewSettings(next);
+    saveReviewWorkflowSettings(next);
     workflow.log({
       level: 'info',
       stage: 'auto',
-      message: enabled ? 'Modo Auto ligado.' : 'Modo Auto desligado.',
-      details: { autoDelaySeconds },
-    });
-  }, [autoDelaySeconds, workflow]);
-
-  const handleAutoDelayChange = useCallback((seconds: number) => {
-    const clamped = clampAutoDelaySeconds(seconds);
-    setAutoDelaySeconds(clamped);
-    saveAutoDelaySeconds(clamped);
-    workflow.log({
-      level: 'info',
-      stage: 'auto',
-      message: `Delay do Auto definido para ${clamped}s.`,
+      message: next.autoReviewEnabled
+        ? `Configurações da revisão: Auto ligado (${next.autoAcceptDelaySeconds}s).`
+        : 'Configurações da revisão atualizadas.',
+      details: {
+        defaultNamingPolicy: next.defaultNamingPolicy,
+        aiRenameEnabled: next.aiRenameEnabled,
+      },
     });
   }, [workflow]);
 
@@ -285,6 +288,7 @@ export function DocumentSendPage() {
     setLastProcessedFile(null);
     setRawAnalysis(null);
     setManualReviewChecked(false);
+    setPerItemNaming({ namingMode: 'ai_suggested' });
     setCurrentDocId(null);
     setIsConfirming(false);
     setAnalysisError(null);
@@ -309,6 +313,7 @@ export function DocumentSendPage() {
     setActiveMetadata(null);
     setRawAnalysis(null);
     setManualReviewChecked(false);
+    setPerItemNaming({ namingMode: 'ai_suggested' });
     setLastProcessedFile(file);
     setCurrentDocId(docId);
     filesByDocIdRef.current.set(docId, file);
@@ -401,7 +406,10 @@ export function DocumentSendPage() {
           : 'completed';
       setFlowPhase('completing');
 
-      if (autoMode && metadata.analysisStatus === 'requires_review') {
+      if (
+        reviewSettings.autoReviewEnabled &&
+        shouldPauseForReview(reviewSettings, { metadata, rawAnalysis: raw })
+      ) {
         setAutoPaused(true);
         workflow.logItem(docId, file.name, {
           level: 'warning',
@@ -499,7 +507,7 @@ export function DocumentSendPage() {
       const logDetails = buildWorkflowErrorLogDetails(workflowError, {
         stage: 'Análise',
         endpoint: workflowError.endpoint,
-        showDebug: showDebugLogs,
+        showDebug: false,
       });
 
       workflow.logItem(docId, file.name, {
@@ -539,7 +547,7 @@ export function DocumentSendPage() {
       };
       toast.error(workflowError.toastMessage);
     }
-  }, [autoMode, clearCompletingTimer, showDebugLogs, workflow]);
+  }, [clearCompletingTimer, reviewSettings, workflow]);
 
   const handleFilesSelected = useCallback(
     (files: File[], invalidItems: Array<{ file: File; error: string }>) => {
@@ -608,8 +616,30 @@ export function DocumentSendPage() {
         return;
       }
 
-      if (!rawAnalysis.classification.classId || !rawAnalysis.recommendedFileName) {
-        toast.error('Classificação ou nome sugerido ausente. Não é possível salvar.');
+      if (!rawAnalysis.classification.classId) {
+        toast.error('Classificação ausente. Não é possível salvar.');
+        return;
+      }
+
+      const effectiveNamingMode = resolveEffectiveNamingForItem(reviewSettings, perItemNaming);
+      const resolvedFinalName = resolveFinalFileNameForConfirm({
+        settings: reviewSettings,
+        originalFileName: rawAnalysis.originalFileName,
+        aiSuggestedFileName: rawAnalysis.recommendedFileName ?? rawAnalysis.originalFileName,
+        perItem: perItemNaming,
+      });
+
+      if (resolvedFinalName === '—') {
+        toast.error('Informe um nome válido para o arquivo.');
+        return;
+      }
+
+      if (
+        reviewSettings.aiRenameEnabled &&
+        effectiveNamingMode === 'ai_suggested' &&
+        !rawAnalysis.recommendedFileName
+      ) {
+        toast.error('Nome sugerido ausente. Não é possível salvar.');
         return;
       }
 
@@ -627,6 +657,10 @@ export function DocumentSendPage() {
       try {
         const result = await confirmAnalysis(rawAnalysis, {
           manualReviewConfirmed: requiresReview,
+          namingMode: effectiveNamingMode,
+          finalFileName: resolvedFinalName,
+          selectedFileName: effectiveNamingMode === 'manual' ? perItemNaming.manualName : undefined,
+          useAiNaming: reviewSettings.aiRenameEnabled && effectiveNamingMode !== 'original',
           context: {
             itemId: currentDocId,
             fileName: lastProcessedFile.name,
@@ -696,7 +730,7 @@ export function DocumentSendPage() {
             message: 'Retorno ao upload agendado.',
             itemId: currentDocId,
             fileName: lastProcessedFile.name,
-            details: { delaySeconds: autoDelaySeconds },
+            details: { delaySeconds: reviewSettings.autoAcceptDelaySeconds },
           });
           toast.success('Documento salvo com sucesso');
         } else {
@@ -718,7 +752,7 @@ export function DocumentSendPage() {
         setIsConfirming(false);
       }
     },
-    [activeMetadata, autoDelaySeconds, currentDocId, lastProcessedFile, manualReviewChecked, rawAnalysis, workflow],
+    [activeMetadata, currentDocId, lastProcessedFile, manualReviewChecked, perItemNaming, rawAnalysis, reviewSettings, workflow],
   );
 
   const handleCancelAuto = useCallback(() => {
@@ -745,31 +779,23 @@ export function DocumentSendPage() {
     });
   }, [currentDocId, lastProcessedFile, workflow]);
 
-  const handleSelectHistoryItem = useCallback((item: DocumentHistoryItem) => {
-    if (item.status === 'analyzing' || item.id === currentDocId) return;
-
-    const snapshot = snapshotsRef.current[item.id];
-    const metadata = snapshot?.metadata ?? item.metadata;
-    if (!metadata) return;
-
-    setAutoPaused(true);
-    setAutoCountdown(null);
-    autoConfirmTriggeredRef.current = true;
-    setCurrentDocId(item.id);
-    setActiveMetadata(metadata);
-    setLogs(snapshot?.logs ?? item.logs ?? []);
-    setRawAnalysis(snapshot?.rawAnalysis ?? null);
-    setManualReviewChecked(false);
-
-    const sessionFile = filesByDocIdRef.current.get(item.id);
-    setLastProcessedFile(sessionFile ?? null);
-
-    setFlowPhase(item.status === 'error' ? 'error' : 'completed');
-  }, [currentDocId]);
-
   const requiresReview = activeMetadata?.analysisStatus === 'requires_review';
+  const effectiveNamingMode = resolveEffectiveNamingForItem(reviewSettings, perItemNaming);
+  const resolvedFinalName =
+    rawAnalysis && activeMetadata
+      ? resolveFinalFileNameForConfirm({
+          settings: reviewSettings,
+          originalFileName: rawAnalysis.originalFileName,
+          aiSuggestedFileName: rawAnalysis.recommendedFileName ?? rawAnalysis.originalFileName,
+          perItem: perItemNaming,
+        })
+      : '—';
+
   const hasValidAnalysis =
-    Boolean(rawAnalysis?.classification.classId) && Boolean(rawAnalysis?.recommendedFileName);
+    Boolean(rawAnalysis?.classification.classId) &&
+    (reviewSettings.aiRenameEnabled
+      ? effectiveNamingMode !== 'manual' || resolvedFinalName !== '—'
+      : Boolean(rawAnalysis?.originalFileName));
 
   const canConfirm =
     Boolean(activeMetadata) &&
@@ -777,14 +803,15 @@ export function DocumentSendPage() {
     Boolean(rawAnalysis) &&
     hasValidAnalysis &&
     flowPhase !== 'error' &&
-    (requiresReview ? manualReviewChecked : activeMetadata?.analysisStatus === 'completed');
+    (requiresReview ? manualReviewChecked : activeMetadata?.analysisStatus === 'completed') &&
+    !(reviewSettings.defaultNamingPolicy === 'manual_required' && resolvedFinalName === '—');
 
-  const autoEligible = canAutoConfirm({
-    autoMode,
+  const autoEligible = canAutoAcceptWithSettings(reviewSettings, {
     isAuthenticated,
     metadata: activeMetadata,
     rawAnalysis,
     autoPaused,
+    saved: Boolean(activeMetadata?.savedDocumentId),
   });
 
   useEffect(() => {
@@ -792,15 +819,15 @@ export function DocumentSendPage() {
       return;
     }
 
-    setAutoCountdown(autoDelaySeconds);
+    setAutoCountdown(reviewSettings.autoAcceptDelaySeconds);
     workflow.log({
       level: 'info',
       stage: 'auto',
-      message: `Contagem regressiva iniciada (${autoDelaySeconds}s).`,
+      message: `Contagem regressiva iniciada (${reviewSettings.autoAcceptDelaySeconds}s).`,
       itemId: currentDocId ?? undefined,
       fileName: lastProcessedFile?.name,
     });
-  }, [autoEligible, autoDelaySeconds, currentDocId, flowPhase, lastProcessedFile, workflow]);
+  }, [autoEligible, currentDocId, flowPhase, lastProcessedFile, reviewSettings.autoAcceptDelaySeconds, workflow]);
 
   useEffect(() => {
     if (autoCountdown === null || autoCountdown <= 0 || autoPaused || !autoEligible) {
@@ -832,14 +859,14 @@ export function DocumentSendPage() {
   useEffect(() => {
     if (flowPhase !== 'saved' || !lastAutoSaved) return;
 
-    setReturnCountdown(autoDelaySeconds);
+    setReturnCountdown(reviewSettings.autoAcceptDelaySeconds);
 
     const timer = window.setTimeout(() => {
       resetToIdle();
-    }, autoDelaySeconds * 1000);
+    }, reviewSettings.autoAcceptDelaySeconds * 1000);
 
     return () => window.clearTimeout(timer);
-  }, [flowPhase, lastAutoSaved, resetToIdle, autoDelaySeconds]);
+  }, [flowPhase, lastAutoSaved, resetToIdle, reviewSettings.autoAcceptDelaySeconds]);
 
   useEffect(() => {
     if (returnCountdown === null || returnCountdown <= 0 || flowPhase !== 'saved') return;
@@ -881,15 +908,58 @@ export function DocumentSendPage() {
     flowPhase !== 'saving';
 
   const isBulkActive = bulkQueue.batchPhase !== 'idle';
-  const sessionItemId = isBulkActive ? bulkQueue.currentItemId : currentDocId;
-  const batchWorkflowLogs = bulkQueue.batchId
-    ? workflow.getBatchLogs(bulkQueue.batchId)
-    : [];
-  const visibleWorkflowLogs = workflow.filterEvents({
-    filter: logFilter,
-    itemId: logFilter === 'current' ? sessionItemId : null,
-    showDebug: showDebugLogs,
-  });
+
+  const progressState = useMemo(() => {
+    if (isBulkActive) {
+      return deriveBulkUploadProgressState({
+        batchPhase: bulkQueue.batchPhase,
+        currentItem: bulkQueue.currentItem,
+        statusMessage: bulkQueue.statusMessage,
+        itemsCount: bulkQueue.items.length,
+      });
+    }
+
+    return deriveSingleFileUploadProgressState({
+      flowPhase,
+      fileName: displayFileName || undefined,
+      fileSize: displayFileSize || undefined,
+      requiresReview,
+      dynamicPercent: processingProgress,
+      errorMessage: analysisError?.message ?? errorMessage,
+      documentId: activeMetadata?.savedDocumentId ?? currentDocId,
+      recentLogLabels: logs.map((log) => log.title).filter(Boolean),
+    });
+  }, [
+    activeMetadata?.savedDocumentId,
+    analysisError?.message,
+    bulkQueue.batchPhase,
+    bulkQueue.currentItem,
+    bulkQueue.items.length,
+    bulkQueue.statusMessage,
+    currentDocId,
+    displayFileName,
+    displayFileSize,
+    errorMessage,
+    flowPhase,
+    isBulkActive,
+    logs,
+    processingProgress,
+    requiresReview,
+  ]);
+
+  const trackingHref = useMemo(
+    () =>
+      buildTrackingHref(
+        progressState.documentId ?? activeMetadata?.savedDocumentId ?? currentDocId ?? undefined,
+        analysisError?.requestId,
+      ),
+    [
+      activeMetadata?.savedDocumentId,
+      analysisError?.requestId,
+      currentDocId,
+      progressState.documentId,
+    ],
+  );
 
   const isResultView =
     !isBulkActive &&
@@ -903,11 +973,9 @@ export function DocumentSendPage() {
         title="Envio de Documentos"
         description="Envie um PDF textual para análise automática. Nomes e metadados são gerados após o processamento."
         actions={
-          <AutoModeToggle
-            enabled={autoMode}
-            onChange={handleAutoModeChange}
-            delaySeconds={autoDelaySeconds}
-            onDelaySecondsChange={handleAutoDelayChange}
+          <ReviewWorkflowSettingsPanel
+            settings={reviewSettings}
+            onChange={handleReviewSettingsChange}
             disabled={
               flowPhase === 'analyzing' ||
               flowPhase === 'completing' ||
@@ -924,17 +992,18 @@ export function DocumentSendPage() {
             <BulkBatchPanel
               className="min-h-0 flex-1"
               items={bulkQueue.items}
-              batchLogs={batchWorkflowLogs}
               batchPhase={bulkQueue.batchPhase}
               currentItem={bulkQueue.currentItem}
               autoCountdown={bulkQueue.autoCountdown}
               manualGate={bulkQueue.manualGate}
               statusMessage={bulkQueue.statusMessage}
-              autoMode={autoMode}
+              reviewSettings={bulkQueue.batchReviewSettings ?? reviewSettings}
               isAuthenticated={isAuthenticated}
               selectedItemId={workflow.selectedItemId}
               onSelectItem={workflow.setSelectedItemId}
+              onPerItemNamingChange={bulkQueue.updateCurrentItemNaming}
               onConfirmContinue={() => void bulkQueue.confirmCurrentAndContinue()}
+              onCancelAuto={bulkQueue.cancelAutoCountdown}
               onSkip={bulkQueue.skipCurrent}
               onReprocess={bulkQueue.reprocessCurrent}
               onPause={bulkQueue.pauseBatch}
@@ -976,12 +1045,12 @@ export function DocumentSendPage() {
                       suggestion={analysisError?.suggestion}
                       action={analysisError?.action}
                       devHint={analysisError?.devHint}
-                      showDebug={showDebugLogs}
+                      showDebug={false}
                       debugDetails={
                         analysisError
                           ? buildWorkflowErrorLogDetails(analysisError, {
                               endpoint: analysisError.endpoint,
-                              showDebug: showDebugLogs,
+                              showDebug: false,
                             })
                           : undefined
                       }
@@ -1009,9 +1078,14 @@ export function DocumentSendPage() {
                       onManualReviewCheckedChange={setManualReviewChecked}
                       autoCountdown={autoEligible && !autoPaused ? autoCountdown : null}
                       autoPaused={autoPaused}
-                      autoMode={autoMode}
+                      autoReviewEnabled={reviewSettings.autoReviewEnabled}
                       onCancelAuto={handleCancelAuto}
                       onManualReview={handleManualReview}
+                      originalFileName={rawAnalysis?.originalFileName ?? displayFileName}
+                      aiSuggestedFileName={rawAnalysis?.recommendedFileName ?? displayFileName}
+                      reviewSettings={reviewSettings}
+                      perItemNaming={perItemNaming}
+                      onPerItemNamingChange={setPerItemNaming}
                     />
                   )}
                 </div>
@@ -1028,16 +1102,30 @@ export function DocumentSendPage() {
           )}
         </div>
 
-        <WorkflowSessionPanel
-          events={visibleWorkflowLogs}
-          filter={logFilter}
-          onFilterChange={setLogFilter}
-          showDebug={showDebugLogs}
-          onShowDebugChange={setShowDebugLogs}
-          currentItemId={sessionItemId}
-          historyItems={history}
-          activeHistoryId={isResultView || isBulkActive ? sessionItemId : null}
-          onSelectHistoryItem={handleSelectHistoryItem}
+        <UploadProgressSummary
+          state={progressState}
+          canViewTracking={canShowWorkflowDebug}
+          trackingHref={trackingHref}
+          canShowTechnicalDetails={canShowWorkflowDebug}
+          technicalDetails={
+            analysisError
+              ? buildWorkflowErrorLogDetails(analysisError, {
+                  endpoint: analysisError.endpoint,
+                  showDebug: false,
+                })
+              : undefined
+          }
+          technicalHint={analysisError?.devHint}
+          onRetry={
+            isBulkActive
+              ? bulkQueue.reprocessCurrent
+              : flowPhase === 'error'
+                ? handleReprocess
+                : undefined
+          }
+          onViewDocument={
+            !isBulkActive && flowPhase === 'saved' ? resetToIdle : undefined
+          }
         />
       </div>
     </div>

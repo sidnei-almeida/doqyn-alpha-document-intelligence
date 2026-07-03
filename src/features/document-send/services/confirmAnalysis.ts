@@ -13,6 +13,10 @@ export type ConfirmAnalysisResponse = {
 
 export type ConfirmAnalysisOptions = {
   manualReviewConfirmed?: boolean;
+  namingMode?: 'ai_suggested' | 'original' | 'manual';
+  finalFileName?: string;
+  selectedFileName?: string;
+  useAiNaming?: boolean;
   context?: WorkflowRequestContext;
 };
 
@@ -28,6 +32,9 @@ export async function confirmAnalysis(
   };
 
   const startedAt = performance.now();
+  const effectiveNamingMode =
+    options?.useAiNaming === false ? 'original' : (options?.namingMode ?? 'ai_suggested');
+
   const response = await authFetch('/api/documents/confirm-analysis', {
     method: 'POST',
     credentials: getFetchCredentials(),
@@ -35,6 +42,10 @@ export async function confirmAnalysis(
     body: JSON.stringify({
       ...payload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
+      namingMode: effectiveNamingMode,
+      aiSuggestedFileName: payload.recommendedFileName,
+      finalFileName: options?.finalFileName,
+      selectedFileName: options?.selectedFileName,
     }),
   });
   const durationMs = Math.round(performance.now() - startedAt);

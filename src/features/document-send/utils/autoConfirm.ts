@@ -8,6 +8,7 @@ export function canAutoConfirm(params: {
   metadata: ExtractedMetadata | null;
   rawAnalysis: AnalyzePdfResponse | null;
   autoPaused: boolean;
+  useAiNaming?: boolean;
 }): boolean {
   if (!params.autoMode || !params.isAuthenticated || params.autoPaused) {
     return false;
@@ -22,7 +23,8 @@ export function canAutoConfirm(params: {
   if (rawAnalysis.classification.requiresReview) return false;
   if (rawAnalysis.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE) return false;
   if (!rawAnalysis.classification.classId) return false;
-  if (!rawAnalysis.recommendedFileName?.trim()) return false;
+  if (params.useAiNaming !== false && !rawAnalysis.recommendedFileName?.trim()) return false;
+  if (params.useAiNaming === false && !rawAnalysis.originalFileName?.trim()) return false;
   if (!rawAnalysis.extraction) return false;
   if (rawAnalysis.extraction.requiresReview) return false;
 

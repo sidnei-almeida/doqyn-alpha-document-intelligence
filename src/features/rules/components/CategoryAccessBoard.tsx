@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { Trash2 } from 'lucide-react';
 import { useConfirm } from '@/components/confirm/useConfirm';
+import { Checkbox } from '@/components/ui/Checkbox';
 import {
   buildDeleteCategoryConfirm,
   buildDeleteGroupConfirm,
@@ -215,23 +216,13 @@ export function CategoryAccessBoard({
                     </div>
 
                     <div className="border-t border-doqyn-border-subtle pt-4">
-                      <label
-                        className={cn(
-                          'flex items-center gap-3',
-                          isAdmin ? 'cursor-pointer' : 'cursor-default opacity-70',
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={notificationsActive}
-                          disabled={!isAdmin || category.accessGroupIds.length === 0}
-                          onChange={(e) => onToggleNotifications(category.id, e.target.checked)}
-                          className="h-4 w-4 rounded border-doqyn-border-strong bg-doqyn-bg accent-doqyn-action disabled:opacity-40"
-                        />
-                        <span className="text-sm text-doqyn-text">
-                          Notificar membros sobre atualizações
-                        </span>
-                      </label>
+                      <Checkbox
+                        checked={notificationsActive}
+                        disabled={!isAdmin || category.accessGroupIds.length === 0}
+                        onChange={(e) => onToggleNotifications(category.id, e.target.checked)}
+                        label="Notificar membros sobre atualizações"
+                        wrapperClassName={cn(!isAdmin && 'cursor-default opacity-70')}
+                      />
                     </div>
                   </CardContent>
                 </Card>
