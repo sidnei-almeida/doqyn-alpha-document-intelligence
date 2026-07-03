@@ -1,0 +1,328 @@
+================================================================================
+DOQYN — Auditoria: erro SSL no fluxo analyze-pdf (AI / RAG)
+Projeto: doqyn-alpha-document-intelligence (branch master)
+Data: 2026-07-01
+Contexto: npm run dev, upload NDA PDF, AI_MODE=no_ai
+================================================================================
+
+1. RESUMO EXECUTIVO
+--------------------------------------------------------------------------------
+
+O erro reportado NÃO é causado pelo pipeline RAG nem pela Groq.
+
+Sintoma observado nos logs:
+  - AI_MODE=no_ai ativo (análise determinística)
+  - ~30 segundos depois: erro OpenSSL TLS
+  - requestId: 3f21da50-9ed0-47fb-ae97-8c273f7f9f0b
+  - durationMs: 30374
+
+Conclusão principal:
+  A falha ocorre durante tentativa de conexão/consulta ao MongoDB Atlas
+  (driver nativo mongodb), logo APÓS o log "AI_MODE=no_ai ativo" e ANTES de:
+    - "no_ai analyze-pdf concluído"
+    - "analyze-pdf request completed"
+    - staging R2
+
+O modo no_ai NÃO desliga a dependência de MongoDB para carregar classe/regra
+do documento (NDA). Com MONGODB_URI configurada no .env, o backend sempre tenta
+Atlas — e o timeout SSL (~30s) é típico de cluster inacessível.
+
+
+2. RECONSTRUÇÃO DA LINHA DO TEMPO (LOGS DO USUÁRIO)
+--------------------------------------------------------------------------------
+
+  T+0ms     analyze-pdf request started
+            fileName: NDA - ACORDO DE CONFIDENCIALIDADE (2).pdf
+            hasBearerToken: false  (auth por cookie — normal com doqyn_auth)
+
+  T+9ms     AI_MODE=no_ai ativo. Retornando análise determinística...
+            companyId: company_dev
+            template: nda
+
+  T+30374ms ERRO level=error
+            message: SSL routines:ssl3_read_bytes:tlsv1 alert internal error
+                     (SSL alert number 80)
+
+Logs AUSENTES (nunca apareceram):
+  - "no_ai analyze-pdf concluído"
+  - "analyze-pdf request completed"
+  - "analyze-pdf staging failed"
+  - "Conectado ao MongoDB Atlas"
+
+Isso delimita o ponto de falha entre o log no_ai (linha 135 de noAiAnalyzer.ts)
+e a conclusão do no_ai (linha 190), cuja primeira operação assíncrona é:
+
+  resolveNdaClassAndRule(companyId)
+    -> getMongoClassAndRule({ companyId, classId: 'class_confidentiality_agreement' })
+      -> loadFromGovernanceCollections(tenantId)
+        -> getTenantCollections(tenantId)
+          -> resolveActiveTenant(tenantId)  // MongoDB
+          -> getDb()                        // MongoDB connect se necessário
+          -> queries em collections de governança
+
+
+3. O ERRO SSL — O QUE SIGNIFICA
+--------------------------------------------------------------------------------
+
+Mensagem:
+  400455F7C97F0000:error:0A000438:SSL routines:ssl3_read_bytes:
+  tlsv1 alert internal error (SSL alert number 80)
+
+Interpretação técnica:
+  - O cliente Node.js (driver MongoDB) iniciou handshake TLS com o servidor
+  - O servidor Atlas respondeu com "internal error" (alerta 80) e encerrou
+  - Duração ~30s coincide com serverSelectionTimeoutMS padrão do driver
+
+Causas frequentes em MongoDB Atlas + dev local:
+  [A] IP atual não está na Network Access List do cluster
+  [B] URI incorreta, cluster pausado/deletado ou credenciais inválidas
+  [C] Proxy/firewall/VPN interceptando TLS
+  [D] Incompatibilidade TLS/OpenSSL (menos comum em Node 20+)
+  [E] Atlas em região bloqueada ou instabilidade temporária do cluster
+
+NÃO é o padrão típico de:
+  - Groq API (erro seria HTTP 4xx/5xx, não alert TLS OpenSSL puro)
+  - Cloudflare R2 (SDK AWS retorna erro estruturado diferente; staging nem rodou)
+  - auth-service (auth já passou antes do log no_ai)
+
+
+4. FLUXO COMPLETO analyze-pdf (BACKEND)
+--------------------------------------------------------------------------------
+
+Arquivo entrada: api/ai/analyze-pdf.ts
+
+  POST /api/ai/analyze-pdf (multipart PDF)
+    |
+    v
+  extractRequestContext + logger "request started"
+    |
+    v
+  requireAuth(req)                    --> doqyn_auth / cookie (OK neste caso)
+    |
+    v
+  canAnalyzeDocuments(user)           --> permissão
+    |
+    v
+  parseMultipart(req)                 --> buffer em memória
+    |
+    v
+  validação tamanho (se storage configurado)
+    |
+    v
+  analyzePdfBuffer()                  --> server/ai/services/analyzePdfService.ts
+    |
+    +--[AI_MODE=no_ai]------------------------------------------+
+    |     analyzePdfWithNoAi()       server/ai/services/noAiAnalyzer.ts
+    |       log "AI_MODE=no_ai ativo"
+    |       getMongoClassAndRule()   *** FALHA AQUI (MongoDB) ***
+    |       metadados NDA fixos (mock de negócio)
+    |       generateRecommendedFileName()
+    |       log "no_ai analyze-pdf concluído"
+    |       return AnalyzePdfResponse
+    |
+    +--[AI_MODE=groq (padrão)]----------------------------------+
+          extractTextFromPdf()       pdf-parse (sem rede)
+          loadActiveDocumentClassRules()  MongoDB OU mock se sem URI
+          createDocumentChunks()
+          selectChunksForClassification()  RAG híbrido IN-MEMORY
+          classifyDocumentWithRules()      Groq LLM
+          selectChunksForExtraction()      RAG híbrido IN-MEMORY
+          extractMetadataWithRule()        Groq LLM
+          generateRecommendedFileName()
+          return AnalyzePdfResponse
+    |
+    v
+  storeAnalysisStaging()            --> R2 ou local (APÓS análise OK)
+    |
+    v
+  logger "analyze-pdf request completed"
+  return 200 JSON
+
+
+5. O QUE É "RAG" NESTE PROJETO
+--------------------------------------------------------------------------------
+
+Arquivo: server/services/retrievalProvider.ts
+Modo ativo: RETRIEVAL_MODE = 'hybrid' (constante)
+
+Implementação: server/services/hybridChunkRetriever.ts
+  - Chunking do texto extraído do PDF
+  - Scoring por keywords/regex das regras de classe
+  - Seleção top-K em memória
+  - NÃO usa vector DB, FAISS, Atlas Vector Search nem Google Document AI
+
+RAG só executa no modo groq (AI_MODE != no_ai), após extração de texto.
+
+Com AI_MODE=no_ai:
+  - NÃO há extração de texto do PDF
+  - NÃO há chunking
+  - NÃO há retrieval/RAG
+  - NÃO há chamadas Groq
+
+Portanto: o usuário pode estar associando "erro na hora do rag" ao fluxo de
+análise em geral, mas neste log específico o RAG nem chegou a ser invocado.
+
+
+6. POR QUE AI_MODE=no_ai NÃO RESOLVE O ERRO
+--------------------------------------------------------------------------------
+
+Expectativa comum (incorreta):
+  "no_ai = tudo local, sem dependências externas"
+
+Realidade no código:
+
+  loadActiveDocumentClassRules() [modo groq]:
+    - Se MONGODB_URI ausente -> fallback mock (DOCUMENT_CLASS_RULES)
+    - Se MONGODB_URI presente -> MongoDB obrigatório
+
+  getMongoClassAndRule() [modo no_ai]:
+    - SEMPRE chama loadFromGovernanceCollections()
+    - NÃO tem fallback mock
+    - Exige classe class_confidentiality_agreement + rule_confidentiality_agreement_v1
+      no Mongo do tenant company_dev
+
+Assimetria importante:
+  no_ai é MAIS dependente de MongoDB que groq quando URI está configurada
+  mas Atlas está inacessível (groq poderia usar mock de regras; no_ai não).
+
+Variáveis relacionadas:
+  AI_MODE=no_ai          -> desliga LLM e RAG
+  NO_AI_TEMPLATE=nda     -> template de metadados fixos
+  MONGODB_URI=...        -> AINDA obrigatório para no_ai buscar classe/regra
+
+
+7. PONTOS DE REDE NO WORKFLOW (CHECKLIST)
+--------------------------------------------------------------------------------
+
+Etapa                          | Rede externa? | Ocorreu neste log?
+-------------------------------|---------------|-------------------
+Auth (doqyn_auth cookie)       | Sim (HTTP)    | OK (passou)
+MongoDB governança (no_ai)     | Sim (TLS)     | FALHOU (~30s)
+Groq LLM                       | Sim           | Não executado
+RAG hybrid                     | Não           | Não executado
+Staging R2                     | Sim (HTTPS)   | Não executado
+Confirm-analysis (futuro)      | Mongo + R2    | Não chegou
+
+
+8. PRÓXIMOS PASSOS APÓS analyze-pdf (para contexto)
+--------------------------------------------------------------------------------
+
+Se analyze-pdf retornasse 200:
+  1. Frontend exibe metadados/classificação
+  2. Usuário confirma -> POST /api/documents/confirm-analysis
+  3. loadAnalysisStaging (R2) + persist original + preview PDF
+  4. insert document/version no MongoDB
+
+O confirm-analysis também depende de MongoDB e staging R2.
+Mesmo corrigindo só o analyze, o confirm falharia sem Mongo acessível.
+
+
+9. DIAGNÓSTICO RECOMENDADO (ORDEM)
+--------------------------------------------------------------------------------
+
+9.1 Confirmar MongoDB localmente
+
+  cd doqyn-alpha-document-intelligence
+  node -e "
+    import { MongoClient } from 'mongodb';
+    const uri = process.env.MONGODB_URI;
+    const t0 = Date.now();
+    const c = new MongoClient(uri, { serverSelectionTimeoutMS: 10000 });
+    try {
+      await c.connect();
+      await c.db().admin().ping();
+      console.log('OK ping', Date.now()-t0, 'ms');
+    } catch (e) {
+      console.error('FAIL', Date.now()-t0, 'ms', e.message);
+    } finally {
+      await c.close();
+    }
+  "
+
+  (carregar .env antes ou: export $(grep -v '^#' .env | xargs))
+
+9.2 Atlas Network Access
+  - Adicionar IP atual (ou 0.0.0.0/0 só em dev) em Atlas -> Network Access
+  - Aguardar propagação (~1-2 min)
+
+9.3 Validar URI
+  - Formato mongodb+srv://...
+  - Usuário/senha corretos (caracteres especiais URL-encoded)
+  - Database name: MONGODB_DATABASE=doqyn_dev (ou valor do .env)
+
+9.4 Verificar tenant e seed
+  - Tenant company_dev deve existir na collection tenants
+  - Classe class_confidentiality_agreement ativa
+  - Regra rule_confidentiality_agreement_v1 ativa
+  - Scripts: npm run db:seed (se existir), test-no-ai.mjs
+
+9.5 Dev sem Atlas (workaround imediato)
+
+  Opção A — remover MONGODB_URI do .env local:
+    - groq mode usa mock de regras
+    - no_ai AINDA falha (getMongoClassAndRule sem fallback)
+    - analyze-pdf no_ai continua quebrado sem código extra
+
+  Opção B — usar MongoDB local (Docker) com URI local
+
+  Opção C — corrigir conectividade Atlas (recomendado para fluxo real)
+
+
+10. MELHORIAS SUGERIDAS NO CÓDIGO (NÃO IMPLEMENTADAS)
+--------------------------------------------------------------------------------
+
+10.1 no_ai com fallback mock
+  Quando getMongoClassAndRule retorna null e !isMongoNativeConfigured(),
+  ou quando Mongo falha em dev, usar DOCUMENT_CLASS_RULES mock para NDA.
+
+10.2 Log mais claro no catch de analyze-pdf
+  Hoje meta.message sobrescreve message no JSON do logger:
+    logger.error('analyze-pdf unexpected error', { message: error.message })
+  Resultado: log parece só erro SSL, sem prefixo identificável.
+  Sugestão: usar campo errorMessage em vez de message no meta.
+
+10.3 Marcar estágio no log de erro
+  Ex.: stage: 'mongodb_class_rule_lookup' para facilitar suporte.
+
+10.4 Timeout explícito menor em dev
+  MongoClient({ serverSelectionTimeoutMS: 5000 }) em APP_ENV=development
+
+
+11. MAPA DE ARQUIVOS RELEVANTES
+--------------------------------------------------------------------------------
+
+  api/ai/analyze-pdf.ts                    Endpoint HTTP
+  server/ai/services/analyzePdfService.ts  Orquestrador (groq vs no_ai)
+  server/ai/services/noAiAnalyzer.ts       Modo dev sem LLM
+  server/services/documentRulesService.ts  getMongoClassAndRule, loadActive...
+  server/tenancy/getTenantCollections.ts   resolve tenant + collections
+  server/db/mongoClient.ts                 MongoClient nativo (Atlas)
+  server/services/retrievalProvider.ts     RAG hybrid (só modo groq)
+  server/services/hybridChunkRetriever.ts Scoring in-memory
+  server/ai/services/groqClient.ts         API Groq (só modo groq)
+  server/storage/stagingStorage.ts         Staging pós-análise (R2/local)
+
+
+12. CONCLUSÃO FINAL
+--------------------------------------------------------------------------------
+
+Pergunta: "O que pode estar dando errado no flow da IA?"
+
+Resposta direta para ESTE log:
+  1. Não é RAG — modo no_ai não executa retrieval.
+  2. Não é Groq — LLM desligado por AI_MODE=no_ai.
+  3. É MongoDB Atlas inacessível no passo getMongoClassAndRule, após o log
+     informativo de no_ai, com timeout TLS ~30 segundos.
+
+A variável AI_MODE=no_ai está funcionando (log confirma). O que permanece
+quebrado é a dependência de governança documental no MongoDB, que o modo no_ai
+ainda exige sem fallback mock.
+
+Ação imediata recomendada:
+  - Corrigir conectividade MONGODB_URI / Atlas Network Access
+  - OU implementar fallback dev para no_ai quando Mongo indisponível
+  - Rodar scripts/test-no-ai.mjs após Mongo OK para validar seed NDA
+
+================================================================================
+Fim do relatório
+================================================================================

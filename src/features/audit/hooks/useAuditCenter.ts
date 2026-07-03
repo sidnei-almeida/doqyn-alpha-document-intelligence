@@ -2,11 +2,11 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/useAuth';
-import { getAccessGroups } from '@/features/rules/api/rulesApi';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   usersApi,
 } from '@/features/users/api/usersApi';
+import { invalidateUserManagementQueries } from '@/features/users/userManagementQueries';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
 import { listPendingApprovals, type PendingApprovalItem } from '../api/pendingApprovalsApi';
@@ -33,7 +33,7 @@ export function useAuditCenter(documentId?: string) {
   const queryClient = useQueryClient();
   const isAdmin = isAuditAdmin(roles, user?.role);
   const isDoqynAdmin = hasRole('doqyn_admin');
-  const tenantId = user?.companyId;
+  const tenantId = user?.companyId ?? '';
 
   const [eventsTab, setEventsTab] = useState<Exclude<AuditTabId, 'pending'>>('events');
   const [eventFilters, setEventFilters] = useState<AuditEventFilters>({
@@ -75,17 +75,20 @@ export function useAuditCenter(documentId?: string) {
     enabled: Boolean(tenantId),
   });
 
-  const groupsQuery = useQuery({
-    queryKey: ['access-groups', tenantId],
-    queryFn: () => getAccessGroups(),
-    enabled: isAdmin,
+  const accessGroupsQuery = useQuery({
+    queryKey: ['auth-access-groups', tenantId],
+    queryFn: () => usersApi.listAccessGroups(isDoqynAdmin ? tenantId : undefined),
+    enabled: isAdmin && Boolean(tenantId),
   });
 
-  const invalidateAll = () => {
-    void queryClient.invalidateQueries({ queryKey: ['audit-overview'] });
-    void queryClient.invalidateQueries({ queryKey: ['audit-events'] });
-    void queryClient.invalidateQueries({ queryKey: ['audit-pending'] });
-    void queryClient.invalidateQueries({ queryKey: ['company-members'] });
+  const documentGroupsQuery = useQuery({
+    queryKey: ['document-groups', tenantId],
+    queryFn: () => usersApi.listDocumentGroups(),
+    enabled: isAdmin && Boolean(tenantId),
+  });
+
+  const invalidateAll = async () => {
+    await invalidateUserManagementQueries(queryClient, tenantId || undefined);
   };
 
   const approveMutation = useMutation({
@@ -93,23 +96,26 @@ export function useAuditCenter(documentId?: string) {
       item,
       platformRoles,
       accessGroupIds,
+      documentGroupIds,
     }: {
       item: PendingApprovalItem;
       platformRoles: Parameters<typeof usersApi.approve>[1]['platformRoles'];
       accessGroupIds: string[];
+      documentGroupIds: string[];
     }) =>
       usersApi.approve(
         item.membershipId,
         {
           platformRoles,
           accessGroupIds,
+          documentGroupIds,
           notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
         },
         isDoqynAdmin ? tenantId : undefined,
       ),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Solicitação aprovada com sucesso.');
-      invalidateAll();
+      await invalidateAll();
     },
     onError: (error: Error) => toast.error(error.message || 'Não foi possível concluir a ação.'),
   });
@@ -117,9 +123,9 @@ export function useAuditCenter(documentId?: string) {
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) =>
       usersApi.reject(item.membershipId, reason, isDoqynAdmin ? tenantId : undefined),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Solicitação rejeitada.');
-      invalidateAll();
+      await invalidateAll();
     },
     onError: (error: Error) => toast.error(error.message || 'Não foi possível concluir a ação.'),
   });
@@ -173,7 +179,8 @@ export function useAuditCenter(documentId?: string) {
     setEventsTab,
     eventFilters,
     setEventFilters: updateEventFilters,
-    groups: groupsQuery.data ?? [],
+    accessGroups: accessGroupsQuery.data ?? [],
+    documentGroups: documentGroupsQuery.data ?? [],
     approveMutation,
     rejectMutation,
     refresh: invalidateAll,

@@ -24,29 +24,8 @@ export function buildDocumentOwnershipFilter(context: TenantStorageContext): Rec
   };
 }
 
-/** Classes/regras: business por tenantId; individual por ownership ou scope global. */
+/** Classes/regras: sempre tenant-scoped — business por tenantId; PF por ownership do usuário. */
 export function buildClassRuleOwnershipFilter(context: TenantStorageContext): Record<string, unknown> {
-  if (context.storageMode === 'shared_individual_collection') {
-    if (!context.userId) {
-      throw new ServiceError(
-        'ownerUserId é obrigatório para consultas em storage compartilhado.',
-        'OWNER_USER_REQUIRED',
-        400,
-      );
-    }
-
-    return {
-      $or: [
-        { scope: 'global' },
-        {
-          tenantType: 'individual',
-          ownerTenantId: context.tenantId,
-          ownerUserId: context.userId,
-        },
-      ],
-    };
-  }
-
   return buildDocumentOwnershipFilter(context);
 }
 

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { MongoDocumentGroup, MongoDocumentGroupMember } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { slugifyName } from '../utils/slugify.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -304,4 +305,44 @@ export async function listAllGroupMemberships(tenantId: string, opts?: ServiceOp
     .toArray();
 
   return (members as MongoDocumentGroupMember[]).map(serializeGroupMember);
+}
+
+export async function syncMemberDocumentGroups(
+  tenantId: string,
+  actorUserId: string,
+  input: {
+    membershipId: string;
+    userId: string;
+    displayName?: string;
+    email?: string;
+    documentGroupIds: string[];
+  },
+  opts?: ServiceOpts,
+): Promise<string[]> {
+  const desired = [...new Set(input.documentGroupIds)];
+  await assertGroupIdsExist(tenantId, desired, {
+    requireActive: true,
+    ownerUserId: actorUserId,
+  });
+
+  const current = await listMembershipGroupIds(tenantId, input.membershipId, opts);
+  const currentSet = new Set(current);
+  const desiredSet = new Set(desired);
+
+  for (const groupId of desired) {
+    if (currentSet.has(groupId)) continue;
+    await addGroupMember(tenantId, groupId, actorUserId, {
+      membershipId: input.membershipId,
+      userId: input.userId,
+      displayName: input.displayName,
+      email: input.email,
+    });
+  }
+
+  for (const groupId of current) {
+    if (desiredSet.has(groupId)) continue;
+    await removeGroupMember(tenantId, groupId, input.membershipId, opts);
+  }
+
+  return listMembershipGroupIds(tenantId, input.membershipId, opts);
 }

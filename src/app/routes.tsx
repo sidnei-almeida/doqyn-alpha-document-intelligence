@@ -13,6 +13,8 @@ import {
   RequestAccessRoute,
   RulesRoute,
   SettingsRoute,
+  TermsRoute,
+  TrackingRoute,
   UserManagementRouteLazy,
   VersioningRoute,
 } from '@/app/lazyRoutes';
@@ -22,6 +24,7 @@ export const router = createBrowserRouter([
   { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
   { path: '/criar-empresa', element: <CompanySignupRoute /> },
   { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
+  { path: '/termos', element: <TermsRoute /> },
   {
     element: <PublicRoute />,
     children: [{ path: '/login', element: <Login /> }],
@@ -39,6 +42,7 @@ export const router = createBrowserRouter([
           { path: '/documents', element: <DocumentsRoute /> },
           { path: '/versioning', element: <VersioningRoute /> },
           { path: '/audit', element: <AuditRoute /> },
+          { path: '/tracking', element: <TrackingRoute /> },
           { path: '/settings', element: <SettingsRoute /> },
         ],
       },

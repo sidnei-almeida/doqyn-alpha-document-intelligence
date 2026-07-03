@@ -15,6 +15,7 @@ interface DataTableProps<T> {
   selectedKey?: string;
   emptyMessage?: string;
   className?: string;
+  stretch?: boolean;
 }
 
 export function DataTable<T>({
@@ -25,17 +26,30 @@ export function DataTable<T>({
   selectedKey,
   emptyMessage = 'Nenhum registro encontrado',
   className,
+  stretch = false,
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-10 text-center text-sm text-doqyn-muted">
+      <div
+        className={cn(
+          'rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-10 text-center text-sm text-doqyn-muted',
+          stretch && 'flex min-h-[420px] flex-1 items-center justify-center',
+          className,
+        )}
+      >
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border border-doqyn-border', className)}>
+    <div
+      className={cn(
+        'overflow-hidden rounded-lg border border-doqyn-border',
+        stretch && 'flex min-h-[420px] flex-1 flex-col',
+        className,
+      )}
+    >
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-doqyn-border bg-doqyn-card">

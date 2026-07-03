@@ -9,7 +9,7 @@ import {
   isR2StorageConfigured,
 } from './storageConfig.js';
 import { getStorageProvider, resetStorageProviderCache } from './getStorageProvider.js';
-import type { StoreDocumentVersionInput, StoredDocumentVersion } from './storageProvider.js';
+import type { StoreDocumentVersionInput, StoredDocumentVersion, StoreDocumentPreviewInput, StorePreviewAssetInput, StoredDocumentPreview } from './storageProvider.js';
 
 export { getStorageProvider, resetStorageProviderCache };
 
@@ -65,6 +65,28 @@ export async function persistDocumentVersionFile(
   }
 
   return provider.storeDocumentVersion(input);
+}
+
+export async function persistDocumentPreviewFile(
+  input: StoreDocumentPreviewInput,
+): Promise<StoredDocumentPreview | null> {
+  const provider = getStorageProvider();
+  if (!provider) {
+    return null;
+  }
+
+  return provider.storeDocumentPreview(input);
+}
+
+export async function persistPreviewAsset(
+  input: StorePreviewAssetInput,
+): Promise<StoredDocumentPreview | null> {
+  const provider = getStorageProvider();
+  if (!provider) {
+    return null;
+  }
+
+  return provider.storePreviewAsset(input);
 }
 
 export function isStorageConfigured(): boolean {

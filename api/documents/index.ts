@@ -1,37 +1,56 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDocument, listDocuments } from '../../server/services/documentService.js';
+import { getDocumentDetail, listDocuments } from '../../server/services/documentService.js';
 import {
   assertQueryTenantMatchesSession,
-  requireDocumentRequestContext,
+  requireDocumentAuthContext,
 } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    const ctx = await requireDocumentRequestContext(req, res);
-    if (!ctx) return;
+    const auth = await requireDocumentAuthContext(req, res);
+    if (!auth) return;
 
-    const { id, search, status, type, area, tenantId } = req.query;
+    const { id, search, status, type, area, categoryId, tenantId, from, to, limit, cursor } =
+      req.query;
 
     try {
       assertQueryTenantMatchesSession(
         typeof tenantId === 'string' ? tenantId : undefined,
-        ctx,
+        auth.ctx,
       );
 
       if (id && typeof id === 'string') {
-        const document = await getDocument(id, ctx.tenantId, ctx.userId);
-        if (!document) return res.status(404).json({ message: 'Documento não encontrado' });
-        return res.status(200).json({ document });
+        const detail = await getDocumentDetail(
+          id,
+          auth.ctx.tenantId,
+          auth.ctx.userId,
+          auth.user,
+          auth.ctx.membershipId,
+        );
+        if (!detail) {
+          return res.status(404).json({
+            message: 'Documento não encontrado.',
+            code: 'DOCUMENT_NOT_FOUND',
+          });
+        }
+        return res.status(200).json(detail);
       }
 
       const result = await listDocuments({
-        tenantId: ctx.tenantId,
-        ownerUserId: ctx.userId,
+        tenantId: auth.ctx.tenantId,
+        ownerUserId: auth.ctx.userId,
+        membershipId: auth.ctx.membershipId,
+        user: auth.user,
         search: typeof search === 'string' ? search : undefined,
         status: typeof status === 'string' ? status : undefined,
         type: typeof type === 'string' ? type : undefined,
         area: typeof area === 'string' ? area : undefined,
+        categoryId: typeof categoryId === 'string' ? categoryId : undefined,
+        from: typeof from === 'string' ? from : undefined,
+        to: typeof to === 'string' ? to : undefined,
+        limit: typeof limit === 'string' ? Number(limit) : undefined,
+        cursor: typeof cursor === 'string' ? cursor : undefined,
       });
 
       return res.status(200).json(result);

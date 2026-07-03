@@ -8,6 +8,7 @@ import {
   getTenantRoles,
 } from './tenantMembersService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { resolveMembershipAccessError } from '../utils/membershipAccessErrors.js';
 
 export type MeResponse = {
   ok?: boolean;
@@ -83,11 +84,25 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
   const { user, activeMembership } = session;
 
   if (!activeMembership) {
-    throw new ServiceError(
-      'Nenhuma membership ativa selecionada.',
-      'NO_ACTIVE_MEMBERSHIP',
-      403,
+    const accessError = resolveMembershipAccessError(
+      (session.memberships ?? []).map((membership) => ({ status: membership.status })),
     );
+
+    throw new ServiceError(accessError.message, accessError.code, accessError.statusCode, accessError.details, {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName ?? undefined,
+        lastName: user.lastName ?? undefined,
+        status: user.status,
+      },
+      memberships: (session.memberships ?? []).map((membership) => ({
+        membershipId: membership.membershipId,
+        tenantId: membership.tenantId,
+        tenantDisplayName: membership.tenantDisplayName,
+        status: membership.status,
+      })),
+    });
   }
 
   return {

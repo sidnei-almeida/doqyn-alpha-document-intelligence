@@ -5,6 +5,21 @@ export type TaxIdType = 'CPF' | 'CNPJ';
 export type TenantStatus = 'pending' | 'active' | 'inactive' | 'blocked';
 export type TenantIsolationStrategy = 'shared_individual_pool' | 'collection_prefix';
 
+export type MongoTenantStorageStatus = 'pending' | 'ready' | 'failed';
+
+export type MongoTenantStorage = {
+  provider: 'cloudflare_r2';
+  mode: 'per_tenant' | 'shared';
+  bucketName: string;
+  bucketAlias: string;
+  bucketSlug?: string;
+  shortHash?: string;
+  bucketStatus: MongoTenantStorageStatus;
+  bucketCreatedAt?: Date;
+  bucketLastCheckedAt?: Date;
+  bucketProvisionError?: string;
+};
+
 export type MongoTenant = {
   _id: string;
   tenantId: string;
@@ -20,6 +35,7 @@ export type MongoTenant = {
     strategy: TenantIsolationStrategy;
     collectionPrefix: string;
   };
+  storage?: MongoTenantStorage;
   createdAt: Date;
   updatedAt: Date;
   /** @deprecated alias de tenantId */
@@ -236,6 +252,8 @@ export type MongoDocumentCategory = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: 'business' | 'individual';
+  ownerTenantId?: string;
   name: string;
   slug: string;
   description: string;
@@ -259,6 +277,8 @@ export type MongoDocumentGroup = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: 'business' | 'individual';
+  ownerTenantId?: string;
   name: string;
   slug: string;
   description: string;
@@ -297,6 +317,8 @@ export type MongoDocumentAccessRule = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: 'business' | 'individual';
+  ownerTenantId?: string;
   groupId: string;
   categoryId: string;
   permissions: MongoDocumentAccessPermissions;
@@ -312,6 +334,8 @@ export type MongoDocumentExtractionRule = {
   _id: string;
   tenantId: string;
   companyId: string;
+  tenantType?: 'business' | 'individual';
+  ownerTenantId?: string;
   categoryId: string;
   /** @deprecated alias de categoryId */
   classId?: string;
@@ -333,6 +357,77 @@ export type MongoStorageSlot = {
   objectKey: string | null;
   bucketAlias: string | null;
   storedAt: Date | null;
+};
+
+export type MongoPreviewStorageStatus =
+  | 'pending'
+  | 'processing'
+  | 'ready'
+  | 'failed'
+  | 'skipped';
+
+export type MongoPreviewStorageSlot = {
+  provider: 'aws_s3' | 'cloudflare_r2' | 'local';
+  status: MongoPreviewStorageStatus;
+  bucketAlias: string | null;
+  objectKey: string | null;
+  contentType?: string;
+  sizeBytes?: number | null;
+  generatedAt?: Date | null;
+  sourceVersionId?: string | null;
+  watermark?: {
+    type: 'text';
+    value: string;
+  };
+  optimization?: {
+    engine: 'ghostscript';
+    profile: string;
+    originalSizeBytes: number;
+    previewSizeBytes: number;
+    compressionRatio: number;
+  };
+  errorCode?: string | null;
+  errorMessage?: string | null;
+};
+
+export type MongoPreviewManifestPage = {
+  page: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  aspectRatio?: number;
+  previewObjectKey?: string;
+  thumbnailObjectKey?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  thumbnailSizeBytes?: number;
+  status?: 'ready' | 'pending' | 'failed';
+  generatedAt?: Date;
+};
+
+export type MongoPreviewManifestImage = {
+  width: number;
+  height: number;
+  aspectRatio?: number;
+  resolutions?: Array<{
+    label: string;
+    width: number;
+    height?: number;
+    objectKey?: string;
+    mimeType?: string;
+    sizeBytes?: number;
+  }>;
+};
+
+export type MongoPreviewManifest = {
+  viewerType: 'pdf_pages' | 'image' | 'unsupported';
+  mimeType: string;
+  source?: 'preview_pdf' | 'preview_image';
+  status?: 'ready' | 'processing' | 'failed';
+  pageCount?: number;
+  pages?: MongoPreviewManifestPage[];
+  image?: MongoPreviewManifestImage;
+  generatedAt?: Date;
 };
 
 export type MongoMetadataIndexEntry = {
@@ -398,7 +493,12 @@ export type MongoDocumentVersion = {
   previousVersionId: string | null;
   originalFileName: string;
   recommendedFileName: string;
+  aiSuggestedFileName?: string;
+  selectedFileName?: string;
   finalFileName: string;
+  namingMode?: 'ai_suggested' | 'original' | 'manual';
+  storageFileName?: string;
+  previewStorageFileName?: string;
   file: {
     mimeType: string;
     extension: string;
@@ -423,7 +523,9 @@ export type MongoDocumentVersion = {
   storage: {
     primary: MongoStorageSlot;
     backup: MongoStorageSlot;
+    preview?: MongoPreviewStorageSlot;
   };
+  previewManifest?: MongoPreviewManifest;
   review: {
     required: boolean;
     reasons: string[];

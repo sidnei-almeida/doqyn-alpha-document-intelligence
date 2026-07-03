@@ -15,6 +15,10 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
+          if (id.includes('pdfjs-dist')) {
+            return 'vendor-pdfjs';
+          }
+
           if (
             id.includes('/react-dom/') ||
             id.includes('/react/') ||

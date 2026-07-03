@@ -4,26 +4,26 @@ import { usesDoqynAuth } from './authConfig.js';
 import { getDoqynSessionTokenFromRequest } from './providers/doqynAuthProvider.js';
 import { getSessionFromRequest } from './session.js';
 import type { AuthUser } from './types.js';
+import { ServiceError } from '../utils/serviceErrors.js';
 
 const LEGACY_TEMP_TENANT_IDS = new Set(['doqyn-alpha']);
 
 /**
- * Resolve o tenantId efetivo para queries MongoDB.
- * Prioridade: sessão autenticada > MONGODB_TENANT_ID / company_dev.
+ * Resolve o tenantId efetivo para rotas autenticadas.
+ * Nunca faz fallback para company_dev — tenant deve vir da sessão.
  */
 export function resolveTenantId(sessionTenantId?: string): string {
-  const configured = DEV_TENANT_ID;
   const fromSession = sessionTenantId?.trim();
 
-  if (!fromSession) {
-    return configured;
+  if (fromSession && !LEGACY_TEMP_TENANT_IDS.has(fromSession)) {
+    return fromSession;
   }
 
-  if (LEGACY_TEMP_TENANT_IDS.has(fromSession)) {
-    return configured;
-  }
-
-  return fromSession;
+  throw new ServiceError(
+    'Não foi possível identificar a empresa/tenant ativo da sessão.',
+    'TENANT_REQUIRED',
+    400,
+  );
 }
 
 export function getTenantIdFromUser(user: AuthUser): string {
@@ -51,7 +51,7 @@ export async function getCurrentTenantId(req: VercelRequest): Promise<string> {
           return session.activeMembership.tenantId;
         }
       } catch {
-        // fallback abaixo
+        // continua para sessão legada
       }
     }
   }
@@ -60,6 +60,18 @@ export async function getCurrentTenantId(req: VercelRequest): Promise<string> {
   if (user) {
     return getTenantIdFromUser(user);
   }
+
+  throw new ServiceError(
+    'Não foi possível identificar a empresa/tenant ativo da sessão.',
+    'TENANT_REQUIRED',
+    400,
+  );
+}
+
+/**
+ * Somente scripts dev explícitos — nunca usar em rotas autenticadas reais.
+ */
+export function resolveDevScriptTenantId(): string {
   return DEV_TENANT_ID;
 }
 

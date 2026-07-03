@@ -2,13 +2,14 @@ import type { VercelRequest } from '@vercel/node';
 import type { AuthUser } from '../auth/types.js';
 import { getTenantIdFromUser } from '../auth/tenantContext.js';
 import { usesDoqynAuth } from '../auth/authConfig.js';
-import { verifyDoqynAuthSession } from '../auth/providers/doqynAuthProvider.js';
+import { verifyDoqynAuthSession, mapDoqynSessionToAuthUser } from '../auth/providers/doqynAuthProvider.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import type { TenantType } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { getTenantCollections, type TenantCollections } from './getTenantCollections.js';
 import {
   resolveTenantStorageScope,
+  resolveTenantStorageScopeForTenant,
   type TenantStorageScope,
 } from './resolveTenantStorageScope.js';
 import type { TenantStorageContext } from './tenantStorage.js';
@@ -31,12 +32,23 @@ function buildStorageScope(input: {
   tenantId: string;
   tenantType: TenantType;
   userId: string;
+  displayName?: string;
+  tenantSlug?: string;
 }): TenantStorageScope {
   return resolveTenantStorageScope({
     tenantId: input.tenantId,
     tenantType: input.tenantType,
     ownerUserId: input.userId,
+    displayName: input.displayName,
+    tenantSlug: input.tenantSlug,
   });
+}
+
+async function buildStorageScopeFromTenant(
+  tenant: import('../db/types.js').MongoTenant,
+  userId: string,
+): Promise<TenantStorageScope> {
+  return resolveTenantStorageScopeForTenant(tenant, userId);
 }
 
 export function resolveTenantStorageScopeFromAuthUser(user: AuthUser): TenantStorageScope {
@@ -93,19 +105,20 @@ export async function buildDocumentRequestContext(
     ...base,
     tenantType: collections.tenant.tenantType,
     storage: collections.storage,
-    storageScope: buildStorageScope({
-      tenantId: base.tenantId,
-      tenantType: collections.tenant.tenantType,
-      userId: base.userId,
-    }),
+    storageScope: await buildStorageScopeFromTenant(collections.tenant, base.userId),
     collections,
   };
 }
 
-export async function requireDocumentRequestContext(
+export type DocumentAuthContext = {
+  ctx: DocumentRequestContext;
+  user: AuthUser;
+};
+
+export async function requireDocumentAuthContext(
   req: VercelRequest,
   res: { status: (code: number) => { json: (body: unknown) => void } },
-): Promise<DocumentRequestContext | null> {
+): Promise<DocumentAuthContext | null> {
   if (usesDoqynAuth()) {
     const session = await verifyDoqynAuthSession(req);
     if (!session?.activeMembership) {
@@ -123,24 +136,34 @@ export async function requireDocumentRequestContext(
     });
 
     return {
-      tenantId: activeMembership.tenantId,
-      userId: user.id,
-      membershipId: activeMembership.membershipId,
-      tenantType: activeMembership.tenantType,
-      storage: collections.storage,
-      storageScope: buildStorageScope({
+      user: mapDoqynSessionToAuthUser(session),
+      ctx: {
         tenantId: activeMembership.tenantId,
-        tenantType: normalizeTenantType(activeMembership.tenantType),
         userId: user.id,
-      }),
-      collections,
+        membershipId: activeMembership.membershipId,
+        tenantType: activeMembership.tenantType,
+        storage: collections.storage,
+        storageScope: await buildStorageScopeFromTenant(collections.tenant, user.id),
+        collections,
+      },
     };
   }
 
   const user = await requireAuth(req, res as never);
   if (!user) return null;
 
-  return buildDocumentRequestContext(user);
+  return {
+    user,
+    ctx: await buildDocumentRequestContext(user),
+  };
+}
+
+export async function requireDocumentRequestContext(
+  req: VercelRequest,
+  res: { status: (code: number) => { json: (body: unknown) => void } },
+): Promise<DocumentRequestContext | null> {
+  const auth = await requireDocumentAuthContext(req, res);
+  return auth?.ctx ?? null;
 }
 
 export function assertQueryTenantMatchesSession(

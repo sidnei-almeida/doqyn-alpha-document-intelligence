@@ -8,7 +8,8 @@ export type IndividualSignupInput = {
   taxId: string;
   password: string;
   confirmPassword: string;
-  termsAccepted: boolean;
+  acceptedTerms: boolean;
+  acceptedTermsVersion: string;
 };
 
 export type IndividualSignupResponse = {
@@ -24,10 +25,7 @@ export async function submitIndividualSignup(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({
-      ...input,
-      termsAccepted: input.termsAccepted ? true : undefined,
-    }),
+    body: JSON.stringify(input),
   });
 
   const data = (await response.json().catch(() => ({}))) as IndividualSignupResponse & {

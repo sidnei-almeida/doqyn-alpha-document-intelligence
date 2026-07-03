@@ -50,7 +50,8 @@ function mapDetailToDto(detail: MemberDetail): CompanyMemberDto {
     tenantRoles: membership.roles,
     status: membership.status === 'removed' ? 'rejected' : membership.status,
     accessGroupIds: membership.accessGroupIds,
-    groupIds: membership.accessGroupIds,
+    documentGroupIds: [],
+    groupIds: [],
     createdAt: detail.createdAt,
     updatedAt: detail.updatedAt,
   };
@@ -65,6 +66,16 @@ async function fetchMemberDetail(membershipId: string, tenantId?: string): Promi
 }
 
 export const doqynUsersApi = {
+  async listAccessGroups(tenantId?: string): Promise<Array<{ id: string; name: string }>> {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}&status=active` : '?status=active';
+    const data = await authServiceJson<{
+      groups: Array<{ groupId: string; name: string; status: string }>;
+    }>(`/admin/access-groups${query}`);
+    return (data.groups ?? [])
+      .filter((group) => group.status === 'active')
+      .map((group) => ({ id: group.groupId, name: group.name }));
+  },
+
   async list(tenantId?: string): Promise<CompanyMemberDto[]> {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
     const data = await authServiceJson<{ items: AuthMembership[] }>(`/admin/members${query}`);
@@ -106,18 +117,22 @@ export const doqynUsersApi = {
     }).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 
-  block(membershipId: string, tenantId?: string) {
+  block(membershipId: string, tenantId?: string, reason?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    return authServiceJson(`/admin/members/${membershipId}/block${query}`, { method: 'POST' }).then(
-      async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }),
-    );
+    const body: Record<string, unknown> = {};
+    if (reason?.trim()) body.reason = reason.trim();
+    return authServiceJson(`/admin/members/${membershipId}/block${query}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 
   activate(membershipId: string, tenantId?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    return authServiceJson(`/admin/members/${membershipId}/unblock${query}`, { method: 'POST' }).then(
-      async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }),
-    );
+    return authServiceJson(`/admin/members/${membershipId}/unblock${query}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 
   updateAccess(

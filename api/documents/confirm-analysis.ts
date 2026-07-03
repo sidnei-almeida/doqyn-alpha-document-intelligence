@@ -9,6 +9,7 @@ import { buildDocumentRequestContext } from '../../server/tenancy/documentReques
 import { requireAuth } from '../../server/auth/requireAuth.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
+import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sendWorkflowError } from '../../server/utils/workflowErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -80,6 +81,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('X-DOQYN-Request-Id', reqCtx.requestId);
     return res.status(201).json(result);
   } catch (error) {
+    if (isServiceError(error)) {
+      logger.warn('confirm-analysis controlled error', {
+        requestId: reqCtx.requestId,
+        code: error.code,
+        message: error.message,
+        durationMs: Date.now() - startedAt,
+      });
+      return res.status(error.statusCode).json({
+        message: error.message,
+        code: error.code,
+      });
+    }
+
     if (isConfirmAnalysisError(error)) {
       logger.warn('confirm-analysis controlled error', {
         requestId: reqCtx.requestId,

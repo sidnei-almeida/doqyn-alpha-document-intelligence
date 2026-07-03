@@ -7,15 +7,21 @@ import {
   approveCompanyMember,
   rejectCompanyMember,
 } from './userManagementService.js';
+import {
+  resolveGovernanceMemberIdentity,
+} from './governanceMembersService.js';
+import { syncMemberDocumentGroups } from './documentGroupsService.js';
 import type { NotificationPreferences } from '../db/types.js';
 import { maskEmail, sanitizeRejectionReason } from '../utils/maskSensitiveData.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { logger } from '../utils/logger.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 type ApproveInput = {
   platformRoles?: string[];
   tenantRoles?: string[];
   accessGroupIds: string[];
+  documentGroupIds?: string[];
   notificationPreferences?: Partial<NotificationPreferences>;
 };
 
@@ -53,6 +59,7 @@ async function logApprovedMembershipAudit(
       targetEmailMasked: maskEmail(targetEmail),
       rolesAssigned,
       groupsAssigned: input.accessGroupIds,
+      documentGroupsAssigned: input.documentGroupIds ?? [],
     }),
   });
 }
@@ -85,8 +92,36 @@ export async function approveMembershipDecision(
   memberId: string,
   input: ApproveInput,
 ) {
+  const tenantId = actor.tenantId ?? actor.companyId;
+  const rolesAssigned = resolveRoles(input);
+  const documentGroupIds = input.documentGroupIds ?? [];
+
+  logger.info('membership approve requested', {
+    tenantId,
+    membershipId: memberId,
+    rolesCount: rolesAssigned.length,
+    accessGroupIdsCount: input.accessGroupIds.length,
+    documentGroupIdsCount: documentGroupIds.length,
+  });
+
   if (!usesDoqynAuth()) {
-    return approveCompanyMember(actor, memberId, input);
+    const result = await approveCompanyMember(actor, memberId, input);
+    if (documentGroupIds.length > 0) {
+      const identity = await resolveGovernanceMemberIdentity(req, actor, tenantId, memberId);
+      await syncMemberDocumentGroups(tenantId, actor.id, {
+        membershipId: memberId,
+        userId: identity.userId,
+        displayName: identity.displayName,
+        email: identity.email,
+        documentGroupIds,
+      });
+    }
+    logger.info('membership approve completed (mongo)', {
+      tenantId,
+      membershipId: memberId,
+      documentGroupIdsCount: documentGroupIds.length,
+    });
+    return result;
   }
 
   const detail = await callDoqynAuthAdmin<{ member: { user: { email: string } } }>(
@@ -100,14 +135,33 @@ export async function approveMembershipDecision(
     {
       method: 'POST',
       body: {
-        roles: resolveRoles(input),
+        roles: rolesAssigned,
         accessGroupIds: input.accessGroupIds,
         notificationPreferences: input.notificationPreferences,
       },
     },
   );
 
+  let syncedDocumentGroupIds: string[] = [];
+  if (documentGroupIds.length > 0) {
+    const identity = await resolveGovernanceMemberIdentity(req, actor, tenantId, memberId);
+    syncedDocumentGroupIds = await syncMemberDocumentGroups(tenantId, actor.id, {
+      membershipId: memberId,
+      userId: identity.userId,
+      displayName: identity.displayName,
+      email: identity.email,
+      documentGroupIds,
+    });
+  }
+
   await logApprovedMembershipAudit(actor, memberId, input, detail.member.user.email);
+
+  logger.info('membership approve completed (auth)', {
+    tenantId,
+    membershipId: memberId,
+    accessGroupIdsCount: (result.membership.accessGroupIds ?? input.accessGroupIds).length,
+    documentGroupIdsCount: syncedDocumentGroupIds.length,
+  });
 
   return {
     member: {
@@ -115,10 +169,11 @@ export async function approveMembershipDecision(
       companyId: result.membership.tenantId,
       tenantId: result.membership.tenantId,
       email: detail.member.user.email,
-      platformRoles: result.membership.roles ?? resolveRoles(input),
+      platformRoles: result.membership.roles ?? rolesAssigned,
       status: result.membership.status,
       accessGroupIds: result.membership.accessGroupIds ?? input.accessGroupIds,
-      groupIds: result.membership.accessGroupIds ?? input.accessGroupIds,
+      documentGroupIds: syncedDocumentGroupIds,
+      groupIds: syncedDocumentGroupIds,
     },
   };
 }

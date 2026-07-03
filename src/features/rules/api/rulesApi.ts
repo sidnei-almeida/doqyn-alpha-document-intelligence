@@ -8,8 +8,6 @@ import type {
 } from '@/types/rules';
 
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
-import { usesDoqynAuth } from '@/auth/authConfig';
-import { authServiceJson } from '@/auth/authServiceClient';
 
 const API_BASE = '/api';
 
@@ -65,12 +63,15 @@ type ApiGroup = {
 type ApiMember = {
   id: string;
   companyId: string;
+  userId?: string;
   name: string;
   email: string;
   position?: string;
   role: string;
   status: MemberStatus;
   groupIds: string[];
+  documentGroupIds?: string[];
+  accessGroupIds?: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -177,7 +178,9 @@ export async function addMemberToAccessGroup(
   await request(`/document-groups/${groupId}/members`, {
     method: 'POST',
     body: JSON.stringify({
+      documentGroupId: groupId,
       membershipId,
+      memberId: membershipId,
       userId: member.userId,
       displayName: member.displayName,
       email: member.email,
@@ -247,39 +250,10 @@ export async function updateCompanyMemberStatus(
 export async function updateCompanyMemberGroups(
   id: string,
   groupIds: string[],
-  tenantId?: string,
 ): Promise<ApiMember> {
-  if (usesDoqynAuth()) {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    const data = await authServiceJson<{
-      membership: {
-        membershipId: string;
-        tenantId: string;
-        status: MemberStatus;
-        roles: string[];
-        accessGroupIds: string[];
-      };
-    }>(`/admin/members/${encodeURIComponent(id)}/access-groups${query}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ accessGroupIds: groupIds }),
-    });
-    const membership = data.membership;
-    return {
-      id: membership.membershipId,
-      companyId: membership.tenantId,
-      name: membership.membershipId.slice(0, 8),
-      email: '',
-      role: membership.roles[0] ?? 'user',
-      status: membership.status,
-      groupIds: membership.accessGroupIds,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
   const data = await request<{ member: ApiMember }>(`/company-members/${id}/groups`, {
     method: 'PUT',
-    body: JSON.stringify({ groupIds }),
+    body: JSON.stringify({ documentGroupIds: groupIds }),
   });
   return unwrap<ApiMember>(data as Record<string, unknown>, ['member']);
 }

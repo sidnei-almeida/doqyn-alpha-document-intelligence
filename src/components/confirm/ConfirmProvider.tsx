@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
@@ -23,6 +24,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>(defaultState);
   const [typedText, setTypedText] = useState('');
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const confirm = useCallback((options: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
@@ -45,6 +47,18 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const variant = state.variant ?? 'danger';
 
+  useEffect(() => {
+    if (!state.open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.setTimeout(() => dialogRef.current?.focus(), 0);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [close, state.open]);
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
@@ -57,7 +71,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           onClick={() => close(false)}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-6 shadow-modal"
+            ref={dialogRef}
+            tabIndex={-1}
+            className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-6 shadow-modal outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start gap-3">

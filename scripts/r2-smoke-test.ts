@@ -20,6 +20,7 @@ import { getTenantBucketName } from '../server/storage/r2/r2BucketNaming.js';
 import { createR2StorageProvider } from '../server/storage/r2/r2StorageProvider.js';
 import {
   buildAnalysisStagingKey,
+  buildDocumentPreviewObjectKey,
   buildDocumentVersionObjectKey,
 } from '../server/storage/storageKeys.js';
 import {
@@ -163,15 +164,26 @@ async function runDocumentVersionLifecycle(input: {
 }): Promise<{ bucket: string; objectKey: string }> {
   const { label, scope, provider, runtimeClient, documentId, versionId } = input;
   const payload = Buffer.from(`%PDF-1.4 doqyn-r2-smoke-doc-${label}-${Date.now()}`);
+  const storageFileName = 'smoke_document.pdf';
+  const previewStorageFileName = 'smoke_document_preview.pdf';
   const expectedKey = buildDocumentVersionObjectKey({
     documentId,
     versionId,
-    extension: 'pdf',
+    storageFileName,
     keyPrefix: scope.keyPrefix,
     basePrefix: scope.basePrefix || undefined,
   });
 
   info(`[${label}] document objectKey esperada: ${expectedKey}`);
+
+  const expectedPreviewKey = buildDocumentPreviewObjectKey({
+    documentId,
+    versionId,
+    previewStorageFileName,
+    keyPrefix: scope.keyPrefix,
+    basePrefix: scope.basePrefix || undefined,
+  });
+  info(`[${label}] preview objectKey esperada (validação de path, sem upload): ${expectedPreviewKey}`);
 
   const stored = await provider.storeDocumentVersion({
     tenantId: scope.tenantId,
@@ -180,6 +192,7 @@ async function runDocumentVersionLifecycle(input: {
     buffer: payload,
     mimeType: 'application/pdf',
     extension: 'pdf',
+    storageFileName,
     storageScope: scope,
   });
 

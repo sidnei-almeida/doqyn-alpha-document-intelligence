@@ -68,15 +68,17 @@ export function mapApiDocumentClass(docClass: ApiDocumentClass): DocumentCategor
 }
 
 export function mapApiMember(member: ApiMember) {
+  const documentGroupIds = member.documentGroupIds ?? member.groupIds ?? [];
   return {
     id: member.id,
     companyId: member.companyId,
+    userId: member.userId ?? member.id,
     name: member.name,
     email: member.email,
     position: member.position,
     role: member.role as UserRole,
     status: member.status,
-    groupIds: member.groupIds ?? [],
+    groupIds: documentGroupIds,
     createdAt: member.createdAt,
   };
 }

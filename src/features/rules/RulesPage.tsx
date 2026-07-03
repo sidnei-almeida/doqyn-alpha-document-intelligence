@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/features/auth/useAuth';
@@ -22,9 +22,6 @@ export function RulesPage() {
   const {
     groups,
     categories,
-    members,
-    pendingApprovals,
-    auditEvents,
     groupMemberCounts,
     loading,
     error,
@@ -33,20 +30,17 @@ export function RulesPage() {
     deleteGroup,
     updateGroup,
     updateCategory,
-    addMemberToDocumentGroup,
-    removeMemberFromDocumentGroup,
     updateGroupClassPermissions,
+    saveGovernanceMapChanges,
     createCategory,
     deleteCategory,
-    approveMember,
-    rejectMember,
     saveExtractionRule,
     getRuleForClass,
   } = useRules(user?.name ?? 'Usuário');
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-doqyn-muted">Carregando governança documental…</p>
       </div>
     );
@@ -54,13 +48,13 @@ export function RulesPage() {
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <PageHeader
-          eyebrow="Governança"
-          title="Regras de acesso"
-          description="Mapa visual de categorias, grupos e permissões documentais."
-        />
+      <PageShell
+        eyebrow="Governança"
+        title="Regras de acesso"
+        description="Mapa visual de categorias, grupos documentais e permissões."
+      >
         <EmptyState
+          stretch
           title="Não foi possível carregar as regras agora."
           description="Verifique sua conexão e tente novamente."
           action={
@@ -69,33 +63,27 @@ export function RulesPage() {
             </Button>
           }
         />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="h-auto w-full space-y-6">
-      <PageHeader
-        eyebrow="Governança"
-        title="Mapa de regras"
-        description="Categorias documentais, grupos de acesso e conexões persistidas no MongoDB do app."
-      />
-
+    <PageShell
+      eyebrow="Governança"
+      title="Mapa de regras"
+      description="Categorias documentais, grupos e conexões de acesso. Membros dos grupos são gerenciados em Usuários."
+      bodyClassName="min-h-0"
+    >
       <GovernanceMapCanvas
+        className="min-h-0 flex-1"
         categories={categories}
         groups={groups}
-        members={members}
-        pendingApprovals={pendingApprovals}
-        auditEvents={auditEvents}
         groupMemberCounts={groupMemberCounts}
         isAdmin={isAdmin}
         onCreateCategory={() => setCategoryModalOpen(true)}
         onCreateGroup={() => setGroupModalOpen(true)}
-        onApprove={approveMember}
-        onReject={rejectMember}
-        onAddMemberToGroup={addMemberToDocumentGroup}
-        onRemoveMemberFromGroup={removeMemberFromDocumentGroup}
         onPermissionChange={updateGroupClassPermissions}
+        onSaveMapChanges={saveGovernanceMapChanges}
         onSaveCategory={async (categoryId, input) => {
           await updateCategory(categoryId, input);
         }}
@@ -132,6 +120,6 @@ export function RulesPage() {
           />
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

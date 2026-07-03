@@ -8,7 +8,7 @@ import {
   PutObjectCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
-import { getTenantBucketName } from '../server/storage/r2/r2BucketNaming.js';
+import { buildTenantBucketName } from '../server/storage/r2/r2BucketNaming.js';
 import { createR2AdminClient, createR2RuntimeClient } from '../server/storage/r2/r2Clients.js';
 import {
   createTenantBucket,
@@ -40,29 +40,28 @@ function createMockClient(handler: (command: unknown) => Promise<unknown>): S3Cl
 }
 
 describe('r2 bucket naming', () => {
-  it('não usa nome de empresa, e-mail ou CNPJ no bucket', () => {
-    const bucket = getTenantBucketName('company_acme_corp', {
-      bucketPrefix: 'doqyn',
-      bucketMode: 'per_tenant',
-      defaultBucket: 'doqyn-alpha',
-    });
+  it('não usa CNPJ ou e-mail no bucket amigável', () => {
+    const bucket = buildTenantBucketName({
+      env: 'dev',
+      tenantId: 'company_acme_corp',
+      tenantDisplayName: 'Acme Corp Ltda',
+      tenantSlug: 'acme-corp',
+    }).bucketName;
 
-    assert.match(bucket, /^doqyn-t-[a-f0-9]{12}$/);
-    assert.equal(bucket.includes('acme'), false);
-    assert.equal(bucket.includes('company'), false);
+    assert.match(bucket, /^doqyn-dev-t-acme-corp-[a-f0-9]{12}$/);
+    assert.equal(bucket.includes('cnpj'), false);
+    assert.equal(bucket.includes('@'), false);
   });
 
   it('é determinístico para o mesmo tenantId', () => {
-    const a = getTenantBucketName('tenant_uuid_001', {
-      bucketPrefix: 'doqyn',
-      bucketMode: 'per_tenant',
-      defaultBucket: 'doqyn-alpha',
-    });
-    const b = getTenantBucketName('tenant_uuid_001', {
-      bucketPrefix: 'doqyn',
-      bucketMode: 'per_tenant',
-      defaultBucket: 'doqyn-alpha',
-    });
+    const input = {
+      env: 'dev' as const,
+      tenantId: 'tenant_uuid_001',
+      tenantDisplayName: 'Tenant UUID',
+      tenantSlug: 'tenant-uuid',
+    };
+    const a = buildTenantBucketName(input).bucketName;
+    const b = buildTenantBucketName(input).bucketName;
     assert.equal(a, b);
   });
 });
@@ -207,11 +206,12 @@ describe('r2 storage provider', () => {
       buffer: Buffer.from('%PDF test'),
       mimeType: 'application/pdf',
       extension: 'pdf',
+      storageFileName: 'documento.pdf',
     });
 
     assert.equal(stored.provider, 'r2');
     assert.equal(stored.bucket, 'doqyn-t-a94f3c82d1b4');
-    assert.match(stored.storageKey, /^documents\/doc_001\/versions\/ver_001\/original\.pdf$/);
+    assert.match(stored.storageKey, /^documents\/doc_001\/versions\/ver_001\/original\/documento\.pdf$/);
     assert.equal(stored.etag, '"etag-123"');
     assert.equal(commands.some((c) => c instanceof PutObjectCommand), true);
     assert.equal(ensureBucket.mock.calls.length, 1);
@@ -232,7 +232,7 @@ describe('r2 storage provider', () => {
     });
 
     const read = await provider.readDocumentVersion(
-      'documents/doc_001/versions/ver_001/original.pdf',
+      'documents/doc_001/versions/ver_001/original/documento.pdf',
       'company_dev',
       'doqyn-t-a94f3c82d1b4',
     );
@@ -255,7 +255,7 @@ describe('r2 storage provider', () => {
     });
 
     await provider.deleteDocumentVersion(
-      'documents/doc_001/versions/ver_001/original.pdf',
+      'documents/doc_001/versions/ver_001/original/documento.pdf',
       'company_dev',
       'doqyn-t-a94f3c82d1b4',
     );

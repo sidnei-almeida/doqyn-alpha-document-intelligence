@@ -2,11 +2,17 @@ import { KeyRound, Lock, Shield } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
+import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/features/auth/useAuth';
 import { AUTH_MODE } from '@/lib/constants';
+import { ApiError } from '@/lib/apiErrors';
+import { SessionApiError } from '@/auth/sessionApi';
+import { getAuthErrorActions } from '@/lib/authErrorMessages';
+import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
 
 export function Login() {
   const { login, loginWithSSO, supportsSso } = useAuth();
@@ -17,6 +23,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSsoLoading, setIsSsoLoading] = useState(false);
 
@@ -25,16 +32,24 @@ export function Login() {
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/upload';
 
+  const errorActions = errorCode ? getAuthErrorActions(errorCode) : [];
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setErrorCode(null);
     setIsSubmitting(true);
 
     try {
       await login(email, password, rememberMe);
       navigate(from, { replace: true });
-    } catch {
-      setError('E-mail ou senha inválidos.');
+    } catch (err) {
+      if (err instanceof ApiError || err instanceof SessionApiError) {
+        setErrorCode(err.code);
+        setError(err.friendlyMessage);
+        return;
+      }
+      setError('Não foi possível concluir a ação agora. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -42,6 +57,7 @@ export function Login() {
 
   async function handleSsoLogin() {
     setError(null);
+    setErrorCode(null);
     setIsSsoLoading(true);
 
     try {
@@ -123,15 +139,12 @@ export function Login() {
               />
 
               <div className="flex items-center justify-between">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-doqyn-muted">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-doqyn-border bg-doqyn-bg accent-doqyn-primary"
-                  />
-                  Lembrar acesso
-                </label>
+                <Checkbox
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  label={<span className="text-xs text-doqyn-muted">Lembrar acesso</span>}
+                  wrapperClassName="items-center"
+                />
                 <button
                   type="button"
                   className="text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
@@ -140,7 +153,25 @@ export function Login() {
                 </button>
               </div>
 
-              {error && <p className="form-error text-center">{error}</p>}
+              {error && (
+                <AlertBanner
+                  variant={getLoginAlertVariant(errorCode)}
+                  title={getLoginAlertTitle(errorCode)}
+                  message={error}
+                >
+                  {errorActions.length > 0 ? (
+                    <div className="mt-2 flex flex-col gap-2">
+                      {errorActions.map((action) => (
+                        <Link key={action.href} to={action.href}>
+                          <Button type="button" variant="secondary" className="w-full">
+                            {action.label}
+                          </Button>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </AlertBanner>
+              )}
 
               <Button
                 type="submit"
@@ -154,7 +185,12 @@ export function Login() {
           )}
 
           {!showCredentialForm && error && (
-            <p className="form-error text-center">{error}</p>
+            <AlertBanner
+              variant={getLoginAlertVariant(errorCode)}
+              title={getLoginAlertTitle(errorCode)}
+              message={error}
+              className="mt-2"
+            />
           )}
         </div>
 

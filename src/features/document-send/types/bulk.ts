@@ -1,5 +1,6 @@
 import type { AnalyzePdfResponse } from '../services/analyzePdf';
 import type { ExtractedMetadata } from '../types';
+import type { PerItemNamingChoice } from './reviewWorkflowSettings';
 
 export type BulkUploadItemStatus =
   | 'queued'
@@ -26,6 +27,7 @@ export type BulkUploadItem = {
   versionId?: string;
   recommendedFileName?: string;
   finalFileName?: string;
+  perItemNaming?: PerItemNamingChoice;
   className?: string;
   confidence?: number;
   errorMessage?: string;

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageShell } from '@/components/layout/PageShell';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -48,7 +48,8 @@ export function AuditPage() {
     setEventsTab,
     eventFilters,
     setEventFilters,
-    groups,
+    accessGroups,
+    documentGroups,
     approveMutation,
     rejectMutation,
   } = useAuditCenter(filterDocId);
@@ -83,59 +84,65 @@ export function AuditPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Governança"
-        title="Auditoria"
-        description="Acompanhe aprovações, ações administrativas e histórico de eventos do sistema."
-      />
-
-      <AuditSummaryCards
-        overview={overview}
-        loading={overviewLoading || pendingLoading}
-        showPending={isAdmin}
-      />
+    <PageShell
+      eyebrow="Governança"
+      title="Auditoria"
+      description="Acompanhe aprovações, ações administrativas e histórico de eventos do sistema."
+      bodyClassName="min-h-0"
+    >
+      <div className="shrink-0">
+        <AuditSummaryCards
+          overview={overview}
+          loading={overviewLoading || pendingLoading}
+          showPending={isAdmin}
+        />
+      </div>
 
       {filterDocId && (
-        <p className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-sm text-doqyn-muted">
+        <p className="shrink-0 rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-sm text-doqyn-muted">
           Exibindo eventos do documento{' '}
           <span className="font-mono text-doqyn-text">{filterDocId}</span>
         </p>
       )}
 
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
+      <div className="shrink-0">
+        <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
+      </div>
 
-      {activeTab === 'pending' && (
-        <Card className="border-doqyn-border bg-doqyn-surface/60">
-          <CardContent className="p-4">
-            {!isAdmin ? (
-              <AuditEmptyState
-                icon={<ShieldAlert className="h-5 w-5" />}
-                title="Acesso restrito"
-                description="Apenas administradores podem consultar pendências e aprovar solicitações."
-              />
-            ) : pendingError ? (
-              <AuditEmptyState
-                icon={<ShieldAlert className="h-5 w-5" />}
-                title="Não foi possível carregar pendências"
-                description="Tente atualizar a página ou verifique sua conexão."
-              />
-            ) : (
-              <PendingApprovalsList
-                items={pendingItems}
-                isAdmin={isAdmin}
-                loading={pendingLoading}
-                onReview={setReviewItem}
-                onApprove={setApproveItem}
-                onReject={setRejectItem}
-              />
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {activeTab === 'pending' && (
+          <Card className="flex min-h-[360px] flex-1 flex-col border-doqyn-border bg-doqyn-surface/60">
+            <CardContent className="flex flex-1 flex-col p-4">
+              {!isAdmin ? (
+                <AuditEmptyState
+                  className="min-h-[320px] flex-1"
+                  icon={<ShieldAlert className="h-5 w-5" />}
+                  title="Acesso restrito"
+                  description="Apenas administradores podem consultar pendências e aprovar solicitações."
+                />
+              ) : pendingError ? (
+                <AuditEmptyState
+                  className="min-h-[320px] flex-1"
+                  icon={<ShieldAlert className="h-5 w-5" />}
+                  title="Não foi possível carregar pendências"
+                  description="Tente atualizar a página ou verifique sua conexão."
+                />
+              ) : (
+                <PendingApprovalsList
+                  items={pendingItems}
+                  isAdmin={isAdmin}
+                  loading={pendingLoading}
+                  onReview={setReviewItem}
+                  onApprove={setApproveItem}
+                  onReject={setRejectItem}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-      {showEventsPanel && (
-        <div className="space-y-4">
+        {showEventsPanel && (
+          <div className="flex min-h-[360px] flex-1 flex-col space-y-4">
           {activeTab === 'security' && (
             <p className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-xs text-doqyn-muted">
               Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no tenant.
@@ -159,11 +166,13 @@ export function AuditPage() {
             )}
           </div>
 
-          <AuditEventsList
-            events={events}
-            loading={eventsLoading}
-            onOpenDetails={setSelectedEvent}
-          />
+            <div className="flex min-h-0 flex-1 flex-col">
+              <AuditEventsList
+                events={events}
+                loading={eventsLoading}
+                onOpenDetails={setSelectedEvent}
+              />
+            </div>
 
           {hasMoreEvents && (
             <div className="flex justify-center">
@@ -179,10 +188,11 @@ export function AuditPage() {
           )}
 
           {!eventsLoading && events.length > 0 && !hasMoreEvents && (
-            <p className="text-center text-xs text-doqyn-muted">Fim do histórico disponível.</p>
+            <p className="shrink-0 text-center text-xs text-doqyn-muted">Fim do histórico disponível.</p>
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <PendingApprovalReviewDialog
         open={Boolean(reviewItem)}
@@ -203,7 +213,8 @@ export function AuditPage() {
       <ApproveApprovalDialog
         open={Boolean(approveItem)}
         item={approveItem}
-        groups={groups}
+        accessGroups={accessGroups}
+        documentGroups={documentGroups}
         saving={approveMutation.isPending}
         canAssignDoqynAdmin={isDoqynAdmin}
         onClose={() => setApproveItem(null)}
@@ -214,6 +225,7 @@ export function AuditPage() {
               item: approveItem,
               platformRoles: input.platformRoles,
               accessGroupIds: input.accessGroupIds,
+              documentGroupIds: input.documentGroupIds,
             },
             { onSuccess: () => setApproveItem(null) },
           );
@@ -238,6 +250,6 @@ export function AuditPage() {
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
       />
-    </div>
+    </PageShell>
   );
 }

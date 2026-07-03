@@ -28,6 +28,17 @@ export const WORKFLOW_STAGE_LABELS: Record<WorkflowLogStage, string> = {
 
 let eventCounter = 0;
 
+export function summarizeWorkflowLogMessage(event: {
+  level: string;
+  stage: string;
+  message: string;
+  details?: Record<string, unknown>;
+}): string {
+  const friendly = event.details?.friendlyTitle;
+  if (typeof friendly === 'string' && friendly.trim()) return friendly.trim();
+  return event.message;
+}
+
 export function createWorkflowEventId(): string {
   eventCounter += 1;
   return `wf-${Date.now()}-${eventCounter}`;

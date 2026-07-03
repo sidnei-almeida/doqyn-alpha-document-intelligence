@@ -10,7 +10,6 @@ import {
   withTenantFieldsFromContext,
 } from '../tenancy/tenantQuery.js';
 import type {
-  MongoAuditLog,
   MongoDocument,
   MongoDocumentVersion,
   MongoMetadataIndexEntry,
@@ -19,6 +18,12 @@ import type {
   MongoVersionMetadataField,
 } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
+import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
+import { buildFilenameUpdatedAuditEvent } from '../audit/buildFilenameUpdatedAuditEvent.js';
+import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
+import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
+import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
+import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
 import {
   diagnoseClassAndRuleLookup,
   getMongoClassAndRule,
@@ -33,7 +38,12 @@ import {
   loadAnalysisStaging,
 } from '../storage/index.js';
 import { storeUploadedDocumentFile } from './documentFileService.js';
+import { generateDocumentPreviewForVersion } from './documentPreviewService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import {
+  resolveStorageFileNames,
+  type NamingMode,
+} from '../utils/resolveStorageFileNames.js';
 
 const evidenceSchema = z.object({
   pageNumber: z.number().optional(),
@@ -71,7 +81,11 @@ const extractionSchema = z.object({
 export const confirmAnalysisSchema = z.object({
   jobId: z.string().optional(),
   originalFileName: z.string().min(1),
-  recommendedFileName: z.string().min(1),
+  recommendedFileName: z.string().min(1).optional(),
+  aiSuggestedFileName: z.string().min(1).optional(),
+  namingMode: z.enum(['ai_suggested', 'original', 'manual']).optional().default('ai_suggested'),
+  finalFileName: z.string().min(1).optional(),
+  selectedFileName: z.string().min(1).optional(),
   fileHash: z.string().regex(/^[a-f0-9]{64}$/, 'Hash SHA256 inválido'),
   fileSizeBytes: z.number().int().nonnegative(),
   textExtraction: z.object({
@@ -228,6 +242,7 @@ async function persistConfirmedVersionFile(input: {
   fileHash: string;
   fileSizeBytes: number;
   originalFileName: string;
+  storageFileName: string;
   storageScope: TenantStorageScope;
 }): Promise<MongoDocumentVersion['storage']> {
   if (!isStorageConfigured()) {
@@ -272,6 +287,7 @@ async function persistConfirmedVersionFile(input: {
     buffer,
     mimeType: 'application/pdf',
     originalFileName: input.originalFileName,
+    storageFileName: input.storageFileName,
     storageScope: input.storageScope,
   });
 
@@ -345,10 +361,26 @@ export async function confirmAnalysisPersistence(input: {
     );
   }
 
-  if (!data.recommendedFileName?.trim()) {
+  const namingModeResolved = (data.namingMode ?? 'ai_suggested') as NamingMode;
+  const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
+  const resolvedFinalFileName = data.finalFileName?.trim();
+
+  if (
+    namingModeResolved === 'ai_suggested' &&
+    !resolvedFinalFileName &&
+    !aiSuggestedFileName.trim()
+  ) {
     throw new ConfirmAnalysisError(
-      'Nome recomendado ausente. Não é possível salvar o documento.',
+      'Nome sugerido ausente. Não é possível salvar o documento.',
       'MISSING_RECOMMENDED_NAME',
+      400,
+    );
+  }
+
+  if (namingModeResolved === 'original' && !data.originalFileName?.trim()) {
+    throw new ConfirmAnalysisError(
+      'Nome original ausente. Não é possível salvar o documento.',
+      'MISSING_ORIGINAL_NAME',
       400,
     );
   }
@@ -434,7 +466,6 @@ export async function confirmAnalysisPersistence(input: {
   const documentId = `doc_${randomUUID()}`;
   const versionId = `ver_${randomUUID()}`;
   const jobId = data.jobId ?? `job_${randomUUID()}`;
-  const auditId = `audit_${randomUUID()}`;
 
   const versionMetadata = mapVersionMetadata(
     data.extraction.metadata as MetadataExtractionResult['metadata'],
@@ -463,6 +494,24 @@ export async function confirmAnalysisPersistence(input: {
     ? 'Documento salvo após revisão manual dos metadados extraídos.'
     : 'Documento criado a partir da análise automática confirmada pelo usuário.';
 
+  let resolvedNames;
+  try {
+    resolvedNames = resolveStorageFileNames({
+      originalFileName: data.originalFileName,
+      aiSuggestedFileName,
+      namingMode: namingModeResolved,
+      manualName: data.selectedFileName ?? data.finalFileName,
+      finalFileName: data.finalFileName,
+      documentId,
+      versionLabel,
+    });
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      throw new ConfirmAnalysisError(error.message, error.code, error.statusCode);
+    }
+    throw error;
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
@@ -477,6 +526,7 @@ export async function confirmAnalysisPersistence(input: {
       fileHash: sha256,
       fileSizeBytes: data.fileSizeBytes,
       originalFileName: data.originalFileName,
+      storageFileName: resolvedNames.storageFileName,
       storageScope: input.ctx.storageScope,
     });
     persistedObjectKey = versionStorage.primary.objectKey;
@@ -496,6 +546,20 @@ export async function confirmAnalysisPersistence(input: {
     );
   }
 
+  const previewResult = await generateDocumentPreviewForVersion({
+    tenantId,
+    documentId,
+    versionId,
+    contentType: 'application/pdf',
+    storageScope: input.ctx.storageScope,
+    primary: versionStorage.primary,
+    previewStorageFileName: resolvedNames.previewStorageFileName,
+  });
+  versionStorage = {
+    ...versionStorage,
+    preview: previewResult.slot,
+  };
+
   const document = withTenantFieldsFromContext(
     input.ctx.storage,
     {
@@ -505,7 +569,7 @@ export async function confirmAnalysisPersistence(input: {
       classId: docClass._id,
       className: docClass.name,
       title: buildDocumentTitle(docClass.name, versionMetadata),
-      currentFileName: data.recommendedFileName,
+      currentFileName: resolvedNames.finalFileName,
       status: 'active',
       processingStatus: needsReview ? 'processed_with_review' : 'processed',
       access: {
@@ -532,8 +596,13 @@ export async function confirmAnalysisPersistence(input: {
       versionLabel,
       previousVersionId: null,
       originalFileName: data.originalFileName,
-      recommendedFileName: data.recommendedFileName,
-      finalFileName: data.recommendedFileName,
+      recommendedFileName: resolvedNames.aiSuggestedFileName,
+      aiSuggestedFileName: resolvedNames.aiSuggestedFileName,
+      selectedFileName: resolvedNames.selectedFileName,
+      finalFileName: resolvedNames.finalFileName,
+      namingMode: resolvedNames.namingMode,
+      storageFileName: resolvedNames.storageFileName,
+      previewStorageFileName: resolvedNames.previewStorageFileName,
       file: {
         mimeType: 'application/pdf',
         extension: 'pdf',
@@ -556,6 +625,7 @@ export async function confirmAnalysisPersistence(input: {
       metadata: versionMetadata,
       metadataIndex,
       storage: versionStorage,
+      previewManifest: previewResult.previewManifest ?? undefined,
       review: {
         required: needsReview,
         reasons: needsReview ? reviewReasons : [],
@@ -585,59 +655,12 @@ export async function confirmAnalysisPersistence(input: {
     input.user.id,
   ) as MongoProcessingJob;
 
-  const auditLog = withTenantFieldsFromContext(
-    input.ctx.storage,
-    {
-      _id: auditId,
-      documentId,
-      versionId,
-      actor: {
-        userId: input.user.id,
-        name: input.user.name,
-        role: input.user.role,
-      },
-      action: auditAction,
-      description: auditDescription,
-      metadata: sanitizeAuditMetadata({
-        className: docClass.name,
-        classId: docClass._id,
-        versionLabel,
-        hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
-        hasDocumentCode: Boolean(documentCode),
-      }),
-      createdAt: now,
-    },
-    input.user.id,
-  ) as MongoAuditLog;
-
-  const { documents, documentVersions, processingJobs, auditLogs } = input.ctx.collections;
+  const { documents, documentVersions, processingJobs } = input.ctx.collections;
 
   try {
     await documents.insertOne(document);
     await documentVersions.insertOne(version);
     await processingJobs.insertOne(processingJob);
-    await auditLogs.insertOne(auditLog);
-
-    await auditLogs.insertOne(
-      withTenantFieldsFromContext(
-        input.ctx.storage,
-        {
-          _id: `audit_${randomUUID()}`,
-          documentId,
-          versionId,
-          actor: auditLog.actor,
-          action: 'document.created',
-          description: 'Documento lógico criado no sistema.',
-          metadata: sanitizeAuditMetadata({
-            classId: docClass._id,
-            hasDocumentCode: Boolean(documentCode),
-            storageStatus: versionStorage.primary.status,
-          }),
-          createdAt: new Date(now.getTime() + 1),
-        },
-        input.user.id,
-      ) as MongoAuditLog,
-    );
   } catch (error) {
     if (persistedObjectKey) {
       await getStorageProvider()
@@ -646,6 +669,153 @@ export async function confirmAnalysisPersistence(input: {
     }
     throw error;
   }
+
+  const auditCtx = buildDocumentAuditContext(input.ctx, input.user);
+  const namingChanges = buildAuditChangeSet(
+    {
+      aiSuggestedFileName: resolvedNames.aiSuggestedFileName,
+      selectedFileName: data.selectedFileName ?? null,
+      finalFileName: data.finalFileName ?? null,
+    },
+    {
+      aiSuggestedFileName: resolvedNames.aiSuggestedFileName,
+      selectedFileName: resolvedNames.selectedFileName,
+      finalFileName: resolvedNames.finalFileName,
+    },
+    ['aiSuggestedFileName', 'selectedFileName', 'finalFileName'],
+  );
+
+  const filenameUpdatedEvent = buildFilenameUpdatedAuditEvent({
+    namingMode: namingModeResolved,
+    originalFileName: data.originalFileName,
+    aiSuggestedFileName: resolvedNames.aiSuggestedFileName,
+    recommendedFileName: data.recommendedFileName,
+    selectedFileName: data.selectedFileName,
+    resolved: resolvedNames,
+    documentId,
+    versionId,
+    occurredAt: new Date(now.getTime() + 1.5),
+  });
+
+  const documentNameSnapshot = buildDocumentNameSnapshot({
+    finalFileName: resolvedNames.finalFileName,
+    storageFileName: resolvedNames.storageFileName,
+    previewStorageFileName: resolvedNames.previewStorageFileName,
+    aiSuggestedFileName: resolvedNames.aiSuggestedFileName,
+    recommendedFileName: data.recommendedFileName,
+    originalFileName: data.originalFileName,
+  });
+
+  const documentTarget = {
+    type: 'document' as const,
+    id: documentId,
+    nameSnapshot: documentNameSnapshot,
+  };
+
+  const auditEvents: DocumentAuditEventInput[] = [
+    {
+      action: 'document.review_confirmed',
+      description: auditDescription,
+      documentId,
+      versionId,
+      analysisJobId: jobId,
+      result: 'success',
+      target: documentTarget,
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        className: docClass.name,
+        categoryId: docClass._id,
+        categoryName: docClass.name,
+        versionLabel,
+        namingMode: namingModeResolved,
+        hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
+        hasDocumentCode: Boolean(documentCode),
+        manualReviewConfirmed: data.manualReviewConfirmed,
+        legacyAction: auditAction,
+        source: 'api',
+      }),
+      changes: namingChanges.length ? namingChanges : undefined,
+      occurredAt: now,
+    },
+    {
+      action: 'document.version_created',
+      description: 'Nova versão do documento criada.',
+      documentId,
+      versionId,
+      target: documentTarget,
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        classId: docClass._id,
+        hasDocumentCode: Boolean(documentCode),
+        storageStatus: versionStorage.primary.status,
+        versionLabel,
+        source: 'api',
+      }),
+      occurredAt: new Date(now.getTime() + 1),
+    },
+  ];
+
+  if (filenameUpdatedEvent) {
+    auditEvents.push(filenameUpdatedEvent);
+  }
+
+  if (versionStorage.primary.status === 'stored') {
+    auditEvents.push({
+      action: 'document.storage_promoted',
+      description: 'Arquivo promovido ao storage definitivo.',
+      documentId,
+      versionId,
+      target: documentTarget,
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        storageProvider: versionStorage.primary.provider,
+        bucketAlias: versionStorage.primary.bucketAlias,
+        storageStatus: versionStorage.primary.status,
+        namingMode: resolvedNames.namingMode,
+        storageFileName: resolvedNames.storageFileName,
+        previewStorageFileName: resolvedNames.previewStorageFileName,
+        source: 'api',
+      }),
+      occurredAt: new Date(now.getTime() + 2),
+    });
+  }
+
+  if (previewResult.slot.status === 'ready') {
+    auditEvents.push({
+      action: 'document.preview_generated',
+      description: 'Preview do documento gerado com sucesso.',
+      documentId,
+      versionId,
+      target: documentTarget,
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        previewStatus: previewResult.slot.status,
+        storageProvider: previewResult.slot.provider,
+        bucketAlias: previewResult.slot.bucketAlias,
+        previewStorageFileName: resolvedNames.previewStorageFileName,
+        source: 'api',
+      }),
+      occurredAt: new Date(now.getTime() + 3),
+    });
+  } else if (previewResult.slot.status === 'failed') {
+    auditEvents.push({
+      action: 'document.preview_failed',
+      description: 'Falha ao gerar preview do documento.',
+      documentId,
+      versionId,
+      result: 'error',
+      target: documentTarget,
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        previewStatus: previewResult.slot.status,
+        reason: previewResult.slot.errorCode ?? previewResult.slot.errorMessage,
+        source: 'api',
+      }),
+      occurredAt: new Date(now.getTime() + 3),
+    });
+  }
+
+  await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
 
   return {
     documentId,

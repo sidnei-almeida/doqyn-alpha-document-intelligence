@@ -1,15 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
+import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
 import { readDocumentVersionFile } from '../../server/services/documentFileService.js';
-import { requireDocumentRequestContext } from '../../server/tenancy/documentRequestContext.js';
+import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
+import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
+import { buildDocumentNameSnapshot } from '../../server/audit/documentNameSnapshot.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
-  const ctx = await requireDocumentRequestContext(req, res);
-  if (!ctx) return;
+  const auth = await requireDocumentAuthContext(req, res);
+  if (!auth) return;
 
   const documentId = typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
   const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
@@ -21,11 +25,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const file = await readDocumentVersionFile({
-      tenantId: ctx.tenantId,
-      ownerUserId: ctx.userId,
+      tenantId: auth.ctx.tenantId,
+      ownerUserId: auth.ctx.userId,
       documentId,
       versionId,
+      storageScope: auth.ctx.storageScope,
+      user: auth.user,
+      membershipId: auth.ctx.membershipId,
     });
+
+    const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
+    const documentNameSnapshot = buildDocumentNameSnapshot({
+      finalFileName: file.fileName,
+      currentFileName: file.fileName,
+    });
+
+    await createDocumentAuditLog(auditCtx, {
+      action: 'document.downloaded',
+      description: 'Download do documento realizado.',
+      documentId,
+      versionId,
+      target: {
+        type: 'document',
+        id: documentId,
+        nameSnapshot: documentNameSnapshot,
+      },
+      metadata: sanitizeAuditMetadata({
+        documentName: documentNameSnapshot,
+        mimeType: file.mimeType,
+        sizeBytes: file.buffer.length,
+        disposition,
+        source: 'api',
+      }),
+    }).catch(() => undefined);
 
     const safeName = file.fileName.replace(/[^\w.\- ()áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/g, '_');
     const contentDisposition =

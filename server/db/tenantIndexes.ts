@@ -126,7 +126,11 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
       collection: names.auditLogs,
       indexes: [
         { key: { tenantId: 1, documentId: 1, createdAt: -1 } },
+        { key: { tenantId: 1, documentId: 1, occurredAt: -1 } },
         { key: { tenantId: 1, action: 1, createdAt: -1 } },
+        { key: { tenantId: 1, 'actor.userId': 1, createdAt: -1 } },
+        { key: { tenantId: 1, createdAt: -1 } },
+        { key: { tenantId: 1, requestId: 1 } },
       ],
     },
   );
@@ -183,6 +187,9 @@ export function sharedIndividualIndexSpecs(): Array<{
     {
       collection: names.auditLogs,
       indexes: [
+        { key: { ownerTenantId: 1, ownerUserId: 1, documentId: 1, createdAt: -1 } },
+        { key: { ownerTenantId: 1, ownerUserId: 1, createdAt: -1 } },
+        { key: { ownerTenantId: 1, ownerUserId: 1, 'actor.userId': 1, createdAt: -1 } },
         { key: { ownerTenantId: 1, createdAt: -1 } },
         { key: { ownerUserId: 1, createdAt: -1 } },
         { key: { action: 1, createdAt: -1 } },

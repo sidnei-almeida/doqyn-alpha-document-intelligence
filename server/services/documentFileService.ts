@@ -1,4 +1,5 @@
 import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
+import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import {
@@ -14,6 +15,11 @@ import {
   tenantScopeFilterFromContext,
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import {
+  assertCanDownloadDocument,
+  loadMemberDocumentGroupIds,
+  resolveDocumentPermissions,
+} from '../tenancy/documentAccess.js';
 
 function buildPendingStorage(): MongoDocumentVersion['storage'] {
   return {
@@ -41,6 +47,7 @@ export async function storeUploadedDocumentFile(input: {
   buffer: Buffer;
   mimeType: string;
   originalFileName: string;
+  storageFileName: string;
   storageScope?: TenantStorageScope;
 }): Promise<MongoDocumentVersion['storage']> {
   const provider = getStorageProvider();
@@ -56,6 +63,7 @@ export async function storeUploadedDocumentFile(input: {
     buffer: input.buffer,
     mimeType: input.mimeType,
     extension,
+    storageFileName: input.storageFileName,
     storageScope: input.storageScope,
   });
 
@@ -71,6 +79,9 @@ export async function readDocumentVersionFile(input: {
   ownerUserId: string;
   documentId: string;
   versionId?: string;
+  storageScope?: TenantStorageScope;
+  user: AuthUser;
+  membershipId?: string;
 }): Promise<{
   buffer: Buffer;
   mimeType: string;
@@ -95,6 +106,18 @@ export async function readDocumentVersionFile(input: {
   }
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
+
+  const memberGroupIds = await loadMemberDocumentGroupIds({
+    tenantId: input.tenantId,
+    userId: input.user.id,
+    membershipId: input.membershipId,
+  });
+  const permissions = resolveDocumentPermissions(
+    input.user,
+    doc as MongoDocument,
+    memberGroupIds,
+  );
+  assertCanDownloadDocument(permissions);
 
   const resolvedVersionId = input.versionId ?? (doc as MongoDocument).currentVersionId;
   const version = await documentVersions.findOne({
@@ -132,6 +155,7 @@ export async function readDocumentVersionFile(input: {
     storageKey,
     input.tenantId,
     primaryStorage?.bucketAlias,
+    input.storageScope,
   );
 
   return {

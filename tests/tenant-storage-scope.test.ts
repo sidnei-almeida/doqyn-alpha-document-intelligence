@@ -12,7 +12,7 @@ import {
   buildIndividualBasePrefix,
   resolveTenantStorageScope,
 } from '../server/tenancy/resolveTenantStorageScope.js';
-import { getTenantBucketName } from '../server/storage/r2/r2BucketNaming.js';
+import { buildTenantBucketName } from '../server/storage/r2/r2BucketNaming.js';
 import {
   buildAnalysisStagingKey,
   buildDocumentVersionObjectKey,
@@ -78,11 +78,12 @@ describe('resolveTenantStorageScope', () => {
       ownerUserId: OWNER_USER_ID,
     });
 
-    const expectedBucket = getTenantBucketName(BUSINESS_TENANT, {
-      bucketPrefix: 'doqyn',
-      bucketMode: 'per_tenant',
-      defaultBucket: 'doqyn-alpha',
-    });
+    const expectedBucket = buildTenantBucketName({
+      env: 'dev',
+      tenantId: BUSINESS_TENANT,
+      tenantDisplayName: BUSINESS_TENANT,
+      tenantSlug: BUSINESS_TENANT,
+    }).bucketName;
 
     assert.equal(scope.tenantType, 'business');
     assert.equal(scope.bucketMode, 'per_tenant');
@@ -123,31 +124,32 @@ describe('resolveTenantStorageScope', () => {
 });
 
 describe('storage keys com basePrefix', () => {
+  const STORAGE_FILE_NAME = 'Contrato_NDA.pdf';
   const individualPrefix = buildIndividualBasePrefix(INDIVIDUAL_TENANT);
 
   it('objectKey business sem basePrefix', () => {
     const key = buildDocumentVersionObjectKey({
       documentId: 'doc_001',
       versionId: 'ver_001',
-      extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
       keyPrefix: 'documents',
     });
 
-    assert.equal(key, 'documents/doc_001/versions/ver_001/original.pdf');
+    assert.equal(key, `documents/doc_001/versions/ver_001/original/${STORAGE_FILE_NAME}`);
   });
 
   it('objectKey individual com basePrefix', () => {
     const key = buildDocumentVersionObjectKey({
       documentId: 'doc_001',
       versionId: 'ver_001',
-      extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
       keyPrefix: 'documents',
       basePrefix: individualPrefix,
     });
 
     assert.equal(
       key,
-      `${individualPrefix}/documents/doc_001/versions/ver_001/original.pdf`,
+      `${individualPrefix}/documents/doc_001/versions/ver_001/original/${STORAGE_FILE_NAME}`,
     );
   });
 
@@ -169,7 +171,7 @@ describe('storage keys com basePrefix', () => {
     const key = buildDocumentVersionObjectKey({
       documentId: 'doc_001',
       versionId: 'ver_001',
-      extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
       basePrefix: individualPrefix,
     });
 
@@ -179,6 +181,7 @@ describe('storage keys com basePrefix', () => {
 });
 
 describe('r2 provider com storageScope', () => {
+  const STORAGE_FILE_NAME = 'Contrato_NDA.pdf';
   const ORIGINAL_ENV = { ...process.env };
 
   beforeEach(() => {
@@ -227,11 +230,15 @@ describe('r2 provider com storageScope', () => {
       buffer: Buffer.from('%PDF business'),
       mimeType: 'application/pdf',
       extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
       storageScope: scope,
     });
 
     assert.equal(stored.bucket, scope.bucketName);
-    assert.match(stored.storageKey, /^documents\/doc_biz\/versions\/ver_biz\/original\.pdf$/);
+    assert.match(
+      stored.storageKey,
+      new RegExp(`^documents/doc_biz/versions/ver_biz/original/${STORAGE_FILE_NAME.replace('.', '\\.')}$`),
+    );
     assert.equal(ensureBucketForScope.mock.calls.length, 1);
     assert.deepEqual(ensureBucketForScope.mock.calls[0]?.arguments[0], {
       bucketMode: 'per_tenant',
@@ -278,13 +285,14 @@ describe('r2 provider com storageScope', () => {
       buffer: Buffer.from('%PDF individual'),
       mimeType: 'application/pdf',
       extension: 'pdf',
+      storageFileName: STORAGE_FILE_NAME,
       storageScope: scope,
     });
 
     assert.equal(stored.bucket, 'doqyn-alpha');
     assert.equal(
       stored.storageKey,
-      `${scope.basePrefix}/documents/doc_ind/versions/ver_ind/original.pdf`,
+      `${scope.basePrefix}/documents/doc_ind/versions/ver_ind/original/${STORAGE_FILE_NAME}`,
     );
     assert.equal(ensureBucketForScope.mock.calls.length, 1);
     assert.equal(ensureBucketForScope.mock.calls[0]?.arguments[0].bucketMode, 'shared');

@@ -17,18 +17,21 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    min-height: 100%;
   }
 
   body {
     margin: 0;
     min-width: 320px;
-    min-height: 100vh;
+    min-height: 100%;
+    min-height: 100dvh;
     background: var(--bg-app);
     color: var(--text-primary);
   }
 
   #root {
-    min-height: 100vh;
+    min-height: 100%;
+    min-height: 100dvh;
   }
 
   input:not([type='checkbox']):not([type='radio']),
@@ -36,6 +39,18 @@
   textarea {
     font-family: inherit;
     font-size: 0.875rem;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--accent-active);
+  }
+
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    border-color: var(--accent-active);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-active) 35%, transparent);
   }
 }
 
@@ -320,6 +335,14 @@
 
   .governance-detail-dialog {
     animation: governance-detail-dialog-in 0.22s ease-out both;
+  }
+
+  @media print {
+    .doqyn-secure-viewer,
+    .doqyn-secure-viewer * {
+      display: none !important;
+      visibility: hidden !important;
+    }
   }
 
   @keyframes governance-detail-dialog-in {

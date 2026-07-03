@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
+import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
+import { policyRequiresPerItemChoice } from '../utils/reviewWorkflowSettings';
 import { formatFileSize } from '../utils/validateUpload';
 import { metadataToFields } from '../utils/documentNaming';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { DocumentNamingSection } from './DocumentNamingSection';
 import { TimelineItem } from './TimelineItem';
 
 const FULL_WIDTH_FIELDS = new Set([
@@ -33,9 +36,14 @@ interface UploadResultPanelProps {
   onManualReviewCheckedChange?: (checked: boolean) => void;
   autoCountdown?: number | null;
   autoPaused?: boolean;
-  autoMode?: boolean;
+  autoReviewEnabled?: boolean;
   onCancelAuto?: () => void;
   onManualReview?: () => void;
+  originalFileName?: string;
+  aiSuggestedFileName?: string;
+  reviewSettings: WorkflowReviewSettings;
+  perItemNaming: PerItemNamingChoice;
+  onPerItemNamingChange: (choice: PerItemNamingChoice) => void;
   className?: string;
 }
 
@@ -56,9 +64,14 @@ export function UploadResultPanel({
   onManualReviewCheckedChange,
   autoCountdown = null,
   autoPaused = false,
-  autoMode = false,
+  autoReviewEnabled = false,
   onCancelAuto,
   onManualReview,
+  originalFileName,
+  aiSuggestedFileName,
+  reviewSettings,
+  perItemNaming,
+  onPerItemNamingChange,
   className,
 }: UploadResultPanelProps) {
   const [activeTab, setActiveTab] = useState<'resultado' | 'logs'>('resultado');
@@ -72,6 +85,12 @@ export function UploadResultPanel({
     activeTab === 'resultado' && !isSaved && flowPhase !== 'error';
   const showAutoBanner =
     autoCountdown !== null && autoCountdown > 0 && !autoPaused && !isSaved;
+  const showNamingSection =
+    Boolean(originalFileName && aiSuggestedFileName) &&
+    (policyRequiresPerItemChoice(reviewSettings.defaultNamingPolicy) ||
+      reviewSettings.defaultNamingPolicy === 'manual_required' ||
+      reviewSettings.defaultNamingPolicy === 'ask_each_file' ||
+      reviewSettings.aiRenameEnabled);
 
   const toggleEvidence = (key: string) => {
     setExpandedEvidence((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -109,7 +128,7 @@ export function UploadResultPanel({
           </div>
         </div>
 
-        {autoMode && autoPaused && requiresReview && (
+        {autoReviewEnabled && autoPaused && requiresReview && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-doqyn-text">
             Auto pausado: revisão necessária.
           </div>
@@ -242,6 +261,16 @@ export function UploadResultPanel({
 
               {flowPhase !== 'error' && (
                 <>
+                  {showNamingSection && originalFileName && aiSuggestedFileName && (
+                    <DocumentNamingSection
+                      settings={reviewSettings}
+                      originalFileName={originalFileName}
+                      aiSuggestedFileName={aiSuggestedFileName}
+                      perItemChoice={perItemNaming}
+                      onPerItemChoiceChange={onPerItemNamingChange}
+                    />
+                  )}
+
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-x-8 lg:gap-y-3">
                     {summaryFields.map((field) => (
                       <div

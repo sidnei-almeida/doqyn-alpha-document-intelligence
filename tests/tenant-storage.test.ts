@@ -79,10 +79,14 @@ describe('document ownership filters', () => {
     assert.throws(() => buildDocumentOwnershipFilter(ctx), (e: ServiceError) => e.code === 'OWNER_USER_REQUIRED');
   });
 
-  it('classes globais no filtro individual', () => {
+  it('classes PF usam ownership estrito sem scope global', () => {
     const filter = buildClassRuleOwnershipFilter(individualCtx);
-    assert.ok(Array.isArray(filter.$or));
-    assert.deepEqual(filter.$or![0], { scope: 'global' });
+    assert.deepEqual(filter, {
+      tenantType: 'individual',
+      ownerTenantId: 'individual_a_ab12',
+      ownerUserId: 'user_a',
+    });
+    assert.equal(JSON.stringify(filter).includes('global'), false);
   });
 
   it('insert individual grava campos de ownership', () => {

@@ -8,13 +8,17 @@ import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope
 import type { StorageConfig } from '../storageConfig.js';
 import {
   buildAnalysisStagingKey,
+  buildDocumentPreviewObjectKey,
   buildDocumentVersionObjectKey,
   sanitizeFileExtension,
 } from '../storageKeys.js';
 import type {
   ReadDocumentVersionResult,
   StagingCapableStorageProvider,
+  StoreDocumentPreviewInput,
   StoreDocumentVersionInput,
+  StorePreviewAssetInput,
+  StoredDocumentPreview,
   StoredDocumentVersion,
 } from '../storageProvider.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
@@ -24,6 +28,7 @@ import {
   ensureTenantBucket,
   resolveTenantBucketName,
 } from './r2BucketProvisioner.js';
+import { markTenantBucketReady } from '../../services/tenantStorageConfigService.js';
 import type { R2Config } from '../storageConfig.js';
 
 async function streamToBuffer(body: unknown): Promise<Buffer> {
@@ -89,6 +94,11 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       tenantId: scope.tenantId,
       config: this.r2,
     });
+
+    if (scope.bucketMode === 'per_tenant') {
+      await markTenantBucketReady(scope.tenantId, bucket).catch(() => undefined);
+    }
+
     return bucket;
   }
 
@@ -123,11 +133,6 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       );
     }
 
-    const extension = sanitizeFileExtension({
-      extension: input.extension,
-      mimeType: input.mimeType,
-    });
-
     const scope = input.storageScope;
     const keyPrefix = scope?.keyPrefix ?? this.r2.keyPrefix;
     const basePrefix = scope?.basePrefix;
@@ -135,7 +140,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     const storageKey = buildDocumentVersionObjectKey({
       documentId: input.documentId,
       versionId: input.versionId,
-      extension,
+      storageFileName: input.storageFileName,
       keyPrefix,
       basePrefix,
     });
@@ -190,6 +195,82 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       etag: result.ETag ?? undefined,
       contentType: result.ContentType ?? undefined,
     };
+  }
+
+  async storeDocumentPreview(input: StoreDocumentPreviewInput): Promise<StoredDocumentPreview> {
+    await this.ensureReady();
+
+    const scope = input.storageScope;
+    const keyPrefix = scope?.keyPrefix ?? this.r2.keyPrefix;
+    const basePrefix = scope?.basePrefix;
+
+    const storageKey = buildDocumentPreviewObjectKey({
+      documentId: input.documentId,
+      versionId: input.versionId,
+      previewStorageFileName: input.previewStorageFileName,
+      keyPrefix,
+      basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
+
+    const result = await this.runtimeClient.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: storageKey,
+        Body: input.buffer,
+        ContentType: 'application/pdf',
+      }),
+    );
+
+    return {
+      storageKey,
+      sizeBytes: input.buffer.length,
+      provider: 'r2',
+      bucket,
+      etag: result.ETag ?? undefined,
+      contentType: 'application/pdf',
+    };
+  }
+
+  async storePreviewAsset(input: StorePreviewAssetInput): Promise<StoredDocumentPreview> {
+    await this.ensureReady();
+
+    const scope = input.storageScope;
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : input.bucketAlias
+        ? await this.resolveBucket(input.tenantId)
+        : await this.resolveBucket(input.tenantId);
+
+    const result = await this.runtimeClient.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: input.objectKey,
+        Body: input.buffer,
+        ContentType: input.contentType,
+      }),
+    );
+
+    return {
+      storageKey: input.objectKey,
+      sizeBytes: input.buffer.length,
+      provider: 'r2',
+      bucket,
+      etag: result.ETag ?? undefined,
+      contentType: input.contentType,
+    };
+  }
+
+  async readDocumentPreview(
+    storageKey: string,
+    tenantId: string,
+    bucketAlias?: string | null,
+    storageScope?: TenantStorageScope,
+  ): Promise<ReadDocumentVersionResult> {
+    return this.readDocumentVersion(storageKey, tenantId, bucketAlias, storageScope);
   }
 
   async deleteDocumentVersion(

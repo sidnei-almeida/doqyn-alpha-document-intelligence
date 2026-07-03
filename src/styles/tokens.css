@@ -34,6 +34,19 @@
   --status-warn-text: #7a5e2a;
   --status-warn-border: #2e2410;
 
+  --feedback-info-bg: var(--bg-surface-2);
+  --feedback-info-border: var(--border-default);
+  --feedback-info-text: var(--text-primary);
+  --feedback-success-bg: var(--status-ok-bg);
+  --feedback-success-border: var(--status-ok-border);
+  --feedback-success-text: var(--status-ok-text);
+  --feedback-warning-bg: var(--status-warn-bg);
+  --feedback-warning-border: var(--status-warn-border);
+  --feedback-warning-text: var(--status-warn-text);
+  --feedback-error-bg: var(--status-danger-bg);
+  --feedback-error-border: var(--status-danger-border);
+  --feedback-error-text: var(--status-danger-text);
+
   --text-hint: var(--text-tertiary);
 }
 
@@ -68,6 +81,19 @@
   --status-warn-bg: #fdf8ee;
   --status-warn-text: #7a5e2a;
   --status-warn-border: #e8d9b0;
+
+  --feedback-info-bg: var(--bg-surface-2);
+  --feedback-info-border: var(--border-default);
+  --feedback-info-text: var(--text-primary);
+  --feedback-success-bg: var(--status-ok-bg);
+  --feedback-success-border: var(--status-ok-border);
+  --feedback-success-text: var(--status-ok-text);
+  --feedback-warning-bg: var(--status-warn-bg);
+  --feedback-warning-border: var(--status-warn-border);
+  --feedback-warning-text: var(--status-warn-text);
+  --feedback-error-bg: var(--status-danger-bg);
+  --feedback-error-border: var(--status-danger-border);
+  --feedback-error-text: var(--status-danger-text);
 }
 
 :root,

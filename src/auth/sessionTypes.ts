@@ -36,5 +36,6 @@ export type AccessGateReason =
   | 'not_linked'
   | 'pending'
   | 'blocked'
+  | 'rejected'
   | 'removed'
   | 'no_membership';

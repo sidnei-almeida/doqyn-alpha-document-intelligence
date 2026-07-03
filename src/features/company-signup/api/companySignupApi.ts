@@ -9,7 +9,8 @@ export type CompanySignupInput = {
   whatsapp: string;
   password: string;
   confirmPassword: string;
-  termsAccepted: boolean;
+  acceptedTerms: boolean;
+  acceptedTermsVersion: string;
 };
 
 export type CompanySignupResponse = {
@@ -23,10 +24,7 @@ export async function submitCompanySignup(input: CompanySignupInput): Promise<Co
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({
-      ...input,
-      termsAccepted: input.termsAccepted ? true : undefined,
-    }),
+    body: JSON.stringify(input),
   });
 
   const data = (await response.json().catch(() => ({}))) as CompanySignupResponse & {

@@ -19,6 +19,15 @@ import {
   getBulkReviewReason,
   resolveBulkItemStatusAfterAnalysis,
 } from '../utils/bulkEligibility';
+import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
+import {
+  canAutoAcceptWithSettings,
+  cloneReviewWorkflowSettings,
+  policyRequiresPerItemChoice,
+  resolveEffectiveNamingForItem,
+  resolveFinalFileNameForConfirm,
+  shouldPauseForReview,
+} from '../utils/reviewWorkflowSettings';
 import {
   buildIsolationSnapshot,
   hasOtherInFlightItem,
@@ -61,8 +70,8 @@ export type BulkTerminalPayload = {
 };
 
 type UseBulkUploadQueueOptions = {
-  autoMode: boolean;
-  autoDelaySeconds: number;
+  reviewSettings: WorkflowReviewSettings;
+  onReviewSettingsChange?: (settings: WorkflowReviewSettings) => void;
   isAuthenticated: boolean;
   workflow: WorkflowLoggerApi;
   onItemSaved: (payload: BulkHistoryPayload) => void;
@@ -126,8 +135,8 @@ function startCountdownSeconds(
 }
 
 export function useBulkUploadQueue({
-  autoMode,
-  autoDelaySeconds,
+  reviewSettings,
+  onReviewSettingsChange,
   isAuthenticated,
   workflow,
   onItemSaved,
@@ -140,6 +149,7 @@ export function useBulkUploadQueue({
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
   const [manualGate, setManualGate] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [batchReviewSettings, setBatchReviewSettings] = useState<WorkflowReviewSettings | null>(null);
 
   const itemsRef = useRef(items);
   const batchPhaseRef = useRef(batchPhase);
@@ -152,8 +162,8 @@ export function useBulkUploadQueue({
   const itemStartedAtRef = useRef<Map<string, number>>(new Map());
   const manualGateRef = useRef(manualGate);
   const currentItemIdRef = useRef<string | null>(null);
-  const autoModeRef = useRef(autoMode);
-  const autoDelaySecondsRef = useRef(autoDelaySeconds);
+  const reviewSettingsRef = useRef(reviewSettings);
+  const batchSettingsRef = useRef<WorkflowReviewSettings | null>(null);
   const isAuthenticatedRef = useRef(isAuthenticated);
   const countdownHandleRef = useRef<CountdownHandle | null>(null);
   const countdownItemIdRef = useRef<string | null>(null);
@@ -180,12 +190,16 @@ export function useBulkUploadQueue({
   }, [currentItemId]);
 
   useEffect(() => {
-    autoModeRef.current = autoMode;
-  }, [autoMode]);
+    reviewSettingsRef.current = reviewSettings;
+  }, [reviewSettings]);
 
   useEffect(() => {
-    autoDelaySecondsRef.current = autoDelaySeconds;
-  }, [autoDelaySeconds]);
+    batchSettingsRef.current = batchReviewSettings;
+  }, [batchReviewSettings]);
+
+  const getActiveSettings = useCallback((): WorkflowReviewSettings => {
+    return batchSettingsRef.current ?? reviewSettingsRef.current;
+  }, []);
 
   useEffect(() => {
     isAuthenticatedRef.current = isAuthenticated;
@@ -480,6 +494,20 @@ export function useBulkUploadQueue({
         return false;
       }
 
+      const settings = getActiveSettings();
+      const effectiveNamingMode = resolveEffectiveNamingForItem(settings, item.perItemNaming);
+      const resolvedFinalName = resolveFinalFileNameForConfirm({
+        settings,
+        originalFileName: item.result.originalFileName,
+        aiSuggestedFileName: item.result.recommendedFileName ?? item.result.originalFileName,
+        perItem: item.perItemNaming,
+      });
+
+      if (resolvedFinalName === '—') {
+        setStatusMessage('Informe um nome válido para o arquivo.');
+        return false;
+      }
+
       patchItem(itemId, { status: 'saving' });
       setStatusMessage('Salvando documento...');
 
@@ -498,6 +526,10 @@ export function useBulkUploadQueue({
           manualReviewConfirmed:
             item.metadata?.analysisStatus === 'requires_review' ||
             resultPayload.status === 'requires_review',
+          namingMode: effectiveNamingMode,
+          finalFileName: resolvedFinalName,
+          selectedFileName: effectiveNamingMode === 'manual' ? item.perItemNaming?.manualName : undefined,
+          useAiNaming: settings.aiRenameEnabled && effectiveNamingMode !== 'original',
           context: {
             batchId: batchIdRef.current ?? undefined,
             itemId,
@@ -511,7 +543,7 @@ export function useBulkUploadQueue({
         }
 
         const confirmDurationMs = Date.now() - confirmStartedAt;
-        const finalFileName = resultPayload.recommendedFileName ?? item.recommendedFileName ?? '';
+        const finalFileName = resolvedFinalName;
 
         patchItem(itemId, {
           status: 'saved',
@@ -568,7 +600,7 @@ export function useBulkUploadQueue({
         return false;
       }
     },
-    [appendItemMessage, canApplyToItem, finishQueueItem, getItemById, onItemSaved, patchItem, workflow],
+    [appendItemMessage, canApplyToItem, finishQueueItem, getActiveSettings, getItemById, onItemSaved, patchItem, workflow],
   );
 
   const processSingleItem = useCallback(
@@ -764,12 +796,21 @@ export function useBulkUploadQueue({
 
         const classificationError = getAnalysisClassificationError(raw, metadata);
         const postStatus = resolveBulkItemStatusAfterAnalysis(metadata, raw);
+        const settings = getActiveSettings();
         const autoSaveBlockers = getBulkAutoSaveBlockers({
           isAuthenticated: isAuthenticatedRef.current,
           metadata,
           rawAnalysis: raw,
+          settings,
+          perItem: next.perItemNaming,
         });
-        const autoEligible = autoSaveBlockers.length === 0;
+        const autoEligible = canAutoAcceptWithSettings(settings, {
+          isAuthenticated: isAuthenticatedRef.current,
+          metadata,
+          rawAnalysis: raw,
+          autoPaused: false,
+          saved: false,
+        });
         const recommendedFileName = raw.recommendedFileName ?? undefined;
         const className = raw.classification.className ?? metadata.documentType;
         const decision = buildAnalysisDecision(raw, metadata);
@@ -888,10 +929,14 @@ export function useBulkUploadQueue({
             recommendedFileName,
             className,
             confidence: raw.classification.confidence,
-          });
+          }, settings);
           markItemReview(next.id, reason);
 
-          if (autoModeRef.current) {
+          if (
+            settings.autoReviewEnabled &&
+            !settings.pauseOnConflict &&
+            settings.continueWhenSafe
+          ) {
             setStatusMessage('Preparando próximo envio...');
             await sleep(BULK_NEXT_ITEM_DELAY_MS);
             setStatusMessage(null);
@@ -904,6 +949,16 @@ export function useBulkUploadQueue({
           return 'manual';
         }
 
+        if (
+          policyRequiresPerItemChoice(settings.defaultNamingPolicy) ||
+          settings.defaultNamingPolicy === 'manual_required'
+        ) {
+          setManualGate(true);
+          manualGateRef.current = true;
+          setStatusMessage('Aguardando escolha do nome do arquivo');
+          return 'manual';
+        }
+
         if (!autoEligible) {
           workflow.logItem(next.id, next.originalFileName, {
             level: 'warning',
@@ -912,7 +967,11 @@ export function useBulkUploadQueue({
             details: { blockers: autoSaveBlockers },
           });
 
-          if (autoModeRef.current) {
+          if (
+            settings.autoReviewEnabled &&
+            !shouldPauseForReview(settings, { metadata, rawAnalysis: raw }) &&
+            settings.continueWhenSafe
+          ) {
             markItemReview(next.id, autoSaveBlockers[0] ?? 'Revisão necessária.');
             setStatusMessage('Preparando próximo envio...');
             await sleep(BULK_NEXT_ITEM_DELAY_MS);
@@ -926,19 +985,19 @@ export function useBulkUploadQueue({
           return 'manual';
         }
 
-        if (autoModeRef.current && autoEligible) {
+        if (settings.autoReviewEnabled && autoEligible) {
           patchItem(next.id, { status: 'auto_countdown' });
 
           workflow.logItem(next.id, next.originalFileName, {
             level: 'info',
             stage: 'auto',
             message: `Countdown criado para item ${next.id}.`,
-            details: { seconds: autoDelaySecondsRef.current },
+            details: { seconds: settings.autoAcceptDelaySeconds },
           });
 
           countdownItemIdRef.current = next.id;
           const countdown = startCountdownSeconds(
-            autoDelaySecondsRef.current,
+            settings.autoAcceptDelaySeconds,
             (remaining) => {
               if (countdownItemIdRef.current !== next.id) return;
               setAutoCountdown(remaining > 0 ? remaining : null);
@@ -946,17 +1005,25 @@ export function useBulkUploadQueue({
                 setStatusMessage(`Auto ativo: salvando este documento em ${remaining}s.`);
               }
             },
-            () =>
-              workerRunId === workerRunIdRef.current &&
-              runIdRef.current === workerRunId &&
-              batchPhaseRef.current === 'running' &&
-              countdownItemIdRef.current === next.id &&
-              currentItemIdRef.current === next.id &&
-              getItemById(next.id)?.status === 'auto_countdown' &&
-              Boolean(getItemById(next.id)?.result) &&
-              !getItemById(next.id)?.result?.classification.requiresReview &&
-              Boolean(getItemById(next.id)?.result?.classification.classId) &&
-              Boolean(getItemById(next.id)?.result?.recommendedFileName?.trim()),
+            () => {
+              const current = getItemById(next.id);
+              return (
+                workerRunId === workerRunIdRef.current &&
+                runIdRef.current === workerRunId &&
+                batchPhaseRef.current === 'running' &&
+                countdownItemIdRef.current === next.id &&
+                currentItemIdRef.current === next.id &&
+                current?.status === 'auto_countdown' &&
+                Boolean(current?.result) &&
+                canAutoAcceptWithSettings(settings, {
+                  isAuthenticated: isAuthenticatedRef.current,
+                  metadata: current?.metadata ?? null,
+                  rawAnalysis: current?.result ?? null,
+                  autoPaused: false,
+                  saved: false,
+                })
+              );
+            },
           );
           countdownHandleRef.current = countdown;
 
@@ -1066,6 +1133,7 @@ export function useBulkUploadQueue({
       appendItemMessage,
       canApplyToItem,
       cancelCurrentCountdown,
+      getActiveSettings,
       getIsolationSnapshot,
       getItemById,
       logIsolationSnapshot,
@@ -1157,6 +1225,22 @@ export function useBulkUploadQueue({
       const allItems = [...validItems, ...errorItems];
       setItems(allItems);
       itemsRef.current = allItems;
+
+      const snapshotSettings = reviewSettingsRef.current.applyToBatch
+        ? cloneReviewWorkflowSettings({
+            ...reviewSettingsRef.current,
+            applyToBatch: true,
+          })
+        : cloneReviewWorkflowSettings(reviewSettingsRef.current);
+      setBatchReviewSettings(snapshotSettings);
+      batchSettingsRef.current = snapshotSettings;
+      if (reviewSettingsRef.current.applyToBatch) {
+        onReviewSettingsChange?.({
+          ...reviewSettingsRef.current,
+          applyToBatch: true,
+        });
+      }
+
       setBatchPhase('running');
       batchPhaseRef.current = 'running';
       setManualGate(false);
@@ -1172,8 +1256,9 @@ export function useBulkUploadQueue({
           total: allItems.length,
           accepted: validItems.length,
           rejected: errorItems.length,
-          autoMode: autoModeRef.current,
-          autoDelaySeconds: autoDelaySecondsRef.current,
+          autoReviewEnabled: snapshotSettings.autoReviewEnabled,
+          autoAcceptDelaySeconds: snapshotSettings.autoAcceptDelaySeconds,
+          defaultNamingPolicy: snapshotSettings.defaultNamingPolicy,
           concurrency: 1,
         },
       });
@@ -1181,8 +1266,8 @@ export function useBulkUploadQueue({
       workflow.logBatch({
         level: 'info',
         stage: 'auto',
-        message: autoModeRef.current
-          ? `Modo Auto ligado (delay ${autoDelaySecondsRef.current}s).`
+        message: snapshotSettings.autoReviewEnabled
+          ? `Modo Auto ligado (delay ${snapshotSettings.autoAcceptDelaySeconds}s).`
           : 'Modo Auto desligado.',
       });
 
@@ -1206,7 +1291,7 @@ export function useBulkUploadQueue({
         finishQueueItem(item.id);
       }
     },
-    [appendItemMessage, createQueueItem, finishQueueItem, resetCurrentProcessingState, workflow],
+    [appendItemMessage, createQueueItem, finishQueueItem, onReviewSettingsChange, resetCurrentProcessingState, workflow],
   );
 
   const confirmCurrentAndContinue = useCallback(async () => {
@@ -1228,6 +1313,8 @@ export function useBulkUploadQueue({
         isAuthenticated: isAuthenticatedRef.current,
         metadata: current.metadata,
         rawAnalysis: current.result,
+        settings: getActiveSettings(),
+        perItem: current.perItemNaming,
       })
     ) {
       return;
@@ -1242,7 +1329,28 @@ export function useBulkUploadQueue({
     await sleep(BULK_NEXT_ITEM_DELAY_MS);
     setStatusMessage(null);
     scheduleQueueWorker();
-  }, [getItemById, saveItem, scheduleQueueWorker]);
+  }, [getActiveSettings, getItemById, saveItem, scheduleQueueWorker]);
+
+  const updateCurrentItemNaming = useCallback((choice: PerItemNamingChoice) => {
+    const itemId = currentItemIdRef.current;
+    if (!itemId) return;
+    patchItem(itemId, { perItemNaming: choice });
+  }, [patchItem]);
+
+  const cancelAutoCountdown = useCallback(() => {
+    cancelCurrentCountdown('cancelado pelo usuário');
+    const itemId = countdownItemIdRef.current;
+    if (itemId) {
+      const item = getItemById(itemId);
+      if (item?.status === 'auto_countdown') {
+        patchItem(itemId, { status: 'analyzed' });
+      }
+    }
+    setAutoCountdown(null);
+    setManualGate(true);
+    manualGateRef.current = true;
+    setStatusMessage('Auto cancelado — aguardando confirmação manual');
+  }, [cancelCurrentCountdown, getItemById, patchItem]);
 
   const skipCurrent = useCallback(() => {
     const itemId = currentItemIdRef.current;
@@ -1365,6 +1473,8 @@ export function useBulkUploadQueue({
     currentItemIdRef.current = null;
     setManualGate(false);
     manualGateRef.current = false;
+    setBatchReviewSettings(null);
+    batchSettingsRef.current = null;
     batchStartedAtRef.current = null;
     itemStartedAtRef.current.clear();
   }, [resetCurrentProcessingState, workflow]);
@@ -1388,6 +1498,7 @@ export function useBulkUploadQueue({
     autoCountdown,
     manualGate,
     statusMessage,
+    batchReviewSettings,
     startBatch,
     confirmCurrentAndContinue,
     skipCurrent,
@@ -1397,5 +1508,7 @@ export function useBulkUploadQueue({
     cancelBatch,
     resetBatch,
     clearCompleted,
+    cancelAutoCountdown,
+    updateCurrentItemNaming,
   };
 }

@@ -1,21 +1,31 @@
 import { Building2, Shield, UserRound } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DoqynLogo } from '@/components/brand';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
+import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
+import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
+import { TaxIdInput } from '@/components/ui/TaxIdInput';
+import { WhatsappInput } from '@/components/ui/WhatsappInput';
+import { formatTaxId } from '@/lib/identifiers';
 import { Textarea } from '@/components/ui/Textarea';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { usesDoqynAuth } from '@/auth/authConfig';
 import { cn } from '@/lib/utils';
 import { submitAccessRequest } from './api/accessRequestApi';
+import {
+  buildRequestAccessPayload,
+  buildRequestAccessReviewSections,
+  REQUEST_ACCESS_REVIEW_COPY,
+  validateRequestAccessForm,
+  type RequestAccessFormValues,
+} from './requestAccessReview';
 
 const CONSENT_TEXT =
   'Aceito receber notificações operacionais do DOQYN por e-mail e WhatsApp relacionadas a documentos, aprovações, assinaturas, atualizações de acesso e comunicações necessárias ao uso da plataforma.';
-
-const CHECKBOX_CLASS =
-  'mt-0.5 h-4 w-4 shrink-0 rounded border-doqyn-border-strong bg-doqyn-bg accent-doqyn-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-surface';
 
 type PersonType = 'individual' | 'business';
 
@@ -98,36 +108,109 @@ export function RequestAccessPage() {
   const [jobTitle, setJobTitle] = useState('');
   const [departmentText, setDepartmentText] = useState('');
   const [reason, setReason] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [informationDeclaration, setInformationDeclaration] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [declarationError, setDeclarationError] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent) {
+  const taxIdKind = employeeFlow || personType === 'business' ? 'CNPJ' : 'CPF';
+
+  const formValues = useMemo<RequestAccessFormValues>(
+    () => ({
+      personType,
+      taxId,
+      tenantDisplayName,
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      whatsapp,
+      jobTitle,
+      departmentText,
+      reason,
+      acceptedTerms,
+      informationDeclaration,
+      consent,
+    }),
+    [
+      personType,
+      taxId,
+      tenantDisplayName,
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      whatsapp,
+      jobTitle,
+      departmentText,
+      reason,
+      acceptedTerms,
+      informationDeclaration,
+      consent,
+    ],
+  );
+
+  const reviewSections = useMemo(
+    () => buildRequestAccessReviewSections(formValues, { employeeFlow }),
+    [formValues, employeeFlow],
+  );
+
+  function handlePersonTypeChange(next: PersonType) {
+    setPersonType(next);
+    if (taxId) {
+      const nextKind = next === 'business' ? 'CNPJ' : 'CPF';
+      setTaxId(formatTaxId(taxId, nextKind));
+    }
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (employeeFlow && password !== confirmPassword) {
-      toast.error('As senhas não conferem.');
+    const form = event.currentTarget;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const validation = validateRequestAccessForm(formValues, { employeeFlow });
+    setTermsError(null);
+    setDeclarationError(null);
+
+    if (!validation.valid) {
+      if (validation.field === 'acceptedTerms') {
+        setTermsError(validation.error ?? null);
+      }
+      if (validation.field === 'informationDeclaration') {
+        setDeclarationError(validation.error ?? null);
+      }
+      toast.error(validation.error ?? 'Revise os campos do formulário.');
+      return;
+    }
+
+    setReviewOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (submitting || !formValues.acceptedTerms) {
+      if (!formValues.acceptedTerms) {
+        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+      }
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const result = await submitAccessRequest({
-        personType: employeeFlow ? 'business' : personType,
-        taxId,
-        tenantDisplayName: employeeFlow ? undefined : tenantDisplayName,
-        firstName,
-        lastName,
-        email,
-        password,
-        whatsapp,
-        jobTitle,
-        departmentText,
-        reason,
-        operationalNotificationsConsent: consent,
-      });
+      const payload = buildRequestAccessPayload(formValues, { employeeFlow });
+      const result = await submitAccessRequest(payload);
 
+      setReviewOpen(false);
       setSubmitted(true);
       toast.success(result.message);
 
@@ -221,18 +304,16 @@ export function RequestAccessPage() {
               {!employeeFlow && (
                 <div className="flex flex-col gap-2">
                   <span className="form-label block">Tipo de cliente</span>
-                  <PersonTypeSegment value={personType} onChange={setPersonType} />
+                  <PersonTypeSegment value={personType} onChange={handlePersonTypeChange} />
                 </div>
               )}
 
-              <Input
+              <TaxIdInput
                 id="taxId"
+                kind={taxIdKind}
                 label={employeeFlow || personType === 'business' ? 'CNPJ da empresa' : 'CPF'}
                 value={taxId}
-                onChange={(e) => setTaxId(e.target.value)}
-                placeholder={
-                  employeeFlow || personType === 'business' ? '00.000.000/0000-00' : '000.000.000-00'
-                }
+                onChange={setTaxId}
                 required
               />
 
@@ -308,13 +389,11 @@ export function RequestAccessPage() {
                 />
               )}
 
-              <Input
+              <WhatsappInput
                 id="whatsapp"
                 label="WhatsApp"
                 value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder="+55 11 99999-9999"
-                autoComplete="tel"
+                onChange={setWhatsapp}
                 required
               />
 
@@ -354,16 +433,49 @@ export function RequestAccessPage() {
 
             <div className="h-px bg-doqyn-border-subtle" />
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3">
-              <input
-                type="checkbox"
-                className={CHECKBOX_CLASS}
+            <div className="space-y-4">
+              <TermsAcceptanceCheckbox
+                checked={acceptedTerms}
+                onChange={(value) => {
+                  setAcceptedTerms(value);
+                  if (value) setTermsError(null);
+                }}
+                error={termsError}
+                privacyHref={undefined}
+                required
+              />
+
+              {employeeFlow && (
+                <Checkbox
+                  checked={informationDeclaration}
+                  onChange={(event) => {
+                    setInformationDeclaration(event.target.checked);
+                    if (event.target.checked) setDeclarationError(null);
+                  }}
+                  required
+                  wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+                  label={
+                    <span className="text-sm leading-relaxed text-doqyn-muted">
+                      Declaro que as informações fornecidas são verdadeiras e que solicito acesso à
+                      empresa informada.
+                    </span>
+                  }
+                  description={
+                    declarationError ? (
+                      <span className="form-error text-xs">{declarationError}</span>
+                    ) : undefined
+                  }
+                />
+              )}
+
+              <Checkbox
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
                 required
+                wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+                label={<span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>}
               />
-              <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
-            </label>
+            </div>
           </div>
 
           <div className="mt-8 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -373,11 +485,28 @@ export function RequestAccessPage() {
             >
               {employeeFlow ? 'Voltar' : 'Já tenho conta'}
             </Link>
-            <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-              {submitting ? 'Enviando...' : 'Solicitar acesso'}
+            <Button type="submit" className="w-full sm:w-auto">
+              Solicitar acesso
             </Button>
           </div>
         </form>
+
+        <ReviewBeforeSubmitDialog
+          open={reviewOpen}
+          title={REQUEST_ACCESS_REVIEW_COPY.title}
+          description={REQUEST_ACCESS_REVIEW_COPY.description}
+          attentionMessage={REQUEST_ACCESS_REVIEW_COPY.attentionMessage}
+          sections={reviewSections}
+          submitting={submitting}
+          confirmLabel={REQUEST_ACCESS_REVIEW_COPY.confirmLabel}
+          onCancel={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onEdit={() => {
+            if (!submitting) setReviewOpen(false);
+          }}
+          onConfirm={handleConfirmSubmit}
+        />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
           <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />

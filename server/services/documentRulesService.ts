@@ -1,6 +1,5 @@
 import type { DocumentClassRule } from '../ai/types/documentAi.types.js';
 import { DOCUMENT_CLASS_RULES } from '../ai/mocks/documentRules.mock.js';
-import { DEV_TENANT_ID } from '../db/constants.js';
 import type {
   MongoDocumentCategory,
   MongoDocumentClass,
@@ -12,15 +11,22 @@ import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { countActiveAccessRules } from './documentAccessRulesService.js';
+import { isAllowMockRulesEnabled } from './documentRulesConfig.js';
 import { logger } from '../utils/logger.js';
+import { ServiceError } from '../utils/serviceErrors.js';
 
 export class DocumentRulesNotSeededError extends Error {
   readonly code = 'DOCUMENT_RULES_NOT_CONFIGURED';
   readonly statusCode = 503;
+  readonly reason: 'governance_unavailable' | 'no_categories' | 'no_extraction_rules';
 
-  constructor(message: string) {
+  constructor(
+    message: string,
+    reason: 'governance_unavailable' | 'no_categories' | 'no_extraction_rules' = 'no_categories',
+  ) {
     super(message);
     this.name = 'DocumentRulesNotSeededError';
+    this.reason = reason;
   }
 }
 
@@ -29,6 +35,7 @@ export type DocumentRulesLoadResult = {
   source: 'mongodb' | 'mock';
   companyId: string;
   database: string;
+  collectionsConsulted: string[];
   activeCategoriesCount: number;
   activeExtractionRulesCount: number;
   activeAccessRulesCount: number;
@@ -70,7 +77,7 @@ function mapToDocumentClassRule(
   };
 }
 
-function mapCategoryExtractionRules(
+export function mapCategoryExtractionRules(
   categories: Array<MongoDocumentCategory | MongoDocumentClass>,
   extractionRules: Array<MongoDocumentExtractionRule | MongoDocumentRule>,
 ): DocumentClassRule[] {
@@ -179,30 +186,43 @@ async function loadFromLegacyCollections(tenantId: string, opts?: { ownerUserId?
 }
 
 export async function loadActiveDocumentClassRules(
-  companyId: string = DEV_TENANT_ID,
+  companyId: string,
   opts?: { ownerUserId?: string },
 ): Promise<DocumentRulesLoadResult> {
-  const tenantId = companyId;
+  const tenantId = companyId?.trim();
+  if (!tenantId) {
+    throw new ServiceError('Não foi possível identificar a empresa/tenant ativo da sessão.', 'TENANT_REQUIRED', 400);
+  }
+
   const database = getMongoDatabaseName();
 
   if (!isMongoNativeConfigured()) {
-    logger.warn('Usando fallback mock de regras porque MongoDB não está configurado.', {
-      companyId: tenantId,
-      database,
-      mockClassesCount: DOCUMENT_CLASS_RULES.length,
-    } as Record<string, unknown>);
+    if (isAllowMockRulesEnabled()) {
+      logger.warn('ALLOW_MOCK_RULES=true: usando catálogo mock em desenvolvimento.', {
+        companyId: tenantId,
+        database,
+        mockClassesCount: DOCUMENT_CLASS_RULES.length,
+      } as Record<string, unknown>);
 
-    return {
-      rules: DOCUMENT_CLASS_RULES,
-      source: 'mock',
-      companyId: tenantId,
-      database,
-      activeCategoriesCount: DOCUMENT_CLASS_RULES.length,
-      activeExtractionRulesCount: DOCUMENT_CLASS_RULES.length,
-      activeAccessRulesCount: DOCUMENT_CLASS_RULES.length,
-      usedMockFallback: true,
-      mockFallbackReason: 'mongodb_not_configured',
-    };
+      return {
+        rules: DOCUMENT_CLASS_RULES,
+        source: 'mock',
+        companyId: tenantId,
+        database,
+        collectionsConsulted: [],
+        activeCategoriesCount: DOCUMENT_CLASS_RULES.length,
+        activeExtractionRulesCount: DOCUMENT_CLASS_RULES.length,
+        activeAccessRulesCount: DOCUMENT_CLASS_RULES.length,
+        usedMockFallback: true,
+        mockFallbackReason: 'allow_mock_rules',
+      };
+    }
+
+    throw new ServiceError(
+      'O armazenamento de regras documentais não está configurado.',
+      'MONGODB_NOT_CONFIGURED',
+      503,
+    );
   }
 
   const governance = await loadFromGovernanceCollections(tenantId, opts);
@@ -214,6 +234,7 @@ export async function loadActiveDocumentClassRules(
   if (!loaded) {
     throw new DocumentRulesNotSeededError(
       'Governança documental não disponível para este tipo de cliente.',
+      'governance_unavailable',
     );
   }
 
@@ -222,19 +243,59 @@ export async function loadActiveDocumentClassRules(
   const activeExtractionRulesCount = loaded.extractionRules.length;
   const activeAccessRulesCount = loaded.activeAccessRulesCount;
 
-  if (!activeCategoriesCount || !mapped.length || !activeAccessRulesCount) {
-    logger.error('Categorias/regras ativas ausentes no MongoDB.', {
+  const collections = await getTenantCollections(tenantId, {
+    userId: opts?.ownerUserId,
+  });
+  const collectionsConsulted = [
+    collections.names.documentCategories,
+    collections.names.documentExtractionRules,
+    collections.names.documentRules,
+  ].filter(Boolean) as string[];
+
+  if (!activeCategoriesCount) {
+    logger.error('Categorias documentais ausentes no MongoDB.', {
       companyId: tenantId,
       database,
       activeCategoriesCount,
       activeExtractionRulesCount,
       activeAccessRulesCount,
       mappedRulesCount: mapped.length,
+      collectionsConsulted,
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Nenhuma categoria, grupo ou regra de acesso ativa encontrada para esta empresa.',
+      'Nenhuma categoria documental ativa encontrada para esta empresa.',
+      'no_categories',
     );
+  }
+
+  if (!mapped.length || !activeExtractionRulesCount) {
+    logger.error('Regras de extração/classificação ausentes no MongoDB.', {
+      companyId: tenantId,
+      database,
+      activeCategoriesCount,
+      activeExtractionRulesCount,
+      activeAccessRulesCount,
+      mappedRulesCount: mapped.length,
+      collectionsConsulted,
+    } as Record<string, unknown>);
+
+    throw new DocumentRulesNotSeededError(
+      'Nenhuma regra de classificação/extração ativa encontrada para as categorias desta empresa.',
+      'no_extraction_rules',
+    );
+  }
+
+  if (!activeAccessRulesCount) {
+    logger.warn('Matriz de acesso vazia — análise permitida, conexões podem estar pendentes no mapa.', {
+      companyId: tenantId,
+      database,
+      activeCategoriesCount,
+      activeExtractionRulesCount,
+      activeAccessRulesCount,
+      mappedRulesCount: mapped.length,
+      collectionsConsulted,
+    } as Record<string, unknown>);
   }
 
   return {
@@ -242,6 +303,7 @@ export async function loadActiveDocumentClassRules(
     source: 'mongodb',
     companyId: tenantId,
     database,
+    collectionsConsulted,
     activeCategoriesCount,
     activeExtractionRulesCount,
     activeAccessRulesCount,
@@ -250,7 +312,7 @@ export async function loadActiveDocumentClassRules(
 }
 
 export async function getActiveDocumentClassRules(
-  companyId: string = DEV_TENANT_ID,
+  companyId: string,
   opts?: { ownerUserId?: string },
 ): Promise<DocumentClassRule[]> {
   const loaded = await loadActiveDocumentClassRules(companyId, opts);
@@ -258,19 +320,31 @@ export async function getActiveDocumentClassRules(
 }
 
 export async function getActiveRulesPayload(
-  companyId: string = DEV_TENANT_ID,
+  companyId: string,
   opts?: { ownerUserId?: string },
 ) {
-  const tenantId = companyId;
+  const tenantId = companyId?.trim();
+  if (!tenantId) {
+    throw new ServiceError('Não foi possível identificar a empresa/tenant ativo da sessão.', 'TENANT_REQUIRED', 400);
+  }
+
   if (!isMongoNativeConfigured()) {
-    return {
-      companyId: tenantId,
-      database: getMongoDatabaseName(),
-      source: 'mock' as const,
-      activeClassesCount: DOCUMENT_CLASS_RULES.length,
-      activeRulesCount: DOCUMENT_CLASS_RULES.length,
-      classes: DOCUMENT_CLASS_RULES,
-    };
+    if (isAllowMockRulesEnabled()) {
+      return {
+        companyId: tenantId,
+        database: getMongoDatabaseName(),
+        source: 'mock' as const,
+        activeClassesCount: DOCUMENT_CLASS_RULES.length,
+        activeRulesCount: DOCUMENT_CLASS_RULES.length,
+        classes: DOCUMENT_CLASS_RULES,
+      };
+    }
+
+    throw new ServiceError(
+      'O armazenamento de regras documentais não está configurado.',
+      'MONGODB_NOT_CONFIGURED',
+      503,
+    );
   }
 
   try {

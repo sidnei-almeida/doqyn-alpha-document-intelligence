@@ -13,8 +13,11 @@ import { getAuthProviderType, usesDoqynAuth } from '@/auth/authConfig';
 import { AccessGateScreen } from '@/auth/AccessGateScreen';
 import { mapMeSessionToAuthUser, resolveAccessGate } from '@/auth/mapMeSession';
 import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
+import { ApiError, shouldLogoutForError } from '@/lib/apiErrors';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 import { AuthContext, type AuthContextValue } from '@/auth/authContext';
+
+import { queryClient } from '@/app/queryClient';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
@@ -22,6 +25,32 @@ const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/criar-empresa',
   '/criar-acesso-cpf',
 ];
+
+function applyPartialUserFromSessionError(
+  err: SessionApiError,
+  setUser: (user: AuthUser | null) => void,
+) {
+  if (!err.partialUser?.email) return;
+
+  const displayName =
+    [err.partialUser.firstName, err.partialUser.lastName].filter(Boolean).join(' ') ||
+    err.partialUser.email;
+
+  setUser({
+    id: err.partialUser.id ?? err.partialUser.email,
+    email: err.partialUser.email,
+    name: displayName,
+    username: err.partialUser.username,
+    firstName: err.partialUser.firstName,
+    lastName: err.partialUser.lastName,
+    companyId: '',
+    companyName: '',
+    role: 'user',
+    area: '',
+    groups: [],
+    roles: [],
+  });
+}
 
 function isPublicUnauthenticatedPath(): boolean {
   if (typeof window === 'undefined') return false;
@@ -107,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTenant(null);
     setMembership(null);
     setAccessGate(null);
+    queryClient.clear();
   }, []);
 
   const sessionSetters = useMemo(
@@ -125,20 +155,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applyMeSession(session, sessionSetters);
       setError(null);
     } catch (err) {
-      clearSession();
-
       if (err instanceof SessionApiError) {
-        if (err.code === 'NO_ACTIVE_MEMBERSHIP') {
-          setAccessGate('no_membership');
-          setError(null);
-          return;
+        if (err.accessGate) {
+          applyPartialUserFromSessionError(err, setUser);
+          setTenant(null);
+          setMembership(null);
+          setAccessGate(err.accessGate);
+          setError(err.friendlyMessage);
+          throw err;
         }
-        if (err.statusCode === 401) {
-          setError(null);
+
+        if (shouldLogoutForError(err.code) || err.status === 401) {
+          clearSession();
+          setError(err.friendlyMessage);
           return;
         }
       }
 
+      if (err instanceof ApiError && err.status === 403) {
+        setError(err.friendlyMessage);
+        return;
+      }
+
+      clearSession();
       throw err;
     }
   }, [clearSession, sessionSetters]);
@@ -190,8 +229,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       clearSession();
     } catch (err) {
+      if (err instanceof SessionApiError && err.accessGate) {
+        setError(err.friendlyMessage);
+        return;
+      }
+
       clearSession();
-      setError(err instanceof Error ? err.message : 'Falha ao autenticar.');
+      if (err instanceof ApiError) {
+        setError(err.friendlyMessage);
+      } else {
+        setError(err instanceof Error ? err.message : 'Falha ao autenticar.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (isDoqynAuth || isApiAuth) {
+        queryClient.clear();
         await loginRequest({ email, password, rememberMe });
         if (isDoqynAuth) {
           await loadDoqynSession();
@@ -319,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           reason={accessGate}
           email={user?.email}
           tenantName={tenant?.displayName}
+          message={error ?? undefined}
           onLogout={() => void logout()}
         />
       </AuthContext.Provider>

@@ -53,8 +53,9 @@ export function serializeTenantMember(member: MongoTenantMember) {
     notificationPreferences: member.notificationPreferences,
     consent: member.consent
       ? {
-          ...member.consent,
+          textVersion: member.consent.consentTextVersion,
           acceptedAt: member.consent.acceptedAt?.toISOString(),
+          operationalNotificationsConsent: member.consent.operationalNotifications,
         }
       : undefined,
     requestedCompanyId: member.requestedTenantId ?? member.requestedAccess?.tenantId,

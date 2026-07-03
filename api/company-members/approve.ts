@@ -15,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         platformRoles?: string[];
         tenantRoles?: string[];
         accessGroupIds?: string[];
+        documentGroupIds?: string[];
         notificationPreferences?: Record<string, boolean>;
       };
 
@@ -22,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         platformRoles: body.platformRoles,
         tenantRoles: body.tenantRoles,
         accessGroupIds: body.accessGroupIds ?? [],
+        documentGroupIds: body.documentGroupIds ?? [],
         notificationPreferences: body.notificationPreferences,
       });
     },

@@ -1,5 +1,9 @@
 import Groq from 'groq-sdk';
-import { AI_ERROR_MESSAGES, DEFAULT_GROQ_MODEL } from '../constants.js';
+import { AI_ERROR_MESSAGES } from '../constants.js';
+import {
+  getGroqMaxOutputTokens,
+  getGroqModelFromEnv,
+} from '../utils/aiConfig.js';
 import {
   diagnoseClassifierError,
   sanitizeDiagnosticText,
@@ -26,13 +30,17 @@ export type CompleteJsonPromptOptions = {
 function getGroqApiKey(): string {
   const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.groqNotConfigured, 'GROQ_NOT_CONFIGURED', 503);
+    throw new AiAnalysisError(
+      AI_ERROR_MESSAGES.aiProviderNotConfigured,
+      'AI_PROVIDER_NOT_CONFIGURED',
+      503,
+    );
   }
   return apiKey;
 }
 
 export function getGroqModel(): string {
-  return process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
+  return getGroqModelFromEnv();
 }
 
 export function getGroqClassifierModel(): string {
@@ -99,6 +107,7 @@ async function callGroqCompletion(
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.1,
+    max_tokens: getGroqMaxOutputTokens(),
     ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
     messages: [
       {
@@ -145,6 +154,7 @@ export async function completeJsonPrompt(
     extractorModel: getGroqExtractorModel(),
     responseFormat,
     promptChars,
+    maxOutputTokens: getGroqMaxOutputTokens(),
     groqApiKeyConfigured: isGroqApiKeyConfigured(),
   });
 

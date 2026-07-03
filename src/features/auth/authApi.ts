@@ -3,21 +3,13 @@ import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
 import { mapMeSessionToAuthUser } from '@/auth/mapMeSession';
 import type { AuthUser } from '@/features/auth/types';
 import type { MeSession } from '@/auth/sessionTypes';
+import { ApiError, parseApiError } from '@/lib/apiErrors';
 
 type LoginInput = {
   email: string;
   password: string;
   rememberMe?: boolean;
 };
-
-async function parseError(response: Response) {
-  try {
-    const data = await response.json();
-    return data?.message || data?.error || 'Erro inesperado';
-  } catch {
-    return 'Erro inesperado';
-  }
-}
 
 export async function doqynLoginRequest(input: LoginInput): Promise<void> {
   const base = getAuthBasePath();
@@ -29,7 +21,7 @@ export async function doqynLoginRequest(input: LoginInput): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 }
 
@@ -41,7 +33,7 @@ export async function doqynLogoutRequest(): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 }
 
@@ -53,7 +45,7 @@ export async function doqynMeRequest(): Promise<MeSession | null> {
   }
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 
   return (await response.json()) as MeSession;
@@ -64,7 +56,11 @@ export async function loginRequest(input: LoginInput): Promise<AuthUser> {
     await doqynLoginRequest(input);
     const session = await doqynMeRequest();
     if (!session) {
-      throw new Error('Não foi possível carregar a sessão após login.');
+      throw new ApiError({
+        status: 401,
+        code: 'AUTH_REQUIRED',
+        message: 'Não foi possível carregar a sessão após login.',
+      });
     }
     return mapMeSessionToAuthUser(session);
   }
@@ -77,7 +73,7 @@ export async function loginRequest(input: LoginInput): Promise<AuthUser> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 
   const data = (await response.json()) as { user: AuthUser };
@@ -97,7 +93,7 @@ export async function meRequest(): Promise<AuthUser | null> {
   }
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 
   const data = (await response.json()) as MeSession & { legacyUser?: AuthUser };
@@ -125,6 +121,8 @@ export async function logoutRequest(): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw await parseApiError(response);
   }
 }
+
+export { ApiError };
