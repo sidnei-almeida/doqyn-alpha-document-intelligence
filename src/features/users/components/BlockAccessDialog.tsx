@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
@@ -43,7 +44,7 @@ export function BlockAccessDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -63,7 +64,7 @@ export function BlockAccessDialog({
             className="rounded p-1 text-doqyn-muted hover:bg-doqyn-surface-hover"
             aria-label="Fechar"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </button>
         </div>
 

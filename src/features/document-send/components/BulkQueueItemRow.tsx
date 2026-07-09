@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import type { BulkUploadItem } from '../types/bulk';
 import { ProcessingHistoryBadge } from './ProcessingHistoryBadge';
 
@@ -55,7 +57,11 @@ export function BulkQueueItemRow({
             className="shrink-0 text-doqyn-muted hover:text-doqyn-text"
             aria-label={expanded ? 'Recolher logs' : 'Expandir logs'}
           >
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {expanded ? (
+              <Icon name="expand_more" size={ICON_SIZE.xs} />
+            ) : (
+              <Icon name="chevron_right" size={ICON_SIZE.xs} />
+            )}
           </button>
         ) : (
           <span className="w-4 shrink-0" />
@@ -71,9 +77,9 @@ export function BulkQueueItemRow({
           )}
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-doqyn-text" title={item.originalFileName}>
+            <TruncatedText as="p" className="text-sm text-doqyn-text">
               {item.originalFileName}
-            </p>
+            </TruncatedText>
             <p className="mt-0.5 truncate text-xs text-doqyn-muted">
               {item.className ?? '—'}
               {item.confidence !== undefined && ` · ${Math.round(item.confidence * 100)}%`}

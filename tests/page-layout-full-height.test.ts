@@ -12,15 +12,20 @@ function readSrc(relativePath: string): string {
 }
 
 describe('layout de altura total nas páginas internas', () => {
-  it('AppLayout usa shell flex com min-h-dvh e main content expansível', () => {
-    const source = readSrc('components/layout/AppLayout.tsx');
+  it('WorkspaceLayout usa shell flex com altura fixa na viewport e main content expansível', () => {
+    const source = readSrc('app/layout/WorkspaceLayout.tsx');
     assert.ok(source.includes('app-shell'));
-    assert.ok(source.includes('min-h-dvh'));
+    assert.ok(source.includes('h-dvh'));
+    assert.ok(source.includes('overflow-hidden'));
     assert.ok(source.includes('main-content'));
     assert.ok(source.includes('page-outlet'));
     assert.ok(source.includes('flex-1'));
     assert.equal(source.includes('h-auto w-full'), false);
-    assert.equal(source.includes('overflow-hidden'), false);
+  });
+
+  it('AppLayout delega para o WorkspaceLayout', () => {
+    const source = readSrc('components/layout/AppLayout.tsx');
+    assert.ok(source.includes('WorkspaceLayout'));
   });
 
   it('PageShell define header fixo e body flexível', () => {
@@ -43,7 +48,7 @@ describe('layout de altura total nas páginas internas', () => {
   it('DashboardPage usa PageShell e grid principal expansível', () => {
     const source = readSrc('features/documents/DashboardPage.tsx');
     assert.ok(source.includes('PageShell'));
-    assert.ok(source.includes('dashboard-main-grid'));
+    assert.ok(source.includes('overview-main-grid'));
     assert.ok(source.includes('flex-1'));
   });
 
@@ -55,15 +60,16 @@ describe('layout de altura total nas páginas internas', () => {
     assert.ok(source.includes('flex-1'));
     assert.ok(canvas.includes('rules-map'));
     assert.ok(canvas.includes('flex-1'));
-    assert.ok(canvas.includes('rules-column'));
+    assert.ok(canvas.includes('GovernanceFlowCanvas'));
   });
 
   it('DocumentsPage usa DataTable com stretch e min-height', () => {
     const source = readSrc('features/documents/DocumentsPage.tsx');
     const table = readSrc('components/ui/DataTable.tsx');
     assert.ok(source.includes('PageShell'));
+    assert.ok(source.includes('FilterBar'));
     assert.ok(source.includes('stretch'));
-    assert.ok(source.includes('min-h-[420px]'));
+    assert.ok(source.includes('sparseMessage'));
     assert.ok(table.includes('stretch'));
   });
 
@@ -86,7 +92,7 @@ describe('layout de altura total nas páginas internas', () => {
     const pages = [
       'features/documents/DashboardPage.tsx',
       'features/documents/DocumentsPage.tsx',
-      'features/documents/SettingsPage.tsx',
+      'features/settings/SettingsPage.tsx',
       'features/rules/RulesPage.tsx',
       'features/users/UsersPage.tsx',
       'features/audit/AuditPage.tsx',

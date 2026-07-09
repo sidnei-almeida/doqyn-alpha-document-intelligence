@@ -1,32 +1,33 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 
 export type AlertBannerVariant = 'error' | 'warning' | 'success' | 'info';
 
 const VARIANT_STYLES: Record<
   AlertBannerVariant,
-  { container: string; icon: string; Icon: typeof AlertCircle }
+  { container: string; icon: string; iconClass: string }
 > = {
   error: {
     container: 'border-[var(--feedback-error-border)] bg-[var(--feedback-error-bg)]',
-    icon: 'text-[var(--feedback-error-text)]',
-    Icon: AlertCircle,
+    icon: 'error',
+    iconClass: 'text-[var(--feedback-error-text)]',
   },
   warning: {
     container: 'border-[var(--feedback-warning-border)] bg-[var(--feedback-warning-bg)]',
-    icon: 'text-[var(--feedback-warning-text)]',
-    Icon: AlertTriangle,
+    icon: 'warning',
+    iconClass: 'text-[var(--feedback-warning-text)]',
   },
   success: {
     container: 'border-[var(--feedback-success-border)] bg-[var(--feedback-success-bg)]',
-    icon: 'text-[var(--feedback-success-text)]',
-    Icon: CheckCircle2,
+    icon: 'check_circle',
+    iconClass: 'text-[var(--feedback-success-text)]',
   },
   info: {
     container: 'border-[var(--feedback-info-border)] bg-[var(--feedback-info-bg)]',
-    icon: 'text-doqyn-muted',
-    Icon: Info,
+    icon: 'info',
+    iconClass: 'text-doqyn-muted',
   },
 };
 
@@ -44,7 +45,6 @@ export function AlertBanner({
   className?: string;
 }) {
   const styles = VARIANT_STYLES[variant];
-  const Icon = styles.Icon;
   const isAlert = variant === 'error' || variant === 'warning';
 
   return (
@@ -56,7 +56,11 @@ export function AlertBanner({
         className,
       )}
     >
-      <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', styles.icon)} strokeWidth={1.5} aria-hidden />
+      <Icon
+        name={styles.icon}
+        size={ICON_SIZE.sm}
+        className={cn('mt-0.5 shrink-0', styles.iconClass)}
+      />
       <div className="min-w-0 flex-1 space-y-1">
         {title ? (
           <p className="text-sm font-medium text-doqyn-text">{title}</p>

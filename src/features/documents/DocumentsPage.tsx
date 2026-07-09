@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useState } from 'react';
-import { Download, Eye, FileText, History, Upload } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useNavigate } from 'react-router-dom';
-import { FilterToolbar } from '@/components/layout/FilterToolbar';
+import { FilterBar, FilterBarField } from '@/components/ui/FilterBar';
 import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
+import { DateInput } from '@/components/ui/DateInput';
+import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { VersionBadge } from '@/components/ui/VersionBadge';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { formatDate } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
 import type { DocumentStatus } from '@/types/document';
@@ -98,15 +102,19 @@ export function DocumentsPage() {
       title="Documentos"
       description="Consulte, visualize e baixe documentos com preview seguro e rastreabilidade."
       actions={
-        <Button onClick={() => navigate('/upload')}>
-          <Upload className="h-4 w-4" />
-          Enviar documento
+        <Button onClick={() => navigate('/biblioteca')}>
+          <Icon name="upload" size={ICON_SIZE.xs} />
+          Ir para a Biblioteca
         </Button>
       }
       bodyClassName="min-h-0"
     >
-      <FilterToolbar>
-        <div className="min-w-[200px] flex-1">
+      <FilterBar
+        showClear={hasActiveFilters}
+        onClear={clearFilters}
+        summary={`${documents.length} ${documents.length === 1 ? 'documento' : 'documentos'}`}
+      >
+        <FilterBarField span={2}>
           <Input
             id="doc-search"
             label="Buscar"
@@ -114,72 +122,91 @@ export function DocumentsPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
-        </div>
-        <Select
-          id="doc-status"
-          label="Status"
-          options={[
-            { value: '', label: 'Todos' },
-            { value: 'active', label: 'Ativo' },
-            { value: 'processed', label: 'Processado' },
-            { value: 'analyzing', label: 'Em análise' },
-          ]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full min-w-[140px] sm:w-[160px]"
-        />
-        <Select
-          id="doc-category"
-          label="Categoria"
-          options={[
-            { value: '', label: 'Todas' },
-            ...categories.map((category) => ({ value: category.id, label: category.name })),
-          ]}
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="w-full min-w-[140px] sm:w-[180px]"
-        />
-        <Input
-          id="doc-from"
-          label="De"
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="w-full min-w-[140px] sm:w-[160px]"
-        />
-        <Input
-          id="doc-to"
-          label="Até"
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="w-full min-w-[140px] sm:w-[160px]"
-        />
-        {hasActiveFilters && (
-          <Button variant="secondary" size="sm" onClick={clearFilters} className="self-end">
-            Limpar filtros
-          </Button>
-        )}
-        <p className="hidden pb-0.5 text-xs text-doqyn-muted sm:block">
-          {documents.length} {documents.length === 1 ? 'documento' : 'documentos'}
-        </p>
-      </FilterToolbar>
+        </FilterBarField>
+        <FilterBarField>
+          <Select
+            id="doc-status"
+            label="Status"
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'active', label: 'Ativo' },
+              { value: 'processed', label: 'Processado' },
+              { value: 'analyzing', label: 'Em análise' },
+            ]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          />
+        </FilterBarField>
+        <FilterBarField>
+          <Select
+            id="doc-category"
+            label="Categoria"
+            options={[
+              { value: '', label: 'Todas' },
+              ...categories.map((category) => ({ value: category.id, label: category.name })),
+            ]}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          />
+        </FilterBarField>
+        <FilterBarField>
+          <DateInput
+            id="doc-from"
+            label="De"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+        </FilterBarField>
+        <FilterBarField>
+          <DateInput
+            id="doc-to"
+            label="Até"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+        </FilterBarField>
+      </FilterBar>
 
       <DataTable
         stretch
-        className="min-h-[420px] flex-1"
-        data={documents}
+        className="flex-1"
+        data={isLoading ? [] : documents}
         keyExtractor={(d) => d.documentId}
         onRowClick={(doc) => openDocument(doc.documentId, 'details')}
         emptyMessage={emptyMessage}
+        emptyDescription={
+          hasActiveFilters
+            ? 'Tente remover ou ajustar os filtros para ampliar a busca.'
+            : 'Envie documentos para começar a montar a biblioteca.'
+        }
+        emptyAction={
+          hasActiveFilters ? (
+            <Button type="button" variant="secondary" size="sm" onClick={clearFilters}>
+              Limpar filtros
+            </Button>
+          ) : (
+            <Button type="button" size="sm" onClick={() => navigate('/biblioteca')}>
+              Enviar documento
+            </Button>
+          )
+        }
+        sparseMessage="Nenhum outro documento para os filtros atuais"
+        sparseDescription="Amplie o período ou ajuste os filtros para ver mais registros."
+        sparseAction={
+          hasActiveFilters ? (
+            <Button type="button" variant="secondary" size="sm" onClick={clearFilters}>
+              Ajustar filtros
+            </Button>
+          ) : undefined
+        }
         columns={[
           {
             key: 'name',
             header: 'Documento',
             render: (doc: DocumentListItem) => (
-              <span className="font-medium text-doqyn-text" title={doc.currentFileName}>
+              <TruncatedText className="max-w-[280px] font-medium">
                 {doc.currentFileName ?? doc.displayName}
-              </span>
+              </TruncatedText>
             ),
           },
           {
@@ -223,61 +250,51 @@ export function DocumentsPage() {
           {
             key: 'actions',
             header: 'Ações',
+            headerClassName: 'text-right',
+            className: 'text-right',
             render: (doc) => (
-              <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
+              <div className="flex justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                <IconButton
+                  label="Detalhes"
                   onClick={() => openDocument(doc.documentId, 'details')}
-                  title="Detalhes"
                 >
-                  <FileText className="h-3.5 w-3.5" />
-                </Button>
+                  <Icon name="description" size={ICON_SIZE.xs} />
+                </IconButton>
                 {doc.permissions?.canPreview !== false && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openDocument(doc.documentId, 'preview')}
-                    title={
+                  <IconButton
+                    label={
                       doc.latestVersionId
                         ? 'Visualizar'
                         : 'Versão não disponível para este documento.'
                     }
+                    onClick={() => openDocument(doc.documentId, 'preview')}
                     disabled={!doc.latestVersionId}
                   >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
+                    <Icon name="visibility" size={ICON_SIZE.xs} />
+                  </IconButton>
                 )}
                 {doc.permissions?.canDownload && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleDownload(doc)}
-                    title={
+                  <IconButton
+                    label={
                       doc.latestVersionId
                         ? 'Baixar original'
                         : 'Versão não disponível para este documento.'
                     }
+                    onClick={() => void handleDownload(doc)}
                     disabled={!doc.latestVersionId}
                   >
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
+                    <Icon name="download" size={ICON_SIZE.xs} />
+                  </IconButton>
                 )}
                 {doc.permissions?.canViewTracking && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                  <IconButton
+                    label="Ver tracking"
                     onClick={() =>
                       navigate(`/tracking?documentId=${encodeURIComponent(doc.documentId)}`)
                     }
-                    title="Ver tracking"
                   >
-                    <History className="h-3.5 w-3.5" />
-                  </Button>
+                    <Icon name="history" size={ICON_SIZE.xs} />
+                  </IconButton>
                 )}
               </div>
             ),

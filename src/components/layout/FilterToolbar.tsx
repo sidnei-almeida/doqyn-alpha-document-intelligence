@@ -1,20 +1,22 @@
-import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
+export { FilterBar, FilterBarField, type FilterBarProps, type FilterBarFieldProps } from '@/components/ui/FilterBar';
 
-interface FilterToolbarProps {
-  children: React.ReactNode;
+/** @deprecated Use FilterBar from @/components/ui/FilterBar */
+export function FilterToolbar({
+  children,
+  className,
+}: {
+  children: ReactNode;
   className?: string;
-}
-
-/** Barra de filtros/busca em largura total — acima do conteúdo, nunca ao lado do painel de detalhes. */
-export function FilterToolbar({ children, className }: FilterToolbarProps) {
+}) {
   return (
     <div
-      className={cn(
-        'rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-3',
-        className,
-      )}
+      className={
+        className ??
+        'rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-3'
+      }
     >
-      <div className="flex flex-wrap items-end gap-3">{children}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
     </div>
   );
 }

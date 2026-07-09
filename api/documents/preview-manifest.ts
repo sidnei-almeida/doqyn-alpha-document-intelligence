@@ -6,6 +6,7 @@ import { getDocumentPreviewManifest } from '../../server/services/documentPrevie
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
+import { setPreviewManifestCacheHeaders } from '../../server/utils/previewCacheHeaders.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -62,7 +63,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }).catch(() => undefined);
     }
 
-    res.setHeader('Cache-Control', 'private, no-store');
+    setPreviewManifestCacheHeaders(res, {
+      documentId,
+      versionId,
+      status: manifest.status,
+    });
     res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.status(200).json(manifest);
   } catch (error) {

@@ -1,3 +1,4 @@
+import { DateInput } from '@/components/ui/DateInput';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import type { AuditEventFilters, AuditSeverity } from '@/types/audit';
@@ -42,17 +43,15 @@ export function AuditFilters({ filters, onChange }: AuditFiltersProps) {
         }
         options={severityOptions}
       />
-      <Input
+      <DateInput
         id="audit-from"
         label="De"
-        type="date"
         value={filters.from ?? ''}
         onChange={(event) => onChange({ ...filters, from: event.target.value })}
       />
-      <Input
+      <DateInput
         id="audit-to"
         label="Até"
-        type="date"
         value={filters.to ?? ''}
         onChange={(event) => onChange({ ...filters, to: event.target.value })}
       />

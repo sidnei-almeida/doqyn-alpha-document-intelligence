@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
@@ -10,6 +11,8 @@ import type { DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 import { PERMISSION_LABELS, readGroupClassPermissions } from '../../utils/groupClassPermissions';
 import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections';
+import { PERMISSION_HINTS } from '../../utils/governanceMapUi';
+import { GovernancePermissionBadges } from './GovernancePermissionBadges';
 import { CategoryIcon } from '../categoryIcons';
 
 export type GovernanceEntitySelection =
@@ -40,7 +43,11 @@ type GovernanceDetailDialogProps = {
     categoryId: string,
     permissions: DocumentAccessPermissions,
   ) => Promise<void>;
+  onDraftPermissionChange?: (edgeId: string, permissions: DocumentAccessPermissions) => void;
+  isDraftOnlyConnection?: boolean;
+  draftConnectionPermissions?: DocumentAccessPermissions | null;
   onDisconnect?: (groupId: string, categoryId: string) => Promise<void>;
+  onSelectConnection?: (categoryId: string, groupId: string) => void;
   onConfigureExtraction?: (category: DocumentCategory) => void;
   onStartConnectMode?: (groupId: string) => void;
 };
@@ -60,7 +67,11 @@ export function GovernanceDetailDialog({
   onDeleteCategory,
   onDeactivateGroup,
   onPermissionChange,
+  onDraftPermissionChange,
+  isDraftOnlyConnection = false,
+  draftConnectionPermissions = null,
   onDisconnect,
+  onSelectConnection,
   onConfigureExtraction,
   onStartConnectMode,
 }: GovernanceDetailDialogProps) {
@@ -107,9 +118,13 @@ export function GovernanceDetailDialog({
       setName(group.name);
       setDescription(group.description ?? '');
     } else if (selection.type === 'connection' && category) {
-      setPermissions(readGroupClassPermissions(category, selection.groupId));
+      if (draftConnectionPermissions) {
+        setPermissions(draftConnectionPermissions);
+      } else {
+        setPermissions(readGroupClassPermissions(category, selection.groupId));
+      }
     }
-  }, [open, selection, category, group]);
+  }, [open, selection, category, group, draftConnectionPermissions]);
 
   useEffect(() => {
     if (!open) return;
@@ -151,7 +166,13 @@ export function GovernanceDetailDialog({
     if (!isAdmin || selection?.type !== 'connection') return;
     setSaving(true);
     try {
+      if (isDraftOnlyConnection && onDraftPermissionChange) {
+        onDraftPermissionChange(`${selection.categoryId}:${selection.groupId}`, permissions);
+        onClose();
+        return;
+      }
       await onPermissionChange(selection.groupId, selection.categoryId, permissions);
+      onClose();
     } finally {
       setSaving(false);
     }
@@ -169,7 +190,7 @@ export function GovernanceDetailDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="viewer-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-end justify-center p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={(event) => event.target === overlayRef.current && onClose()}
     >
       <div
@@ -200,7 +221,7 @@ export function GovernanceDetailDialog({
             className="rounded-lg p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </button>
         </div>
 
@@ -241,15 +262,22 @@ export function GovernanceDetailDialog({
                 {connectedGroups.length === 0 ? (
                   <p className="text-sm text-doqyn-muted">Nenhum grupo conectado.</p>
                 ) : (
-                  <ul className="space-y-1.5">
-                    {connectedGroups.map((item) => (
-                      <li
-                        key={item.id}
-                        className="rounded-lg border border-doqyn-border px-3 py-2 text-sm text-doqyn-text"
-                      >
-                        {item.name}
-                      </li>
-                    ))}
+                  <ul className="space-y-2">
+                    {connectedGroups.map((item) => {
+                      const edgePermissions = readGroupClassPermissions(category, item.id);
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => onSelectConnection?.(category.id, item.id)}
+                            className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                          >
+                            <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                            <GovernancePermissionBadges permissions={edgePermissions} />
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -299,15 +327,22 @@ export function GovernanceDetailDialog({
                 {connectedCategories.length === 0 ? (
                   <p className="text-sm text-doqyn-muted">Nenhuma categoria conectada.</p>
                 ) : (
-                  <ul className="space-y-1.5">
-                    {connectedCategories.map((item) => (
-                      <li
-                        key={item.id}
-                        className="rounded-lg border border-doqyn-border px-3 py-2 text-sm text-doqyn-text"
-                      >
-                        {item.name}
-                      </li>
-                    ))}
+                  <ul className="space-y-2">
+                    {connectedCategories.map((item) => {
+                      const edgePermissions = readGroupClassPermissions(item, group.id);
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => onSelectConnection?.(item.id, group.id)}
+                            className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                          >
+                            <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                            <GovernancePermissionBadges permissions={edgePermissions} />
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -316,28 +351,42 @@ export function GovernanceDetailDialog({
 
           {selection.type === 'connection' && category && group && (
             <>
-              <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 p-3">
-                <p className="text-sm text-doqyn-text">
-                  <span className="font-medium">{group.name}</span>
-                  <span className="text-doqyn-muted"> → </span>
-                  <span className="font-medium">{category.name}</span>
-                </p>
+              <div className="rounded-xl border border-doqyn-border bg-doqyn-bg/50 p-4">
+                <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+                  <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
+                    {group.name}
+                  </span>
+                  <span className="text-doqyn-muted">acessa</span>
+                  <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
+                    {category.name}
+                  </span>
+                </div>
+                <div className="mt-3 flex justify-center">
+                  <GovernancePermissionBadges permissions={permissions} />
+                </div>
+                {isDraftOnlyConnection && (
+                  <p className="mt-2 text-center text-[11px] text-doqyn-warning">
+                    Conexão pendente — salve o mapa para aplicar no servidor.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 {PERMISSION_KEYS.map((key) => (
-                  <Checkbox
-                    key={key}
-                    checked={permissions[key]}
-                    disabled={!isAdmin}
-                    onChange={(event) =>
-                      setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
-                    }
-                    label={PERMISSION_LABELS[key]}
-                    wrapperClassName={cn(
-                      'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
-                      !isAdmin && 'opacity-70',
-                    )}
-                  />
+                  <div key={key} className="space-y-1">
+                    <Checkbox
+                      checked={permissions[key]}
+                      disabled={!isAdmin}
+                      onChange={(event) =>
+                        setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
+                      }
+                      label={PERMISSION_LABELS[key]}
+                      wrapperClassName={cn(
+                        'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
+                        !isAdmin && 'opacity-70',
+                      )}
+                    />
+                    <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
+                  </div>
                 ))}
               </div>
             </>

@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types/rules';
 import { GROUP_COLOR_STYLES, getInitials } from '@/utils/rulesHelpers';
@@ -37,7 +37,7 @@ export function AssignedGroupBadge({ group, onRemove }: AssignedGroupBadgeProps)
           className="ml-0.5 rounded p-0.5 text-doqyn-muted transition-colors hover:text-doqyn-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-primary"
           aria-label={`Remover ${group.name}`}
         >
-          <X className="h-3 w-3" />
+          <Icon name="close" size={12} />
         </button>
       )}
     </span>

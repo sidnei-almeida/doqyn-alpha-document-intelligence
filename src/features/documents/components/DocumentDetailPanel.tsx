@@ -1,4 +1,4 @@
-import { History, Download } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -170,7 +170,7 @@ export function DocumentDetailPanel({
           <div className="flex flex-wrap gap-2">
             {data.permissions.canDownload && activeVersionId && (
               <Button variant="secondary" size="sm" onClick={() => void handleDownload()}>
-                <Download className="h-3.5 w-3.5" />
+                <Icon name="download" size={14} />
                 Baixar original
               </Button>
             )}
@@ -182,7 +182,7 @@ export function DocumentDetailPanel({
                   navigate(`/tracking?documentId=${encodeURIComponent(documentId)}`)
                 }
               >
-                <History className="h-3.5 w-3.5" />
+                <Icon name="history" size={14} />
                 Ver tracking
               </Button>
             )}

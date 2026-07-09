@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +38,7 @@ function TimelineEntry({ item }: { item: DocumentTimelineItem }) {
         </div>
         {hasDetails ? (
           <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Icon name={expanded ? 'expand_less' : 'expand_more'} size={ICON_SIZE.sm} />
           </Button>
         ) : null}
       </div>

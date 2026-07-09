@@ -1,11 +1,11 @@
-import { Check, Eye, MoreHorizontal, Pencil, UserX } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
+import { Button } from '@/components/ui/Button';
 import {
   buildRejectApprovalConfirm,
   buildRemoveMemberConfirm,
   buildSuspendMemberConfirm,
 } from '@/components/confirm/confirmMessages';
-import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { CompanyMember, Group, MemberStatus } from '@/types/rules';
 import { GROUP_COLOR_STYLES } from '@/utils/rulesHelpers';
@@ -165,7 +165,7 @@ function MemberActions({
   if (!isAdmin) {
     return (
       <Button type="button" variant="ghost" size="sm" onClick={onView} className="h-7 px-2">
-        <Eye className="h-3.5 w-3.5" />
+        <Icon name="visibility" size={14} />
       </Button>
     );
   }
@@ -174,7 +174,7 @@ function MemberActions({
     return (
       <div className="flex gap-1">
         <Button type="button" size="sm" onClick={onApprove} className="h-7 px-2">
-          <Check className="h-3.5 w-3.5" />
+          <Icon name="check" size={14} />
         </Button>
         <Button
           type="button"
@@ -183,7 +183,7 @@ function MemberActions({
           onClick={() => void onReject()}
           className="h-7 px-2 border-doqyn-border"
         >
-          <UserX className="h-3.5 w-3.5" />
+          <Icon name="person_remove" size={14} />
         </Button>
       </div>
     );
@@ -192,18 +192,18 @@ function MemberActions({
   return (
     <div className="flex gap-1">
       <Button type="button" variant="ghost" size="sm" onClick={onView} className="h-7 px-2">
-        <Eye className="h-3.5 w-3.5" />
+        <Icon name="visibility" size={14} />
       </Button>
       <Button type="button" variant="ghost" size="sm" onClick={onEditGroups} className="h-7 px-2">
-        <Pencil className="h-3.5 w-3.5" />
+        <Icon name="edit" size={14} />
       </Button>
       {member.status === 'active' && (
         <Button type="button" variant="ghost" size="sm" onClick={() => void onSuspend()} className="h-7 px-2 text-doqyn-warning">
-          <MoreHorizontal className="h-3.5 w-3.5" />
+          <Icon name="more_horiz" size={14} />
         </Button>
       )}
       <Button type="button" variant="ghost" size="sm" onClick={() => void onRemove()} className="h-7 px-2 text-doqyn-danger">
-        <UserX className="h-3.5 w-3.5" />
+        <Icon name="person_remove" size={14} />
       </Button>
     </div>
   );

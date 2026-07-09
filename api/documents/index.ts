@@ -11,8 +11,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const auth = await requireDocumentAuthContext(req, res);
     if (!auth) return;
 
-    const { id, search, status, type, area, categoryId, tenantId, from, to, limit, cursor } =
-      req.query;
+    const {
+      id,
+      search,
+      status,
+      processingStatus,
+      type,
+      area,
+      categoryId,
+      tenantId,
+      from,
+      to,
+      sort,
+      direction,
+      owner,
+      excludeArchived,
+      limit,
+      cursor,
+    } = req.query;
 
     try {
       assertQueryTenantMatchesSession(
@@ -44,11 +60,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         user: auth.user,
         search: typeof search === 'string' ? search : undefined,
         status: typeof status === 'string' ? status : undefined,
+        processingStatus: typeof processingStatus === 'string' ? processingStatus : undefined,
         type: typeof type === 'string' ? type : undefined,
         area: typeof area === 'string' ? area : undefined,
         categoryId: typeof categoryId === 'string' ? categoryId : undefined,
         from: typeof from === 'string' ? from : undefined,
         to: typeof to === 'string' ? to : undefined,
+        sort: typeof sort === 'string' ? sort : undefined,
+        direction: typeof direction === 'string' ? direction : undefined,
+        owner: typeof owner === 'string' ? owner : undefined,
+        excludeArchived: typeof excludeArchived === 'string' ? excludeArchived : undefined,
         limit: typeof limit === 'string' ? Number(limit) : undefined,
         cursor: typeof cursor === 'string' ? cursor : undefined,
       });

@@ -1,4 +1,5 @@
-import { Loader2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { resolveViewerComponent } from '../viewer/viewerRegistry';
 import { usePreviewManifest } from '../viewer/usePreviewManifest';
@@ -36,7 +37,7 @@ export function DocumentPreviewViewer({
         )}
       >
         <div className="flex items-center gap-2 text-sm text-doqyn-muted">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
           Carregando preview...
         </div>
       </section>

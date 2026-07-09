@@ -32,10 +32,6 @@ export default defineConfig({
             return 'vendor-query';
           }
 
-          if (id.includes('lucide-react')) {
-            return 'vendor-icons';
-          }
-
           if (id.includes('@dnd-kit/')) {
             return 'vendor-dnd';
           }
@@ -50,6 +46,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/auth': {
+        target: 'http://127.0.0.1:4100',
+        changeOrigin: true,
+      },
+      '/oauth': {
         target: 'http://127.0.0.1:4100',
         changeOrigin: true,
       },

@@ -16,4 +16,8 @@ export type AuthUser = {
   groups: string[];
   /** Roles da plataforma ou equivalente em mock. */
   roles?: string[];
+  avatarVersion?: number;
+  avatarUpdatedAt?: string;
+  avatarStatus?: 'active' | 'removed' | null;
+  avatarUrl?: string;
 };

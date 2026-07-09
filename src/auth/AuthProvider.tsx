@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -16,15 +17,21 @@ import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
 import { ApiError, shouldLogoutForError } from '@/lib/apiErrors';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 import { AuthContext, type AuthContextValue } from '@/auth/authContext';
-
+import { redirectToOAuth, isOAuthEnabled } from '@/auth/oauthLogin';
 import { queryClient } from '@/app/queryClient';
+import { clearPreviewCachesForTenant } from '@/features/documents/preview/clearPreviewCaches';
+import { clearAllThumbnailCache } from '@/features/documents/preview/thumbnailObjectUrlCache';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
   '/solicitar-acesso',
   '/criar-empresa',
   '/criar-acesso-cpf',
+  '/onboarding',
+  '/auth/oauth/callback',
 ];
+
+const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/auth/oauth/callback'];
 
 function applyPartialUserFromSessionError(
   err: SessionApiError,
@@ -55,6 +62,11 @@ function applyPartialUserFromSessionError(
 function isPublicUnauthenticatedPath(): boolean {
   if (typeof window === 'undefined') return false;
   return PUBLIC_UNAUTHENTICATED_PATHS.some((path) => window.location.pathname.startsWith(path));
+}
+
+function shouldBypassAccessGate(): boolean {
+  if (typeof window === 'undefined') return false;
+  return ACCESS_GATE_BYPASS_PATHS.some((path) => window.location.pathname.startsWith(path));
 }
 
 const MOCK_DEV_USER: AuthUser = {
@@ -120,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initAttempt, setInitAttempt] = useState(0);
+  const previousTenantIdRef = useRef<string | null>(null);
 
   const roles = useMemo(
     () => membership?.tenantRoles ?? user?.roles ?? user?.groups ?? [],
@@ -136,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTenant(null);
     setMembership(null);
     setAccessGate(null);
+    clearAllThumbnailCache();
     queryClient.clear();
   }, []);
 
@@ -253,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (isDoqynAuth || isApiAuth) {
+        clearAllThumbnailCache();
         queryClient.clear();
         await loginRequest({ email, password, rememberMe });
         if (isDoqynAuth) {
@@ -266,9 +281,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isApiAuth, isDoqynAuth, isMock, loadDoqynSession, sessionSetters],
   );
 
-  const loginWithSSO = useCallback(async () => {
-    throw new Error('SSO não disponível. Use login por e-mail e senha.');
+  const loginWithGoogle = useCallback((returnUrl?: string) => {
+    redirectToOAuth('google', returnUrl);
   }, []);
+
+  const loginWithMicrosoft = useCallback((returnUrl?: string) => {
+    redirectToOAuth('microsoft', returnUrl);
+  }, []);
+
+  const loginWithSSO = useCallback(async () => {
+    loginWithGoogle();
+  }, [loginWithGoogle]);
 
   const logout = useCallback(async () => {
     if (isMock) {
@@ -303,7 +326,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refreshUser();
   }, [refreshUser, initAttempt]);
 
+  useEffect(() => {
+    const currentTenantId = tenant?.tenantId ?? null;
+    const previousTenantId = previousTenantIdRef.current;
+    if (previousTenantId && currentTenantId && previousTenantId !== currentTenantId) {
+      clearPreviewCachesForTenant(previousTenantId);
+    }
+    previousTenantIdRef.current = currentTenantId;
+  }, [tenant?.tenantId]);
+
   const supportsSso = false;
+  const supportsOAuth = isDoqynAuth && isOAuthEnabled();
   const isAuthenticated = Boolean(user) && !accessGate;
 
   const value = useMemo<AuthContextValue>(
@@ -321,8 +354,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authMode: AUTH_MODE,
       authProvider,
       supportsSso,
+      supportsOAuth,
       login,
       loginWithSSO,
+      loginWithGoogle,
+      loginWithMicrosoft,
       logout,
       refreshUser,
       refreshToken,
@@ -342,8 +378,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       authProvider,
       supportsSso,
+      supportsOAuth,
       login,
       loginWithSSO,
+      loginWithGoogle,
+      loginWithMicrosoft,
       logout,
       refreshUser,
       refreshToken,
@@ -361,7 +400,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (accessGate) {
+  if (accessGate && !shouldBypassAccessGate()) {
     return (
       <AuthContext.Provider value={value}>
         <AccessGateScreen

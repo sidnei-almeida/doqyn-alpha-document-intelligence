@@ -1,14 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
 import type { DocumentDetailResponse, DocumentListFilters, DocumentListItem } from '@/types/document-library';
+import { serializeDocumentFilters } from '@/features/library/utils/libraryFilterUtils';
+import { logLibraryDev } from '@/features/upload/utils/uploadDevLog';
 import { getDocument, listDocuments } from '../api/documentsApi';
 
-export function useDocuments(filters: DocumentListFilters) {
-  const { tenant } = useAuth();
+type UseDocumentsOptions = {
+  /** Evita reutilizar cache visual entre pastas/filtros distintos. */
+  listScopeKey?: string;
+  enabled?: boolean;
+};
+
+export function useDocuments(filters: DocumentListFilters, options?: UseDocumentsOptions) {
+  const { isAuthenticated, tenant, user } = useAuth();
+  const tenantId = tenant?.tenantId ?? user?.companyId;
+  const userId = user?.id ?? '';
+  const serialized = serializeDocumentFilters(filters);
+  const listScopeKey = options?.listScopeKey ?? serialized;
 
   return useQuery<DocumentListItem[]>({
-    queryKey: ['documents', tenant?.tenantId, filters],
-    queryFn: () => listDocuments(filters),
+    queryKey: ['documents', tenantId, userId, serialized, listScopeKey],
+    queryFn: async () => {
+      const items = await listDocuments(filters);
+      logLibraryDev('documents:list-success', {
+        tenantId: tenantId ?? null,
+        userId: userId || null,
+        count: items.length,
+        scope: listScopeKey,
+      });
+      return items;
+    },
+    enabled: isAuthenticated && (options?.enabled ?? true),
+    staleTime: 5_000,
+    refetchOnWindowFocus: true,
   });
 }
 

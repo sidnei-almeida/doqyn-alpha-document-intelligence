@@ -1,5 +1,5 @@
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
-import { AlertCircle, Check, Circle, Loader2 } from 'lucide-react';
 import type { ProcessingLogItem } from '../types';
 
 interface TimelineItemProps {
@@ -34,10 +34,10 @@ export function TimelineItem({ log, isLast = false }: TimelineItemProps) {
         )}
         aria-hidden
       >
-        {isDone && <Check className="h-3 w-3" strokeWidth={2.5} />}
-        {isActive && <Loader2 className="h-3 w-3 animate-spin" />}
-        {isError && <AlertCircle className="h-3 w-3" />}
-        {!isDone && !isActive && !isError && <Circle className="h-2 w-2 fill-current" />}
+        {isDone && <Icon name="check" size={12} weight={600} />}
+        {isActive && <Icon name="progress_activity" size={12} className="animate-spin" />}
+        {isError && <Icon name="error" size={12} />}
+        {!isDone && !isActive && !isError && <Icon name="circle" size={8} filled />}
       </span>
 
       <div className="min-w-0 flex-1 pt-0.5">

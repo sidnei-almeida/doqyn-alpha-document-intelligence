@@ -8,7 +8,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import { Checkbox } from '@/components/ui/Checkbox';
 import {
@@ -127,7 +127,7 @@ export function CategoryAccessBoard({
                           className="shrink-0 rounded p-1 text-doqyn-muted hover:text-doqyn-danger"
                           aria-label={`Excluir grupo ${group.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Icon name="delete" size={14} />
                         </button>
                       )}
                     </div>
@@ -177,7 +177,7 @@ export function CategoryAccessBoard({
                           className="rounded p-1.5 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-danger"
                           aria-label={`Excluir categoria ${category.name}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon name="delete" size={16} aria-hidden />
                         </button>
                       )}
                     </div>

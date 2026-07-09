@@ -44,6 +44,11 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/audit': () => import('../api/audit/index.js'),
   '/api/audit/overview': () => import('../api/audit/overview.js'),
   '/api/tracking/document-events': () => import('../api/tracking/document-events.js'),
+  '/api/tracking/summary': () => import('../api/tracking/summary.js'),
+  '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
+  '/api/favorites/documents': () => import('../api/favorites/documents.js'),
+  '/api/profile/me': () => import('../api/profile/me.js'),
+  '/api/profile/avatar': () => import('../api/profile/avatar.js'),
   '/api/ai/analyze-pdf': () => import('../api/ai/analyze-pdf.js'),
 };
 
@@ -121,6 +126,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     },
     { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
     {
+      regex: /^\/api\/documents\/([^/]+)\/favorite$/,
+      loader: () => import('../api/documents/[documentId]/favorite.js'),
+      paramKeys: ['documentId'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/manifest$/,
       loader: () => import('../api/documents/preview-manifest.js'),
       paramKeys: ['documentId', 'versionId'],
@@ -151,6 +161,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/tracking\/document-events\/([^/]+)$/,
       loader: () => import('../api/tracking/document-events-item.js'),
+    },
+    {
+      regex: /^\/api\/users\/([^/]+)\/avatar$/,
+      loader: () => import('../api/users/user-avatar.js'),
+      paramKeys: ['userId'],
     },
   ];
 

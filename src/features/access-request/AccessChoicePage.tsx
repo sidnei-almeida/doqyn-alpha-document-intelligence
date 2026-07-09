@@ -1,4 +1,5 @@
-import { Building2, User, UserPlus } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -7,12 +8,12 @@ function AccessOptionCard({
   to,
   title,
   subtitle,
-  icon: Icon,
+  icon,
 }: {
   to: string;
   title: string;
   subtitle: string;
-  icon: typeof Building2;
+  icon: string;
 }) {
   return (
     <Link
@@ -21,7 +22,7 @@ function AccessOptionCard({
     >
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-md border border-doqyn-border bg-doqyn-bg text-doqyn-text">
-          <Icon className="h-4 w-4" strokeWidth={1.5} />
+          <Icon name={icon} size={ICON_SIZE.xs} />
         </span>
         <span className="text-sm font-semibold text-doqyn-text group-hover:underline">{title}</span>
       </div>
@@ -30,7 +31,15 @@ function AccessOptionCard({
   );
 }
 
-export function AccessChoicePage() {
+export function AccessChoicePage({
+  eyebrow = 'Primeiro acesso',
+  title,
+  description = 'Escolha como deseja começar no DOQYN.',
+}: {
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+} = {}) {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-8">
       <div className="absolute right-4 top-4">
@@ -39,8 +48,11 @@ export function AccessChoicePage() {
 
       <div className="w-full max-w-md flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Primeiro acesso" />
-          <p className="mt-4 text-sm text-doqyn-muted">Escolha como deseja começar no DOQYN.</p>
+          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle={eyebrow} />
+          <h1 className="mt-4 text-base font-semibold text-doqyn-text">
+            {title ?? 'Como você quer começar?'}
+          </h1>
+          <p className="mt-2 text-sm text-doqyn-muted">{description}</p>
         </div>
 
         <div className="space-y-3">
@@ -48,19 +60,19 @@ export function AccessChoicePage() {
             to="/solicitar-acesso"
             title="Pedir acesso à minha empresa"
             subtitle="Para funcionários de uma empresa que já usa o DOQYN."
-            icon={UserPlus}
+            icon="person_add"
           />
           <AccessOptionCard
             to="/criar-empresa"
             title="Cadastrar minha empresa"
             subtitle="Para criar um novo ambiente da empresa no DOQYN."
-            icon={Building2}
+            icon="business"
           />
           <AccessOptionCard
             to="/criar-acesso-cpf"
             title="Acessar como pessoa física"
             subtitle="Para clientes CPF que precisam acessar documentos próprios no DOQYN."
-            icon={User}
+            icon="person"
           />
         </div>
 

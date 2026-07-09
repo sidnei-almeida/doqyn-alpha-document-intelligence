@@ -50,11 +50,15 @@ export async function downloadDocument(
   return fetchDocumentDownloadBlob({ documentId, versionId });
 }
 
-export async function fetchDocumentCategories(): Promise<Array<{ id: string; name: string }>> {
+export async function fetchDocumentCategories(): Promise<
+  Array<{ id: string; name: string; description?: string; slug?: string }>
+> {
   const response = await authFetch('/api/document-categories');
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }
-  const data = (await response.json()) as { categories?: Array<{ id: string; name: string }> };
+  const data = (await response.json()) as {
+    categories?: Array<{ id: string; name: string; description?: string; slug?: string }>;
+  };
   return data.categories ?? [];
 }

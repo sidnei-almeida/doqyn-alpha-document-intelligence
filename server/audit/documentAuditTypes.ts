@@ -18,7 +18,20 @@ export type DocumentAuditAction =
   | 'document.preview_generated'
   | 'document.preview_failed'
   | 'document.preview_viewed'
+  | 'document.preview_denied'
+  | 'document.viewer_opened'
+  | 'document.viewer_closed'
+  | 'document.print_attempt_blocked'
+  | 'document.download_attempted'
   | 'document.downloaded'
+  | 'document.download_denied'
+  | 'access.document_denied'
+  | 'access.document_allowed'
+  | 'access.permission_missing'
+  | 'file_explorer.folder_opened'
+  | 'file_explorer.search_performed'
+  | 'file_explorer.filter_applied'
+  | 'file_explorer.details_opened'
   | 'document.archived'
   | 'document.restored'
   | 'document.deleted'
@@ -128,7 +141,13 @@ export type DocumentTrackingListItem = {
     email?: string;
   };
   hasChanges: boolean;
+  status?: TrackingListStatus;
+  actionGroup?: string;
+  result?: string;
+  sessionHash?: string;
 };
+
+export type TrackingListStatus = 'success' | 'failed' | 'denied' | 'pending';
 
 export type DocumentTrackingDetail = DocumentTrackingListItem & {
   tenantId: string;
@@ -137,6 +156,7 @@ export type DocumentTrackingDetail = DocumentTrackingListItem & {
   metadata?: Record<string, unknown>;
   requestId?: string;
   durationMs?: number;
+  security?: Record<string, unknown>;
 };
 
 export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -154,7 +174,19 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.preview_generated': 'Preview gerado',
   'document.preview_failed': 'Falha no preview',
   'document.preview_viewed': 'Preview visualizado',
+  'document.preview_denied': 'Preview negado',
+  'document.viewer_opened': 'Viewer aberto',
+  'document.viewer_closed': 'Viewer fechado',
+  'document.print_attempt_blocked': 'Impressão bloqueada',
+  'document.download_attempted': 'Download tentado',
   'document.downloaded': 'Download realizado',
+  'document.download_denied': 'Download negado',
+  'access.document_denied': 'Acesso negado',
+  'access.document_allowed': 'Acesso permitido',
+  'file_explorer.folder_opened': 'Pasta aberta',
+  'file_explorer.search_performed': 'Busca realizada',
+  'file_explorer.filter_applied': 'Filtro aplicado',
+  'file_explorer.details_opened': 'Detalhes abertos',
   'document.storage_promoted': 'Arquivo promovido ao storage definitivo',
   'document.created': 'Documento criado',
   'document.metadata.confirmed': 'Metadados confirmados',

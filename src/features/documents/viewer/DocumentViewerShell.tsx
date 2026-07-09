@@ -25,7 +25,7 @@ export function DocumentViewerShell({
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef?.current && onOverlayClick?.()}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-3 sm:p-4"
+      className="viewer-overlay-scrim fixed inset-0 z-[60] flex items-center justify-center p-3 backdrop-blur-[2px] sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="document-viewer-modal-title"
@@ -37,7 +37,7 @@ export function DocumentViewerShell({
         <DocumentViewerToolbar {...toolbar} />
 
         <div className="flex min-h-0 flex-1">
-          <div className="relative min-h-0 min-w-0 flex-1 bg-doqyn-surface">{children}</div>
+          <div className="relative min-h-0 min-w-0 flex-1 bg-doqyn-thumbnail-chrome">{children}</div>
 
           <aside
             className={cn(

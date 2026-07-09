@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Minus, Plus, Settings2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Radio } from '@/components/ui/Radio';
+import { SettingsFieldGroup } from '@/features/settings/components/SettingsFieldGroup';
 import { cn } from '@/lib/utils';
 import type { DefaultNamingPolicy, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
 import {
@@ -18,6 +21,8 @@ interface ReviewWorkflowSettingsPanelProps {
   onChange: (settings: WorkflowReviewSettings) => void;
   disabled?: boolean;
   className?: string;
+  /** inline = formulário expandido (página de configurações); dropdown = popover compacto. */
+  variant?: 'dropdown' | 'inline';
 }
 
 const NAMING_POLICIES: DefaultNamingPolicy[] = [
@@ -27,7 +32,7 @@ const NAMING_POLICIES: DefaultNamingPolicy[] = [
   'manual_required',
 ];
 
-function SettingsSection({
+function CollapsibleSettingsSection({
   title,
   defaultOpen = false,
   children,
@@ -46,8 +51,10 @@ function SettingsSection({
         className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-doqyn-text hover:bg-doqyn-hover/50"
       >
         {title}
-        <ChevronDown
-          className={cn('h-3.5 w-3.5 text-doqyn-muted transition-transform', open && 'rotate-180')}
+        <Icon
+          name="expand_more"
+          size={14}
+          className={cn('text-doqyn-muted transition-transform', open && 'rotate-180')}
         />
       </button>
       {open && <div className="space-y-2 px-4 pb-3">{children}</div>}
@@ -67,26 +74,201 @@ function ToggleRow({
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  size?: 'compact' | 'comfortable';
 }) {
   return (
-    <label
-      className={cn(
-        'flex cursor-pointer items-start gap-2 text-xs',
-        disabled && 'cursor-not-allowed opacity-50',
-      )}
-    >
-      <input
-        type="checkbox"
-        className="mt-0.5 rounded border-doqyn-border"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
+    <Checkbox
+      checked={checked}
+      disabled={disabled}
+      label={label}
+      description={description}
+      onChange={(event) => onChange(event.target.checked)}
+    />
+  );
+}
+
+function NamingPolicyOptions({
+  value,
+  onChange,
+}: {
+  value: DefaultNamingPolicy;
+  onChange: (policy: DefaultNamingPolicy) => void;
+  size?: 'compact' | 'comfortable';
+}) {
+  return (
+    <div className="settings-choice-list" role="radiogroup" aria-label="Política de nomeação padrão">
+      {NAMING_POLICIES.map((policy) => (
+        <Radio
+          key={policy}
+          name="default-naming-policy"
+          checked={value === policy}
+          onChange={() => onChange(policy)}
+          label={NAMING_POLICY_LABELS[policy]}
+          wrapperClassName={cn(
+            'settings-choice-item',
+            value === policy && 'settings-choice-item--active',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AutoReviewControls({
+  settings,
+  patch,
+  adjustDelay,
+  size = 'compact',
+}: {
+  settings: WorkflowReviewSettings;
+  patch: (partial: Partial<WorkflowReviewSettings>) => void;
+  adjustDelay: (delta: number) => void;
+  size?: 'compact' | 'comfortable';
+}) {
+  return (
+    <>
+      <ToggleRow
+        label="Ativar modo automático"
+        description="Aceita análises confiáveis após o tempo configurado."
+        checked={settings.autoReviewEnabled}
+        onChange={(checked) => patch({ autoReviewEnabled: checked })}
+        size={size}
       />
-      <span>
-        <span className="font-medium text-doqyn-text">{label}</span>
-        {description && <span className="mt-0.5 block text-doqyn-muted">{description}</span>}
-      </span>
-    </label>
+      {settings.autoReviewEnabled && (
+        <div className="settings-stepper-row">
+          <span className="settings-stepper-row__label">Aguardar</span>
+          <div className="settings-stepper">
+            <button
+              type="button"
+              disabled={settings.autoAcceptDelaySeconds <= AUTO_DELAY_SECONDS_MIN}
+              onClick={() => adjustDelay(-1)}
+              className="settings-stepper__btn"
+              aria-label="Diminuir segundos"
+            >
+              <Icon name="remove" size={14} />
+            </button>
+            <input
+              type="number"
+              min={AUTO_DELAY_SECONDS_MIN}
+              max={AUTO_DELAY_SECONDS_MAX}
+              value={settings.autoAcceptDelaySeconds}
+              onChange={(event) => {
+                const parsed = Number.parseInt(event.target.value, 10);
+                if (!Number.isNaN(parsed)) {
+                  patch({ autoAcceptDelaySeconds: clampAutoDelaySeconds(parsed) });
+                }
+              }}
+              className="settings-stepper__input"
+              aria-label="Segundos antes da revisão automática"
+            />
+            <button
+              type="button"
+              disabled={settings.autoAcceptDelaySeconds >= AUTO_DELAY_SECONDS_MAX}
+              onClick={() => adjustDelay(1)}
+              className="settings-stepper__btn"
+              aria-label="Aumentar segundos"
+            >
+              <Icon name="add" size={14} />
+            </button>
+          </div>
+          <span className="settings-stepper-row__suffix">seg</span>
+        </div>
+      )}
+      <ToggleRow
+        label="Exigir revisão manual em baixa confiança"
+        checked={settings.pauseOnLowConfidence}
+        onChange={(checked) => patch({ pauseOnLowConfidence: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Exigir revisão manual com campos ausentes"
+        checked={settings.pauseOnMissingFields}
+        onChange={(checked) => patch({ pauseOnMissingFields: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Exigir revisão para documentos sensíveis"
+        description="Em breve — detecção automática de contratos e dados pessoais."
+        checked={settings.pauseOnSensitiveDocs}
+        onChange={(checked) => patch({ pauseOnSensitiveDocs: checked })}
+        disabled
+        size={size}
+      />
+    </>
+  );
+}
+
+function AiSuggestionControls({
+  settings,
+  patch,
+  size = 'compact',
+}: {
+  settings: WorkflowReviewSettings;
+  patch: (partial: Partial<WorkflowReviewSettings>) => void;
+  size?: 'compact' | 'comfortable';
+}) {
+  return (
+    <>
+      <ToggleRow
+        label="Permitir IA sugerir nome padronizado"
+        checked={settings.aiRenameEnabled}
+        onChange={(checked) => patch({ aiRenameEnabled: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Permitir IA preencher metadados"
+        description="Análise sempre executa; toggle prepara fase futura."
+        checked={settings.aiMetadataEnabled}
+        onChange={(checked) => patch({ aiMetadataEnabled: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Permitir IA sugerir categoria/classe"
+        description="Análise sempre executa; toggle prepara fase futura."
+        checked={settings.aiClassificationEnabled}
+        onChange={(checked) => patch({ aiClassificationEnabled: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Nunca incluir CPF/CNPJ no nome sugerido"
+        checked={settings.preventSensitiveDataInFileName}
+        onChange={(checked) => patch({ preventSensitiveDataInFileName: checked })}
+        size={size}
+      />
+    </>
+  );
+}
+
+function BatchControls({
+  settings,
+  patch,
+  size = 'compact',
+}: {
+  settings: WorkflowReviewSettings;
+  patch: (partial: Partial<WorkflowReviewSettings>) => void;
+  size?: 'compact' | 'comfortable';
+}) {
+  return (
+    <>
+      <ToggleRow
+        label="Aplicar esta configuração aos próximos arquivos do lote"
+        checked={settings.applyToBatch}
+        onChange={(checked) => patch({ applyToBatch: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Parar para revisão quando houver conflito"
+        checked={settings.pauseOnConflict}
+        onChange={(checked) => patch({ pauseOnConflict: checked })}
+        size={size}
+      />
+      <ToggleRow
+        label="Continuar automaticamente quando estiver seguro"
+        checked={settings.continueWhenSafe}
+        onChange={(checked) => patch({ continueWhenSafe: checked })}
+        size={size}
+      />
+    </>
   );
 }
 
@@ -95,6 +277,7 @@ export function ReviewWorkflowSettingsPanel({
   onChange,
   disabled = false,
   className,
+  variant = 'dropdown',
 }: ReviewWorkflowSettingsPanelProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,7 +294,7 @@ export function ReviewWorkflowSettingsPanel({
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || variant === 'inline') return;
     const onPointerDown = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) {
         setOpen(false);
@@ -126,7 +309,102 @@ export function ReviewWorkflowSettingsPanel({
       window.removeEventListener('mousedown', onPointerDown);
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [open, variant]);
+
+  const dropdownBody = (
+    <div className="max-h-[min(70vh,28rem)] overflow-y-auto scrollbar-thin">
+      <CollapsibleSettingsSection title="Revisão automática">
+        <AutoReviewControls
+          settings={settings}
+          patch={patch}
+          adjustDelay={adjustDelay}
+        />
+      </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title="Nome do documento">
+        <NamingPolicyOptions
+            value={settings.defaultNamingPolicy}
+            onChange={(policy) => patch({ defaultNamingPolicy: policy })}
+          />
+      </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title="Sugestões da IA">
+        <AiSuggestionControls settings={settings} patch={patch} />
+      </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title="Upload em lote">
+        <BatchControls settings={settings} patch={patch} />
+      </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title="Segurança">
+        <p className="text-[11px] leading-relaxed text-doqyn-muted">
+          Nomes são sanitizados (sem barras ou path traversal), limitados a ~180 caracteres e
+          forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome sugerido quando
+          a proteção está ativa.
+        </p>
+      </CollapsibleSettingsSection>
+    </div>
+  );
+
+  const inlineBody = (
+    <div className="settings-workflow-panel">
+      <SettingsFieldGroup
+        title="Revisão automática"
+        description="Define quando a análise pode seguir sem intervenção manual."
+      >
+        <AutoReviewControls
+          settings={settings}
+          patch={patch}
+          adjustDelay={adjustDelay}
+          size="comfortable"
+        />
+      </SettingsFieldGroup>
+
+      <div className="settings-workflow-panel__grid">
+        <SettingsFieldGroup
+          title="Nome do documento"
+          description="Política padrão aplicada após a análise da IA."
+        >
+          <NamingPolicyOptions
+            value={settings.defaultNamingPolicy}
+            onChange={(policy) => patch({ defaultNamingPolicy: policy })}
+            size="comfortable"
+          />
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          title="Sugestões da IA"
+          description="Controle o que a IA pode sugerir automaticamente."
+        >
+          <AiSuggestionControls settings={settings} patch={patch} size="comfortable" />
+        </SettingsFieldGroup>
+      </div>
+
+      <div className="settings-workflow-panel__grid">
+        <SettingsFieldGroup
+          title="Upload em lote"
+          description="Comportamento ao enviar vários arquivos de uma vez."
+        >
+          <BatchControls settings={settings} patch={patch} size="comfortable" />
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          title="Proteção de nomes"
+          description="Regras de sanitização aplicadas aos nomes sugeridos."
+        >
+          <p className="text-sm leading-relaxed text-doqyn-muted">
+            Nomes são sanitizados (sem barras ou path traversal), limitados a aproximadamente 180
+            caracteres e forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome
+            sugerido quando a proteção está ativa.
+          </p>
+        </SettingsFieldGroup>
+      </div>
+    </div>
+  );
+
+  if (variant === 'inline') {
+    return (
+      <div className={cn(className)} data-testid="upload-workflow-settings-inline">
+        {inlineBody}
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
@@ -142,15 +420,17 @@ export function ReviewWorkflowSettingsPanel({
         aria-expanded={open}
         aria-haspopup="dialog"
       >
-        <Settings2 className="h-3.5 w-3.5 shrink-0 text-doqyn-primary" />
+        <Icon name="tune" size={14} className="shrink-0 text-doqyn-primary" />
         <span>Configurações da revisão</span>
         {summary && (
           <Badge variant="default" className="text-[10px]">
             {summary}
           </Badge>
         )}
-        <ChevronDown
-          className={cn('h-3.5 w-3.5 text-doqyn-muted transition-transform', open && 'rotate-180')}
+        <Icon
+          name="expand_more"
+          size={14}
+          className={cn('text-doqyn-muted transition-transform', open && 'rotate-180')}
         />
       </button>
 
@@ -166,149 +446,7 @@ export function ReviewWorkflowSettingsPanel({
               Controle revisão automática, nomeação e comportamento em lote nesta sessão.
             </p>
           </div>
-
-          <div className="max-h-[min(70vh,28rem)] overflow-y-auto scrollbar-thin">
-            <SettingsSection title="Revisão automática" defaultOpen>
-              <ToggleRow
-                label="Ativar modo automático"
-                description="Aceita análises confiáveis após o tempo configurado."
-                checked={settings.autoReviewEnabled}
-                onChange={(checked) => patch({ autoReviewEnabled: checked })}
-              />
-              {settings.autoReviewEnabled && (
-                <div className="flex items-center gap-2 pl-6">
-                  <span className="text-[11px] text-doqyn-muted">Aguardar</span>
-                  <div className="flex items-center rounded-md border border-doqyn-border bg-doqyn-bg">
-                    <button
-                      type="button"
-                      disabled={settings.autoAcceptDelaySeconds <= AUTO_DELAY_SECONDS_MIN}
-                      onClick={() => adjustDelay(-1)}
-                      className="flex h-7 w-7 items-center justify-center text-doqyn-muted hover:text-doqyn-text disabled:opacity-30"
-                      aria-label="Diminuir segundos"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <input
-                      type="number"
-                      min={AUTO_DELAY_SECONDS_MIN}
-                      max={AUTO_DELAY_SECONDS_MAX}
-                      value={settings.autoAcceptDelaySeconds}
-                      onChange={(event) => {
-                        const parsed = Number.parseInt(event.target.value, 10);
-                        if (!Number.isNaN(parsed)) {
-                          patch({ autoAcceptDelaySeconds: clampAutoDelaySeconds(parsed) });
-                        }
-                      }}
-                      className="h-7 w-10 border-x border-doqyn-border bg-transparent text-center text-xs font-medium [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    />
-                    <button
-                      type="button"
-                      disabled={settings.autoAcceptDelaySeconds >= AUTO_DELAY_SECONDS_MAX}
-                      onClick={() => adjustDelay(1)}
-                      className="flex h-7 w-7 items-center justify-center text-doqyn-muted hover:text-doqyn-text disabled:opacity-30"
-                      aria-label="Aumentar segundos"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <span className="text-[11px] text-doqyn-muted">seg</span>
-                </div>
-              )}
-              <ToggleRow
-                label="Exigir revisão manual em baixa confiança"
-                checked={settings.pauseOnLowConfidence}
-                onChange={(checked) => patch({ pauseOnLowConfidence: checked })}
-              />
-              <ToggleRow
-                label="Exigir revisão manual com campos ausentes"
-                checked={settings.pauseOnMissingFields}
-                onChange={(checked) => patch({ pauseOnMissingFields: checked })}
-              />
-              <ToggleRow
-                label="Exigir revisão para documentos sensíveis"
-                description="Em breve — detecção automática de contratos/PII."
-                checked={settings.pauseOnSensitiveDocs}
-                onChange={(checked) => patch({ pauseOnSensitiveDocs: checked })}
-                disabled
-              />
-            </SettingsSection>
-
-            <SettingsSection title="Nome do documento">
-              <div className="space-y-1.5">
-                {NAMING_POLICIES.map((policy) => (
-                  <label
-                    key={policy}
-                    className={cn(
-                      'flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 text-xs',
-                      settings.defaultNamingPolicy === policy
-                        ? 'border-doqyn-primary/40 bg-doqyn-primary/10'
-                        : 'border-doqyn-border-subtle',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="default-naming-policy"
-                      className="mt-0.5"
-                      checked={settings.defaultNamingPolicy === policy}
-                      onChange={() => patch({ defaultNamingPolicy: policy })}
-                    />
-                    <span className="text-doqyn-text">{NAMING_POLICY_LABELS[policy]}</span>
-                  </label>
-                ))}
-              </div>
-            </SettingsSection>
-
-            <SettingsSection title="Sugestões da IA">
-              <ToggleRow
-                label="Permitir IA sugerir nome padronizado"
-                checked={settings.aiRenameEnabled}
-                onChange={(checked) => patch({ aiRenameEnabled: checked })}
-              />
-              <ToggleRow
-                label="Permitir IA preencher metadados"
-                description="Análise sempre executa; toggle prepara fase futura."
-                checked={settings.aiMetadataEnabled}
-                onChange={(checked) => patch({ aiMetadataEnabled: checked })}
-              />
-              <ToggleRow
-                label="Permitir IA sugerir categoria/classe"
-                description="Análise sempre executa; toggle prepara fase futura."
-                checked={settings.aiClassificationEnabled}
-                onChange={(checked) => patch({ aiClassificationEnabled: checked })}
-              />
-              <ToggleRow
-                label="Nunca incluir CPF/CNPJ no nome sugerido"
-                checked={settings.preventSensitiveDataInFileName}
-                onChange={(checked) => patch({ preventSensitiveDataInFileName: checked })}
-              />
-            </SettingsSection>
-
-            <SettingsSection title="Upload em lote">
-              <ToggleRow
-                label="Aplicar esta configuração aos próximos arquivos do lote"
-                checked={settings.applyToBatch}
-                onChange={(checked) => patch({ applyToBatch: checked })}
-              />
-              <ToggleRow
-                label="Parar para revisão quando houver conflito"
-                checked={settings.pauseOnConflict}
-                onChange={(checked) => patch({ pauseOnConflict: checked })}
-              />
-              <ToggleRow
-                label="Continuar automaticamente quando estiver seguro"
-                checked={settings.continueWhenSafe}
-                onChange={(checked) => patch({ continueWhenSafe: checked })}
-              />
-            </SettingsSection>
-
-            <SettingsSection title="Segurança">
-              <p className="text-[11px] leading-relaxed text-doqyn-muted">
-                Nomes são sanitizados (sem barras ou path traversal), limitados a ~180 caracteres e
-                forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome sugerido
-                quando a proteção está ativa.
-              </p>
-            </SettingsSection>
-          </div>
+          {dropdownBody}
         </div>
       )}
     </div>

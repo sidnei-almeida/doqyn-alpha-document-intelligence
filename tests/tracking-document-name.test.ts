@@ -148,10 +148,11 @@ describe('tracking UI — coluna Documento', () => {
     assert.doesNotMatch(tableSource, /objectKey/);
   });
 
-  it('célula usa title com nome completo', () => {
-    assert.match(cellSource, /title=\{name\}/);
-    assert.match(cellSource, /truncate/);
+  it('célula usa tooltip temático com nome completo', () => {
+    assert.match(cellSource, /TruncatedText/);
+    assert.match(cellSource, /tracking-document-name/);
     assert.match(cellSource, /max-w-/);
+    assert.doesNotMatch(cellSource, /title=\{name\}/);
   });
 
   it('drawer mostra nome completo sem depender só de documentId', () => {

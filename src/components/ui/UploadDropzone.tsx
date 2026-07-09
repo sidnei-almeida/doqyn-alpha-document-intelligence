@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { Upload, File, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useCallback, useState } from 'react';
 
 interface UploadDropzoneProps {
@@ -44,7 +45,7 @@ export function UploadDropzone({
       >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-doqyn-primary/10">
-            <File className="h-5 w-5 text-doqyn-primary" />
+            <Icon name="draft" size={ICON_SIZE.md} className="text-doqyn-primary" />
           </div>
           <div>
             <p className="text-sm font-medium text-doqyn-text">{selectedFile.name}</p>
@@ -59,7 +60,7 @@ export function UploadDropzone({
             onClick={onClear}
             className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-card hover:text-doqyn-text"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.sm} />
           </button>
         )}
       </div>
@@ -84,7 +85,7 @@ export function UploadDropzone({
     >
       <input type="file" className="hidden" accept={accept} onChange={handleChange} />
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-doqyn-card">
-        <Upload className="h-5 w-5 text-doqyn-muted" />
+        <Icon name="upload" size={ICON_SIZE.md} className="text-doqyn-muted" />
       </div>
       <p className="mt-4 text-sm font-medium text-doqyn-text">
         Arraste o documento ou clique para selecionar

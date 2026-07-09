@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildDeleteGroupConfirm } from '@/components/confirm/confirmMessages';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export function GroupCard({
     >
       <div className="flex items-start gap-2">
         {draggable && (
-          <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-doqyn-muted" aria-hidden />
+          <Icon name="drag_indicator" size={16} className="text-doqyn-muted" aria-hidden />
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export function GroupCard({
             className="shrink-0 rounded p-1 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-primary"
             aria-label={`Excluir grupo ${group.name}`}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Icon name="delete" size={14} />
           </button>
         )}
       </div>

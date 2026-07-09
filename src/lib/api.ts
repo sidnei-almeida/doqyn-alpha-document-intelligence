@@ -1,4 +1,5 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { serializeQueryParams } from './queryParams';
 
 const API_BASE = '/api';
 
@@ -22,13 +23,13 @@ export const api = {
 
   documents: {
     list: (params?: Record<string, string>) => {
-      const query = params ? `?${new URLSearchParams(params)}` : '';
+      const query = serializeQueryParams(params);
       return request<import('@/types/document-library').DocumentListResponse>(`/documents${query}`);
     },
     get: (id: string) =>
       request<import('@/types/document-library').DocumentDetailResponse>(`/documents/${id}`),
     timeline: (documentId: string, params?: Record<string, string>) => {
-      const query = params ? `?${new URLSearchParams(params)}` : '';
+      const query = serializeQueryParams(params);
       return request<import('@/types/document-audit').DocumentTimelineResponse>(
         `/documents/${documentId}/timeline${query}`,
       );
@@ -49,7 +50,7 @@ export const api = {
 
   audit: {
     list: (params?: Record<string, string>) => {
-      const query = params ? `?${new URLSearchParams(params)}` : '';
+      const query = serializeQueryParams(params);
       return request<{ events: unknown[]; total: number; nextCursor?: string | null }>(`/audit${query}`);
     },
     overview: () =>

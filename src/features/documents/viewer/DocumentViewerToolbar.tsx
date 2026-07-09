@@ -1,19 +1,9 @@
 import type { RefObject } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  History,
-  Info,
-  Loader2,
-  Maximize2,
-  Minus,
-  Plus,
-  RefreshCw,
-  Upload,
-  X,
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TruncatedText } from '@/components/ui/TruncatedText';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { DocumentViewerPermissionFlags } from './documentViewerTypes';
 
@@ -78,13 +68,13 @@ export function DocumentViewerToolbar({
             <p className="text-sm text-doqyn-muted">Carregando documento...</p>
           ) : (
             <>
-              <h2
+              <TruncatedText
+                as="h2"
                 id="document-viewer-modal-title"
-                className="truncate text-base font-semibold text-doqyn-text sm:text-lg"
-                title={title}
+                className="text-base font-semibold text-doqyn-text sm:text-lg"
               >
                 {title}
-              </h2>
+              </TruncatedText>
               {subtitle && (
                 <p className="mt-1 text-xs text-doqyn-muted sm:text-sm">{subtitle}</p>
               )}
@@ -103,9 +93,9 @@ export function DocumentViewerToolbar({
               title="Baixar original"
             >
               {isDownloading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Icon name="progress_activity" size={14} className="animate-spin" />
               ) : (
-                <Download className="h-3.5 w-3.5" />
+                <Icon name="download" size={14} />
               )}
               <span className="hidden sm:inline">Baixar</span>
             </Button>
@@ -118,7 +108,7 @@ export function DocumentViewerToolbar({
               onClick={onViewTracking}
               title="Ver tracking"
             >
-              <History className="h-3.5 w-3.5" />
+              <Icon name="history" size={14} />
               <span className="hidden sm:inline">Tracking</span>
             </Button>
           )}
@@ -130,7 +120,7 @@ export function DocumentViewerToolbar({
               onClick={onUpdateDocument}
               title="Atualizar documento"
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Icon name="upload" size={14} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
           )}
@@ -143,20 +133,21 @@ export function DocumentViewerToolbar({
               aria-pressed={showDetails}
               title="Detalhes"
             >
-              <Info className="h-3.5 w-3.5" />
+              <Icon name="info" size={14} />
               <span className="hidden sm:inline">Detalhes</span>
             </Button>
           )}
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
-            aria-label="Fechar visualização do documento"
-            title="Fechar"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <Tooltip label="Fechar">
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
+              aria-label="Fechar visualização do documento"
+            >
+              <Icon name="close" size={ICON_SIZE.md} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -171,7 +162,7 @@ export function DocumentViewerToolbar({
             title="Diminuir zoom"
             aria-label="Diminuir zoom"
           >
-            <Minus className="h-3.5 w-3.5" />
+            <Icon name="remove" size={14} />
           </Button>
           <Button
             type="button"
@@ -182,7 +173,7 @@ export function DocumentViewerToolbar({
             title="Aumentar zoom"
             aria-label="Aumentar zoom"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Icon name="add" size={14} />
           </Button>
           <Button
             type="button"
@@ -200,7 +191,7 @@ export function DocumentViewerToolbar({
             onClick={onFitPage}
             title="Ajustar à página"
           >
-            <Maximize2 className="h-3.5 w-3.5" />
+            <Icon name="fullscreen" size={14} />
             Página
           </Button>
           <div className="mx-1 hidden h-5 w-px bg-doqyn-border-subtle sm:block" />
@@ -212,7 +203,7 @@ export function DocumentViewerToolbar({
             title="Página anterior"
             aria-label="Página anterior"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <Icon name="chevron_left" size={14} />
           </Button>
           {pageLabel && (
             <span className="min-w-[7rem] text-center text-xs text-doqyn-muted sm:text-sm">
@@ -227,7 +218,7 @@ export function DocumentViewerToolbar({
             title="Próxima página"
             aria-label="Próxima página"
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <Icon name="chevron_right" size={14} />
           </Button>
           {onRefresh && (
             <Button
@@ -238,7 +229,7 @@ export function DocumentViewerToolbar({
               title="Atualizar preview"
               className="ml-auto"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <Icon name="refresh" size={14} />
             </Button>
           )}
         </div>

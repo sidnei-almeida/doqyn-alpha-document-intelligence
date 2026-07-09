@@ -185,19 +185,35 @@ export async function createDefaultExtractionRuleForCategory(
   categoryId: string,
   slug: string,
 ) {
+  void slug;
   return createDocumentExtractionRule(tenantId, userId, {
     categoryId,
     version: 1,
     active: true,
     fields: [
       {
+        key: 'referencia',
+        label: 'Referência / parte principal',
+        type: 'string',
+        required: false,
+        aliases: ['referência', 'referencia', 'parte', 'empresa', 'fornecedor', 'cliente'],
+      },
+      {
         key: 'titulo',
         label: 'Título',
         type: 'string',
         required: false,
+        aliases: ['título', 'titulo', 'assunto'],
+      },
+      {
+        key: 'data_assinatura',
+        label: 'Data de referência',
+        type: 'date',
+        required: false,
+        aliases: ['data de assinatura', 'data', 'emitido em'],
       },
     ],
-    namingTemplate: `${slug}_{titulo}`,
+    namingTemplate: '{referencia}_{titulo}_{data_assinatura}_v{version}',
     minimumConfidence: 0.7,
   });
 }

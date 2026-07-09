@@ -131,6 +131,8 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, 'actor.userId': 1, createdAt: -1 } },
         { key: { tenantId: 1, createdAt: -1 } },
         { key: { tenantId: 1, requestId: 1 } },
+        { key: { tenantId: 1, 'metadata.status': 1, createdAt: -1 } },
+        { key: { tenantId: 1, 'metadata.actionGroup': 1, createdAt: -1 } },
       ],
     },
   );

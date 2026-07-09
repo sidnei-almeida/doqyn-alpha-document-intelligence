@@ -1,8 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
-import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../../server/audit/documentNameSnapshot.js';
 import { readDocumentPreviewFile } from '../../server/services/documentPreviewService.js';
+import {
+  emitAccessDeniedEvent,
+  emitTrackingEvent,
+  extractServiceErrorInfo,
+  shouldEmitAccessDeniedFromError,
+} from '../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
@@ -40,22 +45,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         finalFileName: file.fileName,
       });
 
-      await createDocumentAuditLog(auditCtx, {
-        action: 'document.preview_viewed',
-        description: 'Preview do documento visualizado.',
-        documentId,
-        versionId,
-        target: {
-          type: 'document',
-          id: documentId,
-          nameSnapshot: documentNameSnapshot,
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action: 'document.preview_viewed',
+          description: 'Preview do documento visualizado.',
+          documentId,
+          versionId,
+          target: {
+            type: 'document',
+            id: documentId,
+            nameSnapshot: documentNameSnapshot,
+          },
+          metadata: sanitizeAuditMetadata({
+            documentName: documentNameSnapshot,
+            previewStorageFileName: file.fileName,
+            source: 'ui',
+          }),
         },
-        metadata: sanitizeAuditMetadata({
-          documentName: documentNameSnapshot,
-          previewStorageFileName: file.fileName,
-          source: 'ui',
-        }),
-      }).catch(() => undefined);
+        req,
+      );
     }
 
     res.setHeader('Content-Type', file.mimeType);
@@ -68,26 +77,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     if (isServiceError(error)) {
       const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
-      if (error.code !== 'DOCUMENT_NOT_FOUND' && error.code !== 'DOCUMENT_ACCESS_DENIED') {
-        const previewFailedName = buildDocumentNameSnapshot({});
-        await createDocumentAuditLog(auditCtx, {
-          action: 'document.preview_failed',
-          description: 'Falha ao servir preview do documento.',
+      if (shouldEmitAccessDeniedFromError(error)) {
+        const info = extractServiceErrorInfo(error);
+        await emitAccessDeniedEvent(auditCtx, req, {
+          action: 'document.preview_denied',
           documentId,
           versionId,
-          result: 'error',
-          target: {
-            type: 'document',
-            id: documentId,
-            nameSnapshot: previewFailedName,
+          reason: info.message,
+          code: info.code,
+          requiredPermission: 'canPreview',
+        });
+      } else if (error.code !== 'DOCUMENT_NOT_FOUND') {
+        const previewFailedName = buildDocumentNameSnapshot({});
+        await emitTrackingEvent(
+          auditCtx,
+          {
+            action: 'document.preview_failed',
+            description: 'Falha ao servir preview do documento.',
+            documentId,
+            versionId,
+            result: 'error',
+            status: 'failed',
+            target: {
+              type: 'document',
+              id: documentId,
+              nameSnapshot: previewFailedName,
+            },
+            metadata: sanitizeAuditMetadata({
+              documentName: previewFailedName,
+              reason: error.message,
+              code: error.code,
+              source: 'api',
+            }),
           },
-          metadata: sanitizeAuditMetadata({
-            documentName: previewFailedName,
-            reason: error.message,
-            code: error.code,
-            source: 'api',
-          }),
-        }).catch(() => undefined);
+          req,
+        );
       }
       return res.status(error.statusCode).json({ message: error.message, code: error.code });
     }

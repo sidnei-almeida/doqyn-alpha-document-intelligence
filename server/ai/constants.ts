@@ -6,13 +6,15 @@ export const ALLOWED_MIME_TYPES = ['application/pdf'] as const;
 
 export const CHUNK_SIZE = 1800;
 export const CHUNK_OVERLAP = 250;
-export const MAX_CHUNKS_FOR_CLASSIFICATION = 5;
-export const MAX_CHUNKS_FOR_EXTRACTION = 10;
-export const MAX_CHUNKS_PER_FIELD = 4;
+export const MAX_CHUNKS_FOR_CLASSIFICATION = 4;
+export const MAX_CHUNKS_FOR_EXTRACTION = 8;
+export const MAX_CHUNKS_PER_FIELD = 3;
 
 /** Limites do prompt compacto de classificação (Etapa 5C). */
 export const MAX_CLASSIFIER_CHUNKS = 5;
 export const MAX_CHARS_PER_CLASSIFIER_CHUNK = 1200;
+export const MAX_CHARS_PER_EXTRACTOR_CHUNK = 1400;
+export const MAX_EXTRACTOR_FIELDS_IN_PROMPT = 12;
 export const MAX_POSITIVE_KEYWORDS_PER_CLASS = 10;
 export const MAX_NEGATIVE_KEYWORDS_PER_CLASS = 6;
 

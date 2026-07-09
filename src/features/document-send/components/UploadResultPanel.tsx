@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { AlertTriangle, FileText, RotateCcw } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
@@ -10,6 +13,7 @@ import { formatFileSize } from '../utils/validateUpload';
 import { metadataToFields } from '../utils/documentNaming';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { DocumentNamingSection } from './DocumentNamingSection';
+import { flowPanelContentClass } from './flowPanelShell';
 import { TimelineItem } from './TimelineItem';
 
 const FULL_WIDTH_FIELDS = new Set([
@@ -44,6 +48,7 @@ interface UploadResultPanelProps {
   reviewSettings: WorkflowReviewSettings;
   perItemNaming: PerItemNamingChoice;
   onPerItemNamingChange: (choice: PerItemNamingChoice) => void;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -72,6 +77,7 @@ export function UploadResultPanel({
   reviewSettings,
   perItemNaming,
   onPerItemNamingChange,
+  embedded = false,
   className,
 }: UploadResultPanelProps) {
   const [activeTab, setActiveTab] = useState<'resultado' | 'logs'>('resultado');
@@ -96,13 +102,13 @@ export function UploadResultPanel({
     setExpandedEvidence((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  return (
-    <Card
-      className={cn(
-        'flow-enter flex h-full min-h-0 w-full flex-col overflow-hidden border-doqyn-border bg-doqyn-surface',
-        className,
-      )}
-    >
+  const shellClass = flowPanelContentClass(
+    embedded,
+    cn('flex h-full min-h-0 w-full flex-col overflow-hidden', className),
+  );
+
+  const content = (
+    <>
       <CardHeader className="shrink-0 space-y-3 border-b border-doqyn-border-subtle pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -119,11 +125,11 @@ export function UploadResultPanel({
         </div>
 
         <div className="flex items-center gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5">
-          <FileText className="h-4 w-4 shrink-0 text-doqyn-primary" />
+          <Icon name="description" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-primary" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-doqyn-text" title={fileName}>
+            <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
               {fileName}
-            </p>
+            </TruncatedText>
             <p className="text-xs text-doqyn-muted">{formatFileSize(fileSize)}</p>
           </div>
         </div>
@@ -207,7 +213,7 @@ export function UploadResultPanel({
               {aiUnavailable && (
                 <div className="shrink-0 rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+                    <Icon name="warning" size={ICON_SIZE.xs} className="mt-0.5 shrink-0 text-orange-600" />
                     <div className="space-y-1 text-xs">
                       <p className="font-medium text-doqyn-text">Análise automática indisponível</p>
                       <p className="text-doqyn-muted">
@@ -222,7 +228,7 @@ export function UploadResultPanel({
               {requiresReview && (
                 <div className="shrink-0 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <Icon name="warning" size={ICON_SIZE.xs} className="mt-0.5 shrink-0 text-amber-600" />
                     <div className="space-y-1 text-xs">
                       <p className="font-medium text-doqyn-text">Revisão necessária</p>
                       <p className="text-doqyn-muted">
@@ -281,24 +287,25 @@ export function UploadResultPanel({
                         )}
                       >
                         <span className="shrink-0 text-xs text-doqyn-muted">{field.label}</span>
-                        <span
-                          className={cn(
-                            'min-w-0 text-right text-sm font-medium text-doqyn-text',
-                            field.label === 'Nome sugerido' && 'font-mono text-xs',
-                            FULL_WIDTH_FIELDS.has(field.label) && 'text-left',
-                          )}
-                          title={field.value}
-                        >
+                        <Tooltip label={field.value} wrapperClassName="min-w-0">
                           <span
                             className={cn(
-                              'block break-words',
-                              !FULL_WIDTH_FIELDS.has(field.label) && 'line-clamp-2',
-                              field.label === 'Justificativa' && 'line-clamp-4',
+                              'block text-right text-sm font-medium text-doqyn-text',
+                              field.label === 'Nome sugerido' && 'font-mono text-xs',
+                              FULL_WIDTH_FIELDS.has(field.label) && 'text-left',
                             )}
                           >
-                            {field.value}
+                            <span
+                              className={cn(
+                                'block break-words',
+                                !FULL_WIDTH_FIELDS.has(field.label) && 'line-clamp-2',
+                                field.label === 'Justificativa' && 'line-clamp-4',
+                              )}
+                            >
+                              {field.value}
+                            </span>
                           </span>
-                        </span>
+                        </Tooltip>
                       </div>
                     ))}
                   </div>
@@ -406,7 +413,7 @@ export function UploadResultPanel({
               )}
             </div>
 
-            <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.18)]">
+            <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-sticky-footer">
               {showConfirmActions && requiresReview && (
                 <label className="mb-3 flex items-start gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5 text-xs text-doqyn-muted">
                   <input
@@ -436,7 +443,7 @@ export function UploadResultPanel({
                           : undefined
                       }
                     >
-                      <RotateCcw className="h-4 w-4" />
+                      <Icon name="refresh" size={ICON_SIZE.xs} />
                       Reprocessar análise
                     </Button>
                   )}
@@ -476,6 +483,12 @@ export function UploadResultPanel({
           </>
         )}
       </CardContent>
-    </Card>
+    </>
   );
+
+  if (embedded) {
+    return <div className={shellClass}>{content}</div>;
+  }
+
+  return <Card className={shellClass}>{content}</Card>;
 }

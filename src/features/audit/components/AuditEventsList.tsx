@@ -1,4 +1,5 @@
-import { Eye } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
@@ -10,7 +11,6 @@ import {
   AUDIT_SOURCE_LABELS,
 } from '@/types/audit';
 import { AuditEmptyState } from './AuditEmptyState';
-import { ScrollText } from 'lucide-react';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -43,7 +43,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
   if (events.length === 0) {
     return (
       <AuditEmptyState
-        icon={<ScrollText className="h-5 w-5" />}
+        icon={<Icon name="article" size={ICON_SIZE.nav} />}
         title="Nenhum evento encontrado."
         description="Ajuste a busca ou aguarde novas ações no sistema."
       />
@@ -116,7 +116,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           className: 'w-[100px]',
           render: (event) => (
             <Button type="button" size="sm" variant="secondary" onClick={() => onOpenDetails(event)}>
-              <Eye className="h-3.5 w-3.5" />
+              <Icon name="visibility" size={14} />
               Detalhes
             </Button>
           ),

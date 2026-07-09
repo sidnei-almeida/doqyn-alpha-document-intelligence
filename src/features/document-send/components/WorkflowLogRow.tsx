@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import type { WorkflowLogEvent } from '../types/workflowLog';
 import { WORKFLOW_STAGE_LABELS } from '../utils/workflowLogHelpers';
 import { levelLabel } from '../hooks/useWorkflowLogger';
@@ -87,9 +88,7 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
 
         <div className="min-w-0 space-y-0.5">
           {event.fileName && (
-            <p className="truncate font-medium text-doqyn-text" title={event.fileName}>
-              {event.fileName}
-            </p>
+            <TruncatedText as="p" className="font-medium text-doqyn-text">{event.fileName}</TruncatedText>
           )}
           <p className={cn('break-words text-doqyn-text', event.level === 'debug' && 'opacity-80')}>
             {displayMessage}
@@ -130,7 +129,11 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
               onClick={() => setExpanded((value) => !value)}
               className="inline-flex items-center gap-0.5 text-[10px] text-doqyn-muted hover:text-doqyn-text"
             >
-              {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              {expanded ? (
+                <Icon name="expand_more" size={12} />
+              ) : (
+                <Icon name="chevron_right" size={12} />
+              )}
               Ver detalhes
             </button>
           )}

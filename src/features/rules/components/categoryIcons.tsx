@@ -1,26 +1,40 @@
-import {
-  BarChart3,
-  FileSpreadsheet,
-  FileText,
-  Folder,
-  Receipt,
-  ShieldCheck,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
+import { cn } from '@/lib/utils';
 import type { DocumentIcon } from '@/types/rules';
 
-const ICON_MAP: Record<DocumentIcon, LucideIcon> = {
-  'file-text': FileText,
-  receipt: Receipt,
-  'file-invoice': FileSpreadsheet,
-  users: Users,
-  'chart-bar': BarChart3,
-  'shield-check': ShieldCheck,
-  folder: Folder,
+const ICON_MAP: Record<DocumentIcon, string> = {
+  'file-text': 'description',
+  receipt: 'receipt',
+  'file-invoice': 'table_chart',
+  users: 'group',
+  'chart-bar': 'bar_chart',
+  'shield-check': 'verified_user',
+  folder: 'folder',
 };
 
-export function CategoryIcon({ icon, className }: { icon: DocumentIcon; className?: string }) {
-  const Icon = ICON_MAP[icon] ?? Folder;
-  return <Icon className={className} />;
+type CategoryIconProps = {
+  icon: DocumentIcon;
+  className?: string;
+  color?: string;
+  filled?: boolean;
+  size?: number;
+};
+
+export function CategoryIcon({
+  icon,
+  className,
+  color,
+  filled = false,
+  size = ICON_SIZE.sm,
+}: CategoryIconProps) {
+  return (
+    <Icon
+      name={ICON_MAP[icon] ?? 'folder'}
+      filled={filled}
+      size={size}
+      className={cn(className)}
+      color={color}
+    />
+  );
 }

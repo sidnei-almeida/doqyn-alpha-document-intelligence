@@ -57,7 +57,7 @@ describe('governance map draft — utilitários', () => {
 describe('governance map draft — canvas e hook', () => {
   it('GovernanceMapCanvas usa draft local sem chamar backend na desconexão', () => {
     const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(canvas.includes('useGovernanceMapDraft'));
+    assert.ok(canvas.includes('useGovernanceFlowDraft'));
     assert.ok(canvas.includes('performDraftDisconnect'));
     assert.ok(canvas.includes('removeEdge'));
     assert.equal(canvas.includes('onDisconnect={disconnectGroupFromCategory}'), false);
@@ -67,10 +67,10 @@ describe('governance map draft — canvas e hook', () => {
 
   it('clique no × e Delete alteram apenas draftEdges', () => {
     const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(canvas.includes('handleEdgeDisconnect'));
+    const flow = readSrc('features/rules/governance-flow/GovernanceFlowCanvas.tsx');
+    assert.ok(canvas.includes('handleEdgesRemoved'));
     assert.ok(canvas.includes('performDraftDisconnect'));
-    assert.ok(canvas.includes("event.key !== 'Delete'"));
-    assert.ok(canvas.includes("event.key !== 'Backspace'"));
+    assert.ok(flow.includes("['Delete', 'Backspace']"));
     assert.equal(canvas.includes('await onPermissionChange'), false);
   });
 
@@ -94,12 +94,13 @@ describe('governance map draft — canvas e hook', () => {
   it('Salvar chama onSaveMapChanges com diff e commitSaved', () => {
     const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
     assert.ok(canvas.includes('onSaveMapChanges(getDiff())'));
-    assert.ok(canvas.includes('commitSaved(savedEdges)'));
+    assert.ok(canvas.includes('commitSaved(savedEdges, positions)'));
   });
 
-  it('useGovernanceMapDraft expõe undoStack e discard', () => {
-    const hook = readSrc('features/rules/hooks/useGovernanceMapDraft.ts');
-    assert.ok(hook.includes('undoStack'));
+  it('useGovernanceFlowDraft expõe undoStack e discard', () => {
+    const hook = readSrc('features/rules/governance-flow/useGovernanceFlowDraft.ts');
+    const reducer = readSrc('features/rules/governance-flow/draftReducer.ts');
+    assert.ok(reducer.includes('undoStack'));
     assert.ok(hook.includes('discard'));
     assert.ok(hook.includes('useUnsavedMapChangesGuard'));
     assert.ok(hook.includes('useBlocker'));
@@ -128,12 +129,14 @@ describe('governance map draft — canvas e hook', () => {
   });
 
   it('addEdge evita edge duplicada', () => {
-    const hook = readSrc('features/rules/hooks/useGovernanceMapDraft.ts');
-    assert.ok(hook.includes('if (current.some((edge) => edge.id === edgeId)) return current'));
+    const reducer = readSrc('features/rules/governance-flow/draftReducer.ts');
+    assert.ok(
+      reducer.includes('if (state.draft.edges.some((edge) => edge.id === edgeId)) return state'),
+    );
   });
 
   it('proteção ao sair com alterações pendentes', () => {
-    const hook = readSrc('features/rules/hooks/useGovernanceMapDraft.ts');
+    const hook = readSrc('features/rules/governance-flow/useGovernanceFlowDraft.ts');
     assert.ok(hook.includes('beforeunload'));
     assert.ok(hook.includes('alterações não salvas'));
   });

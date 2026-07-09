@@ -37,7 +37,7 @@ const STATUS_PERCENT: Record<UploadProgressStatus, number> = {
 };
 
 const STATUS_LABEL: Record<UploadProgressStatus, string> = {
-  idle: 'Aguardando arquivo',
+  idle: 'Pronto para começar',
   preparing: 'Preparando envio',
   uploading: 'Enviando documento',
   uploaded: 'Upload concluído',
@@ -49,7 +49,7 @@ const STATUS_LABEL: Record<UploadProgressStatus, string> = {
 };
 
 const STATUS_MESSAGE: Record<UploadProgressStatus, string> = {
-  idle: 'Selecione um documento para iniciar o envio.',
+  idle: 'Arraste um PDF acima ou clique na área de envio para iniciar a análise automática.',
   preparing: 'Pronto para enviar.',
   uploading: 'Seu arquivo será analisado automaticamente.',
   uploaded: 'Arquivo recebido. Iniciando análise.',
@@ -131,7 +131,7 @@ export function deriveBulkUploadProgressState(input: {
       status: 'idle',
       percent: 0,
       label: getUploadProgressLabel('idle'),
-      message: 'Selecione documentos para iniciar o envio em lote.',
+      message: 'Selecione vários PDFs acima para processar em lote.',
     };
   }
 

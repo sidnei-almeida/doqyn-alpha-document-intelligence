@@ -580,6 +580,12 @@ export type MongoAuditLog = {
     userId: string;
     name: string;
     role: string;
+    membershipId?: string;
+    roles?: string[];
+    accessGroupIds?: string[];
+    documentGroupIds?: string[];
+    displayNameSnapshot?: string;
+    emailSnapshot?: string;
   };
   action:
     | UserAuditAction
@@ -589,8 +595,30 @@ export type MongoAuditLog = {
     | 'document.metadata.extracted'
     | 'document.metadata.confirmed'
     | 'document.metadata.reviewed_confirmed'
-    | 'document.review.required';
+    | 'document.review.required'
+    | string;
   description: string;
+  area?: string;
+  result?: 'success' | 'warning' | 'error' | 'info' | string;
   metadata: Record<string, unknown>;
+  requestId?: string;
+  severity?: string;
+  occurredAt?: Date;
+  collectionPrefix?: string;
   createdAt: Date;
+};
+
+/** Preferência pessoal de favorito — escopo global por userId, não por tenant. */
+export type MongoUserDocumentFavorite = {
+  _id: string;
+  userId: string;
+  documentId: string;
+  documentTenantId?: string;
+  documentTenantType?: TenantType;
+  documentCollection?: string;
+  documentClassId?: string;
+  versionId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
 };

@@ -29,6 +29,10 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
     area: '',
     groups: membership.accessGroupIds ?? [],
     roles,
+    avatarVersion: user.avatarVersion,
+    avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
+    avatarStatus: user.avatarStatus ?? null,
+    avatarUrl: user.avatarUrl,
   };
 }
 

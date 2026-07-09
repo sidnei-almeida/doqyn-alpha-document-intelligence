@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -36,7 +37,7 @@ export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="category-modal-title"
@@ -52,7 +53,7 @@ export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
             className="rounded p-1 text-doqyn-muted hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-5 w-5" />
+            <Icon name="close" size={ICON_SIZE.md} />
           </button>
         </div>
 

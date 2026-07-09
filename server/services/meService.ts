@@ -10,6 +10,22 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 import { resolveMembershipAccessError } from '../utils/membershipAccessErrors.js';
 
+import { buildProfileAvatarUrl } from './profile/profileAvatarConfig.js';
+
+function resolveAvatarUrl(input: {
+  userId?: string;
+  avatarVersion?: number;
+  avatarStatus?: 'active' | 'removed' | null;
+}): string | undefined {
+  if (!input.userId || !input.avatarVersion || input.avatarVersion < 1) return undefined;
+  if (input.avatarStatus !== 'active') return undefined;
+  return buildProfileAvatarUrl({
+    userId: input.userId,
+    version: input.avatarVersion,
+    size: 128,
+    self: true,
+  });
+}
 export type MeResponse = {
   ok?: boolean;
   authProvider?: string;
@@ -20,6 +36,10 @@ export type MeResponse = {
     firstName?: string;
     lastName?: string;
     status?: string;
+    avatarVersion?: number;
+    avatarUpdatedAt?: string | null;
+    avatarStatus?: 'active' | 'removed' | null;
+    avatarUrl?: string;
   };
   tenant: {
     tenantId: string;
@@ -114,6 +134,14 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
       firstName: user.firstName ?? undefined,
       lastName: user.lastName ?? undefined,
       status: user.status,
+      avatarVersion: user.avatarVersion ?? 0,
+      avatarUpdatedAt: user.avatarUpdatedAt ?? null,
+      avatarStatus: user.avatarStatus ?? null,
+      avatarUrl: resolveAvatarUrl({
+        userId: user.id,
+        avatarVersion: user.avatarVersion,
+        avatarStatus: user.avatarStatus,
+      }),
     },
     tenant: {
       tenantId: activeMembership.tenantId,
@@ -149,6 +177,9 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
       membershipStatus: activeMembership.status,
       tenantType: activeMembership.tenantType,
       authProvider: 'doqyn_auth',
+      avatarVersion: user.avatarVersion ?? 0,
+      avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
+      avatarStatus: user.avatarStatus ?? undefined,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, RotateCw } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { usePreviewAsset } from './usePreviewAsset';
@@ -111,7 +112,7 @@ export function ImageViewer({
   return (
     <div
       ref={containerRef}
-      className={cn('viewer-image relative h-full overflow-hidden bg-[#0b0d10]', className)}
+      className={cn('viewer-image viewer-canvas-stage relative h-full overflow-hidden', className)}
       onPointerDown={(event) => {
         dragRef.current = {
           startX: event.clientX,
@@ -139,14 +140,14 @@ export function ImageViewer({
           {imageMeta.width} × {imageMeta.height}px
         </span>
         <Button type="button" variant="ghost" size="sm" onClick={() => setRotation((r) => (r + 90) % 360)}>
-          <RotateCw className="h-3.5 w-3.5" />
+          <Icon name="rotate_right" size={14} />
         </Button>
       </div>
 
       <div className="flex h-full w-full items-center justify-center overflow-hidden">
         {state === 'loading' && (
           <div className="flex items-center gap-2 text-sm text-doqyn-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
             Carregando imagem...
           </div>
         )}
@@ -155,7 +156,7 @@ export function ImageViewer({
             src={objectUrl}
             alt={manifest.fileName}
             draggable={false}
-            className="max-w-none select-none shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+            className="max-w-none select-none viewer-page-surface"
             style={{
               width: displayWidth,
               height: displayHeight,

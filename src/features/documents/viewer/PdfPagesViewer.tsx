@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { PreviewManifestPage } from '@/types/preview-manifest';
@@ -32,10 +33,10 @@ function ManifestPageImage({
     >
       {state === 'loading' && (
         <div
-          className="flex items-center justify-center bg-white shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+          className="viewer-page-surface flex items-center justify-center"
           style={{ width, height: Math.min(height, 480) }}
         >
-          <Loader2 className="h-5 w-5 animate-spin text-doqyn-muted" />
+          <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
         </div>
       )}
       {state === 'ready' && objectUrl && (
@@ -44,7 +45,7 @@ function ManifestPageImage({
           alt={`Página ${page.page}`}
           width={width}
           height={height}
-          className="block max-w-full bg-white shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+          className="viewer-page-surface block max-w-full"
           draggable={false}
         />
       )}
@@ -74,8 +75,8 @@ function ThumbnailButton({
           : 'border-doqyn-border-subtle hover:border-doqyn-border',
       )}
     >
-      <div className="flex h-20 w-full items-center justify-center overflow-hidden rounded bg-white">
-        {state === 'loading' && <Loader2 className="h-4 w-4 animate-spin text-doqyn-muted" />}
+      <div className="viewer-page-surface flex h-20 w-full items-center justify-center overflow-hidden rounded">
+        {state === 'loading' && <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin text-doqyn-muted" />}
         {state === 'ready' && objectUrl && (
           <img
             src={objectUrl}
@@ -254,15 +255,15 @@ export function PdfPagesViewer({
               title={showThumbnails ? 'Ocultar miniaturas' : 'Mostrar miniaturas'}
             >
               {showThumbnails ? (
-                <PanelLeftClose className="h-4 w-4" />
+                <Icon name="left_panel_close" size={ICON_SIZE.xs} />
               ) : (
-                <PanelLeftOpen className="h-4 w-4" />
+                <Icon name="left_panel_open" size={ICON_SIZE.xs} />
               )}
             </Button>
           </div>
         )}
 
-        <div ref={scrollRef} className="h-full overflow-y-auto bg-[#0b0d10]">
+        <div ref={scrollRef} className="viewer-canvas-stage h-full overflow-y-auto scrollbar-thin">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6">
             {useLazyRender && (
               <p className="rounded-md border border-doqyn-border bg-doqyn-bg/80 px-3 py-2 text-xs text-doqyn-muted">

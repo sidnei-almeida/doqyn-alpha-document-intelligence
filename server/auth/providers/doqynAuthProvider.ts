@@ -16,6 +16,9 @@ export type DoqynPublicUser = {
   whatsapp?: string | null;
   status: 'active' | 'disabled' | 'pending_verification' | 'anonymized';
   emailVerified?: boolean;
+  avatarVersion?: number;
+  avatarUpdatedAt?: string | null;
+  avatarStatus?: 'active' | 'removed' | null;
 };
 
 export type DoqynPublicMembership = {
@@ -108,6 +111,9 @@ export function mapDoqynSessionToAuthUser(session: DoqynVerifiedSession): AuthUs
     tenantType: activeMembership?.tenantType,
     tenantStatus: activeMembership ? 'active' : undefined,
     authProvider: 'doqyn_auth',
+    avatarVersion: user.avatarVersion ?? 0,
+    avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
+    avatarStatus: user.avatarStatus ?? undefined,
   };
 }
 

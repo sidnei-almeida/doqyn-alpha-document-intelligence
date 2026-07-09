@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { safeDisplayValue } from '@/lib/reviewDisplay';
 
@@ -80,7 +81,7 @@ export function ReviewBeforeSubmitDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current && !submitting) onCancel();
       }}
@@ -110,14 +111,14 @@ export function ReviewBeforeSubmitDialog({
             className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text disabled:opacity-50"
             aria-label="Fechar revisão"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.sm} />
           </button>
         </div>
 
         <div className="space-y-5 overflow-y-auto px-5 py-4 scrollbar-thin">
           {attentionMessage && (
             <div className="flex gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-sm text-amber-200/90">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} />
+              <Icon name="warning" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
               <p>{attentionMessage}</p>
             </div>
           )}

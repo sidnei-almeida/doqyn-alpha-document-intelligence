@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { DocumentCategory, Group } from '@/types/rules';
@@ -78,7 +78,7 @@ export function CategoryCard({
           )}
           aria-label={`Excluir categoria ${category.name}`}
         >
-          <Trash2 className="h-4 w-4" />
+          <Icon name="delete" size={16} aria-hidden />
         </button>
       </CardHeader>
 

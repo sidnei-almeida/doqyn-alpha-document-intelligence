@@ -14,6 +14,11 @@ export const REGISTRY_COLLECTIONS = {
   companyMembers: 'company_members',
 } as const;
 
+/** Coleções globais do app documental (não prefixadas por tenant). */
+export const SHARED_APP_COLLECTIONS = {
+  userDocumentFavorites: 'user_document_favorites',
+} as const;
+
 export const COLLECTIONS = {
   accessGroups: 'access_groups',
   /** @deprecated Legado — preferir documentCategories */

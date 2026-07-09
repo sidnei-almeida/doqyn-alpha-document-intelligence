@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import type { PendingApproval } from '@/types/rules';
@@ -54,7 +54,7 @@ export function PendingApprovalsCard({
                   onClick={() => onApprove(item.id)}
                   className="h-8"
                 >
-                  <Check className="h-3.5 w-3.5" />
+                  <Icon name="check" size={14} />
                   Aprovar
                 </Button>
                 <Button
@@ -64,7 +64,7 @@ export function PendingApprovalsCard({
                   onClick={() => onReject(item.id)}
                   className="h-8 border-doqyn-border"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <Icon name="close" size={14} />
                   Recusar
                 </Button>
               </div>

@@ -1,38 +1,90 @@
 /**
  * DOQYN — design tokens (dark + light)
- * Copiado/adaptado de doqyn-internal — grayscale-first, cor só para semântica.
+ * Linguagem minimalista inspirada em file managers modernos: superfícies suaves,
+ * bordas discretas, acento azul contido. Identidade DOQYN discreta.
  */
 
 [data-theme='dark'] {
-  --bg-app: #0e0e0e;
-  --bg-sidebar: #0a0a0a;
-  --bg-surface: #111111;
-  --bg-surface-2: #161616;
-  --bg-surface-3: #1e1e1e;
+  /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
+  --bg-chrome: #121212;
+  --bg-shell: var(--bg-chrome);
+  --bg-canvas: #1e1e1e;
+  --bg-thumbnail-chrome: #1e1e1e;
+  --bg-app: var(--bg-chrome);
+  --bg-sidebar: var(--bg-shell);
+  --bg-surface: #1e1e1e;
+  --bg-surface-2: #242424;
+  --bg-surface-3: #2c2c2c;
+  --bg-surface-hover: #2c2c2c;
+  --bg-hover: #2c2c2c;
+  --bg-selected: #1d2a3a;
 
-  --border-subtle: #1c1c1c;
-  --border-default: #242424;
-  --border-strong: #2e2e2e;
+  /* Sidebar — item selecionado em azul vivo (estilo Drive), separado de --bg-selected */
+  --sidebar-selected-bg: #0b57d0;
+  --sidebar-selected-text: #ffffff;
 
-  --text-primary: #f0f0f0;
-  --text-secondary: #888888;
-  --text-tertiary: #444444;
-  --text-disabled: #2e2e2e;
+  /* Botão "+ Novo" — índigo flat (Material filled, sem elevação pesada) */
+  --new-button-bg: #5c5cf0;
+  --new-button-bg-hover: #6d6df2;
+  --new-button-bg-active: #4f46e5;
+  --new-button-text: #ffffff;
+  --new-button-chevron: rgba(255, 255, 255, 0.9);
+  --new-button-border: transparent;
+  --shadow-new-button: none;
+  --shadow-new-button-hover: none;
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 55%, transparent);
 
-  --accent-active: #ffffff;
-  --accent-active-bg: #161616;
+  /* Menu dropdown do "+ Novo" */
+  --new-menu-bg: var(--bg-surface);
+  --new-menu-border: var(--border-subtle);
+  --new-menu-shadow: var(--shadow-elevation-2);
+  --new-menu-item-hover: rgba(99, 102, 241, 0.12);
+  --new-menu-item-active: rgba(99, 102, 241, 0.18);
+  --new-menu-icon: #818cf8;
 
-  --status-ok-bg: #0e1a10;
-  --status-ok-text: #3a6b3e;
-  --status-ok-border: #1a2e1c;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: #333333;
+  --border-strong: #3f3f3f;
 
-  --status-danger-bg: #1a0e0e;
-  --status-danger-text: #8b3a3a;
-  --status-danger-border: #2e1a1a;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-tertiary: #80868b;
+  --text-disabled: #5f6368;
 
-  --status-warn-bg: #1a160a;
-  --status-warn-text: #7a5e2a;
-  --status-warn-border: #2e2410;
+  --accent-active: #8ab4f8;
+  --accent-hover: #aecbfa;
+  --accent-active-bg: #1d2a3a;
+  --text-on-accent: #121212;
+
+  --status-ok-bg: #1e3b26;
+  --status-ok-text: #81c995;
+  --status-ok-border: color-mix(in srgb, #81c995 32%, transparent);
+  --status-ok-dot: #81c995;
+
+  --status-danger-bg: #3c2422;
+  --status-danger-text: #f28b82;
+  --status-danger-border: color-mix(in srgb, #f28b82 32%, transparent);
+  --status-danger-dot: #f28b82;
+
+  --status-warn-bg: #3d3222;
+  --status-warn-text: #fdd663;
+  --status-warn-border: color-mix(in srgb, #fdd663 32%, transparent);
+  --status-warn-dot: #fdd663;
+
+  --status-pending-bg: #3d3222;
+  --status-pending-text: #fdd663;
+  --status-pending-border: color-mix(in srgb, #fdd663 28%, transparent);
+  --status-pending-dot: #fdd663;
+
+  --status-info-bg: #1d2a3a;
+  --status-info-text: #8ab4f8;
+  --status-info-border: color-mix(in srgb, #8ab4f8 32%, transparent);
+  --status-info-dot: #8ab4f8;
+
+  --status-neutral-bg: #242424;
+  --status-neutral-text: #9aa0a6;
+  --status-neutral-border: #3f3f3f;
+  --status-neutral-dot: #80868b;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -48,39 +100,111 @@
   --feedback-error-text: var(--status-danger-text);
 
   --text-hint: var(--text-tertiary);
+
+  --shadow-elevation-1: none;
+  --shadow-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-workspace-panel: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-sticky-footer: 0 -2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-action-glow: none;
+  --shadow-card-hover: none;
+  --shadow-viewer-page: var(--shadow-elevation-2);
+  --overlay-scrim: rgba(0, 0, 0, 0.6);
+  --viewer-page-bg: #ffffff;
 }
 
 [data-theme='light'] {
-  --bg-app: #fafafa;
-  --bg-sidebar: #f5f5f5;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f9f9f9;
-  --bg-surface-3: #f2f2f2;
+  /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
+  --color-background: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-surface-container: #f1f3f4;
+  --color-border: #dadce0;
+  --color-border-subtle: #e8eaed;
+  --color-text-primary: #202124;
+  --color-text-secondary: #5f6368;
+  --color-icon-neutral: #5f6368;
+  --color-primary: #1a73e8;
+  --color-primary-hover: #1967d2;
+  --color-primary-surface: #e8f0fe;
 
-  --border-subtle: #e8e8e8;
-  --border-default: #e0e0e0;
-  --border-strong: #cccccc;
+  --bg-chrome: var(--color-surface);
+  --bg-shell: var(--color-surface);
+  --bg-canvas: var(--color-background);
+  --bg-thumbnail-chrome: var(--color-surface-container);
+  --bg-app: var(--bg-chrome);
+  --bg-sidebar: var(--bg-shell);
+  --bg-surface: var(--color-background);
+  --bg-surface-2: var(--color-surface-container);
+  --bg-surface-3: #e8eaed;
+  --bg-surface-hover: var(--color-surface-container);
+  --bg-hover: var(--color-surface-container);
+  --bg-selected: var(--color-primary-surface);
 
-  --text-primary: #0f0f0f;
-  --text-secondary: #4a4a4a;
-  --text-tertiary: #7a7a7a;
-  --text-disabled: #b0b0b0;
-  --text-hint: #9a9a9a;
+  /* Sidebar — item selecionado (Drive light: azul suave + texto azul) */
+  --sidebar-selected-bg: var(--color-primary-surface);
+  --sidebar-selected-text: var(--color-primary);
 
-  --accent-active: #0f0f0f;
-  --accent-active-bg: #eeeeee;
+  /* Botão "+ Novo" — índigo flat (Material filled) */
+  --new-button-bg: #4f46e5;
+  --new-button-bg-hover: #4338ca;
+  --new-button-bg-active: #3730a3;
+  --new-button-text: #ffffff;
+  --new-button-chevron: rgba(255, 255, 255, 0.92);
+  --new-button-border: transparent;
+  --shadow-new-button: none;
+  --shadow-new-button-hover: none;
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 40%, transparent);
 
-  --status-ok-bg: #f0f7f1;
-  --status-ok-text: #3a6b3e;
-  --status-ok-border: #c8e0cb;
+  /* Menu dropdown do "+ Novo" */
+  --new-menu-bg: var(--color-background);
+  --new-menu-border: var(--color-border-subtle);
+  --new-menu-shadow: var(--shadow-elevation-2);
+  --new-menu-item-hover: #f1f3f4;
+  --new-menu-item-active: #e8eaed;
+  --new-menu-icon: #4f46e5;
 
-  --status-danger-bg: #fdf0f0;
-  --status-danger-text: #8b3a3a;
-  --status-danger-border: #f0cccc;
+  --border-subtle: var(--color-border-subtle);
+  --border-default: var(--color-border);
+  --border-strong: #c4c7c5;
 
-  --status-warn-bg: #fdf8ee;
-  --status-warn-text: #7a5e2a;
-  --status-warn-border: #e8d9b0;
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --text-tertiary: #5f6368;
+  --text-disabled: #9aa0a6;
+
+  --accent-active: var(--color-primary);
+  --accent-hover: var(--color-primary-hover);
+  --accent-active-bg: var(--color-primary-surface);
+  --text-on-accent: #ffffff;
+
+  --status-ok-bg: #e6f4ea;
+  --status-ok-text: #1e8e3e;
+  --status-ok-border: color-mix(in srgb, #1e8e3e 24%, transparent);
+  --status-ok-dot: #1e8e3e;
+
+  --status-danger-bg: #fce8e6;
+  --status-danger-text: #d93025;
+  --status-danger-border: color-mix(in srgb, #d93025 24%, transparent);
+  --status-danger-dot: #d93025;
+
+  --status-warn-bg: #fef7e0;
+  --status-warn-text: #b06000;
+  --status-warn-border: color-mix(in srgb, #f9ab00 28%, transparent);
+  --status-warn-dot: #f9ab00;
+
+  --status-pending-bg: #fef7e0;
+  --status-pending-text: #b06000;
+  --status-pending-border: color-mix(in srgb, #f9ab00 24%, transparent);
+  --status-pending-dot: #f9ab00;
+
+  --status-info-bg: var(--color-primary-surface);
+  --status-info-text: var(--color-primary);
+  --status-info-border: color-mix(in srgb, #1a73e8 20%, transparent);
+  --status-info-dot: var(--color-primary);
+
+  --status-neutral-bg: var(--color-surface-container);
+  --status-neutral-text: var(--color-text-secondary);
+  --status-neutral-border: var(--color-border-subtle);
+  --status-neutral-dot: #9aa0a6;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -94,51 +218,184 @@
   --feedback-error-bg: var(--status-danger-bg);
   --feedback-error-border: var(--status-danger-border);
   --feedback-error-text: var(--status-danger-text);
+
+  --text-hint: var(--text-tertiary);
+
+  --shadow-elevation-1: 0 1px 2px rgba(60, 64, 67, 0.08), 0 1px 3px rgba(60, 64, 67, 0.06);
+  --shadow-elevation-2: 0 1px 3px rgba(60, 64, 67, 0.12), 0 4px 8px rgba(60, 64, 67, 0.08);
+  --shadow-workspace-panel: var(--shadow-elevation-1);
+  --shadow-sticky-footer: 0 -2px 8px rgba(60, 64, 67, 0.08);
+  --shadow-action-glow: none;
+  --shadow-card-hover: none;
+  --shadow-viewer-page: var(--shadow-elevation-2);
+  --overlay-scrim: rgba(32, 33, 36, 0.45);
+  --viewer-page-bg: #ffffff;
 }
 
 :root,
 [data-theme='dark'],
 [data-theme='light'] {
+  --bg-base: var(--bg-surface);
   --logo-text: var(--text-primary);
   --logo-muted: var(--text-secondary);
-  --overlay-hover: var(--bg-surface-2);
+  --overlay-hover: var(--bg-hover);
   --overlay-active: var(--bg-surface-3);
-  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-sm: var(--shadow-elevation-1);
+  --shadow-dropdown: var(--shadow-elevation-2);
+  --shadow-modal: var(--shadow-elevation-2);
 
-  --font-family-sans:
-    'Geist Variable', 'Geist Sans', -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
-    sans-serif;
-  --font-family-logo: var(--font-family-sans);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-disabled: var(--text-disabled);
+
+  /* Tipografia — Google Sans Flex (display/UI) + Roboto (corpo) */
+  --font-display: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif;
+  --font-body: 'Roboto', system-ui, sans-serif;
+
+  --text-eyebrow: 11px;
+  --weight-eyebrow: 500;
+  --leading-eyebrow: 1.4;
+  --tracking-eyebrow: 0.08em;
+
+  --text-display: 32px;
+  --weight-display: 500;
+  --leading-display: 1.2;
+
+  --text-h1: 24px;
+  --weight-h1: 500;
+  --leading-h1: 1.2;
+
+  --text-h2: 16px;
+  --weight-h2: 500;
+  --leading-h2: 1.2;
+
+  --text-body: 14px;
+  --weight-body: 400;
+  --leading-body: 1.5;
+
+  --text-label: 13px;
+  --weight-label: 500;
+  --leading-label: 1.4;
+  --tracking-label: 0.01em;
+
+  --text-caption: 12px;
+  --weight-caption: 400;
+  --leading-caption: 1.5;
+
+  --font-family-sans: var(--font-body);
+  --font-family-logo: var(--font-display);
   --font-family-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
 
-  --font-size-xs: 0.625rem;
-  --line-height-xs: 0.875rem;
-  --font-size-sm: 0.75rem;
-  --line-height-sm: 1.125rem;
-  --font-size-base: 0.8125rem;
-  --line-height-base: 1.25rem;
-  --font-size-md: 0.875rem;
-  --line-height-md: 1.375rem;
-  --font-size-lg: 1rem;
-  --line-height-lg: 1.5rem;
-  --font-size-xl: 1.25rem;
-  --line-height-xl: 1.75rem;
+  /* Aliases legados — preferir tokens semânticos (--text-h1, --text-body, etc.) */
+  --font-size-xs: var(--text-caption);
+  --line-height-xs: var(--leading-caption);
+  --font-size-sm: var(--text-caption);
+  --line-height-sm: var(--leading-caption);
+  --font-size-base: var(--text-body);
+  --line-height-base: var(--leading-body);
+  --font-size-md: var(--text-body);
+  --line-height-md: var(--leading-body);
+  --font-size-lg: var(--text-h2);
+  --line-height-lg: var(--leading-h2);
+  --font-size-xl: var(--text-h1);
+  --line-height-xl: var(--leading-h1);
 
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
+  --font-weight-normal: var(--weight-body);
+  --font-weight-medium: var(--weight-label);
+  --font-weight-semibold: var(--weight-h2);
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-shell: 20px;
+  --radius-workspace: 18px;
+  --radius-pill: 9999px;
+  --radius-new-button: 8px;
+
+  --shell-inset: 10px;
+  --shadow-shell: none;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --field-height: 40px;
+  --icon-button-size: 36px;
+
+  --workspace-sidebar-width-expanded: 256px;
+  --workspace-sidebar-width-collapsed: 72px;
+  --workspace-sidebar-width: var(--workspace-sidebar-width-expanded);
+  --workspace-topbar-height: 64px;
+  --workspace-page-action-size: 36px;
+  --library-details-width: 320px;
+
+  /* Camadas de z-index — ordem crescente */
+  --z-local-elevated: 10;
+  --z-sticky: 20;
+  --z-dropdown: 60;
+  --z-sidebar-flyout: 70;
+  --z-tooltip: 75;
+  --z-overlay: 80;
+  --z-drawer: 85;
+  --z-context-menu: 90;
+  --z-modal: 95;
+  --z-popover: 96;
+  --z-confirm: 100;
+
+  /* Acento sólido — sem gradiente */
+  --gradient-action: var(--accent-active);
+  --gradient-action-soft: var(--accent-active-bg);
+
+  /* Cores de pasta (sólidas) */
+  --folder-accent-juridico: #5b8fc7;
+  --folder-accent-financeiro: #4a9b7f;
+  --folder-accent-rh: #8b6bb8;
+  --folder-accent-compras: #c49252;
+  --folder-accent-operacional: #5a94c4;
+  --folder-accent-contratos: #6b7ec4;
+  --folder-accent-default: #80868b;
+
+  --color-cat-juridico: var(--folder-accent-juridico);
+  --color-cat-financeiro: var(--folder-accent-financeiro);
+  --color-cat-rh: var(--folder-accent-rh);
+  --color-cat-compras: var(--folder-accent-compras);
+  --color-cat-operacional: var(--folder-accent-operacional);
+  --color-cat-contratos: var(--folder-accent-contratos);
+  --color-cat-default: var(--folder-accent-default);
+
+  /* Aliases legados — preferir --folder-accent-* ou --color-cat-* */
+  --folder-gradient-juridico: var(--folder-accent-juridico);
+  --folder-gradient-financeiro: var(--folder-accent-financeiro);
+  --folder-gradient-rh: var(--folder-accent-rh);
+  --folder-gradient-compras: var(--folder-accent-compras);
+  --folder-gradient-operacional: var(--folder-accent-operacional);
+  --folder-gradient-contratos: var(--folder-accent-contratos);
+  --folder-gradient-default: var(--folder-accent-default);
+
+  --transition-duration-fast: 120ms;
+  --transition-duration: 150ms;
+  --transition-duration-slow: 220ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
 }
 
 [data-theme='light'] {
-  --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-shell: var(--shadow-elevation-1);
+
+  /* Pasta padrão — ícone amarelo Drive (após o bloco compartilhado para vencer o cascade) */
+  --folder-accent-default: #fbc02d;
 }
 
-/* Fallback dark antes do script de tema */
 :root:not([data-theme]) {
   color-scheme: dark;
 }

@@ -1,5 +1,5 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Check } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -42,9 +42,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               className,
             )}
           >
-            <Check
-              className="h-3 w-3 text-doqyn-bg opacity-0 transition-opacity group-has-[:checked]:opacity-100"
-              strokeWidth={3}
+            <Icon
+              name="check"
+              filled
+              size={12}
+              weight={700}
+              className="text-doqyn-bg opacity-0 transition-opacity group-has-[:checked]:opacity-100"
             />
           </span>
         </span>

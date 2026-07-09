@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -139,7 +140,7 @@ export function AddMemberToGroupDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center modal-overlay-scrim p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={(event) => event.target === overlayRef.current && onClose()}
     >
       <div
@@ -171,7 +172,7 @@ export function AddMemberToGroupDialog({
             className="rounded-lg p-1.5 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </button>
         </div>
 
@@ -227,7 +228,7 @@ export function AddMemberToGroupDialog({
           ) : (
             <>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-doqyn-muted" />
+                <Icon name="search" size={ICON_SIZE.xs} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-doqyn-muted" />
                 <input
                   type="search"
                   value={search}

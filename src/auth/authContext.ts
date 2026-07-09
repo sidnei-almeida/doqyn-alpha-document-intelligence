@@ -17,8 +17,11 @@ export type AuthContextValue = {
   authMode: string;
   authProvider: ReturnType<typeof getAuthProviderType>;
   supportsSso: boolean;
+  supportsOAuth: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithSSO: () => Promise<void>;
+  loginWithGoogle: (returnUrl?: string) => void;
+  loginWithMicrosoft: (returnUrl?: string) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   refreshToken: () => Promise<void>;

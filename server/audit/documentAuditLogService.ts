@@ -242,7 +242,7 @@ export function hashAuditClientContext(value: string): string {
   return createHash('sha256').update(value.trim()).digest('hex');
 }
 
-const DOCUMENT_ACTION_PREFIX = /^document\./;
+const TRACKING_ACTION_PREFIX = /^(document\.|access\.|file_explorer\.)/;
 
 function mapActor(actor: Record<string, unknown>) {
   return {
@@ -274,6 +274,10 @@ function mapTrackingRow(
   });
   const versionLabel =
     typeof metadata.versionLabel === 'string' ? metadata.versionLabel : undefined;
+  const security =
+    metadata.security && typeof metadata.security === 'object'
+      ? (metadata.security as Record<string, unknown>)
+      : undefined;
 
   return {
     id: String(row._id),
@@ -292,6 +296,11 @@ function mapTrackingRow(
     versionId: row.versionId ?? null,
     actor: mapActor(actor),
     hasChanges: changes.length > 0,
+    status: (metadata.status as DocumentTrackingListItem['status']) ?? undefined,
+    actionGroup: typeof metadata.actionGroup === 'string' ? metadata.actionGroup : undefined,
+    result: typeof row.result === 'string' ? row.result : undefined,
+    sessionHash:
+      typeof security?.sessionIdHash === 'string' ? security.sessionIdHash : undefined,
   };
 }
 
@@ -317,10 +326,13 @@ function buildTrackingCategoryFilter(category?: string): Record<string, unknown>
     case 'error':
       return {
         $or: [
-          { action: { $regex: 'failed|error', $options: 'i' } },
+          { action: { $regex: 'failed|error|denied', $options: 'i' } },
           { result: 'error' },
+          { 'metadata.status': { $in: ['failed', 'denied'] } },
         ],
       };
+    case 'access':
+      return { action: { $regex: '^access\\.', $options: 'i' } };
     default:
       return null;
   }
@@ -332,6 +344,9 @@ function buildTrackingQuery(input: {
   versionId?: string;
   action?: string;
   severity?: string;
+  status?: string;
+  actionGroup?: string;
+  requestId?: string;
   actorUserId?: string;
   from?: string;
   to?: string;
@@ -341,36 +356,66 @@ function buildTrackingQuery(input: {
 }): Record<string, unknown> {
   const query: Record<string, unknown> = {
     ...tenantScopeFilterFromContext(input.storage),
-    action: { $regex: '^document\\.' },
+    action: { $regex: '^(document\\.|access\\.|file_explorer\\.)' },
   };
 
   if (input.documentId?.trim()) query.documentId = input.documentId.trim();
   if (input.versionId?.trim()) query.versionId = input.versionId.trim();
   if (input.action?.trim()) query.action = input.action.trim();
+  if (input.requestId?.trim()) query.requestId = input.requestId.trim();
   if (input.actorUserId?.trim()) query['actor.userId'] = input.actorUserId.trim();
 
+  if (input.status?.trim()) {
+    query.$and = [
+      ...(Array.isArray(query.$and) ? query.$and : []),
+      { 'metadata.status': input.status.trim() },
+    ];
+  }
+
+  if (input.actionGroup?.trim()) {
+    query.$and = [
+      ...(Array.isArray(query.$and) ? query.$and : []),
+      { 'metadata.actionGroup': input.actionGroup.trim() },
+    ];
+  }
+
   if (input.from || input.to) {
-    const createdAt: Record<string, Date> = {};
+    const occurredAt: Record<string, Date> = {};
     if (input.from) {
       const fromDate = new Date(input.from);
-      if (!Number.isNaN(fromDate.getTime())) createdAt.$gte = fromDate;
+      if (!Number.isNaN(fromDate.getTime())) occurredAt.$gte = fromDate;
     }
     if (input.to) {
       const toDate = new Date(input.to);
-      if (!Number.isNaN(toDate.getTime())) createdAt.$lte = toDate;
+      if (!Number.isNaN(toDate.getTime())) occurredAt.$lte = toDate;
     }
-    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
+    if (Object.keys(occurredAt).length > 0) {
+      query.$and = [
+        ...(Array.isArray(query.$and) ? query.$and : []),
+        {
+          $or: [
+            { occurredAt },
+            { occurredAt: { $exists: false }, createdAt: occurredAt },
+          ],
+        },
+      ];
+    }
   }
 
   if (input.q?.trim()) {
     const regex = { $regex: input.q.trim(), $options: 'i' };
-    query.$or = [
-      { description: regex },
-      { action: regex },
-      { documentId: regex },
-      { 'actor.name': regex },
-      { 'actor.displayNameSnapshot': regex },
-      { 'actor.emailSnapshot': regex },
+    query.$and = [
+      ...(Array.isArray(query.$and) ? query.$and : []),
+      {
+        $or: [
+          { description: regex },
+          { action: regex },
+          { documentId: regex },
+          { 'actor.name': regex },
+          { 'actor.displayNameSnapshot': regex },
+          { 'actor.emailSnapshot': regex },
+        ],
+      },
     ];
   }
 
@@ -435,6 +480,9 @@ export async function listDocumentTrackingEvents(input: {
   versionId?: string;
   action?: string;
   severity?: string;
+  status?: string;
+  actionGroup?: string;
+  requestId?: string;
   actorUserId?: string;
   from?: string;
   to?: string;
@@ -459,6 +507,9 @@ export async function listDocumentTrackingEvents(input: {
     versionId: input.versionId,
     action: input.action,
     severity: input.severity,
+    status: input.status,
+    actionGroup: input.actionGroup,
+    requestId: input.requestId,
     actorUserId: input.actorUserId,
     from: input.from,
     to: input.to,
@@ -467,8 +518,12 @@ export async function listDocumentTrackingEvents(input: {
     cursor: input.cursor,
   });
 
-  const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
-  const rows = await auditLogs.find(query).sort({ createdAt: -1 }).limit(limit + 1).toArray();
+  const limit = Math.min(Math.max(input.limit ?? 50, 1), 500);
+  const rows = await auditLogs
+    .find(query)
+    .sort({ occurredAt: -1, createdAt: -1 })
+    .limit(limit + 1)
+    .toArray();
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
@@ -478,7 +533,7 @@ export async function listDocumentTrackingEvents(input: {
   const documentNames = await loadDocumentNames(documents, storage, documentIds);
 
   const items = page
-    .filter((row) => DOCUMENT_ACTION_PREFIX.test(String(row.action)))
+    .filter((row) => TRACKING_ACTION_PREFIX.test(String(row.action)))
     .map((row) => mapTrackingRow(row as MongoAuditLog, documentNames));
 
   return {
@@ -506,7 +561,7 @@ export async function getDocumentTrackingEvent(input: {
     ...tenantScopeFilterFromContext(storage),
   } as Record<string, unknown>);
 
-  if (!row || !DOCUMENT_ACTION_PREFIX.test(String((row as MongoAuditLog).action))) {
+  if (!row || !TRACKING_ACTION_PREFIX.test(String((row as MongoAuditLog).action))) {
     throw new ServiceError('Evento não encontrado.', 'TRACKING_EVENT_NOT_FOUND', 404);
   }
 
@@ -521,12 +576,18 @@ export async function getDocumentTrackingEvent(input: {
     ? (metadata.changes as DocumentTrackingDetail['changes'])
     : undefined;
 
+  const security =
+    metadata.security && typeof metadata.security === 'object'
+      ? sanitizeAuditMetadata(metadata.security as Record<string, unknown>)
+      : undefined;
+
   return {
     ...base,
     tenantId: input.ctx.tenantId,
     description: (row as MongoAuditLog).description,
     changes,
     metadata: sanitizeAuditMetadata(metadata),
+    security,
     requestId:
       typeof metadata.requestId === 'string'
         ? metadata.requestId

@@ -47,9 +47,9 @@ describe('preview manifest backend', () => {
     assert.doesNotMatch(manifestServiceSource, /r2\.cloudflarestorage|presigned/i);
   });
 
-  it('manifest handler exige auth e retorna no-store', () => {
+  it('manifest handler exige auth e cache privado versionado', () => {
     assert.match(manifestHandlerSource, /requireDocumentAuthContext/);
-    assert.match(manifestHandlerSource, /private, no-store/);
+    assert.match(manifestHandlerSource, /setPreviewManifestCacheHeaders/);
     assert.match(manifestHandlerSource, /document\.preview_viewed/);
   });
 
@@ -59,8 +59,8 @@ describe('preview manifest backend', () => {
     assert.match(previewServiceSource, /!permissions\.canDownload/);
   });
 
-  it('page handler retorna no-store', () => {
-    assert.match(pageHandlerSource, /private, no-store/);
+  it('page handler retorna cache privado via helper', () => {
+    assert.match(pageHandlerSource, /setPreviewAssetCacheHeaders/);
     assert.match(pageHandlerSource, /requireDocumentAuthContext/);
   });
 

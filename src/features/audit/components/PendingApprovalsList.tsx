@@ -1,13 +1,14 @@
-import { ExternalLink, Eye } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { formatDate } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 import { AuditEmptyState } from './AuditEmptyState';
-import { ClipboardList } from 'lucide-react';
 
 type PendingApprovalsListProps = {
   items: PendingApprovalItem[];
@@ -42,7 +43,7 @@ export function PendingApprovalsList({
   if (items.length === 0) {
     return (
       <AuditEmptyState
-        icon={<ClipboardList className="h-5 w-5" />}
+        icon={<Icon name="assignment" size={ICON_SIZE.nav} />}
         title="Não há pendências no momento."
         description="Novas solicitações de acesso aparecerão aqui para revisão."
       />
@@ -69,13 +70,13 @@ export function PendingApprovalsList({
           header: 'Organização',
           render: (item) => (
             <div className="min-w-0 max-w-[220px]">
-              <p className="truncate text-sm text-doqyn-text" title={item.tenantName ?? item.tenantId}>
+              <TruncatedText as="p" className="text-sm text-doqyn-text">
                 {item.tenantName ?? item.tenantId}
-              </p>
+              </TruncatedText>
               {item.tenantName && item.tenantName !== item.tenantId && (
-                <p className="truncate text-[11px] text-doqyn-muted" title={item.tenantId}>
+                <TruncatedText as="p" className="text-[11px] text-doqyn-muted">
                   {item.tenantId}
-                </p>
+                </TruncatedText>
               )}
             </div>
           ),
@@ -106,7 +107,7 @@ export function PendingApprovalsList({
           render: (item) => (
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" variant="secondary" onClick={() => onReview(item)}>
-                <Eye className="h-3.5 w-3.5" />
+                <Icon name="visibility" size={14} />
                 Revisar
               </Button>
               {isAdmin && (
@@ -124,7 +125,7 @@ export function PendingApprovalsList({
                 className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
               >
                 Usuários
-                <ExternalLink className="h-3 w-3" />
+                <Icon name="open_in_new" size={12} />
               </Link>
             </div>
           ),

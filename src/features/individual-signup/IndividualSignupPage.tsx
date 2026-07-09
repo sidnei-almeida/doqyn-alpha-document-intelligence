@@ -1,4 +1,5 @@
-import { Shield, User } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -115,7 +116,7 @@ export function IndividualSignupPage() {
 
       <div className="w-full max-w-lg flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Pessoa física" />
+          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Pessoa física" />
           <p className="mt-4 max-w-md text-sm text-doqyn-muted">
             Para clientes CPF que precisam acessar documentos pessoais no DOQYN.
           </p>
@@ -126,7 +127,7 @@ export function IndividualSignupPage() {
           className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
         >
           <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <User className="h-4 w-4" strokeWidth={1.5} />
+            <Icon name="person" size={ICON_SIZE.xs} />
             Dados pessoais
           </div>
 
@@ -232,7 +233,7 @@ export function IndividualSignupPage() {
         />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon name="shield" size={14} />
           Documentos pessoais protegidos
         </p>
       </div>

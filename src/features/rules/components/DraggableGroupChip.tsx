@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types/rules';
 import { GROUP_COLOR_STYLES, getInitials } from '@/utils/rulesHelpers';
@@ -50,7 +50,7 @@ export function DraggableGroupChip({
           {...attributes}
           aria-label={`Arrastar grupo ${group.name}`}
         >
-          <GripVertical className="h-3 w-3 text-doqyn-muted" />
+          <Icon name="drag_indicator" size={12} className="text-doqyn-muted" aria-hidden />
         </button>
       )}
       <span

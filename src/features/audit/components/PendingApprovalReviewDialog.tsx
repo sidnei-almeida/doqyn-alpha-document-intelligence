@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { ExternalLink, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn, formatDate } from '@/lib/utils';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
@@ -24,13 +26,11 @@ function OrganizationValue({ tenantName, tenantId }: { tenantName?: string; tena
 
   return (
     <div className="min-w-0">
-      <p className="break-words text-sm font-medium text-doqyn-text" title={primary}>
-        {primary}
-      </p>
+      <p className="break-words text-sm font-medium text-doqyn-text">{primary}</p>
       {showSecondary && (
-        <p className="mt-0.5 truncate text-[11px] text-doqyn-muted" title={tenantId}>
+        <TruncatedText as="p" className="mt-0.5 text-[11px] text-doqyn-muted">
           {tenantId}
-        </p>
+        </TruncatedText>
       )}
     </div>
   );
@@ -62,7 +62,7 @@ export function PendingApprovalReviewDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -87,7 +87,7 @@ export function PendingApprovalReviewDialog({
             className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </button>
         </div>
 
@@ -139,7 +139,7 @@ export function PendingApprovalReviewDialog({
             className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
           >
             Gerenciar em Usuários
-            <ExternalLink className="h-3 w-3" />
+            <Icon name="open_in_new" size={12} />
           </Link>
         </div>
 

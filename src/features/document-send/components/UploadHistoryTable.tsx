@@ -1,5 +1,7 @@
-import { MoreHorizontal } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn } from '@/lib/utils';
 import type { DocumentHistoryItem } from '../types';
 import { ConfidenceBadge } from './ConfidenceBadge';
@@ -68,19 +70,11 @@ export function UploadHistoryTable({ items, className }: UploadHistoryTableProps
                   TABLE_GRID,
                 )}
               >
-                <div
-                  role="cell"
-                  className="min-w-0 truncate pr-3 text-sm font-medium text-doqyn-text"
-                  title={item.originalName}
-                >
-                  {item.originalName}
+                <div role="cell" className="min-w-0 pr-3 text-sm font-medium text-doqyn-text">
+                  <TruncatedText>{item.originalName}</TruncatedText>
                 </div>
-                <div
-                  role="cell"
-                  className="min-w-0 truncate px-3 font-mono text-xs text-doqyn-muted"
-                  title={item.suggestedName}
-                >
-                  {item.suggestedName}
+                <div role="cell" className="min-w-0 px-3 font-mono text-xs text-doqyn-muted">
+                  <TruncatedText>{item.suggestedName}</TruncatedText>
                 </div>
                 <div role="cell" className="px-3 text-sm text-doqyn-muted">
                   {item.category}
@@ -106,7 +100,7 @@ export function UploadHistoryTable({ items, className }: UploadHistoryTableProps
                     className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong"
                     aria-label={`Ações para ${item.originalName}`}
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <Icon name="more_horiz" size={ICON_SIZE.xs} />
                   </button>
                 </div>
               </div>

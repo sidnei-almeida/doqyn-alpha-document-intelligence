@@ -55,10 +55,19 @@ describe('document ownership filters', () => {
     userId: 'user_a',
   });
 
-  it('business filtra por tenantId', () => {
+  it('business inclui docs canônicos e legados em coleção dedicada', () => {
     const filter = buildDocumentOwnershipFilter(businessCtx);
-    assert.equal(filter.tenantType, 'business');
     assert.ok(filter.$or);
+    const branches = filter.$or as Array<Record<string, unknown>>;
+    assert.deepEqual(branches[0], { tenantId: 'company_acme_ab12cd' });
+    assert.ok(
+      branches.some(
+        (branch) =>
+          branch.tenantId &&
+          typeof branch.tenantId === 'object' &&
+          '$exists' in (branch.tenantId as Record<string, unknown>),
+      ),
+    );
   });
 
   it('individual exige ownerTenantId e ownerUserId', () => {
