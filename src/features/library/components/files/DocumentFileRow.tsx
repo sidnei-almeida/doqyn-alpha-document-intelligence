@@ -2,8 +2,10 @@ import type { KeyboardEvent, MouseEvent } from 'react';
 import { cn } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
 import { useExplorerFileActions } from '../../context/useExplorerFileActions';
+import { useSelectableItemRef } from '../../hooks/useSelectableItemRef';
 import { handleExplorerItemKeyDown } from '../../utils/explorerItemKeyboard';
 import { DocumentFileThumbnail } from './DocumentFileThumbnail';
+import { DocumentFavoriteBadge } from './DocumentFavoriteBadge';
 import { DocumentItemMenu } from './DocumentItemMenu';
 import { documentDisplayName, documentSecondaryMeta } from './documentFileUtils';
 
@@ -22,6 +24,7 @@ export function DocumentFileRow({
 }: DocumentFileRowProps) {
   const { isFileSelected, interactFile, openFile, openFileContextMenu } = useExplorerFileActions();
   const isSelected = isFileSelected(doc.documentId);
+  const selectableRef = useSelectableItemRef(doc.documentId, 'file');
   const name = documentDisplayName(doc);
   const secondary = documentSecondaryMeta(doc, meta);
 
@@ -54,9 +57,11 @@ export function DocumentFileRow({
   if (layout === 'compact') {
     return (
       <div
+        ref={selectableRef}
         role="option"
         tabIndex={0}
         data-explorer-item="file"
+        data-explorer-item-id={doc.documentId}
         data-testid="document-file-row"
         {...handlers}
         className={cn(
@@ -74,7 +79,10 @@ export function DocumentFileRow({
         )}
         <DocumentFileThumbnail document={doc} size="row" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-doqyn-text">{name}</p>
+          <p className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-doqyn-text">
+            <DocumentFavoriteBadge document={doc} variant="inline" />
+            <span className="truncate">{name}</span>
+          </p>
           <p className="truncate text-[11px] text-doqyn-subtle">{secondary}</p>
         </div>
         <DocumentItemMenu

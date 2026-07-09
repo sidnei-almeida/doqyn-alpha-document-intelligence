@@ -28,6 +28,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents/download': () => import('../api/documents/download.js'),
   '/api/documents/preview': () => import('../api/documents/preview.js'),
   '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
+  '/api/documents/confirm-update': () => import('../api/documents/confirm-update.js'),
   '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
   '/api/document-rules/active': () => import('../api/document-rules/active.js'),
   '/api/document-rules': () => import('../api/document-rules/index.js'),
@@ -47,9 +48,19 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/tracking/summary': () => import('../api/tracking/summary.js'),
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
+  '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
+  '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
   '/api/profile/avatar': () => import('../api/profile/avatar.js'),
   '/api/ai/analyze-pdf': () => import('../api/ai/analyze-pdf.js'),
+  '/api/ai/analyze-pdf-update': () => import('../api/ai/analyze-pdf-update.js'),
+  '/api/documents/rag-query': () => import('../api/documents/rag-query.js'),
+  '/api/trash/documents': () => import('../api/trash/documents.js'),
+  '/api/settings/trash-retention': () => import('../api/settings/trash-retention.js'),
+  '/api/documents/batch/trash': () => import('../api/documents/batch/trash.js'),
+  '/api/documents/batch/restore': () => import('../api/documents/batch/restore.js'),
+  '/api/documents/batch/permanent-delete': () => import('../api/documents/batch/permanent-delete.js'),
+  '/api/documents/batch/move': () => import('../api/documents/batch/move.js'),
 };
 
 function resolveRoute(pathname: string): RouteMatch | null {
@@ -126,8 +137,43 @@ function resolveRoute(pathname: string): RouteMatch | null {
     },
     { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
     {
+      regex: /^\/api\/documents\/([^/]+)\/trash$/,
+      loader: () => import('../api/documents/[documentId]/trash.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/restore$/,
+      loader: () => import('../api/documents/[documentId]/restore.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/permanent$/,
+      loader: () => import('../api/documents/[documentId]/permanent.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/versions$/,
+      loader: () => import('../api/documents/[documentId]/versions.js'),
+      paramKeys: ['documentId'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/favorite$/,
       loader: () => import('../api/documents/[documentId]/favorite.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/shares\/([^/]+)$/,
+      loader: () => import('../api/documents/[documentId]/shares/[shareId].js'),
+      paramKeys: ['documentId', 'shareId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/shares$/,
+      loader: () => import('../api/documents/[documentId]/shares.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/move$/,
+      loader: () => import('../api/documents/[documentId]/move.js'),
       paramKeys: ['documentId'],
     },
     {

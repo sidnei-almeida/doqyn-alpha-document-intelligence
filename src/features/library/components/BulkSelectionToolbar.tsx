@@ -1,5 +1,4 @@
 import { Icon } from '@/components/ui/Icon';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import type { DocumentListItem } from '@/types/document-library';
@@ -8,24 +7,32 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 type BulkSelectionToolbarProps = {
   selectedCount: number;
   selectedFileIds: Set<string>;
+  selectedFolderCount: number;
   documents: DocumentListItem[];
+  isTrashView?: boolean;
   onClear: () => void;
   onDownload: (docs: DocumentListItem[]) => void;
   onPreview?: (doc: DocumentListItem) => void;
+  onMove?: () => void;
+  onTrash?: (documentIds: string[]) => void;
+  onRestore?: (documentIds: string[]) => void;
+  onPermanentDelete?: (documentIds: string[]) => void;
 };
-
-function comingSoon(label: string) {
-  toast.info(`${label} estará disponível em uma próxima versão.`);
-}
 
 /** Toolbar contextual premium — substitui filtros quando há seleção (estilo Drive/Finder). */
 export function BulkSelectionToolbar({
   selectedCount,
   selectedFileIds,
+  selectedFolderCount,
   documents,
+  isTrashView = false,
   onClear,
   onDownload,
   onPreview,
+  onMove,
+  onTrash,
+  onRestore,
+  onPermanentDelete,
 }: BulkSelectionToolbarProps) {
   if (selectedCount === 0) return null;
 
@@ -38,6 +45,25 @@ export function BulkSelectionToolbar({
     singleFile != null &&
     singleFile.permissions?.canPreview !== false &&
     Boolean(singleFile.latestVersionId);
+
+  const hasFolderSelection = selectedFolderCount > 0;
+  const selectedDocumentIds = [...selectedFileIds];
+  const canTrashAny = selectedDocs.some((doc) => doc.permissions?.canUpdate !== false);
+  const deleteDisabled = hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny;
+  const deleteTooltip = hasFolderSelection
+    ? 'Pastas e categorias não podem ser excluídas. Selecione apenas documentos.'
+    : !canTrashAny
+      ? 'Você não tem permissão para excluir os documentos selecionados.'
+      : undefined;
+  const moveDisabled =
+    hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny || isTrashView;
+  const moveTooltip = hasFolderSelection
+    ? 'Selecione apenas documentos para mover.'
+    : isTrashView
+      ? 'Documentos na lixeira não podem ser movidos.'
+      : !canTrashAny
+        ? 'Você não tem permissão para mover os documentos selecionados.'
+        : undefined;
 
   return (
     <div
@@ -54,58 +80,80 @@ export function BulkSelectionToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={!canPreviewSingle}
-          onClick={() => singleFile && onPreview?.(singleFile)}
-        >
-          <Icon name="visibility" size={ICON_SIZE.sm} />
-          Visualizar
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={!canDownloadAny}
-          onClick={() => onDownload(selectedDocs)}
-        >
-          <Icon name="download" size={ICON_SIZE.sm} />
-          Baixar
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => comingSoon('Mover para pasta')}>
-          <Icon name="drive_file_move" size={ICON_SIZE.sm} />
-          Mover
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => comingSoon('Compartilhar')}>
-          <Icon name="share" size={ICON_SIZE.sm} />
-          Compartilhar
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={!singleFile}
-          onClick={() => comingSoon('Renomear')}
-        >
-          <Icon name="edit" size={ICON_SIZE.sm} />
-          Renomear
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-doqyn-danger hover:text-doqyn-danger"
-          onClick={() => comingSoon('Mover para lixeira')}
-        >
-          <Icon name="delete" size={ICON_SIZE.sm} />
-          Excluir
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => comingSoon('Mais opções')}>
-          <Icon name="more_horiz" size={ICON_SIZE.sm} />
-          Mais
-        </Button>
+        {!isTrashView && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!canPreviewSingle}
+              onClick={() => singleFile && onPreview?.(singleFile)}
+            >
+              <Icon name="visibility" size={ICON_SIZE.sm} />
+              Visualizar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!canDownloadAny}
+              onClick={() => onDownload(selectedDocs)}
+            >
+              <Icon name="download" size={ICON_SIZE.sm} />
+              Baixar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={moveDisabled}
+              title={moveTooltip}
+              onClick={() => onMove?.()}
+            >
+              <Icon name="drive_file_move" size={ICON_SIZE.sm} />
+              Mover
+            </Button>
+          </>
+        )}
+
+        {isTrashView ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={selectedDocumentIds.length === 0}
+              onClick={() => onRestore?.(selectedDocumentIds)}
+            >
+              <Icon name="restore_from_trash" size={ICON_SIZE.sm} />
+              Restaurar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-doqyn-danger hover:text-doqyn-danger"
+              disabled={selectedDocumentIds.length === 0}
+              onClick={() => onPermanentDelete?.(selectedDocumentIds)}
+            >
+              <Icon name="delete_forever" size={ICON_SIZE.sm} />
+              Excluir permanentemente
+            </Button>
+          </>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-doqyn-danger hover:text-doqyn-danger"
+            disabled={deleteDisabled}
+            title={deleteTooltip}
+            onClick={() => onTrash?.(selectedDocumentIds)}
+          >
+            <Icon name="delete" size={ICON_SIZE.sm} />
+            Excluir
+          </Button>
+        )}
       </div>
     </div>
   );

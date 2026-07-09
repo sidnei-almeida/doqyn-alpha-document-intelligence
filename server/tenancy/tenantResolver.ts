@@ -8,6 +8,7 @@ import { SHARED_INDIVIDUAL_COLLECTION_PREFIX, LEGACY_INDIVIDUAL_POOL_PREFIX } fr
 export type TenantCollectionBaseKey =
   | 'documents'
   | 'documentVersions'
+  | 'documentChunks'
   | 'processingJobs'
   | 'auditLogs'
   | 'accessGroups'
@@ -21,6 +22,7 @@ export type TenantCollectionBaseKey =
 const BASE_COLLECTION_NAMES: Record<TenantCollectionBaseKey, string> = {
   documents: COLLECTIONS.documents,
   documentVersions: COLLECTIONS.documentVersions,
+  documentChunks: COLLECTIONS.documentChunks,
   processingJobs: COLLECTIONS.processingJobs,
   auditLogs: COLLECTIONS.auditLogs,
   accessGroups: COLLECTIONS.accessGroups,
@@ -35,6 +37,7 @@ const BASE_COLLECTION_NAMES: Record<TenantCollectionBaseKey, string> = {
 export type ResolvedTenantCollectionNames = {
   documents: string;
   documentVersions: string;
+  documentChunks: string;
   processingJobs: string;
   auditLogs: string;
   accessGroups?: string;
@@ -95,6 +98,7 @@ export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenan
   const core: ResolvedTenantCollectionNames = {
     documents: resolvePrefixedName(BASE_COLLECTION_NAMES.documents, prefix),
     documentVersions: resolvePrefixedName(BASE_COLLECTION_NAMES.documentVersions, prefix),
+    documentChunks: resolvePrefixedName(BASE_COLLECTION_NAMES.documentChunks, prefix),
     processingJobs: resolvePrefixedName(BASE_COLLECTION_NAMES.processingJobs, prefix),
     auditLogs: resolvePrefixedName(BASE_COLLECTION_NAMES.auditLogs, prefix),
   };

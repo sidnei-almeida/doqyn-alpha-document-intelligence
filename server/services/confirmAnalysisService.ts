@@ -44,6 +44,8 @@ import {
   resolveStorageFileNames,
   type NamingMode,
 } from '../utils/resolveStorageFileNames.js';
+import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
+import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 
 const evidenceSchema = z.object({
   pageNumber: z.number().optional(),
@@ -251,9 +253,9 @@ async function persistConfirmedVersionFile(input: {
   originalFileName: string;
   storageFileName: string;
   storageScope: TenantStorageScope;
-}): Promise<MongoDocumentVersion['storage']> {
+}): Promise<{ storage: MongoDocumentVersion['storage']; buffer: Buffer | null }> {
   if (!isStorageConfigured()) {
-    return buildStoragePlaceholders();
+    return { storage: buildStoragePlaceholders(), buffer: null };
   }
 
   if (!input.jobId?.trim()) {
@@ -307,7 +309,7 @@ async function persistConfirmedVersionFile(input: {
     storageScope: input.storageScope,
   });
 
-  return storage;
+  return { storage, buffer };
 }
 
 function buildProcessingSteps(input: ConfirmAnalysisInput, persistedAt: Date) {
@@ -484,8 +486,8 @@ export async function confirmAnalysisPersistence(input: {
   const documentCode = await generateDocumentCode(input.ctx);
   const sha256 = data.fileHash;
 
-  const versionLabel = data.extraction.version || 'v1.0';
-  const versionNumber = Number.parseInt(versionLabel.replace(/[^\d]/g, ''), 10) || 1;
+  const versionLabel = normalizeVersionLabel(data.extraction.version || 'v1.0');
+  const versionNumber = parseMajorVersionNumber(versionLabel);
   const reviewReasons = [
     ...new Set([
       ...(data.classification.requiresReview ? [data.classification.reason] : []),
@@ -522,9 +524,10 @@ export async function confirmAnalysisPersistence(input: {
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
+  let confirmedPdfBuffer: Buffer | null = null;
 
   try {
-    versionStorage = await persistConfirmedVersionFile({
+    const persisted = await persistConfirmedVersionFile({
       tenantId,
       ownerUserId: input.ctx.userId,
       documentId,
@@ -536,6 +539,8 @@ export async function confirmAnalysisPersistence(input: {
       storageFileName: resolvedNames.storageFileName,
       storageScope: input.ctx.storageScope,
     });
+    versionStorage = persisted.storage;
+    confirmedPdfBuffer = persisted.buffer;
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
@@ -573,6 +578,8 @@ export async function confirmAnalysisPersistence(input: {
       _id: documentId,
       documentCode,
       currentVersionId: versionId,
+      currentVersionLabel: versionLabel,
+      versionCount: 1,
       classId: docClass._id,
       className: docClass.name,
       title: buildDocumentTitle(docClass.name, versionMetadata),
@@ -668,6 +675,19 @@ export async function confirmAnalysisPersistence(input: {
     await documents.insertOne(document);
     await documentVersions.insertOne(version);
     await processingJobs.insertOne(processingJob);
+
+    if (confirmedPdfBuffer) {
+      await persistChunksAfterVersionConfirm({
+        ctx: input.ctx,
+        pdfBuffer: confirmedPdfBuffer,
+        documentId,
+        versionId,
+        versionLabel,
+        categoryId: docClass._id,
+        createdBy: input.user.id,
+        isCurrentVersion: true,
+      });
+    }
   } catch (error) {
     if (persistedObjectKey) {
       await getStorageProvider()

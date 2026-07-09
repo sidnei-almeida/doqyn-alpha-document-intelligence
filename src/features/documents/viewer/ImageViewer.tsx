@@ -30,7 +30,7 @@ export function ImageViewer({
     if (!imageMeta) return null;
     const medium = imageMeta.resolutions.find((item) => item.label === 'medium');
     const large = imageMeta.resolutions.find((item) => item.label === 'large');
-    const useLarge = scale > 1.25;
+    const useLarge = scale > 1;
     if (useLarge && large?.url) return large.url;
     return medium?.url ?? imageMeta.previewUrl;
   }, [imageMeta, scale]);
@@ -156,7 +156,8 @@ export function ImageViewer({
             src={objectUrl}
             alt={manifest.fileName}
             draggable={false}
-            className="max-w-none select-none viewer-page-surface"
+            decoding="async"
+            className="viewer-page-surface viewer-page-image max-w-none select-none"
             style={{
               width: displayWidth,
               height: displayHeight,

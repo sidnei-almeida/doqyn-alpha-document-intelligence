@@ -85,4 +85,31 @@ describe('document favorites — frontend', () => {
     assert.ok(libraryView.includes('useFavoriteDocuments'));
     assert.ok(libraryView.includes("collection.id === 'favoritos'"));
   });
+
+  it('badge de favorito aparece em todas as views de documento', () => {
+    const badge = read('src/features/library/components/files/DocumentFavoriteBadge.tsx');
+    const card = read('src/features/library/components/files/DocumentFileCard.tsx');
+    const row = read('src/features/library/components/files/DocumentFileRow.tsx');
+    const fileRow = read('src/features/library/components/FileRow.tsx');
+    const overview = read('src/features/dashboard/components/OverviewRecentDocumentsPanel.tsx');
+
+    assert.ok(badge.includes('useDocumentIsFavorite'));
+    assert.ok(card.includes('DocumentFavoriteBadge'));
+    assert.ok(card.includes('variant="overlay"'));
+    assert.ok(row.includes('DocumentFavoriteBadge'));
+    assert.ok(fileRow.includes('DocumentFavoriteBadge'));
+    assert.ok(overview.includes('DocumentFavoriteBadge'));
+  });
+
+  it('badge de favorito respeita escopo do usuário logado', () => {
+    const hook = read('src/features/library/hooks/useDocumentIsFavorite.ts');
+    const favoritesHook = read('src/features/library/hooks/useFavorites.ts');
+    const service = read('server/services/favorites/documentFavoritesService.ts');
+
+    assert.ok(hook.includes('isAuthenticated'));
+    assert.ok(hook.includes('resolveIsStarred'));
+    assert.ok(favoritesHook.includes("queryKey: ['favorite-documents', userId]"));
+    assert.ok(service.includes('activeFavoriteFilter(user.id'));
+    assert.ok(service.includes('userId: ctx.userId'));
+  });
 });

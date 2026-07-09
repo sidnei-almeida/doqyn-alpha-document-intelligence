@@ -11,6 +11,7 @@ import type { DocumentStatus } from '@/types/document';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { DocumentFavoriteBadge } from '@/features/library/components/files/DocumentFavoriteBadge';
 
 type RecentDocumentRowProps = {
   doc: DocumentListItem;
@@ -37,14 +38,17 @@ export function RecentDocumentRow({ doc, onOpen, onTrack, isSolo = false }: Rece
         <Icon name="description" size={ICON_SIZE.xs} />
       </span>
 
-      <button
-        type="button"
-        className="min-w-0 flex-1 text-left"
-        onClick={() => onOpen(doc)}
-      >
-        <TruncatedText as="p" className="text-sm font-medium leading-snug text-doqyn-text">
-          {fileName}
-        </TruncatedText>
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={() => onOpen(doc)}
+        >
+          <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium leading-snug text-doqyn-text">
+            <DocumentFavoriteBadge document={doc} variant="inline" />
+            <TruncatedText as="span" className="min-w-0 flex-1">
+              {fileName}
+            </TruncatedText>
+          </p>
         <TruncatedText as="p" className="overview-row-meta mt-0.5">
           {meta}
         </TruncatedText>

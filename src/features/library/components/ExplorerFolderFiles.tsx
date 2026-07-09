@@ -23,7 +23,7 @@ export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFiles
 
   if (viewMode === 'grid') {
     return (
-      <div className="explorer-folder-files min-h-0 flex-1" data-testid="explorer-folder-files-grid">
+      <div className="explorer-folder-files flex min-h-0 min-h-full flex-1 flex-col" data-testid="explorer-folder-files-grid">
         <FileGridView documents={documents} variant="explorer" />
       </div>
     );

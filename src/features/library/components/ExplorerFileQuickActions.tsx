@@ -31,10 +31,11 @@ export function ExplorerFileQuickActions({
   return (
     <div
       className={cn(
-        'explorer-quick-actions absolute right-1.5 top-1.5 z-20 flex items-center gap-0.5 rounded-lg border border-doqyn-border-subtle/80 bg-doqyn-surface/95 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+        'explorer-quick-actions absolute right-1.5 top-1.5 z-20 flex items-center gap-0.5 rounded-lg p-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
         className,
       )}
       data-testid="explorer-file-quick-actions"
+      data-no-marquee-select
     >
       <Tooltip label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}>
         <button

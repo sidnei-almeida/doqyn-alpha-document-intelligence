@@ -10,6 +10,8 @@ import {
 import { resolveLibraryCategoryId } from '../utils/resolveLibraryCategory';
 import { useDocumentCategories } from './useCategoryFolders';
 import { useFavoriteDocuments, useFavorites } from './useFavorites';
+import { useTrashDocuments } from './useTrashDocuments';
+import { useSharedWithMeDocuments } from '@/features/sharing/hooks/useSharedWithMeDocuments';
 import { useLibraryRouteState } from './useLibraryRouteState';
 
 /**
@@ -21,6 +23,8 @@ export function useLibraryView() {
   const { toggleStar, isStarred, resolveIsStarred } = useFavorites();
   const { data: categories = [] } = useDocumentCategories();
   const isFavoritesCollection = collection.id === 'favoritos';
+  const isTrashCollection = collection.id === 'lixeira';
+  const isSharedCollection = collection.id === 'compartilhados';
 
   const resolvedSpaceId = useMemo(
     () => (state.space ? resolveLibraryCategoryId(state.space, categories) : ''),
@@ -54,8 +58,15 @@ export function useLibraryView() {
     isError: isDocumentsError,
   } = useDocuments(filters, {
     listScopeKey,
-    enabled: !isFavoritesCollection,
+    enabled: !isFavoritesCollection && !isTrashCollection && !isSharedCollection,
   });
+
+  const {
+    data: trashDocuments = [],
+    isLoading: isLoadingTrash,
+    isFetching: isFetchingTrash,
+    isError: isTrashError,
+  } = useTrashDocuments(state.q.trim() || undefined, isTrashCollection);
 
   const {
     data: favoriteDocuments = [],
@@ -64,9 +75,24 @@ export function useLibraryView() {
     isError: isFavoritesError,
   } = useFavoriteDocuments(isFavoritesCollection);
 
+  const {
+    data: sharedDocuments = [],
+    isLoading: isLoadingShared,
+    isFetching: isFetchingShared,
+    isError: isSharedError,
+  } = useSharedWithMeDocuments(state.q.trim() || undefined, isSharedCollection);
+
   const visibleDocuments = useMemo(() => {
+    if (isTrashCollection) {
+      return sortDocuments(trashDocuments, state.sort, state.direction);
+    }
+
     if (isFavoritesCollection) {
       return sortDocuments(favoriteDocuments, state.sort, state.direction);
+    }
+
+    if (isSharedCollection) {
+      return sortDocuments(sharedDocuments, state.sort, state.direction);
     }
 
     const scoped = applyCollectionFilter(documents, collection, {
@@ -77,11 +103,15 @@ export function useLibraryView() {
   }, [
     documents,
     favoriteDocuments,
+    trashDocuments,
+    sharedDocuments,
     collection,
     user?.id,
     state.sort,
     state.direction,
     isFavoritesCollection,
+    isTrashCollection,
+    isSharedCollection,
   ]);
 
   return {
@@ -92,9 +122,27 @@ export function useLibraryView() {
     categories,
     resolvedSpaceId,
     documents: visibleDocuments,
-    isLoading: isFavoritesCollection ? isLoadingFavorites : isLoadingDocuments,
-    isFetching: isFavoritesCollection ? isFetchingFavorites : isFetchingDocuments,
-    isError: isFavoritesCollection ? isFavoritesError : isDocumentsError,
+    isLoading: isTrashCollection
+      ? isLoadingTrash
+      : isFavoritesCollection
+        ? isLoadingFavorites
+        : isSharedCollection
+          ? isLoadingShared
+          : isLoadingDocuments,
+    isFetching: isTrashCollection
+      ? isFetchingTrash
+      : isFavoritesCollection
+        ? isFetchingFavorites
+        : isSharedCollection
+          ? isFetchingShared
+          : isFetchingDocuments,
+    isError: isTrashCollection
+      ? isTrashError
+      : isFavoritesCollection
+        ? isFavoritesError
+        : isSharedCollection
+          ? isSharedError
+          : isDocumentsError,
     toggleStar,
     isStarred,
     resolveIsStarred,

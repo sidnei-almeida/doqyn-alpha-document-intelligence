@@ -20,6 +20,17 @@ export type MongoTenantStorage = {
   bucketProvisionError?: string;
 };
 
+export type TrashRetentionMode = 'days' | 'manual';
+
+export type MongoTenantTrashSettings = {
+  trashRetentionMode: TrashRetentionMode;
+  trashRetentionDays: number;
+};
+
+export type MongoTenantSettings = {
+  trash?: MongoTenantTrashSettings;
+};
+
 export type MongoTenant = {
   _id: string;
   tenantId: string;
@@ -36,6 +47,7 @@ export type MongoTenant = {
     collectionPrefix: string;
   };
   storage?: MongoTenantStorage;
+  settings?: MongoTenantSettings;
   createdAt: Date;
   updatedAt: Date;
   /** @deprecated alias de tenantId */
@@ -452,6 +464,10 @@ export type MongoVersionMetadataField = {
   };
 };
 
+export type DocumentLifecycleStatus = 'active' | 'trashed' | 'purged' | 'permanently_deleted';
+
+export type DocumentPurgeStatus = 'pending' | 'completed' | 'failed';
+
 export type MongoDocument = {
   _id: string;
   tenantId: string;
@@ -461,11 +477,14 @@ export type MongoDocument = {
   ownerUserId?: string;
   documentCode: string;
   currentVersionId: string;
+  currentVersionLabel?: string;
+  versionCount?: number;
   classId: string;
   className: string;
   title: string;
   currentFileName: string;
   status: 'active' | 'archived';
+  lifecycleStatus?: DocumentLifecycleStatus;
   processingStatus: 'processed' | 'requires_review' | 'processed_with_review' | 'pending';
   access: {
     viewGroupIds: string[];
@@ -478,6 +497,25 @@ export type MongoDocument = {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date | null;
+  deletedBy?: string | null;
+  deletedReason?: string | null;
+  trashExpiresAt?: Date | null;
+  permanentlyDeletedAt?: Date | null;
+  purgeStatus?: DocumentPurgeStatus | null;
+  /** Categoria anterior após movimentação manual entre pastas inteligentes. */
+  previousClassId?: string | null;
+  previousCategoryName?: string | null;
+  lastClassificationSource?: 'ai' | 'manual' | 'manual_move' | string;
+  lastManualCategoryId?: string | null;
+  classificationSource?: 'ai' | 'manual' | string;
+  aiSuggestedClassId?: string | null;
+  manualClassificationOverride?: boolean;
+  manualClassificationUpdatedAt?: Date | null;
+  manualClassificationUpdatedBy?: string | null;
+  movedAt?: Date | null;
+  movedBy?: string | null;
+  categorySlug?: string | null;
 };
 
 export type MongoDocumentVersion = {
@@ -533,6 +571,28 @@ export type MongoDocumentVersion = {
     reviewedAt: Date | null;
   };
   createdBy: string;
+  createdAt: Date;
+};
+
+export type MongoDocumentChunk = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  tenantType?: TenantType;
+  ownerTenantId?: string;
+  ownerUserId?: string;
+  documentId: string;
+  versionId: string;
+  versionLabel: string;
+  isCurrentVersion: boolean;
+  categoryId: string;
+  chunkIndex: number;
+  pageNumber?: number;
+  text: string;
+  charStart?: number;
+  charEnd?: number;
+  /** Reservado para busca vetorial futura (Atlas/FAISS). */
+  embedding?: number[] | null;
   createdAt: Date;
 };
 
@@ -621,4 +681,31 @@ export type MongoUserDocumentFavorite = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
+};
+
+export type DocumentShareGrantStatus = 'active' | 'revoked';
+
+export type DocumentSharePermissions = {
+  canView: boolean;
+  canDownload: boolean;
+  canShare: boolean;
+};
+
+/** Concessão explícita de acesso a documento entre usuários do mesmo tenant. */
+export type MongoDocumentShareGrant = {
+  _id: string;
+  documentId: string;
+  documentTenantId: string;
+  documentTenantType?: TenantType;
+  documentCollection?: string;
+  sharedByUserId: string;
+  sharedWithUserId: string;
+  permissions: DocumentSharePermissions;
+  status: DocumentShareGrantStatus;
+  message?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  revokedAt?: Date | null;
+  revokedBy?: string | null;
+  expiresAt?: Date | null;
 };

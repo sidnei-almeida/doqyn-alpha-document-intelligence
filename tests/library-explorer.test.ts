@@ -71,7 +71,8 @@ describe('File Explorer da Biblioteca', () => {
   it('ExplorerFolderCard abre pasta sem seleção radio', () => {
     const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
     assert.equal(card.includes('HoverCheckbox'), false);
-    assert.equal(card.includes('isSelected'), false);
+    assert.equal(card.includes('type="radio"'), false);
+    assert.ok(card.includes('isFolderSelected'));
     assert.ok(card.includes('onOpen'));
     assert.ok(card.includes('data-explorer-item="folder"'));
   });

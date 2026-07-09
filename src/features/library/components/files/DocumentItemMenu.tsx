@@ -14,6 +14,7 @@ export function DocumentItemMenu({ label, onOpen, className }: DocumentItemMenuP
       type="button"
       className={className}
       aria-label={`Menu de ${label}`}
+      data-no-marquee-select
       onClick={(event) => {
         event.stopPropagation();
         const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();

@@ -38,6 +38,7 @@ export function ExplorerActionsProvider({
     selectedCount,
     selectedFileIds,
     isFileSelected,
+    isFolderSelected,
     clearSelection,
     selectFile,
     interactFile: interactFileBase,
@@ -57,6 +58,7 @@ export function ExplorerActionsProvider({
     () => ({
       defaultOrderedIds: visibleFileIds,
       isFileSelected,
+      isFolderSelected,
       isStarred,
       interactFile: interactFileBase,
       openFile: onOpen,
@@ -72,6 +74,7 @@ export function ExplorerActionsProvider({
     [
       visibleFileIds,
       isFileSelected,
+      isFolderSelected,
       isStarred,
       interactFileBase,
       onOpen,

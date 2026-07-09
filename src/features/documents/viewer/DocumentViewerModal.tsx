@@ -19,8 +19,10 @@ import { resolveViewerComponent, type ViewerActions } from './viewerRegistry';
 export type DocumentViewerModalProps = {
   open: boolean;
   documentId: string | null;
+  initialVersionId?: string | null;
   initialShowDetails?: boolean;
   onClose: () => void;
+  onUpdateDocument?: (documentId: string) => void;
 };
 
 function viewerTypeBadge(viewerType: string | undefined): string | null {
@@ -33,8 +35,10 @@ function viewerTypeBadge(viewerType: string | undefined): string | null {
 export function DocumentViewerModal({
   open,
   documentId,
+  initialVersionId,
   initialShowDetails = false,
   onClose,
+  onUpdateDocument,
 }: DocumentViewerModalProps) {
   const navigate = useNavigate();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -44,7 +48,14 @@ export function DocumentViewerModal({
   const viewerActionsRef = useRef<ViewerActions | null>(null);
 
   const [showDetails, setShowDetails] = useState(initialShowDetails);
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(initialVersionId ?? null);
+
+  useEffect(() => {
+    if (!open) return;
+    setShowDetails(initialShowDetails);
+    setSelectedVersionId(initialVersionId ?? null);
+    viewerActionsRef.current = null;
+  }, [open, documentId, initialShowDetails, initialVersionId]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [viewerToolbar, setViewerToolbar] = useState({
     scale: 1,
@@ -105,13 +116,6 @@ export function DocumentViewerModal({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- abre/fecha apenas com modal; versão é snapshot no evento
   }, [open, documentId]);
-
-  useEffect(() => {
-    if (!open) return;
-    setShowDetails(initialShowDetails);
-    setSelectedVersionId(null);
-    viewerActionsRef.current = null;
-  }, [open, documentId, initialShowDetails]);
 
   useEffect(() => {
     if (!open) return;
@@ -212,8 +216,12 @@ export function DocumentViewerModal({
 
   const handleUpdateDocument = useCallback(() => {
     if (!documentId) return;
-    navigate(`/upload?documentId=${encodeURIComponent(documentId)}`);
-  }, [documentId, navigate]);
+    if (onUpdateDocument) {
+      onUpdateDocument(documentId);
+      return;
+    }
+    navigate(`/biblioteca?updateVersion=${encodeURIComponent(documentId)}`);
+  }, [documentId, navigate, onUpdateDocument]);
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {
     viewerActionsRef.current = actions;
@@ -253,7 +261,7 @@ export function DocumentViewerModal({
         canDownload: data?.permissions.canDownload ?? false,
         canViewTracking: data?.permissions.canViewTracking ?? false,
         canEditMetadata: data?.permissions.canEditMetadata ?? false,
-        canUpdate: data?.permissions.canEditMetadata ?? false,
+        canUpdate: data?.permissions.canUpdate ?? data?.permissions.canEditMetadata ?? false,
       };
 
   const showProtectedNoticeResolved = permissions.canPreview && !permissions.canDownload;

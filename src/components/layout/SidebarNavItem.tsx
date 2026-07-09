@@ -19,11 +19,12 @@ type SidebarNavItemProps = {
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
   cn(
-    'group explorer-interactive flex items-center gap-3 rounded-full font-display text-label font-medium leading-none',
+    'sidebar-nav-link group explorer-interactive flex items-center gap-3 rounded-full font-display text-label font-medium leading-none',
+    'focus-visible:outline-none focus-visible:shadow-[var(--sidebar-focus-ring)]',
     collapsed ? 'h-9 w-10 justify-center px-0' : 'h-10 px-3',
     isActive
-      ? 'bg-doqyn-sidebar-selected text-doqyn-sidebar-selected-text'
-      : 'text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text',
+      ? 'sidebar-nav-link--active'
+      : 'text-doqyn-muted hover:bg-doqyn-sidebar-item-hover hover:text-doqyn-text',
   );
 
 /** Item de navegação — ícone + label; ativo com fundo suave e fill. */
@@ -38,7 +39,7 @@ export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps)
             size={ICON_SIZE.nav}
             className={cn(
               'shrink-0',
-              isActive ? 'text-doqyn-sidebar-selected-text' : 'text-doqyn-muted group-hover:text-doqyn-text',
+              isActive ? 'text-doqyn-sidebar-selected-icon' : 'text-doqyn-muted group-hover:text-doqyn-text',
             )}
           />
           {!collapsed && <span className="truncate">{item.label}</span>}

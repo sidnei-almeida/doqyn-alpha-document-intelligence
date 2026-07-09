@@ -6,6 +6,7 @@ import { PreferencesSettingsSection } from './components/sections/PreferencesSet
 import { ProfileSettingsSection } from './components/sections/ProfileSettingsSection';
 import { SecuritySettingsSection } from './components/sections/SecuritySettingsSection';
 import { SystemSettingsSection } from './components/sections/SystemSettingsSection';
+import { TrashRetentionSettingsSection } from './components/sections/TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './components/sections/UploadAiSettingsSection';
 import { useSettingsSection } from './hooks/useSettingsSection';
 import type { SettingsSectionId } from './settingsSections';
@@ -24,6 +25,8 @@ function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
       return <AuthenticationSettingsSection />;
     case 'organizacao':
       return <OrganizationSettingsSection />;
+    case 'lixeira':
+      return <TrashRetentionSettingsSection />;
     case 'sistema':
       return <SystemSettingsSection />;
     default:

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -24,6 +25,10 @@ const DOCUMENT_ID = 'doc_smoke123';
 const VERSION_ID = 'ver_smoke456';
 const STORAGE_FILE_NAME = 'Contrato_NDA.pdf';
 const PREVIEW_FILE_NAME = 'Contrato_NDA_preview.pdf';
+
+function read(relativePath: string): string {
+  return readFileSync(path.join(process.cwd(), relativePath), 'utf8');
+}
 
 function setR2Env(): void {
   process.env.STORAGE_PROVIDER = 'r2';
@@ -303,6 +308,25 @@ describe('addDoqynWatermarkToPdf', () => {
     const watermarked = await addDoqynWatermarkToPdf({ pdfBuffer: originalPdf, watermarkText: 'DOQYN' });
     assert.notEqual(watermarked.equals(originalPdf), true);
     assert.ok(watermarked.length > 0);
+  });
+});
+
+describe('document preview quality', () => {
+  it('usa DPI e qualidade de imagem configuráveis para páginas do viewer', () => {
+    const config = read('server/preview/previewConfig.ts');
+    const renderer = read('server/preview/pdfPageRenderer.ts');
+    const images = read('server/preview/imagePreviewGenerator.ts');
+    const viewer = read('src/features/documents/viewer/PdfPagesViewer.tsx');
+
+    assert.ok(config.includes('DEFAULT_PAGE_DPI'));
+    assert.ok(config.includes('PDF_PREVIEW_PAGE_DPI'));
+    assert.ok(config.includes('imagePreviewQuality'));
+    assert.ok(renderer.includes('dTextAlphaBits=4'));
+    assert.ok(renderer.includes('config.pageDpi'));
+    assert.ok(images.includes('maxWidth: 1680'));
+    assert.ok(images.includes('mozjpeg: true'));
+    assert.ok(viewer.includes('viewer-page-image'));
+    assert.ok(viewer.includes('decoding="async"'));
   });
 });
 

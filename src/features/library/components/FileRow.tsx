@@ -1,12 +1,14 @@
 import type { KeyboardEvent, MouseEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { DocumentFileRowIcon } from './files/DocumentFileRow';
+import { DocumentFavoriteBadge } from './files/DocumentFavoriteBadge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn, formatDate } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem } from '@/types/document-library';
 import { useExplorerFileActions } from '../context/useExplorerFileActions';
+import { useSelectableItemRef } from '../hooks/useSelectableItemRef';
 import { handleExplorerItemKeyDown } from '../utils/explorerItemKeyboard';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { FileTypeIcon } from '@/components/ui/FileTypeIcon';
@@ -43,6 +45,7 @@ export function FileRow({
 
   const isExplorer = variant === 'explorer' || compact;
   const isSelected = isFileSelected(doc.documentId);
+  const selectableRef = useSelectableItemRef(doc.documentId, 'file');
   const name = displayName(doc);
   const starred = doc.isFavorite === true || isStarred(doc.documentId);
 
@@ -78,7 +81,9 @@ export function FileRow({
   if (isExplorer) {
     return (
       <tr
+        ref={selectableRef}
         data-explorer-item="file"
+        data-explorer-item-id={doc.documentId}
         tabIndex={0}
         role="row"
         {...pointerHandlers}
@@ -100,7 +105,10 @@ export function FileRow({
           <div className="flex items-center gap-2.5 pl-1">
             <DocumentFileRowIcon document={doc} />
             <div className="min-w-0 flex-1">
-              <TruncatedText className="text-[13px] font-medium text-doqyn-text">{name}</TruncatedText>
+              <p className="flex min-w-0 items-center gap-1.5">
+                <DocumentFavoriteBadge document={doc} variant="inline" />
+                <TruncatedText className="min-w-0 flex-1 text-[13px] font-medium text-doqyn-text">{name}</TruncatedText>
+              </p>
               <p className="meta-text mt-0.5 truncate md:hidden">
                 {ownerName(doc)} · {formatDate(doc.updatedAt)}
               </p>
@@ -150,7 +158,9 @@ export function FileRow({
 
   return (
     <tr
+      ref={selectableRef}
       data-explorer-item="file"
+      data-explorer-item-id={doc.documentId}
       tabIndex={0}
       role="row"
       {...pointerHandlers}
@@ -174,7 +184,10 @@ export function FileRow({
             <FileTypeIcon fileName={name} className="h-4 w-4 text-doqyn-muted" />
           </span>
           <div className="min-w-0 flex-1">
-            <TruncatedText className="text-[14px] font-medium text-doqyn-text">{name}</TruncatedText>
+            <p className="flex min-w-0 items-center gap-1.5">
+              <DocumentFavoriteBadge document={doc} variant="inline" />
+              <TruncatedText className="min-w-0 flex-1 text-[14px] font-medium text-doqyn-text">{name}</TruncatedText>
+            </p>
             <p className="meta-text mt-0.5 truncate">
               {ownerName(doc)} · {formatDate(doc.updatedAt)}
             </p>

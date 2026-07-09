@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -19,6 +19,9 @@ import { UploadResultPanel } from './components/UploadResultPanel';
 import { generateDocumentId } from './mockData';
 import { analyzePdf, AnalyzePdfRequestError, type AnalyzePdfResponse } from './services/analyzePdf';
 import { confirmAnalysis } from './services/confirmAnalysis';
+import { confirmUpdateDocumentVersion } from './services/confirmUpdateDocumentVersion';
+import { getDocument } from '@/features/documents/api/documentsApi';
+import { nextMajorVersionLabel } from '@/features/documents/utils/versionLabel';
 import { useBulkUploadQueue, type BulkHistoryPayload, type BulkTerminalPayload } from './hooks/useBulkUploadQueue';
 import { useWorkflowLogger } from './hooks/useWorkflowLogger';
 import {
@@ -152,6 +155,9 @@ function createErrorMetadata(file: File): ExtractedMetadata {
 
 export function DocumentSendPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const updateTargetDocumentId = searchParams.get('documentId')?.trim() || null;
   const { isAuthenticated, roles, user, membership, tenant } = useAuth();
   const canShowWorkflowDebug = canViewDocumentTracking(
     roles,
@@ -184,6 +190,44 @@ export function DocumentSendPage() {
   const [manualReviewChecked, setManualReviewChecked] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<WorkflowErrorDisplay | null>(null);
+  const [updateTargetLabel, setUpdateTargetLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!updateTargetDocumentId) return;
+    navigate(`/biblioteca?updateVersion=${encodeURIComponent(updateTargetDocumentId)}`, {
+      replace: true,
+    });
+  }, [navigate, updateTargetDocumentId]);
+
+  useEffect(() => {
+    if (!updateTargetDocumentId) {
+      setUpdateTargetLabel(null);
+      return;
+    }
+
+    let cancelled = false;
+    void getDocument(updateTargetDocumentId)
+      .then((detail) => {
+        if (cancelled) return;
+        const label =
+          detail.document.currentVersionLabel ??
+          detail.latestVersion?.versionLabel ??
+          `v${detail.document.version}`;
+        setUpdateTargetLabel(label);
+      })
+      .catch(() => {
+        if (!cancelled) setUpdateTargetLabel(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [updateTargetDocumentId]);
+
+  const nextVersionLabel = useMemo(
+    () => (updateTargetLabel ? nextMajorVersionLabel(updateTargetLabel) : null),
+    [updateTargetLabel],
+  );
 
   const workflow = useWorkflowLogger();
   const itemStartedAtRef = useRef<number | null>(null);
@@ -346,6 +390,7 @@ export function DocumentSendPage() {
     try {
       const response = await analyzePdf(file, {
         signal: controller.signal,
+        documentId: updateTargetDocumentId ?? undefined,
         context: {
           itemId: docId,
           fileName: file.name,
@@ -557,7 +602,7 @@ export function DocumentSendPage() {
       };
       toast.error(workflowError.toastMessage);
     }
-  }, [clearCompletingTimer, reviewSettings, workflow]);
+  }, [clearCompletingTimer, reviewSettings, updateTargetDocumentId, workflow]);
 
   const handleFilesSelected = useCallback(
     (files: File[], invalidItems: Array<{ file: File; error: string }>) => {
@@ -665,24 +710,37 @@ export function DocumentSendPage() {
 
       const confirmStartedAt = Date.now();
       try {
-        const result = await confirmAnalysis(rawAnalysis, {
+        const confirmContext = {
+          itemId: currentDocId,
+          fileName: lastProcessedFile.name,
+          requestId: createRequestId(),
+        };
+        const confirmOptions = {
           manualReviewConfirmed: requiresReview,
           namingMode: effectiveNamingMode,
           finalFileName: resolvedFinalName,
           selectedFileName: effectiveNamingMode === 'manual' ? perItemNaming.manualName : undefined,
           useAiNaming: reviewSettings.aiRenameEnabled && effectiveNamingMode !== 'original',
-          context: {
-            itemId: currentDocId,
-            fileName: lastProcessedFile.name,
-            requestId: createRequestId(),
-          },
-        });
+          context: confirmContext,
+        };
+
+        const result = updateTargetDocumentId
+          ? await confirmUpdateDocumentVersion(rawAnalysis, {
+              ...confirmOptions,
+              documentId: updateTargetDocumentId,
+              versionLabel: nextVersionLabel ?? undefined,
+            })
+          : await confirmAnalysis(rawAnalysis, confirmOptions);
 
         const savedMetadata: ExtractedMetadata = {
           ...activeMetadata,
           savedDocumentId: result.documentId,
           savedVersionId: result.versionId,
-          documentCode: result.documentCode,
+          suggestedVersion:
+            'versionLabel' in result
+              ? result.versionLabel
+              : activeMetadata.suggestedVersion,
+          documentCode: 'documentCode' in result ? result.documentCode : activeMetadata.documentCode,
           storageStatus: result.storageStatus,
         };
 
@@ -763,7 +821,7 @@ export function DocumentSendPage() {
         setIsConfirming(false);
       }
     },
-    [activeMetadata, currentDocId, invalidateDocumentQueries, lastProcessedFile, manualReviewChecked, perItemNaming, rawAnalysis, reviewSettings, workflow],
+    [activeMetadata, currentDocId, invalidateDocumentQueries, lastProcessedFile, manualReviewChecked, nextVersionLabel, perItemNaming, rawAnalysis, reviewSettings, updateTargetDocumentId, workflow],
   );
 
   const handleCancelAuto = useCallback(() => {
@@ -1018,9 +1076,13 @@ export function DocumentSendPage() {
       </div>
       <PageHeader
         className={cn('shrink-0', isResultView && 'mb-3 pb-3')}
-        eyebrow="Processamento"
-        title="Envio de Documentos"
-        description="Envie um PDF textual para análise automática. Nomes e metadados são gerados após o processamento."
+        eyebrow={updateTargetDocumentId ? 'Atualização' : 'Processamento'}
+        title={updateTargetDocumentId ? 'Atualizar documento' : 'Envio de Documentos'}
+        description={
+          updateTargetDocumentId
+            ? `Nova versão do mesmo documento${nextVersionLabel ? ` (${nextVersionLabel})` : ''}. Versões anteriores são preservadas.`
+            : 'Envie um PDF textual para análise automática. Nomes e metadados são gerados após o processamento.'
+        }
         actions={
           <ReviewWorkflowSettingsPanel
             settings={reviewSettings}

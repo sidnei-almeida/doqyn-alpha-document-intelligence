@@ -38,9 +38,9 @@ export function DocumentDetailDrawer({
       aria-modal="true"
       aria-labelledby="document-detail-drawer-title"
     >
-      <div className="flex h-full w-full max-w-4xl flex-col border-l border-doqyn-border bg-doqyn-bg shadow-xl">
-        <div className="flex items-center justify-between border-b border-doqyn-border px-5 py-4">
-          <h2 id="document-detail-drawer-title" className="text-lg font-semibold text-doqyn-text">
+      <div className="flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-doqyn-border bg-doqyn-bg shadow-xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-doqyn-border px-4 py-3">
+          <h2 id="document-detail-drawer-title" className="text-[14px] font-semibold text-doqyn-text">
             Detalhes do documento
           </h2>
           <button
@@ -52,7 +52,7 @@ export function DocumentDetailDrawer({
             <Icon name="close" size={ICON_SIZE.md} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
           <DocumentDetailPanel
             documentId={documentId}
             initialFocusPreview={initialMode === 'preview'}

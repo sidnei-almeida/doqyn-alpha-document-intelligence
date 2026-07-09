@@ -116,6 +116,15 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
       ],
     },
     {
+      collection: names.documentChunks,
+      indexes: [
+        { key: { tenantId: 1, documentId: 1, versionId: 1, chunkIndex: 1 }, unique: true },
+        { key: { tenantId: 1, documentId: 1, isCurrentVersion: 1, chunkIndex: 1 } },
+        { key: { tenantId: 1, documentId: 1, versionLabel: 1 } },
+        { key: { tenantId: 1, ownerUserId: 1, documentId: 1, isCurrentVersion: 1 } },
+      ],
+    },
+    {
       collection: names.processingJobs,
       indexes: [
         { key: { tenantId: 1, documentId: 1, createdAt: -1 } },
@@ -166,6 +175,14 @@ export function sharedIndividualIndexSpecs(): Array<{
       indexes: [
         { key: { ownerTenantId: 1, documentId: 1, versionNumber: -1 } },
         { key: { ownerTenantId: 1, createdAt: -1 } },
+      ],
+    },
+    {
+      collection: names.documentChunks,
+      indexes: [
+        { key: { ownerTenantId: 1, documentId: 1, versionId: 1, chunkIndex: 1 } },
+        { key: { ownerTenantId: 1, documentId: 1, isCurrentVersion: 1, chunkIndex: 1 } },
+        { key: { ownerUserId: 1, documentId: 1, isCurrentVersion: 1 } },
       ],
     },
     {

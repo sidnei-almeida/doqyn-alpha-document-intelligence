@@ -17,11 +17,12 @@ export function SidebarSpaceItem({ id, name, isActive, collapsed }: SidebarSpace
     <Link
       to={`/biblioteca?space=${encodeURIComponent(id)}`}
       className={cn(
-        'group explorer-interactive flex h-10 items-center gap-3 rounded-full text-[13px] font-medium',
+        'sidebar-nav-link group explorer-interactive flex h-10 items-center gap-3 rounded-full text-[13px] font-medium',
+        'focus-visible:outline-none focus-visible:shadow-[var(--sidebar-focus-ring)]',
         collapsed ? 'justify-center px-0' : 'px-3',
         isActive
-          ? 'bg-doqyn-sidebar-selected text-doqyn-sidebar-selected-text'
-          : 'text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text',
+          ? 'sidebar-nav-link--active'
+          : 'text-doqyn-muted hover:bg-doqyn-sidebar-item-hover hover:text-doqyn-text',
       )}
       aria-current={isActive ? 'page' : undefined}
     >

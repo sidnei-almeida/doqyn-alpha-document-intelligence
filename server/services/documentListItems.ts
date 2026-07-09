@@ -1,18 +1,24 @@
 import type { AuthUser } from '../auth/types.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
-import type { MongoDocument, MongoPreviewStorageSlot } from '../db/types.js';
+import type { MongoDocument, MongoDocumentShareGrant, MongoPreviewStorageSlot } from '../db/types.js';
 import {
-  canUserListDocument,
   loadMemberDocumentGroupIds,
-  resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
+import {
+  canUserListDocumentWithShare,
+  resolveDocumentPermissionsWithShare,
+} from '../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
+import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
   canDownload: boolean;
   canViewTracking: boolean;
   canEditMetadata: boolean;
+  canUpdate: boolean;
+  canShare?: boolean;
+  sharedViaGrant?: boolean;
 };
 
 function mapPreviewStatus(
@@ -53,11 +59,13 @@ function mapDocumentListItem(
     latestVersionId: doc.currentVersionId,
     currentVersionId: doc.currentVersionId,
     versionLabel: versionMeta?.versionLabel,
+    currentVersionLabel: versionMeta?.versionLabel,
     originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
     displayName:
       (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
     documentType: (record.documentType as string | undefined) ?? doc.className,
-    version: (record.version as number | undefined) ?? 1,
+    version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
+    versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
     ownerName: (record.ownerName as string | undefined),
     area: (record.area as string | undefined),
@@ -83,6 +91,7 @@ function mapDocumentListItem(
       canDownload: true,
       canViewTracking: false,
       canEditMetadata: false,
+      canUpdate: false,
     },
   };
 }
@@ -94,6 +103,7 @@ export async function buildDocumentListItems(input: {
   ownerUserId?: string;
   membershipId?: string;
   memberGroupIds?: string[];
+  shareGrantsByDocumentId?: Map<string, MongoDocumentShareGrant>;
 }) {
   const { tenantId, docs, user, ownerUserId, membershipId } = input;
 
@@ -140,17 +150,44 @@ export async function buildDocumentListItems(input: {
   }
 
   const visibleDocs = user
-    ? docs.filter((doc) => canUserListDocument(user, doc, memberGroupIds))
+    ? docs.filter((doc) =>
+        canUserListDocumentWithShare(
+          user,
+          doc,
+          memberGroupIds,
+          input.shareGrantsByDocumentId?.get(String(doc._id)),
+        ),
+      )
     : docs;
 
   return visibleDocs.map((doc) => {
+    const shareGrant = input.shareGrantsByDocumentId?.get(String(doc._id));
     const perms = user
-      ? resolveDocumentPermissions(user, doc, memberGroupIds)
-      : { canPreview: true, canDownload: true, canEditMetadata: false };
+      ? resolveDocumentPermissionsWithShare(user, doc, memberGroupIds, shareGrant)
+      : { canPreview: true, canDownload: true, canEditMetadata: false, canUpdate: false, canShare: false, sharedViaGrant: false };
     const permissions: DocumentListItemPermissions = {
-      ...perms,
+      canPreview: perms.canPreview,
+      canDownload: perms.canDownload,
+      canEditMetadata: perms.canEditMetadata,
+      canUpdate: perms.canUpdate,
+      canShare: perms.canShare,
+      sharedViaGrant: perms.sharedViaGrant,
       canViewTracking: user ? canViewDocumentTracking(user) : false,
     };
-    return mapDocumentListItem(doc, versionMap.get(doc.currentVersionId ?? ''), permissions);
+    const docRecord = doc as Record<string, unknown>;
+    const versionMetaFromDoc = versionMap.get(doc.currentVersionId ?? '');
+    const versionLabel =
+      versionMetaFromDoc?.versionLabel ??
+      normalizeVersionLabel(
+        (docRecord.currentVersionLabel as string | undefined) ??
+          versionMetaFromDoc?.versionLabel,
+      );
+    return mapDocumentListItem(
+      doc,
+      versionMetaFromDoc
+        ? { ...versionMetaFromDoc, versionLabel }
+        : { versionLabel, hasOriginal: false, hasPreview: false, preview: null },
+      permissions,
+    );
   });
 }
