@@ -38,7 +38,7 @@ export function DropZone({
       )}
     >
       {isOver && !disabled && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-doqyn-primary-bg">
+        <div className="pointer-events-none absolute inset-0 z-[var(--z-local-elevated)] flex items-center justify-center rounded-lg bg-doqyn-primary-bg">
           <span className="rounded-md bg-doqyn-primary-bg px-3 py-1.5 text-xs font-medium text-doqyn-primary">
             {dropHint}
           </span>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -37,6 +37,14 @@ export function RulesPage() {
     saveExtractionRule,
     getRuleForClass,
   } = useRules(user?.name ?? 'Usuário');
+
+  const extractionConfiguredCategoryIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const category of categories) {
+      if (getRuleForClass(category.id)) ids.add(category.id);
+    }
+    return ids;
+  }, [categories, getRuleForClass]);
 
   if (loading) {
     return (
@@ -97,6 +105,7 @@ export function RulesPage() {
             : undefined
         }
         onConfigureExtraction={isAdmin ? (category) => setExtractionCategory(category) : undefined}
+        extractionConfiguredCategoryIds={extractionConfiguredCategoryIds}
       />
 
       {isAdmin && (

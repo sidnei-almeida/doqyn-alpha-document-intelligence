@@ -1,4 +1,4 @@
-import { Ban, Pencil, UserX } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import {
   buildRemoveMemberConfirm,
@@ -168,7 +168,7 @@ export function MemberDetailPanel({
               className="w-full border-doqyn-border"
               onClick={() => onEditGroups(member)}
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Icon name="edit" size={14} />
               Editar grupos
             </Button>
             {member.role !== 'admin' && (
@@ -195,7 +195,7 @@ export function MemberDetailPanel({
                   if (ok) onSuspend(member.id);
                 }}
               >
-                <Ban className="h-3.5 w-3.5" />
+                <Icon name="block" size={14} />
                 Suspender acesso
               </Button>
             )}
@@ -209,7 +209,7 @@ export function MemberDetailPanel({
                 if (ok) onRemove(member.id);
               }}
             >
-              <UserX className="h-3.5 w-3.5" />
+              <Icon name="person_remove" size={14} />
               Remover membro
             </Button>
           </div>

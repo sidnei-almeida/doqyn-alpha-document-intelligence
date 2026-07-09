@@ -41,33 +41,33 @@ describe('desconexão visual na linha do mapa (rascunho local)', () => {
     assert.equal(source.includes('tenantId: body'), false);
   });
 
-  it('ConnectionLines mostra botão × no hover ou seleção da linha', () => {
-    const source = readSrc('features/rules/components/governance/ConnectionLines.tsx');
-    assert.ok(source.includes('pointer-events-auto cursor-pointer'));
-    assert.ok(source.includes('onHoverEdge'));
-    assert.ok(source.includes('hovered || selected'));
+  it('PermissionEdge mostra botão × na aresta selecionada', () => {
+    const source = readSrc('features/rules/governance-flow/PermissionEdge.tsx');
+    assert.ok(source.includes('selected && data?.canRemove'));
+    assert.ok(source.includes('EdgeLabelRenderer'));
     assert.ok(source.includes('×'));
     assert.ok(source.includes('Desconectar categoria'));
-    assert.ok(source.includes('stroke="transparent"'));
-    assert.ok(source.includes('strokeWidth={18}'));
+    assert.ok(source.includes('interactionWidth={18}'));
   });
 
   it('clique na linha seleciona sem abrir sidebar de conexão', () => {
-    const source = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(source.includes('handleEdgeSelect'));
-    assert.ok(source.includes('setSelectedEdgeOnly(edge)'));
-    assert.ok(source.includes('setDetailSelection(null)'));
-    assert.equal(source.includes("setDetailSelection({ type: 'connection'"), false);
-    assert.ok(source.includes('useUnsavedMapChangesGuard'));
+    const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
+    const flow = readSrc('features/rules/governance-flow/GovernanceFlowCanvas.tsx');
+    assert.ok(canvas.includes('setSelectedEdgeId'));
+    assert.ok(canvas.includes('setDetailSelection(null)'));
+    assert.ok(flow.includes('onEdgeSelect'));
+    assert.ok(flow.includes("change.type === 'select'"));
+    assert.ok(canvas.includes('useUnsavedMapChangesGuard'));
   });
 
   it('Delete/Backspace remove edge apenas do draft', () => {
-    const source = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(source.includes("event.key !== 'Delete'"));
-    assert.ok(source.includes("event.key !== 'Backspace'"));
-    assert.ok(source.includes('isEditableKeyboardTarget'));
-    assert.ok(source.includes('performDraftDisconnect'));
-    assert.equal(source.includes('performDisconnect'), false);
+    const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
+    const flow = readSrc('features/rules/governance-flow/GovernanceFlowCanvas.tsx');
+    assert.ok(flow.includes("['Delete', 'Backspace']"));
+    assert.ok(flow.includes('deleteKeyCode'));
+    assert.ok(flow.includes('onEdgesDelete'));
+    assert.ok(canvas.includes('performDraftDisconnect'));
+    assert.equal(canvas.includes('performDisconnect'), false);
   });
 
   it('desconexão no mapa não chama backend imediatamente', () => {
@@ -107,12 +107,13 @@ describe('desconexão visual na linha do mapa (rascunho local)', () => {
     assert.equal(Object.values(EMPTY_CONNECTION_PERMISSIONS).some(Boolean), false);
   });
 
-  it('medição de anchors evita loop com snapshot de paths', () => {
-    const lines = readSrc('features/rules/components/governance/ConnectionLines.tsx');
-    const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(lines.includes('pathsSnapshotRef'));
-    assert.ok(canvas.includes('createAnchorRefFactory'));
-    assert.ok(canvas.includes('scheduleAnchorsUpdate'));
+  it('linhas bezier acompanham os cards em drag e resize (recalculadas por render)', () => {
+    const edge = readSrc('features/rules/governance-flow/PermissionEdge.tsx');
+    const flow = readSrc('features/rules/governance-flow/GovernanceFlowCanvas.tsx');
+    assert.ok(edge.includes('getBezierPath'));
+    assert.ok(edge.includes('sourceX'));
+    assert.ok(edge.includes('targetY'));
+    assert.ok(flow.includes('ReactFlow'));
   });
 
   it('erro ao salvar mantém draft e permite nova tentativa', () => {

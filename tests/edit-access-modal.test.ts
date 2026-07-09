@@ -43,9 +43,11 @@ describe('componentes de formulário DOQYN', () => {
     assert.ok(switchSource.includes('role="switch"'));
   });
 
-  it('globals.css define accent-color de fallback', () => {
+  it('globals.css estiliza checkbox/radio nativos com tema do app', () => {
     const source = readFileSync(join(srcRoot, 'styles/globals.css'), 'utf8');
-    assert.ok(source.includes('accent-color: var(--accent-active)'));
+    assert.ok(source.includes("input[type='checkbox']:not(.sr-only)"));
+    assert.ok(source.includes("input[type='radio']:not(.sr-only)"));
+    assert.ok(source.includes('color-scheme: dark'));
   });
 });
 

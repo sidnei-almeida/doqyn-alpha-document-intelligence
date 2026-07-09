@@ -76,7 +76,7 @@ describe('pipeline de análise — fonte de verdade das regras', () => {
 
   it('draft do mapa não entra em document_rules até Salvar alterações', () => {
     const draft = readFileSync(
-      join(repoRoot, 'src/features/rules/hooks/useGovernanceMapDraft.ts'),
+      join(repoRoot, 'src/features/rules/governance-flow/useGovernanceFlowDraft.ts'),
       'utf8',
     );
     const save = readFileSync(join(repoRoot, 'src/features/rules/hooks/useRules.ts'), 'utf8');

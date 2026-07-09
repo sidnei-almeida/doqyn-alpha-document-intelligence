@@ -1,4 +1,5 @@
 import { formatDate } from '@/lib/utils';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { formatWhatsapp } from '@/lib/identifiers';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
 
@@ -102,11 +103,14 @@ export function AccessRequestDetailsPanel({
         </div>
         <div className="detail-item min-w-0 sm:col-span-2">
           <dt className="text-xs text-doqyn-muted">Empresa informada</dt>
-          <dd
-            className="detail-value mt-0.5 break-words text-sm text-doqyn-text"
-            title={access?.tenantDisplayName ?? undefined}
-          >
-            {display(access?.tenantDisplayName)}
+          <dd className="detail-value mt-0.5 break-words text-sm text-doqyn-text">
+            {access?.tenantDisplayName ? (
+              <Tooltip label={access.tenantDisplayName}>
+                <span>{display(access.tenantDisplayName)}</span>
+              </Tooltip>
+            ) : (
+              display(access?.tenantDisplayName)
+            )}
           </dd>
         </div>
         <div className="detail-item min-w-0">

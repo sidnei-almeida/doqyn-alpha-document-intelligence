@@ -23,7 +23,7 @@ describe('uploadProgress helpers', () => {
     const state = deriveSingleFileUploadProgressState({ flowPhase: 'idle' });
     assert.equal(state.status, 'idle');
     assert.equal(state.percent, 0);
-    assert.match(state.message, /Selecione um documento/i);
+    assert.match(state.message, /Arraste um PDF/i);
   });
 
   it('analyzing tem progresso maior que uploading', () => {
@@ -95,9 +95,11 @@ describe('UploadProgressSummary UI', () => {
     assert.match(summary, /objectKey|token|secret|password|payload/i);
   });
 
-  it('página de envio usa UploadProgressSummary', () => {
+  it('página de envio usa UploadProgressSummary embedded no fluxo unificado', () => {
     const source = readFileSync(SEND_PAGE, 'utf8');
     assert.match(source, /UploadProgressSummary/);
+    assert.match(source, /UploadFlowPanel/);
+    assert.match(source, /variant="embedded"/);
     assert.match(source, /canViewTracking=\{canShowWorkflowDebug\}/);
   });
 });

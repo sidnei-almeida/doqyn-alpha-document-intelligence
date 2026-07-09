@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/useAuth';
+import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
 import { canViewDocumentTracking } from '@/features/tracking/utils/trackingAccess';
 import { BulkBatchPanel } from './components/BulkBatchPanel';
 import { ReviewWorkflowSettingsPanel } from './components/ReviewWorkflowSettingsPanel';
 import { ProcessingCard } from './components/ProcessingCard';
 import { ProcessingErrorCard } from './components/ProcessingErrorCard';
 import { SavedFeedbackCard } from './components/SavedFeedbackCard';
-import { UploadCard } from './components/UploadCard';
+import { UploadDropzoneArea } from './components/UploadDropzoneArea';
+import { UploadFlowPanel } from './components/UploadFlowPanel';
 import { UploadProgressSummary } from './components/UploadProgressSummary';
 import { UploadResultPanel } from './components/UploadResultPanel';
 import { generateDocumentId } from './mockData';
@@ -147,7 +151,8 @@ function createErrorMetadata(file: File): ExtractedMetadata {
 }
 
 export function DocumentSendPage() {
-  const { isAuthenticated, roles, user, membership } = useAuth();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, roles, user, membership, tenant } = useAuth();
   const canShowWorkflowDebug = canViewDocumentTracking(
     roles,
     user?.role,
@@ -198,6 +203,10 @@ export function DocumentSendPage() {
     }
   }, []);
 
+  const invalidateDocumentQueries = useCallback(() => {
+    void invalidateLibraryQueries(queryClient, tenant?.tenantId);
+  }, [queryClient, tenant?.tenantId]);
+
   const handleBulkItemSaved = useCallback(({ item, autoSaved }: BulkHistoryPayload) => {
     if (!item.metadata) return;
 
@@ -235,7 +244,8 @@ export function DocumentSendPage() {
       }),
       ...prev.filter((entry) => entry.id !== item.id),
     ]);
-  }, [workflow]);
+    invalidateDocumentQueries();
+  }, [workflow, invalidateDocumentQueries]);
 
   const handleBulkItemTerminal = useCallback(({ item, autoSaved }: BulkTerminalPayload) => {
     if (item.status === 'saved') return;
@@ -737,6 +747,7 @@ export function DocumentSendPage() {
           setFlowPhase('completed');
           toast.success('Documento salvo com sucesso');
         }
+        invalidateDocumentQueries();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Não foi possível salvar o documento.';
@@ -752,7 +763,7 @@ export function DocumentSendPage() {
         setIsConfirming(false);
       }
     },
-    [activeMetadata, currentDocId, lastProcessedFile, manualReviewChecked, perItemNaming, rawAnalysis, reviewSettings, workflow],
+    [activeMetadata, currentDocId, invalidateDocumentQueries, lastProcessedFile, manualReviewChecked, perItemNaming, rawAnalysis, reviewSettings, workflow],
   );
 
   const handleCancelAuto = useCallback(() => {
@@ -965,8 +976,46 @@ export function DocumentSendPage() {
     !isBulkActive &&
     (flowPhase === 'completed' || flowPhase === 'saving' || flowPhase === 'error');
 
+  const progressSummary = (
+    <UploadProgressSummary
+      variant="embedded"
+      state={progressState}
+      canViewTracking={canShowWorkflowDebug}
+      trackingHref={trackingHref}
+      canShowTechnicalDetails={canShowWorkflowDebug}
+      technicalDetails={
+        analysisError
+          ? buildWorkflowErrorLogDetails(analysisError, {
+              endpoint: analysisError.endpoint,
+              showDebug: false,
+            })
+          : undefined
+      }
+      technicalHint={analysisError?.devHint}
+      onRetry={
+        isBulkActive
+          ? bulkQueue.reprocessCurrent
+          : flowPhase === 'error'
+            ? handleReprocess
+            : undefined
+      }
+      onViewDocument={!isBulkActive && flowPhase === 'saved' ? resetToIdle : undefined}
+    />
+  );
+
+  const isIdleLayout = !isBulkActive && flowPhase === 'idle';
+
   return (
     <div className="flex h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col gap-4 overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between gap-3 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-[12px] text-doqyn-muted">
+        <span>
+          Esta tela de envio é o fluxo legado. O upload agora vive na Biblioteca — use o botão
+          “+ Novo” ou arraste arquivos para a janela.
+        </span>
+        <Link to="/biblioteca" className="shrink-0 font-medium text-doqyn-info hover:underline">
+          Ir para a Biblioteca
+        </Link>
+      </div>
       <PageHeader
         className={cn('shrink-0', isResultView && 'mb-3 pb-3')}
         eyebrow="Processamento"
@@ -986,45 +1035,63 @@ export function DocumentSendPage() {
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={cn(
+            'flex min-h-0 flex-1 flex-col overflow-hidden',
+            isIdleLayout && 'items-center justify-start overflow-auto py-1',
+          )}
+        >
           {isBulkActive ? (
-            <BulkBatchPanel
-              className="min-h-0 flex-1"
-              items={bulkQueue.items}
-              batchPhase={bulkQueue.batchPhase}
-              currentItem={bulkQueue.currentItem}
-              autoCountdown={bulkQueue.autoCountdown}
-              manualGate={bulkQueue.manualGate}
-              statusMessage={bulkQueue.statusMessage}
-              reviewSettings={bulkQueue.batchReviewSettings ?? reviewSettings}
-              isAuthenticated={isAuthenticated}
-              selectedItemId={workflow.selectedItemId}
-              onSelectItem={workflow.setSelectedItemId}
-              onPerItemNamingChange={bulkQueue.updateCurrentItemNaming}
-              onConfirmContinue={() => void bulkQueue.confirmCurrentAndContinue()}
-              onCancelAuto={bulkQueue.cancelAutoCountdown}
-              onSkip={bulkQueue.skipCurrent}
-              onReprocess={bulkQueue.reprocessCurrent}
-              onPause={bulkQueue.pauseBatch}
-              onResume={bulkQueue.resumeBatch}
-              onCancel={bulkQueue.cancelBatch}
-              onNewBatch={bulkQueue.resetBatch}
-              onClearCompleted={bulkQueue.clearCompleted}
-            />
+            <UploadFlowPanel
+              className="min-h-0 w-full flex-1"
+              contentClassName="min-h-0 flex-1 overflow-hidden"
+              progress={progressSummary}
+            >
+              <BulkBatchPanel
+                embedded
+                className="h-full min-h-0"
+                items={bulkQueue.items}
+                batchPhase={bulkQueue.batchPhase}
+                currentItem={bulkQueue.currentItem}
+                autoCountdown={bulkQueue.autoCountdown}
+                manualGate={bulkQueue.manualGate}
+                statusMessage={bulkQueue.statusMessage}
+                reviewSettings={bulkQueue.batchReviewSettings ?? reviewSettings}
+                isAuthenticated={isAuthenticated}
+                selectedItemId={workflow.selectedItemId}
+                onSelectItem={workflow.setSelectedItemId}
+                onPerItemNamingChange={bulkQueue.updateCurrentItemNaming}
+                onConfirmContinue={() => void bulkQueue.confirmCurrentAndContinue()}
+                onCancelAuto={bulkQueue.cancelAutoCountdown}
+                onSkip={bulkQueue.skipCurrent}
+                onReprocess={bulkQueue.reprocessCurrent}
+                onPause={bulkQueue.pauseBatch}
+                onResume={bulkQueue.resumeBatch}
+                onCancel={bulkQueue.cancelBatch}
+                onNewBatch={bulkQueue.resetBatch}
+                onClearCompleted={bulkQueue.clearCompleted}
+              />
+            </UploadFlowPanel>
           ) : (
-            <>
+            <UploadFlowPanel
+              centered={isIdleLayout}
+              className={cn('w-full', isIdleLayout ? 'max-w-2xl shrink-0' : 'min-h-0 flex-1')}
+              contentClassName={!isIdleLayout ? 'min-h-0 flex-1 overflow-hidden' : undefined}
+              progress={progressSummary}
+            >
               {flowPhase === 'idle' && (
-                <UploadCard
+                <UploadDropzoneArea
                   onFilesSelected={handleFilesSelected}
                   onValidationError={(msg) => toast.error(msg)}
                 />
               )}
 
               {(showProcessing || showError || showResult) && (
-                <div className="flex min-h-[300px] min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col">
                   {showProcessing && (
                     <ProcessingCard
+                      embedded
                       className="min-h-0 flex-1"
                       file={lastProcessedFile!}
                       progress={processingProgress}
@@ -1037,6 +1104,7 @@ export function DocumentSendPage() {
 
                   {showError && (
                     <ProcessingErrorCard
+                      embedded
                       className="min-h-0 flex-1"
                       fileName={displayFileName}
                       fileSize={displayFileSize}
@@ -1061,6 +1129,7 @@ export function DocumentSendPage() {
 
                   {showResult && (
                     <UploadResultPanel
+                      embedded
                       className="min-h-0 flex-1"
                       fileName={displayFileName}
                       fileSize={displayFileSize}
@@ -1093,40 +1162,14 @@ export function DocumentSendPage() {
 
               {flowPhase === 'saved' && (
                 <SavedFeedbackCard
+                  embedded
                   autoSaved={lastAutoSaved}
                   returnCountdown={returnCountdown}
-                  className="flex min-h-[200px] flex-1 flex-col justify-center max-md:min-h-[30vh]"
                 />
               )}
-            </>
+            </UploadFlowPanel>
           )}
         </div>
-
-        <UploadProgressSummary
-          state={progressState}
-          canViewTracking={canShowWorkflowDebug}
-          trackingHref={trackingHref}
-          canShowTechnicalDetails={canShowWorkflowDebug}
-          technicalDetails={
-            analysisError
-              ? buildWorkflowErrorLogDetails(analysisError, {
-                  endpoint: analysisError.endpoint,
-                  showDebug: false,
-                })
-              : undefined
-          }
-          technicalHint={analysisError?.devHint}
-          onRetry={
-            isBulkActive
-              ? bulkQueue.reprocessCurrent
-              : flowPhase === 'error'
-                ? handleReprocess
-                : undefined
-          }
-          onViewDocument={
-            !isBulkActive && flowPhase === 'saved' ? resetToIdle : undefined
-          }
-        />
       </div>
     </div>
   );

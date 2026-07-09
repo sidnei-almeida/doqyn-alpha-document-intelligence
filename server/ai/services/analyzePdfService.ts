@@ -17,6 +17,8 @@ import { classifyDocumentWithRules } from './documentClassifierAgent.js';
 import { createDocumentChunks } from './documentChunker.js';
 import { extractMetadataWithRule } from './metadataExtractorAgent.js';
 import { generateRecommendedFileName } from './documentNaming.js';
+import { augmentConfidentialityClassForExtraction } from '../utils/documentClassHeuristics.js';
+import { enrichMetadataWithPartyHeuristics } from '../utils/partyMetadataHeuristics.js';
 import {
   buildRetrievalStats,
   selectChunksForClassification,
@@ -148,6 +150,10 @@ export async function analyzePdfBuffer(input: {
 
   logs.push(createLog('Documento recebido', 'O PDF foi recebido com sucesso.', 'done'));
 
+  const rulesLoadPromise = loadActiveDocumentClassRules(input.companyId, {
+    ownerUserId: input.ownerUserId,
+  });
+
   let extracted;
   try {
     extracted = await extractTextFromPdf(input.buffer);
@@ -197,9 +203,7 @@ export async function analyzePdfBuffer(input: {
 
   let rulesLoad;
   try {
-    rulesLoad = await loadActiveDocumentClassRules(input.companyId, {
-      ownerUserId: input.ownerUserId,
-    });
+    rulesLoad = await rulesLoadPromise;
   } catch (error) {
     if (isDocumentRulesNotSeededError(error)) {
       const userMessage =
@@ -414,9 +418,11 @@ export async function analyzePdfBuffer(input: {
     };
   }
 
+  const extractionClass = augmentConfidentialityClassForExtraction(selectedClass);
+
   const extractionChunks = selectChunksForExtraction({
     chunks,
-    selectedClass,
+    selectedClass: extractionClass,
   });
 
   logger.debug('Retrieval híbrido concluído', buildRetrievalStats({
@@ -427,7 +433,7 @@ export async function analyzePdfBuffer(input: {
 
   const extraction = await extractMetadataWithRule({
     chunks: extractionChunks,
-    selectedClass,
+    selectedClass: extractionClass,
     classification,
     context: {
       requestId: context.requestId,
@@ -437,6 +443,12 @@ export async function analyzePdfBuffer(input: {
     },
   });
   timer.mark('extraction');
+
+  const enrichedMetadata = enrichMetadataWithPartyHeuristics({
+    chunks: extractionChunks,
+    selectedClass,
+    metadata: extraction.metadata,
+  });
 
   logs.push(
     createLog(
@@ -451,8 +463,9 @@ export async function analyzePdfBuffer(input: {
   const recommendedFileName = generateRecommendedFileName({
     originalFileName: input.originalFileName,
     selectedClass,
-    metadata: extraction.metadata,
+    metadata: enrichedMetadata,
     version: extraction.version,
+    sourceChunks: extractionChunks,
   });
 
   logs.push(

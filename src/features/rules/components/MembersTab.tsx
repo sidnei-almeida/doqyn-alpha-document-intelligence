@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Plus } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import type {
   AuditEvent,
@@ -127,7 +128,7 @@ export function MembersTab({
                 onClick={onAddGroup}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-doqyn-border py-2.5 text-sm text-doqyn-muted transition-colors hover:border-doqyn-primary/40 hover:text-doqyn-text"
               >
-                <Plus className="h-4 w-4" />
+                <Icon name="add" size={ICON_SIZE.xs} />
                 Adicionar grupo
               </button>
             )}

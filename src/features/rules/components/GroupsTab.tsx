@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Users, FolderKey, Pencil } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -64,16 +65,16 @@ export function GroupsTab({
                 )}
               </div>
               <Button type="button" variant="ghost" size="sm" onClick={() => onOpenGroup(group)}>
-                <Pencil className="h-4 w-4" />
+                <Icon name="edit" size={ICON_SIZE.xs} />
               </Button>
             </div>
             <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-doqyn-muted">
               <span className="inline-flex items-center gap-1 rounded-full border border-doqyn-border-subtle px-2 py-0.5">
-                <Users className="h-3 w-3" />
+                <Icon name="group" size={12} />
                 {group.memberCount ?? 0} membros
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-doqyn-border-subtle px-2 py-0.5">
-                <FolderKey className="h-3 w-3" />
+                <Icon name="folder_managed" size={12} />
                 {linkedCounts.get(group.id) ?? 0} classes
               </span>
             </div>

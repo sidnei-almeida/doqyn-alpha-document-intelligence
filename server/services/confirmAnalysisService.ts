@@ -193,12 +193,19 @@ function buildMetadataPreview(
 }
 
 function buildDocumentTitle(className: string, metadata: Record<string, MongoVersionMetadataField>) {
+  const reveladora =
+    metadata.parte_reveladora?.normalizedValue ?? metadata.parte_reveladora?.value;
+  const receptora =
+    metadata.parte_receptora?.normalizedValue ?? metadata.parte_receptora?.value;
+  const fornecedor = metadata.fornecedor?.normalizedValue ?? metadata.fornecedor?.value;
+  const numeroNota = metadata.numero_nota?.value;
+
+  if (reveladora && receptora) {
+    return `${className} — ${reveladora} e ${receptora}`;
+  }
+
   const party =
-    metadata.parte_receptora?.normalizedValue ??
-    metadata.parte_receptora?.value ??
-    metadata.fornecedor?.normalizedValue ??
-    metadata.fornecedor?.value ??
-    metadata.numero_nota?.value;
+    receptora ?? reveladora ?? fornecedor ?? numeroNota;
 
   if (party) {
     return `${className} — ${party}`;

@@ -505,7 +505,7 @@ export const SEED_DOCUMENT_RULES: MongoDocumentRule[] = [
         description: 'Valor de multa ou penalidade prevista no acordo.',
       },
     ],
-    namingTemplate: 'NDA_{parte_receptora}_{data_assinatura}_v{version}',
+    namingTemplate: 'NDA_{parte_reveladora}_e_{parte_receptora}_{data_assinatura}_v{version}',
     minimumConfidence: 0.7,
     onLowConfidence: 'requires_review',
     createdBy: 'system',

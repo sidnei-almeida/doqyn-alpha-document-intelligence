@@ -6,6 +6,10 @@ export type MeUser = {
   firstName?: string;
   lastName?: string;
   status?: string;
+  avatarVersion?: number;
+  avatarUpdatedAt?: string | null;
+  avatarStatus?: 'active' | 'removed' | null;
+  avatarUrl?: string;
 };
 
 export type MeTenant = {

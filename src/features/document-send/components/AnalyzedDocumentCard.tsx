@@ -1,5 +1,7 @@
-import { FileText, RotateCcw } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { ExtractedMetadata } from '../types';
@@ -55,13 +57,13 @@ export function AnalyzedDocumentCard({
       <CardContent className="space-y-4">
         <div className="flex items-start gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-doqyn-surface-soft">
-            <FileText className="h-5 w-5 text-doqyn-primary" />
+            <Icon name="description" size={ICON_SIZE.nav} className="text-doqyn-primary" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs text-doqyn-muted">Arquivo original</p>
-            <p className="truncate text-sm font-medium text-doqyn-text" title={file.name}>
+            <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
               {file.name}
-            </p>
+            </TruncatedText>
             <p className="mt-1 text-xs text-doqyn-muted">{formatFileSize(file.size)}</p>
           </div>
         </div>
@@ -75,11 +77,8 @@ export function AnalyzedDocumentCard({
           </div>
           <div>
             <dt className="text-xs text-doqyn-muted">Nome sugerido</dt>
-            <dd
-              className="mt-0.5 truncate font-mono text-xs text-doqyn-text"
-              title={metadata.suggestedName}
-            >
-              {metadata.suggestedName}
+            <dd className="mt-0.5 font-mono text-xs text-doqyn-text">
+              <TruncatedText>{metadata.suggestedName}</TruncatedText>
             </dd>
           </div>
         </dl>
@@ -92,7 +91,7 @@ export function AnalyzedDocumentCard({
             onClick={onReprocess}
             disabled={isProcessing}
           >
-            <RotateCcw className="h-4 w-4" />
+            <Icon name="refresh" size={ICON_SIZE.xs} />
             Reprocessar análise
           </Button>
           <Button

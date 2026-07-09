@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildDeleteGroupConfirm, buildRemoveFromGroupConfirm } from '@/components/confirm/confirmMessages';
 import { cn } from '@/lib/utils';
@@ -103,7 +103,7 @@ export function GroupColumn({
         <div className="flex items-center justify-between gap-2">
           <h3 className="truncate text-sm font-semibold text-doqyn-text">{group.name}</h3>
           <div className="flex shrink-0 items-center gap-1">
-            <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-doqyn-muted">
+            <span className="rounded-full bg-doqyn-surface-hover px-2 py-0.5 text-[10px] text-doqyn-muted">
               {memberCount}
             </span>
             {isAdmin && onDeleteGroup && (
@@ -113,7 +113,7 @@ export function GroupColumn({
                 className="rounded p-0.5 text-doqyn-muted hover:text-doqyn-danger"
                 aria-label={`Excluir grupo ${group.name}`}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Icon name="delete" size={14} />
               </button>
             )}
           </div>

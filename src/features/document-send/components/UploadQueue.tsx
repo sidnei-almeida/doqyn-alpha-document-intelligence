@@ -1,4 +1,5 @@
-import { MoreHorizontal } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { UploadedDocument } from '../types';
@@ -53,10 +54,10 @@ export function UploadQueue({ items, className }: UploadQueueProps) {
                   <td className="px-5 py-3.5">
                     <button
                       type="button"
-                      className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-white/[0.06] hover:text-doqyn-text"
+                      className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-surface-hover hover:text-doqyn-text"
                       aria-label={`Ações para ${item.originalName}`}
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <Icon name="more_horiz" size={ICON_SIZE.xs} />
                     </button>
                   </td>
                 </tr>

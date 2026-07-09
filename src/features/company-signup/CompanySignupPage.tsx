@@ -1,4 +1,5 @@
-import { Building2, Shield } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -139,7 +140,7 @@ export function CompanySignupPage() {
 
       <div className="w-full max-w-lg flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Cadastrar empresa" />
+          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Cadastrar empresa" />
           <p className="mt-4 max-w-md text-sm text-doqyn-muted">
             Use esta opção se sua empresa ainda não possui um ambiente no DOQYN.
           </p>
@@ -150,7 +151,7 @@ export function CompanySignupPage() {
           className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
         >
           <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <Building2 className="h-4 w-4" strokeWidth={1.5} />
+            <Icon name="business" size={ICON_SIZE.xs} />
             Dados da empresa
           </div>
 
@@ -284,7 +285,7 @@ export function CompanySignupPage() {
         />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon name="shield" size={14} />
           Ambiente corporativo seguro
         </p>
       </div>

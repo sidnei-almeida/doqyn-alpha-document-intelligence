@@ -286,7 +286,7 @@ export const DOCUMENT_CLASS_RULES: DocumentClassRule[] = [
         description: 'Objeto das informações confidenciais.',
       },
     ],
-    namingTemplate: 'NDA_{parte_receptora}_{data_assinatura}_v{version}',
+    namingTemplate: 'NDA_{parte_reveladora}_e_{parte_receptora}_{data_assinatura}_v{version}',
   },
 ];
 

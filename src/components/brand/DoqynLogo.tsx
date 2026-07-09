@@ -1,59 +1,103 @@
-import { BrandMark } from '@/components/brand/BrandMark';
 import { cn } from '@/lib/utils';
+import { DoqynMark } from './DoqynMark';
 
-type DoqynLogoSize = 'sm' | 'md' | 'lg' | 'sidebar';
+export type DoqynLogoVariant = 'horizontal' | 'vertical' | 'mark' | 'wordmark';
+export type DoqynLogoSize = 'sm' | 'md' | 'lg' | 'sidebar' | 'login';
 
 type DoqynLogoProps = {
+  variant?: DoqynLogoVariant;
   size?: DoqynLogoSize;
   align?: 'left' | 'center';
   showSubtitle?: boolean;
-  showMark?: boolean;
   subtitle?: string;
   className?: string;
+  /** @deprecated Use variant="mark" — mantido para compatibilidade */
+  showMark?: boolean;
 };
 
-const wordmarkSize: Record<DoqynLogoSize, string> = {
-  sm: 'text-[15px]',
-  md: 'text-[22px]',
-  lg: 'text-[26px]',
-  sidebar: 'text-[15px]',
+const markSize: Record<DoqynLogoSize, number> = {
+  sm: 22,
+  md: 28,
+  lg: 34,
+  sidebar: 32,
+  login: 48,
+};
+
+const wordmarkClass: Record<DoqynLogoSize, string> = {
+  sm: 'text-[13px] tracking-[0.26em]',
+  md: 'text-[16px] tracking-[0.28em]',
+  lg: 'text-[19px] tracking-[0.3em]',
+  sidebar: 'text-[17px] tracking-[0.3em]',
+  login: 'text-[27px] tracking-[0.32em]',
 };
 
 const subtitleSize: Record<DoqynLogoSize, string> = {
-  sm: 'mt-0.5 text-[9px] tracking-[0.16em]',
-  md: 'mt-1 text-[10px] tracking-[0.18em]',
-  lg: 'mt-1 text-[10px] tracking-[0.18em]',
-  sidebar: 'mt-0.5 text-[9px] tracking-[0.14em]',
+  sm: 'mt-1 text-[8px] tracking-[0.22em]',
+  md: 'mt-1.5 text-[9px] tracking-[0.24em]',
+  lg: 'mt-2 text-[10px] tracking-[0.26em]',
+  sidebar: 'mt-1 text-[8px] tracking-[0.22em]',
+  login: 'mt-3 text-[11px] tracking-[0.28em]',
 };
 
-const markSize: Record<DoqynLogoSize, 'xs' | 'sm' | 'md' | 'lg'> = {
-  sm: 'sm',
-  md: 'md',
-  lg: 'lg',
-  sidebar: 'sm',
-};
+function resolveVariant(variant: DoqynLogoVariant | undefined, showMark?: boolean): DoqynLogoVariant {
+  if (variant) return variant;
+  if (showMark === false) return 'wordmark';
+  return 'horizontal';
+}
 
+/**
+ * Logo DOQYN desenhada em código (SVG + wordmark tipográfico) — adapta-se
+ * automaticamente a dark e light via tokens (--logo-text).
+ */
 export function DoqynLogo({
+  variant,
   size = 'md',
   align = 'left',
   showSubtitle = false,
-  showMark = true,
-  subtitle = 'Document Intelligence',
+  subtitle = 'SHARE. CONTROL. TRUST.',
   className,
+  showMark,
 }: DoqynLogoProps) {
+  const resolvedVariant = resolveVariant(variant, showMark);
+
+  const mark = <DoqynMark size={markSize[size]} className="shrink-0" />;
+
   const wordmark = (
     <span
       className={cn(
-        'font-logo font-bold uppercase tracking-[-0.055em] text-doqyn-logo',
-        wordmarkSize[size],
+        'font-display font-medium uppercase leading-none text-doqyn-logo',
+        wordmarkClass[size],
       )}
     >
       DOQYN
     </span>
   );
 
+  const lockup =
+    resolvedVariant === 'mark' ? (
+      mark
+    ) : resolvedVariant === 'wordmark' ? (
+      wordmark
+    ) : resolvedVariant === 'vertical' ? (
+      <span className="flex flex-col items-center gap-2">
+        {mark}
+        {wordmark}
+      </span>
+    ) : (
+      <span className="flex items-center gap-2.5">
+        {mark}
+        {wordmark}
+      </span>
+    );
+
   const subtitleEl = showSubtitle ? (
-    <span className={cn('font-medium uppercase text-doqyn-logo-muted', subtitleSize[size])}>
+    <span
+      className={cn(
+        'font-medium uppercase text-doqyn-logo-muted',
+        subtitleSize[size],
+        align === 'center' && 'text-center',
+      )}
+    >
       {subtitle}
     </span>
   ) : null;
@@ -62,27 +106,13 @@ export function DoqynLogo({
     <div
       className={cn(
         'flex select-none leading-none',
-        align === 'center' ? 'flex-col items-center text-center' : 'items-center gap-2.5',
+        align === 'center' ? 'flex-col items-center text-center' : 'flex-col items-start',
         className,
       )}
+      aria-label="DOQYN"
     >
-      {align === 'center' ? (
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-2">
-            {showMark && <BrandMark size={markSize[size]} />}
-            {wordmark}
-          </div>
-          {subtitleEl}
-        </div>
-      ) : (
-        <>
-          {showMark && <BrandMark size={markSize[size]} />}
-          <div className="flex flex-col">
-            {wordmark}
-            {subtitleEl}
-          </div>
-        </>
-      )}
+      {lockup}
+      {subtitleEl}
     </div>
   );
 }

@@ -217,8 +217,32 @@ export const SEED_GOVERNANCE_ACCESS_RULES: MongoDocumentAccessRule[] = [
   ),
 ];
 
-export const SEED_GOVERNANCE_EXTRACTION_RULES: MongoDocumentExtractionRule[] =
-  SEED_GOVERNANCE_CATEGORIES.map((category) => ({
+const PARTY_FIELD_REVELADORA = {
+  key: 'parte_reveladora',
+  label: 'Parte reveladora',
+  type: 'string' as const,
+  required: false,
+  aliases: ['parte reveladora', 'revelador', 'divulgador', 'contratante'],
+};
+
+const PARTY_FIELD_RECEPTORA = {
+  key: 'parte_receptora',
+  label: 'Parte receptora',
+  type: 'string' as const,
+  required: true,
+  aliases: ['parte receptora', 'receptor', 'recebedor', 'contratado', 'destinatário', 'destinatario'],
+};
+
+const FIELD_DATA_ASSINATURA = {
+  key: 'data_assinatura',
+  label: 'Data de assinatura',
+  type: 'date' as const,
+  required: false,
+  aliases: ['data de assinatura', 'assinado em', 'firmado em', 'celebrado em'],
+};
+
+function governanceExtractionRule(category: MongoDocumentCategory): MongoDocumentExtractionRule {
+  const base = {
     _id: `ext_${category._id}_v1`,
     tenantId: DEV_TENANT_ID,
     companyId: DEV_TENANT_ID,
@@ -226,6 +250,70 @@ export const SEED_GOVERNANCE_EXTRACTION_RULES: MongoDocumentExtractionRule[] =
     classId: category._id,
     version: 1,
     active: true,
+    minimumConfidence: 0.7,
+    onLowConfidence: 'requires_review' as const,
+    createdBy: 'system',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (category.slug === 'juridico') {
+    return {
+      ...base,
+      fields: [PARTY_FIELD_REVELADORA, PARTY_FIELD_RECEPTORA, FIELD_DATA_ASSINATURA],
+      namingTemplate: 'NDA_{parte_reveladora}_e_{parte_receptora}_{data_assinatura}_v{version}',
+    };
+  }
+
+  if (category.slug === 'contratos') {
+    return {
+      ...base,
+      fields: [
+        {
+          key: 'fornecedor',
+          label: 'Fornecedor / contratada',
+          type: 'string' as const,
+          required: true,
+          aliases: ['fornecedor', 'contratada', 'prestador', 'contratado'],
+        },
+        FIELD_DATA_ASSINATURA,
+      ],
+      namingTemplate: 'Contrato_{fornecedor}_{data_assinatura}_v{version}',
+    };
+  }
+
+  if (category.slug === 'financeiro') {
+    return {
+      ...base,
+      fields: [
+        {
+          key: 'fornecedor',
+          label: 'Emitente / fornecedor',
+          type: 'string' as const,
+          required: false,
+          aliases: ['fornecedor', 'emitente', 'prestador'],
+        },
+        {
+          key: 'numero_nota',
+          label: 'Número do documento',
+          type: 'string' as const,
+          required: false,
+          aliases: ['nota fiscal', 'número', 'numero', 'nf-e', 'nfe'],
+        },
+        {
+          key: 'data_emissao',
+          label: 'Data de emissão',
+          type: 'date' as const,
+          required: false,
+          aliases: ['data de emissão', 'data de emissao', 'emitido em'],
+        },
+      ],
+      namingTemplate: 'Fiscal_{fornecedor}_{numero_nota}_{data_emissao}_v{version}',
+    };
+  }
+
+  return {
+    ...base,
     fields: [
       {
         key: 'titulo',
@@ -234,14 +322,21 @@ export const SEED_GOVERNANCE_EXTRACTION_RULES: MongoDocumentExtractionRule[] =
         required: false,
         aliases: ['título', 'titulo', 'assunto'],
       },
+      {
+        key: 'referencia',
+        label: 'Referência / parte principal',
+        type: 'string' as const,
+        required: false,
+        aliases: ['referência', 'referencia', 'parte', 'empresa', 'responsável', 'responsavel'],
+      },
+      FIELD_DATA_ASSINATURA,
     ],
-    namingTemplate: `${category.slug}_{titulo}`,
-    minimumConfidence: 0.7,
-    onLowConfidence: 'requires_review' as const,
-    createdBy: 'system',
-    createdAt: now,
-    updatedAt: now,
-  }));
+    namingTemplate: '{referencia}_{titulo}_{data_assinatura}_v{version}',
+  };
+}
+
+export const SEED_GOVERNANCE_EXTRACTION_RULES: MongoDocumentExtractionRule[] =
+  SEED_GOVERNANCE_CATEGORIES.map((category) => governanceExtractionRule(category));
 
 export type GovernanceMemberSeed = {
   membershipId: string;

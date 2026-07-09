@@ -3,7 +3,11 @@ import { createHash } from 'node:crypto';
 import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion, MongoVersionMetadataField } from '../db/types.js';
-import { logger } from '../utils/logger.js';
+import {
+  buildDocumentSearchOrClause,
+  buildDocumentTypeClause,
+  resolveDocumentListSort,
+} from '../utils/documentListQuery.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import {
   assertCanAccessDocument,
@@ -22,11 +26,16 @@ import { resolveStorageFileNames } from '../utils/resolveStorageFileNames.js';
 import type { AuthUser } from '../auth/types.js';
 import type { MongoPreviewStorageSlot } from '../db/types.js';
 import {
-  canUserListDocument,
   loadMemberDocumentGroupIds,
   resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
+import { logger } from '../utils/logger.js';
+import { buildDocumentListItems } from './documentListItems.js';
+import {
+  attachFavoriteFlags,
+  lookupFavoriteFlags,
+} from './favorites/documentFavoritesService.js';
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
@@ -384,11 +393,16 @@ export async function listDocuments(filters: {
   user?: AuthUser;
   search?: string;
   status?: string;
+  processingStatus?: string;
   type?: string;
   area?: string;
   categoryId?: string;
   from?: string;
   to?: string;
+  sort?: string;
+  direction?: string;
+  owner?: string;
+  excludeArchived?: boolean | string;
   cursor?: string;
   limit?: number;
 }) {
@@ -406,35 +420,64 @@ export async function listDocuments(filters: {
     deletedAt: { $in: [null, undefined] },
   };
   if (filters.status) query.status = filters.status;
-  if (filters.type) query.documentType = filters.type;
-  if (filters.area) query.area = filters.area;
-  if (filters.search) {
-    query.$or = [
-      { displayName: { $regex: filters.search, $options: 'i' } },
-      { title: { $regex: filters.search, $options: 'i' } },
-      { currentFileName: { $regex: filters.search, $options: 'i' } },
-      { documentType: { $regex: filters.search, $options: 'i' } },
-      { className: { $regex: filters.search, $options: 'i' } },
-    ];
+  if (filters.processingStatus) {
+    if (filters.processingStatus === 'processed') {
+      query.processingStatus = { $in: ['processed', 'processed_with_review'] };
+    } else {
+      query.processingStatus = filters.processingStatus;
+    }
   }
+  if (filters.area) query.area = filters.area;
   if (filters.categoryId) query.classId = filters.categoryId;
 
+  if (filters.excludeArchived === true || filters.excludeArchived === 'true') {
+    if (!filters.status) {
+      query.status = { $ne: 'archived' };
+    }
+  }
+
+  if (filters.owner === 'me' && filters.ownerUserId) {
+    query.ownerUserId = filters.ownerUserId;
+  } else if (filters.owner === 'others' && filters.ownerUserId) {
+    query.ownerUserId = { $ne: filters.ownerUserId };
+  }
+
+  const andClauses: Record<string, unknown>[] = [];
+
+  if (filters.search?.trim()) {
+    andClauses.push({ $or: buildDocumentSearchOrClause(filters.search) });
+  }
+
+  if (filters.type) {
+    const typeClause = buildDocumentTypeClause(filters.type);
+    if (typeClause) andClauses.push(typeClause);
+  }
+
+  if (andClauses.length === 1) {
+    Object.assign(query, andClauses[0]);
+  } else if (andClauses.length > 1) {
+    query.$and = andClauses;
+  }
+
   if (filters.from?.trim() || filters.to?.trim()) {
-    const createdAt: Record<string, Date> = {};
+    const updatedAt: Record<string, Date> = {};
     if (filters.from?.trim()) {
-      createdAt.$gte = new Date(filters.from.trim());
+      updatedAt.$gte = new Date(filters.from.trim());
     }
     if (filters.to?.trim()) {
-      const end = new Date(filters.to.trim());
-      end.setHours(23, 59, 59, 999);
-      createdAt.$lte = end;
+      updatedAt.$lte = new Date(filters.to.trim());
     }
-    query.createdAt = createdAt;
+    query.updatedAt = updatedAt;
   }
 
   const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
+  const { field, direction } = resolveDocumentListSort(filters.sort, filters.direction);
 
-  const docs = await documents.find(query).sort({ updatedAt: -1 }).limit(limit).toArray();
+  const docs = await documents
+    .find(query)
+    .sort({ [field]: direction })
+    .limit(limit)
+    .toArray();
   const memberGroupIds =
     filters.user && filters.ownerUserId
       ? await loadMemberDocumentGroupIds({
@@ -444,59 +487,25 @@ export async function listDocuments(filters: {
         })
       : [];
 
-  const versionIds = docs
-    .map((doc) => doc.currentVersionId)
-    .filter((id): id is string => Boolean(id));
-  const versionMap = new Map<
-    string,
-    {
-      preview: MongoPreviewStorageSlot | null;
-      versionLabel?: string;
-      hasOriginal: boolean;
-      hasPreview: boolean;
-    }
-  >();
-
-  if (versionIds.length) {
-    const { documentVersions } = await getTenantCollections(tenantId, {
-      userId: filters.ownerUserId,
-      membershipId: filters.membershipId,
-    });
-    const versions = await documentVersions
-      .find({ _id: { $in: versionIds } } as Record<string, unknown>)
-      .project({ storage: 1, versionLabel: 1 })
-      .toArray();
-    for (const version of versions) {
-      const primary = version.storage?.primary;
-      const preview = version.storage?.preview ?? null;
-      versionMap.set(String(version._id), {
-        preview,
-        versionLabel: version.versionLabel,
-        hasOriginal: primary?.status === 'stored' && Boolean(primary.objectKey),
-        hasPreview: preview?.status === 'ready' && Boolean(preview.objectKey),
-      });
-    }
-  }
-
-  const visibleDocs = filters.user
-    ? docs.filter((doc) => canUserListDocument(filters.user!, doc, memberGroupIds))
-    : docs;
-
-  const items = visibleDocs.map((doc) => {
-    const perms = filters.user
-      ? resolveDocumentPermissions(filters.user, doc as MongoDocument, memberGroupIds)
-      : { canPreview: true, canDownload: true, canEditMetadata: false };
-    const permissions: DocumentListItemPermissions = {
-      ...perms,
-      canViewTracking: filters.user ? canViewDocumentTracking(filters.user) : false,
-    };
-    return mapDocumentListItem(doc as MongoDocument, versionMap.get(doc.currentVersionId ?? ''), permissions);
+  const items = await buildDocumentListItems({
+    tenantId,
+    docs: docs as MongoDocument[],
+    user: filters.user,
+    ownerUserId: filters.ownerUserId,
+    membershipId: filters.membershipId,
+    memberGroupIds,
   });
 
+  const { activeIds } = await lookupFavoriteFlags(
+    filters.ownerUserId,
+    items.map((item) => item.documentId),
+  );
+  const itemsWithFavorites = attachFavoriteFlags(items, activeIds);
+
   return {
-    items,
-    documents: items,
-    total: items.length,
+    items: itemsWithFavorites,
+    documents: itemsWithFavorites,
+    total: itemsWithFavorites.length,
     pagination: {
       nextCursor: null,
     },

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 
 interface TimelineStep {
   id: number;
@@ -39,7 +40,7 @@ export function Timeline({ steps, currentStep, className }: TimelineProps) {
                 !isCompleted && !isCurrent && 'border-doqyn-border bg-doqyn-surface text-doqyn-muted',
               )}
             >
-              {isCompleted ? <Check className="h-3 w-3" /> : step.id}
+              {isCompleted ? <Icon name="check" size={ICON_SIZE.xs} /> : step.id}
             </span>
             <div className="pt-0.5">
               <p

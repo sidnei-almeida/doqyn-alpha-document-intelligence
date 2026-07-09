@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ShieldAlert } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { PageShell } from '@/components/layout/PageShell';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
@@ -116,14 +117,14 @@ export function AuditPage() {
               {!isAdmin ? (
                 <AuditEmptyState
                   className="min-h-[320px] flex-1"
-                  icon={<ShieldAlert className="h-5 w-5" />}
+                  icon={<Icon name="gpp_bad" size={ICON_SIZE.nav} />}
                   title="Acesso restrito"
                   description="Apenas administradores podem consultar pendências e aprovar solicitações."
                 />
               ) : pendingError ? (
                 <AuditEmptyState
                   className="min-h-[320px] flex-1"
-                  icon={<ShieldAlert className="h-5 w-5" />}
+                  icon={<Icon name="gpp_bad" size={ICON_SIZE.nav} />}
                   title="Não foi possível carregar pendências"
                   description="Tente atualizar a página ou verifique sua conexão."
                 />

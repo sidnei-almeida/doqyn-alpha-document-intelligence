@@ -127,6 +127,22 @@ describe('dashboard overview UI', () => {
     join(repoRoot, 'src/features/documents/DashboardPage.tsx'),
     'utf8',
   );
+  const periodSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/OverviewPeriodSelector.tsx'),
+    'utf8',
+  );
+  const documentsPanelSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/OverviewRecentDocumentsPanel.tsx'),
+    'utf8',
+  );
+  const activityPanelSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/OverviewRecentActivityPanel.tsx'),
+    'utf8',
+  );
+  const governanceSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/OverviewGovernancePanel.tsx'),
+    'utf8',
+  );
   const hookSource = readFileSync(
     join(repoRoot, 'src/features/dashboard/hooks/useDashboardOverview.ts'),
     'utf8',
@@ -149,23 +165,24 @@ describe('dashboard overview UI', () => {
   });
 
   it('DashboardPage renderiza cards, período e estados', () => {
-    assert.match(pageSource, /primaryCards/);
-    assert.match(pageSource, /7 dias|30 dias|90 dias/);
+    assert.match(pageSource, /buildOverviewMetrics|OverviewSummaryStrip/);
+    assert.match(periodSource, /7 dias|30 dias|90 dias/);
     assert.match(pageSource, /Carregando visão geral/);
     assert.match(pageSource, /Não foi possível carregar a visão geral/);
-    assert.match(pageSource, /Nenhum documento enviado ainda/);
+    assert.match(documentsPanelSource, /Nenhum documento enviado ainda/);
   });
 
   it('DashboardPage abre DocumentViewerModal ao clicar documento', () => {
     assert.match(pageSource, /DocumentViewerModal/);
-    assert.match(pageSource, /latestVersionId/);
-    assert.match(pageSource, /canPreview/);
+    assert.match(documentsPanelSource, /latestVersionId/);
+    assert.match(documentsPanelSource, /canPreview/);
   });
 
   it('DashboardPage mostra governança apenas em mode full', () => {
     assert.match(pageSource, /data\.mode === 'full'/);
-    assert.match(pageSource, /Governança documental/);
-    assert.match(pageSource, /Atividade recente/);
+    assert.match(pageSource, /OverviewQuickAccessPanel/);
+    assert.match(governanceSource, /Governança documental/);
+    assert.match(activityPanelSource, /Atividade recente/);
   });
 
   it('DashboardPage não exibe objectKey ou URL R2', () => {

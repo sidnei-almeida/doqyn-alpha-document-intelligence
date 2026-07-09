@@ -14,7 +14,7 @@ export function UserManagementRoute() {
   }
 
   if (!hasAnyRole(['doqyn_admin', 'company_admin'])) {
-    return <Navigate to="/upload" replace />;
+    return <Navigate to="/biblioteca" replace />;
   }
 
   return <UsersPage />;

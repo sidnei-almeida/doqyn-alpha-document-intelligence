@@ -2,6 +2,7 @@ import type { WorkflowRequestContext } from '../types/workflowLog';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import type { AnalyzePdfResponse } from './analyzePdf';
+import { normalizeAnalyzePayloadForConfirm } from './normalizeConfirmPayload';
 
 export type ConfirmAnalysisResponse = {
   documentId: string;
@@ -34,16 +35,17 @@ export async function confirmAnalysis(
   const startedAt = performance.now();
   const effectiveNamingMode =
     options?.useAiNaming === false ? 'original' : (options?.namingMode ?? 'ai_suggested');
+  const normalizedPayload = normalizeAnalyzePayloadForConfirm(payload);
 
   const response = await authFetch('/api/documents/confirm-analysis', {
     method: 'POST',
     credentials: getFetchCredentials(),
     headers: withAuthHeaders(buildRequestHeaders(context)),
     body: JSON.stringify({
-      ...payload,
+      ...normalizedPayload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
       namingMode: effectiveNamingMode,
-      aiSuggestedFileName: payload.recommendedFileName,
+      aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,
       selectedFileName: options?.selectedFileName,
     }),

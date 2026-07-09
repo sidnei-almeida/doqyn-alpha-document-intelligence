@@ -101,5 +101,14 @@ export function canUserListDocument(
   doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
   memberGroupIds: string[],
 ): boolean {
-  return resolveDocumentPermissions(user, doc, memberGroupIds).canPreview;
+  if (isDocumentAdmin(user)) return true;
+  if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
+
+  const viewGroups = doc.access?.viewGroupIds ?? [];
+  if (userHasDocumentGroupAccess(viewGroups, memberGroupIds)) return true;
+
+  const downloadGroups = doc.access?.downloadGroupIds ?? [];
+  if (userHasDocumentGroupAccess(downloadGroups, memberGroupIds)) return true;
+
+  return false;
 }

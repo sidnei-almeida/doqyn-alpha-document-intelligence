@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import type { CompanyMember, Group } from '@/types/rules';
 import { GROUP_COLOR_STYLES, getInitials } from '@/utils/rulesHelpers';
@@ -71,7 +71,7 @@ export function UserCard({
             onClick={(e) => e.stopPropagation()}
             aria-label={`Arrastar ${member.name}`}
           >
-            <GripVertical className="h-3.5 w-3.5" />
+            <Icon name="drag_indicator" size={14} className="text-doqyn-muted" aria-hidden />
           </button>
         )}
         <div

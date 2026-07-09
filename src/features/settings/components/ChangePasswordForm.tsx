@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { cn } from '@/lib/utils';
 import { changePassword, ChangePasswordError } from '@/features/settings/api/changePasswordApi';
 
 const EMPTY_FORM = {
@@ -10,7 +11,11 @@ const EMPTY_FORM = {
   confirmPassword: '',
 };
 
-export function ChangePasswordForm() {
+type ChangePasswordFormProps = {
+  className?: string;
+};
+
+export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof EMPTY_FORM, string>>>(
@@ -81,7 +86,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit} autoComplete="off">
+    <form className={cn('space-y-4', className)} onSubmit={handleSubmit} autoComplete="off">
       <Input
         id="currentPassword"
         label="Senha atual"

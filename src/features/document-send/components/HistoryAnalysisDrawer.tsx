@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
-import { FileText, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn } from '@/lib/utils';
 import type { DocumentHistoryItem } from '../types';
 import { metadataToFields } from '../utils/documentNaming';
@@ -36,7 +39,7 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
     <>
       <button
         type="button"
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px]"
+        className="fixed inset-0 z-40 modal-overlay-scrim backdrop-blur-[1px]"
         aria-label="Fechar painel de análise"
         onClick={onClose}
       />
@@ -54,9 +57,9 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
             <h2 id="history-drawer-title" className="text-sm font-semibold text-doqyn-text">
               Análise do documento
             </h2>
-            <p className="mt-1 truncate text-xs text-doqyn-muted" title={item.originalName}>
+            <TruncatedText as="p" className="mt-1 text-xs text-doqyn-muted">
               {item.originalName}
-            </p>
+            </TruncatedText>
           </div>
           <Button
             type="button"
@@ -66,14 +69,14 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
             aria-label="Fechar"
             className="shrink-0 text-doqyn-muted"
           >
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </Button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
           <div className="flex flex-wrap items-center gap-2 text-xs text-doqyn-muted">
             <span className="inline-flex items-center gap-1">
-              <FileText className="h-3.5 w-3.5" />
+              <Icon name="description" size={14} />
               {formatFileSizeLabel(item.fileSize)}
             </span>
             {pageCount !== undefined && <span>{pageCount} página{pageCount === 1 ? '' : 's'}</span>}
@@ -102,9 +105,9 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
                         {field.label}
                       </td>
                       <td className="px-3 py-2 text-xs text-doqyn-text">
-                        <span className="line-clamp-3 break-words" title={field.value}>
-                          {field.value}
-                        </span>
+                        <Tooltip label={field.value}>
+                          <span className="line-clamp-3 break-words">{field.value}</span>
+                        </Tooltip>
                       </td>
                     </tr>
                   ))}

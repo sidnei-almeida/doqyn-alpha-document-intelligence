@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import { buildRejectApprovalConfirm } from '@/components/confirm/confirmMessages';
 import { Button } from '@/components/ui/Button';
@@ -71,7 +71,7 @@ export function PendingApprovalsPanel({
             {isAdmin && (
               <div className="mt-3 flex gap-2">
                 <Button type="button" size="sm" onClick={() => onApprove(item.id)} className="h-7 flex-1">
-                  <Check className="h-3.5 w-3.5" />
+                  <Icon name="check" size={14} />
                   Aprovar
                 </Button>
                 <Button
@@ -81,7 +81,7 @@ export function PendingApprovalsPanel({
                   onClick={() => void handleReject(item)}
                   className="h-7 flex-1 border-doqyn-border"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <Icon name="close" size={14} />
                   Recusar
                 </Button>
               </div>

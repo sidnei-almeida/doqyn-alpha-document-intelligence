@@ -54,6 +54,13 @@ export type ClassRuleDiagnostics = {
   activeRulesCount: number;
 };
 
+const RULES_CACHE_TTL_MS = 60_000;
+const rulesCache = new Map<string, { expiresAt: number; value: DocumentRulesLoadResult }>();
+
+function rulesCacheKey(tenantId: string, ownerUserId?: string): string {
+  return `${tenantId}:${ownerUserId ?? ''}`;
+}
+
 function mapToDocumentClassRule(
   category: MongoDocumentCategory | MongoDocumentClass,
   rule: MongoDocumentExtractionRule | MongoDocumentRule,
@@ -195,6 +202,11 @@ export async function loadActiveDocumentClassRules(
   }
 
   const database = getMongoDatabaseName();
+  const cacheKey = rulesCacheKey(tenantId, opts?.ownerUserId);
+  const cached = rulesCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
 
   if (!isMongoNativeConfigured()) {
     if (isAllowMockRulesEnabled()) {
@@ -298,7 +310,7 @@ export async function loadActiveDocumentClassRules(
     } as Record<string, unknown>);
   }
 
-  return {
+  const result: DocumentRulesLoadResult = {
     rules: mapped,
     source: 'mongodb',
     companyId: tenantId,
@@ -309,6 +321,9 @@ export async function loadActiveDocumentClassRules(
     activeAccessRulesCount,
     usedMockFallback: false,
   };
+
+  rulesCache.set(cacheKey, { expiresAt: Date.now() + RULES_CACHE_TTL_MS, value: result });
+  return result;
 }
 
 export async function getActiveDocumentClassRules(

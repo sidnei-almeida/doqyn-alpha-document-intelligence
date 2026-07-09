@@ -1,6 +1,6 @@
-import { KeyRound, Lock, Shield } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
 import { DoqynLogo } from '@/components/brand';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
@@ -13,24 +13,25 @@ import { ApiError } from '@/lib/apiErrors';
 import { SessionApiError } from '@/auth/sessionApi';
 import { getAuthErrorActions } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 
 export function Login() {
-  const { login, loginWithSSO, supportsSso } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(searchParams.get('oauthMessage'));
+  const [errorCode, setErrorCode] = useState<string | null>(searchParams.get('oauthCode'));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSsoLoading, setIsSsoLoading] = useState(false);
 
   const showCredentialForm =
     AUTH_MODE === 'temporary' || AUTH_MODE === 'mock' || import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
   const from =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/upload';
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/biblioteca';
 
   const errorActions = errorCode ? getAuthErrorActions(errorCode) : [];
 
@@ -55,19 +56,6 @@ export function Login() {
     }
   }
 
-  async function handleSsoLogin() {
-    setError(null);
-    setErrorCode(null);
-    setIsSsoLoading(true);
-
-    try {
-      await loginWithSSO();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível iniciar o SSO.');
-      setIsSsoLoading(false);
-    }
-  }
-
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4">
       <div className="absolute right-4 top-4">
@@ -76,7 +64,13 @@ export function Login() {
 
       <div className="w-full max-w-[400px]">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Document Intelligence" />
+          <DoqynLogo
+            size="login"
+            variant="horizontal"
+            align="center"
+            showSubtitle
+            subtitle="Document Intelligence"
+          />
           <p className="mt-4 text-sm text-doqyn-muted">
             Plataforma corporativa para gestão segura de documentos e rastreabilidade.
           </p>
@@ -85,21 +79,31 @@ export function Login() {
         <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6">
           <h2 className="mb-1 text-base font-semibold text-doqyn-text">Entrar no sistema</h2>
           <p className="mb-5 text-xs text-doqyn-muted">
-            {supportsSso
-              ? 'Use SSO corporativo ou suas credenciais de acesso.'
+            {supportsOAuth
+              ? 'Use sua conta Google, Microsoft ou credenciais DOQYN.'
               : 'Acesse sua área para enviar e gerenciar documentos.'}
           </p>
 
-          {supportsSso && (
+          {supportsOAuth && (
             <div className="mb-4 space-y-3">
               <Button
                 type="button"
                 className="w-full"
-                disabled={isSsoLoading || isSubmitting}
-                onClick={() => void handleSsoLogin()}
+                disabled={isSubmitting}
+                onClick={() => loginWithGoogle(from)}
               >
-                <KeyRound className="h-4 w-4" strokeWidth={1.5} />
-                {isSsoLoading ? 'Redirecionando...' : 'Entrar com SSO corporativo'}
+                <Icon name="key" size={ICON_SIZE.sm} />
+                Continuar com Google
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isSubmitting}
+                onClick={() => loginWithMicrosoft(from)}
+              >
+                <Icon name="key" size={ICON_SIZE.sm} />
+                Continuar com Microsoft
               </Button>
 
               {showCredentialForm && (
@@ -129,7 +133,7 @@ export function Login() {
 
               <Input
                 id="password"
-                label="Senha"
+                label="Senha DOQYN"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -176,10 +180,10 @@ export function Login() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isSubmitting || isSsoLoading || !email.trim() || !password}
+                disabled={isSubmitting || !email.trim() || !password}
               >
-                <Lock className="h-4 w-4" strokeWidth={1.5} />
-                {isSubmitting ? 'Entrando...' : 'Entrar'}
+                <Icon name="lock" size={ICON_SIZE.sm} />
+                {isSubmitting ? 'Entrando...' : 'Entrar com e-mail e senha'}
               </Button>
             </form>
           )}
@@ -195,7 +199,7 @@ export function Login() {
         </div>
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon name="shield" size={ICON_SIZE.xs} />
           Ambiente corporativo seguro
         </p>
         <p className="mt-3 text-center text-sm">

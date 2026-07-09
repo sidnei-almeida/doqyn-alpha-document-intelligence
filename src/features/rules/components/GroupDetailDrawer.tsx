@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import type { CompanyMember, DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../api/rulesApi';
@@ -73,7 +75,10 @@ export function GroupDetailDrawer({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      className="fixed inset-0 z-[var(--z-drawer)] flex justify-end modal-overlay-scrim"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="group-detail-title"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -81,11 +86,11 @@ export function GroupDetailDrawer({
       <aside className="flex h-full w-full max-w-xl flex-col border-l border-doqyn-border bg-doqyn-surface shadow-xl">
         <div className="flex items-center justify-between border-b border-doqyn-border-subtle px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold text-doqyn-text">{group.name}</h2>
+            <h2 id="group-detail-title" className="text-sm font-semibold text-doqyn-text">{group.name}</h2>
             <p className="text-xs text-doqyn-muted">Grupo · auth-service</p>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </Button>
         </div>
 
@@ -150,18 +155,19 @@ export function GroupDetailDrawer({
             )}
             {isAdmin && availableMembers.length > 0 && (
               <div className="flex gap-2">
-                <select
-                  className="h-9 flex-1 rounded-md border border-doqyn-border bg-doqyn-bg px-3 text-sm"
-                  value={selectedMemberId}
-                  onChange={(event) => setSelectedMemberId(event.target.value)}
-                >
-                  <option value="">Adicionar membro...</option>
-                  {availableMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name || member.email}
-                    </option>
-                  ))}
-                </select>
+                <div className="min-w-0 flex-1">
+                  <Select
+                    value={selectedMemberId}
+                    onChange={(event) => setSelectedMemberId(event.target.value)}
+                    options={[
+                      { value: '', label: 'Adicionar membro...' },
+                      ...availableMembers.map((member) => ({
+                        value: member.id,
+                        label: member.name || member.email,
+                      })),
+                    ]}
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="secondary"

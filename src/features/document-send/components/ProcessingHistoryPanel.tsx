@@ -1,5 +1,7 @@
-import { ChevronRight, FileText } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import type { DocumentHistoryItem } from '../types';
 import { ProcessingHistoryBadge } from './ProcessingHistoryBadge';
 
@@ -20,7 +22,7 @@ export function ProcessingHistoryPanel({
     <section
       className={cn(
         'sticky bottom-0 z-20 flex max-h-[35vh] shrink-0 flex-col overflow-hidden',
-        'rounded-lg border border-doqyn-border bg-doqyn-surface shadow-[0_-2px_16px_rgba(0,0,0,0.12)]',
+        'rounded-lg border border-doqyn-border bg-doqyn-surface shadow-sticky-footer',
         className,
       )}
       aria-label="Histórico de processamentos"
@@ -60,28 +62,26 @@ export function ProcessingHistoryPanel({
                     )}
                   >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-doqyn-bg/60">
-                      <FileText className="h-4 w-4 text-doqyn-primary" />
+                      <Icon name="description" size={ICON_SIZE.xs} className="text-doqyn-primary" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p
-                        className="truncate text-sm font-medium text-doqyn-text"
-                        title={item.originalName}
-                      >
+                      <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
                         {item.originalName}
-                      </p>
+                      </TruncatedText>
                       <p className="mt-0.5 text-xs text-doqyn-muted">{item.uploadedAt}</p>
                     </div>
 
                     <ProcessingHistoryBadge status={item.status} />
 
                     {canSelect && (
-                      <ChevronRight
+                      <Icon
+                        name="chevron_right"
+                        size={ICON_SIZE.xs}
                         className={cn(
-                          'h-4 w-4 shrink-0 text-doqyn-muted',
+                          'shrink-0 text-doqyn-muted',
                           isActive && 'text-doqyn-primary',
                         )}
-                        aria-hidden
                       />
                     )}
                   </button>

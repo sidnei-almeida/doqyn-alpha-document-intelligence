@@ -10,7 +10,8 @@ import { VersionBadge } from '@/components/ui/VersionBadge';
 import { formatDate } from '@/lib/utils';
 import { MOCK_DOCUMENTS } from '@/features/documents/mock-data';
 import type { DocumentVersion } from '@/types/document';
-import { GitBranch, Shield } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { toast } from 'sonner';
 
 const MOCK_VERSIONS: DocumentVersion[] = [
@@ -71,7 +72,7 @@ export function VersioningPage() {
       />
 
       <div className="flex items-start gap-3 rounded-lg border border-doqyn-border bg-doqyn-surface p-4">
-        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-doqyn-primary" />
+        <Icon name="shield" size={ICON_SIZE.md} className="mt-0.5 shrink-0 text-doqyn-primary" />
         <div>
           <p className="text-sm font-medium text-doqyn-text">Rastreabilidade garantida</p>
           <p className="mt-1 text-xs text-doqyn-muted">
@@ -103,7 +104,7 @@ export function VersioningPage() {
             />
 
             <Button onClick={handleUploadVersion} disabled={!selectedFile}>
-              <GitBranch className="h-4 w-4" />
+              <Icon name="account_tree" size={ICON_SIZE.xs} />
               Registrar nova versão
             </Button>
           </CardContent>

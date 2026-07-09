@@ -27,6 +27,9 @@ export type AuthUser = {
   authProvider?: 'doqyn_auth' | 'temporary';
   keycloakUserId?: string;
   platformRoles?: PlatformRole[];
+  avatarVersion?: number;
+  avatarUpdatedAt?: string;
+  avatarStatus?: 'active' | 'removed' | null;
 };
 
 export type SessionPayload = AuthUser & {

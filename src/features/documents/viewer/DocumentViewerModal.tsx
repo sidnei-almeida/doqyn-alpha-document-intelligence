@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { emitClientTrackingEvent } from '@/features/tracking/api/trackingClientEvents';
 import type { DocumentVersionSummary } from '@/types/document-library';
 import {
   fetchDocumentDownloadBlob,
@@ -84,6 +85,28 @@ export function DocumentViewerModal({
   const isPdfViewer = manifest?.viewerType === 'pdf_pages';
 
   useEffect(() => {
+    if (!open || !documentId) return;
+
+    const versionId = activeVersionId ?? undefined;
+    emitClientTrackingEvent({
+      action: 'document.viewer_opened',
+      documentId,
+      versionId,
+      metadata: { source: 'viewer_modal' },
+    });
+
+    return () => {
+      emitClientTrackingEvent({
+        action: 'document.viewer_closed',
+        documentId,
+        versionId,
+        metadata: { source: 'viewer_modal' },
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- abre/fecha apenas com modal; versão é snapshot no evento
+  }, [open, documentId]);
+
+  useEffect(() => {
     if (!open) return;
     setShowDetails(initialShowDetails);
     setSelectedVersionId(null);
@@ -127,12 +150,20 @@ export function DocumentViewerModal({
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
         event.preventDefault();
         toast.info('A impressão deste documento não está disponível para seu perfil.');
+        if (documentId) {
+          emitClientTrackingEvent({
+            action: 'document.print_attempt_blocked',
+            documentId,
+            versionId: activeVersionId ?? undefined,
+            metadata: { source: 'viewer_modal' },
+          });
+        }
       }
     };
 
     window.addEventListener('keydown', handlePrintShortcut);
     return () => window.removeEventListener('keydown', handlePrintShortcut);
-  }, [open, showProtectedNotice]);
+  }, [open, showProtectedNotice, documentId, activeVersionId]);
 
   const detailErrorMessage = useMemo(() => {
     if (!error) return null;

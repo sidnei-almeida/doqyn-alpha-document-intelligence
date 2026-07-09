@@ -32,6 +32,7 @@ export const INVALID_GENERIC_STORAGE_NAMES = new Set([
   'file.pdf',
   'upload.pdf',
   'document.pdf',
+  'nda.pdf',
   'sem_nome.pdf',
 ]);
 

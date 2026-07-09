@@ -1,4 +1,4 @@
-import { ImageIcon } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 
 type ImageDocumentViewerProps = {
   className?: string;
@@ -10,7 +10,7 @@ export function ImageDocumentViewer({ className }: ImageDocumentViewerProps) {
     <div
       className={`flex h-full flex-col items-center justify-center gap-3 px-6 text-center ${className ?? ''}`}
     >
-      <ImageIcon className="h-10 w-10 text-doqyn-muted" aria-hidden />
+      <Icon name="image" size={40} className="text-doqyn-muted" aria-hidden />
       <p className="text-sm text-doqyn-muted">
         Visualizador de imagens em desenvolvimento. Em breve: zoom, fit e pan.
       </p>

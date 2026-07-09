@@ -1,4 +1,5 @@
-import { Building2, Shield, UserRound } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -36,9 +37,9 @@ function PersonTypeSegment({
   value: PersonType;
   onChange: (value: PersonType) => void;
 }) {
-  const options: Array<{ id: PersonType; label: string; icon: typeof Building2 }> = [
-    { id: 'business', label: 'Pessoa Jurídica', icon: Building2 },
-    { id: 'individual', label: 'Pessoa Física', icon: UserRound },
+  const options: Array<{ id: PersonType; label: string; icon: string }> = [
+    { id: 'business', label: 'Pessoa Jurídica', icon: 'business' },
+    { id: 'individual', label: 'Pessoa Física', icon: 'person' },
   ];
 
   return (
@@ -48,7 +49,6 @@ function PersonTypeSegment({
       aria-label="Tipo de cliente"
     >
       {options.map((option) => {
-        const Icon = option.icon;
         const selected = value === option.id;
 
         return (
@@ -65,7 +65,7 @@ function PersonTypeSegment({
                 : 'text-doqyn-muted hover:text-doqyn-text',
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+            <Icon name={option.icon} size={ICON_SIZE.xs} className="shrink-0" />
             {option.label}
           </button>
         );
@@ -240,7 +240,7 @@ export function RequestAccessPage() {
 
         <div className="w-full max-w-lg flow-enter">
           <div className="mb-8 flex flex-col items-center text-center">
-            <DoqynLogo size="lg" align="center" showSubtitle subtitle="Solicitação de acesso" />
+            <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Solicitação de acesso" />
           </div>
 
           <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
@@ -259,7 +259,7 @@ export function RequestAccessPage() {
           </div>
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-            <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Icon name="shield" size={14} />
             Ambiente corporativo seguro
           </p>
         </div>
@@ -276,7 +276,8 @@ export function RequestAccessPage() {
       <div className="w-full max-w-2xl flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
           <DoqynLogo
-            size="lg"
+            size="login"
+            variant="horizontal"
             align="center"
             showSubtitle
             subtitle={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitação de acesso'}
@@ -509,7 +510,7 @@ export function RequestAccessPage() {
         />
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon name="shield" size={14} />
           Ambiente corporativo seguro
         </p>
       </div>

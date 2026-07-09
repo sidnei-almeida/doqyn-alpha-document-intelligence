@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 
 type DocumentDetailDrawerProps = {
@@ -32,7 +33,7 @@ export function DocumentDetailDrawer({
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      className="fixed inset-0 z-50 flex justify-end modal-overlay-scrim"
       role="dialog"
       aria-modal="true"
       aria-labelledby="document-detail-drawer-title"
@@ -48,7 +49,7 @@ export function DocumentDetailDrawer({
             className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-5 w-5" />
+            <Icon name="close" size={ICON_SIZE.md} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">

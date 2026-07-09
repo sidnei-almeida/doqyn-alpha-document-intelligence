@@ -35,6 +35,13 @@ const LEGAL_COMMERCIAL_TERMS = [
   'contratada',
   'fornecedor',
   'prestador',
+  'revelador',
+  'receptor',
+  'parte reveladora',
+  'parte receptora',
+  'denominada',
+  'qualificação',
+  'qualificacao',
   'vigência',
   'vigencia',
   'assinatura',
@@ -50,6 +57,9 @@ const LEGAL_COMMERCIAL_TERMS = [
   'partes',
   'nota fiscal',
   'ordem de compra',
+  'razão social',
+  'razao social',
+  'nome completo',
 ];
 
 function uniqueTerms(terms: string[]): string[] {
@@ -303,11 +313,21 @@ export function retrieveChunksForExtraction(input: {
   const limit = input.topK ?? MAX_CHUNKS_FOR_EXTRACTION;
   const byId = new Map<string, RetrievedChunk>();
 
-  for (const field of input.selectedClass.fields) {
+  const requiredFields = input.selectedClass.fields.filter((field) => field.required);
+  const optionalFields = input.selectedClass.fields.filter((field) => !field.required);
+  const fieldsToProcess = [
+    ...requiredFields,
+    ...optionalFields.slice(0, Math.max(0, 6 - requiredFields.length)),
+  ];
+
+  for (const field of fieldsToProcess) {
+    if (byId.size >= limit) break;
+
     const fieldChunks = retrieveChunksForField({
       chunks: input.chunks,
       field,
       selectedClass: input.selectedClass,
+      topK: Math.min(MAX_CHUNKS_PER_FIELD, limit - byId.size || MAX_CHUNKS_PER_FIELD),
     });
 
     for (const chunk of fieldChunks) {

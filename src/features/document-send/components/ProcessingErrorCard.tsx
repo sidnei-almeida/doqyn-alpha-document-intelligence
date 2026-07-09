@@ -1,12 +1,16 @@
-import { AlertTriangle, ExternalLink, RotateCcw, Upload } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { buttonVariants } from '@/components/ui/buttonVariants';
 import { Button } from '@/components/ui/Button';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { WorkflowErrorAction } from '../types/workflowError';
 import { formatFileSize } from '../utils/validateUpload';
 import { shouldShowDevHint } from '../utils/workflowErrors';
+
+import { flowPanelContentClass } from './flowPanelShell';
 
 interface ProcessingErrorCardProps {
   fileName: string;
@@ -20,6 +24,7 @@ interface ProcessingErrorCardProps {
   debugDetails?: Record<string, unknown>;
   onRetry: () => void;
   onChooseAnother: () => void;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -35,42 +40,47 @@ export function ProcessingErrorCard({
   debugDetails,
   onRetry,
   onChooseAnother,
+  embedded = false,
   className,
 }: ProcessingErrorCardProps) {
   const showDevHint = devHint && shouldShowDevHint(showDebug);
 
-  return (
-    <Card
+  const shellClass = flowPanelContentClass(
+    embedded,
+    cn('flex min-h-0 flex-1 flex-col', !embedded && 'border-doqyn-danger-border/40', className),
+  );
+
+  const content = (
+    <div
       className={cn(
-        'flow-enter flex min-h-0 flex-1 flex-col border-doqyn-danger-border/40 bg-doqyn-surface',
-        className,
+        'flex flex-1 flex-col items-center justify-center px-6 py-10 text-center',
+        !embedded && 'min-h-[300px]',
       )}
     >
-      <div className="flex min-h-[300px] flex-1 flex-col items-center justify-center px-6 py-10 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-doqyn-danger-bg">
-          <AlertTriangle className="h-6 w-6 text-doqyn-danger" />
+          <Icon name="warning" size={24} className="text-doqyn-danger" />
         </div>
         <h2 className="mt-5 text-base font-semibold text-doqyn-text">{title}</h2>
         <p className="mt-2 max-w-md text-sm text-doqyn-muted">{message}</p>
         {suggestion && (
           <p className="mt-2 max-w-md text-sm text-doqyn-text">{suggestion}</p>
         )}
-        <p className="mt-3 truncate text-xs text-doqyn-muted" title={fileName}>
-          {fileName} · {formatFileSize(fileSize)}
-        </p>
+        <TruncatedText as="p" className="mt-3 text-xs text-doqyn-muted">
+          {`${fileName} · ${formatFileSize(fileSize)}`}
+        </TruncatedText>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {action && (
             <Link to={action.href} className={buttonVariants({ variant: 'primary' })}>
-              <ExternalLink className="h-4 w-4" />
+              <Icon name="open_in_new" size={ICON_SIZE.xs} />
               {action.label}
             </Link>
           )}
           <Button type="button" variant={action ? 'secondary' : 'primary'} onClick={onRetry}>
-            <RotateCcw className="h-4 w-4" />
+            <Icon name="refresh" size={ICON_SIZE.xs} />
             Tentar novamente
           </Button>
           <Button type="button" variant="secondary" onClick={onChooseAnother}>
-            <Upload className="h-4 w-4" />
+            <Icon name="upload" size={ICON_SIZE.xs} />
             Escolher outro documento
           </Button>
         </div>
@@ -90,6 +100,11 @@ export function ProcessingErrorCard({
           </dl>
         )}
       </div>
-    </Card>
   );
+
+  if (embedded) {
+    return <div className={shellClass}>{content}</div>;
+  }
+
+  return <Card className={shellClass}>{content}</Card>;
 }

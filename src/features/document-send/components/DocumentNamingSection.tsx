@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/Input';
+import { Radio } from '@/components/ui/Radio';
 import { cn } from '@/lib/utils';
 import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
 import { policyRequiresPerItemChoice } from '../utils/reviewWorkflowSettings';
@@ -84,33 +85,26 @@ export function DocumentNamingSection({
       </div>
 
       {showPerItemRadios && (
-        <div className="space-y-2">
+        <div className="space-y-2" role="radiogroup" aria-label="Modo de nomeação do arquivo">
           {MODES.map((mode) => {
             const disabled = !settings.aiRenameEnabled && mode.id !== 'original';
             return (
-              <label
+              <Radio
                 key={mode.id}
-                className={cn(
-                  'flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2 text-xs transition-colors',
+                name="document-naming-mode"
+                checked={effectiveMode === mode.id}
+                disabled={disabled}
+                onChange={() => setMode(mode.id)}
+                label={mode.label}
+                description={mode.description}
+                wrapperClassName={cn(
+                  'rounded-md border px-3 py-2 transition-colors',
                   effectiveMode === mode.id
                     ? 'border-doqyn-primary/40 bg-doqyn-primary/10'
                     : 'border-doqyn-border-subtle bg-doqyn-surface/40',
                   disabled && 'cursor-not-allowed opacity-50',
                 )}
-              >
-                <input
-                  type="radio"
-                  name="document-naming-mode"
-                  className="mt-0.5"
-                  checked={effectiveMode === mode.id}
-                  disabled={disabled}
-                  onChange={() => setMode(mode.id)}
-                />
-                <span>
-                  <span className="font-medium text-doqyn-text">{mode.label}</span>
-                  <span className="mt-0.5 block text-doqyn-muted">{mode.description}</span>
-                </span>
-              </label>
+              />
             );
           })}
         </div>

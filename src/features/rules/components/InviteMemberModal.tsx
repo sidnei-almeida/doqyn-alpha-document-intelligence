@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -63,7 +64,7 @@ export function InviteMemberModal({ open, groups, onClose, onInvite }: InviteMem
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="invite-modal-title"
@@ -79,7 +80,7 @@ export function InviteMemberModal({ open, groups, onClose, onInvite }: InviteMem
             className="rounded p-1 text-doqyn-muted hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-5 w-5" />
+            <Icon name="close" size={ICON_SIZE.md} />
           </button>
         </div>
 

@@ -3,9 +3,14 @@ import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { PromptDialog } from '@/components/ui/PromptDialog';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
-import { Badge } from '@/components/ui/Badge';
+import { MemberStatusBadge } from '@/components/ui/MemberStatusBadge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { DataTable } from '@/components/ui/DataTable';
+import { FilterBar, FilterBarField } from '@/components/ui/FilterBar';
+import { PlatformRoleChips } from '@/components/ui/PlatformRoleChips';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/auth/useAuth';
 import {
@@ -27,14 +32,14 @@ import { AccessRequestDetailsPanel } from './components/AccessRequestDetailsPane
 import { BlockAccessDialog } from './components/BlockAccessDialog';
 import { EditAccessDialog } from './components/EditAccessDialog';
 import { UnblockAccessDialog } from './components/UnblockAccessDialog';
-import { formatPlatformRoles } from './platformRoleLabels';
 import { invalidateUserManagementQueries } from './userManagementQueries';
 
-const STATUS_LABELS: Record<MemberStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
-  active: { label: 'Ativo', variant: 'success' },
-  pending: { label: 'Pendente', variant: 'warning' },
-  blocked: { label: 'Bloqueado', variant: 'danger' },
-  rejected: { label: 'Rejeitado', variant: 'info' },
+const STATUS_FILTER_LABELS: Record<MemberStatus | 'all', string> = {
+  all: 'Todos',
+  active: 'Ativo',
+  pending: 'Pendente',
+  blocked: 'Bloqueado',
+  rejected: 'Rejeitado',
 };
 
 function memberDisplayName(member: CompanyMemberDto): string {
@@ -274,136 +279,144 @@ export function UsersPage() {
         </Card>
       )}
 
-      <div className="flex shrink-0 flex-wrap gap-2">
-        {(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => (
-          <Button
-            key={status}
-            variant={statusFilter === status ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setStatusFilter(status)}
-          >
-            {status === 'all' ? 'Todos' : STATUS_LABELS[status].label}
-          </Button>
-        ))}
-      </div>
-
-      <Card className="flex min-h-[420px] flex-1 flex-col">
-        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          {membersQuery.isLoading ? (
-            <p className="flex flex-1 items-center justify-center p-6 text-sm text-doqyn-muted">
-              Carregando usuários...
-            </p>
-          ) : members.length === 0 ? (
-            <p className="flex flex-1 items-center justify-center p-6 text-sm text-doqyn-muted">
-              Nenhum usuário encontrado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-doqyn-border text-xs uppercase text-doqyn-muted">
-                  <tr>
-                    <th className="px-4 py-3">Nome</th>
-                    <th className="px-4 py-3">E-mail</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Roles</th>
-                    <th className="px-4 py-3">Grupos de acesso</th>
-                    <th className="px-4 py-3">Grupos documentais</th>
-                    <th className="px-4 py-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((member) => {
-                    const statusConfig = STATUS_LABELS[member.status];
-                    return (
-                      <tr key={member.id} className="border-b border-doqyn-border-subtle">
-                        <td className="px-4 py-3 font-medium">{memberDisplayName(member)}</td>
-                        <td className="px-4 py-3 text-doqyn-muted">{member.email}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-doqyn-muted">
-                          {formatPlatformRoles(member.platformRoles)}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-doqyn-muted">
-                          {member.requestedAccess?.departmentText && member.status === 'pending' ? (
-                            <span title={member.requestedAccess.reason}>
-                              {member.requestedAccess.departmentText}
-                            </span>
-                          ) : member.accessGroupIds.length ? (
-                            member.accessGroupIds
-                              .map((id) => accessGroups.find((g) => g.id === id)?.name ?? id)
-                              .join(', ')
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-doqyn-muted">
-                          {(member.documentGroupIds ?? member.groupIds).length ? (
-                            (member.documentGroupIds ?? member.groupIds)
-                              .map((id) => documentGroups.find((g) => g.id === id)?.name ?? id)
-                              .join(', ')
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-2">
-                            {member.status === 'pending' && (
-                              <>
-                                <Button size="sm" onClick={() => openApprove(member)}>
-                                  Aprovar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => handleRejectMember(member)}
-                                >
-                                  Rejeitar
-                                </Button>
-                              </>
-                            )}
-                            {member.status === 'active' && (
-                              <>
-                                <Button size="sm" variant="secondary" onClick={() => openEditAccess(member)}>
-                                  Editar acesso
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => setBlockingMember(member)}
-                                >
-                                  Bloquear acesso
-                                </Button>
-                              </>
-                            )}
-                            {member.status === 'blocked' && (
-                              <>
-                                <Button size="sm" variant="secondary" onClick={() => openEditAccess(member)}>
-                                  Editar acesso
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => setUnblockingMember(member)}
-                                >
-                                  Desbloquear acesso
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      <FilterBar summary={`${members.length} ${members.length === 1 ? 'usuário' : 'usuários'}`}>
+        <FilterBarField span={2} className="lg:col-span-4">
+          <div>
+            <p className="form-label mb-1.5">Status</p>
+            <div className="flex flex-wrap gap-2">
+              {(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => (
+                <Button
+                  key={status}
+                  variant={statusFilter === status ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {STATUS_FILTER_LABELS[status]}
+                </Button>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </FilterBarField>
+      </FilterBar>
+
+      <DataTable
+        stretch
+        className="flex-1"
+        data={membersQuery.isLoading ? [] : members}
+        keyExtractor={(member) => member.id}
+        emptyMessage={
+          membersQuery.isLoading ? 'Carregando usuários...' : 'Nenhum usuário encontrado'
+        }
+        emptyDescription={
+          statusFilter === 'all'
+            ? 'Convide colaboradores para começar a gerenciar acessos da empresa.'
+            : 'Nenhum usuário corresponde ao status selecionado.'
+        }
+        emptyAction={
+          !membersQuery.isLoading && statusFilter === 'all' ? (
+            <Button onClick={() => setInviteOpen(true)}>Convidar usuário</Button>
+          ) : undefined
+        }
+        sparseMessage="Nenhum outro usuário nesta listagem"
+        sparseDescription="Altere o filtro de status para ver outros registros."
+        columns={[
+          {
+            key: 'name',
+            header: 'Nome',
+            render: (member) => (
+              <span className="font-medium">{memberDisplayName(member)}</span>
+            ),
+          },
+          {
+            key: 'email',
+            header: 'E-mail',
+            render: (member) => <span className="text-doqyn-muted">{member.email}</span>,
+          },
+          {
+            key: 'status',
+            header: 'Status',
+            render: (member) => <MemberStatusBadge status={member.status} />,
+          },
+          {
+            key: 'roles',
+            header: 'Roles',
+            render: (member) => <PlatformRoleChips roles={member.platformRoles} />,
+          },
+          {
+            key: 'accessGroups',
+            header: 'Grupos de acesso',
+            render: (member) => (
+              <span className="meta-text">
+                {member.requestedAccess?.departmentText && member.status === 'pending' ? (
+                  <Tooltip label={member.requestedAccess.reason ?? ''}>
+                    <span>{member.requestedAccess.departmentText}</span>
+                  </Tooltip>
+                ) : member.accessGroupIds.length ? (
+                  member.accessGroupIds
+                    .map((id) => accessGroups.find((g) => g.id === id)?.name ?? id)
+                    .join(', ')
+                ) : (
+                  '—'
+                )}
+              </span>
+            ),
+          },
+          {
+            key: 'documentGroups',
+            header: 'Grupos documentais',
+            render: (member) => (
+              <span className="meta-text">
+                {(member.documentGroupIds ?? member.groupIds).length
+                  ? (member.documentGroupIds ?? member.groupIds)
+                      .map((id) => documentGroups.find((g) => g.id === id)?.name ?? id)
+                      .join(', ')
+                  : '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'actions',
+            header: '',
+            headerClassName: 'w-12 text-right',
+            className: 'text-right',
+            render: (member) => (
+              <TableRowActionsMenu
+                actions={[
+                  {
+                    label: 'Aprovar',
+                    onClick: () => openApprove(member),
+                    hidden: member.status !== 'pending',
+                  },
+                  {
+                    label: 'Rejeitar',
+                    onClick: () => handleRejectMember(member),
+                    hidden: member.status !== 'pending',
+                  },
+                  {
+                    label: 'Editar acesso',
+                    onClick: () => openEditAccess(member),
+                    hidden: member.status !== 'active' && member.status !== 'blocked',
+                  },
+                  {
+                    label: 'Bloquear acesso',
+                    onClick: () => setBlockingMember(member),
+                    tone: 'danger',
+                    hidden: member.status !== 'active',
+                  },
+                  {
+                    label: 'Desbloquear acesso',
+                    onClick: () => setUnblockingMember(member),
+                    hidden: member.status !== 'blocked',
+                  },
+                ]}
+              />
+            ),
+          },
+        ]}
+      />
 
       {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
           <Card className="w-full max-w-lg">
             <CardContent className="space-y-4 p-6">
               <h2 className="text-lg font-medium">Convidar usuário</h2>
@@ -448,7 +461,7 @@ export function UsersPage() {
       )}
 
       {approvingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
           <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto">
             <CardContent className="space-y-1 p-6">
               <h2 className="mb-4 text-lg font-medium">Aprovar {memberDisplayName(approvingMember)}</h2>

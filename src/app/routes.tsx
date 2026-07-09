@@ -8,8 +8,10 @@ import {
   CompanySignupRoute,
   DashboardRoute,
   DocumentSendRoute,
-  DocumentsRoute,
   IndividualSignupRoute,
+  LibraryRoute,
+  OAuthCallbackRoute,
+  OnboardingRoute,
   RequestAccessRoute,
   RulesRoute,
   SettingsRoute,
@@ -24,6 +26,8 @@ export const router = createBrowserRouter([
   { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
   { path: '/criar-empresa', element: <CompanySignupRoute /> },
   { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
+  { path: '/onboarding', element: <OnboardingRoute /> },
+  { path: '/auth/oauth/callback', element: <OAuthCallbackRoute /> },
   { path: '/termos', element: <TermsRoute /> },
   {
     element: <PublicRoute />,
@@ -35,11 +39,15 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
+          { path: '/biblioteca', element: <LibraryRoute /> },
+          // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira)
+          { path: '/biblioteca/:collection', element: <LibraryRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
+          // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.
           { path: '/upload', element: <DocumentSendRoute /> },
           { path: '/rules', element: <RulesRoute /> },
           { path: '/users', element: <UserManagementRouteLazy /> },
-          { path: '/documents', element: <DocumentsRoute /> },
+          { path: '/documents', element: <Navigate to="/biblioteca" replace /> },
           { path: '/versioning', element: <VersioningRoute /> },
           { path: '/audit', element: <AuditRoute /> },
           { path: '/tracking', element: <TrackingRoute /> },
@@ -48,6 +56,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/', element: <Navigate to="/upload" replace /> },
-  { path: '*', element: <Navigate to="/upload" replace /> },
+  { path: '/', element: <Navigate to="/biblioteca" replace /> },
+  { path: '*', element: <Navigate to="/biblioteca" replace /> },
 ]);

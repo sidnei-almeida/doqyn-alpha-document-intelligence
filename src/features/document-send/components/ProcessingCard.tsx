@@ -1,5 +1,7 @@
-import { X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { ProcessingLogItem } from '../types';
@@ -11,6 +13,8 @@ import { formatFileSize } from '../utils/validateUpload';
 import { DocumentProcessingVisual } from './DocumentProcessingVisual';
 import { ProcessingStepTimeline } from './ProcessingStepTimeline';
 
+import { flowPanelContentClass } from './flowPanelShell';
+
 interface ProcessingCardProps {
   file: File;
   progress: number;
@@ -18,6 +22,7 @@ interface ProcessingCardProps {
   isCompleting?: boolean;
   simulatedStepIndex?: number;
   onCancel?: () => void;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -28,20 +33,24 @@ export function ProcessingCard({
   isCompleting = false,
   simulatedStepIndex = 0,
   onCancel,
+  embedded = false,
   className,
 }: ProcessingCardProps) {
   const steps =
     logs.length > 0 ? buildStepsFromLogs(logs) : buildSimulatedSteps(simulatedStepIndex);
 
-  return (
-    <Card
-      className={cn(
-        'flow-enter flex min-h-0 flex-1 flex-col overflow-hidden border-doqyn-border bg-doqyn-surface',
-        'max-md:min-h-[40vh] max-md:flex-none',
-        isCompleting && 'processing-card--complete',
-        className,
-      )}
-    >
+  const shellClass = flowPanelContentClass(
+    embedded,
+    cn(
+      'flex min-h-0 flex-1 flex-col overflow-hidden',
+      !embedded && 'max-md:min-h-[40vh] max-md:flex-none',
+      isCompleting && 'processing-card--complete',
+      className,
+    ),
+  );
+
+  const content = (
+    <>
       <div className="relative h-0.5 w-full shrink-0 overflow-hidden bg-doqyn-bg">
         <div
           className={cn(
@@ -70,9 +79,9 @@ export function ProcessingCard({
         <div className="min-w-0 flex-1 space-y-4">
           <div className="flex items-start justify-between gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-doqyn-text" title={file.name}>
+              <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
                 {file.name}
-              </p>
+              </TruncatedText>
               <p className="mt-0.5 text-xs text-doqyn-muted">{formatFileSize(file.size)}</p>
             </div>
             {onCancel && !isCompleting && (
@@ -84,7 +93,7 @@ export function ProcessingCard({
                 className="shrink-0 text-doqyn-muted hover:text-doqyn-text"
                 aria-label="Trocar documento"
               >
-                <X className="h-4 w-4" />
+                <Icon name="close" size={ICON_SIZE.xs} />
               </Button>
             )}
           </div>
@@ -92,6 +101,12 @@ export function ProcessingCard({
           <ProcessingStepTimeline steps={steps} />
         </div>
       </div>
-    </Card>
+    </>
   );
+
+  if (embedded) {
+    return <div className={shellClass}>{content}</div>;
+  }
+
+  return <Card className={shellClass}>{content}</Card>;
 }

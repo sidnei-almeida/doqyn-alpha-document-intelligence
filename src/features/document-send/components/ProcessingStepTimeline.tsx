@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import type { ProcessingStep } from '../utils/processingSteps';
 
@@ -30,7 +30,7 @@ export function ProcessingStepTimeline({ steps, className }: ProcessingStepTimel
             )}
           >
             {step.status === 'done' ? (
-              <Check className="h-3 w-3" strokeWidth={2.5} />
+              <Icon name="check" size={12} weight={600} />
             ) : (
               <span>{index + 1}</span>
             )}

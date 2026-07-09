@@ -42,6 +42,7 @@ export type DocumentListItem = {
     hasPreview: boolean;
   };
   permissions?: DocumentListItemPermissions;
+  isFavorite?: boolean;
 };
 
 export type DocumentVersionSummary = {
@@ -81,10 +82,15 @@ export type DocumentListFilters = {
   search?: string;
   categoryId?: string;
   status?: string;
+  processingStatus?: string;
   type?: string;
   area?: string;
   from?: string;
   to?: string;
+  sort?: string;
+  direction?: string;
+  owner?: string;
+  excludeArchived?: string;
   cursor?: string;
   limit?: string;
 };

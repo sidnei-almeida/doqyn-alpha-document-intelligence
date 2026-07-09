@@ -1,4 +1,4 @@
-import { Download, FileWarning } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 
 type UnsupportedDocumentViewerProps = {
@@ -20,7 +20,7 @@ export function UnsupportedDocumentViewer({
     <div
       className={`flex h-full flex-col items-center justify-center gap-4 px-6 text-center ${className ?? ''}`}
     >
-      <FileWarning className="h-10 w-10 text-doqyn-muted" aria-hidden />
+      <Icon name="report" size={40} className="text-doqyn-muted" aria-hidden />
       <div>
         <p className="text-sm font-medium text-doqyn-text">
           Este tipo de arquivo ainda não possui preview integrado.
@@ -37,7 +37,7 @@ export function UnsupportedDocumentViewer({
           disabled={isDownloading}
           onClick={onDownload}
         >
-          <Download className="h-3.5 w-3.5" />
+          <Icon name="download" size={14} />
           Baixar original
         </Button>
       )}

@@ -1,5 +1,6 @@
 import { Select } from '@/components/ui/Select';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { formatDate } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentDetailResponse, DocumentVersionSummary } from '@/types/document-library';
@@ -24,9 +25,9 @@ export function DocumentViewerDetailsPanel({
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-doqyn-muted">Documento</p>
-        <p className="mt-1 break-words text-sm font-medium text-doqyn-text" title={displayName}>
+        <TruncatedText className="mt-1 break-words text-sm font-medium text-doqyn-text">
           {displayName}
-        </p>
+        </TruncatedText>
       </div>
 
       <div className="flex items-center gap-2">

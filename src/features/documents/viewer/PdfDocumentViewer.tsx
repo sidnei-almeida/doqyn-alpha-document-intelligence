@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, Loader2, RotateCcw } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { getPreviewErrorMessage } from '../utils/previewErrors';
@@ -180,7 +181,7 @@ export function PdfDocumentViewer({
     return (
       <div className={cn('flex h-full items-center justify-center', className)}>
         <div className="flex items-center gap-2 text-sm text-doqyn-muted">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
           Carregando visualizador...
         </div>
       </div>
@@ -193,7 +194,7 @@ export function PdfDocumentViewer({
         <p className="text-sm text-doqyn-danger">{getPreviewErrorMessage(renderError)}</p>
         {onRetry && (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
-            <RotateCcw className="h-3.5 w-3.5" />
+            <Icon name="rotate_left" size={14} />
             Tentar novamente
           </Button>
         )}
@@ -213,7 +214,7 @@ export function PdfDocumentViewer({
           size="sm"
           onClick={() => window.open(fallbackObjectUrl, '_blank', 'noopener,noreferrer')}
         >
-          <ExternalLink className="h-3.5 w-3.5" />
+          <Icon name="open_in_new" size={14} />
           Abrir preview em nova aba
         </Button>
         {onRetry && (
@@ -234,7 +235,7 @@ export function PdfDocumentViewer({
   }
 
   return (
-    <div ref={scrollRef} className={cn('h-full overflow-y-auto bg-[#0b0d10]', className)}>
+    <div ref={scrollRef} className={cn('viewer-canvas-stage h-full overflow-y-auto', className)}>
       <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center gap-6 px-4 py-6">
         {useLazyRender && (
           <p className="rounded-md border border-doqyn-border bg-doqyn-bg/80 px-3 py-2 text-xs text-doqyn-muted">

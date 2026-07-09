@@ -45,17 +45,24 @@ export const PROCESSING_STEPS = [
 ];
 
 export const NAV_ITEMS_PRIMARY = [
-  { label: 'Visão Geral', path: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'Documentos', path: '/documents', icon: 'FileText' },
-  { label: 'Envio de Documentos', path: '/upload', icon: 'Upload' },
+  { label: 'Biblioteca', path: '/biblioteca', icon: 'folder' },
+] as const;
+
+/** Views da Biblioteca — recortes sobre a listagem real (listDocuments). */
+export const NAV_ITEMS_LIBRARY_VIEWS = [
+  { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
+  { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
+  { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
+  { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
 ] as const;
 
 export const NAV_ITEMS_ADMIN = [
-  { label: 'Regras', path: '/rules', icon: 'Scale' },
-  { label: 'Usuários', path: '/users', icon: 'Users', managerOnly: true },
-  { label: 'Auditoria', path: '/audit', icon: 'Shield' },
-  { label: 'Tracking', path: '/tracking', icon: 'Activity', trackingOnly: true },
-  { label: 'Configurações', path: '/settings', icon: 'Settings' },
+  { label: 'Visão Geral', path: '/dashboard', icon: 'dashboard' },
+  { label: 'Regras', path: '/rules', icon: 'account_tree' },
+  { label: 'Usuários', path: '/users', icon: 'group', managerOnly: true },
+  { label: 'Auditoria', path: '/audit', icon: 'shield' },
+  { label: 'Tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
+  { label: 'Configurações', path: '/settings', icon: 'settings' },
 ] as const;
 
 /** @deprecated Use NAV_ITEMS_PRIMARY and NAV_ITEMS_ADMIN */

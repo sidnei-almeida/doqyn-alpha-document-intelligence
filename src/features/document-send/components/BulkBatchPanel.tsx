@@ -1,15 +1,7 @@
-import {
-  CheckCircle2,
-  Copy,
-  FileText,
-  Loader2,
-  Pause,
-  Play,
-  RotateCcw,
-  SkipForward,
-  XCircle,
-} from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { BulkBatchPhase, BulkUploadItem } from '../types/bulk';
@@ -19,6 +11,7 @@ import { canBulkManualConfirm, computeBulkStats } from '../utils/bulkEligibility
 import { formatFileSize } from '../utils/validateUpload';
 import { BulkQueueItemRow } from './BulkQueueItemRow';
 import { DocumentNamingSection } from './DocumentNamingSection';
+import { flowPanelContentClass } from './flowPanelShell';
 
 interface BulkBatchPanelProps {
   items: BulkUploadItem[];
@@ -41,6 +34,7 @@ interface BulkBatchPanelProps {
   onClearCompleted: () => void;
   selectedItemId?: string | null;
   onSelectItem?: (itemId: string) => void;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -99,6 +93,7 @@ export function BulkBatchPanel({
   onClearCompleted,
   selectedItemId = null,
   onSelectItem,
+  embedded = false,
   className,
 }: BulkBatchPanelProps) {
   const stats = computeBulkStats(items);
@@ -138,13 +133,13 @@ export function BulkBatchPanel({
     await navigator.clipboard.writeText(text);
   };
 
-  return (
-    <Card
-      className={cn(
-        'flow-enter flex h-full min-h-0 w-full flex-col overflow-hidden border-doqyn-border bg-doqyn-surface',
-        className,
-      )}
-    >
+  const shellClass = flowPanelContentClass(
+    embedded,
+    cn('flex h-full min-h-0 w-full flex-col overflow-hidden', className),
+  );
+
+  const content = (
+    <>
       <CardHeader className="shrink-0 space-y-4 border-b border-doqyn-border-subtle pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -157,7 +152,7 @@ export function BulkBatchPanel({
             </p>
           </div>
           {batchPhase === 'running' && (
-            <Loader2 className="h-4 w-4 animate-spin text-doqyn-muted" />
+            <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin text-doqyn-muted" />
           )}
         </div>
 
@@ -181,12 +176,12 @@ export function BulkBatchPanel({
                   </p>
                   <div className="mt-2 flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-doqyn-surface-soft">
-                      <FileText className="h-5 w-5 text-doqyn-primary" />
+                      <Icon name="description" size={ICON_SIZE.nav} className="text-doqyn-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-doqyn-text" title={currentItem.originalFileName}>
+                      <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
                         {currentItem.originalFileName}
-                      </p>
+                      </TruncatedText>
                       <p className="text-xs text-doqyn-muted">{formatFileSize(currentItem.sizeBytes)}</p>
                       {currentItem.className && (
                         <p className="mt-1 text-xs text-doqyn-muted">
@@ -194,9 +189,9 @@ export function BulkBatchPanel({
                         </p>
                       )}
                       {currentItem.recommendedFileName && (
-                        <p className="mt-1 truncate font-mono text-xs text-doqyn-text" title={currentItem.recommendedFileName}>
-                          Nome sugerido: {currentItem.recommendedFileName}
-                        </p>
+                        <TruncatedText as="p" className="mt-1 font-mono text-xs text-doqyn-text">
+                          {`Nome sugerido: ${currentItem.recommendedFileName}`}
+                        </TruncatedText>
                       )}
                       {autoCountdown !== null && autoCountdown > 0 && (
                         <div className="mt-2 space-y-2">
@@ -237,7 +232,7 @@ export function BulkBatchPanel({
 
               {isCompleted && (
                 <div className="flow-enter rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-center">
-                  <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+                  <Icon name="check_circle" size={32} className="mx-auto text-emerald-500" />
                   <p className="mt-2 text-sm font-medium text-doqyn-text">Lote concluído</p>
                   <p className="mt-1 text-xs text-doqyn-muted">
                     {stats.saved} salvos · {stats.requiresReview} revisão · {stats.errors} erros
@@ -258,7 +253,7 @@ export function BulkBatchPanel({
               </ul>
             </div>
 
-            <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.18)]">
+            <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-sticky-footer">
               {isCompleted ? (
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="primary" onClick={onNewBatch}>
@@ -268,7 +263,7 @@ export function BulkBatchPanel({
                     Limpar concluídos
                   </Button>
                   <Button type="button" variant="ghost" onClick={() => void copySummary()}>
-                    <Copy className="h-4 w-4" />
+                    <Icon name="content_copy" size={ICON_SIZE.xs} />
                     Copiar resumo
                   </Button>
                 </div>
@@ -282,15 +277,15 @@ export function BulkBatchPanel({
                         disabled={!canConfirmCurrent}
                         onClick={onConfirmContinue}
                       >
-                        <CheckCircle2 className="h-4 w-4" />
+                        <Icon name="check_circle" size={ICON_SIZE.xs} />
                         Confirmar e continuar
                       </Button>
                       <Button type="button" variant="secondary" onClick={onSkip}>
-                        <SkipForward className="h-4 w-4" />
+                        <Icon name="skip_next" size={ICON_SIZE.xs} />
                         Pular documento
                       </Button>
                       <Button type="button" variant="secondary" onClick={onReprocess}>
-                        <RotateCcw className="h-4 w-4" />
+                        <Icon name="refresh" size={ICON_SIZE.xs} />
                         Reprocessar
                       </Button>
                     </div>
@@ -299,17 +294,17 @@ export function BulkBatchPanel({
                   <div className="flex flex-wrap gap-2">
                     {batchPhase === 'running' ? (
                       <Button type="button" variant="secondary" onClick={onPause}>
-                        <Pause className="h-4 w-4" />
+                        <Icon name="pause" size={ICON_SIZE.xs} />
                         Pausar lote
                       </Button>
                     ) : batchPhase === 'paused' ? (
                       <Button type="button" variant="secondary" onClick={onResume}>
-                        <Play className="h-4 w-4" />
+                        <Icon name="play_arrow" size={ICON_SIZE.xs} />
                         Retomar lote
                       </Button>
                     ) : null}
                     <Button type="button" variant="ghost" onClick={onCancel}>
-                      <XCircle className="h-4 w-4" />
+                      <Icon name="cancel" size={ICON_SIZE.xs} />
                       Cancelar lote
                     </Button>
                   </div>
@@ -318,6 +313,12 @@ export function BulkBatchPanel({
             </div>
           </div>
       </CardContent>
-    </Card>
+    </>
   );
+
+  if (embedded) {
+    return <div className={shellClass}>{content}</div>;
+  }
+
+  return <Card className={shellClass}>{content}</Card>;
 }

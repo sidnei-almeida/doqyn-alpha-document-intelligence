@@ -1,5 +1,6 @@
-import { ArrowLeft, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { DoqynLogo } from '@/components/brand';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import {
@@ -24,7 +25,7 @@ export function TermsPage() {
 
       <div className="mx-auto w-full max-w-3xl flow-enter">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="lg" align="center" showSubtitle subtitle="Termos e Condições" />
+          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Termos e Condições" />
         </div>
 
         <article className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 sm:p-8">
@@ -71,14 +72,14 @@ export function TermsPage() {
               to="/acesso"
               className="inline-flex items-center gap-2 text-sm font-medium text-doqyn-text transition-colors hover:text-doqyn-primary"
             >
-              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+              <Icon name="arrow_back" size={ICON_SIZE.sm} />
               Voltar
             </Link>
           </footer>
         </article>
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon name="shield" size={ICON_SIZE.xs} />
           Ambiente corporativo seguro
         </p>
       </div>

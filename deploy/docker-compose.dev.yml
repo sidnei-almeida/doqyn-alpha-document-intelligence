@@ -1,0 +1,58 @@
+# Infra local de desenvolvimento do DOQYN.
+# Sobe apenas os bancos; as APIs rodam com npm run dev em cada repositório.
+#
+#   docker compose -f deploy/docker-compose.dev.yml up -d
+#
+# Serviços e portas:
+#   postgres-auth  -> localhost:5433 (auth-service / Prisma)
+#   mongo          -> localhost:27017 (document-api)
+#
+# O auth-service tem seu próprio docker-compose completo em
+# ../doqyn-auth-service/docker-compose.yml (inclui migrate + API).
+
+services:
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doqyn_auth}
+      POSTGRES_USER: ${POSTGRES_USER:-doqyn_auth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-doqyn_auth_password}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-doqyn_auth} -d ${POSTGRES_DB:-doqyn_auth}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - doqyn_dev
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "${MONGO_HOST_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - doqyn_dev
+
+volumes:
+  postgres_auth_data:
+  mongo_data:
+
+networks:
+  doqyn_dev:
+    driver: bridge

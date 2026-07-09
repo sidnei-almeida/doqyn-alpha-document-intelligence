@@ -1,8 +1,10 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type {
+  ClientTrackingEventInput,
   DocumentTrackingDetail,
   DocumentTrackingFilters,
   DocumentTrackingListResponse,
+  TrackingSummary,
 } from '@/types/document-tracking';
 import { buildTrackingEventsQuery } from '../utils/trackingDisplay';
 
@@ -37,4 +39,20 @@ export async function listDocumentTrackingEvents(
 
 export async function getDocumentTrackingEvent(eventId: string): Promise<{ event: DocumentTrackingDetail }> {
   return request<{ event: DocumentTrackingDetail }>(`/tracking/document-events/${eventId}`);
+}
+
+export async function fetchTrackingSummary(filters: Pick<DocumentTrackingFilters, 'from' | 'to'> = {}): Promise<TrackingSummary> {
+  const params = new URLSearchParams();
+  if (filters.from?.trim()) params.set('from', filters.from.trim());
+  if (filters.to?.trim()) params.set('to', filters.to.trim());
+  const query = params.toString();
+  return request<TrackingSummary>(`/tracking/summary${query ? `?${query}` : ''}`);
+}
+
+export async function postClientTrackingEvent(input: ClientTrackingEventInput): Promise<{ id: string | null }> {
+  return request<{ id: string | null }>('/tracking/client-event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
 }

@@ -74,6 +74,35 @@ export function countSeedRowsMatchingPipelineFilter(
 } {
   const filter = buildPipelineOwnershipFilterForTenant(tenantId);
 
+  const matchesOwnershipClause = (
+    row: Record<string, unknown>,
+    clause: Record<string, unknown>,
+  ): boolean =>
+    Object.entries(clause).every(([optionKey, optionValue]) => {
+      if (optionKey === '$or' && Array.isArray(optionValue)) {
+        return optionValue.some((nested) =>
+          matchesOwnershipClause(row, nested as Record<string, unknown>),
+        );
+      }
+      if (
+        typeof optionValue === 'object' &&
+        optionValue !== null &&
+        '$exists' in (optionValue as Record<string, unknown>)
+      ) {
+        const exists = (optionValue as { $exists: boolean }).$exists;
+        return exists ? row[optionKey] !== undefined : row[optionKey] === undefined;
+      }
+      if (
+        typeof optionValue === 'object' &&
+        optionValue !== null &&
+        '$in' in (optionValue as Record<string, unknown>)
+      ) {
+        const values = (optionValue as { $in: unknown[] }).$in;
+        return values.includes(row[optionKey]);
+      }
+      return row[optionKey] === optionValue;
+    });
+
   const matches = (row: Record<string, unknown>) =>
     Object.entries(filter).every(([key, value]) => {
       if (key === '$and' && Array.isArray(value)) {
@@ -93,12 +122,7 @@ export function countSeedRowsMatchingPipelineFilter(
       }
 
       if (key === '$or' && Array.isArray(value)) {
-        return value.some((option) => {
-          if (typeof option !== 'object' || option === null) return false;
-          return Object.entries(option as Record<string, unknown>).every(
-            ([optionKey, optionValue]) => row[optionKey] === optionValue,
-          );
-        });
+        return value.some((option) => matchesOwnershipClause(row, option as Record<string, unknown>));
       }
 
       return row[key] === value;

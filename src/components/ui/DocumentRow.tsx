@@ -1,6 +1,7 @@
 import { cn, formatDate } from '@/lib/utils';
 import type { Document } from '@/types/document';
-import { FileText } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { StatusPill } from './StatusPill';
 import { VersionBadge } from './VersionBadge';
 
@@ -23,7 +24,7 @@ export function DocumentRow({ document, isSelected, onClick }: DocumentRowProps)
       )}
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-doqyn-card">
-        <FileText className="h-4 w-4 text-doqyn-muted" />
+        <Icon name="description" size={ICON_SIZE.sm} className="text-doqyn-muted" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-doqyn-text">{document.displayName}</p>

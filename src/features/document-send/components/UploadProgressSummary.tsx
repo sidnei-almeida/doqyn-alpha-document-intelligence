@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ExternalLink, RotateCcw } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Progress } from '@/components/ui/Progress';
 import { cn } from '@/lib/utils';
 import type { UploadProgressViewModel } from '../utils/uploadProgress';
@@ -9,6 +10,7 @@ import { formatFileSize } from '../utils/validateUpload';
 
 type UploadProgressSummaryProps = {
   state: UploadProgressViewModel;
+  variant?: 'standalone' | 'embedded';
   canViewTracking?: boolean;
   trackingHref?: string | null;
   canShowTechnicalDetails?: boolean;
@@ -22,6 +24,7 @@ type UploadProgressSummaryProps = {
 
 export function UploadProgressSummary({
   state,
+  variant = 'standalone',
   canViewTracking = false,
   trackingHref = null,
   canShowTechnicalDetails = false,
@@ -33,8 +36,9 @@ export function UploadProgressSummary({
   className,
 }: UploadProgressSummaryProps) {
   const [showTechnical, setShowTechnical] = useState(false);
+  const isIdle = state.status === 'idle';
   const isFailed = state.status === 'failed';
-  const showPercent = state.status !== 'idle';
+  const showPercent = !isIdle;
   const safeTechnicalDetails = technicalDetails
     ? Object.fromEntries(
         Object.entries(technicalDetails).filter(
@@ -47,16 +51,21 @@ export function UploadProgressSummary({
   return (
     <section
       className={cn(
-        'shrink-0 rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-4 shadow-card',
-        isFailed && 'border-doqyn-danger-border/50 bg-doqyn-danger-bg/20',
+        variant === 'embedded'
+          ? 'px-4 py-4'
+          : 'shrink-0 rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-4 shadow-card',
+        variant !== 'embedded' && isFailed && 'border-doqyn-danger-border/50 bg-doqyn-danger-bg/20',
+        variant === 'embedded' && isFailed && 'bg-doqyn-danger-bg/15',
         className,
       )}
       aria-label="Progresso do envio"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-doqyn-text">Progresso do envio</h2>
-          <p className="mt-0.5 text-sm text-doqyn-text">{state.label}</p>
+          <h2 className="eyebrow-text">Progresso do envio</h2>
+          <p className={cn('mt-1 text-sm', isIdle ? 'font-medium text-doqyn-text' : 'text-doqyn-text')}>
+            {state.label}
+          </p>
         </div>
         {showPercent && (
           <span className="text-sm font-medium tabular-nums text-doqyn-muted">
@@ -74,8 +83,8 @@ export function UploadProgressSummary({
       )}
 
       {state.fileName && (
-        <p className="mt-3 truncate text-sm font-medium text-doqyn-text" title={state.fileName}>
-          {state.fileName}
+        <p className="mt-3 text-sm font-medium text-doqyn-text">
+          <TruncatedText as="span">{state.fileName}</TruncatedText>
           {typeof state.fileSize === 'number' && state.fileSize > 0 ? (
             <span className="ml-2 text-xs font-normal text-doqyn-muted">
               {formatFileSize(state.fileSize)}
@@ -87,7 +96,7 @@ export function UploadProgressSummary({
       <p
         className={cn(
           'mt-2 text-sm',
-          isFailed ? 'text-doqyn-danger' : 'text-doqyn-muted',
+          isFailed ? 'text-doqyn-danger' : isIdle ? 'text-doqyn-muted' : 'text-doqyn-muted',
         )}
         role={isFailed ? 'alert' : 'status'}
       >
@@ -106,7 +115,7 @@ export function UploadProgressSummary({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {isFailed && onRetry && (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
-            <RotateCcw className="h-3.5 w-3.5" />
+            <Icon name="refresh" size={14} />
             Tentar novamente
           </Button>
         )}
@@ -128,7 +137,7 @@ export function UploadProgressSummary({
             to={trackingHref}
             className="inline-flex items-center gap-1 text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <Icon name="open_in_new" size={14} />
             Ver tracking completo
           </Link>
         )}

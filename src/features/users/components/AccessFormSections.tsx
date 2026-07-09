@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { cn } from '@/lib/utils';
 import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
@@ -53,7 +54,7 @@ export function GroupsEmptyState({
   return (
     <div className="rounded-lg border border-dashed border-doqyn-border bg-doqyn-bg/50 px-4 py-5 text-center">
       <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-doqyn-surface text-doqyn-muted">
-        <Users className="h-4 w-4" aria-hidden />
+        <Icon name="group" size={ICON_SIZE.xs} aria-hidden />
       </div>
       <p className="text-sm text-doqyn-text">{title}</p>
       <p className="mt-1 text-xs text-doqyn-muted">{description}</p>

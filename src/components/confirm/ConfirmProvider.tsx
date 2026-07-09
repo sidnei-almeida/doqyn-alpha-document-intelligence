@@ -5,9 +5,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { ConfirmContext } from './confirmContext';
 import type { ConfirmOptions } from './confirmTypes';
@@ -64,7 +65,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       {state.open && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay-scrim p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirm-dialog-title"
@@ -83,11 +84,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   variant === 'danger' ? 'bg-doqyn-danger-bg' : 'bg-doqyn-warning-bg',
                 )}
               >
-                <AlertTriangle
-                  className={cn(
-                    'h-5 w-5',
-                    variant === 'danger' ? 'text-doqyn-danger' : 'text-doqyn-warning',
-                  )}
+                <Icon
+                  name="warning"
+                  size={ICON_SIZE.md}
+                  className={variant === 'danger' ? 'text-doqyn-danger' : 'text-doqyn-warning'}
                 />
               </div>
               <div>

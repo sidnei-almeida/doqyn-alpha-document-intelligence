@@ -47,6 +47,9 @@ async function ensureRegistryIndexes() {
     { key: { slug: 1 }, unique: true },
     { key: { status: 1 } },
   ]);
+
+  const { ensureUserDocumentFavoritesIndexes } = await import('./userDocumentFavoritesIndexes.js');
+  await ensureUserDocumentFavoritesIndexes();
 }
 
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {

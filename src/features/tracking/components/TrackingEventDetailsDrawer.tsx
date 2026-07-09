@@ -1,10 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { formatDate } from '@/lib/utils';
-import type { DocumentTrackingDetail } from '@/types/document-tracking';
-import { formatTrackingAction, sanitizeTrackingMetadata } from '../utils/trackingDisplay';
+import type { DocumentTrackingDetail, TrackingListStatus } from '@/types/document-tracking';
+import {
+  formatSessionOrigin,
+  formatTrackingAction,
+  formatTrackingStatus,
+  sanitizeTrackingMetadata,
+} from '../utils/trackingDisplay';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -14,11 +21,20 @@ const SEVERITY_VARIANTS = {
   debug: 'default',
 } as const;
 
+const STATUS_VARIANTS: Record<TrackingListStatus, 'success' | 'warning' | 'danger' | 'default'> = {
+  success: 'success',
+  failed: 'danger',
+  denied: 'warning',
+  pending: 'default',
+};
+
 type TrackingEventDetailsDrawerProps = {
   open: boolean;
   event: DocumentTrackingDetail | null;
   loading?: boolean;
   onClose: () => void;
+  onFilterByUser?: (userId: string) => void;
+  onFilterByRequestId?: (requestId: string) => void;
 };
 
 export function TrackingEventDetailsDrawer({
@@ -26,8 +42,11 @@ export function TrackingEventDetailsDrawer({
   event,
   loading = false,
   onClose,
+  onFilterByUser,
+  onFilterByRequestId,
 }: TrackingEventDetailsDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) return;
@@ -41,11 +60,12 @@ export function TrackingEventDetailsDrawer({
   if (!open) return null;
 
   const safeMetadata = event ? sanitizeTrackingMetadata(event.metadata) : {};
+  const security = event?.security ? sanitizeTrackingMetadata(event.security) : {};
 
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex justify-end modal-overlay-scrim backdrop-blur-sm"
       onClick={(clickEvent) => {
         if (clickEvent.target === overlayRef.current) onClose();
       }}
@@ -58,10 +78,10 @@ export function TrackingEventDetailsDrawer({
         <div className="flex items-start justify-between border-b border-doqyn-border px-5 py-4">
           <div>
             <h2 className="text-base font-semibold text-doqyn-text">Detalhes do evento</h2>
-            <p className="mt-1 text-xs text-doqyn-muted">Tracking documental sanitizado</p>
+            <p className="mt-1 text-xs text-doqyn-muted">Rastreabilidade documental sanitizada</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Fechar">
-            <X className="h-4 w-4" />
+            <Icon name="close" size={ICON_SIZE.xs} />
           </Button>
         </div>
 
@@ -76,6 +96,11 @@ export function TrackingEventDetailsDrawer({
                 <Badge variant={SEVERITY_VARIANTS[event.severity] ?? 'default'}>
                   {event.severity}
                 </Badge>
+                {event.status && (
+                  <Badge variant={STATUS_VARIANTS[event.status] ?? 'default'}>
+                    {formatTrackingStatus(event.status)}
+                  </Badge>
+                )}
                 <span className="text-doqyn-muted">{formatDate(event.occurredAt)}</span>
               </div>
 
@@ -98,15 +123,41 @@ export function TrackingEventDetailsDrawer({
                 {event.actor.email && (
                   <p className="text-xs text-doqyn-muted">{event.actor.email}</p>
                 )}
+                {onFilterByUser && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-auto px-0 text-xs text-doqyn-accent"
+                    onClick={() => onFilterByUser(event.actor.userId)}
+                  >
+                    Filtrar por este usuário
+                  </Button>
+                )}
               </div>
 
               <div>
                 <p className="text-xs text-doqyn-muted">Documento</p>
                 <p className="break-words text-doqyn-text">{event.document.name}</p>
                 {event.document.documentId && (
-                  <p className="mt-1 font-mono text-[11px] text-doqyn-subtle">
-                    {event.document.documentId}
-                  </p>
+                  <>
+                    <p className="mt-1 font-mono text-[11px] text-doqyn-subtle">
+                      {event.document.documentId}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-auto px-0 text-xs text-doqyn-accent"
+                      onClick={() =>
+                        navigate(
+                          `/tracking?documentId=${encodeURIComponent(event.document.documentId!)}`,
+                        )
+                      }
+                    >
+                      Ver timeline do documento
+                    </Button>
+                  </>
                 )}
                 {event.document.versionLabel && (
                   <p className="mt-1 text-xs text-doqyn-muted">
@@ -117,7 +168,7 @@ export function TrackingEventDetailsDrawer({
 
               {event.versionId && (
                 <div>
-                  <p className="text-xs text-doqyn-muted">Versão</p>
+                  <p className="text-xs text-doqyn-muted">ID da versão</p>
                   <p className="font-mono text-xs text-doqyn-text">{event.versionId}</p>
                 </div>
               )}
@@ -148,10 +199,56 @@ export function TrackingEventDetailsDrawer({
                 </div>
               ) : null}
 
-              {(event.requestId || event.durationMs) && (
-                <div className="rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs">
-                  {event.requestId && <p>requestId: {event.requestId}</p>}
+              {(event.requestId || event.sessionHash || typeof event.durationMs === 'number') && (
+                <div className="rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs space-y-1">
+                  {event.requestId && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span>requestId: {event.requestId}</span>
+                      {onFilterByRequestId && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto px-1 text-xs"
+                          onClick={() => onFilterByRequestId(event.requestId!)}
+                        >
+                          Filtrar
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {event.sessionHash && (
+                    <p>sessão: {formatSessionOrigin(event.sessionHash)}</p>
+                  )}
                   {typeof event.durationMs === 'number' && <p>duração: {event.durationMs}ms</p>}
+                </div>
+              )}
+
+              {Object.keys(security).length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-doqyn-muted">
+                    Segurança
+                  </p>
+                  <div className="space-y-1 rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs text-doqyn-muted">
+                    {'ipHash' in security && security.ipHash != null && (
+                      <p>IP (hash): {String(security.ipHash)}</p>
+                    )}
+                    {'userAgentHash' in security && security.userAgentHash != null && (
+                      <p>User-Agent (hash): {String(security.userAgentHash)}</p>
+                    )}
+                    {'userAgentSummary' in security && security.userAgentSummary != null && (
+                      <p>Dispositivo: {String(security.userAgentSummary)}</p>
+                    )}
+                    {'permissionResult' in security && security.permissionResult != null && (
+                      <p>Permissão: {String(security.permissionResult)}</p>
+                    )}
+                    {'permissionReason' in security && security.permissionReason != null && (
+                      <p>Motivo: {String(security.permissionReason)}</p>
+                    )}
+                    {'requiredPermission' in security && security.requiredPermission != null && (
+                      <p>Requerida: {String(security.requiredPermission)}</p>
+                    )}
+                  </div>
                 </div>
               )}
 

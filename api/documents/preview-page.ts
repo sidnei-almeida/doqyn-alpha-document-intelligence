@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readDocumentPreviewPageImage } from '../../server/services/documentPreviewManifestService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
+import { setPreviewAssetCacheHeaders } from '../../server/utils/previewCacheHeaders.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -40,7 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
     res.setHeader('Content-Disposition', `inline; filename="${file.fileName.replace(/"/g, '')}"`);
-    res.setHeader('Cache-Control', 'private, no-store');
+    setPreviewAssetCacheHeaders(
+      res,
+      `"${documentId}:${versionId}:page:${pageNumber}"`,
+      { immutable: false },
+    );
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     return res.status(200).send(file.buffer);

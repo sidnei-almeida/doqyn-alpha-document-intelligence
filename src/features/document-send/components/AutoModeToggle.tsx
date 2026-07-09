@@ -1,4 +1,5 @@
-import { Minus, Plus } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 import {
   AUTO_DELAY_SECONDS_MAX,
@@ -28,14 +29,14 @@ export function AutoModeToggle({
   };
 
   return (
-    <div
-      className={cn(
-        'inline-flex max-w-full items-stretch overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40',
-        disabled && 'opacity-50',
-        className,
-      )}
-      title="Confirma análises confiáveis automaticamente e prepara o próximo envio."
-    >
+    <Tooltip label="Confirma análises confiáveis automaticamente e prepara o próximo envio.">
+      <div
+        className={cn(
+          'inline-flex max-w-full items-stretch overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40',
+          disabled && 'opacity-50',
+          className,
+        )}
+      >
       <div className="flex items-center gap-2.5 px-3 py-2">
         <span className="text-xs font-medium text-doqyn-text">Auto</span>
         <button
@@ -84,7 +85,7 @@ export function AutoModeToggle({
                 className="flex h-7 w-7 items-center justify-center text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Diminuir segundos"
               >
-                <Minus className="h-3 w-3" />
+                <Icon name="remove" size={12} />
               </button>
               <input
                 type="number"
@@ -108,13 +109,14 @@ export function AutoModeToggle({
                 className="flex h-7 w-7 items-center justify-center text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Aumentar segundos"
               >
-                <Plus className="h-3 w-3" />
+                <Icon name="add" size={12} />
               </button>
             </div>
             <span className="text-[10px] text-doqyn-muted">seg</span>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Tooltip>
   );
 }

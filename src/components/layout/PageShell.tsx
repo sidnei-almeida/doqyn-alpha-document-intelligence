@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { PageHeader } from './PageHeader';
+import { WorkspacePageHeader } from './WorkspacePageHeader';
 
 export type PageShellProps = {
   title: string;
@@ -23,11 +23,11 @@ export function PageShell({
 }: PageShellProps) {
   return (
     <div className={cn('page-shell flex min-h-0 flex-1 flex-col', className)}>
-      <div className="page-shell__header shrink-0">
-        <PageHeader
-          title={title}
-          description={description}
+      <div className="page-shell__header shrink-0 pb-5">
+        <WorkspacePageHeader
           eyebrow={eyebrow}
+          title={title}
+          subtitle={description}
           actions={actions}
         />
       </div>

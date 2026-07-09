@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -112,7 +113,7 @@ export function ExtractionConfigDrawer({
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 flex justify-end bg-black/50"
+      className="fixed inset-0 z-[var(--z-drawer)] flex justify-end modal-overlay-scrim"
       role="dialog"
       aria-modal="true"
       aria-labelledby="extraction-drawer-title"
@@ -131,7 +132,7 @@ export function ExtractionConfigDrawer({
             className="rounded p-1 text-doqyn-muted hover:text-doqyn-text"
             aria-label="Fechar"
           >
-            <X className="h-5 w-5" />
+            <Icon name="close" size={ICON_SIZE.md} />
           </button>
         </div>
 
@@ -202,7 +203,7 @@ export function ExtractionConfigDrawer({
                   size="sm"
                   onClick={() => setFields((prev) => [...prev, emptyField()])}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Icon name="add" size={14} />
                   Campo
                 </Button>
               </div>
@@ -233,7 +234,7 @@ export function ExtractionConfigDrawer({
                           className="rounded p-2 text-doqyn-muted hover:text-doqyn-danger"
                           aria-label="Remover campo"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Icon name="delete" size={ICON_SIZE.xs} />
                         </button>
                       )}
                     </div>

@@ -20,7 +20,7 @@ function withRouteSuspense(LazyComponent: ReturnType<typeof lazyNamed>) {
 
 const LazyAuditPage = lazyNamed(() => import('@/features/audit/AuditPage'), 'AuditPage');
 const LazyRulesPage = lazyNamed(() => import('@/features/rules/RulesPage'), 'RulesPage');
-const LazyDocumentsPage = lazyNamed(() => import('@/features/documents/DocumentsPage'), 'DocumentsPage');
+const LazyLibraryPage = lazyNamed(() => import('@/features/library/LibraryPage'), 'LibraryPage');
 const LazyDocumentSendPage = lazyNamed(
   () => import('@/features/document-send/DocumentSendPage'),
   'DocumentSendPage',
@@ -52,6 +52,11 @@ const LazyIndividualSignupPage = lazyNamed(
   'IndividualSignupPage',
 );
 const LazyTermsPage = lazyNamed(() => import('@/pages/TermsPage'), 'TermsPage');
+const LazyOAuthCallbackPage = lazyNamed(
+  () => import('@/pages/OAuthCallbackPage'),
+  'OAuthCallbackPage',
+);
+const LazyOnboardingPage = lazyNamed(() => import('@/pages/OnboardingPage'), 'OnboardingPage');
 
 const LazyTrackingRoute = lazyNamed(
   () => import('@/features/tracking/TrackingRoute'),
@@ -61,7 +66,7 @@ const LazyTrackingRoute = lazyNamed(
 export const TrackingRoute = withRouteSuspense(LazyTrackingRoute);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesPage);
-export const DocumentsRoute = withRouteSuspense(LazyDocumentsPage);
+export const LibraryRoute = withRouteSuspense(LazyLibraryPage);
 export const DocumentSendRoute = withRouteSuspense(LazyDocumentSendPage);
 export const UserManagementRouteLazy = withRouteSuspense(LazyUserManagementRoute);
 export const SettingsRoute = withRouteSuspense(LazySettingsPage);
@@ -72,3 +77,5 @@ export const AccessChoiceRoute = withRouteSuspense(LazyAccessChoicePage);
 export const CompanySignupRoute = withRouteSuspense(LazyCompanySignupPage);
 export const IndividualSignupRoute = withRouteSuspense(LazyIndividualSignupPage);
 export const TermsRoute = withRouteSuspense(LazyTermsPage);
+export const OAuthCallbackRoute = withRouteSuspense(LazyOAuthCallbackPage);
+export const OnboardingRoute = withRouteSuspense(LazyOnboardingPage);

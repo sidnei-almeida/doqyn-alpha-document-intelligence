@@ -1,6 +1,27 @@
 import { ServiceError } from '../utils/serviceErrors.js';
 import type { TenantStorageContext } from './tenantStorage.js';
 
+/**
+ * Coleções dedicadas (documents_{tenant}) já isolam por tenant.
+ * Inclui documentos canônicos (tenantId/companyId) e legados sem esses campos.
+ */
+function buildDedicatedBusinessOwnershipFilter(tenantId: string): Record<string, unknown> {
+  return {
+    $or: [
+      { tenantId },
+      { companyId: tenantId },
+      {
+        tenantId: { $exists: false },
+        companyId: { $exists: false },
+      },
+      {
+        tenantId: { $in: [null, undefined] },
+        companyId: { $in: [null, undefined] },
+      },
+    ],
+  };
+}
+
 export function buildDocumentOwnershipFilter(context: TenantStorageContext): Record<string, unknown> {
   if (context.storageMode === 'shared_individual_collection') {
     if (!context.userId) {
@@ -18,10 +39,7 @@ export function buildDocumentOwnershipFilter(context: TenantStorageContext): Rec
     };
   }
 
-  return {
-    tenantType: 'business',
-    $or: [{ tenantId: context.tenantId }, { companyId: context.tenantId }],
-  };
+  return buildDedicatedBusinessOwnershipFilter(context.tenantId);
 }
 
 /** Classes/regras: sempre tenant-scoped — business por tenantId; PF por ownership do usuário. */
@@ -103,6 +121,14 @@ export function assertCanAccessDocument(
       throw new ServiceError('Documento inacessível.', 'DOCUMENT_FORBIDDEN', 403);
     }
     if (document.ownerUserId !== context.userId) {
+      throw new ServiceError('Documento inacessível.', 'DOCUMENT_FORBIDDEN', 403);
+    }
+    return;
+  }
+
+  if (context.storageMode === 'dedicated_collections') {
+    const tenantId = document.tenantId ?? document.companyId;
+    if (tenantId && tenantId !== context.tenantId) {
       throw new ServiceError('Documento inacessível.', 'DOCUMENT_FORBIDDEN', 403);
     }
     return;

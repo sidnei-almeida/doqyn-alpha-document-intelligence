@@ -8,10 +8,11 @@ interface VersionBadgeProps {
 
 export function VersionBadge({ version, isCurrent, className }: VersionBadgeProps) {
   const label = typeof version === 'number' ? `v${version}` : version;
+  const display = isCurrent ? `${label} · atual` : label;
+
   return (
-    <Badge variant={isCurrent ? 'primary' : 'default'} className={className}>
-      {label}
-      {isCurrent && ' · atual'}
+    <Badge variant={isCurrent ? 'info' : 'neutral'} className={className}>
+      {display}
     </Badge>
   );
 }
