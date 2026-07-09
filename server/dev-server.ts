@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
+import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 
 type ApiHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
 
@@ -162,6 +163,62 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['documentId'],
     },
     {
+      regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,
+      loader: () =>
+        import('../api/documents/[documentId]/external-shares/[shareId]/regenerate-invite.js'),
+      paramKeys: ['documentId', 'shareId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)$/,
+      loader: () => import('../api/documents/[documentId]/external-shares/[shareId].js'),
+      paramKeys: ['documentId', 'shareId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/external-shares$/,
+      loader: () => import('../api/documents/[documentId]/external-shares.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/signature-requests$/,
+      loader: () => import('../api/documents/[documentId]/signature-requests.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/signed-pdf$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/signed-pdf.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/sign$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/sign.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/decline$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/decline.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/index.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/sign\/([^/]+)\/sign$/,
+      loader: () => import('../api/sign/[token]/sign.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/sign\/([^/]+)$/,
+      loader: () => import('../api/sign/[token]/index.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/verify\/signature\/([^/]+)$/,
+      loader: () => import('../api/verify/signature/[verificationCode].js'),
+      paramKeys: ['verificationCode'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/shares\/([^/]+)$/,
       loader: () => import('../api/documents/[documentId]/shares/[shareId].js'),
       paramKeys: ['documentId', 'shareId'],
@@ -175,6 +232,31 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/documents\/([^/]+)\/move$/,
       loader: () => import('../api/documents/[documentId]/move.js'),
       paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/external-shares\/([^/]+)\/accept$/,
+      loader: () => import('../api/external-shares/[token]/accept.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/external-shares\/([^/]+)\/preview(?:\/.*)?$/,
+      loader: () => import('../api/external-shares/[token]/preview.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/external-shares\/([^/]+)\/download$/,
+      loader: () => import('../api/external-shares/[token]/download.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/external-shares\/([^/]+)\/document$/,
+      loader: () => import('../api/external-shares/[token]/document.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/external-shares\/([^/]+)$/,
+      loader: () => import('../api/external-shares/[token].js'),
+      paramKeys: ['token'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/versions\/([^/]+)\/preview\/manifest$/,
@@ -284,46 +366,60 @@ function toVercelRes(res: ServerResponse) {
 
 const PORT = Number(process.env.API_PORT ?? 3001);
 
-createServer(async (req, res) => {
-  const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
-  const pathname = url.pathname;
-
-  const route = resolveRoute(pathname);
-  if (!route) {
-    res.statusCode = 404;
-    res.end(JSON.stringify({ message: 'Not found' }));
-    return;
+async function startDevServer(): Promise<void> {
+  try {
+    await initGeoIpCityReader();
+    console.log('GeoIP City (GeoLite2) pronto para tracking.');
+  } catch {
+    console.warn('GeoIP City indisponível — tracking usará fallback limitado.');
   }
 
-  try {
-    let body: unknown;
-    const query: Record<string, string> = { ...route.params };
-    url.searchParams.forEach((v, k) => {
-      query[k] = v;
-    });
+  createServer(async (req, res) => {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+    const pathname = url.pathname;
 
-    const contentType = req.headers['content-type'] ?? '';
-    const isMultipart = contentType.includes('multipart/form-data');
-
-    if (
-      !isMultipart &&
-      (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')
-    ) {
-      const raw = await readBody(req);
-      if (raw) {
-        body = contentType.includes('application/json') ? JSON.parse(raw) : raw;
-      }
+    const route = resolveRoute(pathname);
+    if (!route) {
+      res.statusCode = 404;
+      res.end(JSON.stringify({ message: 'Not found' }));
+      return;
     }
 
-    const mod = await route.loader();
-    const vercelReq = toVercelReq(req, query, body);
-    const vercelRes = toVercelRes(res);
-    await mod.default(vercelReq as unknown as VercelRequest, vercelRes as unknown as VercelResponse);
-  } catch (error) {
-    console.error(error);
-    res.statusCode = 500;
-    res.end(JSON.stringify({ message: 'Internal server error' }));
-  }
-}).listen(PORT, () => {
-  console.log(`DOQYN API local em http://localhost:${PORT}`);
+    try {
+      let body: unknown;
+      const query: Record<string, string> = { ...route.params };
+      url.searchParams.forEach((v, k) => {
+        query[k] = v;
+      });
+
+      const contentType = req.headers['content-type'] ?? '';
+      const isMultipart = contentType.includes('multipart/form-data');
+
+      if (
+        !isMultipart &&
+        (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')
+      ) {
+        const raw = await readBody(req);
+        if (raw) {
+          body = contentType.includes('application/json') ? JSON.parse(raw) : raw;
+        }
+      }
+
+      const mod = await route.loader();
+      const vercelReq = toVercelReq(req, query, body);
+      const vercelRes = toVercelRes(res);
+      await mod.default(vercelReq as unknown as VercelRequest, vercelRes as unknown as VercelResponse);
+    } catch (error) {
+      console.error(error);
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: 'Internal server error' }));
+    }
+  }).listen(PORT, () => {
+    console.log(`DOQYN API local em http://localhost:${PORT}`);
+  });
+}
+
+startDevServer().catch((error) => {
+  console.error('Falha ao iniciar API local:', error);
+  process.exit(1);
 });

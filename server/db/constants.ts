@@ -18,6 +18,9 @@ export const REGISTRY_COLLECTIONS = {
 export const SHARED_APP_COLLECTIONS = {
   userDocumentFavorites: 'user_document_favorites',
   documentShareGrants: 'document_share_grants',
+  externalDocumentShareGrants: 'external_document_share_grants',
+  documentSignatureRequests: 'document_signature_requests',
+  documentSignatures: 'document_signatures',
 } as const;
 
 export const COLLECTIONS = {

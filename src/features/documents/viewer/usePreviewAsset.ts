@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { fetchPreviewAssetBlob } from '../api/previewManifestApi';
+import { usePreviewAssetFetch } from './PreviewAssetFetchContext';
 
 type PreviewAssetState = 'idle' | 'loading' | 'ready' | 'error';
 
 export function usePreviewAsset(url: string | null, enabled = true) {
+  const fetchPreviewAssetBlob = usePreviewAssetFetch();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [state, setState] = useState<PreviewAssetState>('idle');
   const [error, setError] = useState<unknown>(null);

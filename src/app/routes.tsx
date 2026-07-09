@@ -19,9 +19,15 @@ import {
   TrackingRoute,
   UserManagementRouteLazy,
   VersioningRoute,
+  ExternalSharePortalRoute,
+  SignaturePortalRoute,
+  SignatureVerificationRoute,
 } from '@/app/lazyRoutes';
 
 export const router = createBrowserRouter([
+  { path: '/guest/share/:token', element: <ExternalSharePortalRoute /> },
+  { path: '/guest/sign/:token', element: <SignaturePortalRoute /> },
+  { path: '/verify/signature/:verificationCode', element: <SignatureVerificationRoute /> },
   { path: '/acesso', element: <AccessChoiceRoute /> },
   { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
   { path: '/criar-empresa', element: <CompanySignupRoute /> },

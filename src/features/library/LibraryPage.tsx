@@ -52,6 +52,7 @@ import { useTrashMutations } from './hooks/useTrashMutations';
 import { useMoveDocumentMutations } from './hooks/useMoveDocumentMutations';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
+import { RequestSignatureModal } from '@/features/signature/RequestSignatureModal';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 
 function notifyComingSoon(label: string) {
@@ -104,6 +105,7 @@ export function LibraryPage() {
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
+  const [signatureModalDocId, setSignatureModalDocId] = useState<string | null>(null);
   const [updateVersionDocumentId, setUpdateVersionDocumentId] = useState<string | null>(null);
   const emptyStateFileInputRef = useRef<HTMLInputElement>(null);
   const pendingUploadContextRef = useRef<UploadContext | undefined>(undefined);
@@ -404,6 +406,14 @@ export function LibraryPage() {
     [isTrashView, selectedCount],
   );
 
+  const handleRequestSignature = useCallback(
+    (doc: DocumentListItem) => {
+      if (isTrashView || selectedCount > 1) return;
+      setSignatureModalDocId(doc.documentId);
+    },
+    [isTrashView, selectedCount],
+  );
+
   const handleTracking = (doc: DocumentListItem) => {
     navigate(`/tracking?documentId=${encodeURIComponent(doc.documentId)}`);
   };
@@ -575,6 +585,7 @@ export function LibraryPage() {
       onRename={() => notifyComingSoon('Renomear')}
       onMove={isTrashView ? undefined : handleMoveSingle}
       onShare={isTrashView ? undefined : handleShareSingle}
+      onRequestSignature={isTrashView ? undefined : handleRequestSignature}
       onTrash={isTrashView ? undefined : handleTrashSingle}
     >
     <DndContext>
@@ -697,6 +708,7 @@ export function LibraryPage() {
         onUpdateDocument={handleUpdateDocument}
         onMoveFile={isTrashView ? undefined : handleMoveSingle}
         onShareFile={isTrashView ? undefined : handleShareSingle}
+        onRequestSignatureFile={isTrashView ? undefined : handleRequestSignature}
         onShowContextInfo={() => setInfoOpen(true)}
         onShowFolderInfo={openFolderDetails}
         isTrashView={isTrashView}
@@ -715,6 +727,12 @@ export function LibraryPage() {
         open={Boolean(shareModalDoc)}
         document={shareModalDoc}
         onClose={() => setShareModalDoc(null)}
+      />
+
+      <RequestSignatureModal
+        open={Boolean(signatureModalDocId)}
+        documentId={signatureModalDocId}
+        onClose={() => setSignatureModalDocId(null)}
       />
 
       <MoveDocumentModal

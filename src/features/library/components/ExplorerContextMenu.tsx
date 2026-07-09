@@ -29,6 +29,7 @@ type ExplorerContextMenuProps = {
   onUpdateDocument?: (doc: DocumentListItem) => void;
   onMoveFile?: (doc: DocumentListItem) => void;
   onShareFile?: (doc: DocumentListItem) => void;
+  onRequestSignatureFile?: (doc: DocumentListItem) => void;
   isTrashView?: boolean;
   onTrashFile?: (doc: DocumentListItem) => void;
   onRestoreFile?: (doc: DocumentListItem) => void;
@@ -97,6 +98,7 @@ export function ExplorerContextMenu({
   onUpdateDocument,
   onMoveFile,
   onShareFile,
+  onRequestSignatureFile,
   isTrashView = false,
   onTrashFile,
   onRestoreFile,
@@ -288,6 +290,13 @@ export function ExplorerContextMenu({
                         : undefined
                   }
                   onClick={() => run(() => onShareFile?.(doc))}
+                />
+                <MenuItem
+                  compact
+                  label="Solicitar assinatura"
+                  icon="draw"
+                  disabled={!canShare}
+                  onClick={() => run(() => onRequestSignatureFile?.(doc))}
                 />
                 <MenuItem
                   compact

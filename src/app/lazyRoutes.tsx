@@ -63,7 +63,25 @@ const LazyTrackingRoute = lazyNamed(
   'TrackingRoute',
 );
 
+const LazyExternalSharePortalPage = lazyNamed(
+  () => import('@/features/external-share/ExternalSharePortalPage'),
+  'ExternalSharePortalPage',
+);
+
+const LazySignaturePortalPage = lazyNamed(
+  () => import('@/features/signature/SignaturePortalPage'),
+  'SignaturePortalPage',
+);
+
+const LazySignatureVerificationPage = lazyNamed(
+  () => import('@/features/signature/SignatureVerificationPage'),
+  'SignatureVerificationPage',
+);
+
 export const TrackingRoute = withRouteSuspense(LazyTrackingRoute);
+export const ExternalSharePortalRoute = withRouteSuspense(LazyExternalSharePortalPage);
+export const SignaturePortalRoute = withRouteSuspense(LazySignaturePortalPage);
+export const SignatureVerificationRoute = withRouteSuspense(LazySignatureVerificationPage);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesPage);
 export const LibraryRoute = withRouteSuspense(LazyLibraryPage);

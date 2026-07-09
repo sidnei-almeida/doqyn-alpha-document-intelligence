@@ -244,6 +244,24 @@ export function hashAuditClientContext(value: string): string {
 
 const TRACKING_ACTION_PREFIX = /^(document\.|access\.|file_explorer\.)/;
 
+function resolveTrackingSecurity(metadata: Record<string, unknown>): Record<string, unknown> | undefined {
+  const securityContext =
+    metadata.securityContext && typeof metadata.securityContext === 'object'
+      ? (metadata.securityContext as Record<string, unknown>)
+      : undefined;
+  const legacySecurity =
+    metadata.security && typeof metadata.security === 'object'
+      ? (metadata.security as Record<string, unknown>)
+      : undefined;
+  return securityContext ?? legacySecurity;
+}
+
+function stripRestrictedTrackingMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...metadata };
+  delete result.securityAuditRestricted;
+  return result;
+}
+
 function mapActor(actor: Record<string, unknown>) {
   return {
     userId: String(actor.userId ?? ''),
@@ -274,10 +292,7 @@ function mapTrackingRow(
   });
   const versionLabel =
     typeof metadata.versionLabel === 'string' ? metadata.versionLabel : undefined;
-  const security =
-    metadata.security && typeof metadata.security === 'object'
-      ? (metadata.security as Record<string, unknown>)
-      : undefined;
+  const security = resolveTrackingSecurity(metadata);
 
   return {
     id: String(row._id),
@@ -576,18 +591,21 @@ export async function getDocumentTrackingEvent(input: {
     ? (metadata.changes as DocumentTrackingDetail['changes'])
     : undefined;
 
-  const security =
-    metadata.security && typeof metadata.security === 'object'
-      ? sanitizeAuditMetadata(metadata.security as Record<string, unknown>)
-      : undefined;
+  const security = resolveTrackingSecurity(metadata);
+  const publicMetadata = stripRestrictedTrackingMetadata(metadata);
+  const metadataForDisplay = { ...publicMetadata };
+  delete metadataForDisplay.securityContext;
+  delete metadataForDisplay.security;
+  delete metadataForDisplay.securityAuditRestricted;
 
   return {
     ...base,
     tenantId: input.ctx.tenantId,
     description: (row as MongoAuditLog).description,
     changes,
-    metadata: sanitizeAuditMetadata(metadata),
-    security,
+    metadata: sanitizeAuditMetadata(metadataForDisplay),
+    security: security ? sanitizeAuditMetadata(security) : undefined,
+    securityContext: security ? sanitizeAuditMetadata(security) : undefined,
     requestId:
       typeof metadata.requestId === 'string'
         ? metadata.requestId

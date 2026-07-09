@@ -3,7 +3,12 @@ import { createDocumentAuditLog } from '../../audit/documentAuditLogService.js';
 import type { DocumentAuditContext, DocumentAuditEventInput } from '../../audit/documentAuditTypes.js';
 import { sanitizeAuditMetadata } from '../../utils/sanitizeAuditMetadata.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
-import { buildSecuritySnapshot } from './trackingSecurity.js';
+import {
+  buildSecurityAuditRestricted,
+  buildSecurityContext,
+  resolveClientIp,
+  securityContextToLegacySnapshot,
+} from './securityContext.js';
 import {
   CLIENT_TRACKING_ACTIONS,
   resolveTrackingActionGroup,
@@ -26,22 +31,73 @@ function isAccessDeniedCode(code?: string): boolean {
   );
 }
 
+function resolveIsExternalGuest(
+  event: EmitTrackingEventInput,
+  metadata: Record<string, unknown> | undefined,
+): boolean {
+  if (event.security?.isExternalGuest === true) return true;
+  const source = typeof metadata?.source === 'string' ? metadata.source : '';
+  return source === 'external_share' || source === 'guest_portal';
+}
+
+function buildEventSecurityContext(
+  ctx: DocumentAuditContext,
+  event: EmitTrackingEventInput,
+  req?: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
+) {
+  const clientIp = req ? resolveClientIp(req) : undefined;
+  const isExternalGuest = resolveIsExternalGuest(event, event.metadata);
+  const securityOverrides = (event.security ?? {}) as Record<string, unknown>;
+
+  const securityContext = buildSecurityContext(req, {
+    requestId: ctx.requestId,
+    authMethod:
+      typeof securityOverrides.authMethod === 'string' ? securityOverrides.authMethod : undefined,
+    isExternalGuest,
+    permissionResult:
+      securityOverrides.permissionResult === 'allowed' ||
+      securityOverrides.permissionResult === 'denied'
+        ? securityOverrides.permissionResult
+        : undefined,
+    permissionReason:
+      typeof securityOverrides.permissionReason === 'string'
+        ? securityOverrides.permissionReason
+        : undefined,
+    requiredPermission:
+      typeof securityOverrides.requiredPermission === 'string'
+        ? securityOverrides.requiredPermission
+        : undefined,
+    _clientIp: clientIp,
+  });
+
+  const securityAuditRestricted = buildSecurityAuditRestricted(clientIp);
+  const legacySecurity = securityContextToLegacySnapshot(securityContext);
+
+  return { securityContext, securityAuditRestricted, legacySecurity };
+}
+
 /** Emite evento de tracking sem derrubar o fluxo principal. */
 export async function emitTrackingEvent(
   ctx: DocumentAuditContext,
   event: EmitTrackingEventInput,
-  req?: Pick<VercelRequest, 'headers' | 'socket'>,
+  req?: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
 ): Promise<{ id: string } | null> {
   try {
     const status =
       event.status ?? resolveTrackingEventStatus(event.action, event.result);
     const actionGroup = event.actionGroup ?? resolveTrackingActionGroup(event.action);
-    const security = buildSecuritySnapshot(req, event.security);
+    const { securityContext, securityAuditRestricted, legacySecurity } = buildEventSecurityContext(
+      ctx,
+      event,
+      req,
+    );
 
     const metadata = sanitizeAuditMetadata({
       status,
       actionGroup,
-      security,
+      securityContext,
+      security: legacySecurity,
+      ...(securityAuditRestricted ? { securityAuditRestricted } : {}),
       ...(event.metadata ?? {}),
     });
 
@@ -59,7 +115,7 @@ export async function emitTrackingEvent(
 
 export async function emitAccessDeniedEvent(
   ctx: DocumentAuditContext,
-  req: Pick<VercelRequest, 'headers' | 'socket'> | undefined,
+  req: (Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] }) | undefined,
   input: {
     action?: string;
     documentId?: string;
@@ -90,10 +146,13 @@ export async function emitAccessDeniedEvent(
         requiredPermission: input.requiredPermission,
         source: 'api',
       }),
-      security: buildSecuritySnapshot(req, {
+      security: buildSecurityContext(req, {
         permissionResult: 'denied',
         permissionReason: input.reason,
         requiredPermission: input.requiredPermission,
+        requestId: ctx.requestId,
+        isExternalGuest: false,
+        authMethod: 'session',
       }),
     },
     req,
@@ -102,7 +161,7 @@ export async function emitAccessDeniedEvent(
 
 export async function emitClientTrackingEvent(
   ctx: DocumentAuditContext,
-  req: Pick<VercelRequest, 'headers' | 'socket'>,
+  req: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
   input: {
     action: string;
     documentId?: string;

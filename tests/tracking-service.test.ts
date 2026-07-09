@@ -61,6 +61,7 @@ describe('tracking service', () => {
     );
     assert.ok(summary);
     assert.ok(!summary.includes('Mozilla/5.0'));
+    assert.ok(summary.includes('Chrome'));
   });
 
   it('CLIENT_TRACKING_ACTIONS contém eventos do viewer', () => {

@@ -17,6 +17,14 @@ export type DocumentAuditAction =
   | 'document.moved'
   | 'document.share_created'
   | 'document.share_revoked'
+  | 'document.external_share_created'
+  | 'document.external_share_invite_opened'
+  | 'document.external_share_accepted'
+  | 'document.external_share_viewed'
+  | 'document.external_share_downloaded'
+  | 'document.external_share_revoked'
+  | 'document.external_share_expired'
+  | 'document.external_share_denied'
   | 'document.shared_viewed'
   | 'document.shared_downloaded'
   | 'document.share_denied'
@@ -45,6 +53,16 @@ export type DocumentAuditAction =
   | 'document.trash_restored'
   | 'document.permanent_deleted'
   | 'document.trash_purge_failed'
+  | 'document.signature_request_created'
+  | 'document.signature_link_opened'
+  | 'document.signature_viewed'
+  | 'document.signature_consent_checked'
+  | 'document.signature_completed'
+  | 'document.signature_declined'
+  | 'document.signature_expired'
+  | 'document.signed_pdf_generated'
+  | 'document.signature_verification_opened'
+  | 'document.signature_downloaded'
   | 'document.access_granted'
   | 'document.access_revoked'
   | 'document.shared'
@@ -167,6 +185,7 @@ export type DocumentTrackingDetail = DocumentTrackingListItem & {
   requestId?: string;
   durationMs?: number;
   security?: Record<string, unknown>;
+  securityContext?: Record<string, unknown>;
 };
 
 export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -208,6 +227,16 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.trash_restored': 'Documento restaurado da lixeira',
   'document.permanent_deleted': 'Documento excluído permanentemente',
   'document.trash_purge_failed': 'Falha na purga de storage',
+  'document.signature_request_created': 'Solicitação de assinatura criada',
+  'document.signature_link_opened': 'Link de assinatura aberto',
+  'document.signature_viewed': 'Documento para assinatura visualizado',
+  'document.signature_consent_checked': 'Aceite de assinatura registrado',
+  'document.signature_completed': 'Assinatura eletrônica concluída',
+  'document.signature_declined': 'Assinatura recusada',
+  'document.signature_expired': 'Solicitação de assinatura expirada',
+  'document.signed_pdf_generated': 'PDF assinado gerado',
+  'document.signature_verification_opened': 'Validação de assinatura aberta',
+  'document.signature_downloaded': 'PDF assinado baixado',
   'document.created': 'Documento criado',
   'document.metadata.confirmed': 'Metadados confirmados',
   'document.metadata.reviewed_confirmed': 'Revisão confirmada com ajustes',

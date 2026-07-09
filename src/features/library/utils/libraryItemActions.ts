@@ -52,6 +52,7 @@ export type FileItemActionHandlers = {
   onRename?: (doc: DocumentListItem) => void;
   onMove?: (doc: DocumentListItem) => void;
   onShare?: (doc: DocumentListItem) => void;
+  onRequestSignature?: (doc: DocumentListItem) => void;
   onTrash?: (doc: DocumentListItem) => void;
 };
 
@@ -74,6 +75,11 @@ export function buildFileItemActions(
     { label: 'Renomear', onClick: () => handlers.onRename?.(doc), hidden: !handlers.onRename },
     { label: 'Mover para pasta', onClick: () => handlers.onMove?.(doc), hidden: !handlers.onMove },
     { label: 'Compartilhar', onClick: () => handlers.onShare?.(doc), hidden: !handlers.onShare },
+    {
+      label: 'Solicitar assinatura',
+      onClick: () => handlers.onRequestSignature?.(doc),
+      hidden: !handlers.onRequestSignature,
+    },
     { label: 'Baixar', onClick: () => handlers.onDownload(doc), hidden: !canDownload },
     {
       label: 'Histórico de versões',
