@@ -46,6 +46,8 @@ export type DemoSeedManifestGlobalAdmin = {
   membershipId: string;
   roles: string[];
   status: 'active';
+  jobTitle?: string;
+  departmentText?: string;
 };
 
 export type DemoSeedManifest = {
@@ -55,6 +57,7 @@ export type DemoSeedManifest = {
   authServiceRoot: string;
   companies: DemoSeedManifestCompany[];
   globalAdmin: DemoSeedManifestGlobalAdmin;
+  companyDevActiveUsers: DemoSeedManifestGlobalAdmin[];
 };
 
 export function readDemoSeedManifest(manifestPath: string): DemoSeedManifest {
@@ -68,5 +71,8 @@ export function readDemoSeedManifest(manifestPath: string): DemoSeedManifest {
     throw new Error(`Manifest demo inválido: source=${String(parsed.source)}.`);
   }
 
-  return parsed;
+  return {
+    ...parsed,
+    companyDevActiveUsers: parsed.companyDevActiveUsers ?? [],
+  };
 }

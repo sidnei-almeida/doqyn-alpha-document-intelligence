@@ -60,7 +60,7 @@ export function ExplorerRootHome({
   const uncategorizedOrderedIds = uncategorizedDocuments.map((doc) => doc.documentId);
 
   return (
-    <div className="explorer-root-home flex flex-col gap-7 pb-4" data-testid="explorer-root-home">
+    <div className="explorer-root-home flex min-h-full flex-1 flex-col gap-7 pb-4" data-testid="explorer-root-home">
       <ExplorerFolderGrid
         folders={folders}
         viewMode={viewMode}

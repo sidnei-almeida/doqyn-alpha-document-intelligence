@@ -52,7 +52,7 @@ export function LibraryContentDropZone({
   return (
     <div
       ref={setRef}
-      className={cn('relative min-h-0 flex-1', className)}
+      className={cn('relative flex min-h-0 min-h-full flex-1 flex-col', className)}
       data-testid="library-content-dropzone"
       onDragEnter={(event) => {
         if (!dragEventHasFiles(event)) return;

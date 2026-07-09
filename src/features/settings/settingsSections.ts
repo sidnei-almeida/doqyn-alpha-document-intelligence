@@ -5,6 +5,7 @@ export type SettingsSectionId =
   | 'seguranca'
   | 'autenticacao'
   | 'organizacao'
+  | 'lixeira'
   | 'sistema';
 
 export type SettingsNavItem = {
@@ -50,6 +51,12 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     label: 'Organização',
     description: 'Categorias e governança',
     icon: 'business',
+  },
+  {
+    id: 'lixeira',
+    label: 'Lixeira e retenção',
+    description: 'Exclusão e purga automática',
+    icon: 'delete',
   },
   {
     id: 'sistema',

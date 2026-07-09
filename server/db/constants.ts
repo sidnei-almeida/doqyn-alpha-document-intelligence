@@ -17,6 +17,7 @@ export const REGISTRY_COLLECTIONS = {
 /** Coleções globais do app documental (não prefixadas por tenant). */
 export const SHARED_APP_COLLECTIONS = {
   userDocumentFavorites: 'user_document_favorites',
+  documentShareGrants: 'document_share_grants',
 } as const;
 
 export const COLLECTIONS = {
@@ -32,6 +33,7 @@ export const COLLECTIONS = {
   documentExtractionRules: 'document_extraction_rules',
   documents: 'documents',
   documentVersions: 'document_versions',
+  documentChunks: 'document_chunks',
   processingJobs: 'processing_jobs',
   auditLogs: 'audit_logs',
 } as const;

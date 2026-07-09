@@ -5,10 +5,12 @@ import { cn } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem } from '@/types/document-library';
 import { useExplorerFileActions } from '../../context/useExplorerFileActions';
+import { useSelectableItemRef } from '../../hooks/useSelectableItemRef';
 import { ExplorerFileQuickActions } from '../ExplorerFileQuickActions';
 import { ExplorerSelectionIndicator } from '../ExplorerSelectionIndicator';
 import { handleExplorerItemKeyDown } from '../../utils/explorerItemKeyboard';
 import { DocumentFileThumbnail } from './DocumentFileThumbnail';
+import { DocumentFavoriteBadge } from './DocumentFavoriteBadge';
 import {
   documentDisplayName,
   documentOwnerName,
@@ -42,14 +44,17 @@ export function DocumentFileCard({
   } = useExplorerFileActions();
 
   const isSelected = isFileSelected(doc.documentId);
+  const selectableRef = useSelectableItemRef(doc.documentId, 'file');
   const name = documentDisplayName(doc);
   const secondary = documentSecondaryMeta(doc, meta);
 
   return (
     <div
+      ref={selectableRef}
       role="option"
       tabIndex={0}
       data-explorer-item="file"
+      data-explorer-item-id={doc.documentId}
       data-testid="document-file-card"
       onClick={(event: MouseEvent) =>
         interactFile(doc, {
@@ -103,6 +108,7 @@ export function DocumentFileCard({
         )}
       >
         <DocumentFileThumbnail document={doc} size="card" className="absolute inset-0" />
+        <DocumentFavoriteBadge document={doc} variant="overlay" />
       </div>
 
       <TruncatedText className="px-0.5 text-[12px] font-medium leading-snug text-doqyn-text">

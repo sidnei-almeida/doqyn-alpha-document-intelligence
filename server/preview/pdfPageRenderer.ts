@@ -24,7 +24,7 @@ export type RenderPdfPageResult = {
 export async function renderPdfPageToPng(input: RenderPdfPageInput): Promise<RenderPdfPageResult> {
   const config = getPdfPreviewConfig();
   const gsPath = input.ghostscriptPath?.trim() || config.ghostscriptPath || 'gs';
-  const dpi = input.dpi ?? 144;
+  const dpi = input.dpi ?? config.pageDpi;
   const timeoutMs = input.timeoutMs ?? config.timeoutMs;
   const pageNumber = Math.max(1, Math.floor(input.pageNumber));
 
@@ -38,6 +38,8 @@ export async function renderPdfPageToPng(input: RenderPdfPageInput): Promise<Ren
     const args = [
       '-sDEVICE=png16m',
       `-r${dpi}`,
+      '-dTextAlphaBits=4',
+      '-dGraphicsAlphaBits=4',
       '-dNOPAUSE',
       '-dQUIET',
       '-dBATCH',

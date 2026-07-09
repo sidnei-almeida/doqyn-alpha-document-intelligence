@@ -71,6 +71,25 @@ export function useExplorerSelection(defaultOrderedIds: string[] = []) {
     [defaultOrderedIds],
   );
 
+  const applyMarqueeSelection = useCallback(
+    (fileIds: string[], folderIds: string[], additive: boolean) => {
+      dispatch({ type: 'marquee_select', payload: { fileIds, folderIds, additive } });
+    },
+    [],
+  );
+
+  const restoreSelection = useCallback((fileIds: string[], folderIds: string[]) => {
+    dispatch({ type: 'restore_selection', payload: { fileIds, folderIds } });
+  }, []);
+
+  const captureSelectionSnapshot = useCallback(
+    () => ({
+      fileIds: [...state.selectedFileIds],
+      folderIds: [...state.selectedFolderIds],
+    }),
+    [state.selectedFileIds, state.selectedFolderIds],
+  );
+
   const selectedDocuments = useMemo(
     () => ({ ids: state.selectedFileIds, count: state.selectedFileIds.size }),
     [state.selectedFileIds],
@@ -94,5 +113,8 @@ export function useExplorerSelection(defaultOrderedIds: string[] = []) {
     selectFile,
     interactFile,
     interactFolder,
+    applyMarqueeSelection,
+    restoreSelection,
+    captureSelectionSnapshot,
   };
 }

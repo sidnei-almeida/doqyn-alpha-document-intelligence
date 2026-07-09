@@ -46,7 +46,7 @@ describe('painel de detalhes da Biblioteca', () => {
 
   it('drawer opcional só aparece sob demanda, não como coluna fixa', () => {
     const source = drawer();
-    assert.ok(source.includes('--library-details-width'));
+    assert.ok(source.includes('max-w-xl'));
     assert.ok(source.includes('library-details-drawer'));
     assert.ok(source.includes('Fechar painel de detalhes'));
     assert.equal(source.includes('lg:flex'), false);

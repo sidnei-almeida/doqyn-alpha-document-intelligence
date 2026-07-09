@@ -6,6 +6,7 @@ import type {
   MongoDocument,
   MongoDocumentAccessRule,
   MongoDocumentCategory,
+  MongoDocumentChunk,
   MongoDocumentClass,
   MongoDocumentExtractionRule,
   MongoDocumentGroup,
@@ -27,6 +28,7 @@ export type TenantCollections = {
   storage: TenantStorageContext;
   documents: Collection<MongoDocument>;
   documentVersions: Collection<MongoDocumentVersion>;
+  documentChunks: Collection<MongoDocumentChunk>;
   processingJobs: Collection<MongoProcessingJob>;
   auditLogs: Collection<MongoAuditLog>;
   accessGroups?: Collection<MongoAccessGroup>;
@@ -49,6 +51,7 @@ export type TenantDbCollections = {
   documentExtractionRules: Collection<MongoDocumentExtractionRule> | undefined;
   documents: Collection<MongoDocument>;
   documentVersions: Collection<MongoDocumentVersion>;
+  documentChunks: Collection<MongoDocumentChunk>;
   processingJobs: Collection<MongoProcessingJob>;
   auditLogs: Collection<MongoAuditLog>;
 };
@@ -63,6 +66,7 @@ export function getTenantDbCollections(
   return {
     documents: db.collection<MongoDocument>(resolvedNames.documents),
     documentVersions: db.collection<MongoDocumentVersion>(resolvedNames.documentVersions),
+    documentChunks: db.collection<MongoDocumentChunk>(resolvedNames.documentChunks),
     processingJobs: db.collection<MongoProcessingJob>(resolvedNames.processingJobs),
     auditLogs: db.collection<MongoAuditLog>(resolvedNames.auditLogs),
     accessGroups: resolvedNames.accessGroups

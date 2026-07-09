@@ -158,6 +158,8 @@ describe('document viewing UI', () => {
     assert.match(modalSource, /DocumentViewerDetailsPanel/);
     assert.match(modalSource, /onClose/);
     assert.match(modalSource, /initialShowDetails/);
+    assert.match(modalSource, /initialVersionId/);
+    assert.doesNotMatch(modalSource, /setSelectedVersionId\(null\)/);
   });
 
   it('DocumentPreviewViewer delega para registry de manifest', () => {

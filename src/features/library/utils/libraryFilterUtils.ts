@@ -126,9 +126,9 @@ export function buildLibraryDocumentFilters({
     filters.owner = 'others';
   }
 
-  // Raiz sem filtro de status: ocultar arquivados (lixeira trata no client).
+  // Raiz sem filtro de status: ocultar arquivados.
   if (collectionId === 'lixeira') {
-    filters.status = 'archived';
+    // Lixeira usa endpoint dedicado — não aplicar filtros de listDocuments.
   } else if (collectionId === 'root' && !state.status && !state.q) {
     filters.excludeArchived = 'true';
   }

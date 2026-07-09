@@ -5,6 +5,15 @@ export type DocumentListItemPermissions = {
   canDownload: boolean;
   canViewTracking: boolean;
   canEditMetadata: boolean;
+  canUpdate?: boolean;
+  canShare?: boolean;
+  sharedViaGrant?: boolean;
+};
+
+export type DocumentSharePermissions = {
+  canView: boolean;
+  canDownload: boolean;
+  canShare: boolean;
 };
 
 export type DocumentListItem = {
@@ -18,9 +27,11 @@ export type DocumentListItem = {
   latestVersionId?: string;
   currentVersionId?: string;
   versionLabel?: string;
+  currentVersionLabel?: string;
   displayName: string;
   documentType: string;
   version: number;
+  versionCount?: number;
   ownerUserId: string;
   ownerName?: string;
   area?: string;
@@ -43,6 +54,14 @@ export type DocumentListItem = {
   };
   permissions?: DocumentListItemPermissions;
   isFavorite?: boolean;
+  sharedWithMe?: boolean;
+  sharedByUserId?: string;
+  sharedByNameSnapshot?: string;
+  sharedAt?: string;
+  sharePermissions?: DocumentSharePermissions;
+  deletedAt?: string;
+  trashExpiresAt?: string | null;
+  lifecycleStatus?: string;
 };
 
 export type DocumentVersionSummary = {
@@ -54,6 +73,7 @@ export type DocumentVersionSummary = {
   previewStorageFileName?: string;
   previewStatus?: DocumentPreviewStatus;
   createdAt?: string;
+  isCurrent?: boolean;
   preview?: {
     status: DocumentPreviewStatus;
   };

@@ -4,19 +4,43 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import {
-  selectRangeIds,
-  toggleIdInSet,
-} from '../src/features/library/utils/librarySelectionUtils.ts';
+  explorerSelectionReducer,
+  initialExplorerSelectionState,
+} from '../src/features/library/utils/explorerSelectionReducer.ts';
+import type { DocumentListItem } from '../src/types/document-library.ts';
+import type { LibraryFolder } from '../src/features/library/types/library.ts';
 import {
   buildLibraryBreadcrumbSegments,
   truncateBreadcrumbLabel,
 } from '../src/features/library/utils/libraryItemActions.ts';
+import {
+  selectRangeIds,
+  toggleIdInSet,
+} from '../src/features/library/utils/librarySelectionUtils.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcRoot = join(__dirname, '..', 'src');
 
 function readSrc(relativePath: string): string {
   return readFileSync(join(srcRoot, relativePath), 'utf8');
+}
+
+function mockDoc(id: string): DocumentListItem {
+  return {
+    documentId: id,
+    id,
+    tenantId: 't1',
+    currentFileName: `${id}.pdf`,
+    status: 'ready',
+    displayName: id,
+    documentType: 'pdf',
+    version: 1,
+    ownerUserId: 'u1',
+  };
+}
+
+function mockFolder(id: string): LibraryFolder {
+  return { id, name: id, documentCount: 0 };
 }
 
 describe('seleção múltipla da Biblioteca', () => {
@@ -40,7 +64,89 @@ describe('seleção múltipla da Biblioteca', () => {
     assert.ok(reducer.includes('metaKey'));
     assert.ok(reducer.includes('ctrlKey'));
     assert.ok(reducer.includes('selectRangeIds'));
+    assert.ok(reducer.includes('deselectIdFromSet'));
     assert.ok(hook.includes('interactFile'));
+  });
+
+  it('clique simples em arquivo já selecionado desseleciona', () => {
+    const doc = mockDoc('a');
+    const orderedIds = ['a', 'b', 'c'];
+    const selected = explorerSelectionReducer(initialExplorerSelectionState, {
+      type: 'select_file',
+      payload: { document: doc, orderedIds },
+    });
+    assert.ok(selected.selectedFileIds.has('a'));
+
+    const deselected = explorerSelectionReducer(selected, {
+      type: 'select_file',
+      payload: { document: doc, orderedIds },
+    });
+    assert.equal(deselected.selectedFileIds.size, 0);
+    assert.equal(deselected.focus, null);
+  });
+
+  it('clique simples em um de vários selecionados remove só esse item', () => {
+    const orderedIds = ['a', 'b', 'c'];
+    const multi = explorerSelectionReducer(initialExplorerSelectionState, {
+      type: 'marquee_select',
+      payload: { fileIds: ['a', 'b', 'c'], folderIds: [], additive: false },
+    });
+
+    const next = explorerSelectionReducer(multi, {
+      type: 'select_file',
+      payload: { document: mockDoc('b'), orderedIds },
+    });
+    assert.deepEqual([...next.selectedFileIds].sort(), ['a', 'c']);
+  });
+
+  it('Ctrl/Cmd+clique continua alternando seleção', () => {
+    const orderedIds = ['a', 'b'];
+    const docA = mockDoc('a');
+    const selected = explorerSelectionReducer(initialExplorerSelectionState, {
+      type: 'select_file',
+      payload: { document: docA, orderedIds },
+    });
+
+    const toggledOff = explorerSelectionReducer(selected, {
+      type: 'select_file',
+      payload: { document: docA, orderedIds, modifiers: { metaKey: true } },
+    });
+    assert.equal(toggledOff.selectedFileIds.size, 0);
+
+    const toggledOn = explorerSelectionReducer(toggledOff, {
+      type: 'select_file',
+      payload: { document: mockDoc('b'), orderedIds, modifiers: { ctrlKey: true } },
+    });
+    assert.deepEqual([...toggledOn.selectedFileIds], ['b']);
+  });
+
+  it('Shift+clique mantém seleção por intervalo', () => {
+    const orderedIds = ['a', 'b', 'c', 'd'];
+    const anchored = explorerSelectionReducer(initialExplorerSelectionState, {
+      type: 'select_file',
+      payload: { document: mockDoc('a'), orderedIds },
+    });
+
+    const ranged = explorerSelectionReducer(anchored, {
+      type: 'select_file',
+      payload: { document: mockDoc('c'), orderedIds, modifiers: { shiftKey: true } },
+    });
+    assert.deepEqual([...ranged.selectedFileIds], ['a', 'b', 'c']);
+  });
+
+  it('clique simples em pasta já selecionada desseleciona', () => {
+    const folder = mockFolder('f1');
+    const orderedIds = ['f1', 'f2'];
+    const selected = explorerSelectionReducer(initialExplorerSelectionState, {
+      type: 'select_folder',
+      payload: { folder, orderedIds },
+    });
+
+    const deselected = explorerSelectionReducer(selected, {
+      type: 'select_folder',
+      payload: { folder, orderedIds },
+    });
+    assert.equal(deselected.selectedFolderIds.size, 0);
   });
 
   it('context menu em item não selecionado seleciona antes de abrir', () => {

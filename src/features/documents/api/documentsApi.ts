@@ -4,6 +4,7 @@ import type {
   DocumentListFilters,
   DocumentListItem,
   DocumentListResponse,
+  DocumentVersionSummary,
 } from '@/types/document-library';
 import { authFetch } from '@/auth/apiAuth';
 import { parseDocumentApiError } from './documentsApi.errors';
@@ -48,6 +49,21 @@ export async function downloadDocument(
 ): Promise<{ blob: Blob; fileName: string }> {
   const { fetchDocumentDownloadBlob } = await import('./documentsApi.blobs');
   return fetchDocumentDownloadBlob({ documentId, versionId });
+}
+
+export async function listDocumentVersions(documentId: string): Promise<{
+  documentId: string;
+  currentVersionId: string;
+  currentVersionLabel: string;
+  versionCount: number;
+  versions: DocumentVersionSummary[];
+}> {
+  const encodedId = encodeURIComponent(documentId);
+  const response = await authFetch(`/api/documents/${encodedId}/versions`);
+  if (!response.ok) {
+    throw await parseDocumentApiError(response);
+  }
+  return response.json();
 }
 
 export async function fetchDocumentCategories(): Promise<

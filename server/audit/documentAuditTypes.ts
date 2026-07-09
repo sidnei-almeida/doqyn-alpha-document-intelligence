@@ -14,6 +14,12 @@ export type DocumentAuditAction =
   | 'document.metadata_updated'
   | 'document.filename_updated'
   | 'document.category_updated'
+  | 'document.moved'
+  | 'document.share_created'
+  | 'document.share_revoked'
+  | 'document.shared_viewed'
+  | 'document.shared_downloaded'
+  | 'document.share_denied'
   | 'document.version_created'
   | 'document.preview_generated'
   | 'document.preview_failed'
@@ -35,6 +41,10 @@ export type DocumentAuditAction =
   | 'document.archived'
   | 'document.restored'
   | 'document.deleted'
+  | 'document.trash_moved'
+  | 'document.trash_restored'
+  | 'document.permanent_deleted'
+  | 'document.trash_purge_failed'
   | 'document.access_granted'
   | 'document.access_revoked'
   | 'document.shared'
@@ -170,6 +180,12 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.metadata_updated': 'Metadados atualizados',
   'document.filename_updated': 'Nome do arquivo atualizado',
   'document.category_updated': 'Categoria atualizada',
+  'document.moved': 'Documento movido de categoria',
+  'document.share_created': 'Compartilhamento criado',
+  'document.share_revoked': 'Compartilhamento revogado',
+  'document.shared_viewed': 'Documento compartilhado visualizado',
+  'document.shared_downloaded': 'Download de documento compartilhado',
+  'document.share_denied': 'Compartilhamento negado',
   'document.version_created': 'Nova versão criada',
   'document.preview_generated': 'Preview gerado',
   'document.preview_failed': 'Falha no preview',
@@ -188,6 +204,10 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'file_explorer.filter_applied': 'Filtro aplicado',
   'file_explorer.details_opened': 'Detalhes abertos',
   'document.storage_promoted': 'Arquivo promovido ao storage definitivo',
+  'document.trash_moved': 'Documento movido para a lixeira',
+  'document.trash_restored': 'Documento restaurado da lixeira',
+  'document.permanent_deleted': 'Documento excluído permanentemente',
+  'document.trash_purge_failed': 'Falha na purga de storage',
   'document.created': 'Documento criado',
   'document.metadata.confirmed': 'Metadados confirmados',
   'document.metadata.reviewed_confirmed': 'Revisão confirmada com ajustes',

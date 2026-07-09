@@ -24,8 +24,8 @@ const RESOLUTION_TARGETS: Array<{
 }> = [
   { label: 'thumbnail', maxWidth: 320 },
   { label: 'small', maxWidth: 720 },
-  { label: 'medium', maxWidth: 1440 },
-  { label: 'large', maxWidth: 2400 },
+  { label: 'medium', maxWidth: 1680 },
+  { label: 'large', maxWidth: 2560 },
 ];
 
 const SUPPORTED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -102,6 +102,7 @@ export async function generateWatermarkedImagePreviews(input: {
 
   const watermarkText = (input.watermarkText?.trim() || config.watermarkText).slice(0, 32);
   const output = resolveOutputFormat(normalizedMime);
+  const imageQuality = Math.min(100, Math.max(70, config.imagePreviewQuality));
   const resolutions: ImagePreviewResolution[] = [];
 
   for (const target of RESOLUTION_TARGETS) {
@@ -126,9 +127,9 @@ export async function generateWatermarkedImagePreviews(input: {
     if (output.format === 'png') {
       pipeline = pipeline.png();
     } else if (output.format === 'webp') {
-      pipeline = pipeline.webp({ quality: 85 });
+      pipeline = pipeline.webp({ quality: imageQuality });
     } else {
-      pipeline = pipeline.jpeg({ quality: 85 });
+      pipeline = pipeline.jpeg({ quality: imageQuality, mozjpeg: true });
     }
 
     const buffer = await pipeline.toBuffer();

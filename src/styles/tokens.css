@@ -19,9 +19,29 @@
   --bg-hover: #2c2c2c;
   --bg-selected: #1d2a3a;
 
-  /* Sidebar — item selecionado em azul vivo (estilo Drive), separado de --bg-selected */
-  --sidebar-selected-bg: #0b57d0;
-  --sidebar-selected-text: #ffffff;
+  /* Sidebar — item ativo índigo/violeta discreto (harmonia com + Novo, sem competir) */
+  --sidebar-selected-bg: rgba(99, 102, 241, 0.18);
+  --sidebar-selected-border: transparent;
+  --sidebar-selected-text: #f5f7ff;
+  --sidebar-selected-icon: #a5b4fc;
+  --sidebar-item-hover-bg: rgba(148, 163, 184, 0.08);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 42%, transparent);
+
+  /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
+  --explorer-quick-actions-bg: rgba(30, 30, 30, 0.84);
+  --explorer-quick-actions-border: rgba(255, 255, 255, 0.14);
+  --explorer-quick-actions-icon: #d2d5da;
+  --explorer-quick-actions-icon-hover: #f1f3f4;
+  --explorer-quick-actions-icon-hover-bg: rgba(255, 255, 255, 0.1);
+  --explorer-quick-actions-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
+
+  /* Badge de favorito sobre preview */
+  --document-favorite-badge-bg: rgba(30, 30, 30, 0.78);
+  --document-favorite-badge-shadow: 0 1px 4px rgba(0, 0, 0, 0.32);
+
+  /* Marquee selection — retângulo de seleção no file explorer */
+  --marquee-bg: rgba(148, 163, 184, 0.06);
+  --marquee-border: rgba(148, 163, 184, 0.22);
 
   /* Botão "+ Novo" — índigo flat (Material filled, sem elevação pesada) */
   --new-button-bg: #5c5cf0;
@@ -139,9 +159,29 @@
   --bg-hover: var(--color-surface-container);
   --bg-selected: var(--color-primary-surface);
 
-  /* Sidebar — item selecionado (Drive light: azul suave + texto azul) */
-  --sidebar-selected-bg: var(--color-primary-surface);
-  --sidebar-selected-text: var(--color-primary);
+  /* Sidebar — item ativo índigo/violeta suave (fundo sólido claro, distinto do dark translúcido) */
+  --sidebar-selected-bg: #eef2ff;
+  --sidebar-selected-border: #c7d2fe;
+  --sidebar-selected-text: #312e81;
+  --sidebar-selected-icon: #6366f1;
+  --sidebar-item-hover-bg: rgba(99, 102, 241, 0.08);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 35%, transparent);
+
+  /* Menu rápido sobre preview — vidro claro */
+  --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
+  --explorer-quick-actions-border: rgba(218, 220, 224, 0.92);
+  --explorer-quick-actions-icon: #5f6368;
+  --explorer-quick-actions-icon-hover: #202124;
+  --explorer-quick-actions-icon-hover-bg: rgba(60, 64, 67, 0.08);
+  --explorer-quick-actions-shadow: 0 1px 4px rgba(60, 64, 67, 0.12);
+
+  /* Badge de favorito sobre preview */
+  --document-favorite-badge-bg: rgba(255, 255, 255, 0.94);
+  --document-favorite-badge-shadow: 0 1px 3px rgba(60, 64, 67, 0.14);
+
+  /* Marquee selection — retângulo de seleção no file explorer */
+  --marquee-bg: rgba(99, 102, 241, 0.1);
+  --marquee-border: rgba(99, 102, 241, 0.38);
 
   /* Botão "+ Novo" — índigo flat (Material filled) */
   --new-button-bg: #4f46e5;
@@ -335,7 +375,7 @@
   --workspace-sidebar-width: var(--workspace-sidebar-width-expanded);
   --workspace-topbar-height: 64px;
   --workspace-page-action-size: 36px;
-  --library-details-width: 320px;
+  --library-details-width: 36rem;
 
   /* Camadas de z-index — ordem crescente */
   --z-local-elevated: 10;

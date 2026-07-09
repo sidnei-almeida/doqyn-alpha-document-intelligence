@@ -5,9 +5,10 @@ import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type { MongoUserDocumentFavorite } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
 import {
-  canUserListDocument,
   loadMemberDocumentGroupIds,
 } from '../../tenancy/documentAccess.js';
+import { canUserListDocumentWithShare } from '../../tenancy/documentShareAccess.js';
+import { findActiveShareGrantForUser, findActiveShareGrantsForUser } from '../sharing/documentShareService.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
@@ -78,7 +79,9 @@ async function loadAccessibleDocument(
     membershipId,
   });
 
-  if (!canUserListDocument(user, doc as MongoDocument, memberGroupIds)) {
+  const shareGrant = await findActiveShareGrantForUser(documentId, user.id);
+
+  if (!canUserListDocumentWithShare(user, doc as MongoDocument, memberGroupIds, shareGrant)) {
     throw new ServiceError(
       'Você não tem permissão para favoritar este documento.',
       'DOCUMENT_ACCESS_DENIED',
@@ -201,8 +204,18 @@ async function resolveFavoriteDocuments(
       membershipId,
     });
 
+    const shareGrants = await findActiveShareGrantsForUser(user.id, tenantId);
+    const shareGrantsByDocumentId = new Map(
+      shareGrants.map((grant) => [grant.documentId, grant] as const),
+    );
+
     const visibleDocs = docs.filter((doc) =>
-      canUserListDocument(user, doc as MongoDocument, memberGroupIds),
+      canUserListDocumentWithShare(
+        user,
+        doc as MongoDocument,
+        memberGroupIds,
+        shareGrantsByDocumentId.get(String(doc._id)),
+      ),
     );
 
     const items = await buildDocumentListItems({
@@ -212,6 +225,7 @@ async function resolveFavoriteDocuments(
       ownerUserId: user.id,
       membershipId,
       memberGroupIds,
+      shareGrantsByDocumentId,
     });
 
     for (const item of items) {

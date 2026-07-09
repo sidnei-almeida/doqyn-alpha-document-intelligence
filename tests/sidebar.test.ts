@@ -12,11 +12,10 @@ function readSrc(relativePath: string): string {
 }
 
 describe('sidebar DOQYN', () => {
-  it('item ativo usa fundo azul dedicado da sidebar e pill radius', () => {
+  it('item ativo usa tokens índigo discretos da sidebar e pill radius', () => {
     const source = readSrc('components/layout/SidebarNavItem.tsx');
     assert.ok(source.includes('rounded-full'));
-    assert.ok(source.includes('bg-doqyn-sidebar-selected'));
-    assert.ok(source.includes('text-doqyn-sidebar-selected-text'));
+    assert.ok(source.includes('sidebar-nav-link--active'));
     assert.ok(source.includes('ICON_SIZE.nav'));
     assert.equal(source.includes('border-l-[3px]'), false);
     assert.equal(source.includes('shadow-action-glow'), false);
@@ -70,7 +69,8 @@ describe('sidebar DOQYN', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
     assert.ok(sidebar.includes('workspace-sidebar-nav'));
-    assert.ok(sidebar.includes('justify-between overflow-hidden'));
+    assert.ok(sidebar.includes('mt-5'));
+    assert.equal(sidebar.includes('mt-auto'), false);
     assert.ok(globals.includes(".workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav"));
   });
 

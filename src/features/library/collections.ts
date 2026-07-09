@@ -31,7 +31,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     description: 'Documentos enviados por outras pessoas aos quais você tem acesso.',
     emptyTitle: 'Nada compartilhado com você ainda',
     emptyDescription:
-      'Quando alguém do seu ambiente enviar documentos que você pode acessar, eles aparecem aqui.',
+      'Quando alguém compartilhar um documento com você, ele aparecerá aqui.',
     showFolders: false,
   },
   recentes: {
@@ -56,9 +56,9 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     id: 'lixeira',
     slug: 'lixeira',
     label: 'Lixeira',
-    description: 'Documentos arquivados neste ambiente.',
+    description: 'Documentos excluídos neste ambiente. Restaure ou remova permanentemente.',
     emptyTitle: 'A lixeira está vazia',
-    emptyDescription: 'Documentos arquivados aparecem aqui antes de qualquer remoção definitiva.',
+    emptyDescription: 'Documentos excluídos aparecem aqui antes de qualquer remoção definitiva.',
     showFolders: false,
   },
 };
@@ -73,10 +73,10 @@ export function resolveCollection(slug: string | undefined): LibraryCollection {
 
 /**
  * Recorta a listagem real conforme a coleção ativa.
- * - compartilhados: documentos cujo dono não é o usuário atual;
+ * - compartilhados: GET /api/shared-with-me/documents;
  * - recentes: últimos atualizados (limite fixo);
  * - favoritos: carregados via GET /api/favorites/documents (preferência por userId);
- * - lixeira: status archived vindo do backend.
+ * - lixeira: GET /api/trash/documents (deletedAt != null, não purgados).
  */
 export function applyCollectionFilter(
   documents: DocumentListItem[],
@@ -96,7 +96,7 @@ export function applyCollectionFilter(
     case 'favoritos':
       return documents.filter((doc) => doc.isFavorite === true);
     case 'lixeira':
-      return documents.filter((doc) => doc.status === 'archived');
+      return documents;
     default:
       return documents;
   }

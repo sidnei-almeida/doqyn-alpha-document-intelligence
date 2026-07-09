@@ -5,6 +5,7 @@ import type { FileInteractIntent } from '../hooks/useExplorerSelection';
 export type ExplorerActionsInternalValue = {
   defaultOrderedIds: string[];
   isFileSelected: (id: string) => boolean;
+  isFolderSelected: (id: string) => boolean;
   isStarred: (id: string) => boolean;
   interactFile: (
     document: DocumentListItem,

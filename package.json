@@ -29,6 +29,8 @@
     "db:cleanup-orphan-groups": "tsx scripts/cleanup-dev-orphan-groups.ts",
     "db:sanitize-audit-logs": "tsx scripts/sanitize-existing-audit-logs.ts",
     "db:fix-version-storage": "tsx scripts/fix-dev-document-version-storage.ts",
+    "audit:document-versions": "tsx scripts/audit-document-versions.ts",
+    "trash:purge-expired": "tsx scripts/trash-purge-expired.ts",
     "test:tenant-isolation": "tsx scripts/test-tenant-isolation.ts",
     "db:mongodb-isolation-report": "tsx scripts/generate-mongodb-isolation-final-report.ts",
     "test:groq:smoke": "tsx scripts/test-groq-smoke.mjs",

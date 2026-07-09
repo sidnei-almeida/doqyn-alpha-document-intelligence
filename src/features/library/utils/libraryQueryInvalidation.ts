@@ -20,6 +20,7 @@ export async function invalidateLibraryQueries(
     refetchType: 'all',
   });
   await queryClient.invalidateQueries({ queryKey: ['dashboard-overview'], refetchType: 'all' });
+  await queryClient.invalidateQueries({ queryKey: ['shared-with-me'], refetchType: 'all' });
   await queryClient.invalidateQueries({ queryKey: ['tracking-events'], refetchType: 'all' });
 
   const refetches = await Promise.allSettled([

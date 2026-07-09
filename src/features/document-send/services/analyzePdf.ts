@@ -68,6 +68,8 @@ export type AnalyzePdfResponse = {
 export type AnalyzePdfOptions = {
   signal?: AbortSignal;
   context?: WorkflowRequestContext;
+  /** Quando informado, usa o endpoint de análise de atualização de versão. */
+  documentId?: string;
 };
 
 export class AnalyzePdfRequestError extends Error {
@@ -190,9 +192,16 @@ export async function analyzePdf(
 
   const formData = new FormData();
   formData.append('file', file);
+  if (options?.documentId?.trim()) {
+    formData.append('documentId', options.documentId.trim());
+  }
+
+  const endpoint = options?.documentId?.trim()
+    ? '/api/ai/analyze-pdf-update'
+    : '/api/ai/analyze-pdf';
 
   const startedAt = performance.now();
-  const response = await authFetch('/api/ai/analyze-pdf', {
+  const response = await authFetch(endpoint, {
     method: 'POST',
     credentials: getFetchCredentials(),
     headers: withAuthHeaders(buildRequestHeaders(context), { json: false }),
@@ -211,7 +220,7 @@ export async function analyzePdf(
       payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
     const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
     workflowError.requestId = workflowError.requestId ?? requestId;
-    workflowError.endpoint = '/api/ai/analyze-pdf';
+    workflowError.endpoint = endpoint;
     throw new AnalyzePdfRequestError(workflowError);
   }
 

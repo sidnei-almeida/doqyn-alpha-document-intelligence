@@ -2,7 +2,15 @@ import { REGISTRY_COLLECTIONS, DEV_TENANT_ID } from '../../server/db/constants.j
 import { getDb } from '../../server/db/mongoClient.js';
 import type { MongoTenantMember, PlatformRole } from '../../server/db/types.js';
 import { normalizeEmail } from '../../server/utils/contactNormalize.js';
-import type { DemoSeedManifest } from './manifest.js';
+import type { DemoSeedManifest, DemoSeedManifestGlobalAdmin } from './manifest.js';
+
+function splitDisplayName(displayName: string): { firstName: string; lastName: string } {
+  const [firstName, ...lastParts] = displayName.trim().split(/\s+/);
+  return {
+    firstName: firstName || 'Usuário',
+    lastName: lastParts.join(' ') || 'Demo',
+  };
+}
 
 async function upsertActiveTenantMember(input: {
   memberId: string;
@@ -12,6 +20,8 @@ async function upsertActiveTenantMember(input: {
   firstName: string;
   lastName: string;
   tenantRoles: PlatformRole[];
+  jobTitle?: string;
+  departmentText?: string;
 }): Promise<MongoTenantMember> {
   const db = await getDb();
   const now = new Date();
@@ -30,12 +40,37 @@ async function upsertActiveTenantMember(input: {
     status: 'active',
     tenantRoles: input.tenantRoles,
     accessGroupIds: [],
+    ...(input.jobTitle || input.departmentText
+      ? {
+          requestedAccess: {
+            jobTitle: input.jobTitle,
+            departmentText: input.departmentText,
+            requestedAt: now,
+            source: 'access_request' as const,
+          },
+        }
+      : {}),
     createdAt: now,
     updatedAt: now,
   };
 
   const memberFields = { ...memberDoc };
   delete (memberFields as Partial<typeof memberDoc>).createdAt;
+
+  const emailFilter = {
+    tenantId: input.tenantId,
+    emailNormalized,
+  } as Record<string, unknown>;
+
+  const existing = await db
+    .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
+    .findOne(emailFilter);
+
+  if (existing && existing._id !== input.memberId) {
+    await db
+      .collection(REGISTRY_COLLECTIONS.tenantMembers)
+      .deleteOne({ _id: existing._id } as Record<string, unknown>);
+  }
 
   await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
     { _id: input.memberId } as Record<string, unknown>,
@@ -57,20 +92,36 @@ async function upsertActiveTenantMember(input: {
   return saved;
 }
 
-export async function syncDevTenantMembers(manifest: DemoSeedManifest): Promise<string[]> {
-  const admin = manifest.globalAdmin;
-  const [firstName, ...lastParts] = admin.displayName.trim().split(/\s+/);
-  const lastName = lastParts.join(' ') || 'Admin';
+async function syncManifestMember(
+  member: DemoSeedManifestGlobalAdmin,
+  tenantId: string,
+): Promise<string> {
+  const { firstName, lastName } = splitDisplayName(member.displayName);
 
   await upsertActiveTenantMember({
-    memberId: admin.membershipId,
-    tenantId: admin.tenantId || DEV_TENANT_ID,
-    userId: admin.userId,
-    email: admin.email,
+    memberId: member.membershipId,
+    tenantId,
+    userId: member.userId,
+    email: member.email,
     firstName,
     lastName,
-    tenantRoles: admin.roles as PlatformRole[],
+    tenantRoles: member.roles as PlatformRole[],
+    jobTitle: member.jobTitle,
+    departmentText: member.departmentText,
   });
 
-  return [admin.email];
+  return member.email;
+}
+
+export async function syncDevTenantMembers(manifest: DemoSeedManifest): Promise<string[]> {
+  const tenantId = manifest.globalAdmin.tenantId || DEV_TENANT_ID;
+  const syncedEmails: string[] = [];
+
+  syncedEmails.push(await syncManifestMember(manifest.globalAdmin, tenantId));
+
+  for (const member of manifest.companyDevActiveUsers) {
+    syncedEmails.push(await syncManifestMember(member, tenantId));
+  }
+
+  return syncedEmails;
 }

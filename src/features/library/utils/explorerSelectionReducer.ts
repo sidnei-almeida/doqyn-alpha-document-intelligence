@@ -52,13 +52,56 @@ export type ExplorerSelectionAction =
   | { type: 'select_folder'; payload: SelectFolderPayload }
   | { type: 'toggle_file'; payload: ToggleFilePayload }
   | { type: 'toggle_folder'; payload: ToggleFolderPayload }
-  | { type: 'select_file_only'; payload: { document: DocumentListItem } };
+  | { type: 'select_file_only'; payload: { document: DocumentListItem } }
+  | {
+      type: 'marquee_select';
+      payload: { fileIds: string[]; folderIds: string[]; additive: boolean };
+    }
+  | {
+      type: 'restore_selection';
+      payload: { fileIds: string[]; folderIds: string[] };
+    };
 
 function readModifiers(modifiers?: PointerModifiers) {
   return {
     metaKey: modifiers?.metaKey ?? false,
     ctrlKey: modifiers?.ctrlKey ?? false,
     shiftKey: modifiers?.shiftKey ?? false,
+  };
+}
+
+/** Clique simples em item já selecionado — remove só esse id (estilo Finder). */
+function deselectIdFromSet(
+  state: ExplorerSelectionState,
+  kind: 'file' | 'folder',
+  id: string,
+  orderedIds: string[],
+): ExplorerSelectionState {
+  const selectedKey = kind === 'file' ? 'selectedFileIds' : 'selectedFolderIds';
+  const nextIds = new Set(state[selectedKey]);
+  nextIds.delete(id);
+
+  const nextFocus =
+    state.focus?.kind === kind &&
+    (kind === 'file'
+      ? state.focus.kind === 'file' && state.focus.document.documentId === id
+      : state.focus.kind === 'folder' && state.focus.folder.id === id)
+      ? null
+      : state.focus;
+
+  const nextAnchor =
+    state.anchor?.kind === kind && state.anchor.id === id
+      ? (() => {
+          const remaining = orderedIds.filter((itemId) => nextIds.has(itemId));
+          return remaining[0] ? { kind, id: remaining[0] } : null;
+        })()
+      : state.anchor;
+
+  return {
+    ...state,
+    [selectedKey]: nextIds,
+    focus: nextFocus,
+    anchor: nextAnchor,
   };
 }
 
@@ -104,6 +147,10 @@ export function explorerSelectionReducer(
         };
       }
 
+      if (state.selectedFileIds.has(id)) {
+        return deselectIdFromSet(state, 'file', id, orderedIds);
+      }
+
       return {
         selectedFileIds: new Set([id]),
         selectedFolderIds: new Set(),
@@ -134,6 +181,10 @@ export function explorerSelectionReducer(
           anchor: { kind: 'folder', id },
           focus: { kind: 'folder', folder },
         };
+      }
+
+      if (state.selectedFolderIds.has(id)) {
+        return deselectIdFromSet(state, 'folder', id, orderedIds);
       }
 
       return {
@@ -207,6 +258,44 @@ export function explorerSelectionReducer(
         selectedFolderIds: nextFolderIds,
         focus: nextFocus,
         anchor: nextAnchor,
+      };
+    }
+
+    case 'marquee_select': {
+      const { fileIds, folderIds, additive } = action.payload;
+
+      if (additive) {
+        return {
+          ...state,
+          selectedFileIds: new Set([...state.selectedFileIds, ...fileIds]),
+          selectedFolderIds: new Set([...state.selectedFolderIds, ...folderIds]),
+          anchor: fileIds[0]
+            ? { kind: 'file', id: fileIds[0] }
+            : folderIds[0]
+              ? { kind: 'folder', id: folderIds[0] }
+              : state.anchor,
+          focus: state.focus,
+        };
+      }
+
+      return {
+        selectedFileIds: new Set(fileIds),
+        selectedFolderIds: new Set(folderIds),
+        anchor: fileIds[0]
+          ? { kind: 'file', id: fileIds[0] }
+          : folderIds[0]
+            ? { kind: 'folder', id: folderIds[0] }
+            : null,
+        focus: null,
+      };
+    }
+
+    case 'restore_selection': {
+      const { fileIds, folderIds } = action.payload;
+      return {
+        ...state,
+        selectedFileIds: new Set(fileIds),
+        selectedFolderIds: new Set(folderIds),
       };
     }
 

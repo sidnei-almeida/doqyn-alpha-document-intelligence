@@ -92,6 +92,7 @@ describe('demo seed mongo', () => {
     assert.ok(provisionSource.includes('syncDevTenantMembers'));
     assert.ok(provisionSource.includes('DEV_TENANT_ID'));
     assert.ok(syncSource.includes('manifest.globalAdmin'));
+    assert.ok(syncSource.includes('companyDevActiveUsers'));
     assert.ok(syncSource.includes('userId'));
   });
 

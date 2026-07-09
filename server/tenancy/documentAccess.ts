@@ -9,6 +9,8 @@ export type DocumentAccessPermissions = {
   canPreview: boolean;
   canDownload: boolean;
   canEditMetadata: boolean;
+  canUpdate: boolean;
+  canTrash: boolean;
 };
 
 const DOCUMENT_ADMIN_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin']);
@@ -36,6 +38,7 @@ export function resolveDocumentPermissions(
   const isOwner = Boolean(doc.ownerUserId && doc.ownerUserId === user.id);
   const viewGroups = doc.access?.viewGroupIds ?? [];
   const downloadGroups = doc.access?.downloadGroupIds ?? [];
+  const updateGroups = doc.access?.updateGroupIds ?? [];
 
   const canPreview =
     isAdmin || isOwner || userHasDocumentGroupAccess(viewGroups, memberGroupIds);
@@ -43,10 +46,15 @@ export function resolveDocumentPermissions(
   const canDownload =
     isAdmin || isOwner || userHasDocumentGroupAccess(downloadGroups, memberGroupIds);
 
+  const canUpdate =
+    isAdmin || isOwner || userHasDocumentGroupAccess(updateGroups, memberGroupIds);
+
   return {
     canPreview,
     canDownload,
     canEditMetadata: isAdmin,
+    canUpdate,
+    canTrash: canUpdate,
   };
 }
 
@@ -65,6 +73,56 @@ export function assertCanDownloadDocument(permissions: DocumentAccessPermissions
     throw new ServiceError(
       'Você não tem permissão para baixar este documento.',
       'DOCUMENT_ACCESS_DENIED',
+      403,
+    );
+  }
+}
+
+export function assertCanUpdateDocument(permissions: DocumentAccessPermissions): void {
+  if (!permissions.canUpdate) {
+    throw new ServiceError(
+      'Você não tem permissão para atualizar este documento.',
+      'DOCUMENT_UPDATE_DENIED',
+      403,
+    );
+  }
+}
+
+export function canUserTrashDocument(
+  user: AuthUser,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  memberGroupIds: string[],
+): boolean {
+  return resolveDocumentPermissions(user, doc, memberGroupIds).canTrash;
+}
+
+export function assertCanTrashDocument(
+  user: AuthUser,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  memberGroupIds: string[],
+): void {
+  if (!canUserTrashDocument(user, doc, memberGroupIds)) {
+    throw new ServiceError(
+      'Você não tem permissão para excluir este documento.',
+      'DOCUMENT_TRASH_DENIED',
+      403,
+    );
+  }
+}
+
+export function assertCanPermanentDeleteDocument(
+  user: AuthUser,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  memberGroupIds: string[],
+): void {
+  const isAdmin = isDocumentAdmin(user);
+  const isOwner = Boolean(doc.ownerUserId && doc.ownerUserId === user.id);
+  const canUpdate = resolveDocumentPermissions(user, doc, memberGroupIds).canUpdate;
+
+  if (!isAdmin && !(isOwner && canUpdate)) {
+    throw new ServiceError(
+      'Você não tem permissão para excluir permanentemente este documento.',
+      'DOCUMENT_PERMANENT_DELETE_DENIED',
       403,
     );
   }

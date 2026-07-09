@@ -41,6 +41,8 @@ const ACTION_GROUP_RULES: Array<{ prefix: string; group: TrackingActionGroup }> 
   { prefix: 'document.filename_', group: 'lifecycle' },
   { prefix: 'document.category_', group: 'lifecycle' },
   { prefix: 'document.status_', group: 'lifecycle' },
+  { prefix: 'document.trash_', group: 'lifecycle' },
+  { prefix: 'document.permanent_', group: 'lifecycle' },
   { prefix: 'document.archived', group: 'lifecycle' },
   { prefix: 'document.restored', group: 'lifecycle' },
   { prefix: 'document.deleted', group: 'lifecycle' },

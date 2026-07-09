@@ -94,7 +94,7 @@ export function Sidebar({ className }: SidebarProps) {
         className={cn(
           'workspace-sidebar-nav flex flex-1 flex-col px-2',
           collapsed
-            ? 'justify-between overflow-hidden py-1.5'
+            ? 'gap-1 overflow-hidden py-1.5'
             : 'gap-1 overflow-y-auto py-2 scrollbar-thin',
         )}
       >
@@ -114,7 +114,7 @@ export function Sidebar({ className }: SidebarProps) {
 
         <SidebarSection
           label="Administração"
-          className={cn(!collapsed && 'mt-auto')}
+          className="mt-5"
           collapsed={collapsed}
         >
           {adminNavItems.map((item) => (

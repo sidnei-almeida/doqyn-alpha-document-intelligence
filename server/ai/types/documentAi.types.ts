@@ -110,3 +110,31 @@ export type RetrievedChunk = DocumentChunk & {
   matchedTerms: string[];
   reason: string;
 };
+
+export type VersionComparisonSummary = {
+  changedFields: string[];
+  addedFields: string[];
+  removedFields: string[];
+  riskWarnings: string[];
+  sameDocumentConfidence: number;
+  mainChanges: string[];
+};
+
+export type VersionUpdateExtraction = MetadataExtractionResult & {
+  versionComparison: VersionComparisonSummary;
+  seemsSameDocument: boolean;
+  sameDocumentConfidence: number;
+  sameDocumentEvidence: string[];
+  mainChanges: string[];
+  changedFields: string[];
+  riskWarnings: string[];
+};
+
+export type AnalyzePdfUpdateResponse = AnalyzePdfResponse & {
+  updateMode: true;
+  documentId: string;
+  currentVersionLabel: string;
+  expectedNextVersionLabel: string;
+  previousVersionContextIncluded: boolean;
+  extraction: VersionUpdateExtraction | null;
+};

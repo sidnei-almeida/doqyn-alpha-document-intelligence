@@ -3,6 +3,7 @@ import { canViewDocumentTracking } from '../auth/permissions.js';
 import type { MongoDocument, MongoDocumentVersion, MongoPreviewStorageSlot } from '../db/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import { renderPdfPageToPng } from '../preview/pdfPageRenderer.js';
+import { getPdfPreviewConfig } from '../preview/previewConfig.js';
 import {
   buildPdfPreviewManifestFromBuffer,
   isPreviewManifestUsable,
@@ -18,8 +19,9 @@ import {
 import {
   assertCanPreviewDocument,
   loadMemberDocumentGroupIds,
-  resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
+import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
+import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import {
   buildDocumentPreviewPageAssetObjectKey,
@@ -122,20 +124,6 @@ function mapPreviewStatus(preview: MongoPreviewStorageSlot | null | undefined): 
   return 'failed';
 }
 
-function buildManifestPermissions(
-  user: AuthUser,
-  doc: MongoDocument,
-  memberGroupIds: string[],
-): PreviewManifestPermissions {
-  const perms = resolveDocumentPermissions(user, doc, memberGroupIds);
-  return {
-    canPreview: perms.canPreview,
-    canDownload: perms.canDownload,
-    canUpdate: perms.canEditMetadata,
-    canViewTracking: canViewDocumentTracking(user),
-  };
-}
-
 async function resolvePreviewVersion(input: {
   tenantId: string;
   ownerUserId: string;
@@ -173,11 +161,25 @@ async function resolvePreviewVersion(input: {
     userId: input.user.id,
     membershipId: input.membershipId,
   });
-  const permissions = buildManifestPermissions(input.user, doc as MongoDocument, memberGroupIds);
+  const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
+  const perms = resolveDocumentPermissionsWithShare(
+    input.user,
+    doc as MongoDocument,
+    memberGroupIds,
+    shareGrant,
+  );
+  const permissions = {
+    canPreview: perms.canPreview,
+    canDownload: perms.canDownload,
+    canUpdate: perms.canUpdate,
+    canViewTracking: canViewDocumentTracking(input.user),
+  };
   assertCanPreviewDocument({
     canPreview: permissions.canPreview,
     canDownload: permissions.canDownload,
     canEditMetadata: permissions.canUpdate,
+    canUpdate: permissions.canUpdate,
+    canTrash: permissions.canUpdate,
   });
 
   const version = await documentVersions.findOne({
@@ -491,10 +493,11 @@ export async function readDocumentPreviewPageImage(input: {
     allowBlobWithoutDownload: true,
   });
 
+  const previewConfig = getPdfPreviewConfig();
   const rendered = await renderPdfPageToPng({
     pdfBuffer: previewFile.buffer,
     pageNumber: input.pageNumber,
-    dpi: input.thumbnail ? 72 : 144,
+    dpi: input.thumbnail ? previewConfig.thumbDpi : previewConfig.pageDpi,
   });
 
   await cacheRenderedPage({

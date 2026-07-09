@@ -36,8 +36,9 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import {
   assertCanPreviewDocument,
   loadMemberDocumentGroupIds,
-  resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
+import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
+import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
 
 export { buildDocumentPreviewObjectKey } from '../storage/storageKeys.js';
 
@@ -400,10 +401,12 @@ export async function readDocumentPreviewFile(input: {
     userId: input.user.id,
     membershipId: input.membershipId,
   });
-  const permissions = resolveDocumentPermissions(
+  const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
+  const permissions = resolveDocumentPermissionsWithShare(
     input.user,
     doc as MongoDocument,
     memberGroupIds,
+    shareGrant,
   );
   assertCanPreviewDocument(permissions);
 

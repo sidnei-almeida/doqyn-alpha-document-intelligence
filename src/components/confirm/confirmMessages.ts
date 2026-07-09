@@ -29,6 +29,27 @@ export function buildDeleteCategoryConfirm(categoryName: string) {
   };
 }
 
+export function buildMoveToTrashConfirm(count: number) {
+  const label = count === 1 ? 'este documento' : `${count} documentos`;
+  return {
+    title: 'Mover para a lixeira?',
+    description: `${label.charAt(0).toUpperCase()}${label.slice(1)} será movido para a lixeira. Você poderá restaurar antes da exclusão permanente.`,
+    confirmLabel: 'Mover para lixeira',
+    variant: 'warning' as const,
+  };
+}
+
+export function buildPermanentDeleteConfirm(count: number) {
+  const label = count === 1 ? 'este documento' : `${count} documentos`;
+  return {
+    title: 'Excluir permanentemente?',
+    description: `${label.charAt(0).toUpperCase()}${label.slice(1)} será removido de forma irreversível, incluindo arquivos originais e previews no storage.`,
+    confirmLabel: 'Excluir permanentemente',
+    confirmationText: CONFIRM_DELETE_WORD,
+    variant: 'danger' as const,
+  };
+}
+
 export function buildDeleteGroupConfirm(groupName: string, memberCount: number) {
   return {
     title: 'Excluir grupo?',

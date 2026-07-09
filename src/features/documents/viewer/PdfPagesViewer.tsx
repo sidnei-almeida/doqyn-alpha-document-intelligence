@@ -22,19 +22,18 @@ function ManifestPageImage({
   previewUrl: string;
 }) {
   const { objectUrl, state } = usePreviewAsset(previewUrl, true);
-  const width = Math.max(1, Math.round(page.width * scale));
-  const height = Math.max(1, Math.round(page.height * scale));
+  const displayWidth = Math.max(1, Math.round(page.width * scale));
 
   return (
     <div
       data-page-number={page.page}
       className="viewer-page mx-auto flex w-full justify-center scroll-mt-4"
-      style={{ maxWidth: width }}
+      style={{ maxWidth: displayWidth }}
     >
       {state === 'loading' && (
         <div
           className="viewer-page-surface flex items-center justify-center"
-          style={{ width, height: Math.min(height, 480) }}
+          style={{ width: displayWidth, height: Math.min(Math.round(page.height * scale), 480) }}
         >
           <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
         </div>
@@ -43,9 +42,9 @@ function ManifestPageImage({
         <img
           src={objectUrl}
           alt={`Página ${page.page}`}
-          width={width}
-          height={height}
-          className="viewer-page-surface block max-w-full"
+          width={displayWidth}
+          className="viewer-page-surface viewer-page-image block h-auto max-w-full"
+          decoding="async"
           draggable={false}
         />
       )}

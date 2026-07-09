@@ -27,7 +27,6 @@ import type { AuthUser } from '../auth/types.js';
 import type { MongoPreviewStorageSlot } from '../db/types.js';
 import {
   loadMemberDocumentGroupIds,
-  resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
 import { logger } from '../utils/logger.js';
@@ -36,12 +35,15 @@ import {
   attachFavoriteFlags,
   lookupFavoriteFlags,
 } from './favorites/documentFavoritesService.js';
+import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
+import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
   canDownload: boolean;
   canViewTracking: boolean;
   canEditMetadata: boolean;
+  canUpdate: boolean;
 };
 
 export interface UploadInput {
@@ -112,7 +114,7 @@ export async function uploadDocument(input: UploadInput) {
     namingMode: 'original',
     finalFileName: input.displayName !== input.originalFileName ? input.displayName : undefined,
     documentId,
-    versionLabel: 'v1',
+    versionLabel: 'v1.0',
   });
 
   const skippedPreviewSlot: MongoDocumentVersion['storage']['preview'] = {
@@ -140,6 +142,8 @@ export async function uploadDocument(input: UploadInput) {
     processingStatus: 'pending',
     version: 1,
     currentVersionId: versionId,
+    currentVersionLabel: 'v1.0',
+    versionCount: 1,
     ownerUserId: input.ownerUserId,
     ownerName: input.ownerName,
     area,
@@ -197,7 +201,7 @@ export async function uploadDocument(input: UploadInput) {
     _id: versionId,
     documentId,
     versionNumber: 1,
-    versionLabel: 'v1',
+    versionLabel: 'v1.0',
     previousVersionId: null,
     originalFileName: input.originalFileName,
     recommendedFileName: resolvedNames.aiSuggestedFileName || input.displayName,
@@ -352,11 +356,13 @@ function mapDocumentListItem(
     latestVersionId: doc.currentVersionId,
     currentVersionId: doc.currentVersionId,
     versionLabel: versionMeta?.versionLabel,
+    currentVersionLabel: versionMeta?.versionLabel,
     originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
     displayName:
       (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
     documentType: (record.documentType as string | undefined) ?? doc.className,
-    version: (record.version as number | undefined) ?? 1,
+    version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
+    versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
     ownerName: (record.ownerName as string | undefined),
     area: (record.area as string | undefined),
@@ -382,6 +388,7 @@ function mapDocumentListItem(
       canDownload: true,
       canViewTracking: false,
       canEditMetadata: false,
+      canUpdate: false,
     },
   };
 }
@@ -418,6 +425,7 @@ export async function listDocuments(filters: {
   const query: Record<string, unknown> = {
     ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
   };
   if (filters.status) query.status = filters.status;
   if (filters.processingStatus) {
@@ -541,10 +549,20 @@ export async function getDocumentDetail(
     userId: user.id,
     membershipId,
   });
-  const perms = resolveDocumentPermissions(user, doc as MongoDocument, memberGroupIds);
+  const { permissions: perms } = await resolveDocumentAccessWithShare({
+    user,
+    doc: doc as MongoDocument,
+    memberGroupIds,
+    sharedWithUserId: user.id,
+  });
   const permissions = {
-    ...perms,
+    canPreview: perms.canPreview,
+    canDownload: perms.canDownload,
+    canEditMetadata: perms.canEditMetadata,
+    canUpdate: perms.canUpdate,
     canViewTracking: canViewDocumentTracking(user),
+    canShare: perms.canShare,
+    sharedViaGrant: perms.sharedViaGrant,
   };
 
   if (!permissions.canPreview && !permissions.canDownload) {
@@ -565,7 +583,7 @@ export async function getDocumentDetail(
 
   const mappedVersions = versions.map((version) => ({
     versionId: String(version._id),
-    versionLabel: version.versionLabel,
+    versionLabel: normalizeVersionLabel(version.versionLabel),
     finalFileName: version.finalFileName ?? version.originalFileName,
     originalFileName: version.originalFileName,
     createdAt: version.createdAt,
@@ -581,7 +599,7 @@ export async function getDocumentDetail(
   const latestVersion = latestVersionRaw
     ? {
         versionId: String(latestVersionRaw._id),
-        versionLabel: latestVersionRaw.versionLabel,
+        versionLabel: normalizeVersionLabel(latestVersionRaw.versionLabel),
         finalFileName: latestVersionRaw.finalFileName ?? latestVersionRaw.originalFileName,
         storageFileName: latestVersionRaw.storageFileName ?? latestVersionRaw.finalFileName,
         previewStorageFileName:
@@ -605,7 +623,7 @@ export async function getDocumentDetail(
     doc as MongoDocument,
     latestVersionRaw
       ? {
-          versionLabel: latestVersionRaw.versionLabel,
+          versionLabel: normalizeVersionLabel(latestVersionRaw.versionLabel),
           preview: latestPreview,
           hasOriginal: latestPrimary?.status === 'stored' && Boolean(latestPrimary.objectKey),
           hasPreview: latestPreview?.status === 'ready' && Boolean(latestPreview.objectKey),

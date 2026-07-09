@@ -37,6 +37,7 @@ function resolveBusinessCollections(prefix: string): ResolvedTenantCollectionNam
   return {
     documents: resolvePrefixedName(COLLECTIONS.documents, prefix),
     documentVersions: resolvePrefixedName(COLLECTIONS.documentVersions, prefix),
+    documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
     processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
     accessGroups: resolvePrefixedName(COLLECTIONS.accessGroups, prefix),
@@ -50,6 +51,7 @@ function resolveSharedIndividualCollections(): ResolvedTenantCollectionNames {
   return {
     documents: resolvePrefixedName(COLLECTIONS.documents, prefix),
     documentVersions: resolvePrefixedName(COLLECTIONS.documentVersions, prefix),
+    documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
     processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
     documentClasses: resolvePrefixedName(COLLECTIONS.documentClasses, prefix),

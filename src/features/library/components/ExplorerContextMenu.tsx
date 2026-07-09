@@ -26,15 +26,24 @@ type ExplorerContextMenuProps = {
   onTrackingFile?: (doc: DocumentListItem) => void;
   onSelectFileDetails?: (doc: DocumentListItem) => void;
   onToggleFavorite?: (doc: DocumentListItem) => void;
+  onUpdateDocument?: (doc: DocumentListItem) => void;
+  onMoveFile?: (doc: DocumentListItem) => void;
+  onShareFile?: (doc: DocumentListItem) => void;
+  isTrashView?: boolean;
+  onTrashFile?: (doc: DocumentListItem) => void;
+  onRestoreFile?: (doc: DocumentListItem) => void;
+  onPermanentDeleteFile?: (doc: DocumentListItem) => void;
   onShowContextInfo?: () => void;
   onShowFolderInfo?: (folder: LibraryFolder) => void;
   onComingSoon: (label: string) => void;
 };
 
 const itemClass =
-  'explorer-interactive flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] text-doqyn-text hover:bg-doqyn-surface-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40';
+  'explorer-interactive flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-doqyn-text hover:bg-doqyn-surface-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40';
 
-const dangerClass = `${itemClass} text-doqyn-danger`;
+const fileItemClass = `${itemClass} whitespace-nowrap`;
+
+const dangerClass = `${fileItemClass} text-doqyn-danger`;
 
 function MenuItem({
   label,
@@ -42,23 +51,29 @@ function MenuItem({
   onClick,
   disabled,
   danger,
+  compact,
+  title,
 }: {
   label: string;
   icon: string;
   onClick: () => void;
   disabled?: boolean;
   danger?: boolean;
+  compact?: boolean;
+  title?: string;
 }) {
+  const className = danger ? dangerClass : compact ? fileItemClass : itemClass;
   return (
     <button
       type="button"
       role="menuitem"
-      className={danger ? dangerClass : itemClass}
+      className={className}
       disabled={disabled}
       onClick={onClick}
+      title={title ?? (compact ? label : undefined)}
     >
-      <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0 text-doqyn-subtle" />
-      {label}
+      <Icon name={icon} size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
+      <span className="min-w-0 truncate">{label}</span>
     </button>
   );
 }
@@ -79,6 +94,13 @@ export function ExplorerContextMenu({
   onTrackingFile,
   onSelectFileDetails,
   onToggleFavorite,
+  onUpdateDocument,
+  onMoveFile,
+  onShareFile,
+  isTrashView = false,
+  onTrashFile,
+  onRestoreFile,
+  onPermanentDeleteFile,
   onShowContextInfo,
   onShowFolderInfo,
   onComingSoon,
@@ -105,8 +127,9 @@ export function ExplorerContextMenu({
 
   if (!state) return null;
 
+  const menuWidth = state.kind === 'file' ? 280 : 224;
   const position = {
-    left: Math.min(state.x, window.innerWidth - 260),
+    left: Math.min(state.x, window.innerWidth - menuWidth - 8),
     top: Math.min(state.y, window.innerHeight - 400),
   };
 
@@ -120,7 +143,11 @@ export function ExplorerContextMenu({
       ref={menuRef}
       role="menu"
       aria-label="Menu de contexto"
-      className="menu-enter fixed z-[90] w-56 overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1.5 shadow-dropdown"
+      className={
+        state.kind === 'file'
+          ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1 shadow-dropdown'
+          : 'menu-enter fixed z-[90] w-56 overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1.5 shadow-dropdown'
+      }
       style={position}
       data-testid="explorer-context-menu"
     >
@@ -199,51 +226,121 @@ export function ExplorerContextMenu({
             const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
             const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
             const canTracking = Boolean(doc.permissions?.canViewTracking);
+            const canUpdate = Boolean(doc.permissions?.canUpdate);
+            const canMove = Boolean(canUpdate && onMoveFile && !isTrashView);
+            const canShare = Boolean(
+              doc.permissions?.canShare && onShareFile && !isTrashView && !doc.permissions?.sharedViaGrant,
+            );
             const isFavorite = doc.isFavorite === true;
             return (
               <>
                 <MenuItem
+                  compact
                   label="Visualizar"
                   icon="visibility"
                   disabled={!canPreview}
                   onClick={() => run(() => (onPreviewFile ?? onOpenFile)?.(doc))}
                 />
                 <MenuItem
+                  compact
                   label="Baixar"
                   icon="download"
                   disabled={!canDownload}
                   onClick={() => run(() => onDownloadFile?.(doc))}
                 />
                 <MenuItem
+                  compact
                   label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                   icon="star"
                   onClick={() => run(() => onToggleFavorite?.(doc))}
                 />
                 <MenuItem
+                  compact
                   label="Ver detalhes"
                   icon="info"
                   onClick={() => run(() => onSelectFileDetails?.(doc))}
                 />
                 {canTracking && (
                   <MenuItem
+                    compact
                     label="Ver tracking"
                     icon="history"
                     onClick={() => run(() => onTrackingFile?.(doc))}
                   />
                 )}
-                <MenuItem label="Atualizar versão" icon="refresh" disabled onClick={() => undefined} />
                 <MenuItem
-                  label="Mover"
-                  icon="drive_file_move"
-                  disabled
-                  onClick={() => run(() => onComingSoon('Mover'))}
+                  compact
+                  label="Atualizar documento"
+                  icon="upload"
+                  disabled={!canUpdate}
+                  onClick={() => run(() => onUpdateDocument?.(doc))}
                 />
                 <MenuItem
+                  compact
+                  label="Compartilhar"
+                  icon="share"
+                  disabled={!canShare}
+                  title={
+                    doc.permissions?.sharedViaGrant
+                      ? 'Você não pode compartilhar um documento recebido por compartilhamento.'
+                      : !doc.permissions?.canShare
+                        ? 'Você não tem permissão para compartilhar este documento.'
+                        : undefined
+                  }
+                  onClick={() => run(() => onShareFile?.(doc))}
+                />
+                <MenuItem
+                  compact
+                  label="Mover"
+                  icon="drive_file_move"
+                  disabled={!canMove}
+                  title={
+                    !canUpdate
+                      ? 'Você não tem permissão para mover este documento.'
+                      : isTrashView
+                        ? 'Este documento está na Lixeira e não pode ser movido.'
+                        : undefined
+                  }
+                  onClick={() => run(() => onMoveFile?.(doc))}
+                />
+                <MenuItem
+                  compact
                   label="Renomear"
                   icon="edit"
                   disabled
                   onClick={() => run(() => onComingSoon('Renomear'))}
                 />
+                {isTrashView ? (
+                  <>
+                    <div className="my-1 border-t border-doqyn-border-subtle" />
+                    <MenuItem
+                      compact
+                      label="Restaurar"
+                      icon="restore_from_trash"
+                      onClick={() => run(() => onRestoreFile?.(doc))}
+                    />
+                    <MenuItem
+                      compact
+                      label="Excluir permanentemente"
+                      icon="delete_forever"
+                      danger
+                      onClick={() => run(() => onPermanentDeleteFile?.(doc))}
+                    />
+                  </>
+                ) : (
+                  canUpdate && (
+                    <>
+                      <div className="my-1 border-t border-doqyn-border-subtle" />
+                      <MenuItem
+                        compact
+                        label="Mover para lixeira"
+                        icon="delete"
+                        danger
+                        onClick={() => run(() => onTrashFile?.(doc))}
+                      />
+                    </>
+                  )
+                )}
               </>
             );
           })()}
