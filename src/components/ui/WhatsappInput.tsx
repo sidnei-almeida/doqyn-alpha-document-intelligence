@@ -10,9 +10,11 @@ import { Input, type InputProps } from './Input';
 export interface WhatsappInputProps extends Omit<InputProps, 'value' | 'onChange' | 'type'> {
   value: string;
   onChange: (value: string) => void;
+  /** Quando true, não exibe erro de incompleto enquanto o usuário digita. */
+  optional?: boolean;
 }
 
-export function WhatsappInput({ value, onChange, error, ...props }: WhatsappInputProps) {
+export function WhatsappInput({ value, onChange, error, optional = false, ...props }: WhatsappInputProps) {
   const format = useCallback((raw: string) => formatWhatsapp(raw), []);
 
   const inputProps = useFormattedInput({
@@ -21,7 +23,7 @@ export function WhatsappInput({ value, onChange, error, ...props }: WhatsappInpu
     format,
   });
 
-  const incomplete = value.length > 0 && !isCompleteWhatsapp(value);
+  const incomplete = !optional && value.length > 0 && !isCompleteWhatsapp(value);
   const validationError = incomplete ? 'WhatsApp incompleto.' : undefined;
 
   return (

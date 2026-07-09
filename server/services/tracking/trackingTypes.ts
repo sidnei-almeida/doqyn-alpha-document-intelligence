@@ -12,6 +12,31 @@ export type TrackingActionGroup =
 
 export type TrackingEventStatus = 'success' | 'failed' | 'denied' | 'pending';
 
+/** Eventos documentais com enriquecimento obrigatório de securityContext quando há request. */
+export const DOCUMENT_SECURITY_CONTEXT_ACTIONS = new Set([
+  'document.viewed',
+  'document.preview_viewed',
+  'document.viewer_opened',
+  'document.downloaded',
+  'document.shared_viewed',
+  'document.shared_downloaded',
+  'document.share_created',
+  'document.external_share_viewed',
+  'document.external_share_downloaded',
+  'document.updated',
+  'document.metadata_updated',
+  'document.version_created',
+  'document.moved',
+  'document.trash_moved',
+  'document.permanent_deleted',
+  'document.restored',
+  'document.trash_restored',
+  'document.signature_completed',
+  'document.signature_downloaded',
+  'document.signature_viewed',
+  'document.signature_link_opened',
+]);
+
 /** Eventos que o frontend pode emitir via POST /api/tracking/client-event. */
 export const CLIENT_TRACKING_ACTIONS = new Set([
   'document.viewer_opened',

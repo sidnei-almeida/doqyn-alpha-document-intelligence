@@ -52,6 +52,15 @@ async function ensureRegistryIndexes() {
   await ensureUserDocumentFavoritesIndexes();
   const { ensureDocumentShareGrantsIndexes } = await import('./documentShareGrantsIndexes.js');
   await ensureDocumentShareGrantsIndexes();
+  const { ensureExternalDocumentShareGrantsIndexes } = await import(
+    './externalDocumentShareGrantsIndexes.js'
+  );
+  await ensureExternalDocumentShareGrantsIndexes();
+  const { ensureDocumentSignatureRequestsIndexes, ensureDocumentSignaturesIndexes } = await import(
+    './documentSignatureIndexes.js'
+  );
+  await ensureDocumentSignatureRequestsIndexes();
+  await ensureDocumentSignaturesIndexes();
 }
 
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {

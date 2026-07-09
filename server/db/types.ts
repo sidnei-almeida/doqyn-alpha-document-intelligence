@@ -509,6 +509,8 @@ export type MongoDocument = {
   lastClassificationSource?: 'ai' | 'manual' | 'manual_move' | string;
   lastManualCategoryId?: string | null;
   classificationSource?: 'ai' | 'manual' | string;
+  /** Status agregado de assinatura eletrônica DOQYN na versão atual. */
+  signatureStatus?: DocumentSignatureStatusLabel;
   aiSuggestedClassId?: string | null;
   manualClassificationOverride?: boolean;
   manualClassificationUpdatedAt?: Date | null;
@@ -709,3 +711,136 @@ export type MongoDocumentShareGrant = {
   revokedBy?: string | null;
   expiresAt?: Date | null;
 };
+
+export type ExternalDocumentShareGrantStatus = 'pending' | 'active' | 'revoked' | 'expired';
+
+export type ExternalDocumentSharePermissions = {
+  canView: boolean;
+  canDownload: boolean;
+};
+
+/** Concessão explícita de acesso a documento para convidado externo (fora do tenant). */
+export type MongoExternalDocumentShareGrant = {
+  _id: string;
+  documentId: string;
+  documentTenantId: string;
+  documentTenantType?: TenantType;
+  documentCollection?: string;
+  sharedByUserId: string;
+  sharedByNameSnapshot?: string;
+  recipientEmail: string;
+  recipientEmailNormalized: string;
+  recipientPhone?: string | null;
+  recipientPhoneNormalized?: string | null;
+  recipientPhoneCountryCode?: string | null;
+  recipientPhoneMasked?: string | null;
+  recipientName?: string | null;
+  recipientOrganizationName?: string | null;
+  recipientTaxId?: string | null;
+  permissions: ExternalDocumentSharePermissions;
+  status: ExternalDocumentShareGrantStatus;
+  message?: string | null;
+  inviteTokenHash: string;
+  inviteExpiresAt: Date;
+  acceptedAt?: Date | null;
+  lastAccessAt?: Date | null;
+  accessCodeHash?: string | null;
+  accessCodeExpiresAt?: Date | null;
+  expiresAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  revokedAt?: Date | null;
+  revokedBy?: string | null;
+};
+
+export type DocumentSignatureRequestStatus =
+  | 'pending'
+  | 'partially_signed'
+  | 'signed'
+  | 'declined'
+  | 'expired'
+  | 'cancelled';
+
+export type DocumentSignatureSignerStatus = 'pending' | 'signed' | 'declined';
+
+export type DocumentSignatureSignerType = 'internal_user' | 'external_guest';
+
+export type DocumentSignaturePermissions = {
+  canView: boolean;
+  canSign: boolean;
+  canDownloadAfterSign: boolean;
+};
+
+export type MongoDocumentSignatureSigner = {
+  signerId: string;
+  signerType: DocumentSignatureSignerType;
+  userId?: string | null;
+  name: string;
+  email: string;
+  emailNormalized: string;
+  phone?: string | null;
+  phoneNormalized?: string | null;
+  phoneMasked?: string | null;
+  organizationName?: string | null;
+  status: DocumentSignatureSignerStatus;
+  signedAt?: Date | null;
+  order?: number | null;
+};
+
+/** Solicitação de assinatura eletrônica auditável DOQYN (não ICP-Brasil). */
+export type MongoDocumentSignatureRequest = {
+  _id: string;
+  signatureRequestId: string;
+  documentId: string;
+  versionId: string;
+  documentTenantId: string;
+  documentTenantType?: TenantType;
+  documentCollection?: string;
+  requestedByUserId: string;
+  requestedByNameSnapshot?: string | null;
+  status: DocumentSignatureRequestStatus;
+  signers: MongoDocumentSignatureSigner[];
+  permissions: DocumentSignaturePermissions;
+  signatureTokenHash: string;
+  expiresAt?: Date | null;
+  message?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date | null;
+  cancelledAt?: Date | null;
+  cancelledBy?: string | null;
+};
+
+export type DocumentSignatureStatus = 'signed' | 'revoked' | 'invalidated';
+
+export type MongoDocumentSignature = {
+  _id: string;
+  signatureId: string;
+  signatureRequestId: string;
+  documentId: string;
+  versionId: string;
+  signerId: string;
+  signerType: DocumentSignatureSignerType;
+  signerUserId?: string | null;
+  signerName: string;
+  signerEmailMasked: string;
+  signerEmailHash: string;
+  signerPhoneMasked?: string | null;
+  signerPhoneHash?: string | null;
+  organizationName?: string | null;
+  status: DocumentSignatureStatus;
+  signedAt: Date;
+  consentText: string;
+  authMethod: 'logged_in_session' | 'external_share_token' | 'signature_token' | 'manual_dev';
+  securityContext?: Record<string, unknown>;
+  originalDocumentHashSha256: string;
+  signedPdfHashSha256: string;
+  evidenceHashSha256: string;
+  signedPdfR2Key: string;
+  evidenceJsonR2Key: string;
+  verificationCode: string;
+  verificationUrl: string;
+  createdAt: Date;
+};
+
+export type DocumentSignatureStatusLabel = 'none' | 'pending' | 'signed' | 'declined' | 'expired';

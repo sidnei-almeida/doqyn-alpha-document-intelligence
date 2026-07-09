@@ -47,6 +47,7 @@ export type DocumentTrackingDetail = DocumentTrackingListItem & {
   requestId?: string;
   durationMs?: number;
   security?: Record<string, unknown>;
+  securityContext?: Record<string, unknown>;
 };
 
 export type DocumentTrackingListResponse = {

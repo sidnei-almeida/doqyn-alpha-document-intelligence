@@ -190,6 +190,37 @@ export function buildAnalysisStagingKey(input: {
   return joinStorageKeyParts(input.basePrefix ?? '', stagingPath);
 }
 
+const SAFE_SIGNATURE_ARTIFACT_NAME = /^[a-z0-9_.-]+\.(pdf|json)$/;
+
+function assertSafeSignatureArtifactName(value: string): void {
+  if (!value?.trim() || value.includes('..') || value.includes('/') || value.includes('\\')) {
+    throw new ServiceError('Nome de artefato de assinatura inválido.', 'INVALID_SIGNATURE_ARTIFACT', 400);
+  }
+  if (!SAFE_SIGNATURE_ARTIFACT_NAME.test(value)) {
+    throw new ServiceError('Nome de artefato de assinatura inválido.', 'INVALID_SIGNATURE_ARTIFACT', 400);
+  }
+}
+
+/** Artefatos de assinatura eletrônica — não sobrescreve o original da versão. */
+export function buildSignatureArtifactObjectKey(input: {
+  documentId: string;
+  versionId: string;
+  signatureRequestId: string;
+  artifactName: 'signed.pdf' | 'evidence.json';
+  keyPrefix?: string;
+  basePrefix?: string;
+}): string {
+  assertSafeStorageSegment(input.documentId, 'documentId');
+  assertSafeStorageSegment(input.versionId, 'versionId');
+  assertSafeStorageSegment(input.signatureRequestId, 'signatureRequestId');
+  assertSafeSignatureArtifactName(input.artifactName);
+
+  const keyPrefix = (input.keyPrefix || 'documents').replace(/\/+$/, '');
+  const objectPath = `${keyPrefix}/${input.documentId}/versions/${input.versionId}/signatures/${input.signatureRequestId}/${input.artifactName}`;
+
+  return joinStorageKeyParts(input.basePrefix ?? '', objectPath);
+}
+
 /** @deprecated legado local — mantido para paths antigos em disco. */
 export function buildLegacyAnalysisStagingKey(input: {
   tenantId: string;

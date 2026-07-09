@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { formatDate } from '@/lib/utils';
 import type { DocumentTrackingDetail, TrackingListStatus } from '@/types/document-tracking';
 import {
+  formatSecurityContextDisplay,
   formatSessionOrigin,
   formatTrackingAction,
   formatTrackingStatus,
@@ -60,7 +61,9 @@ export function TrackingEventDetailsDrawer({
   if (!open) return null;
 
   const safeMetadata = event ? sanitizeTrackingMetadata(event.metadata) : {};
-  const security = event?.security ? sanitizeTrackingMetadata(event.security) : {};
+  const securityContext = event?.securityContext ?? event?.security;
+  const securityDisplay = formatSecurityContextDisplay(securityContext, event?.occurredAt);
+  const security = securityContext ? sanitizeTrackingMetadata(securityContext) : {};
 
   return (
     <div
@@ -224,33 +227,53 @@ export function TrackingEventDetailsDrawer({
                 </div>
               )}
 
-              {Object.keys(security).length > 0 && (
+              {securityDisplay ? (
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-doqyn-muted">
-                    Segurança
+                    Contexto de acesso
                   </p>
                   <div className="space-y-1 rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs text-doqyn-muted">
-                    {'ipHash' in security && security.ipHash != null && (
-                      <p>IP (hash): {String(security.ipHash)}</p>
-                    )}
-                    {'userAgentHash' in security && security.userAgentHash != null && (
-                      <p>User-Agent (hash): {String(security.userAgentHash)}</p>
-                    )}
-                    {'userAgentSummary' in security && security.userAgentSummary != null && (
-                      <p>Dispositivo: {String(security.userAgentSummary)}</p>
-                    )}
-                    {'permissionResult' in security && security.permissionResult != null && (
-                      <p>Permissão: {String(security.permissionResult)}</p>
-                    )}
-                    {'permissionReason' in security && security.permissionReason != null && (
-                      <p>Motivo: {String(security.permissionReason)}</p>
-                    )}
-                    {'requiredPermission' in security && security.requiredPermission != null && (
-                      <p>Requerida: {String(security.requiredPermission)}</p>
-                    )}
+                    <p>
+                      <span className="text-doqyn-subtle">Dispositivo:</span> {securityDisplay.deviceLabel}
+                    </p>
+                    <p>
+                      <span className="text-doqyn-subtle">Tipo:</span> {securityDisplay.deviceTypeLabel}
+                    </p>
+                    <p>
+                      <span className="text-doqyn-subtle">Local aproximado:</span>{' '}
+                      {securityDisplay.locationLabel}
+                    </p>
+                    <p>
+                      <span className="text-doqyn-subtle">IP:</span> {securityDisplay.ipLabel}
+                    </p>
+                    <p>
+                      <span className="text-doqyn-subtle">Sessão:</span> {securityDisplay.sessionLabel}
+                    </p>
+                    {securityDisplay.occurredAtLabel ? (
+                      <p>
+                        <span className="text-doqyn-subtle">Horário:</span>{' '}
+                        {formatDate(securityDisplay.occurredAtLabel)}
+                      </p>
+                    ) : null}
+                    {securityDisplay.isExternalGuest ? (
+                      <p>
+                        <span className="text-doqyn-subtle">Origem:</span> Convidado externo
+                      </p>
+                    ) : null}
+                    {'permissionResult' in security && security.permissionResult != null ? (
+                      <p>
+                        <span className="text-doqyn-subtle">Permissão:</span>{' '}
+                        {String(security.permissionResult)}
+                      </p>
+                    ) : null}
+                    {'permissionReason' in security && security.permissionReason != null ? (
+                      <p>
+                        <span className="text-doqyn-subtle">Motivo:</span> {String(security.permissionReason)}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {Object.keys(safeMetadata).length > 0 && (
                 <div>

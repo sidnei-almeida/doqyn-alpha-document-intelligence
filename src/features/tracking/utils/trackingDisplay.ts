@@ -57,6 +57,19 @@ const ACTION_LABELS: Record<string, string> = {
   'document.moved': 'Documento movido de categoria',
   'document.share_created': 'Compartilhamento criado',
   'document.share_revoked': 'Compartilhamento revogado',
+  'document.external_share_created': 'Compartilhamento externo criado',
+  'document.external_share_invite_opened': 'Convite externo aberto',
+  'document.external_share_accepted': 'Convite externo aceito',
+  'document.external_share_viewed': 'Documento externo visualizado',
+  'document.external_share_downloaded': 'Download externo realizado',
+  'document.external_share_revoked': 'Compartilhamento externo revogado',
+  'document.external_share_expired': 'Compartilhamento externo expirado',
+  'document.external_share_denied': 'Acesso externo negado',
+  'document.signature_request_created': 'Solicitação de assinatura criada',
+  'document.signature_completed': 'Assinatura eletrônica concluída',
+  'document.signature_declined': 'Assinatura recusada',
+  'document.signed_pdf_generated': 'PDF assinado gerado',
+  'document.signature_verification_opened': 'Validação de assinatura aberta',
   'document.shared_viewed': 'Documento compartilhado visualizado',
   'document.shared_downloaded': 'Download de documento compartilhado',
   'document.share_denied': 'Compartilhamento negado',
@@ -116,6 +129,74 @@ export function formatTrackingStatus(status?: TrackingListStatus): string {
 export function formatSessionOrigin(sessionHash?: string): string {
   if (!sessionHash) return '—';
   return `${sessionHash.slice(0, 8)}…`;
+}
+
+export type SecurityContextDisplay = {
+  deviceLabel: string;
+  deviceTypeLabel: string;
+  locationLabel: string;
+  ipLabel: string;
+  sessionLabel: string;
+  occurredAtLabel?: string;
+  isExternalGuest: boolean;
+};
+
+function formatDeviceTypeLabel(deviceType?: unknown): string {
+  switch (deviceType) {
+    case 'mobile':
+      return 'Mobile';
+    case 'tablet':
+      return 'Tablet';
+    case 'desktop':
+      return 'Desktop';
+    default:
+      return 'Desconhecido';
+  }
+}
+
+export function formatSecurityContextDisplay(
+  securityContext?: Record<string, unknown> | null,
+  occurredAt?: string,
+): SecurityContextDisplay | null {
+  if (!securityContext || Object.keys(securityContext).length === 0) return null;
+
+  const browser = typeof securityContext.browser === 'string' ? securityContext.browser : undefined;
+  const os = typeof securityContext.os === 'string' ? securityContext.os : undefined;
+  const summary =
+    typeof securityContext.userAgent === 'string'
+      ? securityContext.userAgent
+      : [browser, os].filter(Boolean).join(' em ');
+
+  const city = typeof securityContext.city === 'string' ? securityContext.city : undefined;
+  const region = typeof securityContext.region === 'string' ? securityContext.region : undefined;
+  const country = typeof securityContext.country === 'string' ? securityContext.country : undefined;
+  const locationParts = [city, region, country].filter(Boolean);
+  const ipLabel =
+    typeof securityContext.ipAddressMasked === 'string'
+      ? securityContext.ipAddressMasked
+      : '—';
+  const isLocalNetwork =
+    securityContext.isLocalNetwork === true ||
+    ipLabel === 'rede local' ||
+    ipLabel === '1:…';
+
+  return {
+    deviceLabel: summary || '—',
+    deviceTypeLabel: formatDeviceTypeLabel(securityContext.deviceType),
+    locationLabel: isLocalNetwork
+      ? 'Rede local'
+      : locationParts.length
+        ? locationParts.join(', ')
+        : '—',
+    ipLabel,
+    sessionLabel: formatSessionOrigin(
+      typeof securityContext.sessionIdHash === 'string'
+        ? securityContext.sessionIdHash
+        : undefined,
+    ),
+    occurredAtLabel: occurredAt,
+    isExternalGuest: securityContext.isExternalGuest === true,
+  };
 }
 
 export { sanitizeAuditMetadataForDisplay as sanitizeTrackingMetadata } from '../../audit/utils/auditDisplay';
