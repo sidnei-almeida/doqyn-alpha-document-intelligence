@@ -10,7 +10,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 --ingroup nodejs nodejs
+  && adduser --system --uid 1001 --ingroup nodejs --home /home/nodejs nodejs \
+  && mkdir -p /home/nodejs /app/.npm
 
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
@@ -21,7 +22,11 @@ COPY scripts/ensure-mongodb-indexes.ts ./scripts/ensure-mongodb-indexes.ts
 COPY scripts/lib ./scripts/lib
 COPY public ./public
 
-RUN mkdir -p docs && chown nodejs:nodejs docs
+RUN mkdir -p docs \
+  && chown -R nodejs:nodejs /app /home/nodejs
+
+ENV HOME=/home/nodejs
+ENV NPM_CONFIG_CACHE=/app/.npm
 
 USER nodejs
 
@@ -30,4 +35,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS "http://127.0.0.1:${API_PORT:-3001}/api/health" || exit 1
 
-CMD ["npx", "tsx", "server/dev-server.ts"]
+CMD ["./node_modules/.bin/tsx", "server/dev-server.ts"]
