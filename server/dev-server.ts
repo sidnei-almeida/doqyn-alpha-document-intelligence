@@ -445,14 +445,7 @@ function toVercelRes(res: ServerResponse) {
 const PORT = Number(process.env.API_PORT ?? 3001);
 
 async function startDevServer(): Promise<void> {
-  try {
-    await initGeoIpCityReader();
-    console.log('GeoIP City (GeoLite2) pronto para tracking.');
-  } catch {
-    console.warn('GeoIP City indisponível — tracking usará fallback limitado.');
-  }
-
-  createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
     const pathname = url.pathname;
 
@@ -492,9 +485,19 @@ async function startDevServer(): Promise<void> {
       res.statusCode = 500;
       res.end(JSON.stringify({ message: 'Internal server error' }));
     }
-  }).listen(PORT, '0.0.0.0', () => {
+  });
+
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`DOQYN API em http://0.0.0.0:${PORT}`);
   });
+
+  void initGeoIpCityReader()
+    .then(() => {
+      console.log('GeoIP City (GeoLite2) pronto para tracking.');
+    })
+    .catch(() => {
+      console.warn('GeoIP City indisponível — tracking usará fallback limitado.');
+    });
 }
 
 startDevServer().catch((error) => {
