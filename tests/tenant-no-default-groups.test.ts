@@ -28,10 +28,10 @@ describe('empresa nova sem grupos documentais padrão', () => {
     assert.equal(source.includes('documentGovernanceSeed'), false);
   });
 
-  it('/users mostra empty state quando não há grupos de acesso', () => {
+  it('/users mostra empty state quando não há grupos', () => {
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('Nenhum grupo de acesso criado ainda.'));
-    assert.ok(sections.includes('Nenhum grupo documental criado ainda.'));
+    assert.ok(sections.includes('Nenhum grupo criado ainda.'));
+    assert.ok(sections.includes('Crie grupos na tela Regras'));
   });
 
   it('/rules mostra empty state real sem mocks', () => {
@@ -43,9 +43,9 @@ describe('empresa nova sem grupos documentais padrão', () => {
 
   it('query keys de /users consideram tenant ativo', () => {
     const source = readSrc('src/features/users/UsersPage.tsx');
-    assert.ok(source.includes("queryKey: ['company-members', effectiveCompanyId]"));
-    assert.ok(source.includes("queryKey: ['auth-access-groups', effectiveCompanyId]"));
-    assert.ok(source.includes("queryKey: ['document-groups', effectiveCompanyId]"));
+    assert.ok(source.includes("queryKey: ['company-members', sessionTenantId]"));
+    assert.ok(source.includes("queryKey: ['document-groups', sessionTenantId]"));
+    assert.ok(source.includes('tenant?.tenantId ?? user?.companyId'));
   });
 
   it('logout limpa cache do React Query', () => {

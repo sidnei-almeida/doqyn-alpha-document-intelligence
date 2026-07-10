@@ -3,15 +3,16 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DoqynLogo } from '@/components/brand';
+import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
@@ -102,26 +103,19 @@ export function IndividualSignupPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
       setError(message);
-      toast.error(message);
+      showApiErrorToast(err, message);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-8">
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-lg flow-enter">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Pessoa física" />
-          <p className="mt-4 max-w-md text-sm text-doqyn-muted">
-            Para clientes CPF que precisam acessar documentos pessoais no DOQYN.
-          </p>
-        </div>
-
+    <AuthShell
+      width="md"
+      eyebrow="Pessoa física"
+      description="Para clientes CPF que precisam acessar documentos pessoais no DOQYN."
+      showSecureBadge
+    >
         <form
           onSubmit={handleSubmit}
           className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
@@ -203,7 +197,11 @@ export function IndividualSignupPage() {
             />
           </div>
 
-          {error && <p className="form-error mt-4 text-center">{error}</p>}
+          {error ? (
+            <div className="mt-4">
+              <AlertBanner variant="error" message={error} />
+            </div>
+          ) : null}
 
           <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
             <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
@@ -231,12 +229,6 @@ export function IndividualSignupPage() {
           }}
           onConfirm={handleConfirmSubmit}
         />
-
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Icon name="shield" size={14} />
-          Documentos pessoais protegidos
-        </p>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

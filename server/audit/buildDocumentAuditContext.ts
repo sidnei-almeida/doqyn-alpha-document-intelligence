@@ -6,13 +6,14 @@ export function buildDocumentAuditContext(
   ctx: DocumentRequestContext,
   user: AuthUser,
   requestId?: string,
+  options?: { documentOwnerUserId?: string },
 ): DocumentAuditContext {
   return {
     tenantId: ctx.tenantId,
     tenantType: ctx.tenantType === 'individual' ? 'individual' : 'business',
     collectionPrefix: ctx.storage.collectionPrefix,
     ownerTenantId: ctx.storage.tenantId,
-    ownerUserId: ctx.userId,
+    ownerUserId: options?.documentOwnerUserId ?? ctx.userId,
     actorUserId: user.id,
     actorMembershipId: ctx.membershipId ?? user.membershipId ?? user.memberId,
     actorRoles: user.platformRoles?.map(String),

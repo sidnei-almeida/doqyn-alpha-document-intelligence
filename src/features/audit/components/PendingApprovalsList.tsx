@@ -45,7 +45,7 @@ export function PendingApprovalsList({
       <AuditEmptyState
         icon={<Icon name="assignment" size={ICON_SIZE.nav} />}
         title="Não há pendências no momento."
-        description="Novas solicitações de acesso aparecerão aqui para revisão."
+        description="Novas solicitações de acesso e envios de documentos aparecerão aqui para revisão."
       />
     );
   }
@@ -120,13 +120,15 @@ export function PendingApprovalsList({
                   </Button>
                 </>
               )}
-              <Link
-                to="/users"
-                className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
-              >
-                Usuários
-                <Icon name="open_in_new" size={12} />
-              </Link>
+              {item.type !== 'document_upload' && (
+                <Link
+                  to="/users"
+                  className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
+                >
+                  Usuários
+                  <Icon name="open_in_new" size={12} />
+                </Link>
+              )}
             </div>
           ),
         },

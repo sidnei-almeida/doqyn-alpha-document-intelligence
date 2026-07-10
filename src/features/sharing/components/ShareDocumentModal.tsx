@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { ExternalInviteLinkField } from '@/components/ui/ExternalInviteLinkField';
 import { Input } from '@/components/ui/Input';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -501,12 +502,11 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               </div>
 
               {lastInviteUrl ? (
-                <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-surface-raised px-3 py-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
-                    Link do convite (dev)
-                  </p>
-                  <p className="mt-1 break-all text-[12px] text-doqyn-text">{lastInviteUrl}</p>
-                </div>
+                <ExternalInviteLinkField
+                  value={lastInviteUrl}
+                  intro="Convite criado. Compartilhe o link abaixo com o convidado."
+                  testId="external-share-invite-url"
+                />
               ) : null}
 
               <div>

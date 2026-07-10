@@ -1,5 +1,50 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+    {
+      "source": "/guest/share/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?i)(facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|googlebot|bingbot|applebot|embedly).*"
+        }
+      ],
+      "destination": "/api/og/guest/share/:token"
+    },
+    {
+      "source": "/guest/sign/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?i)(facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|googlebot|bingbot|applebot|embedly).*"
+        }
+      ],
+      "destination": "/api/og/guest/sign/:token"
+    },
+    {
+      "source": "/share/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?i)(facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|googlebot|bingbot|applebot|embedly).*"
+        }
+      ],
+      "destination": "/api/og/guest/share/:token"
+    },
+    {
+      "source": "/sign/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?i)(facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|googlebot|bingbot|applebot|embedly).*"
+        }
+      ],
+      "destination": "/api/og/guest/sign/:token"
+    },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

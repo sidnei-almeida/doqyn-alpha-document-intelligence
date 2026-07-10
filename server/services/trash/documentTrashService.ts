@@ -14,6 +14,10 @@ import {
   loadMemberDocumentGroupIds,
 } from '../../tenancy/documentAccess.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import {
+  buildDocumentMutationFields,
+  resolveDocumentActorIdentity,
+} from '../../utils/documentMutationFields.js';
 import { buildDocumentListItems } from '../documentListItems.js';
 import {
   attachFavoriteFlags,
@@ -183,6 +187,12 @@ export async function moveDocumentToTrash(
 
   const settings = await getTrashRetentionSettings(ctx.tenantId);
   const now = new Date();
+  const actor = await resolveDocumentActorIdentity({ tenantId: ctx.tenantId, actor: user });
+  const mutationFields = buildDocumentMutationFields({
+    actorUserId: actor.userId,
+    actorDisplayName: actor.displayName,
+    now,
+  });
   const trashExpiresAt = computeTrashExpiresAt(settings, now);
 
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
@@ -204,7 +214,7 @@ export async function moveDocumentToTrash(
         trashExpiresAt,
         lifecycleStatus: 'trashed',
         status: 'archived',
-        updatedAt: now,
+        ...mutationFields,
       },
     },
   );
@@ -235,6 +245,12 @@ export async function restoreDocumentFromTrash(
   assertCanTrashDocument(user, doc, memberGroupIds);
 
   const now = new Date();
+  const actor = await resolveDocumentActorIdentity({ tenantId: ctx.tenantId, actor: user });
+  const mutationFields = buildDocumentMutationFields({
+    actorUserId: actor.userId,
+    actorDisplayName: actor.displayName,
+    now,
+  });
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
@@ -254,7 +270,7 @@ export async function restoreDocumentFromTrash(
         trashExpiresAt: null,
         lifecycleStatus: 'active',
         status: 'active',
-        updatedAt: now,
+        ...mutationFields,
       },
     },
   );

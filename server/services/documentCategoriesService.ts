@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { MongoDocumentCategory } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
+import { isDocumentGroupId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
 import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
@@ -215,6 +216,14 @@ export async function assertDocumentCategoryExists(
   categoryId: string,
   opts?: ServiceOpts,
 ) {
+  if (isDocumentGroupId(categoryId)) {
+    throw new ServiceError(
+      'ID de grupo (group_*) não pode ser usado como classe de documento. Use um ID cat_*.',
+      'INVALID_CATEGORY_ID',
+      400,
+    );
+  }
+
   const { collections, scope } = await resolveContext(tenantId, opts);
   const category = await collections.documentCategories.findOne({
     ...scope,

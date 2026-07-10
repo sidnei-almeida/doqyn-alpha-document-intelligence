@@ -88,3 +88,13 @@ export function buildSuspendMemberConfirm(name: string) {
     variant: 'warning' as const,
   };
 }
+
+export function buildRevokeSignatureRequestConfirm(signerName: string) {
+  const label = signerName.trim() || 'o signatário';
+  return {
+    title: 'Revogar solicitação?',
+    description: `O convite de assinatura para ${label} será cancelado e o link deixará de funcionar.`,
+    confirmLabel: 'Revogar',
+    variant: 'danger' as const,
+  };
+}

@@ -93,6 +93,12 @@ describe('tracking securityContext', () => {
     assert.equal(context.authMethod, 'session');
   });
 
+  it('inferência de convidado externo inclui portal de assinatura', () => {
+    const service = read('server/services/tracking/trackingService.ts');
+    assert.ok(service.includes("source === 'signature_portal'"));
+    assert.ok(service.includes("signerType === 'external_guest'"));
+  });
+
   it('sanitize remove IP completo, token e objectKey do payload público', () => {
     const safe = sanitizeAuditMetadata({
       securityContext: {

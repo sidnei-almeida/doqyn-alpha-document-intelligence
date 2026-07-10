@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
-import { applyCollectionFilter } from '../collections';
+import { applyCollectionFilter, RECENT_LIMIT } from '../collections';
 import { sortDocuments } from '../utils/sortDocuments';
 import {
   buildLibraryDocumentFilters,
@@ -25,6 +25,7 @@ export function useLibraryView() {
   const isFavoritesCollection = collection.id === 'favoritos';
   const isTrashCollection = collection.id === 'lixeira';
   const isSharedCollection = collection.id === 'compartilhados';
+  const isSignaturesCollection = collection.id === 'para-assinar';
 
   const resolvedSpaceId = useMemo(
     () => (state.space ? resolveLibraryCategoryId(state.space, categories) : ''),
@@ -35,6 +36,10 @@ export function useLibraryView() {
     if (!state.space || !categories.length) return;
     if (resolvedSpaceId && resolvedSpaceId !== state.space) {
       update({ space: resolvedSpaceId });
+      return;
+    }
+    if (!resolvedSpaceId) {
+      update({ space: '' });
     }
   }, [state.space, resolvedSpaceId, categories.length, update]);
 
@@ -58,7 +63,7 @@ export function useLibraryView() {
     isError: isDocumentsError,
   } = useDocuments(filters, {
     listScopeKey,
-    enabled: !isFavoritesCollection && !isTrashCollection && !isSharedCollection,
+    enabled: !isFavoritesCollection && !isTrashCollection && !isSharedCollection && !isSignaturesCollection,
   });
 
   const {
@@ -98,7 +103,10 @@ export function useLibraryView() {
     const scoped = applyCollectionFilter(documents, collection, {
       currentUserId: user?.id,
     });
-    if (collection.id === 'recentes') return scoped;
+    if (collection.id === 'recentes') {
+      const sorted = sortDocuments(scoped, state.sort, state.direction);
+      return sorted.slice(0, RECENT_LIMIT);
+    }
     return sortDocuments(scoped, state.sort, state.direction);
   }, [
     documents,

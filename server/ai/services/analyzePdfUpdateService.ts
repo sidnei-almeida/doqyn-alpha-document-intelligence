@@ -243,7 +243,7 @@ export async function analyzePdfUpdateBuffer(input: {
     },
   });
 
-  if (classification.errorCode === 'GROQ_RATE_LIMIT') {
+  if (classification.errorCode === 'GROQ_RATE_LIMIT' || classification.errorCode === 'GROQ_DAILY_TOKEN_LIMIT' || classification.errorCode === 'GROQ_CONTEXT_LIMIT') {
     return {
       jobId,
       status: 'ai_unavailable',

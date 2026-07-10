@@ -2,7 +2,7 @@ import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion, MongoPreviewStorageSlot } from '../db/types.js';
 import {
-  loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
   resolveDocumentPermissions,
   assertCanUpdateDocument,
 } from '../tenancy/documentAccess.js';
@@ -13,6 +13,7 @@ import {
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
+import { loadTenantMemberDisplayNames } from '../utils/userDisplayName.js';
 
 function mapPreviewStatus(
   preview?: MongoPreviewStorageSlot | null,
@@ -40,6 +41,7 @@ export type DocumentVersionListItem = {
   previewStorageFileName?: string;
   createdAt: Date;
   createdBy?: string;
+  createdByDisplayName?: string;
   previousVersionId: string | null;
   isCurrent: boolean;
   preview: {
@@ -87,7 +89,7 @@ export async function listDocumentVersions(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: input.tenantId,
     userId: input.user.id,
     membershipId: input.membershipId,
@@ -96,6 +98,7 @@ export async function listDocumentVersions(input: {
     input.user,
     doc as MongoDocument,
     memberGroupIds,
+    governanceIndex,
   );
 
   if (!permissions.canPreview && !permissions.canDownload) {
@@ -124,6 +127,11 @@ export async function listDocumentVersions(input: {
       versions.find((v) => String(v._id) === mongoDoc.currentVersionId)?.versionLabel,
   );
 
+  const creatorIds = versions
+    .map((version) => (version as MongoDocumentVersion).createdBy)
+    .filter((id): id is string => Boolean(id));
+  const creatorDisplayNames = await loadTenantMemberDisplayNames(input.tenantId, creatorIds);
+
   const mapped: DocumentVersionListItem[] = versions.map((version) => {
     const v = version as MongoDocumentVersion;
     const preview = v.storage?.preview ?? null;
@@ -137,6 +145,7 @@ export async function listDocumentVersions(input: {
       previewStorageFileName: v.previewStorageFileName,
       createdAt: v.createdAt,
       createdBy: v.createdBy,
+      createdByDisplayName: v.createdBy ? creatorDisplayNames.get(v.createdBy) : undefined,
       previousVersionId: v.previousVersionId ?? null,
       isCurrent: String(v._id) === mongoDoc.currentVersionId,
       preview: {
@@ -212,7 +221,7 @@ export async function assertCanUpdateExistingDocument(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: input.tenantId,
     userId: input.user.id,
     membershipId: input.membershipId,
@@ -221,6 +230,7 @@ export async function assertCanUpdateExistingDocument(input: {
     input.user,
     doc as MongoDocument,
     memberGroupIds,
+    governanceIndex,
   );
   assertCanUpdateDocument(permissions);
 

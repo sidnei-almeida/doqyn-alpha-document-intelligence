@@ -1,6 +1,6 @@
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Badge } from '@/components/ui/Badge';
-import { PLATFORM_ROLE_LABELS } from '@/features/users/platformRoleLabels';
+import { getPlatformRoleLabel } from '@/features/users/platformRoleLabels';
 import type { PlatformRole } from '@/features/users/api/usersApi';
 
 type PlatformRoleChipsProps = {
@@ -16,15 +16,15 @@ export function PlatformRoleChips({ roles, className }: PlatformRoleChipsProps) 
   return (
     <div className={className ?? 'flex max-w-[220px] flex-wrap gap-1'}>
       {roles.map((role) => {
-        const label = PLATFORM_ROLE_LABELS[role as keyof typeof PLATFORM_ROLE_LABELS]?.label ?? role;
+        const label = getPlatformRoleLabel(role);
         return (
-          <Tooltip key={role} label={label}>
+          <Tooltip key={role} label={role}>
             <Badge
               variant="neutral"
               dot={false}
               className="max-w-full truncate font-medium normal-case tracking-normal"
             >
-              {role}
+              {label}
             </Badge>
           </Tooltip>
         );

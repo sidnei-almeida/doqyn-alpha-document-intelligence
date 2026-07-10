@@ -11,6 +11,10 @@ import {
   resolveGovernanceMemberIdentity,
 } from './governanceMembersService.js';
 import { syncMemberDocumentGroups } from './documentGroupsService.js';
+import {
+  invalidateTenantMemberSyncCache,
+  syncTenantMembersFromAuth,
+} from './tenantMemberSyncService.js';
 import type { NotificationPreferences } from '../db/types.js';
 import { maskEmail, sanitizeRejectionReason } from '../utils/maskSensitiveData.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
@@ -156,6 +160,17 @@ export async function approveMembershipDecision(
 
   await logApprovedMembershipAudit(actor, memberId, input, detail.member.user.email);
 
+  invalidateTenantMemberSyncCache(tenantId);
+  try {
+    await syncTenantMembersFromAuth(tenantId);
+  } catch (error) {
+    logger.warn('tenant member sync failed after approve', {
+      tenantId,
+      membershipId: memberId,
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
+
   logger.info('membership approve completed (auth)', {
     tenantId,
     membershipId: memberId,
@@ -211,6 +226,18 @@ export async function rejectMembershipDecision(
   );
 
   await logRejectedMembershipAudit(actor, memberId, sanitizedReason, detail.member.user.email);
+
+  const tenantId = actor.tenantId ?? actor.companyId;
+  invalidateTenantMemberSyncCache(tenantId);
+  try {
+    await syncTenantMembersFromAuth(tenantId);
+  } catch (error) {
+    logger.warn('tenant member sync failed after reject', {
+      tenantId,
+      membershipId: memberId,
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
 
   return {
     member: {

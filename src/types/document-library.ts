@@ -1,5 +1,31 @@
 export type DocumentPreviewStatus = 'ready' | 'failed' | 'skipped' | 'missing';
 
+export type DocumentSignatureSummaryStatus =
+  | 'none'
+  | 'pending'
+  | 'signed'
+  | 'declined'
+  | 'expired'
+  | 'cancelled';
+
+export type DocumentSignatureSummarySigner = {
+  name: string;
+  signedAt: string;
+};
+
+export type DocumentSignatureSummary = {
+  status: DocumentSignatureSummaryStatus;
+  pendingCount: number;
+  signedCount: number;
+  signedSigners: DocumentSignatureSummarySigner[];
+  latestRequestId?: string;
+  latestSignatureId?: string;
+  latestSignedAt?: string;
+  latestSignerName?: string;
+  hasSignedPdf: boolean;
+  verificationCode?: string;
+};
+
 export type DocumentListItemPermissions = {
   canPreview: boolean;
   canDownload: boolean;
@@ -7,6 +33,7 @@ export type DocumentListItemPermissions = {
   canEditMetadata: boolean;
   canUpdate?: boolean;
   canShare?: boolean;
+  canTransferOwnership?: boolean;
   sharedViaGrant?: boolean;
 };
 
@@ -34,6 +61,8 @@ export type DocumentListItem = {
   versionCount?: number;
   ownerUserId: string;
   ownerName?: string;
+  updatedBy?: string;
+  updatedByName?: string;
   area?: string;
   accessGroups?: string[];
   metadata?: Record<string, unknown>;
@@ -54,6 +83,7 @@ export type DocumentListItem = {
   };
   permissions?: DocumentListItemPermissions;
   isFavorite?: boolean;
+  signatureSummary?: DocumentSignatureSummary;
   sharedWithMe?: boolean;
   sharedByUserId?: string;
   sharedByNameSnapshot?: string;
@@ -73,6 +103,8 @@ export type DocumentVersionSummary = {
   previewStorageFileName?: string;
   previewStatus?: DocumentPreviewStatus;
   createdAt?: string;
+  createdBy?: string;
+  createdByDisplayName?: string;
   isCurrent?: boolean;
   preview?: {
     status: DocumentPreviewStatus;

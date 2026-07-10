@@ -14,6 +14,11 @@ import {
 } from '../auth/memberAuth.js';
 import { memberIdFromEmail } from '../utils/slugify.js';
 import { normalizeEmail } from '../utils/contactNormalize.js';
+import {
+  ensureTenantMembersSyncedForOperations,
+  invalidateTenantMemberSyncCache,
+  syncTenantMembersFromAuth,
+} from './tenantMemberSyncService.js';
 
 export function tenantMemberToCompanyMember(member: MongoTenantMember): MongoCompanyMember {
   const tenantRoles = member.tenantRoles?.length ? member.tenantRoles : (['user'] as PlatformRole[]);
@@ -167,6 +172,20 @@ export async function listTenantMembers(tenantId: string) {
     .toArray();
 
   return legacy.map(companyMemberToTenantMember);
+}
+
+/** Lista membros do tenant após garantir espelhamento auth → Mongo (fonte operacional única). */
+export async function listOperationalTenantMembers(
+  tenantId: string,
+  options?: { forceSync?: boolean },
+): Promise<MongoTenantMember[]> {
+  if (options?.forceSync) {
+    invalidateTenantMemberSyncCache(tenantId);
+    await syncTenantMembersFromAuth(tenantId);
+  } else {
+    await ensureTenantMembersSyncedForOperations(tenantId);
+  }
+  return listTenantMembers(tenantId);
 }
 
 export async function updateTenantMemberFields(

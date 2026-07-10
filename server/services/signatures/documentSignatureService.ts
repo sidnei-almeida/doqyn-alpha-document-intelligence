@@ -5,6 +5,7 @@ import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type {
   DocumentSignaturePermissions,
+  DocumentSignatureStatusLabel,
   MongoDocument,
   MongoDocumentSignature,
   MongoDocumentSignatureRequest,
@@ -15,16 +16,22 @@ import type { AuthUser } from '../../auth/types.js';
 import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
 import {
   assertCanAccessDocument,
+  buildDocumentOwnershipFilter,
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
 import { loadMemberDocumentGroupIds } from '../../tenancy/documentAccess.js';
 import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
+import { resolveDocumentAccessWithShare } from '../sharing/documentShareService.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { resolveTenantStorageScopeById } from '../../tenancy/resolveTenantStorageScope.js';
 import { getStorageProvider, persistPreviewAsset } from '../../storage/index.js';
 import { buildSignatureArtifactObjectKey } from '../../storage/storageKeys.js';
 import { isR2StorageEnabled } from '../../storage/storageConfig.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import {
+  isSignatureRequestOpen,
+  resolveEffectiveSignatureRequestStatus,
+} from './signatureRequestStatus.js';
 import {
   INVALID_RECIPIENT_PHONE_MESSAGE,
   isValidEmail,
@@ -42,6 +49,10 @@ import {
   hashSignaturePortalToken,
 } from './signatureTokens.js';
 import { SIGNATURE_CONSENT_TEXT, generateSignedPdf } from './signaturePdfService.js';
+import { promoteSignedPdfToDocumentVersion } from './promoteSignedPdfToDocumentVersion.js';
+import { resolveInternalSignerForTenant } from './signatureRecipientValidation.js';
+import { normalizeVersionLabel } from '../../utils/versionLabelUtils.js';
+import { loadDocumentSignatureSummary } from './documentSignatureSummaryService.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
@@ -119,12 +130,198 @@ export async function findSignatureRequestByToken(
   return collection.findOne({ signatureTokenHash: hashSignaturePortalToken(token) });
 }
 
-function isRequestOpen(request: MongoDocumentSignatureRequest): boolean {
-  if (request.status === 'cancelled' || request.status === 'declined' || request.status === 'signed') {
+function defaultSignerPermissions(
+  permissions: DocumentSignaturePermissions,
+): MongoDocumentSignatureSigner['permissions'] {
+  return {
+    canViewForSigning: permissions.canView,
+    canSign: permissions.canSign,
+    canDownloadSignedPdf: permissions.canDownloadAfterSign,
+  };
+}
+
+function getPrimarySigner(request: MongoDocumentSignatureRequest): MongoDocumentSignatureSigner {
+  return request.signers[0];
+}
+
+export async function requireAssignedInternalSignatureRequest(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  signatureRequestId: string,
+  options: {
+    requireOpen?: boolean;
+    requireCanView?: boolean;
+    requireCanSign?: boolean;
+  } = {},
+): Promise<MongoDocumentSignatureRequest> {
+  const collection = await getSignatureRequestsCollection();
+  const request = await collection.findOne({
+    signatureRequestId,
+    documentTenantId: ctx.tenantId,
+  });
+  if (!request) {
+    throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
+  }
+
+  const signer = getPrimarySigner(request);
+  if (signer.signerType !== 'internal_user' || signer.userId !== user.id) {
+    throw new ServiceError('Usuário não autorizado.', 'SIGNATURE_FORBIDDEN', 403);
+  }
+  if (options.requireOpen !== false && !isSignatureRequestOpen(request)) {
+    throw new ServiceError('Solicitação de assinatura indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
+  }
+  if (options.requireCanView && !request.permissions.canView) {
+    throw new ServiceError('Visualização não permitida.', 'SIGNATURE_PREVIEW_DENIED', 403);
+  }
+  if (options.requireCanSign && !request.permissions.canSign) {
+    throw new ServiceError('Assinatura não permitida.', 'SIGNATURE_FORBIDDEN', 403);
+  }
+
+  return request;
+}
+
+async function userHasSignatureDocumentAccess(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  request: MongoDocumentSignatureRequest,
+): Promise<boolean> {
+  const signer = getPrimarySigner(request);
+  if (signer.signerType === 'internal_user' && signer.userId === user.id) {
+    return true;
+  }
+
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
+    userId: ctx.userId,
+    membershipId: ctx.membershipId,
+  });
+  const doc = await documents.findOne({
+    _id: request.documentId,
+    ...tenantScopeFilterFromContext(storage),
+    ...ACTIVE_DOCUMENT_FILTER,
+  } as Record<string, unknown>);
+  if (!doc) return false;
+
+  try {
+    assertCanAccessDocument(doc as Record<string, unknown>, storage);
+  } catch {
     return false;
   }
-  if (request.expiresAt && request.expiresAt.getTime() <= Date.now()) return false;
-  return request.status === 'pending' || request.status === 'partially_signed';
+
+  const { permissions } = await resolveDocumentAccessWithShare({
+    user,
+    doc: doc as MongoDocument,
+    sharedWithUserId: user.id,
+    tenantId: ctx.tenantId,
+    membershipId: ctx.membershipId,
+  });
+  return permissions.canPreview || permissions.canDownload;
+}
+
+export async function requireSignaturePortalRequest(
+  token: string,
+  options: {
+    requireOpen?: boolean;
+    requireCanView?: boolean;
+    requireCanSign?: boolean;
+  } = {},
+): Promise<MongoDocumentSignatureRequest> {
+  const request = await findSignatureRequestByToken(token);
+  if (!request) {
+    throw new ServiceError('Convite de assinatura inválido.', 'SIGNATURE_TOKEN_INVALID', 404);
+  }
+  if (options.requireOpen !== false && !isSignatureRequestOpen(request)) {
+    throw new ServiceError('Solicitação de assinatura indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
+  }
+  if (options.requireCanView && !request.permissions.canView) {
+    throw new ServiceError('Visualização não permitida.', 'SIGNATURE_PREVIEW_DENIED', 403);
+  }
+  if (options.requireCanSign && !request.permissions.canSign) {
+    throw new ServiceError('Assinatura não permitida.', 'SIGNATURE_FORBIDDEN', 403);
+  }
+  const signer = getPrimarySigner(request);
+  if (signer.signerType !== 'external_guest') {
+    throw new ServiceError('Convite de assinatura inválido.', 'SIGNATURE_TOKEN_INVALID', 404);
+  }
+  return request;
+}
+
+export async function loadSignatureRequestDocumentContext(
+  request: MongoDocumentSignatureRequest,
+): Promise<{
+  doc: MongoDocument;
+  version: MongoDocumentVersion;
+  storageScope: Awaited<ReturnType<typeof resolveTenantStorageScopeById>>;
+}> {
+  if (!isMongoNativeConfigured()) {
+    throw new ServiceError('Documento indisponível.', 'SIGNATURE_DOCUMENT_UNAVAILABLE', 403);
+  }
+
+  const storageScope = await resolveTenantStorageScopeById(
+    request.documentTenantId,
+    request.requestedByUserId,
+  );
+  const { documents, documentVersions, storage } = await getTenantCollections(request.documentTenantId, {
+    userId: request.requestedByUserId,
+  });
+
+  const doc = await documents.findOne({
+    _id: request.documentId,
+    ...tenantScopeFilterFromContext(storage),
+    ...ACTIVE_DOCUMENT_FILTER,
+  } as Record<string, unknown>);
+
+  if (!doc) {
+    throw new ServiceError('Documento indisponível.', 'SIGNATURE_DOCUMENT_UNAVAILABLE', 403);
+  }
+
+  const version = await documentVersions.findOne({
+    _id: request.versionId,
+    documentId: request.documentId,
+    ...buildDocumentOwnershipFilter(storage),
+  } as Record<string, unknown>);
+
+  if (!version) {
+    throw new ServiceError('Versão da solicitação indisponível.', 'SIGNATURE_VERSION_NOT_FOUND', 404);
+  }
+
+  return {
+    doc: doc as MongoDocument,
+    version: version as MongoDocumentVersion,
+    storageScope,
+  };
+}
+
+export async function readSignatureRequestVersionFile(input: {
+  request: MongoDocumentSignatureRequest;
+  version: MongoDocumentVersion;
+  storageScope: Awaited<ReturnType<typeof resolveTenantStorageScopeById>>;
+}): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
+  const primaryStorage = input.version.storage?.primary;
+  const storageKey = primaryStorage?.objectKey;
+  if (!storageKey) {
+    throw new ServiceError('Arquivo ainda não disponível.', 'FILE_NOT_STORED', 404);
+  }
+  if (primaryStorage?.provider === 'local' && isR2StorageEnabled()) {
+    throw new ServiceError('Arquivo indisponível.', 'FILE_NOT_FOUND', 404);
+  }
+
+  const provider = getStorageProvider();
+  if (!provider) {
+    throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
+  }
+
+  const file = await provider.readDocumentVersion(
+    storageKey,
+    input.request.documentTenantId,
+    primaryStorage?.bucketAlias,
+    input.storageScope,
+  );
+
+  return {
+    buffer: file.buffer,
+    mimeType: input.version.file?.mimeType ?? file.contentType ?? 'application/octet-stream',
+    fileName: input.version.finalFileName || input.version.originalFileName || 'documento',
+  };
 }
 
 async function loadSignableDocument(
@@ -177,30 +374,12 @@ async function readVersionPdfBuffer(input: {
   request: MongoDocumentSignatureRequest;
   version: MongoDocumentVersion;
 }): Promise<Buffer> {
-  const storageScope = await resolveTenantStorageScopeById(
-    input.request.documentTenantId,
-    input.request.documentTenantType,
-  );
-  const primaryStorage = input.version.storage?.primary;
-  const storageKey = primaryStorage?.objectKey;
-  if (!storageKey) {
-    throw new ServiceError('Arquivo ainda não disponível.', 'FILE_NOT_STORED', 404);
-  }
-  if (primaryStorage?.provider === 'local' && isR2StorageEnabled()) {
-    throw new ServiceError('Arquivo indisponível.', 'FILE_NOT_FOUND', 404);
-  }
-
-  const provider = getStorageProvider();
-  if (!provider) {
-    throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
-  }
-
-  const file = await provider.readDocumentVersion(
-    storageKey,
-    input.request.documentTenantId,
-    primaryStorage?.bucketAlias,
+  const { storageScope } = await loadSignatureRequestDocumentContext(input.request);
+  const file = await readSignatureRequestVersionFile({
+    request: input.request,
+    version: input.version,
     storageScope,
-  );
+  });
   return file.buffer;
 }
 
@@ -227,7 +406,7 @@ export function serializeSignatureRequest(
     signatureRequestId: request.signatureRequestId,
     documentId: request.documentId,
     versionId: request.versionId,
-    status: request.status,
+    status: resolveEffectiveSignatureRequestStatus(request),
     permissions: request.permissions,
     signers: request.signers.map(serializeSigner),
     message: request.message ?? null,
@@ -247,8 +426,8 @@ export async function createDocumentSignatureRequest(
   user: AuthUser,
   documentId: string,
   input: {
-    signerName: string;
-    signerEmail: string;
+    signerName?: string;
+    signerEmail?: string;
     signerPhone?: string;
     signerOrganizationName?: string;
     signerType?: 'internal_user' | 'external_guest';
@@ -259,21 +438,38 @@ export async function createDocumentSignatureRequest(
   },
   origin?: string,
 ) {
-  if (!input.signerName?.trim()) {
-    throw new ServiceError('Nome do signatário é obrigatório.', 'SIGNER_NAME_REQUIRED', 400);
-  }
-  if (!isValidEmail(input.signerEmail)) {
-    throw new ServiceError('E-mail do signatário inválido.', 'INVALID_SIGNER_EMAIL', 400);
-  }
-
+  const signerType = input.signerType ?? 'external_guest';
   const { doc, version, documentCollection } = await loadSignableDocument(ctx, user, documentId);
   const config = resolveSignatureConfig();
   const now = new Date();
-  const portalToken = generateSignaturePortalToken();
   const signatureRequestId = randomUUID();
   const signerId = randomUUID();
-  const phoneFields = resolveSignerPhoneFields(input.signerPhone);
   const expiresAt = input.expiresAt ? new Date(input.expiresAt) : addDays(now, config.defaultExpiryDays);
+  const permissions = defaultSignaturePermissions(input.permissions);
+
+  let signerName = input.signerName?.trim() ?? '';
+  let signerEmail = input.signerEmail?.trim() ?? '';
+  let signerUserId: string | null = null;
+  let portalToken: string | undefined;
+  let signatureTokenHash: string | null = null;
+  let phoneFields = resolveSignerPhoneFields(input.signerPhone);
+
+  if (signerType === 'internal_user') {
+    const internalSigner = await resolveInternalSignerForTenant(ctx, user, input.signerUserId ?? '');
+    signerName = internalSigner.name;
+    signerEmail = internalSigner.email;
+    signerUserId = internalSigner.userId;
+    phoneFields = { phone: null, phoneNormalized: null, phoneMasked: null };
+  } else {
+    if (!signerName) {
+      throw new ServiceError('Nome do signatário é obrigatório.', 'SIGNER_NAME_REQUIRED', 400);
+    }
+    if (!isValidEmail(signerEmail)) {
+      throw new ServiceError('E-mail do signatário inválido.', 'INVALID_SIGNER_EMAIL', 400);
+    }
+    portalToken = generateSignaturePortalToken();
+    signatureTokenHash = hashSignaturePortalToken(portalToken);
+  }
 
   const request: MongoDocumentSignatureRequest = {
     _id: signatureRequestId,
@@ -286,24 +482,29 @@ export async function createDocumentSignatureRequest(
     requestedByUserId: user.id,
     requestedByNameSnapshot: user.name ?? user.email ?? user.id,
     status: 'pending',
-    permissions: defaultSignaturePermissions(input.permissions),
-    signatureTokenHash: hashSignaturePortalToken(portalToken),
+    permissions,
+    signatureTokenHash,
     message: input.message?.trim() || null,
     expiresAt,
     signers: [
       {
         signerId,
-        signerType: input.signerType ?? 'external_guest',
-        userId: input.signerUserId ?? null,
-        name: input.signerName.trim(),
-        email: input.signerEmail.trim(),
-        emailNormalized: normalizeEmail(input.signerEmail),
+        signerType,
+        userId: signerUserId,
+        tenantId: signerType === 'internal_user' ? ctx.tenantId : null,
+        name: signerName,
+        email: signerEmail,
+        emailNormalized: normalizeEmail(signerEmail),
         phone: phoneFields.phone,
         phoneNormalized: phoneFields.phoneNormalized,
         phoneMasked: phoneFields.phoneMasked,
         organizationName: input.signerOrganizationName?.trim() || null,
+        permissions: defaultSignerPermissions(permissions),
         status: 'pending',
+        expiresAt,
         order: 1,
+        createdAt: now,
+        updatedAt: now,
       },
     ],
     createdAt: now,
@@ -324,11 +525,12 @@ export async function createDocumentSignatureRequest(
 
   return {
     request: serializeSignatureRequest(request, {
-      includePortalUrl: true,
+      includePortalUrl: signerType === 'external_guest',
       portalToken,
       origin,
     }),
     portalToken,
+    signerType,
     documentName: doc.currentFileName || doc.title,
   };
 }
@@ -353,16 +555,22 @@ export async function listDocumentSignatureRequests(
   const signatureByRequest = new Map(signatureRows.map((row) => [row.signatureRequestId, row]));
 
   return {
-    items: items.map((item) => ({
-      ...serializeSignatureRequest(item),
-      signature: signatureByRequest.has(item.signatureRequestId)
-        ? {
-            signatureId: signatureByRequest.get(item.signatureRequestId)!.signatureId,
-            verificationCode: signatureByRequest.get(item.signatureRequestId)!.verificationCode,
-            signedAt: signatureByRequest.get(item.signatureRequestId)!.signedAt.toISOString(),
-          }
-        : null,
-    })),
+    items: items.map((item) => {
+      const signature = signatureByRequest.get(item.signatureRequestId);
+      return {
+        ...serializeSignatureRequest(item),
+        requestedByName: item.requestedByNameSnapshot ?? 'DOQYN',
+        signature: signature
+          ? {
+              signatureId: signature.signatureId,
+              verificationCode: signature.verificationCode,
+              signedAt: signature.signedAt.toISOString(),
+              hasSignedPdf: Boolean(signature.signedPdfR2Key),
+              hasEvidence: Boolean(signature.evidenceJsonR2Key),
+            }
+          : null,
+      };
+    }),
   };
 }
 
@@ -379,30 +587,130 @@ export async function getDocumentSignatureRequest(
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
   }
-  await loadSignableDocument(ctx, user, request.documentId);
+  const signer = getPrimarySigner(request);
+  const isAssignee = signer.signerType === 'internal_user' && signer.userId === user.id;
+  if (!isAssignee) {
+    await loadSignableDocument(ctx, user, request.documentId);
+  } else if (!(await userHasSignatureDocumentAccess(ctx, user, request))) {
+    throw new ServiceError('Usuário não autorizado.', 'SIGNATURE_FORBIDDEN', 403);
+  }
   return serializeSignatureRequest(request);
 }
 
-export async function getSignaturePortalPayload(token: string) {
-  const request = await findSignatureRequestByToken(token);
-  if (!request) {
-    throw new ServiceError('Convite de assinatura inválido.', 'SIGNATURE_TOKEN_INVALID', 404);
-  }
-  if (!isRequestOpen(request)) {
-    throw new ServiceError('Solicitação de assinatura indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
-  }
+export async function listSignatureRequestsAssignedToMe(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+) {
+  const collection = await getSignatureRequestsCollection();
+  const items = await collection
+    .find({
+      documentTenantId: ctx.tenantId,
+      'signers.userId': user.id,
+      'signers.signerType': 'internal_user',
+    })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .toArray();
 
-  const collections = await getTenantCollections(request.documentTenantId);
-  const doc = await collections.documents.findOne({ _id: request.documentId, ...ACTIVE_DOCUMENT_FILTER });
-  if (!doc) {
-    throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
-  }
+  const { documents, documentVersions } = await getTenantCollections(ctx.tenantId, {
+    userId: ctx.userId,
+    membershipId: ctx.membershipId,
+  });
 
-  const signer = request.signers[0];
+  const mapped = items
+    .filter((item) => {
+      const signer = getPrimarySigner(item);
+      return signer.userId === user.id;
+    })
+    .map((item) => {
+      const signer = getPrimarySigner(item);
+      const effectiveStatus = !isSignatureRequestOpen(item)
+        ? item.status === 'signed'
+          ? 'signed'
+          : item.expiresAt && item.expiresAt.getTime() <= Date.now()
+            ? 'expired'
+            : item.status
+        : signer.status === 'pending'
+          ? 'pending'
+          : signer.status;
+      return { item, signer, effectiveStatus };
+    });
+
+  const results = await Promise.all(
+    mapped.map(async ({ item, signer, effectiveStatus }) => {
+      const doc = await documents.findOne({
+        _id: item.documentId,
+        ...ACTIVE_DOCUMENT_FILTER,
+      } as Record<string, unknown>);
+      const version = await documentVersions.findOne({
+        _id: item.versionId,
+        documentId: item.documentId,
+      } as Record<string, unknown>);
+
+      return {
+        signatureRequestId: item.signatureRequestId,
+        documentId: item.documentId,
+        documentName: (doc as MongoDocument | null)?.currentFileName ?? (doc as MongoDocument | null)?.title ?? 'Documento',
+        versionId: item.versionId,
+        versionLabel: normalizeVersionLabel((version as MongoDocumentVersion | null)?.versionLabel),
+        requestedBy: item.requestedByNameSnapshot ?? 'DOQYN',
+        requestedAt: item.createdAt.toISOString(),
+        expiresAt: item.expiresAt?.toISOString() ?? null,
+        status: effectiveStatus,
+        signerStatus: signer.status,
+        canSign: item.permissions.canSign && effectiveStatus === 'pending',
+      };
+    }),
+  );
+
+  return { items: results };
+}
+
+export async function getInternalSignatureSigningPayload(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  signatureRequestId: string,
+) {
+  const request = await requireAssignedInternalSignatureRequest(ctx, user, signatureRequestId, {
+    requireOpen: true,
+    requireCanView: true,
+  });
+  const { doc, version } = await loadSignatureRequestDocumentContext(request);
+  const signer = getPrimarySigner(request);
+  const versionLabel = version.versionLabel ?? doc.currentVersionLabel ?? null;
+  const isVersionStale = doc.currentVersionId !== request.versionId;
+
   return {
     signatureRequestId: request.signatureRequestId,
     documentId: request.documentId,
     versionId: request.versionId,
+    versionLabel,
+    isVersionStale,
+    documentName: doc.currentFileName || doc.title,
+    issuerName: request.requestedByNameSnapshot ?? 'DOQYN',
+    signer: serializeSigner(signer),
+    permissions: request.permissions,
+    expiresAt: request.expiresAt?.toISOString() ?? null,
+    message: request.message ?? null,
+    consentText: SIGNATURE_CONSENT_TEXT,
+    status: request.status,
+    signerType: 'internal_user' as const,
+  };
+}
+
+export async function getSignaturePortalPayload(token: string) {
+  const request = await requireSignaturePortalRequest(token, { requireOpen: true });
+  const { doc, version } = await loadSignatureRequestDocumentContext(request);
+  const signer = request.signers[0];
+  const versionLabel = version.versionLabel ?? doc.currentVersionLabel ?? null;
+  const isVersionStale = doc.currentVersionId !== request.versionId;
+
+  return {
+    signatureRequestId: request.signatureRequestId,
+    documentId: request.documentId,
+    versionId: request.versionId,
+    versionLabel,
+    isVersionStale,
     documentName: doc.currentFileName || doc.title,
     issuerName: request.requestedByNameSnapshot ?? 'DOQYN',
     signer: serializeSigner(signer),
@@ -437,7 +745,7 @@ export async function completeDocumentSignature(input: {
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
   }
-  if (!isRequestOpen(request)) {
+  if (!isSignatureRequestOpen(request)) {
     throw new ServiceError('Solicitação expirada ou encerrada.', 'SIGNATURE_REQUEST_CLOSED', 403);
   }
 
@@ -474,6 +782,28 @@ export async function completeDocumentSignature(input: {
   }
 
   const originalPdfBuffer = await readVersionPdfBuffer({ request, version: version as MongoDocumentVersion });
+
+  const completedSignatureCount = await signatures.countDocuments({
+    documentId: request.documentId,
+    status: 'signed',
+  });
+
+  const priorSignatures = await signatures
+    .find({
+      documentId: request.documentId,
+      versionId: request.versionId,
+      status: 'signed',
+      signatureRequestId: { $ne: request.signatureRequestId },
+    })
+    .sort({ signedAt: 1 })
+    .toArray();
+
+  const previousStamps = priorSignatures.map((entry) => ({
+    signerName: entry.signerName,
+    signedAt: entry.signedAt,
+    verificationCode: entry.verificationCode,
+  }));
+
   const signedAt = new Date();
   const signatureId = randomUUID();
   const verificationCode = generateVerificationCode();
@@ -499,6 +829,8 @@ export async function completeDocumentSignature(input: {
     verificationUrl,
     securityContext,
     issuerOrganizationName: request.requestedByNameSnapshot ?? undefined,
+    previousStamps,
+    completedSignatureCount,
   });
 
   const storageScope = await resolveTenantStorageScopeById(
@@ -542,6 +874,22 @@ export async function completeDocumentSignature(input: {
     throw new ServiceError('Falha ao persistir artefatos de assinatura.', 'SIGNATURE_STORAGE_FAILED', 500);
   }
 
+  const promotedByUserId =
+    input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
+
+  const promotedVersion = await promoteSignedPdfToDocumentVersion({
+    tenantId: request.documentTenantId,
+    documentId: request.documentId,
+    sourceVersion: version as MongoDocumentVersion,
+    doc: doc as MongoDocument,
+    signedPdfBuffer: pdfResult.signedPdfBuffer,
+    signedPdfHashSha256: pdfResult.signedPdfHashSha256,
+    signatureRequestId: request.signatureRequestId,
+    signatureId,
+    promotedByUserId,
+    storageScope,
+  });
+
   const signature: MongoDocumentSignature = {
     _id: signatureId,
     signatureId,
@@ -571,6 +919,7 @@ export async function completeDocumentSignature(input: {
     evidenceJsonR2Key: evidenceKey,
     verificationCode,
     verificationUrl,
+    promotedVersionId: promotedVersion.versionId,
     createdAt: signedAt,
   };
 
@@ -590,17 +939,15 @@ export async function completeDocumentSignature(input: {
     },
   );
 
-  await collections.documents.updateOne(
-    { _id: request.documentId },
-    { $set: { signatureStatus: 'signed', updatedAt: signedAt } },
-  );
-
   return {
     signatureId,
     verificationCode,
     verificationUrl,
     signedAt: signedAt.toISOString(),
     canDownload: request.permissions.canDownloadAfterSign,
+    promotedVersionId: promotedVersion.versionId,
+    promotedVersionLabel: promotedVersion.versionLabel,
+    promotedFileName: promotedVersion.finalFileName,
   };
 }
 
@@ -616,7 +963,7 @@ export async function declineDocumentSignature(input: {
     const collection = await getSignatureRequestsCollection();
     request = await collection.findOne({ signatureRequestId: input.signatureRequestId.trim() });
   }
-  if (!request || !isRequestOpen(request)) {
+  if (!request || !isSignatureRequestOpen(request)) {
     throw new ServiceError('Solicitação indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
   }
 
@@ -638,6 +985,82 @@ export async function declineDocumentSignature(input: {
     { _id: request.documentId },
     { $set: { signatureStatus: 'declined', updatedAt: now } },
   );
+}
+
+async function syncDocumentSignatureStatus(tenantId: string, documentId: string): Promise<void> {
+  const summary = await loadDocumentSignatureSummary(tenantId, documentId);
+  let signatureStatus: DocumentSignatureStatusLabel;
+
+  if (summary.signedCount > 0) {
+    signatureStatus = 'signed';
+  } else if (summary.status === 'pending') {
+    signatureStatus = 'pending';
+  } else if (summary.status === 'declined') {
+    signatureStatus = 'declined';
+  } else if (summary.status === 'expired') {
+    signatureStatus = 'expired';
+  } else {
+    signatureStatus = 'none';
+  }
+
+  const { documents } = await getTenantCollections(tenantId);
+  await documents.updateOne(
+    { _id: documentId },
+    { $set: { signatureStatus, updatedAt: new Date() } },
+  );
+}
+
+export async function cancelDocumentSignatureRequest(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  signatureRequestId: string,
+  options?: { expectedDocumentId?: string },
+) {
+  const collection = await getSignatureRequestsCollection();
+  const request = await collection.findOne({
+    signatureRequestId,
+    documentTenantId: ctx.tenantId,
+  });
+  if (!request) {
+    throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
+  }
+
+  if (options?.expectedDocumentId && request.documentId !== options.expectedDocumentId) {
+    throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
+  }
+
+  await loadSignableDocument(ctx, user, request.documentId);
+
+  if (!isSignatureRequestOpen(request)) {
+    throw new ServiceError(
+      'Solicitação não pode ser revogada.',
+      'SIGNATURE_REQUEST_NOT_CANCELLABLE',
+      409,
+    );
+  }
+
+  const now = new Date();
+  await collection.updateOne(
+    { signatureRequestId: request.signatureRequestId },
+    {
+      $set: {
+        status: 'cancelled',
+        updatedAt: now,
+        cancelledAt: now,
+        cancelledBy: user.id,
+        signatureTokenHash: null,
+        'signers.0.status': 'declined',
+      },
+    },
+  );
+
+  await syncDocumentSignatureStatus(ctx.tenantId, request.documentId);
+
+  return {
+    signatureRequestId: request.signatureRequestId,
+    documentId: request.documentId,
+    status: 'cancelled' as const,
+  };
 }
 
 export async function getPublicSignatureVerification(verificationCode: string) {
@@ -663,13 +1086,15 @@ export async function getPublicSignatureVerification(verificationCode: string) {
   };
 }
 
-export async function readSignedPdfForRequest(signatureRequestId: string): Promise<{
+export async function readSignedPdfBufferForRequest(signatureRequestId: string): Promise<{
   buffer: Buffer;
   fileName: string;
+  request: MongoDocumentSignatureRequest;
+  signature: MongoDocumentSignature;
 }> {
   const signatures = await getSignaturesCollection();
   const signature = await signatures.findOne({ signatureRequestId });
-  if (!signature || signature.status !== 'signed') {
+  if (!signature || signature.status !== 'signed' || !signature.signedPdfR2Key) {
     throw new ServiceError('PDF assinado indisponível.', 'SIGNED_PDF_NOT_FOUND', 404);
   }
 
@@ -689,7 +1114,14 @@ export async function readSignedPdfForRequest(signatureRequestId: string): Promi
   }
 
   const collections = await getTenantCollections(request.documentTenantId);
-  const doc = await collections.documents.findOne({ _id: request.documentId });
+  const doc = await collections.documents.findOne({
+    _id: request.documentId,
+    ...ACTIVE_DOCUMENT_FILTER,
+  });
+  if (!doc) {
+    throw new ServiceError('Documento indisponível.', 'SIGNATURE_DOCUMENT_UNAVAILABLE', 403);
+  }
+
   const file = await provider.readDocumentVersion(
     signature.signedPdfR2Key,
     request.documentTenantId,
@@ -697,10 +1129,115 @@ export async function readSignedPdfForRequest(signatureRequestId: string): Promi
     storageScope,
   );
 
+  const baseName = doc.currentFileName?.replace(/\.pdf$/i, '') ?? doc.title ?? 'documento';
   return {
     buffer: file.buffer,
-    fileName: `${doc?.currentFileName?.replace(/\.pdf$/i, '') ?? 'documento'}-assinado.pdf`,
+    fileName: `${baseName}-assinado-${signature.verificationCode}.pdf`,
+    request,
+    signature,
   };
+}
+
+export async function readSignedPdfForAuthenticatedRequest(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  signatureRequestId: string,
+): Promise<{
+  buffer: Buffer;
+  fileName: string;
+  request: MongoDocumentSignatureRequest;
+  signature: MongoDocumentSignature;
+}> {
+  const requests = await getSignatureRequestsCollection();
+  const request = await requests.findOne({
+    signatureRequestId,
+    documentTenantId: ctx.tenantId,
+  });
+  if (!request) {
+    throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
+  }
+
+  const hasAccess = await userHasSignatureDocumentAccess(ctx, user, request);
+  if (!hasAccess) {
+    throw new ServiceError('Sem permissão para baixar este documento.', 'SIGNATURE_DOWNLOAD_DENIED', 403);
+  }
+
+  const signer = getPrimarySigner(request);
+  const isAssignedSigner = signer.signerType === 'internal_user' && signer.userId === user.id;
+  if (isAssignedSigner && !request.permissions.canDownloadAfterSign) {
+    throw new ServiceError('Download não permitido.', 'SIGNATURE_DOWNLOAD_DENIED', 403);
+  }
+
+  return readSignedPdfBufferForRequest(signatureRequestId);
+}
+
+export async function readEvidenceJsonForAuthenticatedRequest(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  signatureRequestId: string,
+): Promise<{
+  buffer: Buffer;
+  fileName: string;
+  request: MongoDocumentSignatureRequest;
+  signature: MongoDocumentSignature;
+}> {
+  const file = await readSignedPdfForAuthenticatedRequest(ctx, user, signatureRequestId);
+  if (!file.signature.evidenceJsonR2Key) {
+    throw new ServiceError('Evidências indisponíveis.', 'SIGNATURE_EVIDENCE_NOT_FOUND', 404);
+  }
+
+  const storageScope = await resolveTenantStorageScopeById(
+    file.request.documentTenantId,
+    file.request.documentTenantType,
+  );
+  const provider = getStorageProvider();
+  if (!provider) {
+    throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
+  }
+
+  const evidenceFile = await provider.readDocumentVersion(
+    file.signature.evidenceJsonR2Key,
+    file.request.documentTenantId,
+    null,
+    storageScope,
+  );
+
+  const baseName =
+    file.request.documentId.replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 40) || 'documento';
+  return {
+    buffer: evidenceFile.buffer,
+    fileName: `${baseName}-evidencias-${file.signature.verificationCode}.json`,
+    request: file.request,
+    signature: file.signature,
+  };
+}
+
+export async function readSignedPdfForRequest(signatureRequestId: string): Promise<{
+  buffer: Buffer;
+  fileName: string;
+}> {
+  const file = await readSignedPdfBufferForRequest(signatureRequestId);
+  return {
+    buffer: file.buffer,
+    fileName: file.fileName,
+  };
+}
+
+export async function readSignedPdfForToken(token: string): Promise<{
+  buffer: Buffer;
+  fileName: string;
+}> {
+  const request = await findSignatureRequestByToken(token);
+  if (!request) {
+    throw new ServiceError('Convite de assinatura inválido.', 'SIGNATURE_TOKEN_INVALID', 404);
+  }
+  if (request.status !== 'signed') {
+    throw new ServiceError('PDF assinado indisponível.', 'SIGNED_PDF_NOT_FOUND', 404);
+  }
+  if (!request.permissions.canDownloadAfterSign) {
+    throw new ServiceError('Download não permitido.', 'SIGNATURE_DOWNLOAD_DENIED', 403);
+  }
+  return readSignedPdfBufferForRequest(request.signatureRequestId);
 }
 
 export function buildSignatureAuditContext(
@@ -719,6 +1256,30 @@ export function buildSignatureAuditContext(
   };
 }
 
+/** Contexto de auditoria para ações do signatário externo no portal público. */
+export function buildExternalSignatureAuditContext(
+  request: MongoDocumentSignatureRequest,
+  requestId?: string,
+): DocumentAuditContext {
+  const signer = request.signers[0];
+  const emailHash = signer
+    ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1')
+    : 'unknown';
+
+  return {
+    tenantId: request.documentTenantId,
+    tenantType: request.documentTenantType ?? 'business',
+    collectionPrefix: request.documentTenantId,
+    ownerTenantId: request.documentTenantId,
+    ownerUserId: request.requestedByUserId,
+    actorUserId: `external_guest:${emailHash}`,
+    actorDisplayName: signer?.name ?? 'Convidado externo',
+    actorEmail: signer ? (maskEmail(signer.email) ?? undefined) : undefined,
+    actorRole: 'external_guest',
+    requestId,
+  };
+}
+
 export function buildSignatureTrackingMetadata(
   request: MongoDocumentSignatureRequest,
   extra: Record<string, unknown> = {},
@@ -726,12 +1287,17 @@ export function buildSignatureTrackingMetadata(
   const signer = request.signers[0];
   return {
     signatureRequestId: request.signatureRequestId,
+    signerType: signer?.signerType ?? 'external_guest',
+    signerId: signer?.signerId,
+    signerUserId: signer?.userId ?? undefined,
     signerName: signer?.name,
     signerEmailMasked: signer ? maskEmail(signer.email) : undefined,
     signerEmailHash: signer
       ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1')
       : undefined,
     signerPhoneMasked: signer?.phoneMasked ?? undefined,
+    requestedByUserId: request.requestedByUserId,
+    requestedByNameSnapshot: request.requestedByNameSnapshot ?? undefined,
     source: 'signature_request',
     ...extra,
   };

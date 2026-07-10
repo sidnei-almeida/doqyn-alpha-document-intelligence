@@ -18,12 +18,15 @@ import { ApiError, shouldLogoutForError } from '@/lib/apiErrors';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 import { AuthContext, type AuthContextValue } from '@/auth/authContext';
 import { redirectToOAuth, isOAuthEnabled } from '@/auth/oauthLogin';
-import { queryClient } from '@/app/queryClient';
 import { clearPreviewCachesForTenant } from '@/features/documents/preview/clearPreviewCaches';
-import { clearAllThumbnailCache } from '@/features/documents/preview/thumbnailObjectUrlCache';
+import { clearSessionScopedCaches } from '@/auth/clearSessionScopedCaches';
+import { buildSessionFingerprintFromAuth } from '@/auth/sessionFingerprint';
+import { queryClient } from '@/app/queryClient';
+import { refetchTenantScopedQueries } from '@/features/tenant/tenantLiveSync';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
+  '/convite',
   '/solicitar-acesso',
   '/criar-empresa',
   '/criar-acesso-cpf',
@@ -133,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [initAttempt, setInitAttempt] = useState(0);
   const previousTenantIdRef = useRef<string | null>(null);
+  const sessionFingerprintRef = useRef<string | null>(null);
 
   const roles = useMemo(
     () => membership?.tenantRoles ?? user?.roles ?? user?.groups ?? [],
@@ -149,8 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTenant(null);
     setMembership(null);
     setAccessGate(null);
-    clearAllThumbnailCache();
-    queryClient.clear();
+    sessionFingerprintRef.current = null;
+    clearSessionScopedCaches();
   }, []);
 
   const sessionSetters = useMemo(
@@ -267,8 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (isDoqynAuth || isApiAuth) {
-        clearAllThumbnailCache();
-        queryClient.clear();
+        clearSessionScopedCaches();
         await loginRequest({ email, password, rememberMe });
         if (isDoqynAuth) {
           await loadDoqynSession();
@@ -317,6 +320,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setInitAttempt((value) => value + 1);
   }, []);
 
+  const syncSessionIfChanged = useCallback(async () => {
+    if (!isDoqynAuth || isPublicUnauthenticatedPath()) return;
+
+    try {
+      const session = await getCurrentSession();
+      const nextFingerprint = buildSessionFingerprintFromAuth({
+        user: mapMeSessionToAuthUser(session),
+        tenant: session.tenant,
+        membership: session.membership,
+      });
+      const previousFingerprint = sessionFingerprintRef.current;
+
+      if (
+        previousFingerprint &&
+        nextFingerprint &&
+        previousFingerprint !== nextFingerprint
+      ) {
+        clearSessionScopedCaches();
+      }
+
+      applyMeSession(session, sessionSetters);
+      setError(null);
+
+      if (session.tenant.tenantId) {
+        void refetchTenantScopedQueries(queryClient, session.tenant.tenantId);
+      }
+    } catch (err) {
+      if (err instanceof SessionApiError && err.accessGate) {
+        applyPartialUserFromSessionError(err, setUser);
+        setTenant(null);
+        setMembership(null);
+        setAccessGate(err.accessGate);
+        sessionFingerprintRef.current = null;
+        clearSessionScopedCaches();
+        setError(err.friendlyMessage);
+        return;
+      }
+
+      if (
+        err instanceof SessionApiError &&
+        (shouldLogoutForError(err.code) || err.status === 401)
+      ) {
+        clearSession();
+        setError(err.friendlyMessage);
+      }
+    }
+  }, [clearSession, isDoqynAuth, sessionSetters]);
+
   useEffect(() => {
     registerAuthTokenGetter(null);
     return () => registerAuthTokenGetter(null);
@@ -327,10 +378,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser, initAttempt]);
 
   useEffect(() => {
+    const current = buildSessionFingerprintFromAuth({ user, tenant, membership });
+    const previous = sessionFingerprintRef.current;
+
+    if (previous && current && previous !== current) {
+      clearSessionScopedCaches();
+    }
+
+    sessionFingerprintRef.current = current;
+  }, [user, tenant, membership]);
+
+  useEffect(() => {
+    if (!isDoqynAuth || !user || accessGate) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      void syncSessionIfChanged();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
+  }, [accessGate, isDoqynAuth, syncSessionIfChanged, user]);
+
+  useEffect(() => {
     const currentTenantId = tenant?.tenantId ?? null;
     const previousTenantId = previousTenantIdRef.current;
     if (previousTenantId && currentTenantId && previousTenantId !== currentTenantId) {
       clearPreviewCachesForTenant(previousTenantId);
+      clearSessionScopedCaches();
     }
     previousTenantIdRef.current = currentTenantId;
   }, [tenant?.tenantId]);

@@ -24,7 +24,6 @@ export function mapStatusToApiFilters(status: string): Pick<
     case 'analyzing':
       return { processingStatus: 'pending' };
     case 'pending_review':
-      return { processingStatus: 'requires_review' };
     case 'review_required':
       return { processingStatus: 'requires_review' };
     default:

@@ -29,6 +29,7 @@ export type DocumentAuditAction =
   | 'document.shared_downloaded'
   | 'document.share_denied'
   | 'document.version_created'
+  | 'document.ownership_transferred'
   | 'document.preview_generated'
   | 'document.preview_failed'
   | 'document.preview_viewed'
@@ -54,11 +55,17 @@ export type DocumentAuditAction =
   | 'document.permanent_deleted'
   | 'document.trash_purge_failed'
   | 'document.signature_request_created'
+  | 'document.signature_internal_assigned'
+  | 'document.signature_internal_opened'
+  | 'document.signature_external_invite_created'
+  | 'document.signature_external_opened'
   | 'document.signature_link_opened'
+  | 'document.signature_preview_viewed'
   | 'document.signature_viewed'
   | 'document.signature_consent_checked'
   | 'document.signature_completed'
   | 'document.signature_declined'
+  | 'document.signature_request_cancelled'
   | 'document.signature_expired'
   | 'document.signed_pdf_generated'
   | 'document.signature_verification_opened'
@@ -206,6 +213,7 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.shared_downloaded': 'Download de documento compartilhado',
   'document.share_denied': 'Compartilhamento negado',
   'document.version_created': 'Nova versão criada',
+  'document.ownership_transferred': 'Propriedade transferida',
   'document.preview_generated': 'Preview gerado',
   'document.preview_failed': 'Falha no preview',
   'document.preview_viewed': 'Preview visualizado',
@@ -228,11 +236,17 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.permanent_deleted': 'Documento excluído permanentemente',
   'document.trash_purge_failed': 'Falha na purga de storage',
   'document.signature_request_created': 'Solicitação de assinatura criada',
+  'document.signature_internal_assigned': 'Assinatura atribuída a usuário interno',
+  'document.signature_internal_opened': 'Assinatura interna aberta',
+  'document.signature_external_invite_created': 'Convite externo de assinatura criado',
+  'document.signature_external_opened': 'Assinatura externa aberta',
   'document.signature_link_opened': 'Link de assinatura aberto',
+  'document.signature_preview_viewed': 'Preview para assinatura visualizado',
   'document.signature_viewed': 'Documento para assinatura visualizado',
   'document.signature_consent_checked': 'Aceite de assinatura registrado',
   'document.signature_completed': 'Assinatura eletrônica concluída',
   'document.signature_declined': 'Assinatura recusada',
+  'document.signature_request_cancelled': 'Solicitação de assinatura revogada',
   'document.signature_expired': 'Solicitação de assinatura expirada',
   'document.signed_pdf_generated': 'PDF assinado gerado',
   'document.signature_verification_opened': 'Validação de assinatura aberta',

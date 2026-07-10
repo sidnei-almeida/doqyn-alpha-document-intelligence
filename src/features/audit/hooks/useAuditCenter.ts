@@ -1,14 +1,20 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useAuth } from '@/features/auth/useAuth';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   usersApi,
 } from '@/features/users/api/usersApi';
 import { invalidateUserManagementQueries } from '@/features/users/userManagementQueries';
+import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
+import {
+  approveDocumentUploadApproval,
+  rejectDocumentUploadApproval,
+} from '../api/documentUploadApprovalsApi';
 import { listPendingApprovals, type PendingApprovalItem } from '../api/pendingApprovalsApi';
 import {
   buildAuditEventsQuery,
@@ -54,12 +60,14 @@ export function useAuditCenter(documentId?: string) {
     queryKey: ['audit-overview', tenantId],
     queryFn: () => auditApi.getOverview(),
     enabled: Boolean(tenantId),
+    ...tenantLiveSyncQueryOptions(),
   });
 
   const pendingQuery = useQuery({
     queryKey: ['audit-pending', tenantId],
     queryFn: () => listPendingApprovals(isDoqynAdmin ? tenantId : undefined),
     enabled: Boolean(tenantId) && isAdmin,
+    ...tenantLiveSyncQueryOptions(),
   });
 
   const eventsQuery = useInfiniteQuery({
@@ -75,16 +83,11 @@ export function useAuditCenter(documentId?: string) {
     enabled: Boolean(tenantId),
   });
 
-  const accessGroupsQuery = useQuery({
-    queryKey: ['auth-access-groups', tenantId],
-    queryFn: () => usersApi.listAccessGroups(isDoqynAdmin ? tenantId : undefined),
-    enabled: isAdmin && Boolean(tenantId),
-  });
-
   const documentGroupsQuery = useQuery({
     queryKey: ['document-groups', tenantId],
     queryFn: () => usersApi.listDocumentGroups(),
     enabled: isAdmin && Boolean(tenantId),
+    ...tenantLiveSyncQueryOptions(),
   });
 
   const invalidateAll = async () => {
@@ -117,17 +120,33 @@ export function useAuditCenter(documentId?: string) {
       toast.success('Solicitação aprovada com sucesso.');
       await invalidateAll();
     },
-    onError: (error: Error) => toast.error(error.message || 'Não foi possível concluir a ação.'),
+    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) =>
-      usersApi.reject(item.membershipId, reason, isDoqynAdmin ? tenantId : undefined),
+    mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
+      if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
+        return rejectDocumentUploadApproval(item.documentUpload.approvalId, reason).then(() => undefined);
+      }
+      return usersApi.reject(item.membershipId, reason, isDoqynAdmin ? tenantId : undefined);
+    },
     onSuccess: async () => {
       toast.success('Solicitação rejeitada.');
       await invalidateAll();
+      await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
     },
-    onError: (error: Error) => toast.error(error.message || 'Não foi possível concluir a ação.'),
+    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
+  });
+
+  const approveDocumentUploadMutation = useMutation({
+    mutationFn: (approvalId: string) => approveDocumentUploadApproval(approvalId),
+    onSuccess: async () => {
+      toast.success('Documento aprovado e disponível na Biblioteca.');
+      await invalidateAll();
+      await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
+      await queryClient.invalidateQueries({ queryKey: ['library-documents'] });
+    },
+    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o envio.'),
   });
 
   const pendingItems = pendingQuery.data ?? [];
@@ -179,10 +198,10 @@ export function useAuditCenter(documentId?: string) {
     setEventsTab,
     eventFilters,
     setEventFilters: updateEventFilters,
-    accessGroups: accessGroupsQuery.data ?? [],
     documentGroups: documentGroupsQuery.data ?? [],
     approveMutation,
     rejectMutation,
+    approveDocumentUploadMutation,
     refresh: invalidateAll,
   };
 }

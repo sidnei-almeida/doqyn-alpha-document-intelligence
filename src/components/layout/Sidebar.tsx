@@ -4,7 +4,9 @@ import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/auth/useAuth';
 import { NAV_ITEMS_ADMIN, NAV_ITEMS_LIBRARY_VIEWS } from '@/lib/constants';
 import { canViewDocumentTracking } from '@/features/tracking/utils/trackingAccess';
+import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
 import { useDocumentCategories } from '@/features/library/hooks/useCategoryFolders';
+import { findLibraryCategory } from '@/features/library/utils/resolveLibraryCategory';
 import { NewButtonMenu } from '@/features/library/components/NewButtonMenu';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
@@ -26,21 +28,23 @@ export function Sidebar({ className }: SidebarProps) {
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
 
   const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
+  const canAccessRules = canAccessRulesPage(hasAnyRole);
   const canViewTracking = canViewDocumentTracking(roles, user?.role, membership?.status);
 
   const adminNavItems = NAV_ITEMS_ADMIN.filter((item) => {
+    if ('governanceOnly' in item && item.governanceOnly && !canAccessRules) return false;
     if ('managerOnly' in item && item.managerOnly && !canManageUsers) return false;
     if ('trackingOnly' in item && item.trackingOnly && !canViewTracking) return false;
     return true;
   });
 
   const { data: categories = [] } = useDocumentCategories();
-  const activeSpaceId = searchParams.get('space') ?? '';
-  const uploadContext = categories.find((c) => c.id === activeSpaceId)
-    ? {
-        categoryId: activeSpaceId,
-        categoryName: categories.find((c) => c.id === activeSpaceId)!.name,
-      }
+  const activeSpaceParam = searchParams.get('space') ?? '';
+  const activeCategory = activeSpaceParam
+    ? findLibraryCategory(activeSpaceParam, categories)
+    : undefined;
+  const uploadContext = activeCategory
+    ? { categoryId: activeCategory.id, categoryName: activeCategory.name }
     : undefined;
 
   return (

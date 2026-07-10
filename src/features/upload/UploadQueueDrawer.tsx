@@ -8,10 +8,11 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { formatFileSize } from '@/features/document-send/utils/validateUpload';
 import type { UploadQueueItem, UploadQueueItemStatus } from './types';
 import {
+  countAwaitingApproval,
   countAwaitingReview,
-  countSavedDocuments,
-  isItemSavedInLibrary,
+  countSubmittedItems,
 } from './queue/uploadQueueState';
+import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
@@ -19,6 +20,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   analyzing: 'Analisando com IA…',
   review: 'Aguardando revisão',
   confirming: 'Salvando na Biblioteca…',
+  awaiting_approval: 'Aguardando aprovação do admin',
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
@@ -42,6 +44,9 @@ function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
   if (status === 'review') {
     return <Icon name="visibility" size={ICON_SIZE.sm} className="text-doqyn-warning" />;
   }
+  if (status === 'awaiting_approval') {
+    return <Icon name="hourglass_top" size={ICON_SIZE.sm} className="text-doqyn-info" />;
+  }
   return <Icon name="description" size={ICON_SIZE.sm} className="text-doqyn-muted" />;
 }
 
@@ -59,11 +64,17 @@ function QueueRow({
     if (item.status === 'done' && item.documentId) {
       return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
+    if (item.status === 'awaiting_approval') {
+      return `Enviado para aprovação · ${formatFileSize(item.fileSize)}`;
+    }
     if (autoCountdown !== null) {
       return `Salvando automaticamente em ${autoCountdown}s · ${formatFileSize(item.fileSize)}`;
     }
     return `${STATUS_LABELS[item.status]} · ${formatFileSize(item.fileSize)}`;
   }, [item, autoCountdown]);
+
+  const showProgress = isUploadInProgress(item.status);
+  const progress = uploadStatusProgress(item.status);
 
   return (
     <li className="flex items-center gap-3 border-t border-doqyn-border-subtle px-4 py-3 first:border-t-0">
@@ -75,6 +86,26 @@ function QueueRow({
         <p className={cn('text-[11px]', item.status === 'error' ? 'text-doqyn-danger' : 'text-doqyn-muted')}>
           {subtitle}
         </p>
+        {showProgress && (
+          <div className="mt-2">
+            <div className="mb-1 flex justify-end text-[10px] tabular-nums text-doqyn-subtle">
+              {progress}%
+            </div>
+            <div
+              className="h-0.5 overflow-hidden rounded-full bg-doqyn-card"
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Progresso de ${item.fileName}`}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${progress}%`, background: 'var(--accent-active)' }}
+              />
+            </div>
+          </div>
+        )}
       </div>
       {autoCountdown !== null && (
         <button
@@ -104,7 +135,7 @@ function QueueRow({
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
       )}
-      {(item.status === 'done' || item.status === 'error') && (
+      {(item.status === 'done' || item.status === 'error' || item.status === 'awaiting_approval') && (
         <button
           type="button"
           onClick={() => removeItem(item.id)}
@@ -126,12 +157,13 @@ export function UploadQueueDrawer() {
 
   if (items.length === 0) return null;
 
-  const savedCount = countSavedDocuments(items);
+  const savedCount = countSubmittedItems(items);
   const reviewCount = countAwaitingReview(items);
+  const approvalCount = countAwaitingApproval(items);
   const errorCount = items.filter((item) => item.status === 'error').length;
-  const savedProgressCount = items.filter((item) => isItemSavedInLibrary(item)).length;
+  const submittedProgressCount = countSubmittedItems(items);
   const totalCount = items.length;
-  const progress = totalCount > 0 ? Math.round((savedProgressCount / totalCount) * 100) : 0;
+  const progress = totalCount > 0 ? Math.round((submittedProgressCount / totalCount) * 100) : 0;
 
   const headline = (() => {
     if (pendingCount > 0 && reviewCount > 0) {
@@ -140,8 +172,11 @@ export function UploadQueueDrawer() {
     if (pendingCount > 0) {
       return `${pendingCount} ${pendingCount === 1 ? 'arquivo em processamento' : 'arquivos em processamento'}`;
     }
+    if (savedCount > 0 && approvalCount > 0) {
+      return `${savedCount - approvalCount} salvos · ${approvalCount} aguardando aprovação`;
+    }
     if (savedCount > 0) {
-      return `${savedCount} ${savedCount === 1 ? 'documento salvo' : 'documentos salvos'} na Biblioteca`;
+      return `${savedCount} ${savedCount === 1 ? 'documento processado' : 'documentos processados'}`;
     }
     if (errorCount > 0) {
       return `${errorCount} ${errorCount === 1 ? 'upload com erro' : 'uploads com erro'}`;
@@ -197,7 +232,7 @@ export function UploadQueueDrawer() {
           <div className="mt-2.5">
             <div className="mb-1 flex justify-between text-[10px] text-doqyn-subtle">
               <span>
-                {savedProgressCount}/{totalCount} salvos na Biblioteca
+                {submittedProgressCount}/{totalCount} processados
               </span>
               {reviewSettings.autoReviewEnabled && (
                 <span>Auto · {reviewSettings.autoAcceptDelaySeconds}s</span>

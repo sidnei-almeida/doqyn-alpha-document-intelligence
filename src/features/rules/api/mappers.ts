@@ -1,5 +1,7 @@
 import type { ApiDocumentClass, ApiGroup, ApiMember } from '../api/rulesApi';
-import type { DocumentCategory, DocumentIcon, Group, GroupColor, UserRole } from '@/types/rules';
+import type { CompanyMember, DocumentCategory, DocumentIcon, Group, GroupColor, UserRole } from '@/types/rules';
+import type { CompanyMemberDto, PlatformRole } from '@/features/users/api/usersApi';
+import { collectLinkedDocumentGroupIds } from '@/lib/entityIds';
 
 const ICON_KEYS = new Set<DocumentIcon>([
   'file-text',
@@ -41,6 +43,14 @@ export function mapApiGroup(group: ApiGroup): Group {
 }
 
 export function mapApiDocumentClass(docClass: ApiDocumentClass): DocumentCategory {
+  const permissions = {
+    view: docClass.permissions?.view ?? [],
+    download: docClass.permissions?.download ?? [],
+    update: docClass.permissions?.update ?? [],
+    audit: docClass.permissions?.audit ?? [],
+    share: docClass.permissions?.share ?? [],
+  };
+
   return {
     id: docClass.id,
     companyId: docClass.companyId,
@@ -51,16 +61,10 @@ export function mapApiDocumentClass(docClass: ApiDocumentClass): DocumentCategor
     iconKey: docClass.iconKey,
     color: docClass.color,
     active: docClass.active,
-    accessGroupIds: docClass.permissions?.view ?? [],
+    documentGroupIds: collectLinkedDocumentGroupIds(permissions),
     notifyGroupIds: docClass.notifyGroups ?? [],
     notifyOnUpdate: docClass.notifyOnUpdate ?? false,
-    permissions: {
-      view: docClass.permissions?.view ?? [],
-      download: docClass.permissions?.download ?? [],
-      update: docClass.permissions?.update ?? [],
-      audit: docClass.permissions?.audit ?? [],
-      share: docClass.permissions?.share ?? [],
-    },
+    permissions,
     keywords: docClass.keywords ?? [],
     negativeKeywords: docClass.negativeKeywords ?? [],
     createdAt: docClass.createdAt,
@@ -77,6 +81,37 @@ export function mapApiMember(member: ApiMember) {
     email: member.email,
     position: member.position,
     role: member.role as UserRole,
+    status: member.status,
+    groupIds: documentGroupIds,
+    createdAt: member.createdAt,
+  };
+}
+
+function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
+  if (
+    platformRoles.some((role) =>
+      role === 'doqyn_admin' || role === 'company_admin' || role === 'individual_admin',
+    )
+  ) {
+    return 'admin';
+  }
+  return 'member';
+}
+
+export function mapCompanyMemberDtoToRulesMember(member: CompanyMemberDto): CompanyMember {
+  const documentGroupIds = member.documentGroupIds ?? member.groupIds ?? [];
+  const displayName =
+    member.name ??
+    ([member.firstName, member.lastName].filter(Boolean).join(' ') || member.email);
+
+  return {
+    id: member.id,
+    companyId: member.companyId,
+    userId: member.id,
+    name: displayName,
+    email: member.email,
+    position: member.requestedAccess?.jobTitle,
+    role: mapPlatformRolesToUserRole(member.platformRoles),
     status: member.status,
     groupIds: documentGroupIds,
     createdAt: member.createdAt,

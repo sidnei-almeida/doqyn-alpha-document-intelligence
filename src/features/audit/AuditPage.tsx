@@ -6,6 +6,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApproveApprovalDialog } from './components/ApproveApprovalDialog';
 import { AuditEmptyState } from './components/AuditEmptyState';
@@ -36,6 +37,7 @@ export function AuditPage() {
     isDoqynAdmin,
     overview,
     overviewLoading,
+    overviewError,
     pendingItems,
     pendingLoading,
     pendingError,
@@ -49,10 +51,10 @@ export function AuditPage() {
     setEventsTab,
     eventFilters,
     setEventFilters,
-    accessGroups,
     documentGroups,
     approveMutation,
     rejectMutation,
+    approveDocumentUploadMutation,
   } = useAuditCenter(filterDocId);
 
   const tabs = useMemo(
@@ -69,7 +71,9 @@ export function AuditPage() {
     [isAdmin, overview.pendingCount],
   );
 
-  const showEventFilters = activeTab === 'events';
+  const showEventFilters = activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
+  const auditFiltersMode =
+    activeTab === 'security' ? 'security' : activeTab === 'all' ? 'overview' : 'full';
   const showEventsPanel = activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
 
   const handleTabChange = (tabId: string) => {
@@ -92,6 +96,12 @@ export function AuditPage() {
       bodyClassName="min-h-0"
     >
       <div className="shrink-0">
+        {overviewError ? (
+          <InlineErrorHint
+            message="Não foi possível carregar o resumo da auditoria."
+            className="mb-4"
+          />
+        ) : null}
         <AuditSummaryCards
           overview={overview}
           loading={overviewLoading || pendingLoading}
@@ -134,7 +144,13 @@ export function AuditPage() {
                   isAdmin={isAdmin}
                   loading={pendingLoading}
                   onReview={setReviewItem}
-                  onApprove={setApproveItem}
+                  onApprove={(item) => {
+                    if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
+                      approveDocumentUploadMutation.mutate(item.documentUpload.approvalId);
+                      return;
+                    }
+                    setApproveItem(item);
+                  }}
                   onReject={setRejectItem}
                 />
               )}
@@ -152,6 +168,7 @@ export function AuditPage() {
 
           {showEventFilters && (
             <AuditFilters
+              mode={auditFiltersMode}
               filters={eventFilters}
               onChange={(filters) => setEventFilters({ ...filters, documentId: filterDocId })}
             />
@@ -199,10 +216,20 @@ export function AuditPage() {
         open={Boolean(reviewItem)}
         item={reviewItem}
         isAdmin={isAdmin}
-        saving={approveMutation.isPending || rejectMutation.isPending}
+        saving={
+          approveMutation.isPending ||
+          rejectMutation.isPending ||
+          approveDocumentUploadMutation.isPending
+        }
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
           setReviewItem(null);
+          if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
+            approveDocumentUploadMutation.mutate(item.documentUpload.approvalId, {
+              onSuccess: () => setApproveItem(null),
+            });
+            return;
+          }
           setApproveItem(item);
         }}
         onReject={(item) => {
@@ -212,9 +239,8 @@ export function AuditPage() {
       />
 
       <ApproveApprovalDialog
-        open={Boolean(approveItem)}
-        item={approveItem}
-        accessGroups={accessGroups}
+        open={Boolean(approveItem) && approveItem?.type !== 'document_upload'}
+        item={approveItem?.type === 'document_upload' ? null : approveItem}
         documentGroups={documentGroups}
         saving={approveMutation.isPending}
         canAssignDoqynAdmin={isDoqynAdmin}

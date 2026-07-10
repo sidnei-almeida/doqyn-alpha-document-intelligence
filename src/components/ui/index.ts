@@ -1,9 +1,16 @@
 /**
  * Export central dos componentes de UI reutilizáveis do design system DOQYN.
  */
+export { CopyableTextField, type CopyableTextFieldProps } from './CopyableTextField';
+export {
+  EXTERNAL_INVITE_LINK_LABEL,
+  ExternalInviteLinkField,
+  type ExternalInviteLinkFieldProps,
+} from './ExternalInviteLinkField';
 export { Checkbox, AppCheckbox, type CheckboxProps } from './Checkbox';
 export { Radio, AppRadio, type RadioProps } from './Radio';
-export { Badge, type BadgeProps } from './Badge';
+export { Badge, type BadgeProps, badgeVariants } from './Badge';
+export { BadgeGroup } from './BadgeGroup';
 export { Button, type ButtonProps } from './Button';
 export { buttonVariants } from './buttonVariants';
 export { Card, CardContent, CardDescription, CardEyebrow, CardHeader, CardTitle, ContentCard, MetricCard, type CardProps, type ContentCardProps, type MetricCardProps } from './Card';
@@ -12,6 +19,9 @@ export { FilterBar, FilterBarField, type FilterBarFieldProps, type FilterBarProp
 export { DateInput, type DateInputProps } from './DateInput';
 export { DropdownMenuItem, type DropdownMenuItemProps } from './DropdownMenuItem';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { AlertBanner, type AlertBannerVariant } from './AlertBanner';
+export { InlineErrorHint } from './InlineErrorHint';
+export { AppErrorBoundary } from './AppErrorBoundary';
 export { fieldControlClass, fieldLabelClass, fieldWrapperClass, FIELD_CONTROL_HEIGHT } from './fieldStyles';
 export { FileThumbnail } from './FileThumbnail';
 export { FileTypeIcon } from './FileTypeIcon';

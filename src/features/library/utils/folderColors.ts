@@ -17,10 +17,18 @@ function normalizeFolderKey(value: string): string {
 }
 
 function resolveFolderSlug(nameOrId: string): string | null {
-  const key = normalizeFolderKey(nameOrId);
-  for (const slug of Object.keys(FOLDER_ACCENT_VARS)) {
-    if (key.includes(slug)) return slug;
+  const trimmed = nameOrId.trim();
+  if (trimmed.startsWith('group_')) return null;
+
+  const key = normalizeFolderKey(trimmed);
+  if (FOLDER_ACCENT_VARS[key]) return key;
+
+  const fromCategoryId = trimmed.match(/^(?:cat|class)_(.+)$/i);
+  if (fromCategoryId) {
+    const slug = normalizeFolderKey(fromCategoryId[1]);
+    if (FOLDER_ACCENT_VARS[slug]) return slug;
   }
+
   return null;
 }
 

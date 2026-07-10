@@ -14,21 +14,21 @@ function readSrc(relativePath: string): string {
 }
 
 describe('aprovação de acesso — persistência e cache', () => {
-  it('tela de auditoria usa auth-access-groups, não document-groups do rulesApi', () => {
+  it('tela de auditoria carrega grupos documentais para aprovação', () => {
     const source = readSrc('src/features/audit/hooks/useAuditCenter.ts');
-    assert.ok(source.includes("queryKey: ['auth-access-groups', tenantId]"));
-    assert.ok(source.includes('usersApi.listAccessGroups'));
-    assert.equal(source.includes('getAccessGroups'), false);
+    assert.ok(source.includes("queryKey: ['document-groups', tenantId]"));
+    assert.ok(source.includes('usersApi.listDocumentGroups'));
+    assert.equal(source.includes('usersApi.listAccessGroups'), false);
     assert.equal(source.includes("from '@/features/rules/api/rulesApi'"), false);
   });
 
-  it('ApproveApprovalDialog separa grupos de acesso e grupos documentais', () => {
+  it('ApproveApprovalDialog usa apenas grupos documentais na UI', () => {
     const source = readSrc('src/features/audit/components/ApproveApprovalDialog.tsx');
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
-    assert.ok(source.includes('accessGroups'));
+    assert.equal(source.includes('accessGroups'), false);
     assert.ok(source.includes('documentGroups'));
-    assert.ok(sections.includes('Grupos de acesso (auth-service)'));
-    assert.ok(sections.includes('Grupos documentais (governança)'));
+    assert.ok(sections.includes('title="Grupos"'));
+    assert.ok(sections.includes('Mesmos grupos criados em Regras'));
     assert.ok(source.includes('documentGroupIds'));
   });
 

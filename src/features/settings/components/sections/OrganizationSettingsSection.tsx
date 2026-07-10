@@ -1,16 +1,20 @@
+import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionBody } from '../SettingsSectionBody';
-import { SettingsCard } from '../SettingsCard';
 import { SettingsInfoCard } from '../SettingsInfoCard';
+import { TenantEmailSettingsSection } from './TenantEmailSettingsSection';
 
 export function OrganizationSettingsSection() {
   return (
     <SettingsSectionBody>
-      <div className="settings-cards-grid">
+      <TenantEmailSettingsSection />
+
+      <div className="settings-cards-grid settings-cards-grid--2col">
         <SettingsInfoCard
           icon="balance"
           title="Regras e governança"
           description="Defina políticas de classificação, fluxos de aprovação e mapeamento entre categorias e grupos."
           status="ok"
+          featured
           href="/rules"
           linkLabel="Abrir Regras"
         />
@@ -36,12 +40,16 @@ export function OrganizationSettingsSection() {
         />
       </div>
 
-      <SettingsCard>
-        <p className="text-sm text-doqyn-muted">
-          A governança documental é configurada em <strong className="font-medium text-doqyn-text">Regras</strong>.
-          Alterações impactam classificação automática, alertas e permissões na Biblioteca.
+      <aside className="settings-callout" role="note">
+        <span className="settings-callout__icon" aria-hidden>
+          <Icon name="info" size={18} />
+        </span>
+        <p className="settings-callout__body">
+          A governança documental é configurada em{' '}
+          <strong className="font-medium text-doqyn-text">Regras</strong>. Alterações impactam
+          classificação automática, alertas e permissões na Biblioteca.
         </p>
-      </SettingsCard>
+      </aside>
     </SettingsSectionBody>
   );
 }

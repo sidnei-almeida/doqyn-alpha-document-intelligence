@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { LibraryRouteState } from '../types/library';
+import type { LibraryCollectionFilterCapabilities } from '../utils/libraryCollectionFilterCapabilities';
 import { hasActiveLibraryFilters } from '../utils/libraryFilterUtils';
 import { ActiveFilterChips } from './ActiveFilterChips';
 import { ExplorerFilterChips } from './ExplorerFilterChips';
@@ -22,6 +23,7 @@ type ExplorerPageHeaderProps = {
   showFilterChips?: boolean;
   /** Pastas e coleções virtuais — menus de filtro/ordenação no header. */
   showFilterMenus?: boolean;
+  filterCapabilities?: LibraryCollectionFilterCapabilities;
   /** Chevron decorativo ao lado do título (home). */
   showTitleChevron?: boolean;
   folderName?: string;
@@ -43,6 +45,7 @@ export function ExplorerPageHeader({
   infoButton,
   showFilterChips = false,
   showFilterMenus = false,
+  filterCapabilities,
   showTitleChevron = false,
   folderName,
   'data-testid': testId = 'explorer-page-header',
@@ -73,6 +76,7 @@ export function ExplorerPageHeader({
             onStateChange={onStateChange}
             onRefresh={onRefresh}
             showFilters={showFilterMenus}
+            filterCapabilities={filterCapabilities}
           />
           {infoButton}
         </>
@@ -86,6 +90,7 @@ export function ExplorerPageHeader({
             onStateChange={onStateChange}
             onClearAll={onClearFilters}
             folderName={folderName}
+            filterCapabilities={filterCapabilities}
           />
         ) : undefined
       }

@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { cn } from '@/lib/utils';
 import { GROUP_COLOR_STYLES, getInitials } from '@/utils/rulesHelpers';
+import { isDocumentGroupId } from '@/lib/entityIds';
 import { GovernancePermissionBadges } from '../components/governance/GovernancePermissionBadges';
 import type { GroupFlowNode } from './types';
 
@@ -68,27 +69,36 @@ export const GroupCardNode = memo(function GroupCardNode({ data }: NodeProps<Gro
       />
       <Card
         className={cn(
-          'w-full overflow-hidden',
-          styles.border,
-          selected && 'border-doqyn-border-strong ring-1 ring-doqyn-primary/25',
-          highlighted && !selected && 'border-doqyn-border-strong bg-doqyn-card/70',
-          connectSource && 'border-doqyn-primary ring-1 ring-doqyn-primary/30',
-          dimmed && 'opacity-35',
+          'governance-flow-card w-full overflow-hidden border',
+          selected && 'border-doqyn-border-strong ring-1 ring-doqyn-primary/20',
+          highlighted && !selected && 'border-doqyn-border-strong',
+          connectSource && 'border-doqyn-primary/50 ring-1 ring-doqyn-primary/15',
+          dimmed && 'opacity-55 saturate-75',
         )}
       >
-        <div className="flex items-start gap-2 p-3">
+        <div className="flex items-start gap-2 p-3.5">
           <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <span
                 className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-semibold',
                   styles.avatar,
                 )}
               >
                 {getInitials(group.name)}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-doqyn-text">{group.name}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="truncate text-sm font-semibold text-doqyn-text">{group.name}</p>
+                  <span className="rounded-full border border-doqyn-border bg-doqyn-card px-1.5 py-0.5 text-[10px] font-medium text-doqyn-subtle">
+                    Grupo
+                  </span>
+                  {isDocumentGroupId(group.id) && (
+                    <span className="max-w-[9rem] truncate rounded-full bg-doqyn-surface px-1.5 py-0.5 font-mono text-[10px] text-doqyn-muted">
+                      {group.id}
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={(event) => {
@@ -100,9 +110,17 @@ export const GroupCardNode = memo(function GroupCardNode({ data }: NodeProps<Gro
                   {memberCount} {memberCount === 1 ? 'membro' : 'membros'}
                 </button>
                 {group.description && (
-                  <p className="mt-0.5 line-clamp-2 text-[10px] text-doqyn-subtle">
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-doqyn-subtle">
                     {group.description}
                   </p>
+                )}
+                {hasConnections ? (
+                  <p className="mt-1.5 text-[11px] text-doqyn-subtle">
+                    Acesso a {connectedLinks.length}{' '}
+                    {connectedLinks.length === 1 ? 'categoria' : 'categorias'}
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-doqyn-subtle">Sem categorias conectadas</p>
                 )}
               </div>
             </div>
@@ -186,26 +204,7 @@ export const GroupCardNode = memo(function GroupCardNode({ data }: NodeProps<Gro
             </div>
           )}
         </div>
-        {hasConnections && (
-          <div className="border-t border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2">
-            <p className="mb-1 text-[9px] font-medium uppercase tracking-wider text-doqyn-subtle">
-              Acesso a
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {connectedLinks.slice(0, 4).map((link) => (
-                <button
-                  key={link.categoryId}
-                  type="button"
-                  onClick={() => onOpenConnection(link.categoryId)}
-                  className="nodrag rounded-full border border-doqyn-border-subtle bg-doqyn-surface px-2 py-0.5 text-[10px] text-doqyn-muted hover:border-doqyn-border hover:text-doqyn-text"
-                >
-                  {link.categoryName}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <p className="border-t border-doqyn-border-subtle px-3 py-1.5 text-center text-[10px] text-doqyn-subtle">
+        <p className="border-t border-doqyn-border-subtle/80 px-3.5 py-2 text-center text-[10px] text-doqyn-subtle">
           Membros em{' '}
           <Link
             to="/users"

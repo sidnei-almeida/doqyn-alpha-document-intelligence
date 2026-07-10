@@ -1,5 +1,7 @@
 import type { KeyboardEvent, MouseEvent } from 'react';
+import { BadgeGroup } from '@/components/ui/BadgeGroup';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { VersionBadge } from '@/components/ui/VersionBadge';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
@@ -11,6 +13,7 @@ import { ExplorerSelectionIndicator } from '../ExplorerSelectionIndicator';
 import { handleExplorerItemKeyDown } from '../../utils/explorerItemKeyboard';
 import { DocumentFileThumbnail } from './DocumentFileThumbnail';
 import { DocumentFavoriteBadge } from './DocumentFavoriteBadge';
+import { DocumentSignatureBadge } from './DocumentSignatureBadge';
 import {
   documentDisplayName,
   documentOwnerName,
@@ -41,6 +44,7 @@ export function DocumentFileCard({
     downloadFile,
     openFileDetails,
     openFileContextMenu,
+    openSignatures,
   } = useExplorerFileActions();
 
   const isSelected = isFileSelected(doc.documentId);
@@ -114,12 +118,26 @@ export function DocumentFileCard({
       <TruncatedText className="px-0.5 text-[12px] font-medium leading-snug text-doqyn-text">
         {name}
       </TruncatedText>
-      <p className="mt-0.5 truncate px-0.5 text-[11px] text-doqyn-subtle">{secondary}</p>
+      <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 px-0.5">
+        <span className="truncate text-[11px] text-doqyn-subtle">{secondary}</span>
+        <DocumentSignatureBadge
+          summary={doc.signatureSummary}
+          size="xs"
+          onClick={openSignatures ? () => openSignatures(doc) : undefined}
+        />
+      </p>
 
       {showStatus && (
         <div className="mt-1.5 flex items-center justify-between gap-2 px-0.5">
           <span className="truncate text-[10px] text-doqyn-subtle">{documentOwnerName(doc)}</span>
-          <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} className="scale-90" />
+          <BadgeGroup align="end">
+            <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
+            <VersionBadge
+              version={doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version}`}
+              isCurrent
+              size="xs"
+            />
+          </BadgeGroup>
         </div>
       )}
     </div>

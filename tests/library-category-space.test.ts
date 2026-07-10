@@ -30,7 +30,16 @@ describe('resolveLibraryCategoryId', () => {
     assert.equal(resolveLibraryCategoryId('cat_juridico', CATEGORIES), 'cat_juridico');
   });
 
-  it('resolve nome Jurídico', () => {
+  it('rejeita ID de grupo documental como pasta', () => {
+    assert.equal(resolveLibraryCategoryId('group_juridico', CATEGORIES), undefined);
+    assert.equal(resolveLibraryCategoryId('group_financeiro', CATEGORIES), undefined);
+  });
+
+  it('não faz fallback com ID desconhecido', () => {
+    assert.equal(resolveLibraryCategoryId('not_a_real_id', CATEGORIES), undefined);
+  });
+
+  it('resolve nome Jurídico quando único na lista', () => {
     assert.equal(resolveLibraryCategoryId('Jurídico', CATEGORIES), 'cat_juridico');
   });
 

@@ -124,23 +124,48 @@ export function PendingApprovalReviewDialog({
             </Badge>
           </div>
 
-          <AccessRequestDetailsPanel
-            member={item.member}
-            requestedAccess={item.requestedAccess}
-            whatsapp={item.member?.whatsapp}
-            consent={item.member?.consent}
-            terms={item.member?.terms}
-            notificationPreferences={item.member?.notificationPreferences}
-            className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
-          />
+          {item.type !== 'document_upload' && (
+            <AccessRequestDetailsPanel
+              member={item.member}
+              requestedAccess={item.requestedAccess}
+              whatsapp={item.member?.whatsapp}
+              consent={item.member?.consent}
+              terms={item.member?.terms}
+              notificationPreferences={item.member?.notificationPreferences}
+              className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+            />
+          )}
 
-          <Link
-            to="/users"
-            className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
-          >
-            Gerenciar em Usuários
-            <Icon name="open_in_new" size={12} />
-          </Link>
+          {item.type === 'document_upload' && item.documentUpload && (
+            <div className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4 space-y-3')}>
+              <div>
+                <p className="text-xs text-doqyn-muted">Arquivo</p>
+                <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
+                  {item.documentUpload.originalFileName}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-doqyn-muted">Categoria sugerida</p>
+                <p className="mt-0.5 text-sm text-doqyn-text">
+                  {item.documentUpload.className ?? item.documentUpload.classId ?? '—'}
+                </p>
+              </div>
+              <p className="text-xs text-doqyn-muted">
+                Os metadados foram extraídos automaticamente pela IA. Ao aprovar, o documento será
+                publicado na Biblioteca em nome do solicitante.
+              </p>
+            </div>
+          )}
+
+          {item.type !== 'document_upload' && (
+            <Link
+              to="/users"
+              className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
+            >
+              Gerenciar em Usuários
+              <Icon name="open_in_new" size={12} />
+            </Link>
+          )}
         </div>
 
         {isAdmin && (
@@ -157,7 +182,7 @@ export function PendingApprovalReviewDialog({
               Rejeitar
             </Button>
             <Button type="button" onClick={() => onApprove(item)} disabled={saving}>
-              Aprovar
+              {item.type === 'document_upload' ? 'Aprovar documento' : 'Aprovar'}
             </Button>
           </div>
         )}

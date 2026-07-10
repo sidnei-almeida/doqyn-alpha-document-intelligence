@@ -3,12 +3,9 @@
 #
 #   docker compose -f deploy/docker-compose.dev.yml up -d
 #
-# Serviços e portas:
-#   postgres-auth  -> localhost:5433 (auth-service / Prisma)
-#   mongo          -> localhost:27017 (document-api)
-#
-# O auth-service tem seu próprio docker-compose completo em
-# ../doqyn-auth-service/docker-compose.yml (inclui migrate + API).
+# Produção (stack completa): veja docs/DEPLOY_VPS.md
+#   ./deploy/scripts/setup-production-env.sh
+#   ./deploy/scripts/deploy-production.sh
 
 services:
   postgres-auth:

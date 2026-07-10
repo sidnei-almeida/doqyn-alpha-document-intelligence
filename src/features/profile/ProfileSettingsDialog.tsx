@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useAuth } from '@/auth/useAuth';
+import { formatPlatformRolesList, getAuthRoleLabel } from '@/features/users/platformRoleLabels';
 import {
   validateProfileAvatarFile,
 } from '@/features/profile/api/profileApi';
@@ -173,7 +174,13 @@ export function ProfileSettingsDialog({ open, onClose }: ProfileSettingsDialogPr
             </div>
             <div>
               <p className="text-xs text-doqyn-muted">Papel</p>
-              <p className="text-doqyn-text">{roles[0] ?? user?.role ?? '—'}</p>
+              <p className="text-doqyn-text">
+                {roles.length
+                  ? formatPlatformRolesList(roles)
+                  : user?.role
+                    ? getAuthRoleLabel(user.role)
+                    : '—'}
+              </p>
             </div>
           </div>
         </div>

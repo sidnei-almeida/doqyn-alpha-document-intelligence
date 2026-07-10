@@ -64,11 +64,14 @@ describe('modal Editar acesso — UX e dirty state', () => {
   });
 
   it('roles exibem labels amigáveis mantendo valores internos', () => {
-    assert.equal(PLATFORM_ROLE_LABELS.doqyn_admin.label, 'Administrador DOQYN');
+    assert.equal(PLATFORM_ROLE_LABELS.doqyn_admin.label, 'Administrador do sistema');
     assert.equal(PLATFORM_ROLE_LABELS.company_admin.label, 'Administrador da empresa');
     assert.equal(PLATFORM_ROLE_LABELS.user.label, 'Usuário');
+    const chips = readSrc('components/ui/PlatformRoleChips.tsx');
+    assert.ok(chips.includes('getPlatformRoleLabel'));
+    assert.ok(chips.includes('{label}'));
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('PLATFORM_ROLE_LABELS'));
+    assert.ok(sections.includes('getPlatformRoleMeta'));
     assert.ok(sections.includes('permissões administrativas globais'));
   });
 
@@ -91,26 +94,35 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(dialog.includes('Alterações não salvas'));
   });
 
-  it('grupos de acesso vazios mostram empty state com CTA', () => {
+  it('grupos vazios mostram empty state com CTA para Regras', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('GroupsEmptyState'));
-    assert.ok(sections.includes('Nenhum grupo de acesso criado ainda.'));
-    assert.ok(sections.includes('Crie grupos de acesso em Usuários'));
+    assert.ok(sections.includes('Nenhum grupo criado ainda.'));
+    assert.ok(sections.includes('Crie grupos na tela Regras'));
   });
 
-  it('grupos documentais usam cards com Checkbox customizado', () => {
+  it('grupos usam cards com Checkbox customizado', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('DocumentGroupsSection'));
-    assert.ok(sections.includes('Grupo documental de governança'));
+    assert.ok(sections.includes('Mesmos grupos criados em Regras'));
     assert.ok(sections.includes('memberCount'));
     assert.equal(sections.includes('type="checkbox"'), false);
+  });
+
+  it('UsersPage usa tenant da sessão sem campo manual de companyId', () => {
+    const page = readSrc('features/users/UsersPage.tsx');
+    assert.ok(page.includes('sessionTenantId'));
+    assert.ok(page.includes('tenant?.tenantId ?? user?.companyId'));
+    assert.equal(page.includes('Empresa (companyId)'), false);
+    assert.equal(page.includes('setCompanyId'), false);
+    assert.ok(page.includes('usersApi.list()'));
   });
 
   it('mutation de salvar envia payload correto com roles e grupos', () => {
     const page = readSrc('features/users/UsersPage.tsx');
     assert.ok(page.includes('usersApi.updateAccess'));
     assert.ok(page.includes('platformRoles: form.platformRoles'));
-    assert.ok(page.includes('accessGroupIds: form.accessGroupIds'));
+    assert.ok(page.includes('accessGroupIds: editingMember.accessGroupIds'));
     assert.ok(page.includes('notificationPreferences: form.notificationPreferences'));
     assert.ok(page.includes('usersApi.updateDocumentGroups'));
     assert.ok(page.includes('form.documentGroupIds'));
@@ -121,6 +133,13 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(page.includes('EditAccessDialog'));
     assert.equal(page.includes('function RoleCheckboxes'), false);
     assert.equal(page.includes('function GroupCheckboxes'), false);
+  });
+
+  it('modal de convite exibe link copiável como na requisição de assinatura', () => {
+    const page = readSrc('features/users/UsersPage.tsx');
+    assert.ok(page.includes('ExternalInviteLinkField'));
+    assert.ok(page.includes('user-invite-link-success'));
+    assert.ok(page.includes('inviteResult'));
   });
 });
 

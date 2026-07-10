@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
+import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
 import type {
   AuditEvent,
   CompanyMember,
@@ -11,19 +13,18 @@ import type {
 } from '@/types/rules';
 import { computeGroupMemberCounts, generateId } from '@/utils/rulesHelpers';
 import {
-  createAccessGroup,
+  createDocumentGroup,
   createDocumentClass,
   createDocumentRule,
-  getAccessGroups,
-  getCompanyMembers,
+  getDocumentGroups,
   getDocumentAccessMatrix,
   getDocumentClasses,
   getDocumentRules,
   RulesApiError,
-  toggleAccessGroup,
+  deactivateDocumentGroup,
   toggleDocumentClass,
   toExtractionRule,
-  updateAccessGroup,
+  updateDocumentGroup,
   updateDocumentClass,
   updateDocumentAccessMatrixCell,
   updateDocumentRule,
@@ -34,7 +35,7 @@ import {
   filterActiveGroups,
   mapApiDocumentClass,
   mapApiGroup,
-  mapApiMember,
+  mapCompanyMemberDtoToRulesMember,
 } from '../api/mappers';
 import {
   DEFAULT_CONNECTION_PERMISSIONS,
@@ -42,6 +43,7 @@ import {
   listGovernanceEdges,
 } from '../utils/governanceConnections';
 import type { GovernanceEdgeDiff } from '../utils/governanceMapDraft';
+import { useCompanyMembers } from '@/features/users/hooks/useCompanyMembers';
 
 export type InviteMemberInput = {
   name: string;
@@ -88,7 +90,9 @@ function enrichCategoriesFromMatrix(
 
 export function useRules(actorName: string) {
   const { tenant } = useAuth();
+  const queryClient = useQueryClient();
   const tenantId = tenant?.tenantId;
+  const membersQuery = useCompanyMembers(tenantId ?? '');
   const [groups, setGroups] = useState<Group[]>([]);
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [members, setMembers] = useState<CompanyMember[]>([]);
@@ -121,17 +125,15 @@ export function useRules(actorName: string) {
     setLoading(true);
     setError(null);
     try {
-      const [rawGroups, rawClasses, rawMembers, rawRules, matrix] = await Promise.all([
-        getAccessGroups(),
+      const [rawGroups, rawClasses, rawRules, matrix] = await Promise.all([
+        getDocumentGroups(),
         getDocumentClasses(),
-        getCompanyMembers(),
         getDocumentRules(),
         getDocumentAccessMatrix(),
       ]);
 
       setGroups(filterActiveGroups(rawGroups.map(mapApiGroup)));
       setCategories(filterActiveCategories(enrichCategoriesFromMatrix(rawClasses, matrix)));
-      setMembers(rawMembers.map(mapApiMember));
       setRules(rawRules.map(toExtractionRule));
     } catch (err) {
       console.error('Falha ao carregar regras:', err);
@@ -145,6 +147,12 @@ export function useRules(actorName: string) {
     void reload();
   }, [reload]);
 
+  useEffect(() => {
+    const nextMembers = membersQuery.data?.members;
+    if (!nextMembers) return;
+    setMembers(nextMembers.map(mapCompanyMemberDtoToRulesMember));
+  }, [membersQuery.data?.members]);
+
   const groupMemberCounts = useMemo(
     () => computeGroupMemberCounts(groups, members),
     [groups, members],
@@ -153,7 +161,7 @@ export function useRules(actorName: string) {
   const createGroup = useCallback(
     async (name: string, color: GroupColor) => {
       try {
-        const created = await createAccessGroup({ name, color });
+        const created = await createDocumentGroup({ name, color });
         const mapped = mapApiGroup(created);
         setGroups((prev) => [...prev, mapped]);
         addAuditEvent(`${actorName} criou o grupo ${name.trim()}`, name.trim());
@@ -169,12 +177,12 @@ export function useRules(actorName: string) {
     async (groupId: string) => {
       const group = groups.find((g) => g.id === groupId);
       try {
-        await toggleAccessGroup(groupId);
+        await deactivateDocumentGroup(groupId);
         setGroups((prev) => prev.filter((g) => g.id !== groupId));
         setCategories((prev) =>
           prev.map((cat) => ({
             ...cat,
-            accessGroupIds: cat.accessGroupIds.filter((id) => id !== groupId),
+            documentGroupIds: cat.documentGroupIds.filter((id) => id !== groupId),
             notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
             permissions: cat.permissions
               ? {
@@ -201,7 +209,7 @@ export function useRules(actorName: string) {
   const updateGroup = useCallback(
     async (groupId: string, input: { name: string; description?: string }) => {
       try {
-        const updated = await updateAccessGroup(groupId, {
+        const updated = await updateDocumentGroup(groupId, {
           name: input.name,
           description: input.description ?? null,
         });
@@ -267,6 +275,7 @@ export function useRules(actorName: string) {
         ]);
         const nextCategories = filterActiveCategories(enrichCategoriesFromMatrix(refreshed, matrix));
         setCategories(nextCategories);
+        await invalidateLibraryQueries(queryClient, tenantId);
         toast.success('Alterações salvas.');
         return listGovernanceEdges(nextCategories, groups);
       } catch (err) {
@@ -274,7 +283,7 @@ export function useRules(actorName: string) {
         throw err;
       }
     },
-    [connectGroupToCategory, disconnectGroupFromCategory, groups],
+    [connectGroupToCategory, disconnectGroupFromCategory, groups, queryClient, tenantId],
   );
 
   const updateCategory = useCallback(

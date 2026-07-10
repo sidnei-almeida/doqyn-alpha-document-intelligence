@@ -92,7 +92,7 @@ describe('desconexão visual na linha do mapa (rascunho local)', () => {
     const saveBlock = rules.slice(saveStart, saveEnd);
     assert.ok(saveBlock.includes('setCategories(nextCategories)'));
     assert.equal(saveBlock.includes('setGroups'), false);
-    assert.equal(saveBlock.includes('toggleAccessGroup'), false);
+    assert.equal(saveBlock.includes('deactivateDocumentGroup'), false);
     assert.equal(saveBlock.includes('toggleDocumentClass'), false);
   });
 

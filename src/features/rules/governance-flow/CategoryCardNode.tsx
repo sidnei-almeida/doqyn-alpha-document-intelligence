@@ -3,9 +3,10 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { CategoryIcon } from '../components/categoryIcons';
-import { GovernancePermissionBadges } from '../components/governance/GovernancePermissionBadges';
 import { getCategoryAccentColor } from '../utils/governanceMapUi';
+import { isDocumentCategoryId } from '@/lib/entityIds';
 import type { CategoryFlowNode } from './types';
 
 function blurUnlessFocusWithin(event: React.FocusEvent<HTMLElement>, onBlur: () => void) {
@@ -21,7 +22,6 @@ export const CategoryCardNode = memo(function CategoryCardNode({
   const {
     category,
     connectedGroupCount,
-    connectedLinks,
     hasExtractionConfig,
     selected,
     highlighted,
@@ -30,7 +30,6 @@ export const CategoryCardNode = memo(function CategoryCardNode({
     connectGroupName,
     isAdmin,
     onSelect,
-    onOpenConnection,
     onHoverStart,
     onHoverEnd,
   } = data;
@@ -48,72 +47,58 @@ export const CategoryCardNode = memo(function CategoryCardNode({
       <Card
         variant="interactive"
         className={cn(
-          'governance-category-card w-full',
-          selected && 'border-doqyn-border-strong ring-1 ring-doqyn-primary/25',
-          highlighted && !selected && 'border-doqyn-border-strong bg-doqyn-card/70',
-          connectMode && 'border-dashed border-doqyn-primary/50 bg-doqyn-primary-bg/30',
-          dimmed && 'opacity-35',
+          'governance-flow-card governance-flow-card--interactive w-full border',
+          selected && 'border-doqyn-border-strong ring-1 ring-doqyn-primary/20',
+          highlighted && !selected && 'border-doqyn-border-strong',
+          connectMode && 'border-dashed border-doqyn-primary/40 ring-1 ring-doqyn-primary/15',
+          dimmed && 'opacity-55 saturate-75',
         )}
-        style={accentColor ? { borderLeftColor: accentColor } : undefined}
       >
         <button
           type="button"
           onClick={onSelect}
-          className="w-full p-3 text-left focus:outline-none"
+          className="w-full p-3.5 text-left focus:outline-none"
         >
           <div className="flex items-start gap-3">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-doqyn-border-subtle bg-doqyn-surface"
-              style={accentColor ? { color: accentColor } : undefined}
-            >
-              <CategoryIcon icon={category.icon} className="h-4 w-4" />
-            </div>
+            <span className="governance-flow-icon-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+              <CategoryIcon
+                icon={category.icon}
+                filled
+                size={ICON_SIZE.md}
+                color={accentColor ?? 'var(--folder-accent-default)'}
+              />
+            </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
                 <p className="truncate text-sm font-semibold text-doqyn-text">{category.name}</p>
+                <span className="rounded-full border border-doqyn-border bg-doqyn-card px-1.5 py-0.5 text-[10px] font-medium text-doqyn-subtle">
+                  Classe
+                </span>
+                {isDocumentCategoryId(category.id) && (
+                  <span className="max-w-[9rem] truncate rounded-full bg-doqyn-surface px-1.5 py-0.5 font-mono text-[10px] text-doqyn-muted">
+                    {category.id}
+                  </span>
+                )}
                 {hasExtractionConfig && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-doqyn-info-bg px-1.5 py-0.5 text-[9px] font-medium text-doqyn-info">
-                    <Icon name="auto_awesome" size={10} aria-hidden />
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-doqyn-info-bg px-2 py-0.5 text-[10px] font-medium text-doqyn-info">
+                    <Icon name="auto_awesome" size={11} aria-hidden />
                     Análise
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-doqyn-muted">
+              <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-doqyn-muted">
                 {category.description || 'Categoria documental'}
               </p>
-              <p className="mt-1.5 text-[10px] font-medium text-doqyn-subtle">
-                {connectedGroupCount}{' '}
-                {connectedGroupCount === 1 ? 'grupo com acesso' : 'grupos com acesso'}
+              <p className="mt-2 text-[11px] text-doqyn-subtle">
+                {connectedGroupCount === 0
+                  ? 'Nenhum grupo conectado ainda'
+                  : `${connectedGroupCount} ${
+                      connectedGroupCount === 1 ? 'grupo com acesso' : 'grupos com acesso'
+                    }`}
               </p>
-              {connectedLinks.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {connectedLinks.slice(0, 3).map((link) => (
-                    <li key={link.groupId}>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onOpenConnection(link.groupId);
-                        }}
-                        className="nodrag flex w-full items-center justify-between gap-2 rounded-md border border-doqyn-border-subtle bg-doqyn-bg/50 px-2 py-1 text-left hover:bg-doqyn-surface-hover"
-                      >
-                        <span className="truncate text-[10px] font-medium text-doqyn-text">
-                          {link.groupName}
-                        </span>
-                        <GovernancePermissionBadges permissions={link.permissions} />
-                      </button>
-                    </li>
-                  ))}
-                  {connectedLinks.length > 3 && (
-                    <li className="px-1 text-[10px] text-doqyn-subtle">
-                      +{connectedLinks.length - 3} grupos
-                    </li>
-                  )}
-                </ul>
-              )}
               {connectMode && (
-                <p className="mt-2 rounded-md bg-doqyn-primary-bg px-2 py-1.5 text-[11px] font-medium text-doqyn-primary">
-                  Clique para conectar {connectGroupName ? `"${connectGroupName}"` : 'o grupo'} aqui
+                <p className="mt-2 rounded-lg border border-doqyn-primary/20 bg-doqyn-primary-bg/20 px-2.5 py-1.5 text-[11px] text-doqyn-primary">
+                  Clique para conectar {connectGroupName ? `"${connectGroupName}"` : 'o grupo'}
                 </p>
               )}
             </div>

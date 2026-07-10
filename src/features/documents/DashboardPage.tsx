@@ -110,6 +110,7 @@ export function DashboardPage() {
           <OverviewEnvironmentHealthCard
             health={data.health}
             bucketNameMasked={data.storage?.bucketNameMasked}
+            canManageGovernance={isAdmin}
           />
         </div>
         <div className="lg:col-span-1 xl:col-span-3">
@@ -124,7 +125,6 @@ export function DashboardPage() {
             storage={data.storage}
             downloadsInPeriod={data.summary.downloadsInPeriod}
             recentErrors={data.recentErrors}
-            showRulesCta={!data.health.hasActiveExtractionRules}
           />
         </div>
       )}

@@ -26,12 +26,23 @@ export type DataTableProps<T> = {
   footer?: ReactNode;
   className?: string;
   stretch?: boolean;
+  density?: 'comfortable' | 'compact';
 };
 
-const TABLE_HEAD_CLASS =
-  'type-label px-4 py-3 text-left uppercase tracking-wide text-doqyn-muted';
-
-const TABLE_CELL_CLASS = 'type-body px-4 py-3.5 align-middle';
+const DENSITY_STYLES = {
+  comfortable: {
+    head: 'type-label px-4 py-3 text-left uppercase tracking-wide text-doqyn-muted',
+    cell: 'type-body px-4 py-3.5 align-middle',
+    footer: 'px-4 py-3',
+    thead: 'border-b border-doqyn-border bg-doqyn-card',
+  },
+  compact: {
+    head: 'type-label px-3 py-2 text-left text-[11px] uppercase tracking-wide text-doqyn-muted',
+    cell: 'type-body px-3 py-2 align-middle leading-snug',
+    footer: 'px-3 py-2',
+    thead: 'border-b border-doqyn-border-subtle bg-doqyn-surface',
+  },
+} as const;
 
 export function DataTable<T>({
   columns,
@@ -49,7 +60,9 @@ export function DataTable<T>({
   footer,
   className,
   stretch = false,
+  density = 'comfortable',
 }: DataTableProps<T>) {
+  const densityStyle = DENSITY_STYLES[density];
   if (data.length === 0) {
     return (
       <EmptyState
@@ -76,11 +89,11 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-doqyn-border bg-doqyn-card">
+            <tr className={densityStyle.thead}>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={cn(TABLE_HEAD_CLASS, col.headerClassName, col.className)}
+                  className={cn(densityStyle.head, col.headerClassName, col.className)}
                 >
                   {col.header}
                 </th>
@@ -98,12 +111,13 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(item)}
                   className={cn(
                     'border-b border-doqyn-border-subtle transition-colors last:border-0',
-                    onRowClick && 'cursor-pointer hover:bg-doqyn-surface-hover',
+                    (onRowClick || density === 'compact') &&
+                      'cursor-pointer hover:bg-doqyn-surface-hover/70',
                     isSelected && 'bg-doqyn-primary-bg',
                   )}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={cn(TABLE_CELL_CLASS, col.className)}>
+                    <td key={col.key} className={cn(densityStyle.cell, col.className)}>
                       {col.render(item)}
                     </td>
                   ))}
@@ -125,7 +139,9 @@ export function DataTable<T>({
       )}
 
       {footer && (
-        <div className="shrink-0 border-t border-doqyn-border-subtle px-4 py-3">{footer}</div>
+        <div className={cn('shrink-0 border-t border-doqyn-border-subtle', densityStyle.footer)}>
+          {footer}
+        </div>
       )}
     </div>
   );

@@ -37,7 +37,11 @@ function resolveIsExternalGuest(
 ): boolean {
   if (event.security?.isExternalGuest === true) return true;
   const source = typeof metadata?.source === 'string' ? metadata.source : '';
-  return source === 'external_share' || source === 'guest_portal';
+  if (source === 'external_share' || source === 'guest_portal' || source === 'signature_portal') {
+    return true;
+  }
+  const signerType = typeof metadata?.signerType === 'string' ? metadata.signerType : '';
+  return signerType === 'external_guest';
 }
 
 function buildEventSecurityContext(

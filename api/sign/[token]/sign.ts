@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  buildSignatureAuditContext,
+  buildExternalSignatureAuditContext,
   buildSignatureTrackingMetadata,
   completeDocumentSignature,
   findSignatureRequestByToken,
@@ -34,15 +34,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const request = await findSignatureRequestByToken(token);
+    const consentAccepted = body.consentAccepted === true;
+
+    if (request && consentAccepted) {
+      const auditCtx = buildExternalSignatureAuditContext(request);
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action: 'document.signature_consent_checked',
+          description: 'Aceite de assinatura registrado.',
+          documentId: request.documentId,
+          versionId: request.versionId,
+          metadata: sanitizeAuditMetadata(
+            buildSignatureTrackingMetadata(request, { source: 'signature_portal' }),
+          ),
+          security: { isExternalGuest: true, authMethod: 'signature_token' },
+        },
+        req,
+      );
+    }
+
     const result = await completeDocumentSignature({
       token,
-      consentAccepted: body.consentAccepted === true,
+      consentAccepted,
       req,
       origin: resolveOrigin(req),
     });
 
     if (request) {
-      const auditCtx = buildSignatureAuditContext(request);
+      const auditCtx = buildExternalSignatureAuditContext(request);
       await emitTrackingEvent(
         auditCtx,
         {
@@ -69,8 +89,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(
-            buildSignatureTrackingMetadata(request, { signatureId: result.signatureId }),
+            buildSignatureTrackingMetadata(request, {
+              signatureId: result.signatureId,
+              source: 'signature_portal',
+            }),
           ),
+          security: { isExternalGuest: true, authMethod: 'signature_token' },
         },
         req,
       );

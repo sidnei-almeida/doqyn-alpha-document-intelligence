@@ -7,10 +7,9 @@ import { cn } from '@/lib/utils';
 import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
 import {
   ASSIGNABLE_PLATFORM_ROLES,
-  PLATFORM_ROLE_LABELS,
+  getPlatformRoleMeta,
 } from '../platformRoleLabels';
 
-export type AccessGroupOption = { id: string; name: string };
 export type DocumentGroupOption = {
   id: string;
   name: string;
@@ -88,11 +87,7 @@ export function PlatformRolesSection({
     >
       <div className="space-y-2">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
-          const meta =
-            PLATFORM_ROLE_LABELS[role as keyof typeof PLATFORM_ROLE_LABELS] ?? {
-              label: role,
-              description: 'Role da plataforma.',
-            };
+          const meta = getPlatformRoleMeta(role);
           const disabled = role === 'doqyn_admin' && !canAssignDoqynAdmin;
           const checked = value.includes(role);
 
@@ -112,12 +107,7 @@ export function PlatformRolesSection({
                   }
                 }}
                 label={meta.label}
-                description={
-                  <>
-                    {meta.description}
-                    <span className="mt-1 block font-mono text-[10px] text-doqyn-subtle">{role}</span>
-                  </>
-                }
+                description={meta.description}
               />
             </div>
           );
@@ -128,56 +118,6 @@ export function PlatformRolesSection({
           Essa role concede permissões administrativas globais. Use apenas para administradores da
           plataforma.
         </p>
-      )}
-    </AccessFormSection>
-  );
-}
-
-export function AccessGroupsSection({
-  groups,
-  value,
-  onChange,
-}: {
-  groups: AccessGroupOption[];
-  value: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  return (
-    <AccessFormSection
-      title="Grupos de acesso (auth-service)"
-      description="Controlam permissões de autenticação e acesso ao tenant."
-    >
-      {groups.length === 0 ? (
-        <GroupsEmptyState
-          title="Nenhum grupo de acesso criado ainda."
-          description="Crie grupos de acesso em Usuários antes de atribuí-los."
-          ctaLabel="Gerenciar em Usuários"
-          ctaHref="/users"
-        />
-      ) : (
-        <div className="max-h-40 space-y-2 overflow-y-auto pr-1 scrollbar-thin">
-          {groups.map((group) => {
-            const checked = value.includes(group.id);
-            return (
-              <div
-                key={group.id}
-                className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2"
-              >
-                <Checkbox
-                  checked={checked}
-                  onChange={() => {
-                    if (checked) {
-                      onChange(value.filter((id) => id !== group.id));
-                    } else {
-                      onChange([...value, group.id]);
-                    }
-                  }}
-                  label={group.name}
-                />
-              </div>
-            );
-          })}
-        </div>
       )}
     </AccessFormSection>
   );
@@ -194,13 +134,13 @@ export function DocumentGroupsSection({
 }) {
   return (
     <AccessFormSection
-      title="Grupos documentais (governança)"
-      description="Definem quais grupos documentais este usuário integra no mapa de regras."
+      title="Grupos"
+      description="Mesmos grupos criados em Regras. Definem o acesso do usuário às categorias de documento."
     >
       {groups.length === 0 ? (
         <GroupsEmptyState
-          title="Nenhum grupo documental criado ainda."
-          description="Crie grupos documentais na tela Regras e volte aqui para atribuir membros."
+          title="Nenhum grupo criado ainda."
+          description="Crie grupos na tela Regras e volte aqui para atribuir membros."
           ctaLabel="Abrir Regras"
           ctaHref="/rules"
         />

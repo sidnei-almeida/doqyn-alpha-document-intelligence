@@ -1,6 +1,12 @@
 import type { DocumentListItem } from '@/types/document-library';
 
-export type LibraryCollectionId = 'root' | 'compartilhados' | 'recentes' | 'favoritos' | 'lixeira';
+export type LibraryCollectionId =
+  | 'root'
+  | 'compartilhados'
+  | 'para-assinar'
+  | 'recentes'
+  | 'favoritos'
+  | 'lixeira';
 
 export type LibraryCollection = {
   id: LibraryCollectionId;
@@ -34,6 +40,16 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
       'Quando alguém compartilhar um documento com você, ele aparecerá aqui.',
     showFolders: false,
   },
+  'para-assinar': {
+    id: 'para-assinar',
+    slug: 'assinaturas',
+    label: 'Para assinar',
+    description: 'Documentos que aguardam sua assinatura eletrônica.',
+    emptyTitle: 'Nenhum documento pendente de assinatura.',
+    emptyDescription:
+      'Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui.',
+    showFolders: false,
+  },
   recentes: {
     id: 'recentes',
     slug: 'recentes',
@@ -65,6 +81,8 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
 
 const RECENT_LIMIT = 50;
 
+export { RECENT_LIMIT };
+
 export function resolveCollection(slug: string | undefined): LibraryCollection {
   if (!slug) return LIBRARY_COLLECTIONS.root;
   const match = Object.values(LIBRARY_COLLECTIONS).find((entry) => entry.slug === slug);
@@ -90,9 +108,7 @@ export function applyCollectionFilter(
         return Boolean(ownerId) && ownerId !== context.currentUserId;
       });
     case 'recentes':
-      return [...documents]
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, RECENT_LIMIT);
+      return documents;
     case 'favoritos':
       return documents.filter((doc) => doc.isFavorite === true);
     case 'lixeira':

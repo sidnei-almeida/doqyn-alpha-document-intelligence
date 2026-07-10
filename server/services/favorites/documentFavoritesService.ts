@@ -6,6 +6,7 @@ import type { MongoUserDocumentFavorite } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
 import {
   loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
 } from '../../tenancy/documentAccess.js';
 import { canUserListDocumentWithShare } from '../../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser, findActiveShareGrantsForUser } from '../sharing/documentShareService.js';
@@ -73,7 +74,7 @@ async function loadAccessibleDocument(
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
   }
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId,
     userId: user.id,
     membershipId,
@@ -81,7 +82,15 @@ async function loadAccessibleDocument(
 
   const shareGrant = await findActiveShareGrantForUser(documentId, user.id);
 
-  if (!canUserListDocumentWithShare(user, doc as MongoDocument, memberGroupIds, shareGrant)) {
+  if (
+    !canUserListDocumentWithShare(
+      user,
+      doc as MongoDocument,
+      memberGroupIds,
+      shareGrant,
+      governanceIndex,
+    )
+  ) {
     throw new ServiceError(
       'Você não tem permissão para favoritar este documento.',
       'DOCUMENT_ACCESS_DENIED',
@@ -198,7 +207,7 @@ async function resolveFavoriteDocuments(
       } as Record<string, unknown>)
       .toArray();
 
-    const memberGroupIds = await loadMemberDocumentGroupIds({
+    const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
       tenantId,
       userId: user.id,
       membershipId,
@@ -215,6 +224,7 @@ async function resolveFavoriteDocuments(
         doc as MongoDocument,
         memberGroupIds,
         shareGrantsByDocumentId.get(String(doc._id)),
+        governanceIndex,
       ),
     );
 

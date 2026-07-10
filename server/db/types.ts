@@ -388,7 +388,7 @@ export type MongoPreviewStorageSlot = {
   generatedAt?: Date | null;
   sourceVersionId?: string | null;
   watermark?: {
-    type: 'text';
+    type: 'text' | 'logo';
     value: string;
   };
   optimization?: {
@@ -494,8 +494,12 @@ export type MongoDocument = {
     shareGroupIds: string[];
   };
   currentMetadataPreview: Record<string, string | number | null>;
+  /** Nome exibido do proprietário original (imutável exceto transferência). */
+  ownerName?: string;
   createdBy: string;
   createdAt: Date;
+  updatedBy?: string;
+  updatedByName?: string;
   updatedAt: Date;
   deletedAt?: Date | null;
   deletedBy?: string | null;
@@ -671,6 +675,33 @@ export type MongoAuditLog = {
 };
 
 /** Preferência pessoal de favorito — escopo global por userId, não por tenant. */
+export type DocumentUploadApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export type MongoDocumentUploadApproval = {
+  _id: string;
+  tenantId: string;
+  status: DocumentUploadApprovalStatus;
+  submittedBy: {
+    userId: string;
+    membershipId?: string;
+    name: string;
+    email: string;
+  };
+  payload: Record<string, unknown>;
+  originalFileName: string;
+  classId: string | null;
+  className: string | null;
+  fileHash: string;
+  jobId?: string;
+  documentId?: string;
+  versionId?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type MongoUserDocumentFavorite = {
   _id: string;
   userId: string;
@@ -765,6 +796,12 @@ export type DocumentSignatureSignerStatus = 'pending' | 'signed' | 'declined';
 
 export type DocumentSignatureSignerType = 'internal_user' | 'external_guest';
 
+export type DocumentSignatureSignerPermissions = {
+  canViewForSigning: boolean;
+  canSign: boolean;
+  canDownloadSignedPdf: boolean;
+};
+
 export type DocumentSignaturePermissions = {
   canView: boolean;
   canSign: boolean;
@@ -775,6 +812,7 @@ export type MongoDocumentSignatureSigner = {
   signerId: string;
   signerType: DocumentSignatureSignerType;
   userId?: string | null;
+  tenantId?: string | null;
   name: string;
   email: string;
   emailNormalized: string;
@@ -782,9 +820,14 @@ export type MongoDocumentSignatureSigner = {
   phoneNormalized?: string | null;
   phoneMasked?: string | null;
   organizationName?: string | null;
+  permissions?: DocumentSignatureSignerPermissions;
   status: DocumentSignatureSignerStatus;
   signedAt?: Date | null;
+  declinedAt?: Date | null;
+  expiresAt?: Date | null;
   order?: number | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 /** Solicitação de assinatura eletrônica auditável DOQYN (não ICP-Brasil). */
@@ -801,7 +844,8 @@ export type MongoDocumentSignatureRequest = {
   status: DocumentSignatureRequestStatus;
   signers: MongoDocumentSignatureSigner[];
   permissions: DocumentSignaturePermissions;
-  signatureTokenHash: string;
+  /** Hash do token de portal — apenas para signatários externos. */
+  signatureTokenHash?: string | null;
   expiresAt?: Date | null;
   message?: string | null;
   createdAt: Date;
@@ -840,6 +884,8 @@ export type MongoDocumentSignature = {
   evidenceJsonR2Key: string;
   verificationCode: string;
   verificationUrl: string;
+  /** Versão do documento criada a partir do PDF assinado. */
+  promotedVersionId?: string | null;
   createdAt: Date;
 };
 

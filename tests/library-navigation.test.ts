@@ -59,9 +59,12 @@ describe('navegação da Biblioteca', () => {
     const protectedRoute = readSrc('features/auth/ProtectedRoute.tsx');
     const trackingRoute = readSrc('features/tracking/TrackingRoute.tsx');
     const usersRoute = readSrc('features/users/UserManagementRoute.tsx');
+    const rulesRoute = readSrc('features/rules/RulesRoute.tsx');
     assert.ok(protectedRoute.includes('Navigate to="/biblioteca"'));
     assert.ok(trackingRoute.includes('Navigate to="/biblioteca"'));
     assert.ok(usersRoute.includes('Navigate to="/biblioteca"'));
+    assert.ok(rulesRoute.includes('Navigate to="/biblioteca"'));
+    assert.ok(rulesRoute.includes('canAccessRulesPage'));
     assert.equal(protectedRoute.includes('/upload'), false);
   });
 

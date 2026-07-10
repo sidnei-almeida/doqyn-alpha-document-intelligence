@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { DataTable } from '@/components/ui/DataTable';
 import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
+import { VersionBadge } from '@/components/ui/VersionBadge';
 import { formatDate } from '@/lib/utils';
 import type { DocumentTrackingListItem, TrackingListStatus } from '@/types/document-tracking';
 import {
@@ -47,9 +48,11 @@ export function TrackingEventsTable({
   return (
     <DataTable
       stretch={stretch}
+      density="compact"
       className={stretch ? 'flex-1' : undefined}
       data={items}
       keyExtractor={(item) => item.id}
+      onRowClick={onSelect}
       emptyMessage="Nenhum evento documental encontrado para os filtros selecionados."
       emptyDescription="Ajuste os filtros ou amplie o período para ver mais atividade."
       emptyAction={sparseAction}
@@ -62,16 +65,18 @@ export function TrackingEventsTable({
           key: 'occurredAt',
           header: 'Data/hora',
           render: (item) => (
-            <span className="whitespace-nowrap text-doqyn-muted">{formatDate(item.occurredAt)}</span>
+            <span className="whitespace-nowrap text-xs tabular-nums text-doqyn-muted">
+              {formatDate(item.occurredAt)}
+            </span>
           ),
         },
         {
           key: 'action',
           header: 'Ação',
           render: (item) => (
-            <div className="min-w-[140px]">
-              <p className="font-medium text-doqyn-text">{item.summary}</p>
-              <p className="meta-text">{formatTrackingAction(item.action)}</p>
+            <div className="min-w-[140px] space-y-0.5 leading-tight">
+              <p className="text-sm font-medium text-doqyn-text">{item.summary}</p>
+              <p className="text-[11px] text-doqyn-subtle">{formatTrackingAction(item.action)}</p>
             </div>
           ),
         },
@@ -88,17 +93,17 @@ export function TrackingEventsTable({
         {
           key: 'version',
           header: 'Versão',
-          render: (item) => (
-            <span className="text-xs text-doqyn-muted">
-              {item.document.versionLabel ?? (item.versionId ? item.versionId.slice(0, 8) : '—')}
-            </span>
-          ),
+          render: (item) => {
+            const label =
+              item.document.versionLabel ?? (item.versionId ? item.versionId.slice(0, 8) : null);
+            return label ? <VersionBadge version={label} size="xs" /> : <span className="text-[11px] text-doqyn-muted">—</span>;
+          },
         },
         {
           key: 'actor',
           header: 'Usuário',
           render: (item) => (
-            <span className="text-doqyn-muted">
+            <span className="text-xs text-doqyn-muted">
               {item.actor.displayName ?? item.actor.email ?? item.actor.userId}
             </span>
           ),
@@ -117,7 +122,7 @@ export function TrackingEventsTable({
           header: 'Resultado',
           render: (item) =>
             item.status ? (
-              <Badge variant={STATUS_VARIANTS[item.status] ?? 'default'}>
+              <Badge size="xs" variant={STATUS_VARIANTS[item.status] ?? 'default'}>
                 {formatTrackingStatus(item.status)}
               </Badge>
             ) : (
@@ -128,7 +133,9 @@ export function TrackingEventsTable({
           key: 'severity',
           header: 'Severidade',
           render: (item) => (
-            <Badge variant={SEVERITY_VARIANTS[item.severity] ?? 'default'}>{item.severity}</Badge>
+            <Badge size="xs" variant={SEVERITY_VARIANTS[item.severity] ?? 'default'}>
+              {item.severity}
+            </Badge>
           ),
         },
         {
@@ -137,7 +144,13 @@ export function TrackingEventsTable({
           headerClassName: 'w-12',
           className: 'w-12',
           render: (item) => (
-            <IconButton label="Ver detalhes" onClick={() => onSelect(item)}>
+            <IconButton
+              label="Ver detalhes"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect(item);
+              }}
+            >
               <Icon name="chevron_right" size={ICON_SIZE.xs} />
             </IconButton>
           ),

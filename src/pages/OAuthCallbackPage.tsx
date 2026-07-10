@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
+import { AuthBrandLogo } from '@/components/brand';
 import { useAuth } from '@/features/auth/useAuth';
+import { clearSessionScopedCaches } from '@/auth/clearSessionScopedCaches';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
 function resolveDestination(input: {
@@ -57,6 +59,7 @@ export function OAuthCallbackPage() {
       return;
     }
 
+    clearSessionScopedCaches();
     void refreshUser().catch(() => {
       setMessage('Não foi possível validar a sessão. Redirecionando...');
       navigate('/login', { replace: true });
@@ -78,7 +81,8 @@ export function OAuthCallbackPage() {
   }, [accessGate, isAuthenticated, navigate, searchParams]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-doqyn-bg px-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-doqyn-bg px-4">
+      <AuthBrandLogo />
       <div className="flex flex-col items-center gap-3 text-center">
         <Icon
           name="progress_activity"

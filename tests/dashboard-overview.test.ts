@@ -56,6 +56,10 @@ describe('GET /api/dashboard/overview handler', () => {
     assert.doesNotMatch(handlerSource, /objectKey|r2\.cloudflarestorage|presigned/i);
     assert.doesNotMatch(serviceSource, /objectKey|r2\.cloudflarestorage|presigned/i);
     assert.match(serviceSource, /maskBucketName/);
+    assert.match(
+      serviceSource,
+      /activeCategories[\s\S]*countDocuments\(\{ \.\.\.scope, active: true \}/,
+    );
   });
 });
 
@@ -181,8 +185,20 @@ describe('dashboard overview UI', () => {
   it('DashboardPage mostra governança apenas em mode full', () => {
     assert.match(pageSource, /data\.mode === 'full'/);
     assert.match(pageSource, /OverviewQuickAccessPanel/);
+    assert.match(pageSource, /canManageGovernance=\{isAdmin\}/);
     assert.match(governanceSource, /Governança documental/);
     assert.match(activityPanelSource, /Atividade recente/);
+  });
+
+  it('saúde do ambiente diferencia acesso restrito para usuário comum', () => {
+    const healthCard = readFileSync(
+      join(repoRoot, 'src/features/dashboard/components/OverviewEnvironmentHealthCard.tsx'),
+      'utf8',
+    );
+    assert.match(healthCard, /canManageGovernance/);
+    assert.match(healthCard, /overview-health-badge--restricted/);
+    assert.match(healthCard, /Aguardando configuração pelo administrador/);
+    assert.match(healthCard, /Categorias ativas no ambiente/);
   });
 
   it('DashboardPage não exibe objectKey ou URL R2', () => {

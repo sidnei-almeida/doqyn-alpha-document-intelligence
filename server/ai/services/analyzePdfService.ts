@@ -26,7 +26,6 @@ import {
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
 import { extractTextFromPdf } from './pdfTextExtractor.js';
-
 type AnalyzeRequestContext = {
   requestId?: string;
   batchId?: string;
@@ -281,9 +280,13 @@ export async function analyzePdfBuffer(input: {
   });
   timer.mark('classification');
 
-  if (classification.errorCode === 'GROQ_RATE_LIMIT') {
+  if (
+    classification.errorCode === 'GROQ_RATE_LIMIT' ||
+    classification.errorCode === 'GROQ_DAILY_TOKEN_LIMIT' ||
+    classification.errorCode === 'GROQ_CONTEXT_LIMIT'
+  ) {
     const durations = timer.finish();
-    logAnalyzeStage('analyze-pdf IA temporariamente indisponível (rate limit)', context, {
+    logAnalyzeStage('analyze-pdf IA indisponível (limite Groq)', context, {
       textCharCount,
       pageCount,
       chunksCount,
@@ -295,7 +298,7 @@ export async function analyzePdfBuffer(input: {
     logs.push(
       createLog(
         'Análise automática indisponível',
-        AI_ERROR_MESSAGES.aiUnavailable,
+        classification.reason || AI_ERROR_MESSAGES.aiUnavailable,
         'error',
       ),
     );
@@ -316,7 +319,7 @@ export async function analyzePdfBuffer(input: {
       classification,
       extraction: null,
       logs,
-      errorCode: 'GROQ_RATE_LIMIT',
+      errorCode: classification.errorCode,
     };
   }
 

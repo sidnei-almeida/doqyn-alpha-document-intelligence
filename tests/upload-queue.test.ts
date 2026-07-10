@@ -21,6 +21,8 @@ import {
   analysisFailureMessage,
   needsManualReviewConfirmation,
   UPLOAD_ANALYZE_TIMEOUT_MS,
+  parseUploadAnalyzeTimeoutMs,
+  uploadAnalyzeTimeoutMessage,
 } from '../src/features/upload/queue/uploadQueueAnalysis.ts';
 import type { UploadQueueItem } from '../src/features/upload/types.ts';
 import type { AnalyzePdfResponse } from '../src/features/document-send/services/analyzePdf.ts';
@@ -93,14 +95,28 @@ describe('fila de upload — transições de estado', () => {
     assert.equal(state[0].id, 'item-2');
   });
 
-  it('fila processa um por vez: hasActiveItem e nextQueuedItem', () => {
-    const items = [
+  it('fila processa um por vez: hasActiveItem bloqueia durante review', () => {
+    const analyzing = [
       makeItem({ id: 'a', status: 'analyzing' }),
       makeItem({ id: 'b', status: 'queued' }),
     ];
-    assert.equal(hasActiveItem(items), true);
-    assert.equal(nextQueuedItem(items)?.id, 'b');
-    assert.equal(countPendingItems(items), 2);
+    assert.equal(hasActiveItem(analyzing), true);
+    assert.equal(nextQueuedItem(analyzing)?.id, 'b');
+
+    const awaitingReview = [
+      makeItem({ id: 'a', status: 'review' }),
+      makeItem({ id: 'b', status: 'queued' }),
+    ];
+    assert.equal(hasActiveItem(awaitingReview), true);
+    assert.equal(nextQueuedItem(awaitingReview)?.id, 'b');
+
+    const awaitingApproval = [
+      makeItem({ id: 'a', status: 'awaiting_approval', approvalId: 'ap-1' }),
+      makeItem({ id: 'b', status: 'queued' }),
+    ];
+    assert.equal(hasActiveItem(awaitingApproval), false);
+    assert.equal(nextQueuedItem(awaitingApproval)?.id, 'b');
+
     assert.equal(countPendingItems([makeItem({ status: 'done' })]), 0);
   });
 
@@ -200,10 +216,24 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(provider.includes("status: 'review'"));
   });
 
+  it('open_review não dispara próxima análise antes de salvar', () => {
+    const provider = readSrc('features/upload/UploadQueueProvider.tsx');
+    assert.ok(provider.includes("toast.info('Análise concluída"));
+    assert.equal(
+      provider.includes("action === 'open_review'") &&
+        provider.includes("return;\n      }\n\n      dispatch({\n        type: 'error'"),
+      true,
+    );
+    const state = readSrc('features/upload/queue/uploadQueueState.ts');
+    assert.ok(state.includes("item.status === 'review'"));
+  });
+
   it('provider não cancela analyze in-flight ao mudar status para analyzing', () => {
     const provider = readSrc('features/upload/UploadQueueProvider.tsx');
     assert.ok(provider.includes('processingItemIdRef'));
     assert.ok(provider.includes('UPLOAD_ANALYZE_TIMEOUT_MS'));
+    assert.ok(provider.includes('analyzeAbortRef'));
+    assert.ok(provider.includes('uploadAnalyzeTimeoutMessage'));
     assert.equal(provider.includes('let cancelled = false'), false);
     assert.equal(provider.includes('cancelled = true'), false);
   });
@@ -215,8 +245,13 @@ describe('provider da fila — integração com contratos existentes', () => {
   });
 
   it('uploadQueueAnalysis — mensagens e timeout', () => {
-    assert.equal(UPLOAD_ANALYZE_TIMEOUT_MS > 0, true);
-    assert.match(analysisFailureMessage('ai_unavailable'), /indisponível/i);
+    assert.equal(UPLOAD_ANALYZE_TIMEOUT_MS, 60_000);
+    assert.equal(parseUploadAnalyzeTimeoutMs('45000'), 45_000);
+    assert.equal(parseUploadAnalyzeTimeoutMs('999999'), 90_000);
+    assert.equal(parseUploadAnalyzeTimeoutMs('1000'), 30_000);
+    assert.match(uploadAnalyzeTimeoutMessage(), /60s/);
+    assert.match(analysisFailureMessage('ai_unavailable'), /Groq|limite/i);
+    assert.match(analysisFailureMessage('ai_unavailable', 'GROQ_REQUEST_TIMEOUT'), /interrompida/i);
     assert.match(analysisFailureMessage('failed'), /falhou/i);
 
     const metadata = {
@@ -241,9 +276,11 @@ describe('provider da fila — integração com contratos existentes', () => {
   it('UploadQueueDrawer não usa headline enganosa "Uploads concluídos"', () => {
     const drawer = readSrc('features/upload/UploadQueueDrawer.tsx');
     assert.equal(drawer.includes('Uploads concluídos'), false);
-    assert.ok(drawer.includes('countSavedDocuments'));
+    assert.ok(drawer.includes('countSubmittedItems'));
     assert.ok(drawer.includes('Aguardando revisão'));
     assert.ok(drawer.includes('Salvo na Biblioteca'));
+    assert.ok(drawer.includes('uploadStatusProgress'));
+    assert.ok(drawer.includes('role="progressbar"'));
   });
 
   it('DocumentSendPage legado invalida queries da Biblioteca após salvar', () => {

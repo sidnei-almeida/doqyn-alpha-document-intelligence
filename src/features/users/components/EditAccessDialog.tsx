@@ -10,11 +10,9 @@ import {
   type AccessFormState,
 } from '../accessFormState';
 import {
-  AccessGroupsSection,
   DocumentGroupsSection,
   NotificationsSection,
   PlatformRolesSection,
-  type AccessGroupOption,
   type DocumentGroupOption,
 } from './AccessFormSections';
 
@@ -22,7 +20,6 @@ type EditAccessDialogProps = {
   member: CompanyMemberDto;
   memberName: string;
   initialForm: AccessFormState;
-  accessGroups: AccessGroupOption[];
   documentGroups: DocumentGroupOption[];
   canAssignDoqynAdmin: boolean;
   saving: boolean;
@@ -34,7 +31,6 @@ export function EditAccessDialog({
   member,
   memberName,
   initialForm,
-  accessGroups,
   documentGroups,
   canAssignDoqynAdmin,
   saving,
@@ -114,11 +110,6 @@ export function EditAccessDialog({
             value={form.platformRoles}
             onChange={(platformRoles) => setForm((current) => ({ ...current, platformRoles }))}
             canAssignDoqynAdmin={canAssignDoqynAdmin}
-          />
-          <AccessGroupsSection
-            groups={accessGroups}
-            value={form.accessGroupIds}
-            onChange={(accessGroupIds) => setForm((current) => ({ ...current, accessGroupIds }))}
           />
           <DocumentGroupsSection
             groups={documentGroups}

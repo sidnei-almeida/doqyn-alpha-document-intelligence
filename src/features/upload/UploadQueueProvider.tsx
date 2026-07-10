@@ -3,7 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
+import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
+import { isDocumentCategoryId } from '@/lib/entityIds';
 import { createRequestId } from '@/features/document-send/utils/workflowLogHelpers';
 import { validateConfirmableAnalysis } from '@/features/document-send/services/normalizeConfirmPayload';
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
@@ -13,7 +15,7 @@ import {
 } from '@/features/document-send/utils/reviewWorkflowSettings';
 import type { UploadContext, UploadQueueItem } from './types';
 import { analyzePdf } from './services/analyzePdf';
-import { confirmAnalysis } from './services/confirmAnalysis';
+import { confirmAnalysis, submitUploadForApproval } from './services/confirmAnalysis';
 import { prepareUploadItems } from './services/startUploadFromFiles';
 import { UploadQueueContext, type AutoConfirmCountdown, type UploadQueueContextValue } from './uploadQueueContext';
 import { isUploadAutoConfirmEnabled } from './config/uploadAutoConfirm';
@@ -23,6 +25,7 @@ import {
   analysisFailureMessage,
   needsManualReviewConfirmation,
   UPLOAD_ANALYZE_TIMEOUT_MS,
+  uploadAnalyzeTimeoutMessage,
 } from './queue/uploadQueueAnalysis';
 import { logUploadDev } from './utils/uploadDevLog';
 import {
@@ -35,7 +38,7 @@ import {
 export function UploadQueueProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { isAuthenticated, tenant, user } = useAuth();
+  const { isAuthenticated, tenant, user, hasAnyRole } = useAuth();
   const { settings: reviewSettings, setSettings: updateReviewSettings } = useReviewWorkflowSettingsState();
 
   const [items, dispatch] = useReducer(uploadQueueReducer, []);
@@ -48,12 +51,15 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   const autoPausedRef = useRef(new Set<string>());
   const processingItemIdRef = useRef<string | null>(null);
   const analyzeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const analyzeAbortRef = useRef<AbortController | null>(null);
   const pumpQueueRef = useRef<() => void>(() => undefined);
   const autoConfirmCountdownRef = useRef(autoConfirmCountdown);
   itemsRef.current = items;
   autoConfirmCountdownRef.current = autoConfirmCountdown;
 
   const deployAutoConfirm = isUploadAutoConfirmEnabled();
+
+  const isDocumentAdmin = canConfirmDocumentMetadata(hasAnyRole);
 
   const invalidateLibrary = useCallback(async () => {
     await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
@@ -71,6 +77,15 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       clearTimeout(analyzeTimeoutRef.current);
       analyzeTimeoutRef.current = null;
     }
+  }, []);
+
+  const clearAnalyzeAbort = useCallback(() => {
+    analyzeAbortRef.current = null;
+  }, []);
+
+  const abortInFlightAnalyze = useCallback(() => {
+    analyzeAbortRef.current?.abort();
+    analyzeAbortRef.current = null;
   }, []);
 
   const tryPumpQueue = useCallback(() => {
@@ -91,13 +106,19 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         item.analysis?.metadata.documentType ??
         'outra pasta';
       const uploadSpaceId = item.context?.categoryId;
+      const folderTargetId = [uploadSpaceId, savedClassId].find(
+        (id): id is string => Boolean(id && isDocumentCategoryId(id)),
+      );
 
       if (uploadSpaceId && savedClassId && uploadSpaceId !== savedClassId) {
         toast.success(`"${resolvedFinalName}" salvo em ${savedClassName}.`, {
-          action: {
-            label: 'Abrir pasta',
-            onClick: () => navigate(`/biblioteca?space=${encodeURIComponent(savedClassId)}`),
-          },
+          action: folderTargetId
+            ? {
+                label: 'Abrir pasta',
+                onClick: () =>
+                  navigate(`/biblioteca?space=${encodeURIComponent(folderTargetId)}`),
+              }
+            : undefined,
         });
         return;
       }
@@ -170,7 +191,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        const result = await confirmAnalysis(raw, {
+        const confirmOptions = {
           manualReviewConfirmed,
           namingMode: effectiveNamingMode,
           finalFileName: resolvedFinalName,
@@ -181,19 +202,32 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             fileName: item.fileName,
             requestId: createRequestId(),
           },
-        });
-        dispatch({ type: 'done', id: item.id, documentId: result.documentId });
-        filesRef.current.delete(item.id);
-        setReviewItemId((current) => (current === item.id ? null : current));
-        logUploadDev('confirm:success', {
-          documentId: result.documentId,
-          versionId: result.versionId,
-          classId: raw.classification.classId,
-          status: result.status,
-          storageStatus: result.storageStatus,
-        });
-        await invalidateLibrary();
-        notifySavedDocument({ ...item, analysis: { metadata, raw } }, resolvedFinalName);
+        } as const;
+
+        if (isDocumentAdmin) {
+          const result = await confirmAnalysis(raw, confirmOptions);
+          dispatch({ type: 'done', id: item.id, documentId: result.documentId });
+          filesRef.current.delete(item.id);
+          setReviewItemId((current) => (current === item.id ? null : current));
+          logUploadDev('confirm:success', {
+            documentId: result.documentId,
+            versionId: result.versionId,
+            classId: raw.classification.classId,
+            status: result.status,
+            storageStatus: result.storageStatus,
+          });
+          await invalidateLibrary();
+          notifySavedDocument({ ...item, analysis: { metadata, raw } }, resolvedFinalName);
+        } else {
+          const result = await submitUploadForApproval(raw, confirmOptions);
+          dispatch({ type: 'awaiting_approval', id: item.id, approvalId: result.approvalId });
+          filesRef.current.delete(item.id);
+          setReviewItemId((current) => (current === item.id ? null : current));
+          await queryClient.invalidateQueries({ queryKey: ['audit-pending'] });
+          toast.success(
+            `"${resolvedFinalName}" enviado para aprovação. Um administrador revisará na Auditoria.`,
+          );
+        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Não foi possível salvar o documento.';
@@ -203,7 +237,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         tryPumpQueue();
       }
     },
-    [reviewSettings, invalidateLibrary, clearAutoTimer, notifySavedDocument, tryPumpQueue],
+    [reviewSettings, invalidateLibrary, clearAutoTimer, notifySavedDocument, tryPumpQueue, isDocumentAdmin, queryClient],
   );
 
   const scheduleAutoConfirm = useCallback(
@@ -239,10 +273,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         }
         setAutoConfirmCountdown({ itemId: item.id, secondsLeft });
       }, 1000);
-
-      tryPumpQueue();
     },
-    [reviewSettings, confirmItem, clearAutoTimer, tryPumpQueue],
+    [reviewSettings, confirmItem, clearAutoTimer],
   );
 
   const pumpQueue = useCallback(async () => {
@@ -269,28 +301,51 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     processingItemIdRef.current = next.id;
     dispatch({ type: 'status', id: next.id, status: 'analyzing' });
 
+    abortInFlightAnalyze();
+    const analyzeController = new AbortController();
+    analyzeAbortRef.current = analyzeController;
+
     clearAnalyzeTimeout();
     analyzeTimeoutRef.current = setTimeout(() => {
       if (processingItemIdRef.current !== next.id) return;
       processingItemIdRef.current = null;
       clearAnalyzeTimeout();
+      abortInFlightAnalyze();
       dispatch({
         type: 'error',
         id: next.id,
-        message: 'A análise demorou mais que o esperado. Tente novamente.',
+        message: uploadAnalyzeTimeoutMessage(),
       });
       tryPumpQueue();
     }, UPLOAD_ANALYZE_TIMEOUT_MS);
 
     try {
-      const result = await analyzePdf(file, { context: { fileName: next.fileName } });
+      const result = await analyzePdf(file, {
+        signal: analyzeController.signal,
+        context: { fileName: next.fileName },
+      });
 
       if (processingItemIdRef.current !== next.id) return;
 
       clearAnalyzeTimeout();
+      clearAnalyzeAbort();
       processingItemIdRef.current = null;
 
-      const analysis = { metadata: result.metadata, raw: result.raw };
+      const analysis = {
+        metadata: {
+          ...result.metadata,
+          analysisStatus: result.raw.status,
+          documentType:
+            result.raw.classification.className ?? result.metadata.documentType,
+          confidenceScore: result.raw.classification.confidence,
+          reviewReasons:
+            result.raw.extraction?.reviewReasons ??
+            (result.raw.classification.reviewReason
+              ? [result.raw.classification.reviewReason]
+              : result.metadata.reviewReasons),
+        },
+        raw: result.raw,
+      };
       dispatch({ type: 'analysis', id: next.id, analysis });
 
       logUploadDev('analyze:success', {
@@ -303,7 +358,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         autoConfirmEnabled: deployAutoConfirm,
       });
 
-      const action = resolveQueueAnalysisAction(reviewSettings, result.metadata, result.raw, {
+      const action = resolveQueueAnalysisAction(reviewSettings, analysis.metadata, result.raw, {
         deployAutoConfirm,
         isAuthenticated,
       });
@@ -331,21 +386,26 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             onClick: () => setReviewItemId(next.id),
           },
         });
-        tryPumpQueue();
         return;
       }
 
       dispatch({
         type: 'error',
         id: next.id,
-        message: analysisFailureMessage(result.raw.status),
+        message: analysisFailureMessage(result.raw.status, result.raw.errorCode),
       });
       tryPumpQueue();
     } catch (error) {
       if (processingItemIdRef.current !== next.id) return;
       clearAnalyzeTimeout();
+      clearAnalyzeAbort();
       processingItemIdRef.current = null;
-      const message = error instanceof Error ? error.message : 'Erro ao analisar o documento.';
+      const message =
+        error instanceof DOMException && error.name === 'AbortError'
+          ? uploadAnalyzeTimeoutMessage()
+          : error instanceof Error
+            ? error.message
+            : 'Erro ao analisar o documento.';
       dispatch({ type: 'error', id: next.id, message });
       tryPumpQueue();
     }
@@ -355,6 +415,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     isAuthenticated,
     scheduleAutoConfirm,
     clearAnalyzeTimeout,
+    clearAnalyzeAbort,
+    abortInFlightAnalyze,
     tryPumpQueue,
   ]);
 
@@ -380,8 +442,9 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     () => () => {
       clearAutoTimer();
       clearAnalyzeTimeout();
+      abortInFlightAnalyze();
     },
-    [clearAutoTimer, clearAnalyzeTimeout],
+    [clearAutoTimer, clearAnalyzeTimeout, abortInFlightAnalyze],
   );
 
   const confirmReview = useCallback(
@@ -426,6 +489,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       if (processingItemIdRef.current === itemId) {
         processingItemIdRef.current = null;
         clearAnalyzeTimeout();
+        abortInFlightAnalyze();
       }
       if (autoConfirmCountdown?.itemId === itemId) {
         clearAutoTimer();
@@ -434,7 +498,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       setReviewItemId((current) => (current === itemId ? null : current));
       dispatch({ type: 'remove', id: itemId });
     },
-    [autoConfirmCountdown, clearAutoTimer, clearAnalyzeTimeout],
+    [autoConfirmCountdown, clearAutoTimer, clearAnalyzeTimeout, abortInFlightAnalyze],
   );
 
   const clearFinished = useCallback(() => {

@@ -51,6 +51,7 @@ export const NAV_ITEMS_PRIMARY = [
 /** Views da Biblioteca — recortes sobre a listagem real (listDocuments). */
 export const NAV_ITEMS_LIBRARY_VIEWS = [
   { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
+  { label: 'Para assinar', path: '/biblioteca/assinaturas', icon: 'draw' },
   { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
   { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
   { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
@@ -58,7 +59,7 @@ export const NAV_ITEMS_LIBRARY_VIEWS = [
 
 export const NAV_ITEMS_ADMIN = [
   { label: 'Visão Geral', path: '/dashboard', icon: 'dashboard' },
-  { label: 'Regras', path: '/rules', icon: 'account_tree' },
+  { label: 'Regras', path: '/rules', icon: 'account_tree', governanceOnly: true },
   { label: 'Usuários', path: '/users', icon: 'group', managerOnly: true },
   { label: 'Auditoria', path: '/audit', icon: 'shield' },
   { label: 'Tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },

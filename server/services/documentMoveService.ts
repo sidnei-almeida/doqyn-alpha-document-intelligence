@@ -7,14 +7,19 @@ import {
 } from '../tenancy/tenantQuery.js';
 import {
   assertCanUpdateDocument,
-  loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
   resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
+import type { GovernanceAccessIndex } from '../tenancy/governanceAccessIndex.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertDocumentCategoryExists } from './documentCategoriesService.js';
 import { updateDocumentChunksCategory } from './documentChunkService.js';
+import {
+  buildDocumentMutationFields,
+  resolveDocumentActorIdentity,
+} from '../utils/documentMutationFields.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
@@ -48,7 +53,7 @@ export type BatchMoveDocumentsResult = {
 async function loadActiveDocumentOrThrow(
   documentId: string,
   ctx: DocumentRequestContext,
-): Promise<{ doc: MongoDocument; memberGroupIds: string[] }> {
+): Promise<{ doc: MongoDocument; memberGroupIds: string[]; governanceIndex: GovernanceAccessIndex }> {
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
@@ -66,13 +71,13 @@ async function loadActiveDocumentOrThrow(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
 
-  return { doc: doc as MongoDocument, memberGroupIds };
+  return { doc: doc as MongoDocument, memberGroupIds, governanceIndex };
 }
 
 async function resolveTargetCategory(
@@ -121,7 +126,7 @@ export async function moveDocumentToCategory(
     };
   }
 
-  const { doc, memberGroupIds } = await loadActiveDocumentOrThrow(documentId, ctx);
+  const { doc, memberGroupIds, governanceIndex } = await loadActiveDocumentOrThrow(documentId, ctx);
 
   if (doc.deletedAt) {
     throw new ServiceError(
@@ -131,7 +136,7 @@ export async function moveDocumentToCategory(
     );
   }
 
-  const permissions = resolveDocumentPermissions(user, doc, memberGroupIds);
+  const permissions = resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex);
   assertCanUpdateDocument(permissions);
 
   const targetCategory = await resolveTargetCategory(
@@ -155,6 +160,12 @@ export async function moveDocumentToCategory(
   }
 
   const now = new Date();
+  const actor = await resolveDocumentActorIdentity({ tenantId: ctx.tenantId, actor: user });
+  const mutationFields = buildDocumentMutationFields({
+    actorUserId: actor.userId,
+    actorDisplayName: actor.displayName,
+    now,
+  });
   const docRecord = doc as Record<string, unknown>;
   const aiSuggestedClassId =
     (docRecord.aiSuggestedClassId as string | undefined) ?? doc.classId;
@@ -186,7 +197,7 @@ export async function moveDocumentToCategory(
         manualClassificationUpdatedBy: ctx.userId,
         movedAt: now,
         movedBy: ctx.userId,
-        updatedAt: now,
+        ...mutationFields,
         ...(reason?.trim() ? { movedReason: reason.trim() } : {}),
       },
     },

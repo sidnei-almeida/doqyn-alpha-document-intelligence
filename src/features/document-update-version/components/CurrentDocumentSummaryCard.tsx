@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BadgeGroup } from '@/components/ui/BadgeGroup';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -48,7 +49,7 @@ export function CurrentDocumentSummaryCard({
           <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
             Documento atual
           </p>
-          <VersionBadge version={currentVersionLabel} isCurrent />
+          <VersionBadge version={currentVersionLabel} isCurrent size="xs" />
         </div>
 
         <div className="flex gap-3">
@@ -72,13 +73,14 @@ export function CurrentDocumentSummaryCard({
             <TruncatedText className="text-[13px] font-medium leading-snug text-doqyn-text">
               {name}
             </TruncatedText>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <BadgeGroup className="mt-1.5">
               <StatusPill
                 status={(document.status as DocumentStatus) ?? 'active'}
-                className="scale-90"
+                size="xs"
+                dot
               />
               <DocumentFavoriteBadge document={document} variant="inline" />
-            </div>
+            </BadgeGroup>
             <dl className="mt-2 border-t border-doqyn-border-subtle/70 pt-2">
               <DetailRow
                 label="Categoria"
@@ -123,14 +125,11 @@ export function CurrentDocumentSummaryCard({
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <p className="break-words text-[14px] font-medium text-doqyn-text">{name}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill
-              status={(document.status as DocumentStatus) ?? 'active'}
-              className="scale-90"
-            />
-            <VersionBadge version={currentVersionLabel} isCurrent />
+          <BadgeGroup>
+            <StatusPill status={(document.status as DocumentStatus) ?? 'active'} size="sm" dot />
+            <VersionBadge version={currentVersionLabel} isCurrent size="sm" />
             <DocumentFavoriteBadge document={document} variant="inline" />
-          </div>
+          </BadgeGroup>
           <dl className="grid gap-1 text-[12px] sm:grid-cols-2">
             <div>
               <dt className="text-doqyn-muted">Categoria</dt>

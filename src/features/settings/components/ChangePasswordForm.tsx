@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { changePassword, ChangePasswordError } from '@/features/settings/api/changePasswordApi';
@@ -15,12 +16,55 @@ type ChangePasswordFormProps = {
   className?: string;
 };
 
+type PasswordRequirement = {
+  id: string;
+  label: string;
+  met: boolean;
+};
+
+function getPasswordRequirements(password: string): PasswordRequirement[] {
+  return [
+    {
+      id: 'length',
+      label: 'Mínimo de 8 caracteres',
+      met: password.length >= 8,
+    },
+    {
+      id: 'letters',
+      label: 'Contém letras',
+      met: /[A-Za-zÀ-ÿ]/.test(password),
+    },
+    {
+      id: 'numbers',
+      label: 'Contém números',
+      met: /\d/.test(password),
+    },
+  ];
+}
+
+function getPasswordStrength(
+  password: string,
+  requirements: PasswordRequirement[],
+): {
+  level: 'empty' | 'weak' | 'medium' | 'strong';
+  label: string;
+} {
+  if (!password) return { level: 'empty', label: 'Digite a nova senha' };
+  const metCount = requirements.filter((item) => item.met).length;
+  if (metCount <= 1) return { level: 'weak', label: 'Fraca' };
+  if (metCount === 2) return { level: 'medium', label: 'Média' };
+  return { level: 'strong', label: 'Forte' };
+}
+
 export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof EMPTY_FORM, string>>>(
     {},
   );
+
+  const requirements = getPasswordRequirements(form.newPassword);
+  const strength = getPasswordStrength(form.newPassword, requirements);
 
   function updateField(field: keyof typeof EMPTY_FORM, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -91,29 +135,64 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
         id="currentPassword"
         label="Senha atual"
         type="password"
+        revealable
         autoComplete="current-password"
         value={form.currentPassword}
         onChange={(event) => updateField('currentPassword', event.target.value)}
         error={fieldErrors.currentPassword}
         disabled={submitting}
       />
-      <Input
-        id="newPassword"
-        label="Nova senha"
-        type="password"
-        autoComplete="new-password"
-        value={form.newPassword}
-        onChange={(event) => updateField('newPassword', event.target.value)}
-        error={fieldErrors.newPassword}
-        disabled={submitting}
-      />
-      <p className="text-xs text-doqyn-subtle">
-        Mínimo de 8 caracteres, com letras e números.
-      </p>
+      <div className="space-y-2">
+        <Input
+          id="newPassword"
+          label="Nova senha"
+          type="password"
+          revealable
+          autoComplete="new-password"
+          value={form.newPassword}
+          onChange={(event) => updateField('newPassword', event.target.value)}
+          error={fieldErrors.newPassword}
+          disabled={submitting}
+        />
+
+        <div
+          className="settings-password-strength"
+          data-level={strength.level}
+          aria-live="polite"
+        >
+          <div className="settings-password-strength__track" aria-hidden>
+            <span className="settings-password-strength__segment" />
+            <span className="settings-password-strength__segment" />
+            <span className="settings-password-strength__segment" />
+          </div>
+          <p className="settings-password-strength__label">{strength.label}</p>
+        </div>
+
+        <ul className="settings-password-checklist" aria-label="Requisitos da senha">
+          {requirements.map((requirement) => (
+            <li
+              key={requirement.id}
+              className={cn(
+                'settings-password-checklist__item',
+                requirement.met && 'settings-password-checklist__item--met',
+              )}
+            >
+              <Icon
+                name={requirement.met ? 'check_circle' : 'radio_button_unchecked'}
+                size={14}
+                filled={requirement.met}
+                aria-hidden
+              />
+              <span>{requirement.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <Input
         id="confirmPassword"
         label="Confirmar nova senha"
         type="password"
+        revealable
         autoComplete="new-password"
         value={form.confirmPassword}
         onChange={(event) => updateField('confirmPassword', event.target.value)}

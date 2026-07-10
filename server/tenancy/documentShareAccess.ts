@@ -1,12 +1,14 @@
 import type { AuthUser } from '../auth/types.js';
 import type { MongoDocument, MongoDocumentShareGrant } from '../db/types.js';
 import type { DocumentAccessPermissions } from './documentAccess.js';
+import type { GovernanceAccessIndex } from './governanceAccessIndex.js';
 import {
   canUserListDocument,
   isDocumentAdmin,
   resolveDocumentPermissions,
   userHasDocumentGroupAccess,
 } from './documentAccess.js';
+import { userHasGovernanceCategoryPermission } from './governanceAccessIndex.js';
 
 export type DocumentAccessPermissionsWithShare = DocumentAccessPermissions & {
   canShare: boolean;
@@ -21,36 +23,42 @@ function isShareGrantActive(grant: MongoDocumentShareGrant | null | undefined): 
 
 export function canUserShareDocument(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
 ): boolean {
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
 
   const shareGroups = doc.access?.shareGroupIds ?? [];
   if (userHasDocumentGroupAccess(shareGroups, memberGroupIds)) return true;
+  if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share')) {
+    return true;
+  }
 
-  return resolveDocumentPermissions(user, doc, memberGroupIds).canUpdate;
+  return resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex).canUpdate;
 }
 
 export function canUserListDocumentWithShare(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
   shareGrant?: MongoDocumentShareGrant | null,
+  governanceIndex?: GovernanceAccessIndex,
 ): boolean {
-  if (canUserListDocument(user, doc, memberGroupIds)) return true;
+  if (canUserListDocument(user, doc, memberGroupIds, governanceIndex)) return true;
   return isShareGrantActive(shareGrant) && shareGrant.permissions.canView === true;
 }
 
 export function resolveDocumentPermissionsWithShare(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
   shareGrant?: MongoDocumentShareGrant | null,
+  governanceIndex?: GovernanceAccessIndex,
 ): DocumentAccessPermissionsWithShare {
-  const base = resolveDocumentPermissions(user, doc, memberGroupIds);
-  const canShare = canUserShareDocument(user, doc, memberGroupIds);
+  const base = resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex);
+  const canShare = canUserShareDocument(user, doc, memberGroupIds, governanceIndex);
 
   if (!isShareGrantActive(shareGrant)) {
     return {
@@ -69,6 +77,8 @@ export function resolveDocumentPermissionsWithShare(
     canEditMetadata: base.canEditMetadata,
     canUpdate: base.canUpdate,
     canTrash: base.canTrash,
+    canContribute: base.canContribute,
+    canTransferOwnership: base.canTransferOwnership,
     canShare: canShare && sharePerms.canShare === true,
     sharedViaGrant,
   };

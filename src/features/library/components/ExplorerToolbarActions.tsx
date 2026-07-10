@@ -6,6 +6,7 @@ import { TypeFilterMenu } from './TypeFilterMenu';
 import { ViewModeToggle } from './ViewModeToggle';
 import { WorkspaceRefreshButton } from '@/components/layout/WorkspaceRefreshButton';
 import type { LibraryRouteState } from '../types/library';
+import type { LibraryCollectionFilterCapabilities } from '../utils/libraryCollectionFilterCapabilities';
 
 type ExplorerToolbarActionsProps = {
   state: LibraryRouteState;
@@ -13,8 +14,7 @@ type ExplorerToolbarActionsProps = {
   onRefresh: () => void;
   /** Exibe filtros e ordenação (pastas e coleções virtuais). */
   showFilters?: boolean;
-  /** Oculta filtro de categoria quando já está dentro da pasta. */
-  hideCategoryFilter?: boolean;
+  filterCapabilities?: LibraryCollectionFilterCapabilities;
   refreshLabel?: string;
 };
 
@@ -27,39 +27,64 @@ export function ExplorerToolbarActions({
   onStateChange,
   onRefresh,
   showFilters = false,
+  filterCapabilities,
   refreshLabel = 'Atualizar biblioteca',
 }: ExplorerToolbarActionsProps) {
+  const caps = filterCapabilities ?? {
+    status: true,
+    type: true,
+    period: true,
+    owner: true,
+    sort: true,
+    view: true,
+  };
+
+  const showAnyDocumentFilter =
+    caps.status || caps.type || caps.period || caps.owner || caps.sort;
+
   return (
     <>
-      {showFilters && (
+      {showFilters && showAnyDocumentFilter && (
         <>
-          <FilterMenu
-            status={state.status}
-            onStatusChange={(status) => onStateChange({ status })}
-          />
-          <TypeFilterMenu
-            value={state.type}
-            onChange={(type) => onStateChange({ type })}
-          />
-          <PeriodFilterMenu
-            value={state.period}
-            onChange={(period) => onStateChange({ period })}
-          />
-          <OwnerFilterMenu
-            value={state.owner}
-            onChange={(owner) => onStateChange({ owner })}
-          />
-          <SortMenu
-            sort={state.sort}
-            direction={state.direction}
-            onChange={(patch) => onStateChange(patch)}
-          />
+          {caps.status && (
+            <FilterMenu
+              status={state.status}
+              onStatusChange={(status) => onStateChange({ status })}
+            />
+          )}
+          {caps.type && (
+            <TypeFilterMenu
+              value={state.type}
+              onChange={(type) => onStateChange({ type })}
+            />
+          )}
+          {caps.period && (
+            <PeriodFilterMenu
+              value={state.period}
+              onChange={(period) => onStateChange({ period })}
+            />
+          )}
+          {caps.owner && (
+            <OwnerFilterMenu
+              value={state.owner}
+              onChange={(owner) => onStateChange({ owner })}
+            />
+          )}
+          {caps.sort && (
+            <SortMenu
+              sort={state.sort}
+              direction={state.direction}
+              onChange={(patch) => onStateChange(patch)}
+            />
+          )}
         </>
       )}
-      <ViewModeToggle
-        value={state.view}
-        onChange={(view) => onStateChange({ view })}
-      />
+      {caps.view && (
+        <ViewModeToggle
+          value={state.view}
+          onChange={(view) => onStateChange({ view })}
+        />
+      )}
       <WorkspaceRefreshButton onClick={onRefresh} label={refreshLabel} />
     </>
   );

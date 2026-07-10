@@ -1,7 +1,22 @@
 import { createHash } from 'node:crypto';
 import QRCode from 'qrcode';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, type PDFPage } from 'pdf-lib';
 import type { TrackingSecurityContext } from '../tracking/securityContext.js';
+import {
+  buildCompactStampLines,
+  computeSignatureStampLayoutAtIndex,
+  computeSignatureStampLayouts,
+  getSignatureStampMetrics,
+  SIGNATURE_STAMP_MARKER,
+  type SignatureStampData,
+} from './signatureStampLayout.js';
+import {
+  resolveSignatureStampTargetPage,
+  SIGNATURE_CERTIFICATE_PAGE_MARKER,
+  SIGNATURE_CERTIFICATE_PAGE_TITLE,
+} from './signaturePdfPageUtils.js';
+
+export { SIGNATURE_STAMP_MARKER };
 
 export const SIGNATURE_CONSENT_TEXT =
   'Declaro que li o documento apresentado e concordo em assiná-lo eletronicamente por meio da plataforma DOQYN. Estou ciente de que minha assinatura será vinculada a este documento com data, hora e evidências técnicas de auditoria.';
@@ -20,8 +35,12 @@ export type GenerateSignedPdfInput = {
   signedAt: Date;
   verificationCode: string;
   verificationUrl: string;
+  /** Assinaturas já concluídas no documento — cada uma corresponde a 1 certificado no final. */
+  completedSignatureCount?: number;
   securityContext?: TrackingSecurityContext;
   issuerOrganizationName?: string;
+  /** Assinaturas anteriores na mesma versão — carimbos empilhados no rodapé. */
+  previousStamps?: SignatureStampData[];
 };
 
 function formatSignedAt(date: Date): string {
@@ -33,7 +52,7 @@ function formatSignedAt(date: Date): string {
 }
 
 function drawWrappedLines(input: {
-  page: ReturnType<PDFDocument['getPages']>[number];
+  page: PDFPage;
   lines: string[];
   x: number;
   startY: number;
@@ -56,6 +75,73 @@ function drawWrappedLines(input: {
   return y;
 }
 
+function drawCompactStamp(input: {
+  page: PDFPage;
+  layout: ReturnType<typeof computeSignatureStampLayouts>[number];
+  stamp: SignatureStampData;
+  font: Awaited<ReturnType<PDFDocument['embedFont']>>;
+}) {
+  const metrics = getSignatureStampMetrics();
+  const lines = buildCompactStampLines(input.stamp);
+
+  input.page.drawRectangle({
+    x: input.layout.x,
+    y: input.layout.y,
+    width: input.layout.width,
+    height: input.layout.height,
+    borderColor: rgb(0.55, 0.55, 0.55),
+    borderWidth: 0.4,
+    color: rgb(1, 1, 1),
+    opacity: 0.72,
+  });
+
+  drawWrappedLines({
+    page: input.page,
+    lines,
+    x: input.layout.x + metrics.paddingX,
+    startY: input.layout.y + input.layout.height - metrics.paddingY - metrics.fontSize,
+    lineHeight: metrics.lineHeight,
+    font: input.font,
+    size: metrics.fontSize,
+    color: rgb(0.2, 0.2, 0.2),
+  });
+}
+
+function drawStampsOnPage(input: {
+  page: PDFPage;
+  pageWidth: number;
+  currentStamp: SignatureStampData;
+  completedSignatureCount: number;
+  previousStamps?: SignatureStampData[];
+  font: Awaited<ReturnType<PDFDocument['embedFont']>>;
+}) {
+  const completed = Math.max(0, input.completedSignatureCount);
+
+  if (completed > 0) {
+    const layout = computeSignatureStampLayoutAtIndex(input.pageWidth, completed);
+    drawCompactStamp({
+      page: input.page,
+      layout,
+      stamp: input.currentStamp,
+      font: input.font,
+    });
+    return;
+  }
+
+  const stampsToDraw = [...(input.previousStamps ?? []), input.currentStamp];
+  const layouts = computeSignatureStampLayouts(input.pageWidth, stampsToDraw.length);
+  for (let index = 0; index < stampsToDraw.length; index += 1) {
+    const layout = layouts[index];
+    if (!layout) continue;
+    drawCompactStamp({
+      page: input.page,
+      layout,
+      stamp: stampsToDraw[index]!,
+      font: input.font,
+    });
+  }
+}
+
 export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<{
   signedPdfBuffer: Buffer;
   originalDocumentHashSha256: string;
@@ -70,51 +156,44 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   const pdfDoc = await PDFDocument.load(input.originalPdfBuffer, { ignoreEncryption: true });
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const pages = pdfDoc.getPages();
-  const lastPage = pages[pages.length - 1];
-  const { width: pageWidth } = lastPage.getSize();
+  const stampPage = resolveSignatureStampTargetPage(
+    pdfDoc,
+    input.completedSignatureCount ?? 0,
+  );
+  const { width: pageWidth } = stampPage.getSize();
 
-  const stampLines = [
-    'Assinado eletronicamente por:',
-    `Nome: ${input.signerName}`,
-    `E-mail: ${input.signerEmailMasked}`,
-    ...(input.signerPhoneMasked ? [`Telefone: ${input.signerPhoneMasked}`] : []),
-    `Data/Hora: ${formatSignedAt(input.signedAt)} BRT`,
-    'Método: Assinatura eletrônica DOQYN',
-    `Código de verificação: ${input.verificationCode}`,
-    `Hash SHA-256: ${originalDocumentHashSha256.slice(0, 24)}…`,
-  ];
+  const currentStamp: SignatureStampData = {
+    signerName: input.signerName,
+    signedAt: input.signedAt,
+    verificationCode: input.verificationCode,
+  };
+  const completedSignatureCount = input.completedSignatureCount ?? 0;
 
-  lastPage.drawRectangle({
-    x: 40,
-    y: 28,
-    width: Math.min(pageWidth - 80, 420),
-    height: stampLines.length * 12 + 18,
-    borderColor: rgb(0.75, 0.75, 0.75),
-    borderWidth: 1,
-    color: rgb(0.98, 0.98, 0.98),
-  });
-
-  drawWrappedLines({
-    page: lastPage,
-    lines: stampLines,
-    x: 52,
-    startY: 28 + stampLines.length * 12 + 4,
-    lineHeight: 12,
+  drawStampsOnPage({
+    page: stampPage,
+    pageWidth,
+    currentStamp,
+    completedSignatureCount,
+    previousStamps: input.previousStamps,
     font: regularFont,
-    size: 9,
   });
 
   const certPage = pdfDoc.addPage();
   const { width, height } = certPage.getSize();
   let y = height - 56;
 
-  certPage.drawText('Certificado de Assinatura Eletrônica', {
+  certPage.drawText(SIGNATURE_CERTIFICATE_PAGE_TITLE, {
     x: 48,
     y,
     size: 18,
     font: boldFont,
     color: rgb(0.1, 0.1, 0.1),
+  });
+  certPage.drawText(SIGNATURE_CERTIFICATE_PAGE_MARKER, {
+    x: 0,
+    y: 0,
+    size: 0.01,
+    opacity: 0,
   });
   y -= 28;
 
@@ -144,6 +223,12 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
     `Hash SHA-256 (original): ${originalDocumentHashSha256}`,
     `Código verificador: ${input.verificationCode}`,
     `Validação: ${input.verificationUrl}`,
+    ...(input.previousStamps?.length
+      ? [`Assinaturas anteriores nesta versão: ${input.previousStamps.length}`]
+      : []),
+    ...(completedSignatureCount > 0
+      ? [`Assinaturas anteriores no documento: ${completedSignatureCount}`]
+      : []),
   ];
 
   y = drawWrappedLines({
@@ -190,6 +275,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
     securityContext: input.securityContext ?? null,
     method: 'Assinatura eletrônica DOQYN',
     consentText: SIGNATURE_CONSENT_TEXT,
+    previousSignatureCount: completedSignatureCount + (input.previousStamps?.length ?? 0),
   };
 
   const evidenceHashSha256 = createHash('sha256')

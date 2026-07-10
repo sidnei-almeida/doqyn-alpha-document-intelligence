@@ -4,6 +4,8 @@
  */
 export {
   confirmAnalysis,
+  submitUploadForApproval,
   type ConfirmAnalysisOptions,
   type ConfirmAnalysisResponse,
+  type SubmitUploadApprovalResponse,
 } from '@/features/document-send/services/confirmAnalysis';

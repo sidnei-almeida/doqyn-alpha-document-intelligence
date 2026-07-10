@@ -46,6 +46,12 @@ import {
 } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
 import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
+import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
+import {
+  buildDocumentMutationFields,
+  buildInitialDocumentOwnershipFields,
+  resolveDocumentActorIdentity,
+} from '../utils/documentMutationFields.js';
 
 const evidenceSchema = z.object({
   pageNumber: z.number().optional(),
@@ -341,6 +347,11 @@ export async function confirmAnalysisPersistence(input: {
   user: AuthUser;
   ctx: DocumentRequestContext;
   requestId?: string;
+  /** Dono do documento quando um administrador confirma em nome de outro usuário. */
+  documentOwnerUserId?: string;
+  /** Nome exibido do proprietário (ex.: envio aprovado na auditoria). */
+  documentOwnerDisplayName?: string;
+  skipConfirmPermissionCheck?: boolean;
 }): Promise<{
   documentId: string;
   versionId: string;
@@ -349,6 +360,14 @@ export async function confirmAnalysisPersistence(input: {
   storageStatus: 'stored' | 'pending';
 }> {
   const tenantId = input.ctx.tenantId;
+  const ownerUserId = input.documentOwnerUserId?.trim() || input.ctx.userId;
+  const ownerName = await resolveDocumentOwnerName({
+    tenantId,
+    ownerUserId,
+    displayNameHint: input.documentOwnerDisplayName,
+    actor: input.user,
+  });
+  const ownershipFields = buildInitialDocumentOwnershipFields({ ownerUserId, ownerName });
   const data = confirmAnalysisSchema.parse(input.payload);
 
   if (!data.classification.classId) {
@@ -398,7 +417,7 @@ export async function confirmAnalysisPersistence(input: {
     companyId: tenantId,
     classId: data.classification.classId,
     className: data.classification.className,
-    ownerUserId: input.ctx.userId,
+    ownerUserId,
   });
 
   logger.info('Validando classe e regra antes de persistir documento.', {
@@ -417,7 +436,7 @@ export async function confirmAnalysisPersistence(input: {
   const classAndRule = await getMongoClassAndRule({
     companyId: tenantId,
     classId: data.classification.classId,
-    ownerUserId: input.ctx.userId,
+    ownerUserId,
   });
 
   if (!classAndRule) {
@@ -449,7 +468,7 @@ export async function confirmAnalysisPersistence(input: {
   const { docClass, rule } = classAndRule;
 
   const categoryAccess = await resolveCategoryAccessGroupIds(tenantId, docClass._id, {
-    ownerUserId: input.ctx.userId,
+    ownerUserId,
   });
 
   const legacyPermissions =
@@ -463,7 +482,10 @@ export async function confirmAnalysisPersistence(input: {
           share: categoryAccess.shareGroupIds,
         };
 
-  if (!canConfirmDocuments(input.user, legacyPermissions.update)) {
+  if (
+    !input.skipConfirmPermissionCheck &&
+    !canConfirmDocuments(input.user, legacyPermissions.update)
+  ) {
     throw new ConfirmAnalysisError(
       'Você não tem permissão para confirmar metadados desta classe de documento.',
       'FORBIDDEN',
@@ -529,7 +551,7 @@ export async function confirmAnalysisPersistence(input: {
   try {
     const persisted = await persistConfirmedVersionFile({
       tenantId,
-      ownerUserId: input.ctx.userId,
+      ownerUserId,
       documentId,
       versionId,
       jobId: data.jobId,
@@ -594,11 +616,15 @@ export async function confirmAnalysisPersistence(input: {
         shareGroupIds: legacyPermissions.share,
       },
       currentMetadataPreview: buildMetadataPreview(versionMetadata),
-      createdBy: input.user.id,
-      createdAt: now,
-      updatedAt: now,
+      ownerUserId: ownershipFields.ownerUserId,
+      ownerName: ownershipFields.ownerName,
+      createdBy: ownershipFields.createdBy,
+      updatedBy: ownershipFields.updatedBy,
+      updatedByName: ownershipFields.updatedByName,
+      createdAt: ownershipFields.createdAt,
+      updatedAt: ownershipFields.updatedAt,
     },
-    input.user.id,
+    ownerUserId,
   ) as MongoDocument;
 
   const version = withTenantFieldsFromContext(
@@ -646,10 +672,11 @@ export async function confirmAnalysisPersistence(input: {
         reviewedBy: needsReview ? input.user.id : input.user.id,
         reviewedAt: now,
       },
-      createdBy: input.user.id,
+      uploadedBy: ownerName,
+      createdBy: ownerUserId,
       createdAt: now,
     },
-    input.user.id,
+    ownerUserId,
   ) as MongoDocumentVersion;
 
   const processingJob = withTenantFieldsFromContext(
@@ -662,11 +689,11 @@ export async function confirmAnalysisPersistence(input: {
       status: 'completed',
       steps: buildProcessingSteps(data, now),
       error: null,
-      createdBy: input.user.id,
+      createdBy: ownerUserId,
       createdAt: now,
       completedAt: now,
     },
-    input.user.id,
+    ownerUserId,
   ) as MongoProcessingJob;
 
   const { documents, documentVersions, processingJobs } = input.ctx.collections;
@@ -684,7 +711,7 @@ export async function confirmAnalysisPersistence(input: {
         versionId,
         versionLabel,
         categoryId: docClass._id,
-        createdBy: input.user.id,
+        createdBy: ownerUserId,
         isCurrentVersion: true,
       });
     }
@@ -697,7 +724,9 @@ export async function confirmAnalysisPersistence(input: {
     throw error;
   }
 
-  const auditCtx = buildDocumentAuditContext(input.ctx, input.user);
+  const auditCtx = buildDocumentAuditContext(input.ctx, input.user, input.requestId, {
+    documentOwnerUserId: ownerUserId,
+  });
   const namingChanges = buildAuditChangeSet(
     {
       aiSuggestedFileName: resolvedNames.aiSuggestedFileName,

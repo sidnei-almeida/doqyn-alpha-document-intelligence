@@ -6,15 +6,17 @@ interface StatusPillProps {
   status: DocumentStatus;
   className?: string;
   dot?: boolean;
+  size?: BadgeProps['size'];
 }
 
-/** Badge pill de status de governança — cor semântica dessaturada, peso 500. */
-export function StatusPill({ status, className, dot = false }: StatusPillProps) {
+/** Badge pill de status de governança — compacto e semântico. */
+export function StatusPill({ status, className, dot = true, size = 'sm' }: StatusPillProps) {
   const config = getDocumentStatusBadge(status);
 
   return (
     <Badge
       variant={config.semantic === 'neutral' ? 'default' : config.semantic}
+      size={size}
       className={className}
       dot={dot}
     >
@@ -29,14 +31,16 @@ export function StatusBadge({
   children,
   className,
   dot = false,
+  size = 'sm',
 }: {
   semantic: BadgeProps['variant'];
   children: React.ReactNode;
   className?: string;
   dot?: boolean;
+  size?: BadgeProps['size'];
 }) {
   return (
-    <Badge variant={semantic} className={className} dot={dot}>
+    <Badge variant={semantic} size={size} className={className} dot={dot}>
       {children}
     </Badge>
   );

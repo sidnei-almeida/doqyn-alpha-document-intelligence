@@ -9,7 +9,7 @@ import type {
   MongoTenantMember,
 } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
-import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
+import type { GovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
 import {
   assertCanAccessDocument,
   tenantScopeFilterFromContext,
@@ -17,6 +17,7 @@ import {
 import {
   loadMemberDocumentGroupIds,
   isDocumentAdmin,
+  loadDocumentAccessContext,
 } from '../../tenancy/documentAccess.js';
 import {
   canUserShareDocument,
@@ -26,7 +27,7 @@ import {
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { buildDocumentListItems } from '../documentListItems.js';
 import { attachFavoriteFlags, lookupFavoriteFlags } from '../favorites/documentFavoritesService.js';
-import { listTenantMembers } from '../tenantMemberRepository.js';
+import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { getTenantIdFromUser } from '../../auth/tenantContext.js';
@@ -90,6 +91,8 @@ async function resolveActiveTenantMemberByUserId(
   tenantId: string,
   userId: string,
 ): Promise<MongoTenantMember | null> {
+  await listOperationalTenantMembers(tenantId);
+
   const db = await getDb();
   const member =
     (await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
@@ -162,7 +165,7 @@ export async function searchShareableTenantUsers(
   query?: string,
   documentId?: string,
 ) {
-  const members = await listTenantMembers(ctx.tenantId);
+  const members = await listOperationalTenantMembers(ctx.tenantId);
   const active = members.filter((member) => member.status === 'active');
 
   const existingSharedIds = new Set<string>();
@@ -214,7 +217,7 @@ export async function listDocumentShareGrants(
   }
 
   const grants = await findActiveShareGrantsForDocument(documentId);
-  const members = await listTenantMembers(ctx.tenantId);
+  const members = await listOperationalTenantMembers(ctx.tenantId);
   const memberByUserId = new Map<string, ReturnType<typeof serializeTenantMember>>();
 
   for (const member of members) {
@@ -433,14 +436,14 @@ export async function listSharedWithMeDocuments(
     } as Record<string, unknown>)
     .toArray()) as MongoDocument[];
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId,
     userId: user.id,
     membershipId,
   });
 
   const memberLookup = new Map(
-    (await listTenantMembers(tenantId)).map((member) => {
+    (await listOperationalTenantMembers(tenantId)).map((member) => {
       const serialized = serializeTenantMember(member);
       return [serialized.userId, serialized.name] as const;
     }),
@@ -452,6 +455,7 @@ export async function listSharedWithMeDocuments(
       doc,
       memberGroupIds,
       grantByDocumentId.get(String(doc._id)),
+      governanceIndex,
     ),
   );
 
@@ -506,26 +510,48 @@ export async function listSharedWithMeDocuments(
 export async function resolveDocumentAccessWithShare(input: {
   user: AuthUser;
   doc: MongoDocument;
-  memberGroupIds: string[];
+  memberGroupIds?: string[];
   sharedWithUserId?: string;
+  tenantId?: string;
+  membershipId?: string;
+  governanceIndex?: GovernanceAccessIndex;
 }) {
   const shareGrant = input.sharedWithUserId
     ? await findActiveShareGrantForUser(String(input.doc._id), input.sharedWithUserId)
     : null;
+
+  const accessContext =
+    input.memberGroupIds && input.governanceIndex
+      ? { memberGroupIds: input.memberGroupIds, governanceIndex: input.governanceIndex }
+      : input.tenantId
+        ? await loadDocumentAccessContext({
+            tenantId: input.tenantId,
+            userId: input.user.id,
+            membershipId: input.membershipId,
+          })
+        : {
+            memberGroupIds: input.memberGroupIds ?? [],
+            governanceIndex: input.governanceIndex,
+          };
+
+  const memberGroupIds = accessContext.memberGroupIds ?? [];
+  const governanceIndex = accessContext.governanceIndex;
 
   return {
     shareGrant,
     permissions: resolveDocumentPermissionsWithShare(
       input.user,
       input.doc,
-      input.memberGroupIds,
+      memberGroupIds,
       shareGrant,
+      governanceIndex,
     ),
     canList: canUserListDocumentWithShare(
       input.user,
       input.doc,
-      input.memberGroupIds,
+      memberGroupIds,
       shareGrant,
+      governanceIndex,
     ),
   };
 }

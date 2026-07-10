@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { rejectLegacyAuthEndpoint } from '../../server/auth/legacyAuthGuard.js';
 import { submitPublicAccessRequest } from '../../server/services/accessRequestService.js';
 import { isMongoNativeConfigured } from '../../server/db/mongoClient.js';
 import { extractRequestContext } from '../../server/utils/requestContext.js';
@@ -11,6 +12,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const ctx = extractRequestContext(req);
+
+  if (rejectLegacyAuthEndpoint(res, 'public_access_request')) {
+    return;
+  }
 
   if (!isMongoNativeConfigured()) {
     return res.status(503).json({

@@ -14,7 +14,7 @@ export function readGroupClassPermissions(
   groupId: string,
 ): DocumentAccessPermissions {
   const perms = category.permissions ?? {
-    view: category.accessGroupIds,
+    view: category.documentGroupIds,
     download: [],
     update: [],
     audit: [],

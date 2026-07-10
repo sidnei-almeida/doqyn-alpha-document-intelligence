@@ -9,6 +9,8 @@ import { UploadQueueDrawer } from '@/features/upload/UploadQueueDrawer';
 import { UploadQueueProvider } from '@/features/upload/UploadQueueProvider';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import { useGlobalDragDrop } from '@/features/upload/drag-drop/useGlobalDragDrop';
+import { useSignatureCompletionSync } from '@/features/signature/hooks/useSignatureCompletionSync';
+import { useTenantLiveSync } from '@/features/tenant/useTenantLiveSync';
 
 /**
  * Shell autenticado do workspace — estilo Google Drive:
@@ -16,6 +18,8 @@ import { useGlobalDragDrop } from '@/features/upload/drag-drop/useGlobalDragDrop
  */
 function WorkspaceLayoutInner() {
   const { startUploadFromFiles } = useUploadQueueContext();
+  useSignatureCompletionSync();
+  useTenantLiveSync();
   const [searchParams] = useSearchParams();
   const { data: categories = [] } = useDocumentCategories();
 

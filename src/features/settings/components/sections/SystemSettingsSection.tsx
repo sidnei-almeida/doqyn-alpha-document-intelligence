@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { APP_NAME, AUTH_MODE, AUTH_PROVIDER, AUTH_PROVIDER_LABELS } from '@/lib/constants';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
+import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
-import { SettingsCard } from '../SettingsCard';
+import { SettingsFieldGroup } from '../SettingsFieldGroup';
 import { SettingsInfoCard } from '../SettingsInfoCard';
 
 const APP_VERSION = '0.1.0';
@@ -11,46 +15,106 @@ function envLabel(): string {
   return 'Desenvolvimento';
 }
 
+type SystemFact = {
+  icon: string;
+  label: string;
+  value: string;
+};
+
+function SystemFactRow({ icon, label, value }: SystemFact) {
+  return (
+    <div className="settings-system-fact">
+      <span className="settings-system-fact__icon" aria-hidden>
+        <Icon name={icon} size={ICON_SIZE.xs} />
+      </span>
+      <div className="settings-system-fact__copy min-w-0">
+        <dt className="settings-system-fact__label">{label}</dt>
+        <dd className="settings-system-fact__value">{value}</dd>
+      </div>
+    </div>
+  );
+}
+
+function SystemFactGroup({
+  title,
+  items,
+}: {
+  title: string;
+  items: SystemFact[];
+}) {
+  return (
+    <div className="settings-system-group">
+      <p className="settings-system-group__title">{title}</p>
+      <dl className="settings-system-group__list">
+        {items.map((item) => (
+          <SystemFactRow key={item.label} {...item} />
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export function SystemSettingsSection() {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const authKey = AUTH_PROVIDER || AUTH_MODE;
   const authLabel = AUTH_PROVIDER_LABELS[authKey] ?? authKey;
 
+  const identityFacts: SystemFact[] = [
+    { icon: 'apps', label: 'Aplicação', value: APP_NAME },
+    { icon: 'sell', label: 'Versão', value: APP_VERSION },
+  ];
+
+  const infrastructureFacts: SystemFact[] = [
+    { icon: 'lock', label: 'Autenticação', value: authLabel },
+    { icon: 'cloud', label: 'Armazenamento', value: 'Objeto na nuvem (R2)' },
+  ];
+
+  const advancedFacts: SystemFact[] = [
+    { icon: 'dns', label: 'Ambiente', value: envLabel() },
+    { icon: 'terminal', label: 'Build', value: import.meta.env.MODE },
+  ];
+
   return (
     <SettingsSectionBody>
-      <SettingsCard>
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div>
-            <dt className="settings-dt">Aplicação</dt>
-            <dd className="settings-dd">{APP_NAME}</dd>
-          </div>
-          <div>
-            <dt className="settings-dt">Versão</dt>
-            <dd className="settings-dd">{APP_VERSION}</dd>
-          </div>
-          <div>
-            <dt className="settings-dt">Ambiente</dt>
-            <dd className="settings-dd">{envLabel()}</dd>
-          </div>
-          <div>
-            <dt className="settings-dt">Autenticação</dt>
-            <dd className="settings-dd">{authLabel}</dd>
-          </div>
-          <div>
-            <dt className="settings-dt">Armazenamento</dt>
-            <dd className="settings-dd">Objeto na nuvem (R2)</dd>
-          </div>
-          <div>
-            <dt className="settings-dt">Build</dt>
-            <dd className="settings-dd">{import.meta.env.MODE}</dd>
-          </div>
-        </dl>
-        <p className="mt-4 text-[11px] text-doqyn-subtle">
+      <SettingsFieldGroup
+        title="Sobre o sistema"
+        description="Identidade da aplicação e infraestrutura em uso neste ambiente."
+      >
+        <div className="settings-system-overview">
+          <SystemFactGroup title="Identidade" items={identityFacts} />
+          <SystemFactGroup title="Infraestrutura" items={infrastructureFacts} />
+        </div>
+
+        <div className="settings-system-advanced">
+          <button
+            type="button"
+            className="settings-system-advanced__toggle"
+            aria-expanded={advancedOpen}
+            onClick={() => setAdvancedOpen((value) => !value)}
+          >
+            {advancedOpen ? 'Ocultar detalhes avançados' : 'Ver detalhes avançados'}
+            <Icon
+              name="expand_more"
+              size={16}
+              className={cn('transition-transform', advancedOpen && 'rotate-180')}
+              aria-hidden
+            />
+          </button>
+
+          {advancedOpen ? (
+            <div className="settings-system-advanced__panel">
+              <SystemFactGroup title="Ambiente de execução" items={advancedFacts} />
+            </div>
+          ) : null}
+        </div>
+
+        <p className="settings-system-note">
           Nomes de bucket e credenciais não são exibidos por segurança. Consulte o dashboard
           administrativo para métricas de storage quando disponíveis.
         </p>
-      </SettingsCard>
+      </SettingsFieldGroup>
 
-      <div className="settings-cards-grid">
+      <div className="settings-cards-grid settings-cards-grid--3col">
         <SettingsInfoCard
           icon="database"
           title="Storage de documentos"

@@ -132,10 +132,18 @@ export function DocumentDetailPanel({
               <p className="text-sm text-doqyn-text">{formatDate(data.document.updatedAt)}</p>
             </div>
             <div>
+              <p className="text-xs text-doqyn-muted">Proprietário</p>
+              <p className="text-sm text-doqyn-text">{data.document.ownerName ?? '—'}</p>
+            </div>
+            <div>
               <p className="text-xs text-doqyn-muted">Enviado por</p>
               <p className="text-sm text-doqyn-text">
-                {data.document.createdBy?.displayName ?? data.document.ownerName ?? '—'}
+                {data.document.createdBy?.displayName ?? '—'}
               </p>
+            </div>
+            <div>
+              <p className="text-xs text-doqyn-muted">Última atualização por</p>
+              <p className="text-sm text-doqyn-text">{data.document.updatedByName ?? '—'}</p>
             </div>
             <div>
               <p className="text-xs text-doqyn-muted">Preview</p>

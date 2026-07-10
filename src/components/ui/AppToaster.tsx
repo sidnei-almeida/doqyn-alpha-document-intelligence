@@ -7,33 +7,21 @@ export function AppToaster() {
   return (
     <Toaster
       theme={theme}
-      position="top-right"
-      closeButton
+      position="bottom-center"
+      offset={20}
+      closeButton={false}
       richColors={false}
+      expand={false}
+      visibleToasts={3}
+      gap={10}
       toastOptions={{
+        unstyled: true,
         classNames: {
-          toast:
-            'group !rounded-lg !border !shadow-modal !bg-doqyn-surface !text-doqyn-text !font-sans',
-          title: '!text-sm !font-medium !text-doqyn-text',
-          description: '!text-xs !text-doqyn-muted',
-          actionButton:
-            '!bg-doqyn-primary-bg !text-doqyn-text !border !border-doqyn-border !text-xs',
-          cancelButton: '!text-doqyn-muted !text-xs',
-          closeButton:
-            '!border-doqyn-border !bg-doqyn-card !text-doqyn-muted hover:!text-doqyn-text',
-          success:
-            '!border-doqyn-success-border !bg-doqyn-success-bg [&_[data-title]]:!text-doqyn-text',
-          error:
-            '!border-doqyn-danger-border !bg-doqyn-danger-bg [&_[data-title]]:!text-doqyn-text',
-          warning:
-            '!border-doqyn-warning-border !bg-doqyn-warning-bg [&_[data-title]]:!text-doqyn-text',
-          info: '!border-doqyn-border !bg-doqyn-card [&_[data-title]]:!text-doqyn-text',
-          loading: '!border-doqyn-border !bg-doqyn-card',
-        },
-        style: {
-          background: 'var(--bg-surface)',
-          borderColor: 'var(--border-default)',
-          color: 'var(--text-primary)',
+          toast: 'app-toast',
+          title: 'app-toast__title',
+          description: 'app-toast__description',
+          actionButton: 'app-toast__action',
+          cancelButton: 'app-toast__cancel',
         },
       }}
     />

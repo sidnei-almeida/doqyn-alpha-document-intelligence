@@ -4,6 +4,8 @@ export type ClassifierFailureCode =
   | 'GROQ_API_KEY_MISSING'
   | 'GROQ_MODEL_ERROR'
   | 'GROQ_RATE_LIMIT'
+  | 'GROQ_DAILY_TOKEN_LIMIT'
+  | 'GROQ_CONTEXT_LIMIT'
   | 'GROQ_TIMEOUT'
   | 'GROQ_EMPTY_RESPONSE'
   | 'CLASSIFIER_INVALID_JSON'
@@ -45,6 +47,15 @@ function readErrorCode(error: unknown): string | undefined {
   return typeof code === 'string' ? code : undefined;
 }
 
+function readErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return String(error);
+}
+
 function isResponseFormatError(message: string): boolean {
   const lower = message.toLowerCase();
   return (
@@ -61,7 +72,7 @@ export function shouldRetryWithoutResponseFormat(error: unknown): boolean {
     return false;
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message = readErrorMessage(error);
   const status = readErrorStatus(error);
 
   if (isResponseFormatError(message)) return true;
@@ -92,10 +103,10 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
       };
     }
 
-    if (error.code === 'GROQ_RATE_LIMIT') {
+    if (error.code === 'GROQ_RATE_LIMIT' || error.code === 'GROQ_DAILY_TOKEN_LIMIT' || error.code === 'GROQ_CONTEXT_LIMIT') {
       return {
-        code: 'GROQ_RATE_LIMIT',
-        internalMessage: 'Groq rate limit',
+        code: error.code,
+        internalMessage: error.message,
         errorName: error.name,
         httpStatus: error.statusCode,
         groqErrorCode: error.code,
@@ -103,7 +114,7 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
     }
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message = readErrorMessage(error);
   const sanitized = sanitizeDiagnosticText(message);
   const lower = sanitized.toLowerCase();
   const httpStatus = readErrorStatus(error);
@@ -120,10 +131,40 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
     };
   }
 
+  if (
+    httpStatus === 429 &&
+    (lower.includes('tokens per day') || lower.includes('(tpd)') || lower.includes('tpd:'))
+  ) {
+    return {
+      code: 'GROQ_DAILY_TOKEN_LIMIT',
+      internalMessage: sanitized,
+      errorName,
+      httpStatus,
+      groqErrorCode,
+    };
+  }
+
   if (httpStatus === 429 || lower.includes('rate limit') || lower.includes('too many requests')) {
     return {
       code: 'GROQ_RATE_LIMIT',
-      internalMessage: 'Groq rate limit',
+      internalMessage: sanitized || 'Groq rate limit',
+      errorName,
+      httpStatus,
+      groqErrorCode,
+    };
+  }
+
+  if (
+    httpStatus === 413 ||
+    lower.includes('context length') ||
+    lower.includes('maximum context') ||
+    lower.includes('token limit') ||
+    lower.includes('too many tokens') ||
+    lower.includes('reduce the length')
+  ) {
+    return {
+      code: 'GROQ_CONTEXT_LIMIT',
+      internalMessage: 'Groq context/token limit',
       errorName,
       httpStatus,
       groqErrorCode,

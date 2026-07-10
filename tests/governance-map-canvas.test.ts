@@ -18,7 +18,7 @@ function readSrc(relativePath: string): string {
 
 function makeCategory(
   id: string,
-  accessGroupIds: string[],
+  documentGroupIds: string[],
   overrides: Partial<DocumentCategory> = {},
 ): DocumentCategory {
   return {
@@ -26,7 +26,7 @@ function makeCategory(
     name: `Categoria ${id}`,
     description: 'Descrição',
     icon: 'file',
-    accessGroupIds,
+    documentGroupIds,
     groupClassPermissions: {},
     extractionConfig: null,
     ...overrides,
@@ -44,7 +44,7 @@ function makeGroup(id: string, overrides: Partial<Group> = {}): Group {
 }
 
 describe('Governance Map Canvas — edges e empty states', () => {
-  it('listGovernanceEdges deriva conexões reais de category.accessGroupIds', () => {
+  it('listGovernanceEdges deriva conexões reais de category.documentGroupIds', () => {
     const categories = [makeCategory('cat-1', ['grp-a', 'grp-b'])];
     const groups = [makeGroup('grp-a'), makeGroup('grp-b'), makeGroup('grp-c')];
 

@@ -30,6 +30,8 @@ type ExplorerContextMenuProps = {
   onMoveFile?: (doc: DocumentListItem) => void;
   onShareFile?: (doc: DocumentListItem) => void;
   onRequestSignatureFile?: (doc: DocumentListItem) => void;
+  onViewSignaturesFile?: (doc: DocumentListItem) => void;
+  onDownloadSignedPdfFile?: (doc: DocumentListItem) => void;
   isTrashView?: boolean;
   onTrashFile?: (doc: DocumentListItem) => void;
   onRestoreFile?: (doc: DocumentListItem) => void;
@@ -99,6 +101,8 @@ export function ExplorerContextMenu({
   onMoveFile,
   onShareFile,
   onRequestSignatureFile,
+  onViewSignaturesFile,
+  onDownloadSignedPdfFile,
   isTrashView = false,
   onTrashFile,
   onRestoreFile,
@@ -233,6 +237,13 @@ export function ExplorerContextMenu({
             const canShare = Boolean(
               doc.permissions?.canShare && onShareFile && !isTrashView && !doc.permissions?.sharedViaGrant,
             );
+            const hasSignatureActivity = doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
+            const canDownloadSignedPdf = Boolean(
+              doc.signatureSummary?.hasSignedPdf &&
+                doc.signatureSummary.latestRequestId &&
+                onDownloadSignedPdfFile &&
+                !isTrashView,
+            );
             const isFavorite = doc.isFavorite === true;
             return (
               <>
@@ -298,6 +309,22 @@ export function ExplorerContextMenu({
                   disabled={!canShare}
                   onClick={() => run(() => onRequestSignatureFile?.(doc))}
                 />
+                {hasSignatureActivity ? (
+                  <MenuItem
+                    compact
+                    label="Ver assinaturas"
+                    icon="history_edu"
+                    onClick={() => run(() => onViewSignaturesFile?.(doc))}
+                  />
+                ) : null}
+                {canDownloadSignedPdf ? (
+                  <MenuItem
+                    compact
+                    label="Baixar PDF assinado"
+                    icon="task"
+                    onClick={() => run(() => onDownloadSignedPdfFile?.(doc))}
+                  />
+                ) : null}
                 <MenuItem
                   compact
                   label="Mover"

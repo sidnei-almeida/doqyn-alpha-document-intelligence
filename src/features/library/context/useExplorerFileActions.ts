@@ -27,6 +27,7 @@ export function useExplorerFileActions(localOrderedIds?: string[]) {
       downloadFile: context.downloadFile,
       openFileDetails: context.openFileDetails,
       openFileContextMenu: context.openFileContextMenu,
+      openSignatures: context.openSignatures,
       toggleStar: context.toggleStar,
       selectedCount: context.selectedCount,
       selectedFileIds: context.selectedFileIds,

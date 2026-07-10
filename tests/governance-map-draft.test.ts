@@ -121,11 +121,11 @@ describe('governance map draft — canvas e hook', () => {
     assert.equal(page.includes('onDisconnect={disconnectGroupFromCategory}'), false);
   });
 
-  it('categoria usa contagem do draft, não accessGroupIds do backend', () => {
+  it('categoria usa contagem do draft, não documentGroupIds do backend', () => {
     const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
     assert.ok(canvas.includes('connectedGroupCount'));
     assert.ok(canvas.includes('categoryToGroups.get(category.id)?.size'));
-    assert.equal(canvas.includes('category.accessGroupIds.length'), false);
+    assert.equal(canvas.includes('category.documentGroupIds.length'), false);
   });
 
   it('addEdge evita edge duplicada', () => {

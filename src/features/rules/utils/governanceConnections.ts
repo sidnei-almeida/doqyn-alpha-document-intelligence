@@ -1,5 +1,6 @@
 import type { DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../api/rulesApi';
+import { collectLinkedDocumentGroupIds } from '../../../lib/entityIds';
 import { readGroupClassPermissions } from './groupClassPermissions';
 
 export type GovernanceConnection = {
@@ -28,7 +29,7 @@ export function listGovernanceConnections(
 
   for (const category of categories) {
     const seen = new Set<string>();
-    for (const groupId of category.accessGroupIds) {
+    for (const groupId of collectLinkedDocumentGroupIds(category.permissions, category.documentGroupIds)) {
       if (!groupIds.has(groupId) || seen.has(groupId)) continue;
       seen.add(groupId);
       connections.push({

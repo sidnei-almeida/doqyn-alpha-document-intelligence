@@ -54,7 +54,7 @@ describe('sidebar DOQYN', () => {
   it('navegação principal inclui views da Biblioteca', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
-    for (const label of ['Compartilhados comigo', 'Recentes', 'Favoritos', 'Lixeira']) {
+    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
       assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
     }
   });
