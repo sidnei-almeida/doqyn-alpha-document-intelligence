@@ -121,7 +121,7 @@ services:
       dockerfile: docker/Dockerfile.api
     env_file:
       - .env
-    command: ["npx", "tsx", "scripts/ensure-mongodb-indexes.ts"]
+    command: ["./node_modules/.bin/tsx", "scripts/ensure-mongodb-indexes.ts"]
     depends_on:
       mongo:
         condition: service_healthy
