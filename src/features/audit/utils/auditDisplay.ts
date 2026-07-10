@@ -115,6 +115,7 @@ export function resolveEventFiltersForTab(
   if (tab === 'all') {
     return {
       documentId: baseFilters.documentId,
+      q: baseFilters.q,
       from: baseFilters.from,
       to: baseFilters.to,
       limit: baseFilters.limit,

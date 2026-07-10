@@ -36,6 +36,10 @@ import { useLibraryView } from './hooks/useLibraryView';
 import type { LibraryFolder, LibrarySelection } from './types/library';
 import { SearchScopeHint } from './components/SearchScopeHint';
 import { hasActiveLibraryFilters } from './utils/libraryFilterUtils';
+import {
+  pruneUnsupportedLibraryFilters,
+  resolveCollectionFilterCapabilities,
+} from './utils/libraryCollectionFilterCapabilities';
 import { invalidateLibraryQueries } from './utils/libraryQueryInvalidation';
 import { findLibraryCategory } from './utils/resolveLibraryCategory';
 import {
@@ -53,7 +57,12 @@ import { useMoveDocumentMutations } from './hooks/useMoveDocumentMutations';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
 import { RequestSignatureModal } from '@/features/signature/RequestSignatureModal';
+import { SignaturesAssignedPanel } from '@/features/signature/components/SignaturesAssignedPanel';
+import { DocumentSignaturesDrawer } from '@/features/signature/DocumentSignaturesDrawer';
+import { downloadSignatureRequestSignedPdf } from '@/features/signature/api/signatureApi';
+import { signedPdfDownloadName } from '@/features/signature/utils/signatureSummaryDisplay';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
+import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
 
 function notifyComingSoon(label: string) {
   toast.info(`${label} estará disponível em uma próxima versão.`);
@@ -70,6 +79,24 @@ export function LibraryPage() {
   const { tenant, user } = useAuth();
   const { state, update, clearFilters, collection, categories, documents, isLoading, isFetching, isError, toggleStar, isStarred } =
     useLibraryView();
+  const filterCapabilities = useMemo(
+    () => resolveCollectionFilterCapabilities(collection.id),
+    [collection.id],
+  );
+
+  useEffect(() => {
+    const patch = pruneUnsupportedLibraryFilters(state, collection.id);
+    if (patch) update(patch);
+  }, [
+    collection.id,
+    state.status,
+    state.type,
+    state.period,
+    state.owner,
+    state.sort,
+    state.direction,
+    update,
+  ]);
   const explorer = useLibraryExplorerMode(state, collection);
   const { folders, isLoading: foldersLoading } = useCategoryFolders(documents);
   const documentOrder = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
@@ -78,6 +105,7 @@ export function LibraryPage() {
   const { moveToTrash, restore, permanentDelete } = useTrashMutations();
   const { moveDocuments } = useMoveDocumentMutations();
   const isTrashView = collection.id === 'lixeira';
+  const isSignaturesView = collection.id === 'para-assinar';
   const {
     selectedCount,
     selectedFileIds,
@@ -88,7 +116,7 @@ export function LibraryPage() {
     captureSelectionSnapshot,
   } = explorerSelection;
   const [marqueeDragging, setMarqueeDragging] = useState(false);
-  const { startUploadFromFiles, items: uploadItems } = useUploadQueueContext();
+  const { startUploadFromFiles } = useUploadQueueContext();
 
   const [viewer, setViewer] = useState<{
     documentId: string;
@@ -105,7 +133,9 @@ export function LibraryPage() {
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
-  const [signatureModalDocId, setSignatureModalDocId] = useState<string | null>(null);
+  const [transferModalDoc, setTransferModalDoc] = useState<DocumentListItem | null>(null);
+  const [signatureModalDoc, setSignatureModalDoc] = useState<DocumentListItem | null>(null);
+  const [signaturesDrawerDoc, setSignaturesDrawerDoc] = useState<DocumentListItem | null>(null);
   const [updateVersionDocumentId, setUpdateVersionDocumentId] = useState<string | null>(null);
   const emptyStateFileInputRef = useRef<HTMLInputElement>(null);
   const pendingUploadContextRef = useRef<UploadContext | undefined>(undefined);
@@ -409,10 +439,34 @@ export function LibraryPage() {
   const handleRequestSignature = useCallback(
     (doc: DocumentListItem) => {
       if (isTrashView || selectedCount > 1) return;
-      setSignatureModalDocId(doc.documentId);
+      setSignatureModalDoc(doc);
     },
     [isTrashView, selectedCount],
   );
+
+  const handleViewSignatures = useCallback((doc: DocumentListItem) => {
+    setSignaturesDrawerDoc(doc);
+  }, []);
+
+  const handleDownloadSignedPdf = useCallback(async (doc: DocumentListItem) => {
+    const requestId = doc.signatureSummary?.latestRequestId;
+    if (!requestId || !doc.signatureSummary?.hasSignedPdf) {
+      toast.error('PDF assinado indisponível para este documento.');
+      return;
+    }
+    try {
+      const blob = await downloadSignatureRequestSignedPdf(requestId);
+      triggerBlobDownload(
+        blob,
+        signedPdfDownloadName(
+          doc.currentFileName ?? doc.displayName,
+          doc.signatureSummary.verificationCode,
+        ),
+      );
+    } catch (error) {
+      showApiErrorToast(error, 'Falha ao baixar PDF assinado.');
+    }
+  }, []);
 
   const handleTracking = (doc: DocumentListItem) => {
     navigate(`/tracking?documentId=${encodeURIComponent(doc.documentId)}`);
@@ -446,9 +500,10 @@ export function LibraryPage() {
   };
 
   const showFilterMenus =
-    explorer.isInsideFolder ||
-    explorer.isSearchOrFilterAtRoot ||
-    explorer.isVirtualCollection;
+    !isSignaturesView &&
+    (explorer.isInsideFolder ||
+      explorer.isSearchOrFilterAtRoot ||
+      explorer.isVirtualCollection);
 
   const shellVariant = explorer.isBrowseRoot
     ? 'explorer-root'
@@ -470,7 +525,9 @@ export function LibraryPage() {
 
   let mainContent: React.ReactNode;
 
-  if (isLoading || (explorer.isBrowseRoot && foldersLoading)) {
+  if (isSignaturesView) {
+    mainContent = <SignaturesAssignedPanel search={trimmedQuery} />;
+  } else if (isLoading || (explorer.isBrowseRoot && foldersLoading)) {
     mainContent = explorer.isBrowseRoot ? (
       <div
         className="explorer-root-home flex flex-col gap-8 pb-6"
@@ -553,7 +610,6 @@ export function LibraryPage() {
   const content = (
     <LibraryContentDropZone
       onDropFiles={handleDropFiles}
-      activeUploads={uploadItems}
       onBackgroundContextMenu={handleBackgroundContextMenu}
       onBackgroundClick={() => {
         if (!contextMenu && !marqueeDragging) clearSelection();
@@ -586,6 +642,7 @@ export function LibraryPage() {
       onMove={isTrashView ? undefined : handleMoveSingle}
       onShare={isTrashView ? undefined : handleShareSingle}
       onRequestSignature={isTrashView ? undefined : handleRequestSignature}
+      onViewSignatures={isTrashView ? undefined : handleViewSignatures}
       onTrash={isTrashView ? undefined : handleTrashSingle}
     >
     <DndContext>
@@ -639,6 +696,7 @@ export function LibraryPage() {
               onRefresh={refreshLibrary}
               showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}
               showFilterMenus={showFilterMenus}
+              filterCapabilities={filterCapabilities}
               showTitleChevron={explorer.isBrowseRoot && !hasActiveFilters}
               folderName={activeSpace?.name}
               infoButton={
@@ -687,6 +745,9 @@ export function LibraryPage() {
           onDownload={(doc) => void handleDownload(doc)}
           onUpdateDocument={handleUpdateDocument}
           onPreviewVersion={(doc, versionId) => handlePreview(doc, versionId)}
+          onViewSignatures={handleViewSignatures}
+          onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
+          onTransferOwnership={(doc) => setTransferModalDoc(doc)}
         />
       )}
 
@@ -709,6 +770,8 @@ export function LibraryPage() {
         onMoveFile={isTrashView ? undefined : handleMoveSingle}
         onShareFile={isTrashView ? undefined : handleShareSingle}
         onRequestSignatureFile={isTrashView ? undefined : handleRequestSignature}
+        onViewSignaturesFile={isTrashView ? undefined : handleViewSignatures}
+        onDownloadSignedPdfFile={isTrashView ? undefined : (doc) => void handleDownloadSignedPdf(doc)}
         onShowContextInfo={() => setInfoOpen(true)}
         onShowFolderInfo={openFolderDetails}
         isTrashView={isTrashView}
@@ -729,10 +792,22 @@ export function LibraryPage() {
         onClose={() => setShareModalDoc(null)}
       />
 
+      <TransferOwnershipModal
+        open={Boolean(transferModalDoc)}
+        document={transferModalDoc}
+        onClose={() => setTransferModalDoc(null)}
+      />
+
       <RequestSignatureModal
-        open={Boolean(signatureModalDocId)}
-        documentId={signatureModalDocId}
-        onClose={() => setSignatureModalDocId(null)}
+        open={Boolean(signatureModalDoc)}
+        document={signatureModalDoc}
+        onClose={() => setSignatureModalDoc(null)}
+        onCreated={() => void invalidateLibraryQueries(queryClient, tenant?.tenantId)}
+      />
+
+      <DocumentSignaturesDrawer
+        document={signaturesDrawerDoc}
+        onClose={() => setSignaturesDrawerDoc(null)}
       />
 
       <MoveDocumentModal

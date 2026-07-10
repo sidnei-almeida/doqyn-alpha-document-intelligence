@@ -81,7 +81,7 @@ describe('layout do workspace', () => {
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     assert.ok(sidebar.includes('SidebarNavItem'));
     assert.equal(sidebar.includes('ComingSoonNavItem'), false);
-    for (const label of ['Compartilhados comigo', 'Recentes', 'Favoritos', 'Lixeira']) {
+    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
       assert.ok(constants.includes(label), `${label} presente`);
     }
   });

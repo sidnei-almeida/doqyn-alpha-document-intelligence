@@ -1,6 +1,7 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { LibraryRouteState } from '../types/library';
+import type { LibraryCollectionFilterCapabilities } from '../utils/libraryCollectionFilterCapabilities';
 import { hasActiveLibraryFilters } from '../utils/libraryFilterUtils';
 import {
   OWNER_FILTER_OPTIONS,
@@ -15,6 +16,7 @@ type ActiveFilterChipsProps = {
   onStateChange: (patch: Partial<LibraryRouteState>) => void;
   onClearAll: () => void;
   folderName?: string;
+  filterCapabilities?: LibraryCollectionFilterCapabilities;
 };
 
 function RemovableChip({
@@ -53,7 +55,17 @@ export function ActiveFilterChips({
   onStateChange,
   onClearAll,
   folderName,
+  filterCapabilities,
 }: ActiveFilterChipsProps) {
+  const caps = filterCapabilities ?? {
+    status: true,
+    type: true,
+    period: true,
+    owner: true,
+    sort: true,
+    view: true,
+  };
+
   if (!hasActiveLibraryFilters(state)) return null;
 
   const chips: Array<{ key: string; label: string; onRemove: () => void }> = [];
@@ -74,7 +86,7 @@ export function ActiveFilterChips({
     });
   }
 
-  if (state.status) {
+  if (caps.status && state.status) {
     chips.push({
       key: 'status',
       label: labelFor(STATUS_FILTER_OPTIONS, state.status, 'Status'),
@@ -82,7 +94,7 @@ export function ActiveFilterChips({
     });
   }
 
-  if (state.type) {
+  if (caps.type && state.type) {
     chips.push({
       key: 'type',
       label: labelFor(TYPE_FILTER_OPTIONS, state.type, 'Tipo'),
@@ -90,7 +102,7 @@ export function ActiveFilterChips({
     });
   }
 
-  if (state.period) {
+  if (caps.period && state.period) {
     chips.push({
       key: 'period',
       label: labelFor(PERIOD_FILTER_OPTIONS, state.period, 'Período'),
@@ -98,7 +110,7 @@ export function ActiveFilterChips({
     });
   }
 
-  if (state.owner) {
+  if (caps.owner && state.owner) {
     chips.push({
       key: 'owner',
       label: labelFor(OWNER_FILTER_OPTIONS, state.owner, 'Proprietário'),
@@ -116,7 +128,7 @@ export function ActiveFilterChips({
 
   const sortLabel = resolveSortOptionLabel(state.sort, state.direction);
   const isDefaultSort = state.sort === 'updatedAt' && state.direction === 'desc';
-  if (!isDefaultSort) {
+  if (caps.sort && !isDefaultSort) {
     chips.push({
       key: 'sort',
       label: sortLabel,

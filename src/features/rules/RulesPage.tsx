@@ -3,6 +3,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/features/auth/useAuth';
+import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
 import { CategoryModal } from './components/CategoryModal';
 import { ExtractionConfigDrawer } from './components/ExtractionConfigDrawer';
 import { GovernanceMapCanvas } from './components/governance/GovernanceMapCanvas';
@@ -16,8 +17,7 @@ export function RulesPage() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [extractionCategory, setExtractionCategory] = useState<DocumentCategory | null>(null);
 
-  const isAdmin =
-    hasAnyRole(['doqyn_admin', 'company_admin', 'individual_admin']) || user?.role === 'admin';
+  const isAdmin = canAccessRulesPage(hasAnyRole) || user?.role === 'admin';
 
   const {
     groups,

@@ -218,6 +218,9 @@ describe('document external sharing — UI', () => {
     assert.ok(modal.includes('share-tab-external'));
     assert.ok(modal.includes('external-share-email'));
     assert.ok(modal.includes('external-share-can-download'));
+    assert.ok(modal.includes('ExternalInviteLinkField'));
+    assert.ok(modal.includes('external-share-invite-url'));
+    assert.ok(modal.includes('Compartilhe o link abaixo com o convidado'));
   });
 
   it('modal externo expõe badges de revogar e renovar com tooltip', () => {

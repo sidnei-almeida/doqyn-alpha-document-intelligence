@@ -7,6 +7,10 @@ import { getInitials } from '@/utils/rulesHelpers';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { SidebarTooltip } from './SidebarTooltip';
+import {
+  getPlatformRoleLabel,
+  resolvePrimaryPlatformRole,
+} from '@/features/users/platformRoleLabels';
 
 type SidebarUserPanelProps = {
   name?: string;
@@ -18,25 +22,6 @@ type SidebarUserPanelProps = {
   collapsed?: boolean;
   onLogout: () => void;
 };
-
-const ROLE_LABELS: Record<string, string> = {
-  doqyn_admin: 'Admin DOQYN',
-  company_admin: 'Admin da empresa',
-  user: 'Usuário',
-};
-
-const ROLE_PRIORITY = ['doqyn_admin', 'company_admin', 'user'] as const;
-
-function resolvePrimaryRole(roles: string[]): string | null {
-  for (const role of ROLE_PRIORITY) {
-    if (roles.includes(role)) return role;
-  }
-  return roles[0] ?? null;
-}
-
-function roleLabel(role: string): string {
-  return ROLE_LABELS[role] ?? role;
-}
 
 export function SidebarUserPanel({
   name,
@@ -53,7 +38,7 @@ export function SidebarUserPanel({
   const displayName = name?.trim() || email || 'Usuário';
   const initials = getInitials(displayName);
   const orgLabel = tenantName || companyName;
-  const primaryRole = resolvePrimaryRole(roles);
+  const primaryRole = resolvePrimaryPlatformRole(roles);
 
   const profileButton = (
     <button
@@ -84,7 +69,7 @@ export function SidebarUserPanel({
               dot={false}
               className="mt-1 max-w-full truncate font-medium normal-case tracking-normal"
             >
-              {roleLabel(primaryRole)}
+              {getPlatformRoleLabel(primaryRole)}
             </Badge>
           )}
         </div>
@@ -139,7 +124,7 @@ export function SidebarUserPanel({
                     dot={false}
                     className="font-medium normal-case tracking-normal"
                   >
-                    {roleLabel(role)}
+                    {getPlatformRoleLabel(role)}
                   </Badge>
                 ))}
               </div>

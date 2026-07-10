@@ -2,14 +2,15 @@ import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
 import { DOCUMENT_AUDIT_ACTION_LABELS } from '../audit/documentAuditTypes.js';
-import { isDocumentAdmin, loadMemberDocumentGroupIds } from '../tenancy/documentAccess.js';
+import { isDocumentAdmin, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
+import { listGovernanceViewableCategoryIds } from '../tenancy/governanceAccessIndex.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import type { TenantStorageContext } from '../tenancy/tenantStorage.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { listAuditEvents } from './auditService.js';
 import { listDocuments } from './documentService.js';
-import { listTenantMembers } from './tenantMemberRepository.js';
+import { listOperationalTenantMembers } from './tenantMemberRepository.js';
 import { isStorageConfigured } from '../storage/index.js';
 import { isLegacyTenantBucketName } from '../storage/r2/r2BucketNaming.js';
 
@@ -136,6 +137,7 @@ function buildAccessibleDocumentQuery(
   user: AuthUser,
   memberGroupIds: string[],
   isAdmin: boolean,
+  governanceViewCategoryIds: string[] = [],
 ): Record<string, unknown> {
   const query: Record<string, unknown> = {
     ...tenantScopeFilterFromContext(storage),
@@ -144,10 +146,16 @@ function buildAccessibleDocumentQuery(
   };
 
   if (!isAdmin) {
-    query.$or = [
+    const accessClauses: Record<string, unknown>[] = [
       { ownerUserId: user.id },
       { 'access.viewGroupIds': { $in: memberGroupIds } },
     ];
+
+    if (governanceViewCategoryIds.length > 0) {
+      accessClauses.push({ classId: { $in: governanceViewCategoryIds } });
+    }
+
+    query.$or = accessClauses;
   }
 
   return query;
@@ -251,13 +259,23 @@ export async function getDashboardOverview(input: {
     membershipId: input.membershipId,
   });
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId,
     userId: input.userId,
     membershipId: input.membershipId,
   });
 
-  const docQuery = buildAccessibleDocumentQuery(collections.storage, input.user, memberGroupIds, isAdmin);
+  const governanceViewCategoryIds = isAdmin
+    ? []
+    : listGovernanceViewableCategoryIds(governanceIndex, memberGroupIds);
+
+  const docQuery = buildAccessibleDocumentQuery(
+    collections.storage,
+    input.user,
+    memberGroupIds,
+    isAdmin,
+    governanceViewCategoryIds,
+  );
   const scope = tenantScopeFilterFromContext(collections.storage);
 
   const startOfToday = new Date();
@@ -389,35 +407,35 @@ export async function getDashboardOverview(input: {
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
+  const [activeCategories, activeExtractionRules] = await Promise.all([
+    collections.documentCategories
+      ? collections.documentCategories.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+      : Promise.resolve(0),
+    collections.documentExtractionRules
+      ? collections.documentExtractionRules.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+      : Promise.resolve(0),
+  ]);
+
   let governance: DashboardOverviewResponse['governance'] = null;
   let storage: DashboardOverviewResponse['storage'] = null;
-  let activeCategories = 0;
-  let activeExtractionRules = 0;
 
   if (isAdmin) {
     const [categories, groups, extractionRules, accessRules, members, storageVersions] =
       await Promise.all([
-        collections.documentCategories
-          ? collections.documentCategories.countDocuments({ ...scope, active: true } as Record<string, unknown>)
-          : Promise.resolve(0),
+        Promise.resolve(activeCategories),
         collections.documentGroups
           ? collections.documentGroups.countDocuments({ ...scope, active: true } as Record<string, unknown>)
           : Promise.resolve(0),
-        collections.documentExtractionRules
-          ? collections.documentExtractionRules.countDocuments({ ...scope, active: true } as Record<string, unknown>)
-          : Promise.resolve(0),
+        Promise.resolve(activeExtractionRules),
         collections.documentRules
           ? collections.documentRules.countDocuments({ ...scope, active: true } as Record<string, unknown>)
           : Promise.resolve(0),
-        listTenantMembers(tenantId),
+        listOperationalTenantMembers(tenantId),
         collections.documentVersions
           .find(scope as Record<string, unknown>)
           .project({ file: 1, storage: 1 })
           .toArray(),
       ]);
-
-    activeCategories = categories;
-    activeExtractionRules = extractionRules;
 
     const usersActive = members.filter((m) => m.status === 'active').length;
     const usersPending = members.filter((m) => m.status === 'pending').length;
@@ -491,8 +509,20 @@ export async function getDashboardOverview(input: {
 
   const warnings: string[] = [];
   if (!isStorageConfigured()) warnings.push('Storage não configurado.');
-  if (activeCategories === 0) warnings.push('Nenhuma categoria documental ativa.');
-  if (activeExtractionRules === 0) warnings.push('Nenhuma regra de extração ativa.');
+  if (activeCategories === 0) {
+    warnings.push(
+      isAdmin
+        ? 'Nenhuma categoria documental ativa.'
+        : 'Categorias ainda não configuradas pelo administrador.',
+    );
+  }
+  if (activeExtractionRules === 0) {
+    warnings.push(
+      isAdmin
+        ? 'Nenhuma regra de extração ativa.'
+        : 'Regras de IA ainda não configuradas pelo administrador.',
+    );
+  }
   if (collections.tenant.storage?.bucketName && isLegacyTenantBucketName(collections.tenant.storage.bucketName)) {
     warnings.push('Bucket de storage usa nomenclatura legada.');
   }

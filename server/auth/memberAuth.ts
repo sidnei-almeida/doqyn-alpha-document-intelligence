@@ -69,11 +69,12 @@ export function assertCanManageCompany(user: AuthUser, targetTenantId: string): 
   }
 }
 
-export function resolveTargetCompanyId(user: AuthUser, requestedTenantId?: string): string {
-  if (userIsDoqynAdmin(user)) {
-    return requestedTenantId?.trim() || user.tenantId || user.companyId;
+export function resolveTargetCompanyId(user: AuthUser, _requestedTenantId?: string): string {
+  const sessionTenantId = user.tenantId ?? user.companyId;
+  if (!sessionTenantId?.trim()) {
+    throw new Error('MISSING_TENANT_SCOPE');
   }
-  return user.tenantId ?? user.companyId;
+  return sessionTenantId;
 }
 
 /** @deprecated Use resolveTargetCompanyId */

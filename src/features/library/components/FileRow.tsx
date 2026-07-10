@@ -134,7 +134,7 @@ export function FileRow({
           {formatDate(doc.updatedAt)}
         </td>
         <td className="hidden px-3 py-2.5 sm:table-cell">
-          <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} className="scale-90" />
+          <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
         </td>
         <td className="rounded-r-lg px-2 py-2.5">
           <button
@@ -206,7 +206,7 @@ export function FileRow({
         {formatDate(doc.updatedAt)}
       </td>
       <td className="px-4 py-3">
-        <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} />
+        <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
       </td>
       <td className="px-4 py-3">
         <button

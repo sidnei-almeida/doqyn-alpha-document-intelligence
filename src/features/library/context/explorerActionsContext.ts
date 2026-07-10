@@ -17,6 +17,7 @@ export type ExplorerActionsInternalValue = {
   downloadFile: (doc: DocumentListItem) => void;
   openFileDetails: (doc: DocumentListItem) => void;
   openFileContextMenu: (doc: DocumentListItem, x: number, y: number) => void;
+  openSignatures?: (doc: DocumentListItem) => void;
   toggleStar: (doc: DocumentListItem) => void;
   selectedCount: number;
   selectedFileIds: Set<string>;

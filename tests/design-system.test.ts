@@ -28,6 +28,8 @@ describe('design system DOQYN', () => {
     assert.ok(source.includes('rounded-full'));
     assert.ok(source.includes('badge-text'));
     assert.ok(source.includes('pending:'));
+    assert.ok(source.includes('xs:'));
+    assert.ok(source.includes('brand:'));
   });
 
   it('semântica de status centralizada em statusSemantics.ts', () => {
@@ -125,18 +127,20 @@ describe('design system DOQYN', () => {
     assert.equal(audit.includes('type="date"'), false);
   });
 
-  it('botões primary usam accent sólido; + Novo usa tokens índigo premium', () => {
+  it('botões primary e + Novo usam tokens índigo premium (legível em dark/light)', () => {
     const source = readSrc('components/ui/buttonVariants.ts');
     const newMenu = readSrc('features/library/components/NewButtonMenu.tsx');
     const tokens = readSrc('styles/tokens.css');
     const globals = readSrc('styles/globals.css');
-    assert.ok(source.includes('bg-doqyn-accent-active'));
+    assert.ok(source.includes('primary:'));
     assert.ok(source.includes('action:'));
     assert.ok(source.includes('bg-doqyn-new-button'));
+    assert.ok(source.includes('text-doqyn-new-button-text'));
     assert.ok(source.includes('outline:'));
     assert.ok(newMenu.includes('sidebar-new-button'));
     assert.ok(newMenu.includes('sidebar-new-menu__item'));
     assert.ok(tokens.includes('--new-button-bg:'));
+    assert.ok(tokens.includes('--new-button-text:'));
     assert.ok(tokens.includes('--shadow-new-button: none'));
     assert.ok(tokens.includes('--new-menu-item-hover'));
     assert.ok(globals.includes('.sidebar-new-button:hover'));
@@ -276,5 +280,20 @@ describe('design system DOQYN', () => {
     assert.ok(tokens.includes('--color-cat-contratos'));
     assert.ok(packageJson.includes('material-symbols'));
     assert.equal(packageJson.includes('lucide-react'), false);
+  });
+
+  it('toasts usam snackbar Material sem bordas coloridas', () => {
+    const toaster = readSrc('components/ui/AppToaster.tsx');
+    const globals = readSrc('styles/globals.css');
+    const tokens = readSrc('styles/tokens.css');
+
+    assert.ok(toaster.includes("position=\"bottom-center\""));
+    assert.ok(toaster.includes('closeButton={false}'));
+    assert.ok(toaster.includes('unstyled: true'));
+    assert.ok(toaster.includes('app-toast'));
+    assert.ok(globals.includes('.app-toast'));
+    assert.ok(globals.includes('border: none'));
+    assert.ok(tokens.includes('--toast-bg'));
+    assert.ok(tokens.includes('--toast-shadow'));
   });
 });

@@ -3,6 +3,7 @@ import type { MongoDocumentGroup, MongoDocumentGroupMember } from '../db/types.j
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { slugifyName } from '../utils/slugify.js';
+import { isDocumentCategoryId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
 import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
@@ -188,6 +189,14 @@ export async function assertDocumentGroupExists(
   groupId: string,
   opts?: ServiceOpts,
 ) {
+  if (isDocumentCategoryId(groupId)) {
+    throw new ServiceError(
+      'ID de classe (cat_*) não pode ser usado como grupo de usuários. Use um ID group_*.',
+      'INVALID_GROUP_ID',
+      400,
+    );
+  }
+
   const { collections, scope } = await resolveContext(tenantId, opts);
   const group = await collections.documentGroups.findOne({
     ...scope,

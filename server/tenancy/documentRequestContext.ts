@@ -6,6 +6,7 @@ import { verifyDoqynAuthSession, mapDoqynSessionToAuthUser } from '../auth/provi
 import { requireAuth } from '../auth/requireAuth.js';
 import type { TenantType } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { ensureTenantMembersSyncedForOperations } from '../services/tenantMemberSyncService.js';
 import { getTenantCollections, type TenantCollections } from './getTenantCollections.js';
 import {
   resolveTenantStorageScope,
@@ -134,6 +135,8 @@ export async function requireDocumentAuthContext(
       userId: user.id,
       membershipId: activeMembership.membershipId,
     });
+
+    void ensureTenantMembersSyncedForOperations(activeMembership.tenantId);
 
     return {
       user: mapDoqynSessionToAuthUser(session),

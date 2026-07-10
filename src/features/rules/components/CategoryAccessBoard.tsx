@@ -145,7 +145,7 @@ export function CategoryAccessBoard({
           />
           <div className="grid gap-4 xl:grid-cols-2">
             {categories.map((category) => {
-              const assignedGroups = category.accessGroupIds
+              const assignedGroups = category.documentGroupIds
                 .map((id) => groups.find((g) => g.id === id))
                 .filter((g): g is Group => Boolean(g));
 
@@ -218,7 +218,7 @@ export function CategoryAccessBoard({
                     <div className="border-t border-doqyn-border-subtle pt-4">
                       <Checkbox
                         checked={notificationsActive}
-                        disabled={!isAdmin || category.accessGroupIds.length === 0}
+                        disabled={!isAdmin || category.documentGroupIds.length === 0}
                         onChange={(e) => onToggleNotifications(category.id, e.target.checked)}
                         label="Notificar membros sobre atualizações"
                         wrapperClassName={cn(!isAdmin && 'cursor-default opacity-70')}

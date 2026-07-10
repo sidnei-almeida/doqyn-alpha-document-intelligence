@@ -3,7 +3,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DoqynLogo } from '@/components/brand';
+import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
@@ -13,8 +13,9 @@ import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { formatTaxId } from '@/lib/identifiers';
 import { Textarea } from '@/components/ui/Textarea';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
 import { usesDoqynAuth } from '@/auth/authConfig';
+import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { cn } from '@/lib/utils';
 import { submitAccessRequest } from './api/accessRequestApi';
 import {
@@ -225,7 +226,7 @@ export function RequestAccessPage() {
         });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Falha ao enviar solicitação.');
+      showApiErrorToast(error, 'Falha ao enviar solicitação.');
     } finally {
       setSubmitting(false);
     }
@@ -233,62 +234,44 @@ export function RequestAccessPage() {
 
   if (submitted) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-8">
-        <div className="absolute right-4 top-4">
-          <ThemeToggle />
-        </div>
-
-        <div className="w-full max-w-lg flow-enter">
-          <div className="mb-8 flex flex-col items-center text-center">
-            <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Solicitação de acesso" />
-          </div>
-
-          <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
-            <h1 className="text-base font-semibold text-doqyn-text">Solicitação enviada</h1>
-            <p className="mt-2 text-sm text-doqyn-muted">
-              {employeeFlow
-                ? 'Sua solicitação foi enviada. Um administrador da empresa precisará aprovar seu acesso.'
-                : 'Seu acesso será analisado pelo administrador responsável. Você receberá notificações quando houver atualização.'}
-            </p>
-            <Link
-              to="/login"
-              className="mt-5 inline-flex text-sm font-medium text-doqyn-text underline-offset-4 hover:underline"
-            >
-              Ir para login
-            </Link>
-          </div>
-
-          <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-            <Icon name="shield" size={14} />
-            Ambiente corporativo seguro
-          </p>
-        </div>
-      </main>
+      <AuthShell
+        width="md"
+        eyebrow="Solicitação de acesso"
+        title="Solicitação enviada"
+        description={
+          employeeFlow
+            ? 'Sua solicitação foi enviada. Um administrador da empresa precisará aprovar seu acesso.'
+            : 'Seu acesso será analisado pelo administrador responsável. Você receberá notificações quando houver atualização.'
+        }
+        showSecureBadge
+        footer={
+          <Link to="/login" className="font-medium text-doqyn-accent hover:underline">
+            Ir para login
+          </Link>
+        }
+      >
+        <AuthCard className="p-6">
+          <AlertBanner
+            variant="success"
+            title="Pedido registrado"
+            message="Acompanhe seu e-mail para atualizações sobre a aprovação."
+          />
+        </AuthCard>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-8">
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-2xl flow-enter">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo
-            size="login"
-            variant="horizontal"
-            align="center"
-            showSubtitle
-            subtitle={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitação de acesso'}
-          />
-          <p className="mt-4 max-w-md text-sm text-doqyn-muted">
-            {employeeFlow
-              ? 'Use esta opção se sua empresa já utiliza o DOQYN e você precisa que um administrador aprove seu acesso.'
-              : 'Preencha os dados abaixo para solicitar acesso à plataforma. Um administrador revisará seu pedido e definirá seus grupos de acesso.'}
-          </p>
-        </div>
-
+    <AuthShell
+      width="lg"
+      eyebrow={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitação de acesso'}
+      description={
+        employeeFlow
+          ? 'Use esta opção se sua empresa já utiliza o DOQYN e você precisa que um administrador aprove seu acesso.'
+          : 'Preencha os dados abaixo para solicitar acesso à plataforma. Um administrador revisará seu pedido e definirá seus grupos de acesso.'
+      }
+      showSecureBadge
+    >
         <form
           onSubmit={handleSubmit}
           className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
@@ -508,12 +491,6 @@ export function RequestAccessPage() {
           }}
           onConfirm={handleConfirmSubmit}
         />
-
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Icon name="shield" size={14} />
-          Ambiente corporativo seguro
-        </p>
-      </div>
-    </main>
+    </AuthShell>
   );
 }

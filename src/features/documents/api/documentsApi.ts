@@ -66,6 +66,32 @@ export async function listDocumentVersions(documentId: string): Promise<{
   return response.json();
 }
 
+export async function transferDocumentOwnership(
+  documentId: string,
+  input: { newOwnerUserId: string; reason?: string },
+): Promise<{
+  ok: boolean;
+  result: {
+    documentId: string;
+    previousOwnerUserId: string;
+    previousOwnerName?: string;
+    newOwnerUserId: string;
+    newOwnerName: string;
+    transferredAt: string;
+  };
+}> {
+  const encodedId = encodeURIComponent(documentId);
+  const response = await authFetch(`/api/documents/${encodedId}/transfer-ownership`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw await parseDocumentApiError(response);
+  }
+  return response.json();
+}
+
 export async function fetchDocumentCategories(): Promise<
   Array<{ id: string; name: string; description?: string; slug?: string }>
 > {

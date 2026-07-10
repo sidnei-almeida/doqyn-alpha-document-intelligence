@@ -21,6 +21,7 @@ export const SHARED_APP_COLLECTIONS = {
   externalDocumentShareGrants: 'external_document_share_grants',
   documentSignatureRequests: 'document_signature_requests',
   documentSignatures: 'document_signatures',
+  documentUploadApprovals: 'document_upload_approvals',
 } as const;
 
 export const COLLECTIONS = {

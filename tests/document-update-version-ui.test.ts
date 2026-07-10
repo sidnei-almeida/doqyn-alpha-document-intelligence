@@ -34,13 +34,15 @@ describe('fluxo dedicado de atualização de versão', () => {
 
   it('drawer dedicado exibe resumo, metadados e histórico', () => {
     const drawer = readSrc('features/document-update-version/UpdateDocumentVersionDrawer.tsx');
+    const shell = readSrc('components/layout/WorkspaceSideDrawer.tsx');
     assert.ok(drawer.includes('CurrentDocumentSummaryCard'));
     assert.ok(drawer.includes('CurrentMetadataPanel'));
     assert.ok(drawer.includes('VersionHistorySummary'));
     assert.ok(drawer.includes('NewVersionAnalyzingPanel'));
-    assert.ok(drawer.includes('max-w-xl'));
+    assert.ok(shell.includes('max-w-xl'));
+    assert.ok(drawer.includes('WorkspaceSideDrawer'));
     assert.ok(drawer.includes('fillHeight'));
-    assert.ok(drawer.includes('data-testid="update-version-drawer"'));
+    assert.ok(drawer.includes('testId="update-version-drawer"'));
   });
 
   it('preview do documento atual usa proporção de página', () => {

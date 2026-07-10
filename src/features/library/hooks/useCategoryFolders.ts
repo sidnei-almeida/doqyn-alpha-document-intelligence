@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { DocumentListItem } from '@/types/document-library';
+import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import { fetchDocumentCategories } from '../api/libraryApi';
 import type { LibraryFolder } from '../types/library';
 
@@ -8,6 +9,7 @@ export function useDocumentCategories() {
   return useQuery({
     queryKey: ['document-categories-options'],
     queryFn: fetchDocumentCategories,
+    ...tenantLiveSyncQueryOptions(),
   });
 }
 

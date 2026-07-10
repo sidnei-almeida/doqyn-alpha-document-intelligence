@@ -46,11 +46,13 @@ describe('painel de detalhes da Biblioteca', () => {
 
   it('drawer opcional só aparece sob demanda, não como coluna fixa', () => {
     const source = drawer();
-    assert.ok(source.includes('max-w-xl'));
+    const shell = readSrc('components/layout/WorkspaceSideDrawer.tsx');
+    assert.ok(shell.includes('max-w-xl'));
     assert.ok(source.includes('library-details-drawer'));
+    assert.ok(source.includes('WorkspaceSideDrawer'));
     assert.ok(source.includes('Fechar painel de detalhes'));
     assert.equal(source.includes('lg:flex'), false);
     assert.equal(source.includes('library-details-panel'), false);
-    assert.ok(source.includes('fixed inset-0'));
+    assert.ok(shell.includes('fixed inset-0'));
   });
 });

@@ -1,0 +1,17 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+deploy/.env
+deploy/.env.*
+!.deploy/env/.env.production.example
+.git
+.gitignore
+coverage
+*.log
+.generated
+reports
+tests
+.cursor
+.vscode

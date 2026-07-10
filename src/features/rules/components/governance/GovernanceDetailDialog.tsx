@@ -97,13 +97,13 @@ export function GovernanceDetailDialog({
         : null;
 
   const connectedGroups =
-    category?.accessGroupIds
+    category?.documentGroupIds
       .map((id) => groups.find((item) => item.id === id))
       .filter((item): item is Group => Boolean(item)) ?? [];
 
   const connectedCategories =
     group && selection?.type === 'group'
-      ? categories.filter((item) => item.accessGroupIds.includes(group.id))
+      ? categories.filter((item) => item.documentGroupIds.includes(group.id))
       : [];
 
   const memberCount = group ? (groupMemberCounts[group.id] ?? group.memberCount ?? 0) : 0;

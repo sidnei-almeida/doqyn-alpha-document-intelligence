@@ -1,4 +1,5 @@
 import { authServiceJson } from '@/auth/authServiceClient';
+import { inviteApi } from '@/features/invite/api/inviteApi';
 import type {
   CompanyMemberDto,
   MemberStatus,
@@ -84,6 +85,24 @@ export const doqynUsersApi = {
       items.map((item) => fetchMemberDetail(item.membershipId, tenantId ?? item.tenantId)),
     );
     return details;
+  },
+
+  invite(input: {
+    companyId?: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    platformRoles: PlatformRole[];
+    accessGroupIds: string[];
+  }) {
+    void input.accessGroupIds;
+    return inviteApi.create({
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      platformRoles: input.platformRoles,
+      companyId: input.companyId,
+    });
   },
 
   approve(

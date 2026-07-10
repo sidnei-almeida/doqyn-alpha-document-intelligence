@@ -1,51 +1,69 @@
 import { PageShell } from '@/components/layout/PageShell';
 import { SettingsLayout } from './components/SettingsLayout';
-import { AuthenticationSettingsSection } from './components/sections/AuthenticationSettingsSection';
-import { OrganizationSettingsSection } from './components/sections/OrganizationSettingsSection';
-import { PreferencesSettingsSection } from './components/sections/PreferencesSettingsSection';
-import { ProfileSettingsSection } from './components/sections/ProfileSettingsSection';
+import { AccountSettingsSection } from './components/sections/AccountSettingsSection';
+import { CompanySettingsSection } from './components/sections/CompanySettingsSection';
 import { SecuritySettingsSection } from './components/sections/SecuritySettingsSection';
-import { SystemSettingsSection } from './components/sections/SystemSettingsSection';
-import { TrashRetentionSettingsSection } from './components/sections/TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './components/sections/UploadAiSettingsSection';
 import { useSettingsSection } from './hooks/useSettingsSection';
-import type { SettingsSectionId } from './settingsSections';
+import type { AccountSettingsTab, CompanySettingsTab, SettingsSectionId } from './settingsSections';
+import { settingsSectionMeta } from './settingsSections';
+import { SETTINGS_UI_PATTERN } from './settingsUiPattern';
 
-function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
+function SettingsSectionPanel({
+  section,
+  tab,
+  setAccountTab,
+  setCompanyTab,
+}: {
+  section: SettingsSectionId;
+  tab: ReturnType<typeof useSettingsSection>['tab'];
+  setAccountTab: (tab: AccountSettingsTab) => void;
+  setCompanyTab: (tab: CompanySettingsTab) => void;
+}) {
   switch (section) {
     case 'perfil':
-      return <ProfileSettingsSection />;
-    case 'preferencias':
-      return <PreferencesSettingsSection />;
+      return (
+        <AccountSettingsSection
+          tab={(tab ?? 'identidade') as AccountSettingsTab}
+          onTabChange={setAccountTab}
+        />
+      );
     case 'upload-ia':
       return <UploadAiSettingsSection />;
     case 'seguranca':
       return <SecuritySettingsSection />;
-    case 'autenticacao':
-      return <AuthenticationSettingsSection />;
-    case 'organizacao':
-      return <OrganizationSettingsSection />;
-    case 'lixeira':
-      return <TrashRetentionSettingsSection />;
-    case 'sistema':
-      return <SystemSettingsSection />;
+    case 'empresa':
+      return (
+        <CompanySettingsSection
+          tab={(tab ?? 'governanca') as CompanySettingsTab}
+          onTabChange={setCompanyTab}
+        />
+      );
     default:
-      return <ProfileSettingsSection />;
+      return (
+        <AccountSettingsSection tab="identidade" onTabChange={setAccountTab} />
+      );
   }
 }
 
 export function SettingsPage() {
-  const { section, setSection } = useSettingsSection();
+  const { section, tab, setSection, setAccountTab, setCompanyTab } = useSettingsSection();
+  const meta = settingsSectionMeta(section);
 
   return (
     <PageShell
-      eyebrow="Administração"
-      title="Configurações"
-      description="Perfil, preferências, upload, segurança e demais opções da sua conta."
+      eyebrow={SETTINGS_UI_PATTERN.pageEyebrow}
+      title={meta.label}
+      description={meta.description}
       bodyClassName="min-h-0 settings-page"
     >
       <SettingsLayout section={section} onSectionChange={setSection}>
-        <SettingsSectionPanel section={section} />
+        <SettingsSectionPanel
+          section={section}
+          tab={tab}
+          setAccountTab={setAccountTab}
+          setCompanyTab={setCompanyTab}
+        />
       </SettingsLayout>
     </PageShell>
   );

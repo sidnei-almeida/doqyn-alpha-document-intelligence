@@ -4,9 +4,12 @@ import { Select } from '@/components/ui/Select';
 import type { AuditEventFilters, AuditSeverity } from '@/types/audit';
 import { AUDIT_SEVERITY_LABELS } from '@/types/audit';
 
+export type AuditFiltersMode = 'full' | 'security' | 'overview';
+
 type AuditFiltersProps = {
   filters: AuditEventFilters;
   onChange: (filters: AuditEventFilters) => void;
+  mode?: AuditFiltersMode;
 };
 
 const severityOptions: Array<{ value: AuditSeverity | ''; label: string }> = [
@@ -17,7 +20,10 @@ const severityOptions: Array<{ value: AuditSeverity | ''; label: string }> = [
   })),
 ];
 
-export function AuditFilters({ filters, onChange }: AuditFiltersProps) {
+export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersProps) {
+  const showEventType = mode === 'full';
+  const showSeverity = mode === 'full' || mode === 'security';
+
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
       <Input
@@ -27,22 +33,26 @@ export function AuditFilters({ filters, onChange }: AuditFiltersProps) {
         value={filters.q ?? ''}
         onChange={(event) => onChange({ ...filters, q: event.target.value })}
       />
-      <Input
-        id="audit-type"
-        label="Tipo de evento"
-        placeholder="Ex.: document.created"
-        value={filters.type ?? ''}
-        onChange={(event) => onChange({ ...filters, type: event.target.value })}
-      />
-      <Select
-        id="audit-severity"
-        label="Severidade"
-        value={filters.severity ?? ''}
-        onChange={(event) =>
-          onChange({ ...filters, severity: event.target.value as AuditSeverity | '' })
-        }
-        options={severityOptions}
-      />
+      {showEventType && (
+        <Input
+          id="audit-type"
+          label="Tipo de evento"
+          placeholder="Ex.: document.created"
+          value={filters.type ?? ''}
+          onChange={(event) => onChange({ ...filters, type: event.target.value })}
+        />
+      )}
+      {showSeverity && (
+        <Select
+          id="audit-severity"
+          label="Severidade"
+          value={filters.severity ?? ''}
+          onChange={(event) =>
+            onChange({ ...filters, severity: event.target.value as AuditSeverity | '' })
+          }
+          options={severityOptions}
+        />
+      )}
       <DateInput
         id="audit-from"
         label="De"

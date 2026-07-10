@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
+import { WorkspaceSideDrawer } from '@/components/layout/WorkspaceSideDrawer';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { getDocument, listDocumentVersions } from '@/features/documents/api/documentsApi';
 import { nextMajorVersionLabel } from '@/features/documents/utils/versionLabel';
 import { analyzePdf } from '@/features/document-send/services/analyzePdf';
@@ -141,18 +144,9 @@ export function UpdateDocumentVersionDrawer({
     versionsQuery.isLoading,
   ]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && phase !== 'analyzing' && phase !== 'confirming') {
-        onClose();
-      }
-    };
-    if (documentId) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-    return undefined;
-  }, [documentId, onClose, phase]);
+  const handleClose = useCallback(() => {
+    if (phase !== 'analyzing' && phase !== 'confirming') onClose();
+  }, [phase, onClose]);
 
   const runAnalysis = useCallback(
     async (file: File) => {
@@ -265,29 +259,39 @@ export function UpdateDocumentVersionDrawer({
   const canConfirm = Boolean(analysis) && (!requiresReview || reviewChecked);
 
   return (
-    <div
-      className="fixed inset-0 z-[90] flex justify-end modal-overlay-scrim backdrop-blur-[1px]"
-      role="presentation"
-      data-testid="update-version-drawer-overlay"
-      onClick={() => {
-        if (phase !== 'analyzing' && phase !== 'confirming') onClose();
-      }}
-    >
-      <aside
-        className="drawer-enter-right flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-doqyn-border-subtle bg-doqyn-surface shadow-dropdown"
-        aria-labelledby="update-document-version-title"
-        data-testid="update-version-drawer"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {detail && (
+    <WorkspaceSideDrawer
+      title="Atualizar documento"
+      onClose={handleClose}
+      testId="update-version-drawer"
+      overlayTestId="update-version-drawer-overlay"
+      zIndexClass="z-[90]"
+      scrollable={false}
+      bodyClassName="flex flex-col overflow-hidden p-0"
+      onOverlayClick={handleClose}
+      header={
+        detail ? (
           <UpdateDocumentVersionHeader
-            document={detail.document}
+            documentItem={detail.document}
             currentVersionLabel={currentVersionLabel}
             nextVersionLabel={nextVersionLabel}
-            onClose={onClose}
+            onClose={handleClose}
           />
-        )}
-
+        ) : (
+          <div className="flex shrink-0 items-center justify-between border-b border-doqyn-border-subtle px-4 py-3">
+            <p className="text-[12px] font-semibold text-doqyn-text">Atualizar documento</p>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="explorer-icon-btn shrink-0"
+              aria-label="Fechar atualização de versão"
+              data-testid="update-version-drawer-close"
+            >
+              <Icon name="close" size={ICON_SIZE.sm} />
+            </button>
+          </div>
+        )
+      }
+    >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {phase === 'loading' && (
             <p className="px-5 py-8 text-center text-[13px] text-doqyn-muted">
@@ -406,11 +410,10 @@ export function UpdateDocumentVersionDrawer({
             nextVersionLabel={nextVersionLabel}
             canConfirm={canConfirm}
             onConfirm={() => void handleConfirm()}
-            onClose={onClose}
+            onClose={handleClose}
             onRetry={resetFlow}
           />
         </div>
-      </aside>
-    </div>
+    </WorkspaceSideDrawer>
   );
 }

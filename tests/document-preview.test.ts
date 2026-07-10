@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import { PDFDocument } from 'pdf-lib';
+import sharp from 'sharp';
 import {
   buildIndividualBasePrefix,
   resolveTenantStorageScope,
@@ -236,7 +237,8 @@ describe('generateDocumentPreviewForVersion with local storage', () => {
       result.slot.objectKey,
       `${scope.basePrefix}/documents/${DOCUMENT_ID}/versions/${VERSION_ID}/preview/${PREVIEW_FILE_NAME}`,
     );
-    assert.equal(result.slot.watermark?.value, 'DOQYN');
+    assert.equal(result.slot.watermark?.type, 'logo');
+    assert.equal(result.slot.watermark?.value, 'doqyn-horizontal');
     assert.equal(result.slot.optimization?.engine, 'ghostscript');
     assert.ok(result.previewManifest);
     assert.equal(result.previewManifest?.viewerType, 'pdf_pages');
@@ -305,9 +307,42 @@ describe('generateDocumentPreviewForVersion with local storage', () => {
 describe('addDoqynWatermarkToPdf', () => {
   it('retorna PDF diferente do original', async () => {
     const originalPdf = await createMinimalPdf();
-    const watermarked = await addDoqynWatermarkToPdf({ pdfBuffer: originalPdf, watermarkText: 'DOQYN' });
+    const watermarked = await addDoqynWatermarkToPdf({ pdfBuffer: originalPdf });
     assert.notEqual(watermarked.equals(originalPdf), true);
     assert.ok(watermarked.length > 0);
+  });
+});
+
+describe('doqyn logo watermark asset', () => {
+  it('rasteriza logo horizontal com canal alpha', async () => {
+    const { rasterizeDoqynWatermarkLogo, DOQYN_HORIZONTAL_LOGO_ASPECT } = await import(
+      '../server/preview/watermarkAsset.js'
+    );
+    const logo = await rasterizeDoqynWatermarkLogo(480);
+    assert.ok(logo.length > 0);
+    const meta = await sharp(logo).metadata();
+    assert.equal(meta.format, 'png');
+    assert.ok((meta.width ?? 0) > (meta.height ?? 0));
+    assert.ok(Math.abs((meta.width ?? 1) / (meta.height ?? 1) - DOQYN_HORIZONTAL_LOGO_ASPECT) < 0.05);
+    assert.equal(meta.hasAlpha, true);
+
+    const { data } = await sharp(logo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let grayPixels = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      if (data[index + 3] < 32) continue;
+      assert.equal(data[index], 128);
+      assert.equal(data[index + 1], 128);
+      assert.equal(data[index + 2], 128);
+      grayPixels += 1;
+    }
+    assert.ok(grayPixels > 100);
+  });
+
+  it('gera overlay diagonal com a marca DOQYN', async () => {
+    const { buildDoqynLogoWatermarkOverlay } = await import('../server/preview/watermarkTiling.js');
+    const overlay = await buildDoqynLogoWatermarkOverlay(1200, 800);
+    const stats = await sharp(overlay).stats();
+    assert.ok(stats.channels.some((channel) => channel.max > 0));
   });
 });
 
@@ -316,6 +351,7 @@ describe('document preview quality', () => {
     const config = read('server/preview/previewConfig.ts');
     const renderer = read('server/preview/pdfPageRenderer.ts');
     const images = read('server/preview/imagePreviewGenerator.ts');
+    const watermarkAsset = read('server/preview/watermarkAsset.ts');
     const viewer = read('src/features/documents/viewer/PdfPagesViewer.tsx');
 
     assert.ok(config.includes('DEFAULT_PAGE_DPI'));
@@ -324,6 +360,10 @@ describe('document preview quality', () => {
     assert.ok(renderer.includes('dTextAlphaBits=4'));
     assert.ok(renderer.includes('config.pageDpi'));
     assert.ok(images.includes('maxWidth: 1680'));
+    assert.ok(images.includes('buildDoqynLogoWatermarkOverlay'));
+    assert.ok(watermarkAsset.includes('doqyn-horizontal.webp'));
+    assert.ok(watermarkAsset.includes('DOQYN_HORIZONTAL_LOGO_ASPECT'));
+    assert.ok(watermarkAsset.includes('DOQYN_WATERMARK_GRAY'));
     assert.ok(images.includes('mozjpeg: true'));
     assert.ok(viewer.includes('viewer-page-image'));
     assert.ok(viewer.includes('decoding="async"'));

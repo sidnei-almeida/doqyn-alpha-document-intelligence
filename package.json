@@ -33,6 +33,8 @@
     "trash:purge-expired": "tsx scripts/trash-purge-expired.ts",
     "test:tenant-isolation": "tsx scripts/test-tenant-isolation.ts",
     "db:mongodb-isolation-report": "tsx scripts/generate-mongodb-isolation-final-report.ts",
+    "deploy:setup": "./deploy/scripts/setup-production-env.sh",
+    "deploy:production": "./deploy/scripts/deploy-production.sh",
     "test:groq:smoke": "tsx scripts/test-groq-smoke.mjs",
     "test:groq:fixture": "tsx scripts/test-groq-fixture.mjs",
     "test:groq:pdf": "tsx scripts/test-groq-pdf.mjs",

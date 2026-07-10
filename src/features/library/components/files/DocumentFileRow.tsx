@@ -1,4 +1,5 @@
 import type { KeyboardEvent, MouseEvent } from 'react';
+import { BadgeGroup } from '@/components/ui/BadgeGroup';
 import { cn } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
 import { useExplorerFileActions } from '../../context/useExplorerFileActions';
@@ -6,6 +7,7 @@ import { useSelectableItemRef } from '../../hooks/useSelectableItemRef';
 import { handleExplorerItemKeyDown } from '../../utils/explorerItemKeyboard';
 import { DocumentFileThumbnail } from './DocumentFileThumbnail';
 import { DocumentFavoriteBadge } from './DocumentFavoriteBadge';
+import { DocumentSignatureBadge } from './DocumentSignatureBadge';
 import { DocumentItemMenu } from './DocumentItemMenu';
 import { documentDisplayName, documentSecondaryMeta } from './documentFileUtils';
 
@@ -22,7 +24,8 @@ export function DocumentFileRow({
   meta,
   layout = 'compact',
 }: DocumentFileRowProps) {
-  const { isFileSelected, interactFile, openFile, openFileContextMenu } = useExplorerFileActions();
+  const { isFileSelected, interactFile, openFile, openFileContextMenu, openSignatures } =
+    useExplorerFileActions();
   const isSelected = isFileSelected(doc.documentId);
   const selectableRef = useSelectableItemRef(doc.documentId, 'file');
   const name = documentDisplayName(doc);
@@ -83,7 +86,16 @@ export function DocumentFileRow({
             <DocumentFavoriteBadge document={doc} variant="inline" />
             <span className="truncate">{name}</span>
           </p>
-          <p className="truncate text-[11px] text-doqyn-subtle">{secondary}</p>
+          <p className="flex min-w-0 flex-wrap items-center gap-1.5 truncate text-[11px] text-doqyn-subtle">
+            <span className="truncate">{secondary}</span>
+            <BadgeGroup>
+              <DocumentSignatureBadge
+                summary={doc.signatureSummary}
+                size="xs"
+                onClick={openSignatures ? () => openSignatures(doc) : undefined}
+              />
+            </BadgeGroup>
+          </p>
         </div>
         <DocumentItemMenu
           label={name}

@@ -61,6 +61,8 @@ async function ensureRegistryIndexes() {
   );
   await ensureDocumentSignatureRequestsIndexes();
   await ensureDocumentSignaturesIndexes();
+  const { ensureDocumentUploadApprovalIndexes } = await import('./documentUploadApprovalIndexes.js');
+  await ensureDocumentUploadApprovalIndexes();
 }
 
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {

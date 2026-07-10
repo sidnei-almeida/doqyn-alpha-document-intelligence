@@ -18,7 +18,7 @@ import {
 } from '../tenancy/tenantQuery.js';
 import {
   assertCanPreviewDocument,
-  loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
 } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
@@ -156,7 +156,7 @@ async function resolvePreviewVersion(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: input.tenantId,
     userId: input.user.id,
     membershipId: input.membershipId,
@@ -167,6 +167,7 @@ async function resolvePreviewVersion(input: {
     doc as MongoDocument,
     memberGroupIds,
     shareGrant,
+    governanceIndex,
   );
   const permissions = {
     canPreview: perms.canPreview,
@@ -177,9 +178,10 @@ async function resolvePreviewVersion(input: {
   assertCanPreviewDocument({
     canPreview: permissions.canPreview,
     canDownload: permissions.canDownload,
-    canEditMetadata: permissions.canUpdate,
+    canEditMetadata: perms.canEditMetadata,
     canUpdate: permissions.canUpdate,
-    canTrash: permissions.canUpdate,
+    canTrash: perms.canTrash,
+    canContribute: perms.canContribute,
   });
 
   const version = await documentVersions.findOne({

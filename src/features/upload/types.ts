@@ -7,6 +7,7 @@ export type UploadQueueItemStatus =
   | 'analyzing'
   | 'review'
   | 'confirming'
+  | 'awaiting_approval'
   | 'done'
   | 'error';
 
@@ -29,6 +30,7 @@ export type UploadQueueItem = {
   context?: UploadContext;
   analysis?: UploadQueueItemAnalysis;
   documentId?: string;
+  approvalId?: string;
   errorMessage?: string;
   /** Escolha de nomeação por arquivo (quando policy = ask_each_file ou revisão manual). */
   namingChoice?: PerItemNamingChoice;

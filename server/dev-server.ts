@@ -29,6 +29,8 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents/download': () => import('../api/documents/download.js'),
   '/api/documents/preview': () => import('../api/documents/preview.js'),
   '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
+  '/api/documents/submit-upload-approval': () => import('../api/documents/submit-upload-approval.js'),
+  '/api/documents/upload-approvals': () => import('../api/documents/upload-approvals/index.js'),
   '/api/documents/confirm-update': () => import('../api/documents/confirm-update.js'),
   '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
   '/api/document-rules/active': () => import('../api/document-rules/active.js'),
@@ -37,6 +39,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/access-groups': () => import('../api/access-groups/index.js'),
   '/api/auth/access-requests': () => import('../api/auth/access-requests.js'),
   '/api/internal/tenants/provision': () => import('../api/internal/tenants/provision.js'),
+  '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
   '/api/company-members/invite': () => import('../api/company-members/invite.js'),
   '/api/document-classes': () => import('../api/document-classes/index.js'),
@@ -138,6 +141,16 @@ function resolveRoute(pathname: string): RouteMatch | null {
     },
     { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
     {
+      regex: /^\/api\/documents\/upload-approvals\/([^/]+)\/approve$/,
+      loader: () => import('../api/documents/upload-approvals/[approvalId]/approve.js'),
+      paramKeys: ['approvalId'],
+    },
+    {
+      regex: /^\/api\/documents\/upload-approvals\/([^/]+)\/reject$/,
+      loader: () => import('../api/documents/upload-approvals/[approvalId]/reject.js'),
+      paramKeys: ['approvalId'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/trash$/,
       loader: () => import('../api/documents/[documentId]/trash.js'),
       paramKeys: ['documentId'],
@@ -179,13 +192,38 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['documentId'],
     },
     {
+      regex: /^\/api\/documents\/([^/]+)\/signature-requests\/([^/]+)\/cancel$/,
+      loader: () =>
+        import('../api/documents/[documentId]/signature-requests/[signatureRequestId]/cancel.js'),
+      paramKeys: ['documentId', 'signatureRequestId'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/signature-requests$/,
       loader: () => import('../api/documents/[documentId]/signature-requests.js'),
       paramKeys: ['documentId'],
     },
     {
+      regex: /^\/api\/signature-requests\/assigned-to-me$/,
+      loader: () => import('../api/signature-requests/assigned-to-me.js'),
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/preview(?:\/.*)?$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/preview.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/signing-payload$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/signing-payload.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
       regex: /^\/api\/signature-requests\/([^/]+)\/signed-pdf$/,
       loader: () => import('../api/signature-requests/[signatureRequestId]/signed-pdf.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/signature-requests\/([^/]+)\/evidence$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/evidence.js'),
       paramKeys: ['signatureRequestId'],
     },
     {
@@ -199,9 +237,44 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['signatureRequestId'],
     },
     {
+      regex: /^\/api\/signature-requests\/([^/]+)\/cancel$/,
+      loader: () => import('../api/signature-requests/[signatureRequestId]/cancel.js'),
+      paramKeys: ['signatureRequestId'],
+    },
+    {
       regex: /^\/api\/signature-requests\/([^/]+)$/,
       loader: () => import('../api/signature-requests/[signatureRequestId]/index.js'),
       paramKeys: ['signatureRequestId'],
+    },
+    {
+      regex: /^\/api\/og\/guest\/share\/([^/]+)\/image$/,
+      loader: () => import('../api/og/guest/share/[token]/image.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/og\/guest\/share\/([^/]+)$/,
+      loader: () => import('../api/og/guest/share/[token].js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/og\/guest\/sign\/([^/]+)\/image$/,
+      loader: () => import('../api/og/guest/sign/[token]/image.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/og\/guest\/sign\/([^/]+)$/,
+      loader: () => import('../api/og/guest/sign/[token].js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/sign\/([^/]+)\/preview(?:\/.*)?$/,
+      loader: () => import('../api/sign/[token]/preview.js'),
+      paramKeys: ['token'],
+    },
+    {
+      regex: /^\/api\/sign\/([^/]+)\/signed-pdf$/,
+      loader: () => import('../api/sign/[token]/signed-pdf.js'),
+      paramKeys: ['token'],
     },
     {
       regex: /^\/api\/sign\/([^/]+)\/sign$/,
@@ -231,6 +304,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/documents\/([^/]+)\/move$/,
       loader: () => import('../api/documents/[documentId]/move.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/transfer-ownership$/,
+      loader: () => import('../api/documents/[documentId]/transfer-ownership.js'),
       paramKeys: ['documentId'],
     },
     {
@@ -414,8 +492,8 @@ async function startDevServer(): Promise<void> {
       res.statusCode = 500;
       res.end(JSON.stringify({ message: 'Internal server error' }));
     }
-  }).listen(PORT, () => {
-    console.log(`DOQYN API local em http://localhost:${PORT}`);
+  }).listen(PORT, '0.0.0.0', () => {
+    console.log(`DOQYN API em http://0.0.0.0:${PORT}`);
   });
 }
 

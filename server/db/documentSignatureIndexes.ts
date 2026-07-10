@@ -6,7 +6,8 @@ export const DOCUMENT_SIGNATURE_REQUESTS_INDEXES: IndexDescription[] = [
   { key: { signatureRequestId: 1 }, unique: true },
   { key: { documentId: 1, status: 1, createdAt: -1 } },
   { key: { documentTenantId: 1, status: 1 } },
-  { key: { signatureTokenHash: 1 }, unique: true },
+  { key: { signatureTokenHash: 1 }, unique: true, sparse: true },
+  { key: { 'signers.userId': 1, status: 1, createdAt: -1 } },
   { key: { 'signers.emailNormalized': 1, status: 1 } },
 ];
 

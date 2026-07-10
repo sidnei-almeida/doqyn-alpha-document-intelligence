@@ -32,11 +32,15 @@ import { canViewDocumentTracking } from '../auth/permissions.js';
 import { logger } from '../utils/logger.js';
 import { buildDocumentListItems } from './documentListItems.js';
 import {
+  loadDocumentSignatureSummary,
+} from './signatures/documentSignatureSummaryService.js';
+import {
   attachFavoriteFlags,
   lookupFavoriteFlags,
 } from './favorites/documentFavoritesService.js';
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
+import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
@@ -77,7 +81,11 @@ export async function uploadDocument(input: UploadInput) {
   const area = input.accessGroups[0] ?? 'Geral';
   const versionId = nanoid();
   const documentId = nanoid();
-  const now = new Date();
+  const ownershipFields = buildInitialDocumentOwnershipFields({
+    ownerUserId: input.ownerUserId,
+    ownerName: input.ownerName,
+  });
+  const now = ownershipFields.createdAt;
 
   if (!isMongoNativeConfigured()) {
     logger.info('Upload simulado (sem MongoDB)', { fileName: input.originalFileName });
@@ -144,8 +152,8 @@ export async function uploadDocument(input: UploadInput) {
     currentVersionId: versionId,
     currentVersionLabel: 'v1.0',
     versionCount: 1,
-    ownerUserId: input.ownerUserId,
-    ownerName: input.ownerName,
+    ownerUserId: ownershipFields.ownerUserId,
+    ownerName: ownershipFields.ownerName,
     area,
     accessGroups: input.accessGroups,
     access: {
@@ -158,9 +166,11 @@ export async function uploadDocument(input: UploadInput) {
     currentMetadataPreview: {},
     metadata: { ...metadata, classification },
     processingStatusLegacy: 'in_progress',
-    createdBy: input.ownerUserId,
-    createdAt: now,
-    updatedAt: now,
+    createdBy: ownershipFields.createdBy,
+    updatedBy: ownershipFields.updatedBy,
+    updatedByName: ownershipFields.updatedByName,
+    createdAt: ownershipFields.createdAt,
+    updatedAt: ownershipFields.updatedAt,
   },
     input.ownerUserId,
   );
@@ -544,22 +554,19 @@ export async function getDocumentDetail(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
-    tenantId: resolvedTenantId,
-    userId: user.id,
-    membershipId,
-  });
   const { permissions: perms } = await resolveDocumentAccessWithShare({
     user,
     doc: doc as MongoDocument,
-    memberGroupIds,
     sharedWithUserId: user.id,
+    tenantId: resolvedTenantId,
+    membershipId,
   });
   const permissions = {
     canPreview: perms.canPreview,
     canDownload: perms.canDownload,
     canEditMetadata: perms.canEditMetadata,
     canUpdate: perms.canUpdate,
+    canTransferOwnership: perms.canTransferOwnership,
     canViewTracking: canViewDocumentTracking(user),
     canShare: perms.canShare,
     sharedViaGrant: perms.sharedViaGrant,
@@ -619,18 +626,21 @@ export async function getDocumentDetail(
   const latestPreview = latestVersionRaw?.storage?.preview ?? null;
   const latestPrimary = latestVersionRaw?.storage?.primary;
 
-  const document = mapDocumentListItem(
-    doc as MongoDocument,
-    latestVersionRaw
-      ? {
-          versionLabel: normalizeVersionLabel(latestVersionRaw.versionLabel),
-          preview: latestPreview,
-          hasOriginal: latestPrimary?.status === 'stored' && Boolean(latestPrimary.objectKey),
-          hasPreview: latestPreview?.status === 'ready' && Boolean(latestPreview.objectKey),
-        }
-      : undefined,
-    permissions,
-  );
+  const document = {
+    ...mapDocumentListItem(
+      doc as MongoDocument,
+      latestVersionRaw
+        ? {
+            versionLabel: normalizeVersionLabel(latestVersionRaw.versionLabel),
+            preview: latestPreview,
+            hasOriginal: latestPrimary?.status === 'stored' && Boolean(latestPrimary.objectKey),
+            hasPreview: latestPreview?.status === 'ready' && Boolean(latestPreview.objectKey),
+          }
+        : undefined,
+      permissions,
+    ),
+    signatureSummary: await loadDocumentSignatureSummary(resolvedTenantId, id),
+  };
 
   const record = doc as Record<string, unknown>;
   const versionMetadata = latestVersionRaw

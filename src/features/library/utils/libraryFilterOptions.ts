@@ -12,7 +12,6 @@ export const LIBRARY_STATUS_FILTER_VALUES = [
   'processed',
   'analyzing',
   'pending_review',
-  'review_required',
   'archived',
 ] as const;
 
@@ -20,7 +19,10 @@ export const STATUS_FILTER_OPTIONS = [
   { value: '', label: 'Todos os status' },
   ...LIBRARY_STATUS_FILTER_VALUES.map((value) => ({
     value,
-    label: DOCUMENT_STATUSES[value as keyof typeof DOCUMENT_STATUSES]?.label ?? value,
+    label:
+      value === 'pending_review'
+        ? 'Requer revisão'
+        : (DOCUMENT_STATUSES[value as keyof typeof DOCUMENT_STATUSES]?.label ?? value),
   })),
 ];
 

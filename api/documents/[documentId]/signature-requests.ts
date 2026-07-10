@@ -48,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST') {
       const body = req.body as Record<string, unknown>;
+      const resolvedSignerType = body.signerType === 'internal_user' ? 'internal_user' : 'external_guest';
       const result = await createDocumentSignatureRequest(
         auth.ctx,
         auth.user,
@@ -58,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           signerPhone: typeof body.signerPhone === 'string' ? body.signerPhone : undefined,
           signerOrganizationName:
             typeof body.signerOrganizationName === 'string' ? body.signerOrganizationName : undefined,
-          signerType: body.signerType === 'internal_user' ? 'internal_user' : 'external_guest',
+          signerType: resolvedSignerType,
           signerUserId: typeof body.signerUserId === 'string' ? body.signerUserId : undefined,
           message: typeof body.message === 'string' ? body.message : undefined,
           expiresAt: typeof body.expiresAt === 'string' ? body.expiresAt : undefined,
@@ -83,7 +84,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           versionId: result.request.versionId,
           metadata: sanitizeAuditMetadata({
             signatureRequestId: result.request.signatureRequestId,
-            signerType: body.signerType === 'internal_user' ? 'internal_user' : 'external_guest',
+            signerType: result.signerType,
+            source: 'signature_request',
+          }),
+        },
+        req,
+      );
+
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action:
+            result.signerType === 'internal_user'
+              ? 'document.signature_internal_assigned'
+              : 'document.signature_external_invite_created',
+          description:
+            result.signerType === 'internal_user'
+              ? 'Assinatura atribuída a usuário interno.'
+              : 'Convite externo de assinatura criado.',
+          documentId,
+          versionId: result.request.versionId,
+          metadata: sanitizeAuditMetadata({
+            signatureRequestId: result.request.signatureRequestId,
+            signerType: result.signerType,
+            signerUserId:
+              body.signerType === 'internal_user' && typeof body.signerUserId === 'string'
+                ? body.signerUserId
+                : undefined,
             source: 'signature_request',
           }),
         },

@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import { getPdfPreviewConfig } from './previewConfig.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { buildDoqynLogoWatermarkOverlay } from './watermarkTiling.js';
 
 export type ImagePreviewResolution = {
   label: 'thumbnail' | 'small' | 'medium' | 'large';
@@ -29,23 +30,6 @@ const RESOLUTION_TARGETS: Array<{
 ];
 
 const SUPPORTED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-function buildWatermarkSvg(width: number, height: number, text: string): string {
-  const fontSize = Math.max(24, Math.round(Math.min(width, height) * 0.08));
-  const stepX = Math.round(width * 0.45);
-  const stepY = Math.round(height * 0.35);
-  const labels: string[] = [];
-
-  for (let y = -height; y < height * 2; y += stepY) {
-    for (let x = -width; x < width * 2; x += stepX) {
-      labels.push(
-        `<text x="${x}" y="${y}" font-family="Arial, sans-serif" font-size="${fontSize}" fill="rgba(180,180,180,0.28)" transform="rotate(-35 ${x} ${y})">${text}</text>`,
-      );
-    }
-  }
-
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${labels.join('')}</svg>`;
-}
 
 function resolveOutputFormat(mimeType: string): {
   mimeType: string;
@@ -100,7 +84,6 @@ export async function generateWatermarkedImagePreviews(input: {
     throw new ServiceError('Não foi possível ler dimensões da imagem.', 'PREVIEW_IMAGE_INVALID', 422);
   }
 
-  const watermarkText = (input.watermarkText?.trim() || config.watermarkText).slice(0, 32);
   const output = resolveOutputFormat(normalizedMime);
   const imageQuality = Math.min(100, Math.max(70, config.imagePreviewQuality));
   const resolutions: ImagePreviewResolution[] = [];
@@ -114,11 +97,11 @@ export async function generateWatermarkedImagePreviews(input: {
     const resizedMeta = await sharp(resizedBuffer).metadata();
     const width = resizedMeta.width ?? target.maxWidth;
     const height = resizedMeta.height ?? sourceHeight;
-    const watermarkSvg = buildWatermarkSvg(width, height, watermarkText);
+    const watermarkOverlay = await buildDoqynLogoWatermarkOverlay(width, height);
 
     let pipeline = sharp(resizedBuffer).composite([
       {
-        input: Buffer.from(watermarkSvg),
+        input: watermarkOverlay,
         top: 0,
         left: 0,
       },

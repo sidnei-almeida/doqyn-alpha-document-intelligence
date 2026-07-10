@@ -123,12 +123,12 @@ function unwrap<T>(data: Record<string, unknown>, keys: string[]): T {
 
 // --- Grupos documentais (MongoDB) ---
 
-export async function getAccessGroups(): Promise<ApiGroup[]> {
+export async function getDocumentGroups(): Promise<ApiGroup[]> {
   const data = await request<{ groups: ApiGroup[] }>('/document-groups');
   return data.groups ?? [];
 }
 
-export async function createAccessGroup(
+export async function createDocumentGroup(
   payload: { name: string; description?: string; color?: string },
 ): Promise<ApiGroup> {
   const data = await request<{ group: ApiGroup }>('/document-groups', {
@@ -138,7 +138,7 @@ export async function createAccessGroup(
   return { ...unwrap<ApiGroup>(data as Record<string, unknown>, ['group']), color: payload.color ?? 'blue' };
 }
 
-export async function updateAccessGroup(
+export async function updateDocumentGroup(
   id: string,
   payload: { name?: string; description?: string | null; active?: boolean },
 ): Promise<ApiGroup> {
@@ -149,12 +149,12 @@ export async function updateAccessGroup(
   return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
-export async function toggleAccessGroup(id: string): Promise<{ id: string; active: boolean }> {
-  const group = await updateAccessGroup(id, { active: false });
+export async function deactivateDocumentGroup(id: string): Promise<{ id: string; active: boolean }> {
+  const group = await updateDocumentGroup(id, { active: false });
   return { id: group.id, active: group.active };
 }
 
-export async function deleteAccessGroup(id: string): Promise<void> {
+export async function deleteDocumentGroup(id: string): Promise<void> {
   await request(`/document-groups/${id}`, { method: 'DELETE' });
 }
 
@@ -170,7 +170,7 @@ export async function getGroupMembers(groupId: string): Promise<AuthGroupMember[
   return data.members ?? [];
 }
 
-export async function addMemberToAccessGroup(
+export async function addMemberToDocumentGroup(
   groupId: string,
   membershipId: string,
   member: { userId: string; displayName?: string; email?: string },
@@ -188,7 +188,7 @@ export async function addMemberToAccessGroup(
   });
 }
 
-export async function removeMemberFromAccessGroup(
+export async function removeMemberFromDocumentGroup(
   groupId: string,
   membershipId: string,
 ): Promise<void> {

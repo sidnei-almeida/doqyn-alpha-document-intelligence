@@ -9,21 +9,28 @@ export function UploadAiSettingsSection() {
 
   return (
     <SettingsSectionBody id="upload">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="settings-section-note">
-          Preferências salvas neste navegador e aplicadas à Biblioteca, fila de upload e fluxo
-          legado.
-        </p>
-        <span className="settings-summary-pill">
-          <Icon name="auto_awesome" size={14} aria-hidden />
-          {reviewSettings.autoReviewEnabled
-            ? `Auto ${reviewSettings.autoAcceptDelaySeconds}s`
-            : 'Revisão manual'}
-          <span className="text-doqyn-subtle" aria-hidden>
+      <p className="settings-section-note">
+        Preferências salvas neste navegador e aplicadas à Biblioteca, fila de upload e fluxo legado.
+      </p>
+
+      <div className="settings-summary-bar" role="status" aria-live="polite">
+        <div className="settings-summary-bar__label">
+          <Icon name="tune" size={14} aria-hidden />
+          <span>Resumo atual</span>
+        </div>
+        <div className="settings-summary-bar__values">
+          <span className="settings-summary-bar__chip">
+            {reviewSettings.autoReviewEnabled
+              ? `Auto ${reviewSettings.autoAcceptDelaySeconds}s`
+              : 'Revisão manual'}
+          </span>
+          <span className="settings-summary-bar__separator" aria-hidden>
             ·
           </span>
-          {NAMING_POLICY_LABELS[reviewSettings.defaultNamingPolicy]}
-        </span>
+          <span className="settings-summary-bar__chip">
+            {NAMING_POLICY_LABELS[reviewSettings.defaultNamingPolicy]}
+          </span>
+        </div>
       </div>
 
       <ReviewWorkflowSettingsPanel

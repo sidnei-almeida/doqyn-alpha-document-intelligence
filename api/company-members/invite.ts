@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { rejectLegacyAuthEndpoint } from '../../server/auth/legacyAuthGuard.js';
 import { resolveTargetCompanyId } from '../../server/auth/memberAuth.js';
 import { inviteCompanyMember } from '../../server/services/userManagementService.js';
 import { withUserManagementApi } from '../../server/utils/userManagementApi.js';
@@ -6,6 +7,10 @@ import { withUserManagementApi } from '../../server/utils/userManagementApi.js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método não permitido' });
+  }
+
+  if (rejectLegacyAuthEndpoint(res, 'membership_invite')) {
+    return;
   }
 
   return withUserManagementApi(req, res, {

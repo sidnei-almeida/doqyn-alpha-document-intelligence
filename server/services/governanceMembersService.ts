@@ -19,6 +19,7 @@ import {
   getTenantMemberById,
   listTenantMembers,
 } from './tenantMemberRepository.js';
+import { syncTenantMembersFromAuth } from './tenantMemberSyncService.js';
 
 export type GovernanceMemberRecord = {
   id: string;
@@ -251,6 +252,11 @@ export async function listGovernanceMembers(
 
   if (usesDoqynAuth()) {
     const members = await listAuthGovernanceMembers(req, tenantId, documentGroupMap);
+    try {
+      await syncTenantMembersFromAuth(tenantId);
+    } catch {
+      // Listagem admin continua mesmo se o espelhamento falhar pontualmente.
+    }
     logger.info('governance members listed', {
       tenantId,
       memberCount: members.length,

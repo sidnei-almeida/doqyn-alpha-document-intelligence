@@ -48,13 +48,14 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.equal(source.includes('approveMember'), false);
   });
 
-  it('/users (UsersPage) expõe grupos documentais no modal Editar acesso', () => {
+  it('/users (UsersPage) expõe grupos no modal Editar acesso', () => {
     const source = readSrc('features/users/UsersPage.tsx');
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('Grupos documentais (governança)'));
+    assert.ok(sections.includes('title="Grupos"'));
     assert.ok(source.includes('updateDocumentGroups'));
     assert.ok(source.includes('listDocumentGroups'));
-    assert.ok(sections.includes('Grupos de acesso (auth-service)'));
+    assert.equal(sections.includes('Grupos de acesso (auth-service)'), false);
+    assert.ok(source.includes("header: 'Grupos'"));
   });
 
   it('splitUserAccessPayload separa auth-service e grupos documentais', () => {

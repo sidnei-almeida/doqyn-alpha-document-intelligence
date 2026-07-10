@@ -17,7 +17,7 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 import {
   assertCanDownloadDocument,
-  loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
 } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
@@ -108,7 +108,7 @@ export async function readDocumentVersionFile(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: input.tenantId,
     userId: input.user.id,
     membershipId: input.membershipId,
@@ -119,6 +119,7 @@ export async function readDocumentVersionFile(input: {
     doc as MongoDocument,
     memberGroupIds,
     shareGrant,
+    governanceIndex,
   );
   assertCanDownloadDocument(permissions);
 

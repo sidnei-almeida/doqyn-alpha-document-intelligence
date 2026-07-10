@@ -3,6 +3,7 @@ import { AI_ERROR_MESSAGES } from '../constants.js';
 import {
   getGroqMaxOutputTokens,
   getGroqModelFromEnv,
+  getGroqRequestTimeoutMs,
 } from '../utils/aiConfig.js';
 import {
   diagnoseClassifierError,
@@ -64,8 +65,30 @@ function getGroqClient(): Groq {
 
 function isRateLimitError(error: unknown): boolean {
   const diagnostic = diagnoseClassifierError(error);
-  return diagnostic.code === 'GROQ_RATE_LIMIT';
+  return (
+    diagnostic.code === 'GROQ_RATE_LIMIT' ||
+    diagnostic.code === 'GROQ_DAILY_TOKEN_LIMIT' ||
+    diagnostic.code === 'GROQ_CONTEXT_LIMIT'
+  );
 }
+
+function rateLimitErrorCode(diagnostic: ReturnType<typeof diagnoseClassifierError>): string {
+  if (diagnostic.code === 'GROQ_DAILY_TOKEN_LIMIT') return 'GROQ_DAILY_TOKEN_LIMIT';
+  if (diagnostic.code === 'GROQ_CONTEXT_LIMIT') return 'GROQ_CONTEXT_LIMIT';
+  return 'GROQ_RATE_LIMIT';
+}
+
+function rateLimitErrorMessage(diagnostic: ReturnType<typeof diagnoseClassifierError>): string {
+  if (diagnostic.code === 'GROQ_DAILY_TOKEN_LIMIT') {
+    return AI_ERROR_MESSAGES.groqDailyTokenLimit;
+  }
+  if (diagnostic.code === 'GROQ_CONTEXT_LIMIT') {
+    return AI_ERROR_MESSAGES.groqContextLimit;
+  }
+  return AI_ERROR_MESSAGES.aiUnavailable;
+}
+
+const RATE_LIMIT_RETRY_DELAYS_MS = [2000, 5000, 10000] as const;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -96,6 +119,31 @@ function readRetryAfterMs(error: unknown): number {
   return Math.min(seconds * 1000, maxMs);
 }
 
+function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        new AiAnalysisError(
+          AI_ERROR_MESSAGES.groqRequestTimeout,
+          'GROQ_REQUEST_TIMEOUT',
+          504,
+        ),
+      );
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 async function callGroqCompletion(
   prompt: string,
   useResponseFormat: boolean,
@@ -103,22 +151,26 @@ async function callGroqCompletion(
 ): Promise<{ content: string; durationMs: number }> {
   const client = getGroqClient();
   const startedAt = Date.now();
+  const timeoutMs = getGroqRequestTimeoutMs();
 
-  const completion = await client.chat.completions.create({
-    model,
-    temperature: 0.1,
-    max_tokens: getGroqMaxOutputTokens(),
-    ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
-    messages: [
-      {
-        role: 'system',
-        content: useResponseFormat
-          ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
-          : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
-      },
-      { role: 'user', content: prompt },
-    ],
-  });
+  const completion = await withGroqRequestTimeout(
+    client.chat.completions.create({
+      model,
+      temperature: 0.1,
+      max_tokens: getGroqMaxOutputTokens(),
+      ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
+      messages: [
+        {
+          role: 'system',
+          content: useResponseFormat
+            ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
+            : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
+        },
+        { role: 'user', content: prompt },
+      ],
+    }),
+    timeoutMs,
+  );
 
   const content = completion.choices[0]?.message?.content;
   if (!content?.trim()) {
@@ -180,56 +232,67 @@ export async function completeJsonPrompt(
     const firstDiag = diagnoseClassifierError(firstError);
 
     if (isRateLimitError(firstError)) {
-      const retryAfterMs = readRetryAfterMs(firstError);
+      let lastError: unknown = firstError;
 
-      logger.warn('Retrying Groq after rate limit (429).', {
+      for (let attempt = 0; attempt < RATE_LIMIT_RETRY_DELAYS_MS.length; attempt += 1) {
+        const retryAfterMs = Math.max(
+          readRetryAfterMs(lastError),
+          RATE_LIMIT_RETRY_DELAYS_MS[attempt],
+        );
+
+        logger.warn('Retrying Groq after rate/context limit.', {
+          requestId: context?.requestId,
+          jobId: context?.jobId,
+          companyId: context?.companyId,
+          operation,
+          model,
+          attempt: attempt + 1,
+          retryAfterMs,
+          errorCode: diagnoseClassifierError(lastError).code,
+        });
+
+        await sleep(retryAfterMs);
+
+        try {
+          const rateRetry = await callGroqCompletion(prompt, true, model);
+
+          logger.info('groq completion rate-limit retry completed', {
+            requestId: context?.requestId,
+            jobId: context?.jobId,
+            companyId: context?.companyId,
+            operation,
+            model,
+            responseFormat,
+            groqCalled: true,
+            groqDurationMs: rateRetry.durationMs,
+            responseChars: rateRetry.content.length,
+            retriedAfterRateLimit: true,
+            attempt: attempt + 1,
+          });
+
+          return rateRetry.content;
+        } catch (retryError) {
+          lastError = retryError;
+        }
+      }
+
+      const finalDiag = diagnoseClassifierError(lastError);
+      logger.error('groq completion rate-limit retries exhausted', {
         requestId: context?.requestId,
         jobId: context?.jobId,
         companyId: context?.companyId,
         operation,
         model,
-        httpStatus: firstDiag.httpStatus,
-        retryAfterMs,
+        errorCode: finalDiag.code,
+        errorMessage: finalDiag.internalMessage,
+        httpStatus: finalDiag.httpStatus,
+        retriedAfterRateLimit: true,
       });
-
-      await sleep(retryAfterMs);
-
-      try {
-        const rateRetry = await callGroqCompletion(prompt, true, model);
-
-        logger.info('groq completion rate-limit retry completed', {
-          requestId: context?.requestId,
-          jobId: context?.jobId,
-          companyId: context?.companyId,
-          operation,
-          model,
-          responseFormat,
-          groqCalled: true,
-          groqDurationMs: rateRetry.durationMs,
-          responseChars: rateRetry.content.length,
-          retriedAfterRateLimit: true,
-        });
-
-        return rateRetry.content;
-      } catch (rateRetryError) {
-        const rateRetryDiag = diagnoseClassifierError(rateRetryError);
-        logger.error('groq completion rate-limit retry failed', {
-          requestId: context?.requestId,
-          jobId: context?.jobId,
-          companyId: context?.companyId,
-          operation,
-          model,
-          errorCode: rateRetryDiag.code,
-          errorMessage: rateRetryDiag.internalMessage,
-          httpStatus: rateRetryDiag.httpStatus,
-          retriedAfterRateLimit: true,
-        });
-        throw new AiAnalysisError(
-          AI_ERROR_MESSAGES.aiUnavailable,
-          'GROQ_RATE_LIMIT',
-          503,
-        );
-      }
+      throw new AiAnalysisError(
+        rateLimitErrorMessage(finalDiag),
+        rateLimitErrorCode(finalDiag),
+        503,
+      );
     }
 
     logger.warn('groq completion failed', {

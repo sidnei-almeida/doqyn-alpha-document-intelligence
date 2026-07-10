@@ -18,7 +18,7 @@ const RECIPIENT_PHONE_INPUT_PATTERN = /^[\d+\s()-]+$/;
 function ensureBrCountryCode(digits: string): string {
   const normalized = digits.replace(/\D/g, '').slice(0, PHONE_MAX_DIGITS);
   if (!normalized) return normalized;
-  if (normalized.startsWith(BR_COUNTRY_CODE) && normalized.length >= 12) return normalized;
+  if (normalized.startsWith(BR_COUNTRY_CODE)) return normalized;
   if (normalized.length >= 10 && normalized.length <= 11) {
     return `${BR_COUNTRY_CODE}${normalized}`;
   }

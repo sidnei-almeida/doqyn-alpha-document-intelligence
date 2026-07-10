@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DoqynLogo } from '@/components/brand';
 import { Badge } from '@/components/ui/Badge';
+import { VersionBadge } from '@/components/ui/VersionBadge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -15,6 +16,7 @@ import {
   fetchExternalSharePreviewManifest,
 } from '@/features/sharing/api/externalShareApi';
 import { GuestDocumentViewer } from './GuestDocumentViewer';
+import { useGuestPortalPageMeta } from '@/features/guest-portal/useGuestPortalPageMeta';
 
 type PortalState =
   | { kind: 'loading' }
@@ -90,7 +92,7 @@ function PendingInvitePanel({
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="neutral">{payload.document.categoryName}</Badge>
             {payload.document.versionLabel ? (
-              <Badge variant="info">{payload.document.versionLabel}</Badge>
+              <VersionBadge version={payload.document.versionLabel} isCurrent size="sm" />
             ) : null}
             <Badge variant="pending">Aguardando aceite</Badge>
           </div>
@@ -138,6 +140,32 @@ export function ExternalSharePortalPage() {
   const { token = '' } = useParams();
   const [portal, setPortal] = useState<PortalState>({ kind: 'loading' });
   const [downloading, setDownloading] = useState(false);
+
+  const pageMeta = useMemo(() => {
+    if (portal.kind !== 'ready') {
+      return {
+        title: 'Compartilhamento · DOQYN',
+        description: 'Acesse um documento compartilhado com segurança no DOQYN.',
+        imagePath: '/og/portal-default.webp',
+      };
+    }
+
+    const { payload } = portal;
+    const versionSuffix = payload.document.versionLabel ? ` · ${payload.document.versionLabel}` : '';
+    return {
+      title: `${payload.document.displayName}${versionSuffix} · DOQYN`,
+      description:
+        payload.status === 'pending'
+          ? `${payload.sharedByName} convidou você a acessar um documento em ${payload.ownerTenantName}.`
+          : `${payload.sharedByName} compartilhou um documento com você via ${payload.ownerTenantName}.`,
+      imagePath:
+        payload.status === 'active' && payload.permissions?.canView
+          ? `/api/og/guest/share/${encodeURIComponent(token)}/image`
+          : '/og/portal-default.webp',
+    };
+  }, [portal, token]);
+
+  useGuestPortalPageMeta(pageMeta);
 
   useEffect(() => {
     if (!token) {

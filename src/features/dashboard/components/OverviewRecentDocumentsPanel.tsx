@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { BadgeGroup } from '@/components/ui/BadgeGroup';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -55,9 +56,15 @@ export function RecentDocumentRow({ doc, onOpen, onTrack, isSolo = false }: Rece
       </button>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <div className="hidden items-center gap-1.5 sm:flex">
-          <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} />
-          <VersionBadge version={doc.versionLabel ?? `v${doc.version}`} isCurrent />
+        <div className="hidden sm:flex">
+          <BadgeGroup align="end">
+            <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
+            <VersionBadge
+              version={doc.versionLabel ?? `v${doc.version}`}
+              isCurrent
+              size="xs"
+            />
+          </BadgeGroup>
         </div>
         <div className="flex items-center opacity-70 transition-opacity duration-150 group-hover:opacity-100">
           {doc.permissions?.canPreview && doc.latestVersionId && (

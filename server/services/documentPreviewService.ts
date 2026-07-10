@@ -35,7 +35,7 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 import {
   assertCanPreviewDocument,
-  loadMemberDocumentGroupIds,
+  loadDocumentAccessContext,
 } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
@@ -183,8 +183,8 @@ async function generateImagePreviewManifest(input: {
       generatedAt: now,
       sourceVersionId: input.versionId,
       watermark: {
-        type: 'text',
-        value: getPdfPreviewConfig().watermarkText,
+        type: 'logo',
+        value: 'doqyn-horizontal',
       },
     },
     previewManifest,
@@ -300,8 +300,8 @@ export async function generateDocumentPreviewForVersion(
         generatedAt: now,
         sourceVersionId: input.versionId,
         watermark: {
-          type: 'text',
-          value: previewResult.watermarkText,
+          type: 'logo',
+          value: 'doqyn-horizontal',
         },
         optimization: {
           engine: 'ghostscript',
@@ -396,7 +396,7 @@ export async function readDocumentPreviewFile(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: input.tenantId,
     userId: input.user.id,
     membershipId: input.membershipId,
@@ -407,6 +407,7 @@ export async function readDocumentPreviewFile(input: {
     doc as MongoDocument,
     memberGroupIds,
     shareGrant,
+    governanceIndex,
   );
   assertCanPreviewDocument(permissions);
 

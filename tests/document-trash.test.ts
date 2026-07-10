@@ -124,9 +124,11 @@ describe('document trash — permanent delete e R2', () => {
 });
 
 describe('document trash — permissões', () => {
-  it('canTrash segue canUpdate', () => {
+  it('canTrash e canUpdate restritos a administradores', () => {
     const access = read('server/tenancy/documentAccess.ts');
-    assert.ok(access.includes('canTrash: canUpdate'));
+    assert.ok(access.includes('const canUpdate = isAdmin'));
+    assert.ok(access.includes('const canTrash = isAdmin'));
+    assert.ok(access.includes('canContribute'));
     assert.ok(access.includes('assertCanTrashDocument'));
     assert.ok(access.includes('assertCanPermanentDeleteDocument'));
   });
@@ -249,12 +251,24 @@ describe('document trash — frontend lixeira', () => {
     assert.ok(menu.includes('onTrashFile'));
   });
 
-  it('settings tem seção Lixeira e retenção', () => {
+  it('settings tem retenção na aba Empresa', () => {
     const sections = read('src/features/settings/settingsSections.ts');
     const page = read('src/features/settings/SettingsPage.tsx');
-    assert.ok(sections.includes("'lixeira'"));
-    assert.ok(sections.includes('Lixeira e retenção'));
-    assert.ok(page.includes('TrashRetentionSettingsSection'));
+    const company = read('src/features/settings/components/sections/CompanySettingsSection.tsx');
+    const retention = read(
+      'src/features/settings/components/sections/TrashRetentionSettingsSection.tsx',
+    );
+    assert.ok(sections.includes("'empresa'"));
+    assert.ok(sections.includes("'retencao'"));
+    assert.ok(sections.includes("lixeira: { section: 'empresa', tab: 'retencao' }"));
+    assert.ok(page.includes('CompanySettingsSection'));
+    assert.ok(company.includes('TrashRetentionSettingsSection'));
+    assert.ok(company.includes('canManageRetention'));
+    assert.ok(retention.includes('settings-retention-preview'));
+    assert.ok(retention.includes('isDirty'));
+    assert.ok(retention.includes('muted={!daysEnabled}'));
+    assert.ok(retention.includes('RETENTION_DAYS_MIN'));
+    assert.ok(retention.includes('RETENTION_DAYS_MAX'));
   });
 
   it('confirmMessages inclui permanent delete com EXCLUIR', () => {

@@ -45,7 +45,7 @@ export function getAccessibleCategories(
   if (member.status !== 'active') return [];
 
   const groupSet = new Set(member.groupIds);
-  return categories.filter((cat) => cat.accessGroupIds.some((id) => groupSet.has(id)));
+  return categories.filter((cat) => cat.documentGroupIds.some((id) => groupSet.has(id)));
 }
 
 export function computeGroupMemberCounts(

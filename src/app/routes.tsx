@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Login } from '@/pages/Login';
 import { ProtectedRoute, PublicRoute } from '@/features/auth/ProtectedRoute';
 import {
+  AcceptInviteRoute,
   AccessChoiceRoute,
   AuditRoute,
   CompanySignupRoute,
@@ -22,12 +23,16 @@ import {
   ExternalSharePortalRoute,
   SignaturePortalRoute,
   SignatureVerificationRoute,
+  InternalSignatureRoute,
 } from '@/app/lazyRoutes';
 
 export const router = createBrowserRouter([
   { path: '/guest/share/:token', element: <ExternalSharePortalRoute /> },
   { path: '/guest/sign/:token', element: <SignaturePortalRoute /> },
+  { path: '/share/:token', element: <ExternalSharePortalRoute /> },
+  { path: '/sign/:token', element: <SignaturePortalRoute /> },
   { path: '/verify/signature/:verificationCode', element: <SignatureVerificationRoute /> },
+  { path: '/convite/:token', element: <AcceptInviteRoute /> },
   { path: '/acesso', element: <AccessChoiceRoute /> },
   { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
   { path: '/criar-empresa', element: <CompanySignupRoute /> },
@@ -48,6 +53,7 @@ export const router = createBrowserRouter([
           { path: '/biblioteca', element: <LibraryRoute /> },
           // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira)
           { path: '/biblioteca/:collection', element: <LibraryRoute /> },
+          { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
           // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.
           { path: '/upload', element: <DocumentSendRoute /> },

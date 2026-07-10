@@ -20,6 +20,7 @@ type ExplorerActionsProviderProps = {
   onOpenContextMenu: (state: ExplorerContextMenuState) => void;
 } & FileItemActionHandlers & {
   onDetails: (doc: DocumentListItem) => void;
+  onViewSignatures?: (doc: DocumentListItem) => void;
 };
 
 export function ExplorerActionsProvider({
@@ -33,6 +34,7 @@ export function ExplorerActionsProvider({
   onPreview,
   onDownload,
   onDetails,
+  onViewSignatures,
 }: ExplorerActionsProviderProps) {
   const {
     selectedCount,
@@ -66,6 +68,7 @@ export function ExplorerActionsProvider({
       downloadFile: onDownload,
       openFileDetails: onDetails,
       openFileContextMenu,
+      openSignatures: onViewSignatures,
       toggleStar: (doc) => onToggleStar(doc.documentId, doc.isFavorite),
       selectedCount,
       selectedFileIds,
@@ -81,6 +84,7 @@ export function ExplorerActionsProvider({
       onPreview,
       onDownload,
       onDetails,
+      onViewSignatures,
       openFileContextMenu,
       onToggleStar,
       selectedCount,

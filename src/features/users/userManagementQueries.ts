@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { refetchTenantScopedQueries } from '@/features/tenant/tenantLiveSync';
 
 export function userManagementQueryKeys(tenantId: string) {
   return {
@@ -41,4 +42,8 @@ export async function invalidateUserManagementQueries(
       queryClient.invalidateQueries({ queryKey, refetchType: 'all' }),
     ),
   );
+
+  if (tenantId) {
+    await refetchTenantScopedQueries(queryClient, tenantId);
+  }
 }

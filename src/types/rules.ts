@@ -37,7 +37,8 @@ export interface DocumentCategory {
   iconKey?: string;
   color?: string;
   active: boolean;
-  accessGroupIds: string[];
+  /** IDs de grupos documentais (`document_groups`) com regra nesta categoria. */
+  documentGroupIds: string[];
   notifyGroupIds: string[];
   notifyOnUpdate: boolean;
   permissions?: {

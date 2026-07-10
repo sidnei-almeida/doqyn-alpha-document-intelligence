@@ -5,27 +5,12 @@ import { useAuth } from '@/auth/useAuth';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
+import {
+  getPlatformRoleLabel,
+  resolvePrimaryPlatformRole,
+} from '@/features/users/platformRoleLabels';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-
-const ROLE_LABELS: Record<string, string> = {
-  doqyn_admin: 'Admin DOQYN',
-  company_admin: 'Admin da empresa',
-  user: 'Usuário',
-};
-
-const ROLE_PRIORITY = ['doqyn_admin', 'company_admin', 'user'] as const;
-
-function resolvePrimaryRole(roles: string[]): string | null {
-  for (const role of ROLE_PRIORITY) {
-    if (roles.includes(role)) return role;
-  }
-  return roles[0] ?? null;
-}
-
-function roleLabel(role: string): string {
-  return ROLE_LABELS[role] ?? role;
-}
 
 /** Menu do usuário no canto superior direito — estilo workspace de arquivos. */
 export function HeaderUserMenu() {
@@ -35,7 +20,7 @@ export function HeaderUserMenu() {
 
   const displayName = user?.name?.trim() || user?.email || 'Usuário';
   const orgLabel = tenant?.displayName || user?.companyName;
-  const primaryRole = resolvePrimaryRole(roles);
+  const primaryRole = resolvePrimaryPlatformRole(roles);
 
   return (
     <div className="relative shrink-0" data-testid="header-user-menu">
@@ -64,7 +49,7 @@ export function HeaderUserMenu() {
           </span>
           {(primaryRole || orgLabel) && (
             <span className="block max-w-[140px] truncate text-[11px] leading-tight text-doqyn-muted lg:max-w-[180px]">
-              {primaryRole ? roleLabel(primaryRole) : orgLabel}
+              {primaryRole ? getPlatformRoleLabel(primaryRole) : orgLabel}
             </span>
           )}
         </span>

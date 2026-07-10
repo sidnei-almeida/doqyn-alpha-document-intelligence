@@ -161,7 +161,7 @@ export const usersApi = {
     accessGroupIds: string[];
   }) => {
     if (usesDoqynAuth()) {
-      return Promise.reject(new Error('Convite de usuário ainda não disponível via auth-service.'));
+      return doqynUsersApi.invite(input);
     }
     return request<{ member: CompanyMemberDto; temporaryPassword?: string }>('/company-members/invite', {
       method: 'POST',

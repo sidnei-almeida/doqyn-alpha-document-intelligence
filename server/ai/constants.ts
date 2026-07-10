@@ -45,6 +45,12 @@ export const AI_ERROR_MESSAGES = {
     'Limite temporário da análise automática atingido. Aguarde alguns minutos e tente novamente.',
   aiUnavailableReviewReason:
     'Limite temporário da IA atingido. Tente novamente mais tarde.',
+  groqDailyTokenLimit:
+    'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset da cota ou use um modelo menor (ex.: llama-3.1-8b-instant).',
+  groqContextLimit:
+    'O documento excede o limite de contexto do modelo. Reduza PDF_ANALYSIS_MAX_INPUT_CHARS ou envie um PDF menor.',
+  groqRequestTimeout:
+    'A análise automática demorou demais e foi interrompida. Tente novamente.',
   invalidAiResponse:
     'A resposta da IA veio em formato inválido. O documento foi marcado para revisão.',
   aiProviderNotConfigured:

@@ -76,6 +76,7 @@ export function DocumentVersionHistoryPanel({
               </p>
               <p className="text-[11px] text-doqyn-muted">
                 {version.createdAt ? formatDate(version.createdAt) : '—'}
+                {version.createdByDisplayName ? ` · ${version.createdByDisplayName}` : ''}
               </p>
             </div>
             {onPreviewVersion && version.versionId && (

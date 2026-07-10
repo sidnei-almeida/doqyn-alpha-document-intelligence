@@ -210,3 +210,10 @@ export const NAMING_POLICY_LABELS: Record<DefaultNamingPolicy, string> = {
   ask_each_file: 'Perguntar em cada arquivo',
   manual_required: 'Nome manual obrigatório',
 };
+
+export const NAMING_POLICY_DESCRIPTIONS: Record<DefaultNamingPolicy, string> = {
+  original: 'Mantém o arquivo como enviado (sanitizado).',
+  ai_suggested: 'Aplica o nome padronizado sugerido pela análise.',
+  ask_each_file: 'Exibe a escolha de nome na revisão de cada arquivo.',
+  manual_required: 'Exige digitar o nome final antes de confirmar.',
+};

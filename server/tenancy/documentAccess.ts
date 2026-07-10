@@ -4,6 +4,11 @@ import { getTenantCollections } from './getTenantCollections.js';
 import { tenantScopeFilterFromContext } from './tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import type { MongoDocument } from '../db/types.js';
+import {
+  type GovernanceAccessIndex,
+  userHasGovernanceCategoryPermission,
+  loadGovernanceAccessIndex,
+} from './governanceAccessIndex.js';
 
 export type DocumentAccessPermissions = {
   canPreview: boolean;
@@ -11,6 +16,8 @@ export type DocumentAccessPermissions = {
   canEditMetadata: boolean;
   canUpdate: boolean;
   canTrash: boolean;
+  canContribute: boolean;
+  canTransferOwnership: boolean;
 };
 
 const DOCUMENT_ADMIN_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin']);
@@ -31,8 +38,9 @@ export function userHasDocumentGroupAccess(
 
 export function resolveDocumentPermissions(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
 ): DocumentAccessPermissions {
   const isAdmin = isDocumentAdmin(user);
   const isOwner = Boolean(doc.ownerUserId && doc.ownerUserId === user.id);
@@ -41,20 +49,34 @@ export function resolveDocumentPermissions(
   const updateGroups = doc.access?.updateGroupIds ?? [];
 
   const canPreview =
-    isAdmin || isOwner || userHasDocumentGroupAccess(viewGroups, memberGroupIds);
+    isAdmin ||
+    isOwner ||
+    userHasDocumentGroupAccess(viewGroups, memberGroupIds) ||
+    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'view');
 
   const canDownload =
-    isAdmin || isOwner || userHasDocumentGroupAccess(downloadGroups, memberGroupIds);
+    isAdmin ||
+    isOwner ||
+    userHasDocumentGroupAccess(downloadGroups, memberGroupIds) ||
+    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'download');
 
-  const canUpdate =
-    isAdmin || isOwner || userHasDocumentGroupAccess(updateGroups, memberGroupIds);
+  const canContribute =
+    isAdmin ||
+    userHasDocumentGroupAccess(updateGroups, memberGroupIds) ||
+    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'upload');
+
+  const canUpdate = isAdmin;
+  const canTrash = isAdmin;
+  const canTransferOwnership = isAdmin || isOwner;
 
   return {
     canPreview,
     canDownload,
     canEditMetadata: isAdmin,
     canUpdate,
-    canTrash: canUpdate,
+    canTrash,
+    canContribute,
+    canTransferOwnership,
   };
 }
 
@@ -90,18 +112,20 @@ export function assertCanUpdateDocument(permissions: DocumentAccessPermissions):
 
 export function canUserTrashDocument(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
 ): boolean {
-  return resolveDocumentPermissions(user, doc, memberGroupIds).canTrash;
+  return resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex).canTrash;
 }
 
 export function assertCanTrashDocument(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
 ): void {
-  if (!canUserTrashDocument(user, doc, memberGroupIds)) {
+  if (!canUserTrashDocument(user, doc, memberGroupIds, governanceIndex)) {
     throw new ServiceError(
       'Você não tem permissão para excluir este documento.',
       'DOCUMENT_TRASH_DENIED',
@@ -112,14 +136,11 @@ export function assertCanTrashDocument(
 
 export function assertCanPermanentDeleteDocument(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
-  memberGroupIds: string[],
+  _doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
+  _memberGroupIds: string[],
+  _governanceIndex?: GovernanceAccessIndex,
 ): void {
-  const isAdmin = isDocumentAdmin(user);
-  const isOwner = Boolean(doc.ownerUserId && doc.ownerUserId === user.id);
-  const canUpdate = resolveDocumentPermissions(user, doc, memberGroupIds).canUpdate;
-
-  if (!isAdmin && !(isOwner && canUpdate)) {
+  if (!isDocumentAdmin(user)) {
     throw new ServiceError(
       'Você não tem permissão para excluir permanentemente este documento.',
       'DOCUMENT_PERMANENT_DELETE_DENIED',
@@ -154,10 +175,27 @@ export async function loadMemberDocumentGroupIds(input: {
   return [...new Set(rows.map((row) => row.groupId).filter(Boolean))];
 }
 
+export async function loadDocumentAccessContext(input: {
+  tenantId: string;
+  userId: string;
+  membershipId?: string;
+}): Promise<{
+  memberGroupIds: string[];
+  governanceIndex: GovernanceAccessIndex;
+}> {
+  const [memberGroupIds, governanceIndex] = await Promise.all([
+    loadMemberDocumentGroupIds(input),
+    loadGovernanceAccessIndex(input.tenantId, { ownerUserId: input.userId }),
+  ]);
+
+  return { memberGroupIds, governanceIndex };
+}
+
 export function canUserListDocument(
   user: AuthUser,
-  doc: Pick<MongoDocument, 'ownerUserId' | 'access'>,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
   memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
 ): boolean {
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
@@ -167,6 +205,16 @@ export function canUserListDocument(
 
   const downloadGroups = doc.access?.downloadGroupIds ?? [];
   if (userHasDocumentGroupAccess(downloadGroups, memberGroupIds)) return true;
+
+  if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'view')) {
+    return true;
+  }
+
+  if (
+    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'download')
+  ) {
+    return true;
+  }
 
   return false;
 }

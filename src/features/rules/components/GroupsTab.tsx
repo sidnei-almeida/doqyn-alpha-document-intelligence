@@ -26,7 +26,7 @@ export function GroupsTab({
     for (const group of groups) {
       counts.set(
         group.id,
-        categories.filter((category) => category.accessGroupIds.includes(group.id)).length,
+        categories.filter((category) => category.documentGroupIds.includes(group.id)).length,
       );
     }
     return counts;

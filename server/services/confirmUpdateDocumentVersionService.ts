@@ -16,7 +16,10 @@ import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
 import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
-import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import {
+  buildDocumentMutationFields,
+  resolveDocumentActorIdentity,
+} from '../utils/documentMutationFields.js';
 import { logger } from '../utils/logger.js';
 import {
   deleteAnalysisStaging,
@@ -49,6 +52,7 @@ import {
   getMongoClassAndRule,
 } from './documentRulesService.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
+import { loadDocumentAccessContext, resolveDocumentPermissions } from '../tenancy/documentAccess.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 
@@ -314,15 +318,30 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
 
   const { docClass, rule } = classAndRule;
 
-  if (
-    !canConfirmDocuments(
-      input.user,
-      existingDoc.access?.updateGroupIds ?? [],
-    )
-  ) {
+  const accessCtx = await loadDocumentAccessContext({
+    tenantId,
+    userId: input.ctx.userId,
+    membershipId: input.ctx.membershipId,
+  });
+  const documentPermissions = resolveDocumentPermissions(
+    input.user,
+    existingDoc,
+    accessCtx.memberGroupIds,
+    accessCtx.governanceIndex,
+  );
+
+  if (!documentPermissions.canContribute) {
     throw new ConfirmAnalysisError(
-      'Você não tem permissão para atualizar este documento.',
+      'Você não tem permissão para enviar nova versão deste documento.',
       'FORBIDDEN',
+      403,
+    );
+  }
+
+  if (!canConfirmDocuments(input.user, existingDoc.access?.updateGroupIds ?? [])) {
+    throw new ConfirmAnalysisError(
+      'A confirmação de nova versão requer aprovação de um administrador.',
+      'REQUIRES_ADMIN_APPROVAL',
       403,
     );
   }
@@ -468,7 +487,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
       createdBy: input.user.id,
       createdAt: now,
     },
-    input.user.id,
+    existingDoc.ownerUserId ?? input.user.id,
   ) as MongoDocumentVersion;
 
   const processingJob = withTenantFieldsFromContext(
@@ -490,6 +509,16 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
 
   const { documents, processingJobs } = input.ctx.collections;
 
+  const actor = await resolveDocumentActorIdentity({
+    tenantId,
+    actor: input.user,
+  });
+  const mutationFields = buildDocumentMutationFields({
+    actorUserId: actor.userId,
+    actorDisplayName: actor.displayName,
+    now,
+  });
+
   const documentUpdate: Record<string, unknown> = {
     currentVersionId: versionId,
     currentVersionLabel: versionLabel,
@@ -500,7 +529,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     currentFileName: resolvedNames.finalFileName,
     processingStatus: needsReview ? 'processed_with_review' : 'processed',
     currentMetadataPreview: buildMetadataPreview(versionMetadata),
-    updatedAt: now,
+    ...mutationFields,
   };
 
   try {
@@ -532,7 +561,9 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     throw error;
   }
 
-  const auditCtx = buildDocumentAuditContext(input.ctx, input.user);
+  const auditCtx = buildDocumentAuditContext(input.ctx, input.user, input.requestId, {
+    documentOwnerUserId: existingDoc.ownerUserId,
+  });
   const documentNameSnapshot = buildDocumentNameSnapshot({
     finalFileName: resolvedNames.finalFileName,
     storageFileName: resolvedNames.storageFileName,

@@ -1,4 +1,5 @@
 import { getDoqynAuthBaseUrl, getDoqynAuthInternalApiKey } from '../auth/authConfig.js';
+import type { AuthTenantMemberSyncSnapshot } from './authTenantMemberTypes.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 type InternalAvatarMetadata = {
@@ -63,4 +64,13 @@ export async function updateUserAvatarMetadata(
     method: 'PATCH',
     body: input,
   });
+}
+
+export async function fetchAuthTenantMembersForSync(
+  tenantId: string,
+): Promise<AuthTenantMemberSyncSnapshot[]> {
+  const result = await callInternal<{ ok: true; members: AuthTenantMemberSyncSnapshot[] }>(
+    `/internal/tenants/${encodeURIComponent(tenantId)}/members`,
+  );
+  return result.members ?? [];
 }

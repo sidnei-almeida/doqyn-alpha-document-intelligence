@@ -12,6 +12,11 @@ export type ConfirmAnalysisResponse = {
   storageStatus: 'stored' | 'pending';
 };
 
+export type SubmitUploadApprovalResponse = {
+  approvalId: string;
+  status: 'pending';
+};
+
 export type ConfirmAnalysisOptions = {
   manualReviewConfirmed?: boolean;
   namingMode?: 'ai_suggested' | 'original' | 'manual';
@@ -67,6 +72,62 @@ export async function confirmAnalysis(
 
   if (!data || !('documentId' in data)) {
     throw new Error('Resposta inválida ao salvar documento.');
+  }
+
+  return {
+    ...data,
+    durationMs,
+    httpStatus: response.status,
+    requestId,
+  };
+}
+
+export async function submitUploadForApproval(
+  payload: AnalyzePdfResponse,
+  options?: ConfirmAnalysisOptions,
+): Promise<SubmitUploadApprovalResponse & { durationMs: number; httpStatus: number; requestId: string }> {
+  const requestId = options?.context?.requestId ?? createRequestId();
+  const context: WorkflowRequestContext = {
+    ...options?.context,
+    requestId,
+    fileName: options?.context?.fileName ?? payload.originalFileName,
+  };
+
+  const startedAt = performance.now();
+  const effectiveNamingMode =
+    options?.useAiNaming === false ? 'original' : (options?.namingMode ?? 'ai_suggested');
+  const normalizedPayload = normalizeAnalyzePayloadForConfirm(payload);
+
+  const response = await authFetch('/api/documents/submit-upload-approval', {
+    method: 'POST',
+    credentials: getFetchCredentials(),
+    headers: withAuthHeaders(buildRequestHeaders(context)),
+    body: JSON.stringify({
+      ...normalizedPayload,
+      manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
+      namingMode: effectiveNamingMode,
+      aiSuggestedFileName: normalizedPayload.recommendedFileName,
+      finalFileName: options?.finalFileName,
+      selectedFileName: options?.selectedFileName,
+    }),
+  });
+  const durationMs = Math.round(performance.now() - startedAt);
+
+  const data = (await response.json().catch(() => null)) as
+    | SubmitUploadApprovalResponse
+    | { message?: string; code?: string }
+    | null;
+
+  if (!response.ok) {
+    const message =
+      data && 'message' in data && data.message
+        ? data.message
+        : 'Não foi possível enviar o documento para aprovação.';
+    throw new Error(message);
+  }
+
+  if (!data || !('approvalId' in data)) {
+    throw new Error('Resposta inválida ao enviar documento para aprovação.');
   }
 
   return {

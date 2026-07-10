@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  buildSignatureAuditContext,
+  buildExternalSignatureAuditContext,
   buildSignatureTrackingMetadata,
   findSignatureRequestByToken,
   getSignaturePortalPayload,
@@ -25,12 +25,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const payload = await getSignaturePortalPayload(token);
       const request = await findSignatureRequestByToken(token);
       if (request) {
-        const auditCtx = buildSignatureAuditContext(request);
+        const auditCtx = buildExternalSignatureAuditContext(request);
         await emitTrackingEvent(
           auditCtx,
           {
-            action: 'document.signature_link_opened',
-            description: 'Link de assinatura eletrônica aberto.',
+            action: 'document.signature_external_opened',
+            description: 'Solicitação de assinatura externa aberta.',
             documentId: request.documentId,
             versionId: request.versionId,
             metadata: sanitizeAuditMetadata(

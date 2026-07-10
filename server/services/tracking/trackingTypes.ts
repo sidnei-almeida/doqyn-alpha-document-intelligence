@@ -33,8 +33,12 @@ export const DOCUMENT_SECURITY_CONTEXT_ACTIONS = new Set([
   'document.trash_restored',
   'document.signature_completed',
   'document.signature_downloaded',
+  'document.signature_preview_viewed',
   'document.signature_viewed',
   'document.signature_link_opened',
+  'document.signature_external_opened',
+  'document.signature_consent_checked',
+  'document.signed_pdf_generated',
 ]);
 
 /** Eventos que o frontend pode emitir via POST /api/tracking/client-event. */

@@ -1,24 +1,5 @@
 import type { DocumentListItem } from '@/types/document-library';
-import type { UploadQueueItemStatus } from '@/features/upload/types';
-
-export function uploadStatusProgress(status: UploadQueueItemStatus): number {
-  switch (status) {
-    case 'queued':
-      return 12;
-    case 'analyzing':
-      return 48;
-    case 'review':
-      return 72;
-    case 'confirming':
-      return 88;
-    case 'done':
-      return 100;
-    case 'error':
-      return 100;
-    default:
-      return 0;
-  }
-}
+export { uploadStatusProgress } from '@/features/upload/utils/uploadStatusProgress';
 
 export function truncateBreadcrumbLabel(label: string, maxLength = 28): string {
   if (label.length <= maxLength) return label;

@@ -44,12 +44,8 @@ export function useExternalShareMutations(documentId: string | null) {
         expiresAt: input.expiresAt,
         message: input.message,
       }),
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast.success('Convite externo criado.');
-      if (result.inviteUrl) {
-        void navigator.clipboard?.writeText(result.inviteUrl).catch(() => undefined);
-        toast.message('Link copiado para a área de transferência.');
-      }
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível criar o convite externo.'),
     onSettled: invalidate,
@@ -64,12 +60,8 @@ export function useExternalShareMutations(documentId: string | null) {
 
   const regenerateExternalShare = useMutation({
     mutationFn: (shareId: string) => regenerateDocumentExternalShare(documentId!, shareId),
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast.success('Novo link de convite gerado.');
-      if (result.inviteUrl) {
-        void navigator.clipboard?.writeText(result.inviteUrl).catch(() => undefined);
-        toast.message('Link copiado para a área de transferência.');
-      }
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível renovar o convite externo.'),
     onSettled: invalidate,

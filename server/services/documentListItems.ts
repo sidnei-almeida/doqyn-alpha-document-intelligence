@@ -4,12 +4,19 @@ import type { MongoDocument, MongoDocumentShareGrant, MongoPreviewStorageSlot } 
 import {
   loadMemberDocumentGroupIds,
 } from '../tenancy/documentAccess.js';
+import { loadGovernanceAccessIndex } from '../tenancy/governanceAccessIndex.js';
 import {
   canUserListDocumentWithShare,
   resolveDocumentPermissionsWithShare,
 } from '../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
+import {
+  EMPTY_DOCUMENT_SIGNATURE_SUMMARY,
+  loadSignatureSummariesForDocuments,
+  type DocumentSignatureSummary,
+} from './signatures/documentSignatureSummaryService.js';
+import { loadTenantMemberDisplayNames } from '../utils/userDisplayName.js';
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
@@ -18,6 +25,7 @@ export type DocumentListItemPermissions = {
   canEditMetadata: boolean;
   canUpdate: boolean;
   canShare?: boolean;
+  canTransferOwnership?: boolean;
   sharedViaGrant?: boolean;
 };
 
@@ -46,8 +54,20 @@ function mapDocumentListItem(
     hasPreview?: boolean;
   },
   permissions?: DocumentListItemPermissions,
+  signatureSummary?: DocumentSignatureSummary,
+  displayNames?: Map<string, string>,
 ) {
   const record = doc as Record<string, unknown>;
+  const createdByUserId = doc.createdBy ?? doc.ownerUserId;
+  const resolvedOwnerName =
+    (record.ownerName as string | undefined)?.trim() ||
+    (doc.ownerUserId ? displayNames?.get(doc.ownerUserId) : undefined);
+  const resolvedCreatedByName =
+    createdByUserId ? displayNames?.get(createdByUserId) : undefined;
+  const resolvedUpdatedByName =
+    (record.updatedByName as string | undefined)?.trim() ||
+    (doc.updatedBy ? displayNames?.get(doc.updatedBy) : undefined);
+
   return {
     documentId: String(doc._id),
     id: String(doc._id),
@@ -67,7 +87,9 @@ function mapDocumentListItem(
     version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
     versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
-    ownerName: (record.ownerName as string | undefined),
+    ownerName: resolvedOwnerName,
+    updatedBy: doc.updatedBy,
+    updatedByName: resolvedUpdatedByName,
     area: (record.area as string | undefined),
     accessGroups: (record.accessGroups as string[] | undefined) ?? doc.access?.viewGroupIds,
     metadata: record.metadata,
@@ -75,8 +97,8 @@ function mapDocumentListItem(
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
     createdBy: {
-      userId: doc.ownerUserId,
-      displayName: (record.ownerName as string | undefined) ?? undefined,
+      userId: createdByUserId,
+      displayName: resolvedCreatedByName ?? undefined,
       email: undefined,
     },
     preview: {
@@ -93,6 +115,7 @@ function mapDocumentListItem(
       canEditMetadata: false,
       canUpdate: false,
     },
+    signatureSummary: signatureSummary ?? { ...EMPTY_DOCUMENT_SIGNATURE_SUMMARY },
   };
 }
 
@@ -112,6 +135,11 @@ export async function buildDocumentListItems(input: {
     (user && ownerUserId
       ? await loadMemberDocumentGroupIds({ tenantId, userId: ownerUserId, membershipId })
       : []);
+
+  const governanceIndex =
+    user && ownerUserId
+      ? await loadGovernanceAccessIndex(tenantId, { ownerUserId })
+      : undefined;
 
   const versionIds = docs
     .map((doc) => doc.currentVersionId)
@@ -156,14 +184,30 @@ export async function buildDocumentListItems(input: {
           doc,
           memberGroupIds,
           input.shareGrantsByDocumentId?.get(String(doc._id)),
+          governanceIndex,
         ),
       )
     : docs;
 
+  const signatureSummaries = await loadSignatureSummariesForDocuments(
+    tenantId,
+    visibleDocs.map((doc) => String(doc._id)),
+  );
+
+  const displayNameUserIds = visibleDocs.flatMap((doc) => {
+    const record = doc as Record<string, unknown>;
+    const ids: string[] = [];
+    if (doc.ownerUserId && !String(record.ownerName ?? '').trim()) ids.push(doc.ownerUserId);
+    if (doc.createdBy) ids.push(doc.createdBy);
+    if (doc.updatedBy && !String(record.updatedByName ?? '').trim()) ids.push(doc.updatedBy);
+    return ids;
+  });
+  const displayNames = await loadTenantMemberDisplayNames(tenantId, displayNameUserIds);
+
   return visibleDocs.map((doc) => {
     const shareGrant = input.shareGrantsByDocumentId?.get(String(doc._id));
     const perms = user
-      ? resolveDocumentPermissionsWithShare(user, doc, memberGroupIds, shareGrant)
+      ? resolveDocumentPermissionsWithShare(user, doc, memberGroupIds, shareGrant, governanceIndex)
       : { canPreview: true, canDownload: true, canEditMetadata: false, canUpdate: false, canShare: false, sharedViaGrant: false };
     const permissions: DocumentListItemPermissions = {
       canPreview: perms.canPreview,
@@ -171,6 +215,7 @@ export async function buildDocumentListItems(input: {
       canEditMetadata: perms.canEditMetadata,
       canUpdate: perms.canUpdate,
       canShare: perms.canShare,
+      canTransferOwnership: perms.canTransferOwnership,
       sharedViaGrant: perms.sharedViaGrant,
       canViewTracking: user ? canViewDocumentTracking(user) : false,
     };
@@ -188,6 +233,8 @@ export async function buildDocumentListItems(input: {
         ? { ...versionMetaFromDoc, versionLabel }
         : { versionLabel, hasOriginal: false, hasPreview: false, preview: null },
       permissions,
+      signatureSummaries.get(String(doc._id)) ?? { ...EMPTY_DOCUMENT_SIGNATURE_SUMMARY },
+      displayNames,
     );
   });
 }

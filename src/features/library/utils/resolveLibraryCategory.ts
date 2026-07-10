@@ -1,3 +1,9 @@
+import {
+  isDocumentCategoryId,
+  isDocumentGroupId,
+  isLegacyExtractionClassId,
+} from '../../../lib/entityIds';
+
 export type LibraryCategoryRef = {
   id: string;
   name: string;
@@ -13,9 +19,17 @@ function normalizeCategoryKey(value: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+function resolveUniqueCategoryMatch(
+  matches: readonly LibraryCategoryRef[],
+): LibraryCategoryRef | undefined {
+  if (matches.length === 1) return matches[0];
+  return undefined;
+}
+
 /**
  * Resolve ?space= para o categoryId real usado em listDocuments (classId no Mongo).
- * Aceita id canônico (cat_juridico), slug (juridico) ou nome (Jurídico).
+ * Aceita apenas IDs de categoria (cat_*) ou slug/nome **quando único** na lista de categorias.
+ * Nunca trata group_* como categoria — grupos e classes podem ter o mesmo nome.
  */
 export function resolveLibraryCategoryId(
   space: string,
@@ -24,20 +38,27 @@ export function resolveLibraryCategoryId(
   const trimmed = space.trim();
   if (!trimmed) return undefined;
 
-  const byId = categories.find((category) => category.id === trimmed);
-  if (byId) return byId.id;
+  if (isDocumentGroupId(trimmed)) return undefined;
+
+  if (isDocumentCategoryId(trimmed) || isLegacyExtractionClassId(trimmed)) {
+    return categories.find((category) => category.id === trimmed)?.id;
+  }
 
   const normalized = normalizeCategoryKey(trimmed);
 
-  const bySlug = categories.find(
+  const bySlug = categories.filter(
     (category) => category.slug && normalizeCategoryKey(category.slug) === normalized,
   );
-  if (bySlug) return bySlug.id;
+  const slugMatch = resolveUniqueCategoryMatch(bySlug);
+  if (slugMatch) return slugMatch.id;
 
-  const byName = categories.find((category) => normalizeCategoryKey(category.name) === normalized);
-  if (byName) return byName.id;
+  const byName = categories.filter(
+    (category) => normalizeCategoryKey(category.name) === normalized,
+  );
+  const nameMatch = resolveUniqueCategoryMatch(byName);
+  if (nameMatch) return nameMatch.id;
 
-  return trimmed;
+  return undefined;
 }
 
 export function findLibraryCategory(

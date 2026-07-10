@@ -65,8 +65,12 @@ describe('detalhes sob demanda na Biblioteca', () => {
 
   it('drawer opcional abre e fecha sob demanda', () => {
     const drawer = readSrc('features/library/components/OptionalDetailsDrawer.tsx');
+    const shell = readSrc('components/layout/WorkspaceSideDrawer.tsx');
     assert.ok(drawer.includes('library-details-drawer'));
     assert.ok(drawer.includes('library-details-drawer-close'));
+    assert.ok(drawer.includes('WorkspaceSideDrawer'));
+    assert.ok(shell.includes('explorer-icon-btn shrink-0'));
+    assert.ok(shell.includes("event.key === 'Escape'"));
     assert.ok(drawer.includes('Fechar painel de detalhes'));
     assert.ok(drawer.includes('canPreview'));
     assert.ok(drawer.includes('/tracking?documentId='));

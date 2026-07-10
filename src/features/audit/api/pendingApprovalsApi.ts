@@ -2,6 +2,7 @@ import { authServiceJson } from '@/auth/authServiceClient';
 import { usesDoqynAuth } from '@/auth/authConfig';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
 import { usersApi } from '@/features/users/api/usersApi';
+import { listDocumentUploadApprovals } from './documentUploadApprovalsApi';
 
 export type PendingApprovalItem = {
   id: string;
@@ -10,11 +11,19 @@ export type PendingApprovalItem = {
   email: string;
   tenantId: string;
   tenantName?: string;
-  type: 'access_request' | 'invite' | 'registration';
+  type: 'access_request' | 'invite' | 'registration' | 'document_upload';
   status: 'pending';
   requestedAt: string;
   requestedAccess?: CompanyMemberDto['requestedAccess'];
   member?: CompanyMemberDto;
+  documentUpload?: {
+    approvalId: string;
+    originalFileName: string;
+    classId: string | null;
+    className: string | null;
+    fileHash: string;
+    payload: Record<string, unknown>;
+  };
 };
 
 type AuthAccessRequestDetail = {
@@ -179,10 +188,37 @@ function mergePendingItem(
 export async function listPendingApprovals(tenantId?: string): Promise<PendingApprovalItem[]> {
   const { members } = await usersApi.list(tenantId);
   const pendingMembers = members.filter((member) => member.status === 'pending').map(mapMemberToPending);
-  const byMembership = new Map(pendingMembers.map((item) => [item.membershipId, item]));
+  const byId = new Map(pendingMembers.map((item) => [item.id, item]));
+
+  let documentUploadItems: PendingApprovalItem[] = [];
+  const uploads = await listDocumentUploadApprovals();
+  documentUploadItems = uploads.map((upload) => ({
+    id: upload.id,
+    membershipId: upload.submittedBy.membershipId ?? upload.submittedBy.userId,
+    name: upload.submittedBy.name,
+    email: upload.submittedBy.email,
+    tenantId: tenantId ?? '',
+    type: 'document_upload' as const,
+    status: 'pending' as const,
+    requestedAt: upload.createdAt,
+    documentUpload: {
+      approvalId: upload.id,
+      originalFileName: upload.originalFileName,
+      classId: upload.classId,
+      className: upload.className,
+      fileHash: upload.fileHash,
+      payload: upload.payload,
+    },
+  }));
+
+  for (const item of documentUploadItems) {
+    byId.set(item.id, item);
+  }
 
   if (!usesDoqynAuth()) {
-    return pendingMembers;
+    return [...byId.values()].sort(
+      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+    );
   }
 
   try {
@@ -195,18 +231,17 @@ export async function listPendingApprovals(tenantId?: string): Promise<PendingAp
       const mapped = mapAuthRequestToPending(request);
       if (!mapped) continue;
 
-      const existing = byMembership.get(mapped.membershipId);
-      byMembership.set(
-        mapped.membershipId,
-        existing ? mergePendingItem(existing, mapped) : mapped,
-      );
+      const existing = byId.get(mapped.id);
+      byId.set(mapped.id, existing ? mergePendingItem(existing, mapped) : mapped);
     }
 
-    return [...byMembership.values()].sort(
+    return [...byId.values()].sort(
       (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
     );
   } catch {
-    return pendingMembers;
+    return [...byId.values()].sort(
+      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+    );
   }
 }
 
@@ -214,4 +249,5 @@ export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = 
   access_request: 'Solicitação de acesso',
   invite: 'Convite pendente',
   registration: 'Cadastro aguardando aprovação',
+  document_upload: 'Envio de documento',
 };

@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useTrashRetentionSettings } from '@/features/library/hooks/useTrashMutations';
+import { Icon } from '@/components/ui/Icon';
+import { Button } from '@/components/ui/Button';
+import { Radio } from '@/components/ui/Radio';
+import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsCard } from '../SettingsCard';
-import { SettingsSectionHeader } from '../SettingsSectionHeader';
-import { SettingsFieldGroup } from '../SettingsFieldGroup';
-import { Button } from '@/components/ui/Button';
+import { SettingsRow, SettingsRowList } from '../SettingsRow';
+
+const RETENTION_DAYS_MIN = 1;
+const RETENTION_DAYS_MAX = 365;
+
+function clampRetentionDays(value: number): number {
+  if (Number.isNaN(value)) return RETENTION_DAYS_MIN;
+  return Math.min(RETENTION_DAYS_MAX, Math.max(RETENTION_DAYS_MIN, Math.round(value)));
+}
+
+function retentionPreview(mode: 'days' | 'manual', days: number): string {
+  if (mode === 'manual') {
+    return 'Arquivos excluídos permanecem na lixeira até exclusão manual.';
+  }
+  const label = days === 1 ? '1 dia' : `${days} dias`;
+  return `Arquivos excluídos serão apagados permanentemente após ${label}.`;
+}
 
 export function TrashRetentionSettingsSection() {
   const { data: settings, isLoading, updateSettings, isSaving } = useTrashRetentionSettings();
@@ -17,6 +35,11 @@ export function TrashRetentionSettingsSection() {
     setDays(settings.trashRetentionDays);
   }, [settings]);
 
+  const daysEnabled = mode === 'days';
+  const isDirty =
+    Boolean(settings) &&
+    (mode !== settings.trashRetentionMode || days !== settings.trashRetentionDays);
+
   const handleSave = () => {
     updateSettings({
       trashRetentionMode: mode,
@@ -24,60 +47,104 @@ export function TrashRetentionSettingsSection() {
     });
   };
 
+  const adjustDays = (delta: number) => {
+    setDays((current) => clampRetentionDays(current + delta));
+  };
+
   return (
-    <SettingsSectionBody>
-      <SettingsSectionHeader
-        title="Lixeira e retenção"
-        description="Define por quanto tempo os documentos excluídos permanecem na lixeira antes da purga automática."
-      />
-
-      <SettingsCard>
+    <SettingsSectionBody className="settings-retention-section">
+      <SettingsCard padding="none" density="compact" className="settings-retention-card">
         {isLoading ? (
-          <p className="text-sm text-doqyn-muted">Carregando configurações…</p>
+          <p className="px-4 py-5 text-sm text-doqyn-muted sm:px-5">Carregando configurações…</p>
         ) : (
-          <div className="space-y-5">
-            <SettingsFieldGroup title="Modo de retenção">
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                <label className="flex items-center gap-2 text-sm text-doqyn-text">
-                  <input
-                    type="radio"
-                    name="trashRetentionMode"
-                    checked={mode === 'days'}
-                    onChange={() => setMode('days')}
-                  />
-                  Excluir automaticamente após período
-                </label>
-                <label className="flex items-center gap-2 text-sm text-doqyn-text">
-                  <input
-                    type="radio"
-                    name="trashRetentionMode"
-                    checked={mode === 'manual'}
-                    onChange={() => setMode('manual')}
-                  />
-                  Retenção manual (sem purga automática)
-                </label>
-              </div>
-            </SettingsFieldGroup>
+          <div className="settings-retention-form">
+            <SettingsRowList>
+              <SettingsRow
+                label="Modo de retenção"
+                description="Define se a purga automática remove documentos da lixeira."
+                className="settings-row--stack"
+                control={
+                  <div className="flex flex-col gap-2">
+                    <Radio
+                      name="trashRetentionMode"
+                      checked={mode === 'days'}
+                      onChange={() => setMode('days')}
+                      label="Excluir automaticamente após período"
+                    />
+                    <Radio
+                      name="trashRetentionMode"
+                      checked={mode === 'manual'}
+                      onChange={() => setMode('manual')}
+                      label="Retenção manual (sem purga automática)"
+                    />
+                  </div>
+                }
+              />
 
-            {mode === 'days' && (
-              <SettingsFieldGroup
-                title="Dias na lixeira"
+              <SettingsRow
+                label="Dias na lixeira"
                 description="Entre 1 e 365 dias. Após esse prazo, a purga remove arquivos do storage."
-              >
-                <input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={days}
-                  onChange={(event) => setDays(Number(event.target.value))}
-                  className="settings-input w-28"
-                />
-              </SettingsFieldGroup>
-            )}
+                htmlFor="trash-retention-days"
+                muted={!daysEnabled}
+                control={
+                  <div
+                    className={cn(
+                      'settings-stepper-row settings-stepper-row--inline',
+                      !daysEnabled && 'settings-stepper-row--disabled',
+                    )}
+                  >
+                    <div className="settings-stepper">
+                      <button
+                        type="button"
+                        disabled={!daysEnabled || days <= RETENTION_DAYS_MIN}
+                        onClick={() => adjustDays(-1)}
+                        className="settings-stepper__btn"
+                        aria-label="Diminuir dias"
+                      >
+                        <Icon name="remove" size={14} />
+                      </button>
+                      <input
+                        id="trash-retention-days"
+                        type="number"
+                        min={RETENTION_DAYS_MIN}
+                        max={RETENTION_DAYS_MAX}
+                        value={days}
+                        disabled={!daysEnabled}
+                        onChange={(event) => {
+                          const parsed = Number.parseInt(event.target.value, 10);
+                          if (!Number.isNaN(parsed)) {
+                            setDays(clampRetentionDays(parsed));
+                          }
+                        }}
+                        className="settings-stepper__input"
+                        aria-label="Dias na lixeira"
+                      />
+                      <button
+                        type="button"
+                        disabled={!daysEnabled || days >= RETENTION_DAYS_MAX}
+                        onClick={() => adjustDays(1)}
+                        className="settings-stepper__btn"
+                        aria-label="Aumentar dias"
+                      >
+                        <Icon name="add" size={14} />
+                      </button>
+                    </div>
+                    <span className="settings-stepper-row__suffix">dias</span>
+                  </div>
+                }
+              />
+            </SettingsRowList>
 
-            <div className="flex justify-end">
-              <Button type="button" size="sm" disabled={isSaving} onClick={handleSave}>
-                Salvar configurações
+            <div className="settings-retention-preview" role="status" aria-live="polite">
+              <span className="settings-retention-preview__icon" aria-hidden>
+                <Icon name="info" size={16} />
+              </span>
+              <p className="settings-retention-preview__text">{retentionPreview(mode, days)}</p>
+            </div>
+
+            <div className="settings-retention-actions">
+              <Button type="button" size="sm" disabled={!isDirty || isSaving} onClick={handleSave}>
+                {isSaving ? 'Salvando…' : 'Salvar configurações'}
               </Button>
             </div>
           </div>

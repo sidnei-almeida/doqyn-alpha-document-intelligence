@@ -8,10 +8,8 @@ import {
   type PlatformRole,
 } from '@/features/users/api/usersApi';
 import {
-  AccessGroupsSection,
   DocumentGroupsSection,
   PlatformRolesSection,
-  type AccessGroupOption,
   type DocumentGroupOption,
 } from '@/features/users/components/AccessFormSections';
 import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
@@ -20,7 +18,6 @@ import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 type ApproveApprovalDialogProps = {
   open: boolean;
   item: PendingApprovalItem | null;
-  accessGroups: AccessGroupOption[];
   documentGroups: DocumentGroupOption[];
   saving?: boolean;
   canAssignDoqynAdmin?: boolean;
@@ -36,7 +33,6 @@ type ApproveApprovalDialogProps = {
 export function ApproveApprovalDialog({
   open,
   item,
-  accessGroups,
   documentGroups,
   saving,
   canAssignDoqynAdmin = false,
@@ -45,13 +41,11 @@ export function ApproveApprovalDialog({
 }: ApproveApprovalDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>(['user']);
-  const [accessGroupIds, setAccessGroupIds] = useState<string[]>([]);
   const [documentGroupIds, setDocumentGroupIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       setPlatformRoles(['user']);
-      setAccessGroupIds([]);
       setDocumentGroupIds([]);
     }
   }, [open, item?.id]);
@@ -108,11 +102,6 @@ export function ApproveApprovalDialog({
             onChange={setPlatformRoles}
             canAssignDoqynAdmin={canAssignDoqynAdmin}
           />
-          <AccessGroupsSection
-            groups={accessGroups}
-            value={accessGroupIds}
-            onChange={setAccessGroupIds}
-          />
           <DocumentGroupsSection
             groups={documentGroups}
             value={documentGroupIds}
@@ -129,7 +118,7 @@ export function ApproveApprovalDialog({
             onClick={() =>
               onConfirm({
                 platformRoles: platformRoles.length > 0 ? platformRoles : ['user'],
-                accessGroupIds,
+                accessGroupIds: [],
                 documentGroupIds,
                 notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
               })

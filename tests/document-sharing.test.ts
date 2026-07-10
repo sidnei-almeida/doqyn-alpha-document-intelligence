@@ -48,6 +48,7 @@ describe('document sharing — serviço e segurança', () => {
 
   it('valida destinatário ativo no tenant via tenant_members', () => {
     const service = read('server/services/sharing/documentShareService.ts');
+    assert.ok(service.includes('listOperationalTenantMembers'));
     assert.ok(service.includes('REGISTRY_COLLECTIONS.tenantMembers'));
     assert.ok(service.includes("status: 'active'"));
   });

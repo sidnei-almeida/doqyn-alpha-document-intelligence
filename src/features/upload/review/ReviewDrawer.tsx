@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TruncatedText } from '@/components/ui/TruncatedText';
+import { WorkspaceSideDrawer } from '@/components/layout/WorkspaceSideDrawer';
 import { ConfidenceBadge } from '@/features/document-send/components/ConfidenceBadge';
 import { DocumentNamingSection } from '@/features/document-send/components/DocumentNamingSection';
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
@@ -12,6 +13,8 @@ import {
   resolveFinalFileNameForConfirm,
 } from '@/features/document-send/utils/reviewWorkflowSettings';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useAuth } from '@/auth/useAuth';
+import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { useUploadQueueContext } from '../uploadQueueContext';
 
 /**
@@ -26,6 +29,8 @@ export function ReviewDrawer() {
     confirmReview,
     setItemNamingChoice,
   } = useUploadQueueContext();
+  const { hasAnyRole } = useAuth();
+  const isDocumentAdmin = canConfirmDocumentMetadata(hasAnyRole);
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [reviewChecked, setReviewChecked] = useState(false);
@@ -60,15 +65,6 @@ export function ReviewDrawer() {
       },
     );
   }, [reviewItemId, item, reviewSettings.defaultNamingPolicy]);
-
-  useEffect(() => {
-    if (!reviewItemId) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeReview();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [reviewItemId, closeReview]);
 
   if (!item || !item.analysis) return null;
 
@@ -111,22 +107,18 @@ export function ReviewDrawer() {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[95] flex justify-end modal-overlay-scrim backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Revisão do documento"
-      onClick={closeReview}
-    >
-      <aside
-        className="drawer-enter-right flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-doqyn-border-subtle bg-doqyn-surface shadow-dropdown"
-        onClick={(event) => event.stopPropagation()}
-        data-testid="upload-review-drawer"
-      >
+    <WorkspaceSideDrawer
+      title={requiresReview ? 'Revisão necessária' : isDocumentAdmin ? 'Confirmar análise' : 'Enviar para aprovação'}
+      onClose={closeReview}
+      testId="upload-review-drawer"
+      zIndexClass="z-[95]"
+      scrollable={false}
+      bodyClassName="flex flex-col overflow-hidden p-0"
+      header={
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-doqyn-border-subtle px-4 py-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-primary">
-              {requiresReview ? 'Revisão necessária' : 'Confirmar análise'}
+              {requiresReview ? 'Revisão necessária' : isDocumentAdmin ? 'Confirmar análise' : 'Enviar para aprovação'}
             </p>
             <TruncatedText as="h2" className="mt-0.5 text-[14px] font-semibold text-doqyn-text">
               {item.fileName}
@@ -137,11 +129,11 @@ export function ReviewDrawer() {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Tooltip label="Preferências de upload">
               <Link
                 to="/settings?section=upload-ia"
-                className="rounded-md p-1.5 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="explorer-icon-btn shrink-0"
                 aria-label="Preferências de upload"
                 onClick={closeReview}
               >
@@ -151,14 +143,16 @@ export function ReviewDrawer() {
             <button
               type="button"
               onClick={closeReview}
-              className="rounded-md p-1.5 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+              className="explorer-icon-btn shrink-0"
               aria-label="Fechar revisão"
+              data-testid="upload-review-drawer-close"
             >
               <Icon name="close" size={ICON_SIZE.sm} />
             </button>
           </div>
         </header>
-
+      }
+    >
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {uploadDestination && (
             <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2">
@@ -253,8 +247,15 @@ export function ReviewDrawer() {
               onChange={(event) => setReviewChecked(event.target.checked)}
               className="mt-0.5"
             />
-            Revisei os dados extraídos e confirmo o salvamento deste documento.
+            Revisei os dados extraídos e confirmo o{' '}
+            {isDocumentAdmin ? 'salvamento' : 'envio para aprovação'} deste documento.
           </label>
+          {!isDocumentAdmin && (
+            <p className="mt-2 text-[11px] text-doqyn-muted">
+              Um administrador da empresa revisará os metadados na Auditoria antes de publicar na
+              Biblioteca.
+            </p>
+          )}
           <div className="mt-3 flex justify-end gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={closeReview}>
               Deixar para depois
@@ -268,12 +269,11 @@ export function ReviewDrawer() {
               {isConfirming && (
                 <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
               )}
-              Confirmar e salvar
+              {isDocumentAdmin ? 'Confirmar e salvar' : 'Enviar para aprovação'}
             </Button>
           </div>
         </footer>
-      </aside>
-    </div>
+    </WorkspaceSideDrawer>
   );
 }
 

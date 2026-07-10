@@ -2,10 +2,7 @@ import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/Progress';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import type { UploadQueueItem } from '@/features/upload/types';
-import { uploadStatusProgress } from '../utils/libraryItemActions';
 
 function dragEventHasFiles(event: React.DragEvent): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
@@ -14,8 +11,6 @@ function dragEventHasFiles(event: React.DragEvent): boolean {
 type LibraryContentDropZoneProps = {
   children: ReactNode;
   onDropFiles: (files: File[]) => void;
-  /** Itens em upload ativos — exibe progresso discreto no overlay após o drop. */
-  activeUploads?: UploadQueueItem[];
   className?: string;
   onBackgroundContextMenu?: (event: React.MouseEvent) => void;
   onBackgroundClick?: (event: React.MouseEvent) => void;
@@ -28,7 +23,6 @@ type LibraryContentDropZoneProps = {
 export function LibraryContentDropZone({
   children,
   onDropFiles,
-  activeUploads = [],
   className,
   onBackgroundContextMenu,
   onBackgroundClick,
@@ -45,9 +39,6 @@ export function LibraryContentDropZone({
   );
 
   const showDropHint = nativeDragging || isOver;
-  const uploading = activeUploads.filter((item) =>
-    ['queued', 'analyzing', 'review', 'confirming'].includes(item.status),
-  );
 
   return (
     <div
@@ -103,26 +94,6 @@ export function LibraryContentDropZone({
               Os arquivos entram na fila de upload com análise e revisão.
             </p>
           </div>
-        </div>
-      )}
-
-      {uploading.length > 0 && !showDropHint && (
-        <div
-          className="pointer-events-none absolute bottom-3 left-3 right-3 z-10 rounded-lg border border-doqyn-border-subtle bg-doqyn-surface/95 p-3 shadow-dropdown backdrop-blur-sm"
-          data-testid="library-upload-progress-panel"
-        >
-          <p className="mb-2 text-[11px] font-medium text-doqyn-muted">Enviando arquivos…</p>
-          <ul className="space-y-2">
-            {uploading.slice(0, 4).map((item) => (
-              <li key={item.id}>
-                <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
-                  <span className="truncate text-doqyn-text">{item.fileName}</span>
-                  <span className="shrink-0 text-doqyn-subtle">{uploadStatusProgress(item.status)}%</span>
-                </div>
-                <Progress value={uploadStatusProgress(item.status)} className="h-1" />
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>

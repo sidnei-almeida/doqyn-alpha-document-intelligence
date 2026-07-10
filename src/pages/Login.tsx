@@ -1,12 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
-import { DoqynLogo } from '@/components/brand';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
@@ -57,157 +56,134 @@ export function Login() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4">
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
+    <AuthShell
+      eyebrow="Document Intelligence"
+      title="Entrar no sistema"
+      description="Plataforma corporativa para gestão segura de documentos e rastreabilidade."
+      showSecureBadge
+      footer={
+        <Link to="/acesso" className="text-doqyn-accent transition-colors hover:underline">
+          Não tem acesso ainda?
+        </Link>
+      }
+    >
+      <AuthCard className="p-6">
+        <p className="mb-5 text-xs text-doqyn-muted">
+          {supportsOAuth
+            ? 'Use sua conta Google, Microsoft ou credenciais DOQYN.'
+            : 'Acesse sua área para enviar e gerenciar documentos.'}
+        </p>
 
-      <div className="w-full max-w-[400px]">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo
-            size="login"
-            variant="horizontal"
-            align="center"
-            showSubtitle
-            subtitle="Document Intelligence"
-          />
-          <p className="mt-4 text-sm text-doqyn-muted">
-            Plataforma corporativa para gestão segura de documentos e rastreabilidade.
-          </p>
-        </div>
+        {supportsOAuth && (
+          <div className="mb-4 space-y-2.5">
+            <Button
+              type="button"
+              className="w-full"
+              disabled={isSubmitting}
+              onClick={() => loginWithGoogle(from)}
+            >
+              <Icon name="key" size={ICON_SIZE.sm} />
+              Continuar com Google
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              disabled={isSubmitting}
+              onClick={() => loginWithMicrosoft(from)}
+            >
+              <Icon name="key" size={ICON_SIZE.sm} />
+              Continuar com Microsoft
+            </Button>
 
-        <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6">
-          <h2 className="mb-1 text-base font-semibold text-doqyn-text">Entrar no sistema</h2>
-          <p className="mb-5 text-xs text-doqyn-muted">
-            {supportsOAuth
-              ? 'Use sua conta Google, Microsoft ou credenciais DOQYN.'
-              : 'Acesse sua área para enviar e gerenciar documentos.'}
-          </p>
-
-          {supportsOAuth && (
-            <div className="mb-4 space-y-3">
-              <Button
-                type="button"
-                className="w-full"
-                disabled={isSubmitting}
-                onClick={() => loginWithGoogle(from)}
-              >
-                <Icon name="key" size={ICON_SIZE.sm} />
-                Continuar com Google
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                disabled={isSubmitting}
-                onClick={() => loginWithMicrosoft(from)}
-              >
-                <Icon name="key" size={ICON_SIZE.sm} />
-                Continuar com Microsoft
-              </Button>
-
-              {showCredentialForm && (
-                <div className="flex items-center gap-3">
-                  <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
-                    ou
-                  </span>
-                  <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {showCredentialForm && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                id="email"
-                label="E-mail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu.email@empresa.com"
-                autoComplete="email"
-                required
-              />
-
-              <Input
-                id="password"
-                label="Senha DOQYN"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite sua senha"
-                autoComplete="current-password"
-                required
-              />
-
-              <div className="flex items-center justify-between">
-                <Checkbox
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  label={<span className="text-xs text-doqyn-muted">Lembrar acesso</span>}
-                  wrapperClassName="items-center"
-                />
-                <button
-                  type="button"
-                  className="text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
-                >
-                  Esqueci minha senha
-                </button>
+            {showCredentialForm && (
+              <div className="flex items-center gap-3 pt-1">
+                <span className="h-px flex-1 bg-doqyn-border-subtle" />
+                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">ou</span>
+                <span className="h-px flex-1 bg-doqyn-border-subtle" />
               </div>
+            )}
+          </div>
+        )}
 
-              {error && (
-                <AlertBanner
-                  variant={getLoginAlertVariant(errorCode)}
-                  title={getLoginAlertTitle(errorCode)}
-                  message={error}
-                >
-                  {errorActions.length > 0 ? (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {errorActions.map((action) => (
-                        <Link key={action.href} to={action.href}>
-                          <Button type="button" variant="secondary" className="w-full">
-                            {action.label}
-                          </Button>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : null}
-                </AlertBanner>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting || !email.trim() || !password}
-              >
-                <Icon name="lock" size={ICON_SIZE.sm} />
-                {isSubmitting ? 'Entrando...' : 'Entrar com e-mail e senha'}
-              </Button>
-            </form>
-          )}
-
-          {!showCredentialForm && error && (
-            <AlertBanner
-              variant={getLoginAlertVariant(errorCode)}
-              title={getLoginAlertTitle(errorCode)}
-              message={error}
-              className="mt-2"
+        {showCredentialForm && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              id="email"
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu.email@empresa.com"
+              autoComplete="email"
+              required
             />
-          )}
-        </div>
 
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
-          <Icon name="shield" size={ICON_SIZE.xs} />
-          Ambiente corporativo seguro
-        </p>
-        <p className="mt-3 text-center text-sm">
-          <Link to="/acesso" className="text-doqyn-accent hover:underline">
-            Não tem acesso ainda?
-          </Link>
-        </p>
-      </div>
-    </main>
+            <Input
+              id="password"
+              label="Senha DOQYN"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Digite sua senha"
+              autoComplete="current-password"
+              required
+            />
+
+            <div className="flex items-center justify-between gap-3">
+              <Checkbox
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                label={<span className="text-xs text-doqyn-muted">Lembrar acesso</span>}
+                wrapperClassName="items-center"
+              />
+              <button
+                type="button"
+                className="text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+
+            {error ? (
+              <AlertBanner
+                variant={getLoginAlertVariant(errorCode)}
+                title={getLoginAlertTitle(errorCode)}
+                message={error}
+              >
+                {errorActions.length > 0 ? (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {errorActions.map((action) => (
+                      <Link key={action.href} to={action.href}>
+                        <Button type="button" variant="secondary" className="w-full">
+                          {action.label}
+                        </Button>
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </AlertBanner>
+            ) : null}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || !email.trim() || !password}
+            >
+              <Icon name="lock" size={ICON_SIZE.sm} />
+              {isSubmitting ? 'Entrando...' : 'Entrar com e-mail e senha'}
+            </Button>
+          </form>
+        )}
+
+        {!showCredentialForm && error ? (
+          <AlertBanner
+            variant={getLoginAlertVariant(errorCode)}
+            title={getLoginAlertTitle(errorCode)}
+            message={error}
+          />
+        ) : null}
+      </AuthCard>
+    </AuthShell>
   );
 }

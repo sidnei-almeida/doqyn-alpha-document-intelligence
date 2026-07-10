@@ -27,13 +27,13 @@ export function CategoryCard({
 }: CategoryCardProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const assignedGroups = category.accessGroupIds
+  const assignedGroups = category.documentGroupIds
     .map((id) => groups.find((g) => g.id === id))
     .filter((g): g is Group => Boolean(g));
 
   const notificationsActive =
-    category.accessGroupIds.length > 0 &&
-    category.notifyGroupIds.length === category.accessGroupIds.length;
+    category.documentGroupIds.length > 0 &&
+    category.notifyGroupIds.length === category.documentGroupIds.length;
 
   const handleDragOver = (e: React.DragEvent) => {
     if (!isAdmin) return;
@@ -120,7 +120,7 @@ export function CategoryCard({
             <input
               type="checkbox"
               checked={notificationsActive}
-              disabled={!isAdmin || category.accessGroupIds.length === 0}
+              disabled={!isAdmin || category.documentGroupIds.length === 0}
               onChange={(e) => onToggleAllNotifications(category.id, e.target.checked)}
               className="h-4 w-4 rounded border-doqyn-border-strong bg-doqyn-bg accent-doqyn-action disabled:opacity-40"
             />

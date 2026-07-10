@@ -33,10 +33,19 @@ function reviewResult(reason: string, extra?: Partial<ClassificationResult>): Cl
   };
 }
 
-function rateLimitResult(): ClassificationResult {
-  return reviewResult(AI_ERROR_MESSAGES.aiUnavailable, {
-    errorCode: 'GROQ_RATE_LIMIT',
-    reviewReason: AI_ERROR_MESSAGES.aiUnavailableReviewReason,
+function rateLimitResult(
+  errorCode: 'GROQ_RATE_LIMIT' | 'GROQ_DAILY_TOKEN_LIMIT' | 'GROQ_CONTEXT_LIMIT',
+): ClassificationResult {
+  const reason =
+    errorCode === 'GROQ_DAILY_TOKEN_LIMIT'
+      ? AI_ERROR_MESSAGES.groqDailyTokenLimit
+      : errorCode === 'GROQ_CONTEXT_LIMIT'
+        ? AI_ERROR_MESSAGES.groqContextLimit
+        : AI_ERROR_MESSAGES.aiUnavailable;
+
+  return reviewResult(reason, {
+    errorCode,
+    reviewReason: reason,
   });
 }
 
@@ -211,7 +220,12 @@ export async function classifyDocumentWithRules(input: {
 
     if (
       diagnostic.code === 'GROQ_RATE_LIMIT' ||
-      (error instanceof AiAnalysisError && error.code === 'GROQ_RATE_LIMIT')
+      diagnostic.code === 'GROQ_DAILY_TOKEN_LIMIT' ||
+      diagnostic.code === 'GROQ_CONTEXT_LIMIT' ||
+      (error instanceof AiAnalysisError &&
+        (error.code === 'GROQ_RATE_LIMIT' ||
+          error.code === 'GROQ_DAILY_TOKEN_LIMIT' ||
+          error.code === 'GROQ_CONTEXT_LIMIT'))
     ) {
       logClassifierFailure(context, diagnostic, {
         groqDurationMs: Date.now() - groqStartedAt,
@@ -219,7 +233,13 @@ export async function classifyDocumentWithRules(input: {
         validationFailed: false,
         rateLimit: true,
       });
-      return rateLimitResult();
+      const errorCode =
+        diagnostic.code === 'GROQ_DAILY_TOKEN_LIMIT'
+          ? 'GROQ_DAILY_TOKEN_LIMIT'
+          : diagnostic.code === 'GROQ_CONTEXT_LIMIT'
+            ? 'GROQ_CONTEXT_LIMIT'
+            : 'GROQ_RATE_LIMIT';
+      return rateLimitResult(errorCode);
     }
 
     logClassifierFailure(context, diagnostic, {

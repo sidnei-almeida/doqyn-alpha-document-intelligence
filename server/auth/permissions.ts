@@ -1,6 +1,6 @@
 import type { AuthUser } from './types.js';
-import { userHasAnyGroup, userHasRole } from './requireAuth.js';
 import { userIsDoqynAdmin } from './memberAuth.js';
+import { isDocumentAdmin } from '../tenancy/documentAccess.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 /** Qualquer usuário autenticado pode solicitar análise experimental. */
@@ -8,20 +8,12 @@ export function canAnalyzeDocuments(user: AuthUser): boolean {
   return Boolean(user.id);
 }
 
-/** Confirmação exige admin ou grupo com permissão de update na classe. */
+/** Somente administradores confirmam metadados diretamente; demais usuários enviam para aprovação. */
 export function canConfirmDocuments(
   user: AuthUser,
-  updateGroupIds: string[] = [],
+  _updateGroupIds: string[] = [],
 ): boolean {
-  if (userHasRole(user, ['admin', 'manager'])) {
-    return true;
-  }
-
-  if (!updateGroupIds.length) {
-    return true;
-  }
-
-  return userHasAnyGroup(user, updateGroupIds);
+  return isDocumentAdmin(user);
 }
 
 const TRACKING_ADMIN_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin']);
