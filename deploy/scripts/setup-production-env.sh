@@ -103,14 +103,17 @@ echo ""
 info "Banco de dados"
 USE_ATLAS="$(prompt_default "Usar MongoDB Atlas? (s/n)" "n")"
 if [[ "$USE_ATLAS" =~ ^[Ss]$ ]]; then
-  read -r -p "MONGODB_URI (Atlas): " MONGODB_URI
+  read -r -p "MONGODB_URI (Atlas SRV): " MONGODB_URI
   if [[ -z "$MONGODB_URI" ]]; then
     error "MONGODB_URI é obrigatório para Atlas."
     exit 1
   fi
+  MONGODB_DB="$(prompt_default "MONGODB_DATABASE" "doqyn_prod")"
+  MONGODB_USE_ATLAS=true
 else
   MONGODB_DB="$(prompt_default "Nome do banco Mongo local (Docker)" "doqyn_prod")"
   MONGODB_URI="mongodb://mongo:27017/${MONGODB_DB}"
+  MONGODB_USE_ATLAS=false
 fi
 
 POSTGRES_DB="$(prompt_default "Postgres — nome do banco (auth)" "doqyn_auth")"
@@ -159,9 +162,12 @@ PASSWORD_RESET_TOKEN_HASH_SECRET="$(generate_base64_32)"
 PASSWORD_PEPPER="$(generate_hex_secret)"
 TRACKING_IP_ENCRYPTION_KEY="$(generate_hex_secret)"
 TRACKING_IP_HASH_SALT="$(generate_hex_secret)"
+METRICS_TOKEN="$(generate_hex_secret)"
+GRAFANA_ADMIN_PASSWORD="$(generate_base64_32)"
 
 ENCODED_PASSWORD="$(urlencode "$POSTGRES_PASSWORD")"
-DATABASE_URL="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@postgres-auth:5432/${POSTGRES_DB}"
+DATABASE_URL_DIRECT="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@postgres-auth:5432/${POSTGRES_DB}"
+DATABASE_URL="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@pgbouncer:5432/${POSTGRES_DB}"
 
 OAUTH_GOOGLE_REDIRECT_URI="${PUBLIC_APP_URL%/}/oauth/google/callback"
 OAUTH_MICROSOFT_REDIRECT_URI="${PUBLIC_APP_URL%/}/oauth/microsoft/callback"
@@ -187,6 +193,7 @@ POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 PORT=4100
 NODE_ENV=production
 DATABASE_URL=${DATABASE_URL}
+DATABASE_URL_DIRECT=${DATABASE_URL_DIRECT}
 SESSION_COOKIE_NAME=doqyn_session
 SESSION_TTL_DAYS=7
 COOKIE_DOMAIN=${COOKIE_DOMAIN}
@@ -223,6 +230,8 @@ DOQYN_AUTH_INTERNAL_API_KEY=${DOQYN_INTERNAL_API_KEY}
 DOQYN_AUTH_COOKIE_NAME=doqyn_session
 MONGODB_URI=${MONGODB_URI}
 MONGODB_DATABASE=${MONGODB_DB:-doqyn_prod}
+MONGODB_USE_ATLAS=${MONGODB_USE_ATLAS:-false}
+MONGODB_SERVER_SELECTION_TIMEOUT_MS=$([[ "${MONGODB_USE_ATLAS}" == "true" ]] && echo 10000 || echo 5000)
 STORAGE_PROVIDER=r2
 R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
 R2_ENDPOINT=${R2_ENDPOINT}
@@ -242,16 +251,43 @@ PDF_ANALYSIS_MAX_INPUT_CHARS=30000
 PDF_ANALYSIS_MAX_PAGES=10
 DOCUMENT_ANALYSIS_PROVIDER=groq
 
-# Redis (fila BullMQ + cache de sessão + quotas)
+# Google Cloud Vision — OCR (desligado por padrão; JSON em deploy/secrets/)
+VISION_OCR_ENABLED=false
+GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-vision-sa.json
+VISION_OCR_MAX_PAGES=20
+VISION_OCR_MIN_TEXT_CHARS=300
+
+# Redis (fila BullMQ, cache de sessão, quotas + rate limit do auth-service)
 REDIS_URL=redis://redis:6379
 REDIS_ENABLED=true
 REDIS_KEY_PREFIX=doqyn:
+
+# Auth-service — rate limit distribuído (mesmo Redis)
+RATE_LIMIT_REDIS_ENABLED=true
+
+# PgBouncer (pool Postgres do auth)
+PGBOUNCER_MAX_CLIENT_CONN=500
+PGBOUNCER_DEFAULT_POOL_SIZE=25
+
+# Réplicas HTTP (nginx least_conn + DNS Docker)
+AUTH_API_REPLICAS=2
+DOQYN_API_REPLICAS=2
+
+# Upload presigned R2 (Fase B.5)
+PRESIGNED_UPLOAD_ENABLED=true
+PRESIGNED_UPLOAD_TTL_SECONDS=900
+VITE_PRESIGNED_UPLOAD_ENABLED=true
 
 # Fila de análise assíncrona
 ANALYSIS_SYNC_FALLBACK=false
 ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=10
 ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT=2
 ANALYSIS_JOB_TTL_HOURS=24
+
+# Fila de preview assíncrona (Ghostscript fora da API)
+PREVIEW_SYNC_FALLBACK=false
+PREVIEW_QUEUE_CONCURRENCY_GLOBAL=4
+PREVIEW_JOB_TTL_HOURS=24
 
 # MongoDB pool
 MONGODB_MAX_POOL_SIZE=50
@@ -266,6 +302,18 @@ TENANT_QUOTA_ENABLED=true
 TENANT_QUOTA_ANALYSIS_PER_DAY=200
 TENANT_QUOTA_UPLOADS_PER_HOUR=60
 
+# Prometheus
+METRICS_ENABLED=true
+METRICS_TOKEN=${METRICS_TOKEN}
+METRICS_SERVICE_NAME=doqyn-api
+METRICS_PORT=9100
+
+# Observabilidade (profile opcional)
+PROMETHEUS_PORT=9090
+GRAFANA_PORT=3000
+GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+OBSERVABILITY_ENABLE=true
+
 TRACKING_IP_ENCRYPTION_KEY=${TRACKING_IP_ENCRYPTION_KEY}
 TRACKING_IP_HASH_SALT=${TRACKING_IP_HASH_SALT}
 
@@ -278,8 +326,10 @@ EOF
 
 chmod 600 "$ENV_FILE"
 
+"$SCRIPT_DIR/sync-observability-secrets.sh" "$ENV_FILE"
+
 echo ""
-warn "Guarde backup seguro de deploy/.env (especialmente DATA_ENCRYPTION_KEY)."
+warn "Guarde backup seguro de deploy/.env (especialmente DATA_ENCRYPTION_KEY e METRICS_TOKEN)."
 echo ""
 info "Arquivo criado: ${ENV_FILE}"
 info "Próximo passo:"
