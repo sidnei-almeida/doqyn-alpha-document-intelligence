@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { ExtractedMetadataField, MetadataExtractionResult } from '../ai/types/documentAi.types.js';
+import type { ExtractedMetadataField } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
-import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import {
   buildDocumentOwnershipFilter,
   withTenantFieldsFromContext,
@@ -15,7 +14,6 @@ import type {
   MongoMetadataIndexEntry,
   MongoProcessingJob,
   MongoRuleField,
-  MongoVersionMetadataField,
 } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
 import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
@@ -31,14 +29,11 @@ import {
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
+import { getStorageProvider } from '../storage/index.js';
 import {
-  deleteAnalysisStaging,
-  getStorageProvider,
-  isStorageConfigured,
-  loadAnalysisStaging,
-} from '../storage/index.js';
-import { storeUploadedDocumentFile } from './documentFileService.js';
-import { generateDocumentPreviewForVersion } from './documentPreviewService.js';
+  enqueueScheduledDocumentPreview,
+  scheduleDocumentPreviewForVersion,
+} from './preview/documentPreviewScheduling.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import {
   resolveStorageFileNames,
@@ -48,10 +43,22 @@ import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/version
 import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import {
-  buildDocumentMutationFields,
   buildInitialDocumentOwnershipFields,
-  resolveDocumentActorIdentity,
 } from '../utils/documentMutationFields.js';
+import {
+  ConfirmAnalysisError,
+  assertAiSuggestedNamePresent,
+  requireConfirmClassification,
+  buildDocumentTitle,
+  buildMetadataPreview,
+  buildProcessingSteps,
+  buildStoragePlaceholders,
+  isConfirmAnalysisError,
+  mapVersionMetadata,
+  persistConfirmedVersionFile,
+} from './confirm/confirmVersionShared.js';
+
+export { ConfirmAnalysisError, isConfirmAnalysisError };
 
 const evidenceSchema = z.object({
   pageNumber: z.number().optional(),
@@ -116,18 +123,6 @@ export const confirmAnalysisSchema = z.object({
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
 
-export class ConfirmAnalysisError extends Error {
-  readonly code: string;
-  readonly statusCode: number;
-
-  constructor(message: string, code: string, statusCode = 400) {
-    super(message);
-    this.name = 'ConfirmAnalysisError';
-    this.code = code;
-    this.statusCode = statusCode;
-  }
-}
-
 function buildMetadataIndex(
   metadata: Record<string, ExtractedMetadataField>,
   fields: MongoRuleField[],
@@ -167,179 +162,11 @@ function buildMetadataIndex(
   return index;
 }
 
-function mapVersionMetadata(
-  metadata: MetadataExtractionResult['metadata'],
-): Record<string, MongoVersionMetadataField> {
-  const mapped: Record<string, MongoVersionMetadataField> = {};
-
-  for (const [key, field] of Object.entries(metadata)) {
-    mapped[key] = {
-      label: field.label,
-      value: field.value,
-      normalizedValue: field.normalizedValue ?? field.value,
-      confidence: field.confidence,
-      source: field.source === 'no_ai' ? 'ai' : 'ai',
-      page: field.evidence?.pageNumber,
-      ...(field.currency ? { currency: field.currency } : {}),
-      ...(field.evidence ? { evidence: field.evidence } : {}),
-    };
-  }
-
-  return mapped;
-}
-
-function buildMetadataPreview(
-  metadata: Record<string, MongoVersionMetadataField>,
-): Record<string, string | number | null> {
-  const preview: Record<string, string | number | null> = {};
-
-  for (const [key, field] of Object.entries(metadata)) {
-    preview[key] = field.normalizedValue ?? field.value;
-  }
-
-  return preview;
-}
-
-function buildDocumentTitle(className: string, metadata: Record<string, MongoVersionMetadataField>) {
-  const reveladora =
-    metadata.parte_reveladora?.normalizedValue ?? metadata.parte_reveladora?.value;
-  const receptora =
-    metadata.parte_receptora?.normalizedValue ?? metadata.parte_receptora?.value;
-  const fornecedor = metadata.fornecedor?.normalizedValue ?? metadata.fornecedor?.value;
-  const numeroNota = metadata.numero_nota?.value;
-
-  if (reveladora && receptora) {
-    return `${className} — ${reveladora} e ${receptora}`;
-  }
-
-  const party =
-    receptora ?? reveladora ?? fornecedor ?? numeroNota;
-
-  if (party) {
-    return `${className} — ${party}`;
-  }
-
-  return className;
-}
-
 async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string> {
   const { documents } = ctx.collections;
   const year = new Date().getFullYear();
   const count = await documents.countDocuments(buildDocumentOwnershipFilter(ctx.storage));
   return `DOQYN-${year}-${String(count + 1).padStart(6, '0')}`;
-}
-
-function buildStoragePlaceholders(): MongoDocumentVersion['storage'] {
-  return {
-    primary: {
-      provider: 'aws_s3',
-      status: 'pending',
-      objectKey: null,
-      bucketAlias: null,
-      storedAt: null,
-    },
-    backup: {
-      provider: 'cloudflare_r2',
-      status: 'pending',
-      objectKey: null,
-      bucketAlias: null,
-      storedAt: null,
-    },
-  };
-}
-
-async function persistConfirmedVersionFile(input: {
-  tenantId: string;
-  ownerUserId: string;
-  documentId: string;
-  versionId: string;
-  jobId?: string;
-  fileHash: string;
-  fileSizeBytes: number;
-  originalFileName: string;
-  storageFileName: string;
-  storageScope: TenantStorageScope;
-}): Promise<{ storage: MongoDocumentVersion['storage']; buffer: Buffer | null }> {
-  if (!isStorageConfigured()) {
-    return { storage: buildStoragePlaceholders(), buffer: null };
-  }
-
-  if (!input.jobId?.trim()) {
-    throw new ConfirmAnalysisError(
-      'Identificador da análise ausente. Refaça a análise do documento.',
-      'STAGING_JOB_REQUIRED',
-      400,
-    );
-  }
-
-  const buffer = await loadAnalysisStaging({
-    tenantId: input.tenantId,
-    ownerUserId: input.ownerUserId,
-    jobId: input.jobId,
-    expectedSha256: input.fileHash,
-    mimeType: 'application/pdf',
-    originalFileName: input.originalFileName,
-    storageScope: input.storageScope,
-  }).catch((error: unknown) => {
-    if (error instanceof ServiceError) {
-      throw new ConfirmAnalysisError(error.message, error.code, error.statusCode);
-    }
-    throw error;
-  });
-
-  if (buffer.length !== input.fileSizeBytes) {
-    throw new ConfirmAnalysisError(
-      'Tamanho do arquivo não confere. Refaça a análise.',
-      'STAGING_SIZE_MISMATCH',
-      400,
-    );
-  }
-
-  const storage = await storeUploadedDocumentFile({
-    tenantId: input.tenantId,
-    documentId: input.documentId,
-    versionId: input.versionId,
-    buffer,
-    mimeType: 'application/pdf',
-    originalFileName: input.originalFileName,
-    storageFileName: input.storageFileName,
-    storageScope: input.storageScope,
-  });
-
-  await deleteAnalysisStaging({
-    tenantId: input.tenantId,
-    ownerUserId: input.ownerUserId,
-    jobId: input.jobId,
-    mimeType: 'application/pdf',
-    originalFileName: input.originalFileName,
-    storageScope: input.storageScope,
-  });
-
-  return { storage, buffer };
-}
-
-function buildProcessingSteps(input: ConfirmAnalysisInput, persistedAt: Date) {
-  const baseSteps = input.logs.map((log) => ({
-    key: log.title
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_|_$/g, ''),
-    label: log.title,
-    status: log.status === 'error' ? ('error' as const) : ('done' as const),
-    createdAt: persistedAt,
-  }));
-
-  return [
-    ...baseSteps,
-    {
-      key: 'persisted',
-      label: 'Metadados salvos',
-      status: 'done' as const,
-      createdAt: persistedAt,
-    },
-  ];
 }
 
 export async function confirmAnalysisPersistence(input: {
@@ -370,40 +197,24 @@ export async function confirmAnalysisPersistence(input: {
   const ownershipFields = buildInitialDocumentOwnershipFields({ ownerUserId, ownerName });
   const data = confirmAnalysisSchema.parse(input.payload);
 
-  if (!data.classification.classId) {
-    throw new ConfirmAnalysisError(
-      'Classificação inválida. Não é possível confirmar sem uma classe identificada.',
-      'INVALID_CLASSIFICATION',
-      400,
-    );
-  }
-
+  const classId = requireConfirmClassification({
+    classId: data.classification.classId,
+    requiresReview: data.classification.requiresReview,
+    extractionRequiresReview: data.extraction.requiresReview,
+    manualReviewConfirmed: data.manualReviewConfirmed,
+  });
   const needsReview =
     data.classification.requiresReview || data.extraction.requiresReview;
-
-  if (needsReview && !data.manualReviewConfirmed) {
-    throw new ConfirmAnalysisError(
-      'Este documento requer revisão manual antes de ser confirmado.',
-      'REQUIRES_REVIEW',
-      409,
-    );
-  }
 
   const namingModeResolved = (data.namingMode ?? 'ai_suggested') as NamingMode;
   const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
   const resolvedFinalFileName = data.finalFileName?.trim();
 
-  if (
-    namingModeResolved === 'ai_suggested' &&
-    !resolvedFinalFileName &&
-    !aiSuggestedFileName.trim()
-  ) {
-    throw new ConfirmAnalysisError(
-      'Nome sugerido ausente. Não é possível salvar o documento.',
-      'MISSING_RECOMMENDED_NAME',
-      400,
-    );
-  }
+  assertAiSuggestedNamePresent({
+    namingMode: namingModeResolved,
+    finalFileName: resolvedFinalFileName,
+    aiSuggestedFileName,
+  });
 
   if (namingModeResolved === 'original' && !data.originalFileName?.trim()) {
     throw new ConfirmAnalysisError(
@@ -415,7 +226,7 @@ export async function confirmAnalysisPersistence(input: {
 
   const diagnostics = await diagnoseClassAndRuleLookup({
     companyId: tenantId,
-    classId: data.classification.classId,
+    classId,
     className: data.classification.className,
     ownerUserId,
   });
@@ -435,7 +246,7 @@ export async function confirmAnalysisPersistence(input: {
 
   const classAndRule = await getMongoClassAndRule({
     companyId: tenantId,
-    classId: data.classification.classId,
+    classId,
     ownerUserId,
   });
 
@@ -498,9 +309,7 @@ export async function confirmAnalysisPersistence(input: {
   const versionId = `ver_${randomUUID()}`;
   const jobId = data.jobId ?? `job_${randomUUID()}`;
 
-  const versionMetadata = mapVersionMetadata(
-    data.extraction.metadata as MetadataExtractionResult['metadata'],
-  );
+  const versionMetadata = mapVersionMetadata(data.extraction.metadata);
   const metadataIndex = buildMetadataIndex(
     data.extraction.metadata as Record<string, ExtractedMetadataField>,
     rule.fields,
@@ -580,7 +389,7 @@ export async function confirmAnalysisPersistence(input: {
     );
   }
 
-  const previewResult = await generateDocumentPreviewForVersion({
+  const previewResult = await scheduleDocumentPreviewForVersion({
     tenantId,
     documentId,
     versionId,
@@ -588,6 +397,8 @@ export async function confirmAnalysisPersistence(input: {
     storageScope: input.ctx.storageScope,
     primary: versionStorage.primary,
     previewStorageFileName: resolvedNames.previewStorageFileName,
+    ownerUserId,
+    requestId: input.requestId,
   });
   versionStorage = {
     ...versionStorage,
@@ -651,7 +462,7 @@ export async function confirmAnalysisPersistence(input: {
         pageCount: data.textExtraction.pageCount,
       },
       classification: {
-        classId: data.classification.classId!,
+        classId,
         className: data.classification.className ?? docClass.name,
         confidence: data.classification.confidence,
         requiresReview: needsReview,
@@ -687,7 +498,10 @@ export async function confirmAnalysisPersistence(input: {
       versionId,
       type: 'pdf_analysis',
       status: 'completed',
-      steps: buildProcessingSteps(data, now),
+      steps: buildProcessingSteps(data.logs, now, {
+        key: 'persisted',
+        label: 'Metadados salvos',
+      }),
       error: null,
       createdBy: ownerUserId,
       createdAt: now,
@@ -713,6 +527,20 @@ export async function confirmAnalysisPersistence(input: {
         categoryId: docClass._id,
         createdBy: ownerUserId,
         isCurrentVersion: true,
+      });
+    }
+
+    if (previewResult.asyncQueued) {
+      await enqueueScheduledDocumentPreview({
+        tenantId,
+        documentId,
+        versionId,
+        contentType: 'application/pdf',
+        storageScope: input.ctx.storageScope,
+        primary: versionStorage.primary,
+        previewStorageFileName: resolvedNames.previewStorageFileName,
+        ownerUserId,
+        requestId: input.requestId,
       });
     }
   } catch (error) {
@@ -880,8 +708,4 @@ export async function confirmAnalysisPersistence(input: {
     documentCode,
     storageStatus: versionStorage.primary.status === 'stored' ? 'stored' : 'pending',
   };
-}
-
-export function isConfirmAnalysisError(error: unknown): error is ConfirmAnalysisError {
-  return error instanceof ConfirmAnalysisError;
 }
