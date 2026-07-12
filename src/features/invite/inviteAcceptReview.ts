@@ -152,14 +152,25 @@ export function buildAcceptInviteReviewSections(
     {
       title: 'Confirmações',
       fields: [
-        { label: 'Termos de uso', value: formatBooleanConsent(values.acceptedTerms) },
+        {
+          label: 'Termos de uso',
+          value: formatBooleanConsent(values.acceptedTerms, 'Aceito', 'Não aceito'),
+        },
         {
           label: 'Declaração de veracidade',
-          value: formatBooleanConsent(values.informationDeclaration),
+          value: formatBooleanConsent(
+            values.informationDeclaration,
+            'Informações declaradas como verdadeiras',
+            'Declaração não confirmada',
+          ),
         },
         {
           label: 'Notificações operacionais',
-          value: formatBooleanConsent(values.consent),
+          value: formatBooleanConsent(
+            values.consent,
+            'Aceito receber notificações operacionais',
+            'Não aceitei notificações operacionais',
+          ),
         },
       ],
     },

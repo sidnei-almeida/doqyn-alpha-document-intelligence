@@ -208,7 +208,15 @@ export async function buildDocumentListItems(input: {
     const shareGrant = input.shareGrantsByDocumentId?.get(String(doc._id));
     const perms = user
       ? resolveDocumentPermissionsWithShare(user, doc, memberGroupIds, shareGrant, governanceIndex)
-      : { canPreview: true, canDownload: true, canEditMetadata: false, canUpdate: false, canShare: false, sharedViaGrant: false };
+      : {
+          canPreview: true,
+          canDownload: true,
+          canEditMetadata: false,
+          canUpdate: false,
+          canShare: false,
+          canTransferOwnership: false,
+          sharedViaGrant: false,
+        };
     const permissions: DocumentListItemPermissions = {
       canPreview: perms.canPreview,
       canDownload: perms.canDownload,

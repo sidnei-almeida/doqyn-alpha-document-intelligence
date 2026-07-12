@@ -1,5 +1,5 @@
 import { DEV_TENANT_ID } from '../db/constants.js';
-import type { AuthRole, AuthUser } from './types';
+import type { AuthRole, AuthUser } from './types.js';
 
 function requiredEnv(name: string): string {
   const value = process.env[name];

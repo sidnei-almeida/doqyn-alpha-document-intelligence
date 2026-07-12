@@ -32,8 +32,9 @@ function readQuotaLimitsFromEnv(): TenantQuotaLimits {
 
 function isTenantQuotaEnabled(): boolean {
   const raw = process.env.TENANT_QUOTA_ENABLED?.trim().toLowerCase();
-  if (!raw) return true;
-  return !['0', 'false', 'no', 'off'].includes(raw);
+  // Default OFF — exige opt-in explícito (precisa Redis para funcionar de verdade).
+  if (!raw) return false;
+  return ['1', 'true', 'yes', 'on'].includes(raw);
 }
 
 async function loadTenantQuotaOverrides(tenantId: string): Promise<Partial<TenantQuotaLimits>> {
@@ -85,15 +86,13 @@ export async function assertTenantQuota(
 
   const usage = await redisIncrWithTtl(key, ttlSeconds);
   if (usage === null) {
-    throw new ServiceError(
-      'Controle de quotas indisponível (Redis). Tente novamente em instantes.',
-      'QUOTA_SERVICE_UNAVAILABLE',
-      503,
-    );
+    // Fail-open: sem Redis não bloqueia análise/upload (dev local / Redis caído).
+    // Em produção com multi-réplica, configure REDIS_URL + TENANT_QUOTA_ENABLED=true.
+    return;
   }
 
   if (usage > limit) {
-    recordQuotaExceeded();
+    recordQuotaExceeded(action);
     throw new ServiceError(
       'Limite de uso do tenant excedido. Tente novamente mais tarde.',
       'TENANT_QUOTA_EXCEEDED',

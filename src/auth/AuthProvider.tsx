@@ -312,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRole = useCallback((role: string) => roles.includes(role), [roles]);
 
   const hasAnyRole = useCallback(
-    (checkRoles: string[]) => checkRoles.some((role) => roles.includes(role)),
+    (checkRoles: readonly string[]) => checkRoles.some((role) => roles.includes(role)),
     [roles],
   );
 

@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { parse, serialize } from 'cookie';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { AuthRole, AuthUser, SessionPayload } from './types';
+import type { AuthUser, AuthRole, SessionPayload } from './types.js';
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;

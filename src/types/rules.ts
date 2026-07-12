@@ -2,7 +2,7 @@
 
 export type UserRole = 'admin' | 'manager' | 'member' | 'auditor';
 
-export type MemberStatus = 'active' | 'pending' | 'blocked';
+export type MemberStatus = 'active' | 'pending' | 'blocked' | 'rejected';
 
 export type GroupColor = 'blue' | 'green' | 'amber' | 'red' | 'purple';
 

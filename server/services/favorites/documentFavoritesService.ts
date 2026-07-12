@@ -5,7 +5,6 @@ import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type { MongoUserDocumentFavorite } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
 import {
-  loadMemberDocumentGroupIds,
   loadDocumentAccessContext,
 } from '../../tenancy/documentAccess.js';
 import { canUserListDocumentWithShare } from '../../tenancy/documentShareAccess.js';

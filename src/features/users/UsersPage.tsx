@@ -23,6 +23,7 @@ import {
   suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
+import type { CreateInviteResponse } from '@/features/invite/api/inviteApi';
 import { cloneAccessFormState, type AccessFormState } from './accessFormState';
 import {
   DocumentGroupsSection,
@@ -129,12 +130,14 @@ export function UsersPage() {
   };
 
   const inviteMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (): Promise<
+      CreateInviteResponse | { member: CompanyMemberDto; temporaryPassword?: string }
+    > =>
       usersApi.invite({
         ...inviteForm,
       }),
     onSuccess: (data) => {
-      if (data.emailSent) {
+      if ('emailSent' in data && data.emailSent) {
         showAppToast({
           type: 'success',
           title: 'Convite enviado por e-mail.',
@@ -172,7 +175,7 @@ export function UsersPage() {
       }
 
       showAppToast({ type: 'success', title: 'Usuário convidado com sucesso.' });
-      if ('temporaryPassword' in data && data.temporaryPassword) {
+      if ('temporaryPassword' in data && typeof data.temporaryPassword === 'string') {
         showAppToast({
           type: 'info',
           title: 'Senha temporária (dev)',

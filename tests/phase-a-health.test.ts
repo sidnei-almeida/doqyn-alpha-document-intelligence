@@ -14,7 +14,9 @@ function makeChecks(
     r2: { ok: true, configured: true },
     auth: { ok: true },
     analysisQueue: { ok: true, waiting: 0, active: 0 },
+    previewQueue: { ok: true, waiting: 0, active: 0 },
     aiProvider: { ok: true, name: 'groq', configured: true },
+    visionOcr: { ok: true, enabled: false, configured: false, name: 'google_vision' },
     ...overrides,
   };
 }
