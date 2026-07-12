@@ -225,7 +225,8 @@ describe('provider da fila — integração com contratos existentes', () => {
       true,
     );
     const state = readSrc('features/upload/queue/uploadQueueState.ts');
-    assert.ok(state.includes("item.status === 'review'"));
+    assert.ok(state.includes("item.status === 'review'") || state.includes('hasInFlightUploadItem'));
+    assert.ok(readSrc('features/upload/queue/uploadQueueCore.ts').includes('UPLOAD_IN_FLIGHT_STATUSES'));
   });
 
   it('provider não cancela analyze in-flight ao mudar status para analyzing', () => {

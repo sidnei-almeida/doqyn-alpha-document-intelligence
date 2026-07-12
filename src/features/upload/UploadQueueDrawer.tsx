@@ -21,6 +21,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   review: 'Aguardando revisão',
   confirming: 'Salvando na Biblioteca…',
   awaiting_approval: 'Aguardando aprovação do admin',
+  ai_paused: 'IA indisponível — tente novamente',
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
@@ -38,7 +39,7 @@ function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
   if (status === 'done') {
     return <Icon name="check_circle" size={ICON_SIZE.sm} className="text-doqyn-success" />;
   }
-  if (status === 'error') {
+  if (status === 'error' || status === 'ai_paused') {
     return <Icon name="error" size={ICON_SIZE.sm} className="text-doqyn-danger" />;
   }
   if (status === 'review') {
@@ -60,7 +61,7 @@ function QueueRow({
   const { openReview, retryItem, removeItem, cancelAutoConfirm } = useUploadQueueContext();
 
   const subtitle = useMemo(() => {
-    if (item.status === 'error' && item.errorMessage) return item.errorMessage;
+    if ((item.status === 'error' || item.status === 'ai_paused') && item.errorMessage) return item.errorMessage;
     if (item.status === 'done' && item.documentId) {
       return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
@@ -83,7 +84,7 @@ function QueueRow({
         <TruncatedText as="p" className="text-[13px] font-medium text-doqyn-text">
           {item.fileName}
         </TruncatedText>
-        <p className={cn('text-[11px]', item.status === 'error' ? 'text-doqyn-danger' : 'text-doqyn-muted')}>
+        <p className={cn('text-[11px]', item.status === 'error' || item.status === 'ai_paused' ? 'text-doqyn-danger' : 'text-doqyn-muted')}>
           {subtitle}
         </p>
         {showProgress && (
@@ -125,7 +126,7 @@ function QueueRow({
           Revisar
         </button>
       )}
-      {item.status === 'error' && (
+      {(item.status === 'error' || item.status === 'ai_paused') && (
         <button
           type="button"
           onClick={() => retryItem(item.id)}
@@ -135,7 +136,7 @@ function QueueRow({
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
       )}
-      {(item.status === 'done' || item.status === 'error' || item.status === 'awaiting_approval') && (
+      {(item.status === 'done' || item.status === 'error' || item.status === 'ai_paused' || item.status === 'awaiting_approval') && (
         <button
           type="button"
           onClick={() => removeItem(item.id)}

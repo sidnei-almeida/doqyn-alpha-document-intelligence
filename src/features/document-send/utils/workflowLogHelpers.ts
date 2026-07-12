@@ -8,6 +8,10 @@ import type {
 } from '../types/workflowLog';
 import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
 import { generateDocumentId } from '../mockData';
+import {
+  getAutoSaveBlockers,
+  resolveAnalysisOutcome,
+} from '../../upload/queue/uploadQueueCore';
 
 export const WORKFLOW_LOG_MAX_EVENTS = 500;
 
@@ -135,7 +139,14 @@ export function buildAnalysisDecision(
   raw: AnalyzePdfResponse,
   metadata: ExtractedMetadata,
 ): AnalysisDecision {
-  const reasons: string[] = [];
+  const outcome = resolveAnalysisOutcome(metadata, raw);
+  const blockers = getAutoSaveBlockers({
+    isAuthenticated: true,
+    metadata,
+    rawAnalysis: raw,
+  });
+
+  const reasons = [...blockers];
   const details: Record<string, unknown> = {
     confidence: raw.classification.confidence,
     className: raw.classification.className,
@@ -145,56 +156,33 @@ export function buildAnalysisDecision(
     recommendedFileName: raw.recommendedFileName,
   };
 
-  if (metadata.analysisStatus === 'ai_unavailable' || raw.status === 'ai_unavailable') {
-    reasons.push(
-      raw.classification.reason ||
-        'Limite temporário da análise automática atingido. Aguarde alguns minutos e tente novamente.',
-    );
-    return { action: 'error', reasons, details: { ...details, errorCode: 'GROQ_RATE_LIMIT' } };
+  if (outcome.status === 'ai_paused') {
+    return {
+      action: 'error',
+      reasons: outcome.classificationError ? [outcome.classificationError] : reasons,
+      details: { ...details, errorCode: 'GROQ_RATE_LIMIT' },
+    };
   }
 
-  if (metadata.analysisStatus === 'failed' || raw.status === 'failed') {
-    reasons.push('A análise não foi concluída com sucesso.');
-    return { action: 'error', reasons, details };
-  }
-
-  if (!raw.classification.classId || !raw.classification.className) {
-    reasons.push(
-      raw.classification.reason ||
-        'A análise não retornou identificação de classe para este documento.',
-    );
-    return { action: 'error', reasons, details };
+  if (outcome.status === 'failed') {
+    return {
+      action: 'error',
+      reasons: outcome.classificationError ? [outcome.classificationError] : reasons,
+      details,
+    };
   }
 
   if (raw.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE) {
-    reasons.push(
-      `Confiança abaixo do mínimo configurado (${Math.round(raw.classification.confidence * 100)}%).`,
-    );
+    const confidenceReason = `Confiança abaixo do mínimo configurado (${Math.round(raw.classification.confidence * 100)}%).`;
+    if (!reasons.includes(confidenceReason)) {
+      reasons.push(confidenceReason);
+    }
   }
 
-  if (raw.classification.requiresReview) {
-    reasons.push(
-      raw.classification.reason || 'Resultado marcado para revisão pela análise.',
-    );
-  }
-
-  if (raw.extraction?.requiresReview) {
-    reasons.push('Alguns metadados precisam de validação.');
-  }
-
-  const missingFields = raw.extraction?.missingFields ?? metadata.missingFields ?? [];
-  if (missingFields.length > 0) {
-    reasons.push(`Campo obrigatório ausente: ${missingFields.join(', ')}.`);
-  }
-
-  if (!raw.recommendedFileName?.trim()) {
-    reasons.push('Nome sugerido não foi gerado.');
-  }
-
-  if (metadata.analysisStatus === 'requires_review' || reasons.length > 0) {
+  if (outcome.status === 'requires_review' || reasons.length > 0) {
     return {
       action: 'review',
-      reasons,
+      reasons: reasons.length > 0 ? reasons : ['Revisão necessária antes do salvamento.'],
       details: { ...details, action: 'não salvo automaticamente' },
     };
   }

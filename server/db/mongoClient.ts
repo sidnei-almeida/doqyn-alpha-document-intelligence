@@ -1,4 +1,4 @@
-import { MongoClient, type Db } from 'mongodb';
+import { MongoClient, type Db, type MongoClientOptions } from 'mongodb';
 import { getMongoDatabaseName } from './database.js';
 import { logger } from '../utils/logger.js';
 
@@ -33,12 +33,25 @@ function getMongoUri(): string {
   return uri;
 }
 
+function readPoolSize(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.floor(parsed);
+}
+
+export function getMongoClientOptions(): MongoClientOptions {
+  return {
+    maxPoolSize: readPoolSize(process.env.MONGODB_MAX_POOL_SIZE, 50),
+    minPoolSize: readPoolSize(process.env.MONGODB_MIN_POOL_SIZE, 5),
+    maxIdleTimeMS: 30_000,
+    serverSelectionTimeoutMS: 5_000,
+  };
+}
+
 export async function getMongoClient(): Promise<MongoClient> {
   if (cache.client) return cache.client;
 
-  const client = new MongoClient(getMongoUri(), {
-    maxPoolSize: 10,
-  });
+  const client = new MongoClient(getMongoUri(), getMongoClientOptions());
 
   await client.connect();
   cache.client = client;

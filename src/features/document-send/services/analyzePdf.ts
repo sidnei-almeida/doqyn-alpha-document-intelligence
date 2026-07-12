@@ -3,6 +3,7 @@ import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/wo
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
+import { UPLOAD_ANALYZE_TIMEOUT_MS } from '@/features/upload/queue/uploadQueueAnalysis';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 
 type EvidenceSnippet = {
@@ -46,6 +47,12 @@ type MetadataExtractionResult = {
   reviewReasons: string[];
 };
 
+export type AnalyzePdfEnqueueResponse = {
+  jobId: string;
+  status: 'queued';
+  pollUrl: string;
+};
+
 export type AnalyzePdfResponse = {
   jobId: string;
   status: 'completed' | 'requires_review' | 'ai_unavailable' | 'failed';
@@ -63,6 +70,36 @@ export type AnalyzePdfResponse = {
   extraction: MetadataExtractionResult | null;
   logs: ApiProcessingLogItem[];
   errorCode?: string;
+};
+
+export type VersionUpdateExtraction = MetadataExtractionResult & {
+  seemsSameDocument: boolean;
+  sameDocumentConfidence: number;
+  sameDocumentEvidence: string[];
+  mainChanges: string[];
+  changedFields: string[];
+  riskWarnings: string[];
+};
+
+export type AnalyzePdfUpdateResponse = AnalyzePdfResponse & {
+  updateMode: true;
+  documentId: string;
+  currentVersionLabel: string;
+  expectedNextVersionLabel: string;
+  previousVersionContextIncluded: boolean;
+  extraction: VersionUpdateExtraction | null;
+};
+
+export type AnalysisJobResult = AnalyzePdfResponse | AnalyzePdfUpdateResponse;
+
+type AnalysisJobPollResponse = {
+  jobId: string;
+  status: 'queued' | 'processing' | 'completed' | 'requires_review' | 'ai_unavailable' | 'failed';
+  progress?: number;
+  pollUrl: string;
+  result?: AnalysisJobResult;
+  errorCode?: string;
+  errorMessage?: string;
 };
 
 export type AnalyzePdfOptions = {
@@ -172,13 +209,113 @@ function mapToExtractedMetadata(
   };
 }
 
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
+    const timer = window.setTimeout(() => resolve(), ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        window.clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
+  });
+}
+
+function isTerminalAnalysisStatus(
+  status: AnalysisJobPollResponse['status'],
+): status is AnalyzePdfResponse['status'] {
+  return (
+    status === 'completed' ||
+    status === 'requires_review' ||
+    status === 'ai_unavailable' ||
+    status === 'failed'
+  );
+}
+
+async function pollAnalysisJobResult(
+  jobId: string,
+  options?: Pick<AnalyzePdfOptions, 'signal'>,
+): Promise<AnalysisJobResult> {
+  const timeoutMs = UPLOAD_ANALYZE_TIMEOUT_MS;
+  const startedAt = performance.now();
+  const pollIntervalMs = 2_000;
+
+  while (true) {
+    if (options?.signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+
+    const response = await authFetch(`/api/ai/jobs/${encodeURIComponent(jobId)}`, {
+      method: 'GET',
+      credentials: getFetchCredentials(),
+      headers: withAuthHeaders({}, { json: true }),
+      signal: options?.signal,
+    });
+
+    const payload = (await response.json().catch(() => null)) as AnalysisJobPollResponse | null;
+
+    if (!response.ok || !payload) {
+      const workflowError = parseWorkflowErrorPayload(
+        payload as WorkflowErrorApiResponse | null,
+        'Erro ao consultar análise',
+      );
+      throw new AnalyzePdfRequestError(workflowError);
+    }
+
+    if (payload.status === 'failed') {
+      const workflowError = parseWorkflowErrorPayload(
+        {
+          error: {
+            code: payload.errorCode ?? 'ANALYSIS_FAILED',
+            message: payload.errorMessage ?? 'Falha na análise do documento.',
+          },
+        },
+        'Falha na análise do documento.',
+      );
+      throw new AnalyzePdfRequestError(workflowError);
+    }
+
+    if (isTerminalAnalysisStatus(payload.status) && payload.result) {
+      return payload.result;
+    }
+
+    if (isTerminalAnalysisStatus(payload.status) && !payload.result) {
+      throw new AnalyzePdfRequestError(
+        parseWorkflowErrorPayload(
+          {
+            error: {
+              code: 'ANALYSIS_RESULT_MISSING',
+              message: 'Análise concluída sem resultado disponível. Tente novamente.',
+            },
+          },
+          'Análise concluída sem resultado disponível.',
+        ),
+      );
+    }
+
+    if (performance.now() - startedAt >= timeoutMs) {
+      throw new Error('Tempo limite aguardando a conclusão da análise.');
+    }
+
+    await sleep(pollIntervalMs, options?.signal);
+  }
+}
+
 export async function analyzePdf(
   file: File,
   options?: AnalyzePdfOptions,
 ): Promise<{
   metadata: ExtractedMetadata;
   logs: ProcessingLogItem[];
-  raw: AnalyzePdfResponse;
+  raw: AnalysisJobResult;
   durationMs: number;
   httpStatus: number;
   requestId: string;
@@ -208,12 +345,31 @@ export async function analyzePdf(
     body: formData,
     signal: options?.signal,
   });
-  const durationMs = Math.round(performance.now() - startedAt);
-
   const payload = (await response.json().catch(() => null)) as
     | AnalyzePdfResponse
+    | AnalyzePdfEnqueueResponse
     | WorkflowErrorApiResponse
     | null;
+  const durationMs = Math.round(performance.now() - startedAt);
+
+  if (response.status === 202) {
+    if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
+      throw new Error('Resposta inválida do servidor (fila assíncrona)');
+    }
+
+    const queued = payload as AnalyzePdfEnqueueResponse;
+    const polled = await pollAnalysisJobResult(queued.jobId, options);
+    const totalDurationMs = Math.round(performance.now() - startedAt);
+
+    return {
+      metadata: mapToExtractedMetadata(polled, polled.extraction, polled.classification),
+      logs: mapApiLogs(polled.logs),
+      raw: polled,
+      durationMs: totalDurationMs,
+      httpStatus: 200,
+      requestId,
+    };
+  }
 
   if (!response.ok) {
     const errorPayload: WorkflowErrorApiResponse | null =

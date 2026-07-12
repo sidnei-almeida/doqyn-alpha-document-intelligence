@@ -3,6 +3,14 @@ import { generateDocumentId } from '../mockData';
 import { analyzePdf, AnalyzePdfRequestError } from '../services/analyzePdf';
 import { confirmAnalysis } from '../services/confirmAnalysis';
 import { BULK_NEXT_ITEM_DELAY_MS } from '../uploadConstants';
+import {
+  findNextQueuedItem,
+  hasInFlightBulkItem,
+  isBulkInFlightStatus,
+  sleep,
+  startCountdownSeconds,
+  type CountdownHandle,
+} from '../../upload/queue/uploadQueueCore';
 import type { WorkflowLoggerApi } from '../hooks/useWorkflowLogger';
 import type { BulkBatchPhase, BulkUploadItem, BulkUploadItemStatus } from '../types/bulk';
 import {
@@ -44,21 +52,6 @@ import {
   parseWorkflowErrorPayload,
 } from '../utils/workflowErrors';
 
-const IN_FLIGHT_STATUSES: BulkUploadItemStatus[] = ['analyzing', 'saving', 'auto_countdown'];
-
-function formatNow(): string {
-  const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-function isInFlightStatus(status: BulkUploadItemStatus): boolean {
-  return IN_FLIGHT_STATUSES.includes(status);
-}
-
 export type BulkHistoryPayload = {
   item: BulkUploadItem;
   autoSaved: boolean;
@@ -78,60 +71,13 @@ type UseBulkUploadQueueOptions = {
   onItemTerminal?: (payload: BulkTerminalPayload) => void;
 };
 
-type CountdownHandle = {
-  cancel: () => void;
-  completed: Promise<boolean>;
-};
+function formatNow(): string {
+  const now = new Date();
+  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
 
-function startCountdownSeconds(
-  seconds: number,
-  onTick: (remaining: number) => void,
-  shouldContinue: () => boolean,
-): CountdownHandle {
-  let remaining = seconds;
-  let intervalId: number | null = null;
-  let resolveCompleted: (value: boolean) => void = () => undefined;
-
-  const completed = new Promise<boolean>((resolve) => {
-    resolveCompleted = resolve;
-  });
-
-  const cancel = () => {
-    if (intervalId !== null) {
-      window.clearInterval(intervalId);
-      intervalId = null;
-    }
-    resolveCompleted(false);
-  };
-
-  if (!shouldContinue()) {
-    resolveCompleted(false);
-    return { cancel, completed: Promise.resolve(false) };
-  }
-
-  onTick(remaining);
-
-  intervalId = window.setInterval(() => {
-    if (!shouldContinue()) {
-      cancel();
-      return;
-    }
-
-    remaining -= 1;
-    if (remaining <= 0) {
-      if (intervalId !== null) {
-        window.clearInterval(intervalId);
-        intervalId = null;
-      }
-      onTick(0);
-      resolveCompleted(true);
-      return;
-    }
-
-    onTick(remaining);
-  }, 1000);
-
-  return { cancel, completed };
+function isInFlightStatus(status: BulkUploadItemStatus): boolean {
+  return isBulkInFlightStatus(status);
 }
 
 export function useBulkUploadQueue({
@@ -1170,7 +1116,7 @@ export function useBulkUploadQueue({
         runIdRef.current === workerRunId
       ) {
         const snapshot = itemsRef.current;
-        const next = snapshot.find((item) => item.status === 'queued');
+        const next = findNextQueuedItem(snapshot);
 
         if (!next) {
           tryCompleteBatch();

@@ -8,6 +8,7 @@ export type UploadQueueItemStatus =
   | 'review'
   | 'confirming'
   | 'awaiting_approval'
+  | 'ai_paused'
   | 'done'
   | 'error';
 

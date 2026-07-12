@@ -16,7 +16,7 @@ import type {
 } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
-import { classifyDocumentWithRules } from './documentClassifierAgent.js';
+import { resolveAnalysisProvider } from '../providers/resolveAnalysisProvider.js';
 import { createDocumentChunks } from './documentChunker.js';
 import { extractMetadataForVersionUpdate } from './metadataUpdateExtractorAgent.js';
 import { generateRecommendedFileName } from './documentNaming.js';
@@ -164,12 +164,13 @@ export async function analyzePdfUpdateBuffer(input: {
   documentId: string;
   ownerUserId?: string;
   membershipId?: string;
+  jobId?: string;
   requestContext?: AnalyzeRequestContext;
 }): Promise<AnalyzePdfUpdateResponse> {
   assertAiProviderConfigured();
   validatePdfUpload(input);
 
-  const jobId = `job_${randomUUID()}`;
+  const jobId = input.jobId ?? `job_${randomUUID()}`;
   const logs: ProcessingLogItem[] = [];
   const fileHash = createHash('sha256').update(input.buffer).digest('hex');
   const fileSizeBytes = input.buffer.length;
@@ -232,7 +233,7 @@ export async function analyzePdfUpdateBuffer(input: {
     classes: documentClassRules,
   });
 
-  const classification = await classifyDocumentWithRules({
+  const classification = await resolveAnalysisProvider().classify({
     chunks: classificationChunks,
     classes: documentClassRules,
     context: {

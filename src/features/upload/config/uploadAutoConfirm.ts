@@ -1,5 +1,5 @@
 /** Resultado da análise que determina o próximo passo na fila da Biblioteca. */
-export type PostAnalysisAction = 'auto_confirm' | 'open_review' | 'fail';
+export type PostAnalysisAction = 'auto_confirm' | 'open_review' | 'ai_pause' | 'fail';
 
 /**
  * Interpreta o valor bruto da configuração (testável sem import.meta).

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { join } from 'node:path';
 import type { IndexDescription } from 'mongodb';
-import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
+import { REGISTRY_COLLECTIONS, SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
@@ -86,6 +86,19 @@ function registryIndexes(): Array<{ collection: string; indexes: IndexDescriptio
         { key: { tenantId: 1, createdAt: 1 } },
         { key: { tenantId: 1, updatedAt: 1 } },
         { key: { memberId: 1 }, unique: true },
+      ],
+    },
+  ];
+}
+
+function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescription[] }> {
+  return [
+    {
+      collection: SHARED_APP_COLLECTIONS.analysisJobs,
+      indexes: [
+        { key: { tenantId: 1, ownerUserId: 1, createdAt: -1 } },
+        { key: { tenantId: 1, status: 1, createdAt: -1 } },
+        { key: { status: 1, createdAt: -1 } },
       ],
     },
   ];
@@ -190,6 +203,10 @@ async function main() {
   const database = getMongoDatabaseName();
 
   for (const group of registryIndexes()) {
+    await ensureIndexes(group.collection, group.indexes);
+  }
+
+  for (const group of sharedAppIndexes()) {
     await ensureIndexes(group.collection, group.indexes);
   }
 

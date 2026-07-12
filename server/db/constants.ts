@@ -22,6 +22,7 @@ export const SHARED_APP_COLLECTIONS = {
   documentSignatureRequests: 'document_signature_requests',
   documentSignatures: 'document_signatures',
   documentUploadApprovals: 'document_upload_approvals',
+  analysisJobs: 'analysis_jobs',
 } as const;
 
 export const COLLECTIONS = {

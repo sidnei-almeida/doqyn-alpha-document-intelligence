@@ -6,6 +6,7 @@ import {
   getDoqynAuthCookieName,
   getDoqynAuthInternalApiKey,
 } from '../authConfig.js';
+import { getCachedDoqynSession, setCachedDoqynSession } from '../sessionCache.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 
 export type DoqynPublicUser = {
@@ -123,6 +124,11 @@ export async function verifyDoqynAuthSession(
   const sessionToken = getDoqynSessionTokenFromRequest(req);
   if (!sessionToken) return null;
 
+  const cached = await getCachedDoqynSession(sessionToken);
+  if (cached) {
+    return cached;
+  }
+
   const baseUrl = getDoqynAuthBaseUrl();
   const apiKey = getDoqynAuthInternalApiKey();
 
@@ -157,9 +163,13 @@ export async function verifyDoqynAuthSession(
     throw new ServiceError('Resposta inválida do auth-service.', 'INVALID_SESSION', 502);
   }
 
-  return {
+  const session: DoqynVerifiedSession = {
     user: data.user,
     activeMembership: data.activeMembership ?? null,
     memberships: data.memberships ?? [],
   };
+
+  await setCachedDoqynSession(sessionToken, session);
+
+  return session;
 }

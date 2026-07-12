@@ -25,3 +25,15 @@ export function getDoqynAuthInternalApiKey(): string {
 export function getDoqynAuthCookieName(): string {
   return process.env.DOQYN_AUTH_COOKIE_NAME?.trim() || 'doqyn_session';
 }
+
+export function isSessionCacheEnabled(): boolean {
+  const raw = process.env.SESSION_CACHE_ENABLED?.trim().toLowerCase();
+  if (!raw) return true;
+  return !['0', 'false', 'no', 'off'].includes(raw);
+}
+
+export function getSessionCacheTtlSeconds(): number {
+  const parsed = Number(process.env.SESSION_CACHE_TTL_SECONDS);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 45;
+  return Math.floor(parsed);
+}

@@ -5,7 +5,7 @@ dist
 !.env.example
 deploy/.env
 deploy/.env.*
-!.deploy/env/.env.production.example
+!deploy/env/.env.production.example
 .git
 .gitignore
 coverage
