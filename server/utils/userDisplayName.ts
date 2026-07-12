@@ -58,7 +58,7 @@ export async function resolveDocumentOwnerName(input: {
   } as Record<string, unknown>);
 
   if (legacyMember) {
-    return resolveMemberDisplayName(legacyMember as MongoTenantMember & { name?: string });
+    return resolveMemberDisplayName(legacyMember as unknown as MongoTenantMember & { name?: string });
   }
 
   return input.ownerUserId;
@@ -105,7 +105,9 @@ export async function loadTenantMemberDisplayNames(
     .toArray();
 
   for (const member of legacyMembers) {
-    const displayName = resolveMemberDisplayName(member as MongoTenantMember & { name?: string });
+    const displayName = resolveMemberDisplayName(
+      member as unknown as MongoTenantMember & { name?: string },
+    );
     if (member.keycloakUserId) result.set(member.keycloakUserId, displayName);
     if (member.userId) result.set(member.userId, displayName);
     result.set(String(member._id), displayName);

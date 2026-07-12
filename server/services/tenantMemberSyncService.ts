@@ -1,6 +1,7 @@
 import { REGISTRY_COLLECTIONS } from '../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../db/mongoClient.js';
 import type {
+  AccessRequestSource,
   MongoTenantMember,
   PlatformRole,
   TenantMemberStatus,
@@ -30,6 +31,16 @@ function mapPlatformRoles(roles: string[]): PlatformRole[] {
     allowed.includes(role as PlatformRole),
   );
   return mapped.length > 0 ? mapped : ['user'];
+}
+
+function mapAccessRequestSource(
+  source: AuthTenantMemberSyncSnapshot['source'] | undefined,
+): AccessRequestSource {
+  if (source === 'access_request') return 'public_form';
+  if (source === 'admin_invite' || source === 'migration' || source === 'manual_seed') {
+    return source;
+  }
+  return 'admin_invite';
 }
 
 export function invalidateTenantMemberSyncCache(tenantId: string): void {
@@ -76,7 +87,7 @@ export async function upsertTenantMemberFromAuthSnapshot(
             jobTitle: snapshot.jobTitle?.trim() || undefined,
             departmentText: snapshot.departmentText?.trim() || undefined,
             requestedAt: approvedAt ?? createdAt,
-            source: snapshot.source ?? 'admin_invite',
+            source: mapAccessRequestSource(snapshot.source),
           },
         }
       : {}),

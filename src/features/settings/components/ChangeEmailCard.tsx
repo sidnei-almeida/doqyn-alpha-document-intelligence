@@ -4,9 +4,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { SettingsCard } from '../SettingsCard';
-import { SettingsRow, SettingsRowList } from '../SettingsRow';
-import { emailChangeApi, getEmailChangeErrorMessage } from '../../api/emailChangeApi';
+import { SettingsCard } from './SettingsCard';
+import { SettingsRow, SettingsRowList } from './SettingsRow';
+import {
+  emailChangeApi,
+  getEmailChangeErrorMessage,
+  type RequestEmailChangeResponse,
+} from '../api/emailChangeApi';
 
 export function ChangeEmailCard() {
   const { user, refreshUser } = useAuth();
@@ -21,12 +25,12 @@ export function ChangeEmailCard() {
   });
 
   const requestMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (): Promise<RequestEmailChangeResponse> =>
       emailChangeApi.request({
         newEmail,
         password,
       }),
-    onSuccess: async (result) => {
+    onSuccess: async (result: RequestEmailChangeResponse) => {
       toast.success(result.message);
       setPassword('');
       setDevLink(result.confirmUrl ?? null);
@@ -41,7 +45,11 @@ export function ChangeEmailCard() {
     }
   }, [statusQuery.data]);
 
-  const pending = statusQuery.data?.pending === true;
+  const pendingStatus =
+    statusQuery.data && statusQuery.data.pending === true && 'newEmail' in statusQuery.data
+      ? statusQuery.data
+      : null;
+  const pending = pendingStatus !== null;
 
   return (
     <SettingsCard density="compact" className="max-w-2xl">
@@ -87,9 +95,9 @@ export function ChangeEmailCard() {
           />
         </SettingsRowList>
 
-        {pending ? (
+        {pendingStatus ? (
           <p className="mt-4 rounded-md border border-doqyn-border bg-doqyn-surface-2 px-3 py-2 text-sm text-doqyn-muted">
-            Confirmação pendente para <strong>{statusQuery.data.newEmail}</strong>. Verifique a
+            Confirmação pendente para <strong>{pendingStatus.newEmail}</strong>. Verifique a
             caixa de entrada do novo e-mail e clique no link recebido.
           </p>
         ) : null}

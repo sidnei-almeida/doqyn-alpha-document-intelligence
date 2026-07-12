@@ -1,4 +1,4 @@
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import {
   getRedisConnectTimeoutMs,
   getRedisMaxRetries,
@@ -41,12 +41,12 @@ export async function getRedisClient(): Promise<Redis | null> {
         connectTimeout: getRedisConnectTimeoutMs(),
         lazyConnect: true,
         enableOfflineQueue: false,
-        retryStrategy(times) {
+        retryStrategy(times: number) {
           return Math.min(times * 200, 3_000);
         },
       });
 
-      client.on('error', (error) => {
+      client.on('error', (error: Error) => {
         logger.warn('Redis client error', {
           message: error instanceof Error ? error.message : 'unknown',
         });

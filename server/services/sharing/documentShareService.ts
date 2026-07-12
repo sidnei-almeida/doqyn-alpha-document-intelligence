@@ -9,6 +9,7 @@ import type {
   MongoTenantMember,
 } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
+import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
 import type { GovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
 import {
   assertCanAccessDocument,

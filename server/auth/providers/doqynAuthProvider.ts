@@ -7,6 +7,7 @@ import {
   getDoqynAuthInternalApiKey,
 } from '../authConfig.js';
 import { getCachedDoqynSession, setCachedDoqynSession } from '../sessionCache.js';
+import { recordSessionVerify } from '../../metrics/prometheus.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 
 export type DoqynPublicUser = {
@@ -126,8 +127,11 @@ export async function verifyDoqynAuthSession(
 
   const cached = await getCachedDoqynSession(sessionToken);
   if (cached) {
+    recordSessionVerify('cache_hit');
     return cached;
   }
+
+  recordSessionVerify('cache_miss');
 
   const baseUrl = getDoqynAuthBaseUrl();
   const apiKey = getDoqynAuthInternalApiKey();

@@ -81,6 +81,7 @@ export const STATUS_LABELS: Record<MemberStatus, string> = {
   active: 'Ativo',
   pending: 'Pendente',
   blocked: 'Bloqueado',
+  rejected: 'Rejeitado',
 };
 
 export const GROUP_COLOR_STYLES: Record<
