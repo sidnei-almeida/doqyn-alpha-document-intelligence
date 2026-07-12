@@ -96,7 +96,7 @@ describe('document electronic signature — fase 1', () => {
     const service = read('server/services/signatures/documentSignatureService.ts');
     assert.ok(promote.includes('promoteSignedPdfToDocumentVersion'));
     assert.ok(promote.includes('storeUploadedDocumentFile'));
-    assert.ok(promote.includes('generateDocumentPreviewForVersion'));
+    assert.ok(promote.includes('scheduleDocumentPreviewForVersion'));
     assert.ok(promote.includes('currentVersionId'));
     assert.ok(service.includes('promoteSignedPdfToDocumentVersion'));
     assert.ok(service.includes('promotedVersionId'));
@@ -227,10 +227,10 @@ describe('document electronic signature — fase 1', () => {
   });
 
   it('endpoints e rotas dev registrados', () => {
-    const devServer = read('server/dev-server.ts');
-    assert.ok(devServer.includes('/signature-requests'));
-    assert.ok(devServer.includes('/api/sign/'));
-    assert.ok(devServer.includes('/verify/signature/'));
+    const apiServer = read('server/apiServer.ts');
+    assert.ok(apiServer.includes('/signature-requests'));
+    assert.ok(apiServer.includes('/api/sign/'));
+    assert.ok(apiServer.includes('/verify/signature/'));
   });
 
   it('tracking inclui eventos de assinatura', () => {
@@ -281,11 +281,11 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(preview.includes('/pages/'));
   });
 
-  it('endpoints de preview e download assinado registrados no dev-server', () => {
-    const devServer = read('server/dev-server.ts');
-    assert.ok(devServer.includes('/api/sign/'));
-    assert.ok(devServer.includes('sign/[token]/preview.js'));
-    assert.ok(devServer.includes('sign/[token]/signed-pdf.js'));
+  it('endpoints de preview e download assinado registrados no apiServer', () => {
+    const apiServer = read('server/apiServer.ts');
+    assert.ok(apiServer.includes('/api/sign/'));
+    assert.ok(apiServer.includes('sign/[token]/preview.js'));
+    assert.ok(apiServer.includes('sign/[token]/signed-pdf.js'));
   });
 
   it('portal valida token e bloqueia request fechada', () => {
@@ -473,13 +473,13 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     const payload = read('api/signature-requests/[signatureRequestId]/signing-payload.ts');
     const preview = read('api/signature-requests/[signatureRequestId]/preview.ts');
     const sign = read('api/signature-requests/[signatureRequestId]/sign.ts');
-    const devServer = read('server/dev-server.ts');
     assert.ok(assigned.includes('listSignatureRequestsAssignedToMe'));
     assert.ok(payload.includes('getInternalSignatureSigningPayload'));
     assert.ok(preview.includes('getInternalSignaturePreviewManifest'));
     assert.ok(sign.includes('completeDocumentSignature'));
-    assert.ok(devServer.includes('assigned-to-me'));
-    assert.ok(devServer.includes('signing-payload'));
+    const apiServer = read('server/apiServer.ts');
+    assert.ok(apiServer.includes('assigned-to-me'));
+    assert.ok(apiServer.includes('signing-payload'));
   });
 
   it('tracking diferencia eventos interno e externo', () => {

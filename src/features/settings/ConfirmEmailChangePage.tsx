@@ -4,7 +4,9 @@ import { toast } from 'sonner';
 import { DoqynLogo } from '@/components/brand';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { buttonVariants } from '@/components/ui/buttonVariants';
 import { ApiError } from '@/lib/apiErrors';
+import { cn } from '@/lib/utils';
 import { emailChangeApi, getEmailChangeErrorMessage } from '@/features/settings/api/emailChangeApi';
 
 type PageState =
@@ -122,9 +124,12 @@ export function ConfirmEmailChangePage() {
             <div className="space-y-3">
               <h1 className="text-xl font-semibold text-doqyn-text">{pageState.title}</h1>
               <p className="text-sm text-doqyn-muted">{pageState.message}</p>
-              <Button variant="secondary" className="w-full" asChild>
-                <Link to="/login">Voltar ao login</Link>
-              </Button>
+              <Link
+                to="/login"
+                className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}
+              >
+                Voltar ao login
+              </Link>
             </div>
           ) : null}
         </div>

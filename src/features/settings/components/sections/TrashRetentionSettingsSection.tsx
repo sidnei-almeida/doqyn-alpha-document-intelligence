@@ -38,7 +38,7 @@ export function TrashRetentionSettingsSection() {
   const daysEnabled = mode === 'days';
   const isDirty =
     Boolean(settings) &&
-    (mode !== settings.trashRetentionMode || days !== settings.trashRetentionDays);
+    (mode !== settings?.trashRetentionMode || days !== settings?.trashRetentionDays);
 
   const handleSave = () => {
     updateSettings({

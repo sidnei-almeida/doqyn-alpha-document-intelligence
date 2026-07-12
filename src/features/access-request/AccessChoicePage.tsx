@@ -1,7 +1,7 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
-import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { cn } from '@/lib/utils';
 
 function AccessOptionCard({

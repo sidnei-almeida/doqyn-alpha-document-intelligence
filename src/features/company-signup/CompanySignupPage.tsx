@@ -11,7 +11,7 @@ import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDial
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
-import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitCompanySignup } from './api/companySignupApi';

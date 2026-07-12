@@ -4,7 +4,10 @@ import type { MongoDocument, MongoDocumentVersion } from '../../db/types.js';
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { storeUploadedDocumentFile } from '../documentFileService.js';
-import { generateDocumentPreviewForVersion } from '../documentPreviewService.js';
+import {
+  enqueueScheduledDocumentPreview,
+  scheduleDocumentPreviewForVersion,
+} from '../preview/documentPreviewScheduling.js';
 import { isStorageConfigured, getStorageProvider } from '../../storage/index.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { resolveStorageFileNames } from '../../utils/resolveStorageFileNames.js';
@@ -94,7 +97,7 @@ export async function promoteSignedPdfToDocumentVersion(input: {
       ? 'stored'
       : 'pending';
 
-  const previewResult = await generateDocumentPreviewForVersion({
+  const previewResult = await scheduleDocumentPreviewForVersion({
     tenantId: input.tenantId,
     documentId: input.documentId,
     versionId,
@@ -102,6 +105,7 @@ export async function promoteSignedPdfToDocumentVersion(input: {
     storageScope: input.storageScope,
     primary: versionStorage.primary,
     previewStorageFileName: resolvedNames.previewStorageFileName,
+    ownerUserId: input.promotedByUserId,
   });
 
   versionStorage = {
@@ -170,6 +174,19 @@ export async function promoteSignedPdfToDocumentVersion(input: {
         },
       },
     );
+
+    if (previewResult.asyncQueued) {
+      await enqueueScheduledDocumentPreview({
+        tenantId: input.tenantId,
+        documentId: input.documentId,
+        versionId,
+        contentType: 'application/pdf',
+        storageScope: input.storageScope,
+        primary: versionStorage.primary,
+        previewStorageFileName: resolvedNames.previewStorageFileName,
+        ownerUserId: input.promotedByUserId,
+      });
+    }
   } catch (error) {
     const objectKey = versionStorage.primary.objectKey;
     if (objectKey) {

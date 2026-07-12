@@ -34,4 +34,9 @@ describe('Fase A — imports dos módulos novos', () => {
     assert.equal(typeof mod.enqueuePdfAnalysisJob, 'function');
     assert.equal(typeof mod.isAsyncPdfAnalysisAvailable, 'function');
   });
+
+  it('api/metrics importa handler Prometheus', async () => {
+    const mod = await import('../api/metrics.js');
+    assert.equal(typeof mod.default, 'function');
+  });
 });

@@ -26,7 +26,7 @@ export type AuthContextValue = {
   refreshUser: () => Promise<void>;
   refreshToken: () => Promise<void>;
   hasRole: (role: string) => boolean;
-  hasAnyRole: (checkRoles: string[]) => boolean;
+  hasAnyRole: (checkRoles: readonly string[]) => boolean;
   retryAuth: () => void;
 };
 
