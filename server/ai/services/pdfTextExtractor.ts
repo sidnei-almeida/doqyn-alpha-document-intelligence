@@ -6,6 +6,13 @@ import {
 } from '../utils/aiConfig.js';
 import { normalizeDocumentText } from '../utils/textNormalization.js';
 import { logger } from '../../utils/logger.js';
+import {
+  bufferMeta,
+  pipelineDebug,
+  pipelineError,
+  pipelineInfo,
+  previewText,
+} from '../utils/pipelineDebug.js';
 
 function truncatePages(pages: PdfPageText[]): { pages: PdfPageText[]; text: string; truncated: boolean } {
   const maxChars = getPdfAnalysisMaxInputChars();
@@ -48,10 +55,24 @@ function limitPages(pages: PdfPageText[]): { pages: PdfPageText[]; pagesTruncate
 }
 
 export async function extractTextFromPdf(fileBuffer: Buffer): Promise<ExtractedPdfText> {
+  const startedAt = Date.now();
+  pipelineInfo('pdfParse', 'inicio parse PDF', {
+    ...bufferMeta(fileBuffer, 'pdf'),
+    maxInputChars: getPdfAnalysisMaxInputChars(),
+    maxPages: getPdfAnalysisMaxPages(),
+  });
+
   const parser = new PDFParse({ data: fileBuffer });
 
   try {
     const textResult = await parser.getText();
+
+    pipelineDebug('pdfParse', 'PDFParse.getText raw', {
+      totalPages: textResult.total,
+      rawTextChars: (textResult.text ?? '').length,
+      pagesFromParser: textResult.pages?.length ?? 0,
+      rawTextPreview: previewText(textResult.text, 160),
+    });
 
     const pages: PdfPageText[] =
       textResult.pages?.length > 0
@@ -84,6 +105,16 @@ export async function extractTextFromPdf(fileBuffer: Buffer): Promise<ExtractedP
       });
     }
 
+    pipelineInfo('pdfParse', 'parse PDF concluído', {
+      durationMs: Date.now() - startedAt,
+      pageCount: textResult.total || finalPages.length,
+      charCount: text.length,
+      truncated: textTruncated,
+      emptySource: nonEmptyPages.length === 0,
+      pagesKept: finalPages.length,
+      perPageChars: finalPages.map((p) => ({ page: p.pageNumber, chars: p.text.length })),
+    });
+
     return {
       text,
       pages: finalPages,
@@ -91,6 +122,12 @@ export async function extractTextFromPdf(fileBuffer: Buffer): Promise<ExtractedP
       charCount: text.length,
       truncated: textTruncated,
     };
+  } catch (error) {
+    pipelineError('pdfParse', 'parse PDF falhou', error, {
+      durationMs: Date.now() - startedAt,
+      ...bufferMeta(fileBuffer, 'pdf'),
+    });
+    throw error;
   } finally {
     await parser.destroy();
   }
