@@ -1,7 +1,10 @@
 import {
   AI_ERROR_MESSAGES,
-  ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE_BYTES,
+  extensionAllowedForAnalysis,
+  isAllowedAnalysisMimeType,
+  resolveAnalysisMimeType,
+  type AllowedAnalysisMimeType,
 } from '../constants.js';
 import type { ProcessingLogItem } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
@@ -22,11 +25,11 @@ export function createLog(
   return { title, description, status };
 }
 
-export function validatePdfUpload(input: {
+export function validateAnalysisUpload(input: {
   buffer: Buffer;
   originalFileName: string;
   mimeType: string;
-}): void {
+}): AllowedAnalysisMimeType {
   if (!input.buffer.length) {
     throw new AiAnalysisError(AI_ERROR_MESSAGES.emptyFile, 'EMPTY_FILE', 400);
   }
@@ -35,19 +38,49 @@ export function validatePdfUpload(input: {
     throw new AiAnalysisError(AI_ERROR_MESSAGES.fileTooLarge, 'FILE_TOO_LARGE', 400);
   }
 
-  const lowerName = input.originalFileName.toLowerCase();
-  if (!lowerName.endsWith('.pdf')) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_EXTENSION', 400);
+  if (!extensionAllowedForAnalysis(input.originalFileName)) {
+    throw new AiAnalysisError(
+      AI_ERROR_MESSAGES.unsupportedFormat,
+      'INVALID_EXTENSION',
+      400,
+    );
   }
 
-  const mime = input.mimeType.toLowerCase();
-  if (
-    mime &&
-    mime !== 'application/octet-stream' &&
-    !ALLOWED_MIME_TYPES.includes(mime as (typeof ALLOWED_MIME_TYPES)[number])
-  ) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_MIME', 400);
+  const resolved = resolveAnalysisMimeType({
+    fileName: input.originalFileName,
+    mimeType: input.mimeType,
+  });
+
+  if (!resolved) {
+    const mime = input.mimeType.toLowerCase();
+    if (
+      mime &&
+      mime !== 'application/octet-stream' &&
+      !isAllowedAnalysisMimeType(mime)
+    ) {
+      throw new AiAnalysisError(
+        AI_ERROR_MESSAGES.unsupportedFormat,
+        'INVALID_MIME',
+        400,
+      );
+    }
+    throw new AiAnalysisError(
+      AI_ERROR_MESSAGES.unsupportedFormat,
+      'INVALID_MIME',
+      400,
+    );
   }
+
+  return resolved;
+}
+
+/** @deprecated use validateAnalysisUpload */
+export function validatePdfUpload(input: {
+  buffer: Buffer;
+  originalFileName: string;
+  mimeType: string;
+}): void {
+  validateAnalysisUpload(input);
 }
 
 export function logAnalyzeStage(

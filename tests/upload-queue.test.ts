@@ -146,10 +146,16 @@ describe('preparação de upload — mesmas regras do fluxo legado', () => {
     }
   });
 
-  it('rejeita formatos não permitidos', () => {
-    const file = new File([new Blob(['x'])], 'foto.png', { type: 'image/png' });
-    const result = prepareUploadItems([file]);
-    assert.equal(result.ok, false);
+  it('aceita imagens JPG/PNG/WebP e rejeita formatos não suportados', () => {
+    const png = new File([new Blob(['x'])], 'foto.png', { type: 'image/png' });
+    const pngResult = prepareUploadItems([png]);
+    assert.equal(pngResult.ok, true);
+
+    const docx = new File([new Blob(['x'])], 'relatorio.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    const docxResult = prepareUploadItems([docx]);
+    assert.equal(docxResult.ok, false);
   });
 
   it('respeita o limite de lote considerando itens pendentes', () => {

@@ -3,7 +3,7 @@ import {
   MAX_FILES_PER_BATCH,
   UPLOAD_ERROR_MESSAGES,
 } from '../uploadConstants';
-import { isAllowedPdfFile } from './validateUpload';
+import { isAllowedAnalysisFile } from './validateUpload';
 
 export type BulkFileValidationResult = {
   validFiles: File[];
@@ -29,7 +29,7 @@ export function validateBulkFiles(files: File[]): BulkFileValidationResult {
       continue;
     }
 
-    if (!isAllowedPdfFile(file)) {
+    if (!isAllowedAnalysisFile(file)) {
       invalidItems.push({ file, error: UPLOAD_ERROR_MESSAGES.unsupportedFormat });
       continue;
     }

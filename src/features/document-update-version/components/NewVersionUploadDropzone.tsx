@@ -3,8 +3,8 @@ import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
-import { MAX_FILE_SIZE_MB } from '@/features/document-send/uploadConstants';
-import { formatFileSize, isAllowedPdfFile } from '@/features/document-send/utils/validateUpload';
+import { MAX_FILE_SIZE_MB, UPLOAD_ACCEPT } from '@/features/document-send/uploadConstants';
+import { formatFileSize, isAllowedAnalysisFile } from '@/features/document-send/utils/validateUpload';
 
 type NewVersionUploadDropzoneProps = {
   nextVersionLabel: string;
@@ -31,8 +31,8 @@ export function NewVersionUploadDropzone({
 
   const handleFile = useCallback(
     (file: File) => {
-      if (!isAllowedPdfFile(file)) {
-        onValidationError('Envie um arquivo PDF para criar uma nova versão.');
+      if (!isAllowedAnalysisFile(file)) {
+        onValidationError('Envie PDF ou imagem (JPG, PNG ou WebP) para criar uma nova versão.');
         return;
       }
       onFileSelected(file);
@@ -127,14 +127,14 @@ export function NewVersionUploadDropzone({
             <Icon name="upload" size={ICON_SIZE.nav} className="text-doqyn-primary" />
           </div>
           <p id={`${inputId}-title`} className="mt-4 text-sm font-medium text-doqyn-text">
-            Arraste o PDF ou clique para selecionar
+            Arraste PDF ou imagem, ou clique para selecionar
           </p>
           <p className="mt-1 max-w-sm text-sm text-doqyn-muted">
             O documento original será preservado no histórico
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Badge variant="neutral" dot={false} className="text-[11px]">
-              PDF
+              PDF · JPG · PNG · WebP
             </Badge>
             <Badge variant="neutral" dot={false} className="text-[11px]">
               até {MAX_FILE_SIZE_MB} MB
@@ -151,7 +151,7 @@ export function NewVersionUploadDropzone({
         id={inputId}
         type="file"
         className="sr-only"
-        accept=".pdf,application/pdf"
+        accept={UPLOAD_ACCEPT}
         disabled={disabled}
         onChange={(event) => {
           const file = event.target.files?.[0];

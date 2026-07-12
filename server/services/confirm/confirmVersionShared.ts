@@ -61,7 +61,10 @@ export async function persistConfirmedVersionFile(input: {
   originalFileName: string;
   storageFileName: string;
   storageScope: TenantStorageScope;
+  mimeType?: string;
 }): Promise<{ storage: MongoDocumentVersion['storage']; buffer: Buffer | null }> {
+  const mimeType = input.mimeType?.trim() || 'application/pdf';
+
   if (!isStorageConfigured()) {
     return { storage: buildStoragePlaceholders(), buffer: null };
   }
@@ -79,7 +82,7 @@ export async function persistConfirmedVersionFile(input: {
     ownerUserId: input.ownerUserId,
     jobId: input.jobId,
     expectedSha256: input.fileHash,
-    mimeType: 'application/pdf',
+    mimeType,
     originalFileName: input.originalFileName,
     storageScope: input.storageScope,
   }).catch((error: unknown) => {
@@ -102,7 +105,7 @@ export async function persistConfirmedVersionFile(input: {
     documentId: input.documentId,
     versionId: input.versionId,
     buffer,
-    mimeType: 'application/pdf',
+    mimeType,
     originalFileName: input.originalFileName,
     storageFileName: input.storageFileName,
     storageScope: input.storageScope,
@@ -112,7 +115,7 @@ export async function persistConfirmedVersionFile(input: {
     tenantId: input.tenantId,
     ownerUserId: input.ownerUserId,
     jobId: input.jobId,
-    mimeType: 'application/pdf',
+    mimeType,
     originalFileName: input.originalFileName,
     storageScope: input.storageScope,
   });

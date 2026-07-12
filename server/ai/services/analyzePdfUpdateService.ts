@@ -26,7 +26,7 @@ import {
   selectChunksForExtraction,
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
-import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
+import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
   buildVisionOcrFailedReviewResponse,
   isVisionOcrFailure,
@@ -48,7 +48,7 @@ import type { PreviousVersionContext } from '../utils/updateExtractorPrompt.js';
 import {
   type AnalyzeRequestContext,
   createLog,
-  validatePdfUpload,
+  validateAnalysisUpload,
 } from './pdfAnalysisHelpers.js';
 
 async function loadPreviousVersionContext(input: {
@@ -132,7 +132,7 @@ export async function analyzePdfUpdateBuffer(input: {
   requestContext?: AnalyzeRequestContext;
 }): Promise<AnalyzePdfUpdateResponse> {
   assertAiProviderConfigured();
-  validatePdfUpload(input);
+  const resolvedMimeType = validateAnalysisUpload(input);
 
   const jobId = input.jobId ?? `job_${randomUUID()}`;
   const logs: ProcessingLogItem[] = [];
@@ -161,7 +161,7 @@ export async function analyzePdfUpdateBuffer(input: {
 
   let extracted;
   try {
-    extracted = await extractTextFromDocumentPdf(input.buffer);
+    extracted = await extractTextFromDocument(input.buffer, resolvedMimeType);
   } catch {
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'TEXT_EXTRACTION_FAILED', 422);
   }

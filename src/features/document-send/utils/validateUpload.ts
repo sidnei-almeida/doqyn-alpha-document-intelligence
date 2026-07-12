@@ -1,4 +1,5 @@
 import {
+  ALLOWED_FILE_EXTENSIONS,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE_BYTES,
   MAX_FILES_PER_BATCH,
@@ -9,15 +10,21 @@ export type FileValidationResult =
   | { valid: true; files: File[] }
   | { valid: false; error: string };
 
-export function isAllowedPdfFile(file: File): boolean {
+export function isAllowedAnalysisFile(file: File): boolean {
   const lower = file.name.toLowerCase();
-  if (!lower.endsWith('.pdf')) return false;
+  const hasAllowedExtension = ALLOWED_FILE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+  if (!hasAllowedExtension) return false;
   if (!file.type || file.type === 'application/octet-stream') return true;
   return ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number]);
 }
 
+/** @deprecated use isAllowedAnalysisFile */
+export function isAllowedPdfFile(file: File): boolean {
+  return isAllowedAnalysisFile(file);
+}
+
 function isAllowedType(file: File): boolean {
-  return isAllowedPdfFile(file);
+  return isAllowedAnalysisFile(file);
 }
 
 export function validateUploadFiles(

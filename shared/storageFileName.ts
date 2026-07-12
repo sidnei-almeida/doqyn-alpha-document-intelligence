@@ -52,14 +52,28 @@ export function sanitizeFileNameSegment(value: string, fallback: string): string
 }
 
 export function ensurePdfExtension(fileName: string): string {
-  const base = fileName.replace(/\.pdf$/i, '');
-  return `${base}.pdf`;
+  return ensureDocumentExtension(fileName, '.pdf');
+}
+
+const KNOWN_DOC_EXTENSIONS = /\.(pdf|png|jpe?g|webp)$/i;
+
+export function extensionFromFileName(fileName: string): string {
+  const match = fileName.toLowerCase().match(KNOWN_DOC_EXTENSIONS);
+  return match ? match[0].replace(/jpeg$/, 'jpg') : '.pdf';
+}
+
+export function ensureDocumentExtension(fileName: string, extension = '.pdf'): string {
+  const ext = extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`;
+  const normalizedExt = ext === '.jpeg' ? '.jpg' : ext;
+  const base = fileName.replace(KNOWN_DOC_EXTENSIONS, '');
+  return `${base}${normalizedExt}`;
 }
 
 export function limitFileNameLength(fileName: string, maxLength = 180): string {
   if (fileName.length <= maxLength) return fileName;
-  const ext = '.pdf';
-  const base = fileName.slice(0, maxLength - ext.length);
+  const extMatch = fileName.match(KNOWN_DOC_EXTENSIONS);
+  const ext = extMatch ? extMatch[0] : '.pdf';
+  const base = fileName.slice(0, Math.max(1, maxLength - ext.length));
   return `${base}${ext}`;
 }
 
@@ -69,7 +83,8 @@ export function stripEmailFromFileName(name: string): string {
 
 /** Remove CPF/CNPJ (11 ou 14 dígitos) de segmentos de nome de arquivo. */
 export function stripSensitiveIdentifiersFromFileName(fileName: string): string {
-  const base = fileName.replace(/\.pdf$/i, '');
+  const ext = extensionFromFileName(fileName);
+  const base = fileName.replace(KNOWN_DOC_EXTENSIONS, '');
   const segments = base
     .split('_')
     .map((segment) =>
@@ -83,16 +98,17 @@ export function stripSensitiveIdentifiersFromFileName(fileName: string): string 
     .filter(Boolean);
 
   const joined = segments.join('_') || 'Documento';
-  return ensurePdfExtension(`${joined}.pdf`.replace(/\.pdf\.pdf$/i, '.pdf'));
+  return ensureDocumentExtension(joined, ext);
 }
 
 export function buildStorageFileNameFallback(
   documentId?: string,
   versionLabel?: string,
+  extension = '.pdf',
 ): string {
   const versionToken = (versionLabel ?? 'v1').replace(/[^\d]/g, '') || '1';
   const docToken = documentId?.replace(/^doc_/, '').slice(0, 12) || 'documento';
-  return `Documento_${docToken}_v${versionToken}.pdf`;
+  return ensureDocumentExtension(`Documento_${docToken}_v${versionToken}`, extension);
 }
 
 export function isInvalidGenericStorageFileName(fileName: string): boolean {
@@ -102,10 +118,11 @@ export function isInvalidGenericStorageFileName(fileName: string): boolean {
 export function sanitizeStorageFileName(
   name: string,
   fallback: string,
-  options?: { stripSensitive?: boolean },
+  options?: { stripSensitive?: boolean; extension?: string },
 ): string {
+  const ext = options?.extension ?? extensionFromFileName(name) ?? extensionFromFileName(fallback);
   const working = stripEmailFromFileName(name);
-  const withoutExt = working.replace(/\.pdf$/i, '').trim();
+  const withoutExt = working.replace(KNOWN_DOC_EXTENSIONS, '').trim();
 
   if (!withoutExt || withoutExt === '.' || withoutExt === '..') {
     return fallback;
@@ -116,7 +133,7 @@ export function sanitizeStorageFileName(
     return fallback;
   }
 
-  let result = limitFileNameLength(ensurePdfExtension(base));
+  let result = limitFileNameLength(ensureDocumentExtension(base, ext));
 
   if (options?.stripSensitive !== false) {
     result = stripSensitiveIdentifiersFromFileName(result);
@@ -130,7 +147,7 @@ export function sanitizeStorageFileName(
 }
 
 export function buildPreviewStorageFileName(storageFileName: string): string {
-  const base = storageFileName.replace(/\.pdf$/i, '');
+  const base = storageFileName.replace(KNOWN_DOC_EXTENSIONS, '');
   return limitFileNameLength(`${base}_preview.pdf`);
 }
 
@@ -138,13 +155,20 @@ export function resolveStorageFileNames(
   input: ResolveStorageFileNamesInput,
 ): ResolvedStorageFileNames {
   const namingMode = input.namingMode ?? 'ai_suggested';
-  const fallback = buildStorageFileNameFallback(input.documentId, input.versionLabel);
+  const extension = extensionFromFileName(input.originalFileName);
+  const fallback = buildStorageFileNameFallback(
+    input.documentId,
+    input.versionLabel,
+    extension,
+  );
 
   const aiSuggestedFileName = input.aiSuggestedFileName?.trim()
-    ? sanitizeStorageFileName(input.aiSuggestedFileName, fallback)
+    ? sanitizeStorageFileName(input.aiSuggestedFileName, fallback, { extension })
     : '';
 
-  const originalSanitized = sanitizeStorageFileName(input.originalFileName, fallback);
+  const originalSanitized = sanitizeStorageFileName(input.originalFileName, fallback, {
+    extension,
+  });
 
   let selectedFileName: string | undefined;
   let finalFileName: string;
@@ -154,7 +178,7 @@ export function resolveStorageFileNames(
   switch (namingMode) {
     case 'original':
       finalFileName = explicitFinal
-        ? sanitizeStorageFileName(explicitFinal, fallback)
+        ? sanitizeStorageFileName(explicitFinal, fallback, { extension })
         : originalSanitized;
       break;
     case 'manual': {
@@ -162,14 +186,14 @@ export function resolveStorageFileNames(
       if (!manual?.trim()) {
         throw new Error('Nome manual inválido.');
       }
-      selectedFileName = sanitizeStorageFileName(manual, fallback);
+      selectedFileName = sanitizeStorageFileName(manual, fallback, { extension });
       finalFileName = selectedFileName;
       break;
     }
     case 'ai_suggested':
     default:
       if (explicitFinal) {
-        finalFileName = sanitizeStorageFileName(explicitFinal, fallback);
+        finalFileName = sanitizeStorageFileName(explicitFinal, fallback, { extension });
       } else if (aiSuggestedFileName) {
         finalFileName = aiSuggestedFileName;
       } else {

@@ -1,3 +1,6 @@
+import { UPLOAD_ERROR_MESSAGES } from '../uploadConstants';
+import { isAllowedAnalysisFile } from './validateUpload';
+
 export const NON_EXTRACTABLE_TEXT_MESSAGE =
   'Texto não extraível. Revisão/OCR necessário.';
 
@@ -44,8 +47,8 @@ export function validateBulkQueueFile(file: File | undefined | null): {
     return { valid: false, reason: 'Arquivo vazio no item da fila.' };
   }
 
-  if (!file.name.toLowerCase().endsWith('.pdf')) {
-    return { valid: false, reason: 'Arquivo da fila não é PDF.' };
+  if (!isAllowedAnalysisFile(file)) {
+    return { valid: false, reason: UPLOAD_ERROR_MESSAGES.unsupportedFormat };
   }
 
   return { valid: true };

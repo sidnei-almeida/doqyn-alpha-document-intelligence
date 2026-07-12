@@ -125,6 +125,15 @@ function isPresignedUploadEnabled(): boolean {
   return import.meta.env.VITE_PRESIGNED_UPLOAD_ENABLED === 'true';
 }
 
+function resolveClientMimeType(file: File): string {
+  if (file.type && file.type !== 'application/octet-stream') return file.type;
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  return 'application/pdf';
+}
+
 async function requestStagingUploadUrl(
   file: File,
   signal?: AbortSignal,
@@ -135,7 +144,7 @@ async function requestStagingUploadUrl(
     headers: withAuthHeaders({}, { json: true }),
     body: JSON.stringify({
       fileName: file.name,
-      mimeType: file.type || 'application/pdf',
+      mimeType: resolveClientMimeType(file),
       sizeBytes: file.size,
     }),
     signal,
@@ -145,7 +154,7 @@ async function requestStagingUploadUrl(
   if (!response.ok || !payload?.uploadUrl || !payload.jobId) {
     const workflowError = parseWorkflowErrorPayload(
       payload as WorkflowErrorApiResponse | null,
-      'Erro ao preparar upload do PDF',
+      'Erro ao preparar upload do documento',
     );
     throw new AnalyzePdfRequestError(workflowError);
   }
@@ -173,10 +182,10 @@ async function putFileToStagingUploadUrl(
             code: 'STAGING_UPLOAD_FAILED',
             category: 'storage',
             title: 'Falha no upload para storage',
-            message: 'Falha ao enviar o PDF para o storage. Tente novamente.',
+            message: 'Falha ao enviar o documento para o storage. Tente novamente.',
           },
         },
-        'Falha ao enviar o PDF para o storage.',
+        'Falha ao enviar o documento para o storage.',
       ),
     );
   }
@@ -421,7 +430,7 @@ export async function analyzePdf(
       body: JSON.stringify({
         jobId: issued.jobId,
         originalFileName: file.name,
-        mimeType: file.type || 'application/pdf',
+        mimeType: resolveClientMimeType(file),
         sizeBytes: file.size,
         ...(options?.documentId?.trim() ? { documentId: options.documentId.trim() } : {}),
       }),

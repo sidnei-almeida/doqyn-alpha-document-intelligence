@@ -80,7 +80,7 @@ export async function parseAnalyzePdfRequest(req: IncomingMessage): Promise<Pars
 
   const { file, fields } = await parseMultipart(req);
   if (!file) {
-    throw new ServiceError('Arquivo PDF não enviado.', 'FILE_REQUIRED', 400);
+    throw new ServiceError('Arquivo não enviado.', 'FILE_REQUIRED', 400);
   }
 
   return {
