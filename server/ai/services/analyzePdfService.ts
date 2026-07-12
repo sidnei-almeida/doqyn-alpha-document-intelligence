@@ -1,8 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   AI_ERROR_MESSAGES,
-  ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE_BYTES,
   MIN_TEXT_CHARS,
 } from '../constants.js';
 import {
@@ -24,13 +22,22 @@ import {
   selectChunksForExtraction,
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
-import { extractTextFromPdf } from './pdfTextExtractor.js';
-type AnalyzeRequestContext = {
-  requestId?: string;
-  batchId?: string;
-  itemId?: string;
-  fileName?: string;
-};
+import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
+import {
+  bufferMeta,
+  pipelineInfo,
+  pipelineWarn,
+  previewText,
+} from '../utils/pipelineDebug.js';
+import {
+  getGroqModelFromEnv,
+} from '../utils/aiConfig.js';
+import {
+  type AnalyzeRequestContext,
+  createLog,
+  logAnalyzeStage,
+  validatePdfUpload,
+} from './pdfAnalysisHelpers.js';
 
 type StageDurationsMs = {
   validation?: number;
@@ -43,14 +50,6 @@ type StageDurationsMs = {
   finalization?: number;
   total?: number;
 };
-
-function createLog(
-  title: string,
-  description: string,
-  status: ProcessingLogItem['status'],
-): ProcessingLogItem {
-  return { title, description, status };
-}
 
 function createStageTimer() {
   const startedAt = Date.now();
@@ -68,48 +67,6 @@ function createStageTimer() {
       return durations;
     },
   };
-}
-
-function validatePdfUpload(input: {
-  buffer: Buffer;
-  originalFileName: string;
-  mimeType: string;
-}): void {
-  if (!input.buffer.length) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.emptyFile, 'EMPTY_FILE', 400);
-  }
-
-  if (input.buffer.length > MAX_FILE_SIZE_BYTES) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.fileTooLarge, 'FILE_TOO_LARGE', 400);
-  }
-
-  const lowerName = input.originalFileName.toLowerCase();
-  if (!lowerName.endsWith('.pdf')) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_EXTENSION', 400);
-  }
-
-  const mime = input.mimeType.toLowerCase();
-  if (
-    mime &&
-    mime !== 'application/octet-stream' &&
-    !ALLOWED_MIME_TYPES.includes(mime as (typeof ALLOWED_MIME_TYPES)[number])
-  ) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_MIME', 400);
-  }
-}
-
-function logAnalyzeStage(
-  message: string,
-  context: AnalyzeRequestContext,
-  details: Record<string, unknown>,
-) {
-  logger.info(message, {
-    requestId: context.requestId,
-    batchId: context.batchId,
-    itemId: context.itemId,
-    fileName: context.fileName,
-    ...details,
-  });
 }
 
 export async function analyzePdfBuffer(input: {
@@ -132,6 +89,23 @@ export async function analyzePdfBuffer(input: {
     ...input.requestContext,
     fileName: input.requestContext?.fileName ?? input.originalFileName,
   };
+
+  pipelineInfo('analyzePdf', 'JOB INÍCIO', {
+    jobId,
+    companyId: input.companyId,
+    ownerUserId: input.ownerUserId,
+    originalFileName: input.originalFileName,
+    mimeType: input.mimeType,
+    fileHashPrefix: fileHash.slice(0, 12),
+    ...bufferMeta(input.buffer, 'pdf'),
+    analysisProvider: analysisProvider.name,
+    groqModel: getGroqModelFromEnv(),
+    classifierModel: process.env.GROQ_CLASSIFIER_MODEL?.trim() || getGroqModelFromEnv(),
+    extractorModel: process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModelFromEnv(),
+    requestId: context.requestId,
+    batchId: context.batchId,
+    itemId: context.itemId,
+  });
 
   validatePdfUpload(input);
 
@@ -156,7 +130,7 @@ export async function analyzePdfBuffer(input: {
 
   let extracted;
   try {
-    extracted = await extractTextFromPdf(input.buffer);
+    extracted = await extractTextFromDocumentPdf(input.buffer);
   } catch {
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf extração de texto falhou', context, {
@@ -176,6 +150,10 @@ export async function analyzePdfBuffer(input: {
     textCharCount,
     pageCount,
     truncated: extracted.truncated,
+    textSource: extracted.source,
+    ocrFallbackUsed: extracted.ocrFallbackUsed,
+    ocrPagesProcessed: extracted.ocrPagesProcessed,
+    ocrDurationMs: extracted.ocrDurationMs,
   });
 
   if (extracted.charCount < MIN_TEXT_CHARS) {
@@ -188,15 +166,30 @@ export async function analyzePdfBuffer(input: {
       stageDurationsMs: durations,
       reason: 'INSUFFICIENT_TEXT',
     });
+    pipelineWarn('analyzePdf', 'ABORT — texto insuficiente após cascata', {
+      jobId,
+      textCharCount,
+      pageCount,
+      minRequired: MIN_TEXT_CHARS,
+      textSource: extracted.source,
+      ocrFallbackUsed: extracted.ocrFallbackUsed,
+      ocrPagesProcessed: extracted.ocrPagesProcessed,
+      textPreview: previewText(extracted.text, 200),
+      stageDurationsMs: durations,
+    });
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'INSUFFICIENT_TEXT', 422);
   }
 
   logs.push(
     createLog(
       'Texto extraído',
-      extracted.truncated
-        ? 'O conteúdo textual do PDF foi extraído para análise (texto truncado por limite de tamanho).'
-        : 'O conteúdo textual do PDF foi extraído para análise.',
+      extracted.ocrFallbackUsed
+        ? extracted.truncated
+          ? 'Texto obtido via OCR (Vision) — truncado por limite de páginas/tamanho.'
+          : 'Texto obtido via OCR (Vision) a partir de PDF escaneado/imagem.'
+        : extracted.truncated
+          ? 'O conteúdo textual do PDF foi extraído para análise (texto truncado por limite de tamanho).'
+          : 'O conteúdo textual do PDF foi extraído para análise.',
       'done',
     ),
   );
@@ -247,7 +240,7 @@ export async function analyzePdfBuffer(input: {
       collectionsConsulted: rulesLoad.collectionsConsulted,
       rulesSource: rulesLoad.source,
       mappedRulesCount: documentClassRules.length,
-    }    );
+    });
   }
 
   const chunks = createDocumentChunks(extracted);
@@ -268,6 +261,15 @@ export async function analyzePdfBuffer(input: {
   );
   timer.mark('retrieval');
 
+  pipelineInfo('analyzePdf', 'pré-classificação', {
+    jobId,
+    rulesCount: documentClassRules.length,
+    rulesSource: rulesLoad.source,
+    chunksCount,
+    classificationChunks: classificationChunks.length,
+    classNames: documentClassRules.map((r) => r.name),
+  });
+
   groqCalled = true;
   const classification = await analysisProvider.classify({
     chunks: classificationChunks,
@@ -280,6 +282,17 @@ export async function analyzePdfBuffer(input: {
     },
   });
   timer.mark('classification');
+
+  pipelineInfo('analyzePdf', 'classificação concluída', {
+    jobId,
+    classId: classification.classId,
+    className: classification.className,
+    confidence: classification.confidence,
+    requiresReview: classification.requiresReview,
+    errorCode: classification.errorCode,
+    reasonPreview: previewText(classification.reason, 160),
+    evidenceCount: classification.evidence?.length ?? 0,
+  });
 
   if (
     classification.errorCode === 'GROQ_RATE_LIMIT' ||
@@ -316,6 +329,8 @@ export async function analyzePdfBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification,
       extraction: null,
@@ -359,6 +374,8 @@ export async function analyzePdfBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification,
       extraction: null,
@@ -408,6 +425,8 @@ export async function analyzePdfBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification: {
         ...classification,
@@ -499,6 +518,25 @@ export async function analyzePdfBuffer(input: {
     stageDurationsMs: durations,
   });
 
+  pipelineInfo('analyzePdf', 'JOB FIM', {
+    jobId,
+    status,
+    textCharCount,
+    pageCount,
+    chunksCount,
+    textSource: extracted.source,
+    ocrFallbackUsed: extracted.ocrFallbackUsed,
+    classId: classification.classId,
+    className: classification.className,
+    classificationConfidence: classification.confidence,
+    classificationRequiresReview: classification.requiresReview,
+    extractionMissingFields: extraction.missingFields,
+    extractionRequiresReview: extraction.requiresReview,
+    recommendedFileName,
+    metadataKeys: Object.keys(extraction.metadata ?? {}),
+    stageDurationsMs: durations,
+  });
+
   if (requiresReview) {
     logs.push(
       createLog(
@@ -531,6 +569,8 @@ export async function analyzePdfBuffer(input: {
       pageCount: extracted.pageCount,
       charCount: extracted.charCount,
       truncated: extracted.truncated,
+      source: extracted.source,
+      ocrFallbackUsed: extracted.ocrFallbackUsed,
     },
     classification,
     extraction,
