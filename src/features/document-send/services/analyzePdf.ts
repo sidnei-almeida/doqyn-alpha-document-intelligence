@@ -109,6 +109,79 @@ export type AnalyzePdfOptions = {
   documentId?: string;
 };
 
+type StagingUploadUrlResponse = {
+  jobId: string;
+  stagingKey: string;
+  uploadUrl: string;
+  expiresAt: string;
+  expiresInSeconds: number;
+  method: 'PUT';
+  requiredHeaders: {
+    'Content-Type': string;
+  };
+};
+
+function isPresignedUploadEnabled(): boolean {
+  return import.meta.env.VITE_PRESIGNED_UPLOAD_ENABLED === 'true';
+}
+
+async function requestStagingUploadUrl(
+  file: File,
+  signal?: AbortSignal,
+): Promise<StagingUploadUrlResponse> {
+  const response = await authFetch('/api/documents/upload-url', {
+    method: 'POST',
+    credentials: getFetchCredentials(),
+    headers: withAuthHeaders({}, { json: true }),
+    body: JSON.stringify({
+      fileName: file.name,
+      mimeType: file.type || 'application/pdf',
+      sizeBytes: file.size,
+    }),
+    signal,
+  });
+
+  const payload = (await response.json().catch(() => null)) as StagingUploadUrlResponse | null;
+  if (!response.ok || !payload?.uploadUrl || !payload.jobId) {
+    const workflowError = parseWorkflowErrorPayload(
+      payload as WorkflowErrorApiResponse | null,
+      'Erro ao preparar upload do PDF',
+    );
+    throw new AnalyzePdfRequestError(workflowError);
+  }
+
+  return payload;
+}
+
+async function putFileToStagingUploadUrl(
+  file: File,
+  issued: StagingUploadUrlResponse,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(issued.uploadUrl, {
+    method: issued.method,
+    headers: issued.requiredHeaders,
+    body: file,
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new AnalyzePdfRequestError(
+      parseWorkflowErrorPayload(
+        {
+          error: {
+            code: 'STAGING_UPLOAD_FAILED',
+            category: 'storage',
+            title: 'Falha no upload para storage',
+            message: 'Falha ao enviar o PDF para o storage. Tente novamente.',
+          },
+        },
+        'Falha ao enviar o PDF para o storage.',
+      ),
+    );
+  }
+}
+
 export class AnalyzePdfRequestError extends Error {
   readonly code?: string;
   readonly workflowError: WorkflowErrorDisplay;
@@ -275,6 +348,8 @@ async function pollAnalysisJobResult(
         {
           error: {
             code: payload.errorCode ?? 'ANALYSIS_FAILED',
+            category: 'ai',
+            title: 'Falha na análise',
             message: payload.errorMessage ?? 'Falha na análise do documento.',
           },
         },
@@ -293,6 +368,8 @@ async function pollAnalysisJobResult(
           {
             error: {
               code: 'ANALYSIS_RESULT_MISSING',
+              category: 'ai',
+              title: 'Resultado da análise indisponível',
               message: 'Análise concluída sem resultado disponível. Tente novamente.',
             },
           },
@@ -327,17 +404,87 @@ export async function analyzePdf(
     fileName: options?.context?.fileName ?? file.name,
   };
 
+  const endpoint = options?.documentId?.trim()
+    ? '/api/ai/analyze-pdf-update'
+    : '/api/ai/analyze-pdf';
+
+  const startedAt = performance.now();
+
+  if (isPresignedUploadEnabled()) {
+    const issued = await requestStagingUploadUrl(file, options?.signal);
+    await putFileToStagingUploadUrl(file, issued, options?.signal);
+
+    const response = await authFetch(endpoint, {
+      method: 'POST',
+      credentials: getFetchCredentials(),
+      headers: withAuthHeaders(buildRequestHeaders(context), { json: true }),
+      body: JSON.stringify({
+        jobId: issued.jobId,
+        originalFileName: file.name,
+        mimeType: file.type || 'application/pdf',
+        sizeBytes: file.size,
+        ...(options?.documentId?.trim() ? { documentId: options.documentId.trim() } : {}),
+      }),
+      signal: options?.signal,
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | AnalyzePdfResponse
+      | AnalyzePdfEnqueueResponse
+      | WorkflowErrorApiResponse
+      | null;
+
+    if (response.status === 202) {
+      if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
+        throw new Error('Resposta inválida do servidor (fila assíncrona)');
+      }
+
+      const queued = payload as AnalyzePdfEnqueueResponse;
+      const polled = await pollAnalysisJobResult(queued.jobId, options);
+      const totalDurationMs = Math.round(performance.now() - startedAt);
+
+      return {
+        metadata: mapToExtractedMetadata(polled, polled.extraction, polled.classification),
+        logs: mapApiLogs(polled.logs),
+        raw: polled,
+        durationMs: totalDurationMs,
+        httpStatus: 200,
+        requestId,
+      };
+    }
+
+    if (!response.ok) {
+      const errorPayload: WorkflowErrorApiResponse | null =
+        payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
+      const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+      workflowError.requestId = workflowError.requestId ?? requestId;
+      workflowError.endpoint = endpoint;
+      throw new AnalyzePdfRequestError(workflowError);
+    }
+
+    if (!payload || !('jobId' in payload)) {
+      throw new Error('Resposta inválida do servidor');
+    }
+
+    const result = payload as AnalyzePdfResponse;
+    const durationMs = Math.round(performance.now() - startedAt);
+
+    return {
+      metadata: mapToExtractedMetadata(result, result.extraction, result.classification),
+      logs: mapApiLogs(result.logs),
+      raw: result,
+      durationMs,
+      httpStatus: response.status,
+      requestId,
+    };
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   if (options?.documentId?.trim()) {
     formData.append('documentId', options.documentId.trim());
   }
 
-  const endpoint = options?.documentId?.trim()
-    ? '/api/ai/analyze-pdf-update'
-    : '/api/ai/analyze-pdf';
-
-  const startedAt = performance.now();
   const response = await authFetch(endpoint, {
     method: 'POST',
     credentials: getFetchCredentials(),

@@ -5,7 +5,6 @@ import { confirmAnalysis } from '../services/confirmAnalysis';
 import { BULK_NEXT_ITEM_DELAY_MS } from '../uploadConstants';
 import {
   findNextQueuedItem,
-  hasInFlightBulkItem,
   isBulkInFlightStatus,
   sleep,
   startCountdownSeconds,

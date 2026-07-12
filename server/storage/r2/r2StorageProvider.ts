@@ -1,9 +1,11 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
+import { createHash } from 'node:crypto';
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import type { StorageConfig } from '../storageConfig.js';
 import {
@@ -76,6 +78,20 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
         500,
       );
     }
+  }
+
+  getRuntimeClient(): S3Client {
+    return this.runtimeClient;
+  }
+
+  async resolveStagingBucket(
+    storageScope: TenantStorageScope | undefined,
+    tenantId: string,
+  ): Promise<string> {
+    if (storageScope) {
+      return this.resolveBucketFromScope(storageScope);
+    }
+    return this.resolveBucket(tenantId);
   }
 
   /** @deprecated legado — preferir resolveBucketFromScope */
@@ -406,6 +422,118 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
         Key: stagingKey,
       }),
     );
+  }
+
+  async headStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    storageScope?: TenantStorageScope;
+  }): Promise<{ sizeBytes: number; contentType?: string; etag?: string }> {
+    await this.ensureReady();
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType ?? 'application/pdf',
+    });
+
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
+
+    try {
+      const result = await this.runtimeClient.send(
+        new HeadObjectCommand({
+          Bucket: bucket,
+          Key: stagingKey,
+        }),
+      );
+
+      const sizeBytes = Number(result.ContentLength ?? 0);
+      if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+        throw new ServiceError(
+          'Arquivo de staging vazio ou ausente.',
+          'STAGING_FILE_NOT_FOUND',
+          400,
+        );
+      }
+
+      return {
+        sizeBytes,
+        contentType: result.ContentType,
+        etag: result.ETag ?? undefined,
+      };
+    } catch (error) {
+      const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+      const status =
+        error && typeof error === 'object' && '$metadata' in error
+          ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+          : undefined;
+      if (name === 'NotFound' || status === 404) {
+        throw new ServiceError(
+          'Arquivo ainda não foi enviado ao storage. Conclua o upload antes de analisar.',
+          'STAGING_FILE_NOT_FOUND',
+          400,
+        );
+      }
+      throw error;
+    }
+  }
+
+  async hashStagingFile(input: {
+    tenantId: string;
+    jobId: string;
+    mimeType?: string;
+    originalFileName?: string;
+    storageScope?: TenantStorageScope;
+  }): Promise<string> {
+    await this.ensureReady();
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType ?? 'application/pdf',
+    });
+
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+
+    const bucket = scope
+      ? await this.resolveBucketFromScope(scope)
+      : await this.resolveBucket(input.tenantId);
+
+    const result = await this.runtimeClient.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: stagingKey,
+      }),
+    );
+
+    const hash = createHash('sha256');
+    if (!result.Body) {
+      throw new ServiceError(
+        'Arquivo de staging vazio.',
+        'STAGING_FILE_NOT_FOUND',
+        400,
+      );
+    }
+
+    for await (const chunk of result.Body as AsyncIterable<Uint8Array>) {
+      hash.update(Buffer.from(chunk));
+    }
+
+    return hash.digest('hex');
   }
 }
 

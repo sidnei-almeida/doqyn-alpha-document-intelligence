@@ -12,10 +12,9 @@ import { analyzePdfBuffer } from '../../server/ai/services/analyzePdfService.js'
 import { resolveAnalysisProviderName } from '../../server/ai/providers/resolveAnalysisProvider.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
-import { parseMultipart } from '../../server/utils/parseMultipart.js';
+import { parseAnalyzePdfRequest } from '../../server/utils/parseAnalyzePdfRequest.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
-import { getStorageConfig } from '../../server/storage/storageConfig.js';
 import { isStorageConfigured, storeAnalysisStaging } from '../../server/storage/index.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
@@ -26,8 +25,12 @@ import {
 import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
 import {
   enqueuePdfAnalysisJob,
+  enqueuePdfAnalysisJobFromStaging,
   isAsyncPdfAnalysisAvailable,
 } from '../../server/services/analysis/enqueuePdfAnalysisJob.js';
+import {
+  resolveAnalyzePdfIngress,
+} from '../../server/services/analysis/analyzePdfIngress.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -66,52 +69,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { file } = await parseMultipart(req);
-
-    if (!file) {
-      logger.warn('analyze-pdf validation failed', {
-        requestId: ctx.requestId,
-        reason: 'missing_file',
-        durationMs: Date.now() - startedAt,
-      });
-      return res.status(400).json({ message: AI_ERROR_MESSAGES.pdfOnly });
-    }
-
-    uploadFileName = file.filename;
-
-    if (file.size === 0) {
-      logger.warn('analyze-pdf validation failed', {
-        requestId: ctx.requestId,
-        reason: 'empty_file',
-        durationMs: Date.now() - startedAt,
-      });
-      return res.status(400).json({ message: AI_ERROR_MESSAGES.emptyFile });
-    }
-
-    if (isStorageConfigured()) {
-      const storageConfig = getStorageConfig();
-      if (file.size > storageConfig.maxUploadBytes) {
-        logger.warn('analyze-pdf validation failed', {
-          requestId: ctx.requestId,
-          reason: 'file_too_large',
-          fileSizeBytes: file.size,
-          maxUploadBytes: storageConfig.maxUploadBytes,
-          durationMs: Date.now() - startedAt,
-        });
-        return res.status(413).json({
-          message: `Arquivo excede o limite de ${Math.floor(storageConfig.maxUploadBytes / (1024 * 1024))} MB.`,
-          code: 'FILE_TOO_LARGE',
-        });
-      }
-    }
+    const parsed = await parseAnalyzePdfRequest(req);
 
     const companyId = getCompanyIdFromUser(user);
     const docCtx = await buildDocumentRequestContext(user);
     auditCtx = buildDocumentAuditContext(docCtx, user, ctx.requestId);
+    const storageScope = resolveTenantStorageScopeFromAuthUser(user);
+
+    const ingress = await resolveAnalyzePdfIngress(parsed, {
+      tenantId: companyId,
+      ownerUserId: user.id,
+      storageScope,
+      loadBuffer: !isAsyncPdfAnalysisAvailable(),
+    });
+
+    uploadFileName = ingress.originalFileName;
 
     const analysisStartedName = buildAnalysisJobNameSnapshot({
-      originalFileName: file.filename,
-      uploadFileName: file.filename,
+      originalFileName: ingress.originalFileName,
+      uploadFileName: ingress.originalFileName,
     });
 
     await createDocumentAuditLog(auditCtx, {
@@ -119,14 +95,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: 'Análise de PDF iniciada.',
       target: {
         type: 'analysis_job',
-        id: ctx.requestId,
+        id: ingress.jobId ?? ctx.requestId,
         nameSnapshot: analysisStartedName,
       },
       metadata: sanitizeAuditMetadata({
         documentName: analysisStartedName,
-        mimeType: file.mimeType,
-        sizeBytes: file.size,
-        source: 'api',
+        mimeType: ingress.mimeType,
+        sizeBytes: ingress.fileSize,
+        source: ingress.fromStaging ? 'presigned_staging' : 'api',
       }),
     }).catch(() => undefined);
 
@@ -137,6 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tenantType: user.tenantType ?? 'business',
       sessionTenantId: user.tenantId,
       sessionCompanyId: user.companyId,
+      fromStaging: ingress.fromStaging,
+      jobId: ingress.jobId,
     });
 
     await assertTenantQuota(companyId, 'analysis_per_day');
@@ -144,27 +122,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const aiProvider = resolveAnalysisProviderName();
 
     if (isAsyncPdfAnalysisAvailable()) {
-      const storageScope = resolveTenantStorageScopeFromAuthUser(user);
-
       try {
-        const queued = await enqueuePdfAnalysisJob({
-          tenantId: companyId,
-          ownerUserId: user.id,
-          buffer: file.buffer,
-          originalFileName: file.filename,
-          mimeType: file.mimeType,
-          storageScope,
-          requestId: ctx.requestId,
-          batchId: ctx.batchId,
-          itemId: ctx.itemId,
-          jobKind: 'initial',
-        });
+        const queued =
+          ingress.fromStaging && ingress.jobId
+            ? await enqueuePdfAnalysisJobFromStaging({
+                tenantId: companyId,
+                ownerUserId: user.id,
+                jobId: ingress.jobId,
+                originalFileName: ingress.originalFileName,
+                mimeType: ingress.mimeType,
+                fileSizeBytes: ingress.fileSize,
+                storageScope,
+                requestId: ctx.requestId,
+                batchId: ctx.batchId,
+                itemId: ctx.itemId,
+                jobKind: 'initial',
+              })
+            : await enqueuePdfAnalysisJob({
+                tenantId: companyId,
+                ownerUserId: user.id,
+                buffer: parsed.mode === 'multipart' ? parsed.file.buffer : Buffer.alloc(0),
+                originalFileName: ingress.originalFileName,
+                mimeType: ingress.mimeType,
+                storageScope,
+                requestId: ctx.requestId,
+                batchId: ctx.batchId,
+                itemId: ctx.itemId,
+                jobKind: 'initial',
+              });
 
         logger.info('analyze-pdf enfileirado', {
           requestId: ctx.requestId,
           jobId: queued.jobId,
           tenantId: companyId,
           aiProvider,
+          fromStaging: ingress.fromStaging,
           durationMs: Date.now() - startedAt,
         });
 
@@ -188,30 +180,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const fileBuffer = ingress.buffer;
+    if (!fileBuffer) {
+      return res.status(500).json({ message: AI_ERROR_MESSAGES.analysisFailed });
+    }
+
     const result = await analyzePdfBuffer({
-      buffer: file.buffer,
-      originalFileName: file.filename,
-      mimeType: file.mimeType,
+      buffer: fileBuffer,
+      originalFileName: ingress.originalFileName,
+      mimeType: ingress.mimeType,
       companyId,
       ownerUserId: user.id,
+      jobId: ingress.jobId,
       requestContext: {
         requestId: ctx.requestId,
         batchId: ctx.batchId,
         itemId: ctx.itemId,
-        fileName: file.filename,
+        fileName: ingress.originalFileName,
       },
     });
 
-    if (isStorageConfigured()) {
+    if (isStorageConfigured() && !ingress.fromStaging) {
       try {
-        const storageScope = resolveTenantStorageScopeFromAuthUser(user);
         await storeAnalysisStaging({
           tenantId: companyId,
           ownerUserId: user.id,
           jobId: result.jobId,
-          buffer: file.buffer,
-          mimeType: file.mimeType,
-          originalFileName: file.filename,
+          buffer: fileBuffer,
+          mimeType: ingress.mimeType,
+          originalFileName: ingress.originalFileName,
           storageScope,
         });
       } catch (stagingError) {
@@ -238,9 +235,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : 'document.analysis_completed';
 
     const analysisNameSnapshot = buildAnalysisJobNameSnapshot({
-      originalFileName: file.filename,
+      originalFileName: ingress.originalFileName,
       recommendedFileName: result.recommendedFileName,
-      uploadFileName: file.filename,
+      uploadFileName: ingress.originalFileName,
     });
 
     await createDocumentAuditLog(auditCtx, {
@@ -268,7 +265,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         durationMs: Date.now() - startedAt,
         aiProvider,
         errorCode: result.errorCode,
-        source: 'api',
+        source: ingress.fromStaging ? 'presigned_staging' : 'api',
       }),
     }).catch(() => undefined);
 
@@ -276,9 +273,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       requestId: ctx.requestId,
       batchId: ctx.batchId,
       itemId: ctx.itemId,
-      fileName: file.filename,
-      fileSizeBytes: file.size,
-      mimeType: file.mimeType,
+      fileName: ingress.originalFileName,
+      fileSizeBytes: ingress.fileSize,
+      mimeType: ingress.mimeType,
+      fromStaging: ingress.fromStaging,
       aiProvider,
       jobId: result.jobId,
       status: result.status,
