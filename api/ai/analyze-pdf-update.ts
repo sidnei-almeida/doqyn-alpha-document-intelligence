@@ -11,10 +11,9 @@ import { createDocumentAuditLog } from '../../server/audit/documentAuditLogServi
 import { analyzePdfUpdateBuffer } from '../../server/ai/services/analyzePdfUpdateService.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
-import { parseMultipart } from '../../server/utils/parseMultipart.js';
+import { parseAnalyzePdfRequest } from '../../server/utils/parseAnalyzePdfRequest.js';
 import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
-import { getStorageConfig } from '../../server/storage/storageConfig.js';
 import { isStorageConfigured, storeAnalysisStaging } from '../../server/storage/index.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
@@ -25,8 +24,13 @@ import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
 import { resolveAnalysisProviderName } from '../../server/ai/providers/resolveAnalysisProvider.js';
 import {
   enqueuePdfAnalysisJob,
+  enqueuePdfAnalysisJobFromStaging,
   isAsyncPdfAnalysisAvailable,
 } from '../../server/services/analysis/enqueuePdfAnalysisJob.js';
+import {
+  readDocumentIdFromIngress,
+  resolveAnalyzePdfIngress,
+} from '../../server/services/analysis/analyzePdfIngress.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -56,8 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { file, fields } = await parseMultipart(req);
-    const documentId = fields.documentId?.trim();
+    const parsed = await parseAnalyzePdfRequest(req);
+    const documentId = readDocumentIdFromIngress(parsed);
 
     if (!documentId) {
       return res.status(400).json({
@@ -66,27 +70,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    if (!file) {
-      return res.status(400).json({ message: AI_ERROR_MESSAGES.pdfOnly });
-    }
-
-    if (file.size === 0) {
-      return res.status(400).json({ message: AI_ERROR_MESSAGES.emptyFile });
-    }
-
-    if (isStorageConfigured()) {
-      const storageConfig = getStorageConfig();
-      if (file.size > storageConfig.maxUploadBytes) {
-        return res.status(413).json({
-          message: `Arquivo excede o limite de ${Math.floor(storageConfig.maxUploadBytes / (1024 * 1024))} MB.`,
-          code: 'FILE_TOO_LARGE',
-        });
-      }
-    }
-
     const companyId = getCompanyIdFromUser(user);
     const docCtx = await buildDocumentRequestContext(user);
     auditCtx = buildDocumentAuditContext(docCtx, user, ctx.requestId);
+    const storageScope = resolveTenantStorageScopeFromAuthUser(user);
+
+    const ingress = await resolveAnalyzePdfIngress(parsed, {
+      tenantId: companyId,
+      ownerUserId: user.id,
+      storageScope,
+      loadBuffer: !isAsyncPdfAnalysisAvailable(),
+    });
 
     await assertTenantQuota(companyId, 'analysis_per_day');
 
@@ -101,23 +95,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const aiProvider = resolveAnalysisProviderName();
 
     if (isAsyncPdfAnalysisAvailable()) {
-      const storageScope = resolveTenantStorageScopeFromAuthUser(user);
-
       try {
-        const queued = await enqueuePdfAnalysisJob({
-          tenantId: companyId,
-          ownerUserId: user.id,
-          buffer: file.buffer,
-          originalFileName: file.filename,
-          mimeType: file.mimeType,
-          storageScope,
-          requestId: ctx.requestId,
-          batchId: ctx.batchId,
-          itemId: ctx.itemId,
-          jobKind: 'version_update',
-          documentId,
-          membershipId: docCtx.membershipId,
-        });
+        const queued =
+          ingress.fromStaging && ingress.jobId
+            ? await enqueuePdfAnalysisJobFromStaging({
+                tenantId: companyId,
+                ownerUserId: user.id,
+                jobId: ingress.jobId,
+                originalFileName: ingress.originalFileName,
+                mimeType: ingress.mimeType,
+                fileSizeBytes: ingress.fileSize,
+                storageScope,
+                requestId: ctx.requestId,
+                batchId: ctx.batchId,
+                itemId: ctx.itemId,
+                jobKind: 'version_update',
+                documentId,
+                membershipId: docCtx.membershipId,
+              })
+            : await enqueuePdfAnalysisJob({
+                tenantId: companyId,
+                ownerUserId: user.id,
+                buffer: parsed.mode === 'multipart' ? parsed.file.buffer : Buffer.alloc(0),
+                originalFileName: ingress.originalFileName,
+                mimeType: ingress.mimeType,
+                storageScope,
+                requestId: ctx.requestId,
+                batchId: ctx.batchId,
+                itemId: ctx.itemId,
+                jobKind: 'version_update',
+                documentId,
+                membershipId: docCtx.membershipId,
+              });
 
         logger.info('analyze-pdf-update enfileirado', {
           requestId: ctx.requestId,
@@ -125,6 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           documentId,
           tenantId: companyId,
           aiProvider,
+          fromStaging: ingress.fromStaging,
           durationMs: Date.now() - startedAt,
         });
 
@@ -142,39 +152,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const fileBuffer = ingress.buffer;
+    if (!fileBuffer) {
+      return res.status(500).json({ message: AI_ERROR_MESSAGES.analysisFailed });
+    }
+
     const result = await analyzePdfUpdateBuffer({
-      buffer: file.buffer,
-      originalFileName: file.filename,
-      mimeType: file.mimeType,
+      buffer: fileBuffer,
+      originalFileName: ingress.originalFileName,
+      mimeType: ingress.mimeType,
       companyId,
       documentId,
       ownerUserId: user.id,
       membershipId: docCtx.membershipId,
+      jobId: ingress.jobId,
       requestContext: {
         requestId: ctx.requestId,
         batchId: ctx.batchId,
         itemId: ctx.itemId,
-        fileName: file.filename,
+        fileName: ingress.originalFileName,
       },
     });
 
-    if (isStorageConfigured()) {
-      const storageScope = resolveTenantStorageScopeFromAuthUser(user);
+    if (isStorageConfigured() && !ingress.fromStaging) {
       await storeAnalysisStaging({
         tenantId: companyId,
         ownerUserId: user.id,
         jobId: result.jobId,
-        buffer: file.buffer,
-        mimeType: file.mimeType,
-        originalFileName: file.filename,
+        buffer: fileBuffer,
+        mimeType: ingress.mimeType,
+        originalFileName: ingress.originalFileName,
         storageScope,
       });
     }
 
     const analysisNameSnapshot = buildAnalysisJobNameSnapshot({
-      originalFileName: file.filename,
+      originalFileName: ingress.originalFileName,
       recommendedFileName: result.recommendedFileName,
-      uploadFileName: file.filename,
+      uploadFileName: ingress.originalFileName,
     });
 
     await createDocumentAuditLog(auditCtx, {
@@ -196,7 +211,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         seemsSameDocument: result.extraction?.seemsSameDocument,
         sameDocumentConfidence: result.extraction?.sameDocumentConfidence,
         status: result.status,
-        source: 'api',
+        source: ingress.fromStaging ? 'presigned_staging' : 'api',
         updateMode: true,
       }),
     }).catch(() => undefined);
@@ -206,6 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       documentId,
       jobId: result.jobId,
       status: result.status,
+      fromStaging: ingress.fromStaging,
       durationMs: Date.now() - startedAt,
     });
 
