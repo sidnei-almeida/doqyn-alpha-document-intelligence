@@ -19,8 +19,6 @@ import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { createDocumentAuditLog } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import { createProcessingJob } from './processingService.js';
-import { extractMetadata } from './metadataService.js';
-import { classifyDocument } from './documentClassificationService.js';
 import { storeUploadedDocumentFile } from './documentFileService.js';
 import { resolveStorageFileNames } from '../utils/resolveStorageFileNames.js';
 import type { AuthUser } from '../auth/types.js';
@@ -41,6 +39,45 @@ import {
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
+
+/** Stub legado do upload simulado — pipeline real usa analyze/confirm. */
+async function extractMetadata(input: {
+  originalFileName: string;
+  mimeType: string;
+  fileSize: number;
+  documentType: string;
+}) {
+  return {
+    fileName: input.originalFileName,
+    mimeType: input.mimeType,
+    fileSize: input.fileSize,
+    documentType: input.documentType,
+    extractedAt: new Date().toISOString(),
+    fields: {
+      detectedLanguage: 'pt-BR',
+      pageCount: input.mimeType === 'application/pdf' ? 3 : 1,
+    },
+  };
+}
+
+async function classifyDocument(
+  documentType: string,
+  metadata: Record<string, unknown>,
+) {
+  const categoryMap: Record<string, string> = {
+    Contrato: 'legal',
+    'Nota Fiscal': 'financial',
+    Relatório: 'report',
+    'Política Interna': 'policy',
+    Comprovante: 'receipt',
+  };
+
+  return {
+    category: categoryMap[documentType] ?? 'general',
+    confidence: 0.92,
+    metadata,
+  };
+}
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
