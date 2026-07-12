@@ -52,6 +52,19 @@ function resolvePreviewProvider(
   return 'aws_s3';
 }
 
+export function buildPendingPreviewSlot(
+  primary: MongoStorageSlot,
+  versionId: string,
+): MongoPreviewStorageSlot {
+  return {
+    provider: resolvePreviewProvider(primary),
+    status: 'pending',
+    bucketAlias: primary.bucketAlias ?? null,
+    objectKey: null,
+    sourceVersionId: versionId,
+  };
+}
+
 function buildSkippedPreview(errorCode: string, errorMessage: string): MongoPreviewStorageSlot {
   return {
     provider: 'cloudflare_r2',
