@@ -22,7 +22,7 @@ import {
   selectChunksForExtraction,
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
-import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
+import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
   buildVisionOcrFailedReviewResponse,
   isVisionOcrFailure,
@@ -40,7 +40,7 @@ import {
   type AnalyzeRequestContext,
   createLog,
   logAnalyzeStage,
-  validatePdfUpload,
+  validateAnalysisUpload,
 } from './pdfAnalysisHelpers.js';
 
 type StageDurationsMs = {
@@ -111,7 +111,7 @@ export async function analyzePdfBuffer(input: {
     itemId: context.itemId,
   });
 
-  validatePdfUpload(input);
+  const resolvedMimeType = validateAnalysisUpload(input);
 
   const timer = createStageTimer();
   let groqCalled = false;
@@ -120,13 +120,21 @@ export async function analyzePdfBuffer(input: {
 
   logAnalyzeStage('analyze-pdf arquivo recebido', context, {
     fileSizeBytes,
-    mimeType: input.mimeType,
+    mimeType: resolvedMimeType,
     companyId: input.companyId,
   });
 
   timer.mark('validation');
 
-  logs.push(createLog('Documento recebido', 'O PDF foi recebido com sucesso.', 'done'));
+  logs.push(
+    createLog(
+      'Documento recebido',
+      resolvedMimeType.startsWith('image/')
+        ? 'A imagem foi recebida com sucesso.'
+        : 'O PDF foi recebido com sucesso.',
+      'done',
+    ),
+  );
 
   const rulesLoadPromise = loadActiveDocumentClassRules(input.companyId, {
     ownerUserId: input.ownerUserId,
@@ -134,7 +142,7 @@ export async function analyzePdfBuffer(input: {
 
   let extracted;
   try {
-    extracted = await extractTextFromDocumentPdf(input.buffer);
+    extracted = await extractTextFromDocument(input.buffer, resolvedMimeType);
   } catch {
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf extração de texto falhou', context, {

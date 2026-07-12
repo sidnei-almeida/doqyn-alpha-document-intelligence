@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
-import { MAX_FILE_SIZE_MB, MAX_FILES_PER_BATCH } from '../uploadConstants';
+import { MAX_FILE_SIZE_MB, MAX_FILES_PER_BATCH, UPLOAD_ACCEPT } from '../uploadConstants';
 import { validateBulkFiles } from '../utils/validateBulkUpload';
 
 interface UploadDropzoneAreaProps {
@@ -97,7 +97,7 @@ export function UploadDropzoneArea({
         id={inputId}
         type="file"
         className="sr-only"
-        accept=".pdf,application/pdf"
+        accept={UPLOAD_ACCEPT}
         multiple
         disabled={disabled}
         onChange={(e) => {
@@ -114,11 +114,11 @@ export function UploadDropzoneArea({
         Comece enviando um documento
       </p>
       <p className="mt-1 max-w-sm text-center text-sm text-doqyn-muted">
-        Arraste PDFs aqui ou clique para selecionar do seu computador
+        Arraste PDFs ou imagens (JPG, PNG, WebP) aqui ou clique para selecionar
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <Badge variant="neutral" dot={false} className="text-[11px]">
-          PDF
+          PDF · JPG · PNG · WebP
         </Badge>
         <Badge variant="neutral" dot={false} className="text-[11px]">
           até {MAX_FILE_SIZE_MB} MB

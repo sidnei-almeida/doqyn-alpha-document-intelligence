@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { DocumentChunk } from '../ai/types/documentAi.types.js';
 import { createDocumentChunks } from '../ai/services/documentChunker.js';
-import { extractTextFromDocumentPdf } from '../ai/services/documentTextExtractor.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import type { MongoDocumentChunk } from '../db/types.js';
 import {
@@ -20,6 +19,7 @@ export type PersistDocumentChunksInput = {
   categoryId: string;
   isCurrentVersion: boolean;
   pdfBuffer: Buffer;
+  mimeType?: string;
   createdBy: string;
 };
 
@@ -97,7 +97,15 @@ export function buildRagChunkFilter(input: RagChunkQueryInput): Record<string, u
 }
 
 export async function createChunksFromPdfBuffer(buffer: Buffer): Promise<DocumentChunk[]> {
-  const extracted = await extractTextFromDocumentPdf(buffer);
+  return createChunksFromDocumentBuffer(buffer, 'application/pdf');
+}
+
+export async function createChunksFromDocumentBuffer(
+  buffer: Buffer,
+  mimeType = 'application/pdf',
+): Promise<DocumentChunk[]> {
+  const { extractTextFromDocument } = await import('../ai/services/documentTextExtractor.js');
+  const extracted = await extractTextFromDocument(buffer, mimeType);
   return createDocumentChunks(extracted);
 }
 
@@ -113,7 +121,10 @@ export async function persistDocumentVersionChunks(
     return { chunkCount: 0 };
   }
 
-  const chunks = await createChunksFromPdfBuffer(input.pdfBuffer);
+  const chunks = await createChunksFromDocumentBuffer(
+    input.pdfBuffer,
+    input.mimeType ?? 'application/pdf',
+  );
   if (chunks.length === 0) {
     return { chunkCount: 0 };
   }

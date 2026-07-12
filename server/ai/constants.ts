@@ -2,7 +2,63 @@ export const MAX_FILE_SIZE_MB = 15;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export const MAX_TEXT_CHARS = 50_000;
 export const MIN_TEXT_CHARS = 300;
-export const ALLOWED_MIME_TYPES = ['application/pdf'] as const;
+
+export const ALLOWED_PDF_MIME_TYPES = ['application/pdf'] as const;
+export const ALLOWED_IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+export const ALLOWED_MIME_TYPES = [
+  ...ALLOWED_PDF_MIME_TYPES,
+  ...ALLOWED_IMAGE_MIME_TYPES,
+] as const;
+
+export const ALLOWED_ANALYSIS_EXTENSIONS = [
+  '.pdf',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+] as const;
+
+export type AllowedAnalysisMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
+export function isAllowedAnalysisMimeType(mimeType: string): boolean {
+  const mime = mimeType.trim().toLowerCase();
+  return (ALLOWED_MIME_TYPES as readonly string[]).includes(mime);
+}
+
+export function isImageAnalysisMimeType(mimeType: string): boolean {
+  const mime = mimeType.trim().toLowerCase();
+  return (ALLOWED_IMAGE_MIME_TYPES as readonly string[]).includes(mime);
+}
+
+export function isPdfAnalysisMimeType(mimeType: string): boolean {
+  return mimeType.trim().toLowerCase() === 'application/pdf';
+}
+
+export function extensionAllowedForAnalysis(fileName: string): boolean {
+  const lower = fileName.toLowerCase();
+  return ALLOWED_ANALYSIS_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+export function resolveAnalysisMimeType(input: {
+  fileName: string;
+  mimeType?: string;
+}): AllowedAnalysisMimeType | null {
+  const mime = input.mimeType?.trim().toLowerCase();
+  if (mime && mime !== 'application/octet-stream' && isAllowedAnalysisMimeType(mime)) {
+    return mime as AllowedAnalysisMimeType;
+  }
+
+  const lower = input.fileName.toLowerCase();
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  return null;
+}
 
 export const CHUNK_SIZE = 1800;
 export const CHUNK_OVERLAP = 250;
@@ -26,12 +82,16 @@ export const CLASSIFICATION_CONFIDENCE_THRESHOLD = MIN_CLASSIFICATION_CONFIDENCE
 
 export const AI_ERROR_MESSAGES = {
   pdfOnly: 'Envie apenas arquivos PDF nesta etapa.',
+  unsupportedFormat:
+    'Envie PDF ou imagem (JPG, PNG ou WebP) nesta etapa.',
   fileTooLarge: 'O arquivo excede o limite de 15MB.',
   emptyFile: 'O arquivo enviado está vazio.',
   insufficientText:
     'Texto insuficiente ou não extraível. O documento pode ser escaneado ou baseado em imagem.',
   visionOcrFailed:
     'OCR automático falhou. O documento foi enviado para revisão manual.',
+  visionOcrRequiredForImages:
+    'Análise de imagens exige Vision OCR configurado. Ative VISION_OCR_ENABLED e as credenciais GCP.',
   rulesNotSeeded:
     'Não há classes e regras de documentos configuradas para esta empresa.',
   rulesNoCategories:
