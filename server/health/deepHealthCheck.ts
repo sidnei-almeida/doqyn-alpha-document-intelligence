@@ -1,9 +1,11 @@
 import { getDoqynAuthBaseUrl } from '../auth/authConfig.js';
 import { resolveAnalysisProvider } from '../ai/providers/resolveAnalysisProvider.js';
+import { getVisionOcrHealth, isVisionOcrEnabled } from '../ai/vision/visionConfig.js';
 import { isRedisConfigured, redisPing } from '../redis/redisClient.js';
 import { getDb, isMongoNativeConfigured } from '../db/mongoClient.js';
 import { isStorageConfigured } from '../storage/index.js';
 import { getAnalysisQueueStats, isAnalysisQueueEnabled } from '../queues/analysisQueue.js';
+import { getPreviewQueueStats, isPreviewQueueEnabled } from '../queues/previewQueue.js';
 import { getPhaseAMetricsSnapshot } from '../metrics/phaseAMetrics.js';
 
 export type HealthCheckResult = {
@@ -14,6 +16,7 @@ export type HealthCheckResult = {
   active?: number;
   name?: string;
   configured?: boolean;
+  enabled?: boolean;
 };
 
 export type DeepHealthReport = {
@@ -24,7 +27,9 @@ export type DeepHealthReport = {
     r2: HealthCheckResult;
     auth: HealthCheckResult;
     analysisQueue: HealthCheckResult;
+    previewQueue: HealthCheckResult;
     aiProvider: HealthCheckResult;
+    visionOcr: HealthCheckResult;
   };
   metrics: ReturnType<typeof getPhaseAMetricsSnapshot>;
   timestamp: string;
@@ -39,7 +44,12 @@ async function checkMongo(): Promise<HealthCheckResult> {
   try {
     const db = await getDb();
     await db.command({ ping: 1 });
-    return { ok: true, latencyMs: Date.now() - startedAt };
+    const { isMongoAtlasEnabled } = await import('../db/mongoConfig.js');
+    return {
+      ok: true,
+      latencyMs: Date.now() - startedAt,
+      message: isMongoAtlasEnabled() ? 'atlas' : 'local',
+    };
   } catch (error) {
     return {
       ok: false,
@@ -112,6 +122,26 @@ async function checkAnalysisQueue(): Promise<HealthCheckResult> {
   }
 }
 
+async function checkPreviewQueue(): Promise<HealthCheckResult> {
+  if (!isPreviewQueueEnabled()) {
+    return { ok: true, message: 'Fila de preview em modo síncrono' };
+  }
+
+  try {
+    const stats = await getPreviewQueueStats();
+    return {
+      ok: true,
+      waiting: stats.waiting,
+      active: stats.active,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'preview queue stats failed',
+    };
+  }
+}
+
 function checkAiProvider(): HealthCheckResult {
   const provider = resolveAnalysisProvider();
   return {
@@ -119,6 +149,27 @@ function checkAiProvider(): HealthCheckResult {
     name: provider.name,
     configured: provider.isConfigured(),
     message: provider.isConfigured() ? undefined : 'Provedor de IA não configurado',
+  };
+}
+
+function checkVisionOcr(): HealthCheckResult {
+  const health = getVisionOcrHealth();
+  if (!health.enabled) {
+    return {
+      ok: true,
+      enabled: false,
+      configured: false,
+      name: 'google_vision',
+      message: health.message,
+    };
+  }
+
+  return {
+    ok: health.configured,
+    enabled: true,
+    configured: health.configured,
+    name: 'google_vision',
+    message: health.message,
   };
 }
 
@@ -134,24 +185,32 @@ export function resolveOverallStatus(checks: DeepHealthReport['checks']): DeepHe
   const authDown = !checks.auth.ok;
   const queueExpected = isAnalysisQueueEnabled();
   const queueDown = queueExpected && !checks.analysisQueue.ok;
+  const previewQueueExpected = isPreviewQueueEnabled();
+  const previewQueueDown = previewQueueExpected && !checks.previewQueue.ok;
   const aiDown = isProductionRuntime() && !checks.aiProvider.ok;
   const storageDown = isProductionRuntime() && !checks.r2.ok;
+  const visionDown =
+    isProductionRuntime() && isVisionOcrEnabled() && checks.visionOcr.enabled === true && !checks.visionOcr.ok;
 
-  if (redisDown || authDown || queueDown || aiDown || storageDown) return 'degraded';
+  if (redisDown || authDown || queueDown || previewQueueDown || aiDown || storageDown || visionDown) {
+    return 'degraded';
+  }
   return 'ok';
 }
 
 export async function runDeepHealthCheck(): Promise<DeepHealthReport> {
-  const [mongo, redis, r2, auth, analysisQueue] = await Promise.all([
+  const [mongo, redis, r2, auth, analysisQueue, previewQueue] = await Promise.all([
     checkMongo(),
     checkRedis(),
     checkStorage(),
     checkAuth(),
     checkAnalysisQueue(),
+    checkPreviewQueue(),
   ]);
 
   const aiProvider = checkAiProvider();
-  const checks = { mongo, redis, r2, auth, analysisQueue, aiProvider };
+  const visionOcr = checkVisionOcr();
+  const checks = { mongo, redis, r2, auth, analysisQueue, previewQueue, aiProvider, visionOcr };
 
   return {
     status: resolveOverallStatus(checks),

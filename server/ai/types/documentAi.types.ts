@@ -75,6 +75,8 @@ export type AnalyzePdfResponse = {
     pageCount?: number;
     charCount: number;
     truncated: boolean;
+    source?: 'pdf_parse' | 'google_vision' | 'pdf_parse+google_vision';
+    ocrFallbackUsed?: boolean;
   };
   classification: ClassificationResult;
   extraction: MetadataExtractionResult | null;
@@ -94,6 +96,11 @@ export type ExtractedPdfText = {
   pageCount?: number;
   charCount: number;
   truncated: boolean;
+  /** Origem da extração (pdf-parse e/ou Vision OCR). */
+  source?: 'pdf_parse' | 'google_vision' | 'pdf_parse+google_vision';
+  ocrFallbackUsed?: boolean;
+  ocrPagesProcessed?: number;
+  ocrDurationMs?: number;
 };
 
 export type DocumentChunk = {

@@ -1,8 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   AI_ERROR_MESSAGES,
-  ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE_BYTES,
   MIN_TEXT_CHARS,
 } from '../constants.js';
 import {
@@ -28,7 +26,7 @@ import {
   selectChunksForExtraction,
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
-import { extractTextFromPdf } from './pdfTextExtractor.js';
+import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
 import { isMongoNativeConfigured } from '../../db/mongoClient.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import {
@@ -43,49 +41,11 @@ import {
   normalizeVersionLabel,
 } from '../../utils/versionLabelUtils.js';
 import type { PreviousVersionContext } from '../utils/updateExtractorPrompt.js';
-
-type AnalyzeRequestContext = {
-  requestId?: string;
-  batchId?: string;
-  itemId?: string;
-  fileName?: string;
-};
-
-function createLog(
-  title: string,
-  description: string,
-  status: ProcessingLogItem['status'],
-): ProcessingLogItem {
-  return { title, description, status };
-}
-
-function validatePdfUpload(input: {
-  buffer: Buffer;
-  originalFileName: string;
-  mimeType: string;
-}): void {
-  if (!input.buffer.length) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.emptyFile, 'EMPTY_FILE', 400);
-  }
-
-  if (input.buffer.length > MAX_FILE_SIZE_BYTES) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.fileTooLarge, 'FILE_TOO_LARGE', 400);
-  }
-
-  const lowerName = input.originalFileName.toLowerCase();
-  if (!lowerName.endsWith('.pdf')) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_EXTENSION', 400);
-  }
-
-  const mime = input.mimeType.toLowerCase();
-  if (
-    mime &&
-    mime !== 'application/octet-stream' &&
-    !ALLOWED_MIME_TYPES.includes(mime as (typeof ALLOWED_MIME_TYPES)[number])
-  ) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.pdfOnly, 'INVALID_MIME', 400);
-  }
-}
+import {
+  type AnalyzeRequestContext,
+  createLog,
+  validatePdfUpload,
+} from './pdfAnalysisHelpers.js';
 
 async function loadPreviousVersionContext(input: {
   documentId: string;
@@ -197,7 +157,7 @@ export async function analyzePdfUpdateBuffer(input: {
 
   let extracted;
   try {
-    extracted = await extractTextFromPdf(input.buffer);
+    extracted = await extractTextFromDocumentPdf(input.buffer);
   } catch {
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'TEXT_EXTRACTION_FAILED', 422);
   }
@@ -206,7 +166,15 @@ export async function analyzePdfUpdateBuffer(input: {
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'INSUFFICIENT_TEXT', 422);
   }
 
-  logs.push(createLog('Texto extraído', 'Conteúdo do novo arquivo extraído para análise.', 'done'));
+  logs.push(
+    createLog(
+      'Texto extraído',
+      extracted.ocrFallbackUsed
+        ? 'Conteúdo do novo arquivo obtido via OCR (Vision) para análise.'
+        : 'Conteúdo do novo arquivo extraído para análise.',
+      'done',
+    ),
+  );
 
   let rulesLoad;
   try {
@@ -262,6 +230,8 @@ export async function analyzePdfUpdateBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification,
       extraction: null,
@@ -289,6 +259,8 @@ export async function analyzePdfUpdateBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification,
       extraction: null,
@@ -315,6 +287,8 @@ export async function analyzePdfUpdateBuffer(input: {
         pageCount: extracted.pageCount,
         charCount: extracted.charCount,
         truncated: extracted.truncated,
+        source: extracted.source,
+        ocrFallbackUsed: extracted.ocrFallbackUsed,
       },
       classification: {
         ...classification,
@@ -423,6 +397,8 @@ export async function analyzePdfUpdateBuffer(input: {
       pageCount: extracted.pageCount,
       charCount: extracted.charCount,
       truncated: extracted.truncated,
+      source: extracted.source,
+      ocrFallbackUsed: extracted.ocrFallbackUsed,
     },
     classification,
     extraction,

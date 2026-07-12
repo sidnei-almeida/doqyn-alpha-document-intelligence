@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DocumentChunk } from '../ai/types/documentAi.types.js';
 import { createDocumentChunks } from '../ai/services/documentChunker.js';
-import { extractTextFromPdf } from '../ai/services/pdfTextExtractor.js';
+import { extractTextFromDocumentPdf } from '../ai/services/documentTextExtractor.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import type { MongoDocumentChunk } from '../db/types.js';
 import {
@@ -97,7 +97,7 @@ export function buildRagChunkFilter(input: RagChunkQueryInput): Record<string, u
 }
 
 export async function createChunksFromPdfBuffer(buffer: Buffer): Promise<DocumentChunk[]> {
-  const extracted = await extractTextFromPdf(buffer);
+  const extracted = await extractTextFromDocumentPdf(buffer);
   return createDocumentChunks(extracted);
 }
 

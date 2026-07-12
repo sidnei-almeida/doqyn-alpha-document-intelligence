@@ -12,6 +12,15 @@ import {
 } from '../utils/classifierDiagnostics.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { logger } from '../../utils/logger.js';
+import { recordAiProviderRequest } from '../../metrics/prometheus.js';
+import {
+  pipelineDebug,
+  pipelineError,
+  pipelineInfo,
+  pipelineWarn,
+  previewText,
+  summarizeError,
+} from '../utils/pipelineDebug.js';
 
 let groqClient: Groq | null = null;
 
@@ -148,36 +157,95 @@ async function callGroqCompletion(
   prompt: string,
   useResponseFormat: boolean,
   model: string,
+  operation: string,
 ): Promise<{ content: string; durationMs: number }> {
-  const client = getGroqClient();
   const startedAt = Date.now();
-  const timeoutMs = getGroqRequestTimeoutMs();
 
-  const completion = await withGroqRequestTimeout(
-    client.chat.completions.create({
+  pipelineDebug('groq.call', 'enviando chat.completions.create', {
+    model,
+    operation,
+    useResponseFormat,
+    promptChars: prompt.length,
+    promptPreview: previewText(prompt, 280),
+    maxOutputTokens: getGroqMaxOutputTokens(),
+    timeoutMs: getGroqRequestTimeoutMs(),
+  });
+
+  try {
+    const client = getGroqClient();
+    const timeoutMs = getGroqRequestTimeoutMs();
+
+    const completion = await withGroqRequestTimeout(
+      client.chat.completions.create({
+        model,
+        temperature: 0.1,
+        max_tokens: getGroqMaxOutputTokens(),
+        ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
+        messages: [
+          {
+            role: 'system',
+            content: useResponseFormat
+              ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
+              : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+      timeoutMs,
+    );
+
+    const content = completion.choices[0]?.message?.content;
+    const finishReason = completion.choices[0]?.finish_reason;
+    const usage = completion.usage;
+
+    if (!content?.trim()) {
+      pipelineError('groq.call', 'resposta vazia do Groq', undefined, {
+        model,
+        operation,
+        finishReason,
+        usage,
+        durationMs: Date.now() - startedAt,
+      });
+      throw new AiAnalysisError(AI_ERROR_MESSAGES.analysisFailed, 'GROQ_EMPTY_RESPONSE', 502);
+    }
+
+    const durationMs = Date.now() - startedAt;
+    recordAiProviderRequest({
+      provider: 'groq',
+      operation,
+      status: 'success',
+      durationSeconds: durationMs / 1000,
+    });
+
+    pipelineInfo('groq.call', 'chat.completions ok', {
       model,
-      temperature: 0.1,
-      max_tokens: getGroqMaxOutputTokens(),
-      ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
-      messages: [
-        {
-          role: 'system',
-          content: useResponseFormat
-            ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
-            : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
-        },
-        { role: 'user', content: prompt },
-      ],
-    }),
-    timeoutMs,
-  );
+      operation,
+      durationMs,
+      responseChars: content.length,
+      finishReason,
+      promptTokens: usage?.prompt_tokens,
+      completionTokens: usage?.completion_tokens,
+      totalTokens: usage?.total_tokens,
+      responsePreview: previewText(content, 280),
+    });
 
-  const content = completion.choices[0]?.message?.content;
-  if (!content?.trim()) {
-    throw new AiAnalysisError(AI_ERROR_MESSAGES.analysisFailed, 'GROQ_EMPTY_RESPONSE', 502);
+    return { content: content.trim(), durationMs };
+  } catch (error) {
+    recordAiProviderRequest({
+      provider: 'groq',
+      operation,
+      status: isRateLimitError(error) ? 'rate_limit' : 'error',
+      durationSeconds: (Date.now() - startedAt) / 1000,
+    });
+    pipelineError('groq.call', 'chat.completions falhou', error, {
+      model,
+      operation,
+      useResponseFormat,
+      durationMs: Date.now() - startedAt,
+      promptChars: prompt.length,
+    });
+    throw error;
   }
-
-  return { content: content.trim(), durationMs: Date.now() - startedAt };
 }
 
 export async function completeJsonPrompt(
@@ -210,8 +278,18 @@ export async function completeJsonPrompt(
     groqApiKeyConfigured: isGroqApiKeyConfigured(),
   });
 
+  pipelineInfo('groq.completeJson', 'início completeJsonPrompt', {
+    requestId: context?.requestId,
+    jobId: context?.jobId,
+    companyId: context?.companyId,
+    operation,
+    model,
+    promptChars,
+    promptPreview: previewText(prompt, 200),
+  });
+
   try {
-    const first = await callGroqCompletion(prompt, true, model);
+    const first = await callGroqCompletion(prompt, true, model, operation);
 
     logger.info('groq completion request completed', {
       requestId: context?.requestId,
@@ -254,7 +332,7 @@ export async function completeJsonPrompt(
         await sleep(retryAfterMs);
 
         try {
-          const rateRetry = await callGroqCompletion(prompt, true, model);
+          const rateRetry = await callGroqCompletion(prompt, true, model, operation);
 
           logger.info('groq completion rate-limit retry completed', {
             requestId: context?.requestId,
@@ -312,6 +390,16 @@ export async function completeJsonPrompt(
       validationFailed: false,
     });
 
+    pipelineWarn('groq.completeJson', 'primeira tentativa falhou', {
+      requestId: context?.requestId,
+      jobId: context?.jobId,
+      operation,
+      model,
+      ...summarizeError(firstError),
+      diagnosticCode: firstDiag.code,
+      willRetryWithoutResponseFormat: shouldRetryWithoutResponseFormat(firstError),
+    });
+
     if (!shouldRetryWithoutResponseFormat(firstError)) {
       throw firstError;
     }
@@ -326,7 +414,7 @@ export async function completeJsonPrompt(
     });
 
     try {
-      const retry = await callGroqCompletion(prompt, false, model);
+      const retry = await callGroqCompletion(prompt, false, model, operation);
 
       logger.info('groq completion retry completed', {
         requestId: context?.requestId,
