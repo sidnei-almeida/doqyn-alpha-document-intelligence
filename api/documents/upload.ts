@@ -3,6 +3,7 @@ import { lookup } from 'mime-types';
 import { uploadDocument } from '../../server/services/documentService.js';
 import { getStorageConfig } from '../../server/storage/storageConfig.js';
 import { requireDocumentRequestContext } from '../../server/tenancy/documentRequestContext.js';
+import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
 export const config = {
@@ -83,6 +84,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const accessGroups = fields.accessGroups ? JSON.parse(fields.accessGroups) : [];
     const originalFileName = file?.filename ?? fields.fileName ?? 'documento.pdf';
     const displayName = originalFileName.replace(/\.[^.]+$/, '');
+
+    await assertTenantQuota(ctx.tenantId, 'uploads_per_hour');
 
     const result = await uploadDocument({
       tenantId: ctx.tenantId,

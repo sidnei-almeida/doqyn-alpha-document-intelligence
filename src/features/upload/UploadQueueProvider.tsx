@@ -27,6 +27,11 @@ import {
   UPLOAD_ANALYZE_TIMEOUT_MS,
   uploadAnalyzeTimeoutMessage,
 } from './queue/uploadQueueAnalysis';
+import {
+  normalizeUploadQueueAnalysis,
+  startCountdownSeconds,
+  type CountdownHandle,
+} from './queue/uploadQueueCore';
 import { logUploadDev } from './utils/uploadDevLog';
 import {
   countPendingItems,
@@ -47,7 +52,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
 
   const filesRef = useRef(new Map<string, File>());
   const itemsRef = useRef(items);
-  const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownHandleRef = useRef<CountdownHandle | null>(null);
   const autoPausedRef = useRef(new Set<string>());
   const processingItemIdRef = useRef<string | null>(null);
   const analyzeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,10 +71,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   }, [queryClient, tenant?.tenantId, user?.companyId]);
 
   const clearAutoTimer = useCallback(() => {
-    if (autoTimerRef.current) {
-      clearInterval(autoTimerRef.current);
-      autoTimerRef.current = null;
-    }
+    countdownHandleRef.current?.cancel();
+    countdownHandleRef.current = null;
   }, []);
 
   const clearAnalyzeTimeout = useCallback(() => {
@@ -250,29 +253,33 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       }
 
       autoPausedRef.current.delete(item.id);
-      let secondsLeft = delaySeconds;
-      setAutoConfirmCountdown({ itemId: item.id, secondsLeft });
+      setAutoConfirmCountdown({ itemId: item.id, secondsLeft: delaySeconds });
       dispatch({ type: 'status', id: item.id, status: 'review' });
 
       clearAutoTimer();
-      autoTimerRef.current = setInterval(() => {
-        secondsLeft -= 1;
-        if (autoPausedRef.current.has(item.id)) {
-          clearAutoTimer();
-          setAutoConfirmCountdown(null);
-          return;
-        }
-        if (secondsLeft <= 0) {
-          clearAutoTimer();
-          setAutoConfirmCountdown(null);
-          const current = itemsRef.current.find((entry) => entry.id === item.id);
-          if (current?.analysis) {
-            void confirmItem(current, manualReviewConfirmed, current.namingChoice);
+      const countdown = startCountdownSeconds(
+        delaySeconds,
+        (remaining) => {
+          if (remaining > 0) {
+            setAutoConfirmCountdown({ itemId: item.id, secondsLeft: remaining });
           }
-          return;
+        },
+        () => !autoPausedRef.current.has(item.id),
+      );
+      countdownHandleRef.current = countdown;
+
+      void countdown.completed.then((finished) => {
+        if (countdownHandleRef.current === countdown) {
+          countdownHandleRef.current = null;
         }
-        setAutoConfirmCountdown({ itemId: item.id, secondsLeft });
-      }, 1000);
+        setAutoConfirmCountdown(null);
+        if (!finished) return;
+
+        const current = itemsRef.current.find((entry) => entry.id === item.id);
+        if (current?.analysis) {
+          void confirmItem(current, manualReviewConfirmed, current.namingChoice);
+        }
+      });
     },
     [reviewSettings, confirmItem, clearAutoTimer],
   );
@@ -331,21 +338,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       clearAnalyzeAbort();
       processingItemIdRef.current = null;
 
-      const analysis = {
-        metadata: {
-          ...result.metadata,
-          analysisStatus: result.raw.status,
-          documentType:
-            result.raw.classification.className ?? result.metadata.documentType,
-          confidenceScore: result.raw.classification.confidence,
-          reviewReasons:
-            result.raw.extraction?.reviewReasons ??
-            (result.raw.classification.reviewReason
-              ? [result.raw.classification.reviewReason]
-              : result.metadata.reviewReasons),
-        },
-        raw: result.raw,
-      };
+      const analysis = normalizeUploadQueueAnalysis(result.metadata, result.raw);
       dispatch({ type: 'analysis', id: next.id, analysis });
 
       logUploadDev('analyze:success', {
@@ -386,6 +379,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             onClick: () => setReviewItemId(next.id),
           },
         });
+        return;
+      }
+
+      if (action === 'ai_pause') {
+        const message = analysisFailureMessage(result.raw.status, result.raw.errorCode);
+        dispatch({ type: 'ai_pause', id: next.id, message });
+        toast.warning(message);
         return;
       }
 

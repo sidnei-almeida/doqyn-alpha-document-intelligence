@@ -13,9 +13,8 @@ import {
 import type { AnalyzePdfResponse, ProcessingLogItem } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
-import { classifyDocumentWithRules } from './documentClassifierAgent.js';
+import { resolveAnalysisProvider } from '../providers/resolveAnalysisProvider.js';
 import { createDocumentChunks } from './documentChunker.js';
-import { extractMetadataWithRule } from './metadataExtractorAgent.js';
 import { generateRecommendedFileName } from './documentNaming.js';
 import { augmentConfidentialityClassForExtraction } from '../utils/documentClassHeuristics.js';
 import { enrichMetadataWithPartyHeuristics } from '../utils/partyMetadataHeuristics.js';
@@ -119,11 +118,13 @@ export async function analyzePdfBuffer(input: {
   mimeType: string;
   companyId: string;
   ownerUserId?: string;
+  jobId?: string;
   requestContext?: AnalyzeRequestContext;
 }): Promise<AnalyzePdfResponse> {
   assertAiProviderConfigured();
+  const analysisProvider = resolveAnalysisProvider();
 
-  const jobId = `job_${randomUUID()}`;
+  const jobId = input.jobId?.trim() || `job_${randomUUID()}`;
   const logs: ProcessingLogItem[] = [];
   const fileHash = createHash('sha256').update(input.buffer).digest('hex');
   const fileSizeBytes = input.buffer.length;
@@ -268,7 +269,7 @@ export async function analyzePdfBuffer(input: {
   timer.mark('retrieval');
 
   groqCalled = true;
-  const classification = await classifyDocumentWithRules({
+  const classification = await analysisProvider.classify({
     chunks: classificationChunks,
     classes: documentClassRules,
     context: {
@@ -434,7 +435,7 @@ export async function analyzePdfBuffer(input: {
     extractionChunks,
   }));
 
-  const extraction = await extractMetadataWithRule({
+  const extraction = await analysisProvider.extractMetadata({
     chunks: extractionChunks,
     selectedClass: extractionClass,
     classification,

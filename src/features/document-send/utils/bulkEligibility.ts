@@ -1,15 +1,18 @@
-import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
 import type { AnalyzePdfResponse } from '../services/analyzePdf';
 import type { ExtractedMetadata } from '../types';
 import type { BulkUploadItem } from '../types/bulk';
 import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
+import { DEFAULT_WORKFLOW_REVIEW_SETTINGS } from './reviewWorkflowSettings';
 import {
-  canAutoAcceptWithSettings,
-  DEFAULT_WORKFLOW_REVIEW_SETTINGS,
-  policyRequiresPerItemChoice,
-  resolveEffectiveNamingForItem,
-} from './reviewWorkflowSettings';
+  canAutoSave,
+  canManualConfirm,
+  getAnalysisClassificationError,
+  getAutoSaveBlockers,
+  getReviewReasonFromBlockers,
+  resolveAnalysisOutcome,
+} from '../../upload/queue/uploadQueueCore';
 
+/** @deprecated Use getAutoSaveBlockers de uploadQueueCore */
 export function getBulkAutoSaveBlockers(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
@@ -17,70 +20,10 @@ export function getBulkAutoSaveBlockers(params: {
   settings?: WorkflowReviewSettings;
   perItem?: PerItemNamingChoice | null;
 }): string[] {
-  const settings = params.settings ?? DEFAULT_WORKFLOW_REVIEW_SETTINGS;
-  const blockers: string[] = [];
-  const { isAuthenticated, metadata, rawAnalysis } = params;
-
-  if (!isAuthenticated) blockers.push('Usuário não autenticado.');
-  if (!metadata || !rawAnalysis) {
-    blockers.push('Análise indisponível.');
-    return blockers;
-  }
-
-  if (policyRequiresPerItemChoice(settings.defaultNamingPolicy) && !params.perItem?.namingMode) {
-    blockers.push('Escolha de nome por arquivo necessária.');
-  }
-
-  if (settings.defaultNamingPolicy === 'manual_required' && !params.perItem?.manualName?.trim()) {
-    blockers.push('Nome manual obrigatório.');
-  }
-
-  if (metadata.analysisStatus !== 'completed') {
-    blockers.push('Análise marcada como revisão pela API.');
-  }
-  if (rawAnalysis.status !== 'completed') {
-    blockers.push('Status da análise não é concluído.');
-  }
-  if (rawAnalysis.classification.requiresReview) {
-    blockers.push('Classificação marcada para revisão.');
-  }
-  if (settings.pauseOnLowConfidence && rawAnalysis.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE) {
-    blockers.push(
-      `Confiança abaixo do mínimo (${Math.round(rawAnalysis.classification.confidence * 100)}%).`,
-    );
-  }
-  if (!rawAnalysis.classification.classId) {
-    blockers.push('Classe não retornada pela análise.');
-  }
-
-  const effectiveMode = resolveEffectiveNamingForItem(settings, params.perItem);
-  if (settings.aiRenameEnabled && effectiveMode === 'ai_suggested' && !rawAnalysis.recommendedFileName?.trim()) {
-    blockers.push('Nome sugerido ausente.');
-  }
-  if (!settings.aiRenameEnabled && !rawAnalysis.originalFileName?.trim()) {
-    blockers.push('Nome original ausente.');
-  }
-  if (!rawAnalysis.extraction) {
-    blockers.push('Metadados não extraídos.');
-  }
-  if (settings.pauseOnLowConfidence && rawAnalysis.extraction?.requiresReview) {
-    blockers.push('Metadados marcados para revisão.');
-  }
-
-  const missingFields = rawAnalysis.extraction?.missingFields ?? metadata.missingFields ?? [];
-  if (settings.pauseOnMissingFields && missingFields.length > 0) {
-    blockers.push(`Campos ausentes: ${missingFields.join(', ')}.`);
-  }
-
-  if (!canAutoAcceptWithSettings(settings, { ...params, autoPaused: false, saved: false })) {
-    if (blockers.length === 0) {
-      blockers.push('Documento não elegível para salvamento automático.');
-    }
-  }
-
-  return blockers;
+  return getAutoSaveBlockers(params);
 }
 
+/** @deprecated Use canAutoSave de uploadQueueCore */
 export function canBulkAutoSave(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
@@ -88,9 +31,10 @@ export function canBulkAutoSave(params: {
   settings?: WorkflowReviewSettings;
   perItem?: PerItemNamingChoice | null;
 }): boolean {
-  return getBulkAutoSaveBlockers(params).length === 0;
+  return canAutoSave(params);
 }
 
+/** @deprecated Use canManualConfirm de uploadQueueCore */
 export function canBulkManualConfirm(params: {
   isAuthenticated: boolean;
   metadata: ExtractedMetadata | null;
@@ -98,119 +42,28 @@ export function canBulkManualConfirm(params: {
   settings?: WorkflowReviewSettings;
   perItem?: PerItemNamingChoice | null;
 }): boolean {
-  if (!params.isAuthenticated) return false;
-
-  const settings = params.settings ?? DEFAULT_WORKFLOW_REVIEW_SETTINGS;
-  const { metadata, rawAnalysis } = params;
-  if (!metadata || !rawAnalysis) return false;
-  if (metadata.analysisStatus === 'failed' || rawAnalysis.status === 'failed') return false;
-  if (!rawAnalysis.classification.classId) return false;
-
-  const effectiveMode = resolveEffectiveNamingForItem(settings, params.perItem);
-  if (settings.aiRenameEnabled && effectiveMode === 'ai_suggested' && !rawAnalysis.recommendedFileName?.trim()) {
-    return false;
-  }
-  if (!settings.aiRenameEnabled && !rawAnalysis.originalFileName?.trim()) return false;
-  if (effectiveMode === 'manual') {
-    const resolved = params.perItem?.manualName?.trim();
-    if (!resolved) return false;
-  }
-  if (!rawAnalysis.extraction) return false;
-
-  if (metadata.analysisStatus === 'completed' && rawAnalysis.status === 'completed') {
-    return true;
-  }
-
-  if (metadata.analysisStatus === 'requires_review' || rawAnalysis.status === 'requires_review') {
-    return true;
-  }
-
-  return false;
+  return canManualConfirm(params);
 }
 
-/** Mensagem de erro real quando a API não retorna classe — sem categoria fake. */
-export function getAnalysisClassificationError(
-  raw: AnalyzePdfResponse,
-  metadata: ExtractedMetadata,
-): string | null {
-  if (raw.status === 'ai_unavailable' || raw.classification.errorCode === 'GROQ_RATE_LIMIT') {
-    return (
-      raw.classification.reason ||
-      'Limite temporário da análise automática atingido. Aguarde alguns minutos e tente novamente.'
-    );
-  }
-
-  if (metadata.analysisStatus === 'failed' || raw.status === 'failed') {
-    return metadata.classificationReason || 'A análise não foi concluída.';
-  }
-
-  if (!raw.classification.classId || !raw.classification.className) {
-    return (
-      raw.classification.reason ||
-      'A análise não retornou identificação de classe para este documento.'
-    );
-  }
-
-  return null;
-}
+export { getAnalysisClassificationError };
 
 /**
- * Status na fila espelha a resposta da API.
- * Sem status `unclassified` — falha de classificação vira `error` com motivo real.
+ * Status na fila bulk espelha a resposta da API via uploadQueueCore.
  */
 export function resolveBulkItemStatusAfterAnalysis(
   metadata: ExtractedMetadata,
   raw: AnalyzePdfResponse,
 ): 'analyzed' | 'requires_review' | 'ai_paused' | 'error' {
-  if (raw.status === 'ai_unavailable' || raw.classification.errorCode === 'GROQ_RATE_LIMIT') {
-    return 'ai_paused';
-  }
-
-  if (metadata.analysisStatus === 'failed' || raw.status === 'failed') {
-    return 'error';
-  }
-
-  if (!raw.classification.classId || !raw.classification.className) {
-    return 'error';
-  }
-
-  if (
-    raw.status === 'requires_review' ||
-    metadata.analysisStatus === 'requires_review'
-  ) {
-    return 'requires_review';
-  }
-
-  return 'analyzed';
+  const outcome = resolveAnalysisOutcome(metadata, raw);
+  if (outcome.status === 'failed') return 'error';
+  return outcome.status;
 }
 
 export function getBulkReviewReason(
   item: BulkUploadItem,
   settings: WorkflowReviewSettings = DEFAULT_WORKFLOW_REVIEW_SETTINGS,
 ): string {
-  if (item.errorMessage) return item.errorMessage;
-
-  const raw = item.result;
-  const metadata = item.metadata;
-  if (!raw || !metadata) return 'Análise indisponível.';
-
-  const blockers = getBulkAutoSaveBlockers({
-    isAuthenticated: true,
-    metadata,
-    rawAnalysis: raw,
-    settings,
-    perItem: item.perItemNaming,
-  });
-
-  if (blockers.length > 0) {
-    return blockers[0];
-  }
-
-  if (raw.status === 'requires_review' || metadata.analysisStatus === 'requires_review') {
-    return raw.classification.reason || 'Resultado marcado para revisão pela análise.';
-  }
-
-  return 'Revisão necessária antes do salvamento.';
+  return getReviewReasonFromBlockers(item, settings);
 }
 
 export function computeBulkStats(

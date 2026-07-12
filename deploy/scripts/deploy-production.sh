@@ -53,8 +53,8 @@ compose up -d postgres-auth
 info "Aplicando migrations do auth..."
 compose run --rm auth-migrate
 
-info "Subindo MongoDB..."
-compose up -d mongo
+info "Subindo MongoDB e Redis..."
+compose up -d mongo redis
 
 info "Subindo auth-api..."
 compose up -d --wait auth-api
@@ -65,8 +65,11 @@ compose up -d --wait doqyn-api
 info "Garantindo índices MongoDB..."
 compose run --rm doqyn-api-indexes || warn "Índices MongoDB: verifique logs (normal se ainda não há tenants)."
 
-info "Subindo frontend e nginx..."
-compose up -d --wait doqyn-web nginx
+info "Subindo worker de análise (fila BullMQ)..."
+compose up -d doqyn-worker
+
+info "Subindo nginx (SPA + proxy)..."
+compose up -d --wait nginx
 
 sleep 2
 
@@ -83,6 +86,18 @@ if curl -fsS "http://127.0.0.1:${HTTP_PORT}/health" >/dev/null; then
   info "Auth OK: http://127.0.0.1:${HTTP_PORT}/health"
 else
   warn "Health do auth ainda não respondeu — veja: compose logs auth-api"
+fi
+
+DEEP_JSON="$(curl -fsS "http://127.0.0.1:${HTTP_PORT}/api/health/deep" 2>/dev/null || true)"
+if [[ -n "$DEEP_JSON" ]]; then
+  DEEP_STATUS="$(printf '%s' "$DEEP_JSON" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')"
+  if [[ "$DEEP_STATUS" == "ok" ]]; then
+    info "Deep health OK"
+  else
+    warn "Deep health: ${DEEP_STATUS:-unknown} — verifique redis, worker e storage"
+  fi
+else
+  warn "Deep health ainda não respondeu — veja: compose logs doqyn-api"
 fi
 
 echo ""

@@ -4,6 +4,8 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
+import { connectRedisOnBoot } from './redis/redisClient.js';
+import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
 
 type ApiHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
 
@@ -20,6 +22,7 @@ type RoutePattern = {
 
 const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
+  '/api/health/deep': () => import('../api/health/deep.js'),
   '/api/auth/login': () => import('../api/auth/login.js'),
   '/api/auth/me': () => import('../api/auth/me.js'),
   '/api/me': () => import('../api/me.js'),
@@ -149,6 +152,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/documents\/upload-approvals\/([^/]+)\/reject$/,
       loader: () => import('../api/documents/upload-approvals/[approvalId]/reject.js'),
       paramKeys: ['approvalId'],
+    },
+    {
+      regex: /^\/api\/ai\/jobs\/([^/]+)$/,
+      loader: () => import('../api/ai/jobs/[jobId].js'),
+      paramKeys: ['jobId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/trash$/,
@@ -445,6 +453,9 @@ function toVercelRes(res: ServerResponse) {
 const PORT = Number(process.env.API_PORT ?? 3001);
 
 async function startDevServer(): Promise<void> {
+  await connectRedisOnBoot();
+  startInProcessAnalysisWorker();
+
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
     const pathname = url.pathname;

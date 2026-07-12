@@ -46,9 +46,25 @@ services:
     networks:
       - doqyn_dev
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - doqyn_dev
+
 volumes:
   postgres_auth_data:
   mongo_data:
+  redis_data:
 
 networks:
   doqyn_dev:

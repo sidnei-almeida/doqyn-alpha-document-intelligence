@@ -21,6 +21,12 @@ import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
 import { buildAnalysisJobNameSnapshot } from '../../server/audit/documentNameSnapshot.js';
 import { assertCanUpdateExistingDocument } from '../../server/services/documentVersionService.js';
+import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
+import { resolveAnalysisProviderName } from '../../server/ai/providers/resolveAnalysisProvider.js';
+import {
+  enqueuePdfAnalysisJob,
+  isAsyncPdfAnalysisAvailable,
+} from '../../server/services/analysis/enqueuePdfAnalysisJob.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -82,6 +88,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const docCtx = await buildDocumentRequestContext(user);
     auditCtx = buildDocumentAuditContext(docCtx, user, ctx.requestId);
 
+    await assertTenantQuota(companyId, 'analysis_per_day');
+
     await assertCanUpdateExistingDocument({
       documentId,
       tenantId: companyId,
@@ -89,6 +97,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       user,
       membershipId: docCtx.membershipId,
     });
+
+    const aiProvider = resolveAnalysisProviderName();
+
+    if (isAsyncPdfAnalysisAvailable()) {
+      const storageScope = resolveTenantStorageScopeFromAuthUser(user);
+
+      try {
+        const queued = await enqueuePdfAnalysisJob({
+          tenantId: companyId,
+          ownerUserId: user.id,
+          buffer: file.buffer,
+          originalFileName: file.filename,
+          mimeType: file.mimeType,
+          storageScope,
+          requestId: ctx.requestId,
+          batchId: ctx.batchId,
+          itemId: ctx.itemId,
+          jobKind: 'version_update',
+          documentId,
+          membershipId: docCtx.membershipId,
+        });
+
+        logger.info('analyze-pdf-update enfileirado', {
+          requestId: ctx.requestId,
+          jobId: queued.jobId,
+          documentId,
+          tenantId: companyId,
+          aiProvider,
+          durationMs: Date.now() - startedAt,
+        });
+
+        res.setHeader('X-DOQYN-Request-Id', ctx.requestId);
+        return res.status(202).json(queued);
+      } catch (queueError) {
+        if (isServiceError(queueError)) {
+          const { statusCode, body } = workflowErrorFromUnknown(queueError, {
+            requestId: ctx.requestId,
+            defaultCode: queueError.code,
+          });
+          return res.status(statusCode).json(body);
+        }
+        throw queueError;
+      }
+    }
 
     const result = await analyzePdfUpdateBuffer({
       buffer: file.buffer,
