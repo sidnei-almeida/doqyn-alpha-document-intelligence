@@ -122,6 +122,32 @@ if [[ -f "$ENV_FILE" ]]; then
   fi
 fi
 
+info_section "Vision OCR (opcional)"
+
+if [[ -f "$ENV_FILE" ]]; then
+  VISION_ON="${VISION_OCR_ENABLED:-false}"
+  if [[ "$VISION_ON" == "true" ]]; then
+    ok "VISION_OCR_ENABLED=true"
+    if [[ -f "$DEPLOY_DIR/secrets/gcp-vision-sa.json" ]]; then
+      ok "deploy/secrets/gcp-vision-sa.json presente"
+    else
+      fail "VISION_OCR_ENABLED=true mas falta deploy/secrets/gcp-vision-sa.json"
+    fi
+    if [[ "${GOOGLE_APPLICATION_CREDENTIALS:-}" == "/run/secrets/gcp-vision-sa.json" ]]; then
+      ok "GOOGLE_APPLICATION_CREDENTIALS aponta para /run/secrets/gcp-vision-sa.json"
+    else
+      warn "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-vazio} (esperado /run/secrets/gcp-vision-sa.json no Docker)"
+    fi
+  else
+    warn "VISION_OCR_ENABLED=false — OCR de PDF escaneado desligado (ok por padrão)"
+    if [[ -f "$DEPLOY_DIR/secrets/gcp-vision-sa.json" ]]; then
+      ok "gcp-vision-sa.json presente (pronto para ligar VISION_OCR_ENABLED)"
+    else
+      warn "gcp-vision-sa.json ausente — copie a SA para deploy/secrets/ antes de ligar OCR"
+    fi
+  fi
+fi
+
 info_section "Observabilidade"
 
 if [[ -f "$ENV_FILE" ]]; then
