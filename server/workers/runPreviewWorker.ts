@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { connectRedisOnBoot } from '../redis/redisClient.js';
-import { runAnalysisWorkerLoop } from './analysisWorker.js';
+import { runPreviewWorkerLoop } from './previewWorker.js';
 import {
   configurePrometheusService,
   initPrometheusMetrics,
@@ -8,14 +8,17 @@ import {
 import { startStandaloneMetricsServer } from '../metrics/metricsServer.js';
 
 async function main() {
-  configurePrometheusService({ serviceName: 'doqyn-worker', serviceRole: 'worker' });
+  configurePrometheusService({
+    serviceName: process.env.METRICS_SERVICE_NAME ?? 'doqyn-worker-preview',
+    serviceRole: 'worker-preview',
+  });
   initPrometheusMetrics();
-  startStandaloneMetricsServer('worker');
+  startStandaloneMetricsServer('worker-preview');
   await connectRedisOnBoot();
-  await runAnalysisWorkerLoop();
+  await runPreviewWorkerLoop();
 }
 
 main().catch((error) => {
-  console.error('Falha ao iniciar analysis worker:', error);
+  console.error('Falha ao iniciar preview worker:', error);
   process.exit(1);
 });
