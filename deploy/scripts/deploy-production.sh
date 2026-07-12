@@ -8,6 +8,9 @@ PROJECT_ROOT="$(cd "$DEPLOY_DIR/.." && pwd)"
 ENV_FILE="$DEPLOY_DIR/.env"
 COMPOSE_FILE="$DEPLOY_DIR/docker-compose.production.yml"
 
+# shellcheck source=lib/compose-production.sh
+source "$SCRIPT_DIR/lib/compose-production.sh"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -18,11 +21,7 @@ warn()  { echo -e "${YELLOW}!${NC} $*"; }
 error() { echo -e "${RED}✗${NC} $*" >&2; }
 
 compose() {
-  if docker compose version >/dev/null 2>&1; then
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
-  else
-    docker-compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
-  fi
+  compose_production "$DEPLOY_DIR" "$@"
 }
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -42,7 +41,34 @@ fi
 
 export AUTH_SERVICE_DIR
 
+read_replicas() {
+  local name="$1"
+  local default_value="$2"
+  local raw="${!name:-$default_value}"
+  if [[ ! "$raw" =~ ^[0-9]+$ ]] || [[ "$raw" -lt 1 ]]; then
+    error "${name} inválido em deploy/.env: ${raw} (use inteiro >= 1)"
+    exit 1
+  fi
+  echo "$raw"
+}
+
 cd "$DEPLOY_DIR"
+
+AUTH_API_REPLICAS="$(read_replicas AUTH_API_REPLICAS 1)"
+DOQYN_API_REPLICAS="$(read_replicas DOQYN_API_REPLICAS 1)"
+
+info "Réplicas configuradas: auth-api=${AUTH_API_REPLICAS}, doqyn-api=${DOQYN_API_REPLICAS}"
+
+if [[ "${HTTP_PORT:-80}" == "80" ]]; then
+  info "Preparando host Ubuntu (liberar porta 80 do nginx do sistema)..."
+  if "$SCRIPT_DIR/run-prepare-ubuntu-host.sh"; then
+    info "Porta 80 livre para o container nginx"
+  else
+    warn "Não foi possível liberar a porta 80 automaticamente."
+    warn "Execute manualmente: sudo ./deploy/scripts/prepare-ubuntu-host.sh"
+    warn "Diagnóstico: sudo ./deploy/scripts/prepare-ubuntu-host.sh --check"
+  fi
+fi
 
 info "Construindo imagens (pode demorar na primeira vez)..."
 compose build
@@ -54,19 +80,27 @@ info "Aplicando migrations do auth..."
 compose run --rm auth-migrate
 
 info "Subindo MongoDB e Redis..."
-compose up -d mongo redis
+if is_mongodb_atlas_deploy; then
+  info "MongoDB Atlas — sem container mongo local (${MONGODB_DATABASE:-})"
+  compose up -d redis
+else
+  compose up -d mongo redis
+fi
 
-info "Subindo auth-api..."
-compose up -d --wait auth-api
+info "Subindo auth-api (${AUTH_API_REPLICAS} réplica(s))..."
+compose up -d --scale "auth-api=${AUTH_API_REPLICAS}" --wait auth-api
 
-info "Subindo API principal..."
-compose up -d --wait doqyn-api
+info "Subindo API principal (${DOQYN_API_REPLICAS} réplica(s))..."
+compose up -d --scale "doqyn-api=${DOQYN_API_REPLICAS}" --wait doqyn-api
 
 info "Garantindo índices MongoDB..."
 compose run --rm doqyn-api-indexes || warn "Índices MongoDB: verifique logs (normal se ainda não há tenants)."
 
 info "Subindo worker de análise (fila BullMQ)..."
 compose up -d doqyn-worker
+
+info "Subindo worker de preview (Ghostscript)..."
+compose up -d doqyn-worker-preview
 
 info "Subindo nginx (SPA + proxy)..."
 compose up -d --wait nginx
@@ -110,5 +144,15 @@ echo ""
 echo "  App:  ${PUBLIC_URL}"
 echo "  Logs: cd deploy && docker compose -f docker-compose.production.yml --env-file .env logs -f"
 echo ""
+
+if [[ "${OBSERVABILITY_ENABLE:-false}" == "true" ]]; then
+  info "OBSERVABILITY_ENABLE=true — subindo Prometheus e Grafana..."
+  "$SCRIPT_DIR/up-observability.sh"
+else
+  echo "  Observabilidade (opcional): ./deploy/scripts/up-observability.sh"
+fi
+
+echo ""
 warn "HTTPS: este compose expõe porta ${HTTP_PORT} (HTTP). Use Certbot/Nginx no host ou Cloudflare para TLS."
+echo "Validação pré-deploy: ./deploy/scripts/validate-vps-ready.sh"
 echo "Guia completo: docs/DEPLOY_VPS.md"

@@ -14,24 +14,32 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-echo "→ Liberando porta 80 (nginx do Ubuntu, se existir)..."
-if command -v systemctl >/dev/null 2>&1; then
-  sudo systemctl stop nginx 2>/dev/null || true
-  sudo systemctl disable nginx 2>/dev/null || true
-  sudo systemctl mask nginx 2>/dev/null || true
-fi
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+# shellcheck source=scripts/lib/compose-production.sh
+source "$DEPLOY_DIR/scripts/lib/compose-production.sh"
+
+echo "→ Preparando host Ubuntu (porta 80)..."
+"$DEPLOY_DIR/scripts/run-prepare-ubuntu-host.sh" || {
+  echo "! Não liberou a porta 80 — tente: sudo ./deploy/scripts/prepare-ubuntu-host.sh --check"
+}
 
 cd "$DEPLOY_DIR"
 
 compose() {
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+  compose_production "$DEPLOY_DIR" "$@"
 }
 
 echo "→ Build (pode demorar na 1ª vez)..."
 compose build
 
 echo "→ Subindo bancos, Redis e auth..."
-compose up -d postgres-auth mongo redis
+if is_mongodb_atlas_deploy; then
+  echo "→ MongoDB Atlas (${MONGODB_DATABASE:-}) — sem container mongo"
+  compose up -d postgres-auth redis
+else
+  compose up -d postgres-auth mongo redis
+fi
 compose run --rm auth-migrate
 compose up -d --wait auth-api
 

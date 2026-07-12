@@ -14,12 +14,20 @@ dist-ssr/
 .env.*
 !.env.example
 !deploy/env/.env.production.example
+deploy/.env
+deploy/secrets/**
+!deploy/secrets/README.md
+deploy/observability/prometheus.generated.yml
 .env.local
 .env.*.local
 *.pem
 *.key
 credentials.json
 secrets.json
+# Service accounts GCP (Vision) — nunca versionar
+axial-entropy-*.json
+**/gcp-*-sa.json
+*-credentials.json
 data/geoip/*.mmdb
 
 # Internal docs, audit reports, local runbooks (não versionar)

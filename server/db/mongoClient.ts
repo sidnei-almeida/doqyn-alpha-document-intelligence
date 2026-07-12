@@ -1,5 +1,9 @@
-import { MongoClient, type Db, type MongoClientOptions } from 'mongodb';
+import { MongoClient, type Db } from 'mongodb';
 import { getMongoDatabaseName } from './database.js';
+import {
+  getMongoClientOptions,
+  getMongoConnectionLabel,
+} from './mongoConfig.js';
 import { logger } from '../utils/logger.js';
 
 interface MongoCache {
@@ -33,20 +37,8 @@ function getMongoUri(): string {
   return uri;
 }
 
-function readPoolSize(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.floor(parsed);
-}
-
-export function getMongoClientOptions(): MongoClientOptions {
-  return {
-    maxPoolSize: readPoolSize(process.env.MONGODB_MAX_POOL_SIZE, 50),
-    minPoolSize: readPoolSize(process.env.MONGODB_MIN_POOL_SIZE, 5),
-    maxIdleTimeMS: 30_000,
-    serverSelectionTimeoutMS: 5_000,
-  };
-}
+export { getMongoClientOptions } from './mongoConfig.js';
+export { isMongoAtlasEnabled, isMongoAtlasUri } from './mongoConfig.js';
 
 export async function getMongoClient(): Promise<MongoClient> {
   if (cache.client) return cache.client;
@@ -55,7 +47,7 @@ export async function getMongoClient(): Promise<MongoClient> {
 
   await client.connect();
   cache.client = client;
-  logger.info('Conectado ao MongoDB Atlas', { database: getMongoDatabaseName() });
+  logger.info(`Conectado ao ${getMongoConnectionLabel()}`, { database: getMongoDatabaseName() });
   return client;
 }
 
