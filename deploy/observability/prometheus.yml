@@ -1,0 +1,48 @@
+# Configuração Prometheus — rede interna Docker (não exposta publicamente).
+# Token Bearer opcional via /etc/prometheus/metrics_token (gerado em deploy/secrets/).
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: doqyn-api
+    metrics_path: /api/metrics
+    scheme: http
+    dns_sd_configs:
+      - names: ['doqyn-api']
+        type: A
+        port: 3001
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
+
+  - job_name: doqyn-worker
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['doqyn-worker:9100']
+        labels:
+          service: doqyn-worker
+
+  - job_name: doqyn-worker-preview
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['doqyn-worker-preview:9100']
+        labels:
+          service: doqyn-worker-preview
+
+  - job_name: redis
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: redis

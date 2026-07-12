@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: DOQYN
+    orgId: 1
+    folder: DOQYN
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
