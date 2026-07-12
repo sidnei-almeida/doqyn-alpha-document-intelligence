@@ -7,6 +7,8 @@
 # Uso (a partir deste repositório):
 #   ./deploy/scripts/setup-production-env.sh
 #   ./deploy/scripts/deploy-production.sh
+#   ./deploy/scripts/up-observability.sh          # opcional
+#   ./deploy/scripts/validate-vps-ready.sh        # checagem pré-VPS
 #
 # Ou manualmente:
 #   docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d
@@ -35,6 +37,25 @@ services:
     networks:
       - doqyn
 
+  pgbouncer:
+    image: edoburu/pgbouncer:1.23.1-p2
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-500}
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-25}
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - doqyn
+
   auth-migrate:
     build:
       context: ${AUTH_SERVICE_DIR:-../../doqyn-auth-service}
@@ -43,7 +64,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}
+      DATABASE_URL: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
+      DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
     depends_on:
       postgres-auth:
         condition: service_healthy
@@ -52,6 +74,7 @@ services:
       - doqyn
 
   auth-api:
+    # Réplicas: DOQYN_API_REPLICAS / AUTH_API_REPLICAS em deploy/.env (deploy-production.sh)
     build:
       context: ${AUTH_SERVICE_DIR:-../../doqyn-auth-service}
       dockerfile: docker/Dockerfile
@@ -60,10 +83,18 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}
+      DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
+      REDIS_URL: redis://redis:6379
+      REDIS_ENABLED: "true"
+      RATE_LIMIT_REDIS_ENABLED: "true"
       DOQYN_APP_BASE_URL: http://doqyn-api:3001
     depends_on:
       postgres-auth:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       auth-migrate:
         condition: service_completed_successfully
@@ -78,6 +109,7 @@ services:
       - doqyn
 
   mongo:
+    profiles: ["local-mongo"]
     image: mongo:7
     volumes:
       - mongo_data:/data/db
@@ -105,6 +137,7 @@ services:
       - doqyn
 
   doqyn-api:
+    # Réplicas via docker compose scale — ver DOQYN_API_REPLICAS
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
@@ -117,6 +150,10 @@ services:
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
       ANALYSIS_SYNC_FALLBACK: "false"
+      PREVIEW_SYNC_FALLBACK: "false"
+      METRICS_ENABLED: "true"
+      METRICS_SERVICE_NAME: doqyn-api
+      METRICS_SERVICE_ROLE: api
     depends_on:
       mongo:
         condition: service_healthy
@@ -140,7 +177,7 @@ services:
       dockerfile: docker/Dockerfile.api
     env_file:
       - .env
-    command: ["./node_modules/.bin/tsx", "scripts/ensure-mongodb-indexes.ts"]
+    command: ["node", "dist/scripts/ensure-mongodb-indexes.js"]
     depends_on:
       mongo:
         condition: service_healthy
@@ -160,6 +197,11 @@ services:
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
       ANALYSIS_SYNC_FALLBACK: "false"
+      PREVIEW_SYNC_FALLBACK: "false"
+      METRICS_ENABLED: "true"
+      METRICS_SERVICE_NAME: doqyn-worker
+      METRICS_SERVICE_ROLE: worker
+      METRICS_PORT: 9100
     depends_on:
       mongo:
         condition: service_healthy
@@ -168,7 +210,40 @@ services:
       doqyn-api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f runAnalysisWorker >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f dist/server/workers/runAnalysisWorker.js >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - doqyn
+
+  doqyn-worker-preview:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    env_file:
+      - .env
+    command: ["node", "dist/server/workers/runPreviewWorker.js"]
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      REDIS_ENABLED: "true"
+      PREVIEW_SYNC_FALLBACK: "false"
+      METRICS_ENABLED: "true"
+      METRICS_SERVICE_NAME: doqyn-worker-preview
+      METRICS_SERVICE_ROLE: worker-preview
+      METRICS_PORT: 9100
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      doqyn-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f dist/server/workers/runPreviewWorker.js >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -185,6 +260,7 @@ services:
         VITE_APP_NAME: ${VITE_APP_NAME:-DOQYN}
         VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER:-doqyn_auth}
         VITE_AUTH_BASE_PATH: ${VITE_AUTH_BASE_PATH:-/auth}
+        VITE_PRESIGNED_UPLOAD_ENABLED: ${VITE_PRESIGNED_UPLOAD_ENABLED:-false}
     depends_on:
       doqyn-api:
         condition: service_healthy
@@ -196,10 +272,75 @@ services:
     networks:
       - doqyn
 
+  # --- Observabilidade (profile opcional: --profile observability) ---
+  redis-exporter:
+    profiles: ["observability"]
+    image: oliver006/redis_exporter:v1.66.0
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - doqyn
+
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v2.53.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./observability/prometheus.generated.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts:/etc/prometheus/alerts:ro
+      - ./secrets/metrics_token:/etc/prometheus/metrics_token:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      doqyn-api:
+        condition: service_healthy
+      doqyn-worker:
+        condition: service_started
+      doqyn-worker-preview:
+        condition: service_started
+      redis-exporter:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - doqyn
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Defina GRAFANA_ADMIN_PASSWORD em deploy/.env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - doqyn
+
 volumes:
   postgres_auth_data:
   mongo_data:
   redis_data:
+  grafana_data:
+  prometheus_data:
 
 networks:
   doqyn:
