@@ -45,6 +45,7 @@ import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import {
   buildInitialDocumentOwnershipFields,
 } from '../utils/documentMutationFields.js';
+import { resolveAnalysisMimeType } from '../ai/constants.js';
 import {
   ConfirmAnalysisError,
   assertAiSuggestedNamePresent,
@@ -96,6 +97,7 @@ const extractionSchema = z.object({
 export const confirmAnalysisSchema = z.object({
   jobId: z.string().optional(),
   originalFileName: z.string().min(1),
+  mimeType: z.string().min(1).optional(),
   recommendedFileName: z.string().min(1).optional(),
   aiSuggestedFileName: z.string().min(1).optional(),
   namingMode: z.enum(['ai_suggested', 'original', 'manual']).optional().default('ai_suggested'),
@@ -196,6 +198,11 @@ export async function confirmAnalysisPersistence(input: {
   });
   const ownershipFields = buildInitialDocumentOwnershipFields({ ownerUserId, ownerName });
   const data = confirmAnalysisSchema.parse(input.payload);
+  const contentMimeType =
+    resolveAnalysisMimeType({
+      fileName: data.originalFileName,
+      mimeType: data.mimeType,
+    }) ?? 'application/pdf';
 
   const classId = requireConfirmClassification({
     classId: data.classification.classId,
@@ -369,6 +376,7 @@ export async function confirmAnalysisPersistence(input: {
       originalFileName: data.originalFileName,
       storageFileName: resolvedNames.storageFileName,
       storageScope: input.ctx.storageScope,
+      mimeType: contentMimeType,
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
@@ -393,7 +401,7 @@ export async function confirmAnalysisPersistence(input: {
     tenantId,
     documentId,
     versionId,
-    contentType: 'application/pdf',
+    contentType: contentMimeType,
     storageScope: input.ctx.storageScope,
     primary: versionStorage.primary,
     previewStorageFileName: resolvedNames.previewStorageFileName,
@@ -455,7 +463,7 @@ export async function confirmAnalysisPersistence(input: {
       storageFileName: resolvedNames.storageFileName,
       previewStorageFileName: resolvedNames.previewStorageFileName,
       file: {
-        mimeType: 'application/pdf',
+        mimeType: contentMimeType,
         extension: 'pdf',
         sizeBytes: data.fileSizeBytes,
         sha256,
@@ -535,7 +543,7 @@ export async function confirmAnalysisPersistence(input: {
         tenantId,
         documentId,
         versionId,
-        contentType: 'application/pdf',
+        contentType: contentMimeType,
         storageScope: input.ctx.storageScope,
         primary: versionStorage.primary,
         previewStorageFileName: resolvedNames.previewStorageFileName,

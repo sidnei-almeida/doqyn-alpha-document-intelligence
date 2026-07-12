@@ -5,20 +5,23 @@ import { getStorageConfig } from '../../storage/storageConfig.js';
 import { isPresignedUploadEnabled } from '../../storage/presignedUploadConfig.js';
 import { createStagingPresignedPutUrl } from '../../storage/r2/r2PresignedUrls.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
-import { AI_ERROR_MESSAGES } from '../../ai/constants.js';
-
-const PDF_MIME = 'application/pdf';
+import {
+  AI_ERROR_MESSAGES,
+  resolveAnalysisMimeType,
+} from '../../ai/constants.js';
 
 function resolveMimeType(fileName: string, mimeType?: string): string {
+  const resolved = resolveAnalysisMimeType({ fileName, mimeType });
+  if (resolved) return resolved;
   const trimmed = mimeType?.trim();
   if (trimmed) return trimmed;
-  return lookup(fileName) || PDF_MIME;
+  return lookup(fileName) || 'application/pdf';
 }
 
-function assertPdfUpload(fileName: string, mimeType: string): void {
-  const lower = fileName.toLowerCase();
-  if (!lower.endsWith('.pdf') && mimeType !== PDF_MIME) {
-    throw new ServiceError(AI_ERROR_MESSAGES.pdfOnly, 'PDF_ONLY', 400);
+function assertAnalysisUpload(fileName: string, mimeType: string): void {
+  const resolved = resolveAnalysisMimeType({ fileName, mimeType });
+  if (!resolved) {
+    throw new ServiceError(AI_ERROR_MESSAGES.unsupportedFormat, 'UNSUPPORTED_FORMAT', 400);
   }
 }
 
@@ -60,7 +63,7 @@ export async function issueAnalysisStagingUploadUrl(
 
   const originalFileName = input.originalFileName?.trim() || 'documento.pdf';
   const mimeType = resolveMimeType(originalFileName, input.mimeType);
-  assertPdfUpload(originalFileName, mimeType);
+  assertAnalysisUpload(originalFileName, mimeType);
 
   if (!Number.isFinite(input.sizeBytes) || input.sizeBytes <= 0) {
     throw new ServiceError(AI_ERROR_MESSAGES.emptyFile, 'EMPTY_FILE', 400);

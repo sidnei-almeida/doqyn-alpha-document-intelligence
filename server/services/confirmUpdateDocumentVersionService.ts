@@ -61,6 +61,7 @@ import { canConfirmDocuments } from '../auth/permissions.js';
 import { loadDocumentAccessContext, resolveDocumentPermissions } from '../tenancy/documentAccess.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
+import { resolveAnalysisMimeType } from '../ai/constants.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
 
@@ -86,6 +87,11 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   const tenantId = input.ctx.tenantId;
   const data = confirmUpdateSchema.parse(input.payload);
   const documentId = data.documentId.trim();
+  const contentMimeType =
+    resolveAnalysisMimeType({
+      fileName: data.originalFileName,
+      mimeType: data.mimeType,
+    }) ?? 'application/pdf';
 
   const existingDoc = await assertCanUpdateExistingDocument({
     documentId,
@@ -232,6 +238,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
       originalFileName: data.originalFileName,
       storageFileName: resolvedNames.storageFileName,
       storageScope: input.ctx.storageScope,
+      mimeType: contentMimeType,
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
@@ -257,7 +264,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     tenantId,
     documentId,
     versionId,
-    contentType: 'application/pdf',
+    contentType: contentMimeType,
     storageScope: input.ctx.storageScope,
     primary: versionStorage.primary,
     previewStorageFileName: resolvedNames.previewStorageFileName,
@@ -286,7 +293,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
       storageFileName: resolvedNames.storageFileName,
       previewStorageFileName: resolvedNames.previewStorageFileName,
       file: {
-        mimeType: 'application/pdf',
+        mimeType: contentMimeType,
         extension: 'pdf',
         sizeBytes: data.fileSizeBytes,
         sha256,
@@ -391,7 +398,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
         tenantId,
         documentId,
         versionId,
-        contentType: 'application/pdf',
+        contentType: contentMimeType,
         storageScope: input.ctx.storageScope,
         primary: versionStorage.primary,
         previewStorageFileName: resolvedNames.previewStorageFileName,

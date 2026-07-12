@@ -11,13 +11,17 @@ import type { ExtractedPdfText } from '../types/documentAi.types.js';
 import { getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
 import { recordVisionOcrRequest } from '../../metrics/prometheus.js';
 import {
+  isImageAnalysisMimeType,
+  isPdfAnalysisMimeType,
+} from '../constants.js';
+import {
   getVisionOcrHealth,
   getVisionOcrMaxPages,
   getVisionOcrMinTextChars,
   isVisionOcrConfigured,
   isVisionOcrEnabled,
 } from '../vision/visionConfig.js';
-import { ocrPdfPages } from '../vision/visionOcrService.js';
+import { ocrImageBuffer, ocrPdfPages } from '../vision/visionOcrService.js';
 import type { VisionOcrResult } from '../vision/visionTypes.js';
 import { extractTextFromPdf } from './pdfTextExtractor.js';
 
@@ -39,6 +43,7 @@ export type DocumentTextExtractDeps = {
     buffer: Buffer,
     options?: { pageCountHint?: number; maxPages?: number },
   ) => Promise<VisionOcrResult>;
+  ocrImage?: (buffer: Buffer) => Promise<{ pageNumber: number; text: string; confidence?: number }>;
 };
 
 /** Política B.8: Vision só dispara abaixo do threshold e com credenciais. */
@@ -289,4 +294,125 @@ export async function extractTextFromDocumentPdf(
       ocrErrorCode: 'VISION_OCR_FAILED',
     };
   }
+}
+
+/**
+ * Imagem (JPG/PNG/WebP) → Vision OCR direto (sem pdf-parse).
+ */
+export async function extractTextFromDocumentImage(
+  fileBuffer: Buffer,
+  deps: DocumentTextExtractDeps = {},
+): Promise<ExtractedDocumentText> {
+  const runOcr = deps.ocrImage ?? ocrImageBuffer;
+  const startedAt = Date.now();
+
+  pipelineInfo('textExtract.image', 'inicio OCR de imagem', {
+    ...bufferMeta(fileBuffer, 'image'),
+    visionEnabled: isVisionOcrEnabled(),
+    visionConfigured: isVisionOcrConfigured(),
+    visionHealth: getVisionOcrHealth(),
+  });
+
+  if (!isVisionOcrEnabled() || !isVisionOcrConfigured()) {
+    logger.info('ocr_cascade', {
+      decision: 'image_vision_unavailable',
+      ocrFallbackUsed: false,
+      ocrAttempted: false,
+      ocrPagesProcessed: 0,
+      ocrDurationMs: 0,
+      ocrErrorCode: 'VISION_OCR_FAILED',
+    });
+    recordVisionOcrRequest({
+      status: 'error',
+      failureReason: isVisionOcrEnabled() ? 'not_configured' : 'disabled',
+    });
+    return {
+      text: '',
+      pages: [{ pageNumber: 1, text: '' }],
+      pageCount: 1,
+      charCount: 0,
+      truncated: false,
+      source: 'google_vision',
+      ocrFallbackUsed: false,
+      ocrAttempted: false,
+      ocrErrorCode: 'VISION_OCR_FAILED',
+    };
+  }
+
+  try {
+    const page = await runOcr(fileBuffer);
+    const durationMs = Date.now() - startedAt;
+    const text = page.text ?? '';
+
+    logger.info('ocr_cascade', {
+      decision: 'image_vision_success',
+      ocrFallbackUsed: true,
+      ocrAttempted: true,
+      ocrPagesProcessed: 1,
+      ocrDurationMs: durationMs,
+      ocrCharCount: text.length,
+    });
+
+    recordVisionOcrRequest({
+      status: 'success',
+      pagesProcessed: 1,
+    });
+
+    return {
+      text,
+      pages: [{ pageNumber: 1, text }],
+      pageCount: 1,
+      charCount: text.length,
+      truncated: false,
+      source: 'google_vision',
+      ocrFallbackUsed: true,
+      ocrAttempted: true,
+      ocrPagesProcessed: 1,
+      ocrDurationMs: durationMs,
+    };
+  } catch (error) {
+    const durationMs = Date.now() - startedAt;
+    pipelineError('textExtract.image', 'OCR de imagem falhou', error, {
+      totalDurationMs: durationMs,
+    });
+    logger.info('ocr_cascade', {
+      decision: 'image_vision_failed',
+      ocrFallbackUsed: false,
+      ocrAttempted: true,
+      ocrPagesProcessed: 0,
+      ocrDurationMs: durationMs,
+      ocrErrorCode: 'VISION_OCR_FAILED',
+    });
+    recordVisionOcrRequest({
+      status: 'error',
+      failureReason: 'api_error',
+    });
+    return {
+      text: '',
+      pages: [{ pageNumber: 1, text: '' }],
+      pageCount: 1,
+      charCount: 0,
+      truncated: false,
+      source: 'google_vision',
+      ocrFallbackUsed: false,
+      ocrAttempted: true,
+      ocrDurationMs: durationMs,
+      ocrErrorCode: 'VISION_OCR_FAILED',
+    };
+  }
+}
+
+/** Roteia PDF (cascata) ou imagem (Vision direto). */
+export async function extractTextFromDocument(
+  fileBuffer: Buffer,
+  mimeType: string,
+  deps: DocumentTextExtractDeps = {},
+): Promise<ExtractedDocumentText> {
+  if (isImageAnalysisMimeType(mimeType)) {
+    return extractTextFromDocumentImage(fileBuffer, deps);
+  }
+  if (isPdfAnalysisMimeType(mimeType) || !mimeType.trim()) {
+    return extractTextFromDocumentPdf(fileBuffer, deps);
+  }
+  return extractTextFromDocumentPdf(fileBuffer, deps);
 }
