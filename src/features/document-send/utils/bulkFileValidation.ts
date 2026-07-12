@@ -4,6 +4,7 @@ export const NON_EXTRACTABLE_TEXT_MESSAGE =
 const NON_EXTRACTABLE_CODES = new Set([
   'INSUFFICIENT_TEXT',
   'TEXT_EXTRACTION_FAILED',
+  'VISION_OCR_FAILED',
 ]);
 
 const NON_EXTRACTABLE_PHRASES = [
@@ -12,6 +13,7 @@ const NON_EXTRACTABLE_PHRASES = [
   'nao extraivel',
   'escaneado',
   'baseado em imagem',
+  'ocr automático falhou',
 ];
 
 export function isNonExtractablePdfError(input: {
