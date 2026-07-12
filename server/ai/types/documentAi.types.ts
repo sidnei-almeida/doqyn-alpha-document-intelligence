@@ -77,6 +77,8 @@ export type AnalyzePdfResponse = {
     truncated: boolean;
     source?: 'pdf_parse' | 'google_vision' | 'pdf_parse+google_vision';
     ocrFallbackUsed?: boolean;
+    ocrPagesProcessed?: number;
+    ocrDurationMs?: number;
   };
   classification: ClassificationResult;
   extraction: MetadataExtractionResult | null;

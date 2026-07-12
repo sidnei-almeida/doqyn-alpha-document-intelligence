@@ -30,6 +30,8 @@ export const AI_ERROR_MESSAGES = {
   emptyFile: 'O arquivo enviado está vazio.',
   insufficientText:
     'Texto insuficiente ou não extraível. O documento pode ser escaneado ou baseado em imagem.',
+  visionOcrFailed:
+    'OCR automático falhou. O documento foi enviado para revisão manual.',
   rulesNotSeeded:
     'Não há classes e regras de documentos configuradas para esta empresa.',
   rulesNoCategories:

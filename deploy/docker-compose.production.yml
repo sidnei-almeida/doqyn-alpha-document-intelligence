@@ -154,6 +154,9 @@ services:
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-api
       METRICS_SERVICE_ROLE: api
+    volumes:
+      # Vision OCR: deploy/secrets/gcp-vision-sa.json → /run/secrets/gcp-vision-sa.json
+      - ./secrets:/run/secrets:ro
     depends_on:
       mongo:
         condition: service_healthy
@@ -202,6 +205,8 @@ services:
       METRICS_SERVICE_NAME: doqyn-worker
       METRICS_SERVICE_ROLE: worker
       METRICS_PORT: 9100
+    volumes:
+      - ./secrets:/run/secrets:ro
     depends_on:
       mongo:
         condition: service_healthy

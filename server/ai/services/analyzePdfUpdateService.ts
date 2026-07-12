@@ -27,6 +27,10 @@ import {
 } from '../../services/retrievalProvider.js';
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
+import {
+  buildVisionOcrFailedReviewResponse,
+  isVisionOcrFailure,
+} from './visionOcrFailureReview.js';
 import { isMongoNativeConfigured } from '../../db/mongoClient.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import {
@@ -163,6 +167,24 @@ export async function analyzePdfUpdateBuffer(input: {
   }
 
   if (extracted.charCount < MIN_TEXT_CHARS) {
+    if (isVisionOcrFailure(extracted)) {
+      return {
+        ...buildVisionOcrFailedReviewResponse({
+          jobId,
+          originalFileName: input.originalFileName,
+          fileHash,
+          fileSizeBytes,
+          extracted,
+          logs,
+        }),
+        updateMode: true,
+        documentId,
+        currentVersionLabel: previous.context.currentVersionLabel,
+        expectedNextVersionLabel: previous.context.expectedNextVersionLabel,
+        previousVersionContextIncluded: true,
+        extraction: null,
+      };
+    }
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'INSUFFICIENT_TEXT', 422);
   }
 

@@ -138,6 +138,26 @@ export const quotaExceededTotal = new Counter({
   registers: [prometheusRegistry],
 });
 
+export const visionOcrRequestsTotal = new Counter({
+  name: 'doqyn_vision_ocr_requests_total',
+  help: 'Chamadas ao Vision OCR (fallback de texto)',
+  labelNames: ['status'] as const,
+  registers: [prometheusRegistry],
+});
+
+export const visionOcrPagesTotal = new Counter({
+  name: 'doqyn_vision_ocr_pages_total',
+  help: 'Páginas processadas pelo Vision OCR',
+  registers: [prometheusRegistry],
+});
+
+export const visionOcrFailuresTotal = new Counter({
+  name: 'doqyn_vision_ocr_failures_total',
+  help: 'Falhas no Vision OCR',
+  labelNames: ['reason'] as const,
+  registers: [prometheusRegistry],
+});
+
 function statusClass(statusCode: number): string {
   if (statusCode >= 500) return '5xx';
   if (statusCode >= 400) return '4xx';
@@ -223,6 +243,26 @@ export function recordAiProviderRequest(input: {
     { provider: input.provider, operation: input.operation },
     input.durationSeconds,
   );
+}
+
+export function recordVisionOcrRequest(input: {
+  status: 'success' | 'error' | 'skipped';
+  pagesProcessed?: number;
+  failureReason?: string;
+}): void {
+  if (!isPrometheusEnabled()) return;
+
+  visionOcrRequestsTotal.inc({ status: input.status });
+
+  if (input.status === 'success' && input.pagesProcessed && input.pagesProcessed > 0) {
+    visionOcrPagesTotal.inc(input.pagesProcessed);
+  }
+
+  if (input.status === 'error') {
+    visionOcrFailuresTotal.inc({
+      reason: input.failureReason?.trim() || 'unknown',
+    });
+  }
 }
 
 export async function renderPrometheusMetrics(): Promise<string> {

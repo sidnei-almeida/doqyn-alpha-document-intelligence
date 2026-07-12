@@ -24,6 +24,10 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocumentPdf } from './documentTextExtractor.js';
 import {
+  buildVisionOcrFailedReviewResponse,
+  isVisionOcrFailure,
+} from './visionOcrFailureReview.js';
+import {
   bufferMeta,
   pipelineInfo,
   pipelineWarn,
@@ -164,7 +168,12 @@ export async function analyzePdfBuffer(input: {
       minRequired: MIN_TEXT_CHARS,
       groqCalled,
       stageDurationsMs: durations,
-      reason: 'INSUFFICIENT_TEXT',
+      reason: isVisionOcrFailure(extracted) ? 'VISION_OCR_FAILED' : 'INSUFFICIENT_TEXT',
+      ocrFallbackUsed: extracted.ocrFallbackUsed,
+      ocrAttempted: extracted.ocrAttempted,
+      ocrPagesProcessed: extracted.ocrPagesProcessed,
+      ocrDurationMs: extracted.ocrDurationMs,
+      ocrErrorCode: extracted.ocrErrorCode,
     });
     pipelineWarn('analyzePdf', 'ABORT — texto insuficiente após cascata', {
       jobId,
@@ -173,10 +182,24 @@ export async function analyzePdfBuffer(input: {
       minRequired: MIN_TEXT_CHARS,
       textSource: extracted.source,
       ocrFallbackUsed: extracted.ocrFallbackUsed,
+      ocrAttempted: extracted.ocrAttempted,
       ocrPagesProcessed: extracted.ocrPagesProcessed,
+      ocrErrorCode: extracted.ocrErrorCode,
       textPreview: previewText(extracted.text, 200),
       stageDurationsMs: durations,
     });
+
+    if (isVisionOcrFailure(extracted)) {
+      return buildVisionOcrFailedReviewResponse({
+        jobId,
+        originalFileName: input.originalFileName,
+        fileHash,
+        fileSizeBytes,
+        extracted,
+        logs,
+      });
+    }
+
     throw new AiAnalysisError(AI_ERROR_MESSAGES.insufficientText, 'INSUFFICIENT_TEXT', 422);
   }
 
