@@ -1,5 +1,6 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
+import { findNextQueuedItem, hasInFlightUploadItem } from './uploadQueueCore';
 
 export type UploadQueueAction =
   | { type: 'enqueue'; items: UploadQueueItem[] }
@@ -8,6 +9,7 @@ export type UploadQueueAction =
   | { type: 'done'; id: string; documentId: string }
   | { type: 'awaiting_approval'; id: string; approvalId: string }
   | { type: 'error'; id: string; message: string }
+  | { type: 'ai_pause'; id: string; message: string }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'clear-finished' }
@@ -51,9 +53,15 @@ export function uploadQueueReducer(
           ? { ...item, status: 'error' as const, errorMessage: action.message }
           : item,
       );
+    case 'ai_pause':
+      return items.map((item) =>
+        item.id === action.id
+          ? { ...item, status: 'ai_paused' as const, errorMessage: action.message }
+          : item,
+      );
     case 'retry':
       return items.map((item) =>
-        item.id === action.id && item.status === 'error'
+        item.id === action.id && (item.status === 'error' || item.status === 'ai_paused')
           ? { ...item, status: 'queued' as const, errorMessage: undefined, analysis: undefined }
           : item,
       );
@@ -74,7 +82,7 @@ export function uploadQueueReducer(
 
 /** Próximo item enfileirado ainda não iniciado. */
 export function nextQueuedItem(items: UploadQueueItem[]): UploadQueueItem | null {
-  return items.find((item) => item.status === 'queued') ?? null;
+  return findNextQueuedItem(items);
 }
 
 /**
@@ -82,12 +90,7 @@ export function nextQueuedItem(items: UploadQueueItem[]): UploadQueueItem | null
  * para aprovação. Garante o pipeline: analisar → salvar/aprovar → próximo.
  */
 export function hasActiveItem(items: UploadQueueItem[]): boolean {
-  return items.some(
-    (item) =>
-      item.status === 'analyzing' ||
-      item.status === 'confirming' ||
-      item.status === 'review',
-  );
+  return hasInFlightUploadItem(items);
 }
 
 export function countAwaitingApproval(items: UploadQueueItem[]): number {

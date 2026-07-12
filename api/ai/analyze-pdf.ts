@@ -9,6 +9,7 @@ import {
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
 import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
 import { analyzePdfBuffer } from '../../server/ai/services/analyzePdfService.js';
+import { resolveAnalysisProviderName } from '../../server/ai/providers/resolveAnalysisProvider.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
 import { parseMultipart } from '../../server/utils/parseMultipart.js';
@@ -22,6 +23,11 @@ import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.
 import {
   buildAnalysisJobNameSnapshot,
 } from '../../server/audit/documentNameSnapshot.js';
+import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
+import {
+  enqueuePdfAnalysisJob,
+  isAsyncPdfAnalysisAvailable,
+} from '../../server/services/analysis/enqueuePdfAnalysisJob.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -133,6 +139,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sessionCompanyId: user.companyId,
     });
 
+    await assertTenantQuota(companyId, 'analysis_per_day');
+
+    const aiProvider = resolveAnalysisProviderName();
+
+    if (isAsyncPdfAnalysisAvailable()) {
+      const storageScope = resolveTenantStorageScopeFromAuthUser(user);
+
+      try {
+        const queued = await enqueuePdfAnalysisJob({
+          tenantId: companyId,
+          ownerUserId: user.id,
+          buffer: file.buffer,
+          originalFileName: file.filename,
+          mimeType: file.mimeType,
+          storageScope,
+          requestId: ctx.requestId,
+          batchId: ctx.batchId,
+          itemId: ctx.itemId,
+          jobKind: 'initial',
+        });
+
+        logger.info('analyze-pdf enfileirado', {
+          requestId: ctx.requestId,
+          jobId: queued.jobId,
+          tenantId: companyId,
+          aiProvider,
+          durationMs: Date.now() - startedAt,
+        });
+
+        res.setHeader('X-DOQYN-Request-Id', ctx.requestId);
+        return res.status(202).json(queued);
+      } catch (stagingError) {
+        if (isServiceError(stagingError)) {
+          logger.warn('analyze-pdf staging failed (async)', {
+            requestId: ctx.requestId,
+            code: stagingError.code,
+            message: stagingError.message,
+            durationMs: Date.now() - startedAt,
+          });
+          const { statusCode, body } = workflowErrorFromUnknown(stagingError, {
+            requestId: ctx.requestId,
+            defaultCode: stagingError.code,
+          });
+          return res.status(statusCode).json(body);
+        }
+        throw stagingError;
+      }
+    }
+
     const result = await analyzePdfBuffer({
       buffer: file.buffer,
       originalFileName: file.filename,
@@ -211,7 +266,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         checksumSha256: result.fileHash,
         sizeBytes: result.fileSizeBytes,
         durationMs: Date.now() - startedAt,
-        aiProvider: 'groq',
+        aiProvider,
         errorCode: result.errorCode,
         source: 'api',
       }),
@@ -224,8 +279,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fileName: file.filename,
       fileSizeBytes: file.size,
       mimeType: file.mimeType,
-      aiProvider: 'groq',
-      groqModel: process.env.GROQ_MODEL?.trim() || 'llama-3.1-8b-instant',
+      aiProvider,
       jobId: result.jobId,
       status: result.status,
       className: result.classification.className,

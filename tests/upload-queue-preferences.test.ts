@@ -12,11 +12,17 @@ function readSrc(relativePath: string): string {
 }
 
 describe('preferências de upload na fila da Biblioteca', () => {
-  it('resolveQueueAnalysisAction integra settings do usuário', () => {
+  it('uploadQueueCore centraliza roteamento pós-análise', () => {
+    const core = readSrc('features/upload/queue/uploadQueueCore.ts');
+    assert.ok(core.includes('shouldPauseForReview'));
+    assert.ok(core.includes('canAutoAcceptWithSettings'));
+    assert.ok(core.includes('policyRequiresPerItemChoice'));
+    assert.ok(core.includes('resolveQueueAnalysisAction'));
+  });
+
+  it('resolveQueueAnalysisAction reexporta uploadQueueCore', () => {
     const resolver = readSrc('features/upload/config/resolveQueueAnalysisAction.ts');
-    assert.ok(resolver.includes('shouldPauseForReview'));
-    assert.ok(resolver.includes('canAutoAcceptWithSettings'));
-    assert.ok(resolver.includes('policyRequiresPerItemChoice'));
+    assert.ok(resolver.includes('uploadQueueCore'));
   });
 
   it('SettingsPage expõe seção de upload e análise da IA', () => {

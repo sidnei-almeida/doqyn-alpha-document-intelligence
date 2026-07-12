@@ -31,6 +31,11 @@ export type MongoTenantSettings = {
   trash?: MongoTenantTrashSettings;
 };
 
+export type MongoTenantQuotas = {
+  analysisPerDay?: number;
+  uploadsPerHour?: number;
+};
+
 export type MongoTenant = {
   _id: string;
   tenantId: string;
@@ -48,6 +53,7 @@ export type MongoTenant = {
   };
   storage?: MongoTenantStorage;
   settings?: MongoTenantSettings;
+  quotas?: MongoTenantQuotas;
   createdAt: Date;
   updatedAt: Date;
   /** @deprecated alias de tenantId */

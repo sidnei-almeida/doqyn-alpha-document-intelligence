@@ -31,7 +31,8 @@ describe('pipeline Groq — remoção de no_ai', () => {
     assert.equal(analyze.includes('isNoAiMode'), false);
     assert.equal(analyze.includes('analyzePdfWithNoAi'), false);
     assert.ok(analyze.includes('assertAiProviderConfigured'));
-    assert.ok(analyze.includes('classifyDocumentWithRules'));
+    assert.ok(analyze.includes('resolveAnalysisProvider'));
+    assert.ok(analyze.includes('analysisProvider.classify'));
   });
 
   it('A. sem GROQ_API_KEY assertAiProviderConfigured lança AI_PROVIDER_NOT_CONFIGURED', () => {
@@ -104,7 +105,7 @@ describe('pipeline Groq — remoção de no_ai', () => {
     const endpoint = readApi('ai/analyze-pdf.ts');
     assert.equal(endpoint.includes('req.body.tenantId'), false);
     assert.ok(endpoint.includes('getCompanyIdFromUser(user)'));
-    assert.ok(endpoint.includes("aiProvider: 'groq'"));
+    assert.ok(endpoint.includes('resolveAnalysisProviderName'));
     assert.equal(endpoint.includes('AI_MODE'), false);
   });
 

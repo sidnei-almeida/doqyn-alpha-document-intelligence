@@ -13,6 +13,7 @@ dist-ssr/
 .env
 .env.*
 !.env.example
+!deploy/env/.env.production.example
 .env.local
 .env.*.local
 *.pem
@@ -22,7 +23,8 @@ secrets.json
 data/geoip/*.mmdb
 
 # Internal docs, audit reports, local runbooks (não versionar)
-docs/
+docs/*
+!docs/DEPLOY_VPS.md
 
 # Editor / IDE
 .vscode/*
