@@ -15,6 +15,7 @@ Pré-requisito para qualquer deploy local ou VPS.
 | `DOQYN_PUBLIC_APP_URL` | `DOQYN_APP_PUBLIC_URL` | **Recomendado** iguais |
 | `DOQYN_AUTH_BASE_URL` | `PORT` (+ host) | Alpha aponta para o Auth (ex. `http://127.0.0.1:4100`) |
 | API `:3001` | `DOQYN_APP_BASE_URL` | Auth aponta para a API Alpha |
+| `REDIS_KEY_PREFIX` | `REDIS_KEY_PREFIX` | **Devem diferir** — Alpha `doqyn:alpha:` / Auth `doqyn:auth:` |
 
 > `ALLOWED_ORIGINS` existe **só no Auth**. No Alpha use `DOQYN_PUBLIC_APP_URL` (e a origem real do Vite/nginx).
 

@@ -221,6 +221,19 @@ function main() {
   if (!appBase) add('DOQYN_APP_BASE_URL (Auth)', 'missing', 'Auth → URL da API Alpha');
   else add('DOQYN_APP_BASE_URL (Auth)', 'ok', 'definido (não imprime valor)');
 
+  // Redis prefix isolation (shared Redis)
+  const alphaRedis = (alpha.REDIS_KEY_PREFIX ?? 'doqyn:alpha:').trim() || 'doqyn:alpha:';
+  const authRedis = (auth.REDIS_KEY_PREFIX ?? 'doqyn:auth:').trim() || 'doqyn:auth:';
+  if (alphaRedis === authRedis) {
+    add(
+      'REDIS_KEY_PREFIX Alpha ≠ Auth',
+      'warn',
+      `ambos="${alphaRedis}" — risco de colisão em Redis compartilhado (use doqyn:alpha: / doqyn:auth:)`,
+    );
+  } else {
+    add('REDIS_KEY_PREFIX Alpha ≠ Auth', 'ok', 'prefixos distintos');
+  }
+
   // Tabela
   const pad = (s, n) => String(s).padEnd(n);
   console.log(`${pad('CHECK', 52)} ${pad('STATUS', 8)} DETAIL`);

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CollectionInfo, Db, Document, IndexDescriptionInfo } from 'mongodb';
-import { COLLECTIONS, DEV_TENANT_ID, REGISTRY_COLLECTIONS } from '../server/db/constants.js';
+import { COLLECTIONS, DEV_TENANT_ID, REGISTRY_COLLECTIONS, SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
@@ -22,6 +22,7 @@ type Finding = {
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_AUDITORIA_MONGODB_SCHEMA.txt');
 
 const KNOWN_REGISTRY = new Set(Object.values(REGISTRY_COLLECTIONS));
+const KNOWN_SHARED_APP = new Set(Object.values(SHARED_APP_COLLECTIONS));
 const KNOWN_BASE = new Set(Object.values(COLLECTIONS));
 
 const TENANT_MEMBER_STATUSES = new Set(['pending', 'active', 'blocked', 'rejected']);
@@ -126,9 +127,14 @@ function suggestMissingIndexes(collectionName: string, indexes: IndexDescription
   return suggestions;
 }
 
-function categorizeCollection(name: string): 'registry' | 'legacy_flat' | 'tenant_prefixed' | 'other' {
+function categorizeCollection(
+  name: string,
+): 'registry' | 'shared_app' | 'legacy_flat' | 'tenant_prefixed' | 'other' {
   if (KNOWN_REGISTRY.has(name as (typeof REGISTRY_COLLECTIONS)[keyof typeof REGISTRY_COLLECTIONS])) {
     return 'registry';
+  }
+  if (KNOWN_SHARED_APP.has(name as (typeof SHARED_APP_COLLECTIONS)[keyof typeof SHARED_APP_COLLECTIONS])) {
+    return 'shared_app';
   }
 
   for (const base of KNOWN_BASE) {
@@ -640,6 +646,7 @@ async function main() {
   const emptyCollections = [...counts.entries()].filter(([, count]) => count === 0).map(([name]) => name);
   const legacyCollections = collectionNames.filter((n) => categorizeCollection(n) === 'legacy_flat');
   const prefixedCollections = collectionNames.filter((n) => categorizeCollection(n) === 'tenant_prefixed');
+  const sharedAppCollections = collectionNames.filter((n) => categorizeCollection(n) === 'shared_app');
 
   const critical = findings.filter((f) => f.severity === 'CRITICO');
   const high = findings.filter((f) => f.severity === 'ALTO');
@@ -655,6 +662,7 @@ async function main() {
   line(`Coleções encontradas: ${collectionNames.length}`);
   line(`Tenants: ${tenants.length}`);
   line(`Coleções vazias: ${emptyCollections.length}`);
+  line(`Coleções SHARED_APP: ${sharedAppCollections.length}`);
   line(`Coleções legadas (flat): ${legacyCollections.length}`);
   line(`Coleções com prefixo de tenant: ${prefixedCollections.length}`);
   line(`Achados CRÍTICOS: ${critical.length}`);
