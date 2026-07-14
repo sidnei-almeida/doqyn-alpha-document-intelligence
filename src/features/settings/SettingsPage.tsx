@@ -5,29 +5,22 @@ import { CompanySettingsSection } from './components/sections/CompanySettingsSec
 import { SecuritySettingsSection } from './components/sections/SecuritySettingsSection';
 import { UploadAiSettingsSection } from './components/sections/UploadAiSettingsSection';
 import { useSettingsSection } from './hooks/useSettingsSection';
-import type { AccountSettingsTab, CompanySettingsTab, SettingsSectionId } from './settingsSections';
+import type { CompanySettingsTab, SettingsSectionId } from './settingsSections';
 import { settingsSectionMeta } from './settingsSections';
 import { SETTINGS_UI_PATTERN } from './settingsUiPattern';
 
 function SettingsSectionPanel({
   section,
   tab,
-  setAccountTab,
   setCompanyTab,
 }: {
   section: SettingsSectionId;
   tab: ReturnType<typeof useSettingsSection>['tab'];
-  setAccountTab: (tab: AccountSettingsTab) => void;
   setCompanyTab: (tab: CompanySettingsTab) => void;
 }) {
   switch (section) {
     case 'perfil':
-      return (
-        <AccountSettingsSection
-          tab={(tab ?? 'identidade') as AccountSettingsTab}
-          onTabChange={setAccountTab}
-        />
-      );
+      return <AccountSettingsSection />;
     case 'upload-ia':
       return <UploadAiSettingsSection />;
     case 'seguranca':
@@ -40,14 +33,12 @@ function SettingsSectionPanel({
         />
       );
     default:
-      return (
-        <AccountSettingsSection tab="identidade" onTabChange={setAccountTab} />
-      );
+      return <AccountSettingsSection />;
   }
 }
 
 export function SettingsPage() {
-  const { section, tab, setSection, setAccountTab, setCompanyTab } = useSettingsSection();
+  const { section, tab, setSection, setCompanyTab } = useSettingsSection();
   const meta = settingsSectionMeta(section);
 
   return (
@@ -61,7 +52,6 @@ export function SettingsPage() {
         <SettingsSectionPanel
           section={section}
           tab={tab}
-          setAccountTab={setAccountTab}
           setCompanyTab={setCompanyTab}
         />
       </SettingsLayout>

@@ -1,8 +1,7 @@
 export type SettingsSectionId = 'perfil' | 'upload-ia' | 'seguranca' | 'empresa';
 
-export type AccountSettingsTab = 'identidade' | 'preferencias' | 'acesso';
 export type CompanySettingsTab = 'governanca' | 'retencao' | 'sistema';
-export type SettingsTabId = AccountSettingsTab | CompanySettingsTab;
+export type SettingsTabId = CompanySettingsTab;
 
 export type LegacySettingsSectionId =
   | 'preferencias'
@@ -50,12 +49,6 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
   },
 ];
 
-export const ACCOUNT_SETTINGS_TABS: SettingsSubTabItem<AccountSettingsTab>[] = [
-  { id: 'identidade', label: 'Identidade' },
-  { id: 'preferencias', label: 'Preferências' },
-  { id: 'acesso', label: 'Acesso' },
-];
-
 export const COMPANY_SETTINGS_TABS: SettingsSubTabItem<CompanySettingsTab>[] = [
   { id: 'governanca', label: 'Governança' },
   { id: 'retencao', label: 'Retenção' },
@@ -64,27 +57,26 @@ export const COMPANY_SETTINGS_TABS: SettingsSubTabItem<CompanySettingsTab>[] = [
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'perfil';
 
+/** URLs legadas → seção canônica (Perfil não usa mais tab). */
 export const LEGACY_SECTION_REDIRECTS: Record<
   LegacySettingsSectionId,
-  { section: SettingsSectionId; tab: SettingsTabId }
+  { section: SettingsSectionId; tab?: SettingsTabId | null }
 > = {
-  preferencias: { section: 'perfil', tab: 'preferencias' },
-  autenticacao: { section: 'perfil', tab: 'acesso' },
+  preferencias: { section: 'perfil' },
+  autenticacao: { section: 'perfil' },
   organizacao: { section: 'empresa', tab: 'governanca' },
   lixeira: { section: 'empresa', tab: 'retencao' },
   sistema: { section: 'empresa', tab: 'sistema' },
 };
 
 const VALID_SECTIONS = new Set<string>(SETTINGS_NAV_ITEMS.map((item) => item.id));
-const ACCOUNT_TABS = new Set<string>(ACCOUNT_SETTINGS_TABS.map((item) => item.id));
 const COMPANY_TABS = new Set<string>(COMPANY_SETTINGS_TABS.map((item) => item.id));
+
+/** Tabs legadas de Perfil — só para limpar ?tab= da URL. */
+const LEGACY_ACCOUNT_TAB_PARAMS = new Set(['identidade', 'preferencias', 'acesso']);
 
 export function isLegacySettingsSection(value: string): value is LegacySettingsSectionId {
   return value in LEGACY_SECTION_REDIRECTS;
-}
-
-export function isAccountSettingsTab(value: string): value is AccountSettingsTab {
-  return ACCOUNT_TABS.has(value);
 }
 
 export function isCompanySettingsTab(value: string): value is CompanySettingsTab {
@@ -92,7 +84,6 @@ export function isCompanySettingsTab(value: string): value is CompanySettingsTab
 }
 
 export function getDefaultTabForSection(section: SettingsSectionId): SettingsTabId | null {
-  if (section === 'perfil') return 'identidade';
   if (section === 'empresa') return 'governanca';
   return null;
 }
@@ -116,7 +107,7 @@ export function parseSettingsTab(
   tabParam: string | null,
 ): SettingsTabId | null {
   if (sectionParam && isLegacySettingsSection(sectionParam)) {
-    return LEGACY_SECTION_REDIRECTS[sectionParam].tab;
+    return LEGACY_SECTION_REDIRECTS[sectionParam].tab ?? null;
   }
 
   const defaultTab = getDefaultTabForSection(section);
@@ -124,16 +115,15 @@ export function parseSettingsTab(
     return null;
   }
 
-  if (tabParam) {
-    if (section === 'perfil' && isAccountSettingsTab(tabParam)) {
-      return tabParam;
-    }
-    if (section === 'empresa' && isCompanySettingsTab(tabParam)) {
-      return tabParam;
-    }
+  if (tabParam && section === 'empresa' && isCompanySettingsTab(tabParam)) {
+    return tabParam;
   }
 
   return defaultTab;
+}
+
+export function isLegacyAccountTabParam(value: string | null): boolean {
+  return Boolean(value && LEGACY_ACCOUNT_TAB_PARAMS.has(value));
 }
 
 export function isSettingsSection(value: string): value is SettingsSectionId {

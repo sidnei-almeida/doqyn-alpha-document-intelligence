@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTrashRetentionSettings } from '@/features/library/hooks/useTrashMutations';
 import { Icon } from '@/components/ui/Icon';
-import { Button } from '@/components/ui/Button';
 import { Radio } from '@/components/ui/Radio';
 import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsCard } from '../SettingsCard';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
+import { SettingsSaveBar } from '../SettingsSaveBar';
 
 const RETENTION_DAYS_MIN = 1;
 const RETENTION_DAYS_MAX = 365;
@@ -142,11 +142,17 @@ export function TrashRetentionSettingsSection() {
               <p className="settings-retention-preview__text">{retentionPreview(mode, days)}</p>
             </div>
 
-            <div className="settings-retention-actions">
-              <Button type="button" size="sm" disabled={!isDirty || isSaving} onClick={handleSave}>
-                {isSaving ? 'Salvando…' : 'Salvar configurações'}
-              </Button>
-            </div>
+            <SettingsSaveBar
+              inset
+              dirty={isDirty}
+              saving={isSaving}
+              onSave={handleSave}
+              onDiscard={() => {
+                if (!settings) return;
+                setMode(settings.trashRetentionMode);
+                setDays(settings.trashRetentionDays);
+              }}
+            />
           </div>
         )}
       </SettingsCard>

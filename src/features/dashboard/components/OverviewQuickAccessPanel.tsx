@@ -48,7 +48,7 @@ const OPERATIONAL_LINKS: QuickLink[] = [
     id: 'preferencias',
     label: 'Preferências',
     description: 'Tema e experiência',
-    path: '/settings?section=perfil&tab=preferencias',
+    path: '/settings?section=perfil',
     icon: 'tune',
   },
   {
