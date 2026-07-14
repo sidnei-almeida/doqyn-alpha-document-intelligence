@@ -41,11 +41,11 @@ import {
   assertAiSuggestedNamePresent,
   requireConfirmClassification,
   buildDocumentTitle,
-  buildMetadataPreview,
   buildProcessingSteps,
   buildStoragePlaceholders,
   mapVersionMetadata,
   persistConfirmedVersionFile,
+  projectDocumentSearchMeta,
 } from './confirm/confirmVersionShared.js';
 import { assertCanUpdateExistingDocument } from './documentVersionService.js';
 import {
@@ -201,6 +201,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   const jobId = data.jobId ?? `job_${randomUUID()}`;
 
   const versionMetadata = mapVersionMetadata(data.extraction.metadata);
+  const searchMeta = projectDocumentSearchMeta(versionMetadata, rule.fields);
   const sha256 = data.fileHash;
 
   let resolvedNames;
@@ -312,7 +313,6 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
         ruleVersion: rule.version,
       },
       metadata: versionMetadata,
-      metadataIndex: [],
       storage: versionStorage,
       previewManifest: previewResult.previewManifest ?? undefined,
       review: {
@@ -368,7 +368,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     title: buildDocumentTitle(docClass.name, versionMetadata),
     currentFileName: resolvedNames.finalFileName,
     processingStatus: needsReview ? 'processed_with_review' : 'processed',
-    currentMetadataPreview: buildMetadataPreview(versionMetadata),
+    searchMeta,
     ...mutationFields,
   };
 

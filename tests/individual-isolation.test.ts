@@ -48,7 +48,9 @@ describe('storage resolver', () => {
   it('individual usa somente compartilhado', () => {
     const ctx = individualCtx(TENANT_A, USER_A);
     assert.equal(ctx.collections.documents, 'documents_compartilhado');
-    assert.equal(ctx.collections.documentClasses, 'document_classes_compartilhado');
+    assert.equal(ctx.collections.documentCategories, 'document_categories_compartilhado');
+    assert.equal(ctx.collections.accessGroups, undefined);
+    assert.equal(ctx.collections.documentClasses, undefined);
     assert.ok(!ctx.collections.documents.includes('individual_'));
   });
 

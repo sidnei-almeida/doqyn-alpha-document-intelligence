@@ -50,13 +50,14 @@ async function main() {
 
   const names = resolveTenantCollectionNames(tenant);
   const groupId = 'group_financeiro_test2';
-  const classId = 'class_test2';
-  const ruleId = 'rule_test2';
+  const categoryId = 'class_test2';
+  const accessRuleId = 'access_rule_test2';
+  const extractionRuleId = 'rule_test2';
   const documentId = 'doc_test2';
   const versionId = 'ver_test2';
   const auditId = 'audit_test2';
 
-  await db.collection(names.accessGroups!).updateOne(
+  await db.collection(names.documentGroups!).updateOne(
     { _id: groupId },
     {
       $set: withTenantFields(TEST_TENANT_ID, {
@@ -72,11 +73,11 @@ async function main() {
     { upsert: true },
   );
 
-  await db.collection(names.documentClasses!).updateOne(
-    { _id: classId },
+  await db.collection(names.documentCategories!).updateOne(
+    { _id: categoryId },
     {
       $set: withTenantFields(TEST_TENANT_ID, {
-        _id: classId,
+        _id: categoryId,
         name: 'Classe Teste 2',
         slug: 'classe-teste-2',
         description: 'Classe de isolamento',
@@ -84,15 +85,6 @@ async function main() {
         iconKey: 'file',
         color: '#16a34a',
         keywords: ['teste'],
-        permissions: {
-          view: [groupId],
-          download: [groupId],
-          update: [groupId],
-          audit: [groupId],
-          share: [groupId],
-        },
-        notifyOnUpdate: false,
-        notifyGroups: [],
         createdBy: 'seed',
         createdAt: now,
         updatedAt: now,
@@ -102,11 +94,34 @@ async function main() {
   );
 
   await db.collection(names.documentRules!).updateOne(
-    { _id: ruleId },
+    { _id: accessRuleId },
     {
       $set: withTenantFields(TEST_TENANT_ID, {
-        _id: ruleId,
-        classId,
+        _id: accessRuleId,
+        groupId,
+        categoryId,
+        active: true,
+        permissions: {
+          view: true,
+          download: true,
+          upload: true,
+          share: true,
+          manage: false,
+        },
+        createdBy: 'seed',
+        createdAt: now,
+        updatedAt: now,
+      }),
+    },
+    { upsert: true },
+  );
+
+  await db.collection(names.documentExtractionRules!).updateOne(
+    { _id: extractionRuleId },
+    {
+      $set: withTenantFields(TEST_TENANT_ID, {
+        _id: extractionRuleId,
+        categoryId,
         version: 1,
         active: true,
         fields: [
@@ -136,7 +151,7 @@ async function main() {
         _id: documentId,
         documentCode: 'TST2-001',
         currentVersionId: versionId,
-        classId,
+        classId: categoryId,
         className: 'Classe Teste 2',
         title: 'Documento Teste 2',
         currentFileName: 'teste2.pdf',
@@ -149,7 +164,7 @@ async function main() {
           auditGroupIds: [groupId],
           shareGroupIds: [groupId],
         },
-        currentMetadataPreview: {},
+        searchMeta: { people: [], dates: [] },
         createdBy: 'seed',
         createdAt: now,
         updatedAt: now,
@@ -179,15 +194,14 @@ async function main() {
           sha256: 'dev-seed-sha256-placeholder',
         },
         classification: {
-          classId,
+          classId: categoryId,
           className: 'Classe Teste 2',
           confidence: 1,
           requiresReview: false,
           reason: 'seed',
         },
-        rule: { ruleId, ruleVersion: 1 },
+        rule: { ruleId: extractionRuleId, ruleVersion: 1 },
         metadata: {},
-        metadataIndex: [],
         storage: {
           primary: {
             provider: 'aws_s3',

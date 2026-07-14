@@ -26,8 +26,9 @@ export const SHARED_APP_COLLECTIONS = {
 } as const;
 
 export const COLLECTIONS = {
+  /** @deprecated Retirado do resolver — grupos vivem no Auth + document_groups */
   accessGroups: 'access_groups',
-  /** @deprecated Legado — preferir documentCategories */
+  /** @deprecated Retirado do resolver — preferir documentCategories */
   documentClasses: 'document_classes',
   documentCategories: 'document_categories',
   documentGroups: 'document_groups',

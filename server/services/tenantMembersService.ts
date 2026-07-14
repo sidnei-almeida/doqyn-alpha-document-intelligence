@@ -180,37 +180,6 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
     { upsert: true },
   );
 
-  await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).updateOne(
-    {
-      $or: [
-        { authUserId: SIDNEI_DEV_USER_ID },
-        { email: emailNormalized, companyId: tenantId },
-      ],
-    } as Record<string, unknown>,
-    {
-      $setOnInsert: { _id: memberId, createdAt: now },
-      $set: {
-        tenantId,
-        companyId: tenantId,
-        userId: SIDNEI_DEV_USER_ID,
-        authUserId: SIDNEI_DEV_USER_ID,
-        username: 'sidnei',
-        name: 'Sidnei Almeida',
-        email: SIDNEI_DEV_EMAIL,
-        firstName: 'Sidnei',
-        lastName: 'Almeida',
-        role: 'member',
-        platformRoles: ['company_admin', 'user'],
-        status: 'active',
-        groupIds: [],
-        accessGroupIds: [],
-        updatedAt: now,
-      },
-      $unset: { keycloakUserId: '' },
-    },
-    { upsert: true },
-  );
-
   const saved = await members.findOne({ _id: memberId } as Record<string, unknown>);
   if (!saved) {
     throw new ServiceError('Falha ao garantir tenant_member do sidnei.', 'MEMBER_SEED_FAILED', 500);

@@ -110,28 +110,33 @@ function tenantScopedIndexes(names: ReturnType<typeof resolveTenantCollectionNam
 }> {
   const out: Array<{ collection: string; indexes: IndexDescription[] }> = [];
 
-  if (names.accessGroups) {
+  if (names.documentCategories) {
     out.push({
-      collection: names.accessGroups,
+      collection: names.documentCategories,
       indexes: [
         { key: { tenantId: 1, active: 1 } },
         { key: { tenantId: 1, slug: 1 }, unique: true },
-        { key: { tenantId: 1, status: 1 } },
-        { key: { tenantId: 1, createdAt: 1 } },
-        { key: { tenantId: 1, updatedAt: 1 } },
       ],
     });
   }
 
-  if (names.documentClasses) {
+  if (names.documentGroups) {
     out.push({
-      collection: names.documentClasses,
+      collection: names.documentGroups,
       indexes: [
         { key: { tenantId: 1, active: 1 } },
         { key: { tenantId: 1, slug: 1 }, unique: true },
-        { key: { tenantId: 1, name: 1 } },
-        { key: { tenantId: 1, createdAt: 1 } },
-        { key: { tenantId: 1, updatedAt: 1 } },
+      ],
+    });
+  }
+
+  if (names.documentGroupMembers) {
+    out.push({
+      collection: names.documentGroupMembers,
+      indexes: [
+        { key: { tenantId: 1, groupId: 1, active: 1 } },
+        { key: { tenantId: 1, membershipId: 1, active: 1 } },
+        { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
       ],
     });
   }
@@ -140,11 +145,18 @@ function tenantScopedIndexes(names: ReturnType<typeof resolveTenantCollectionNam
     out.push({
       collection: names.documentRules,
       indexes: [
-        { key: { tenantId: 1, classId: 1, active: 1 } },
-        { key: { tenantId: 1, classId: 1, version: -1 } },
-        { key: { tenantId: 1, accessGroupIds: 1 } },
-        { key: { tenantId: 1, createdAt: 1 } },
-        { key: { tenantId: 1, updatedAt: 1 } },
+        { key: { tenantId: 1, groupId: 1, categoryId: 1 }, unique: true },
+        { key: { tenantId: 1, active: 1 } },
+      ],
+    });
+  }
+
+  if (names.documentExtractionRules) {
+    out.push({
+      collection: names.documentExtractionRules,
+      indexes: [
+        { key: { tenantId: 1, categoryId: 1, active: 1 } },
+        { key: { tenantId: 1, categoryId: 1, version: -1 } },
       ],
     });
   }
@@ -159,6 +171,9 @@ function tenantScopedIndexes(names: ReturnType<typeof resolveTenantCollectionNam
         { key: { 'access.viewGroupIds': 1, tenantId: 1, updatedAt: -1 } },
         { key: { tenantId: 1, createdAt: -1 } },
         { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
+        { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+        { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
+        { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
       ],
     },
     {

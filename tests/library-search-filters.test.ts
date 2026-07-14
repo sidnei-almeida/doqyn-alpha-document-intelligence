@@ -18,7 +18,7 @@ describe('documentListQuery (backend)', () => {
     assert.equal(escapeRegexLiteral('x'.repeat(200)).length, 120);
   });
 
-  it('buildDocumentSearchOrClause cobre campos de nome e metadados', () => {
+  it('buildDocumentSearchOrClause cobre campos de nome e metadados isolados', () => {
     const clause = buildDocumentSearchOrClause('nda');
     const fields = clause.map((entry) => Object.keys(entry)[0]);
     for (const field of [
@@ -27,9 +27,13 @@ describe('documentListQuery (backend)', () => {
       'recommendedFileName',
       'className',
       'ownerName',
+      'searchMeta.people.name',
+      'searchMeta.people.nameNormalized',
+      'searchMeta.documentTitle',
     ]) {
       assert.ok(fields.includes(field), `campo ${field} pesquisável`);
     }
+    assert.equal(fields.includes('metadata.tags'), false);
   });
 
   it('buildDocumentTypeClause diferencia pdf, image e other', () => {

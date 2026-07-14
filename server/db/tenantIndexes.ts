@@ -68,23 +68,33 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
 }> {
   const out: Array<{ collection: string; indexes: IndexDescription[] }> = [];
 
-  if (names.accessGroups) {
+  if (names.documentCategories) {
     out.push({
-      collection: names.accessGroups,
+      collection: names.documentCategories,
       indexes: [
         { key: { tenantId: 1, active: 1 } },
         { key: { tenantId: 1, slug: 1 }, unique: true },
-        { key: { tenantId: 1, status: 1 } },
       ],
     });
   }
 
-  if (names.documentClasses) {
+  if (names.documentGroups) {
     out.push({
-      collection: names.documentClasses,
+      collection: names.documentGroups,
       indexes: [
         { key: { tenantId: 1, active: 1 } },
         { key: { tenantId: 1, slug: 1 }, unique: true },
+      ],
+    });
+  }
+
+  if (names.documentGroupMembers) {
+    out.push({
+      collection: names.documentGroupMembers,
+      indexes: [
+        { key: { tenantId: 1, groupId: 1, active: 1 } },
+        { key: { tenantId: 1, membershipId: 1, active: 1 } },
+        { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
       ],
     });
   }
@@ -93,8 +103,18 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
     out.push({
       collection: names.documentRules,
       indexes: [
-        { key: { tenantId: 1, classId: 1, active: 1 } },
-        { key: { tenantId: 1, classId: 1, version: -1 } },
+        { key: { tenantId: 1, groupId: 1, categoryId: 1 }, unique: true },
+        { key: { tenantId: 1, active: 1 } },
+      ],
+    });
+  }
+
+  if (names.documentExtractionRules) {
+    out.push({
+      collection: names.documentExtractionRules,
+      indexes: [
+        { key: { tenantId: 1, categoryId: 1, active: 1 } },
+        { key: { tenantId: 1, categoryId: 1, version: -1 } },
       ],
     });
   }
@@ -106,6 +126,9 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, status: 1, updatedAt: -1 } },
         { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
         { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
+        { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+        { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
+        { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
       ],
     },
     {
@@ -168,6 +191,8 @@ export function sharedIndividualIndexSpecs(): Array<{
         { key: { ownerTenantId: 1, classId: 1, createdAt: -1 } },
         { key: { ownerTenantId: 1, status: 1, createdAt: -1 } },
         { key: { tenantType: 1, ownerTenantId: 1 } },
+        { key: { ownerTenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+        { key: { ownerTenantId: 1, 'searchMeta.validityDate': 1 } },
       ],
     },
     {
@@ -186,17 +211,24 @@ export function sharedIndividualIndexSpecs(): Array<{
       ],
     },
     {
-      collection: names.documentClasses!,
+      collection: names.documentCategories!,
       indexes: [
         { key: { ownerTenantId: 1, active: 1 } },
-        { key: { scope: 1, status: 1 } },
+        { key: { ownerTenantId: 1, slug: 1 }, unique: true },
       ],
     },
     {
       collection: names.documentRules!,
       indexes: [
+        { key: { ownerTenantId: 1, groupId: 1, categoryId: 1 }, unique: true },
         { key: { ownerTenantId: 1, active: 1 } },
-        { key: { scope: 1, status: 1 } },
+      ],
+    },
+    {
+      collection: names.documentExtractionRules!,
+      indexes: [
+        { key: { ownerTenantId: 1, categoryId: 1, active: 1 } },
+        { key: { ownerTenantId: 1, categoryId: 1, version: -1 } },
       ],
     },
     {
