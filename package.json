@@ -30,6 +30,8 @@
     "mongo:cleanup:execute": "node scripts/mongo-cleanup-legacy.mjs --execute",
     "audit:no-flat-writes": "tsx scripts/assert-no-flat-tenant-writes.ts",
     "db:ensure-indexes": "tsx scripts/ensure-mongodb-indexes.ts",
+    "db:backfill-search-meta": "tsx scripts/backfill-document-search-meta.ts",
+    "db:drop-empty-legacy": "tsx scripts/drop-empty-legacy-collections.ts",
     "db:migrate-flat-to-tenant": "tsx scripts/migrate-flat-to-tenant-prefixed.ts",
     "db:migrate-keycloak-to-auth-user-id": "tsx scripts/migrate-keycloak-to-auth-user-id.ts",
     "db:seed-isolation-test": "tsx scripts/seed-second-tenant-isolation-test.ts",

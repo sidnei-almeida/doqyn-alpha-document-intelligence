@@ -1,11 +1,16 @@
 import type { Collection } from 'mongodb';
 import { getTenantCollections, type TenantCollections } from './getTenantCollections.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import type {
+  MongoDocumentAccessRule,
+  MongoDocumentCategory,
+  MongoDocumentGroup,
+} from '../db/types.js';
 
 export type BusinessAdminCollections = TenantCollections & {
-  accessGroups: Collection;
-  documentClasses: Collection;
-  documentRules: Collection;
+  documentCategories: Collection<MongoDocumentCategory>;
+  documentGroups: Collection<MongoDocumentGroup>;
+  documentRules: Collection<MongoDocumentAccessRule>;
 };
 
 export async function requireBusinessAdminCollections(
@@ -13,7 +18,11 @@ export async function requireBusinessAdminCollections(
 ): Promise<BusinessAdminCollections> {
   const collections = await getTenantCollections(tenantId);
 
-  if (!collections.documentClasses || !collections.documentRules || !collections.accessGroups) {
+  if (
+    !collections.documentCategories ||
+    !collections.documentGroups ||
+    !collections.documentRules
+  ) {
     throw new ServiceError(
       'Recursos administrativos indisponíveis para este tipo de cliente.',
       'TENANT_COLLECTION_UNAVAILABLE',

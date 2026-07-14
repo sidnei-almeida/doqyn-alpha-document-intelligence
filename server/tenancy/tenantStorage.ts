@@ -40,8 +40,6 @@ function resolveBusinessCollections(prefix: string): ResolvedTenantCollectionNam
     documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
     processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
-    accessGroups: resolvePrefixedName(COLLECTIONS.accessGroups, prefix),
-    documentClasses: resolvePrefixedName(COLLECTIONS.documentClasses, prefix),
     ...resolveGovernanceCollections(prefix),
   };
 }
@@ -54,7 +52,6 @@ function resolveSharedIndividualCollections(): ResolvedTenantCollectionNames {
     documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
     processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
     auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
-    documentClasses: resolvePrefixedName(COLLECTIONS.documentClasses, prefix),
     ...resolveGovernanceCollections(prefix),
   };
 }

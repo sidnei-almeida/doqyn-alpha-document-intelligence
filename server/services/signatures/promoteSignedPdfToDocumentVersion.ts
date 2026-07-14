@@ -116,8 +116,13 @@ export async function promoteSignedPdfToDocumentVersion(input: {
   const pageCount = await resolvePdfPageCount(input.signedPdfBuffer);
   const { documentVersions, documents } = await getTenantCollections(input.tenantId);
 
+  const {
+    metadataIndex: _dropIndex,
+    ...sourceWithoutDeadIndex
+  } = input.sourceVersion as MongoDocumentVersion & { metadataIndex?: unknown };
+
   const version: MongoDocumentVersion = {
-    ...input.sourceVersion,
+    ...sourceWithoutDeadIndex,
     _id: versionId,
     documentId: input.documentId,
     versionNumber,

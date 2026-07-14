@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { ExtractedMetadataField } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
@@ -11,9 +10,7 @@ import {
 import type {
   MongoDocument,
   MongoDocumentVersion,
-  MongoMetadataIndexEntry,
   MongoProcessingJob,
-  MongoRuleField,
 } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
 import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
@@ -55,12 +52,12 @@ import {
   assertAiSuggestedNamePresent,
   requireConfirmClassification,
   buildDocumentTitle,
-  buildMetadataPreview,
   buildProcessingSteps,
   buildStoragePlaceholders,
   isConfirmAnalysisError,
   mapVersionMetadata,
   persistConfirmedVersionFile,
+  projectDocumentSearchMeta,
 } from './confirm/confirmVersionShared.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
@@ -128,45 +125,6 @@ export const confirmAnalysisSchema = z.object({
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
-
-function buildMetadataIndex(
-  metadata: Record<string, ExtractedMetadataField>,
-  fields: MongoRuleField[],
-): MongoMetadataIndexEntry[] {
-  const index: MongoMetadataIndexEntry[] = [];
-
-  for (const field of fields) {
-    const item = metadata[field.key];
-    if (!item) continue;
-
-    const raw = item.normalizedValue ?? item.value;
-    if (raw === null || raw === '') continue;
-
-    if (field.type === 'date') {
-      const parsed = new Date(String(raw));
-      if (!Number.isNaN(parsed.getTime())) {
-        index.push({ key: field.key, type: 'date', valueDate: parsed });
-      }
-      continue;
-    }
-
-    if (field.type === 'currency' || field.type === 'number') {
-      const amount = typeof raw === 'number' ? raw : Number.parseFloat(String(raw));
-      if (Number.isFinite(amount)) {
-        index.push({ key: field.key, type: 'number', valueNumber: amount });
-      }
-      continue;
-    }
-
-    index.push({
-      key: field.key,
-      type: 'string',
-      valueString: String(raw).toLowerCase(),
-    });
-  }
-
-  return index;
-}
 
 async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string> {
   const { documents } = ctx.collections;
@@ -277,7 +235,7 @@ export async function confirmAnalysisPersistence(input: {
           ? 'Execute npm run db:setup para popular classes e regras em doqyn_dev.'
           : diagnostics.documentClassFound
             ? 'Classe encontrada, mas regra ativa ausente para este classId.'
-            : 'classId não encontrado em document_classes para este companyId.',
+            : 'classId não encontrado em document_categories para este tenant.',
     });
 
     throw new ConfirmAnalysisError(
@@ -321,10 +279,7 @@ export async function confirmAnalysisPersistence(input: {
   const jobId = data.jobId ?? `job_${randomUUID()}`;
 
   const versionMetadata = mapVersionMetadata(data.extraction.metadata);
-  const metadataIndex = buildMetadataIndex(
-    data.extraction.metadata as Record<string, ExtractedMetadataField>,
-    rule.fields,
-  );
+  const searchMeta = projectDocumentSearchMeta(versionMetadata, rule.fields);
   const documentCode = await generateDocumentCode(input.ctx);
   const sha256 = data.fileHash;
 
@@ -438,7 +393,7 @@ export async function confirmAnalysisPersistence(input: {
         auditGroupIds: legacyPermissions.audit,
         shareGroupIds: legacyPermissions.share,
       },
-      currentMetadataPreview: buildMetadataPreview(versionMetadata),
+      searchMeta,
       ownerUserId: ownershipFields.ownerUserId,
       ownerName: ownershipFields.ownerName,
       createdBy: ownershipFields.createdBy,
@@ -486,7 +441,6 @@ export async function confirmAnalysisPersistence(input: {
         ruleVersion: rule.version,
       },
       metadata: versionMetadata,
-      metadataIndex,
       storage: versionStorage,
       previewManifest: previewResult.previewManifest ?? undefined,
       review: {

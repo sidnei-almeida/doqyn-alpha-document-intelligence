@@ -1,6 +1,9 @@
 import type { MetadataExtractionResult, ProcessingLogItem } from '../../ai/types/documentAi.types.js';
 import { mapExtractedFieldSource } from '../../ai/utils/mapMetadataSource.js';
-import type { MongoDocumentVersion, MongoVersionMetadataField } from '../../db/types.js';
+import type {
+  MongoDocumentVersion,
+  MongoVersionMetadataField,
+} from '../../db/types.js';
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import {
   deleteAnalysisStaging,
@@ -144,18 +147,6 @@ export function mapVersionMetadata(
   return mapped;
 }
 
-export function buildMetadataPreview(
-  metadata: Record<string, MongoVersionMetadataField>,
-): Record<string, string | number | null> {
-  const preview: Record<string, string | number | null> = {};
-
-  for (const [key, field] of Object.entries(metadata)) {
-    preview[key] = field.normalizedValue ?? field.value;
-  }
-
-  return preview;
-}
-
 export function buildDocumentTitle(
   className: string,
   metadata: Record<string, MongoVersionMetadataField>,
@@ -250,3 +241,5 @@ export function assertAiSuggestedNamePresent(input: {
     );
   }
 }
+
+export { projectDocumentSearchMeta, parseMetadataDate } from './projectSearchMeta.js';

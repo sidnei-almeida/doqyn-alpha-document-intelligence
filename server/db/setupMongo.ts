@@ -108,6 +108,9 @@ async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
     { key: { tenantId: 1, status: 1, updatedAt: -1 } },
     { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
     { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+    { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
+    { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
   ]);
 
   await db.collection(names.documentVersions).createIndexes([

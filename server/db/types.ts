@@ -471,6 +471,38 @@ export type MongoVersionMetadataField = {
   };
 };
 
+/** Pessoa isolada p/ busca direcionada (não substitui versions.metadata). */
+export type MongoDocumentPersonMeta = {
+  name: string;
+  nameNormalized: string;
+  /** Papel / relação: mae, pai, responsavel, parte_receptora, fornecedor, … */
+  role: string;
+  /** Nome da pessoa relacionada (ex.: mãe → filho), quando inferível. */
+  relatedTo?: string;
+  sourceKey: string;
+};
+
+/** Data isolada p/ busca/filtro sem varrer o blob de metadados. */
+export type MongoDocumentDateMeta = {
+  kind: string;
+  date: Date;
+  sourceKey: string;
+  label?: string;
+};
+
+/**
+ * Projeção indexável no documento (1º nível).
+ * Mantém extras ricos em document_versions.metadata.
+ */
+export type MongoDocumentSearchMeta = {
+  people: MongoDocumentPersonMeta[];
+  dates: MongoDocumentDateMeta[];
+  /** Título extraído (ex.: campo titulo), distinto do filename. */
+  documentTitle?: string | null;
+  /** Vencimento/validade tipado quando a IA (ou usuário) fornecer data. */
+  validityDate?: Date | null;
+};
+
 export type DocumentLifecycleStatus =
   | 'active'
   | 'trashed'
@@ -505,7 +537,9 @@ export type MongoDocument = {
     auditGroupIds: string[];
     shareGroupIds: string[];
   };
-  currentMetadataPreview: Record<string, string | number | null>;
+  currentMetadataPreview?: Record<string, string | number | null>;
+  /** Nomes, datas e validade isolados para busca performática. */
+  searchMeta?: MongoDocumentSearchMeta;
   /** Nome exibido do proprietário original (imutável exceto transferência). */
   ownerName?: string;
   createdBy: string;
@@ -579,7 +613,8 @@ export type MongoDocumentVersion = {
     ruleVersion: number;
   };
   metadata: Record<string, MongoVersionMetadataField>;
-  metadataIndex: MongoMetadataIndexEntry[];
+  /** @deprecated Preferir documents.searchMeta — não é mais preenchido. */
+  metadataIndex?: MongoMetadataIndexEntry[];
   storage: {
     primary: MongoStorageSlot;
     backup: MongoStorageSlot;

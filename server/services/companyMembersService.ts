@@ -1,29 +1,33 @@
-import { randomUUID } from 'node:crypto';
 import { REGISTRY_COLLECTIONS } from '../db/constants.js';
-import type { CompanyMemberStatus, MongoCompanyMember } from '../db/types.js';
+import type { CompanyMemberStatus, MongoTenantMember, PlatformRole } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import { memberIdFromEmail } from '../utils/slugify.js';
-
-import { serializeCompanyMember } from './memberSerialize.js';
+import { normalizeEmail } from '../utils/contactNormalize.js';
+import {
+  createUniqueMemberId,
+  getTenantMemberById,
+  listTenantMembers,
+  saveTenantMember,
+  updateTenantMemberFields,
+} from './tenantMemberRepository.js';
+import { serializeTenantMember } from './memberSerialize.js';
 
 const ALLOWED_ROLES = new Set(['admin', 'manager', 'member', 'auditor']);
 const ALLOWED_STATUSES = new Set<CompanyMemberStatus>(['pending', 'active', 'blocked', 'rejected']);
 
-function serializeMember(member: MongoCompanyMember) {
-  return serializeCompanyMember(member);
+function roleToTenantRoles(role: string): PlatformRole[] {
+  if (role === 'admin') return ['company_admin', 'user'];
+  return ['user'];
 }
 
+/**
+ * API legada company-members — persiste apenas em `tenant_members` (formato canônico).
+ * Não grava mais em `company_members`.
+ */
 export async function listCompanyMembers(companyId: string) {
-  const db = await getDb();
-  const members = await db
-    .collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers)
-    .find({ companyId })
-    .sort({ name: 1 })
-    .toArray();
-
-  return members.map(serializeMember);
+  const members = await listTenantMembers(companyId);
+  return members.map(serializeTenantMember);
 }
 
 export async function createCompanyMember(
@@ -61,44 +65,41 @@ export async function createCompanyMember(
   await assertGroupIdsExist(companyId, groupIds, { requireActive: false });
 
   const db = await getDb();
-  const duplicateEmail = await db.collection(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    companyId,
-    email,
+  const emailNormalized = normalizeEmail(email);
+  const duplicateEmail = await db.collection(REGISTRY_COLLECTIONS.tenantMembers).findOne({
+    tenantId: companyId,
+    emailNormalized,
   } as Record<string, unknown>);
 
   if (duplicateEmail) {
     throw new ServiceError('Já existe um membro com este e-mail.', 'DUPLICATE_EMAIL', 409);
   }
 
-  let id = memberIdFromEmail(email);
-  const existingId = await db.collection(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    _id: id,
-    companyId,
-  } as Record<string, unknown>);
-
-  if (existingId) {
-    id = `member_${randomUUID().slice(0, 8)}`;
-  }
-
+  const id = await createUniqueMemberId(email, companyId);
   const now = new Date();
-  const member: MongoCompanyMember = {
+  const nameParts = name.split(/\s+/);
+  const firstName = nameParts[0] ?? name;
+  const lastName = nameParts.slice(1).join(' ') || undefined;
+
+  const member: MongoTenantMember = {
     _id: id,
+    memberId: id,
     tenantId: companyId,
     companyId,
-    userId: id,
-    name,
     email,
-    position: input.position?.trim() || undefined,
-    role: role as MongoCompanyMember['role'],
+    emailNormalized,
+    firstName,
+    lastName,
     status,
-    groupIds,
+    tenantRoles: roleToTenantRoles(role),
+    accessGroupIds: groupIds,
+    accessRequestMessage: input.position?.trim() || undefined,
     createdAt: now,
     updatedAt: now,
   };
 
-  await db.collection(REGISTRY_COLLECTIONS.companyMembers).insertOne(member as Record<string, unknown>);
-
-  return serializeMember(member);
+  const saved = await saveTenantMember(member);
+  return serializeTenantMember(saved);
 }
 
 export async function updateCompanyMember(
@@ -112,24 +113,21 @@ export async function updateCompanyMember(
     position?: string;
   },
 ) {
-  const db = await getDb();
-  const existing = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    _id: memberId,
-    companyId,
-  } as Record<string, unknown>);
-
-  if (!existing) {
+  const existing = await getTenantMemberById(memberId);
+  if (!existing || existing.tenantId !== companyId) {
     throw new ServiceError('Membro não encontrado.', 'NOT_FOUND', 404);
   }
 
-  const patch: Partial<MongoCompanyMember> = { updatedAt: new Date() };
+  const patch: Partial<MongoTenantMember> = {};
 
   if (input.name !== undefined) {
     const name = input.name.trim();
     if (!name) {
       throw new ServiceError('Nome não pode ser vazio.', 'VALIDATION_ERROR', 400);
     }
-    patch.name = name;
+    const parts = name.split(/\s+/);
+    patch.firstName = parts[0] ?? name;
+    patch.lastName = parts.slice(1).join(' ') || undefined;
   }
 
   if (input.email !== undefined) {
@@ -138,13 +136,14 @@ export async function updateCompanyMember(
       throw new ServiceError('E-mail inválido.', 'VALIDATION_ERROR', 400);
     }
     patch.email = email;
+    patch.emailNormalized = normalizeEmail(email);
   }
 
   if (input.role !== undefined) {
     if (!ALLOWED_ROLES.has(input.role)) {
       throw new ServiceError('Papel inválido.', 'VALIDATION_ERROR', 400);
     }
-    patch.role = input.role as MongoCompanyMember['role'];
+    patch.tenantRoles = roleToTenantRoles(input.role);
   }
 
   if (input.status !== undefined) {
@@ -155,20 +154,15 @@ export async function updateCompanyMember(
   }
 
   if (input.position !== undefined) {
-    patch.position = input.position.trim() || undefined;
+    patch.accessRequestMessage = input.position.trim() || undefined;
   }
 
-  await db.collection(REGISTRY_COLLECTIONS.companyMembers).updateOne(
-    { _id: memberId, companyId } as Record<string, unknown>,
-    { $set: patch },
-  );
-
-  const updated = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    _id: memberId,
-    companyId,
-  } as Record<string, unknown>);
-
-  return serializeMember(updated!);
+  try {
+    const updated = await updateTenantMemberFields(memberId, companyId, patch);
+    return serializeTenantMember(updated);
+  } catch {
+    throw new ServiceError('Membro não encontrado.', 'NOT_FOUND', 404);
+  }
 }
 
 export async function updateMemberStatus(
@@ -190,25 +184,12 @@ export async function updateMemberGroups(
 ) {
   await assertGroupIdsExist(companyId, groupIds, { requireActive: false });
 
-  const db = await getDb();
-  const existing = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    _id: memberId,
-    companyId,
-  } as Record<string, unknown>);
-
-  if (!existing) {
+  try {
+    const updated = await updateTenantMemberFields(memberId, companyId, {
+      accessGroupIds: groupIds,
+    });
+    return serializeTenantMember(updated);
+  } catch {
     throw new ServiceError('Membro não encontrado.', 'NOT_FOUND', 404);
   }
-
-  await db.collection(REGISTRY_COLLECTIONS.companyMembers).updateOne(
-    { _id: memberId, companyId } as Record<string, unknown>,
-    { $set: { groupIds, updatedAt: new Date() } },
-  );
-
-  const updated = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    _id: memberId,
-    companyId,
-  } as Record<string, unknown>);
-
-  return serializeMember(updated!);
 }
