@@ -28,7 +28,8 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
-  buildVisionOcrFailedReviewResponse,
+  buildTextExtractionFailedResponse,
+  isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { isMongoNativeConfigured } from '../../db/mongoClient.js';
@@ -167,15 +168,19 @@ export async function analyzePdfUpdateBuffer(input: {
   }
 
   if (extracted.charCount < MIN_TEXT_CHARS) {
-    if (isVisionOcrFailure(extracted)) {
+    if (isInsufficientTextAfterOcr(extracted)) {
       return {
-        ...buildVisionOcrFailedReviewResponse({
+        ...buildTextExtractionFailedResponse({
           jobId,
           originalFileName: input.originalFileName,
           fileHash,
           fileSizeBytes,
           extracted,
           logs,
+          errorCode: isVisionOcrFailure(extracted) ? 'VISION_OCR_FAILED' : 'INSUFFICIENT_TEXT',
+          reason: isVisionOcrFailure(extracted)
+            ? AI_ERROR_MESSAGES.visionOcrFailed
+            : AI_ERROR_MESSAGES.insufficientText,
         }),
         updateMode: true,
         documentId,

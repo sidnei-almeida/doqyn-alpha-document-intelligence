@@ -2,36 +2,46 @@ import { AI_ERROR_MESSAGES } from '../constants.js';
 import type { AnalyzePdfResponse, ClassificationResult } from '../types/documentAi.types.js';
 import type { ExtractedDocumentText } from './documentTextExtractor.js';
 import type { ProcessingLogItem } from '../types/documentAi.types.js';
+import { getVisionOcrMinTextChars } from '../vision/visionConfig.js';
 
 export function isVisionOcrFailure(extracted: ExtractedDocumentText): boolean {
   return extracted.ocrErrorCode === 'VISION_OCR_FAILED';
 }
 
+/** OCR tentado (ou falhou) e texto ainda abaixo do mínimo — não dá para seguir a Groq. */
+export function isInsufficientTextAfterOcr(extracted: ExtractedDocumentText): boolean {
+  if (extracted.charCount >= getVisionOcrMinTextChars()) return false;
+  return isVisionOcrFailure(extracted) || extracted.ocrAttempted === true;
+}
+
 /**
- * B.8: falha do Vision → requires_review com metadados mínimos (não 500/422).
+ * Extração de texto irrecuperável → status failed (não 500/422), com código claro.
+ * Evita beco sem saída de requires_review sem classId.
  */
-export function buildVisionOcrFailedReviewResponse(input: {
+export function buildTextExtractionFailedResponse(input: {
   jobId: string;
   originalFileName: string;
   fileHash: string;
   fileSizeBytes: number;
   extracted: ExtractedDocumentText;
   logs: ProcessingLogItem[];
+  errorCode: 'VISION_OCR_FAILED' | 'INSUFFICIENT_TEXT';
+  reason: string;
 }): AnalyzePdfResponse {
-  const reason = AI_ERROR_MESSAGES.visionOcrFailed;
   const classification: ClassificationResult = {
     classId: null,
     className: null,
     confidence: 0,
-    requiresReview: true,
-    reason,
+    requiresReview: false,
+    reason: input.reason,
+    errorCode: input.errorCode,
     evidence: [],
   };
 
   return {
     jobId: input.jobId,
-    status: 'requires_review',
-    errorCode: 'VISION_OCR_FAILED',
+    status: 'failed',
+    errorCode: input.errorCode,
     originalFileName: input.originalFileName,
     fileHash: input.fileHash,
     fileSizeBytes: input.fileSizeBytes,
@@ -51,10 +61,26 @@ export function buildVisionOcrFailedReviewResponse(input: {
     logs: [
       ...input.logs,
       {
-        title: 'Revisão necessária',
-        description: reason,
-        status: 'done',
+        title: input.errorCode === 'VISION_OCR_FAILED' ? 'OCR falhou' : 'Texto insuficiente',
+        description: input.reason,
+        status: 'error',
       },
     ],
   };
+}
+
+/** @deprecated use buildTextExtractionFailedResponse */
+export function buildVisionOcrFailedReviewResponse(input: {
+  jobId: string;
+  originalFileName: string;
+  fileHash: string;
+  fileSizeBytes: number;
+  extracted: ExtractedDocumentText;
+  logs: ProcessingLogItem[];
+}): AnalyzePdfResponse {
+  return buildTextExtractionFailedResponse({
+    ...input,
+    errorCode: 'VISION_OCR_FAILED',
+    reason: AI_ERROR_MESSAGES.visionOcrFailed,
+  });
 }

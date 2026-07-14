@@ -46,6 +46,10 @@ import {
   buildInitialDocumentOwnershipFields,
 } from '../utils/documentMutationFields.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
+import { sanitizeFileExtension } from '../storage/storageKeys.js';
+import {
+  extensionFromFileName,
+} from '../../shared/storageFileName.js';
 import {
   ConfirmAnalysisError,
   assertAiSuggestedNamePresent,

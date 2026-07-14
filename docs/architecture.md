@@ -2,75 +2,56 @@
 
 ## Visão geral
 
-O DOQYN Alpha segue uma arquitetura monorepo com frontend SPA e API serverless, preparada para deploy na Vercel.
+Monorepo com frontend SPA (Vite/React) e API Node (handlers em `/api`, servidos por `dev-server` / `production-server`). Identidade fica no serviço irmão **doqyn-auth-service** (PostgreSQL). Documentos e metadados ficam no **MongoDB**; arquivos no **Cloudflare R2** (ou storage local).
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Frontend (React)                     │
-│  Login → Upload → Documentos → Versionamento → Auditoria  │
-└────────────────────────┬────────────────────────────────┘
-                         │ /api/*
-┌────────────────────────▼────────────────────────────────┐
-│              API Handlers (Vercel / dev-server)          │
-└────────────────────────┬────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────┐
-│                    server/services/                      │
-│  documentService · processingService · auditService      │
-│  metadataService · documentClassificationService         │
-└──────────┬─────────────────────────────┬──────────────┘
-           │                             │
-┌──────────▼──────────┐       ┌──────────▼──────────────┐
-│   MongoDB Atlas     │       │  Integrações futuras      │
-│   (metadados)       │       │  Google Doc AI · S3 · R2  │
-└─────────────────────┘       └───────────────────────────┘
+┌────────────────────────────┐     /auth /oauth      ┌─────────────────────┐
+│  Frontend (React :5173)    │ ───────────────────►  │  Auth-service :4100 │
+│  Biblioteca, upload, etc.  │ ◄── cookie sessão ─── │  Fastify + Postgres │
+└─────────────┬──────────────┘                       └──────────┬──────────┘
+              │ /api/*                                         │
+              ▼                                                │ verify
+┌────────────────────────────┐     Bearer internal◄────────────┘
+│  Alpha API :3001           │
+│  + workers BullMQ          │
+└──────┬─────────┬───────────┘
+       │         │
+       ▼         ▼
+   MongoDB     R2 / Redis / Groq / Vision
 ```
 
 ## Princípios
 
-1. **Metadados no MongoDB, arquivos fora** — O banco armazena referências, status, versões, hash e histórico. Arquivos reais irão para S3/R2.
-2. **Interface em linguagem de negócio** — Nenhum termo técnico de infraestrutura é exposto ao usuário final.
-3. **Autenticação isolada** — Camada `AuthProvider` permite alternar entre mock e Keycloak sem espalhar lógica.
-4. **Serviços com nomes genéricos** — Pontos de integração para IA claramente definidos mas simulados nesta fase.
-
-## Modelos de dados
-
-| Modelo | Responsabilidade |
-|--------|-----------------|
-| `Document` | Documento principal com status, versão e metadados |
-| `DocumentVersion` | Versões preservadas com hash e referência de storage |
-| `AuditEvent` | Rastreabilidade de todas as ações |
-| `ProcessingJob` | Pipeline de processamento com etapas |
-| `Rule` | Regras de classificação e acesso (futuro) |
+1. **Metadados no MongoDB, arquivos fora** — Mongo guarda documentos, versões, chunks, auditoria; binários no R2 (ou disco local).
+2. **Identidade no Auth-service** — Cookie HttpOnly + `POST /internal/sessions/verify`. **Keycloak não é usado.**
+3. **Multi-tenant por collection prefix** — business: `documents_{tenantId}`; PF: pool `*_compartilhado` + filtro `ownerUserId`.
+4. **IA no backend** — classificação/extração via Groq; OCR opcional via Google Vision.
 
 ## Autenticação
 
 ```
-VITE_AUTH_MODE=temporary → API com cookie JWT (desenvolvimento)
-VITE_AUTH_MODE=mock     → MockAuthProvider (demonstração)
-VITE_AUTH_MODE=keycloak → KeycloakAuthProvider (produção / SSO)
+AUTH_PROVIDER=doqyn_auth          → backend usa doqynAuthProvider
+VITE_AUTH_PROVIDER=doqyn_auth     → frontend usa cookie + /auth/*
+
+# Legado (evitar em novos ambientes):
+AUTH_PROVIDER=temporary           → JWT local /api/auth/login
 ```
 
-A troca é feita em `src/features/auth/getAuthProvider.ts` e `AuthProvider.tsx`.
+`VITE_AUTH_MODE` é legado e só entra se `VITE_AUTH_PROVIDER` não estiver definido. Não há `KeycloakAuthProvider`.
 
 ## Processamento de documentos
 
-Fluxo atual (simulado):
-
-1. Upload recebido → `documentService.uploadDocument()`
-2. Metadados extraídos → `metadataExtractionService`
-3. Classificação → `documentClassificationService`
-4. Job criado → `processingService.createProcessingJob()`
-5. Evento de auditoria registrado
-
-Pontos de integração futura estão marcados nos serviços com comentários `Future:`.
+1. `POST /api/ai/analyze-pdf` (sync ou fila BullMQ)
+2. Extração de texto (± Vision OCR) → classificação/extração Groq
+3. `POST /api/documents/confirm-analysis` → Mongo + R2 + audit + preview
 
 ## Deploy
 
-- **Frontend**: build Vite → assets estáticos
-- **API**: funções serverless em `/api`
-- **Banco**: MongoDB Atlas com connection pooling via cache global (serverless-friendly)
+- **Local:** `npm run dev` (Vite + API)
+- **Produção:** Docker / VPS — ver `docs/DEPLOY_VPS.md` e `deploy/`
+- **Auth:** stack própria em `doqyn-auth-service`
 
 ## Desenvolvimento local
 
-O Vite faz proxy de `/api` para `localhost:3001`. O `server/dev-server.ts` emula o ambiente Vercel para testes locais.
+Vite faz proxy de `/api` → `:3001` e `/auth` + `/oauth` → `:4100`.  
+Guia: [LOCAL_DEV.md](./LOCAL_DEV.md) e [AUTH_INTEGRATION.md](./AUTH_INTEGRATION.md).

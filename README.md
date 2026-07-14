@@ -1,91 +1,92 @@
 # DOQYN — Alpha Document Intelligence
 
-Versão alpha técnica da plataforma **DOQYN** para gestão segura, inteligente e rastreável de documentos empresariais.
+Versão alpha da plataforma **DOQYN** para gestão segura, inteligente e rastreável de documentos empresariais.
 
 ## Objetivo desta fase
 
 Validar o fluxo principal da plataforma:
 
-1. Acesso e login
-2. Envio de documento
-3. Registro de metadados
-4. Processamento simulado (preparado para IA/OCR)
-5. Status, histórico, rastreabilidade e versionamento
+1. Acesso e login (via **doqyn-auth-service**)
+2. Envio e análise de documento (IA / OCR)
+3. Registro de metadados e versionamento
+4. Assinaturas, compartilhamento, auditoria e governança
 
 ## Stack
 
 | Camada | Tecnologias |
 |--------|-------------|
-| Frontend | React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form, Zod, Zustand, Sonner |
-| Backend | Node.js, TypeScript, API serverless (`/api`), Mongoose, Zod |
-| Banco | MongoDB Atlas (metadados apenas) |
-| Auth | doqyn-auth-service (`doqyn_auth`) — cookie HttpOnly + `/api/me` |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form, Zod, Zustand, Sonner |
+| Backend | Node.js, TypeScript, handlers em `/api` (dev-server / produção), Zod |
+| Banco documental | MongoDB (driver nativo — **não** usa Mongoose) |
+| Auth | **doqyn-auth-service** (`AUTH_PROVIDER=doqyn_auth`) — cookie HttpOnly + `/api/me` |
+| Storage | Cloudflare R2 (S3 API) ou disco local |
+| IA / OCR | Groq (classificação/extração); Google Cloud Vision (OCR opcional) |
+| Filas | Redis + BullMQ (análise e preview; fallback síncrono em dev) |
+
+> **Keycloak foi removido por completo** do fluxo de autenticação. O provider oficial é apenas `doqyn_auth`. O campo Mongo legado `keycloakUserId` (quando existir) armazena o **userId do Auth**, não um ID Keycloak.
 
 ## Início rápido
 
+Requer o **doqyn-auth-service** rodando (porta `4100`). Ver também [docs/AUTH_INTEGRATION.md](docs/AUTH_INTEGRATION.md) e [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md).
+
 ```bash
-# Instalar dependências
-npm install
+# No repo do auth-service (irmão deste projeto)
+cd ../doqyn-auth-service
+cp .env.example .env   # preencher secrets (ver README do auth)
+npm install && npm run dev
+SEED_FORCE_PASSWORD_RESET=true npm run db:seed
 
-# Copiar variáveis de ambiente
+# Neste repo (Alpha)
+cd ../doqyn-alpha-document-intelligence
 cp .env.example .env
-
-# Gerar hash da senha temporária
-node scripts/generate-password-hash.mjs "sua-senha-aqui"
-# Copie o hash para TEMP_ADMIN_PASSWORD_HASH no .env
-
-# Defina JWT_SECRET (mínimo 32 caracteres) no .env
-
-# Terminal 1 — API local (porta 3001)
-npm run dev:api
-
-# Terminal 2 — Frontend (porta 5173)
-npm run dev
+# Obrigatório alinhar:
+#   DOQYN_AUTH_INTERNAL_API_KEY  ==  DOQYN_INTERNAL_API_KEY do auth
+#   DOQYN_APP_INTERNAL_API_KEY   idêntico nos dois .env
+#   AUTH_PROVIDER=doqyn_auth e VITE_AUTH_PROVIDER=doqyn_auth
+npm install
+npm run dev            # Vite :5173 + API :3001
 ```
 
-Acesse [http://localhost:5173](http://localhost:5173) e faça login com o e-mail e senha configurados em `.env` (`TEMP_ADMIN_EMAIL` + senha usada no hash).
+Acesse [http://localhost:5173](http://localhost:5173).
+
+Credencial de seed do auth (padrão): `sidnei@doqyn.dev` / `DevDoqyn@123`  
+(ou o valor de `SEED_DEV_PASSWORD` no `.env` do auth-service).
+
+Scripts úteis:
+
+```bash
+npm run dev:api              # só API :3001
+npm run dev:web              # só Vite :5173
+npm run dev:worker           # worker de análise (filas)
+npm run dev:worker:preview   # worker de preview Ghostscript
+```
 
 ## Autenticação (doqyn_auth)
 
-O provider oficial é `doqyn_auth`, via doqyn-auth-service. Keycloak foi removido.
+Provider oficial: `doqyn_auth`, via [doqyn-auth-service](../doqyn-auth-service).
 
 Variáveis principais:
 
 - `AUTH_PROVIDER=doqyn_auth`
 - `VITE_AUTH_PROVIDER=doqyn_auth`
 - `DOQYN_AUTH_BASE_URL=http://127.0.0.1:4100`
+- `DOQYN_AUTH_INTERNAL_API_KEY` — **igual** a `DOQYN_INTERNAL_API_KEY` no auth
+- `DOQYN_AUTH_COOKIE_NAME=doqyn_session` — **igual** a `SESSION_COOKIE_NAME` no auth
+- `DOQYN_APP_INTERNAL_API_KEY` — **igual** nos dois lados (provisionamento Mongo)
 - `VITE_AUTH_BASE_PATH=/auth`
+
+Fluxo resumido:
+
+1. Login em `POST /auth/login` (proxy Vite → auth `:4100`)
+2. Cookie HttpOnly `doqyn_session` definido pelo auth-service
+3. Frontend chama `GET /api/me`
+4. Alpha valida sessão com `POST /internal/sessions/verify` no auth
 
 Consulte `.env.example` para a lista completa.
 
-## Temporary Auth (legado)
+### Temporary Auth (legado)
 
-Modo `temporary` permanece disponível apenas para desenvolvimento local sem auth-service.
-
-Variáveis obrigatórias (backend — **sem** prefixo `VITE_`):
-
-- `TEMP_ADMIN_EMAIL`
-- `TEMP_ADMIN_PASSWORD_HASH`
-- `TEMP_ADMIN_NAME`
-- `TEMP_COMPANY_ID`
-- `TEMP_COMPANY_NAME`
-- `TEMP_USER_ROLE`
-- `TEMP_USER_AREA`
-- `TEMP_USER_GROUPS`
-- `JWT_SECRET`
-- `AUTH_COOKIE_NAME`
-- `AUTH_COOKIE_SECURE`
-- `AUTH_SESSION_MAX_AGE_SECONDS`
-
-Gerar hash da senha:
-
-```bash
-node scripts/generate-password-hash.mjs "your-password"
-```
-
-Em desenvolvimento local, use `AUTH_COOKIE_SECURE=false`. Na Vercel, configure `AUTH_COOKIE_SECURE=true` e todas as variáveis no painel do projeto.
-
-A sessão usa cookie **httpOnly** — o JWT não fica no frontend nem no `localStorage`.
+O modo `AUTH_PROVIDER=temporary` (JWT local) ainda existe no código para cenários sem auth-service, mas **não é o fluxo oficial**. Prefira `doqyn_auth` em desenvolvimento e produção.
 
 ## Estrutura do projeto
 
@@ -93,13 +94,14 @@ A sessão usa cookie **httpOnly** — o JWT não fica no frontend nem no `localS
 src/                  # Frontend React
   app/                # Rotas, providers, App
   components/         # Design system e layout
-  features/           # Módulos por domínio (auth, upload, documents, audit...)
+  features/           # Módulos por domínio (upload, library, signature, audit…)
+  auth/               # Config de auth no cliente
   lib/                # Utilitários, API client, constantes
-  types/              # Tipos TypeScript compartilhados
 
-api/                  # Handlers serverless (Vercel)
-server/               # Lógica de negócio, modelos, serviços, DB
+api/                  # Handlers HTTP (estilo Vercel)
+server/               # Lógica de negócio, tenancy, IA, filas, storage, DB
 docs/                 # Documentação técnica
+deploy/               # Docker, nginx, envs de produção
 ```
 
 ## Variáveis de ambiente
@@ -108,33 +110,38 @@ Consulte `.env.example`. Variáveis com prefixo `VITE_` são públicas no fronte
 
 ## Telas disponíveis
 
-- **Login** — autenticação via doqyn-auth-service
-- **Visão Geral** — dashboard com métricas
-- **Enviar documento** — upload com drag & drop
-- **Documentos** — listagem, filtros e detalhes
-- **Versionamento** — histórico e nova versão
-- **Auditoria** — rastreabilidade de eventos
-- **Configurações** — preferências básicas
+- **Login / onboarding SaaS** — via doqyn-auth-service
+- **Biblioteca** — documentos, filtros, preview
+- **Enviar documento** — upload + análise IA
+- **Assinaturas** — pedidos e portal guest
+- **Governança** — categorias, grupos, regras
+- **Auditoria / tracking**
+- **Configurações**
 
-## API
+## API (amostra)
 
 | Endpoint | Método | Descrição |
 |----------|--------|-----------|
 | `/api/health` | GET | Status do sistema |
-| `/api/auth/login` | POST | Login temporário (cookie httpOnly) |
-| `/api/auth/me` | GET | Usuário da sessão atual |
-| `/api/auth/logout` | POST | Encerrar sessão |
+| `/api/me` | GET | Sessão agregada (via auth-service) |
+| `/api/ai/analyze-pdf` | POST | Análise IA do PDF |
+| `/api/documents/confirm-analysis` | POST | Persistir documento após análise |
 | `/api/documents` | GET | Listar documentos |
-| `/api/documents/upload` | POST | Enviar documento |
-| `/api/audit` | GET | Listar eventos de auditoria |
+| `/api/audit` | GET | Eventos de auditoria |
+
+O login SaaS é `POST /auth/login` no **auth-service** (não no Alpha). `POST /api/auth/login` permanece apenas no fluxo legado `temporary`.
 
 ## Documentação
 
+- [Integração Auth](docs/AUTH_INTEGRATION.md)
+- [Desenvolvimento local](docs/LOCAL_DEV.md)
+- [Documentação completa (PDF)](docs/Documentacao_DoQyn_Alpha_AUH.pdf)
 - [Arquitetura](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Notas de segurança](docs/security-notes.md)
 
 ## Próximas etapas
 
-- Regras de acesso avançadas
-- RAG com Groq
+- Notificações (e-mail / WhatsApp) com worker real
+- RAG conversacional sobre chunks
+- Limpeza de campos/nomes legados (`keycloakUserId` → `authUserId` em migração futura)

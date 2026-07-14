@@ -66,6 +66,7 @@ export type MongoTenantMember = {
   _id: string;
   memberId: string;
   tenantId: string;
+  /** Legado de naming: valor = UUID do usuário no doqyn-auth-service (`auth_users.id`). Keycloak não é usado. */
   keycloakUserId?: string;
   username?: string;
   email: string;
