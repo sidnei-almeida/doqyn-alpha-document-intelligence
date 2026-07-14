@@ -46,7 +46,7 @@ async function upsertActiveTenantMember(input: {
             jobTitle: input.jobTitle,
             departmentText: input.departmentText,
             requestedAt: now,
-            source: 'access_request' as const,
+            source: 'manual_seed' as const,
           },
         }
       : {}),
@@ -77,6 +77,7 @@ async function upsertActiveTenantMember(input: {
     {
       $setOnInsert: { createdAt: now },
       $set: memberFields,
+      $unset: { keycloakUserId: '' },
     },
     { upsert: true },
   );

@@ -7,9 +7,8 @@ export const USER_DOCUMENT_FAVORITES_INDEXES: IndexDescription[] = [
     key: { userId: 1, documentId: 1 },
     unique: true,
     name: 'userId_documentId_unique',
-    partialFilterExpression: {
-      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
-    },
+    // Atlas não aceita $or/$exists:false em partialFilterExpression.
+    partialFilterExpression: { deletedAt: null },
   },
   { key: { userId: 1, deletedAt: 1, createdAt: -1 } },
   { key: { documentId: 1 } },
