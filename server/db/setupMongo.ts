@@ -15,7 +15,7 @@ type SeedCounts = {
   documentGroupMembers: number;
   documentRules: number;
   documentExtractionRules: number;
-  companyMembers: number;
+  tenantMembers: number;
 };
 
 async function ensureRegistryIndexes() {
@@ -33,19 +33,6 @@ async function ensureRegistryIndexes() {
     { key: { tenantId: 1, status: 1 } },
     { key: { tenantId: 1, emailNormalized: 1 }, unique: true },
     { key: { authUserId: 1, status: 1 } },
-  ]);
-
-  await db.collection(REGISTRY_COLLECTIONS.companyMembers).createIndexes([
-    { key: { companyId: 1, status: 1 } },
-    { key: { companyId: 1, email: 1 }, unique: true },
-    { key: { companyId: 1, userId: 1 } },
-    { key: { authUserId: 1, status: 1 } },
-  ]);
-
-  await db.collection(REGISTRY_COLLECTIONS.companies).createIndexes([
-    { key: { companyId: 1 }, unique: true },
-    { key: { slug: 1 }, unique: true },
-    { key: { status: 1 } },
   ]);
 
   const { ensureUserDocumentFavoritesIndexes } = await import('./userDocumentFavoritesIndexes.js');
@@ -139,7 +126,7 @@ async function getSeedCounts(names: ResolvedTenantCollectionNames): Promise<Seed
     documentGroupMembers,
     documentRules,
     documentExtractionRules,
-    companyMembers,
+    tenantMembers,
   ] = await Promise.all([
     names.documentCategories
       ? db.collection(names.documentCategories).countDocuments(tenantFilter)
@@ -156,7 +143,7 @@ async function getSeedCounts(names: ResolvedTenantCollectionNames): Promise<Seed
     names.documentExtractionRules
       ? db.collection(names.documentExtractionRules).countDocuments({ ...tenantFilter, active: true })
       : Promise.resolve(0),
-    db.collection(REGISTRY_COLLECTIONS.companyMembers).countDocuments(tenantFilter),
+    db.collection(REGISTRY_COLLECTIONS.tenantMembers).countDocuments(tenantFilter),
   ]);
 
   return {
@@ -165,7 +152,7 @@ async function getSeedCounts(names: ResolvedTenantCollectionNames): Promise<Seed
     documentGroupMembers,
     documentRules,
     documentExtractionRules,
-    companyMembers,
+    tenantMembers,
   };
 }
 
