@@ -96,6 +96,39 @@ describe('demo seed mongo', () => {
     assert.ok(syncSource.includes('userId'));
   });
 
+  it('seed demo persiste formato canônico (sem dual-write legado)', () => {
+    const provisionSource = readFileSync(
+      join(repoRoot, 'scripts/demo-seed/provisionTenants.ts'),
+      'utf8',
+    );
+    const syncSource = readFileSync(join(repoRoot, 'scripts/demo-seed/syncMembers.ts'), 'utf8');
+
+    assert.ok(provisionSource.includes('document_categories_'));
+    assert.ok(provisionSource.includes('document_groups_'));
+    assert.ok(provisionSource.includes('document_extraction_rules_'));
+    assert.ok(provisionSource.includes('REGISTRY_COLLECTIONS.tenants'));
+    assert.equal(provisionSource.includes('REGISTRY_COLLECTIONS.companies'), false);
+    assert.equal(provisionSource.includes('document_classes'), false);
+    assert.equal(provisionSource.includes('access_groups_'), false);
+
+    assert.ok(syncSource.includes('REGISTRY_COLLECTIONS.tenantMembers'));
+    assert.ok(syncSource.includes('authUserId'));
+    assert.equal(syncSource.includes('companyMembers'), false);
+    assert.equal(syncSource.includes('keycloakUserId: input'), false);
+    assert.ok(syncSource.includes("source: 'manual_seed'"));
+    assert.ok(syncSource.includes("$unset: { keycloakUserId: '' }"));
+  });
+
+  it('accessRules da seed usam groupId × categoryId', () => {
+    const seed = buildGovernanceSeedForTenant(DEMO_TENANT_ID);
+    assert.ok(seed.accessRules.length > 0);
+    for (const rule of seed.accessRules) {
+      assert.ok(rule.groupId);
+      assert.ok(rule.categoryId);
+      assert.equal('classId' in rule && Boolean((rule as { classId?: string }).classId), false);
+    }
+  });
+
   it('.gitignore ignora artefatos .generated', () => {
     const gitignore = readFileSync(join(repoRoot, '.gitignore'), 'utf8');
     assert.ok(gitignore.includes('.generated/'));
