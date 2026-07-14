@@ -2,6 +2,7 @@ import type { AuthUser } from '../auth/types.js';
 import { REGISTRY_COLLECTIONS } from '../db/constants.js';
 import { getDb } from '../db/mongoClient.js';
 import type { MongoCompanyMember, MongoTenantMember } from '../db/types.js';
+import { resolveMemberAuthUserId } from './memberAuthUserId.js';
 
 export function resolveAuthUserDisplayName(user: Pick<AuthUser, 'firstName' | 'lastName' | 'name' | 'email'>): string {
   const parts = [user.firstName, user.lastName].filter(Boolean);
@@ -31,18 +32,16 @@ export async function resolveDocumentOwnerName(input: {
   }
 
   const db = await getDb();
-  const memberFilter = {
-    tenantId: input.tenantId,
-    $or: [
-      { keycloakUserId: input.ownerUserId },
-      { memberId: input.ownerUserId },
-      { _id: input.ownerUserId },
-    ],
-  } as Record<string, unknown>;
-
   const tenantMember = await db
     .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
-    .findOne(memberFilter);
+    .findOne({
+      tenantId: input.tenantId,
+      $or: [
+        { authUserId: input.ownerUserId },
+        { memberId: input.ownerUserId },
+        { _id: input.ownerUserId },
+      ],
+    } as Record<string, unknown>);
 
   if (tenantMember) {
     return resolveMemberDisplayName(tenantMember);
@@ -51,7 +50,7 @@ export async function resolveDocumentOwnerName(input: {
   const legacyMember = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
     companyId: input.tenantId,
     $or: [
-      { keycloakUserId: input.ownerUserId },
+      { authUserId: input.ownerUserId },
       { userId: input.ownerUserId },
       { _id: input.ownerUserId },
     ],
@@ -78,7 +77,7 @@ export async function loadTenantMemberDisplayNames(
     .find({
       tenantId,
       $or: [
-        { keycloakUserId: { $in: uniqueIds } },
+        { authUserId: { $in: uniqueIds } },
         { memberId: { $in: uniqueIds } },
         { _id: { $in: uniqueIds } },
       ],
@@ -87,7 +86,8 @@ export async function loadTenantMemberDisplayNames(
 
   for (const member of tenantMembers) {
     const displayName = resolveMemberDisplayName(member);
-    if (member.keycloakUserId) result.set(member.keycloakUserId, displayName);
+    const authUserId = resolveMemberAuthUserId(member);
+    if (authUserId) result.set(authUserId, displayName);
     if (member.memberId) result.set(member.memberId, displayName);
     result.set(String(member._id), displayName);
   }
@@ -97,7 +97,7 @@ export async function loadTenantMemberDisplayNames(
     .find({
       companyId: tenantId,
       $or: [
-        { keycloakUserId: { $in: uniqueIds } },
+        { authUserId: { $in: uniqueIds } },
         { userId: { $in: uniqueIds } },
         { _id: { $in: uniqueIds } },
       ],
@@ -108,7 +108,8 @@ export async function loadTenantMemberDisplayNames(
     const displayName = resolveMemberDisplayName(
       member as unknown as MongoTenantMember & { name?: string },
     );
-    if (member.keycloakUserId) result.set(member.keycloakUserId, displayName);
+    const authUserId = resolveMemberAuthUserId(member);
+    if (authUserId) result.set(authUserId, displayName);
     if (member.userId) result.set(member.userId, displayName);
     result.set(String(member._id), displayName);
   }

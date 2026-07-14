@@ -30,7 +30,7 @@ export function mapMemberToAuthUser(
   const groups = getMemberAccessGroupIds(member);
 
   return {
-    id: member.keycloakUserId ?? member.userId ?? member._id,
+    id: member.authUserId ?? member.userId ?? member._id,
     email: member.email,
     name: member.name || member.email,
     username: member.username,
@@ -44,7 +44,7 @@ export function mapMemberToAuthUser(
     area: member.position ?? '',
     groups,
     memberId: member._id,
-    keycloakUserId: member.keycloakUserId,
+    authUserId: member.authUserId ?? member.userId,
     platformRoles,
   };
 }

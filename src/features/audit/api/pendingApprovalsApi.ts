@@ -75,7 +75,7 @@ function inferPendingType(member: CompanyMemberDto): PendingApprovalItem['type']
   if (member.requestedAccess?.source === 'access_request' || member.requestedAccess?.reason) {
     return 'access_request';
   }
-  if (member.username || member.keycloakUserId) {
+  if (member.username || member.authUserId) {
     return 'invite';
   }
   return 'registration';

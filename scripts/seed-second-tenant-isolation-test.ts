@@ -259,7 +259,7 @@ async function main() {
         memberId,
         tenantId: TEST_TENANT_ID,
         companyId: TEST_TENANT_ID,
-        keycloakUserId: 'fake-keycloak-isolation-test-2',
+        authUserId: 'fake-auth-isolation-test-2',
         email: 'isolation-test@doqyn.test',
         emailNormalized: 'isolation-test@doqyn.test',
         firstName: 'Isolation',
@@ -296,7 +296,7 @@ async function main() {
   report.line(`Documento: ${documentId}`);
   report.line(`Versão: ${versionId}`);
   report.line(`Audit: ${auditId}`);
-  report.line(`Member: ${memberId} (keycloakUserId fake)`);
+  report.line(`Member: ${memberId} (authUserId fake)`);
 
   report.section('FIM');
   report.write(REPORT_PATH);

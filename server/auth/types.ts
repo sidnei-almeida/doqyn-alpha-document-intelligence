@@ -25,7 +25,7 @@ export type AuthUser = {
   tenantType?: string;
   tenantStatus?: string;
   authProvider?: 'doqyn_auth' | 'temporary';
-  keycloakUserId?: string;
+  authUserId?: string;
   platformRoles?: PlatformRole[];
   avatarVersion?: number;
   avatarUpdatedAt?: string;

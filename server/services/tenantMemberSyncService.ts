@@ -71,7 +71,7 @@ export async function upsertTenantMemberFromAuthSnapshot(
     memberId: snapshot.membershipId,
     tenantId: snapshot.tenantId,
     companyId: snapshot.tenantId,
-    keycloakUserId: snapshot.userId,
+    authUserId: snapshot.userId,
     username: email,
     email,
     emailNormalized,
@@ -116,6 +116,7 @@ export async function upsertTenantMemberFromAuthSnapshot(
     {
       $setOnInsert: { createdAt },
       $set: memberFields,
+      $unset: { keycloakUserId: '' },
     },
     { upsert: true },
   );

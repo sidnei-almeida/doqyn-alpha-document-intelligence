@@ -32,7 +32,7 @@ async function upsertActiveTenantMember(input: {
     memberId: input.memberId,
     tenantId: input.tenantId,
     companyId: input.tenantId,
-    keycloakUserId: input.userId,
+    authUserId: input.userId,
     email: input.email,
     emailNormalized,
     firstName: input.firstName,
