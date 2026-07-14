@@ -78,6 +78,38 @@ describe('projectDocumentSearchMeta', () => {
     assert.equal(meta.dates.some((d) => d.kind === 'vencimento'), true);
   });
 
+  it('infere validityDate de data_assinatura + prazo_vigencia (ex.: 5 anos)', () => {
+    const meta = projectDocumentSearchMeta({
+      parte_reveladora: field('Parte reveladora', 'Cristiano Rafael Baldissera'),
+      parte_receptora: field('Parte receptora', 'Sidnei Alves de Almeida'),
+      data_assinatura: field('Data de assinatura', '09/06/2021'),
+      prazo_vigencia: field('Prazo de vigência', '5 anos'),
+    });
+
+    assert.ok(meta.validityDate);
+    assert.equal(meta.validityDate!.toISOString().slice(0, 10), '2026-06-09');
+    assert.equal(
+      meta.dates.some((d) => d.kind === 'validade' && d.sourceKey === 'prazo_vigencia'),
+      true,
+    );
+  });
+
+  it('não sobrescreve data_vencimento absoluta com prazo relativo', () => {
+    const meta = projectDocumentSearchMeta({
+      data_assinatura: field('Data de assinatura', '01/01/2020'),
+      data_vencimento: field('Data de vencimento', '15/03/2025'),
+      prazo_vigencia: field('Prazo de vigência', '10 anos'),
+    });
+    assert.equal(meta.validityDate!.toISOString().slice(0, 10), '2025-03-15');
+  });
+
+  it('sem âncora de assinatura não inventa validityDate a partir do prazo', () => {
+    const meta = projectDocumentSearchMeta({
+      prazo_vigencia: field('Prazo de vigência', '5 anos'),
+    });
+    assert.equal(meta.validityDate ?? null, null);
+  });
+
   it('usa título extraído sem remover demais campos do blob', () => {
     const metadata = {
       titulo: field('Título', 'Política de Segurança da Informação'),
