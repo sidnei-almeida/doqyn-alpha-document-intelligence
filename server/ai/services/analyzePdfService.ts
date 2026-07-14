@@ -24,7 +24,8 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
-  buildVisionOcrFailedReviewResponse,
+  buildTextExtractionFailedResponse,
+  isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import {
@@ -197,14 +198,18 @@ export async function analyzePdfBuffer(input: {
       stageDurationsMs: durations,
     });
 
-    if (isVisionOcrFailure(extracted)) {
-      return buildVisionOcrFailedReviewResponse({
+    if (isInsufficientTextAfterOcr(extracted)) {
+      return buildTextExtractionFailedResponse({
         jobId,
         originalFileName: input.originalFileName,
         fileHash,
         fileSizeBytes,
         extracted,
         logs,
+        errorCode: isVisionOcrFailure(extracted) ? 'VISION_OCR_FAILED' : 'INSUFFICIENT_TEXT',
+        reason: isVisionOcrFailure(extracted)
+          ? AI_ERROR_MESSAGES.visionOcrFailed
+          : AI_ERROR_MESSAGES.insufficientText,
       });
     }
 
