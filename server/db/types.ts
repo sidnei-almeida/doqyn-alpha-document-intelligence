@@ -499,7 +499,7 @@ export type MongoDocumentSearchMeta = {
   dates: MongoDocumentDateMeta[];
   /** Título extraído (ex.: campo titulo), distinto do filename. */
   documentTitle?: string | null;
-  /** Vencimento/validade tipado quando a IA (ou usuário) fornecer data. */
+  /** Vencimento/validade tipado (data absoluta ou inferida de âncora + prazo). */
   validityDate?: Date | null;
 };
 
