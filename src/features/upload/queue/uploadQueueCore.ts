@@ -163,8 +163,17 @@ export function resolveAnalysisOutcome(
   if (metadata.analysisStatus === 'failed' || raw.status === 'failed') {
     return {
       status: 'failed',
-      classificationError: getAnalysisClassificationError(raw, metadata) ?? 'A análise não foi concluída.',
+      classificationError:
+        getAnalysisClassificationError(raw, metadata) ??
+        raw.classification.reason ??
+        'A análise não foi concluída.',
     };
+  }
+
+  // requires_review pode vir sem classId (ex.: classificação inconclusiva) —
+  // não tratar como failed antes deste check.
+  if (raw.status === 'requires_review' || metadata.analysisStatus === 'requires_review') {
+    return { status: 'requires_review', classificationError: null };
   }
 
   if (!raw.classification.classId || !raw.classification.className) {
@@ -174,10 +183,6 @@ export function resolveAnalysisOutcome(
         getAnalysisClassificationError(raw, metadata) ??
         'A análise não retornou identificação de classe para este documento.',
     };
-  }
-
-  if (raw.status === 'requires_review' || metadata.analysisStatus === 'requires_review') {
-    return { status: 'requires_review', classificationError: null };
   }
 
   return { status: 'analyzed', classificationError: null };
