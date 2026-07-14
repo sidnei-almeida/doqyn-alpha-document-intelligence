@@ -75,6 +75,16 @@ describe('reviewWorkflowSettings', () => {
     assert.equal(memoryStorage.get(AUTO_DELAY_STORAGE_KEY), '20');
   });
 
+  it('permite delay auto de 0 segundos', () => {
+    saveReviewWorkflowSettings({
+      ...DEFAULT_WORKFLOW_REVIEW_SETTINGS,
+      autoReviewEnabled: true,
+      autoAcceptDelaySeconds: 0,
+    });
+    const settings = loadReviewWorkflowSettings();
+    assert.equal(settings.autoAcceptDelaySeconds, 0);
+  });
+
   it('resolve naming efetivo por política', () => {
     const base = { ...DEFAULT_WORKFLOW_REVIEW_SETTINGS };
 

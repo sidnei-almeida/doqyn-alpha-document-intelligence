@@ -5,6 +5,7 @@ import { formatDate } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentDetailResponse, DocumentVersionSummary } from '@/types/document-library';
 import { getPreviewStatusLabel } from '../utils/previewErrors';
+import { metadataRecordToDisplayFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
 
 type DocumentViewerDetailsPanelProps = {
   data: DocumentDetailResponse;
@@ -84,12 +85,12 @@ export function DocumentViewerDetailsPanel({
             Metadados
           </p>
           <dl className="grid gap-2 text-sm">
-            {Object.entries(data.metadata)
+            {metadataRecordToDisplayFields(data.metadata)
               .slice(0, 12)
-              .map(([key, value]) => (
-                <div key={key}>
-                  <dt className="text-xs text-doqyn-muted">{key}</dt>
-                  <dd className="break-words text-doqyn-text">{String(value ?? '—')}</dd>
+              .map((field) => (
+                <div key={field.key}>
+                  <dt className="text-xs text-doqyn-muted">{field.label}</dt>
+                  <dd className="break-words text-doqyn-text">{field.value}</dd>
                 </div>
               ))}
           </dl>

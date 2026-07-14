@@ -12,6 +12,10 @@ import {
 } from '../../storage/index.js';
 import { storeUploadedDocumentFile } from '../documentFileService.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import {
+  dedupeMetadataRecord,
+  resolveMetadataLabel,
+} from '../../../shared/metadataKeyNormalize.js';
 
 export class ConfirmAnalysisError extends Error {
   readonly code: string;
@@ -144,7 +148,17 @@ export function mapVersionMetadata(
     };
   }
 
-  return mapped;
+  // Une chaves/labels equivalentes ("Parte Reveladora" ≈ parte_reveladora) e
+  // grava labels canônicos para não reaparecer duplicata na próxima versão.
+  return Object.fromEntries(
+    Object.entries(dedupeMetadataRecord(mapped)).map(([key, field]) => [
+      key,
+      {
+        ...field,
+        label: resolveMetadataLabel(key, field.label),
+      },
+    ]),
+  );
 }
 
 export function buildDocumentTitle(

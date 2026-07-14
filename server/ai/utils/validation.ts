@@ -177,7 +177,7 @@ export function validateMetadataResult(
     const normalized = applyFieldNormalization(fieldDef, value);
 
     metadata[key] = {
-      label: typeof field.label === 'string' ? field.label : fieldDef.label,
+      label: fieldDef.label,
       value: normalized.value,
       normalizedValue: normalized.normalizedValue,
       confidence,

@@ -5,6 +5,7 @@ import {
   analysisMetadataToDisplayFields,
   metadataRecordToDisplayFields,
 } from './documentMetadataDisplay';
+import { canonicalizeMetadataKey } from '../../../../shared/metadataKeyNormalize.ts';
 
 function normalizeCompareValue(value: string): string {
   return value.trim().toLowerCase();
@@ -54,25 +55,29 @@ export function buildVersionComparisonRows(input: {
 
   const currentFields = metadataRecordToDisplayFields(input.detail.metadata);
   const newFields = analysisMetadataToDisplayFields(input.analysis);
-  const newFieldMap = new Map(newFields.map((field) => [field.key, field]));
+  const newFieldMap = new Map(
+    newFields.map((field) => [canonicalizeMetadataKey(field.key, field.label), field]),
+  );
 
   for (const currentField of currentFields) {
     if (/resumo|summary/i.test(currentField.key)) continue;
-    const newField = newFieldMap.get(currentField.key);
+    const matchKey = canonicalizeMetadataKey(currentField.key, currentField.label);
+    const newField = newFieldMap.get(matchKey);
     rows.push(
       buildRow(
-        `metadata:${currentField.key}`,
+        `metadata:${matchKey}`,
         currentField.label,
         currentField.value,
         newField?.value ?? '—',
       ),
     );
-    newFieldMap.delete(currentField.key);
+    newFieldMap.delete(matchKey);
   }
 
   for (const newField of newFieldMap.values()) {
     if (/resumo|summary/i.test(newField.key)) continue;
-    rows.push(buildRow(`metadata:${newField.key}`, newField.label, '—', newField.value));
+    const matchKey = canonicalizeMetadataKey(newField.key, newField.label);
+    rows.push(buildRow(`metadata:${matchKey}`, newField.label, '—', newField.value));
   }
 
   return rows;
