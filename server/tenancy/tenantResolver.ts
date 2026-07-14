@@ -109,15 +109,12 @@ export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenan
     return {
       ...core,
       ...governance,
-      accessGroups: resolvePrefixedName(BASE_COLLECTION_NAMES.accessGroups, prefix),
-      documentClasses: resolvePrefixedName(BASE_COLLECTION_NAMES.documentClasses, prefix),
     };
   }
 
   return {
     ...core,
     ...governance,
-    documentClasses: resolvePrefixedName(BASE_COLLECTION_NAMES.documentClasses, prefix),
   };
 }
 

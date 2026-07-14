@@ -27,7 +27,19 @@ export function resolveDocumentListSort(
 
 /** Campos pesquisáveis no documento (tenant-scoped). */
 export function buildDocumentSearchOrClause(term: string): Record<string, unknown>[] {
-  const regex = { $regex: escapeRegexLiteral(term), $options: 'i' };
+  const escaped = escapeRegexLiteral(term);
+  const regex = { $regex: escaped, $options: 'i' };
+  const normalized = term
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  const normalizedRegex = {
+    $regex: escapeRegexLiteral(normalized),
+    $options: 'i',
+  };
+
   return [
     { title: regex },
     { currentFileName: regex },
@@ -41,7 +53,12 @@ export function buildDocumentSearchOrClause(term: string): Record<string, unknow
     { ownerName: regex },
     { 'createdBy.displayName': regex },
     { 'createdBy.email': regex },
-    { 'metadata.tags': regex },
+    // Metadados isolados (busca direcionada — não varrer versions.metadata)
+    { 'searchMeta.documentTitle': regex },
+    { 'searchMeta.people.name': regex },
+    { 'searchMeta.people.nameNormalized': normalizedRegex },
+    { 'searchMeta.people.role': normalizedRegex },
+    { 'searchMeta.people.relatedTo': regex },
   ];
 }
 

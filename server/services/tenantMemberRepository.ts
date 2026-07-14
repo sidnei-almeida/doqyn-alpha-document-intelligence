@@ -153,13 +153,6 @@ export async function saveTenantMember(member: MongoTenantMember): Promise<Mongo
     { upsert: true },
   );
 
-  const legacy = tenantMemberToCompanyMember(doc);
-  await db.collection(REGISTRY_COLLECTIONS.companyMembers).updateOne(
-    { _id: doc._id } as Record<string, unknown>,
-    { $set: legacy, $unset: { keycloakUserId: '' } },
-    { upsert: true },
-  );
-
   return doc;
 }
 

@@ -82,25 +82,6 @@ export async function ensureDevTenantSeed(): Promise<MongoTenant> {
     { upsert: true },
   );
 
-  await db.collection(REGISTRY_COLLECTIONS.companies).updateOne(
-    { companyId: DEV_TENANT_ID } as Record<string, unknown>,
-    {
-      $setOnInsert: {
-        _id: 'company_dev_record',
-        createdAt: now,
-      },
-      $set: {
-        tenantId: DEV_TENANT_ID,
-        companyId: DEV_TENANT_ID,
-        name: tenantFields.displayName,
-        slug: tenantFields.slug,
-        status: 'active',
-        updatedAt: now,
-      },
-    },
-    { upsert: true },
-  );
-
   const tenant = await getTenantById(DEV_TENANT_ID);
   if (!tenant) {
     throw new ServiceError('Falha ao garantir tenant de desenvolvimento.', 'TENANT_SEED_FAILED', 500);
