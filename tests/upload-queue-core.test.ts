@@ -8,7 +8,9 @@ import {
   hasInFlightUploadItem,
   resolveAnalysisOutcome,
   resolveQueueAnalysisAction,
+  startCountdownSeconds,
 } from '../src/features/upload/queue/uploadQueueCore';
+import { clampAutoDelaySeconds } from '../src/features/document-send/uploadConstants';
 import { DEFAULT_WORKFLOW_REVIEW_SETTINGS } from '../src/features/document-send/utils/reviewWorkflowSettings';
 import type { UploadQueueItem } from '../src/features/upload/types';
 
@@ -124,5 +126,19 @@ describe('uploadQueueCore', () => {
       rawAnalysis: makeAnalysis(),
     });
     assert.ok(blockers.some((entry) => entry.includes('autenticado')));
+  });
+
+  it('clampAutoDelaySeconds permite 0', () => {
+    assert.equal(clampAutoDelaySeconds(0), 0);
+    assert.equal(clampAutoDelaySeconds(-2), 0);
+    assert.equal(clampAutoDelaySeconds(3), 3);
+  });
+
+  it('startCountdownSeconds com 0s completa imediatamente', async () => {
+    const ticks: number[] = [];
+    const handle = startCountdownSeconds(0, (remaining) => ticks.push(remaining), () => true);
+    const finished = await handle.completed;
+    assert.equal(finished, true);
+    assert.deepEqual(ticks, [0]);
   });
 });

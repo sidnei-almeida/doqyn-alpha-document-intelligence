@@ -38,6 +38,7 @@ import {
 } from './favorites/documentFavoritesService.js';
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
+import { dedupeMetadataRecord } from '../../shared/metadataKeyNormalize.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
 
 /** Stub legado do upload simulado — pipeline real usa analyze/confirm. */
@@ -369,9 +370,12 @@ function flattenVersionMetadata(
   metadata?: Record<string, MongoVersionMetadataField>,
 ): Record<string, unknown> {
   if (!metadata) return {};
+  // Mantém chaves canônicas (snake_case). Usar label como chave gerava duplicatas
+  // ("Parte Reveladora" vs parte_reveladora) na comparação de versões.
+  const canonical = dedupeMetadataRecord(metadata);
   const flat: Record<string, unknown> = {};
-  for (const [key, field] of Object.entries(metadata)) {
-    flat[field.label?.trim() || key] = field.value ?? field.normalizedValue ?? null;
+  for (const [key, field] of Object.entries(canonical)) {
+    flat[key] = field.value ?? field.normalizedValue ?? null;
   }
   return flat;
 }

@@ -17,6 +17,7 @@ import { DocumentPreviewViewer } from './DocumentPreviewViewer';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useDocumentDetail } from '../hooks/useDocuments';
 import { DocumentApiError } from '../api/documentsApi.errors';
+import { metadataRecordToDisplayFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
 
 type DocumentDetailPanelProps = {
   documentId: string | null;
@@ -203,12 +204,12 @@ export function DocumentDetailPanel({
               Metadados
             </p>
             <dl className="grid gap-2 text-sm sm:grid-cols-2">
-              {Object.entries(data.metadata)
+              {metadataRecordToDisplayFields(data.metadata)
                 .slice(0, 8)
-                .map(([key, value]) => (
-                  <div key={key}>
-                    <dt className="text-xs text-doqyn-muted">{key}</dt>
-                    <dd className="text-doqyn-text">{String(value ?? '—')}</dd>
+                .map((field) => (
+                  <div key={field.key}>
+                    <dt className="text-xs text-doqyn-muted">{field.label}</dt>
+                    <dd className="text-doqyn-text">{field.value}</dd>
                   </div>
                 ))}
             </dl>

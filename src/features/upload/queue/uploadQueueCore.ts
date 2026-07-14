@@ -76,6 +76,13 @@ export function startCountdownSeconds(
     return { cancel, completed: Promise.resolve(false) };
   }
 
+  // 0s = confirma imediatamente (sem intervalo de 1s).
+  if (seconds <= 0) {
+    onTick(0);
+    resolveCompleted(true);
+    return { cancel, completed: Promise.resolve(true) };
+  }
+
   onTick(remaining);
 
   intervalId = window.setInterval(() => {

@@ -18,7 +18,7 @@ export const UPLOAD_ACCEPT =
 export const MIN_CLASSIFICATION_CONFIDENCE = 0.7;
 
 export const AUTO_DELAY_SECONDS_DEFAULT = 10;
-export const AUTO_DELAY_SECONDS_MIN = 3;
+export const AUTO_DELAY_SECONDS_MIN = 0;
 export const AUTO_DELAY_SECONDS_MAX = 30;
 
 export const AUTO_DELAY_STORAGE_KEY = 'doqyn.upload.autoDelaySeconds';

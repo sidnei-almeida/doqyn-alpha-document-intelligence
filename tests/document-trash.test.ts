@@ -343,12 +343,20 @@ describe('document trash — frontend lixeira e desativados', () => {
     assert.ok(mutations.includes("['trash-documents']"));
   });
 
-  it('sidebar filtra Desativados para admin+', () => {
+  it('sidebar filtra Desativados para admin+ em Administração', () => {
     const sidebar = read('src/components/layout/Sidebar.tsx');
     const constants = read('src/lib/constants.ts');
-    assert.ok(constants.includes("path: '/biblioteca/desativados'"));
-    assert.ok(constants.includes('adminOnly: true'));
+    const libraryViewsBlock = constants.match(
+      /export const NAV_ITEMS_LIBRARY_VIEWS = \[[\s\S]*?\] as const;/,
+    )?.[0] ?? '';
+    const adminBlock = constants.match(
+      /export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/,
+    )?.[0] ?? '';
+    assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
+    assert.ok(adminBlock.includes('adminOnly: true'));
+    assert.ok(adminBlock.includes('Desativados'));
+    assert.ok(!libraryViewsBlock.includes('Desativados'));
     assert.ok(sidebar.includes('canManageDeactivated'));
-    assert.ok(sidebar.includes('libraryViewItems'));
+    assert.ok(sidebar.includes('adminNavItems'));
   });
 });
