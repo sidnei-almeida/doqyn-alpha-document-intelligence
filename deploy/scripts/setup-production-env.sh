@@ -258,9 +258,10 @@ VISION_OCR_MAX_PAGES=20
 VISION_OCR_MIN_TEXT_CHARS=300
 
 # Redis (fila BullMQ, cache de sessão, quotas + rate limit do auth-service)
+# Compose força REDIS_KEY_PREFIX=doqyn:alpha: na API/workers e doqyn:auth: no auth-api
 REDIS_URL=redis://redis:6379
 REDIS_ENABLED=true
-REDIS_KEY_PREFIX=doqyn:
+REDIS_KEY_PREFIX=doqyn:alpha:
 
 # Auth-service — rate limit distribuído (mesmo Redis)
 RATE_LIMIT_REDIS_ENABLED=true

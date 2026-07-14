@@ -1,19 +1,21 @@
 import 'dotenv/config';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLLECTIONS, REGISTRY_COLLECTIONS } from '../server/db/constants.js';
+import { COLLECTIONS, REGISTRY_COLLECTIONS, SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_AUDITORIA_USO_COLLECTIONS.txt');
 
 const TENANT_SCOPED = new Set(Object.values(COLLECTIONS));
 const REGISTRY = new Set(Object.values(REGISTRY_COLLECTIONS));
+const SHARED_APP = new Set(Object.values(SHARED_APP_COLLECTIONS));
 
 const SCAN_DIRS = ['server', 'api', 'src', 'scripts'];
 const EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 
 type Classification =
   | 'OK_GLOBAL_REGISTRY'
+  | 'OK_SHARED_APP'
   | 'OK_MIGRATION_SCRIPT'
   | 'OK_TEST_OR_MOCK'
   | 'OK_TENANCY_LAYER'
@@ -49,6 +51,10 @@ function classify(file: string, collection: string, snippet: string): Occurrence
   } else if (REGISTRY.has(collection)) {
     classification = 'OK_GLOBAL_REGISTRY';
     recommendation = 'Uso permitido — coleção de registry global.';
+    needsGetTenantCollections = false;
+  } else if (SHARED_APP.has(collection)) {
+    classification = 'OK_SHARED_APP';
+    recommendation = 'Uso permitido — coleção SHARED_APP (assinaturas, shares, analysis_jobs, etc.).';
     needsGetTenantCollections = false;
   } else if (
     lower.includes('migrate-flat') ||
@@ -134,7 +140,7 @@ function scanFile(filePath: string) {
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(line)) !== null) {
         const collection = match[1];
-        if (!TENANT_SCOPED.has(collection) && !REGISTRY.has(collection)) continue;
+        if (!TENANT_SCOPED.has(collection) && !REGISTRY.has(collection) && !SHARED_APP.has(collection)) continue;
 
         const occ = classify(filePath, collection, line);
         occ.line = i + 1;

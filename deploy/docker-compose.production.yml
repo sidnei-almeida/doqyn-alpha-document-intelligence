@@ -87,6 +87,7 @@ services:
       DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
+      REDIS_KEY_PREFIX: doqyn:auth:
       RATE_LIMIT_REDIS_ENABLED: "true"
       DOQYN_APP_BASE_URL: http://doqyn-api:3001
     depends_on:
@@ -149,6 +150,7 @@ services:
       DOQYN_AUTH_BASE_URL: http://auth-api:4100
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
+      REDIS_KEY_PREFIX: doqyn:alpha:
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
       METRICS_ENABLED: "true"
@@ -199,6 +201,7 @@ services:
       DOQYN_AUTH_BASE_URL: http://auth-api:4100
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
+      REDIS_KEY_PREFIX: doqyn:alpha:
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
       METRICS_ENABLED: "true"
@@ -235,6 +238,7 @@ services:
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
+      REDIS_KEY_PREFIX: doqyn:alpha:
       PREVIEW_SYNC_FALLBACK: "false"
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-worker-preview
