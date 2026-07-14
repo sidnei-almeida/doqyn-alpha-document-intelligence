@@ -12,7 +12,12 @@ import { createReportWriter, isApplyFlag } from './lib/reportUtils.js';
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_DROP_EMPTY_LEGACY.txt');
 
 const LEGACY_PREFIXES = ['document_classes_', 'access_groups_'] as const;
-const LEGACY_EXACT = ['document_classes', 'access_groups'] as const;
+const LEGACY_EXACT = [
+  'document_classes',
+  'access_groups',
+  'companies',
+  'company_members',
+] as const;
 
 function hasApplyArg(): boolean {
   return process.argv.includes('--apply') || isApplyFlag('MIGRATION_APPLY');
