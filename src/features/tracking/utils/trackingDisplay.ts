@@ -86,6 +86,8 @@ const ACTION_LABELS: Record<string, string> = {
   'document.version_created': 'Nova versão criada',
   'document.trash_moved': 'Movido para lixeira',
   'document.trash_restored': 'Restaurado da lixeira',
+  'document.deactivated': 'Desativado após lixeira',
+  'document.reactivated': 'Reativado',
   'document.permanent_deleted': 'Excluído permanentemente',
   'document.trash_purge_failed': 'Falha na purga de storage',
   'access.document_denied': 'Acesso negado',

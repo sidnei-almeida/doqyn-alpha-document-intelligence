@@ -33,9 +33,10 @@ type ExplorerContextMenuProps = {
   onViewSignaturesFile?: (doc: DocumentListItem) => void;
   onDownloadSignedPdfFile?: (doc: DocumentListItem) => void;
   isTrashView?: boolean;
+  isDeactivatedView?: boolean;
   onTrashFile?: (doc: DocumentListItem) => void;
   onRestoreFile?: (doc: DocumentListItem) => void;
-  onPermanentDeleteFile?: (doc: DocumentListItem) => void;
+  onReactivateFile?: (doc: DocumentListItem) => void;
   onShowContextInfo?: () => void;
   onShowFolderInfo?: (folder: LibraryFolder) => void;
   onComingSoon: (label: string) => void;
@@ -104,9 +105,10 @@ export function ExplorerContextMenu({
   onViewSignaturesFile,
   onDownloadSignedPdfFile,
   isTrashView = false,
+  isDeactivatedView = false,
   onTrashFile,
   onRestoreFile,
-  onPermanentDeleteFile,
+  onReactivateFile,
   onShowContextInfo,
   onShowFolderInfo,
   onComingSoon,
@@ -233,16 +235,17 @@ export function ExplorerContextMenu({
             const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
             const canTracking = Boolean(doc.permissions?.canViewTracking);
             const canUpdate = Boolean(doc.permissions?.canUpdate);
-            const canMove = Boolean(canUpdate && onMoveFile && !isTrashView);
+            const archiveView = isTrashView || isDeactivatedView;
+            const canMove = Boolean(canUpdate && onMoveFile && !archiveView);
             const canShare = Boolean(
-              doc.permissions?.canShare && onShareFile && !isTrashView && !doc.permissions?.sharedViaGrant,
+              doc.permissions?.canShare && onShareFile && !archiveView && !doc.permissions?.sharedViaGrant,
             );
             const hasSignatureActivity = doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
             const canDownloadSignedPdf = Boolean(
               doc.signatureSummary?.hasSignedPdf &&
                 doc.signatureSummary.latestRequestId &&
                 onDownloadSignedPdfFile &&
-                !isTrashView,
+                !archiveView,
             );
             const isFavorite = doc.isFavorite === true;
             return (
@@ -335,7 +338,9 @@ export function ExplorerContextMenu({
                       ? 'Você não tem permissão para mover este documento.'
                       : isTrashView
                         ? 'Este documento está na Lixeira e não pode ser movido.'
-                        : undefined
+                        : isDeactivatedView
+                          ? 'Este documento está desativado e não pode ser movido.'
+                          : undefined
                   }
                   onClick={() => run(() => onMoveFile?.(doc))}
                 />
@@ -355,12 +360,15 @@ export function ExplorerContextMenu({
                       icon="restore_from_trash"
                       onClick={() => run(() => onRestoreFile?.(doc))}
                     />
+                  </>
+                ) : isDeactivatedView ? (
+                  <>
+                    <div className="my-1 border-t border-doqyn-border-subtle" />
                     <MenuItem
                       compact
-                      label="Excluir permanentemente"
-                      icon="delete_forever"
-                      danger
-                      onClick={() => run(() => onPermanentDeleteFile?.(doc))}
+                      label="Recuperar"
+                      icon="replay"
+                      onClick={() => run(() => onReactivateFile?.(doc))}
                     />
                   </>
                 ) : (

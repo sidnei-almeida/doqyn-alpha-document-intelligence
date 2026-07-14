@@ -3,11 +3,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import {
   batchMoveDocumentsToTrash,
-  batchPermanentlyDeleteDocuments,
   batchRestoreDocuments,
   fetchTrashRetentionSettings,
   moveDocumentToTrash,
-  permanentlyDeleteDocument,
   restoreDocumentFromTrash,
   updateTrashRetentionSettings,
   type TrashRetentionSettings,
@@ -21,6 +19,7 @@ export function useTrashMutations() {
   const invalidate = async () => {
     await invalidateLibraryQueries(queryClient, tenant?.tenantId);
     await queryClient.invalidateQueries({ queryKey: ['trash-documents'] });
+    await queryClient.invalidateQueries({ queryKey: ['deactivated-documents'] });
   };
 
   const moveToTrash = useMutation({
@@ -67,27 +66,7 @@ export function useTrashMutations() {
     onSettled: invalidate,
   });
 
-  const permanentDelete = useMutation({
-    mutationFn: ({ documentIds }: { documentIds: string[] }) =>
-      documentIds.length === 1
-        ? permanentlyDeleteDocument(documentIds[0]!).then(() => ({
-            results: [{ documentId: documentIds[0]!, ok: true }],
-            succeeded: 1,
-            failed: 0,
-          }))
-        : batchPermanentlyDeleteDocuments(documentIds),
-    onSuccess: (result) => {
-      toast.success(
-        result.succeeded === 1
-          ? 'Documento excluído permanentemente.'
-          : `${result.succeeded} documentos excluídos permanentemente.`,
-      );
-    },
-    onError: () => toast.error('Não foi possível excluir permanentemente.'),
-    onSettled: invalidate,
-  });
-
-  return { moveToTrash, restore, permanentDelete };
+  return { moveToTrash, restore };
 }
 
 export function useTrashRetentionSettings() {

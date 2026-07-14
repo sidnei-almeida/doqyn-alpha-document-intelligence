@@ -26,6 +26,7 @@ import {
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 function encodeToken(token: string): string {

@@ -23,6 +23,7 @@ import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 async function findActiveTenantMemberUserId(

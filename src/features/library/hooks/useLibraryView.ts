@@ -11,6 +11,7 @@ import { resolveLibraryCategoryId } from '../utils/resolveLibraryCategory';
 import { useDocumentCategories } from './useCategoryFolders';
 import { useFavoriteDocuments, useFavorites } from './useFavorites';
 import { useTrashDocuments } from './useTrashDocuments';
+import { useDeactivatedDocuments } from './useDeactivatedDocuments';
 import { useSharedWithMeDocuments } from '@/features/sharing/hooks/useSharedWithMeDocuments';
 import { useLibraryRouteState } from './useLibraryRouteState';
 
@@ -24,6 +25,7 @@ export function useLibraryView() {
   const { data: categories = [] } = useDocumentCategories();
   const isFavoritesCollection = collection.id === 'favoritos';
   const isTrashCollection = collection.id === 'lixeira';
+  const isDeactivatedCollection = collection.id === 'desativados';
   const isSharedCollection = collection.id === 'compartilhados';
   const isSignaturesCollection = collection.id === 'para-assinar';
 
@@ -56,6 +58,13 @@ export function useLibraryView() {
 
   const listScopeKey = useMemo(() => libraryListScopeKey(filters), [filters]);
 
+  const useDedicatedList =
+    isFavoritesCollection ||
+    isTrashCollection ||
+    isDeactivatedCollection ||
+    isSharedCollection ||
+    isSignaturesCollection;
+
   const {
     data: documents = [],
     isLoading: isLoadingDocuments,
@@ -63,7 +72,7 @@ export function useLibraryView() {
     isError: isDocumentsError,
   } = useDocuments(filters, {
     listScopeKey,
-    enabled: !isFavoritesCollection && !isTrashCollection && !isSharedCollection && !isSignaturesCollection,
+    enabled: !useDedicatedList,
   });
 
   const {
@@ -72,6 +81,13 @@ export function useLibraryView() {
     isFetching: isFetchingTrash,
     isError: isTrashError,
   } = useTrashDocuments(state.q.trim() || undefined, isTrashCollection);
+
+  const {
+    data: deactivatedDocuments = [],
+    isLoading: isLoadingDeactivated,
+    isFetching: isFetchingDeactivated,
+    isError: isDeactivatedError,
+  } = useDeactivatedDocuments(state.q.trim() || undefined, isDeactivatedCollection);
 
   const {
     data: favoriteDocuments = [],
@@ -90,6 +106,10 @@ export function useLibraryView() {
   const visibleDocuments = useMemo(() => {
     if (isTrashCollection) {
       return sortDocuments(trashDocuments, state.sort, state.direction);
+    }
+
+    if (isDeactivatedCollection) {
+      return sortDocuments(deactivatedDocuments, state.sort, state.direction);
     }
 
     if (isFavoritesCollection) {
@@ -112,6 +132,7 @@ export function useLibraryView() {
     documents,
     favoriteDocuments,
     trashDocuments,
+    deactivatedDocuments,
     sharedDocuments,
     collection,
     user?.id,
@@ -119,6 +140,7 @@ export function useLibraryView() {
     state.direction,
     isFavoritesCollection,
     isTrashCollection,
+    isDeactivatedCollection,
     isSharedCollection,
   ]);
 
@@ -132,25 +154,31 @@ export function useLibraryView() {
     documents: visibleDocuments,
     isLoading: isTrashCollection
       ? isLoadingTrash
-      : isFavoritesCollection
-        ? isLoadingFavorites
-        : isSharedCollection
-          ? isLoadingShared
-          : isLoadingDocuments,
+      : isDeactivatedCollection
+        ? isLoadingDeactivated
+        : isFavoritesCollection
+          ? isLoadingFavorites
+          : isSharedCollection
+            ? isLoadingShared
+            : isLoadingDocuments,
     isFetching: isTrashCollection
       ? isFetchingTrash
-      : isFavoritesCollection
-        ? isFetchingFavorites
-        : isSharedCollection
-          ? isFetchingShared
-          : isFetchingDocuments,
+      : isDeactivatedCollection
+        ? isFetchingDeactivated
+        : isFavoritesCollection
+          ? isFetchingFavorites
+          : isSharedCollection
+            ? isFetchingShared
+            : isFetchingDocuments,
     isError: isTrashCollection
       ? isTrashError
-      : isFavoritesCollection
-        ? isFavoritesError
-        : isSharedCollection
-          ? isSharedError
-          : isDocumentsError,
+      : isDeactivatedCollection
+        ? isDeactivatedError
+        : isFavoritesCollection
+          ? isFavoritesError
+          : isSharedCollection
+            ? isSharedError
+            : isDocumentsError,
     toggleStar,
     isStarred,
     resolveIsStarred,

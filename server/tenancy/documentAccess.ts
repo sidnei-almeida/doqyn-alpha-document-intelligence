@@ -149,6 +149,17 @@ export function assertCanPermanentDeleteDocument(
   }
 }
 
+/** Admin+ pode listar e reativar documentos na seção Desativados. */
+export function assertCanManageDeactivatedDocuments(user: AuthUser): void {
+  if (!isDocumentAdmin(user)) {
+    throw new ServiceError(
+      'Somente administradores podem gerenciar documentos desativados.',
+      'DOCUMENT_DEACTIVATED_ACCESS_DENIED',
+      403,
+    );
+  }
+}
+
 export async function loadMemberDocumentGroupIds(input: {
   tenantId: string;
   userId: string;

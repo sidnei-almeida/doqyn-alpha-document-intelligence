@@ -471,7 +471,12 @@ export type MongoVersionMetadataField = {
   };
 };
 
-export type DocumentLifecycleStatus = 'active' | 'trashed' | 'purged' | 'permanently_deleted';
+export type DocumentLifecycleStatus =
+  | 'active'
+  | 'trashed'
+  | 'deactivated'
+  | 'purged'
+  | 'permanently_deleted';
 
 export type DocumentPurgeStatus = 'pending' | 'completed' | 'failed';
 
@@ -512,6 +517,10 @@ export type MongoDocument = {
   deletedBy?: string | null;
   deletedReason?: string | null;
   trashExpiresAt?: Date | null;
+  /** Após TTL da lixeira — soft-desativado; storage/Mongo permanecem. */
+  deactivatedAt?: Date | null;
+  deactivatedBy?: string | null;
+  deactivatedReason?: string | null;
   permanentlyDeletedAt?: Date | null;
   purgeStatus?: DocumentPurgeStatus | null;
   /** Categoria anterior após movimentação manual entre pastas inteligentes. */

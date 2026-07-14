@@ -24,6 +24,7 @@ import {
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 export type MoveDocumentResult = {

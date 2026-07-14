@@ -6,7 +6,8 @@ export type LibraryCollectionId =
   | 'para-assinar'
   | 'recentes'
   | 'favoritos'
-  | 'lixeira';
+  | 'lixeira'
+  | 'desativados';
 
 export type LibraryCollection = {
   id: LibraryCollectionId;
@@ -72,9 +73,22 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     id: 'lixeira',
     slug: 'lixeira',
     label: 'Lixeira',
-    description: 'Documentos excluídos neste ambiente. Restaure ou remova permanentemente.',
+    description:
+      'Documentos excluídos neste ambiente. Restaure antes do prazo; depois eles passam para Desativados.',
     emptyTitle: 'A lixeira está vazia',
-    emptyDescription: 'Documentos excluídos aparecem aqui antes de qualquer remoção definitiva.',
+    emptyDescription:
+      'Documentos excluídos aparecem aqui durante o período de retenção.',
+    showFolders: false,
+  },
+  desativados: {
+    id: 'desativados',
+    slug: 'desativados',
+    label: 'Desativados',
+    description:
+      'Documentos desativados após o prazo na lixeira. Somente administradores podem recuperar.',
+    emptyTitle: 'Nenhum documento desativado',
+    emptyDescription:
+      'Quando o prazo da lixeira termina, os documentos passam para cá sem exclusão física.',
     showFolders: false,
   },
 };
@@ -94,7 +108,8 @@ export function resolveCollection(slug: string | undefined): LibraryCollection {
  * - compartilhados: GET /api/shared-with-me/documents;
  * - recentes: últimos atualizados (limite fixo);
  * - favoritos: carregados via GET /api/favorites/documents (preferência por userId);
- * - lixeira: GET /api/trash/documents (deletedAt != null, não purgados).
+ * - lixeira: GET /api/trash/documents;
+ * - desativados: GET /api/deactivated/documents (admin+).
  */
 export function applyCollectionFilter(
   documents: DocumentListItem[],
@@ -112,6 +127,7 @@ export function applyCollectionFilter(
     case 'favoritos':
       return documents.filter((doc) => doc.isFavorite === true);
     case 'lixeira':
+    case 'desativados':
       return documents;
     default:
       return documents;

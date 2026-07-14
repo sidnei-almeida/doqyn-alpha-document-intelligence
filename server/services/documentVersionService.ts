@@ -81,6 +81,8 @@ export async function listDocumentVersions(input: {
     _id: input.documentId,
     ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   } as Record<string, unknown>);
 
   if (!doc) {
@@ -213,6 +215,8 @@ export async function assertCanUpdateExistingDocument(input: {
     _id: input.documentId,
     ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   } as Record<string, unknown>);
 
   if (!doc) {
