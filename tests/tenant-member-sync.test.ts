@@ -23,7 +23,8 @@ describe('tenant member sync — auth para mongo', () => {
     assert.ok(service.includes('upsertTenantMemberFromAuthSnapshot'));
     assert.ok(service.includes('syncTenantMembersFromAuth'));
     assert.ok(service.includes('ensureTenantMembersSyncedForOperations'));
-    assert.ok(service.includes('keycloakUserId'));
+    assert.ok(service.includes('authUserId'));
+    assert.ok(service.includes('snapshot.userId'));
   });
 
   it('cliente interno consulta /internal/tenants/:tenantId/members', () => {

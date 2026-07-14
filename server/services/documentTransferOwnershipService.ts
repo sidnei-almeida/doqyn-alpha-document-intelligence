@@ -35,7 +35,7 @@ async function findActiveTenantMemberUserId(
 
   const member = await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
     tenantId,
-    $or: [{ keycloakUserId: userId }, { memberId: userId }, { _id: userId }],
+    $or: [{ authUserId: userId }, { memberId: userId }, { _id: userId }],
     ...statusFilter,
   } as Record<string, unknown>);
 
@@ -43,7 +43,7 @@ async function findActiveTenantMemberUserId(
 
   const legacy = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
     companyId: tenantId,
-    $or: [{ keycloakUserId: userId }, { userId }, { _id: userId }],
+    $or: [{ authUserId: userId }, { userId }, { _id: userId }],
     ...statusFilter,
   } as Record<string, unknown>);
 
@@ -56,7 +56,7 @@ async function findActiveTenantMemberUserId(
 }
 
 function resolveMemberUserId(member: MongoTenantMember): string {
-  return member.keycloakUserId ?? member.memberId ?? String(member._id);
+  return member.authUserId ?? member.memberId ?? String(member._id);
 }
 
 export type TransferDocumentOwnershipResult = {

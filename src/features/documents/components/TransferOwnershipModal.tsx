@@ -28,8 +28,8 @@ function memberDisplayName(member: {
   return member.name?.trim() || member.email;
 }
 
-function memberUserId(member: { id: string; keycloakUserId?: string }): string {
-  return member.keycloakUserId?.trim() || member.id;
+function memberUserId(member: { id: string; authUserId?: string }): string {
+  return member.authUserId?.trim() || member.id;
 }
 
 export function TransferOwnershipModal({ open, document, onClose }: TransferOwnershipModalProps) {

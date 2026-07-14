@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       memberId: member._id,
       tenantId: member.tenantId,
-      userId: member.keycloakUserId ?? member.memberId,
+      userId: member.authUserId ?? member.memberId,
     });
   } catch (error) {
     if (isServiceError(error)) {

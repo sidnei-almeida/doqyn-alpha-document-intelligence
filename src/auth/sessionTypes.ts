@@ -1,6 +1,6 @@
 export type MeUser = {
   id?: string;
-  keycloakUserId?: string;
+  authUserId?: string;
   username?: string;
   email: string;
   firstName?: string;

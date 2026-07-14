@@ -270,7 +270,7 @@ export async function listGovernanceMembers(
   return mongoMembers.map((member) => {
     const serialized = serializeTenantMember(member);
     const documentGroupIds = documentGroupMap.get(member._id) ?? [];
-    const userId = member.keycloakUserId ?? member.memberId ?? member._id;
+    const userId = member.authUserId ?? member.memberId ?? member._id;
     return mapMongoMemberToGovernanceMember(serialized, documentGroupIds, userId);
   });
 }
@@ -304,7 +304,7 @@ export async function resolveGovernanceMemberIdentity(
 
   const name = [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
   return {
-    userId: member.keycloakUserId ?? member.memberId ?? member._id,
+    userId: member.authUserId ?? member.memberId ?? member._id,
     displayName: name,
     email: member.email,
   };
