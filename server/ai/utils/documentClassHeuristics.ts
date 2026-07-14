@@ -99,6 +99,23 @@ export const CONFIDENTIALITY_PARTY_FIELDS: DocumentRuleField[] = [
     aliases: ['data de assinatura', 'assinado em', 'firmado em', 'celebrado em'],
     description: 'Data de assinatura ou celebração do acordo.',
   },
+  {
+    key: 'prazo_vigencia',
+    label: 'Prazo de vigência',
+    type: 'string',
+    required: false,
+    aliases: [
+      'vigência',
+      'vigencia',
+      'prazo de vigência',
+      'prazo de vigencia',
+      'válido por',
+      'valido por',
+      'prazo',
+    ],
+    description:
+      'Prazo relativo de vigência (ex.: "5 anos", "24 meses"). Não invente data absoluta aqui.',
+  },
 ];
 
 /** Garante campos de partes no pipeline de extração/validação mesmo com regras legadas no Mongo. */

@@ -57,6 +57,24 @@ const VALIDITY_SOURCE_KEYS = new Set([
   'validade',
 ]);
 
+/** Campos de prazo relativo (“5 anos”, “24 meses”) — não são data absoluta. */
+const DURATION_SOURCE_KEYS = new Set([
+  'prazo_vigencia',
+  'prazo',
+  'vigencia_prazo',
+  'periodo_vigencia',
+  'duracao',
+  'duracao_vigencia',
+]);
+
+const ANCHOR_DATE_PRIORITY = [
+  'data_assinatura',
+  'data_emissao',
+  'vigencia_inicio',
+  'data_vigencia',
+  'data_documento',
+] as const;
+
 const TITLE_KEYS = new Set(['titulo', 'title', 'nome_documento', 'document_title']);
 
 const PERSON_KEY_HINT =
@@ -66,6 +84,12 @@ const DATE_KEY_HINT = /(data_|_data$|venciment|validade|vigencia|assinatura|emis
 
 const EXCLUDE_FROM_PERSON =
   /(cnpj|cpf|\brg\b|valor|numero|n[uú]mero|telefone|email|endereco|\bcep\b|codigo|moeda|multa|prazo_vigencia|inscricao)/i;
+
+export type ValidityDuration = {
+  years: number;
+  months: number;
+  days: number;
+};
 
 function normalizeSearchText(value: string): string {
   return value
@@ -133,6 +157,71 @@ export function parseMetadataDate(raw: string | number): Date | null {
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+/**
+ * Interpreta prazos relativos comuns em contratos BR.
+ * Ex.: "5 anos", "válido por 24 meses", "pelo prazo de 90 dias".
+ */
+export function parseValidityDuration(raw: string | number | null | undefined): ValidityDuration | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const text = String(raw)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return null;
+
+  // Se parece data absoluta, não tratar como duração.
+  if (parseMetadataDate(text)) return null;
+
+  let years = 0;
+  let months = 0;
+  let days = 0;
+
+  const yearMatch = text.match(/(\d{1,3})\s*(anos?|ano)\b/);
+  if (yearMatch) years = Number(yearMatch[1]);
+
+  const monthMatch = text.match(/(\d{1,4})\s*(meses?|mes)\b/);
+  if (monthMatch) months = Number(monthMatch[1]);
+
+  const dayMatch = text.match(/(\d{1,5})\s*(dias?|dia)\b/);
+  if (dayMatch) days = Number(dayMatch[1]);
+
+  // Fallback: "prazo de 5" / "valido por 5" sem unidade → anos (comum em NDA).
+  if (years === 0 && months === 0 && days === 0) {
+    const bare = text.match(
+      /(?:prazo|valido por|vigencia(?:\s+de)?)\s*(?:de\s*)?(\d{1,3})\b/,
+    );
+    if (bare) years = Number(bare[1]);
+  }
+
+  if (!Number.isFinite(years) || !Number.isFinite(months) || !Number.isFinite(days)) {
+    return null;
+  }
+  if (years <= 0 && months <= 0 && days <= 0) return null;
+  if (years > 100 || months > 600 || days > 3650) return null;
+
+  return { years, months, days };
+}
+
+/** Soma duração em UTC (evita deslocamento de fuso em dd/mm). */
+export function addValidityDuration(anchor: Date, duration: ValidityDuration): Date {
+  const result = new Date(
+    Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), anchor.getUTCDate()),
+  );
+  if (duration.years) result.setUTCFullYear(result.getUTCFullYear() + duration.years);
+  if (duration.months) result.setUTCMonth(result.getUTCMonth() + duration.months);
+  if (duration.days) result.setUTCDate(result.getUTCDate() + duration.days);
+  return result;
+}
+
+function isDurationField(key: string, label: string): boolean {
+  const keyNorm = key.toLowerCase();
+  if (DURATION_SOURCE_KEYS.has(keyNorm)) return true;
+  const blob = `${keyNorm} ${normalizeSearchText(label)}`;
+  return /\bprazo\b/.test(blob) && /vigenc|validad/.test(blob);
 }
 
 function resolvePersonRole(key: string, label: string): string | null {
@@ -203,6 +292,10 @@ function pickRelatedAnchor(people: MongoDocumentPersonMeta[]): string | undefine
 /**
  * Projeta nomes, datas e validade a partir do metadata rico da versão.
  * Não remove nem altera o blob original — só isola sinais para busca.
+ *
+ * Validade:
+ * 1) data absoluta (vencimento/validade/vigência fim), se existir;
+ * 2) senão, âncora (assinatura/emissão) + prazo relativo (“5 anos”).
  */
 export function projectDocumentSearchMeta(
   metadata: Record<string, MongoVersionMetadataField>,
@@ -213,6 +306,8 @@ export function projectDocumentSearchMeta(
   const dates: MongoDocumentDateMeta[] = [];
   let documentTitle: string | null = null;
   let validityDate: Date | null = null;
+  const durationCandidates: Array<{ key: string; label: string; duration: ValidityDuration }> = [];
+  const anchorByKey = new Map<string, Date>();
 
   for (const [key, field] of Object.entries(metadata)) {
     const keyNorm = key.toLowerCase();
@@ -222,6 +317,14 @@ export function projectDocumentSearchMeta(
     if (TITLE_KEYS.has(keyNorm)) {
       const title = fieldString(field);
       if (title) documentTitle = title;
+    }
+
+    if (isDurationField(key, label)) {
+      const duration = parseValidityDuration(fieldRawValue(field));
+      if (duration) {
+        durationCandidates.push({ key, label, duration });
+      }
+      continue;
     }
 
     const dateKind =
@@ -240,10 +343,19 @@ export function projectDocumentSearchMeta(
             sourceKey: key,
             label,
           });
+          if (ANCHOR_DATE_PRIORITY.includes(keyNorm as (typeof ANCHOR_DATE_PRIORITY)[number])) {
+            anchorByKey.set(keyNorm, parsed);
+          }
+          if (dateKind === 'assinatura' || dateKind === 'emissao' || dateKind === 'vigencia_inicio') {
+            anchorByKey.set(keyNorm, parsed);
+          }
           if (VALIDITY_SOURCE_KEYS.has(keyNorm) || dateKind === 'vencimento' || dateKind === 'validade') {
             if (!validityDate || dateKind === 'vencimento' || dateKind === 'vigencia_fim') {
               validityDate = parsed;
             }
+          }
+          if (dateKind === 'vigencia_fim' && !validityDate) {
+            validityDate = parsed;
           }
         }
       }
@@ -270,6 +382,41 @@ export function projectDocumentSearchMeta(
       role,
       sourceKey: key,
     });
+  }
+
+  if (!validityDate && durationCandidates.length > 0) {
+    let anchor: Date | null = null;
+    let anchorKey: string | null = null;
+    for (const key of ANCHOR_DATE_PRIORITY) {
+      const hit = anchorByKey.get(key) ?? dates.find((d) => d.sourceKey === key)?.date;
+      if (hit) {
+        anchor = hit;
+        anchorKey = key;
+        break;
+      }
+    }
+    if (!anchor) {
+      const byKind = dates.find(
+        (d) =>
+          d.kind === 'assinatura' || d.kind === 'emissao' || d.kind === 'vigencia_inicio',
+      );
+      if (byKind) {
+        anchor = byKind.date;
+        anchorKey = byKind.sourceKey;
+      }
+    }
+
+    if (anchor) {
+      const chosen = durationCandidates[0]!;
+      const inferred = addValidityDuration(anchor, chosen.duration);
+      validityDate = inferred;
+      dates.push({
+        kind: 'validade',
+        date: inferred,
+        sourceKey: chosen.key,
+        label: `${chosen.label} (inferido de ${anchorKey ?? 'âncora'})`,
+      });
+    }
   }
 
   const reveladora = people.find((p) => p.role === 'parte_reveladora');
