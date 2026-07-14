@@ -13,13 +13,13 @@
 - [x] Lixeira, shares, favoritos, auditoria/tracking
 - [x] OAuth Google/Microsoft no auth-service (quando configurado)
 - [x] Remoção completa do **Keycloak** do fluxo de autenticação
+- [x] Renomear campo legado `keycloakUserId` → `authUserId` (migração Mongo)
 
 ## Em andamento / próximo
 
 - [ ] Notificações reais (e-mail + WhatsApp) — preferências já existem; worker ainda não
 - [ ] SMTP de produto estável (reset/convites em produção)
 - [ ] RAG conversacional sobre `document_chunks`
-- [ ] Renomear campo legado `keycloakUserId` → `authUserId` (migração Mongo)
 - [ ] Remover/aisolar temporary-auth e collections legadas (`companies`, `document_classes`)
 - [ ] Alinhar scripts de audit Mongo com SHARED_APP + categories
 

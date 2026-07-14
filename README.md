@@ -23,7 +23,7 @@ Validar o fluxo principal da plataforma:
 | IA / OCR | Groq (classificação/extração); Google Cloud Vision (OCR opcional) |
 | Filas | Redis + BullMQ (análise e preview; fallback síncrono em dev) |
 
-> **Keycloak foi removido por completo** do fluxo de autenticação. O provider oficial é apenas `doqyn_auth`. O campo Mongo legado `keycloakUserId` (quando existir) armazena o **userId do Auth**, não um ID Keycloak.
+> **Keycloak foi removido por completo** do fluxo de autenticação. O provider oficial é apenas `doqyn_auth`. No Mongo o campo canônico é `authUserId`. Migração: `npm run db:migrate-keycloak-to-auth-user-id -- --apply`.
 
 ## Início rápido
 
@@ -145,4 +145,4 @@ O login SaaS é `POST /auth/login` no **auth-service** (não no Alpha). `POST /a
 
 - Notificações (e-mail / WhatsApp) com worker real
 - RAG conversacional sobre chunks
-- Limpeza de campos/nomes legados (`keycloakUserId` → `authUserId` em migração futura)
+- Limpeza de campos/nomes legados (`keycloakUserId` → `authUserId`) — script `npm run db:migrate-keycloak-to-auth-user-id`

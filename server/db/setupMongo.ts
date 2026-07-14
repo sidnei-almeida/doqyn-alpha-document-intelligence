@@ -32,14 +32,14 @@ async function ensureRegistryIndexes() {
   await db.collection(REGISTRY_COLLECTIONS.tenantMembers).createIndexes([
     { key: { tenantId: 1, status: 1 } },
     { key: { tenantId: 1, emailNormalized: 1 }, unique: true },
-    { key: { keycloakUserId: 1, status: 1 } },
+    { key: { authUserId: 1, status: 1 } },
   ]);
 
   await db.collection(REGISTRY_COLLECTIONS.companyMembers).createIndexes([
     { key: { companyId: 1, status: 1 } },
     { key: { companyId: 1, email: 1 }, unique: true },
     { key: { companyId: 1, userId: 1 } },
-    { key: { keycloakUserId: 1, status: 1 } },
+    { key: { authUserId: 1, status: 1 } },
   ]);
 
   await db.collection(REGISTRY_COLLECTIONS.companies).createIndexes([

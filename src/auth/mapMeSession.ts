@@ -17,7 +17,7 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
     user.email;
 
   return {
-    id: user.id ?? user.keycloakUserId ?? user.email,
+    id: user.id ?? user.authUserId ?? user.email,
     email: user.email,
     name: displayName,
     username: user.username,

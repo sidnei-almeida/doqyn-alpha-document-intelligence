@@ -3,6 +3,7 @@ import type { MongoCompanyMember, MongoTenantMember } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { getMemberAccessGroupIds, getMemberPlatformRoles } from '../auth/memberAuth.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { resolveMemberAuthUserId } from '../utils/memberAuthUserId.js';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -10,12 +11,13 @@ function normalizeEmail(email: string): string {
 
 function mapLegacyMemberToTenantMember(member: MongoCompanyMember): MongoTenantMember {
   const tenantId = member.tenantId ?? member.companyId;
+  const authUserId = resolveMemberAuthUserId(member);
   return {
     _id: member._id,
     memberId: member._id,
     tenantId,
     companyId: tenantId,
-    keycloakUserId: member.keycloakUserId,
+    authUserId,
     username: member.username,
     email: member.email,
     emailNormalized: normalizeEmail(member.email),
@@ -39,15 +41,16 @@ function mapLegacyMemberToTenantMember(member: MongoCompanyMember): MongoTenantM
 }
 
 export async function findActiveTenantMember(input: {
-  keycloakUserId?: string;
+  authUserId?: string;
   email?: string;
 }): Promise<MongoTenantMember | null> {
   const db = await getDb();
   const emailNormalized = input.email ? normalizeEmail(input.email) : undefined;
+  const authUserId = input.authUserId;
 
-  let member = input.keycloakUserId
+  let member = authUserId
     ? await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
-        keycloakUserId: input.keycloakUserId,
+        authUserId,
         status: 'active',
       } as Record<string, unknown>)
     : null;
@@ -61,9 +64,9 @@ export async function findActiveTenantMember(input: {
 
   if (member) return member;
 
-  let legacy = input.keycloakUserId
+  let legacy = authUserId
     ? await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-        keycloakUserId: input.keycloakUserId,
+        authUserId,
         status: 'active',
       } as Record<string, unknown>)
     : null;
@@ -80,17 +83,18 @@ export async function findActiveTenantMember(input: {
 
 /** Busca membership por identidade, qualquer status (exceto rejected). Usado em GET /api/me. */
 export async function findTenantMemberByIdentity(input: {
-  keycloakUserId?: string;
+  authUserId?: string;
   email?: string;
 }): Promise<MongoTenantMember | null> {
   const db = await getDb();
   const emailNormalized = input.email ? normalizeEmail(input.email) : undefined;
+  const authUserId = input.authUserId;
 
   const statusFilter = { status: { $in: ['active', 'pending', 'blocked'] } };
 
-  let member = input.keycloakUserId
+  let member = authUserId
     ? await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
-        keycloakUserId: input.keycloakUserId,
+        authUserId,
         ...statusFilter,
       } as Record<string, unknown>)
     : null;
@@ -104,9 +108,9 @@ export async function findTenantMemberByIdentity(input: {
 
   if (member) return member;
 
-  let legacy = input.keycloakUserId
+  let legacy = authUserId
     ? await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-        keycloakUserId: input.keycloakUserId,
+        authUserId,
         ...statusFilter,
       } as Record<string, unknown>)
     : null;
@@ -136,7 +140,7 @@ const SIDNEI_DEV_MEMBER_ID = 'member_sidnei';
 
 /**
  * Garante vínculo ativo do usuário sidnei ao tenant company_dev.
- * Upsert idempotente por keycloakUserId ou emailNormalized.
+ * Upsert idempotente por authUserId ou emailNormalized.
  */
 export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> {
   const db = await getDb();
@@ -147,7 +151,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
   const members = db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers);
 
   const existing =
-    (await members.findOne({ keycloakUserId: SIDNEI_DEV_USER_ID } as Record<string, unknown>)) ??
+    (await members.findOne({ authUserId: SIDNEI_DEV_USER_ID } as Record<string, unknown>)) ??
     (await members.findOne({ emailNormalized, tenantId } as Record<string, unknown>));
 
   const memberId = existing?._id ?? SIDNEI_DEV_MEMBER_ID;
@@ -157,7 +161,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
     memberId,
     tenantId,
     companyId: tenantId,
-    keycloakUserId: SIDNEI_DEV_USER_ID,
+    authUserId: SIDNEI_DEV_USER_ID,
     username: 'sidnei',
     email: SIDNEI_DEV_EMAIL,
     emailNormalized,
@@ -172,15 +176,14 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
 
   await members.updateOne(
     { _id: memberId } as Record<string, unknown>,
-    { $set: memberDoc },
+    { $set: memberDoc, $unset: { keycloakUserId: '' } },
     { upsert: true },
   );
 
-  // Compatibilidade legado: company_members ainda é fallback de leitura em alguns fluxos.
   await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).updateOne(
     {
       $or: [
-        { keycloakUserId: SIDNEI_DEV_USER_ID },
+        { authUserId: SIDNEI_DEV_USER_ID },
         { email: emailNormalized, companyId: tenantId },
       ],
     } as Record<string, unknown>,
@@ -190,7 +193,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
         tenantId,
         companyId: tenantId,
         userId: SIDNEI_DEV_USER_ID,
-        keycloakUserId: SIDNEI_DEV_USER_ID,
+        authUserId: SIDNEI_DEV_USER_ID,
         username: 'sidnei',
         name: 'Sidnei Almeida',
         email: SIDNEI_DEV_EMAIL,
@@ -203,6 +206,7 @@ export async function ensureSidneiDevTenantMember(): Promise<MongoTenantMember> 
         accessGroupIds: [],
         updatedAt: now,
       },
+      $unset: { keycloakUserId: '' },
     },
     { upsert: true },
   );

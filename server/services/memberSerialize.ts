@@ -3,6 +3,7 @@ import {
   getMemberAccessGroupIds,
   getMemberPlatformRoles,
 } from '../auth/memberAuth.js';
+import { resolveMemberAuthUserId } from '../utils/memberAuthUserId.js';
 
 function serializeRequestedAccess(member: MongoTenantMember) {
   const requested = member.requestedAccess;
@@ -29,14 +30,15 @@ export function serializeTenantMember(member: MongoTenantMember) {
   const accessGroupIds = member.accessGroupIds?.length
     ? member.accessGroupIds
     : getMemberAccessGroupIds(member as unknown as MongoCompanyMember);
+  const authUserId = resolveMemberAuthUserId(member);
 
   return {
     id: member._id,
     memberId: member.memberId,
     companyId: member.tenantId,
     tenantId: member.tenantId,
-    userId: member.keycloakUserId ?? member.memberId,
-    keycloakUserId: member.keycloakUserId,
+    userId: authUserId ?? member.memberId,
+    authUserId,
     username: member.username,
     email: member.email,
     firstName: member.firstName,
@@ -75,13 +77,14 @@ export function serializeTenantMember(member: MongoTenantMember) {
 export function serializeCompanyMember(member: MongoCompanyMember) {
   const platformRoles = getMemberPlatformRoles(member);
   const accessGroupIds = getMemberAccessGroupIds(member);
+  const authUserId = resolveMemberAuthUserId(member);
 
   return {
     id: member._id,
     companyId: member.companyId,
     tenantId: member.tenantId ?? member.companyId,
     userId: member.userId,
-    keycloakUserId: member.keycloakUserId,
+    authUserId,
     username: member.username,
     email: member.email,
     firstName: member.firstName,

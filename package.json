@@ -31,6 +31,7 @@
     "audit:no-flat-writes": "tsx scripts/assert-no-flat-tenant-writes.ts",
     "db:ensure-indexes": "tsx scripts/ensure-mongodb-indexes.ts",
     "db:migrate-flat-to-tenant": "tsx scripts/migrate-flat-to-tenant-prefixed.ts",
+    "db:migrate-keycloak-to-auth-user-id": "tsx scripts/migrate-keycloak-to-auth-user-id.ts",
     "db:seed-isolation-test": "tsx scripts/seed-second-tenant-isolation-test.ts",
     "db:cleanup-orphan-groups": "tsx scripts/cleanup-dev-orphan-groups.ts",
     "db:sanitize-audit-logs": "tsx scripts/sanitize-existing-audit-logs.ts",

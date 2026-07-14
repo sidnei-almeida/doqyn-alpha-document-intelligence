@@ -66,8 +66,8 @@ export type MongoTenantMember = {
   _id: string;
   memberId: string;
   tenantId: string;
-  /** Legado de naming: valor = UUID do usuário no doqyn-auth-service (`auth_users.id`). Keycloak não é usado. */
-  keycloakUserId?: string;
+  /** UUID do usuário no doqyn-auth-service (`auth_users.id`). */
+  authUserId?: string;
   username?: string;
   email: string;
   emailNormalized: string;
@@ -187,7 +187,7 @@ export type MongoCompanyMember = {
   firstName?: string;
   lastName?: string;
   username?: string;
-  keycloakUserId?: string;
+  authUserId?: string;
   position?: string;
   /** Legado — preferir platformRoles em fluxos novos. */
   role: 'admin' | 'manager' | 'member' | 'auditor';

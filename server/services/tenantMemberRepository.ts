@@ -23,13 +23,14 @@ import {
 export function tenantMemberToCompanyMember(member: MongoTenantMember): MongoCompanyMember {
   const tenantRoles = member.tenantRoles?.length ? member.tenantRoles : (['user'] as PlatformRole[]);
   const accessGroupIds = getMemberAccessGroupIds(member as unknown as MongoCompanyMember);
+  const authUserId = member.authUserId;
 
   return {
     _id: member._id,
     tenantId: member.tenantId,
     companyId: member.tenantId,
-    userId: member.keycloakUserId ?? member.memberId,
-    keycloakUserId: member.keycloakUserId,
+    userId: authUserId ?? member.memberId,
+    authUserId,
     username: member.username,
     name: [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email,
     email: member.email,
@@ -79,7 +80,7 @@ function companyMemberToTenantMember(member: MongoCompanyMember): MongoTenantMem
     memberId: member._id,
     tenantId,
     companyId: tenantId,
-    keycloakUserId: member.keycloakUserId,
+    authUserId: member.authUserId ?? member.userId,
     username: member.username,
     email: member.email,
     emailNormalized: normalizeEmail(member.email),
@@ -134,21 +135,28 @@ export async function createUniqueMemberId(email: string, tenantId: string): Pro
 
 export async function saveTenantMember(member: MongoTenantMember): Promise<MongoTenantMember> {
   const db = await getDb();
+  const authUserId = member.authUserId;
+  const { keycloakUserId: _legacy, ...memberWithoutLegacy } = member as MongoTenantMember & {
+    keycloakUserId?: string;
+  };
   const doc = {
-    ...member,
+    ...memberWithoutLegacy,
+    authUserId,
     memberId: member.memberId ?? member._id,
     companyId: member.tenantId,
     updatedAt: new Date(),
   };
 
-  await db
-    .collection(REGISTRY_COLLECTIONS.tenantMembers)
-    .updateOne({ _id: doc._id } as Record<string, unknown>, { $set: doc }, { upsert: true });
+  await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
+    { _id: doc._id } as Record<string, unknown>,
+    { $set: doc, $unset: { keycloakUserId: '' } },
+    { upsert: true },
+  );
 
   const legacy = tenantMemberToCompanyMember(doc);
   await db.collection(REGISTRY_COLLECTIONS.companyMembers).updateOne(
     { _id: doc._id } as Record<string, unknown>,
-    { $set: legacy },
+    { $set: legacy, $unset: { keycloakUserId: '' } },
     { upsert: true },
   );
 

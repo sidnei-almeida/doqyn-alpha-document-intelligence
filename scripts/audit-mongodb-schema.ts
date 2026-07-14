@@ -47,6 +47,7 @@ const RECOMMENDED_INDEX_FIELDS = [
   'createdAt',
   'updatedAt',
   'emailNormalized',
+  'authUserId',
   'keycloakUserId',
   'memberId',
   'classId',
@@ -111,6 +112,7 @@ function suggestMissingIndexes(collectionName: string, indexes: IndexDescription
       (field === 'status' && !collectionName.startsWith('companies')) ||
       (field === 'createdAt' || field === 'updatedAt') ||
       (field === 'emailNormalized' && collectionName.includes('member')) ||
+      (field === 'authUserId' && collectionName.includes('member')) ||
       (field === 'keycloakUserId' && collectionName.includes('member')) ||
       (field === 'memberId' && collectionName.includes('member')) ||
       (field === 'classId' && (lower.includes('document') || lower.includes('rule'))) ||
@@ -269,7 +271,7 @@ async function auditTenantMembers(
   const col = REGISTRY_COLLECTIONS.tenantMembers;
   const members = await db.collection(col).find({}).toArray();
 
-  const keycloakDup = new Map<string, number>();
+  const authUserDup = new Map<string, number>();
   const emailDup = new Map<string, number>();
 
   for (const member of members) {
@@ -313,9 +315,15 @@ async function auditTenantMembers(
       }
     }
 
-    if (tenantId && member.keycloakUserId) {
-      const key = `${tenantId}::${member.keycloakUserId}`;
-      keycloakDup.set(key, (keycloakDup.get(key) ?? 0) + 1);
+    const authUserId =
+      typeof member.authUserId === 'string'
+        ? member.authUserId
+        : typeof (member as { keycloakUserId?: string }).keycloakUserId === 'string'
+          ? (member as { keycloakUserId?: string }).keycloakUserId
+          : undefined;
+    if (tenantId && authUserId) {
+      const key = `${tenantId}::${authUserId}`;
+      authUserDup.set(key, (authUserDup.get(key) ?? 0) + 1);
     }
 
     if (tenantId && member.emailNormalized) {
@@ -324,9 +332,9 @@ async function auditTenantMembers(
     }
   }
 
-  for (const [key, count] of keycloakDup.entries()) {
+  for (const [key, count] of authUserDup.entries()) {
     if (count > 1) {
-      addFinding({ severity: 'MEDIO', category: 'tenant_members', collection: col, count, message: `keycloakUserId duplicado no tenant (${key.split('::')[0]}).` });
+      addFinding({ severity: 'MEDIO', category: 'tenant_members', collection: col, count, message: `authUserId duplicado no tenant (${key.split('::')[0]}).` });
     }
   }
 

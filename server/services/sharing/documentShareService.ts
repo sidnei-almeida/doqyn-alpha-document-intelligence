@@ -100,7 +100,7 @@ async function resolveActiveTenantMemberByUserId(
     (await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
       tenantId,
       status: 'active',
-      $or: [{ keycloakUserId: userId }, { memberId: userId }],
+      $or: [{ authUserId: userId }, { memberId: userId }],
     })) ?? null;
 
   return member;
