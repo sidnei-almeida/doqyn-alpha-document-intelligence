@@ -33,6 +33,10 @@ data/geoip/*.mmdb
 # Internal docs, audit reports, local runbooks (não versionar)
 docs/*
 !docs/DEPLOY_VPS.md
+!docs/ENV_SYNC.md
+!docs/architecture.md
+!docs/roadmap.md
+!docs/security-notes.md
 
 # Editor / IDE
 .vscode/*

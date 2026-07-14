@@ -82,7 +82,8 @@ Fluxo resumido:
 3. Frontend chama `GET /api/me`
 4. Alpha valida sessão com `POST /internal/sessions/verify` no auth
 
-Consulte `.env.example` para a lista completa.
+Consulte `.env.example` para a lista completa.  
+**Validar sync Auth↔Alpha:** `npm run env:auth-sync` — ver [docs/ENV_SYNC.md](docs/ENV_SYNC.md).
 
 ### Temporary Auth (legado)
 
