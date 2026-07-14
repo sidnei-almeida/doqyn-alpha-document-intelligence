@@ -36,12 +36,10 @@ export function Sidebar({ className }: SidebarProps) {
     'individual_admin',
   ]);
 
-  const libraryViewItems = NAV_ITEMS_LIBRARY_VIEWS.filter((item) => {
-    if ('adminOnly' in item && item.adminOnly && !canManageDeactivated) return false;
-    return true;
-  });
+  const libraryViewItems = NAV_ITEMS_LIBRARY_VIEWS;
 
   const adminNavItems = NAV_ITEMS_ADMIN.filter((item) => {
+    if ('adminOnly' in item && item.adminOnly && !canManageDeactivated) return false;
     if ('governanceOnly' in item && item.governanceOnly && !canAccessRules) return false;
     if ('managerOnly' in item && item.managerOnly && !canManageUsers) return false;
     if ('trackingOnly' in item && item.trackingOnly && !canViewTracking) return false;

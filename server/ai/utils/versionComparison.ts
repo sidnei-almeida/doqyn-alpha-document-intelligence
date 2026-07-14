@@ -1,4 +1,5 @@
 import type { MongoVersionMetadataField } from '../../db/types.js';
+import { dedupeMetadataRecord } from '../../../shared/metadataKeyNormalize.js';
 
 export type VersionComparisonInput = {
   oldMetadata: Record<string, MongoVersionMetadataField>;
@@ -62,8 +63,10 @@ function describeFieldChange(key: string, oldValue: string, newValue: string): s
 }
 
 export function compareDocumentVersions(input: VersionComparisonInput): VersionComparisonResult {
-  const oldKeys = new Set(Object.keys(input.oldMetadata));
-  const newKeys = new Set(Object.keys(input.newMetadata));
+  const oldMetadata = dedupeMetadataRecord(input.oldMetadata);
+  const newMetadata = dedupeMetadataRecord(input.newMetadata);
+  const oldKeys = new Set(Object.keys(oldMetadata));
+  const newKeys = new Set(Object.keys(newMetadata));
   const allKeys = new Set([...oldKeys, ...newKeys]);
 
   const changedFields: string[] = [];
@@ -73,8 +76,8 @@ export function compareDocumentVersions(input: VersionComparisonInput): VersionC
   const riskWarnings: string[] = [];
 
   for (const key of allKeys) {
-    const oldField = input.oldMetadata[key];
-    const newField = input.newMetadata[key];
+    const oldField = oldMetadata[key];
+    const newField = newMetadata[key];
     const oldValue = normalizeComparable(fieldValue(oldField));
     const newValue = normalizeComparable(fieldValue(newField));
 

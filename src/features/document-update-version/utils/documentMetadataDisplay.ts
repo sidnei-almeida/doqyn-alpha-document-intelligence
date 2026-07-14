@@ -1,33 +1,8 @@
 import type { MetadataDisplayField } from '../types';
-
-const METADATA_LABEL_OVERRIDES: Record<string, string> = {
-  documentType: 'Tipo',
-  tipo: 'Tipo',
-  parties: 'Partes',
-  parte_reveladora: 'Parte reveladora',
-  parte_receptora: 'Parte receptora',
-  cnpj: 'CNPJ',
-  cpf: 'CPF',
-  cpf_cnpj: 'CPF/CNPJ',
-  data_documento: 'Data do documento',
-  data_validade: 'Validade',
-  resumo: 'Resumo',
-  summary: 'Resumo',
-  clausulas: 'Cláusulas',
-  sensitivity: 'Sensibilidade',
-  sensibilidade: 'Sensibilidade',
-  category: 'Categoria',
-  className: 'Categoria',
-  recommendedFileName: 'Nome sugerido (IA)',
-  aiSuggestedFileName: 'Nome sugerido (IA)',
-};
-
-function humanizeKey(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
+import {
+  canonicalizeMetadataKey,
+  resolveMetadataLabel,
+} from '../../../../shared/metadataKeyNormalize.ts';
 
 function formatMetadataValue(value: unknown): string {
   if (value == null || value === '') return '—';
@@ -54,29 +29,39 @@ function formatMetadataValue(value: unknown): string {
   return '—';
 }
 
+function fieldLabelFromRaw(key: string, value: unknown): string | null {
+  if (typeof value === 'object' && value !== null && 'label' in value) {
+    const label = (value as { label?: unknown }).label;
+    if (typeof label === 'string' && label.trim()) return label.trim();
+  }
+  return null;
+}
+
 /** Converte metadados do documento em campos legíveis para painéis de resumo. */
 export function metadataRecordToDisplayFields(
   metadata: Record<string, unknown> | undefined | null,
 ): MetadataDisplayField[] {
   if (!metadata || Object.keys(metadata).length === 0) return [];
 
-  return Object.entries(metadata)
-    .map(([key, value]) => {
-      const label =
-        typeof value === 'object' &&
-        value !== null &&
-        'label' in value &&
-        typeof (value as { label?: unknown }).label === 'string'
-          ? String((value as { label: string }).label)
-          : METADATA_LABEL_OVERRIDES[key] ?? humanizeKey(key);
+  const byCanonical = new Map<string, MetadataDisplayField>();
 
-      return {
-        key,
-        label,
-        value: formatMetadataValue(value),
-      };
-    })
-    .filter((field) => field.value !== '—');
+  for (const [key, value] of Object.entries(metadata)) {
+    const rawLabel = fieldLabelFromRaw(key, value);
+    const canonicalKey = canonicalizeMetadataKey(key, rawLabel);
+    const formatted = formatMetadataValue(value);
+    if (formatted === '—') continue;
+
+    const existing = byCanonical.get(canonicalKey);
+    if (existing && existing.value !== '—') continue;
+
+    byCanonical.set(canonicalKey, {
+      key: canonicalKey,
+      label: resolveMetadataLabel(canonicalKey, rawLabel),
+      value: formatted,
+    });
+  }
+
+  return [...byCanonical.values()];
 }
 
 export function analysisMetadataToDisplayFields(
@@ -89,9 +74,22 @@ export function analysisMetadataToDisplayFields(
   const metadata = raw?.extraction?.metadata;
   if (!metadata) return [];
 
-  return Object.entries(metadata).map(([key, field]) => ({
-    key,
-    label: field.label?.trim() || METADATA_LABEL_OVERRIDES[key] || humanizeKey(key),
-    value: formatMetadataValue(field.value),
-  }));
+  const byCanonical = new Map<string, MetadataDisplayField>();
+
+  for (const [key, field] of Object.entries(metadata)) {
+    const canonicalKey = canonicalizeMetadataKey(key, field.label);
+    const formatted = formatMetadataValue(field.value);
+    const existing = byCanonical.get(canonicalKey);
+    if (existing && existing.value !== '—' && formatted === '—') continue;
+
+    byCanonical.set(canonicalKey, {
+      key: canonicalKey,
+      label: resolveMetadataLabel(canonicalKey, field.label),
+      value: formatted,
+    });
+  }
+
+  return [...byCanonical.values()];
 }
+
+export { resolveMetadataLabel, canonicalizeMetadataKey };
