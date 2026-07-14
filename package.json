@@ -46,6 +46,7 @@
     "test:groq:pdf": "tsx scripts/test-groq-pdf.mjs",
     "test:no-ai": "tsx scripts/test-no-ai.mjs",
     "env:audit": "node scripts/r2-env-check.mjs",
+    "env:auth-sync": "node scripts/env-auth-sync-check.mjs",
     "r2:env-check": "node scripts/r2-env-check.mjs",
     "r2:smoke": "tsx scripts/r2-smoke-test.ts",
     "r2:audit-buckets": "tsx scripts/r2-audit-buckets.ts",
