@@ -57,6 +57,7 @@ import { loadDocumentSignatureSummary } from './documentSignatureSummaryService.
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 function addDays(base: Date, days: number): Date {

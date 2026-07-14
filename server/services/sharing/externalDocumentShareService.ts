@@ -30,6 +30,7 @@ import {
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 function defaultExternalPermissions(
@@ -137,7 +138,12 @@ async function loadShareableDocumentForExternal(
       _id: documentId,
       ...tenantScopeFilterFromContext(storage),
     } as Record<string, unknown>);
-    if (trashed && ((trashed as MongoDocument).deletedAt || (trashed as MongoDocument).permanentlyDeletedAt)) {
+    if (
+      trashed &&
+      ((trashed as MongoDocument).deletedAt ||
+        (trashed as MongoDocument).permanentlyDeletedAt ||
+        (trashed as MongoDocument).deactivatedAt)
+    ) {
       throw new ServiceError('Documento na lixeira não pode ser compartilhado.', 'DOCUMENT_TRASHED', 400);
     }
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
@@ -537,7 +543,7 @@ export async function isExternalShareDocumentAvailable(
   } as Record<string, unknown>);
   if (!doc) return false;
   const typed = doc as MongoDocument;
-  return !typed.deletedAt && !typed.permanentlyDeletedAt;
+  return !typed.deletedAt && !typed.permanentlyDeletedAt && !typed.deactivatedAt;
 }
 
 export async function acceptExternalShareInvite(token: string) {

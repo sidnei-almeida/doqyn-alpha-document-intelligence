@@ -10,13 +10,14 @@ type BulkSelectionToolbarProps = {
   selectedFolderCount: number;
   documents: DocumentListItem[];
   isTrashView?: boolean;
+  isDeactivatedView?: boolean;
   onClear: () => void;
   onDownload: (docs: DocumentListItem[]) => void;
   onPreview?: (doc: DocumentListItem) => void;
   onMove?: () => void;
   onTrash?: (documentIds: string[]) => void;
   onRestore?: (documentIds: string[]) => void;
-  onPermanentDelete?: (documentIds: string[]) => void;
+  onReactivate?: (documentIds: string[]) => void;
 };
 
 /** Toolbar contextual premium — substitui filtros quando há seleção (estilo Drive/Finder). */
@@ -26,13 +27,14 @@ export function BulkSelectionToolbar({
   selectedFolderCount,
   documents,
   isTrashView = false,
+  isDeactivatedView = false,
   onClear,
   onDownload,
   onPreview,
   onMove,
   onTrash,
   onRestore,
-  onPermanentDelete,
+  onReactivate,
 }: BulkSelectionToolbarProps) {
   if (selectedCount === 0) return null;
 
@@ -55,15 +57,18 @@ export function BulkSelectionToolbar({
     : !canTrashAny
       ? 'Você não tem permissão para excluir os documentos selecionados.'
       : undefined;
+  const archiveView = isTrashView || isDeactivatedView;
   const moveDisabled =
-    hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny || isTrashView;
+    hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny || archiveView;
   const moveTooltip = hasFolderSelection
     ? 'Selecione apenas documentos para mover.'
     : isTrashView
       ? 'Documentos na lixeira não podem ser movidos.'
-      : !canTrashAny
-        ? 'Você não tem permissão para mover os documentos selecionados.'
-        : undefined;
+      : isDeactivatedView
+        ? 'Documentos desativados não podem ser movidos.'
+        : !canTrashAny
+          ? 'Você não tem permissão para mover os documentos selecionados.'
+          : undefined;
 
   return (
     <div
@@ -80,7 +85,7 @@ export function BulkSelectionToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-1">
-        {!isTrashView && (
+        {!archiveView && (
           <>
             <Button
               type="button"
@@ -117,29 +122,27 @@ export function BulkSelectionToolbar({
         )}
 
         {isTrashView ? (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={selectedDocumentIds.length === 0}
-              onClick={() => onRestore?.(selectedDocumentIds)}
-            >
-              <Icon name="restore_from_trash" size={ICON_SIZE.sm} />
-              Restaurar
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-doqyn-danger hover:text-doqyn-danger"
-              disabled={selectedDocumentIds.length === 0}
-              onClick={() => onPermanentDelete?.(selectedDocumentIds)}
-            >
-              <Icon name="delete_forever" size={ICON_SIZE.sm} />
-              Excluir permanentemente
-            </Button>
-          </>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={selectedDocumentIds.length === 0}
+            onClick={() => onRestore?.(selectedDocumentIds)}
+          >
+            <Icon name="restore_from_trash" size={ICON_SIZE.sm} />
+            Restaurar
+          </Button>
+        ) : isDeactivatedView ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={selectedDocumentIds.length === 0}
+            onClick={() => onReactivate?.(selectedDocumentIds)}
+          >
+            <Icon name="replay" size={ICON_SIZE.sm} />
+            Recuperar
+          </Button>
         ) : (
           <Button
             type="button"

@@ -51,7 +51,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/biblioteca', element: <LibraryRoute /> },
-          // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira)
+          // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira, desativados)
           { path: '/biblioteca/:collection', element: <LibraryRoute /> },
           { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },

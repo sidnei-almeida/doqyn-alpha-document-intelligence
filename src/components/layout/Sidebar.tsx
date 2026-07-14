@@ -30,6 +30,16 @@ export function Sidebar({ className }: SidebarProps) {
   const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const canViewTracking = canViewDocumentTracking(roles, user?.role, membership?.status);
+  const canManageDeactivated = hasAnyRole([
+    'doqyn_admin',
+    'company_admin',
+    'individual_admin',
+  ]);
+
+  const libraryViewItems = NAV_ITEMS_LIBRARY_VIEWS.filter((item) => {
+    if ('adminOnly' in item && item.adminOnly && !canManageDeactivated) return false;
+    return true;
+  });
 
   const adminNavItems = NAV_ITEMS_ADMIN.filter((item) => {
     if ('governanceOnly' in item && item.governanceOnly && !canAccessRules) return false;
@@ -107,7 +117,7 @@ export function Sidebar({ className }: SidebarProps) {
             item={{ label: 'Biblioteca', path: '/biblioteca', icon: 'folder', end: true }}
             collapsed={collapsed}
           />
-          {NAV_ITEMS_LIBRARY_VIEWS.map((item) => (
+          {libraryViewItems.map((item) => (
             <SidebarNavItem key={item.path} item={item} collapsed={collapsed} />
           ))}
         </SidebarSection>

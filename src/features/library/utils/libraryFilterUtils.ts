@@ -126,8 +126,8 @@ export function buildLibraryDocumentFilters({
   }
 
   // Raiz sem filtro de status: ocultar arquivados.
-  if (collectionId === 'lixeira') {
-    // Lixeira usa endpoint dedicado — não aplicar filtros de listDocuments.
+  if (collectionId === 'lixeira' || collectionId === 'desativados') {
+    // Lixeira/Desativados usam endpoint dedicado — não aplicar filtros de listDocuments.
   } else if (collectionId === 'root' && !state.status && !state.q) {
     filters.excludeArchived = 'true';
   }

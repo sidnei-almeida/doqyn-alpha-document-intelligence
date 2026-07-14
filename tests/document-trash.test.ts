@@ -12,13 +12,15 @@ function read(path: string): string {
 }
 
 describe('document trash — tipos e campos Mongo', () => {
-  it('MongoDocument inclui campos de soft delete e purga', () => {
+  it('MongoDocument inclui soft delete, desativação e campos legados de purga', () => {
     const types = read('server/db/types.ts');
     assert.ok(types.includes('lifecycleStatus'));
+    assert.ok(types.includes("'deactivated'"));
     assert.ok(types.includes('deletedBy'));
     assert.ok(types.includes('trashExpiresAt'));
+    assert.ok(types.includes('deactivatedAt'));
+    assert.ok(types.includes('deactivatedBy'));
     assert.ok(types.includes('permanentlyDeletedAt'));
-    assert.ok(types.includes('purgeStatus'));
   });
 
   it('MongoTenant inclui settings.trash com retenção', () => {
@@ -69,17 +71,18 @@ describe('document trash — soft delete service', () => {
     assert.equal(moveBlock.includes('deleteDocumentVersion'), false);
   });
 
-  it('listDocuments exclui deletedAt e permanentlyDeletedAt', () => {
+  it('listDocuments exclui deletedAt, permanentlyDeletedAt e deactivatedAt', () => {
     const documentService = read('server/services/documentService.ts');
     assert.ok(documentService.includes('permanentlyDeletedAt'));
+    assert.ok(documentService.includes('deactivatedAt'));
     assert.ok(documentService.includes('deletedAt: { $in: [null, undefined] }'));
   });
 
-  it('listTrashDocuments filtra deletedAt != null e não purgados', () => {
+  it('listTrashDocuments filtra deletedAt != null e não desativados', () => {
     const service = read('server/services/trash/documentTrashService.ts');
     assert.ok(service.includes('TRASH_DOCUMENT_FILTER'));
     assert.ok(service.includes('deletedAt: { $ne: null'));
-    assert.ok(service.includes('permanentlyDeletedAt'));
+    assert.ok(service.includes('deactivatedAt: { $in: [null, undefined] }'));
   });
 
   it('restore limpa campos de lixeira', () => {
@@ -90,36 +93,38 @@ describe('document trash — soft delete service', () => {
   });
 });
 
-describe('document trash — permanent delete e R2', () => {
-  it('purge remove original, preview e assets do manifest', () => {
-    const purge = read('server/services/trash/documentStoragePurgeService.ts');
-    assert.ok(purge.includes('purgeDocumentVersionStorage'));
-    assert.ok(purge.includes('deleteDocumentVersion'));
-    assert.ok(purge.includes('previewObjectKey'));
-    assert.ok(purge.includes('thumbnailObjectKey'));
-  });
-
-  it('permanent delete marca permanentlyDeletedAt e purgeStatus', () => {
+describe('document trash — desativação em vez de hard delete', () => {
+  it('expiração da lixeira desativa sem purge R2', () => {
     const service = read('server/services/trash/documentTrashService.ts');
-    assert.ok(service.includes('permanentlyDeletedAt'));
-    assert.ok(service.includes('purgeStatus'));
-    assert.ok(service.includes("'permanently_deleted'"));
-  });
-
-  it('falha parcial R2 mantém purgeStatus failed', () => {
-    const service = read('server/services/trash/documentTrashService.ts');
-    assert.ok(service.includes("purge.hasFailures ? ('failed'"));
-    assert.ok(service.includes("lifecycleStatus: purge.hasFailures ? 'trashed'"));
-  });
-
-  it('não remove audit/tracking — apenas storage R2', () => {
-    const service = read('server/services/trash/documentTrashService.ts');
-    const purgeFn = service.slice(
-      service.indexOf('async function executePermanentDocumentPurge'),
-      service.indexOf('type BatchResult'),
+    assert.ok(service.includes('deactivateExpiredTrashDocuments'));
+    assert.ok(service.includes("lifecycleStatus: 'deactivated'"));
+    assert.ok(service.includes("deactivatedReason: 'trash_expired'"));
+    assert.ok(service.includes("action: 'document.deactivated'"));
+    assert.ok(service.includes('emitTrackingEvent'));
+    const deactivateBlock = service.slice(
+      service.indexOf('async function deactivateTrashDocument'),
+      service.indexOf('export async function deactivateExpiredTrashDocuments'),
     );
-    assert.equal(purgeFn.includes('auditLogs'), false);
-    assert.equal(purgeFn.includes('documentVersions.delete'), false);
+    assert.equal(deactivateBlock.includes('purgeAllDocumentVersionStorage'), false);
+  });
+
+  it('permanent delete retorna 410 PERMANENT_DELETE_DISABLED', () => {
+    const service = read('server/services/trash/documentTrashService.ts');
+    const permanent = read('api/documents/[documentId]/permanent.ts');
+    const batch = read('api/documents/batch/permanent-delete.ts');
+    assert.ok(service.includes('PERMANENT_DELETE_DISABLED'));
+    assert.ok(service.includes('410'));
+    assert.ok(permanent.includes('410'));
+    assert.ok(permanent.includes('PERMANENT_DELETE_DISABLED'));
+    assert.ok(batch.includes('410'));
+  });
+
+  it('listDeactivatedDocuments e reactivateDocument existem', () => {
+    const service = read('server/services/trash/documentTrashService.ts');
+    assert.ok(service.includes('listDeactivatedDocuments'));
+    assert.ok(service.includes('reactivateDocument'));
+    assert.ok(service.includes('DEACTIVATED_DOCUMENT_FILTER'));
+    assert.ok(service.includes('assertCanManageDeactivatedDocuments'));
   });
 });
 
@@ -130,49 +135,57 @@ describe('document trash — permissões', () => {
     assert.ok(access.includes('const canTrash = isAdmin'));
     assert.ok(access.includes('canContribute'));
     assert.ok(access.includes('assertCanTrashDocument'));
-    assert.ok(access.includes('assertCanPermanentDeleteDocument'));
+    assert.ok(access.includes('assertCanManageDeactivatedDocuments'));
   });
 
   it('favoritos excluem documentos com deletedAt', () => {
     const favorites = read('server/services/favorites/documentFavoritesService.ts');
     assert.ok(favorites.includes('deletedAt: { $in: [null, undefined] }'));
+    assert.ok(favorites.includes('deactivatedAt'));
   });
 });
 
 describe('document trash — tracking', () => {
-  it('ações de tracking para lixeira', () => {
+  it('ações de tracking para lixeira e desativados', () => {
     const audit = read('server/audit/documentAuditTypes.ts');
     assert.ok(audit.includes('document.trash_moved'));
     assert.ok(audit.includes('document.trash_restored'));
-    assert.ok(audit.includes('document.permanent_deleted'));
-    assert.ok(audit.includes('document.trash_purge_failed'));
+    assert.ok(audit.includes('document.deactivated'));
+    assert.ok(audit.includes('document.reactivated'));
   });
 
   it('endpoints emitem tracking events', () => {
     const trashApi = read('api/documents/[documentId]/trash.ts');
     const restoreApi = read('api/documents/[documentId]/restore.ts');
-    const permanentApi = read('api/documents/[documentId]/permanent.ts');
+    const reactivateApi = read('api/documents/[documentId]/reactivate.ts');
     assert.ok(trashApi.includes('document.trash_moved'));
     assert.ok(restoreApi.includes('document.trash_restored'));
-    assert.ok(permanentApi.includes('document.permanent_deleted'));
+    assert.ok(reactivateApi.includes('document.reactivated'));
   });
 });
 
-describe('document trash — endpoints e dev-server', () => {
-  it('expõe rotas de lixeira no app principal', () => {
-    const devServer = read('server/dev-server.ts');
-    assert.ok(devServer.includes('/api/trash/documents'));
-    assert.ok(devServer.includes('/api/documents/batch/trash'));
-    assert.ok(devServer.includes('/api/documents/batch/restore'));
-    assert.ok(devServer.includes('/api/documents/batch/permanent-delete'));
-    assert.ok(devServer.includes('/trash'));
-    assert.ok(devServer.includes('/restore'));
-    assert.ok(devServer.includes('/permanent'));
+describe('document trash — endpoints e apiServer', () => {
+  it('expõe rotas de lixeira e desativados no apiServer', () => {
+    const apiServer = read('server/apiServer.ts');
+    assert.ok(apiServer.includes('/api/trash/documents'));
+    assert.ok(apiServer.includes('/api/deactivated/documents'));
+    assert.ok(apiServer.includes('/api/documents/batch/trash'));
+    assert.ok(apiServer.includes('/api/documents/batch/restore'));
+    assert.ok(apiServer.includes('/api/documents/batch/reactivate'));
+    assert.ok(apiServer.includes('/api/documents/batch/permanent-delete'));
+    assert.ok(apiServer.includes('/reactivate'));
+    assert.ok(apiServer.includes('/restore'));
+    assert.ok(apiServer.includes('/permanent'));
   });
 
   it('GET /api/trash/documents lista lixeira', () => {
     const api = read('api/trash/documents.ts');
     assert.ok(api.includes('listTrashDocuments'));
+  });
+
+  it('GET /api/deactivated/documents lista desativados', () => {
+    const api = read('api/deactivated/documents.ts');
+    assert.ok(api.includes('listDeactivatedDocuments'));
   });
 
   it('batch trash aceita documentIds', () => {
@@ -188,16 +201,16 @@ describe('document trash — endpoints e dev-server', () => {
     assert.ok(api.includes('isDocumentAdmin'));
   });
 
-  it('script trash:purge-expired com dry-run default', () => {
+  it('script trash:purge-expired desativa documentos expirados', () => {
     const pkg = read('package.json');
     const script = read('scripts/trash-purge-expired.ts');
     assert.ok(pkg.includes('trash:purge-expired'));
-    assert.ok(script.includes('purgeExpiredTrashDocuments'));
+    assert.ok(script.includes('deactivateExpiredTrashDocuments'));
     assert.ok(script.includes('--apply'));
   });
 });
 
-describe('document trash — frontend lixeira', () => {
+describe('document trash — frontend lixeira e desativados', () => {
   it('useTrashDocuments consome GET /api/trash/documents', () => {
     const hook = read('src/features/library/hooks/useTrashDocuments.ts');
     const api = read('src/features/library/api/trashApi.ts');
@@ -205,11 +218,19 @@ describe('document trash — frontend lixeira', () => {
     assert.ok(api.includes('/api/trash/documents'));
   });
 
-  it('useLibraryView usa trash API na coleção lixeira', () => {
+  it('useDeactivatedDocuments consome GET /api/deactivated/documents', () => {
+    const hook = read('src/features/library/hooks/useDeactivatedDocuments.ts');
+    const api = read('src/features/library/api/deactivatedApi.ts');
+    assert.ok(hook.includes("queryKey: ['deactivated-documents'"));
+    assert.ok(api.includes('/api/deactivated/documents'));
+  });
+
+  it('useLibraryView usa trash e deactivated APIs nas coleções', () => {
     const hook = read('src/features/library/hooks/useLibraryView.ts');
     assert.ok(hook.includes("collection.id === 'lixeira'"));
+    assert.ok(hook.includes("collection.id === 'desativados'"));
     assert.ok(hook.includes('useTrashDocuments'));
-    assert.ok(hook.includes('!isTrashCollection'));
+    assert.ok(hook.includes('useDeactivatedDocuments'));
   });
 
   it('BulkSelectionToolbar desabilita Excluir com pastas selecionadas', () => {
@@ -220,18 +241,22 @@ describe('document trash — frontend lixeira', () => {
     assert.ok(toolbar.includes('isTrashView'));
   });
 
-  it('lixeira mostra Restaurar e Excluir permanentemente', () => {
+  it('lixeira mostra Restaurar; desativados mostra Recuperar; sem exclusão permanente', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
     assert.ok(toolbar.includes('Restaurar'));
-    assert.ok(toolbar.includes('Excluir permanentemente'));
-    assert.ok(toolbar.includes('onPermanentDelete'));
+    assert.ok(toolbar.includes('Recuperar'));
+    assert.ok(toolbar.includes('onReactivate'));
+    assert.equal(toolbar.includes('Excluir permanentemente'), false);
+    assert.equal(toolbar.includes('onPermanentDelete'), false);
   });
 
-  it('LibraryPage usa confirmação para trash e permanent delete', () => {
+  it('LibraryPage usa confirmação para trash e reativação', () => {
     const page = read('src/features/library/LibraryPage.tsx');
     assert.ok(page.includes('buildMoveToTrashConfirm'));
-    assert.ok(page.includes('buildPermanentDeleteConfirm'));
     assert.ok(page.includes('useTrashMutations'));
+    assert.ok(page.includes('useDeactivatedMutations'));
+    assert.ok(page.includes('handleReactivate'));
+    assert.equal(page.includes('buildPermanentDeleteConfirm'), false);
   });
 
   it('menu de contexto de pasta não tem Excluir ativo', () => {
@@ -248,10 +273,13 @@ describe('document trash — frontend lixeira', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('Mover para lixeira'));
     assert.ok(menu.includes('isTrashView'));
+    assert.ok(menu.includes('isDeactivatedView'));
     assert.ok(menu.includes('onTrashFile'));
+    assert.ok(menu.includes('onReactivateFile'));
+    assert.equal(menu.includes('Excluir permanentemente'), false);
   });
 
-  it('settings tem retenção na aba Empresa', () => {
+  it('settings tem retenção na aba Empresa com copy de desativação', () => {
     const sections = read('src/features/settings/settingsSections.ts');
     const page = read('src/features/settings/SettingsPage.tsx');
     const company = read('src/features/settings/components/sections/CompanySettingsSection.tsx');
@@ -265,26 +293,29 @@ describe('document trash — frontend lixeira', () => {
     assert.ok(company.includes('TrashRetentionSettingsSection'));
     assert.ok(company.includes('canManageRetention'));
     assert.ok(retention.includes('settings-retention-preview'));
+    assert.ok(retention.includes('desativado'));
     assert.ok(retention.includes('isDirty'));
-    assert.ok(retention.includes('muted={!daysEnabled}'));
     assert.ok(retention.includes('RETENTION_DAYS_MIN'));
-    assert.ok(retention.includes('RETENTION_DAYS_MAX'));
   });
 
-  it('confirmMessages inclui permanent delete com EXCLUIR', () => {
+  it('confirmMessages não inclui permanent delete', () => {
     const messages = read('src/components/confirm/confirmMessages.ts');
-    assert.ok(messages.includes('buildPermanentDeleteConfirm'));
-    assert.ok(messages.includes('CONFIRM_DELETE_WORD'));
+    assert.ok(messages.includes('buildMoveToTrashConfirm'));
+    assert.ok(messages.includes('desativado'));
+    assert.equal(messages.includes('buildPermanentDeleteConfirm'), false);
   });
 
-  it('tracking display traduz eventos de lixeira', () => {
+  it('tracking display traduz eventos de lixeira e desativados', () => {
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(display.includes('document.trash_moved'));
-    assert.ok(display.includes('document.permanent_deleted'));
+    assert.ok(display.includes('document.reactivated'));
+    assert.ok(display.includes('document.deactivated'));
   });
 
-  it('collections lixeira não filtra por status archived', () => {
+  it('collections inclui desativados e lixeira sem filtro archived', () => {
     const collections = read('src/features/library/collections.ts');
+    assert.ok(collections.includes("'desativados'"));
+    assert.ok(collections.includes("slug: 'desativados'"));
     const lixeiraBlock = collections.slice(
       collections.indexOf("case 'lixeira'"),
       collections.indexOf('default:'),
@@ -297,16 +328,27 @@ describe('document trash — frontend lixeira', () => {
     assert.equal(filters.includes("filters.status = 'archived'"), false);
   });
 
-  it('trashApi expõe batch restore e permanent delete', () => {
+  it('trashApi e deactivatedApi expõem restore/reactivate', () => {
     const api = read('src/features/library/api/trashApi.ts');
+    const deactivated = read('src/features/library/api/deactivatedApi.ts');
     assert.ok(api.includes('batchRestoreDocuments'));
-    assert.ok(api.includes('batchPermanentlyDeleteDocuments'));
-    assert.ok(api.includes('/api/documents/batch/permanent-delete'));
+    assert.equal(api.includes('batchPermanentlyDeleteDocuments'), false);
+    assert.ok(deactivated.includes('batchReactivateDocuments'));
+    assert.ok(deactivated.includes('/api/documents/batch/reactivate'));
   });
 
   it('invalidação de cache após mutações de lixeira', () => {
     const mutations = read('src/features/library/hooks/useTrashMutations.ts');
     assert.ok(mutations.includes('invalidateLibraryQueries'));
     assert.ok(mutations.includes("['trash-documents']"));
+  });
+
+  it('sidebar filtra Desativados para admin+', () => {
+    const sidebar = read('src/components/layout/Sidebar.tsx');
+    const constants = read('src/lib/constants.ts');
+    assert.ok(constants.includes("path: '/biblioteca/desativados'"));
+    assert.ok(constants.includes('adminOnly: true'));
+    assert.ok(sidebar.includes('canManageDeactivated'));
+    assert.ok(sidebar.includes('libraryViewItems'));
   });
 });

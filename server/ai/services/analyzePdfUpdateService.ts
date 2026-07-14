@@ -79,6 +79,8 @@ async function loadPreviousVersionContext(input: {
     _id: input.documentId,
     ...tenantScopeFilterFromContext(collections.storage),
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   } as Record<string, unknown>);
 
   if (!doc) {

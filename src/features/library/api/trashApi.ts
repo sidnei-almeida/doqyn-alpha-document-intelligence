@@ -53,12 +53,6 @@ export async function restoreDocumentFromTrash(documentId: string): Promise<void
   await parseJson(response);
 }
 
-export async function permanentlyDeleteDocument(documentId: string): Promise<void> {
-  const encoded = encodeURIComponent(documentId);
-  const response = await authFetch(`/api/documents/${encoded}/permanent`, { method: 'DELETE' });
-  await parseJson(response);
-}
-
 export async function batchMoveDocumentsToTrash(documentIds: string[]): Promise<BatchTrashResult> {
   const response = await authFetch('/api/documents/batch/trash', {
     method: 'POST',
@@ -70,17 +64,6 @@ export async function batchMoveDocumentsToTrash(documentIds: string[]): Promise<
 
 export async function batchRestoreDocuments(documentIds: string[]): Promise<BatchTrashResult> {
   const response = await authFetch('/api/documents/batch/restore', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documentIds }),
-  });
-  return parseJson<BatchTrashResult>(response);
-}
-
-export async function batchPermanentlyDeleteDocuments(
-  documentIds: string[],
-): Promise<BatchTrashResult> {
-  const response = await authFetch('/api/documents/batch/permanent-delete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ documentIds }),

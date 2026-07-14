@@ -67,6 +67,8 @@ async function loadAccessibleDocument(
     _id: documentId,
     ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   } as Record<string, unknown>);
 
   if (!doc) {
@@ -202,6 +204,8 @@ async function resolveFavoriteDocuments(
         _id: { $in: documentIds },
         ...tenantScopeFilterFromContext(storage),
         deletedAt: { $in: [null, undefined] },
+        permanentlyDeletedAt: { $in: [null, undefined] },
+        deactivatedAt: { $in: [null, undefined] },
         ...(excludeArchived ? { status: { $ne: 'archived' } } : {}),
       } as Record<string, unknown>)
       .toArray();

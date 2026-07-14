@@ -52,6 +52,8 @@ export type DocumentAuditAction =
   | 'document.deleted'
   | 'document.trash_moved'
   | 'document.trash_restored'
+  | 'document.deactivated'
+  | 'document.reactivated'
   | 'document.permanent_deleted'
   | 'document.trash_purge_failed'
   | 'document.signature_request_created'
@@ -233,6 +235,8 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.storage_promoted': 'Arquivo promovido ao storage definitivo',
   'document.trash_moved': 'Documento movido para a lixeira',
   'document.trash_restored': 'Documento restaurado da lixeira',
+  'document.deactivated': 'Documento desativado após lixeira',
+  'document.reactivated': 'Documento reativado',
   'document.permanent_deleted': 'Documento excluído permanentemente',
   'document.trash_purge_failed': 'Falha na purga de storage',
   'document.signature_request_created': 'Solicitação de assinatura criada',

@@ -49,10 +49,10 @@ import {
 import { useConfirm } from '@/components/confirm/useConfirm';
 import {
   buildMoveToTrashConfirm,
-  buildPermanentDeleteConfirm,
 } from '@/components/confirm/confirmMessages';
 
 import { useTrashMutations } from './hooks/useTrashMutations';
+import { useDeactivatedMutations } from './hooks/useDeactivatedMutations';
 import { useMoveDocumentMutations } from './hooks/useMoveDocumentMutations';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
@@ -76,7 +76,7 @@ export function LibraryPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const { tenant, user } = useAuth();
+  const { tenant, user, hasAnyRole } = useAuth();
   const { state, update, clearFilters, collection, categories, documents, isLoading, isFetching, isError, toggleStar, isStarred } =
     useLibraryView();
   const filterCapabilities = useMemo(
@@ -102,10 +102,24 @@ export function LibraryPage() {
   const documentOrder = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
   const explorerSelection = useExplorerSelection(documentOrder);
   const confirm = useConfirm();
-  const { moveToTrash, restore, permanentDelete } = useTrashMutations();
+  const { moveToTrash, restore } = useTrashMutations();
+  const { reactivate } = useDeactivatedMutations();
   const { moveDocuments } = useMoveDocumentMutations();
   const isTrashView = collection.id === 'lixeira';
+  const isDeactivatedView = collection.id === 'desativados';
+  const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
+  const canManageDeactivated = hasAnyRole([
+    'doqyn_admin',
+    'company_admin',
+    'individual_admin',
+  ]);
+
+  useEffect(() => {
+    if (isDeactivatedView && !canManageDeactivated) {
+      navigate('/biblioteca', { replace: true });
+    }
+  }, [isDeactivatedView, canManageDeactivated, navigate]);
   const {
     selectedCount,
     selectedFileIds,
@@ -372,15 +386,13 @@ export function LibraryPage() {
     [clearSelection, restore],
   );
 
-  const handlePermanentDelete = useCallback(
+  const handleReactivate = useCallback(
     async (documentIds: string[]) => {
       if (!documentIds.length) return;
-      const accepted = await confirm(buildPermanentDeleteConfirm(documentIds.length));
-      if (!accepted) return;
-      permanentDelete.mutate({ documentIds });
+      reactivate.mutate({ documentIds });
       clearSelection();
     },
-    [clearSelection, confirm, permanentDelete],
+    [clearSelection, reactivate],
   );
 
   const handleTrashSingle = useCallback(
@@ -391,9 +403,9 @@ export function LibraryPage() {
   );
 
   const openMoveModal = useCallback((docs: DocumentListItem[]) => {
-    if (!docs.length || isTrashView) return;
+    if (!docs.length || isLifecycleArchiveView) return;
     setMoveModalDocs(docs);
-  }, [isTrashView]);
+  }, [isLifecycleArchiveView]);
 
   const handleMoveSingle = useCallback(
     (doc: DocumentListItem) => {
@@ -430,18 +442,18 @@ export function LibraryPage() {
 
   const handleShareSingle = useCallback(
     (doc: DocumentListItem) => {
-      if (isTrashView || selectedCount > 1) return;
+      if (isLifecycleArchiveView || selectedCount > 1) return;
       setShareModalDoc(doc);
     },
-    [isTrashView, selectedCount],
+    [isLifecycleArchiveView, selectedCount],
   );
 
   const handleRequestSignature = useCallback(
     (doc: DocumentListItem) => {
-      if (isTrashView || selectedCount > 1) return;
+      if (isLifecycleArchiveView || selectedCount > 1) return;
       setSignatureModalDoc(doc);
     },
-    [isTrashView, selectedCount],
+    [isLifecycleArchiveView, selectedCount],
   );
 
   const handleViewSignatures = useCallback((doc: DocumentListItem) => {
@@ -639,11 +651,11 @@ export function LibraryPage() {
       onDetails={openFileDetails}
       onTracking={handleTracking}
       onRename={() => notifyComingSoon('Renomear')}
-      onMove={isTrashView ? undefined : handleMoveSingle}
-      onShare={isTrashView ? undefined : handleShareSingle}
-      onRequestSignature={isTrashView ? undefined : handleRequestSignature}
-      onViewSignatures={isTrashView ? undefined : handleViewSignatures}
-      onTrash={isTrashView ? undefined : handleTrashSingle}
+      onMove={isLifecycleArchiveView ? undefined : handleMoveSingle}
+      onShare={isLifecycleArchiveView ? undefined : handleShareSingle}
+      onRequestSignature={isLifecycleArchiveView ? undefined : handleRequestSignature}
+      onViewSignatures={isLifecycleArchiveView ? undefined : handleViewSignatures}
+      onTrash={isLifecycleArchiveView ? undefined : handleTrashSingle}
     >
     <DndContext>
       <input
@@ -724,13 +736,14 @@ export function LibraryPage() {
               selectedFolderCount={selectedFolderIds.size}
               documents={documents}
               isTrashView={isTrashView}
+              isDeactivatedView={isDeactivatedView}
               onClearSelection={clearSelection}
               onBulkDownload={(docs) => void handleBulkDownload(docs)}
               onPreview={handlePreview}
               onMove={handleBulkMove}
               onTrash={(ids) => void handleMoveToTrash(ids)}
               onRestore={(ids) => void handleRestoreFromTrash(ids)}
-              onPermanentDelete={(ids) => void handlePermanentDelete(ids)}
+              onReactivate={(ids) => void handleReactivate(ids)}
             />
           ) : undefined
         }
@@ -767,17 +780,20 @@ export function LibraryPage() {
         onSelectFileDetails={openFileDetails}
         onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
         onUpdateDocument={handleUpdateDocument}
-        onMoveFile={isTrashView ? undefined : handleMoveSingle}
-        onShareFile={isTrashView ? undefined : handleShareSingle}
-        onRequestSignatureFile={isTrashView ? undefined : handleRequestSignature}
-        onViewSignaturesFile={isTrashView ? undefined : handleViewSignatures}
-        onDownloadSignedPdfFile={isTrashView ? undefined : (doc) => void handleDownloadSignedPdf(doc)}
+        onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
+        onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
+        onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
+        onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
+        onDownloadSignedPdfFile={
+          isLifecycleArchiveView ? undefined : (doc) => void handleDownloadSignedPdf(doc)
+        }
         onShowContextInfo={() => setInfoOpen(true)}
         onShowFolderInfo={openFolderDetails}
         isTrashView={isTrashView}
+        isDeactivatedView={isDeactivatedView}
         onTrashFile={handleTrashSingle}
         onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
-        onPermanentDeleteFile={(doc) => void handlePermanentDelete([doc.documentId])}
+        onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
         onComingSoon={notifyComingSoon}
       />
 
