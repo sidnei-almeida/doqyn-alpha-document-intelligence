@@ -143,6 +143,8 @@ function buildAccessibleDocumentQuery(
     ...tenantScopeFilterFromContext(storage),
     status: 'active',
     deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   };
 
   if (!isAdmin) {

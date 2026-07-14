@@ -66,9 +66,11 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/ai/analyze-pdf-update': () => import('../api/ai/analyze-pdf-update.js'),
   '/api/documents/rag-query': () => import('../api/documents/rag-query.js'),
   '/api/trash/documents': () => import('../api/trash/documents.js'),
+  '/api/deactivated/documents': () => import('../api/deactivated/documents.js'),
   '/api/settings/trash-retention': () => import('../api/settings/trash-retention.js'),
   '/api/documents/batch/trash': () => import('../api/documents/batch/trash.js'),
   '/api/documents/batch/restore': () => import('../api/documents/batch/restore.js'),
+  '/api/documents/batch/reactivate': () => import('../api/documents/batch/reactivate.js'),
   '/api/documents/batch/permanent-delete': () => import('../api/documents/batch/permanent-delete.js'),
   '/api/documents/batch/move': () => import('../api/documents/batch/move.js'),
 };
@@ -169,6 +171,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/documents\/([^/]+)\/restore$/,
       loader: () => import('../api/documents/[documentId]/restore.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/reactivate$/,
+      loader: () => import('../api/documents/[documentId]/reactivate.js'),
       paramKeys: ['documentId'],
     },
     {

@@ -473,6 +473,7 @@ export async function listDocuments(filters: {
     ...tenantScopeFilterFromContext(storage),
     deletedAt: { $in: [null, undefined] },
     permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
   };
   if (filters.status) query.status = filters.status;
   if (filters.processingStatus) {

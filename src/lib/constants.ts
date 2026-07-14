@@ -55,6 +55,12 @@ export const NAV_ITEMS_LIBRARY_VIEWS = [
   { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
   { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
   { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
+  {
+    label: 'Desativados',
+    path: '/biblioteca/desativados',
+    icon: 'block',
+    adminOnly: true,
+  },
 ] as const;
 
 export const NAV_ITEMS_ADMIN = [

@@ -9,7 +9,7 @@ import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
 import {
   assertCanTrashDocument,
-  assertCanPermanentDeleteDocument,
+  assertCanManageDeactivatedDocuments,
   canUserListDocument,
   loadMemberDocumentGroupIds,
 } from '../../tenancy/documentAccess.js';
@@ -27,18 +27,26 @@ import {
   computeTrashExpiresAt,
   getTrashRetentionSettings,
 } from './trashRetentionSettings.js';
-import { purgeAllDocumentVersionStorage } from './documentStoragePurgeService.js';
-import { resolveTenantStorageScopeForTenant } from '../../tenancy/resolveTenantStorageScope.js';
-import { getTenantById, listActiveTenants } from '../tenantsService.js';
+import { listActiveTenants } from '../tenantsService.js';
+import { emitTrackingEvent } from '../tracking/trackingService.js';
+import { sanitizeAuditMetadata } from '../../utils/sanitizeAuditMetadata.js';
+import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 const TRASH_DOCUMENT_FILTER = {
   deletedAt: { $ne: null, $exists: true },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
+};
+
+const DEACTIVATED_DOCUMENT_FILTER = {
+  lifecycleStatus: 'deactivated',
+  deactivatedAt: { $ne: null, $exists: true },
 };
 
 export type TrashDocumentListItem = Awaited<
@@ -51,6 +59,15 @@ export type TrashDocumentListItem = Awaited<
   lifecycleStatus?: string;
 };
 
+export type DeactivatedDocumentListItem = Awaited<
+  ReturnType<typeof buildDocumentListItems>
+>[number] & {
+  deactivatedAt?: string;
+  deactivatedBy?: string | null;
+  deactivatedReason?: string | null;
+  lifecycleStatus?: string;
+};
+
 function mapTrashFields(doc: MongoDocument) {
   return {
     deletedAt: doc.deletedAt ? new Date(doc.deletedAt).toISOString() : undefined,
@@ -59,6 +76,19 @@ function mapTrashFields(doc: MongoDocument) {
     trashExpiresAt: doc.trashExpiresAt ? new Date(doc.trashExpiresAt).toISOString() : null,
     lifecycleStatus: doc.lifecycleStatus ?? (doc.deletedAt ? 'trashed' : 'active'),
   };
+}
+
+function mapDeactivatedFields(doc: MongoDocument) {
+  return {
+    deactivatedAt: doc.deactivatedAt ? new Date(doc.deactivatedAt).toISOString() : undefined,
+    deactivatedBy: doc.deactivatedBy ?? null,
+    deactivatedReason: doc.deactivatedReason ?? null,
+    lifecycleStatus: doc.lifecycleStatus ?? 'deactivated',
+  };
+}
+
+function isDeactivatedDocument(doc: MongoDocument): boolean {
+  return Boolean(doc.deactivatedAt) || doc.lifecycleStatus === 'deactivated';
 }
 
 async function loadDocumentOrThrow(
@@ -122,6 +152,38 @@ async function buildTrashListResponse(
   };
 }
 
+async function buildDeactivatedListResponse(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  docs: MongoDocument[],
+) {
+  const items = await buildDocumentListItems({
+    tenantId: ctx.tenantId,
+    docs,
+    user,
+    ownerUserId: ctx.userId,
+    membershipId: ctx.membershipId,
+  });
+
+  const { activeIds } = await lookupFavoriteFlags(
+    ctx.userId,
+    items.map((item) => item.documentId),
+  );
+  const withFavorites = attachFavoriteFlags(items, activeIds);
+
+  const enriched: DeactivatedDocumentListItem[] = withFavorites.map((item, index) => ({
+    ...item,
+    ...mapDeactivatedFields(docs[index]!),
+  }));
+
+  return {
+    items: enriched,
+    documents: enriched,
+    total: enriched.length,
+    pagination: { nextCursor: null },
+  };
+}
+
 export async function listTrashDocuments(
   ctx: DocumentRequestContext,
   user: AuthUser,
@@ -171,6 +233,47 @@ export async function listTrashDocuments(
   return buildTrashListResponse(ctx, user, visible);
 }
 
+export async function listDeactivatedDocuments(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  filters?: { search?: string; limit?: number },
+) {
+  assertCanManageDeactivatedDocuments(user);
+
+  if (!isMongoNativeConfigured()) {
+    return { items: [], documents: [], total: 0, pagination: { nextCursor: null } };
+  }
+
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
+    userId: ctx.userId,
+    membershipId: ctx.membershipId,
+  });
+
+  const query: Record<string, unknown> = {
+    ...tenantScopeFilterFromContext(storage),
+    ...DEACTIVATED_DOCUMENT_FILTER,
+  };
+
+  if (filters?.search?.trim()) {
+    const term = filters.search.trim();
+    query.$or = [
+      { title: { $regex: term, $options: 'i' } },
+      { currentFileName: { $regex: term, $options: 'i' } },
+      { className: { $regex: term, $options: 'i' } },
+    ];
+  }
+
+  const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 200);
+
+  const docs = (await documents
+    .find(query)
+    .sort({ deactivatedAt: -1 })
+    .limit(limit)
+    .toArray()) as MongoDocument[];
+
+  return buildDeactivatedListResponse(ctx, user, docs);
+}
+
 export async function moveDocumentToTrash(
   ctx: DocumentRequestContext,
   user: AuthUser,
@@ -178,6 +281,14 @@ export async function moveDocumentToTrash(
   reason?: string,
 ) {
   const { doc, memberGroupIds } = await loadDocumentOrThrow(documentId, ctx);
+
+  if (isDeactivatedDocument(doc)) {
+    throw new ServiceError(
+      'Documento está desativado. Use a seção Desativados para recuperar.',
+      'DOCUMENT_DEACTIVATED',
+      409,
+    );
+  }
 
   if (doc.deletedAt) {
     throw new ServiceError('Documento já está na lixeira.', 'DOCUMENT_ALREADY_TRASHED', 409);
@@ -234,6 +345,14 @@ export async function restoreDocumentFromTrash(
 ) {
   const { doc, memberGroupIds } = await loadDocumentOrThrow(documentId, ctx);
 
+  if (isDeactivatedDocument(doc)) {
+    throw new ServiceError(
+      'Documento está desativado. Use a recuperação de desativados.',
+      'DOCUMENT_DEACTIVATED',
+      409,
+    );
+  }
+
   if (!doc.deletedAt) {
     throw new ServiceError('Documento não está na lixeira.', 'DOCUMENT_NOT_TRASHED', 409);
   }
@@ -282,89 +401,79 @@ export async function restoreDocumentFromTrash(
   };
 }
 
-export async function permanentlyDeleteDocument(
+export async function reactivateDocument(
   ctx: DocumentRequestContext,
   user: AuthUser,
   documentId: string,
-  options?: { skipPermissionCheck?: boolean },
 ) {
-  const { doc, memberGroupIds } = await loadDocumentOrThrow(documentId, ctx);
+  assertCanManageDeactivatedDocuments(user);
 
-  if (!doc.deletedAt) {
+  const { doc } = await loadDocumentOrThrow(documentId, ctx);
+
+  if (!isDeactivatedDocument(doc)) {
     throw new ServiceError(
-      'Somente documentos na lixeira podem ser excluídos permanentemente.',
-      'DOCUMENT_NOT_TRASHED',
+      'Documento não está desativado.',
+      'DOCUMENT_NOT_DEACTIVATED',
       409,
     );
   }
 
-  if (doc.permanentlyDeletedAt) {
-    throw new ServiceError('Documento já foi excluído permanentemente.', 'DOCUMENT_ALREADY_PURGED', 409);
-  }
-
-  if (!options?.skipPermissionCheck) {
-    assertCanPermanentDeleteDocument(user, doc, memberGroupIds);
-  }
-
-  return executePermanentDocumentPurge(ctx, doc);
-}
-
-async function executePermanentDocumentPurge(
-  ctx: DocumentRequestContext,
-  doc: MongoDocument,
-) {
-  const documentId = String(doc._id);
-
-  const { documents, documentVersions, storage } = await getTenantCollections(ctx.tenantId, {
+  const now = new Date();
+  const actor = await resolveDocumentActorIdentity({ tenantId: ctx.tenantId, actor: user });
+  const mutationFields = buildDocumentMutationFields({
+    actorUserId: actor.userId,
+    actorDisplayName: actor.displayName,
+    now,
+  });
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
-
-  const versions = await documentVersions
-    .find({
-      documentId,
-      ...tenantScopeFilterFromContext(storage),
-    } as Record<string, unknown>)
-    .toArray();
-
-  const tenant = await getTenantById(ctx.tenantId);
-  const storageScope = tenant
-    ? await resolveTenantStorageScopeForTenant(tenant, doc.ownerUserId)
-    : undefined;
-
-  const purge = await purgeAllDocumentVersionStorage({
-    tenantId: ctx.tenantId,
-    versions,
-    storageScope,
-  });
-
-  const now = new Date();
-  const purgeStatus = purge.hasFailures ? ('failed' as const) : ('completed' as const);
-  const lifecycleStatus = purge.hasFailures ? ('trashed' as const) : ('permanently_deleted' as const);
 
   await documents.updateOne(
     {
       _id: documentId,
       ...tenantScopeFilterFromContext(storage),
+      ...DEACTIVATED_DOCUMENT_FILTER,
     } as Record<string, unknown>,
     {
       $set: {
-        permanentlyDeletedAt: purge.hasFailures ? null : now,
-        purgeStatus,
-        lifecycleStatus: purge.hasFailures ? 'trashed' : 'permanently_deleted',
-        updatedAt: now,
-        ...(purge.hasFailures ? {} : { status: 'archived' }),
+        deactivatedAt: null,
+        deactivatedBy: null,
+        deactivatedReason: null,
+        deletedAt: null,
+        deletedBy: null,
+        deletedReason: null,
+        trashExpiresAt: null,
+        lifecycleStatus: 'active',
+        status: 'active',
+        ...mutationFields,
       },
     },
   );
 
   return {
     documentId,
-    permanentlyDeletedAt: purge.hasFailures ? null : now.toISOString(),
-    purgeStatus,
-    lifecycleStatus,
-    purgeResults: purge.results,
+    lifecycleStatus: 'active' as const,
+    reactivatedAt: now.toISOString(),
   };
+}
+
+/**
+ * Exclusão permanente descontinuada — use lixeira → desativados.
+ * Storage/Mongo não são apagados pelo fluxo de produto.
+ */
+export async function permanentlyDeleteDocument(
+  _ctx: DocumentRequestContext,
+  _user: AuthUser,
+  _documentId: string,
+  _options?: { skipPermissionCheck?: boolean },
+): Promise<never> {
+  throw new ServiceError(
+    'Exclusão permanente descontinuada. Após o prazo na lixeira o documento é desativado; administradores podem recuperá-lo em Desativados.',
+    'PERMANENT_DELETE_DISABLED',
+    410,
+  );
 }
 
 type BatchResult = {
@@ -423,6 +532,14 @@ export async function batchRestoreDocumentsFromTrash(
   );
 }
 
+export async function batchReactivateDocuments(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  documentIds: string[],
+) {
+  return runBatch(documentIds, (documentId) => reactivateDocument(ctx, user, documentId));
+}
+
 export async function batchPermanentlyDeleteDocuments(
   ctx: DocumentRequestContext,
   user: AuthUser,
@@ -433,18 +550,55 @@ export async function batchPermanentlyDeleteDocuments(
   );
 }
 
-export async function purgeExpiredTrashDocuments(input: {
+async function deactivateTrashDocument(
+  tenantId: string,
+  doc: MongoDocument,
+  actorUserId: string,
+): Promise<void> {
+  const documentId = String(doc._id);
+  const now = new Date();
+  const { documents, storage } = await getTenantCollections(tenantId, {});
+
+  await documents.updateOne(
+    {
+      _id: documentId,
+      ...tenantScopeFilterFromContext(storage),
+      ...TRASH_DOCUMENT_FILTER,
+    } as Record<string, unknown>,
+    {
+      $set: {
+        deactivatedAt: now,
+        deactivatedBy: actorUserId,
+        deactivatedReason: 'trash_expired',
+        lifecycleStatus: 'deactivated',
+        status: 'archived',
+        deletedAt: null,
+        deletedBy: null,
+        deletedReason: null,
+        trashExpiresAt: null,
+        updatedAt: now,
+        updatedBy: actorUserId,
+      },
+    },
+  );
+}
+
+/**
+ * Ao expirar o TTL da lixeira: desativa o documento (sem apagar R2/Mongo).
+ * Mantém o nome histórico `purgeExpiredTrashDocuments` para o script npm.
+ */
+export async function deactivateExpiredTrashDocuments(input: {
   tenantId?: string;
   apply?: boolean;
 }): Promise<{
   scanned: number;
   eligible: Array<{ tenantId: string; documentId: string; trashExpiresAt: string }>;
-  purged: number;
+  deactivated: number;
   failed: number;
   dryRun: boolean;
 }> {
   if (!isMongoNativeConfigured()) {
-    return { scanned: 0, eligible: [], purged: 0, failed: 0, dryRun: !input.apply };
+    return { scanned: 0, eligible: [], deactivated: 0, failed: 0, dryRun: !input.apply };
   }
 
   const tenantList = input.tenantId
@@ -452,15 +606,11 @@ export async function purgeExpiredTrashDocuments(input: {
     : (await listActiveTenants()).map((t) => ({ tenantId: t.tenantId }));
   const now = new Date();
   const eligible: Array<{ tenantId: string; documentId: string; trashExpiresAt: string }> = [];
-  let purged = 0;
+  let deactivated = 0;
   let failed = 0;
 
   for (const { tenantId } of tenantList) {
-    const tenant = await getTenantById(tenantId);
-    if (!tenant) continue;
-
-    const collections = await getTenantCollections(tenantId, {});
-    const { documents, storage } = collections;
+    const { documents, storage } = await getTenantCollections(tenantId, {});
     const expired = await documents
       .find({
         ...tenantScopeFilterFromContext(storage),
@@ -468,13 +618,6 @@ export async function purgeExpiredTrashDocuments(input: {
         trashExpiresAt: { $ne: null, $lte: now },
       } as Record<string, unknown>)
       .toArray();
-
-    let storageScope: Awaited<ReturnType<typeof resolveTenantStorageScopeForTenant>> | undefined;
-    try {
-      storageScope = await resolveTenantStorageScopeForTenant(tenant, expired[0]?.ownerUserId);
-    } catch {
-      storageScope = undefined;
-    }
 
     for (const doc of expired) {
       eligible.push({
@@ -486,20 +629,32 @@ export async function purgeExpiredTrashDocuments(input: {
       if (!input.apply) continue;
 
       try {
-        const scope =
-          storageScope ??
-          (await resolveTenantStorageScopeForTenant(tenant, doc.ownerUserId));
-        const purgeCtx: DocumentRequestContext = {
+        const typed = doc as MongoDocument;
+        const actorUserId = typed.deletedBy ?? typed.ownerUserId ?? 'system';
+        await deactivateTrashDocument(tenantId, typed, actorUserId);
+
+        const auditCtx: DocumentAuditContext = {
           tenantId,
-          userId: doc.deletedBy ?? doc.ownerUserId ?? 'system',
-          tenantType: doc.tenantType ?? tenant.tenantType,
-          storage,
-          storageScope: scope,
-          collections,
+          tenantType: typed.tenantType === 'individual' ? 'individual' : 'business',
+          collectionPrefix: storage.collectionPrefix,
+          ownerTenantId: storage.tenantId,
+          ownerUserId: typed.ownerUserId,
+          actorUserId: 'system',
+          actorDisplayName: 'Sistema (retenção da lixeira)',
+          actorRole: 'system',
         };
-        const result = await executePermanentDocumentPurge(purgeCtx, doc as MongoDocument);
-        if (result.purgeStatus === 'completed') purged += 1;
-        else failed += 1;
+        await emitTrackingEvent(auditCtx, {
+          action: 'document.deactivated',
+          description: 'Documento desativado após expiração do prazo na lixeira.',
+          documentId: String(typed._id),
+          metadata: sanitizeAuditMetadata({
+            source: 'trash_retention_job',
+            reason: 'trash_expired',
+            previousDeletedBy: typed.deletedBy ?? null,
+          }),
+        });
+
+        deactivated += 1;
       } catch {
         failed += 1;
       }
@@ -509,10 +664,33 @@ export async function purgeExpiredTrashDocuments(input: {
   return {
     scanned: eligible.length,
     eligible,
-    purged,
+    deactivated,
     failed,
     dryRun: !input.apply,
   };
 }
 
-export { ACTIVE_DOCUMENT_FILTER, TRASH_DOCUMENT_FILTER };
+/** @deprecated Use deactivateExpiredTrashDocuments — retorna `purged` como alias de `deactivated`. */
+export async function purgeExpiredTrashDocuments(input: {
+  tenantId?: string;
+  apply?: boolean;
+}): Promise<{
+  scanned: number;
+  eligible: Array<{ tenantId: string; documentId: string; trashExpiresAt: string }>;
+  purged: number;
+  deactivated: number;
+  failed: number;
+  dryRun: boolean;
+}> {
+  const result = await deactivateExpiredTrashDocuments(input);
+  return {
+    ...result,
+    purged: result.deactivated,
+  };
+}
+
+export {
+  ACTIVE_DOCUMENT_FILTER,
+  TRASH_DOCUMENT_FILTER,
+  DEACTIVATED_DOCUMENT_FILTER,
+};

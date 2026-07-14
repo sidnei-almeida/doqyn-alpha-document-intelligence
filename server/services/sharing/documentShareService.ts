@@ -36,6 +36,7 @@ import { getTenantIdFromUser } from '../../auth/tenantContext.js';
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
   permanentlyDeletedAt: { $in: [null, undefined] },
+  deactivatedAt: { $in: [null, undefined] },
 };
 
 function defaultSharePermissions(input?: Partial<DocumentSharePermissions>): DocumentSharePermissions {

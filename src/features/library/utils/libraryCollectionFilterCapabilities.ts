@@ -34,6 +34,7 @@ export function resolveCollectionFilterCapabilities(
         view: false,
       };
     case 'lixeira':
+    case 'desativados':
     case 'compartilhados':
     case 'favoritos':
       return {

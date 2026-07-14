@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { purgeExpiredTrashDocuments } from '../server/services/trash/documentTrashService.js';
+import { deactivateExpiredTrashDocuments } from '../server/services/trash/documentTrashService.js';
 
 function hasApplyFlag(): boolean {
   return process.argv.includes('--apply');
@@ -12,11 +12,11 @@ async function main() {
 
   console.log(
     apply
-      ? 'Executando purga de documentos expirados na lixeira…'
-      : 'Dry-run: documentos elegíveis para purga automática…',
+      ? 'Desativando documentos com lixeira expirada (sem excluir storage)…'
+      : 'Dry-run: documentos elegíveis para desativação (lixeira expirada)…',
   );
 
-  const result = await purgeExpiredTrashDocuments({ tenantId, apply });
+  const result = await deactivateExpiredTrashDocuments({ tenantId, apply });
 
   console.log(`Elegíveis: ${result.eligible.length}`);
   if (result.eligible.length > 0) {
@@ -29,9 +29,13 @@ async function main() {
   }
 
   if (apply) {
-    console.log(`Purga concluída: ${result.purged} ok, ${result.failed} falha(s).`);
+    console.log(
+      `Desativação concluída: ${result.deactivated} ok, ${result.failed} falha(s).`,
+    );
   } else {
-    console.log('Nenhuma alteração aplicada. Use --apply para executar a purga.');
+    console.log(
+      'Nenhuma alteração aplicada. Use --apply para desativar documentos expirados na lixeira.',
+    );
   }
 }
 

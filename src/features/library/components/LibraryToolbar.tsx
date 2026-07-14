@@ -9,13 +9,14 @@ type LibraryToolbarProps = {
   selectedFolderCount: number;
   documents: DocumentListItem[];
   isTrashView?: boolean;
+  isDeactivatedView?: boolean;
   onClearSelection: () => void;
   onBulkDownload: (docs: DocumentListItem[]) => void;
   onPreview?: (doc: DocumentListItem) => void;
   onMove?: () => void;
   onTrash?: (documentIds: string[]) => void;
   onRestore?: (documentIds: string[]) => void;
-  onPermanentDelete?: (documentIds: string[]) => void;
+  onReactivate?: (documentIds: string[]) => void;
 };
 
 /** Barra de seleção em massa — filtros e ações principais ficam no header. */
@@ -25,13 +26,14 @@ export function LibraryToolbar({
   selectedFolderCount,
   documents,
   isTrashView,
+  isDeactivatedView,
   onClearSelection,
   onBulkDownload,
   onPreview,
   onMove,
   onTrash,
   onRestore,
-  onPermanentDelete,
+  onReactivate,
 }: LibraryToolbarProps) {
   if (selectedCount === 0) return null;
 
@@ -43,13 +45,14 @@ export function LibraryToolbar({
         selectedFolderCount={selectedFolderCount}
         documents={documents}
         isTrashView={isTrashView}
+        isDeactivatedView={isDeactivatedView}
         onClear={onClearSelection}
         onDownload={onBulkDownload}
         onPreview={onPreview}
         onMove={onMove}
         onTrash={onTrash}
         onRestore={onRestore}
-        onPermanentDelete={onPermanentDelete}
+        onReactivate={onReactivate}
       />
     </div>
   );

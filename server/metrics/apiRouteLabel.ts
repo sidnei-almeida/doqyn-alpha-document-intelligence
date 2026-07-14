@@ -11,6 +11,7 @@ const STATIC_PREFIXES = [
   '/api/audit',
   '/api/tracking/',
   '/api/trash/',
+  '/api/deactivated/',
   '/api/settings/',
   '/api/internal/',
 ];
@@ -54,6 +55,10 @@ export function normalizeApiRouteLabel(pathname: string): string {
 
   if (pathname.match(/^\/api\/documents\/[^/]+\/restore$/)) {
     return '/api/documents/:documentId/restore';
+  }
+
+  if (pathname.match(/^\/api\/documents\/[^/]+\/reactivate$/)) {
+    return '/api/documents/:documentId/reactivate';
   }
 
   if (pathname.match(/^\/api\/documents\/[^/]+\/permanent$/)) {

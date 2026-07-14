@@ -29,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       _id: documentId,
       ...tenantScopeFilterFromContext(docCtx.storage),
       deletedAt: { $in: [null, undefined] },
+      permanentlyDeletedAt: { $in: [null, undefined] },
+      deactivatedAt: { $in: [null, undefined] },
     } as Record<string, unknown>);
 
     if (!doc) {

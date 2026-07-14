@@ -18,10 +18,10 @@ function clampRetentionDays(value: number): number {
 
 function retentionPreview(mode: 'days' | 'manual', days: number): string {
   if (mode === 'manual') {
-    return 'Arquivos excluídos permanecem na lixeira até exclusão manual.';
+    return 'Arquivos excluídos permanecem na lixeira até desativação manual ou ação do job de retenção.';
   }
   const label = days === 1 ? '1 dia' : `${days} dias`;
-  return `Arquivos excluídos serão apagados permanentemente após ${label}.`;
+  return `Após ${label} na lixeira, o documento é desativado (não excluído do storage). Administradores podem recuperá-lo em Desativados.`;
 }
 
 export function TrashRetentionSettingsSection() {
@@ -61,7 +61,7 @@ export function TrashRetentionSettingsSection() {
             <SettingsRowList>
               <SettingsRow
                 label="Modo de retenção"
-                description="Define se a purga automática remove documentos da lixeira."
+                description="Define se, após o prazo, documentos da lixeira passam automaticamente para Desativados."
                 className="settings-row--stack"
                 control={
                   <div className="flex flex-col gap-2">
@@ -69,13 +69,13 @@ export function TrashRetentionSettingsSection() {
                       name="trashRetentionMode"
                       checked={mode === 'days'}
                       onChange={() => setMode('days')}
-                      label="Excluir automaticamente após período"
+                      label="Desativar automaticamente após período"
                     />
                     <Radio
                       name="trashRetentionMode"
                       checked={mode === 'manual'}
                       onChange={() => setMode('manual')}
-                      label="Retenção manual (sem purga automática)"
+                      label="Retenção manual (sem desativação automática)"
                     />
                   </div>
                 }
@@ -83,7 +83,7 @@ export function TrashRetentionSettingsSection() {
 
               <SettingsRow
                 label="Dias na lixeira"
-                description="Entre 1 e 365 dias. Após esse prazo, a purga remove arquivos do storage."
+                description="Entre 1 e 365 dias. Após esse prazo, o documento é desativado (R2/Mongo permanecem)."
                 htmlFor="trash-retention-days"
                 muted={!daysEnabled}
                 control={

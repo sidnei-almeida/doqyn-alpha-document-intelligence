@@ -10,6 +10,8 @@ export type SidebarNavItemConfig = {
   icon: string;
   /** Ativa apenas em match exato (evita destacar a raiz junto com sub-rotas). */
   end?: boolean;
+  /** Usado pela Sidebar para filtrar itens admin-only; ignorado no render. */
+  adminOnly?: boolean;
 };
 
 type SidebarNavItemProps = {
