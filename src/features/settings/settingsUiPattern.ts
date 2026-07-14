@@ -2,12 +2,13 @@
  * Padrão visual do módulo Configurações (camada estrutural compartilhada).
  *
  * Navegação (menu lateral — 4 itens):
- * - Perfil → sub-abas: Identidade · Preferências · Acesso
+ * - Perfil → tela única (identidade + preferências + acesso), sem subtabs
  * - Upload e IA
  * - Segurança
  * - Empresa → sub-abas: Governança · Retenção (admin) · Sistema
  * URLs legadas (?section=preferencias, autenticacao, organizacao, lixeira, sistema)
- * redirecionam para a seção composta + ?tab= correspondente.
+ * redirecionam para a seção composta + ?tab= correspondente (Empresa).
+ * ?tab=identidade|preferencias|acesso no Perfil é removido da URL.
  *
  * Hierarquia de cabeçalho (uma só):
  * - PageShell: eyebrow "Configurações" + título/descrição da seção ativa
@@ -40,7 +41,22 @@
  * Lixeira e retenção:
  * - Formulário estreito centralizado (settings-retention-card)
  * - Preview dinâmico + dias desabilitados no modo manual
- * - Salvar só habilitado com alteração pendente
+ * - SettingsSaveBar: Salvar/Descartar só com alteração pendente
+ *
+ * Upload e IA:
+ * - Rascunho local + SettingsSaveBar (não persiste a cada toggle)
+ * - settings-summary-bar reflete o rascunho até salvar
+ * - Grid 2 colunas equilibradas (settings-workflow-panel__grid--balanced)
+ * - Nome do documento: lista compacta (settings-choice-item--compact)
+ *
+ * Perfil (identidade):
+ * - Uma tela só: Identidade (largura total) + Preferências | Acesso em 2 colunas (≥1024px)
+ * - Cards sem max-width 40rem do compact (preenchem o painel)
+ * - settings-profile-layout em 2 colunas no desktop (identidade | detalhes)
+ *
+ * Preferências:
+ * - Tema/visualização aplicados na hora (feedback imediato)
+ * - Card full-width do painel (settings-preferences-card)
  *
  * Sistema:
  * - Lista "Sobre o sistema" com grupos (identidade / infraestrutura)
@@ -50,11 +66,6 @@
  * Dependências:
  * - settings-dependent-group: borda lateral + indentação para opções filhas
  * - settings-dependent-group--inactive: quando o pai está desligado
- *
- * Upload e IA:
- * - settings-summary-bar abaixo da nota da seção (não pill solta)
- * - Grid 2 colunas equilibradas (settings-workflow-panel__grid--balanced)
- * - Nome do documento: lista compacta (settings-choice-item--compact)
  *
  * Autenticação:
  * - Resumo em uma linha + expansor "Ver detalhes técnicos"
