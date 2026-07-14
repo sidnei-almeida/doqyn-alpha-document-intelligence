@@ -3,11 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import {
   DEFAULT_SETTINGS_SECTION,
   getDefaultTabForSection,
+  isLegacyAccountTabParam,
   isLegacySettingsSection,
   LEGACY_SECTION_REDIRECTS,
   parseSettingsSection,
   parseSettingsTab,
-  type AccountSettingsTab,
   type CompanySettingsTab,
   type SettingsSectionId,
   type SettingsTabId,
@@ -37,8 +37,9 @@ export function useSettingsSection() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const rawSection = searchParams.get('section');
+  const rawTab = searchParams.get('tab');
   const section = parseSettingsSection(rawSection);
-  const tab = parseSettingsTab(section, rawSection, searchParams.get('tab'));
+  const tab = parseSettingsTab(section, rawSection, rawTab);
 
   const setSection = useCallback(
     (next: SettingsSectionId) => {
@@ -68,13 +69,6 @@ export function useSettingsSection() {
     [section, setSearchParams],
   );
 
-  const setAccountTab = useCallback(
-    (nextTab: AccountSettingsTab) => {
-      setTab(nextTab);
-    },
-    [setTab],
-  );
-
   const setCompanyTab = useCallback(
     (nextTab: CompanySettingsTab) => {
       setTab(nextTab);
@@ -97,20 +91,32 @@ export function useSettingsSection() {
       setSearchParams(
         (params) => {
           const updated = new URLSearchParams(params);
-          applyCanonicalParams(updated, redirect.section, redirect.tab);
+          applyCanonicalParams(updated, redirect.section, redirect.tab ?? null);
+          return updated;
+        },
+        { replace: true },
+      );
+      return;
+    }
+
+    // Limpa ?tab=identidade|preferencias|acesso no Perfil (tabs removidas).
+    if (section === 'perfil' && isLegacyAccountTabParam(rawTab)) {
+      setSearchParams(
+        (params) => {
+          const updated = new URLSearchParams(params);
+          applyCanonicalParams(updated, 'perfil', null);
           return updated;
         },
         { replace: true },
       );
     }
-  }, [rawSection, searchParams, setSearchParams, setSection]);
+  }, [rawSection, rawTab, searchParams, section, setSearchParams, setSection]);
 
   return {
     section,
     tab,
     setSection,
     setTab,
-    setAccountTab,
     setCompanyTab,
   };
 }

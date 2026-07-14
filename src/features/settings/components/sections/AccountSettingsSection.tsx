@@ -1,29 +1,40 @@
-import {
-  ACCOUNT_SETTINGS_TABS,
-  type AccountSettingsTab,
-} from '../../settingsSections';
-import { SettingsSubTabs } from '../SettingsSubTabs';
+import { SettingsSectionHeader } from '../SettingsSectionHeader';
 import { AuthenticationSettingsSection } from './AuthenticationSettingsSection';
 import { PreferencesSettingsSection } from './PreferencesSettingsSection';
 import { ProfileSettingsSection } from './ProfileSettingsSection';
 
-type AccountSettingsSectionProps = {
-  tab: AccountSettingsTab;
-  onTabChange: (tab: AccountSettingsTab) => void;
-};
-
-export function AccountSettingsSection({ tab, onTabChange }: AccountSettingsSectionProps) {
+/** Perfil em tela única: identidade em largura total; preferências e acesso em grade. */
+export function AccountSettingsSection() {
   return (
-    <div className="settings-composite-section">
-      <SettingsSubTabs
-        items={ACCOUNT_SETTINGS_TABS}
-        active={tab}
-        onSelect={onTabChange}
-        ariaLabel="Subseções de perfil"
-      />
-      {tab === 'identidade' && <ProfileSettingsSection />}
-      {tab === 'preferencias' && <PreferencesSettingsSection />}
-      {tab === 'acesso' && <AuthenticationSettingsSection />}
+    <div className="settings-composite-section settings-profile-page">
+      <section className="settings-profile-block settings-profile-block--identity">
+        <SettingsSectionHeader
+          title="Identidade"
+          description="Foto, papéis e detalhes da conta."
+          className="settings-profile-block-header"
+        />
+        <ProfileSettingsSection />
+      </section>
+
+      <div className="settings-profile-secondary-grid">
+        <section className="settings-profile-block">
+          <SettingsSectionHeader
+            title="Preferências"
+            description="Tema e visualização da Biblioteca."
+            className="settings-profile-block-header"
+          />
+          <PreferencesSettingsSection />
+        </section>
+
+        <section className="settings-profile-block">
+          <SettingsSectionHeader
+            title="Acesso"
+            description="Autenticação e senha."
+            className="settings-profile-block-header"
+          />
+          <AuthenticationSettingsSection />
+        </section>
+      </div>
     </div>
   );
 }

@@ -1453,6 +1453,118 @@
     padding: 1rem 1.25rem 1.25rem;
   }
 
+  .settings-save-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-top: 0.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  }
+
+  .settings-save-bar--inset {
+    margin: 0;
+    padding: 1rem 1.25rem 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  }
+
+  .settings-save-bar__status {
+    @apply type-caption;
+    margin: 0;
+  }
+
+  .settings-save-bar__status--dirty {
+    color: var(--text-warning, var(--text-secondary));
+  }
+
+  .settings-save-bar__status--clean {
+    color: var(--text-tertiary);
+  }
+
+  .settings-save-bar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .settings-profile-card {
+    width: 100%;
+    max-width: none;
+  }
+
+  .settings-profile-layout {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  @media (min-width: 768px) {
+    .settings-profile-layout {
+      grid-template-columns: minmax(0, 1.2fr) minmax(14rem, 1fr);
+      gap: 1.75rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .settings-profile-layout {
+      grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+    }
+  }
+
+  .settings-profile-identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .settings-profile-avatar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .settings-profile-identity__meta {
+    min-width: 0;
+    flex: 1;
+    padding-top: 0.125rem;
+  }
+
+  .settings-profile-details {
+    min-width: 0;
+    padding: 0.875rem 1rem;
+    border-radius: 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 75%, transparent);
+    background: color-mix(in srgb, var(--bg-surface) 40%, transparent);
+  }
+
+  @media (min-width: 768px) {
+    .settings-profile-details {
+      border: none;
+      background: transparent;
+      padding: 0;
+      border-left: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+      padding-left: 1.25rem;
+      border-radius: 0;
+    }
+  }
+
+  .settings-profile-details__grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .settings-preferences-card {
+    width: 100%;
+    max-width: none;
+  }
+
   .settings-stepper-row__label,
   .settings-stepper-row__suffix {
     @apply type-caption text-doqyn-subtle;
@@ -1616,6 +1728,57 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+  }
+
+  .settings-profile-page {
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .settings-profile-secondary-grid {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .settings-profile-secondary-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.25rem 1.5rem;
+    }
+  }
+
+  .settings-profile-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .settings-profile-block-header {
+    margin: 0;
+  }
+
+  .settings-profile-block-header .settings-section-title {
+    font-size: 0.9375rem;
+  }
+
+  .settings-profile-block-header .settings-section-subtitle {
+    margin-top: 0.125rem;
+    max-width: none;
+  }
+
+  .settings-profile-block .settings-section-body {
+    gap: 0.75rem;
+  }
+
+  /* Cards do Perfil usam a largura do painel (não o max 40rem do compact). */
+  .settings-profile-page .settings-card--compact,
+  .settings-profile-card.settings-card--compact,
+  .settings-preferences-card.settings-card--compact {
+    max-width: none;
+    width: 100%;
   }
 
   .settings-subtabs {

@@ -59,12 +59,12 @@ describe('SettingsPage layout', () => {
     assert.ok(sections.includes("'upload-ia'"));
     assert.ok(sections.includes("'seguranca'"));
     assert.ok(sections.includes("'empresa'"));
-    assert.ok(sections.includes('ACCOUNT_SETTINGS_TABS'));
     assert.ok(sections.includes('COMPANY_SETTINGS_TABS'));
     assert.ok(sections.includes("id: 'perfil'"));
     assert.ok(sections.includes("id: 'upload-ia'"));
     assert.ok(sections.includes("id: 'seguranca'"));
     assert.ok(sections.includes("id: 'empresa'"));
+    assert.equal(sections.includes('ACCOUNT_SETTINGS_TABS'), false);
     assert.equal(sections.includes("id: 'organizacao'"), false);
     assert.equal(sections.includes("id: 'lixeira'"), false);
     assert.equal(sections.includes("id: 'autenticacao'"), false);
@@ -84,32 +84,45 @@ describe('SettingsPage layout', () => {
     assert.equal(prefs.includes('SettingsInfoCard'), false);
   });
 
-  it('Perfil composto mostra identidade, preferências e acesso', () => {
+  it('Perfil é tela única sem subtabs', () => {
     const page = readSrc('features/settings/SettingsPage.tsx');
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
     const profile = readSrc('features/settings/components/sections/ProfileSettingsSection.tsx');
+    const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
     assert.ok(page.includes('AccountSettingsSection'));
     assert.ok(account.includes('ProfileSettingsSection'));
     assert.ok(account.includes('PreferencesSettingsSection'));
     assert.ok(account.includes('AuthenticationSettingsSection'));
-    assert.ok(account.includes("'identidade'"));
-    assert.ok(account.includes("'preferencias'"));
-    assert.ok(account.includes("'acesso'"));
+    assert.ok(account.includes('settings-profile-page'));
+    assert.ok(account.includes('settings-profile-secondary-grid'));
+    assert.ok(account.includes('Identidade'));
+    assert.ok(account.includes('Preferências'));
+    assert.ok(account.includes('Acesso'));
+    assert.equal(account.includes('SettingsSubTabs'), false);
+    assert.equal(account.includes('onTabChange'), false);
     assert.ok(profile.includes('UserAvatar'));
     assert.ok(profile.includes('Alterar foto'));
     assert.ok(profile.includes('settings-profile-avatar-trigger'));
+    assert.ok(profile.includes('settings-profile-layout'));
     assert.ok(profile.includes('PlatformRoleChips'));
     assert.ok(profile.includes('Detalhes da conta'));
     assert.ok(profile.includes('photo_camera'));
+    assert.equal(profile.includes('max-w-2xl'), false);
+    assert.ok(globals.includes('settings-profile-secondary-grid'));
+    assert.ok(globals.includes('.settings-profile-page .settings-card--compact'));
   });
 
   it('clicar em Upload e IA mostra seção Upload e IA', () => {
     const page = readSrc('features/settings/SettingsPage.tsx');
     const upload = readSrc('features/settings/components/sections/UploadAiSettingsSection.tsx');
     const panel = readSrc('features/document-send/components/ReviewWorkflowSettingsPanel.tsx');
+    const saveBar = readSrc('features/settings/components/SettingsSaveBar.tsx');
     assert.ok(page.includes("case 'upload-ia'"));
     assert.ok(upload.includes('ReviewWorkflowSettingsPanel'));
     assert.ok(upload.includes('useUploadQueueContext'));
+    assert.ok(upload.includes('SettingsSaveBar'));
+    assert.ok(upload.includes('setDraft'));
+    assert.ok(upload.includes('Alterações não salvas') || saveBar.includes('Alterações não salvas'));
     assert.ok(panel.includes('SettingsFieldGroup'));
     assert.ok(panel.includes('settings-workflow-panel'));
   });
@@ -159,7 +172,7 @@ describe('SettingsPage layout', () => {
     assert.ok(system.includes('import.meta.env.MODE'));
   });
 
-  it('Autenticação permanece acessível na aba Acesso do perfil', () => {
+  it('Autenticação permanece na tela única de Perfil', () => {
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
     const auth = readSrc('features/settings/components/sections/AuthenticationSettingsSection.tsx');
     assert.ok(account.includes('AuthenticationSettingsSection'));
@@ -223,11 +236,13 @@ describe('SettingsPage layout', () => {
     assert.ok(hook.includes('parseSettingsSection'));
     assert.ok(hook.includes('parseSettingsTab'));
     assert.ok(hook.includes('LEGACY_SECTION_REDIRECTS'));
+    assert.ok(hook.includes('isLegacyAccountTabParam'));
     assert.ok(sections.includes('upload-ia'));
     assert.ok(sections.includes('LEGACY_SECTION_REDIRECTS'));
     assert.ok(hook.includes("hash === 'upload'"));
     assert.ok(hook.includes("setSection('upload-ia')"));
-    assert.ok(sections.includes("preferencias: { section: 'perfil', tab: 'preferencias' }"));
+    assert.ok(sections.includes("preferencias: { section: 'perfil' }"));
+    assert.ok(sections.includes("autenticacao: { section: 'perfil' }"));
     assert.ok(sections.includes("lixeira: { section: 'empresa', tab: 'retencao' }"));
   });
 });

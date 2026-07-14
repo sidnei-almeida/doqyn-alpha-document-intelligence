@@ -67,7 +67,7 @@ export function PreferencesSettingsSection() {
 
   return (
     <SettingsSectionBody>
-      <SettingsCard padding="none" density="compact" className="max-w-2xl">
+      <SettingsCard padding="none" density="compact" className="settings-preferences-card">
         <SettingsRowList>
           <SettingsRow
             label="Tema"
