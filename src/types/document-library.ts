@@ -113,11 +113,36 @@ export type DocumentVersionSummary = {
 
 export type DocumentPermissions = DocumentListItemPermissions;
 
+export type DocumentSearchMetaPerson = {
+  name: string;
+  nameNormalized?: string;
+  role: string;
+  relatedTo?: string;
+  sourceKey?: string;
+};
+
+export type DocumentSearchMetaDate = {
+  kind: string;
+  date: string;
+  sourceKey?: string;
+  label?: string;
+};
+
+/** Projeção indexável do documento (people/dates/validity). */
+export type DocumentSearchMeta = {
+  people?: DocumentSearchMetaPerson[];
+  dates?: DocumentSearchMetaDate[];
+  documentTitle?: string | null;
+  validityDate?: string | null;
+};
+
 export type DocumentDetailResponse = {
   document: DocumentListItem;
   latestVersion: DocumentVersionSummary | null;
   versions: DocumentVersionSummary[];
   metadata: Record<string, unknown>;
+  /** Presente quando o documento tem searchMeta no Mongo. */
+  searchMeta?: DocumentSearchMeta | null;
   permissions: DocumentPermissions;
 };
 

@@ -16,6 +16,14 @@ export type CompactExtractorField = {
 };
 
 const PARTY_FIELD_KEYS = new Set(['parte_reveladora', 'parte_receptora']);
+const VALIDITY_FIELD_KEYS = new Set([
+  'data_assinatura',
+  'data_emissao',
+  'prazo_vigencia',
+  'data_validade',
+  'vigencia_inicio',
+  'vigencia_fim',
+]);
 
 function limitExtractorChunks(chunks: RetrievedChunk[]): RetrievedChunk[] {
   return chunks.map((chunk) => ({
@@ -33,6 +41,9 @@ function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorFiel
     const partyBoost =
       Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
     if (partyBoost !== 0) return partyBoost;
+    const validityBoost =
+      Number(VALIDITY_FIELD_KEYS.has(b.key)) - Number(VALIDITY_FIELD_KEYS.has(a.key));
+    if (validityBoost !== 0) return validityBoost;
     return Number(b.required) - Number(a.required);
   });
 
@@ -63,9 +74,15 @@ DOCUMENTO DE CONFIDENCIALIDADE / NDA — instruções obrigatórias:
    - rótulos soltos ("RECEPTOR", "REVELADOR", "ao receptor", "no contexto de negociações")
 6. Se não encontrar o nome de uma parte nos trechos, use null — não invente nem copie o título.
 7. CPF/CNPJ servem só para confirmar a parte; o value deve ser o NOME, não o documento.
+8. Datas e vigência (PRIORIDADE MÁXIMA junto com as partes):
+   - data_assinatura é OBRIGATÓRIA quando o documento tiver prazo/vigência. Procure com agressividade: preâmbulo, cláusula de vigência, "assinado/firmado/celebrado em", "aos X dias de [mês] de [ano]", rodapé e bloco de assinaturas.
+   - Extraia prazo_vigencia relativo ("7 anos", "24 meses", "pelo prazo de 5 anos"). Não confunda prazo com data absoluta.
+   - Se tiver data âncora (assinatura/emissão) E prazo_vigencia, CALCULE data_validade = âncora + prazo (yyyy-mm-dd) e cite no evidence.snippet que foi calculado.
+   - Sem data âncora no texto: data_validade = null. Nunca use data de hoje, upload ou criação do arquivo.
+   - Se estiver em dúvida entre duas datas, prefira a de assinatura/celebração à data de emissão de anexo.
 
 Exemplo de metadados corretos para NDA:
-{"parte_reveladora":{"value":"Paulão Comércio Ltda","normalizedValue":"Paulão Comércio Ltda","confidence":0.92,"evidence":{"snippet":"PARTE REVELADORA: Paulão Comércio Ltda"}},"parte_receptora":{"value":"Cliente Beta S.A.","normalizedValue":"Cliente Beta S.A.","confidence":0.9,"evidence":{"snippet":"PARTE RECEPTORA: Cliente Beta S.A."}}}`;
+{"parte_reveladora":{"value":"Paulão Comércio Ltda","normalizedValue":"Paulão Comércio Ltda","confidence":0.92,"evidence":{"snippet":"PARTE REVELADORA: Paulão Comércio Ltda"}},"parte_receptora":{"value":"Cliente Beta S.A.","normalizedValue":"Cliente Beta S.A.","confidence":0.9,"evidence":{"snippet":"PARTE RECEPTORA: Cliente Beta S.A."}},"data_assinatura":{"value":"2024-03-10","normalizedValue":"2024-03-10","confidence":0.9,"evidence":{"snippet":"assinado em 10 de março de 2024"}},"prazo_vigencia":{"value":"5 anos","normalizedValue":"5 anos","confidence":0.88,"evidence":{"snippet":"vigência de 5 anos"}},"data_validade":{"value":"2029-03-10","normalizedValue":"2029-03-10","confidence":0.86,"evidence":{"snippet":"Calculado: 2024-03-10 + 5 anos"}}}`;
 }
 
 export function buildCompactExtractorPrompt(

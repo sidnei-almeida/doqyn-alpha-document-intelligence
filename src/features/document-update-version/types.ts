@@ -15,6 +15,8 @@ export type MetadataDisplayField = {
   key: string;
   label: string;
   value: string;
+  /** Texto auxiliar (ex.: validade inferida). */
+  hint?: string;
 };
 
 export type VersionComparisonRow = {

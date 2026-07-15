@@ -33,6 +33,13 @@ export const CONFIDENTIALITY_RETRIEVAL_TERMS = [
   'informações confidenciais',
   'informacoes confidenciais',
   'segredo comercial',
+  'assinado em',
+  'data de assinatura',
+  'celebrado em',
+  'firmado em',
+  'prazo de vigência',
+  'válido por',
+  'anos',
 ];
 
 function classTextHaystack(
@@ -95,9 +102,17 @@ export const CONFIDENTIALITY_PARTY_FIELDS: DocumentRuleField[] = [
     key: 'data_assinatura',
     label: 'Data de assinatura',
     type: 'date',
-    required: false,
-    aliases: ['data de assinatura', 'assinado em', 'firmado em', 'celebrado em'],
-    description: 'Data de assinatura ou celebração do acordo.',
+    required: true,
+    aliases: [
+      'data de assinatura',
+      'assinado em',
+      'firmado em',
+      'celebrado em',
+      'datado de',
+      'aos dias de',
+    ],
+    description:
+      'Data de assinatura ou celebração do acordo (yyyy-mm-dd). Campo crítico para calcular validade. Procure no preâmbulo, cláusula de vigência e bloco de assinaturas.',
   },
   {
     key: 'prazo_vigencia',
@@ -116,6 +131,15 @@ export const CONFIDENTIALITY_PARTY_FIELDS: DocumentRuleField[] = [
     description:
       'Prazo relativo de vigência (ex.: "5 anos", "24 meses"). Não invente data absoluta aqui.',
   },
+  {
+    key: 'data_validade',
+    label: 'Validade',
+    type: 'date',
+    required: false,
+    aliases: ['validade', 'vencimento', 'vigência fim', 'vigencia fim', 'término', 'termino'],
+    description:
+      'Data absoluta de término da vigência (yyyy-mm-dd). Se existir data_assinatura (ou emissão) E prazo_vigencia, CALCULE âncora+prazo. Sem âncora, deixe null — não use data de hoje/upload.',
+  },
 ];
 
 /** Garante campos de partes no pipeline de extração/validação mesmo com regras legadas no Mongo. */
@@ -124,14 +148,23 @@ export function augmentConfidentialityClassForExtraction(
 ): DocumentClassRule {
   if (!isConfidentialityClassRule(selectedClass)) return selectedClass;
 
-  const existingKeys = new Set(selectedClass.fields.map((field) => field.key));
-  const missingPartyFields = CONFIDENTIALITY_PARTY_FIELDS.filter(
-    (field) => !existingKeys.has(field.key),
-  );
-  if (missingPartyFields.length === 0) return selectedClass;
+  const byKey = new Map(selectedClass.fields.map((field) => [field.key, field]));
+  for (const field of CONFIDENTIALITY_PARTY_FIELDS) {
+    const existing = byKey.get(field.key);
+    if (!existing) {
+      byKey.set(field.key, field);
+      continue;
+    }
+    byKey.set(field.key, {
+      ...existing,
+      required: existing.required || field.required,
+      aliases: [...new Set([...(existing.aliases ?? []), ...(field.aliases ?? [])])],
+      description: field.description || existing.description,
+    });
+  }
 
   return {
     ...selectedClass,
-    fields: [...missingPartyFields, ...selectedClass.fields],
+    fields: [...byKey.values()],
   };
 }

@@ -17,7 +17,7 @@ import { DocumentPreviewViewer } from './DocumentPreviewViewer';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useDocumentDetail } from '../hooks/useDocuments';
 import { DocumentApiError } from '../api/documentsApi.errors';
-import { metadataRecordToDisplayFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
+import { DocumentStandardFicha } from './DocumentDetailsShared';
 
 type DocumentDetailPanelProps = {
   documentId: string | null;
@@ -198,21 +198,9 @@ export function DocumentDetailPanel({
           </div>
         </CardHeader>
 
-        {Object.keys(data.metadata).length > 0 && (
+        {(data.searchMeta || Object.keys(data.metadata).length > 0) && (
           <CardContent>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-doqyn-muted">
-              Metadados
-            </p>
-            <dl className="grid gap-2 text-sm sm:grid-cols-2">
-              {metadataRecordToDisplayFields(data.metadata)
-                .slice(0, 8)
-                .map((field) => (
-                  <div key={field.key}>
-                    <dt className="text-xs text-doqyn-muted">{field.label}</dt>
-                    <dd className="text-doqyn-text">{field.value}</dd>
-                  </div>
-                ))}
-            </dl>
+            <DocumentStandardFicha metadata={data.metadata} searchMeta={data.searchMeta} />
           </CardContent>
         )}
       </Card>

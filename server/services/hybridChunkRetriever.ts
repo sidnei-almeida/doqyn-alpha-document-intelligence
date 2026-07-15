@@ -313,12 +313,24 @@ export function retrieveChunksForExtraction(input: {
   const limit = input.topK ?? getExtractionMaxChunks();
   const byId = new Map<string, RetrievedChunk>();
 
-  const requiredFields = input.selectedClass.fields.filter((field) => field.required);
-  const optionalFields = input.selectedClass.fields.filter((field) => !field.required);
-  const fieldsToProcess = [
-    ...requiredFields,
-    ...optionalFields.slice(0, Math.max(0, 6 - requiredFields.length)),
-  ];
+  const PRIORITY_FIELD_KEYS = new Set([
+    'data_assinatura',
+    'prazo_vigencia',
+    'data_validade',
+    'vigencia_inicio',
+    'vigencia_fim',
+    'parte_reveladora',
+    'parte_receptora',
+  ]);
+
+  const fieldsToProcess = [...input.selectedClass.fields]
+    .sort((a, b) => {
+      const priority =
+        Number(PRIORITY_FIELD_KEYS.has(b.key)) - Number(PRIORITY_FIELD_KEYS.has(a.key));
+      if (priority !== 0) return priority;
+      return Number(b.required) - Number(a.required);
+    })
+    .slice(0, Math.max(8, input.selectedClass.fields.filter((f) => f.required).length));
 
   for (const field of fieldsToProcess) {
     if (byId.size >= limit) break;
