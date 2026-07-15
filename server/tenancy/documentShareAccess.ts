@@ -6,7 +6,6 @@ import {
   canUserListDocument,
   isDocumentAdmin,
   resolveDocumentPermissions,
-  userHasDocumentGroupAccess,
 } from './documentAccess.js';
 import { userHasGovernanceCategoryPermission } from './governanceAccessIndex.js';
 
@@ -30,8 +29,6 @@ export function canUserShareDocument(
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
 
-  const shareGroups = doc.access?.shareGroupIds ?? [];
-  if (userHasDocumentGroupAccess(shareGroups, memberGroupIds)) return true;
   if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share')) {
     return true;
   }

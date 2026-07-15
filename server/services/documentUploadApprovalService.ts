@@ -101,10 +101,7 @@ export async function submitDocumentUploadForApproval(input: {
     ownerUserId: input.ctx.userId,
   });
 
-  const updateGroupIds =
-    'permissions' in classAndRule.docClass && classAndRule.docClass.permissions
-      ? classAndRule.docClass.permissions.update
-      : categoryAccess.updateGroupIds;
+  const updateGroupIds = categoryAccess.updateGroupIds;
 
   const accessCtx = await loadDocumentAccessContext({
     tenantId,

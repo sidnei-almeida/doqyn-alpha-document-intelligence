@@ -147,12 +147,13 @@ describe('integração Biblioteca — pasta e cache', () => {
     assert.equal(card.includes('canPreview === false') && card.includes('return null'), false);
   });
 
-  it('listagem não exige canPreview — usa grupos de view/download', () => {
+  it('listagem não exige canPreview — regras de governança cobrem view e download', () => {
     const access = readFileSync(
       join(__dirname, '..', 'server', 'tenancy', 'documentAccess.ts'),
       'utf8',
     );
-    assert.ok(access.includes('downloadGroupIds'));
+    assert.ok(access.includes('userHasGovernanceCategoryPermission'));
+    assert.ok(access.includes("'download'"));
     assert.ok(access.includes('canUserListDocument'));
   });
 

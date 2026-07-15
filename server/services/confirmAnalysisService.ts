@@ -251,16 +251,15 @@ export async function confirmAnalysisPersistence(input: {
     ownerUserId,
   });
 
-  const legacyPermissions =
-    'permissions' in docClass && docClass.permissions
-      ? docClass.permissions
-      : {
-          view: categoryAccess.viewGroupIds,
-          download: categoryAccess.downloadGroupIds,
-          update: categoryAccess.updateGroupIds,
-          audit: categoryAccess.auditGroupIds,
-          share: categoryAccess.shareGroupIds,
-        };
+  // Snapshot informativo gravado no documento — o acesso em runtime é sempre
+  // resolvido pelas regras de governança ativas, nunca por este snapshot.
+  const legacyPermissions = {
+    view: categoryAccess.viewGroupIds,
+    download: categoryAccess.downloadGroupIds,
+    update: categoryAccess.updateGroupIds,
+    audit: categoryAccess.auditGroupIds,
+    share: categoryAccess.shareGroupIds,
+  };
 
   if (
     !input.skipConfirmPermissionCheck &&

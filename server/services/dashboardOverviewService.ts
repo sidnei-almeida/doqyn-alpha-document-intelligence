@@ -135,7 +135,6 @@ function maskBucketName(bucketName: string | undefined | null): string | null {
 function buildAccessibleDocumentQuery(
   storage: TenantStorageContext,
   user: AuthUser,
-  memberGroupIds: string[],
   isAdmin: boolean,
   governanceViewCategoryIds: string[] = [],
 ): Record<string, unknown> {
@@ -148,10 +147,7 @@ function buildAccessibleDocumentQuery(
   };
 
   if (!isAdmin) {
-    const accessClauses: Record<string, unknown>[] = [
-      { ownerUserId: user.id },
-      { 'access.viewGroupIds': { $in: memberGroupIds } },
-    ];
+    const accessClauses: Record<string, unknown>[] = [{ ownerUserId: user.id }];
 
     if (governanceViewCategoryIds.length > 0) {
       accessClauses.push({ classId: { $in: governanceViewCategoryIds } });
@@ -274,7 +270,6 @@ export async function getDashboardOverview(input: {
   const docQuery = buildAccessibleDocumentQuery(
     collections.storage,
     input.user,
-    memberGroupIds,
     isAdmin,
     governanceViewCategoryIds,
   );
