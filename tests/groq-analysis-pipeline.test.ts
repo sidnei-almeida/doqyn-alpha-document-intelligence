@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { DEFAULT_GROQ_MODEL, getGroqMaxOutputTokens, getGroqModelFromEnv, getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../server/ai/utils/aiConfig.js';
+import { DEFAULT_GROQ_MODEL, getExtractionMaxChunks, getGroqMaxOutputTokens, getGroqModelFromEnv, getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../server/ai/utils/aiConfig.js';
 import { AI_ERROR_MESSAGES } from '../server/ai/constants.js';
 import { isGroqApiKeyConfigured } from '../server/ai/services/groqClient.js';
 import { AiAnalysisError } from '../server/ai/utils/errors.js';
@@ -15,6 +15,11 @@ const repoRoot = join(__dirname, '..');
 
 function readServer(relativePath: string): string {
   return readFileSync(join(repoRoot, 'server', relativePath), 'utf8');
+}
+
+function restoreEnv(key: string, value: string | undefined): void {
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
 }
 
 function readApi(relativePath: string): string {
@@ -85,13 +90,36 @@ describe('pipeline Groq — remoção de no_ai', () => {
   });
 
   it('guardrails de custo — limites PDF configuráveis', () => {
-    assert.equal(getPdfAnalysisMaxInputChars(), 30_000);
-    assert.equal(getPdfAnalysisMaxPages(), 10);
+    // Defaults dimensionados para a janela de 131k tokens do llama-4-scout.
+    // No plano gratuito da Groq (6k TPM), baixe via env ou a análise dá 429.
+    assert.equal(getPdfAnalysisMaxInputChars(), 300_000);
+    assert.equal(getPdfAnalysisMaxPages(), 100);
+    assert.equal(getExtractionMaxChunks(), 40);
 
     const extractor = readServer('ai/services/pdfTextExtractor.ts');
     assert.ok(extractor.includes('getPdfAnalysisMaxInputChars'));
     assert.ok(extractor.includes('getPdfAnalysisMaxPages'));
     assert.ok(extractor.includes('truncated for cost guardrails'));
+  });
+
+  it('guardrails de custo — env sobrescreve os defaults', () => {
+    const previous = {
+      chars: process.env.PDF_ANALYSIS_MAX_INPUT_CHARS,
+      pages: process.env.PDF_ANALYSIS_MAX_PAGES,
+      chunks: process.env.EXTRACTION_MAX_CHUNKS,
+    };
+    try {
+      process.env.PDF_ANALYSIS_MAX_INPUT_CHARS = '30000';
+      process.env.PDF_ANALYSIS_MAX_PAGES = '10';
+      process.env.EXTRACTION_MAX_CHUNKS = '8';
+      assert.equal(getPdfAnalysisMaxInputChars(), 30_000);
+      assert.equal(getPdfAnalysisMaxPages(), 10);
+      assert.equal(getExtractionMaxChunks(), 8);
+    } finally {
+      restoreEnv('PDF_ANALYSIS_MAX_INPUT_CHARS', previous.chars);
+      restoreEnv('PDF_ANALYSIS_MAX_PAGES', previous.pages);
+      restoreEnv('EXTRACTION_MAX_CHUNKS', previous.chunks);
+    }
   });
 
   it('C. pipeline continua tenant-based sem mock global', () => {
