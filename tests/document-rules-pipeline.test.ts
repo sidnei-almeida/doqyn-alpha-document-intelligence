@@ -74,15 +74,10 @@ describe('pipeline de análise — fonte de verdade das regras', () => {
     assert.ok(script.includes('document_rules = matriz de acesso'));
   });
 
-  it('draft do mapa não entra em document_rules até Salvar alterações', () => {
-    const draft = readFileSync(
-      join(repoRoot, 'src/features/rules/governance-flow/useGovernanceFlowDraft.ts'),
-      'utf8',
-    );
+  it('mudança de permissão na UI persiste em document_rules via PUT matrix', () => {
     const save = readFileSync(join(repoRoot, 'src/features/rules/hooks/useRules.ts'), 'utf8');
-    assert.ok(draft.includes('draftEdges'));
-    assert.ok(save.includes('saveGovernanceMapChanges'));
-    assert.ok(save.includes('disconnectGroupFromCategory'));
+    assert.ok(save.includes('updateGroupClassPermissions'));
+    assert.ok(save.includes('updateDocumentAccessMatrixCell'));
   });
 });
 

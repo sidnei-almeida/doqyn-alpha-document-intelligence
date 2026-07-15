@@ -25,12 +25,14 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.equal(RULES_SCREEN_CAPABILITIES.managesUserRoles, false);
   });
 
-  it('/rules (GovernanceMapCanvas) não renderiza botão "Adicionar membro"', () => {
-    const source = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.equal(source.includes('Adicionar membro'), false);
-    assert.equal(source.includes('AddMemberToGroupDialog'), false);
-    assert.equal(source.includes('removeMemberFromDocumentGroup'), false);
-    assert.equal(source.includes('addMemberToDocumentGroup'), false);
+  it('/rules (vistas de acesso) não renderiza gestão de membros', () => {
+    const card = readSrc('features/rules/components/access/CategoryAccessCard.tsx');
+    const popover = readSrc('features/rules/components/access/PermissionPopover.tsx');
+    for (const source of [card, popover]) {
+      assert.equal(source.includes('Adicionar membro'), false);
+      assert.equal(source.includes('removeMemberFromDocumentGroup'), false);
+      assert.equal(source.includes('addMemberToDocumentGroup'), false);
+    }
   });
 
   it('/rules (GovernanceDetailDialog) orienta gestão de membros em Usuários', () => {
@@ -168,7 +170,6 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.equal(source.includes('removeMemberFromDocumentGroup'), false);
     assert.equal(source.includes('updateMemberGroups'), false);
     assert.ok(source.includes('groupMemberCounts'));
-    assert.ok(source.includes('disconnectGroupFromCategory'));
-    assert.ok(source.includes('saveGovernanceMapChanges'));
+    assert.ok(source.includes('updateGroupClassPermissions'));
   });
 });
