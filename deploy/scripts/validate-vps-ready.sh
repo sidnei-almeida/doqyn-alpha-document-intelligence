@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$DEPLOY_DIR/.." && pwd)"
 ENV_FILE="$DEPLOY_DIR/.env"
-COMPOSE_FILE="$DEPLOY_DIR/docker-compose.production.yml"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -98,6 +97,35 @@ if [[ -f "$ENV_FILE" ]]; then
     ok "ANALYSIS_SYNC_FALLBACK=false (fila assíncrona)"
   else
     warn "ANALYSIS_SYNC_FALLBACK não é false"
+  fi
+fi
+
+info_section "Limites de análise de documento"
+if [[ -f "$ENV_FILE" ]]; then
+  MAX_PAGES="${PDF_ANALYSIS_MAX_PAGES:-100}"
+  MAX_CHUNKS="${EXTRACTION_MAX_CHUNKS:-40}"
+  MODEL="${GROQ_MODEL:-}"
+
+  ok "GROQ_MODEL=${MODEL:-(default do código)}"
+  ok "PDF_ANALYSIS_MAX_PAGES=${MAX_PAGES} | EXTRACTION_MAX_CHUNKS=${MAX_CHUNKS}"
+
+  # Extrair muita página sem elevar os chunks não serve para nada: o texto é
+  # extraído e descartado antes de chegar ao modelo.
+  if [[ "$MAX_PAGES" -gt 20 && "$MAX_CHUNKS" -le 8 ]]; then
+    warn "MAX_PAGES=${MAX_PAGES} com EXTRACTION_MAX_CHUNKS=${MAX_CHUNKS}: o texto além"
+    warn "dos primeiros ~8 trechos é extraído mas nunca chega ao modelo. Suba"
+    warn "EXTRACTION_MAX_CHUNKS ou reduza MAX_PAGES."
+  fi
+
+  # Limites altos exigem janela de contexto grande.
+  if [[ "$MAX_CHUNKS" -gt 8 && "$MODEL" == *"8b-instant"* ]]; then
+    warn "EXTRACTION_MAX_CHUNKS=${MAX_CHUNKS} com ${MODEL}: modelo pequeno para esse"
+    warn "volume. Considere meta-llama/llama-4-scout-17b-16e-instruct (131k tokens)."
+  fi
+
+  if [[ "$MAX_PAGES" -le 10 ]]; then
+    warn "PDF_ANALYSIS_MAX_PAGES=${MAX_PAGES}: documento maior é cortado nessa página"
+    warn "e o que vem depois (assinatura, vigência) não é extraído."
   fi
 fi
 

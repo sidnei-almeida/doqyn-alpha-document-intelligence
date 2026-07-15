@@ -143,7 +143,28 @@ R2_ADMIN_ACCESS_KEY_ID="${R2_ADMIN_ACCESS_KEY_ID:-$R2_ACCESS_KEY_ID}"
 R2_ADMIN_SECRET_ACCESS_KEY="${R2_ADMIN_SECRET_ACCESS_KEY:-$R2_SECRET_ACCESS_KEY}"
 
 echo ""
-read -r -p "GROQ_API_KEY (análise de PDF): " GROQ_API_KEY
+info "Análise de documentos (Groq)"
+read -r -p "GROQ_API_KEY: " GROQ_API_KEY
+GROQ_MODEL_ID="$(prompt_default "Modelo Groq" "meta-llama/llama-4-scout-17b-16e-instruct")"
+
+GROQ_PAID="$(prompt_default "Plano Groq é on-demand (pago)? (s/n)" "s")"
+if [[ "$GROQ_PAID" =~ ^[Ss]$ ]]; then
+  # Cabe em ~100 páginas dentro da janela de 131k tokens do scout.
+  PDF_MAX_PAGES_DEFAULT=100
+  PDF_MAX_INPUT_CHARS_DEFAULT=300000
+  EXTRACTION_CHUNKS_DEFAULT=40
+else
+  # Gratuito: 6k TPM por organização. Acima disso a análise retorna 429.
+  warn "Plano gratuito: limites reduzidos para não estourar 6k TPM (429)."
+  warn "Documento longo será truncado. Migre para on-demand antes de produção real."
+  PDF_MAX_PAGES_DEFAULT=10
+  PDF_MAX_INPUT_CHARS_DEFAULT=30000
+  EXTRACTION_CHUNKS_DEFAULT=8
+fi
+
+PDF_MAX_PAGES="$(prompt_default "Máximo de páginas analisadas por documento" "$PDF_MAX_PAGES_DEFAULT")"
+PDF_MAX_INPUT_CHARS="$(prompt_default "Máximo de caracteres extraídos por documento" "$PDF_MAX_INPUT_CHARS_DEFAULT")"
+EXTRACTION_CHUNKS="$(prompt_default "Chunks enviados ao extrator" "$EXTRACTION_CHUNKS_DEFAULT")"
 
 echo ""
 info "OAuth Google (deixe vazio para configurar depois)"
@@ -245,10 +266,16 @@ R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
 R2_ADMIN_ACCESS_KEY_ID=${R2_ADMIN_ACCESS_KEY_ID}
 R2_ADMIN_SECRET_ACCESS_KEY=${R2_ADMIN_SECRET_ACCESS_KEY}
 GROQ_API_KEY=${GROQ_API_KEY}
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=${GROQ_MODEL_ID}
 GROQ_REQUEST_TIMEOUT_MS=25000
-PDF_ANALYSIS_MAX_INPUT_CHARS=30000
-PDF_ANALYSIS_MAX_PAGES=10
+# Dimensionados para a janela de 131k tokens do llama-4-scout (~460k chars):
+# documento de ~100 páginas cabe no contexto. Exige plano on-demand pago —
+# no gratuito (6k TPM) um documento sozinho já estoura e retorna 429.
+PDF_ANALYSIS_MAX_INPUT_CHARS=${PDF_MAX_INPUT_CHARS}
+PDF_ANALYSIS_MAX_PAGES=${PDF_MAX_PAGES}
+# Chunks enviados ao extrator. Abaixo disso, subir MAX_PAGES não adianta: o
+# texto é extraído mas nunca chega ao modelo.
+EXTRACTION_MAX_CHUNKS=${EXTRACTION_CHUNKS}
 DOCUMENT_ANALYSIS_PROVIDER=groq
 
 # Google Cloud Vision — OCR (desligado por padrão; JSON em deploy/secrets/)
