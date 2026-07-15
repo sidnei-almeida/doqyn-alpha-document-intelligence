@@ -1,8 +1,18 @@
 export const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
 export const DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 1200;
 export const DEFAULT_GROQ_REQUEST_TIMEOUT_MS = 25_000;
-export const DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS = 30_000;
-export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 10;
+/**
+ * Dimensionados para a janela de 131k tokens do llama-4-scout (~460k chars).
+ * Documento empresarial de ~100 páginas cabe no contexto; o teto antigo
+ * (10 páginas / 30k chars) era o rate limit do plano gratuito da Groq
+ * (6k TPM), não um limite do modelo. Em dev no plano gratuito, mantenha os
+ * valores baixos via .env ou a análise devolve 429.
+ */
+export const DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS = 300_000;
+export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 100;
+/** Chunks enviados ao extrator. Antes fixo em 8 (~14k chars), o que descartava
+ * quase todo documento longo mesmo com o texto já extraído. */
+export const DEFAULT_EXTRACTION_MAX_CHUNKS = 40;
 
 function readPositiveInt(envValue: string | undefined, fallback: number): number {
   const parsed = Number(envValue);
@@ -26,6 +36,10 @@ export function getPdfAnalysisMaxInputChars(): number {
 
 export function getPdfAnalysisMaxPages(): number {
   return readPositiveInt(process.env.PDF_ANALYSIS_MAX_PAGES, DEFAULT_PDF_ANALYSIS_MAX_PAGES);
+}
+
+export function getExtractionMaxChunks(): number {
+  return readPositiveInt(process.env.EXTRACTION_MAX_CHUNKS, DEFAULT_EXTRACTION_MAX_CHUNKS);
 }
 
 export function getGroqRequestTimeoutMs(): number {
