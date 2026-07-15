@@ -100,13 +100,22 @@ function normalizeSearchText(value: string): string {
     .trim();
 }
 
-function fieldRawValue(field: MongoVersionMetadataField): string | number | null {
+/**
+ * Só label/value/normalizedValue importam aqui — `source` diverge entre o
+ * estágio de pipeline (`no_ai`) e o persistido (`manual`), e não é lido.
+ */
+export type SearchMetaField = Pick<
+  MongoVersionMetadataField,
+  'label' | 'value' | 'normalizedValue'
+>;
+
+function fieldRawValue(field: SearchMetaField): string | number | null {
   const raw = field.normalizedValue ?? field.value;
   if (raw === null || raw === undefined || raw === '') return null;
   return raw;
 }
 
-function fieldString(field: MongoVersionMetadataField): string | null {
+function fieldString(field: SearchMetaField): string | null {
   const raw = fieldRawValue(field);
   if (raw === null) return null;
   const text = String(raw).trim();
@@ -298,7 +307,7 @@ function pickRelatedAnchor(people: MongoDocumentPersonMeta[]): string | undefine
  * 2) senão, âncora (assinatura/emissão) + prazo relativo (“5 anos”).
  */
 export function projectDocumentSearchMeta(
-  metadata: Record<string, MongoVersionMetadataField>,
+  metadata: Record<string, SearchMetaField>,
   ruleFields?: MongoRuleField[],
 ): MongoDocumentSearchMeta {
   const ruleTypeByKey = new Map((ruleFields ?? []).map((f) => [f.key, f.type]));

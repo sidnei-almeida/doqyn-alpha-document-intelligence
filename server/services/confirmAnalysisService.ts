@@ -81,7 +81,7 @@ const metadataFieldSchema = z.object({
   value: z.union([z.string(), z.number(), z.null()]),
   normalizedValue: z.union([z.string(), z.number(), z.null()]).optional(),
   confidence: z.number(),
-  source: z.enum(['document_text', 'no_ai']).optional().default('document_text'),
+  source: z.enum(['document_text', 'no_ai', 'ai']).optional().default('document_text'),
   evidence: evidenceSchema.optional(),
   currency: z.string().optional(),
 });
