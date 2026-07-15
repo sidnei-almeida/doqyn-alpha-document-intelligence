@@ -52,15 +52,12 @@ describe('layout de altura total nas páginas internas', () => {
     assert.ok(source.includes('flex-1'));
   });
 
-  it('RulesPage estica o mapa de governança', () => {
+  it('RulesPage usa PageShell com vistas de acesso', () => {
     const source = readSrc('features/rules/RulesPage.tsx');
-    const canvas = readSrc('features/rules/components/governance/GovernanceMapCanvas.tsx');
     assert.ok(source.includes('PageShell'));
-    assert.ok(source.includes('GovernanceMapCanvas'));
+    assert.ok(source.includes('CategoryAccessCard'));
+    assert.ok(source.includes('AccessMatrixView'));
     assert.ok(source.includes('flex-1'));
-    assert.ok(canvas.includes('rules-map'));
-    assert.ok(canvas.includes('flex-1'));
-    assert.ok(canvas.includes('GovernanceFlowCanvas'));
   });
 
   it('DocumentsPage usa DataTable com stretch e min-height', () => {
