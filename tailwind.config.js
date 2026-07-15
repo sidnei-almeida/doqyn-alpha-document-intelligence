@@ -97,10 +97,28 @@ export default {
         ],
         display: [
           'var(--text-display)',
-          { lineHeight: 'var(--leading-display)', fontWeight: 'var(--weight-display)' },
+          {
+            lineHeight: 'var(--leading-display)',
+            letterSpacing: 'var(--tracking-display)',
+            fontWeight: 'var(--weight-display)',
+          },
         ],
-        h1: ['var(--text-h1)', { lineHeight: 'var(--leading-h1)', fontWeight: 'var(--weight-h1)' }],
-        h2: ['var(--text-h2)', { lineHeight: 'var(--leading-h2)', fontWeight: 'var(--weight-h2)' }],
+        h1: [
+          'var(--text-h1)',
+          {
+            lineHeight: 'var(--leading-h1)',
+            letterSpacing: 'var(--tracking-h1)',
+            fontWeight: 'var(--weight-h1)',
+          },
+        ],
+        h2: [
+          'var(--text-h2)',
+          {
+            lineHeight: 'var(--leading-h2)',
+            letterSpacing: 'var(--tracking-h2)',
+            fontWeight: 'var(--weight-h2)',
+          },
+        ],
         body: [
           'var(--text-body)',
           { lineHeight: 'var(--leading-body)', fontWeight: 'var(--weight-body)' },

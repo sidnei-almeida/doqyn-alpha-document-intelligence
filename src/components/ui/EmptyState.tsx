@@ -28,7 +28,7 @@ export function EmptyState({
       role="status"
     >
       {icon ? (
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-doqyn-surface text-doqyn-muted">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-doqyn-border-subtle bg-doqyn-surface text-doqyn-muted">
           {icon}
         </div>
       ) : (

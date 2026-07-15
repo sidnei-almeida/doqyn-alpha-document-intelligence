@@ -8,7 +8,7 @@ export const fieldControlClass = cn(
   'type-body w-full rounded-lg border border-doqyn-border-subtle bg-doqyn-surface px-3.5 text-doqyn-text',
   'placeholder:text-doqyn-disabled transition-[border-color,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
   'hover:border-doqyn-border',
-  'focus-visible:border-doqyn-accent-active focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/25',
+  'focus-visible:border-doqyn-accent-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/20',
   'disabled:cursor-not-allowed disabled:opacity-40',
 );
 

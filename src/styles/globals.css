@@ -48,6 +48,47 @@
     font-family: var(--font-display);
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+  }
+
+  /* Scrollbars temáticas — finas, arredondadas, discretas (app inteiro) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   #root {
     width: 100%;
     min-height: 100%;
@@ -189,6 +230,7 @@
     font-size: var(--text-display);
     font-weight: var(--weight-display);
     line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
@@ -198,6 +240,7 @@
     font-size: var(--text-h1);
     font-weight: var(--weight-h1);
     line-height: var(--leading-h1);
+    letter-spacing: var(--tracking-h1);
     color: var(--text-primary);
   }
 
@@ -206,6 +249,7 @@
     font-size: var(--text-h2);
     font-weight: var(--weight-h2);
     line-height: var(--leading-h2);
+    letter-spacing: var(--tracking-h2);
     color: var(--text-primary);
   }
 
@@ -263,6 +307,7 @@
 
   .table-text {
     @apply type-body;
+    font-variant-numeric: tabular-nums;
   }
 
   .badge-text {
@@ -546,16 +591,16 @@
   .doqyn-tooltip {
     pointer-events: none;
     max-width: min(20rem, calc(100vw - 1rem));
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-default);
-    background: var(--bg-surface-2);
-    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
     padding: 0.3rem 0.55rem;
     font-family: var(--font-display);
     font-size: var(--text-caption);
     font-weight: var(--weight-label);
     line-height: var(--leading-label);
-    box-shadow: var(--shadow-dropdown);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
     z-index: var(--z-tooltip);
   }
 
