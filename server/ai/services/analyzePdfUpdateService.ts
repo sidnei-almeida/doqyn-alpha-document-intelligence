@@ -20,6 +20,13 @@ import { extractMetadataForVersionUpdate } from './metadataUpdateExtractorAgent.
 import { generateRecommendedFileName } from './documentNaming.js';
 import { augmentConfidentialityClassForExtraction } from '../utils/documentClassHeuristics.js';
 import { enrichMetadataWithPartyHeuristics } from '../utils/partyMetadataHeuristics.js';
+import { enrichMetadataWithDateHeuristics } from '../utils/dateMetadataHeuristics.js';
+import { enrichMetadataWithInferredValidity } from '../utils/validityMetadataHeuristics.js';
+import { recoverMissingValidityAnchor } from './recoverValidityAnchorAgent.js';
+import {
+  recoverMissingRequiredFieldsFromOcr,
+  reconcileRequiredFieldsAfterEnrichment,
+} from './recoverOcrRequiredFieldsAgent.js';
 import {
   buildRetrievalStats,
   selectChunksForClassification,
@@ -357,13 +364,53 @@ export async function analyzePdfUpdateBuffer(input: {
     },
   });
 
-  const enrichedMetadata = enrichMetadataWithPartyHeuristics({
-    chunks: extractionChunks,
-    selectedClass,
-    metadata: extraction.metadata,
+  let enrichedMetadata = enrichMetadataWithDateHeuristics({
+    metadata: enrichMetadataWithPartyHeuristics({
+      chunks: extractionChunks,
+      selectedClass,
+      metadata: extraction.metadata,
+    }),
+    chunks: extractionChunks.length > 0 ? extractionChunks : chunks,
+    originalFileName: input.originalFileName,
   });
 
+  enrichedMetadata = await recoverMissingValidityAnchor({
+    chunks: extractionChunks.length > 0 ? extractionChunks : chunks,
+    metadata: enrichedMetadata,
+    selectedClass: extractionClass,
+    context: {
+      requestId: input.requestContext?.requestId,
+      jobId,
+      companyId: input.companyId,
+      database: rulesLoad.database,
+    },
+  });
+
+  // Texto de OCR perde o vínculo rótulo→valor; varre o documento inteiro atrás
+  // dos obrigatórios que o retrieval por keyword não alcançou.
+  enrichedMetadata = await recoverMissingRequiredFieldsFromOcr({
+    chunks,
+    metadata: enrichedMetadata,
+    selectedClass: extractionClass,
+    ocrFallbackUsed: extracted.ocrFallbackUsed,
+    context: {
+      requestId: input.requestContext?.requestId,
+      jobId,
+      companyId: input.companyId,
+      database: rulesLoad.database,
+    },
+  });
+
+  enrichedMetadata = enrichMetadataWithInferredValidity(enrichedMetadata);
   extraction.metadata = enrichedMetadata;
+
+  const reconciled = reconcileRequiredFieldsAfterEnrichment({
+    extraction,
+    selectedClass: extractionClass,
+  });
+  extraction.missingFields = reconciled.missingFields;
+  extraction.requiresReview = reconciled.requiresReview;
+  extraction.reviewReasons = reconciled.reviewReasons;
 
   const recommendedFileName = generateRecommendedFileName({
     originalFileName: input.originalFileName,
