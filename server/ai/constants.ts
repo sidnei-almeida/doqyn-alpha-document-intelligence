@@ -69,7 +69,12 @@ export const MAX_CHUNKS_PER_FIELD = 3;
 /** Limites do prompt compacto de classificação (Etapa 5C). */
 export const MAX_CLASSIFIER_CHUNKS = 5;
 export const MAX_CHARS_PER_CLASSIFIER_CHUNK = 1200;
-export const MAX_CHARS_PER_EXTRACTOR_CHUNK = 1400;
+/**
+ * Precisa acompanhar CHUNK_SIZE: enquanto era 1400 contra chunk de 1800, todo
+ * chunk cheio perdia os últimos 400 chars antes de chegar ao modelo. O fecho do
+ * documento (data de assinatura, vigência) mora na cauda do último chunk.
+ */
+export const MAX_CHARS_PER_EXTRACTOR_CHUNK = CHUNK_SIZE;
 export const MAX_EXTRACTOR_FIELDS_IN_PROMPT = 12;
 export const MAX_POSITIVE_KEYWORDS_PER_CLASS = 10;
 export const MAX_NEGATIVE_KEYWORDS_PER_CLASS = 6;
