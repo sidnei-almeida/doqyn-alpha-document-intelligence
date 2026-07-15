@@ -45,8 +45,9 @@ show_port_usage() {
 is_port_free() {
   local port="$1"
   if command -v ss >/dev/null 2>&1; then
-    ! ss -tln "sport = :${port}" 2>/dev/null | grep -q LISTEN
-    return
+    if ss -tln "sport = :${port}" 2>/dev/null | grep -q LISTEN; then
+      return 1
+    fi
   fi
   return 0
 }

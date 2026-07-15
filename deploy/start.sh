@@ -4,7 +4,6 @@ set -euo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$DEPLOY_DIR/.env"
-COMPOSE_FILE="$DEPLOY_DIR/docker-compose.production.yml"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Arquivo deploy/.env não existe."
