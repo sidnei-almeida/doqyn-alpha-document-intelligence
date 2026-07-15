@@ -62,22 +62,30 @@ Deferred to a later hardening pass (audit findings P2–P4, not in this mileston
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | TBD (roadmapper) | Pending |
-| AUTHSEC-01 | TBD (roadmapper) | Pending |
-| AUTHSEC-02 | TBD (roadmapper) | Pending |
-| AUTHSEC-03 | TBD (roadmapper) | Pending |
-| DATA-01 | TBD (roadmapper) | Pending |
-| DATA-02 | TBD (roadmapper) | Pending |
-| DATA-03 | TBD (roadmapper) | Pending |
-| RELIABILITY-01 | TBD (roadmapper) | Pending |
-| SEC-01 | TBD (roadmapper) | Pending |
-| SEC-02 | TBD (roadmapper) | Pending |
+| INFRA-01 | Phase 1 — Deploy & Edge Hardening | Pending |
+| AUTHSEC-03 | Phase 1 — Deploy & Edge Hardening | Pending |
+| SEC-01 | Phase 1 — Deploy & Edge Hardening | Pending |
+| AUTHSEC-01 | Phase 2 — Auth Provider Fail-Closed | Pending |
+| AUTHSEC-02 | Phase 2 — Auth Provider Fail-Closed | Pending |
+| DATA-01 | Phase 3 — MongoDB Query & Index Layer | Pending |
+| DATA-02 | Phase 3 — MongoDB Query & Index Layer | Pending |
+| DATA-03 | Phase 3 — MongoDB Query & Index Layer | Pending |
+| RELIABILITY-01 | Phase 4 — Request-Path Reliability & Validation | Pending |
+| SEC-02 | Phase 4 — Request-Path Reliability & Validation | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 10 ⚠️ (will be resolved by roadmapper)
+- Mapped to phases: 10 ✓
+- Unmapped: 0 ✓
+
+Phases group requirements by technical layer (horizontal-layer mode), not user-facing vertical slices:
+- Phase 1 = deploy/edge config layer (`docker-compose.production.yml` + `nginx/default.conf`)
+- Phase 2 = application auth layer (`server/auth/*`, `api/auth/*`)
+- Phase 3 = MongoDB data-access/index layer (`dashboardOverviewService.ts`, `documentListQuery.ts`, `tenantIndexes.ts`, `setupMongo.ts`)
+- Phase 4 = Node request-handling layer (`enqueuePdfAnalysisJob.ts`, `documentPreviewScheduling.ts`, `api/**` write handlers)
+
+Note: AUTHSEC-03 (security headers) is assigned to Phase 1 rather than the auth-removal phase because it is an nginx/deploy-config change, sharing a layer and file (`deploy/nginx/default.conf`) with SEC-01's rate limiting — grouped by technical layer per project mode.
 
 ---
 *Requirements defined: 2026-07-15*
-*Last updated: 2026-07-15 after initial definition*
+*Last updated: 2026-07-15 after roadmap creation (phases assigned)*
