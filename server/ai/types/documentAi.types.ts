@@ -43,7 +43,8 @@ export type ExtractedMetadataField = {
   value: string | number | null;
   normalizedValue?: string | number | null;
   confidence: number;
-  source: 'document_text' | 'no_ai';
+  /** `ai` = preenchido por passagem LLM de recuperação; `no_ai` = heurística sem LLM. */
+  source: 'document_text' | 'no_ai' | 'ai';
   evidence?: EvidenceSnippet;
   currency?: string;
 };
