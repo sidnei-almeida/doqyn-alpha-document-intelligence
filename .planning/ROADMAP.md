@@ -28,7 +28,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Datastore services (mongo, postgres-auth, redis) declare guaranteed memory `reservations`, and bursty workers (doqyn-worker, doqyn-worker-preview) are tightly capped, so a runaway worker cannot get a datastore OOM-killed.
   3. `curl -I` against a production route returns `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy` headers on every response.
   4. A rapid burst of requests to `/api/share/*`, `/api/external-shares/*`, `/api/sign/*`, or `/api/verify/signature/*` starts returning 429/503 from nginx once the per-IP limit is exceeded, while normal traffic is unaffected.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Docker resource limits + datastore reservations + worker caps (INFRA-01)
+- [ ] 01-02-PLAN.md — Nginx security headers + public-route per-IP rate limiting (AUTHSEC-03, SEC-01)
+- [ ] 01-03-PLAN.md — Runtime verification: header/rate-limit smoke-check + guest-CSP human-verify (INFRA-01, AUTHSEC-03, SEC-01)
 
 ### Phase 2: Auth Provider Fail-Closed
 **Goal**: The application auth layer has exactly one authentication path (`doqyn_auth`), and a misconfigured deploy refuses to start rather than silently exposing the legacy single-admin login.
@@ -67,7 +70,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Deploy & Edge Hardening | 0/TBD | Not started | - |
+| 1. Deploy & Edge Hardening | 0/3 | Not started | - |
 | 2. Auth Provider Fail-Closed | 0/TBD | Not started | - |
 | 3. MongoDB Query & Index Layer | 0/TBD | Not started | - |
 | 4. Request-Path Reliability & Validation | 0/TBD | Not started | - |
