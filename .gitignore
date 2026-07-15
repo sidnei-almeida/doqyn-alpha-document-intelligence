@@ -76,3 +76,8 @@ backups/
 
 # Demo seed (manifest e relatório local do auth-service)
 .generated/
+
+# Documentos reais usados em teste local (contêm dados pessoais — nunca versionar)
+NDA_*.png
+NDA_*.pdf
+*.local-fixture.*
