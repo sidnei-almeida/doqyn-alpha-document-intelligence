@@ -114,11 +114,12 @@ describe('governance map draft — canvas e hook', () => {
     assert.ok(rules.includes('for (const edge of diff.added)'));
   });
 
-  it('RulesPage repassa onSaveMapChanges ao canvas', () => {
+  it('RulesPage usa vistas de acesso (cards + matriz) com mutação por célula', () => {
     const page = readSrc('features/rules/RulesPage.tsx');
-    assert.ok(page.includes('saveGovernanceMapChanges'));
-    assert.ok(page.includes('onSaveMapChanges={saveGovernanceMapChanges}'));
-    assert.equal(page.includes('onDisconnect={disconnectGroupFromCategory}'), false);
+    assert.ok(page.includes('CategoryAccessCard'));
+    assert.ok(page.includes('AccessMatrixView'));
+    assert.ok(page.includes('updateGroupClassPermissions'));
+    assert.equal(page.includes('GovernanceMapCanvas'), false);
   });
 
   it('categoria usa contagem do draft, não documentGroupIds do backend', () => {
