@@ -19,6 +19,7 @@ import {
   resolveDocumentActorIdentity,
 } from '../../utils/documentMutationFields.js';
 import { buildDocumentListItems } from '../documentListItems.js';
+import { escapeRegexLiteral } from '../../utils/documentListQuery.js';
 import {
   attachFavoriteFlags,
   lookupFavoriteFlags,
@@ -204,7 +205,7 @@ export async function listTrashDocuments(
   };
 
   if (filters?.search?.trim()) {
-    const term = filters.search.trim();
+    const term = escapeRegexLiteral(filters.search);
     query.$or = [
       { title: { $regex: term, $options: 'i' } },
       { currentFileName: { $regex: term, $options: 'i' } },
@@ -255,7 +256,7 @@ export async function listDeactivatedDocuments(
   };
 
   if (filters?.search?.trim()) {
-    const term = filters.search.trim();
+    const term = escapeRegexLiteral(filters.search);
     query.$or = [
       { title: { $regex: term, $options: 'i' } },
       { currentFileName: { $regex: term, $options: 'i' } },

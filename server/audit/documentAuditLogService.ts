@@ -5,6 +5,7 @@ import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext, withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { escapeRegexLiteral } from '../utils/documentListQuery.js';
 import { assertCanAccessDocument } from '../tenancy/documentOwnership.js';
 import {
   DOCUMENT_AUDIT_ACTION_LABELS,
@@ -418,7 +419,7 @@ function buildTrackingQuery(input: {
   }
 
   if (input.q?.trim()) {
-    const regex = { $regex: input.q.trim(), $options: 'i' };
+    const regex = { $regex: escapeRegexLiteral(input.q), $options: 'i' };
     query.$and = [
       ...(Array.isArray(query.$and) ? query.$and : []),
       {
