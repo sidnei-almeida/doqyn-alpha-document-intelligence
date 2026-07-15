@@ -4,6 +4,7 @@ import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext, withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { escapeRegexLiteral } from '../utils/documentListQuery.js';
 
 export type AuditEventSeverity = 'info' | 'success' | 'warning' | 'error' | 'critical';
 
@@ -108,7 +109,7 @@ function mapAuditLog(event: MongoAuditLog): AuditEventDto {
 
 function buildTextSearch(query: Record<string, unknown>, q?: string) {
   if (!q?.trim()) return;
-  const regex = { $regex: q.trim(), $options: 'i' };
+  const regex = { $regex: escapeRegexLiteral(q), $options: 'i' };
   query.$or = [
     { description: regex },
     { action: regex },
