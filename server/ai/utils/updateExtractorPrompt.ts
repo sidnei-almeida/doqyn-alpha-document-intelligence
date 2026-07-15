@@ -33,7 +33,7 @@ function limitExtractorChunks(chunks: RetrievedChunk[]): RetrievedChunk[] {
 
 function confidentialityExtractionHints(): string {
   return `
-DOCUMENTO DE CONFIDENCIALIDADE / NDA — priorize identificar partes reveladora e receptora nos trechos.`;
+DOCUMENTO DE CONFIDENCIALIDADE / NDA — priorize partes, data_assinatura, prazo_vigencia e data_validade (calcule âncora+prazo quando ambos existirem; sem âncora, data_validade null).`;
 }
 
 export function buildUpdateExtractorPrompt(input: {

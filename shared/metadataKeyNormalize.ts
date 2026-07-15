@@ -13,14 +13,19 @@ export const CANONICAL_METADATA_LABELS: Record<string, string> = {
   data_emissao: 'Data de emissão',
   vigencia_inicio: 'Início da vigência',
   vigencia_fim: 'Fim da vigência',
+  prazo_vigencia: 'Prazo de vigência',
+  prazo: 'Prazo de vigência',
   documento_type: 'Tipo',
   document_type: 'Tipo',
   documenttype: 'Tipo',
   tipo: 'Tipo',
+  titulo: 'Título',
+  title: 'Título',
   parties: 'Partes',
   cnpj: 'CNPJ',
   cpf: 'CPF',
   cpf_cnpj: 'CPF/CNPJ',
+  cpf_cnpj_receptora: 'CPF/CNPJ da parte receptora',
   resumo: 'Resumo',
   summary: 'Resumo',
   clausulas: 'Cláusulas',
@@ -30,7 +35,41 @@ export const CANONICAL_METADATA_LABELS: Record<string, string> = {
   classname: 'Categoria',
   recommendedfilename: 'Nome sugerido (IA)',
   aisuggestedfilename: 'Nome sugerido (IA)',
+  fornecedor: 'Fornecedor',
+  beneficiario: 'Beneficiário',
+  pagador: 'Pagador',
+  cliente: 'Cliente',
+  titular: 'Titular',
 };
+
+/**
+ * Ordem da ficha no painel Detalhes (viewer).
+ * Validade absoluta/inferida é tratada à parte (não listar data_validade aqui se o builder unificar).
+ */
+export const STANDARD_DETAILS_KEYS: readonly string[] = [
+  'titulo',
+  'parte_reveladora',
+  'parte_receptora',
+  'fornecedor',
+  'beneficiario',
+  'pagador',
+  'cliente',
+  'titular',
+  'cpf_cnpj_receptora',
+  'cpf_cnpj',
+  'cnpj',
+  'cpf',
+  'data_assinatura',
+  'data_documento',
+  'data_emissao',
+  'vigencia_inicio',
+  'prazo_vigencia',
+  'resumo',
+  'tipo',
+];
+
+/** Chaves de validade absoluta — o builder une num único campo "Validade". */
+export const VALIDITY_ABSOLUTE_KEYS = new Set(['data_validade', 'vigencia_fim', 'data_vencimento']);
 
 /** Aliases textuais (já slugificados) → chave canônica. */
 const ALIAS_TO_CANONICAL_KEY: Record<string, string> = {
@@ -59,6 +98,13 @@ const ALIAS_TO_CANONICAL_KEY: Record<string, string> = {
   vencimento: 'data_validade',
   data_emissao: 'data_emissao',
   data_de_emissao: 'data_emissao',
+  prazo_vigencia: 'prazo_vigencia',
+  prazo: 'prazo_vigencia',
+  vigencia_prazo: 'prazo_vigencia',
+  titulo: 'titulo',
+  title: 'titulo',
+  nome_documento: 'titulo',
+  document_title: 'titulo',
   resumo: 'resumo',
   summary: 'resumo',
   tipo: 'tipo',

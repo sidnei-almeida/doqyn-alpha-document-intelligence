@@ -684,6 +684,25 @@ export async function getDocumentDetail(
     ? flattenVersionMetadata(latestVersionRaw.metadata)
     : {};
 
+  const rawSearchMeta = (doc as MongoDocument).searchMeta;
+  const searchMeta = rawSearchMeta
+    ? {
+        people: rawSearchMeta.people ?? [],
+        dates: (rawSearchMeta.dates ?? []).map((entry) => ({
+          kind: entry.kind,
+          date: entry.date instanceof Date ? entry.date.toISOString() : String(entry.date),
+          sourceKey: entry.sourceKey,
+          label: entry.label,
+        })),
+        documentTitle: rawSearchMeta.documentTitle ?? null,
+        validityDate: rawSearchMeta.validityDate
+          ? rawSearchMeta.validityDate instanceof Date
+            ? rawSearchMeta.validityDate.toISOString()
+            : String(rawSearchMeta.validityDate)
+          : null,
+      }
+    : null;
+
   return {
     document,
     latestVersion,
@@ -692,6 +711,7 @@ export async function getDocumentDetail(
       Object.keys(versionMetadata).length > 0
         ? versionMetadata
         : ((record.metadata as Record<string, unknown> | undefined) ?? {}),
+    searchMeta,
     permissions,
   };
 }

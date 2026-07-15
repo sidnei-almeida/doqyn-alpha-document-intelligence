@@ -49,7 +49,10 @@ describe('visualização dentro da pasta', () => {
 
   it('OptionalDetailsDrawer minimalista com metadados essenciais', () => {
     const panel = readSrc('features/library/components/OptionalDetailsDrawer.tsx');
-    assert.ok(panel.includes('Atualizado'));
+    // "Atualizado" migrou para o componente compartilhado com o viewer.
+    const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
+    assert.ok(panel.includes('DocumentDetailsShared'));
+    assert.ok(shared.includes('Atualizado'));
     assert.ok(panel.includes('Visualizar'));
     assert.ok(panel.includes('/tracking?documentId='));
     assert.equal(panel.includes('DetailsPanelTabs'), false);

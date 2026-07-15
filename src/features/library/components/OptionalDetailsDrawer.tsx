@@ -6,18 +6,23 @@ import { buttonVariants } from '@/components/ui/buttonVariants';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { WorkspaceSideDrawer } from '@/components/layout/WorkspaceSideDrawer';
-import { formatDate } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem } from '@/types/document-library';
 import { getFolderAccentColor } from '../utils/folderColors';
-import type { LibrarySelection } from '../types/library';
+import type { LibraryFolder, LibrarySelection } from '../types/library';
 import { DocumentVersionHistoryPanel } from './DocumentVersionHistoryPanel';
 import { DocumentFileThumbnail } from './files/DocumentFileThumbnail';
 import { DocumentFavoriteBadge } from './files/DocumentFavoriteBadge';
 import { DocumentSignatureBadge } from './files/DocumentSignatureBadge';
 import { signatureDetailSummaryText } from '@/features/signature/utils/signatureSummaryDisplay';
 import { TruncatedText } from '@/components/ui/TruncatedText';
+import { useDocumentDetail } from '@/features/documents/hooks/useDocuments';
+import {
+  DocumentDetailField,
+  DocumentStandardFicha,
+  DocumentSystemDetails,
+} from '@/features/documents/components/DocumentDetailsShared';
 
 type OptionalDetailsDrawerProps = {
   selection: LibrarySelection;
@@ -30,15 +35,6 @@ type OptionalDetailsDrawerProps = {
   onDownloadSignedPdf?: (doc: DocumentListItem) => void;
   onTransferOwnership?: (doc: DocumentListItem) => void;
 };
-
-function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-1.5">
-      <dt className="shrink-0 text-[11px] text-doqyn-muted">{label}</dt>
-      <dd className="min-w-0 truncate text-right text-[11px] text-doqyn-text">{children}</dd>
-    </div>
-  );
-}
 
 function FileDetailsBody({
   doc,
@@ -72,6 +68,8 @@ function FileDetailsBody({
   );
   const verificationCode = doc.signatureSummary?.verificationCode;
 
+  const { data: detail, isLoading: detailLoading } = useDocumentDetail(doc.documentId);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0">
@@ -103,98 +101,108 @@ function FileDetailsBody({
         </div>
 
         <div className="flex flex-wrap gap-1.5 py-3">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={!canPreview}
-          onClick={() => onPreview(doc)}
-        >
-          <Icon name="visibility" size={ICON_SIZE.sm} />
-          Visualizar
-        </Button>
-        {canDownload && (
-          <Button type="button" size="sm" variant="secondary" onClick={() => onDownload(doc)}>
-            <Icon name="download" size={ICON_SIZE.sm} />
-            Baixar
-          </Button>
-        )}
-        {canTracking && (
-          <Link
-            to={`/tracking?documentId=${encodeURIComponent(doc.documentId)}`}
-            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={!canPreview}
+            onClick={() => onPreview(doc)}
           >
-            <Icon name="history" size={ICON_SIZE.sm} />
-            Tracking
-          </Link>
-        )}
-        {canUpdate && onUpdateDocument && (
-          <Button type="button" size="sm" variant="secondary" onClick={() => onUpdateDocument(doc)}>
-            <Icon name="upload" size={ICON_SIZE.sm} />
-            Atualizar documento
+            <Icon name="visibility" size={ICON_SIZE.sm} />
+            Visualizar
           </Button>
-        )}
-        {canTransferOwnership && (
-          <Button type="button" size="sm" variant="secondary" onClick={() => onTransferOwnership?.(doc)}>
-            <Icon name="person" size={ICON_SIZE.sm} />
-            Transferir propriedade
-          </Button>
-        )}
-      </div>
-
-      <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
-        <DetailField label="Categoria">{doc.categoryName ?? doc.documentType ?? '—'}</DetailField>
-        <DetailField label="Proprietário">{doc.ownerName ?? '—'}</DetailField>
-        <DetailField label="Enviado por">
-          {doc.createdBy?.displayName ?? '—'}
-        </DetailField>
-        <DetailField label="Última atualização por">
-          {doc.updatedByName ?? '—'}
-        </DetailField>
-        <DetailField label="Atualizado">{formatDate(doc.updatedAt)}</DetailField>
-        <DetailField label="Criado">{formatDate(doc.createdAt)}</DetailField>
-        <DetailField label="Versão">
-          <VersionBadge
-            version={doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version}`}
-            isCurrent
-          />
-        </DetailField>
-      </dl>
-
-      <div className="border-t border-doqyn-border-subtle py-3">
-        <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-          Assinatura
-        </p>
-        <p className="text-[12px] leading-relaxed text-doqyn-subtle">
-          {signatureDetailSummaryText(doc.signatureSummary)}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {hasSignatureActivity && onViewSignatures ? (
-            <Button type="button" size="sm" variant="secondary" onClick={() => onViewSignatures(doc)}>
-              Ver assinaturas
+          {canDownload && (
+            <Button type="button" size="sm" variant="secondary" onClick={() => onDownload(doc)}>
+              <Icon name="download" size={ICON_SIZE.sm} />
+              Baixar
             </Button>
-          ) : null}
-          {canDownloadSignedPdf ? (
+          )}
+          {canTracking && (
+            <Link
+              to={`/tracking?documentId=${encodeURIComponent(doc.documentId)}`}
+              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            >
+              <Icon name="history" size={ICON_SIZE.sm} />
+              Tracking
+            </Link>
+          )}
+          {canUpdate && onUpdateDocument && (
+            <Button type="button" size="sm" variant="secondary" onClick={() => onUpdateDocument(doc)}>
+              <Icon name="upload" size={ICON_SIZE.sm} />
+              Atualizar documento
+            </Button>
+          )}
+          {canTransferOwnership && (
             <Button
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => onDownloadSignedPdf?.(doc)}
-              data-testid="details-download-signed-pdf"
+              onClick={() => onTransferOwnership?.(doc)}
             >
-              Baixar PDF assinado
+              <Icon name="person" size={ICON_SIZE.sm} />
+              Transferir propriedade
             </Button>
-          ) : null}
-          {verificationCode ? (
-            <Link
-              to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-            >
-              Abrir validador
-            </Link>
-          ) : null}
+          )}
         </div>
-      </div>
+
+        <DocumentSystemDetails document={detail?.document ?? doc} />
+
+        <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
+          <DocumentDetailField label="Versão">
+            <VersionBadge
+              version={doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version}`}
+              isCurrent
+            />
+          </DocumentDetailField>
+        </dl>
+
+        {detailLoading ? (
+          <p className="py-2 text-[11px] text-doqyn-muted">Carregando ficha…</p>
+        ) : (
+          <div className="py-2">
+            <DocumentStandardFicha metadata={detail?.metadata} searchMeta={detail?.searchMeta} />
+          </div>
+        )}
+
+        <div className="border-t border-doqyn-border-subtle py-3">
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
+            Assinatura
+          </p>
+          <p className="text-[12px] leading-relaxed text-doqyn-subtle">
+            {signatureDetailSummaryText(doc.signatureSummary)}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {hasSignatureActivity && onViewSignatures ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => onViewSignatures(doc)}
+              >
+                Ver assinaturas
+              </Button>
+            ) : null}
+            {canDownloadSignedPdf ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => onDownloadSignedPdf?.(doc)}
+                data-testid="details-download-signed-pdf"
+              >
+                Baixar PDF assinado
+              </Button>
+            ) : null}
+            {verificationCode ? (
+              <Link
+                to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                Abrir validador
+              </Link>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col border-t border-doqyn-border-subtle pt-3">
@@ -212,8 +220,6 @@ function FileDetailsBody({
     </div>
   );
 }
-
-import type { LibraryFolder } from '../types/library';
 
 function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
   const accent = getFolderAccentColor(folder.name);
@@ -289,10 +295,10 @@ export function OptionalDetailsDrawer({
           onDownload={onDownload}
           onUpdateDocument={onUpdateDocument}
           onPreviewVersion={onPreviewVersion}
-        onViewSignatures={onViewSignatures}
-        onDownloadSignedPdf={onDownloadSignedPdf}
-        onTransferOwnership={onTransferOwnership}
-      />
+          onViewSignatures={onViewSignatures}
+          onDownloadSignedPdf={onDownloadSignedPdf}
+          onTransferOwnership={onTransferOwnership}
+        />
       )}
       {selection.kind === 'folder' && <FolderDetailsBody folder={selection.folder} />}
     </WorkspaceSideDrawer>
