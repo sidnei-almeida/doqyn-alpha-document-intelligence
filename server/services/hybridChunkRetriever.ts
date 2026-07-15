@@ -12,9 +12,9 @@
  */
 import {
   MAX_CHUNKS_FOR_CLASSIFICATION,
-  MAX_CHUNKS_FOR_EXTRACTION,
   MAX_CHUNKS_PER_FIELD,
 } from '../ai/constants.js';
+import { getExtractionMaxChunks } from '../ai/utils/aiConfig.js';
 import { extraRetrievalTermsForClass } from '../ai/utils/documentClassHeuristics.js';
 import type {
   DocumentChunk,
@@ -310,7 +310,7 @@ export function retrieveChunksForExtraction(input: {
   selectedClass: DocumentClassRule;
   topK?: number;
 }): RetrievedChunk[] {
-  const limit = input.topK ?? MAX_CHUNKS_FOR_EXTRACTION;
+  const limit = input.topK ?? getExtractionMaxChunks();
   const byId = new Map<string, RetrievedChunk>();
 
   const requiredFields = input.selectedClass.fields.filter((field) => field.required);
