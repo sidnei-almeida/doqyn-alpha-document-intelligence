@@ -58,7 +58,7 @@ describe('governance runtime access', () => {
     assert.equal(perms.canUpdate, false);
   });
 
-  it('sem regra ativa continua exigindo snapshot de grupos no documento', () => {
+  it('desconectar o grupo revoga acesso mesmo com snapshot antigo no documento', () => {
     const user = commonUser();
     const doc = {
       ownerUserId: 'user_outro',
@@ -72,7 +72,16 @@ describe('governance runtime access', () => {
       },
     };
 
-    assert.equal(canUserListDocument(user, doc, ['group_financeiro']), false);
+    const emptyIndex = buildGovernanceAccessIndex([]);
+
+    // Usuário está no grupo carimbado no documento, mas a regra grupo ↔ categoria
+    // foi desconectada — o snapshot não pode mais conceder acesso.
+    assert.equal(canUserListDocument(user, doc, ['group_juridico'], emptyIndex), false);
+    assert.equal(canUserListDocument(user, doc, ['group_juridico']), false);
+
+    const perms = resolveDocumentPermissions(user, doc, ['group_juridico'], emptyIndex);
+    assert.equal(perms.canPreview, false);
+    assert.equal(perms.canDownload, false);
   });
 
   it('lista categorias visíveis via governança para dashboard/query', () => {

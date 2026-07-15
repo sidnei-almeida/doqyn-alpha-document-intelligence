@@ -7,6 +7,7 @@ import {
   resolveDocumentPermissions,
   userHasDocumentGroupAccess,
 } from '../server/tenancy/documentAccess.js';
+import { buildGovernanceAccessIndex } from '../server/tenancy/governanceAccessIndex.js';
 import { getPreviewErrorMessage } from '../src/features/documents/utils/previewErrors.js';
 import type { AuthUser } from '../server/auth/types.js';
 
@@ -58,17 +59,43 @@ describe('documentAccess permissions', () => {
     assert.equal(perms.canDownload, false);
   });
 
-  it('usuário comum com grupo permitido visualiza', () => {
+  it('usuário comum com regra ativa (grupo ↔ categoria) visualiza', () => {
+    const governanceIndex = buildGovernanceAccessIndex([
+      {
+        categoryId: 'cat_juridico',
+        groupId: 'group_juridico',
+        active: true,
+        permissions: { view: true, download: true, upload: false, share: false, manage: false },
+      },
+    ]);
+
     const perms = resolveDocumentPermissions(
       commonUser(),
       {
         ownerUserId: 'other',
-        access: { viewGroupIds: ['group_juridico'], downloadGroupIds: ['group_juridico'] },
+        classId: 'cat_juridico',
+        access: { viewGroupIds: [], downloadGroupIds: [] },
       },
       ['group_juridico'],
+      governanceIndex,
     );
     assert.equal(perms.canPreview, true);
     assert.equal(perms.canDownload, true);
+  });
+
+  it('snapshot de grupos no documento não concede acesso sem regra ativa', () => {
+    const perms = resolveDocumentPermissions(
+      commonUser(),
+      {
+        ownerUserId: 'other',
+        classId: 'cat_juridico',
+        access: { viewGroupIds: ['group_juridico'], downloadGroupIds: ['group_juridico'] },
+      },
+      ['group_juridico'],
+      buildGovernanceAccessIndex([]),
+    );
+    assert.equal(perms.canPreview, false);
+    assert.equal(perms.canDownload, false);
   });
 
   it('owner visualiza mesmo sem grupo', () => {
