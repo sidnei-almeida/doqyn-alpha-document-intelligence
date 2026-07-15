@@ -420,6 +420,7 @@ export function useRules(actorName: string) {
   return {
     groups,
     categories,
+    members,
     groupMemberCounts,
     loading,
     error,
