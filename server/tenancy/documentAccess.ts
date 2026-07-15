@@ -36,6 +36,11 @@ export function userHasDocumentGroupAccess(
   return requiredGroupIds.some((groupId) => memberGroupIds.includes(groupId));
 }
 
+/**
+ * Grupos são resolvidos SEMPRE pelas regras de governança ativas (grupo ↔ categoria),
+ * nunca pelo snapshot access.*GroupIds gravado no documento — o snapshot é apenas
+ * informativo e fica obsoleto quando o admin desconecta um grupo no mapa de regras.
+ */
 export function resolveDocumentPermissions(
   user: AuthUser,
   doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
@@ -44,25 +49,19 @@ export function resolveDocumentPermissions(
 ): DocumentAccessPermissions {
   const isAdmin = isDocumentAdmin(user);
   const isOwner = Boolean(doc.ownerUserId && doc.ownerUserId === user.id);
-  const viewGroups = doc.access?.viewGroupIds ?? [];
-  const downloadGroups = doc.access?.downloadGroupIds ?? [];
-  const updateGroups = doc.access?.updateGroupIds ?? [];
 
   const canPreview =
     isAdmin ||
     isOwner ||
-    userHasDocumentGroupAccess(viewGroups, memberGroupIds) ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'view');
 
   const canDownload =
     isAdmin ||
     isOwner ||
-    userHasDocumentGroupAccess(downloadGroups, memberGroupIds) ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'download');
 
   const canContribute =
     isAdmin ||
-    userHasDocumentGroupAccess(updateGroups, memberGroupIds) ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'upload');
 
   const canUpdate = isAdmin;
@@ -210,12 +209,6 @@ export function canUserListDocument(
 ): boolean {
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
-
-  const viewGroups = doc.access?.viewGroupIds ?? [];
-  if (userHasDocumentGroupAccess(viewGroups, memberGroupIds)) return true;
-
-  const downloadGroups = doc.access?.downloadGroupIds ?? [];
-  if (userHasDocumentGroupAccess(downloadGroups, memberGroupIds)) return true;
 
   if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'view')) {
     return true;

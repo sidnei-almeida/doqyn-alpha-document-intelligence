@@ -82,9 +82,12 @@ describe('confirmUpdateSchema', () => {
   });
 });
 
-describe('documentAccess canUpdate', () => {
-  it('resolve canUpdate via updateGroupIds', async () => {
+describe('documentAccess canContribute', () => {
+  it('resolve canContribute via regra de governança (upload); canUpdate segue admin-only', async () => {
     const { resolveDocumentPermissions } = await import('../server/tenancy/documentAccess.js');
+    const { buildGovernanceAccessIndex } = await import(
+      '../server/tenancy/governanceAccessIndex.js'
+    );
     const user = {
       id: 'user_1',
       email: 'u@test.dev',
@@ -95,22 +98,34 @@ describe('documentAccess canUpdate', () => {
       platformRoles: ['user' as const],
     };
 
+    const governanceIndex = buildGovernanceAccessIndex([
+      {
+        categoryId: 'cat_1',
+        groupId: 'g_update',
+        active: true,
+        permissions: { view: false, download: false, upload: true, share: false, manage: false },
+      },
+    ]);
+
     const perms = resolveDocumentPermissions(
       user,
       {
         ownerUserId: 'other',
+        classId: 'cat_1',
         access: {
-          viewGroupIds: ['g1'],
-          downloadGroupIds: ['g1'],
-          updateGroupIds: ['g_update'],
+          viewGroupIds: [],
+          downloadGroupIds: [],
+          updateGroupIds: [],
           auditGroupIds: [],
           shareGroupIds: [],
         },
       },
       ['g_update'],
+      governanceIndex,
     );
 
-    assert.equal(perms.canUpdate, true);
+    assert.equal(perms.canContribute, true);
+    assert.equal(perms.canUpdate, false);
     assert.equal(perms.canPreview, false);
   });
 });

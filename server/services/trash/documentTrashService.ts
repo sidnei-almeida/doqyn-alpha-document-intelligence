@@ -11,6 +11,7 @@ import {
   assertCanTrashDocument,
   assertCanManageDeactivatedDocuments,
   canUserListDocument,
+  loadDocumentAccessContext,
   loadMemberDocumentGroupIds,
 } from '../../tenancy/documentAccess.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
@@ -221,14 +222,14 @@ export async function listTrashDocuments(
     .limit(limit)
     .toArray();
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
 
   const visible = docs.filter((doc) =>
-    canUserListDocument(user, doc as MongoDocument, memberGroupIds),
+    canUserListDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex),
   ) as MongoDocument[];
 
   return buildTrashListResponse(ctx, user, visible);
