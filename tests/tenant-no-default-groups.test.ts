@@ -35,8 +35,8 @@ describe('empresa nova sem grupos documentais padrão', () => {
   });
 
   it('/rules mostra empty state real sem mocks', () => {
-    const source = readSrc('src/features/rules/components/governance/GovernanceMapCanvas.tsx');
-    assert.ok(source.includes('Mapa de governança vazio'));
+    const source = readSrc('src/features/rules/RulesPage.tsx');
+    assert.ok(source.includes('Nenhuma categoria de documentos ainda.'));
     assert.equal(source.includes('INITIAL_GROUPS'), false);
     assert.equal(source.includes('mockData'), false);
   });
