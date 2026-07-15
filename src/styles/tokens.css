@@ -122,8 +122,8 @@
   --text-hint: var(--text-tertiary);
 
   --shadow-elevation-1: none;
-  --shadow-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-workspace-panel: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-elevation-2: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-workspace-panel: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-sticky-footer: 0 -2px 12px rgba(0, 0, 0, 0.35);
   --shadow-action-glow: none;
   --shadow-card-hover: none;
@@ -137,6 +137,15 @@
   --toast-muted: #bdc1c6;
   --toast-action: #8ab4f8;
   --toast-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
+
+  /* Tooltip — inverse surface (padrão Google), sem borda */
+  --tooltip-bg: #3c4043;
+  --tooltip-text: #e8eaed;
+
+  /* Scrollbar temática + seleção de texto */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+  --selection-bg: rgba(138, 180, 248, 0.3);
 
   --governance-flow-card-bg: var(--bg-surface-3);
   --governance-flow-card-border: color-mix(in srgb, var(--border-subtle) 55%, var(--border-default));
@@ -290,6 +299,15 @@
   --toast-action: #aecbfa;
   --toast-shadow: 0 2px 8px rgba(60, 64, 67, 0.28), 0 4px 16px rgba(60, 64, 67, 0.16);
 
+  /* Tooltip — inverse surface (padrão Google), sem borda */
+  --tooltip-bg: #3c4043;
+  --tooltip-text: #f1f3f4;
+
+  /* Scrollbar temática + seleção de texto */
+  --scrollbar-thumb: rgba(60, 64, 67, 0.28);
+  --scrollbar-thumb-hover: rgba(60, 64, 67, 0.45);
+  --selection-bg: rgba(26, 115, 232, 0.18);
+
   --governance-flow-card-bg: var(--color-background);
   --governance-flow-card-border: var(--border-default);
   --governance-flow-card-shadow: var(--shadow-elevation-1);
@@ -325,14 +343,17 @@
   --text-display: 32px;
   --weight-display: 500;
   --leading-display: 1.2;
+  --tracking-display: -0.015em;
 
   --text-h1: 24px;
   --weight-h1: 500;
   --leading-h1: 1.2;
+  --tracking-h1: -0.01em;
 
   --text-h2: 16px;
   --weight-h2: 500;
   --leading-h2: 1.2;
+  --tracking-h2: -0.005em;
 
   --text-body: 14px;
   --weight-body: 400;
