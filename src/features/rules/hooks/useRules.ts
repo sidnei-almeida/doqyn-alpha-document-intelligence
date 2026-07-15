@@ -37,12 +37,6 @@ import {
   mapApiGroup,
   mapCompanyMemberDtoToRulesMember,
 } from '../api/mappers';
-import {
-  DEFAULT_CONNECTION_PERMISSIONS,
-  EMPTY_CONNECTION_PERMISSIONS,
-  listGovernanceEdges,
-} from '../utils/governanceConnections';
-import type { GovernanceEdgeDiff } from '../utils/governanceMapDraft';
 import { useCompanyMembers } from '@/features/users/hooks/useCompanyMembers';
 
 export type InviteMemberInput = {
@@ -227,63 +221,18 @@ export function useRules(actorName: string) {
     async (groupId: string, classId: string, permissions: DocumentAccessPermissions) => {
       try {
         await updateDocumentAccessMatrixCell({ groupId, classId, permissions });
-        const [refreshed, matrix] = await Promise.all([getDocumentClasses(), getDocumentAccessMatrix()]);
+        const [refreshed, matrix] = await Promise.all([
+          getDocumentClasses(),
+          getDocumentAccessMatrix(),
+        ]);
         setCategories(filterActiveCategories(enrichCategoriesFromMatrix(refreshed, matrix)));
+        await invalidateLibraryQueries(queryClient, tenantId);
         toast.success('Permissões atualizadas.');
       } catch (err) {
         handleApiError(err, 'Não foi possível atualizar permissões.');
       }
     },
-    [],
-  );
-
-  const disconnectGroupFromCategory = useCallback(
-    async (groupId: string, categoryId: string) => {
-      await updateDocumentAccessMatrixCell({
-        groupId,
-        classId: categoryId,
-        permissions: EMPTY_CONNECTION_PERMISSIONS,
-      });
-    },
-    [],
-  );
-
-  const connectGroupToCategory = useCallback(
-    async (
-      groupId: string,
-      categoryId: string,
-      permissions: DocumentAccessPermissions = DEFAULT_CONNECTION_PERMISSIONS,
-    ) => {
-      await updateDocumentAccessMatrixCell({ groupId, classId: categoryId, permissions });
-    },
-    [],
-  );
-
-  const saveGovernanceMapChanges = useCallback(
-    async (diff: GovernanceEdgeDiff) => {
-      try {
-        for (const edge of diff.removed) {
-          await disconnectGroupFromCategory(edge.targetId, edge.sourceId);
-        }
-        for (const edge of diff.added) {
-          await connectGroupToCategory(edge.targetId, edge.sourceId, edge.permissions);
-        }
-
-        const [refreshed, matrix] = await Promise.all([
-          getDocumentClasses(),
-          getDocumentAccessMatrix(),
-        ]);
-        const nextCategories = filterActiveCategories(enrichCategoriesFromMatrix(refreshed, matrix));
-        setCategories(nextCategories);
-        await invalidateLibraryQueries(queryClient, tenantId);
-        toast.success('Alterações salvas.');
-        return listGovernanceEdges(nextCategories, groups);
-      } catch (err) {
-        handleApiError(err, 'Não foi possível salvar as alterações.');
-        throw err;
-      }
-    },
-    [connectGroupToCategory, disconnectGroupFromCategory, groups, queryClient, tenantId],
+    [queryClient, tenantId],
   );
 
   const updateCategory = useCallback(
@@ -429,9 +378,6 @@ export function useRules(actorName: string) {
     deleteGroup,
     updateGroup,
     updateGroupClassPermissions,
-    disconnectGroupFromCategory,
-    connectGroupToCategory,
-    saveGovernanceMapChanges,
     updateCategory,
     createCategory,
     deleteCategory,

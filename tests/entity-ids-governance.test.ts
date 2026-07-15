@@ -6,7 +6,7 @@ import {
   isDocumentGroupId,
 } from '../src/lib/entityIds.js';
 import { resolveLibraryCategoryId } from '../src/features/library/utils/resolveLibraryCategory.js';
-import { listGovernanceConnections } from '../src/features/rules/utils/governanceConnections.js';
+import { listConnectedGroups } from '../src/features/rules/components/access/accessModel.js';
 import type { DocumentCategory, Group } from '../src/types/rules.js';
 
 const CATEGORIES = [
@@ -78,9 +78,8 @@ describe('governance connections — todas as permissões', () => {
       },
     ];
 
-    const connections = listGovernanceConnections(categories, groups);
-    assert.equal(connections.length, 1);
-    assert.equal(connections[0]?.groupId, 'group_financeiro');
-    assert.equal(connections[0]?.categoryId, 'cat_juridico');
+    const connected = listConnectedGroups(categories[0]!, groups);
+    assert.equal(connected.length, 1);
+    assert.equal(connected[0]?.id, 'group_financeiro');
   });
 });
