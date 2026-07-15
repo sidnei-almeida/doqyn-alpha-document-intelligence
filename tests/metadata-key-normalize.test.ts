@@ -50,6 +50,67 @@ describe('metadataKeyNormalize', () => {
   });
 });
 
+describe('buildStandardDetailsFields', () => {
+  it('monta ficha standard com validade inferida', async () => {
+    const { buildStandardDetailsFields } = await import(
+      '../src/features/document-update-version/utils/documentMetadataDisplay.ts'
+    );
+
+    const fields = buildStandardDetailsFields({
+      metadata: {
+        parte_reveladora: 'Empresa A',
+        parte_receptora: 'Empresa B',
+        data_assinatura: '2024-01-15',
+        prazo_vigencia: '5 anos',
+        multa_penalidade: 'R$ 10.000',
+      },
+      searchMeta: {
+        people: [
+          { name: 'Empresa A', role: 'parte_reveladora' },
+          { name: 'Empresa B', role: 'parte_receptora' },
+        ],
+        dates: [
+          {
+            kind: 'validade',
+            date: '2029-01-15T00:00:00.000Z',
+            label: 'Prazo de vigência (inferido de data_assinatura)',
+          },
+        ],
+        validityDate: '2029-01-15T00:00:00.000Z',
+      },
+    });
+
+    const keys = fields.map((f) => f.key);
+    assert.ok(keys.includes('parte_reveladora'));
+    assert.ok(keys.includes('parte_receptora'));
+    assert.ok(keys.includes('data_assinatura'));
+    assert.ok(keys.includes('prazo_vigencia'));
+    assert.ok(keys.includes('validity'));
+    assert.ok(!keys.includes('multa_penalidade'));
+
+    const validity = fields.find((f) => f.key === 'validity');
+    assert.equal(validity?.value, '15/01/2029');
+    assert.ok(validity?.hint);
+  });
+
+  it('validade sem âncora fica não determinada', async () => {
+    const { buildStandardDetailsFields } = await import(
+      '../src/features/document-update-version/utils/documentMetadataDisplay.ts'
+    );
+
+    const fields = buildStandardDetailsFields({
+      metadata: {
+        parte_reveladora: 'Só nome',
+        prazo_vigencia: '5 anos',
+      },
+      searchMeta: { people: [], dates: [], validityDate: null },
+    });
+
+    const validity = fields.find((f) => f.key === 'validity');
+    assert.equal(validity?.value, 'Não determinada');
+  });
+});
+
 describe('buildVersionComparisonRows — sem duplicata de metadado', () => {
   it('casa Parte Reveladora (legado) com parte_reveladora (extração)', () => {
     const detail = {

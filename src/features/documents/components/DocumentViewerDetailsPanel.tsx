@@ -1,11 +1,6 @@
 import { Select } from '@/components/ui/Select';
-import { StatusPill } from '@/components/ui/StatusPill';
-import { TruncatedText } from '@/components/ui/TruncatedText';
-import { formatDate } from '@/lib/utils';
-import type { DocumentStatus } from '@/types/document';
 import type { DocumentDetailResponse, DocumentVersionSummary } from '@/types/document-library';
-import { getPreviewStatusLabel } from '../utils/previewErrors';
-import { metadataRecordToDisplayFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
+import { DocumentDetailsSections } from './DocumentDetailsShared';
 
 type DocumentViewerDetailsPanelProps = {
   data: DocumentDetailResponse;
@@ -22,80 +17,36 @@ export function DocumentViewerDetailsPanel({
   displayName,
   onSelectVersion,
 }: DocumentViewerDetailsPanelProps) {
-  return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
+  const versionSlot =
+    data.versions.length > 1 ? (
+      <Select
+        id="viewer-document-version"
+        label="Versão"
+        value={activeVersionId ?? ''}
+        onChange={(event) => onSelectVersion(event.target.value)}
+        options={data.versions.map((version) => ({
+          value: version.versionId,
+          label: `${version.versionLabel ?? version.versionId} — ${version.finalFileName ?? 'sem nome'}`,
+        }))}
+      />
+    ) : activeVersion?.versionLabel ? (
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-doqyn-muted">Documento</p>
-        <TruncatedText className="mt-1 break-words text-sm font-medium text-doqyn-text">
-          {displayName}
-        </TruncatedText>
+        <p className="text-[11px] text-doqyn-muted">Versão</p>
+        <p className="text-[12px] text-doqyn-text">{activeVersion.versionLabel}</p>
       </div>
+    ) : null;
 
-      <div className="flex items-center gap-2">
-        <StatusPill status={(data.document.status as DocumentStatus) ?? 'active'} />
-        <span className="text-xs text-doqyn-muted">
-          {getPreviewStatusLabel(activeVersion?.preview?.status ?? data.document.preview?.status)}
-        </span>
-      </div>
-
-      <dl className="grid gap-3 text-sm">
-        <div>
-          <dt className="text-xs text-doqyn-muted">Categoria</dt>
-          <dd className="text-doqyn-text">
-            {data.document.categoryName ?? data.document.documentType ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-doqyn-muted">Enviado por</dt>
-          <dd className="text-doqyn-text">
-            {data.document.createdBy?.displayName ?? data.document.ownerName ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-doqyn-muted">Criado em</dt>
-          <dd className="text-doqyn-text">{formatDate(data.document.createdAt)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-doqyn-muted">Atualizado em</dt>
-          <dd className="text-doqyn-text">{formatDate(data.document.updatedAt)}</dd>
-        </div>
-      </dl>
-
-      {data.versions.length > 1 ? (
-        <Select
-          id="viewer-document-version"
-          label="Versão"
-          value={activeVersionId ?? ''}
-          onChange={(event) => onSelectVersion(event.target.value)}
-          options={data.versions.map((version) => ({
-            value: version.versionId,
-            label: `${version.versionLabel ?? version.versionId} — ${version.finalFileName ?? 'sem nome'}`,
-          }))}
-        />
-      ) : activeVersion?.versionLabel ? (
-        <div>
-          <p className="text-xs text-doqyn-muted">Versão</p>
-          <p className="text-sm text-doqyn-text">{activeVersion.versionLabel}</p>
-        </div>
-      ) : null}
-
-      {Object.keys(data.metadata).length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-doqyn-muted">
-            Metadados
-          </p>
-          <dl className="grid gap-2 text-sm">
-            {metadataRecordToDisplayFields(data.metadata)
-              .slice(0, 12)
-              .map((field) => (
-                <div key={field.key}>
-                  <dt className="text-xs text-doqyn-muted">{field.label}</dt>
-                  <dd className="break-words text-doqyn-text">{field.value}</dd>
-                </div>
-              ))}
-          </dl>
-        </div>
-      )}
+  return (
+    <div className="flex h-full flex-col overflow-y-auto p-4">
+      <DocumentDetailsSections
+        document={data.document}
+        metadata={data.metadata}
+        searchMeta={data.searchMeta}
+        displayName={displayName}
+        previewStatus={activeVersion?.preview?.status ?? data.document.preview?.status}
+        showPreviewStatus
+        versionSlot={versionSlot}
+      />
     </div>
   );
 }

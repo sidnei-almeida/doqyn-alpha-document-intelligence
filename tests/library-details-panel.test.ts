@@ -24,10 +24,14 @@ describe('painel de detalhes da Biblioteca', () => {
   });
 
   it('mostra metadados essenciais do arquivo', () => {
-    const source = drawer();
-    for (const field of ['Categoria', 'Proprietário', 'Atualizado', 'Versão']) {
-      assert.ok(source.includes(field), `campo ${field} presente`);
+    // Campos de sistema vivem no componente compartilhado com o viewer;
+    // o drawer o renderiza e acrescenta os seus próprios.
+    const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
+    assert.ok(drawer().includes('DocumentDetailsShared'), 'drawer usa o componente compartilhado');
+    for (const field of ['Categoria', 'Proprietário', 'Atualizado']) {
+      assert.ok(shared.includes(field), `campo ${field} presente no compartilhado`);
     }
+    assert.ok(drawer().includes('Versão'), 'campo Versão presente no drawer');
   });
 
   it('popover de contexto com link para Regras quando há categoria', () => {
