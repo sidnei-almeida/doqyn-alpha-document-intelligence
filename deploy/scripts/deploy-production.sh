@@ -6,7 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$DEPLOY_DIR/.." && pwd)"
 ENV_FILE="$DEPLOY_DIR/.env"
-COMPOSE_FILE="$DEPLOY_DIR/docker-compose.production.yml"
 
 # shellcheck source=lib/compose-production.sh
 source "$SCRIPT_DIR/lib/compose-production.sh"
