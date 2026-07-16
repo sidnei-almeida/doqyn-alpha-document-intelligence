@@ -26,7 +26,9 @@ export function OverviewPanelStat({
       className="overview-governance-stat flex h-full min-h-[5.75rem] flex-col justify-center px-3 py-3 text-left sm:px-4 sm:py-4"
     >
       <p className="overview-kpi-label">{label}</p>
-      <div className={cn('overview-governance-value mt-1 tabular-nums', valueClassName)}>{value}</div>
+      <div className={cn('overview-governance-value mt-1 tabular-nums', valueClassName)}>
+        {value}
+      </div>
       {hint ? <p className="overview-kpi-subtext mt-1 line-clamp-2">{hint}</p> : null}
     </Wrapper>
   );
@@ -42,9 +44,7 @@ export function OverviewPanelStatGrid({
   columnsClassName = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
 }: OverviewPanelStatGridProps) {
   return (
-    <div className={cn('grid gap-px bg-doqyn-border-subtle/50', columnsClassName)}>
-      {children}
-    </div>
+    <div className={cn('bg-doqyn-border-subtle/50 grid gap-px', columnsClassName)}>{children}</div>
   );
 }
 
@@ -65,15 +65,17 @@ type OverviewPanelFooterProps = {
 
 export function OverviewPanelFooter({ links, onNavigate, status }: OverviewPanelFooterProps) {
   return (
-    <div className="border-t border-doqyn-border-subtle/60 px-4 py-3 sm:px-5">
-      {status ? <div className="mb-2.5 min-h-[1.25rem] text-sm leading-relaxed">{status}</div> : null}
+    <div className="border-doqyn-border-subtle/60 border-t px-4 py-3 sm:px-5">
+      {status ? (
+        <div className="mb-2.5 min-h-[1.25rem] text-sm leading-relaxed">{status}</div>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {links.map((item) => (
           <button
             key={item.path}
             type="button"
             onClick={() => onNavigate(item.path)}
-            className="inline-flex items-center gap-1 rounded-full border border-doqyn-border-subtle bg-doqyn-bg/50 px-3 py-1.5 text-xs font-medium text-doqyn-text hover:bg-doqyn-surface-hover"
+            className="bg-doqyn-bg/50 inline-flex items-center gap-1 rounded-full border border-doqyn-border-subtle px-3 py-1.5 text-xs font-medium text-doqyn-text hover:bg-doqyn-surface-hover"
           >
             {item.label}
             <Icon name="chevron_right" size={14} className="text-doqyn-subtle" aria-hidden />

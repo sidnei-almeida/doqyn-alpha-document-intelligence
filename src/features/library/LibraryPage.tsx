@@ -63,6 +63,7 @@ import { downloadSignatureRequestSignedPdf } from '@/features/signature/api/sign
 import { signedPdfDownloadName } from '@/features/signature/utils/signatureSummaryDisplay';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
+import { DocumentChatDrawer } from '@/features/documents/components/DocumentChatDrawer';
 
 function notifyComingSoon(label: string) {
   toast.info(`${label} estará disponível em uma próxima versão.`);
@@ -145,6 +146,7 @@ export function LibraryPage() {
   });
   const [infoOpen, setInfoOpen] = useState(false);
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
+  const [chatDrawerDoc, setChatDrawerDoc] = useState<DocumentListItem | null>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
   const [transferModalDoc, setTransferModalDoc] = useState<DocumentListItem | null>(null);
@@ -778,6 +780,7 @@ export function LibraryPage() {
         onDownloadFile={(doc) => void handleDownload(doc)}
         onTrackingFile={handleTracking}
         onSelectFileDetails={openFileDetails}
+        onChatFile={setChatDrawerDoc}
         onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
         onUpdateDocument={handleUpdateDocument}
         onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
@@ -800,6 +803,13 @@ export function LibraryPage() {
       <UpdateDocumentVersionDrawer
         documentId={updateVersionDocumentId}
         onClose={closeUpdateVersionDrawer}
+      />
+
+      <DocumentChatDrawer
+        open={Boolean(chatDrawerDoc)}
+        documentId={chatDrawerDoc?.documentId ?? null}
+        documentName={chatDrawerDoc?.displayName ?? null}
+        onClose={() => setChatDrawerDoc(null)}
       />
 
       <ShareDocumentModal

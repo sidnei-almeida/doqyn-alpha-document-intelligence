@@ -63,7 +63,12 @@ import {
 export { ConfirmAnalysisError, isConfirmAnalysisError };
 
 const evidenceSchema = z.object({
-  pageNumber: z.number().optional(),
+  // Jobs assíncronos persistidos no Mongo voltam com pageNumber null (driver
+  // converte undefined em null) — aceitar e normalizar de volta para undefined.
+  pageNumber: z
+    .number()
+    .nullish()
+    .transform((value) => value ?? undefined),
   snippet: z.string(),
 });
 
