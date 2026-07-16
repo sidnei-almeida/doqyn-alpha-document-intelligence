@@ -1,4 +1,5 @@
 import { useIsFetching } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
@@ -11,7 +12,7 @@ export function WorkspaceTopBar() {
 
   return (
     <header
-      className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-5"
+      className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 border-b border-doqyn-border-hairline px-4 sm:gap-4 sm:px-5"
       data-testid="workspace-topbar"
     >
       <div className="flex min-w-0 flex-1 items-center">
@@ -28,6 +29,9 @@ export function WorkspaceTopBar() {
         >
           <Icon name="help" size={ICON_SIZE.nav} />
         </a>
+        <Link to="/settings" className={iconButtonClass} aria-label="Configurações">
+          <Icon name="settings" size={ICON_SIZE.nav} />
+        </Link>
         <HeaderUserMenu />
       </div>
     </header>
