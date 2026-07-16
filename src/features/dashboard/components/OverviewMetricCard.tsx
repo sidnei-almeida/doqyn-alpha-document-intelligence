@@ -38,9 +38,9 @@ export function OverviewMetricCard({ metric, onNavigate }: OverviewMetricCardPro
       type="button"
       className={cn(
         'overview-metric-cell group flex h-full min-h-[7.5rem] flex-col justify-between gap-2 p-4 text-left sm:gap-2.5 sm:p-5',
-        'transition-[background-color,transform] duration-150 ease-[var(--ease-standard)]',
+        'transition-[background-color,transform] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
         'hover:bg-doqyn-surface-hover/45 active:scale-[0.995]',
-        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/15',
+        'focus-visible:ring-doqyn-accent-active/15 focus-visible:outline-none focus-visible:ring-1',
       )}
       onClick={() => onNavigate(metric.path)}
       aria-label={`${metric.label}: ${metric.value}`}
@@ -49,26 +49,18 @@ export function OverviewMetricCard({ metric, onNavigate }: OverviewMetricCardPro
         <span className="overview-kpi-label">{metric.label}</span>
         <span className="flex items-center gap-1.5">
           {tone !== 'default' && (
-            <span
-              className={cn('h-1.5 w-1.5 rounded-full', TONE_DOT_CLASS[tone])}
-              aria-hidden
-            />
+            <span className={cn('h-1.5 w-1.5 rounded-full', TONE_DOT_CLASS[tone])} aria-hidden />
           )}
           <Icon
             name={iconName}
             size={14}
-            className="text-doqyn-subtle transition-colors duration-150 group-hover:text-doqyn-muted"
+            className="text-doqyn-subtle transition-colors duration-[var(--transition-duration)] group-hover:text-doqyn-muted"
             aria-hidden
           />
         </span>
       </div>
 
-      <span
-        className={cn(
-          'overview-kpi-value tabular-nums',
-          TONE_VALUE_CLASS[tone],
-        )}
-      >
+      <span className={cn('overview-kpi-value tabular-nums', TONE_VALUE_CLASS[tone])}>
         {metric.value}
       </span>
 

@@ -135,8 +135,7 @@
   --text-hint: var(--text-tertiary);
 
   /* Elevação dark — hairline ambiente + realce interno de 1px (premium, sem glow) */
-  --shadow-elevation-1:
-    0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --shadow-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   --shadow-elevation-2:
     0 1px 2px rgba(0, 0, 0, 0.46), 0 12px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -321,15 +320,12 @@
   --text-hint: var(--text-tertiary);
 
   /* Elevação light — ladder ambiente+key frio (papel sobre mesa, sem flutuar) */
-  --shadow-elevation-1:
-    0 1px 1px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.06);
-  --shadow-elevation-2:
-    0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.12);
+  --shadow-elevation-1: 0 1px 1px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-elevation-2: 0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.12);
   --shadow-workspace-panel: var(--shadow-elevation-1);
   --shadow-sticky-footer: 0 -2px 8px rgba(15, 23, 42, 0.06);
   --shadow-action-glow: none;
-  --shadow-card-hover:
-    0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.12);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.12);
   --shadow-viewer-page: var(--shadow-elevation-2);
   --overlay-scrim: rgba(32, 33, 36, 0.45);
   --viewer-page-bg: #ffffff;
@@ -518,8 +514,7 @@
 
   /* Anel de foco unificado — 2px limpo com sensação de offset (halo interno na superfície) */
   --focus-ring:
-    0 0 0 1px var(--bg-surface),
-    0 0 0 3px color-mix(in srgb, var(--accent-active) 38%, transparent);
+    0 0 0 1px var(--bg-surface), 0 0 0 3px color-mix(in srgb, var(--accent-active) 38%, transparent);
 }
 
 [data-theme='light'] {
