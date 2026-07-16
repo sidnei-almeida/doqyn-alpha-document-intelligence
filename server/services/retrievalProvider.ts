@@ -21,6 +21,7 @@ import {
   formatChunksForPrompt,
   retrieveChunksForClassification,
   retrieveChunksForExtraction,
+  retrieveChunksForQuestion,
   type RetrievalStats,
 } from './hybridChunkRetriever.js';
 
@@ -54,6 +55,15 @@ export function selectChunksForExtraction(input: {
 }): RetrievedChunk[] {
   assertHybridMode();
   return retrieveChunksForExtraction(input);
+}
+
+export function selectChunksForQuestion(input: {
+  chunks: DocumentChunk[];
+  question: string;
+  topK?: number;
+}): RetrievedChunk[] {
+  assertHybridMode();
+  return retrieveChunksForQuestion(input);
 }
 
 export { formatChunksForPrompt, buildRetrievalStats };
