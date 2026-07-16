@@ -194,6 +194,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['documentId'],
     },
     {
+      regex: /^\/api\/documents\/([^/]+)\/chat$/,
+      loader: () => import('../api/documents/[documentId]/chat.js'),
+      paramKeys: ['documentId'],
+    },
+    {
       regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,
       loader: () =>
         import('../api/documents/[documentId]/external-shares/[shareId]/regenerate-invite.js'),
