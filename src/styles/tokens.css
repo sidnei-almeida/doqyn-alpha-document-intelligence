@@ -5,27 +5,39 @@
  */
 
 [data-theme='dark'] {
-  /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
-  --bg-chrome: #121212;
+  /* Base quase preta atrás de sidebar+topbar (premium dark); painel interno mais claro */
+  --bg-chrome: #0a0a0b;
   --bg-shell: var(--bg-chrome);
-  --bg-canvas: #1e1e1e;
-  --bg-thumbnail-chrome: #1e1e1e;
+  --bg-canvas: #141416;
+  --bg-thumbnail-chrome: #141416;
   --bg-app: var(--bg-chrome);
   --bg-sidebar: var(--bg-shell);
-  --bg-surface: #1e1e1e;
-  --bg-surface-2: #242424;
-  --bg-surface-3: #2c2c2c;
-  --bg-surface-hover: #2c2c2c;
-  --bg-hover: #2c2c2c;
+  --bg-surface: #141416;
+  --bg-surface-2: #1b1b1e;
+  --bg-surface-3: #232327;
+  --bg-surface-hover: #202024;
+  --bg-hover: #202024;
   --bg-selected: #1d2a3a;
 
-  /* Sidebar — item ativo índigo/violeta discreto (harmonia com + Novo, sem competir) */
-  --sidebar-selected-bg: rgba(99, 102, 241, 0.18);
+  /* Acento premium — âmbar/dourado no dark (badge de plano, destaques, progresso) */
+  --accent-premium: #d4a656;
+  --accent-premium-bg: rgba(212, 166, 86, 0.14);
+  --accent-premium-border: rgba(212, 166, 86, 0.35);
+  --text-on-premium: #1a1610;
+
+  /* Sidebar — item ativo no acento premium (âmbar em baixa opacidade) */
+  --sidebar-selected-bg: var(--accent-premium-bg);
   --sidebar-selected-border: transparent;
-  --sidebar-selected-text: #f5f7ff;
-  --sidebar-selected-icon: #a5b4fc;
+  --sidebar-selected-text: #f5efe2;
+  --sidebar-selected-icon: var(--accent-premium);
   --sidebar-item-hover-bg: rgba(148, 163, 184, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 42%, transparent);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-premium) 42%, transparent);
+
+  /* CTA primário — monocromático premium (branco sobre dark, estilo Vercel/Linear) */
+  --cta-bg: #e8e8ea;
+  --cta-bg-hover: #ffffff;
+  --cta-bg-active: #d9d9de;
+  --cta-text: #101012;
 
   /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
   --explorer-quick-actions-bg: rgba(30, 30, 30, 0.84);
@@ -43,28 +55,29 @@
   --marquee-bg: rgba(148, 163, 184, 0.06);
   --marquee-border: rgba(148, 163, 184, 0.22);
 
-  /* Botão "+ Novo" — índigo flat (Material filled, sem elevação pesada) */
-  --new-button-bg: #5c5cf0;
-  --new-button-bg-hover: #6d6df2;
-  --new-button-bg-active: #4f46e5;
-  --new-button-text: #ffffff;
-  --new-button-chevron: rgba(255, 255, 255, 0.9);
-  --new-button-border: transparent;
+  /* Botão "+ Novo" — superfície neutra com borda sutil e "+" no acento premium */
+  --new-button-bg: #202024;
+  --new-button-bg-hover: #26262b;
+  --new-button-bg-active: #2b2b31;
+  --new-button-text: #f4f4f5;
+  --new-button-chevron: rgba(255, 255, 255, 0.65);
+  --new-button-border: rgba(255, 255, 255, 0.12);
+  --new-button-icon: var(--accent-premium);
   --shadow-new-button: none;
   --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 55%, transparent);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-premium) 45%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--bg-surface);
   --new-menu-border: var(--border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: rgba(99, 102, 241, 0.12);
-  --new-menu-item-active: rgba(99, 102, 241, 0.18);
-  --new-menu-icon: #818cf8;
+  --new-menu-item-hover: rgba(255, 255, 255, 0.06);
+  --new-menu-item-active: rgba(255, 255, 255, 0.1);
+  --new-menu-icon: var(--accent-premium);
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: #333333;
-  --border-strong: #3f3f3f;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
 
   --text-primary: #e8eaed;
   --text-secondary: #9aa0a6;
@@ -121,12 +134,18 @@
 
   --text-hint: var(--text-tertiary);
 
-  --shadow-elevation-1: none;
-  --shadow-elevation-2: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.38);
+  /* Elevação dark — hairline ambiente + realce interno de 1px (premium, sem glow) */
+  --shadow-elevation-1:
+    0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --shadow-elevation-2:
+    0 1px 2px rgba(0, 0, 0, 0.46), 0 12px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   --shadow-workspace-panel: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-sticky-footer: 0 -2px 12px rgba(0, 0, 0, 0.35);
   --shadow-action-glow: none;
-  --shadow-card-hover: none;
+  --shadow-card-hover:
+    0 2px 6px rgba(0, 0, 0, 0.46), 0 10px 24px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   --shadow-viewer-page: var(--shadow-elevation-2);
   --overlay-scrim: rgba(0, 0, 0, 0.6);
   --viewer-page-bg: #ffffff;
@@ -148,24 +167,42 @@
   --selection-bg: rgba(138, 180, 248, 0.3);
 
   --governance-flow-card-bg: var(--bg-surface-3);
-  --governance-flow-card-border: color-mix(in srgb, var(--border-subtle) 55%, var(--border-default));
-  --governance-flow-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --governance-flow-card-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --governance-flow-card-border: color-mix(
+    in srgb,
+    var(--border-subtle) 55%,
+    var(--border-default)
+  );
+  --governance-flow-card-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --governance-flow-card-shadow-hover:
+    0 4px 14px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 [data-theme='light'] {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;
-  --color-surface: #f8f9fa;
+  --color-surface: #fafafa;
   --color-surface-container: #f1f3f4;
-  --color-border: #dadce0;
-  --color-border-subtle: #e8eaed;
-  --color-text-primary: #202124;
+  --color-border: #e4e4e7;
+  --color-border-subtle: #ececef;
+  --color-text-primary: #18181b;
   --color-text-secondary: #5f6368;
   --color-icon-neutral: #5f6368;
   --color-primary: #1a73e8;
   --color-primary-hover: #1967d2;
   --color-primary-surface: #e8f0fe;
+
+  /* Acento premium — preto sólido no light (badge preenchido, progresso, destaques) */
+  --accent-premium: #18181b;
+  --accent-premium-bg: rgba(24, 24, 27, 0.07);
+  --accent-premium-border: rgba(24, 24, 27, 0.18);
+  --text-on-premium: #ffffff;
+
+  /* CTA primário — preto sólido (monocromático premium) */
+  --cta-bg: #18181b;
+  --cta-bg-hover: #27272b;
+  --cta-bg-active: #09090b;
+  --cta-text: #ffffff;
 
   --bg-chrome: var(--color-surface);
   --bg-shell: var(--color-surface);
@@ -180,13 +217,13 @@
   --bg-hover: var(--color-surface-container);
   --bg-selected: var(--color-primary-surface);
 
-  /* Sidebar — item ativo índigo/violeta suave (fundo sólido claro, distinto do dark translúcido) */
-  --sidebar-selected-bg: #eef2ff;
-  --sidebar-selected-border: #c7d2fe;
-  --sidebar-selected-text: #312e81;
-  --sidebar-selected-icon: #6366f1;
-  --sidebar-item-hover-bg: rgba(99, 102, 241, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 35%, transparent);
+  /* Sidebar — item ativo no acento premium (preto em baixa opacidade) */
+  --sidebar-selected-bg: var(--accent-premium-bg);
+  --sidebar-selected-border: rgba(24, 24, 27, 0.14);
+  --sidebar-selected-text: #18181b;
+  --sidebar-selected-icon: #18181b;
+  --sidebar-item-hover-bg: rgba(24, 24, 27, 0.05);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #18181b 30%, transparent);
 
   /* Menu rápido sobre preview — vidro claro */
   --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
@@ -204,30 +241,31 @@
   --marquee-bg: rgba(99, 102, 241, 0.1);
   --marquee-border: rgba(99, 102, 241, 0.38);
 
-  /* Botão "+ Novo" — índigo flat (Material filled) */
-  --new-button-bg: #4f46e5;
-  --new-button-bg-hover: #4338ca;
-  --new-button-bg-active: #3730a3;
-  --new-button-text: #ffffff;
-  --new-button-chevron: rgba(255, 255, 255, 0.92);
-  --new-button-border: transparent;
-  --shadow-new-button: none;
-  --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 40%, transparent);
+  /* Botão "+ Novo" — branco com borda e sombra sutil, "+" preto (mockup light) */
+  --new-button-bg: #ffffff;
+  --new-button-bg-hover: #f4f4f5;
+  --new-button-bg-active: #e9e9eb;
+  --new-button-text: #18181b;
+  --new-button-chevron: rgba(24, 24, 27, 0.6);
+  --new-button-border: #e4e4e7;
+  --new-button-icon: #18181b;
+  --shadow-new-button: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.07);
+  --shadow-new-button-hover: 0 1px 3px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #18181b 30%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--color-background);
   --new-menu-border: var(--color-border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: #f1f3f4;
-  --new-menu-item-active: #e8eaed;
-  --new-menu-icon: #4f46e5;
+  --new-menu-item-hover: #f4f4f5;
+  --new-menu-item-active: #e9e9eb;
+  --new-menu-icon: #18181b;
 
   --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border);
   --border-strong: #c4c7c5;
 
-  --text-primary: #202124;
+  --text-primary: #18181b;
   --text-secondary: #5f6368;
   --text-tertiary: #5f6368;
   --text-disabled: #9aa0a6;
@@ -282,12 +320,16 @@
 
   --text-hint: var(--text-tertiary);
 
-  --shadow-elevation-1: 0 1px 2px rgba(60, 64, 67, 0.08), 0 1px 3px rgba(60, 64, 67, 0.06);
-  --shadow-elevation-2: 0 1px 3px rgba(60, 64, 67, 0.12), 0 4px 8px rgba(60, 64, 67, 0.08);
+  /* Elevação light — ladder ambiente+key frio (papel sobre mesa, sem flutuar) */
+  --shadow-elevation-1:
+    0 1px 1px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-elevation-2:
+    0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.12);
   --shadow-workspace-panel: var(--shadow-elevation-1);
-  --shadow-sticky-footer: 0 -2px 8px rgba(60, 64, 67, 0.08);
+  --shadow-sticky-footer: 0 -2px 8px rgba(15, 23, 42, 0.06);
   --shadow-action-glow: none;
-  --shadow-card-hover: none;
+  --shadow-card-hover:
+    0 2px 4px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.12);
   --shadow-viewer-page: var(--shadow-elevation-2);
   --overlay-scrim: rgba(32, 33, 36, 0.45);
   --viewer-page-bg: #ffffff;
@@ -326,6 +368,9 @@
   --shadow-dropdown: var(--shadow-elevation-2);
   --shadow-modal: var(--shadow-elevation-2);
 
+  /* Separador hairline premium (1px) — deriva da borda sutil de cada tema */
+  --border-hairline: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
@@ -342,18 +387,18 @@
 
   --text-display: 32px;
   --weight-display: 500;
-  --leading-display: 1.2;
-  --tracking-display: -0.015em;
+  --leading-display: 1.14;
+  --tracking-display: -0.02em;
 
   --text-h1: 24px;
   --weight-h1: 500;
-  --leading-h1: 1.2;
-  --tracking-h1: -0.01em;
+  --leading-h1: 1.16;
+  --tracking-h1: -0.015em;
 
   --text-h2: 16px;
   --weight-h2: 500;
-  --leading-h2: 1.2;
-  --tracking-h2: -0.005em;
+  --leading-h2: 1.25;
+  --tracking-h2: -0.008em;
 
   --text-body: 14px;
   --weight-body: 400;
@@ -466,12 +511,15 @@
   --folder-gradient-default: var(--folder-accent-default);
 
   --transition-duration-fast: 120ms;
-  --transition-duration: 150ms;
-  --transition-duration-slow: 220ms;
+  --transition-duration: 160ms;
+  --transition-duration-slow: 240ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
+  /* Anel de foco unificado — 2px limpo com sensação de offset (halo interno na superfície) */
+  --focus-ring:
+    0 0 0 1px var(--bg-surface),
+    0 0 0 3px color-mix(in srgb, var(--accent-active) 38%, transparent);
 }
 
 [data-theme='light'] {
