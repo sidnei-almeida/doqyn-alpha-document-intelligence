@@ -25,7 +25,7 @@ export function OverviewStoragePanel({
 
   const errorStatus =
     recentErrors.length > 0 ? (
-      <ul className="max-h-24 space-y-1.5 overflow-y-auto pr-1 text-doqyn-danger scrollbar-thin">
+      <ul className="scrollbar-thin max-h-24 space-y-1.5 overflow-y-auto pr-1 text-doqyn-danger">
         {recentErrors.map((error) => (
           <li key={error.id}>
             <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
@@ -76,7 +76,12 @@ export function OverviewStoragePanel({
             label="Downloads"
             value={
               <span className="inline-flex items-center gap-1.5">
-                <Icon name="download" size={ICON_SIZE.xs} className="text-doqyn-muted" aria-hidden />
+                <Icon
+                  name="download"
+                  size={ICON_SIZE.xs}
+                  className="text-doqyn-muted"
+                  aria-hidden
+                />
                 {downloadsInPeriod}
               </span>
             }
@@ -86,7 +91,7 @@ export function OverviewStoragePanel({
         </OverviewPanelStatCell>
       </OverviewPanelStatGrid>
 
-      <div className="border-t border-doqyn-border-subtle/60 px-4 py-3 sm:px-5">
+      <div className="border-doqyn-border-subtle/60 border-t px-4 py-3 sm:px-5">
         <div className="min-h-[1.25rem] text-sm leading-relaxed">{errorStatus}</div>
       </div>
     </OverviewPanelShell>

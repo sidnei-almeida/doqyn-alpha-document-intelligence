@@ -21,7 +21,12 @@ type RecentDocumentRowProps = {
   isSolo?: boolean;
 };
 
-export function RecentDocumentRow({ doc, onOpen, onTrack, isSolo = false }: RecentDocumentRowProps) {
+export function RecentDocumentRow({
+  doc,
+  onOpen,
+  onTrack,
+  isSolo = false,
+}: RecentDocumentRowProps) {
   const fileName = doc.currentFileName ?? doc.displayName ?? 'Documento';
   const meta = `${doc.categoryName ?? doc.documentType ?? '—'} · ${doc.createdBy?.displayName ?? doc.ownerName ?? '—'}`;
 
@@ -33,23 +38,19 @@ export function RecentDocumentRow({ doc, onOpen, onTrack, isSolo = false }: Rece
       )}
     >
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doqyn-card/70 text-doqyn-muted"
+        className="bg-doqyn-card/70 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-doqyn-muted"
         aria-hidden
       >
         <Icon name="description" size={ICON_SIZE.xs} />
       </span>
 
-        <button
-          type="button"
-          className="min-w-0 flex-1 text-left"
-          onClick={() => onOpen(doc)}
-        >
-          <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium leading-snug text-doqyn-text">
-            <DocumentFavoriteBadge document={doc} variant="inline" />
-            <TruncatedText as="span" className="min-w-0 flex-1">
-              {fileName}
-            </TruncatedText>
-          </p>
+      <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpen(doc)}>
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium leading-snug text-doqyn-text">
+          <DocumentFavoriteBadge document={doc} variant="inline" />
+          <TruncatedText as="span" className="min-w-0 flex-1">
+            {fileName}
+          </TruncatedText>
+        </p>
         <TruncatedText as="p" className="overview-row-meta mt-0.5">
           {meta}
         </TruncatedText>
@@ -59,14 +60,10 @@ export function RecentDocumentRow({ doc, onOpen, onTrack, isSolo = false }: Rece
         <div className="hidden sm:flex">
           <BadgeGroup align="end">
             <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
-            <VersionBadge
-              version={doc.versionLabel ?? `v${doc.version}`}
-              isCurrent
-              size="xs"
-            />
+            <VersionBadge version={doc.versionLabel ?? `v${doc.version}`} isCurrent size="xs" />
           </BadgeGroup>
         </div>
-        <div className="flex items-center opacity-70 transition-opacity duration-150 group-hover:opacity-100">
+        <div className="flex items-center opacity-70 transition-opacity duration-[var(--transition-duration)] group-hover:opacity-100">
           {doc.permissions?.canPreview && doc.latestVersionId && (
             <IconButton label="Visualizar" onClick={() => onOpen(doc)}>
               <Icon name="visibility" size={ICON_SIZE.xs} />
@@ -114,7 +111,12 @@ export function OverviewRecentDocumentsPanel({
           title="Nenhum documento enviado ainda"
           description="Envie o primeiro documento para acompanhar métricas e atividade."
           action={
-            <Button type="button" size="sm" variant="secondary" onClick={() => navigate('/biblioteca')}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => navigate('/biblioteca')}
+            >
               Ir para Biblioteca
             </Button>
           }

@@ -32,6 +32,12 @@ function parseEvidence(raw: unknown): EvidenceSnippet | undefined {
       ? data.pageNumber
       : undefined;
 
+  // Omitir a chave quando não há página: o driver do Mongo persiste
+  // `pageNumber: undefined` como null, que é rejeitado no confirm-analysis.
+  if (pageNumber === undefined) {
+    return { snippet: snippet.slice(0, 300) };
+  }
+
   return { pageNumber, snippet: snippet.slice(0, 300) };
 }
 
