@@ -458,3 +458,44 @@ export async function completeJsonPrompt(
     }
   }
 }
+
+export type GroqChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
+/** Completion de conversa (texto livre) para o chat documental. */
+export async function completeChatConversation(
+  messages: GroqChatMessage[],
+  options?: { model?: string; context?: GroqPromptContext },
+): Promise<string> {
+  const model = options?.model ?? getGroqModel();
+  const context = options?.context;
+  const startedAt = Date.now();
+
+  logger.info('groq chat completion started', {
+    requestId: context?.requestId,
+    operation: context?.operation ?? 'document_chat',
+    model,
+    messageCount: messages.length,
+  });
+
+  const client = getGroqClient();
+  const completion = await withGroqRequestTimeout(
+    client.chat.completions.create({
+      model,
+      temperature: 0.2,
+      max_tokens: getGroqMaxOutputTokens(),
+      messages,
+    }),
+    getGroqRequestTimeoutMs(),
+  );
+
+  const content = completion.choices[0]?.message?.content ?? '';
+
+  logger.info('groq chat completion completed', {
+    requestId: context?.requestId,
+    model,
+    durationMs: Date.now() - startedAt,
+    outputChars: content.length,
+  });
+
+  return content;
+}
