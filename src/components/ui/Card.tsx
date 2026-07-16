@@ -2,20 +2,23 @@ import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const cardVariants = cva('rounded-xl border border-doqyn-border-subtle bg-doqyn-surface', {
-  variants: {
-    variant: {
-      default: '',
-      metric: 'transition-colors hover:bg-doqyn-surface-hover',
-      content: '',
-      interactive:
-        'cursor-pointer transition-colors hover:border-doqyn-border hover:bg-doqyn-surface-hover',
+const cardVariants = cva(
+  'rounded-xl border border-doqyn-border-subtle bg-doqyn-surface shadow-elevation-1 transition-[background-color,border-color,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
+  {
+    variants: {
+      variant: {
+        default: '',
+        metric: 'hover:border-doqyn-border hover:bg-doqyn-surface-hover hover:shadow-card-hover',
+        content: '',
+        interactive:
+          'cursor-pointer hover:border-doqyn-border hover:bg-doqyn-surface-hover hover:shadow-card-hover',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
     },
   },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
+);
 
 export interface CardProps
   extends HTMLAttributes<HTMLDivElement>,
