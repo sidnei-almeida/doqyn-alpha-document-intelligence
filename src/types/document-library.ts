@@ -69,6 +69,8 @@ export type DocumentListItem = {
   processingStatus?: string;
   createdAt: string;
   updatedAt: string;
+  /** Tamanho do arquivo da versão atual, quando disponível. */
+  fileSizeBytes?: number;
   createdBy?: {
     userId?: string;
     displayName?: string;

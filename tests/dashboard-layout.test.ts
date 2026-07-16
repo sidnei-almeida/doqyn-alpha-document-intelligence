@@ -19,11 +19,12 @@ describe('dashboard layout', () => {
     assert.ok(source.includes('overview-kpi-subtext'));
   });
 
-  it('DashboardPage usa faixa executiva e painéis modulares em largura total', () => {
+  it('DashboardPage usa home estilo Drive com stats, sugeridos, tabela e atividade', () => {
     const source = readSrc('features/documents/DashboardPage.tsx');
-    assert.ok(source.includes('OverviewSummaryStrip'));
-    assert.ok(source.includes('OverviewRecentDocumentsPanel'));
-    assert.ok(source.includes('OverviewRecentActivityPanel'));
+    assert.ok(source.includes('HomeStatCard'));
+    assert.ok(source.includes('HomeSuggestedCarousel'));
+    assert.ok(source.includes('HomeRecentFilesTable'));
+    assert.ok(source.includes('HomeActivityPanel'));
     assert.ok(source.includes('OverviewGovernancePanel'));
     assert.ok(source.includes('OverviewQuickAccessPanel'));
     assert.ok(source.includes('overview-insights-grid'));

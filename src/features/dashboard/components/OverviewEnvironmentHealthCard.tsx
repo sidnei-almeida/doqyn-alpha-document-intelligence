@@ -26,8 +26,7 @@ function HealthIndicator({
   const restricted = !ok && !canManage;
   const badgeLabel = ok ? 'OK' : restricted ? 'Restrito' : 'Atenção';
   const resolvedDetail =
-    detail ??
-    (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
+    detail ?? (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
 
   return (
     <div className="overview-health-row flex items-center justify-between gap-3 rounded-lg px-1 py-2">
@@ -105,7 +104,9 @@ export function OverviewEnvironmentHealthCard({
         <HealthIndicator
           label="Storage"
           ok={health.hasStorageConfigured}
-          detail={health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'}
+          detail={
+            health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'
+          }
           actionLabel="Sistema"
           onAction={
             !health.hasStorageConfigured
@@ -153,13 +154,13 @@ export function OverviewEnvironmentHealthCard({
       </div>
 
       {bucketNameMasked && (
-        <p className="text-xs text-doqyn-muted border-t border-doqyn-border-subtle/70 pt-3">
+        <p className="border-doqyn-border-subtle/70 border-t pt-3 text-xs text-doqyn-muted">
           Bucket: <span className="font-medium text-doqyn-text">{bucketNameMasked}</span>
         </p>
       )}
 
       {health.warnings.length > 0 && (
-        <ul className="overview-health-warnings max-h-28 space-y-2 overflow-y-auto border-t border-doqyn-border-subtle/70 pt-3 scrollbar-thin">
+        <ul className="overview-health-warnings border-doqyn-border-subtle/70 scrollbar-thin max-h-28 space-y-2 overflow-y-auto border-t pt-3">
           {health.warnings.map((warning) => (
             <li
               key={warning}

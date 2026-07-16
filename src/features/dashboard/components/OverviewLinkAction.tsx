@@ -22,14 +22,12 @@ export function OverviewLinkAction({
       onClick={onClick}
       className={cn(
         'overview-link-action inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-0.5 text-[12px] font-medium text-doqyn-muted transition-colors duration-150',
-        'hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/20',
+        'focus-visible:ring-doqyn-accent-active/20 hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-1',
         className,
       )}
     >
       {children}
-      {showChevron && (
-        <Icon name="chevron_right" size={14} aria-hidden />
-      )}
+      {showChevron && <Icon name="chevron_right" size={14} aria-hidden />}
     </button>
   );
 }

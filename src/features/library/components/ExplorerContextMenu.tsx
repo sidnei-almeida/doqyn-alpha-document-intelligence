@@ -25,6 +25,7 @@ type ExplorerContextMenuProps = {
   onDownloadFile?: (doc: DocumentListItem) => void;
   onTrackingFile?: (doc: DocumentListItem) => void;
   onSelectFileDetails?: (doc: DocumentListItem) => void;
+  onChatFile?: (doc: DocumentListItem) => void;
   onToggleFavorite?: (doc: DocumentListItem) => void;
   onUpdateDocument?: (doc: DocumentListItem) => void;
   onMoveFile?: (doc: DocumentListItem) => void;
@@ -97,6 +98,7 @@ export function ExplorerContextMenu({
   onDownloadFile,
   onTrackingFile,
   onSelectFileDetails,
+  onChatFile,
   onToggleFavorite,
   onUpdateDocument,
   onMoveFile,
@@ -275,6 +277,13 @@ export function ExplorerContextMenu({
                   label="Ver detalhes"
                   icon="info"
                   onClick={() => run(() => onSelectFileDetails?.(doc))}
+                />
+                <MenuItem
+                  compact
+                  label="Conversar com o documento"
+                  icon="chat"
+                  disabled={!canPreview}
+                  onClick={() => run(() => onChatFile?.(doc))}
                 />
                 {canTracking && (
                   <MenuItem

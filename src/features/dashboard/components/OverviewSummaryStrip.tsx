@@ -14,7 +14,7 @@ export function OverviewSummaryStrip({ metrics, onNavigate }: OverviewSummaryStr
       aria-label="Resumo executivo"
       data-testid="overview-summary-strip"
     >
-      <div className="grid grid-cols-2 gap-px bg-doqyn-border-subtle/50 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="bg-doqyn-border-subtle/50 grid grid-cols-2 gap-px sm:grid-cols-3 xl:grid-cols-6">
         {metrics.map((metric) => (
           <div key={metric.key} className="bg-doqyn-surface/40">
             <OverviewMetricCard metric={metric} onNavigate={onNavigate} />

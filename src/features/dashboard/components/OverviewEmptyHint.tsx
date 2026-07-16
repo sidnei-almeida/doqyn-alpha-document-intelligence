@@ -9,7 +9,12 @@ type OverviewEmptyHintProps = {
 };
 
 /** Empty state leve — sem hero, ícone grande ou card pesado. */
-export function OverviewEmptyHint({ title, description, action, className }: OverviewEmptyHintProps) {
+export function OverviewEmptyHint({
+  title,
+  description,
+  action,
+  className,
+}: OverviewEmptyHintProps) {
   return (
     <div
       className={cn(

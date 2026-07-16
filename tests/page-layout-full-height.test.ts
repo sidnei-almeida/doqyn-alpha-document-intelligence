@@ -48,7 +48,7 @@ describe('layout de altura total nas páginas internas', () => {
   it('DashboardPage usa PageShell e grid principal expansível', () => {
     const source = readSrc('features/documents/DashboardPage.tsx');
     assert.ok(source.includes('PageShell'));
-    assert.ok(source.includes('overview-main-grid'));
+    assert.ok(source.includes('xl:grid-cols-[minmax(0,1fr)_21rem]'));
     assert.ok(source.includes('flex-1'));
   });
 

@@ -1,9 +1,11 @@
 import type { AuthUser } from '../auth/types.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
-import type { MongoDocument, MongoDocumentShareGrant, MongoPreviewStorageSlot } from '../db/types.js';
-import {
-  loadMemberDocumentGroupIds,
-} from '../tenancy/documentAccess.js';
+import type {
+  MongoDocument,
+  MongoDocumentShareGrant,
+  MongoPreviewStorageSlot,
+} from '../db/types.js';
+import { loadMemberDocumentGroupIds } from '../tenancy/documentAccess.js';
 import { loadGovernanceAccessIndex } from '../tenancy/governanceAccessIndex.js';
 import {
   canUserListDocumentWithShare,
@@ -52,6 +54,7 @@ function mapDocumentListItem(
     preview?: MongoPreviewStorageSlot | null;
     hasOriginal?: boolean;
     hasPreview?: boolean;
+    fileSizeBytes?: number;
   },
   permissions?: DocumentListItemPermissions,
   signatureSummary?: DocumentSignatureSummary,
@@ -62,8 +65,7 @@ function mapDocumentListItem(
   const resolvedOwnerName =
     (record.ownerName as string | undefined)?.trim() ||
     (doc.ownerUserId ? displayNames?.get(doc.ownerUserId) : undefined);
-  const resolvedCreatedByName =
-    createdByUserId ? displayNames?.get(createdByUserId) : undefined;
+  const resolvedCreatedByName = createdByUserId ? displayNames?.get(createdByUserId) : undefined;
   const resolvedUpdatedByName =
     (record.updatedByName as string | undefined)?.trim() ||
     (doc.updatedBy ? displayNames?.get(doc.updatedBy) : undefined);
@@ -81,21 +83,23 @@ function mapDocumentListItem(
     versionLabel: versionMeta?.versionLabel,
     currentVersionLabel: versionMeta?.versionLabel,
     originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
-    displayName:
-      (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
+    displayName: (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
     documentType: (record.documentType as string | undefined) ?? doc.className,
-    version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
-    versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
+    version:
+      (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
+    versionCount:
+      (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
     ownerName: resolvedOwnerName,
     updatedBy: doc.updatedBy,
     updatedByName: resolvedUpdatedByName,
-    area: (record.area as string | undefined),
+    area: record.area as string | undefined,
     accessGroups: (record.accessGroups as string[] | undefined) ?? doc.access?.viewGroupIds,
     metadata: record.metadata,
     processingStatus: doc.processingStatus ?? (record.processingStatusLegacy as string | undefined),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    fileSizeBytes: versionMeta?.fileSizeBytes,
     createdBy: {
       userId: createdByUserId,
       displayName: resolvedCreatedByName ?? undefined,
@@ -137,9 +141,7 @@ export async function buildDocumentListItems(input: {
       : []);
 
   const governanceIndex =
-    user && ownerUserId
-      ? await loadGovernanceAccessIndex(tenantId, { ownerUserId })
-      : undefined;
+    user && ownerUserId ? await loadGovernanceAccessIndex(tenantId, { ownerUserId }) : undefined;
 
   const versionIds = docs
     .map((doc) => doc.currentVersionId)
@@ -152,6 +154,7 @@ export async function buildDocumentListItems(input: {
       versionLabel?: string;
       hasOriginal: boolean;
       hasPreview: boolean;
+      fileSizeBytes?: number;
     }
   >();
 
@@ -162,17 +165,19 @@ export async function buildDocumentListItems(input: {
     });
     const versions = await documentVersions
       .find({ _id: { $in: versionIds } } as Record<string, unknown>)
-      .project({ storage: 1, versionLabel: 1 })
+      .project({ storage: 1, versionLabel: 1, 'file.sizeBytes': 1 })
       .toArray();
 
     for (const version of versions) {
       const primary = version.storage?.primary;
       const preview = version.storage?.preview ?? null;
+      const fileSizeBytes = (version as { file?: { sizeBytes?: number } }).file?.sizeBytes;
       versionMap.set(String(version._id), {
         preview,
         versionLabel: version.versionLabel,
         hasOriginal: primary?.status === 'stored' && Boolean(primary.objectKey),
         hasPreview: preview?.status === 'ready' && Boolean(preview.objectKey),
+        fileSizeBytes: typeof fileSizeBytes === 'number' ? fileSizeBytes : undefined,
       });
     }
   }
@@ -232,8 +237,7 @@ export async function buildDocumentListItems(input: {
     const versionLabel =
       versionMetaFromDoc?.versionLabel ??
       normalizeVersionLabel(
-        (docRecord.currentVersionLabel as string | undefined) ??
-          versionMetaFromDoc?.versionLabel,
+        (docRecord.currentVersionLabel as string | undefined) ?? versionMetaFromDoc?.versionLabel,
       );
     return mapDocumentListItem(
       doc,

@@ -16,7 +16,7 @@ type OverviewPeriodSelectorProps = {
 export function OverviewPeriodSelector({ value, onChange }: OverviewPeriodSelectorProps) {
   return (
     <div
-      className="flex h-9 items-center rounded-full bg-doqyn-card/60 p-0.5"
+      className="bg-doqyn-card/60 flex h-9 items-center rounded-full p-0.5"
       role="group"
       aria-label="Período do painel"
       data-testid="overview-period-selector"

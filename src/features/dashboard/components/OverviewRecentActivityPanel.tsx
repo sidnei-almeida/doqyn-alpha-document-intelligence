@@ -21,7 +21,7 @@ export function ActivityTimelineItem({
   return (
     <article className="overview-activity-item relative pl-5">
       <span
-        className="absolute left-0 top-[0.4rem] h-2 w-2 rounded-full bg-doqyn-text/20 ring-2 ring-doqyn-surface/80"
+        className="bg-doqyn-text/20 ring-doqyn-surface/80 absolute left-0 top-[0.4rem] h-2 w-2 rounded-full ring-2"
         aria-hidden
       />
       <div className="flex items-start justify-between gap-3">

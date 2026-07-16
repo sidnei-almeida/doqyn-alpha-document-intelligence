@@ -49,13 +49,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const parsed = confirmAnalysisSchema.safeParse(body);
 
     if (!parsed.success) {
+      const issues = parsed.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        code: issue.code,
+        message: issue.message,
+      }));
       logger.warn('confirm-analysis invalid payload', {
         requestId: reqCtx.requestId,
+        issues,
         durationMs: Date.now() - startedAt,
       });
       return res.status(400).json({
         message: 'Payload inválido para confirmação de metadados.',
         code: 'INVALID_PAYLOAD',
+        issues,
       });
     }
 

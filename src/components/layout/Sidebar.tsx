@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { SidebarNavItem } from './SidebarNavItem';
 import { SidebarSection } from './SidebarSection';
+import { SidebarStoragePanel } from './SidebarStoragePanel';
 import { useSidebarCollapsed } from './useSidebarCollapsed';
 
 interface SidebarProps {
@@ -30,11 +31,7 @@ export function Sidebar({ className }: SidebarProps) {
   const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const canViewTracking = canViewDocumentTracking(roles, user?.role, membership?.status);
-  const canManageDeactivated = hasAnyRole([
-    'doqyn_admin',
-    'company_admin',
-    'individual_admin',
-  ]);
+  const canManageDeactivated = hasAnyRole(['doqyn_admin', 'company_admin', 'individual_admin']);
 
   const libraryViewItems = NAV_ITEMS_LIBRARY_VIEWS;
 
@@ -71,10 +68,7 @@ export function Sidebar({ className }: SidebarProps) {
         )}
       >
         <div
-          className={cn(
-            'w-full',
-            collapsed ? 'flex flex-col items-center gap-1.5' : 'relative',
-          )}
+          className={cn('w-full', collapsed ? 'flex flex-col items-center gap-1.5' : 'relative')}
         >
           <div className={cn('flex w-full items-center justify-center', !collapsed && 'px-7')}>
             <SidebarBrandLogo collapsed={collapsed} />
@@ -105,9 +99,7 @@ export function Sidebar({ className }: SidebarProps) {
       <nav
         className={cn(
           'workspace-sidebar-nav flex flex-1 flex-col px-2',
-          collapsed
-            ? 'gap-1 overflow-hidden py-1.5'
-            : 'gap-1 overflow-y-auto py-2 scrollbar-thin',
+          collapsed ? 'gap-1 overflow-hidden py-1.5' : 'scrollbar-thin gap-1 overflow-y-auto py-2',
         )}
       >
         <SidebarSection collapsed={collapsed}>
@@ -120,20 +112,16 @@ export function Sidebar({ className }: SidebarProps) {
           ))}
         </SidebarSection>
 
-        {!collapsed && (
-          <div className="my-3 h-px bg-doqyn-border-subtle/40 mx-2" aria-hidden />
-        )}
+        {!collapsed && <div className="mx-2 my-3 h-px bg-doqyn-border-subtle/40" aria-hidden />}
 
-        <SidebarSection
-          label="Administração"
-          className="mt-5"
-          collapsed={collapsed}
-        >
+        <SidebarSection label="Administração" className="mt-5" collapsed={collapsed}>
           {adminNavItems.map((item) => (
             <SidebarNavItem key={item.path} item={item} collapsed={collapsed} />
           ))}
         </SidebarSection>
       </nav>
+
+      {!collapsed && <SidebarStoragePanel />}
     </aside>
   );
 }

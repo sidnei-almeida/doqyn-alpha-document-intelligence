@@ -26,7 +26,7 @@ export function OverviewDistributionPanel({
         {items.length === 0 ? (
           <OverviewEmptyHint title={emptyLabel} className="min-h-[10rem] flex-1 px-0 py-6" />
         ) : (
-          <div className="overview-distribution-list max-h-[14rem] flex-1 space-y-3.5 overflow-y-auto pr-1 scrollbar-thin">
+          <div className="overview-distribution-list scrollbar-thin max-h-[14rem] flex-1 space-y-3.5 overflow-y-auto pr-1">
             {items.map((item) => (
               <div key={item.label}>
                 <div className="mb-1.5 flex items-center justify-between gap-3">
