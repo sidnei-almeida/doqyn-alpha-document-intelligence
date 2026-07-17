@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { formatDate, formatDateTime } from '@/lib/formatLocale';
 import { isCompleteWhatsapp, WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import type { DocumentListItem } from '@/types/document-library';
 import { useDocumentShares, useShareableUsersSearch, useShareDocumentMutations } from '../hooks/useShareDocumentMutations';
@@ -132,15 +133,11 @@ function ExternalShareListItem({
           {share.recipientOrganizationName || 'Sem organização'}
           {' · '}
           {formatStatusLabel(share.status)}
-          {share.expiresAt
-            ? ` · expira ${new Date(share.expiresAt).toLocaleDateString('pt-BR')}`
-            : ''}
+          {share.expiresAt ? ` · expira ${formatDate(share.expiresAt)}` : ''}
         </p>
         <p className="text-[11px] text-doqyn-subtle">
           {share.permissions.canDownload ? 'Visualizar e baixar' : 'Somente visualizar'}
-          {share.lastAccessAt
-            ? ` · último acesso ${new Date(share.lastAccessAt).toLocaleString('pt-BR')}`
-            : ''}
+          {share.lastAccessAt ? ` · último acesso ${formatDateTime(share.lastAccessAt)}` : ''}
         </p>
         {share.recipientPhoneMasked ? (
           <p className="text-[11px] text-doqyn-subtle">{share.recipientPhoneMasked}</p>

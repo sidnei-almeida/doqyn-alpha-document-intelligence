@@ -1,3 +1,4 @@
+import { formatTime } from '@/lib/formatLocale';
 import type { AnalyzePdfResponse } from '../services/analyzePdf';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 import type {
@@ -56,7 +57,7 @@ export function createRequestId(): string {
 }
 
 export function formatWorkflowTimestamp(date = new Date()): string {
-  return date.toLocaleTimeString('pt-BR', {
+  return formatTime(date, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',

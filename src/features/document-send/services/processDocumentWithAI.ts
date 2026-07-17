@@ -1,4 +1,5 @@
 import type { ExtractedMetadata } from '../types';
+import { formatDate } from '@/lib/formatLocale';
 import {
   generateDocumentNameFromExtracted,
   getConfidenceLevel,
@@ -52,7 +53,7 @@ export async function processDocumentWithAI(file: File): Promise<ExtractedMetada
     suggestedVersion = 'v1.0';
   }
 
-  const documentDate = new Date().toLocaleDateString('pt-BR');
+  const documentDate = formatDate(new Date());
   const level = getConfidenceLevel(confidenceScore);
 
   const base: Omit<ExtractedMetadata, 'suggestedName'> = {

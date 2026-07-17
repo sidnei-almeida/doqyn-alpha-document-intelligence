@@ -62,6 +62,7 @@ import {
   parseWorkflowErrorPayload,
 } from './utils/workflowErrors';
 import { formatHistoryDate } from './utils/historyFormat';
+import { formatDate, formatTime } from '@/lib/formatLocale';
 
 type AnalysisSnapshot = {
   metadata: ExtractedMetadata;
@@ -73,7 +74,7 @@ type AnalysisSnapshot = {
 
 function formatNow(): string {
   const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  return `${formatDate(now)} ${formatTime(now, { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function toHistoryStatus(metadata: ExtractedMetadata): HistoryStatus {

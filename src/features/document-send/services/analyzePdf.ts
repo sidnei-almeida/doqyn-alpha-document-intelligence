@@ -1,6 +1,7 @@
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/workflowError';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { formatDate, formatTime } from '@/lib/formatLocale';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
 import { UPLOAD_ANALYZE_TIMEOUT_MS } from '@/features/upload/queue/uploadQueueAnalysis';
@@ -205,7 +206,7 @@ export class AnalyzePdfRequestError extends Error {
 
 function formatNow(): string {
   const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  return `${formatDate(now)} ${formatTime(now, { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function mapApiLogs(logs: ApiProcessingLogItem[]): ProcessingLogItem[] {
