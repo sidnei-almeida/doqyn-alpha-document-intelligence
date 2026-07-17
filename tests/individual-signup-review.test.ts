@@ -11,6 +11,7 @@ const validForm = {
   lastName: 'Lima',
   email: 'ana@email.com',
   whatsapp: '+55 (11) 97777-6666',
+  country: 'BR' as const,
   taxId: '123.456.789-01',
   password: 'senha-segura-123',
   confirmPassword: 'senha-segura-123',

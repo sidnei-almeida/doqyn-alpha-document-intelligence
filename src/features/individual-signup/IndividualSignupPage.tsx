@@ -5,13 +5,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { DocumentIdInput } from '@/components/ui/DocumentIdInput';
 import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
-import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { getActiveLocale } from '@/lib/formatLocale';
+import {
+  defaultCountryForLocale,
+  getIdentifierSpec,
+  type CountryCode,
+} from '@/lib/identifiers/countryIdentifiers';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitIndividualSignup } from './api/individualSignupApi';
 import {
@@ -30,6 +37,9 @@ export function IndividualSignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [country, setCountry] = useState<CountryCode>(() =>
+    defaultCountryForLocale(getActiveLocale()),
+  );
   const [taxId, setTaxId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,18 +49,36 @@ export function IndividualSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function handleCountryChange(next: CountryCode) {
+    setCountry(next);
+    setTaxId('');
+  }
+
+  const documentSpec = useMemo(() => getIdentifierSpec(country, 'individual'), [country]);
+
   const formValues = useMemo<IndividualSignupFormValues>(
     () => ({
       firstName,
       lastName,
       email,
       whatsapp,
+      country,
       taxId,
       password,
       confirmPassword,
       acceptedTerms,
     }),
-    [firstName, lastName, email, whatsapp, taxId, password, confirmPassword, acceptedTerms],
+    [
+      firstName,
+      lastName,
+      email,
+      whatsapp,
+      country,
+      taxId,
+      password,
+      confirmPassword,
+      acceptedTerms,
+    ],
   );
 
   const reviewSections = useMemo(
@@ -116,119 +144,121 @@ export function IndividualSignupPage() {
       description="Para clientes CPF que precisam acessar documentos pessoais no DOQYN."
       showSecureBadge
     >
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-        >
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <Icon name="person" size={ICON_SIZE.xs} />
-            Dados pessoais
-          </div>
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
+      >
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
+          <Icon name="person" size={ICON_SIZE.xs} />
+          Dados pessoais
+        </div>
 
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                id="firstName"
-                label="Nome"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <Input
-                id="lastName"
-                label="Sobrenome"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-            </div>
-
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              id="email"
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <WhatsappInput
-              id="whatsapp"
-              label="WhatsApp"
-              value={whatsapp}
-              onChange={setWhatsapp}
-              required
-            />
-            <TaxIdInput
-              id="taxId"
-              kind="CPF"
-              label="CPF"
-              value={taxId}
-              onChange={setTaxId}
+              id="firstName"
+              label="Nome"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <Input
-              id="confirmPassword"
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-
-            <TermsAcceptanceCheckbox
-              checked={acceptedTerms}
-              onChange={(value) => {
-                setAcceptedTerms(value);
-                if (value) setTermsError(null);
-              }}
-              error={termsError}
-              privacyHref={undefined}
+              id="lastName"
+              label="Sobrenome"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               required
             />
           </div>
 
-          {error ? (
-            <div className="mt-4">
-              <AlertBanner variant="error" message={error} />
-            </div>
-          ) : null}
+          <Input
+            id="email"
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <WhatsappInput
+            id="whatsapp"
+            label="WhatsApp"
+            value={whatsapp}
+            onChange={setWhatsapp}
+            required
+          />
+          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <DocumentIdInput
+            id="taxId"
+            country={country}
+            personType="individual"
+            label={documentSpec.code}
+            value={taxId}
+            onChange={setTaxId}
+            required
+          />
+          <Input
+            id="password"
+            label="Senha"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
+          <Input
+            id="confirmPassword"
+            label="Confirmar senha"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={8}
+            required
+          />
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-              Voltar
-            </Link>
-            <Button type="submit" className="w-full sm:w-auto">
-              Criar acesso CPF
-            </Button>
+          <TermsAcceptanceCheckbox
+            checked={acceptedTerms}
+            onChange={(value) => {
+              setAcceptedTerms(value);
+              if (value) setTermsError(null);
+            }}
+            error={termsError}
+            privacyHref={undefined}
+            required
+          />
+        </div>
+
+        {error ? (
+          <div className="mt-4">
+            <AlertBanner variant="error" message={error} />
           </div>
-        </form>
+        ) : null}
 
-        <ReviewBeforeSubmitDialog
-          open={reviewOpen}
-          title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-          description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-          attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
-          sections={reviewSections}
-          submitting={submitting}
-          confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
-          onCancel={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onEdit={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onConfirm={handleConfirmSubmit}
-        />
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+            Voltar
+          </Link>
+          <Button type="submit" className="w-full sm:w-auto">
+            Criar acesso CPF
+          </Button>
+        </div>
+      </form>
+
+      <ReviewBeforeSubmitDialog
+        open={reviewOpen}
+        title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
+        description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
+        attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+        sections={reviewSections}
+        submitting={submitting}
+        confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+        onCancel={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onEdit={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onConfirm={handleConfirmSubmit}
+      />
     </AuthShell>
   );
 }

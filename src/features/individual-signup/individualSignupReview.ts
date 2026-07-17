@@ -1,5 +1,5 @@
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { toTaxIdApiValue, toWhatsappApiValue } from '../../lib/identifiers';
+import { getIdentifierSpec, toWhatsappApiValue, type CountryCode } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatDocumentForReview,
@@ -13,15 +13,18 @@ export type IndividualSignupFormValues = {
   lastName: string;
   email: string;
   whatsapp: string;
+  country: CountryCode;
   taxId: string;
   password: string;
   confirmPassword: string;
   acceptedTerms: boolean;
 };
 
-export function validateIndividualSignupForm(
-  values: IndividualSignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' } {
+export function validateIndividualSignupForm(values: IndividualSignupFormValues): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -43,7 +46,7 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
     lastName: values.lastName,
     email: values.email,
     whatsapp: toWhatsappApiValue(values.whatsapp),
-    taxId: toTaxIdApiValue(values.taxId),
+    taxId: getIdentifierSpec(values.country, 'individual').normalize(values.taxId),
     password: values.password,
     confirmPassword: values.confirmPassword,
     acceptedTerms: true,
@@ -65,8 +68,8 @@ export function buildIndividualSignupReviewSections(
         { label: 'E-mail', value: safeDisplayValue(values.email) },
         { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
         {
-          label: 'CPF',
-          value: formatDocumentForReview(values.taxId, 'CPF'),
+          label: getIdentifierSpec(values.country, 'individual').code,
+          value: formatDocumentForReview(values.taxId, values.country, 'individual'),
         },
       ],
     },
@@ -90,8 +93,7 @@ export function buildIndividualSignupReviewSections(
 
 export const INDIVIDUAL_SIGNUP_REVIEW_COPY = {
   title: 'Revisar cadastro',
-  description:
-    'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
+  description: 'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
   attentionMessage:
     'Verifique principalmente CPF, e-mail e WhatsApp. Informações incorretas podem atrasar seu acesso.',
   confirmLabel: 'Confirmar e cadastrar',
