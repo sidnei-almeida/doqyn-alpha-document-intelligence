@@ -40,7 +40,7 @@ Idioma padrão de fallback: `pt-BR`.
 
 - [x] **FMT-01**: Formatação de data/hora passa a usar o locale ativo (não mais `'pt-BR'` hardcoded) via util/hook central.
 - [x] **FMT-02**: Formatação de números/ordenação (`localeCompare`, `Intl.NumberFormat`) usa o locale ativo.
-- [ ] **FMT-03**: Os ~20+ usos hardcoded de `toLocale*('pt-BR')` / `Intl.*('pt-BR')` migram para o util central (ou recebem o locale ativo).
+- [x] **FMT-03**: Os ~20+ usos hardcoded de `toLocale*('pt-BR')` / `Intl.*('pt-BR')` migram para o util central (ou recebem o locale ativo).
 
 ### Country-aware fiscal identifiers (DOC)
 

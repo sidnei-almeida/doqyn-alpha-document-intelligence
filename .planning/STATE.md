@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-07-17T18:33:57.225Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-07-17T22:22:15.577Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 6
-  percent: 40
+  completed_plans: 8
+  percent: 60
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 
 ## Current Position
 
-Phase: 3 (Formatação sensível a locale) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
+Phase: 3 (Formatação sensível a locale) — COMPLETE
+Plan: 3 of 3
+Status: Complete
 Last activity: 2026-07-17
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -55,6 +55,8 @@ Progress: [████████░░] 75%
 - [Phase 03]: getActiveLocale validates i18n.language against SUPPORTED_LOCALES, falls back to DEFAULT_LOCALE (pt-BR)
 - [Phase 03]: Date/time formatters delegate to native toLocale*(locale) when opts omitted (byte-identity), Intl.DateTimeFormat(locale, opts) otherwise
 - [Phase 03]: Root tsconfig.json now declares baseUrl/paths for @/* so tsx (npm test) resolves aliases at runtime, matching tsconfig.app.json
+- [Phase 03]: sortDocuments keeps no locale parameter — localeCompareActive resolves the active locale internally at call time
+- [Phase 03]: Public portal date helpers (SignaturePortalPage/InternalSignaturePage/ExternalSharePortalPage) stay module-scope reading the active i18n locale, acceptable per CONTEXT discretion
 
 ### Pending Todos
 
@@ -76,6 +78,6 @@ Progress: [████████░░] 75%
 
 ## Session Continuity
 
-Last session: 2026-07-17T18:33:57.217Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-07-17T22:22:15.568Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None

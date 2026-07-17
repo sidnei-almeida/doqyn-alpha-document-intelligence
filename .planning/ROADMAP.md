@@ -12,7 +12,7 @@ do app é incremental e fora desta milestone.
 
 - [x] **Phase 1: Fundação i18n + detecção de locale** — runtime i18n, provider, catálogos pt-BR/es-PY/en-US, auto-detecção e `<html lang>` dinâmico (completed 2026-07-17)
 - [x] **Phase 2: Seletor de idioma + persistência** — componente de troca de idioma (header + configurações), persistência em localStorage sobrepondo auto-detecção (completed 2026-07-17)
-- [ ] **Phase 3: Formatação sensível a locale** — util/hook central de data/número; migrar usos hardcoded `pt-BR`
+- [x] **Phase 3: Formatação sensível a locale** — util/hook central de data/número; migrar usos hardcoded `pt-BR` (completed 2026-07-17)
 - [ ] **Phase 4: Identificadores fiscais por país** — registro por país (CPF/CNPJ, CI/RUC, SSN/EIN) + integração no cadastro/revisão
 - [ ] **Phase 5: Telefone por país + integração no cadastro** — entrada de telefone multi-país (E.164) + normalização no servidor + tradução das telas de cadastro/auth
 
@@ -56,7 +56,7 @@ do app é incremental e fora desta milestone.
 **Plans**: 3 plans
   - [x] 03-01-PLAN.md — Módulo central formatLocale + hook useLocaleFormatters + delega utils.ts + testes [FMT-01, FMT-02]
   - [x] 03-02-PLAN.md — Migra document-send + sharing + document-update-version para formatLocale [FMT-01, FMT-03]
-  - [ ] 03-03-PLAN.md — Migra library sortDocuments + signature + external-share para formatLocale [FMT-01, FMT-02, FMT-03]
+  - [x] 03-03-PLAN.md — Migra library sortDocuments + signature + external-share para formatLocale [FMT-01, FMT-02, FMT-03]
 
 ### Phase 4: Identificadores fiscais por país
 **Goal**: Um registro de identificadores por país substitui o `taxId.ts` BR-only, cobrindo CPF/CNPJ (BR), CI/RUC (PY) e SSN/EIN (US) com rótulo, máscara, placeholder, normalização e validação; os formulários de cadastro selecionam o país e mostram o campo de documento correto; a revisão exibe o documento formatado por país.
@@ -87,6 +87,6 @@ do app é incremental e fora desta milestone.
 |-------|----------------|--------|-----------|
 | 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
 | 2. Seletor de idioma + persistência | 2/2 | Complete   | 2026-07-17 |
-| 3. Formatação sensível a locale | 2/3 | In Progress|  |
+| 3. Formatação sensível a locale | 3/3 | Complete   | 2026-07-17 |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |
 | 5. Telefone por país + integração no cadastro | 0/TBD | Not started | - |
