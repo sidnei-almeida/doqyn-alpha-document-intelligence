@@ -33,8 +33,8 @@ Idioma padrão de fallback: `pt-BR`.
 ### Language / country selector (SEL)
 
 - [ ] **SEL-01**: Componente de seleção de idioma acessível a partir do header/topbar e das Configurações.
-- [ ] **SEL-02**: A preferência de idioma escolhida persiste entre sessões (localStorage) e sobrepõe a auto-detecção.
-- [ ] **SEL-03**: Trocar o idioma atualiza a UI imediatamente, sem reload de página.
+- [x] **SEL-02**: A preferência de idioma escolhida persiste entre sessões (localStorage) e sobrepõe a auto-detecção.
+- [x] **SEL-03**: Trocar o idioma atualiza a UI imediatamente, sem reload de página.
 
 ### Locale-aware formatting (FMT)
 

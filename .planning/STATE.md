@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-07-17T17:58:13.592Z"
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-07-17T18:11:40.622Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 5
+  completed_plans: 4
   percent: 20
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-17)
 
 **Core value:** Tenants can securely upload, analyze, and manage documents — expandindo para múltiplos países.
-**Current focus:** Phase 1 — Fundação i18n + detecção de locale
+**Current focus:** Phase 2 — Seletor de idioma + persistência
 
 ## Current Position
 
-Phase: 1 (Fundação i18n + detecção de locale) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
+Phase: 2 (Seletor de idioma + persistência) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Accumulated Context
 
@@ -47,6 +47,9 @@ Progress: [██████████] 100%
 - [Phase 1]: src/i18n/index.ts guards navigator.languages before calling resolveSupportedLocale, falling back to DEFAULT_LOCALE when navigator is unavailable; resolveSupportedLocale itself stays DOM-free
 - [Phase 1]: useDocumentLang syncs document.documentElement.lang via i18next languageChanged; invoked from an inner LangSync component inside I18nextProvider (outermost provider)
 - [Phase 1]: Nav items migrated from label to labelKey (nav namespace reference) resolved via t(item.labelKey); no new catalog keys needed, all resolved from 01-02 catalogs
+- [Phase 2]: Stored locale preference (doqyn.locale) takes precedence over browser auto-detection at i18next init (SEL-02)
+- [Phase 2]: useLocale decouples from the i18next singleton, obtaining the instance via useTranslation() to match useDocumentLang
+- [Phase 2]: language.* native-name values are identical across all three catalogs; only language.label is localized per language
 
 ### Pending Todos
 
@@ -68,6 +71,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-07-17T17:58:13.584Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-07-17T18:11:40.613Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

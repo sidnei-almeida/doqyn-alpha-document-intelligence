@@ -42,7 +42,7 @@ do app é incremental e fora desta milestone.
   2. Escolha persiste em localStorage e é lida na inicialização com precedência sobre a auto-detecção do navegador.
   3. Trocar o idioma re-renderiza a UI imediatamente (sem reload), incluindo `<html lang>`.
 **Plans**: 2 plans
-  - [ ] 02-01-PLAN.md — Persistência (localePreference) + precedência no init do i18next + hook useLocale + chaves language.* [SEL-02, SEL-03]
+  - [x] 02-01-PLAN.md — Persistência (localePreference) + precedência no init do i18next + hook useLocale + chaves language.* [SEL-02, SEL-03]
   - [ ] 02-02-PLAN.md — Componente LanguageSelect reusável + wiring no header e nas Configurações + teste [SEL-01, SEL-03]
 
 ### Phase 3: Formatação sensível a locale
@@ -83,7 +83,7 @@ do app é incremental e fora desta milestone.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
-| 2. Seletor de idioma + persistência | 0/2 | Not started | - |
+| 2. Seletor de idioma + persistência | 1/2 | In Progress|  |
 | 3. Formatação sensível a locale | 0/TBD | Not started | - |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |
 | 5. Telefone por país + integração no cadastro | 0/TBD | Not started | - |
