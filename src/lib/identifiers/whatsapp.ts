@@ -46,7 +46,7 @@ function resolveDigits(digits: string, options: FormatDigitsOptions): string {
 }
 
 /** Formata número brasileiro: +55 54 99999-9999 */
-function formatBrazilianPhone(digits: string): string {
+export function formatBrazilianPhone(digits: string): string {
   const bounded = digits.slice(0, BR_PHONE_MAX_DIGITS);
   const national = bounded.slice(BR_COUNTRY_CODE.length);
   if (!national) return `+${BR_COUNTRY_CODE}`;
