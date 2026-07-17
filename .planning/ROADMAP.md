@@ -11,7 +11,7 @@ do app é incremental e fora desta milestone.
 ## Phases
 
 - [x] **Phase 1: Fundação i18n + detecção de locale** — runtime i18n, provider, catálogos pt-BR/es-PY/en-US, auto-detecção e `<html lang>` dinâmico (completed 2026-07-17)
-- [ ] **Phase 2: Seletor de idioma + persistência** — componente de troca de idioma (header + configurações), persistência em localStorage sobrepondo auto-detecção
+- [x] **Phase 2: Seletor de idioma + persistência** — componente de troca de idioma (header + configurações), persistência em localStorage sobrepondo auto-detecção (completed 2026-07-17)
 - [ ] **Phase 3: Formatação sensível a locale** — util/hook central de data/número; migrar usos hardcoded `pt-BR`
 - [ ] **Phase 4: Identificadores fiscais por país** — registro por país (CPF/CNPJ, CI/RUC, SSN/EIN) + integração no cadastro/revisão
 - [ ] **Phase 5: Telefone por país + integração no cadastro** — entrada de telefone multi-país (E.164) + normalização no servidor + tradução das telas de cadastro/auth
@@ -43,7 +43,7 @@ do app é incremental e fora desta milestone.
   3. Trocar o idioma re-renderiza a UI imediatamente (sem reload), incluindo `<html lang>`.
 **Plans**: 2 plans
   - [x] 02-01-PLAN.md — Persistência (localePreference) + precedência no init do i18next + hook useLocale + chaves language.* [SEL-02, SEL-03]
-  - [ ] 02-02-PLAN.md — Componente LanguageSelect reusável + wiring no header e nas Configurações + teste [SEL-01, SEL-03]
+  - [x] 02-02-PLAN.md — Componente LanguageSelect reusável + wiring no header e nas Configurações + teste [SEL-01, SEL-03]
 
 ### Phase 3: Formatação sensível a locale
 **Goal**: Datas, horas e números são formatados pelo locale ativo através de um util/hook central; os usos hardcoded de `'pt-BR'` migram para ele, sem regressão visual no fluxo BR.
@@ -83,7 +83,7 @@ do app é incremental e fora desta milestone.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
-| 2. Seletor de idioma + persistência | 1/2 | In Progress|  |
+| 2. Seletor de idioma + persistência | 2/2 | Complete   | 2026-07-17 |
 | 3. Formatação sensível a locale | 0/TBD | Not started | - |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |
 | 5. Telefone por país + integração no cadastro | 0/TBD | Not started | - |

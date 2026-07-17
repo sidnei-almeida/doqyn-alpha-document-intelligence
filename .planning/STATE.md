@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-07-17T18:11:40.622Z"
+status: verifying
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-07-17T18:17:14.634Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
-  percent: 20
+  completed_plans: 5
+  percent: 40
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 
 Phase: 2 (Seletor de idioma + persistência) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-17
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -50,6 +50,8 @@ Progress: [████████░░] 80%
 - [Phase 2]: Stored locale preference (doqyn.locale) takes precedence over browser auto-detection at i18next init (SEL-02)
 - [Phase 2]: useLocale decouples from the i18next singleton, obtaining the instance via useTranslation() to match useDocumentLang
 - [Phase 2]: language.* native-name values are identical across all three catalogs; only language.label is localized per language
+- [Phase 2]: LanguageSelect is presentation-only; all locale state/side effects flow through useLocale (no direct localStorage/i18n calls in the component)
+- [Phase 2]: Header popover uses a stacked label-above-control layout for the language row (w-56 too narrow for inline three-language labels)
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ Progress: [████████░░] 80%
 
 ## Session Continuity
 
-Last session: 2026-07-17T18:11:40.613Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-07-17T18:17:14.626Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
