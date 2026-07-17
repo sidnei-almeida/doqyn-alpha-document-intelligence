@@ -1,5 +1,6 @@
 import type { MetadataDisplayField } from '../types';
 import type { DocumentSearchMeta } from '@/types/document-library';
+import { formatDate } from '@/lib/formatLocale';
 import {
   canonicalizeMetadataKey,
   resolveMetadataLabel,
@@ -40,18 +41,18 @@ function fieldLabelFromRaw(key: string, value: unknown): string | null {
   return null;
 }
 
-const DATE_ONLY = new Intl.DateTimeFormat('pt-BR', {
+const DATE_ONLY_OPTS: Intl.DateTimeFormatOptions = {
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
   timeZone: 'UTC',
-});
+};
 
 function formatDateOnly(value: string | Date | null | undefined): string | null {
   if (value == null || value === '') return null;
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  return DATE_ONLY.format(d);
+  return formatDate(d, DATE_ONLY_OPTS);
 }
 
 function formatMaybeDateValue(raw: unknown): string {
