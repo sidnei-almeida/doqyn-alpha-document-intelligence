@@ -85,7 +85,7 @@ do app é incremental e fora desta milestone.
 **Plans**: 4 plans
   - [x] 05-01-PLAN.md — Registro phone.ts country-aware (BR/PY/US format/toE164/isComplete/defaultPhoneCountry) + export formatBrazilianPhone + testes (regressão BR) [TEL-01]
   - [ ] 05-02-PLAN.md — Componente PhoneInput (seletor DDI + input formatado) + wiring nos 2 cadastros (payload E.164, revisão por país) + formatPhone country-aware + testes [TEL-01, TEL-02]
-  - [ ] 05-03-PLAN.md — contactNormalize multi-país (55/595/1 sem forçar +55, extract/mask por país) + estende contact-recipient-phone.test.ts (PY/US + no-double-prefix, BR verde) [TEL-03]
+  - [x] 05-03-PLAN.md — contactNormalize multi-país (55/595/1 sem forçar +55, extract/mask por país) + estende contact-recipient-phone.test.ts (PY/US + no-double-prefix, BR verde) [TEL-03]
   - [ ] 05-04-PLAN.md — Tradução Login + 2 cadastros para namespace `auth` (pt-BR/es-PY/en-US) + registro do namespace + teste de paridade [TEL-02]
 
 ## Progress
@@ -96,4 +96,4 @@ do app é incremental e fora desta milestone.
 | 2. Seletor de idioma + persistência | 2/2 | Complete   | 2026-07-17 |
 | 3. Formatação sensível a locale | 3/3 | Complete   | 2026-07-17 |
 | 4. Identificadores fiscais por país | 3/3 | Complete   | 2026-07-17 |
-| 5. Telefone por país + integração no cadastro | 1/4 | In Progress|  |
+| 5. Telefone por país + integração no cadastro | 2/4 | In Progress|  |

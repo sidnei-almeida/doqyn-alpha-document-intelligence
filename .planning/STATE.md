@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-07-17T23:12:33.656Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-07-17T23:16:30.848Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 80
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 ## Current Position
 
 Phase: 5 (Telefone por país + integração no cadastro) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ Progress: [████████░░] 80%
 - [Phase 04]: [Phase 04-03] CountrySelect label kept as hardcoded 'País' string, consistent with existing field label convention
 - [Phase 05]: formatBrazilianPhone made additive export from whatsapp.ts to reuse BR formatting in phone.ts without duplicating logic
 - [Phase 05]: PHONE_COUNTRIES registry (BR/PY/US) mirrors Phase 4 COUNTRY_IDENTIFIERS shape: dialCode/placeholder/nationalLengths/format
+- [Phase 05]: [Phase 05-03] contactNormalize dial-code checks ordered 595 -> 55 -> 1 (most-specific-first) across ensureBrCountryCode/extractRecipientPhoneCountryCode/maskRecipientPhoneForDisplay; bare (no '+') non-BR numbers still resolve via explicit dial-code prefix, US bare-11-digit stays ambiguous by design (BR DDD-11 wins) per client sending explicit + for PY/US
 
 ### Pending Todos
 
@@ -86,6 +87,6 @@ Progress: [████████░░] 80%
 
 ## Session Continuity
 
-Last session: 2026-07-17T23:12:33.645Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-07-17T23:16:30.837Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
