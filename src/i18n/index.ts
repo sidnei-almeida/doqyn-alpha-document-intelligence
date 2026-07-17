@@ -2,14 +2,16 @@
  * Configured i18next singleton for the app shell.
  *
  * Initializes once with the pt-BR/es-PY/en-US catalogs, pt-BR as fallback
- * language, and an initial language resolved via `resolveSupportedLocale`
- * (I18N-03) from the browser's reported languages. Does not read/write
- * localStorage (deferred to a later plan) and does not mount any provider —
- * that wiring happens in plan 01-03.
+ * language, and an initial language resolved with a saved-preference-first
+ * precedence (SEL-02): a valid `doqyn.locale` value in localStorage wins,
+ * otherwise falls back to browser-language detection via
+ * `resolveSupportedLocale` (I18N-03). Does not mount any provider — that
+ * wiring happens in plan 01-03.
  */
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, resolveSupportedLocale } from './config';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config';
+import { getStoredLocale, resolveInitialLocale } from './localePreference';
 import ptBRCommon from './locales/pt-BR/common.json';
 import ptBRNav from './locales/pt-BR/nav.json';
 import esPYCommon from './locales/es-PY/common.json';
@@ -26,8 +28,7 @@ const resources = {
 const detectedLanguages =
   typeof navigator !== 'undefined' && navigator.languages ? navigator.languages : [];
 
-const initialLocale =
-  detectedLanguages.length > 0 ? resolveSupportedLocale(detectedLanguages) : DEFAULT_LOCALE;
+const initialLocale = resolveInitialLocale(getStoredLocale(), detectedLanguages);
 
 if (!i18next.isInitialized) {
   void i18next.use(initReactI18next).init({
