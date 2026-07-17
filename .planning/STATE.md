@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-07-17T18:17:14.634Z"
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-07-17T18:33:57.225Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
   percent: 40
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-17)
 
 **Core value:** Tenants can securely upload, analyze, and manage documents — expandindo para múltiplos países.
-**Current focus:** Phase 2 — Seletor de idioma + persistência
+**Current focus:** Phase 3 — Formatação sensível a locale
 
 ## Current Position
 
-Phase: 2 (Seletor de idioma + persistência) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
+Phase: 3 (Formatação sensível a locale) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 ## Accumulated Context
 
@@ -52,6 +52,9 @@ Progress: [██████████] 100%
 - [Phase 2]: language.* native-name values are identical across all three catalogs; only language.label is localized per language
 - [Phase 2]: LanguageSelect is presentation-only; all locale state/side effects flow through useLocale (no direct localStorage/i18n calls in the component)
 - [Phase 2]: Header popover uses a stacked label-above-control layout for the language row (w-56 too narrow for inline three-language labels)
+- [Phase 03]: getActiveLocale validates i18n.language against SUPPORTED_LOCALES, falls back to DEFAULT_LOCALE (pt-BR)
+- [Phase 03]: Date/time formatters delegate to native toLocale*(locale) when opts omitted (byte-identity), Intl.DateTimeFormat(locale, opts) otherwise
+- [Phase 03]: Root tsconfig.json now declares baseUrl/paths for @/* so tsx (npm test) resolves aliases at runtime, matching tsconfig.app.json
 
 ### Pending Todos
 
@@ -73,6 +76,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-07-17T18:17:14.626Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-07-17T18:33:57.217Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

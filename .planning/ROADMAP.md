@@ -54,7 +54,7 @@ do app é incremental e fora desta milestone.
   2. Os ~20+ usos hardcoded de `toLocale*('pt-BR')` / `Intl.*('pt-BR')` em `src/` migram para o util central (ou recebem o locale ativo).
   3. Em pt-BR o resultado permanece idêntico ao atual; em es-PY/en-US datas e números aparecem no formato local.
 **Plans**: 3 plans
-  - [ ] 03-01-PLAN.md — Módulo central formatLocale + hook useLocaleFormatters + delega utils.ts + testes [FMT-01, FMT-02]
+  - [x] 03-01-PLAN.md — Módulo central formatLocale + hook useLocaleFormatters + delega utils.ts + testes [FMT-01, FMT-02]
   - [ ] 03-02-PLAN.md — Migra document-send + sharing + document-update-version para formatLocale [FMT-01, FMT-03]
   - [ ] 03-03-PLAN.md — Migra library sortDocuments + signature + external-share para formatLocale [FMT-01, FMT-02, FMT-03]
 
@@ -87,6 +87,6 @@ do app é incremental e fora desta milestone.
 |-------|----------------|--------|-----------|
 | 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
 | 2. Seletor de idioma + persistência | 2/2 | Complete   | 2026-07-17 |
-| 3. Formatação sensível a locale | 0/3 | Planned | - |
+| 3. Formatação sensível a locale | 1/3 | In Progress|  |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |
 | 5. Telefone por país + integração no cadastro | 0/TBD | Not started | - |
