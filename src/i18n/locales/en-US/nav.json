@@ -1,0 +1,16 @@
+{
+  "library": "Library",
+  "sharedWithMe": "Shared with me",
+  "toSign": "To sign",
+  "recent": "Recent",
+  "favorites": "Favorites",
+  "trash": "Trash",
+  "overview": "Overview",
+  "rules": "Rules",
+  "users": "Users",
+  "audit": "Audit",
+  "tracking": "Tracking",
+  "deactivated": "Deactivated",
+  "settings": "Settings",
+  "administration": "Administration"
+}
