@@ -1,4 +1,5 @@
 import type { DocumentListItem } from '@/types/document-library';
+import { localeCompareActive } from '@/lib/formatLocale';
 import type { LibrarySortDirection, LibrarySortKey } from '../types/library';
 
 function documentDisplayName(doc: DocumentListItem): string {
@@ -21,24 +22,24 @@ export function sortDocuments(
     case 'name':
       sorted.sort(
         (a, b) =>
-          factor * documentDisplayName(a).localeCompare(documentDisplayName(b), 'pt-BR'),
+          factor * localeCompareActive(documentDisplayName(a), documentDisplayName(b)),
       );
       break;
     case 'status':
       sorted.sort(
-        (a, b) => factor * (a.status ?? '').localeCompare(b.status ?? '', 'pt-BR'),
+        (a, b) => factor * localeCompareActive(a.status ?? '', b.status ?? ''),
       );
       break;
     case 'owner':
       sorted.sort(
         (a, b) =>
-          factor * documentOwnerName(a).localeCompare(documentOwnerName(b), 'pt-BR'),
+          factor * localeCompareActive(documentOwnerName(a), documentOwnerName(b)),
       );
       break;
     case 'category':
       sorted.sort(
         (a, b) =>
-          factor * (a.categoryName ?? '').localeCompare(b.categoryName ?? '', 'pt-BR'),
+          factor * localeCompareActive(a.categoryName ?? '', b.categoryName ?? ''),
       );
       break;
     case 'updatedAt':
