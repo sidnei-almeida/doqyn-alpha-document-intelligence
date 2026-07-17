@@ -1,0 +1,16 @@
+{
+  "country": {
+    "BR": "Brasil",
+    "PY": "Paraguai",
+    "US": "Estados Unidos"
+  },
+  "doc": {
+    "cpf": "CPF",
+    "cnpj": "CNPJ",
+    "ci": "CI",
+    "ruc": "RUC",
+    "ssn": "SSN",
+    "ein": "EIN"
+  },
+  "incomplete": "{{doc}} incompleto."
+}
