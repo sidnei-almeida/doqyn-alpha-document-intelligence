@@ -10,6 +10,7 @@ import { PASSWORD_REVIEW_LABEL } from '../src/lib/reviewDisplay';
 
 const validForm = {
   companyName: 'Alpha Consultoria',
+  country: 'BR' as const,
   taxId: '12.345.678/0001-99',
   firstName: 'Maria',
   lastName: 'Santos',
