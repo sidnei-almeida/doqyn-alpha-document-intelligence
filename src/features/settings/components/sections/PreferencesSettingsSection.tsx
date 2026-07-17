@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/useTheme';
 import { Icon } from '@/components/ui/Icon';
+import { LanguageSelect } from '@/components/ui/LanguageSelect';
 import {
   getLibraryDefaultView,
   setLibraryDefaultView,
@@ -53,6 +55,7 @@ function LibraryViewPreview({ mode }: { mode: LibraryDefaultView }) {
 }
 
 export function PreferencesSettingsSection() {
+  const { t } = useTranslation('common');
   const { theme, setTheme } = useTheme();
   const [defaultView, setDefaultView] = useState<LibraryDefaultView>('grid');
 
@@ -99,6 +102,12 @@ export function PreferencesSettingsSection() {
                 })}
               </div>
             }
+          />
+
+          <SettingsRow
+            label={t('language.label')}
+            description="Altera o idioma da interface imediatamente, sem recarregar a página."
+            control={<LanguageSelect />}
           />
 
           <SettingsRow

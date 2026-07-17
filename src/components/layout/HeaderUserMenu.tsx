@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/auth/useAuth';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageSelect } from '@/components/ui/LanguageSelect';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import {
@@ -14,6 +16,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 
 /** Menu do usuário no canto superior direito — estilo workspace de arquivos. */
 export function HeaderUserMenu() {
+  const { t } = useTranslation('common');
   const { user, roles, tenant, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -96,6 +99,11 @@ export function HeaderUserMenu() {
         <div className="flex items-center justify-between gap-2 px-3 py-2">
           <span className="text-[13px] text-doqyn-text">Tema</span>
           <ThemeToggle />
+        </div>
+
+        <div className="flex flex-col gap-1.5 px-3 py-2">
+          <span className="text-[13px] text-doqyn-text">{t('language.label')}</span>
+          <LanguageSelect className="flex-wrap" />
         </div>
 
         <div className="my-1 border-t border-doqyn-border-subtle" />
