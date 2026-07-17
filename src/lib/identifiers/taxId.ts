@@ -44,3 +44,47 @@ export function taxIdPlaceholder(kind: TaxIdKind): string {
 export function toTaxIdApiValue(value: string): string {
   return normalizeTaxId(value);
 }
+
+function isAllSameDigit(digits: string): boolean {
+  return digits.length > 0 && digits.split('').every((d) => d === digits[0]);
+}
+
+function computeModulo11CheckDigit(digits: string, weights: number[]): number {
+  const sum = digits
+    .split('')
+    .reduce((acc, digit, index) => acc + Number(digit) * weights[index], 0);
+  const resto = sum % 11;
+  return resto < 2 ? 0 : 11 - resto;
+}
+
+/** Valida os dígitos verificadores do CPF (mód. 11), adicional ao gate de completude por comprimento. */
+export function validateCpf(value: string): boolean {
+  const digits = extractDigits(value);
+  if (digits.length !== CPF_LENGTH) return false;
+  if (isAllSameDigit(digits)) return false;
+
+  const dv1 = computeModulo11CheckDigit(digits.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  if (dv1 !== Number(digits[9])) return false;
+
+  const dv2 = computeModulo11CheckDigit(digits.slice(0, 10), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return dv2 === Number(digits[10]);
+}
+
+/** Valida os dígitos verificadores do CNPJ (mód. 11), adicional ao gate de completude por comprimento. */
+export function validateCnpj(value: string): boolean {
+  const digits = extractDigits(value);
+  if (digits.length !== CNPJ_LENGTH) return false;
+  if (isAllSameDigit(digits)) return false;
+
+  const dv1 = computeModulo11CheckDigit(
+    digits.slice(0, 12),
+    [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+  );
+  if (dv1 !== Number(digits[12])) return false;
+
+  const dv2 = computeModulo11CheckDigit(
+    digits.slice(0, 13),
+    [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+  );
+  return dv2 === Number(digits[13]);
+}
