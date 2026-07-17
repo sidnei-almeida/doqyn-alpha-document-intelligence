@@ -14,15 +14,18 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config';
 import { getStoredLocale, resolveInitialLocale } from './localePreference';
 import ptBRCommon from './locales/pt-BR/common.json';
 import ptBRNav from './locales/pt-BR/nav.json';
+import ptBRIdentifiers from './locales/pt-BR/identifiers.json';
 import esPYCommon from './locales/es-PY/common.json';
 import esPYNav from './locales/es-PY/nav.json';
+import esPYIdentifiers from './locales/es-PY/identifiers.json';
 import enUSCommon from './locales/en-US/common.json';
 import enUSNav from './locales/en-US/nav.json';
+import enUSIdentifiers from './locales/en-US/identifiers.json';
 
 const resources = {
-  'pt-BR': { common: ptBRCommon, nav: ptBRNav },
-  'es-PY': { common: esPYCommon, nav: esPYNav },
-  'en-US': { common: enUSCommon, nav: enUSNav },
+  'pt-BR': { common: ptBRCommon, nav: ptBRNav, identifiers: ptBRIdentifiers },
+  'es-PY': { common: esPYCommon, nav: esPYNav, identifiers: esPYIdentifiers },
+  'en-US': { common: enUSCommon, nav: enUSNav, identifiers: enUSIdentifiers },
 } as const;
 
 const detectedLanguages =
@@ -36,7 +39,7 @@ if (!i18next.isInitialized) {
     lng: initialLocale,
     fallbackLng: DEFAULT_LOCALE,
     defaultNS: 'common',
-    ns: ['common', 'nav'],
+    ns: ['common', 'nav', 'identifiers'],
     supportedLngs: SUPPORTED_LOCALES,
     interpolation: { escapeValue: false },
     returnNull: false,
