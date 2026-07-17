@@ -25,7 +25,7 @@ Idioma padrão de fallback: `pt-BR`.
 ### i18n foundation (I18N)
 
 - [ ] **I18N-01**: Runtime de i18n instalado e configurado (react-i18next) com um `LocaleProvider` envolvendo o app; sem quebra de build/tests.
-- [ ] **I18N-02**: Catálogos de mensagens para `pt-BR`, `es-PY` e `en-US`, organizados por namespace (ex.: `common`, `auth`, `library`, `viewer`). pt-BR completo; es-PY/en-US com as chaves cobertas nesta milestone (fallback para pt-BR quando ausente).
+- [x] **I18N-02**: Catálogos de mensagens para `pt-BR`, `es-PY` e `en-US`, organizados por namespace (ex.: `common`, `auth`, `library`, `viewer`). pt-BR completo; es-PY/en-US com as chaves cobertas nesta milestone (fallback para pt-BR quando ausente).
 - [x] **I18N-03**: Detecção automática de idioma na primeira visita a partir de `navigator.language`/`navigator.languages`, mapeando para um locale suportado (fallback pt-BR quando não suportado).
 - [ ] **I18N-04**: `<html lang>` reflete dinamicamente o locale ativo.
 - [ ] **I18N-05**: Nenhuma string traduzida hardcoded nas superfícies migradas — todas passam pela função de tradução `t()`.

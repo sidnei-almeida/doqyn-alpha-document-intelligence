@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Milestone i18n/multi-país criada; iniciando execução autônoma da Fase 1
-last_updated: "2026-07-17T17:37:29.684Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-07-17T17:45:42.501Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 ## Current Position
 
 Phase: 1 (Fundação i18n + detecção de locale) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Accumulated Context
 
@@ -43,6 +43,8 @@ Progress: [███░░░░░░░] 33%
 - Escopo de tradução v1: shell/navegação, autenticação/cadastro, biblioteca, visualizador — tradução total é incremental.
 - Executando em modo autônomo com `skip_discuss=true` e `ui_phase=false` (sem interrupções ao usuário).
 - [Phase 1]: i18n detection: primeiro idioma reconhecido na lista vence (es/en/pt por primary subtag, case-insensitive), fallback pt-BR.
+- [Phase 1]: i18n import convention: src/ frontend modules use no explicit .js extension on relative imports (e.g. ./config), unlike server/api code
+- [Phase 1]: src/i18n/index.ts guards navigator.languages before calling resolveSupportedLocale, falling back to DEFAULT_LOCALE when navigator is unavailable; resolveSupportedLocale itself stays DOM-free
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ Progress: [███░░░░░░░] 33%
 
 ## Session Continuity
 
-Last session: 2026-07-17T17:36:57.737Z
-Stopped at: Milestone i18n/multi-país criada; iniciando execução autônoma da Fase 1
+Last session: 2026-07-17T17:45:42.493Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
