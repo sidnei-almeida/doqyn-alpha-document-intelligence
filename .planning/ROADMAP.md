@@ -70,7 +70,7 @@ do app é incremental e fora desta milestone.
   5. `reviewDisplay` e telas de revisão exibem o documento formatado por país, mantendo o mascaramento de dados sensíveis do ID pessoal.
 **Plans**: 3 plans
   - [x] 04-01-PLAN.md — Registro countryIdentifiers.ts (BR/PY/US specs) + validação CPF/CNPJ/RUC mod-11 + SSN/EIN + defaultCountryForLocale + testes (regressão BR) [DOC-01, DOC-02, DOC-03]
-  - [ ] 04-02-PLAN.md — DocumentIdInput + CountrySelect + generalização reviewDisplay (mascaramento por país, back-compat BR) + catálogos i18n identifiers [DOC-01, DOC-03, DOC-05]
+  - [x] 04-02-PLAN.md — DocumentIdInput + CountrySelect + generalização reviewDisplay (mascaramento por país, back-compat BR) + catálogos i18n identifiers [DOC-01, DOC-03, DOC-05]
   - [ ] 04-03-PLAN.md — Integração no cadastro individual + empresa (seletor de país, campo/rótulo dinâmico, payload normalizado, revisão por país) + testes [DOC-04, DOC-05]
 
 ### Phase 5: Telefone por país + integração no cadastro
@@ -91,5 +91,5 @@ do app é incremental e fora desta milestone.
 | 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
 | 2. Seletor de idioma + persistência | 2/2 | Complete   | 2026-07-17 |
 | 3. Formatação sensível a locale | 3/3 | Complete   | 2026-07-17 |
-| 4. Identificadores fiscais por país | 1/3 | In Progress|  |
+| 4. Identificadores fiscais por país | 2/3 | In Progress|  |
 | 5. Telefone por país + integração no cadastro | 0/TBD | Not started | - |

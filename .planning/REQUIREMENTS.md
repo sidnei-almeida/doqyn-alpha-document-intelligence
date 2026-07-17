@@ -48,7 +48,7 @@ Idioma padrão de fallback: `pt-BR`.
 - [x] **DOC-02**: Brasil mantém CPF/CNPJ (comportamento atual preservado, incluindo dígitos verificadores quando já existirem).
 - [x] **DOC-03**: Paraguai (CI/RUC) e EUA (SSN/EIN) suportados com máscara + placeholder + validação de formato/dígito verificador quando aplicável.
 - [ ] **DOC-04**: Formulários de cadastro (individual e empresa) selecionam o país e exibem o campo de documento correto (rótulo, máscara, validação) conforme o país.
-- [ ] **DOC-05**: `reviewDisplay`/telas de revisão exibem o documento formatado corretamente por país (mascarando dados sensíveis do ID pessoal como hoje ocorre com CPF).
+- [x] **DOC-05**: `reviewDisplay`/telas de revisão exibem o documento formatado corretamente por país (mascarando dados sensíveis do ID pessoal como hoje ocorre com CPF).
 
 ### Country-aware phone (TEL)
 

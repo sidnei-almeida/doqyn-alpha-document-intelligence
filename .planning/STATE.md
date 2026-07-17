@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-07-17T22:38:20.863Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-07-17T22:44:11.072Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 60
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 ## Current Position
 
 Phase: 4 (Identificadores fiscais por país) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-17
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## Accumulated Context
 
@@ -59,6 +59,8 @@ Progress: [████████░░] 82%
 - [Phase 03]: Public portal date helpers (SignaturePortalPage/InternalSignaturePage/ExternalSharePortalPage) stay module-scope reading the active i18n locale, acceptable per CONTEXT discretion
 - [Phase 04]: BR isComplete stays length-based; validate() (mod-11 DV) is additive and never gates completeness for CPF/CNPJ
 - [Phase 04]: PY RUC validate recomputes mod-11 base-11 check digit over 8 base digits; US SSN validate enforces SSA area/group/serial rules, EIN validate is format-only
+- [Phase 04]: [Phase 04-02] formatDocument/formatDocumentForReview overloads narrow on disjoint TaxIdKind/CountryCode literal unions to keep BR-only callers compiling unchanged
+- [Phase 04]: [Phase 04-02] PY CI review masking duplicates a small thousands-grouping helper locally in reviewDisplay.ts rather than exporting countryIdentifiers.ts internals
 
 ### Pending Todos
 
@@ -80,6 +82,6 @@ Progress: [████████░░] 82%
 
 ## Session Continuity
 
-Last session: 2026-07-17T22:38:20.855Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-07-17T22:44:11.064Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
