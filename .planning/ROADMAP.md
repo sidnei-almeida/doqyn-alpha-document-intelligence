@@ -10,7 +10,7 @@ do app é incremental e fora desta milestone.
 
 ## Phases
 
-- [ ] **Phase 1: Fundação i18n + detecção de locale** — runtime i18n, provider, catálogos pt-BR/es-PY/en-US, auto-detecção e `<html lang>` dinâmico
+- [x] **Phase 1: Fundação i18n + detecção de locale** — runtime i18n, provider, catálogos pt-BR/es-PY/en-US, auto-detecção e `<html lang>` dinâmico (completed 2026-07-17)
 - [ ] **Phase 2: Seletor de idioma + persistência** — componente de troca de idioma (header + configurações), persistência em localStorage sobrepondo auto-detecção
 - [ ] **Phase 3: Formatação sensível a locale** — util/hook central de data/número; migrar usos hardcoded `pt-BR`
 - [ ] **Phase 4: Identificadores fiscais por país** — registro por país (CPF/CNPJ, CI/RUC, SSN/EIN) + integração no cadastro/revisão
@@ -31,7 +31,7 @@ do app é incremental e fora desta milestone.
 **Plans**: 3 plans
   - [x] 01-01-PLAN.md — Deps + config/detecção (resolveSupportedLocale) + teste unitário [I18N-01, I18N-02, I18N-03]
   - [x] 01-02-PLAN.md — Catálogos common/nav (pt-BR/es-PY/en-US) + init do i18next com fallback pt-BR [I18N-02, I18N-03]
-  - [ ] 01-03-PLAN.md — I18nextProvider + `<html lang>` dinâmico + migração shell/nav para t() [I18N-01, I18N-04]
+  - [x] 01-03-PLAN.md — I18nextProvider + `<html lang>` dinâmico + migração shell/nav para t() [I18N-01, I18N-04]
 
 ### Phase 2: Seletor de idioma + persistência
 **Goal**: Usuário pode trocar o idioma por um seletor no header e nas Configurações; a escolha persiste entre sessões e sobrepõe a auto-detecção; a troca reflete imediatamente sem reload.
@@ -80,7 +80,7 @@ do app é incremental e fora desta milestone.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fundação i18n + detecção de locale | 2/3 | In Progress|  |
+| 1. Fundação i18n + detecção de locale | 3/3 | Complete   | 2026-07-17 |
 | 2. Seletor de idioma + persistência | 0/TBD | Not started | - |
 | 3. Formatação sensível a locale | 0/TBD | Not started | - |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |

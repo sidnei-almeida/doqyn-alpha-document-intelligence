@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-17T17:45:42.501Z"
+status: verifying
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-07-17T17:58:13.592Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 20
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 
 Phase: 1 (Fundação i18n + detecção de locale) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-17
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -45,6 +45,8 @@ Progress: [███████░░░] 67%
 - [Phase 1]: i18n detection: primeiro idioma reconhecido na lista vence (es/en/pt por primary subtag, case-insensitive), fallback pt-BR.
 - [Phase 1]: i18n import convention: src/ frontend modules use no explicit .js extension on relative imports (e.g. ./config), unlike server/api code
 - [Phase 1]: src/i18n/index.ts guards navigator.languages before calling resolveSupportedLocale, falling back to DEFAULT_LOCALE when navigator is unavailable; resolveSupportedLocale itself stays DOM-free
+- [Phase 1]: useDocumentLang syncs document.documentElement.lang via i18next languageChanged; invoked from an inner LangSync component inside I18nextProvider (outermost provider)
+- [Phase 1]: Nav items migrated from label to labelKey (nav namespace reference) resolved via t(item.labelKey); no new catalog keys needed, all resolved from 01-02 catalogs
 
 ### Pending Todos
 
@@ -66,6 +68,6 @@ Progress: [███████░░░] 67%
 
 ## Session Continuity
 
-Last session: 2026-07-17T17:45:42.493Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-07-17T17:58:13.584Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
