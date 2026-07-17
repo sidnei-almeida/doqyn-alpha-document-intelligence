@@ -1,0 +1,16 @@
+{
+  "library": "Biblioteca",
+  "sharedWithMe": "Compartido conmigo",
+  "toSign": "Para firmar",
+  "recent": "Recientes",
+  "favorites": "Favoritos",
+  "trash": "Papelera",
+  "overview": "Resumen",
+  "rules": "Reglas",
+  "users": "Usuarios",
+  "audit": "Auditoría",
+  "tracking": "Seguimiento",
+  "deactivated": "Desactivados",
+  "settings": "Configuración",
+  "administration": "Administración"
+}
