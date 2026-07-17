@@ -25,7 +25,7 @@ describe('sidebar DOQYN', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(section.includes('text-doqyn-subtle'));
-    assert.ok(sidebar.includes('Administração'));
+    assert.ok(sidebar.includes("t('administration')"));
   });
 
   it('sidebar workspace: Biblioteca, + Novo, modo colapsável', () => {
@@ -54,8 +54,8 @@ describe('sidebar DOQYN', () => {
   it('navegação principal inclui views da Biblioteca', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
-    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
-      assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
+    for (const labelKey of ['sharedWithMe', 'toSign', 'recent', 'favorites', 'trash']) {
+      assert.ok(sidebar.includes(labelKey) || readSrc('lib/constants.ts').includes(labelKey));
     }
   });
 

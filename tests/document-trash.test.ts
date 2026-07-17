@@ -354,8 +354,8 @@ describe('document trash — frontend lixeira e desativados', () => {
     )?.[0] ?? '';
     assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
     assert.ok(adminBlock.includes('adminOnly: true'));
-    assert.ok(adminBlock.includes('Desativados'));
-    assert.ok(!libraryViewsBlock.includes('Desativados'));
+    assert.ok(adminBlock.includes('deactivated'));
+    assert.ok(!libraryViewsBlock.includes('deactivated'));
     assert.ok(sidebar.includes('canManageDeactivated'));
     assert.ok(sidebar.includes('adminNavItems'));
   });
