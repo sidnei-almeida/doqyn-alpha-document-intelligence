@@ -1,4 +1,5 @@
 import type { DocumentSignatureSummary, DocumentSignatureSummaryStatus } from '@/types/document-library';
+import { formatDate } from '@/lib/formatLocale';
 
 const EMPTY_SIGNATURE_SUMMARY: DocumentSignatureSummary = {
   status: 'none',
@@ -121,7 +122,7 @@ export function signatureDetailSummaryText(summary?: DocumentSignatureSummary | 
   }
 
   if (normalized.status === 'signed' && normalized.latestSignedAt) {
-    const date = new Date(normalized.latestSignedAt).toLocaleString('pt-BR', {
+    const date = formatDate(new Date(normalized.latestSignedAt), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

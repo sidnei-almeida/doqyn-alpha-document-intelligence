@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { formatDateTime } from '@/lib/formatLocale';
 import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { ExternalSharePortalPayload } from '@/features/sharing/api/externalShareApi';
 import {
@@ -29,7 +30,7 @@ type PortalState =
     };
 
 function formatShareDate(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
+  return formatDateTime(new Date(iso), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

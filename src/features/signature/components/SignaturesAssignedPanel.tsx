@@ -4,12 +4,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { formatDateTime } from '@/lib/formatLocale';
 import type { AssignedSignatureRequestItem } from '@/features/signature/api/signatureApi';
 import { useAssignedSignatureRequests } from '@/features/signature/hooks/useAssignedSignatureRequests';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('pt-BR', {
+  return formatDateTime(new Date(iso), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
