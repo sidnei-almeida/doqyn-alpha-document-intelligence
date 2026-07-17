@@ -19,18 +19,20 @@ Tenants can securely upload, analyze, and manage documents — and understand wh
 
 ### Active
 
-**Milestone focus: enrich the viewer Details panel with the standard metadata set (not a raw blob dump).**
+**Milestone focus: Internacionalização e multi-país (BR / PY / US) — expandir o app para Paraguai e Estados Unidos.**
 
-- [ ] Show curated standard fields in Detalhes (parties, signature/doc dates, validity — explicit or inferred)
-- [ ] Prefer searchMeta / canonical keys over flattening arbitrary version metadata
-- [ ] When validity is inferred (anchor + prazo), surface that honestly; if no base, show “não determinada”
-- [ ] Keep system fields already shown (category, uploader, dates, version)
+- [ ] Fundação de i18n (react-i18next) + detecção automática de idioma do navegador + `<html lang>` dinâmico
+- [ ] Seletor de idioma com persistência (localStorage), sobrepondo a auto-detecção
+- [ ] Formatação de data/número sensível ao locale ativo (substituir `pt-BR` hardcoded)
+- [ ] Identificadores fiscais por país (BR CPF/CNPJ, PY CI/RUC, US SSN/EIN) no cadastro/revisão
+- [ ] Telefone por país (BR +55, PY +595, US +1) em E.164 + normalização no servidor
 
 ### Out of Scope (this milestone)
 
-- Full exclusive Documento ↔ Ficha mode switch (deferred; enriching Detalhes first)
-- Audit/P1 hardening (removed from GSD; may return later)
-- Redesigning extraction rules / AI prompts beyond what Detalhes needs to display
+- Tradução 100% do app (incremental; cobre shell, auth/cadastro, biblioteca, viewer)
+- Persistir idioma no perfil do `doqyn-auth-service` (deferido; v1 usa localStorage)
+- Milestone "Viewer — Detalhes com metadados standard" (deferida)
+- Billing/moeda multi-país e novos países além de BR/PY/US
 
 ## Context
 
