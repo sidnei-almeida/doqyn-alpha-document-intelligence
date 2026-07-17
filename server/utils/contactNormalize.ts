@@ -8,6 +8,8 @@ export function normalizeWhatsapp(value: string): string {
 }
 
 const BR_COUNTRY_CODE = '55';
+const PY_COUNTRY_CODE = '595';
+const US_COUNTRY_CODE = '1';
 const PHONE_MAX_DIGITS = 15;
 
 export const INVALID_RECIPIENT_PHONE_MESSAGE =
@@ -15,9 +17,17 @@ export const INVALID_RECIPIENT_PHONE_MESSAGE =
 
 const RECIPIENT_PHONE_INPUT_PATTERN = /^[\d+\s()-]+$/;
 
+/**
+ * Sem DDI explícito, respeita dial codes conhecidos (55/595) já presentes nos
+ * dígitos e só prefixa 55 (conveniência BR) para número nacional 10-11 dígitos
+ * que não comece com um dial code conhecido. US (dial code 1) é desambiguado
+ * apenas via o caminho '+' explícito em parseOptionalRecipientPhone, pois um
+ * número nacional BR de 11 dígitos pode legitimamente começar com '1' (DDD 11).
+ */
 function ensureBrCountryCode(digits: string): string {
   const normalized = digits.replace(/\D/g, '').slice(0, PHONE_MAX_DIGITS);
   if (!normalized) return normalized;
+  if (normalized.startsWith(PY_COUNTRY_CODE) && normalized.length >= 12) return normalized;
   if (normalized.startsWith(BR_COUNTRY_CODE)) return normalized;
   if (normalized.length >= 10 && normalized.length <= 11) {
     return `${BR_COUNTRY_CODE}${normalized}`;
@@ -32,15 +42,27 @@ export type ParsedRecipientPhone = {
   recipientPhoneMasked: string;
 };
 
-/** Máscara para UI/logs — ex.: +55 54 *****-9999 */
+/** Máscara para UI/logs — ex.: +55 54 *****-9999, +595 98 *****-4567, +1 (202) *****-0123 */
 export function maskRecipientPhoneForDisplay(e164: string): string {
   const digits = e164.replace(/\D/g, '');
   if (!digits) return '****';
   const last4 = digits.slice(-4);
 
+  if (digits.startsWith(PY_COUNTRY_CODE) && digits.length === 12) {
+    const national = digits.slice(3);
+    const area = national.slice(0, 2);
+    return `+${PY_COUNTRY_CODE} ${area} *****-${last4}`;
+  }
+
   if (digits.startsWith(BR_COUNTRY_CODE) && digits.length >= 12) {
     const ddd = digits.slice(2, 4);
     return `+${BR_COUNTRY_CODE} ${ddd} *****-${last4}`;
+  }
+
+  if (digits.startsWith(US_COUNTRY_CODE) && digits.length === 11) {
+    const national = digits.slice(1);
+    const area = national.slice(0, 3);
+    return `+${US_COUNTRY_CODE} (${area}) *****-${last4}`;
   }
 
   if (digits.length <= 4) return `*****-${last4}`;
@@ -49,8 +71,14 @@ export function maskRecipientPhoneForDisplay(e164: string): string {
 }
 
 function extractRecipientPhoneCountryCode(digits: string): string {
+  if (digits.startsWith(PY_COUNTRY_CODE) && digits.length >= 12) {
+    return PY_COUNTRY_CODE;
+  }
   if (digits.startsWith(BR_COUNTRY_CODE) && digits.length >= 12) {
     return BR_COUNTRY_CODE;
+  }
+  if (digits.startsWith(US_COUNTRY_CODE) && digits.length === 11) {
+    return US_COUNTRY_CODE;
   }
   if (digits.length >= 12) return digits.slice(0, 2);
   if (digits.length >= 11) return digits.slice(0, 1);
