@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SidebarBrandLogo } from '@/components/brand';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/auth/useAuth';
@@ -24,6 +25,7 @@ interface SidebarProps {
  * Pastas/categorias ficam na Biblioteca, não duplicadas aqui.
  */
 export function Sidebar({ className }: SidebarProps) {
+  const { t } = useTranslation(['nav', 'common']);
   const { user, roles, hasAnyRole, membership } = useAuth();
   const [searchParams] = useSearchParams();
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
@@ -82,7 +84,9 @@ export function Sidebar({ className }: SidebarProps) {
               'hover:bg-doqyn-surface-hover/50 hover:text-doqyn-muted',
               !collapsed && 'absolute right-0 top-1/2 z-10 -translate-y-1/2',
             )}
-            aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+            aria-label={
+              collapsed ? t('common:expandSidebar') : t('common:collapseSidebar')
+            }
             data-testid="sidebar-collapse-toggle"
           >
             <Icon name={collapsed ? 'chevron_right' : 'chevron_left'} size={ICON_SIZE.sm} />
@@ -104,7 +108,7 @@ export function Sidebar({ className }: SidebarProps) {
       >
         <SidebarSection collapsed={collapsed}>
           <SidebarNavItem
-            item={{ label: 'Biblioteca', path: '/biblioteca', icon: 'folder', end: true }}
+            item={{ labelKey: 'library', path: '/biblioteca', icon: 'folder', end: true }}
             collapsed={collapsed}
           />
           {libraryViewItems.map((item) => (
@@ -114,7 +118,7 @@ export function Sidebar({ className }: SidebarProps) {
 
         {!collapsed && <div className="mx-2 my-3 h-px bg-doqyn-border-subtle/40" aria-hidden />}
 
-        <SidebarSection label="Administração" className="mt-5" collapsed={collapsed}>
+        <SidebarSection label={t('administration')} className="mt-5" collapsed={collapsed}>
           {adminNavItems.map((item) => (
             <SidebarNavItem key={item.path} item={item} collapsed={collapsed} />
           ))}
