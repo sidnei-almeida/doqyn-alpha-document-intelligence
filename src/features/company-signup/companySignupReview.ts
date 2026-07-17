@@ -1,5 +1,5 @@
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { toTaxIdApiValue, toWhatsappApiValue } from '../../lib/identifiers';
+import { getIdentifierSpec, toWhatsappApiValue, type CountryCode } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
@@ -11,6 +11,7 @@ import {
 
 export type CompanySignupFormValues = {
   companyName: string;
+  country: CountryCode;
   taxId: string;
   firstName: string;
   lastName: string;
@@ -22,9 +23,11 @@ export type CompanySignupFormValues = {
   companyAuthorization: boolean;
 };
 
-export function validateCompanySignupForm(
-  values: CompanySignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' | 'companyAuthorization' } {
+export function validateCompanySignupForm(values: CompanySignupFormValues): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms' | 'companyAuthorization';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -51,7 +54,7 @@ export function validateCompanySignupForm(
 export function buildCompanySignupPayload(values: CompanySignupFormValues) {
   return {
     companyName: values.companyName,
-    taxId: toTaxIdApiValue(values.taxId),
+    taxId: getIdentifierSpec(values.country, 'company').normalize(values.taxId),
     firstName: values.firstName,
     lastName: values.lastName,
     email: values.email,
@@ -63,17 +66,15 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
   };
 }
 
-export function buildCompanySignupReviewSections(
-  values: CompanySignupFormValues,
-): ReviewSection[] {
+export function buildCompanySignupReviewSections(values: CompanySignupFormValues): ReviewSection[] {
   return [
     {
       title: 'Empresa',
       fields: [
         { label: 'Nome da empresa', value: safeDisplayValue(values.companyName) },
         {
-          label: 'CNPJ',
-          value: formatDocumentForReview(values.taxId, 'CNPJ'),
+          label: getIdentifierSpec(values.country, 'company').code,
+          value: formatDocumentForReview(values.taxId, values.country, 'company'),
         },
       ],
     },
