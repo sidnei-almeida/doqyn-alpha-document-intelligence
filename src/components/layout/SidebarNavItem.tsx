@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { SidebarTooltip } from './SidebarTooltip';
 
 export type SidebarNavItemConfig = {
-  label: string;
+  /** Chave no namespace `nav` (src/i18n/locales/<locale>/nav.json). */
+  labelKey: string;
   path: string;
   icon: string;
   /** Ativa apenas em match exato (evita destacar a raiz junto com sub-rotas). */
@@ -31,6 +33,9 @@ const navLinkClass = (isActive: boolean, collapsed: boolean) =>
 
 /** Item de navegação — ícone + label; ativo com fundo suave e fill. */
 export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps) {
+  const { t } = useTranslation('nav');
+  const label = t(item.labelKey);
+
   const link = (
     <NavLink to={item.path} end={item.end} className={({ isActive }) => navLinkClass(isActive, collapsed)}>
       {({ isActive }) => (
@@ -44,14 +49,14 @@ export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps)
               isActive ? 'text-doqyn-sidebar-selected-icon' : 'text-doqyn-muted group-hover:text-doqyn-text',
             )}
           />
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && <span className="truncate">{label}</span>}
         </>
       )}
     </NavLink>
   );
 
   return (
-    <SidebarTooltip label={item.label} collapsed={collapsed}>
+    <SidebarTooltip label={label} collapsed={collapsed}>
       {link}
     </SidebarTooltip>
   );

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useDashboardOverview } from '@/features/dashboard/hooks/useDashboardOverview';
 import { formatStorageBytes } from '@/features/dashboard/utils/buildOverviewMetrics';
 
@@ -7,8 +8,13 @@ import { formatStorageBytes } from '@/features/dashboard/utils/buildOverviewMetr
  * A barra mostra a fração de documentos processados (métrica real; não há cota de bytes).
  */
 export function SidebarStoragePanel() {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const { data } = useDashboardOverview('30d');
+  const { data } = useDashboardOverview('30d', {
+    staleTime: 5 * 60_000,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
 
   if (!data?.storage) return null;
 
@@ -18,7 +24,7 @@ export function SidebarStoragePanel() {
 
   return (
     <div className="mx-2 mb-2 shrink-0 rounded-xl border border-doqyn-border-subtle bg-doqyn-surface p-3 shadow-elevation-1">
-      <p className="type-label text-doqyn-muted">Armazenamento</p>
+      <p className="type-label text-doqyn-muted">{t('storage')}</p>
       <p className="mt-1 font-display text-[15px] font-medium tracking-[-0.005em] text-doqyn-text">
         {formatStorageBytes(data.storage.totalSizeBytes)}
         <span className="ml-1 font-body text-[11px] font-normal text-doqyn-subtle">
@@ -43,7 +49,7 @@ export function SidebarStoragePanel() {
         onClick={() => navigate('/library')}
         className="mt-2 font-display text-label font-medium text-doqyn-primary hover:underline"
       >
-        Gerenciar
+        {t('manage')}
       </button>
     </div>
   );

@@ -44,32 +44,33 @@ export const PROCESSING_STEPS = [
   { id: 4, label: 'Disponível com rastreabilidade', description: 'Documento pronto para consulta' },
 ];
 
+/** `labelKey` references a key in the `nav` i18next namespace (see src/i18n/locales/<locale>/nav.json). */
 export const NAV_ITEMS_PRIMARY = [
-  { label: 'Biblioteca', path: '/biblioteca', icon: 'folder' },
+  { labelKey: 'library', path: '/biblioteca', icon: 'folder' },
 ] as const;
 
 /** Views da Biblioteca — recortes sobre a listagem real (listDocuments). */
 export const NAV_ITEMS_LIBRARY_VIEWS = [
-  { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
-  { label: 'Para assinar', path: '/biblioteca/assinaturas', icon: 'draw' },
-  { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
-  { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
-  { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
+  { labelKey: 'sharedWithMe', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
+  { labelKey: 'toSign', path: '/biblioteca/assinaturas', icon: 'draw' },
+  { labelKey: 'recent', path: '/biblioteca/recentes', icon: 'history' },
+  { labelKey: 'favorites', path: '/biblioteca/favoritos', icon: 'star' },
+  { labelKey: 'trash', path: '/biblioteca/lixeira', icon: 'delete' },
 ] as const;
 
 export const NAV_ITEMS_ADMIN = [
-  { label: 'Visão Geral', path: '/dashboard', icon: 'dashboard' },
-  { label: 'Regras', path: '/rules', icon: 'account_tree', governanceOnly: true },
-  { label: 'Usuários', path: '/users', icon: 'group', managerOnly: true },
-  { label: 'Auditoria', path: '/audit', icon: 'shield' },
-  { label: 'Tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
+  { labelKey: 'overview', path: '/dashboard', icon: 'dashboard' },
+  { labelKey: 'rules', path: '/rules', icon: 'account_tree', governanceOnly: true },
+  { labelKey: 'users', path: '/users', icon: 'group', managerOnly: true },
+  { labelKey: 'audit', path: '/audit', icon: 'shield' },
+  { labelKey: 'tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
   {
-    label: 'Desativados',
+    labelKey: 'deactivated',
     path: '/biblioteca/desativados',
     icon: 'block',
     adminOnly: true,
   },
-  { label: 'Configurações', path: '/settings', icon: 'settings' },
+  { labelKey: 'settings', path: '/settings', icon: 'settings' },
 ] as const;
 
 /** @deprecated Use NAV_ITEMS_PRIMARY and NAV_ITEMS_ADMIN */
