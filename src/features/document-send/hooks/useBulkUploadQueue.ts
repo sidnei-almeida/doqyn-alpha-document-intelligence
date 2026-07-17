@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatDate, formatTime } from '@/lib/formatLocale';
 import { generateDocumentId } from '../mockData';
 import { analyzePdf, AnalyzePdfRequestError } from '../services/analyzePdf';
 import { confirmAnalysis } from '../services/confirmAnalysis';
@@ -72,7 +73,7 @@ type UseBulkUploadQueueOptions = {
 
 function formatNow(): string {
   const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  return `${formatDate(now)} ${formatTime(now, { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function isInFlightStatus(status: BulkUploadItemStatus): boolean {
