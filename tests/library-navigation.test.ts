@@ -52,7 +52,7 @@ describe('navegação da Biblioteca', () => {
     const constants = readSrc('lib/constants.ts');
     const adminBlock = constants.slice(constants.indexOf('NAV_ITEMS_ADMIN'));
     assert.ok(adminBlock.includes('/dashboard'));
-    assert.ok(adminBlock.includes('Visão Geral'));
+    assert.ok(adminBlock.includes('overview'));
   });
 
   it('login autenticado e guards de rota levam a /biblioteca', () => {
