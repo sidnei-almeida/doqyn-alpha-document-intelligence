@@ -6,5 +6,11 @@
   "expandSidebar": "Expand sidebar",
   "collapseSidebar": "Collapse sidebar",
   "userMenu": "User menu",
-  "account": "Account"
+  "account": "Account",
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português",
+    "es-PY": "Español",
+    "en-US": "English"
+  }
 }
