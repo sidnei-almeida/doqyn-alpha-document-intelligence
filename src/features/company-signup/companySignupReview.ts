@@ -1,5 +1,5 @@
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { getIdentifierSpec, toWhatsappApiValue, type CountryCode } from '../../lib/identifiers';
+import { getIdentifierSpec, toE164, type CountryCode } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
@@ -17,6 +17,7 @@ export type CompanySignupFormValues = {
   lastName: string;
   email: string;
   whatsapp: string;
+  whatsappCountry?: CountryCode;
   password: string;
   confirmPassword: string;
   acceptedTerms: boolean;
@@ -58,7 +59,7 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
     firstName: values.firstName,
     lastName: values.lastName,
     email: values.email,
-    whatsapp: toWhatsappApiValue(values.whatsapp),
+    whatsapp: toE164(values.whatsapp, values.whatsappCountry ?? 'BR'),
     password: values.password,
     confirmPassword: values.confirmPassword,
     acceptedTerms: true,
@@ -86,7 +87,10 @@ export function buildCompanySignupReviewSections(values: CompanySignupFormValues
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
         { label: 'E-mail corporativo', value: safeDisplayValue(values.email) },
-        { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
+        {
+          label: 'WhatsApp',
+          value: formatPhone(values.whatsapp, values.whatsappCountry ?? 'BR'),
+        },
       ],
     },
     {

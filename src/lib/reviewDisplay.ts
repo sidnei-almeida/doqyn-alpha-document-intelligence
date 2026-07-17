@@ -1,5 +1,6 @@
 import type { TaxIdKind } from './identifiers/taxId';
 import { formatWhatsapp } from './identifiers/whatsapp';
+import { formatPhone as phoneFormatPhone } from './identifiers/phone';
 import {
   getIdentifierSpec,
   type CountryCode,
@@ -100,9 +101,9 @@ export function formatDocumentForReview(
   }
 }
 
-export function formatPhone(value: string | undefined | null): string {
+export function formatPhone(value: string | undefined | null, country?: CountryCode): string {
   if (!value?.trim()) return '—';
-  const formatted = formatWhatsapp(value);
+  const formatted = country ? phoneFormatPhone(value, country) : formatWhatsapp(value);
   return formatted || safeDisplayValue(value);
 }
 
