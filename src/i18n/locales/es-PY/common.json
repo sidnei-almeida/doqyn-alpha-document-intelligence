@@ -6,5 +6,11 @@
   "expandSidebar": "Expandir barra lateral",
   "collapseSidebar": "Contraer barra lateral",
   "userMenu": "Menú de usuario",
-  "account": "Cuenta"
+  "account": "Cuenta",
+  "language": {
+    "label": "Idioma",
+    "pt-BR": "Português",
+    "es-PY": "Español",
+    "en-US": "English"
+  }
 }
