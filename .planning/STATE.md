@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Milestone i18n/multi-país criada; iniciando execução autônoma da Fase 1
+last_updated: "2026-07-17T17:37:29.684Z"
+last_activity: 2026-07-17
+progress:
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -5,16 +21,16 @@
 See: .planning/PROJECT.md (updated 2026-07-17)
 
 **Core value:** Tenants can securely upload, analyze, and manage documents — expandindo para múltiplos países.
-**Current focus:** Internacionalização e multi-país (BR / PY / US) — i18n + identificadores/telefone por país
+**Current focus:** Phase 1 — Fundação i18n + detecção de locale
 
 ## Current Position
 
-Phase: 1 — Fundação i18n + detecção de locale
-Plan: —
-Status: Ready to plan (autonomous, discuss skipped)
-Last activity: 2026-07-17 — Nova milestone i18n/multi-país definida; milestone Viewer Detalhes deferida (0%, não iniciada)
+Phase: 1 (Fundação i18n + detecção de locale) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-07-17
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Accumulated Context
 
@@ -26,6 +42,7 @@ Progress: [░░░░░░░░░░] 0%
 - Identificadores por país: BR CPF/CNPJ, PY CI/RUC, US SSN/EIN. Telefone: BR +55, PY +595, US +1 (E.164).
 - Escopo de tradução v1: shell/navegação, autenticação/cadastro, biblioteca, visualizador — tradução total é incremental.
 - Executando em modo autônomo com `skip_discuss=true` e `ui_phase=false` (sem interrupções ao usuário).
+- [Phase 1]: i18n detection: primeiro idioma reconhecido na lista vence (es/en/pt por primary subtag, case-insensitive), fallback pt-BR.
 
 ### Pending Todos
 
@@ -47,6 +64,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-07-17
+Last session: 2026-07-17T17:36:57.737Z
 Stopped at: Milestone i18n/multi-país criada; iniciando execução autônoma da Fase 1
 Resume file: None

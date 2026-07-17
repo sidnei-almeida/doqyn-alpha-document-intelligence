@@ -29,7 +29,7 @@ do app é incremental e fora desta milestone.
   4. `<html lang>` muda dinamicamente conforme o locale ativo.
   5. As strings do shell/navegação (layout principal/topbar/menu) passam por `t()` e aparecem traduzidas nos 3 idiomas.
 **Plans**: 3 plans
-  - [ ] 01-01-PLAN.md — Deps + config/detecção (resolveSupportedLocale) + teste unitário [I18N-01, I18N-02, I18N-03]
+  - [x] 01-01-PLAN.md — Deps + config/detecção (resolveSupportedLocale) + teste unitário [I18N-01, I18N-02, I18N-03]
   - [ ] 01-02-PLAN.md — Catálogos common/nav (pt-BR/es-PY/en-US) + init do i18next com fallback pt-BR [I18N-02, I18N-03]
   - [ ] 01-03-PLAN.md — I18nextProvider + `<html lang>` dinâmico + migração shell/nav para t() [I18N-01, I18N-04]
 
@@ -80,7 +80,7 @@ do app é incremental e fora desta milestone.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fundação i18n + detecção de locale | 0/3 | Not started | - |
+| 1. Fundação i18n + detecção de locale | 1/3 | In Progress|  |
 | 2. Seletor de idioma + persistência | 0/TBD | Not started | - |
 | 3. Formatação sensível a locale | 0/TBD | Not started | - |
 | 4. Identificadores fiscais por país | 0/TBD | Not started | - |
