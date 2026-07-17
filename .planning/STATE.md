@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-07-17T22:44:11.072Z"
+status: verifying
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-07-17T22:51:28.016Z"
 last_activity: 2026-07-17
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 60
+  completed_plans: 11
+  percent: 80
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-07-17)
 
 ## Current Position
 
-Phase: 4 (Identificadores fiscais por país) — EXECUTING
+Phase: 4 (Identificadores fiscais por país) — COMPLETE
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-17
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -61,6 +61,8 @@ Progress: [█████████░] 91%
 - [Phase 04]: PY RUC validate recomputes mod-11 base-11 check digit over 8 base digits; US SSN validate enforces SSA area/group/serial rules, EIN validate is format-only
 - [Phase 04]: [Phase 04-02] formatDocument/formatDocumentForReview overloads narrow on disjoint TaxIdKind/CountryCode literal unions to keep BR-only callers compiling unchanged
 - [Phase 04]: [Phase 04-02] PY CI review masking duplicates a small thousands-grouping helper locally in reviewDisplay.ts rather than exporting countryIdentifiers.ts internals
+- [Phase 04]: [Phase 04-03] Document field label uses getIdentifierSpec(country, personType).code (plain string) instead of a translated labelKey
+- [Phase 04]: [Phase 04-03] CountrySelect label kept as hardcoded 'País' string, consistent with existing field label convention
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ Progress: [█████████░] 91%
 
 ## Session Continuity
 
-Last session: 2026-07-17T22:44:11.064Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-07-17T22:51:14.879Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
