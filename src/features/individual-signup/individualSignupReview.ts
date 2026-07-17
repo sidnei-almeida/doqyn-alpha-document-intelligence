@@ -1,5 +1,5 @@
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { getIdentifierSpec, toWhatsappApiValue, type CountryCode } from '../../lib/identifiers';
+import { getIdentifierSpec, toE164, type CountryCode } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatDocumentForReview,
@@ -13,6 +13,7 @@ export type IndividualSignupFormValues = {
   lastName: string;
   email: string;
   whatsapp: string;
+  whatsappCountry?: CountryCode;
   country: CountryCode;
   taxId: string;
   password: string;
@@ -45,7 +46,7 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
     firstName: values.firstName,
     lastName: values.lastName,
     email: values.email,
-    whatsapp: toWhatsappApiValue(values.whatsapp),
+    whatsapp: toE164(values.whatsapp, values.whatsappCountry ?? 'BR'),
     taxId: getIdentifierSpec(values.country, 'individual').normalize(values.taxId),
     password: values.password,
     confirmPassword: values.confirmPassword,
@@ -66,7 +67,10 @@ export function buildIndividualSignupReviewSections(
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
         { label: 'E-mail', value: safeDisplayValue(values.email) },
-        { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
+        {
+          label: 'WhatsApp',
+          value: formatPhone(values.whatsapp, values.whatsappCountry ?? 'BR'),
+        },
         {
           label: getIdentifierSpec(values.country, 'individual').code,
           value: formatDocumentForReview(values.taxId, values.country, 'individual'),

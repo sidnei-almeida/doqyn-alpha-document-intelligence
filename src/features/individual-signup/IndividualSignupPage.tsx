@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/Button';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { DocumentIdInput } from '@/components/ui/DocumentIdInput';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
-import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { getActiveLocale } from '@/lib/formatLocale';
+import { defaultPhoneCountry } from '@/lib/identifiers';
 import {
   defaultCountryForLocale,
   getIdentifierSpec,
@@ -37,6 +38,9 @@ export function IndividualSignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(() =>
+    defaultPhoneCountry(getActiveLocale()),
+  );
   const [country, setCountry] = useState<CountryCode>(() =>
     defaultCountryForLocale(getActiveLocale()),
   );
@@ -62,6 +66,7 @@ export function IndividualSignupPage() {
       lastName,
       email,
       whatsapp,
+      whatsappCountry: phoneCountry,
       country,
       taxId,
       password,
@@ -73,6 +78,7 @@ export function IndividualSignupPage() {
       lastName,
       email,
       whatsapp,
+      phoneCountry,
       country,
       taxId,
       password,
@@ -179,11 +185,13 @@ export function IndividualSignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <WhatsappInput
+          <PhoneInput
             id="whatsapp"
             label="WhatsApp"
             value={whatsapp}
             onChange={setWhatsapp}
+            country={phoneCountry}
+            onCountryChange={setPhoneCountry}
             required
           />
           <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
