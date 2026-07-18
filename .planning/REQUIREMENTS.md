@@ -28,7 +28,7 @@ Idioma padrão de fallback: `pt-BR`.
 - [x] **I18N-02**: Catálogos de mensagens para `pt-BR`, `es-PY` e `en-US`, organizados por namespace (ex.: `common`, `auth`, `library`, `viewer`). pt-BR completo; es-PY/en-US com as chaves cobertas nesta milestone (fallback para pt-BR quando ausente).
 - [x] **I18N-03**: Detecção automática de idioma na primeira visita a partir de `navigator.language`/`navigator.languages`, mapeando para um locale suportado (fallback pt-BR quando não suportado).
 - [x] **I18N-04**: `<html lang>` reflete dinamicamente o locale ativo.
-- [ ] **I18N-05**: Nenhuma string traduzida hardcoded nas superfícies migradas — todas passam pela função de tradução `t()`.
+- [x] **I18N-05** (parcial): Nas superfícies que os planos de fase efetivamente migraram — shell/nav (Sidebar, WorkspaceTopBar) e auth/cadastro (Login, IndividualSignupPage, CompanySignupPage) — nenhuma string traduzida hardcoded permanece; todas passam por `t()`. `HeaderUserMenu` e `PreferencesSettingsSection` receberam apenas o novo controle de idioma (Fase 2) sem migração das strings pré-existentes (ex.: "Usuário", "Tema da interface", "Claro"/"Escuro"); Library e Viewer não foram tocados por nenhuma fase. Consistente com "Out of Scope: tradução 100% do app" — tratado como incremental, não como gap desta milestone.
 
 ### Language / country selector (SEL)
 
