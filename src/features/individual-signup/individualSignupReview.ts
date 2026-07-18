@@ -28,7 +28,7 @@ export function validateIndividualSignupForm(
 ): {
   valid: boolean;
   error?: string;
-  field?: 'acceptedTerms';
+  field?: 'acceptedTerms' | 'taxId';
 } {
   if (!values.acceptedTerms) {
     return {
@@ -42,6 +42,10 @@ export function validateIndividualSignupForm(
     return { valid: false, error: t('signup.common.passwordMismatch') };
   }
 
+  if (!getIdentifierSpec(values.country, 'individual').validate(values.taxId)) {
+    return { valid: false, error: t('signup.common.invalidTaxId'), field: 'taxId' };
+  }
+
   return { valid: true };
 }
 
@@ -51,6 +55,8 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
     lastName: values.lastName,
     email: values.email,
     whatsapp: toE164(values.whatsapp, values.whatsappCountry ?? 'BR'),
+    country: values.country,
+    taxIdType: getIdentifierSpec(values.country, 'individual').code.toLowerCase(),
     taxId: getIdentifierSpec(values.country, 'individual').normalize(values.taxId),
     password: values.password,
     confirmPassword: values.confirmPassword,

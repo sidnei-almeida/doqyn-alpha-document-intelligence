@@ -1,3 +1,4 @@
+import type { CountryCode as LibPhoneCountryCode } from 'libphonenumber-js/min';
 import { extractDigits } from './digits';
 import {
   formatCnpj,
@@ -8,7 +9,13 @@ import {
 } from './taxId';
 import type { SupportedLocale } from '@/i18n/config';
 
-export type CountryCode = 'BR' | 'PY' | 'US';
+/**
+ * Reaproveita o union de ~240 países ISO 3166-1 alpha-2 do libphonenumber-js em vez de
+ * manter nosso próprio union fechado — qualquer país real já é um CountryCode válido.
+ * `KNOWN_COUNTRY_IDENTIFIERS` abaixo é que decide, país a país, se há validação forte
+ * (BR/PY/US/ES) ou o fallback genérico (formato/tamanho, sem dígito verificador).
+ */
+export type CountryCode = LibPhoneCountryCode;
 
 export type PersonType = 'individual' | 'company';
 
@@ -105,7 +112,71 @@ function validateEin(raw: string): boolean {
   return extractDigits(raw, EIN_LENGTH).length === EIN_LENGTH;
 }
 
-export const COUNTRY_IDENTIFIERS: Record<CountryCode, Record<PersonType, IdentifierSpec>> = {
+/** Mantém apenas letras/dígitos, maiúsculo — usado por identificadores alfanuméricos (NIF/CIF). */
+function extractAlphanumericUpper(raw: string, maxLength?: number): string {
+  const cleaned = raw.toUpperCase().replace(/[^0-9A-Z]/g, '');
+  return maxLength ? cleaned.slice(0, maxLength) : cleaned;
+}
+
+const NIF_LENGTH = 9; // 8 dígitos + 1 letra de controle
+const NIF_CHECK_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE';
+const CIF_LENGTH = 9; // 1 letra de tipo de entidade + 7 dígitos + 1 dígito/letra de controle
+
+function formatNif(raw: string): string {
+  return extractAlphanumericUpper(raw, NIF_LENGTH);
+}
+
+/** Valida o NIF espanhol (pessoa física): letra de controle = mód. 23 dos 8 dígitos. */
+function validateNif(raw: string): boolean {
+  const cleaned = formatNif(raw);
+  if (cleaned.length !== NIF_LENGTH) return false;
+  const digits = cleaned.slice(0, 8);
+  const letter = cleaned.slice(8);
+  if (!/^\d{8}$/.test(digits) || !/^[A-Z]$/.test(letter)) return false;
+  return NIF_CHECK_LETTERS[Number(digits) % 23] === letter;
+}
+
+function formatCif(raw: string): string {
+  return extractAlphanumericUpper(raw, CIF_LENGTH);
+}
+
+/**
+ * Valida só o formato do CIF espanhol (letra de tipo de organização + 7 dígitos + dígito/letra
+ * de controle) — o dígito de controle em si varia por tipo de entidade e não é verificado aqui.
+ */
+function validateCifFormat(raw: string): boolean {
+  return /^[A-HJNPQRSUVW]\d{7}[0-9A-J]$/.test(formatCif(raw));
+}
+
+/** Tamanho aceito pelo fallback genérico (sem validação forte) — folgado o bastante pra cobrir a maioria dos documentos fiscais do mundo. */
+const GENERIC_TAX_ID_MIN_LENGTH = 4;
+const GENERIC_TAX_ID_MAX_LENGTH = 20;
+
+/**
+ * Spec de fallback pra qualquer país sem entrada em KNOWN_COUNTRY_IDENTIFIERS — validação
+ * fraca (só formato/tamanho, sem dígito verificador). Evita que a lista de países da UI
+ * fique travada aos poucos países com validação forte implementada.
+ */
+function buildGenericIdentifierSpec(personType: PersonType): IdentifierSpec {
+  return {
+    code: personType === 'individual' ? 'TAX_ID' : 'TAX_ID',
+    labelKey: 'identifiers:doc.generic',
+    format: (raw) => extractAlphanumericUpper(raw, GENERIC_TAX_ID_MAX_LENGTH),
+    placeholder: '',
+    normalize: (raw) => extractAlphanumericUpper(raw, GENERIC_TAX_ID_MAX_LENGTH),
+    isComplete: (raw) => {
+      const length = extractAlphanumericUpper(raw).length;
+      return length >= GENERIC_TAX_ID_MIN_LENGTH && length <= GENERIC_TAX_ID_MAX_LENGTH;
+    },
+    validate: (raw) => {
+      const length = extractAlphanumericUpper(raw).length;
+      return length >= GENERIC_TAX_ID_MIN_LENGTH && length <= GENERIC_TAX_ID_MAX_LENGTH;
+    },
+    inputMode: 'text',
+  };
+}
+
+const KNOWN_COUNTRY_IDENTIFIERS: Partial<Record<CountryCode, Record<PersonType, IdentifierSpec>>> = {
   BR: {
     individual: {
       code: 'CPF',
@@ -175,13 +246,35 @@ export const COUNTRY_IDENTIFIERS: Record<CountryCode, Record<PersonType, Identif
       inputMode: 'numeric',
     },
   },
+  ES: {
+    individual: {
+      code: 'NIF',
+      labelKey: 'identifiers:doc.nif',
+      format: formatNif,
+      placeholder: '12345678Z',
+      normalize: (raw) => extractAlphanumericUpper(raw, NIF_LENGTH),
+      isComplete: (raw) => formatNif(raw).length === NIF_LENGTH,
+      validate: validateNif,
+      inputMode: 'text',
+    },
+    company: {
+      code: 'CIF',
+      labelKey: 'identifiers:doc.cif',
+      format: formatCif,
+      placeholder: 'B12345678',
+      normalize: (raw) => extractAlphanumericUpper(raw, CIF_LENGTH),
+      isComplete: (raw) => formatCif(raw).length === CIF_LENGTH,
+      validate: validateCifFormat,
+      inputMode: 'text',
+    },
+  },
 };
 
 export function getIdentifierSpec(country: CountryCode, personType: PersonType): IdentifierSpec {
-  return COUNTRY_IDENTIFIERS[country][personType];
+  return KNOWN_COUNTRY_IDENTIFIERS[country]?.[personType] ?? buildGenericIdentifierSpec(personType);
 }
 
-export const SUPPORTED_COUNTRIES: CountryCode[] = ['BR', 'PY', 'US'];
+export const SUPPORTED_COUNTRIES: CountryCode[] = ['BR', 'PY', 'US', 'ES'];
 
 export function countryLabelKey(country: CountryCode): string {
   return `identifiers:country.${country}`;

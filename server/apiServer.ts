@@ -24,6 +24,7 @@ type RoutePattern = {
 const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/health/deep': () => import('../api/health/deep.js'),
+  '/api/geo/detect-country': () => import('../api/geo/detect-country.js'),
   '/api/metrics': () => import('../api/metrics.js'),
   '/api/auth/login': () => import('../api/auth/login.js'),
   '/api/auth/me': () => import('../api/auth/me.js'),
