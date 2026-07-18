@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import i18n from '../src/i18n/index.ts';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
@@ -10,6 +11,8 @@ import {
   buildCompanySignupReviewSections,
   type CompanySignupFormValues,
 } from '../src/features/company-signup/companySignupReview';
+
+const t = i18n.getFixedT('pt-BR', 'auth');
 
 const individualBaseForm: IndividualSignupFormValues = {
   firstName: 'Ana',
@@ -50,7 +53,7 @@ describe('individual signup phone (BR/PY/US)', () => {
   });
 
   it('BR review field formats as +55 54 99999-9999', () => {
-    const sections = buildIndividualSignupReviewSections(individualBaseForm);
+    const sections = buildIndividualSignupReviewSections(individualBaseForm, t);
     assert.equal(whatsappReviewValue(sections), '+55 54 99999-9999');
   });
 
@@ -63,7 +66,7 @@ describe('individual signup phone (BR/PY/US)', () => {
     const payload = buildIndividualSignupPayload(values);
     assert.equal(payload.whatsapp, '595981234567');
 
-    const sections = buildIndividualSignupReviewSections(values);
+    const sections = buildIndividualSignupReviewSections(values, t);
     assert.equal(whatsappReviewValue(sections), '+595 981 234 567');
   });
 
@@ -76,11 +79,12 @@ describe('individual signup phone (BR/PY/US)', () => {
     const payload = buildIndividualSignupPayload(values);
     assert.equal(payload.whatsapp, '12025550123');
 
-    const sections = buildIndividualSignupReviewSections(values);
+    const sections = buildIndividualSignupReviewSections(values, t);
     assert.equal(whatsappReviewValue(sections), '+1 (202) 555-0123');
   });
 
   it('defaults to BR payload when whatsappCountry is omitted (keeps country-signup-integration.test.ts fixtures valid)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructure-to-omit pattern
     const { whatsappCountry: _omit, ...withoutCountry } = individualBaseForm;
     const payload = buildIndividualSignupPayload(withoutCountry as IndividualSignupFormValues);
     assert.equal(payload.whatsapp, '5554999999999');
@@ -94,7 +98,7 @@ describe('company signup phone (BR/PY/US)', () => {
   });
 
   it('BR review field formats as +55 54 99999-9999', () => {
-    const sections = buildCompanySignupReviewSections(companyBaseForm);
+    const sections = buildCompanySignupReviewSections(companyBaseForm, t);
     assert.equal(whatsappReviewValue(sections), '+55 54 99999-9999');
   });
 
@@ -107,7 +111,7 @@ describe('company signup phone (BR/PY/US)', () => {
     const payload = buildCompanySignupPayload(values);
     assert.equal(payload.whatsapp, '595981234567');
 
-    const sections = buildCompanySignupReviewSections(values);
+    const sections = buildCompanySignupReviewSections(values, t);
     assert.equal(whatsappReviewValue(sections), '+595 981 234 567');
   });
 
@@ -120,11 +124,12 @@ describe('company signup phone (BR/PY/US)', () => {
     const payload = buildCompanySignupPayload(values);
     assert.equal(payload.whatsapp, '12025550123');
 
-    const sections = buildCompanySignupReviewSections(values);
+    const sections = buildCompanySignupReviewSections(values, t);
     assert.equal(whatsappReviewValue(sections), '+1 (202) 555-0123');
   });
 
   it('defaults to BR payload when whatsappCountry is omitted (keeps country-signup-integration.test.ts fixtures valid)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructure-to-omit pattern
     const { whatsappCountry: _omit, ...withoutCountry } = companyBaseForm;
     const payload = buildCompanySignupPayload(withoutCountry as CompanySignupFormValues);
     assert.equal(payload.whatsapp, '5554999999999');

@@ -15,9 +15,15 @@ function readSrc(relativePath: string): string {
 describe('OAuth login frontend', () => {
   it('LoginPage mostra botões Google e Microsoft', () => {
     const source = readSrc('pages/Login.tsx');
-    assert.ok(source.includes('Continuar com Google'));
-    assert.ok(source.includes('Continuar com Microsoft'));
+    assert.ok(source.includes("t('login.continueWithGoogle')"));
+    assert.ok(source.includes("t('login.continueWithMicrosoft')"));
     assert.ok(source.includes('supportsOAuth'));
+  });
+
+  it('catálogo pt-BR traduz os botões OAuth', () => {
+    const authPtBR = JSON.parse(readSrc('i18n/locales/pt-BR/auth.json'));
+    assert.equal(authPtBR.login.continueWithGoogle, 'Continuar com Google');
+    assert.equal(authPtBR.login.continueWithMicrosoft, 'Continuar com Microsoft');
   });
 
   it('redirect OAuth aponta para /oauth/*/start', () => {
