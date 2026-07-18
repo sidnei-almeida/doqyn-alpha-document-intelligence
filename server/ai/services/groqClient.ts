@@ -490,6 +490,10 @@ export async function completeChatConversation(
 
   const content = completion.choices[0]?.message?.content ?? '';
 
+  if (!content.trim()) {
+    throw new AiAnalysisError(AI_ERROR_MESSAGES.chatEmptyResponse, 'GROQ_EMPTY_RESPONSE', 502);
+  }
+
   logger.info('groq chat completion completed', {
     requestId: context?.requestId,
     model,
