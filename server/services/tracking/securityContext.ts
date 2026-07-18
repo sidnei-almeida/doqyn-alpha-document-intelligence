@@ -180,7 +180,7 @@ export function resolveSessionIdHash(req: Pick<VercelRequest, 'headers'>): strin
   return value ? hashTrackingValue(value, 'doqyn-session-v1') : undefined;
 }
 
-function resolveApproximateGeo(
+export function resolveApproximateGeo(
   req: Pick<VercelRequest, 'headers'>,
   clientIp?: string,
 ): Pick<TrackingSecurityContext, 'country' | 'region' | 'city' | 'timezone'> {

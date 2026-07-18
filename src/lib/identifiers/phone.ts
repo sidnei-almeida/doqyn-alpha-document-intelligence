@@ -1,81 +1,43 @@
+import { AsYouType, isValidPhoneNumber, getCountryCallingCode } from 'libphonenumber-js/min';
 import { extractDigits } from './digits';
-import { BR_COUNTRY_CODE, WHATSAPP_MAX_DIGITS, formatBrazilianPhone } from './whatsapp';
+import { WHATSAPP_MAX_DIGITS } from './whatsapp';
 import { defaultCountryForLocale, type CountryCode } from './countryIdentifiers';
 import type { SupportedLocale } from '@/i18n/config';
 
 export type PhoneCountrySpec = {
-  dialCode: string;
   placeholder: string;
-  nationalLengths: number[];
-  format(nationalDigits: string): string;
 };
 
-const PY_DIAL_CODE = '595';
-const US_DIAL_CODE = '1';
-
-/** Formata número paraguaio: +595 981 234 567 (grupos parciais de 3 dígitos durante a digitação). */
-function formatParaguayanPhone(national: string): string {
-  if (!national) return `+${PY_DIAL_CODE}`;
-  const groups = national.match(/.{1,3}/g) ?? [];
-  return `+${PY_DIAL_CODE} ${groups.join(' ')}`;
-}
-
-/** Formata número americano: +1 (202) 555-0123 (degrada graciosamente com input parcial). */
-function formatAmericanPhone(national: string): string {
-  if (!national) return `+${US_DIAL_CODE}`;
-
-  const area = national.slice(0, 3);
-  if (national.length <= 3) {
-    return `+${US_DIAL_CODE} (${area}`;
-  }
-
-  const rest = national.slice(3);
-  const prefix = rest.slice(0, 3);
-  const line = rest.slice(3, 7);
-
-  if (!line) {
-    return `+${US_DIAL_CODE} (${area}) ${prefix}`;
-  }
-
-  return `+${US_DIAL_CODE} (${area}) ${prefix}-${line}`;
-}
-
-export const PHONE_COUNTRIES: Record<CountryCode, PhoneCountrySpec> = {
-  BR: {
-    dialCode: BR_COUNTRY_CODE,
-    placeholder: '+55 54 99999-9999',
-    nationalLengths: [10, 11],
-    format: (national) => formatBrazilianPhone(`${BR_COUNTRY_CODE}${national}`),
-  },
-  PY: {
-    dialCode: PY_DIAL_CODE,
-    placeholder: '+595 981 234 567',
-    nationalLengths: [9],
-    format: formatParaguayanPhone,
-  },
-  US: {
-    dialCode: US_DIAL_CODE,
-    placeholder: '+1 (202) 555-0123',
-    nationalLengths: [10],
-    format: formatAmericanPhone,
-  },
+/**
+ * Placeholders de exibição pros países mais comuns. A formatação/validação em si vem de
+ * libphonenumber-js (cobre qualquer país ISO) — um país sem entrada aqui cai no fallback
+ * genérico de getPhonePlaceholder (só "+DDI "), não precisa de placeholder próprio.
+ */
+export const PHONE_COUNTRIES: Partial<Record<CountryCode, PhoneCountrySpec>> = {
+  BR: { placeholder: '+55 54 99999 9999' },
+  PY: { placeholder: '+595 981 234567' },
+  US: { placeholder: '+1 202 555 0123' },
+  ES: { placeholder: '+34 612 34 56 78' },
 };
 
-/** Extrai os dígitos nacionais removendo o dial code do país quando presente. */
+/** Placeholder de exibição do país; cai pra "+DDI " genérico se não houver um específico. */
+export function getPhonePlaceholder(country: CountryCode): string {
+  return PHONE_COUNTRIES[country]?.placeholder ?? `+${getCountryCallingCode(country)} `;
+}
+
+/** Extrai os dígitos nacionais removendo o DDI do país quando presente. */
 function nationalDigitsFor(rawInput: string, country: CountryCode): string {
-  const spec = PHONE_COUNTRIES[country];
+  const dial = getCountryCallingCode(country);
   const digits = extractDigits(rawInput, WHATSAPP_MAX_DIGITS);
-  return digits.startsWith(spec.dialCode) ? digits.slice(spec.dialCode.length) : digits;
+  return digits.startsWith(dial) ? digits.slice(dial.length) : digits;
 }
 
-/** E.164 sem o "+": dial code do país + dígitos nacionais. */
+/** E.164 sem o "+": DDI do país + dígitos nacionais. */
 export function toE164(rawInput: string, country: CountryCode): string {
   if (!rawInput) return '';
-  const spec = PHONE_COUNTRIES[country];
-  const digits = extractDigits(rawInput, WHATSAPP_MAX_DIGITS);
-  if (!digits) return '';
-  if (digits.startsWith(spec.dialCode)) return digits;
-  return `${spec.dialCode}${digits}`;
+  const national = nationalDigitsFor(rawInput, country);
+  if (!national) return '';
+  return `${getCountryCallingCode(country)}${national}`;
 }
 
 /** E.164 com o "+" prefixado. */
@@ -84,19 +46,19 @@ export function toE164Plus(rawInput: string, country: CountryCode): string {
   return e164 ? `+${e164}` : '';
 }
 
-/** Formata o telefone completo (com máscara) para o país informado. */
+/** Formata o telefone completo (com máscara) para o país informado, digitando progressivamente. */
 export function formatPhone(rawInput: string, country: CountryCode): string {
   if (!rawInput) return '';
-  const spec = PHONE_COUNTRIES[country];
+  const dial = getCountryCallingCode(country);
   const national = nationalDigitsFor(rawInput, country);
-  return spec.format(national);
+  if (!national) return `+${dial}`;
+  return new AsYouType(country).input(`+${dial}${national}`);
 }
 
-/** Verifica se a quantidade de dígitos nacionais bate com o esperado para o país. */
+/** Valida o número (dígito verificador de tamanho por tipo de linha real, via libphonenumber-js). */
 export function isCompletePhone(value: string, country: CountryCode): boolean {
-  const spec = PHONE_COUNTRIES[country];
-  const national = nationalDigitsFor(value, country);
-  return spec.nationalLengths.includes(national.length);
+  const e164Plus = toE164Plus(value, country);
+  return e164Plus ? isValidPhoneNumber(e164Plus) : false;
 }
 
 /** País de telefone padrão a partir do locale ativo. */

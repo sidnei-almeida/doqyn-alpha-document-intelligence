@@ -5,6 +5,10 @@ export type IndividualSignupInput = {
   lastName: string;
   email: string;
   whatsapp: string;
+  /** ISO 3166-1 alpha-2 (ex.: BR, PY, US, ES) — país de domicílio/documento fiscal do usuário. */
+  country: string;
+  /** Tipo de documento fiscal (ex.: cpf, ci, ssn, nif, tax_id) — vem de getIdentifierSpec(country, 'individual').code. */
+  taxIdType: string;
   taxId: string;
   password: string;
   confirmPassword: string;

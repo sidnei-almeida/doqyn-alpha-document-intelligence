@@ -67,14 +67,58 @@ describe('getIdentifierSpec routing', () => {
     assert.equal(getIdentifierSpec('US', 'company').code, 'EIN');
   });
 
-  it('todo spec normaliza para dígitos e usa inputMode numeric', () => {
-    for (const country of SUPPORTED_COUNTRIES) {
+  it('BR/PY/US normalizam para dígitos e usam inputMode numeric', () => {
+    for (const country of ['BR', 'PY', 'US'] as const) {
       for (const personType of ['individual', 'company'] as const) {
         const spec = getIdentifierSpec(country, personType);
         assert.equal(spec.normalize('ab1.2c3-4'), '1234');
         assert.equal(spec.inputMode, 'numeric');
       }
     }
+  });
+
+  it('SUPPORTED_COUNTRIES inclui ES', () => {
+    assert.ok(SUPPORTED_COUNTRIES.includes('ES'));
+  });
+});
+
+describe('ES NIF', () => {
+  it('valida NIF com letra de controle correta', () => {
+    assert.equal(getIdentifierSpec('ES', 'individual').validate('12345678Z'), true);
+  });
+
+  it('rejeita NIF com letra de controle incorreta', () => {
+    assert.equal(getIdentifierSpec('ES', 'individual').validate('12345678A'), false);
+  });
+
+  it('rejeita NIF incompleto', () => {
+    assert.equal(getIdentifierSpec('ES', 'individual').validate('1234567Z'), false);
+  });
+
+  it('code é NIF e inputMode é text (documento alfanumérico)', () => {
+    const spec = getIdentifierSpec('ES', 'individual');
+    assert.equal(spec.code, 'NIF');
+    assert.equal(spec.inputMode, 'text');
+  });
+});
+
+describe('ES CIF', () => {
+  it('aceita formato válido (letra de tipo + 7 dígitos + controle)', () => {
+    assert.equal(getIdentifierSpec('ES', 'company').validate('B12345678'), true);
+  });
+
+  it('rejeita formato inválido', () => {
+    assert.equal(getIdentifierSpec('ES', 'company').validate('123456789'), false);
+  });
+});
+
+describe('fallback genérico (país sem identificador forte)', () => {
+  it('aceita tamanho razoável sem checar dígito verificador', () => {
+    const spec = getIdentifierSpec('DE', 'individual');
+    assert.equal(spec.code, 'TAX_ID');
+    assert.equal(spec.inputMode, 'text');
+    assert.equal(spec.validate('DE123456789'), true);
+    assert.equal(spec.validate('ab'), false);
   });
 });
 

@@ -2,7 +2,8 @@
   "country": {
     "BR": "Brasil",
     "PY": "Paraguai",
-    "US": "Estados Unidos"
+    "US": "Estados Unidos",
+    "ES": "Espanha"
   },
   "doc": {
     "cpf": "CPF",
@@ -11,6 +12,9 @@
     "ruc": "RUC",
     "ssn": "SSN",
     "ein": "EIN",
+    "nif": "NIF",
+    "cif": "CIF",
+    "generic": "Documento fiscal",
     "phone": "Telefone"
   },
   "incomplete": "{{doc}} incompleto.",
