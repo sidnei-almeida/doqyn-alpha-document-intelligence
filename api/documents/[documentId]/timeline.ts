@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
-import { listDocumentTimeline } from '../../server/audit/documentAuditLogService.js';
-import { requireDocumentTrackingAccess } from '../../server/audit/requireDocumentTrackingAccess.js';
-import { isServiceError } from '../../server/utils/serviceErrors.js';
+import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAuditContext.js';
+import { listDocumentTimeline } from '../../../server/audit/documentAuditLogService.js';
+import { requireDocumentTrackingAccess } from '../../../server/audit/requireDocumentTrackingAccess.js';
+import { isServiceError } from '../../../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
