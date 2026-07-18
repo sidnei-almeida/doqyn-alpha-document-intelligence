@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,7 @@ import {
 } from './individualSignupReview';
 
 export function IndividualSignupPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -109,7 +111,7 @@ export function IndividualSignupPage() {
       if (validation.field === 'acceptedTerms') {
         setTermsError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.common.reviewFormFields'));
       return;
     }
 
@@ -119,7 +121,7 @@ export function IndividualSignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.common.acceptTermsRequired'));
       }
       return;
     }
@@ -131,11 +133,11 @@ export function IndividualSignupPage() {
       const result = await submitIndividualSignup(buildIndividualSignupPayload(formValues));
 
       setReviewOpen(false);
-      toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
+      toast.success(result.message ?? t('signup.individual.successToast'));
       await refreshUser();
       navigate('/upload', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
+      const message = err instanceof Error ? err.message : t('signup.individual.errorFallback');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -146,8 +148,8 @@ export function IndividualSignupPage() {
   return (
     <AuthShell
       width="md"
-      eyebrow="Pessoa física"
-      description="Para clientes CPF que precisam acessar documentos pessoais no DOQYN."
+      eyebrow={t('signup.individual.eyebrow')}
+      description={t('signup.individual.description')}
       showSecureBadge
     >
       <form
@@ -156,21 +158,21 @@ export function IndividualSignupPage() {
       >
         <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
           <Icon name="person" size={ICON_SIZE.xs} />
-          Dados pessoais
+          {t('signup.individual.sectionTitle')}
         </div>
 
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="firstName"
-              label="Nome"
+              label={t('signup.common.firstName')}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <Input
               id="lastName"
-              label="Sobrenome"
+              label={t('signup.common.lastName')}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -179,7 +181,7 @@ export function IndividualSignupPage() {
 
           <Input
             id="email"
-            label="E-mail"
+            label={t('signup.common.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -187,14 +189,19 @@ export function IndividualSignupPage() {
           />
           <PhoneInput
             id="whatsapp"
-            label="WhatsApp"
+            label={t('signup.common.whatsapp')}
             value={whatsapp}
             onChange={setWhatsapp}
             country={phoneCountry}
             onCountryChange={setPhoneCountry}
             required
           />
-          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <CountrySelect
+            id="country"
+            label={t('signup.common.country')}
+            value={country}
+            onChange={handleCountryChange}
+          />
           <DocumentIdInput
             id="taxId"
             country={country}
@@ -206,7 +213,7 @@ export function IndividualSignupPage() {
           />
           <Input
             id="password"
-            label="Senha"
+            label={t('signup.common.password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -215,7 +222,7 @@ export function IndividualSignupPage() {
           />
           <Input
             id="confirmPassword"
-            label="Confirmar senha"
+            label={t('signup.common.confirmPassword')}
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -243,10 +250,10 @@ export function IndividualSignupPage() {
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-            Voltar
+            {t('signup.common.back')}
           </Link>
           <Button type="submit" className="w-full sm:w-auto">
-            Criar acesso CPF
+            {t('signup.individual.submit')}
           </Button>
         </div>
       </form>
