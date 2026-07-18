@@ -27,7 +27,7 @@ import { submitCompanySignup } from './api/companySignupApi';
 import {
   buildCompanySignupPayload,
   buildCompanySignupReviewSections,
-  COMPANY_SIGNUP_REVIEW_COPY,
+  getCompanySignupReviewCopy,
   validateCompanySignupForm,
   type CompanySignupFormValues,
 } from './companySignupReview';
@@ -97,7 +97,12 @@ export function CompanySignupPage() {
     ],
   );
 
-  const reviewSections = useMemo(() => buildCompanySignupReviewSections(formValues), [formValues]);
+  const reviewSections = useMemo(
+    () => buildCompanySignupReviewSections(formValues, t),
+    [formValues, t],
+  );
+
+  const reviewCopy = useMemo(() => getCompanySignupReviewCopy(t), [t]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -109,7 +114,7 @@ export function CompanySignupPage() {
       return;
     }
 
-    const validation = validateCompanySignupForm(formValues);
+    const validation = validateCompanySignupForm(formValues, t);
     setTermsError(null);
     setAuthorizationError(null);
 
@@ -297,12 +302,12 @@ export function CompanySignupPage() {
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={COMPANY_SIGNUP_REVIEW_COPY.title}
-        description={COMPANY_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={COMPANY_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={reviewCopy.title}
+        description={reviewCopy.description}
+        attentionMessage={reviewCopy.attentionMessage}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={COMPANY_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={reviewCopy.confirmLabel}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}
