@@ -135,12 +135,16 @@ describe('dashboard overview UI', () => {
     join(repoRoot, 'src/features/dashboard/components/OverviewPeriodSelector.tsx'),
     'utf8',
   );
-  const documentsPanelSource = readFileSync(
-    join(repoRoot, 'src/features/dashboard/components/OverviewRecentDocumentsPanel.tsx'),
+  const homeRecentFilesSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/home/HomeRecentFilesTable.tsx'),
     'utf8',
   );
-  const activityPanelSource = readFileSync(
-    join(repoRoot, 'src/features/dashboard/components/OverviewRecentActivityPanel.tsx'),
+  const homeDocumentPanelSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/home/HomeDocumentPanel.tsx'),
+    'utf8',
+  );
+  const homeActivityPanelSource = readFileSync(
+    join(repoRoot, 'src/features/dashboard/components/home/HomeActivityPanel.tsx'),
     'utf8',
   );
   const governanceSource = readFileSync(
@@ -173,13 +177,14 @@ describe('dashboard overview UI', () => {
     assert.match(periodSource, /7 dias|30 dias|90 dias/);
     assert.match(pageSource, /Carregando visão geral/);
     assert.match(pageSource, /Não foi possível carregar a visão geral/);
-    assert.match(documentsPanelSource, /Nenhum documento enviado ainda/);
+    assert.match(pageSource, /Nenhum documento ainda/);
   });
 
   it('DashboardPage abre DocumentViewerModal ao clicar documento', () => {
     assert.match(pageSource, /DocumentViewerModal/);
-    assert.match(documentsPanelSource, /latestVersionId/);
-    assert.match(documentsPanelSource, /canPreview/);
+    assert.match(homeDocumentPanelSource, /latestVersionId/);
+    assert.match(homeDocumentPanelSource, /canPreview/);
+    assert.match(homeRecentFilesSource, /canPreview/);
   });
 
   it('DashboardPage mostra governança apenas em mode full', () => {
@@ -187,7 +192,7 @@ describe('dashboard overview UI', () => {
     assert.match(pageSource, /OverviewQuickAccessPanel/);
     assert.match(pageSource, /canManageGovernance=\{isAdmin\}/);
     assert.match(governanceSource, /Governança documental/);
-    assert.match(activityPanelSource, /Atividade recente/);
+    assert.match(homeActivityPanelSource, /Atividade recente/);
   });
 
   it('saúde do ambiente diferencia acesso restrito para usuário comum', () => {
