@@ -86,11 +86,15 @@ export function DashboardPage() {
       actions={<OverviewHeaderActions period={period} onPeriodChange={setPeriod} />}
       bodyClassName="overview-page w-full gap-6"
     >
-      {isFetching && !isLoading && (
-        <p className="shrink-0 text-xs text-doqyn-subtle" aria-live="polite">
-          Atualizando métricas…
-        </p>
-      )}
+      <p
+        className={cn(
+          'shrink-0 text-xs text-doqyn-subtle',
+          isFetching && !isLoading ? 'visible' : 'invisible',
+        )}
+        aria-live="polite"
+      >
+        Atualizando métricas…
+      </p>
 
       <div
         className={cn(
@@ -234,6 +238,7 @@ export function DashboardPage() {
         open={Boolean(chatDoc)}
         documentId={chatDoc?.documentId ?? null}
         documentName={chatDoc?.displayName ?? null}
+        categoryName={chatDoc?.categoryName ?? null}
         onClose={() => setChatDoc(null)}
       />
     </PageShell>

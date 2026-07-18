@@ -1,4 +1,5 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { i18n } from '@/i18n';
 
 export type DocumentChatRole = 'user' | 'assistant';
 
@@ -25,10 +26,13 @@ export async function askDocumentChatQuestion(
   question: string,
   history: DocumentChatHistoryMessage[],
 ): Promise<DocumentChatResponse> {
-  const response = await authFetch(`/api/documents/${documentId}/chat`, {
+  const response = await authFetch(`/api/documents/${encodeURIComponent(documentId)}/chat`, {
     method: 'POST',
     credentials: getFetchCredentials(),
-    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+    headers: withAuthHeaders({
+      'Content-Type': 'application/json',
+      'x-doqyn-locale': i18n.language,
+    }),
     body: JSON.stringify({ question, history }),
   });
 

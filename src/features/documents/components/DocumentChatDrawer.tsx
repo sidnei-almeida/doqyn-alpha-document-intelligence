@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
@@ -18,14 +19,31 @@ type DocumentChatDrawerProps = {
   open: boolean;
   documentId: string | null;
   documentName: string | null;
+  categoryName?: string | null;
   onClose: () => void;
 };
 
+const ASSISTANT_NAME = 'Doqy';
+
 function formatCitationLabel(citation: DocumentChatCitation): string {
-  return citation.pageNumber ? `Página ${citation.pageNumber}` : `Trecho ${citation.chunkIndex + 1}`;
+  return citation.pageNumber
+    ? `Página ${citation.pageNumber}`
+    : `Trecho ${citation.chunkIndex + 1}`;
 }
 
-export function DocumentChatDrawer({ open, documentId, documentName, onClose }: DocumentChatDrawerProps) {
+function buildGreeting(documentName: string | null, categoryName?: string | null): string {
+  const name = documentName ?? 'este documento';
+  const categoryLine = categoryName ? `, um documento do tipo ${categoryName}` : '';
+  return `Oi, eu sou o ${ASSISTANT_NAME} 👋 Já li "${name}"${categoryLine}. Pode perguntar o que quiser sobre o conteúdo dele que eu busco a resposta pra você.`;
+}
+
+export function DocumentChatDrawer({
+  open,
+  documentId,
+  documentName,
+  categoryName,
+  onClose,
+}: DocumentChatDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -34,10 +52,16 @@ export function DocumentChatDrawer({ open, documentId, documentName, onClose }: 
 
   useEffect(() => {
     if (!open) return;
-    setMessages([]);
+    setMessages([
+      {
+        id: 'greeting',
+        role: 'assistant',
+        content: buildGreeting(documentName, categoryName),
+      },
+    ]);
     setQuestion('');
     setSending(false);
-  }, [open, documentId]);
+  }, [open, documentId, documentName, categoryName]);
 
   useEffect(() => {
     if (!open) return;
@@ -76,7 +100,9 @@ export function DocumentChatDrawer({ open, documentId, documentName, onClose }: 
         },
       ]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível responder à pergunta.');
+      toast.error(
+        error instanceof Error ? error.message : 'Não foi possível responder à pergunta.',
+      );
       setMessages((current) => current.filter((message) => message.id !== userMessage.id));
       setQuestion(trimmed);
     } finally {
@@ -88,20 +114,28 @@ export function DocumentChatDrawer({ open, documentId, documentName, onClose }: 
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-50 flex justify-end modal-overlay-scrim"
+      className="modal-overlay-scrim fixed inset-0 z-50 flex justify-end"
       role="dialog"
       aria-modal="true"
       aria-labelledby="document-chat-drawer-title"
     >
       <div className="flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-doqyn-border bg-doqyn-bg shadow-xl">
         <div className="flex shrink-0 items-center justify-between border-b border-doqyn-border px-4 py-3">
-          <div className="min-w-0">
-            <h2 id="document-chat-drawer-title" className="text-[14px] font-semibold text-doqyn-text">
-              Conversar com o documento
-            </h2>
-            {documentName && (
-              <p className="truncate text-[12px] text-doqyn-muted">{documentName}</p>
-            )}
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-doqyn-primary-soft text-doqyn-primary">
+              <Icon name="auto_awesome" size={ICON_SIZE.sm} />
+            </div>
+            <div className="min-w-0">
+              <h2
+                id="document-chat-drawer-title"
+                className="text-[14px] font-semibold text-doqyn-text"
+              >
+                {ASSISTANT_NAME}
+              </h2>
+              {documentName && (
+                <p className="truncate text-[12px] text-doqyn-muted">{documentName}</p>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -114,53 +148,46 @@ export function DocumentChatDrawer({ open, documentId, documentName, onClose }: 
         </div>
 
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-doqyn-muted">
-              <Icon name="chat" size={32} className="text-doqyn-subtle" />
-              <p className="text-[13px]">Faça uma pergunta sobre este documento.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {messages.map((message) => (
+          <div className="flex flex-col gap-3">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  'flex flex-col gap-1',
+                  message.role === 'user' ? 'items-end' : 'items-start',
+                )}
+              >
                 <div
-                  key={message.id}
-                  className={cn('flex flex-col gap-1', message.role === 'user' ? 'items-end' : 'items-start')}
-                >
-                  <div
-                    className={cn(
-                      'max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-[13px]',
-                      message.role === 'user'
-                        ? 'bg-doqyn-primary text-white'
-                        : 'bg-doqyn-surface text-doqyn-text',
-                    )}
-                  >
-                    {message.content}
-                  </div>
-                  {message.citations && message.citations.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {message.citations.map((citation, index) => (
-                        <span
-                          key={`${message.id}-citation-${index}`}
-                          className="rounded-full border border-doqyn-border-subtle bg-doqyn-surface px-2 py-0.5 text-[11px] text-doqyn-subtle"
-                        >
-                          {formatCitationLabel(citation)}
-                        </span>
-                      ))}
-                    </div>
+                  className={cn(
+                    'max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-[13px]',
+                    message.role === 'user'
+                      ? 'bg-doqyn-primary text-white'
+                      : 'bg-doqyn-surface text-doqyn-text',
                   )}
+                >
+                  {message.content}
                 </div>
-              ))}
-              {sending && (
-                <div className="flex items-start">
-                  <div className="flex items-center gap-2 rounded-xl bg-doqyn-surface px-3 py-2 text-[13px] text-doqyn-muted">
-                    <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-                    Pensando...
+                {message.citations && message.citations.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {message.citations.map((citation, index) => (
+                      <Badge key={`${message.id}-citation-${index}`} variant="default" size="xs">
+                        {formatCitationLabel(citation)}
+                      </Badge>
+                    ))}
                   </div>
+                )}
+              </div>
+            ))}
+            {sending && (
+              <div className="flex items-start">
+                <div className="flex items-center gap-2 rounded-xl bg-doqyn-surface px-3 py-2 text-[13px] text-doqyn-muted">
+                  <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
+                  {ASSISTANT_NAME} está pensando...
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         <div className="shrink-0 border-t border-doqyn-border px-4 py-3">
@@ -174,7 +201,7 @@ export function DocumentChatDrawer({ open, documentId, documentName, onClose }: 
                   void handleSend();
                 }
               }}
-              placeholder="Pergunte algo sobre este documento..."
+              placeholder={`Pergunte algo pro ${ASSISTANT_NAME}...`}
               rows={2}
               disabled={sending}
               className="min-h-0 flex-1 resize-none rounded-lg border border-doqyn-border-subtle bg-doqyn-surface px-3 py-2 text-[13px] text-doqyn-text outline-none placeholder:text-doqyn-subtle focus:border-doqyn-primary disabled:opacity-60"
