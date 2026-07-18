@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
@@ -31,10 +32,8 @@ import {
   type CompanySignupFormValues,
 } from './companySignupReview';
 
-const COMPANY_AUTHORIZATION_TEXT =
-  'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
-
 export function CompanySignupPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -121,7 +120,7 @@ export function CompanySignupPage() {
       if (validation.field === 'companyAuthorization') {
         setAuthorizationError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.common.reviewFormFields'));
       return;
     }
 
@@ -131,7 +130,7 @@ export function CompanySignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.common.acceptTermsRequired'));
       }
       return;
     }
@@ -143,11 +142,11 @@ export function CompanySignupPage() {
       const result = await submitCompanySignup(buildCompanySignupPayload(formValues));
 
       setReviewOpen(false);
-      toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
+      toast.success(result.message ?? t('signup.company.successToast'));
       await refreshUser();
       navigate('/upload', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao cadastrar empresa.';
+      const message = err instanceof Error ? err.message : t('signup.company.errorFallback');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -158,8 +157,8 @@ export function CompanySignupPage() {
   return (
     <AuthShell
       width="md"
-      eyebrow="Cadastrar empresa"
-      description="Use esta opção se sua empresa ainda não possui um ambiente no DOQYN."
+      eyebrow={t('signup.company.eyebrow')}
+      description={t('signup.company.description')}
       showSecureBadge
     >
       <form
@@ -168,18 +167,23 @@ export function CompanySignupPage() {
       >
         <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
           <Icon name="business" size={ICON_SIZE.xs} />
-          Dados da empresa
+          {t('signup.company.sectionTitle')}
         </div>
 
         <div className="space-y-4">
           <Input
             id="companyName"
-            label="Nome da empresa"
+            label={t('signup.company.companyNameLabel')}
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
-          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <CountrySelect
+            id="country"
+            label={t('signup.common.country')}
+            value={country}
+            onChange={handleCountryChange}
+          />
           <DocumentIdInput
             id="taxId"
             country={country}
@@ -193,14 +197,14 @@ export function CompanySignupPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="firstName"
-              label="Nome do responsável"
+              label={t('signup.company.responsibleFirstNameLabel')}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <Input
               id="lastName"
-              label="Sobrenome"
+              label={t('signup.common.lastName')}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -209,7 +213,7 @@ export function CompanySignupPage() {
 
           <Input
             id="email"
-            label="E-mail corporativo"
+            label={t('signup.company.emailLabel')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -217,7 +221,7 @@ export function CompanySignupPage() {
           />
           <PhoneInput
             id="whatsapp"
-            label="WhatsApp"
+            label={t('signup.common.whatsapp')}
             value={whatsapp}
             onChange={setWhatsapp}
             country={phoneCountry}
@@ -226,7 +230,7 @@ export function CompanySignupPage() {
           />
           <Input
             id="password"
-            label="Senha"
+            label={t('signup.common.password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -235,7 +239,7 @@ export function CompanySignupPage() {
           />
           <Input
             id="confirmPassword"
-            label="Confirmar senha"
+            label={t('signup.common.confirmPassword')}
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -264,7 +268,7 @@ export function CompanySignupPage() {
             wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
             label={
               <span className="text-sm leading-relaxed text-doqyn-muted">
-                {COMPANY_AUTHORIZATION_TEXT}
+                {t('signup.company.authorizationText')}
               </span>
             }
             description={
@@ -283,10 +287,10 @@ export function CompanySignupPage() {
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-            Voltar
+            {t('signup.common.back')}
           </Link>
           <Button type="submit" className="w-full sm:w-auto">
-            Cadastrar empresa
+            {t('signup.company.submit')}
           </Button>
         </div>
       </form>

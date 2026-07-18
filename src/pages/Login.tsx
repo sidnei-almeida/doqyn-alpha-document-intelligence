@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/Icon';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +16,7 @@ import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFee
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
 export function Login() {
+  const { t } = useTranslation('auth');
   const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,7 +51,7 @@ export function Login() {
         setError(err.friendlyMessage);
         return;
       }
-      setError('Não foi possível concluir a ação agora. Tente novamente.');
+      setError(t('login.genericError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -57,21 +59,19 @@ export function Login() {
 
   return (
     <AuthShell
-      eyebrow="Document Intelligence"
-      title="Entrar no sistema"
-      description="Plataforma corporativa para gestão segura de documentos e rastreabilidade."
+      eyebrow={t('login.eyebrow')}
+      title={t('login.title')}
+      description={t('login.description')}
       showSecureBadge
       footer={
         <Link to="/acesso" className="text-doqyn-accent transition-colors hover:underline">
-          Não tem acesso ainda?
+          {t('login.footerLink')}
         </Link>
       }
     >
       <AuthCard className="p-6">
         <p className="mb-5 text-xs text-doqyn-muted">
-          {supportsOAuth
-            ? 'Use sua conta Google, Microsoft ou credenciais DOQYN.'
-            : 'Acesse sua área para enviar e gerenciar documentos.'}
+          {supportsOAuth ? t('login.hintOAuth') : t('login.hintNoOAuth')}
         </p>
 
         {supportsOAuth && (
@@ -83,7 +83,7 @@ export function Login() {
               onClick={() => loginWithGoogle(from)}
             >
               <Icon name="key" size={ICON_SIZE.sm} />
-              Continuar com Google
+              {t('login.continueWithGoogle')}
             </Button>
             <Button
               type="button"
@@ -93,13 +93,15 @@ export function Login() {
               onClick={() => loginWithMicrosoft(from)}
             >
               <Icon name="key" size={ICON_SIZE.sm} />
-              Continuar com Microsoft
+              {t('login.continueWithMicrosoft')}
             </Button>
 
             {showCredentialForm && (
               <div className="flex items-center gap-3 pt-1">
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">ou</span>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
+                  {t('login.or')}
+                </span>
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
               </div>
             )}
@@ -110,22 +112,22 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               id="email"
-              label="E-mail"
+              label={t('login.emailLabel')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu.email@empresa.com"
+              placeholder={t('login.emailPlaceholder')}
               autoComplete="email"
               required
             />
 
             <Input
               id="password"
-              label="Senha DOQYN"
+              label={t('login.passwordLabel')}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite sua senha"
+              placeholder={t('login.passwordPlaceholder')}
               autoComplete="current-password"
               required
             />
@@ -134,14 +136,14 @@ export function Login() {
               <Checkbox
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                label={<span className="text-xs text-doqyn-muted">Lembrar acesso</span>}
+                label={<span className="text-xs text-doqyn-muted">{t('login.rememberMe')}</span>}
                 wrapperClassName="items-center"
               />
               <button
                 type="button"
                 className="text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
               >
-                Esqueci minha senha
+                {t('login.forgotPassword')}
               </button>
             </div>
 
@@ -171,7 +173,7 @@ export function Login() {
               disabled={isSubmitting || !email.trim() || !password}
             >
               <Icon name="lock" size={ICON_SIZE.sm} />
-              {isSubmitting ? 'Entrando...' : 'Entrar com e-mail e senha'}
+              {isSubmitting ? t('login.submitting') : t('login.submit')}
             </Button>
           </form>
         )}
