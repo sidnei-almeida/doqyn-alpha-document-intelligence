@@ -151,14 +151,10 @@ export async function resolveActiveTenant(tenantId: string): Promise<MongoTenant
     throw new ServiceError('Cliente inativo ou indisponível.', 'TENANT_INACTIVE', 403);
   }
 
-  if (tenant.tenantType === 'individual' && tenant.taxIdType !== 'CPF') {
-    throw new ServiceError('Tenant individual deve usar CPF.', 'TENANT_TYPE_MISMATCH', 400);
-  }
-
-  if (tenant.tenantType === 'business' && tenant.taxIdType !== 'CNPJ') {
-    throw new ServiceError('Tenant business deve usar CNPJ.', 'TENANT_TYPE_MISMATCH', 400);
-  }
-
+  // Não valida taxIdType contra um literal fixo (ex.: "CNPJ") — com suporte multi-país
+  // (BR/PY/US/ES/genérico), um tenant business pode legitimamente usar cnpj/ruc/ein/cif/
+  // tax_id, e o fallback genérico usa o mesmo código pra individual e company. A
+  // consistência real (tenantType × estratégia de isolamento) já é garantida abaixo.
   if (tenant.tenantType === 'individual') {
     assertTenantIsolationStrategy(tenant, 'shared_individual_pool');
   }
