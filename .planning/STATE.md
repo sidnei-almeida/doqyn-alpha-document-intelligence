@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
+status: Awaiting next milestone
 stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-07-18T03:45:05.141Z"
-last_activity: 2026-07-18
+last_updated: "2026-07-18T04:16:18.385Z"
+last_activity: 2026-07-18 — Milestone v1.0 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
@@ -18,64 +18,31 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-17)
+See: .planning/PROJECT.md (updated 2026-07-18)
 
-**Core value:** Tenants can securely upload, analyze, and manage documents — expandindo para múltiplos países.
-**Current focus:** Phase 5 — Telefone por país + integração no cadastro
+**Core value:** Tenants can securely upload, analyze, and manage documents — regardless of which supported country (Brasil, Paraguai, Estados Unidos) they operate in.
+**Current focus:** Awaiting next milestone
 
 ## Current Position
 
-Phase: 5 (Telefone por país + integração no cadastro) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-07-18
-
-Progress: [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-18 — Milestone v1.0 completed and archived
 
 ## Accumulated Context
 
 ### Decisions
 
-- Expansão para Paraguai (es-PY) e Estados Unidos (en-US), mantendo Brasil (pt-BR) como fallback.
-- Runtime de i18n escolhido: `react-i18next` (padrão, robusto, integra com React 19).
-- Idioma persiste em localStorage nesta milestone; sync com perfil no `doqyn-auth-service` fica deferido.
-- Identificadores por país: BR CPF/CNPJ, PY CI/RUC, US SSN/EIN. Telefone: BR +55, PY +595, US +1 (E.164).
-- Escopo de tradução v1: shell/navegação, autenticação/cadastro, biblioteca, visualizador — tradução total é incremental.
-- Executando em modo autônomo com `skip_discuss=true` e `ui_phase=false` (sem interrupções ao usuário).
-- [Phase 1]: i18n detection: primeiro idioma reconhecido na lista vence (es/en/pt por primary subtag, case-insensitive), fallback pt-BR.
-- [Phase 1]: i18n import convention: src/ frontend modules use no explicit .js extension on relative imports (e.g. ./config), unlike server/api code
-- [Phase 1]: src/i18n/index.ts guards navigator.languages before calling resolveSupportedLocale, falling back to DEFAULT_LOCALE when navigator is unavailable; resolveSupportedLocale itself stays DOM-free
-- [Phase 1]: useDocumentLang syncs document.documentElement.lang via i18next languageChanged; invoked from an inner LangSync component inside I18nextProvider (outermost provider)
-- [Phase 1]: Nav items migrated from label to labelKey (nav namespace reference) resolved via t(item.labelKey); no new catalog keys needed, all resolved from 01-02 catalogs
-- [Phase 2]: Stored locale preference (doqyn.locale) takes precedence over browser auto-detection at i18next init (SEL-02)
-- [Phase 2]: useLocale decouples from the i18next singleton, obtaining the instance via useTranslation() to match useDocumentLang
-- [Phase 2]: language.* native-name values are identical across all three catalogs; only language.label is localized per language
-- [Phase 2]: LanguageSelect is presentation-only; all locale state/side effects flow through useLocale (no direct localStorage/i18n calls in the component)
-- [Phase 2]: Header popover uses a stacked label-above-control layout for the language row (w-56 too narrow for inline three-language labels)
-- [Phase 03]: getActiveLocale validates i18n.language against SUPPORTED_LOCALES, falls back to DEFAULT_LOCALE (pt-BR)
-- [Phase 03]: Date/time formatters delegate to native toLocale*(locale) when opts omitted (byte-identity), Intl.DateTimeFormat(locale, opts) otherwise
-- [Phase 03]: Root tsconfig.json now declares baseUrl/paths for @/* so tsx (npm test) resolves aliases at runtime, matching tsconfig.app.json
-- [Phase 03]: sortDocuments keeps no locale parameter — localeCompareActive resolves the active locale internally at call time
-- [Phase 03]: Public portal date helpers (SignaturePortalPage/InternalSignaturePage/ExternalSharePortalPage) stay module-scope reading the active i18n locale, acceptable per CONTEXT discretion
-- [Phase 04]: BR isComplete stays length-based; validate() (mod-11 DV) is additive and never gates completeness for CPF/CNPJ
-- [Phase 04]: PY RUC validate recomputes mod-11 base-11 check digit over 8 base digits; US SSN validate enforces SSA area/group/serial rules, EIN validate is format-only
-- [Phase 04]: [Phase 04-02] formatDocument/formatDocumentForReview overloads narrow on disjoint TaxIdKind/CountryCode literal unions to keep BR-only callers compiling unchanged
-- [Phase 04]: [Phase 04-02] PY CI review masking duplicates a small thousands-grouping helper locally in reviewDisplay.ts rather than exporting countryIdentifiers.ts internals
-- [Phase 04]: [Phase 04-03] Document field label uses getIdentifierSpec(country, personType).code (plain string) instead of a translated labelKey
-- [Phase 04]: [Phase 04-03] CountrySelect label kept as hardcoded 'País' string, consistent with existing field label convention
-- [Phase 05]: formatBrazilianPhone made additive export from whatsapp.ts to reuse BR formatting in phone.ts without duplicating logic
-- [Phase 05]: PHONE_COUNTRIES registry (BR/PY/US) mirrors Phase 4 COUNTRY_IDENTIFIERS shape: dialCode/placeholder/nationalLengths/format
-- [Phase 05]: [Phase 05-03] contactNormalize dial-code checks ordered 595 -> 55 -> 1 (most-specific-first) across ensureBrCountryCode/extractRecipientPhoneCountryCode/maskRecipientPhoneForDisplay; bare (no '+') non-BR numbers still resolve via explicit dial-code prefix, US bare-11-digit stays ambiguous by design (BR DDD-11 wins) per client sending explicit + for PY/US
-- [Phase 05-04]: auth namespace groups shared signup field labels under signup.common (firstName/lastName/email/whatsapp/country/password/confirmPassword/back), reused by both individual and company signup pages
-- [Phase 05-04]: CompanySignupPage's module-level COMPANY_AUTHORIZATION_TEXT constant inlined as a t() call inside the component, since useTranslation is only usable in component/hook scope
+See `.planning/PROJECT.md` Key Decisions table and `.planning/milestones/v1.0-ROADMAP.md` for the full v1.0 decision log (i18n runtime choice, locale persistence, country/phone registry design, translation scope, audit-before-close gate). Cleared here per milestone-close convention — full log is in PROJECT.md/milestone archive, not duplicated in STATE.md.
 
 ### Pending Todos
 
-- Executar as 5 fases da milestone i18n autonomamente.
+None — milestone v1.0 complete. Run `/gsd:new-milestone` to define the next one.
 
 ### Blockers/Concerns
 
-- Nenhum bloqueio conhecido. Ponto de atenção: validação de dígito verificador de RUC (PY) e regras de SSN/EIN (US) devem ser de formato, sem depender de serviços externos.
+None known.
 
 ## Deferred Items
 
@@ -85,10 +52,16 @@ Progress: [██████████] 100%
 | Product | Exclusive Documento ↔ Ficha viewer mode | deferred | 2026-07-15 |
 | Infra | Audit P1 hardening | deferred | 2026-07-15 |
 | i18n | Persistir idioma no perfil do usuário (auth-service) | deferred | 2026-07-17 |
-| i18n | Tradução 100% do app (superfícies restantes) | deferred | 2026-07-17 |
+| i18n | Tradução 100% do app (Library, Viewer, remaining Settings strings) | deferred | 2026-07-18 |
+| i18n | Generalizar WhatsappInput (BR-only) para share/signature/access-request/invite | deferred | 2026-07-18 |
+| Backend | Aceitação/validação de documentos e telefones não-BR no doqyn-auth-service | deferred | 2026-07-18 |
 
 ## Session Continuity
 
-Last session: 2026-07-18T03:45:05.133Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-07-18
+Stopped at: Milestone v1.0 completed and archived
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with `/gsd:new-milestone`
