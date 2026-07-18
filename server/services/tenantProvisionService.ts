@@ -22,6 +22,10 @@ export type ProvisionTenantInput = {
   tenantId: string;
   tenantType: TenantType;
   displayName: string;
+  /** ISO 3166-1 alpha-2 (ex.: BR, PY, US, ES). Ausente em chamadas antigas — assume BR. */
+  country?: string;
+  /** Tipo de documento fiscal detectado no cadastro (ex.: cpf, cnpj, ruc, ssn, ein). Ausente em chamadas antigas — assume CPF/CNPJ pelo tenantType. */
+  taxIdType?: string;
   collectionPrefix: string;
   createdByUserId: string;
   createdByMembershipId: string;
@@ -128,7 +132,9 @@ export async function provisionTenantEnvironment(
     ? buildBusinessCollectionPrefix(input.tenantId)
     : SHARED_INDIVIDUAL_COLLECTION_PREFIX;
   const isolationStrategy = isBusiness ? 'collection_prefix' : 'shared_individual_pool';
-  const taxIdType = isBusiness ? 'CNPJ' : 'CPF';
+  // Fallback pra chamadas antigas (pré multi-país) que não enviam country/taxIdType.
+  const country = input.country?.trim().toUpperCase() || 'BR';
+  const taxIdType = input.taxIdType?.trim() || (isBusiness ? 'cnpj' : 'cpf');
 
   if (!existing) {
     const tenantDoc: Record<string, unknown> = {
@@ -136,6 +142,7 @@ export async function provisionTenantEnvironment(
       tenantId: input.tenantId,
       companyId: input.tenantId,
       tenantType: input.tenantType,
+      country,
       taxIdType,
       taxIdMasked: isBusiness ? '**.***.***/****-**' : '***.***.***-**',
       taxIdHash: `provisioned_${input.tenantId}`,
@@ -161,6 +168,7 @@ export async function provisionTenantEnvironment(
           displayName: input.displayName.trim(),
           status: 'active',
           tenantType: input.tenantType,
+          country,
           taxIdType,
           'isolation.strategy': isolationStrategy,
           'isolation.collectionPrefix': collectionPrefix,

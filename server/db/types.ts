@@ -1,7 +1,8 @@
 export type StoragePlaceholderStatus = 'pending' | 'stored' | 'failed' | 'skipped';
 
 export type TenantType = 'individual' | 'business';
-export type TaxIdType = 'CPF' | 'CNPJ';
+/** Tipo de documento fiscal do tenant (ex.: 'cpf', 'cnpj', 'ruc', 'ssn', 'ein', 'nif'...) — aberto pra suportar múltiplos países. */
+export type TaxIdType = string;
 export type TenantStatus = 'pending' | 'active' | 'inactive' | 'blocked';
 export type TenantIsolationStrategy = 'shared_individual_pool' | 'collection_prefix';
 
@@ -40,6 +41,8 @@ export type MongoTenant = {
   _id: string;
   tenantId: string;
   tenantType: TenantType;
+  /** ISO 3166-1 alpha-2 (ex.: BR, PY, US, ES). Ausente em tenants criados antes do suporte multi-país. */
+  country?: string;
   taxIdType: TaxIdType;
   taxIdMasked: string;
   taxIdHash: string;

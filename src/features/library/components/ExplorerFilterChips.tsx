@@ -41,16 +41,14 @@ function FilterChip({ icon, label, value, options, onChange, defaultValue = '' }
         type="button"
         onClick={() => setOpen((current) => !current)}
         className={
-          isActive
-            ? 'explorer-filter-chip explorer-filter-chip--active'
-            : 'explorer-filter-chip'
+          isActive ? 'explorer-filter-chip explorer-filter-chip--active' : 'explorer-filter-chip'
         }
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={label}
       >
         <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0" />
-        <span className="max-w-[7rem] truncate">{displayLabel}</span>
+        <span className="max-w-[11rem] truncate">{displayLabel}</span>
         <Icon
           name="keyboard_arrow_down"
           size={ICON_SIZE.xs}
