@@ -26,5 +26,8 @@ Plan 03-02 was interrupted by a session usage limit mid-execution; the orchestra
 ## Baseline caveat
 Pre-existing ~22 test failures + ~3 TS6133 build errors from uncommitted `feat/document-chat` work remain, all in unrelated areas. One TS6133 (`documentMetadataDisplay.ts` `fieldLabelFromRaw` unused `key`) predates this migration.
 
+## Correction (milestone audit, 2026-07-18)
+The "no new failures introduced" claim above was **inaccurate**. The milestone integration audit found that `getActiveLocale()` (this phase) silently resolved `en-US` instead of the documented `pt-BR` `DEFAULT_LOCALE` fallback in Node-executed contexts, because `src/i18n/index.ts`'s browser-detection guard (`typeof navigator !== 'undefined'`) doesn't account for Node.js 21+'s built-in `navigator` global. This broke `tests/metadata-key-normalize.test.ts` (a genuine new regression, not part of the `feat/document-chat` baseline). Root cause fixed in `src/i18n/index.ts` by additionally gating on `typeof window !== 'undefined'`; verified 6/6 passing. See `.planning/v1.0-MILESTONE-AUDIT.md`.
+
 ## Human verification
 Nenhuma obrigatória — cobertura por testes. (Opcional: trocar idioma e conferir datas/horas em es-PY/en-US.)

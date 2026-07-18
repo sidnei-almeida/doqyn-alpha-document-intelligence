@@ -26,5 +26,12 @@ Plan 05-02 foi interrompido por limite de sessão após os 3 commits de tarefa t
 ## Baseline caveat
 Falhas pré-existentes (~22 testes) do trabalho não commitado `feat/document-chat` permanecem, todas em áreas não relacionadas. Nenhuma regressão nova introduzida por esta fase.
 
+## Correction (milestone audit, 2026-07-18)
+The "nenhuma regressão nova" claim above was **inaccurate** in two ways, both found by the milestone integration audit:
+1. `tests/oauth-login.test.ts` asserted the literal string `'Continuar com Google'` in `Login.tsx`; this plan's own auth-namespace migration (05-04) replaced it with `t('login.continueWithGoogle')`, breaking that assertion. Fixed by updating the test to assert the `t()` call site plus a catalog-value check.
+2. `individualSignupReview.ts`/`companySignupReview.ts`'s validation errors and `INDIVIDUAL_SIGNUP_REVIEW_COPY`/`COMPANY_SIGNUP_REVIEW_COPY` review-dialog copy were never migrated to `t()` despite the summary's claim that "Login + both signup pages" were fully translated — a PY/US user would hit raw Portuguese text at the review-before-submit step and on validation failure. Fixed by threading a `TFunction<'auth'>` parameter through the review builders and adding the missing `signup.*.review.*` catalog keys (3 locales).
+
+Both fixes verified: `npm test` full suite returns to the documented 21-failure baseline (was 23, i.e. both flagged regressions confirmed fixed with no new failures introduced). See `.planning/v1.0-MILESTONE-AUDIT.md`.
+
 ## Human verification
 Opcional: abrir os cadastros individual/empresa, trocar o país no seletor de telefone, confirmar máscara/E.164 e que Login/cadastro aparecem no idioma ativo (pt-BR/es-PY/en-US).
