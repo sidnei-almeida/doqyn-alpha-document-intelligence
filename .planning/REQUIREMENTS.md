@@ -53,7 +53,7 @@ Idioma padrão de fallback: `pt-BR`.
 ### Country-aware phone (TEL)
 
 - [x] **TEL-01**: `whatsapp.ts`/entrada de telefone generalizada por país (BR +55, PY +595, US +1) com máscara/format e valor E.164 correto por DDI.
-- [ ] **TEL-02**: Seletor de país (DDI) na entrada de telefone dos formulários de cadastro; default alinhado ao locale/país ativo.
+- [x] **TEL-02**: Seletor de país (DDI) na entrada de telefone dos formulários de cadastro; default alinhado ao locale/país ativo.
 - [x] **TEL-03**: `server/utils/contactNormalize.ts` aceita e normaliza números E.164 multi-país (não assume +55) sem quebrar o fluxo BR atual.
 
 ## Out of Scope (this milestone)
