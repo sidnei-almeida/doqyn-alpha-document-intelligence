@@ -52,12 +52,12 @@ describe('individual signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '5554999999999');
   });
 
-  it('BR review field formats as +55 54 99999-9999', () => {
+  it('BR review field formats as +55 54 99999 9999', () => {
     const sections = buildIndividualSignupReviewSections(individualBaseForm, t);
-    assert.equal(whatsappReviewValue(sections), '+55 54 99999-9999');
+    assert.equal(whatsappReviewValue(sections), '+55 54 99999 9999');
   });
 
-  it('PY payload whatsapp is 595981234567 and review is +595 981 234 567', () => {
+  it('PY payload whatsapp is 595981234567 and review is +595 981 234567', () => {
     const values: IndividualSignupFormValues = {
       ...individualBaseForm,
       whatsapp: '+595 981 234 567',
@@ -67,10 +67,10 @@ describe('individual signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '595981234567');
 
     const sections = buildIndividualSignupReviewSections(values, t);
-    assert.equal(whatsappReviewValue(sections), '+595 981 234 567');
+    assert.equal(whatsappReviewValue(sections), '+595 981 234567');
   });
 
-  it('US payload whatsapp is 12025550123 and review is +1 (202) 555-0123', () => {
+  it('US payload whatsapp is 12025550123 and review is +1 202 555 0123', () => {
     const values: IndividualSignupFormValues = {
       ...individualBaseForm,
       whatsapp: '+1 (202) 555-0123',
@@ -80,7 +80,7 @@ describe('individual signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '12025550123');
 
     const sections = buildIndividualSignupReviewSections(values, t);
-    assert.equal(whatsappReviewValue(sections), '+1 (202) 555-0123');
+    assert.equal(whatsappReviewValue(sections), '+1 202 555 0123');
   });
 
   it('defaults to BR payload when whatsappCountry is omitted (keeps country-signup-integration.test.ts fixtures valid)', () => {
@@ -97,12 +97,12 @@ describe('company signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '5554999999999');
   });
 
-  it('BR review field formats as +55 54 99999-9999', () => {
+  it('BR review field formats as +55 54 99999 9999', () => {
     const sections = buildCompanySignupReviewSections(companyBaseForm, t);
-    assert.equal(whatsappReviewValue(sections), '+55 54 99999-9999');
+    assert.equal(whatsappReviewValue(sections), '+55 54 99999 9999');
   });
 
-  it('PY payload whatsapp is 595981234567 and review is +595 981 234 567', () => {
+  it('PY payload whatsapp is 595981234567 and review is +595 981 234567', () => {
     const values: CompanySignupFormValues = {
       ...companyBaseForm,
       whatsapp: '+595 981 234 567',
@@ -112,10 +112,10 @@ describe('company signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '595981234567');
 
     const sections = buildCompanySignupReviewSections(values, t);
-    assert.equal(whatsappReviewValue(sections), '+595 981 234 567');
+    assert.equal(whatsappReviewValue(sections), '+595 981 234567');
   });
 
-  it('US payload whatsapp is 12025550123 and review is +1 (202) 555-0123', () => {
+  it('US payload whatsapp is 12025550123 and review is +1 202 555 0123', () => {
     const values: CompanySignupFormValues = {
       ...companyBaseForm,
       whatsapp: '+1 (202) 555-0123',
@@ -125,7 +125,7 @@ describe('company signup phone (BR/PY/US)', () => {
     assert.equal(payload.whatsapp, '12025550123');
 
     const sections = buildCompanySignupReviewSections(values, t);
-    assert.equal(whatsappReviewValue(sections), '+1 (202) 555-0123');
+    assert.equal(whatsappReviewValue(sections), '+1 202 555 0123');
   });
 
   it('defaults to BR payload when whatsappCountry is omitted (keeps country-signup-integration.test.ts fixtures valid)', () => {

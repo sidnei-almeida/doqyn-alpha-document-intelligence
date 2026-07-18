@@ -31,7 +31,7 @@ export function validateCompanySignupForm(
 ): {
   valid: boolean;
   error?: string;
-  field?: 'acceptedTerms' | 'companyAuthorization';
+  field?: 'acceptedTerms' | 'companyAuthorization' | 'taxId';
 } {
   if (!values.acceptedTerms) {
     return {
@@ -53,12 +53,18 @@ export function validateCompanySignupForm(
     return { valid: false, error: t('signup.common.passwordMismatch') };
   }
 
+  if (!getIdentifierSpec(values.country, 'company').validate(values.taxId)) {
+    return { valid: false, error: t('signup.common.invalidTaxId'), field: 'taxId' };
+  }
+
   return { valid: true };
 }
 
 export function buildCompanySignupPayload(values: CompanySignupFormValues) {
   return {
     companyName: values.companyName,
+    country: values.country,
+    taxIdType: getIdentifierSpec(values.country, 'company').code.toLowerCase(),
     taxId: getIdentifierSpec(values.country, 'company').normalize(values.taxId),
     firstName: values.firstName,
     lastName: values.lastName,

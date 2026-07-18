@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormattedInput } from '@/hooks/useFormattedInput';
-import { formatPhone, isCompletePhone, PHONE_COUNTRIES } from '@/lib/identifiers/phone';
+import { formatPhone, getPhonePlaceholder, isCompletePhone } from '@/lib/identifiers/phone';
 import type { CountryCode } from '@/lib/identifiers/countryIdentifiers';
 import { CountrySelect } from './CountrySelect';
 import { Input, type InputProps } from './Input';
@@ -33,9 +33,12 @@ export function PhoneInput({
   const handleCountryChange = useCallback(
     (next: CountryCode) => {
       onCountryChange(next);
-      onChange(formatPhone(value, next));
+      // Reformatar o valor já digitado sob o DDI do país novo garantiria número
+      // corrompido (os dígitos do DDI antigo virariam "nacionais" do país novo) —
+      // mais seguro resetar, igual ao CountrySelect do documento fiscal.
+      onChange('');
     },
-    [onCountryChange, onChange, value],
+    [onCountryChange, onChange],
   );
 
   const incomplete = !optional && value.length > 0 && !isCompletePhone(value, country);
@@ -60,7 +63,7 @@ export function PhoneInput({
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        placeholder={props.placeholder ?? PHONE_COUNTRIES[country].placeholder}
+        placeholder={props.placeholder ?? getPhonePlaceholder(country)}
         error={error ?? validationError}
       />
     </div>

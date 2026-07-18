@@ -1,6 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { getActiveLocale } from '@/lib/formatLocale';
 import { defaultPhoneCountry } from '@/lib/identifiers';
+import { useDetectedCountry } from '@/hooks/useDetectedCountry';
 import {
   defaultCountryForLocale,
   getIdentifierSpec,
@@ -58,10 +59,30 @@ export function CompanySignupPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const countryTouched = useRef(false);
+  const phoneCountryTouched = useRef(false);
+  const detectedCountry = useDetectedCountry();
+
+  useEffect(() => {
+    if (!detectedCountry) return;
+    if (!countryTouched.current) {
+      setCountry(detectedCountry);
+      // Documento já digitado é do país anterior (ex.: locale default) — limpa
+      // igual ao handleCountryChange, senão fica reinterpretado sob o spec errado.
+      setTaxId('');
+    }
+    if (!phoneCountryTouched.current) setPhoneCountry(detectedCountry);
+  }, [detectedCountry]);
 
   function handleCountryChange(next: CountryCode) {
+    countryTouched.current = true;
     setCountry(next);
     setTaxId('');
+  }
+
+  function handlePhoneCountryChange(next: CountryCode) {
+    phoneCountryTouched.current = true;
+    setPhoneCountry(next);
   }
 
   const documentSpec = useMemo(() => getIdentifierSpec(country, 'company'), [country]);
@@ -230,7 +251,7 @@ export function CompanySignupPage() {
             value={whatsapp}
             onChange={setWhatsapp}
             country={phoneCountry}
-            onCountryChange={setPhoneCountry}
+            onCountryChange={handlePhoneCountryChange}
             required
           />
           <Input
