@@ -382,7 +382,8 @@ function resolveRoute(pathname: string): RouteMatch | null {
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/timeline$/,
-      loader: () => import('../api/documents/timeline.js'),
+      loader: () => import('../api/documents/[documentId]/timeline.js'),
+      paramKeys: ['documentId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)$/,

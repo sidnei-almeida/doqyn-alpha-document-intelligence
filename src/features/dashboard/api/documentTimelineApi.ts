@@ -18,11 +18,14 @@ export async function fetchDocumentTimeline(
   documentId: string,
   limit = 12,
 ): Promise<DocumentTimelineItem[]> {
-  const params = new URLSearchParams({ documentId, limit: String(limit) });
-  const response = await authFetch(`/api/documents/timeline?${params.toString()}`, {
-    credentials: getFetchCredentials(),
-    headers: withAuthHeaders(),
-  });
+  const params = new URLSearchParams({ limit: String(limit) });
+  const response = await authFetch(
+    `/api/documents/${encodeURIComponent(documentId)}/timeline?${params.toString()}`,
+    {
+      credentials: getFetchCredentials(),
+      headers: withAuthHeaders(),
+    },
+  );
 
   const data = (await response.json().catch(() => ({}))) as {
     items?: DocumentTimelineItem[];
