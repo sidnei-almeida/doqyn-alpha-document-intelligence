@@ -124,9 +124,16 @@ export const AI_ERROR_MESSAGES = {
     'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
   groqNotConfigured:
     'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
+  chatEmptyResponse: 'Não foi possível gerar uma resposta agora. Tente novamente.',
 } as const;
 
 export { DEFAULT_GROQ_MODEL } from './utils/aiConfig.js';
+export {
+  DOCUMENT_CHAT_SUPPORTED_LOCALES,
+  DEFAULT_DOCUMENT_CHAT_LOCALE,
+  resolveDocumentChatLocale,
+  type DocumentChatLocale,
+} from './utils/aiConfig.js';
 
 /**
  * Modo de retrieval ativo nesta etapa do projeto.
