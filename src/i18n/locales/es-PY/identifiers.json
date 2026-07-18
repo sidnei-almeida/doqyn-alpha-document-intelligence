@@ -10,7 +10,9 @@
     "ci": "CI",
     "ruc": "RUC",
     "ssn": "SSN",
-    "ein": "EIN"
+    "ein": "EIN",
+    "phone": "Teléfono"
   },
-  "incomplete": "{{doc}} incompleto."
+  "incomplete": "{{doc}} incompleto.",
+  "ddiLabel": "Código de país"
 }

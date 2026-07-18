@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import i18n from '../src/i18n/index.ts';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
@@ -16,6 +17,7 @@ import {
 import { DOQYN_TERMS_VERSION } from '../src/legal/terms';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const t = i18n.getFixedT('pt-BR', 'auth');
 
 const individualBaseForm: IndividualSignupFormValues = {
   firstName: 'Ana',
@@ -81,7 +83,7 @@ describe('individual signup', () => {
       ...individualBaseForm,
       country: 'US',
       taxId: '123-45-6789',
-    });
+    }, t);
     const field = sections.flatMap((section) => section.fields).find((f) => f.label === 'SSN');
     assert.equal(field?.value, '***-**-6789');
   });
@@ -91,7 +93,7 @@ describe('individual signup', () => {
       ...individualBaseForm,
       country: 'BR',
       taxId: '529.982.247-25',
-    });
+    }, t);
     const field = sections.flatMap((section) => section.fields).find((f) => f.label === 'CPF');
     assert.equal(field?.value, '529.***.***-25');
   });
@@ -129,7 +131,7 @@ describe('company signup', () => {
       ...companyBaseForm,
       country: 'US',
       taxId: '123456789',
-    });
+    }, t);
     const field = sections.flatMap((section) => section.fields).find((f) => f.label === 'EIN');
     assert.equal(field?.value, '12-3456789');
   });
@@ -139,7 +141,7 @@ describe('company signup', () => {
       ...companyBaseForm,
       country: 'PY',
       taxId: '800177266',
-    });
+    }, t);
     const field = sections.flatMap((section) => section.fields).find((f) => f.label === 'RUC');
     assert.equal(field?.value, '80017726-6');
   });
@@ -149,7 +151,7 @@ describe('company signup', () => {
       ...companyBaseForm,
       country: 'BR',
       taxId: '11222333000181',
-    });
+    }, t);
     const field = sections.flatMap((section) => section.fields).find((f) => f.label === 'CNPJ');
     assert.equal(field?.value, '11.222.333/0001-81');
   });

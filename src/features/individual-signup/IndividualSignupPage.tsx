@@ -26,7 +26,7 @@ import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
-  INDIVIDUAL_SIGNUP_REVIEW_COPY,
+  getIndividualSignupReviewCopy,
   validateIndividualSignupForm,
   type IndividualSignupFormValues,
 } from './individualSignupReview';
@@ -90,9 +90,11 @@ export function IndividualSignupPage() {
   );
 
   const reviewSections = useMemo(
-    () => buildIndividualSignupReviewSections(formValues),
-    [formValues],
+    () => buildIndividualSignupReviewSections(formValues, t),
+    [formValues, t],
   );
+
+  const reviewCopy = useMemo(() => getIndividualSignupReviewCopy(t), [t]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -104,7 +106,7 @@ export function IndividualSignupPage() {
       return;
     }
 
-    const validation = validateIndividualSignupForm(formValues);
+    const validation = validateIndividualSignupForm(formValues, t);
     setTermsError(null);
 
     if (!validation.valid) {
@@ -260,12 +262,12 @@ export function IndividualSignupPage() {
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-        description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={reviewCopy.title}
+        description={reviewCopy.description}
+        attentionMessage={reviewCopy.attentionMessage}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={reviewCopy.confirmLabel}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}

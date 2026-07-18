@@ -31,8 +31,14 @@ const resources = {
   'en-US': { common: enUSCommon, nav: enUSNav, identifiers: enUSIdentifiers, auth: enUSAuth },
 } as const;
 
+// `typeof navigator !== 'undefined'` alone is not a reliable browser check: Node.js 21+
+// ships a built-in `navigator` global (unrelated to real user language preference) whose
+// `navigator.languages` resolves to the Node/ICU environment, not the browser. `window`
+// only exists in real browser/DOM contexts, so gate detection on it too.
 const detectedLanguages =
-  typeof navigator !== 'undefined' && navigator.languages ? navigator.languages : [];
+  typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.languages
+    ? navigator.languages
+    : [];
 
 const initialLocale = resolveInitialLocale(getStoredLocale(), detectedLanguages);
 

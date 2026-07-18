@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFormattedInput } from '@/hooks/useFormattedInput';
 import { formatPhone, isCompletePhone, PHONE_COUNTRIES } from '@/lib/identifiers/phone';
 import type { CountryCode } from '@/lib/identifiers/countryIdentifiers';
@@ -24,6 +25,7 @@ export function PhoneInput({
   id,
   ...props
 }: PhoneInputProps) {
+  const { t } = useTranslation('identifiers');
   const format = useCallback((raw: string) => formatPhone(raw, country), [country]);
 
   const { onChange: handleChange, onPaste } = useFormattedInput({ value, onChange, format });
@@ -37,13 +39,15 @@ export function PhoneInput({
   );
 
   const incomplete = !optional && value.length > 0 && !isCompletePhone(value, country);
-  const validationError = incomplete ? 'Telefone incompleto.' : undefined;
+  const validationError = incomplete
+    ? t('incomplete', { doc: t('doc.phone') })
+    : undefined;
 
   return (
     <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
       <CountrySelect
         id={id ? `${id}-country` : undefined}
-        label="DDI"
+        label={t('ddiLabel')}
         value={country}
         onChange={handleCountryChange}
       />
