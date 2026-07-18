@@ -33,7 +33,8 @@ export function ToolbarSelect({
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== defaultValue;
-  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label;
+  const selectedLabel =
+    options.find((option) => option.value === value)?.label ?? options[0]?.label;
 
   return (
     <div className={cn('relative shrink-0', className)}>
@@ -53,7 +54,7 @@ export function ToolbarSelect({
         aria-label={label}
       >
         <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0" />
-        <span className="max-w-[9rem] truncate">{selectedLabel}</span>
+        <span className="max-w-[13rem] truncate">{selectedLabel}</span>
         <Icon
           name="keyboard_arrow_down"
           size={ICON_SIZE.sm}
