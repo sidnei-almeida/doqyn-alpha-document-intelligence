@@ -18,6 +18,20 @@ name: doqyn
 services:
   postgres-auth:
     image: postgres:16-alpine
+    # Orçamento 8GB/2vCPU — ver docs/PLANO_ACAO_ESCALA_2026-07-20.md (Passo 1)
+    mem_limit: ${POSTGRES_MEM_LIMIT:-1g}
+    mem_reservation: 512m
+    cpus: ${POSTGRES_CPUS:-0.5}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - log_min_duration_statement=500
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-doqyn_auth}
       POSTGRES_USER: ${POSTGRES_USER:-doqyn_auth}
@@ -39,6 +53,8 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:1.23.1-p2
+    mem_limit: 64m
+    cpus: 0.1
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}
       POOL_MODE: transaction
@@ -61,6 +77,9 @@ services:
       context: ${AUTH_SERVICE_DIR:-../../doqyn-auth-service}
       dockerfile: docker/Dockerfile
       target: migrate
+    # One-shot: roda no deploy, sem concorrer com o regime normal.
+    mem_limit: 384m
+    cpus: 0.5
     env_file:
       - .env
     environment:
@@ -79,15 +98,20 @@ services:
       context: ${AUTH_SERVICE_DIR:-../../doqyn-auth-service}
       dockerfile: docker/Dockerfile
       target: runner
+    mem_limit: ${AUTH_API_MEM_LIMIT:-512m}
+    mem_reservation: 256m
+    cpus: ${AUTH_API_CPUS:-0.5}
     env_file:
       - .env
     environment:
       NODE_ENV: production
+      # Abaixo do mem_limit: heap não é toda a memória do processo.
+      NODE_OPTIONS: --max-old-space-size=384
       DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}
       DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
-      REDIS_KEY_PREFIX: doqyn:auth:
+      REDIS_KEY_PREFIX: "doqyn:auth:"
       RATE_LIMIT_REDIS_ENABLED: "true"
       DOQYN_APP_BASE_URL: http://doqyn-api:3001
     depends_on:
@@ -125,7 +149,27 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    # noeviction é REQUISITO do BullMQ: com allkeys-lru o Redis descarta chaves de job sob
+    # pressão e documentos enviados nunca são analisados, sem erro em lugar nenhum.
+    # Seguro porque todo cache aqui tem TTL (sessão, quota, slot de análise).
+    # AOF no lugar de RDB: --save faz fork, e copy-on-write dobra a memória num pico.
+    command:
+      - redis-server
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-640mb}
+      - --maxmemory-policy
+      - noeviction
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - ""
+      - --loglevel
+      - warning
+    mem_limit: ${REDIS_MEM_LIMIT:-900m}
+    mem_reservation: 320m
+    cpus: ${REDIS_CPUS:-0.3}
     volumes:
       - redis_data:/data
     healthcheck:
@@ -138,19 +182,24 @@ services:
       - doqyn
 
   doqyn-api:
-    # Réplicas via docker compose scale — ver DOQYN_API_REPLICAS
+    # Réplicas: manter DOQYN_API_REPLICAS=1 em 2 vCPU — réplicas competem pelos mesmos
+    # 2 núcleos que os 3 processos Node já disputam. Ver Passo 8 do plano de escala.
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
+    mem_limit: ${DOQYN_API_MEM_LIMIT:-1g}
+    mem_reservation: 512m
+    cpus: ${DOQYN_API_CPUS:-0.8}
     env_file:
       - .env
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=768
       API_PORT: 3001
       DOQYN_AUTH_BASE_URL: http://auth-api:4100
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
-      REDIS_KEY_PREFIX: doqyn:alpha:
+      REDIS_KEY_PREFIX: "doqyn:alpha:"
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
       METRICS_ENABLED: "true"
@@ -159,9 +208,10 @@ services:
     volumes:
       # Vision OCR: deploy/secrets/gcp-vision-sa.json → /run/secrets/gcp-vision-sa.json
       - ./secrets:/run/secrets:ro
+    # Sem depends_on em `mongo`: o serviço é profile-gated (local-mongo) e com Atlas
+    # (MONGODB_USE_ATLAS=true) referenciá-lo invalida o projeto inteiro. A prontidão do
+    # Mongo é coberta pelo healthcheck profundo abaixo e pela ordem em deploy-production.sh.
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_healthy
       auth-api:
@@ -180,12 +230,15 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
+    # One-shot: cria índices no Atlas. Heap limitado — sem isso o V8 dimensiona pelos 8GB da VM.
+    mem_limit: 512m
+    cpus: 0.5
     env_file:
       - .env
+    environment:
+      NODE_OPTIONS: --max-old-space-size=384
     command: ["node", "dist/scripts/ensure-mongodb-indexes.js"]
-    depends_on:
-      mongo:
-        condition: service_healthy
+    # Sem depends_on em `mongo` (profile-gated) — roda via `compose run --rm` depois do Mongo.
     restart: "no"
     networks:
       - doqyn
@@ -194,16 +247,23 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.worker
+    mem_limit: ${DOQYN_WORKER_MEM_LIMIT:-1g}
+    mem_reservation: 512m
+    cpus: ${DOQYN_WORKER_CPUS:-0.8}
     env_file:
       - .env
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=768
       DOQYN_AUTH_BASE_URL: http://auth-api:4100
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
-      REDIS_KEY_PREFIX: doqyn:alpha:
+      REDIS_KEY_PREFIX: "doqyn:alpha:"
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
+      # 2 vCPU: default do código é 10/2 — oversubscription de 5x. Ver Passo 1 do plano.
+      ANALYSIS_QUEUE_CONCURRENCY_GLOBAL: ${ANALYSIS_QUEUE_CONCURRENCY_GLOBAL:-2}
+      ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT: ${ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT:-1}
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-worker
       METRICS_SERVICE_ROLE: worker
@@ -211,8 +271,6 @@ services:
     volumes:
       - ./secrets:/run/secrets:ro
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_healthy
       doqyn-api:
@@ -234,19 +292,24 @@ services:
     env_file:
       - .env
     command: ["node", "dist/server/workers/runPreviewWorker.js"]
+    mem_limit: ${DOQYN_WORKER_PREVIEW_MEM_LIMIT:-768m}
+    mem_reservation: 384m
+    cpus: ${DOQYN_WORKER_PREVIEW_CPUS:-0.6}
     environment:
       NODE_ENV: production
+      # Heap menor: o custo do Ghostscript é processo filho, fora do heap do Node.
+      NODE_OPTIONS: --max-old-space-size=512
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
-      REDIS_KEY_PREFIX: doqyn:alpha:
+      REDIS_KEY_PREFIX: "doqyn:alpha:"
       PREVIEW_SYNC_FALLBACK: "false"
+      # Cada job gera um Ghostscript CPU-bound. Default do código é 4 — em 2 vCPU, trava a máquina.
+      PREVIEW_QUEUE_CONCURRENCY_GLOBAL: ${PREVIEW_QUEUE_CONCURRENCY_GLOBAL:-1}
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-worker-preview
       METRICS_SERVICE_ROLE: worker-preview
       METRICS_PORT: 9100
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_healthy
       doqyn-api:
@@ -270,6 +333,8 @@ services:
         VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER:-doqyn_auth}
         VITE_AUTH_BASE_PATH: ${VITE_AUTH_BASE_PATH:-/auth}
         VITE_PRESIGNED_UPLOAD_ENABLED: ${VITE_PRESIGNED_UPLOAD_ENABLED:-false}
+    mem_limit: 128m
+    cpus: 0.2
     depends_on:
       doqyn-api:
         condition: service_healthy
