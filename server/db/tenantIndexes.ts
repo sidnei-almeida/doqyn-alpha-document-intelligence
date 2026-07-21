@@ -280,5 +280,10 @@ export async function ensureRegistryTenantIndexes(): Promise<void> {
     { key: { taxIdHash: 1 }, unique: true, partialFilterExpression: { taxIdHash: { $exists: true } } },
     { key: { slug: 1 }, unique: true },
     { key: { status: 1 } },
+    // resolveTenant() busca com { $or: [{ tenantId }, { companyId }] } em quase toda
+    // requisição. Um $or só usa índice se TODOS os ramos forem indexados — sem este,
+    // o ramo companyId força COLLSCAN no registry a cada request. Parcial porque nem
+    // todo tenant tem companyId (não é único: tenantId e companyId podem coincidir).
+    { key: { companyId: 1 }, partialFilterExpression: { companyId: { $exists: true } } },
   ]);
 }

@@ -63,9 +63,15 @@ function registryIndexes(): Array<{ collection: string; indexes: IndexDescriptio
       collection: REGISTRY_COLLECTIONS.tenants,
       indexes: [
         { key: { tenantId: 1 }, unique: true },
-        { key: { taxIdHash: 1 }, unique: true },
+        // Parcial: sem isso, o segundo tenant sem taxIdHash quebra com duplicate-key
+        // (Mongo trata campo ausente como null e único só aceita um null).
+        // Espelha server/db/tenantIndexes.ts:ensureRegistryTenantIndexes.
+        { key: { taxIdHash: 1 }, unique: true, partialFilterExpression: { taxIdHash: { $exists: true } } },
         { key: { slug: 1 }, unique: true },
         { key: { status: 1 } },
+        // resolveTenant() faz { $or: [{ tenantId }, { companyId }] } em quase toda
+        // requisição, e $or só usa índice se todos os ramos forem indexados.
+        { key: { companyId: 1 }, partialFilterExpression: { companyId: { $exists: true } } },
         { key: { tenantType: 1, status: 1 } },
         { key: { createdAt: 1 } },
         { key: { updatedAt: 1 } },
