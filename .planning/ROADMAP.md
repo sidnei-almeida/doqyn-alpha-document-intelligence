@@ -1,28 +1,30 @@
-# Roadmap: Viewer — Detalhes com metadados standard
+# Roadmap: DOQYN Alpha — Document Intelligence
 
-## Overview
+## Milestones
 
-Enrich the document viewer Details aside with the curated standard metadata vocabulary (parties, dates, validity), instead of dumping the raw metadata blob. Full Documento ↔ Ficha mode is deferred.
+- ✅ **v1.0 Internacionalização e multi-país (BR/PY/US)** — Phases 1-5 (shipped 2026-07-18)
 
 ## Phases
 
-- [ ] **Phase 1: Detalhes standard metadata** — Curated display of standard fields + honest validity (explicit / inferred / não determinada)
-- *(further phases TBD after discuss/plan)*
+<details>
+<summary>✅ v1.0 Internacionalização e multi-país (BR/PY/US) (Phases 1-5) — SHIPPED 2026-07-18</summary>
 
-## Phase Details
+- [x] Phase 1: Fundação i18n + detecção de locale (3/3 plans) — completed 2026-07-17
+- [x] Phase 2: Seletor de idioma + persistência (2/2 plans) — completed 2026-07-17
+- [x] Phase 3: Formatação sensível a locale (3/3 plans) — completed 2026-07-17
+- [x] Phase 4: Identificadores fiscais por país (3/3 plans) — completed 2026-07-17
+- [x] Phase 5: Telefone por país + integração no cadastro (4/4 plans) — completed 2026-07-18
 
-### Phase 1: Detalhes standard metadata
-**Goal**: Opening Detalhes shows the standard ficha fields clearly; non-standard keys are omitted or demoted.
-**Depends on**: Nothing
-**Requirements**: TBD (see REQUIREMENTS.md)
-**Success Criteria** (draft):
-  1. Detalhes shows partes (ex.: reveladora/receptora), key dates, and validity with source clarity when inferred.
-  2. Panel no longer shows an undifferentiated first-12 dump of arbitrary metadata keys as the primary experience.
-  3. If validity has no absolute date and no anchor+prazo, UI shows “não determinada” (does not invent).
-**Plans**: TBD
+Full detail: `.planning/milestones/v1.0-ROADMAP.md`
+
+</details>
 
 ## Progress
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Detalhes standard metadata | 0/TBD | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|-----------------|--------|-----------|
+| 1. Fundação i18n + detecção de locale | v1.0 | 3/3 | Complete | 2026-07-17 |
+| 2. Seletor de idioma + persistência | v1.0 | 2/2 | Complete | 2026-07-17 |
+| 3. Formatação sensível a locale | v1.0 | 3/3 | Complete | 2026-07-17 |
+| 4. Identificadores fiscais por país | v1.0 | 3/3 | Complete | 2026-07-17 |
+| 5. Telefone por país + integração no cadastro | v1.0 | 4/4 | Complete | 2026-07-18 |

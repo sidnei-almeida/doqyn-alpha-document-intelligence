@@ -195,7 +195,17 @@ function mapMongoMemberToGovernanceMember(
     accessGroupIds: serialized.accessGroupIds,
     groupIds: documentGroupIds,
     documentGroupIds,
-    requestedAccess: serialized.requestedAccess,
+    requestedAccess: serialized.requestedAccess
+      ? {
+          ...serialized.requestedAccess,
+          taxIdType:
+            serialized.requestedAccess.taxIdType?.toUpperCase() === 'CPF'
+              ? 'CPF'
+              : serialized.requestedAccess.taxIdType?.toUpperCase() === 'CNPJ'
+                ? 'CNPJ'
+                : undefined,
+        }
+      : undefined,
     consent: serialized.consent,
     notificationPreferences: serialized.notificationPreferences,
     createdAt: serialized.createdAt,

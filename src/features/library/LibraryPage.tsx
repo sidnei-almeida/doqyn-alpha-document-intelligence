@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
+import { cn } from '@/lib/utils';
 import { DocumentViewerModal } from '@/features/documents/viewer';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { ALLOWED_FILE_EXTENSIONS } from '@/features/document-send/uploadConstants';
@@ -12,7 +13,10 @@ import type { UploadContext } from '@/features/upload/types';
 import type { DocumentListItem } from '@/types/document-library';
 import { downloadDocument, triggerBlobDownload } from './api/libraryApi';
 import { ExplorerShell } from './components/ExplorerShell';
-import { ExplorerContextMenu, type ExplorerContextMenuState } from './components/ExplorerContextMenu';
+import {
+  ExplorerContextMenu,
+  type ExplorerContextMenuState,
+} from './components/ExplorerContextMenu';
 import { ExplorerRootHome } from './components/ExplorerRootHome';
 import { ExplorerPageHeader } from './components/ExplorerPageHeader';
 import { LibraryBreadcrumbs } from './components/LibraryBreadcrumbs';
@@ -42,14 +46,9 @@ import {
 } from './utils/libraryCollectionFilterCapabilities';
 import { invalidateLibraryQueries } from './utils/libraryQueryInvalidation';
 import { findLibraryCategory } from './utils/resolveLibraryCategory';
-import {
-  pickRecentDocuments,
-  pickUncategorizedDocuments,
-} from './utils/libraryHomeSections';
+import { pickRecentDocuments, pickUncategorizedDocuments } from './utils/libraryHomeSections';
 import { useConfirm } from '@/components/confirm/useConfirm';
-import {
-  buildMoveToTrashConfirm,
-} from '@/components/confirm/confirmMessages';
+import { buildMoveToTrashConfirm } from '@/components/confirm/confirmMessages';
 
 import { useTrashMutations } from './hooks/useTrashMutations';
 import { useDeactivatedMutations } from './hooks/useDeactivatedMutations';
@@ -63,6 +62,7 @@ import { downloadSignatureRequestSignedPdf } from '@/features/signature/api/sign
 import { signedPdfDownloadName } from '@/features/signature/utils/signatureSummaryDisplay';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
+import { DocumentChatDrawer } from '@/features/documents/components/DocumentChatDrawer';
 
 function notifyComingSoon(label: string) {
   toast.info(`${label} estará disponível em uma próxima versão.`);
@@ -77,8 +77,19 @@ export function LibraryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { tenant, user, hasAnyRole } = useAuth();
-  const { state, update, clearFilters, collection, categories, documents, isLoading, isFetching, isError, toggleStar, isStarred } =
-    useLibraryView();
+  const {
+    state,
+    update,
+    clearFilters,
+    collection,
+    categories,
+    documents,
+    isLoading,
+    isFetching,
+    isError,
+    toggleStar,
+    isStarred,
+  } = useLibraryView();
   const filterCapabilities = useMemo(
     () => resolveCollectionFilterCapabilities(collection.id),
     [collection.id],
@@ -109,11 +120,7 @@ export function LibraryPage() {
   const isDeactivatedView = collection.id === 'desativados';
   const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
-  const canManageDeactivated = hasAnyRole([
-    'doqyn_admin',
-    'company_admin',
-    'individual_admin',
-  ]);
+  const canManageDeactivated = hasAnyRole(['doqyn_admin', 'company_admin', 'individual_admin']);
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
@@ -145,6 +152,7 @@ export function LibraryPage() {
   });
   const [infoOpen, setInfoOpen] = useState(false);
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
+  const [chatDrawerDoc, setChatDrawerDoc] = useState<DocumentListItem | null>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
   const [transferModalDoc, setTransferModalDoc] = useState<DocumentListItem | null>(null);
@@ -170,9 +178,7 @@ export function LibraryPage() {
 
   const uploadContext = useMemo(
     () =>
-      activeSpace
-        ? { categoryId: activeSpace.id, categoryName: activeSpace.name }
-        : undefined,
+      activeSpace ? { categoryId: activeSpace.id, categoryName: activeSpace.name } : undefined,
     [activeSpace],
   );
 
@@ -289,10 +295,13 @@ export function LibraryPage() {
     void invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
   }, [queryClient, tenant?.tenantId, user?.companyId]);
 
-  const triggerUploadPicker = useCallback((context?: UploadContext) => {
-    pendingUploadContextRef.current = context ?? uploadContext;
-    emptyStateFileInputRef.current?.click();
-  }, [uploadContext]);
+  const triggerUploadPicker = useCallback(
+    (context?: UploadContext) => {
+      pendingUploadContextRef.current = context ?? uploadContext;
+      emptyStateFileInputRef.current?.click();
+    },
+    [uploadContext],
+  );
 
   const startUploadInFolder = useCallback(
     (folder: LibraryFolder) => {
@@ -402,10 +411,13 @@ export function LibraryPage() {
     [handleMoveToTrash],
   );
 
-  const openMoveModal = useCallback((docs: DocumentListItem[]) => {
-    if (!docs.length || isLifecycleArchiveView) return;
-    setMoveModalDocs(docs);
-  }, [isLifecycleArchiveView]);
+  const openMoveModal = useCallback(
+    (docs: DocumentListItem[]) => {
+      if (!docs.length || isLifecycleArchiveView) return;
+      setMoveModalDocs(docs);
+    },
+    [isLifecycleArchiveView],
+  );
 
   const handleMoveSingle = useCallback(
     (doc: DocumentListItem) => {
@@ -513,9 +525,7 @@ export function LibraryPage() {
 
   const showFilterMenus =
     !isSignaturesView &&
-    (explorer.isInsideFolder ||
-      explorer.isSearchOrFilterAtRoot ||
-      explorer.isVirtualCollection);
+    (explorer.isInsideFolder || explorer.isSearchOrFilterAtRoot || explorer.isVirtualCollection);
 
   const shellVariant = explorer.isBrowseRoot
     ? 'explorer-root'
@@ -568,9 +578,7 @@ export function LibraryPage() {
         totalDocumentCount={documents.length}
         viewMode={state.view}
         onOpenFolder={openSpace}
-        onFolderContextMenu={(folder, x, y) =>
-          setContextMenu({ kind: 'folder', folder, x, y })
-        }
+        onFolderContextMenu={(folder, x, y) => setContextMenu({ kind: 'folder', folder, x, y })}
         onFolderInfo={openFolderDetails}
         onUploadClick={() => triggerUploadPicker()}
       />
@@ -657,193 +665,206 @@ export function LibraryPage() {
       onViewSignatures={isLifecycleArchiveView ? undefined : handleViewSignatures}
       onTrash={isLifecycleArchiveView ? undefined : handleTrashSingle}
     >
-    <DndContext>
-      <input
-        ref={emptyStateFileInputRef}
-        type="file"
-        accept={ALLOWED_FILE_EXTENSIONS.join(',')}
-        multiple
-        className="hidden"
-        onChange={(event) => handleEmptyStateFiles(event.target.files)}
-        aria-hidden
-        tabIndex={-1}
-      />
+      <DndContext>
+        <input
+          ref={emptyStateFileInputRef}
+          type="file"
+          accept={ALLOWED_FILE_EXTENSIONS.join(',')}
+          multiple
+          className="hidden"
+          onChange={(event) => handleEmptyStateFiles(event.target.files)}
+          aria-hidden
+          tabIndex={-1}
+        />
 
-      <ExplorerShell
-        variant={shellVariant}
-        header={
-          <div className="space-y-0">
-            <ExplorerPageHeader
-              breadcrumb={
-                !explorer.isBrowseRoot ? (
-                  <LibraryBreadcrumbs segments={breadcrumbSegments} onNavigateRoot={goToRoot} />
-                ) : undefined
-              }
-              title={pageTitle}
-              subtitle={pageDescription}
-              meta={
-                <>
-                  {explorer.isInsideFolder && activeSpace && (
-                    <SearchScopeHint
-                      state={state}
-                      folderName={activeSpace.name}
-                      onStateChange={update}
-                    />
-                  )}
-                  {explorer.isInsideFolder && documents.length > 0 && !trimmedQuery ? (
-                    <span>
-                      {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
-                    </span>
-                  ) : undefined}
-                  {isFetching && !isLoading ? (
-                    <span className="text-doqyn-subtle" aria-live="polite">
+        <ExplorerShell
+          variant={shellVariant}
+          header={
+            <div className="space-y-0">
+              <ExplorerPageHeader
+                breadcrumb={
+                  !explorer.isBrowseRoot ? (
+                    <LibraryBreadcrumbs segments={breadcrumbSegments} onNavigateRoot={goToRoot} />
+                  ) : undefined
+                }
+                title={pageTitle}
+                subtitle={pageDescription}
+                meta={
+                  <>
+                    {explorer.isInsideFolder && activeSpace && (
+                      <SearchScopeHint
+                        state={state}
+                        folderName={activeSpace.name}
+                        onStateChange={update}
+                      />
+                    )}
+                    {explorer.isInsideFolder && documents.length > 0 && !trimmedQuery ? (
+                      <span>
+                        {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
+                      </span>
+                    ) : undefined}
+                    <span
+                      className={cn(
+                        'text-doqyn-subtle',
+                        isFetching && !isLoading ? 'visible' : 'invisible',
+                      )}
+                      aria-live="polite"
+                    >
                       Atualizando…
                     </span>
-                  ) : null}
-                </>
-              }
-              state={state}
-              onStateChange={update}
-              onClearFilters={clearFilters}
-              onRefresh={refreshLibrary}
-              showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}
-              showFilterMenus={showFilterMenus}
-              filterCapabilities={filterCapabilities}
-              showTitleChevron={explorer.isBrowseRoot && !hasActiveFilters}
-              folderName={activeSpace?.name}
-              infoButton={
-                <ContextInfoButton
-                  overview={libraryOverview}
-                  folder={activeSpace}
-                  open={infoOpen}
-                  onOpenChange={setInfoOpen}
-                />
-              }
-            />
-            {isError && (
-              <p className="mt-3 text-[12px] text-doqyn-danger">
-                Não foi possível carregar os documentos agora.
-              </p>
-            )}
-          </div>
-        }
-        toolbar={
-          selectedCount > 0 ? (
-            <LibraryToolbar
-              state={state}
-              selectedCount={selectedCount}
-              selectedFileIds={selectedFileIds}
-              selectedFolderCount={selectedFolderIds.size}
-              documents={documents}
-              isTrashView={isTrashView}
-              isDeactivatedView={isDeactivatedView}
-              onClearSelection={clearSelection}
-              onBulkDownload={(docs) => void handleBulkDownload(docs)}
-              onPreview={handlePreview}
-              onMove={handleBulkMove}
-              onTrash={(ids) => void handleMoveToTrash(ids)}
-              onRestore={(ids) => void handleRestoreFromTrash(ids)}
-              onReactivate={(ids) => void handleReactivate(ids)}
-            />
-          ) : undefined
-        }
-        content={content}
-      />
-
-      {detailsDrawer && (
-        <OptionalDetailsDrawer
-          selection={detailsDrawer}
-          onClose={closeDetailsDrawer}
-          onPreview={(doc) => handlePreview(doc)}
-          onDownload={(doc) => void handleDownload(doc)}
-          onUpdateDocument={handleUpdateDocument}
-          onPreviewVersion={(doc, versionId) => handlePreview(doc, versionId)}
-          onViewSignatures={handleViewSignatures}
-          onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
-          onTransferOwnership={(doc) => setTransferModalDoc(doc)}
+                  </>
+                }
+                state={state}
+                onStateChange={update}
+                onClearFilters={clearFilters}
+                onRefresh={refreshLibrary}
+                showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}
+                showFilterMenus={showFilterMenus}
+                filterCapabilities={filterCapabilities}
+                showTitleChevron={explorer.isBrowseRoot && !hasActiveFilters}
+                folderName={activeSpace?.name}
+                infoButton={
+                  <ContextInfoButton
+                    overview={libraryOverview}
+                    folder={activeSpace}
+                    open={infoOpen}
+                    onOpenChange={setInfoOpen}
+                  />
+                }
+              />
+              {isError && (
+                <p className="mt-3 text-[12px] text-doqyn-danger">
+                  Não foi possível carregar os documentos agora.
+                </p>
+              )}
+            </div>
+          }
+          toolbar={
+            selectedCount > 0 ? (
+              <LibraryToolbar
+                state={state}
+                selectedCount={selectedCount}
+                selectedFileIds={selectedFileIds}
+                selectedFolderCount={selectedFolderIds.size}
+                documents={documents}
+                isTrashView={isTrashView}
+                isDeactivatedView={isDeactivatedView}
+                onClearSelection={clearSelection}
+                onBulkDownload={(docs) => void handleBulkDownload(docs)}
+                onPreview={handlePreview}
+                onMove={handleBulkMove}
+                onTrash={(ids) => void handleMoveToTrash(ids)}
+                onRestore={(ids) => void handleRestoreFromTrash(ids)}
+                onReactivate={(ids) => void handleReactivate(ids)}
+              />
+            ) : undefined
+          }
+          content={content}
         />
-      )}
 
-      <ExplorerContextMenu
-        state={contextMenu}
-        onClose={() => setContextMenu(null)}
-        viewMode={state.view}
-        onViewModeChange={(view) => update({ view })}
-        onRefresh={refreshLibrary}
-        onUpload={() => triggerUploadPicker()}
-        onUploadInFolder={startUploadInFolder}
-        onOpenFolder={openSpace}
-        onOpenFile={handleOpen}
-        onPreviewFile={handlePreview}
-        onDownloadFile={(doc) => void handleDownload(doc)}
-        onTrackingFile={handleTracking}
-        onSelectFileDetails={openFileDetails}
-        onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
-        onUpdateDocument={handleUpdateDocument}
-        onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
-        onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
-        onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
-        onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
-        onDownloadSignedPdfFile={
-          isLifecycleArchiveView ? undefined : (doc) => void handleDownloadSignedPdf(doc)
-        }
-        onShowContextInfo={() => setInfoOpen(true)}
-        onShowFolderInfo={openFolderDetails}
-        isTrashView={isTrashView}
-        isDeactivatedView={isDeactivatedView}
-        onTrashFile={handleTrashSingle}
-        onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
-        onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
-        onComingSoon={notifyComingSoon}
-      />
+        {detailsDrawer && (
+          <OptionalDetailsDrawer
+            selection={detailsDrawer}
+            onClose={closeDetailsDrawer}
+            onPreview={(doc) => handlePreview(doc)}
+            onDownload={(doc) => void handleDownload(doc)}
+            onUpdateDocument={handleUpdateDocument}
+            onPreviewVersion={(doc, versionId) => handlePreview(doc, versionId)}
+            onViewSignatures={handleViewSignatures}
+            onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
+            onTransferOwnership={(doc) => setTransferModalDoc(doc)}
+          />
+        )}
 
-      <UpdateDocumentVersionDrawer
-        documentId={updateVersionDocumentId}
-        onClose={closeUpdateVersionDrawer}
-      />
+        <ExplorerContextMenu
+          state={contextMenu}
+          onClose={() => setContextMenu(null)}
+          viewMode={state.view}
+          onViewModeChange={(view) => update({ view })}
+          onRefresh={refreshLibrary}
+          onUpload={() => triggerUploadPicker()}
+          onUploadInFolder={startUploadInFolder}
+          onOpenFolder={openSpace}
+          onOpenFile={handleOpen}
+          onPreviewFile={handlePreview}
+          onDownloadFile={(doc) => void handleDownload(doc)}
+          onTrackingFile={handleTracking}
+          onSelectFileDetails={openFileDetails}
+          onChatFile={setChatDrawerDoc}
+          onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
+          onUpdateDocument={handleUpdateDocument}
+          onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
+          onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
+          onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
+          onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
+          onDownloadSignedPdfFile={
+            isLifecycleArchiveView ? undefined : (doc) => void handleDownloadSignedPdf(doc)
+          }
+          onShowContextInfo={() => setInfoOpen(true)}
+          onShowFolderInfo={openFolderDetails}
+          isTrashView={isTrashView}
+          isDeactivatedView={isDeactivatedView}
+          onTrashFile={handleTrashSingle}
+          onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
+          onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
+          onComingSoon={notifyComingSoon}
+        />
 
-      <ShareDocumentModal
-        open={Boolean(shareModalDoc)}
-        document={shareModalDoc}
-        onClose={() => setShareModalDoc(null)}
-      />
+        <UpdateDocumentVersionDrawer
+          documentId={updateVersionDocumentId}
+          onClose={closeUpdateVersionDrawer}
+        />
 
-      <TransferOwnershipModal
-        open={Boolean(transferModalDoc)}
-        document={transferModalDoc}
-        onClose={() => setTransferModalDoc(null)}
-      />
+        <DocumentChatDrawer
+          open={Boolean(chatDrawerDoc)}
+          documentId={chatDrawerDoc?.documentId ?? null}
+          documentName={chatDrawerDoc?.displayName ?? null}
+          categoryName={chatDrawerDoc?.categoryName ?? null}
+          onClose={() => setChatDrawerDoc(null)}
+        />
 
-      <RequestSignatureModal
-        open={Boolean(signatureModalDoc)}
-        document={signatureModalDoc}
-        onClose={() => setSignatureModalDoc(null)}
-        onCreated={() => void invalidateLibraryQueries(queryClient, tenant?.tenantId)}
-      />
+        <ShareDocumentModal
+          open={Boolean(shareModalDoc)}
+          document={shareModalDoc}
+          onClose={() => setShareModalDoc(null)}
+        />
 
-      <DocumentSignaturesDrawer
-        document={signaturesDrawerDoc}
-        onClose={() => setSignaturesDrawerDoc(null)}
-      />
+        <TransferOwnershipModal
+          open={Boolean(transferModalDoc)}
+          document={transferModalDoc}
+          onClose={() => setTransferModalDoc(null)}
+        />
 
-      <MoveDocumentModal
-        open={Boolean(moveModalDocs?.length)}
-        documents={moveModalDocs ?? []}
-        categories={categories}
-        isSubmitting={moveDocuments.isPending}
-        onClose={() => setMoveModalDocs(null)}
-        onConfirm={handleConfirmMove}
-      />
+        <RequestSignatureModal
+          open={Boolean(signatureModalDoc)}
+          document={signatureModalDoc}
+          onClose={() => setSignatureModalDoc(null)}
+          onCreated={() => void invalidateLibraryQueries(queryClient, tenant?.tenantId)}
+        />
 
-      <DocumentViewerModal
-        open={Boolean(viewer)}
-        documentId={viewer?.documentId ?? null}
-        initialVersionId={viewer?.versionId}
-        initialShowDetails={viewer?.mode === 'details'}
-        onClose={() => setViewer(null)}
-        onUpdateDocument={openUpdateVersionDrawer}
-      />
-    </DndContext>
+        <DocumentSignaturesDrawer
+          document={signaturesDrawerDoc}
+          onClose={() => setSignaturesDrawerDoc(null)}
+        />
+
+        <MoveDocumentModal
+          open={Boolean(moveModalDocs?.length)}
+          documents={moveModalDocs ?? []}
+          categories={categories}
+          isSubmitting={moveDocuments.isPending}
+          onClose={() => setMoveModalDocs(null)}
+          onConfirm={handleConfirmMove}
+        />
+
+        <DocumentViewerModal
+          open={Boolean(viewer)}
+          documentId={viewer?.documentId ?? null}
+          initialVersionId={viewer?.versionId}
+          initialShowDetails={viewer?.mode === 'details'}
+          onClose={() => setViewer(null)}
+          onUpdateDocument={openUpdateVersionDrawer}
+        />
+      </DndContext>
     </ExplorerActionsProvider>
   );
 }

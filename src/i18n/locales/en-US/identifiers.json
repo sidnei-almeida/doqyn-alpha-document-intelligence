@@ -1,0 +1,22 @@
+{
+  "country": {
+    "BR": "Brazil",
+    "PY": "Paraguay",
+    "US": "United States",
+    "ES": "Spain"
+  },
+  "doc": {
+    "cpf": "CPF",
+    "cnpj": "CNPJ",
+    "ci": "CI",
+    "ruc": "RUC",
+    "ssn": "SSN",
+    "ein": "EIN",
+    "nif": "NIF",
+    "cif": "CIF",
+    "generic": "Tax ID",
+    "phone": "Phone"
+  },
+  "incomplete": "{{doc}} is incomplete.",
+  "ddiLabel": "Country code"
+}

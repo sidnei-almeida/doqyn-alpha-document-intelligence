@@ -1,11 +1,13 @@
+import { formatDate, formatTime } from '@/lib/formatLocale';
+
 export function formatHistoryDate(date: Date | string): string {
   const value = typeof date === 'string' ? new Date(date) : date;
-  const datePart = value.toLocaleDateString('pt-BR', {
+  const datePart = formatDate(value, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
-  const timePart = value.toLocaleTimeString('pt-BR', {
+  const timePart = formatTime(value, {
     hour: '2-digit',
     minute: '2-digit',
   });

@@ -1,5 +1,6 @@
+import type { TFunction } from 'i18next';
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { toTaxIdApiValue, toWhatsappApiValue } from '../../lib/identifiers';
+import { getIdentifierSpec, toE164, type CountryCode } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatDocumentForReview,
@@ -13,6 +14,8 @@ export type IndividualSignupFormValues = {
   lastName: string;
   email: string;
   whatsapp: string;
+  whatsappCountry?: CountryCode;
+  country: CountryCode;
   taxId: string;
   password: string;
   confirmPassword: string;
@@ -21,17 +24,26 @@ export type IndividualSignupFormValues = {
 
 export function validateIndividualSignupForm(
   values: IndividualSignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' } {
+  t: TFunction<'auth'>,
+): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms' | 'taxId';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
-      error: 'É necessário aceitar os Termos e Condições de Uso para continuar.',
+      error: t('signup.common.acceptTermsRequired'),
       field: 'acceptedTerms',
     };
   }
 
   if (values.password !== values.confirmPassword) {
-    return { valid: false, error: 'As senhas não conferem.' };
+    return { valid: false, error: t('signup.common.passwordMismatch') };
+  }
+
+  if (!getIdentifierSpec(values.country, 'individual').validate(values.taxId)) {
+    return { valid: false, error: t('signup.common.invalidTaxId'), field: 'taxId' };
   }
 
   return { valid: true };
@@ -42,8 +54,10 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
     firstName: values.firstName,
     lastName: values.lastName,
     email: values.email,
-    whatsapp: toWhatsappApiValue(values.whatsapp),
-    taxId: toTaxIdApiValue(values.taxId),
+    whatsapp: toE164(values.whatsapp, values.whatsappCountry ?? 'BR'),
+    country: values.country,
+    taxIdType: getIdentifierSpec(values.country, 'individual').code.toLowerCase(),
+    taxId: getIdentifierSpec(values.country, 'individual').normalize(values.taxId),
     password: values.password,
     confirmPassword: values.confirmPassword,
     acceptedTerms: true,
@@ -53,46 +67,50 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
 
 export function buildIndividualSignupReviewSections(
   values: IndividualSignupFormValues,
+  t: TFunction<'auth'>,
 ): ReviewSection[] {
   return [
     {
-      title: 'Dados pessoais',
+      title: t('signup.individual.review.sectionTitle'),
       fields: [
         {
-          label: 'Nome completo',
+          label: t('signup.common.review.fullNameLabel'),
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
-        { label: 'E-mail', value: safeDisplayValue(values.email) },
-        { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
+        { label: t('signup.individual.review.emailLabel'), value: safeDisplayValue(values.email) },
         {
-          label: 'CPF',
-          value: formatDocumentForReview(values.taxId, 'CPF'),
+          label: t('signup.individual.review.whatsappLabel'),
+          value: formatPhone(values.whatsapp, values.whatsappCountry ?? 'BR'),
+        },
+        {
+          label: getIdentifierSpec(values.country, 'individual').code,
+          value: formatDocumentForReview(values.taxId, values.country, 'individual'),
         },
       ],
     },
     {
-      title: 'Confirmações',
+      title: t('signup.common.review.confirmationsTitle'),
       fields: [
         {
-          label: 'Termos de uso',
+          label: t('signup.common.review.termsLabel'),
           value: values.acceptedTerms
-            ? `Aceito em relação à versão ${DOQYN_TERMS_VERSION}`
-            : 'Não aceito',
+            ? t('signup.common.review.termsAccepted', { version: DOQYN_TERMS_VERSION })
+            : t('signup.common.review.termsNotAccepted'),
         },
       ],
     },
     {
-      title: 'Segurança',
-      fields: [{ label: 'Senha', value: PASSWORD_REVIEW_LABEL }],
+      title: t('signup.common.review.securityTitle'),
+      fields: [{ label: t('signup.common.review.passwordLabel'), value: PASSWORD_REVIEW_LABEL }],
     },
   ];
 }
 
-export const INDIVIDUAL_SIGNUP_REVIEW_COPY = {
-  title: 'Revisar cadastro',
-  description:
-    'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
-  attentionMessage:
-    'Verifique principalmente CPF, e-mail e WhatsApp. Informações incorretas podem atrasar seu acesso.',
-  confirmLabel: 'Confirmar e cadastrar',
-} as const;
+export function getIndividualSignupReviewCopy(t: TFunction<'auth'>) {
+  return {
+    title: t('signup.individual.review.title'),
+    description: t('signup.individual.review.description'),
+    attentionMessage: t('signup.individual.review.attentionMessage'),
+    confirmLabel: t('signup.individual.review.confirmLabel'),
+  } as const;
+}

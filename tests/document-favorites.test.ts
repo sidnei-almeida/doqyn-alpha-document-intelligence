@@ -91,14 +91,16 @@ describe('document favorites — frontend', () => {
     const card = read('src/features/library/components/files/DocumentFileCard.tsx');
     const row = read('src/features/library/components/files/DocumentFileRow.tsx');
     const fileRow = read('src/features/library/components/FileRow.tsx');
-    const overview = read('src/features/dashboard/components/OverviewRecentDocumentsPanel.tsx');
+    const homeRecentFiles = read(
+      'src/features/dashboard/components/home/HomeRecentFilesTable.tsx',
+    );
 
     assert.ok(badge.includes('useDocumentIsFavorite'));
     assert.ok(card.includes('DocumentFavoriteBadge'));
     assert.ok(card.includes('variant="overlay"'));
     assert.ok(row.includes('DocumentFavoriteBadge'));
     assert.ok(fileRow.includes('DocumentFavoriteBadge'));
-    assert.ok(overview.includes('DocumentFavoriteBadge'));
+    assert.ok(homeRecentFiles.includes('doc.isFavorite'));
   });
 
   it('badge de favorito respeita escopo do usuário logado', () => {

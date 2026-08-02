@@ -1,4 +1,6 @@
 import { useIsFetching } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
@@ -6,6 +8,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 
 /** Barra superior — busca protagonista, ações discretas e usuário à direita. */
 export function WorkspaceTopBar() {
+  const { t } = useTranslation('common');
   const iconButtonClass = 'explorer-icon-btn h-10 w-10';
   const documentsFetching = useIsFetching({ queryKey: ['documents'] }) > 0;
 
@@ -24,10 +27,13 @@ export function WorkspaceTopBar() {
           target="_blank"
           rel="noreferrer"
           className={iconButtonClass}
-          aria-label="Ajuda"
+          aria-label={t('help')}
         >
           <Icon name="help" size={ICON_SIZE.nav} />
         </a>
+        <Link to="/settings" className={iconButtonClass} aria-label={t('settings')}>
+          <Icon name="settings" size={ICON_SIZE.nav} />
+        </Link>
         <HeaderUserMenu />
       </div>
     </header>

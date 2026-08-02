@@ -1,41 +1,55 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { DocumentIdInput } from '@/components/ui/DocumentIdInput';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
-import { TaxIdInput } from '@/components/ui/TaxIdInput';
-import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { getActiveLocale } from '@/lib/formatLocale';
+import { defaultPhoneCountry } from '@/lib/identifiers';
+import { useDetectedCountry } from '@/hooks/useDetectedCountry';
+import {
+  defaultCountryForLocale,
+  getIdentifierSpec,
+  type CountryCode,
+} from '@/lib/identifiers/countryIdentifiers';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitCompanySignup } from './api/companySignupApi';
 import {
   buildCompanySignupPayload,
   buildCompanySignupReviewSections,
-  COMPANY_SIGNUP_REVIEW_COPY,
+  getCompanySignupReviewCopy,
   validateCompanySignupForm,
   type CompanySignupFormValues,
 } from './companySignupReview';
 
-const COMPANY_AUTHORIZATION_TEXT =
-  'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
-
 export function CompanySignupPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
   const [companyName, setCompanyName] = useState('');
+  const [country, setCountry] = useState<CountryCode>(() =>
+    defaultCountryForLocale(getActiveLocale()),
+  );
   const [taxId, setTaxId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(() =>
+    defaultPhoneCountry(getActiveLocale()),
+  );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -45,15 +59,44 @@ export function CompanySignupPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const countryTouched = useRef(false);
+  const phoneCountryTouched = useRef(false);
+  const detectedCountry = useDetectedCountry();
+
+  useEffect(() => {
+    if (!detectedCountry) return;
+    if (!countryTouched.current) {
+      setCountry(detectedCountry);
+      // Documento já digitado é do país anterior (ex.: locale default) — limpa
+      // igual ao handleCountryChange, senão fica reinterpretado sob o spec errado.
+      setTaxId('');
+    }
+    if (!phoneCountryTouched.current) setPhoneCountry(detectedCountry);
+  }, [detectedCountry]);
+
+  function handleCountryChange(next: CountryCode) {
+    countryTouched.current = true;
+    setCountry(next);
+    setTaxId('');
+  }
+
+  function handlePhoneCountryChange(next: CountryCode) {
+    phoneCountryTouched.current = true;
+    setPhoneCountry(next);
+  }
+
+  const documentSpec = useMemo(() => getIdentifierSpec(country, 'company'), [country]);
 
   const formValues = useMemo<CompanySignupFormValues>(
     () => ({
       companyName,
+      country,
       taxId,
       firstName,
       lastName,
       email,
       whatsapp,
+      whatsappCountry: phoneCountry,
       password,
       confirmPassword,
       acceptedTerms,
@@ -61,11 +104,13 @@ export function CompanySignupPage() {
     }),
     [
       companyName,
+      country,
       taxId,
       firstName,
       lastName,
       email,
       whatsapp,
+      phoneCountry,
       password,
       confirmPassword,
       acceptedTerms,
@@ -74,9 +119,11 @@ export function CompanySignupPage() {
   );
 
   const reviewSections = useMemo(
-    () => buildCompanySignupReviewSections(formValues),
-    [formValues],
+    () => buildCompanySignupReviewSections(formValues, t),
+    [formValues, t],
   );
+
+  const reviewCopy = useMemo(() => getCompanySignupReviewCopy(t), [t]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,7 +135,7 @@ export function CompanySignupPage() {
       return;
     }
 
-    const validation = validateCompanySignupForm(formValues);
+    const validation = validateCompanySignupForm(formValues, t);
     setTermsError(null);
     setAuthorizationError(null);
 
@@ -99,7 +146,7 @@ export function CompanySignupPage() {
       if (validation.field === 'companyAuthorization') {
         setAuthorizationError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.common.reviewFormFields'));
       return;
     }
 
@@ -109,7 +156,7 @@ export function CompanySignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.common.acceptTermsRequired'));
       }
       return;
     }
@@ -121,11 +168,11 @@ export function CompanySignupPage() {
       const result = await submitCompanySignup(buildCompanySignupPayload(formValues));
 
       setReviewOpen(false);
-      toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
+      toast.success(result.message ?? t('signup.company.successToast'));
       await refreshUser();
       navigate('/upload', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao cadastrar empresa.';
+      const message = err instanceof Error ? err.message : t('signup.company.errorFallback');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -136,148 +183,160 @@ export function CompanySignupPage() {
   return (
     <AuthShell
       width="md"
-      eyebrow="Cadastrar empresa"
-      description="Use esta opção se sua empresa ainda não possui um ambiente no DOQYN."
+      eyebrow={t('signup.company.eyebrow')}
+      description={t('signup.company.description')}
       showSecureBadge
     >
-        <form onSubmit={handleSubmit} className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <Icon name="business" size={ICON_SIZE.xs} />
-            Dados da empresa
-          </div>
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
+      >
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
+          <Icon name="business" size={ICON_SIZE.xs} />
+          {t('signup.company.sectionTitle')}
+        </div>
 
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <Input
+            id="companyName"
+            label={t('signup.company.companyNameLabel')}
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            required
+          />
+          <CountrySelect
+            id="country"
+            label={t('signup.common.country')}
+            value={country}
+            onChange={handleCountryChange}
+          />
+          <DocumentIdInput
+            id="taxId"
+            country={country}
+            personType="company"
+            label={documentSpec.code}
+            value={taxId}
+            onChange={setTaxId}
+            required
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              id="companyName"
-              label="Nome da empresa"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              required
-            />
-            <TaxIdInput
-              id="taxId"
-              kind="CNPJ"
-              label="CNPJ"
-              value={taxId}
-              onChange={setTaxId}
-              required
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                id="firstName"
-                label="Nome do responsável"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <Input
-                id="lastName"
-                label="Sobrenome"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-            </div>
-
-            <Input
-              id="email"
-              label="E-mail corporativo"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <WhatsappInput
-              id="whatsapp"
-              label="WhatsApp"
-              value={whatsapp}
-              onChange={setWhatsapp}
+              id="firstName"
+              label={t('signup.company.responsibleFirstNameLabel')}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
+              id="lastName"
+              label={t('signup.common.lastName')}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               required
-            />
-            <Input
-              id="confirmPassword"
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-
-            <TermsAcceptanceCheckbox
-              checked={acceptedTerms}
-              onChange={(value) => {
-                setAcceptedTerms(value);
-                if (value) setTermsError(null);
-              }}
-              error={termsError}
-              privacyHref={undefined}
-              required
-            />
-
-            <Checkbox
-              checked={companyAuthorization}
-              onChange={(event) => {
-                setCompanyAuthorization(event.target.checked);
-                if (event.target.checked) setAuthorizationError(null);
-              }}
-              required
-              wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-              label={
-                <span className="text-sm leading-relaxed text-doqyn-muted">
-                  {COMPANY_AUTHORIZATION_TEXT}
-                </span>
-              }
-              description={
-                authorizationError ? (
-                  <span className="form-error text-xs">{authorizationError}</span>
-                ) : undefined
-              }
             />
           </div>
 
-          {error ? (
-            <div className="mt-4">
-              <AlertBanner variant="error" message={error} />
-            </div>
-          ) : null}
+          <Input
+            id="email"
+            label={t('signup.company.emailLabel')}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <PhoneInput
+            id="whatsapp"
+            label={t('signup.common.whatsapp')}
+            value={whatsapp}
+            onChange={setWhatsapp}
+            country={phoneCountry}
+            onCountryChange={handlePhoneCountryChange}
+            required
+          />
+          <Input
+            id="password"
+            label={t('signup.common.password')}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
+          <Input
+            id="confirmPassword"
+            label={t('signup.common.confirmPassword')}
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={8}
+            required
+          />
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-              Voltar
-            </Link>
-            <Button type="submit" className="w-full sm:w-auto">
-              Cadastrar empresa
-            </Button>
+          <TermsAcceptanceCheckbox
+            checked={acceptedTerms}
+            onChange={(value) => {
+              setAcceptedTerms(value);
+              if (value) setTermsError(null);
+            }}
+            error={termsError}
+            privacyHref={undefined}
+            required
+          />
+
+          <Checkbox
+            checked={companyAuthorization}
+            onChange={(event) => {
+              setCompanyAuthorization(event.target.checked);
+              if (event.target.checked) setAuthorizationError(null);
+            }}
+            required
+            wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+            label={
+              <span className="text-sm leading-relaxed text-doqyn-muted">
+                {t('signup.company.authorizationText')}
+              </span>
+            }
+            description={
+              authorizationError ? (
+                <span className="form-error text-xs">{authorizationError}</span>
+              ) : undefined
+            }
+          />
+        </div>
+
+        {error ? (
+          <div className="mt-4">
+            <AlertBanner variant="error" message={error} />
           </div>
-        </form>
+        ) : null}
 
-        <ReviewBeforeSubmitDialog
-          open={reviewOpen}
-          title={COMPANY_SIGNUP_REVIEW_COPY.title}
-          description={COMPANY_SIGNUP_REVIEW_COPY.description}
-          attentionMessage={COMPANY_SIGNUP_REVIEW_COPY.attentionMessage}
-          sections={reviewSections}
-          submitting={submitting}
-          confirmLabel={COMPANY_SIGNUP_REVIEW_COPY.confirmLabel}
-          onCancel={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onEdit={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onConfirm={handleConfirmSubmit}
-        />
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+            {t('signup.common.back')}
+          </Link>
+          <Button type="submit" className="w-full sm:w-auto">
+            {t('signup.company.submit')}
+          </Button>
+        </div>
+      </form>
+
+      <ReviewBeforeSubmitDialog
+        open={reviewOpen}
+        title={reviewCopy.title}
+        description={reviewCopy.description}
+        attentionMessage={reviewCopy.attentionMessage}
+        sections={reviewSections}
+        submitting={submitting}
+        confirmLabel={reviewCopy.confirmLabel}
+        onCancel={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onEdit={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onConfirm={handleConfirmSubmit}
+      />
     </AuthShell>
   );
 }

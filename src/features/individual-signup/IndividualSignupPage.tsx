@@ -1,28 +1,39 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { DocumentIdInput } from '@/components/ui/DocumentIdInput';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
-import { TaxIdInput } from '@/components/ui/TaxIdInput';
-import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { getActiveLocale } from '@/lib/formatLocale';
+import { defaultPhoneCountry } from '@/lib/identifiers';
+import { useDetectedCountry } from '@/hooks/useDetectedCountry';
+import {
+  defaultCountryForLocale,
+  getIdentifierSpec,
+  type CountryCode,
+} from '@/lib/identifiers/countryIdentifiers';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
-  INDIVIDUAL_SIGNUP_REVIEW_COPY,
+  getIndividualSignupReviewCopy,
   validateIndividualSignupForm,
   type IndividualSignupFormValues,
 } from './individualSignupReview';
 
 export function IndividualSignupPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -30,7 +41,27 @@ export function IndividualSignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<CountryCode>(() =>
+    defaultPhoneCountry(getActiveLocale()),
+  );
+  const [country, setCountry] = useState<CountryCode>(() =>
+    defaultCountryForLocale(getActiveLocale()),
+  );
   const [taxId, setTaxId] = useState('');
+  const countryTouched = useRef(false);
+  const phoneCountryTouched = useRef(false);
+  const detectedCountry = useDetectedCountry();
+
+  useEffect(() => {
+    if (!detectedCountry) return;
+    if (!countryTouched.current) {
+      setCountry(detectedCountry);
+      // Documento já digitado é do país anterior (ex.: locale default) — limpa
+      // igual ao handleCountryChange, senão fica reinterpretado sob o spec errado.
+      setTaxId('');
+    }
+    if (!phoneCountryTouched.current) setPhoneCountry(detectedCountry);
+  }, [detectedCountry]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -39,24 +70,52 @@ export function IndividualSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function handleCountryChange(next: CountryCode) {
+    countryTouched.current = true;
+    setCountry(next);
+    setTaxId('');
+  }
+
+  function handlePhoneCountryChange(next: CountryCode) {
+    phoneCountryTouched.current = true;
+    setPhoneCountry(next);
+  }
+
+  const documentSpec = useMemo(() => getIdentifierSpec(country, 'individual'), [country]);
+
   const formValues = useMemo<IndividualSignupFormValues>(
     () => ({
       firstName,
       lastName,
       email,
       whatsapp,
+      whatsappCountry: phoneCountry,
+      country,
       taxId,
       password,
       confirmPassword,
       acceptedTerms,
     }),
-    [firstName, lastName, email, whatsapp, taxId, password, confirmPassword, acceptedTerms],
+    [
+      firstName,
+      lastName,
+      email,
+      whatsapp,
+      phoneCountry,
+      country,
+      taxId,
+      password,
+      confirmPassword,
+      acceptedTerms,
+    ],
   );
 
   const reviewSections = useMemo(
-    () => buildIndividualSignupReviewSections(formValues),
-    [formValues],
+    () => buildIndividualSignupReviewSections(formValues, t),
+    [formValues, t],
   );
+
+  const reviewCopy = useMemo(() => getIndividualSignupReviewCopy(t), [t]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,14 +127,14 @@ export function IndividualSignupPage() {
       return;
     }
 
-    const validation = validateIndividualSignupForm(formValues);
+    const validation = validateIndividualSignupForm(formValues, t);
     setTermsError(null);
 
     if (!validation.valid) {
       if (validation.field === 'acceptedTerms') {
         setTermsError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.common.reviewFormFields'));
       return;
     }
 
@@ -85,7 +144,7 @@ export function IndividualSignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.common.acceptTermsRequired'));
       }
       return;
     }
@@ -97,11 +156,11 @@ export function IndividualSignupPage() {
       const result = await submitIndividualSignup(buildIndividualSignupPayload(formValues));
 
       setReviewOpen(false);
-      toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
+      toast.success(result.message ?? t('signup.individual.successToast'));
       await refreshUser();
       navigate('/upload', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
+      const message = err instanceof Error ? err.message : t('signup.individual.errorFallback');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -112,123 +171,132 @@ export function IndividualSignupPage() {
   return (
     <AuthShell
       width="md"
-      eyebrow="Pessoa física"
-      description="Para clientes CPF que precisam acessar documentos pessoais no DOQYN."
+      eyebrow={t('signup.individual.eyebrow')}
+      description={t('signup.individual.description')}
       showSecureBadge
     >
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-        >
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <Icon name="person" size={ICON_SIZE.xs} />
-            Dados pessoais
-          </div>
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
+      >
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
+          <Icon name="person" size={ICON_SIZE.xs} />
+          {t('signup.individual.sectionTitle')}
+        </div>
 
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                id="firstName"
-                label="Nome"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <Input
-                id="lastName"
-                label="Sobrenome"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-            </div>
-
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              id="email"
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <WhatsappInput
-              id="whatsapp"
-              label="WhatsApp"
-              value={whatsapp}
-              onChange={setWhatsapp}
-              required
-            />
-            <TaxIdInput
-              id="taxId"
-              kind="CPF"
-              label="CPF"
-              value={taxId}
-              onChange={setTaxId}
+              id="firstName"
+              label={t('signup.common.firstName')}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <Input
-              id="confirmPassword"
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-
-            <TermsAcceptanceCheckbox
-              checked={acceptedTerms}
-              onChange={(value) => {
-                setAcceptedTerms(value);
-                if (value) setTermsError(null);
-              }}
-              error={termsError}
-              privacyHref={undefined}
+              id="lastName"
+              label={t('signup.common.lastName')}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               required
             />
           </div>
 
-          {error ? (
-            <div className="mt-4">
-              <AlertBanner variant="error" message={error} />
-            </div>
-          ) : null}
+          <Input
+            id="email"
+            label={t('signup.common.email')}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <PhoneInput
+            id="whatsapp"
+            label={t('signup.common.whatsapp')}
+            value={whatsapp}
+            onChange={setWhatsapp}
+            country={phoneCountry}
+            onCountryChange={handlePhoneCountryChange}
+            required
+          />
+          <CountrySelect
+            id="country"
+            label={t('signup.common.country')}
+            value={country}
+            onChange={handleCountryChange}
+          />
+          <DocumentIdInput
+            id="taxId"
+            country={country}
+            personType="individual"
+            label={documentSpec.code}
+            value={taxId}
+            onChange={setTaxId}
+            required
+          />
+          <Input
+            id="password"
+            label={t('signup.common.password')}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
+          <Input
+            id="confirmPassword"
+            label={t('signup.common.confirmPassword')}
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={8}
+            required
+          />
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-              Voltar
-            </Link>
-            <Button type="submit" className="w-full sm:w-auto">
-              Criar acesso CPF
-            </Button>
+          <TermsAcceptanceCheckbox
+            checked={acceptedTerms}
+            onChange={(value) => {
+              setAcceptedTerms(value);
+              if (value) setTermsError(null);
+            }}
+            error={termsError}
+            privacyHref={undefined}
+            required
+          />
+        </div>
+
+        {error ? (
+          <div className="mt-4">
+            <AlertBanner variant="error" message={error} />
           </div>
-        </form>
+        ) : null}
 
-        <ReviewBeforeSubmitDialog
-          open={reviewOpen}
-          title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-          description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-          attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
-          sections={reviewSections}
-          submitting={submitting}
-          confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
-          onCancel={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onEdit={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onConfirm={handleConfirmSubmit}
-        />
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+            {t('signup.common.back')}
+          </Link>
+          <Button type="submit" className="w-full sm:w-auto">
+            {t('signup.individual.submit')}
+          </Button>
+        </div>
+      </form>
+
+      <ReviewBeforeSubmitDialog
+        open={reviewOpen}
+        title={reviewCopy.title}
+        description={reviewCopy.description}
+        attentionMessage={reviewCopy.attentionMessage}
+        sections={reviewSections}
+        submitting={submitting}
+        confirmLabel={reviewCopy.confirmLabel}
+        onCancel={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onEdit={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onConfirm={handleConfirmSubmit}
+      />
     </AuthShell>
   );
 }

@@ -1,0 +1,22 @@
+{
+  "country": {
+    "BR": "Brasil",
+    "PY": "Paraguai",
+    "US": "Estados Unidos",
+    "ES": "Espanha"
+  },
+  "doc": {
+    "cpf": "CPF",
+    "cnpj": "CNPJ",
+    "ci": "CI",
+    "ruc": "RUC",
+    "ssn": "SSN",
+    "ein": "EIN",
+    "nif": "NIF",
+    "cif": "CIF",
+    "generic": "Documento fiscal",
+    "phone": "Telefone"
+  },
+  "incomplete": "{{doc}} incompleto.",
+  "ddiLabel": "DDI"
+}

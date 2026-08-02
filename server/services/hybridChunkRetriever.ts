@@ -384,3 +384,28 @@ export function buildRetrievalStats(input: {
     extractionScores: input.extractionChunks.map((c) => c.score),
   };
 }
+
+/** Seleciona chunks relevantes para uma pergunta livre do chat documental. */
+export function retrieveChunksForQuestion(input: {
+  chunks: DocumentChunk[];
+  question: string;
+  topK?: number;
+}): RetrievedChunk[] {
+  const limit = input.topK ?? 12;
+  const terms = uniqueTerms(
+    input.question
+      .split(/[\s?!.,;:()"']+/)
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 3),
+  );
+
+  const scored = input.chunks.map((chunk) => {
+    const { score, matchedTerms } = scoreTermsInChunk(chunk, terms, { proximity: true });
+    return toRetrievedChunk(chunk, score, matchedTerms, 'extraction');
+  });
+
+  const positive = scored.filter((chunk) => chunk.score > 0);
+  const top = sortAndLimit(positive, limit);
+
+  return top.length > 0 ? top : fallbackChunks(input.chunks, limit, 'extraction');
+}

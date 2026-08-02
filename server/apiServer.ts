@@ -24,6 +24,7 @@ type RoutePattern = {
 const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/health/deep': () => import('../api/health/deep.js'),
+  '/api/geo/detect-country': () => import('../api/geo/detect-country.js'),
   '/api/metrics': () => import('../api/metrics.js'),
   '/api/auth/login': () => import('../api/auth/login.js'),
   '/api/auth/me': () => import('../api/auth/me.js'),
@@ -191,6 +192,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/documents\/([^/]+)\/favorite$/,
       loader: () => import('../api/documents/[documentId]/favorite.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/chat$/,
+      loader: () => import('../api/documents/[documentId]/chat.js'),
       paramKeys: ['documentId'],
     },
     {
@@ -376,7 +382,8 @@ function resolveRoute(pathname: string): RouteMatch | null {
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/timeline$/,
-      loader: () => import('../api/documents/timeline.js'),
+      loader: () => import('../api/documents/[documentId]/timeline.js'),
+      paramKeys: ['documentId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)$/,

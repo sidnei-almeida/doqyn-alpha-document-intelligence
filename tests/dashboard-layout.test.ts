@@ -12,18 +12,12 @@ function readSrc(relativePath: string): string {
 }
 
 describe('dashboard layout', () => {
-  it('OverviewMetricCard destaca label, valor e subtexto', () => {
-    const source = readSrc('features/dashboard/components/OverviewMetricCard.tsx');
-    assert.ok(source.includes('tabular-nums'));
-    assert.ok(source.includes('overview-kpi-label'));
-    assert.ok(source.includes('overview-kpi-subtext'));
-  });
-
-  it('DashboardPage usa faixa executiva e painéis modulares em largura total', () => {
+  it('DashboardPage usa home estilo Drive com stats, sugeridos, tabela e atividade', () => {
     const source = readSrc('features/documents/DashboardPage.tsx');
-    assert.ok(source.includes('OverviewSummaryStrip'));
-    assert.ok(source.includes('OverviewRecentDocumentsPanel'));
-    assert.ok(source.includes('OverviewRecentActivityPanel'));
+    assert.ok(source.includes('HomeStatCard'));
+    assert.ok(source.includes('HomeSuggestedCarousel'));
+    assert.ok(source.includes('HomeRecentFilesTable'));
+    assert.ok(source.includes('HomeActivityPanel'));
     assert.ok(source.includes('OverviewGovernancePanel'));
     assert.ok(source.includes('OverviewQuickAccessPanel'));
     assert.ok(source.includes('overview-insights-grid'));
@@ -31,17 +25,14 @@ describe('dashboard layout', () => {
     assert.equal(source.includes('max-w-[1440px]'), false);
   });
 
-  it('documentos recentes truncam nome e usam IconButton', () => {
-    const source = readSrc('features/dashboard/components/OverviewRecentDocumentsPanel.tsx');
-    assert.ok(source.includes('RecentDocumentRow'));
-    assert.ok(source.includes('TruncatedText'));
-    assert.ok(source.includes('IconButton'));
+  it('documentos recentes usam FileTypeIcon e menu de ações por linha', () => {
+    const source = readSrc('features/dashboard/components/home/HomeRecentFilesTable.tsx');
+    assert.ok(source.includes('FileTypeIcon'));
+    assert.ok(source.includes('TableRowActionsMenu'));
   });
 
   it('feed de atividade separa ator, documento e timestamp', () => {
-    const source = readSrc('features/dashboard/components/OverviewRecentActivityPanel.tsx');
-    assert.ok(source.includes('ActivityTimelineItem'));
-    assert.ok(source.includes('justify-between'));
+    const source = readSrc('features/dashboard/components/home/HomeActivityPanel.tsx');
     assert.ok(source.includes('<time'));
   });
 

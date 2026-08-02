@@ -1,0 +1,16 @@
+{
+  "help": "Help",
+  "settings": "Settings",
+  "storage": "Storage",
+  "manage": "Manage",
+  "expandSidebar": "Expand sidebar",
+  "collapseSidebar": "Collapse sidebar",
+  "userMenu": "User menu",
+  "account": "Account",
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português",
+    "es-PY": "Español",
+    "en-US": "English"
+  }
+}

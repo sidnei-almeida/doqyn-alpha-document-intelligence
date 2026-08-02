@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import i18n from '../src/i18n/index.ts';
 import {
   buildCompanySignupPayload,
   buildCompanySignupReviewSections,
@@ -8,8 +9,11 @@ import {
 import { DOQYN_TERMS_VERSION } from '../src/legal/terms';
 import { PASSWORD_REVIEW_LABEL } from '../src/lib/reviewDisplay';
 
+const t = i18n.getFixedT('pt-BR', 'auth');
+
 const validForm = {
   companyName: 'Alpha Consultoria',
+  country: 'BR' as const,
   taxId: '12.345.678/0001-99',
   firstName: 'Maria',
   lastName: 'Santos',
@@ -23,13 +27,13 @@ const validForm = {
 
 describe('company signup review flow', () => {
   it('bloqueia sem aceite dos termos', () => {
-    const result = validateCompanySignupForm({ ...validForm, acceptedTerms: false });
+    const result = validateCompanySignupForm({ ...validForm, acceptedTerms: false }, t);
     assert.equal(result.valid, false);
     assert.equal(result.field, 'acceptedTerms');
   });
 
   it('seções de revisão mostram versão dos termos', () => {
-    const sections = buildCompanySignupReviewSections(validForm);
+    const sections = buildCompanySignupReviewSections(validForm, t);
     const serialized = JSON.stringify(sections);
 
     assert.equal(serialized.includes(DOQYN_TERMS_VERSION), true);
