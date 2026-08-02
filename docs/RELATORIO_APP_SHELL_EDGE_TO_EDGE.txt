@@ -1,0 +1,77 @@
+RELATÓRIO — App shell edge-to-edge (sem janela flutuante)
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. ONDE ESTAVA O ARREDONDAMENTO EXTERNO
+================================================================================
+
+src/styles/globals.css — bloco @layer utilities:
+
+.app-chrome
+  - padding: var(--shell-inset)  → 10px de moldura em volta do app
+  - background: var(--bg-chrome) → anel visível entre navegador e shell
+
+.app-shell
+  - border-radius: var(--radius-shell)  → 20px nos cantos externos
+  - box-shadow: var(--shadow-shell)     → sombra de janela flutuante
+  - min-height: calc(100dvh - 2 * var(--shell-inset)) → altura reduzida
+
+Tokens em src/styles/tokens.css:
+  - --shell-inset: 10px
+  - --radius-shell: 20px
+  - --shadow-shell: sombra composta
+
+WorkspaceLayout.tsx aplicava ainda bg-doqyn-chrome no wrapper externo.
+
+================================================================================
+2. ESTILOS REMOVIDOS / ALTERADOS
+================================================================================
+
+Removidos de .app-chrome:
+  - padding (--shell-inset)
+  - fundo chrome separado (agora bg-shell integral)
+
+Removidos de .app-shell:
+  - border-radius
+  - box-shadow
+  - cálculo de altura com inset
+
+Adicionados:
+  - html, body, #root: width 100%, min-height 100dvh
+  - .app-chrome / .app-shell: width 100%, min-height 100dvh
+
+WorkspaceLayout:
+  - removido bg-doqyn-chrome
+  - adicionado w-full nos wrappers externos
+
+================================================================================
+3. ARREDONDAMENTOS INTERNOS PRESERVADOS
+================================================================================
+
+  - .workspace-canvas-inner → border-radius: var(--radius-workspace) (16px)
+  - Cards, pastas, arquivos, menus, modais, settings, overview panels
+  - --radius-shell permanece em tokens/tailwind para uso pontual se necessário
+  - Padding interno de .workspace-canvas (inset entre topbar e canvas)
+
+================================================================================
+4. ARQUIVOS ALTERADOS
+================================================================================
+
+src/styles/globals.css
+src/app/layout/WorkspaceLayout.tsx
+tests/library-drive-shell.test.ts
+docs/RELATORIO_APP_SHELL_EDGE_TO_EDGE.txt
+
+================================================================================
+5. COMANDOS
+================================================================================
+
+npm test        → OK
+npm run build   → OK
+npm run lint    → OK
+npx tsc --noEmit → OK
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

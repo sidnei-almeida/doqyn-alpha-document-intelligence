@@ -1,0 +1,419 @@
+================================================================================
+DOQYN ALPHA — RELATÓRIO DAS ÚLTIMAS MODIFICAÇÕES
+Visão Geral (dashboard) + Evolução do Document Viewer + Ambiente DEV
+================================================================================
+
+Data do relatório  : 03 de julho de 2026
+Repositório         : doqyn-alpha-document-intelligence
+Escopo              : Dashboard operacional real, persistência de preview,
+                      pipeline de imagens, reforço de segurança do viewer,
+                      reset/seed demo e organização dos serviços locais
+Status geral        : IMPLEMENTADO — pronto para validação manual
+
+Referências cruzadas:
+  - docs/DOCUMENT_VIEWER.md
+  - docs/RELATORIO_VISUALIZADOR_DOCUMENTOS_2026-07-02.txt
+  - docs/DOCUMENT_STORAGE_FLOW.md
+  - docs/security-notes.md
+
+================================================================================
+SUMÁRIO
+================================================================================
+
+  1.  Visão Geral — dashboard sem mocks
+  2.  Document Viewer — persistência do previewManifest
+  3.  Document Viewer — cache de páginas PDF em storage
+  4.  Document Viewer — pipeline de preview para imagens
+  5.  Document Viewer — reforço canPreview sem canDownload
+  6.  Document Viewer — thumbnails e melhorias de UI
+  7.  Backend — arquivos novos e alterados
+  8.  Frontend — arquivos novos e alterados
+  9.  Testes e validação automatizada
+ 10.  Ambiente DEV — reset, seed demo e serviços
+ 11.  Credenciais demo para testes
+ 12.  Pendências conhecidas
+ 13.  Checklist de validação manual
+
+================================================================================
+1. VISÃO GERAL — DASHBOARD SEM MOCKS
+================================================================================
+
+PROBLEMA
+--------
+A tela "Visão Geral" (DashboardPage) usava dados estáticos:
+MOCK_DOCUMENTS, contagens fixas (4 documentos, 6 eventos, etc.) e lista fake
+de documentos (Contrato Fornecedor 2024, NF Transporte, etc.).
+
+SOLUÇÃO
+-------
+Dashboard operacional tenant-based com dados reais do MongoDB e auth-service.
+
+BACKEND
+-------
+- GET /api/dashboard/overview
+  - Autenticação obrigatória (requireDocumentAuthContext)
+  - Isolamento por tenant da sessão
+  - Query: period=7d|30d|90d, from, to
+  - Modos:
+    * full — company_admin / doqyn_admin (governança, storage, usuários)
+    * operational — usuário comum (sem métricas administrativas globais)
+
+- server/services/dashboardOverviewService.ts
+  - Agrega: documentos, tracking, governança, storage, saúde do ambiente
+  - recentDocuments via listDocuments (com permissões)
+  - recentTrackingEvents / recentErrors via audit
+  - Membros via listTenantMembers (auth-service)
+  - Não expõe objectKey nem URL R2
+
+FRONTEND
+--------
+- src/features/documents/DashboardPage.tsx — reescrita completa
+- src/features/dashboard/api/dashboardApi.ts
+- src/features/dashboard/hooks/useDashboardOverview.ts
+- src/types/dashboard-overview.ts
+
+UI ENTREGUE
+-----------
+- 6 cards de métricas reais (documentos, análise, revisão, processados, erros, eventos)
+- Filtro de período 7d / 30d / 90d
+- Distribuição por status e categoria (barras CSS)
+- Saúde do ambiente
+- Documentos recentes com DocumentViewerModal
+- Atividade recente (tracking)
+- Governança documental (somente mode=full)
+- Estados: loading, erro, empty state com CTA "Enviar documento"
+- Removido import de mock-data / MOCK_DOCUMENTS
+
+================================================================================
+2. DOCUMENT VIEWER — PERSISTÊNCIA DO previewManifest
+================================================================================
+
+PROBLEMA
+--------
+O manifest era montado em runtime a cada request. Para PDF, o backend extraía
+dimensões do PDF watermarkado via pdf-lib — custoso e repetitivo.
+
+SOLUÇÃO
+-------
+Campo version.previewManifest persistido em MongoDocumentVersion.
+
+FLUXO
+-----
+1. Após generateDocumentPreviewForVersion (PDF):
+   - extractPdfPageDimensions no buffer watermarkado
+   - Monta MongoPreviewManifest (viewerType: pdf_pages, source: preview_pdf)
+   - Retorna { slot, previewManifest }
+
+2. confirmAnalysisService grava previewManifest no insert da versão
+
+3. getDocumentPreviewManifest:
+   - Prioriza previewManifest salvo (ensurePdfPreviewManifest)
+   - Se ausente: gera sob demanda, persiste e retorna
+
+ARQUIVOS
+--------
+- server/preview/previewManifestPersistence.ts (novo)
+- server/services/documentPreviewService.ts (retorno estendido)
+- server/services/documentPreviewManifestService.ts (ensure + cache)
+- server/db/types.ts (MongoPreviewManifest enriquecido)
+- server/services/confirmAnalysisService.ts (grava manifest na versão)
+
+================================================================================
+3. DOCUMENT VIEWER — CACHE DE PÁGINAS PDF EM STORAGE
+================================================================================
+
+ESTRATÉGIA: Opção A — cache em storage (implementada)
+
+FLUXO
+-----
+1. GET /preview/pages/{n} ou /preview/thumbnails/{n}
+2. Se previewObjectKey/thumbnailObjectKey existir no manifest → lê do storage
+3. Senão: renderiza via Ghostscript do PDF watermarkado → salva PNG → atualiza Mongo
+
+PATHS DE STORAGE
+----------------
+- preview/pages/page-{n}.png
+- preview/thumbnails/thumb-page-{n}.png
+
+FUNÇÕES
+-------
+- buildDocumentPreviewPageAssetObjectKey (storageKeys.ts)
+- storePreviewAsset / persistPreviewAsset (storage providers)
+- readCachedPageAsset / cacheRenderedPage (manifest service)
+- updatePreviewManifestPageCache (previewManifestPersistence.ts)
+
+REGRAS
+------
+- Páginas sempre do preview PDF watermarkado, nunca do original
+- objectKey interno — nunca retornado na API pública
+- Cache-Control continua private, no-store na resposta HTTP
+
+================================================================================
+4. DOCUMENT VIEWER — PIPELINE DE PREVIEW PARA IMAGENS
+================================================================================
+
+DEPENDÊNCIA NOVA
+----------------
+- sharp (^0.34.x)
+
+TIPOS SUPORTADOS
+----------------
+- image/jpeg
+- image/png
+- image/webp
+
+FLUXO
+-----
+1. generateDocumentPreviewForVersion detecta MIME de imagem
+2. generateWatermarkedImagePreviews (imagePreviewGenerator.ts):
+   - Watermark DOQYN via SVG composite
+   - Resoluções: thumbnail (320), small (720), medium (1440), large (2400)
+3. Cada resolução salva em storage: preview/images/{label}.{ext}
+4. previewManifest com viewerType: image, source: preview_image
+5. GET /preview/image?size=small|medium|large resolve resolução correta
+
+STORAGE KEYS
+------------
+- Originais: assertSafeOriginalStorageFileName (.pdf, .png, .jpg, .webp)
+- buildDocumentPreviewImageResolutionObjectKey
+
+FRONTEND
+--------
+- ImageViewer usa medium por padrão, large quando zoom > 1.25
+- Manifest image com resolutions[] e URLs autenticadas
+
+NOTA
+----
+confirm-analysis ainda envia contentType: application/pdf.
+O pipeline de imagem no backend está pronto; conectar no fluxo analyze/confirm
+para upload de imagens é próximo passo natural.
+
+================================================================================
+5. DOCUMENT VIEWER — REFORÇO canPreview SEM canDownload
+================================================================================
+
+GARANTIAS
+---------
+- Blob PDF bloqueado: PREVIEW_BLOB_RESTRICTED (403) sem canDownload
+- Usuário view-only usa manifest + pages/images watermarkadas
+- Modal: classe doqyn-secure-viewer
+- Ctrl+P / Cmd+P: toast "A impressão deste documento não está disponível..."
+- CSS @media print oculta .doqyn-secure-viewer
+- Sem iframe / object / embed no fluxo ativo
+- Botão download só com permissions.canDownload
+
+TESTES
+------
+- tests/secure-preview-permissions.test.ts (novo)
+
+================================================================================
+6. DOCUMENT VIEWER — THUMBNAILS E MELHORIAS DE UI
+================================================================================
+
+PdfPagesViewer
+--------------
+- Sidebar de miniaturas (desktop): botão abrir/fechar
+- Thumbnails via thumbnailUrl autenticado (lazy load)
+- Clique na miniatura navega para a página
+- Lazy render para documentos > 20 páginas (FULL_RENDER_PAGE_LIMIT)
+- Fit width / fit page com dimensões do manifest (suporta paisagem e páginas mistas)
+
+DocumentViewerModal
+-------------------
+- Banner "Visualização protegida" quando canPreview && !canDownload
+- Handler de impressão bloqueada
+
+================================================================================
+7. BACKEND — ARQUIVOS NOVOS E ALTERADOS (PRINCIPAIS)
+================================================================================
+
+NOVOS
+-----
+- api/dashboard/overview.ts
+- server/services/dashboardOverviewService.ts
+- server/preview/previewManifestPersistence.ts
+- server/preview/imagePreviewGenerator.ts
+- docs/DOCUMENT_VIEWER.md
+
+ALTERADOS (viewer + dashboard)
+------------------------------
+- server/services/documentPreviewService.ts
+- server/services/documentPreviewManifestService.ts
+- server/services/confirmAnalysisService.ts
+- server/db/types.ts
+- server/storage/storageKeys.ts
+- server/storage/storageProvider.ts
+- server/storage/index.ts
+- server/storage/localStorageProvider.ts
+- server/storage/r2/r2StorageProvider.ts
+- server/dev-server.ts (rota /api/dashboard/overview)
+
+================================================================================
+8. FRONTEND — ARQUIVOS NOVOS E ALTERADOS (PRINCIPAIS)
+================================================================================
+
+NOVOS
+-----
+- src/features/dashboard/api/dashboardApi.ts
+- src/features/dashboard/hooks/useDashboardOverview.ts
+- src/types/dashboard-overview.ts
+
+ALTERADOS
+---------
+- src/features/documents/DashboardPage.tsx (sem mocks)
+- src/features/documents/viewer/PdfPagesViewer.tsx (thumbnails)
+- src/features/documents/viewer/ImageViewer.tsx (resolução large no zoom)
+- src/features/documents/viewer/DocumentViewerModal.tsx (Ctrl+P, secure viewer)
+- src/styles/globals.css (@media print)
+
+REMOVIDO DO RUNTIME DA DASHBOARD
+--------------------------------
+- Import de mock-data / MOCK_DOCUMENTS em DashboardPage
+
+LEGADO (não usado no fluxo ativo)
+---------------------------------
+- PdfDocumentViewer.tsx (pdf.js — órfão)
+- useDocumentPreviewBlob.ts (blob PDF legado)
+
+================================================================================
+9. TESTES E VALIDAÇÃO AUTOMATIZADA
+================================================================================
+
+SUITE ATUAL
+-----------
+- npm test → 491 testes passando
+
+NOVOS / ATUALIZADOS
+-------------------
+- tests/dashboard-overview.test.ts
+- tests/image-preview.test.ts
+- tests/secure-preview-permissions.test.ts
+- tests/preview-manifest.test.ts (atualizado)
+- tests/document-preview.test.ts (retorno { slot, previewManifest })
+
+VALIDAÇÃO BUILD
+---------------
+- npm run build  → OK
+- npm run lint   → OK
+- npx tsc --noEmit → OK
+
+================================================================================
+10. AMBIENTE DEV — RESET, SEED DEMO E SERVIÇOS
+================================================================================
+
+EXECUTADO EM 02–03/07/2026
+--------------------------
+
+1. Auth-service (Postgres)
+   npm run dev:reset:postgres -- --confirm-reset-doqyn-dev
+   + seed dev (sidnei@doqyn.dev, teste.juridico@doqyn.dev)
+
+2. Auth-service demo seed
+   npm run dev:seed:demo
+   → 4 empresas, 11 pendências de acesso
+
+3. App principal (MongoDB)
+   npm run dev:reset:mongo -- --confirm-reset-doqyn-dev
+   → database doqyn_dev zerado
+
+4. App principal setup + demo seed
+   npm run db:setup
+   npm run dev:seed:demo
+   → 5 tenants com governança documental
+
+LIMPEZA DE SERVIÇOS DUPLICADOS
+------------------------------
+Havia múltiplas instâncias de npm run dev (auth e app) concorrendo nas portas.
+Processos antigos encerrados (exit 137 esperado na limpeza).
+
+CONFIGURAÇÃO ESTÁVEL (3 terminais)
+------------------------------------
+| Terminal | Comando                                      | Porta |
+|----------|----------------------------------------------|-------|
+| 1        | cd doqyn-auth-service && npm run dev         | 4100  |
+| 2        | cd doqyn-alpha... && npm run dev:api         | 3001  |
+| 3        | cd doqyn-alpha... && npm run dev:web         | 5173  |
+
+NÃO usar npm run dev no app principal se dev:api + dev:web já estão separados.
+
+URLs
+----
+- Frontend : http://localhost:5173
+- API      : http://localhost:3001
+- Auth     : http://127.0.0.1:4100
+
+================================================================================
+11. CREDENCIAIS DEMO PARA TESTES
+================================================================================
+
+Admin global (demo seed auth)
+  Email : admin.global@doqyn.dev
+  Senha : DevDoqyn@123
+
+Operador dev (seed postgres)
+  Email : sidnei@doqyn.dev
+  Senha : dev-password-change-me
+  Roles : doqyn_admin, company_admin, user
+  Tenant: company_dev
+
+Relatório completo de contas demo
+  doqyn-auth-service/.generated/doqyn-demo-accounts.md
+
+Tenants Mongo provisionados (demo seed)
+  - company_dev
+  - company_alpha_consultoria
+  - company_horizonte_logistica
+  - company_metalprime_industrias
+  - company_nexserv_tecnologia
+
+================================================================================
+12. PENDÊNCIAS CONHECIDAS
+================================================================================
+
+- confirm-analysis ainda hardcoded contentType: application/pdf
+  → pipeline de imagem no backend pronto, falta conectar no upload/analyze
+
+- UploadPage e VersioningPage ainda usam MOCK_DOCUMENTS (fora do escopo desta etapa)
+
+- R2 não foi resetado (por design — objetos antigos podem existir no bucket)
+
+- Screenshot/foto da tela ainda possível (limitação inerente de view-only)
+
+- Testes de integração com Ghostscript real não automatizados (depende de binário gs)
+
+================================================================================
+13. CHECKLIST DE VALIDAÇÃO MANUAL
+================================================================================
+
+DASHBOARD
+[ ] Login como company_admin → Visão Geral com cards reais
+[ ] Trocar período 7d/30d/90d → métricas atualizam
+[ ] Documentos recentes abrem DocumentViewerModal
+[ ] Usuário comum não vê bloco Governança
+[ ] Tenant vazio → empty state com CTA
+
+VIEWER PDF
+[ ] Abrir PDF → manifest + pages (não blob PDF sem download)
+[ ] Segunda abertura → manifest do Mongo (sem re-extração lenta)
+[ ] Watermark visível nas páginas
+[ ] PDF paisagem → fit width sem corte
+[ ] PDF > 20 páginas → lazy loading + aviso
+[ ] Sidebar de miniaturas (desktop)
+
+VIEWER SEGURO (sem canDownload)
+[ ] Sem botão download
+[ ] Network: manifest/pages, não PDF blob
+[ ] Ctrl+P → toast de bloqueio
+[ ] GET /api/documents/download → 403
+
+IMAGEM (quando fluxo aceitar upload)
+[ ] Preview watermarkado via ImageViewer
+[ ] Zoom > 1.25 carrega resolução large
+
+AMBIENTE
+[ ] 3 terminais apenas (auth + api + web)
+[ ] Health: auth=200, api=200, web=200
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

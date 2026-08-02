@@ -1,0 +1,103 @@
+RELATÓRIO — CACHE DE THUMBNAILS/PREVIEWS
+=======================================
+Data: 2026-07-07
+
+PROBLEMA (CAUSA DO REFETCH EXCESSIVO)
+-------------------------------------
+1. usePreviewAsset refazia fetch + createObjectURL a cada mount/unmount do card.
+2. manifest React Query tinha staleTime de apenas 60s e refetchOnMount/Focus padrão.
+3. Query keys sem tenantId — risco de colisão entre sessões.
+4. Backend retornava Cache-Control: private, no-store em todos os endpoints.
+5. Cards desmontavam ao navegar entre pastas/grade/lista, destruindo blobs locais.
+
+SOLUÇÃO IMPLEMENTADA
+--------------------
+
+### Fase 1 — Frontend (obrigatória)
+
+**React Query — manifest**
+- Query key: ['document-preview-manifest', tenantId, documentId, versionId]
+- staleTime: 30 min | gcTime: 2 h
+- refetchOnWindowFocus: false | refetchOnMount: false
+- retry: 1
+- Polling 4s apenas enquanto status === 'processing'
+
+**React Query — blob thumbnail**
+- Query key: ['document-thumbnail-blob', tenantId, documentId, versionId, assetUrl]
+- Mesmas opções de stale/gc/refetch
+- enabled só com canPreview + visible + assetUrl
+
+**Object URL cache (LRU em memória)**
+- Arquivo: src/features/documents/preview/thumbnailObjectUrlCache.ts
+- Key: document-thumbnail:{tenantId}:{documentId}:{versionId}:{assetUrl}
+- maxItems: 150 (LRU com revoke ao evictar)
+- ensureThumbnailObjectUrl() reutiliza URL sem revogar no unmount do card
+
+**Limpeza de sessão**
+- logout/login: clearAllThumbnailCache() + queryClient.clear()
+- troca de tenant: clearPreviewCachesForTenant(tenantAnterior)
+- AuthProvider: previousTenantIdRef
+
+**Lazy loading**
+- IntersectionObserver (rootMargin 160px) mantido — só busca quando visível
+
+### Fase 2 — Backend headers
+
+**Helper:** server/utils/previewCacheHeaders.ts
+
+| Endpoint | Cache-Control |
+|----------|---------------|
+| manifest (ready/failed) | private, max-age=3600 + ETag |
+| manifest (processing) | private, no-store |
+| thumbnails PNG | private, max-age=86400, immutable + ETag |
+| preview/image (small) | private, max-age=86400, immutable |
+| preview/pages | private, max-age=3600 |
+
+Todos com Vary: Cookie, Authorization. Auth/permissão inalterados.
+
+NÃO implementado (escopo): IndexedDB/Cache API persistente.
+
+ARQUIVOS CRIADOS
+----------------
+- src/features/documents/preview/previewQueryKeys.ts
+- src/features/documents/preview/thumbnailObjectUrlCache.ts
+- src/features/documents/preview/clearPreviewCaches.ts
+- server/utils/previewCacheHeaders.ts
+- tests/thumbnail-cache.test.ts
+- docs/RELATORIO_THUMBNAIL_CACHE.txt
+
+ARQUIVOS ALTERADOS
+------------------
+- src/features/documents/preview/useDocumentThumbnail.ts
+- src/features/documents/preview/index.ts
+- src/auth/AuthProvider.tsx
+- api/documents/preview-manifest.ts
+- api/documents/preview-thumbnail.ts
+- api/documents/preview-image.ts
+- api/documents/preview-page.ts
+- tests/document-thumbnail.test.ts
+- tests/preview-manifest.test.ts
+
+PRESERVADO
+----------
+- DocumentViewerModal (usePreviewManifest + usePreviewAsset sem alteração)
+- Fluxo upload/analyze/confirm
+- canPreview=false não dispara queries
+- Sem objectKey/R2/presigned no frontend
+
+VALIDAÇÃO DEVTOOLS NETWORK
+---------------------------
+1. Abrir /biblioteca em grade — anotar requests manifest + thumbnails.
+2. Entrar em pasta e voltar — mesmos documentos NÃO devem refazer fetch
+   (se dentro de staleTime 30 min e cache LRU ativo).
+3. Trocar grade/lista — sem novos downloads para docs já vistos.
+4. Reload da página — pode baixar de novo (cache em memória); HTTP cache
+   pode servir 304 se ETag bater (depende do browser).
+5. Logout/login — cache limpo; thumbnails de outro usuário não vazam.
+
+COMANDOS
+--------
+npm test — 735 testes passando
+npm run build — OK
+npm run lint — OK
+npx tsc --noEmit — OK

@@ -1,0 +1,786 @@
+================================================================================
+PLANO TÉCNICO — FILE EXPLORER (MongoDB + Cloudflare R2)
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Data: 2026-07-07
+Status: PLANEJAMENTO — sem implementação
+Autor: planejamento técnico pós-auditoria Biblioteca/upload
+
+================================================================================
+0. VISÃO E PRINCÍPIOS
+================================================================================
+
+Objetivo:
+  Permitir que o usuário crie pastas, navegue em árvore, envie documentos para
+  uma pasta, mova/renomeie arquivos e pastas, arquive/apague, com reflexo lógico
+  no app e físico controlado no R2 — sem expor credenciais ao frontend.
+
+Princípio central (NÃO NEGOCIÁVEL):
+  MongoDB = fonte de verdade da árvore lógica e metadados.
+  R2       = armazenamento físico de blobs (original, preview, assets).
+  Frontend = nunca acessa R2; todo I/O passa pelo backend autenticado.
+
+Decisão arquitetural crítica — duas camadas de path:
+
+  CAMADA A — Storage canônico (existente, NÃO mudar em moves):
+    {basePrefix}/documents/{documentId}/versions/{versionId}/original/{file}
+    {basePrefix}/documents/{documentId}/versions/{versionId}/preview/...
+
+    Definida em server/storage/storageKeys.ts (buildDocumentVersionObjectKey).
+    objectKey gravado em MongoDocumentVersion.storage.primary/preview.
+    Preview manifest, download, tracking e versionamento dependem desta chave.
+
+  CAMADA B — Explorer lógico (nova, Mongo-first):
+    Árvore de pastas em document_folders + folderId em documents.
+    Moves/renames de arquivo na UI = atualização Mongo (folderId, displayName).
+    NÃO reescrever objectKeys da Camada A ao mover entre pastas.
+
+  CAMADA C — Espelho opcional R2 para pastas (fases posteriores):
+    Placeholders de pasta vazia e, se necessário, índices por prefixo.
+    Objetos físicos de documento permanecem na Camada A.
+
+Por que não embutir folderPath no objectKey canônico:
+  - Mover documento exigiria copy+delete de original + preview + pages + thumbs
+  - previewManifest quebraria; versões antigas ficariam órfãs
+  - Alto risco de inconsistência mid-copy
+  - Contradiz restrição "não mover paths internos de preview"
+
+Conclusão: File Explorer é primariamente um modelo LÓGICO em Mongo, com R2
+refletindo pastas via placeholders e listagem por convenção — não via
+reorganização dos blobs versionados.
+
+================================================================================
+1. MODELO DE DADOS MONGODB
+================================================================================
+
+1.1 Nova coleção: document_folders_{tenantPrefix}
+--------------------------------------------------------------------------------
+
+Tipo: MongoDocumentFolder
+
+Campos propostos:
+
+  _id                  string (UUID)           — folderId
+  tenantId             string                  — tenant canônico
+  companyId            string                  — compat legado
+  tenantType           'business' | 'individual'
+  ownerTenantId        string?                 — isolamento individual pool
+  ownerUserId          string?                 — dono em tenant individual
+
+  name                 string                  — nome exibido (único entre irmãos)
+  slug                 string                  — derivado de name (sanitizado)
+  parentFolderId       string | null           — null = raiz do explorer do tenant
+  ancestorIds          string[]                — materialized path para queries
+  depth                number                  — 0 = raiz
+
+  /** Caminho lógico estável para R2 placeholder e auditoria (não é objectKey de doc) */
+  logicalPath          string                  — ex: /Contratos/2026/Fornecedores
+  r2PlaceholderKey     string | null           — chave do marker .folder no R2
+
+  /** Vínculo opcional com governança (NÃO substitui classId do documento) */
+  linkedCategoryId     string | null           — document_categories._id se pasta espelha categoria
+
+  status               'active' | 'archived'
+  deletedAt            Date | null             — soft delete
+
+  createdBy            string                  — userId
+  createdAt            Date
+  updatedAt            Date
+  updatedBy            string?
+
+Índices:
+
+  UNIQUE (tenantId, parentFolderId, slug, deletedAt)  — nomes únicos por nível
+  INDEX  (tenantId, parentFolderId, status, deletedAt)
+  INDEX  (tenantId, ancestorIds)
+  INDEX  (tenantId, ownerUserId)                      — individual pool
+  INDEX  (tenantId, linkedCategoryId)                 — sync opcional com categorias
+
+Regras de negócio:
+  - Profundidade máxima sugerida: 20 níveis (configurável)
+  - Nome: 1–120 chars; proibir / \ .. NUL; normalizar espaços
+  - slug: slugify(name); em conflito, sufixo -2, -3...
+  - Não permitir ciclos em parentFolderId (validar ancestorIds)
+  - Soft delete em pasta: exige pasta vazia (sem subpastas ativas nem docs ativos)
+
+1.2 Alteração em documents_{tenantPrefix} (MongoDocument)
+--------------------------------------------------------------------------------
+
+Campos novos (aditivos — não quebrar docs existentes):
+
+  folderId             string | null           — null = "Biblioteca raiz" / sem pasta manual
+  folderPath           string | null           — denormalizado: logicalPath da pasta (cache)
+  displayName          string?                 — nome amigável na pasta (default: currentFileName)
+
+Campos existentes preservados:
+  classId, className     — classificação IA / governança (ORTOGONAL a folderId)
+  currentFileName        — nome técnico da versão atual
+  status, processingStatus
+  storage via versions   — inalterado
+
+Migração inicial:
+  - folderId = null para todos os documentos existentes
+  - Documentos continuam visíveis na raiz do File Explorer
+  - Espaços atuais (?space=categoryId) permanecem como filtro de governança
+
+1.3 Relação folderId vs classId (categoria / espaço)
+--------------------------------------------------------------------------------
+
+Conceitos distintos:
+
+  classId / categoryId  → governança, regras IA, extração, permissões de grupo
+  folderId              → organização do usuário estilo file manager
+
+Um documento pode estar em:
+  - Pasta "Contratos/2026" (folderId)
+  - Classificado como "Nota Fiscal" (classId)
+
+A Biblioteca atual usa classId como "espaço". O File Explorer adiciona
+hierarquia manual. Convivência planejada:
+
+  - Modo navegação: ?folder={folderId} (novo) vs ?space={categoryId} (atual)
+  - Filtros combináveis: folderId + categoryId + search + status
+  - Upload pode especificar folderId de destino; classId continua vindo da IA
+
+1.4 Soft delete e lixeira
+--------------------------------------------------------------------------------
+
+  Documento arquivado: status='archived' (já existe) — permanece com folderId
+  Pasta arquivada: status='archived' + deletedAt — filhos devem estar vazios ou movidos
+  Restaurar: limpar deletedAt / status active
+
+Lixeira da Biblioteca (collection lixeira) continua filtrando status archived;
+File Explorer pode mostrar pastas arquivadas em view separada (fase posterior).
+
+1.5 Preparação para permissões por pasta (fase 6 — só modelo)
+--------------------------------------------------------------------------------
+
+Campos reservados em document_folders (nullable na fase 1):
+
+  inheritPermissions   boolean  default true
+  accessGroupIds       string[] default []   — vazio = herda tenant default
+
+Em documents (fase 6):
+  folderAccessOverride  null | { viewGroupIds, ... }
+
+Não implementar enforcement na fase 1–5; apenas schema e tipos TypeScript.
+
+================================================================================
+2. ESTRATÉGIA R2 (Cloudflare R2 / S3-compatible)
+================================================================================
+
+2.1 O que NÃO fazer no R2
+--------------------------------------------------------------------------------
+
+  - Não colocar R2 API token no frontend ou em VITE_*
+  - Não usar ListObjects do browser
+  - Não mover/renomear objectKeys em documents/{documentId}/versions/... ao mover pasta
+  - Não deletar blobs de preview ao mover documento entre pastas
+  - Não usar R2 como única fonte da árvore
+
+2.2 Padrão de prefixos propostos
+--------------------------------------------------------------------------------
+
+Manter Camada A intacta:
+
+  Business:
+    documents/{documentId}/versions/{versionId}/original/{storageFileName}
+    documents/{documentId}/versions/{versionId}/preview/...
+
+  Individual (+ basePrefix opaco):
+    individuals/{hash16}/documents/{documentId}/versions/...
+
+Nova Camada C — markers de pasta (placeholders):
+
+  {basePrefix}/explorer/folders/{folderId}/.folder
+
+  Conteúdo: JSON mínimo (opcional) ou zero-byte:
+    { "folderId", "tenantId", "logicalPath", "createdAt" }
+  Content-Type: application/x-doqyn-folder ou application/octet-stream
+
+Prefixo lógico para listagem administrativa (opcional, fase 2):
+
+  {basePrefix}/explorer/by-path/{encodedLogicalPath}/.folder
+
+  encodedLogicalPath = segmentos URL-safe, sem ..
+
+NÃO criar:
+  explorer/by-path/.../arquivo.pdf como cópia do original (evitar duplicação)
+
+2.3 Criar placeholder de pasta
+--------------------------------------------------------------------------------
+
+Fluxo POST /api/file-explorer/folders:
+
+  1. Validar tenant + nome + parent
+  2. Inserir document_folders no Mongo
+  3. Se storage configurado:
+       PUT r2PlaceholderKey com body vazio ou metadata JSON
+  4. Atualizar folder.r2PlaceholderKey
+  5. Audit: folder.created
+
+Idempotência: se PUT falhar após insert Mongo, job de reconciliação recria marker;
+pasta continua listável via Mongo mesmo sem marker R2.
+
+2.4 Listar por prefix/delimiter (uso limitado)
+--------------------------------------------------------------------------------
+
+ListObjectsV2 com:
+  Prefix: {basePrefix}/explorer/folders/{parentFolderId}/
+  Delimiter: /
+
+Uso previsto:
+  - Auditoria / scripts de consistência Mongo↔R2
+  - NÃO como API principal do frontend (frontend usa GET /api/file-explorer/items)
+
+A listagem do usuário vem do Mongo (rápida, permissões, metadados).
+
+2.5 Mover arquivo — estratégia segura
+--------------------------------------------------------------------------------
+
+FASE 3–4 (recomendada): MOVE LÓGICO APENAS
+
+  PATCH /api/file-explorer/items/:documentId/move { folderId }
+    1. Validar documento no tenant + permissão canEditMetadata ou nova canMoveDocument
+    2. Validar folderId destino (existe, active, mesmo tenant)
+    3. Atualizar documents.folderId + folderPath (denormalizado)
+    4. Audit: document.moved { fromFolderId, toFolderId }
+    5. ZERO operações R2 na Camada A
+
+Justificativa: objectKey não contém folderPath; mover no R2 não altera semântica
+para o app e introduz risco sem benefício.
+
+FASE 4 alternativa (somente se exigência explícita de espelho físico):
+
+  Manter ponteiro simbólico (NÃO cópia do PDF):
+    {basePrefix}/explorer/index/{folderId}/{documentId} → objeto 0-byte com
+    { "canonicalKey": "documents/.../original/..." }
+
+  Copy+delete do PDF completo + preview: PROIBIDO na v1 por risco a versionamento.
+
+2.6 Renomear pasta
+--------------------------------------------------------------------------------
+
+  PATCH /api/file-explorer/folders/:id { name }
+    1. Atualizar name, slug, logicalPath em Mongo (e descendentes em batch)
+    2. R2: criar novo placeholder .folder no path novo; deletar marker antigo
+    3. NÃO mover objetos documents/{documentId}/...
+    4. Audit: folder.renamed
+
+Renomear pasta com muitos descendentes: atualizar logicalPath em subpastas via
+ancestorIds (job assíncrono se > 500 nós).
+
+2.7 Renomear arquivo (documento)
+--------------------------------------------------------------------------------
+
+  PATCH /api/file-explorer/items/:id/rename { displayName }
+    1. Atualizar documents.displayName e, se política permitir, currentFileName
+    2. Opcional: nova versão com filename_updated (já existe audit document.filename_updated)
+    3. NÃO renomear storageFileName/objectKey da versão atual salva
+       (quebraria integridade; nova versão futura pode gerar novo storageFileName)
+
+Distinção:
+  - displayName: rótulo na pasta (explorer)
+  - currentFileName / storageFileName: pipeline de versão (inalterado no rename simples)
+
+2.8 Upload para pasta
+--------------------------------------------------------------------------------
+
+  Camada A inalterada: após confirm-analysis, storeUploadedDocumentFile usa
+  documentId/versionId — independente de folderId.
+
+  Mongo: ao criar documento em confirmAnalysisPersistence, aceitar folderId opcional
+  no payload e gravar em documents.folderId.
+
+  R2: não adicionar folderId ao objectKey.
+
+2.9 Evitar quebra de preview / versionamento
+--------------------------------------------------------------------------------
+
+Regras:
+  - previewManifest referencia objectKeys da versão; imutáveis após geração
+  - generateDocumentPreviewForVersion lê primary.objectKey — nunca derivar de folder
+  - Download/preview APIs: resolvem por documentId + versionId, não por folder path
+  - Tracking events: documentId permanece estável ao mover pasta
+
+Teste de regressão obrigatório em cada fase:
+  upload → confirm → preview → download → move folder → preview/download novamente
+
+2.10 Reconciliação Mongo ↔ R2
+--------------------------------------------------------------------------------
+
+Script seguro (fase 2+): npm run audit:explorer-r2-consistency
+  - Pastas Mongo sem .folder marker → reportar / recriar
+  - Markers R2 órfãos (sem Mongo) → reportar (não auto-delete)
+  - Nunca comparar contagem de objetos documents/ com contagem de docs Mongo
+    (previews multiplicam objetos)
+
+================================================================================
+3. ENDPOINTS BACKEND
+================================================================================
+
+Namespace: /api/file-explorer
+Autenticação: requireAuth + tenant context (buildDocumentRequestContext)
+Permissões base: canListDocuments / canConfirmDocuments / canEditMetadata (estender)
+
+3.1 GET /api/file-explorer/items
+--------------------------------------------------------------------------------
+
+Query:
+  folderId     string | 'root'   — pasta atual (default root)
+  categoryId   string?           — filtro opcional classId (governança)
+  search       string?
+  status       string?
+  cursor       string?
+  limit        number (max 100)
+  include      'folders' | 'documents' | 'all' (default all)
+
+Response:
+{
+  "folder": { "id", "name", "parentFolderId", "logicalPath", "breadcrumb": [...] },
+  "folders": [{ "id", "name", "slug", "childFolderCount", "documentCount", "updatedAt" }],
+  "documents": [{ ...DocumentListItem, "folderId", "displayName" }],
+  "pagination": { "nextCursor" }
+}
+
+Implementação:
+  - Pastas: query document_folders by parentFolderId
+  - Docs: listDocuments + filter folderId
+  - Contagens: aggregation ou cache (evitar N+1)
+
+3.2 POST /api/file-explorer/folders
+--------------------------------------------------------------------------------
+
+Body: { name, parentFolderId?: null | string, linkedCategoryId?: string }
+Response 201: { folder: MongoDocumentFolder }
+Erros: 409 NAME_CONFLICT, 400 INVALID_PARENT, 403 FORBIDDEN
+
+3.3 PATCH /api/file-explorer/folders/:id
+--------------------------------------------------------------------------------
+
+Body: { name?, parentFolderId? (move folder), status? }
+Move pasta: validar não mover para descendente; atualizar ancestorIds em subtree
+Response: { folder }
+
+3.4 DELETE /api/file-explorer/folders/:id
+--------------------------------------------------------------------------------
+
+Soft delete se vazia; 409 FOLDER_NOT_EMPTY se tiver filhos/docs
+Response: { ok: true }
+
+3.5 PATCH /api/file-explorer/items/:documentId/move
+--------------------------------------------------------------------------------
+
+Body: { folderId: string | null }
+Response: { documentId, folderId, folderPath }
+
+3.6 PATCH /api/file-explorer/items/:documentId/rename
+--------------------------------------------------------------------------------
+
+Body: { displayName: string }
+Response: { documentId, displayName }
+
+3.7 POST /api/file-explorer/upload
+--------------------------------------------------------------------------------
+
+NÃO duplicar analyze-pdf. Opções:
+
+  Opção A (recomendada): endpoint apenas registra intenção de destino
+    Body: { folderId } → retorna { uploadSessionId, folderId }
+    Frontend usa fila existente com UploadContext.folderId
+
+  Opção B: multipart proxy — evitar; manter analyze-pdf existente
+
+Integração real:
+  - Estender confirm-analysis body com folderId?: string
+  - confirmAnalysisPersistence grava documents.folderId
+
+3.8 Endpoints auxiliares (fase 2+)
+--------------------------------------------------------------------------------
+
+  GET /api/file-explorer/folders/:id/breadcrumb
+  GET /api/file-explorer/tree?depth=2          — sidebar árvore lazy
+  POST /api/file-explorer/folders/:id/restore  — lixeira de pastas
+
+Arquivos backend sugeridos:
+  api/file-explorer/index.ts
+  api/file-explorer/folders/item.ts
+  api/file-explorer/items/move.ts
+  server/services/fileExplorerService.ts
+  server/services/folderStorageService.ts      — placeholders R2
+  server/db/types.ts                           — MongoDocumentFolder
+
+================================================================================
+4. INTEGRAÇÃO COM UPLOAD EXISTENTE
+================================================================================
+
+4.1 Estado atual (pós-correção regressões)
+--------------------------------------------------------------------------------
+
+  UploadQueueProvider → analyzePdf → ReviewDrawer → confirmAnalysis
+  UploadContext: { categoryId?, categoryName? } — UX apenas, não enviado à API
+  confirmAnalysisPersistence: classId da IA, sem folderId
+
+4.2 Extensões necessárias (fase 3)
+--------------------------------------------------------------------------------
+
+Frontend:
+  UploadContext += { folderId?: string, folderName?: string }
+  WorkspaceLayout / LibraryPage: passar folderId da pasta atual (?folder=)
+  confirmAnalysis options: incluir folderId no body (novo campo opcional)
+
+Backend:
+  confirmAnalysisSchema += folderId: z.string().optional()
+  confirmAnalysisPersistence:
+    if (data.folderId) validar pasta no tenant
+    document.folderId = data.folderId
+    document.folderPath = folder.logicalPath
+
+analyzePdf:
+  SEM folderId (IA não depende de pasta)
+  Staging tmp/{jobId} inalterado
+
+4.3 Fluxo completo com pasta
+--------------------------------------------------------------------------------
+
+  1. Usuário em /biblioteca?folder=fld_abc
+  2. + Novo → upload com context { folderId: 'fld_abc' }
+  3. analyzePdf (sem folderId)
+  4. ReviewDrawer → confirmAnalysis({ ...raw, folderId: 'fld_abc' })
+  5. Mongo: documento com folderId + classId (IA)
+  6. R2: documents/{docId}/versions/... (sem folder no path)
+  7. invalidateQueries ['documents', 'file-explorer']
+  8. Documento aparece na pasta fld_abc
+
+4.4 Manter IA/classificação
+--------------------------------------------------------------------------------
+
+  classId continua obrigatório para confirm (governança)
+  folderId opcional — organização do usuário
+  Conflito categoria vs pasta: permitido; UI mostra ambos no DetailsPanel
+
+4.5 Pré-requisito
+--------------------------------------------------------------------------------
+
+  Corrigir e validar fluxo upload atual (BUG-001 race, extraction:null) ANTES
+  de implementar folderId no confirm — conforme restrição do pedido.
+
+================================================================================
+5. INTEGRAÇÃO COM BIBLIOTECA (FRONTEND)
+================================================================================
+
+5.1 Modelo de navegação URL
+--------------------------------------------------------------------------------
+
+Estado atual:
+  /biblioteca?space={categoryId}     — espaço = categoria governança
+
+Proposto (convivência):
+  /biblioteca?folder={folderId}      — pasta manual (explorer)
+  /biblioteca?space={categoryId}     — filtro governança (opcional combinado)
+  /biblioteca                        — raiz (folderId=null)
+
+useLibraryRouteState:
+  + folder: string (query folder=)
+  Prioridade de breadcrumb: folder path > space name > "Biblioteca"
+
+5.2 Componentes a estender (sem redesign)
+--------------------------------------------------------------------------------
+
+  LibraryPage          — orquestra folder + space filters
+  useLibraryView       — chama GET /api/file-explorer/items OU compõe hooks
+  FolderGrid           — subpastas reais (não só categorias)
+  FileTable/FileGridView — já suportam documentos
+  LibraryBreadcrumbs   — trail folderId ancestry
+  DetailsPanel         — exibir pasta + categoria
+  FileContextMenu      — substituir stubs "Mover" / "Renomear"
+  BulkSelectionToolbar — mover lote para pasta
+  NewButtonMenu        — habilitar "Nova pasta" (hoje disabled)
+  Sidebar              — árvore lazy (FileExplorerTree) opcional fase 2
+  LibraryContentDropZone — upload na pasta atual
+  UploadQueueProvider  — UploadContext.folderId
+
+5.3 Drag and drop entre pastas (fase 4–5)
+--------------------------------------------------------------------------------
+
+  @dnd-kit já presente — estender:
+    - draggable: FileRow / FolderCard
+    - droppable: FolderCard / sidebar node
+    - onDrop: PATCH move com folderId destino
+  Feedback otimista + rollback se API falhar
+
+5.4 Pastas inteligentes vs pastas manuais
+--------------------------------------------------------------------------------
+
+  Manter seção "Espaços" (categorias) na sidebar — governança
+  Adicionar seção "Pastas" ou árvore unificada com ícones distintos:
+    - Pasta manual (user-created)
+    - Espaço/categoria (linkedCategoryId ou filtro space)
+
+Evitar confundir: categoria não cria hierarquia; pasta manual sim.
+
+5.5 React Query keys
+--------------------------------------------------------------------------------
+
+  ['file-explorer', tenantId, folderId, filters]
+  ['file-explorer-tree', tenantId, parentFolderId]
+  Invalidar após: create/rename/move/delete folder, move/rename doc, confirm upload
+
+================================================================================
+6. SEGURANÇA
+================================================================================
+
+6.1 Tenant isolation
+--------------------------------------------------------------------------------
+
+  - Todas as queries com tenantScopeFilterFromContext(storage)
+  - folder.tenantId === session tenant
+  - individual: ownerUserId em folder e document
+  - Validar parentFolderId pertence ao mesmo tenant antes de criar/mover
+
+6.2 Permissões (fase 1–5 — document-level existente)
+--------------------------------------------------------------------------------
+
+  Listar: canUserListDocument (existente)
+  Criar pasta: canConfirmDocuments ou novo canManageFolders (admin/editor)
+  Mover/renomear doc: canEditMetadata
+  Deletar pasta: canManageFolders + pasta vazia
+
+6.3 Path traversal
+--------------------------------------------------------------------------------
+
+  - logicalPath: rejeitar .., //, \, caracteres de controle
+  - slug: slugifyName existente
+  - folderId: assertSafeStorageSegment ao montar r2PlaceholderKey
+  - Nunca aceitar logicalPath do cliente como chave R2 direta — só server-side
+
+6.4 Sanitização de nomes
+--------------------------------------------------------------------------------
+
+  Reutilizar shared/storageFileName.ts e slugify.ts
+  Nomes de pasta: mais permissivos que storageFileName (espaços, acentos)
+  Proibir: / \ : * ? " < > | e leading/trailing dots
+
+6.5 Não expor objectKey
+--------------------------------------------------------------------------------
+
+  APIs retornam: canPreview, canDownload, documentId, versionId
+  Preview/download: endpoints existentes /api/documents/:id/preview
+  Nunca retornar storage.primary.objectKey ao frontend
+
+6.6 Audit log
+--------------------------------------------------------------------------------
+
+Novos eventos (documentAuditTypes.ts):
+
+  folder.created
+  folder.renamed
+  folder.moved
+  folder.archived
+  folder.restored
+  folder.deleted
+  document.moved_to_folder
+  document.moved_from_folder
+  document.display_name_updated
+
+Metadados sanitizados: folderId, names, logicalPath (sem secrets)
+
+Tracking: eventos de visualização permanecem por documentId.
+
+================================================================================
+7. RISCOS E MITIGAÇÕES
+================================================================================
+
+Risco                              | Impacto | Mitigação
+-----------------------------------|---------|----------------------------------
+Mover objeto R2 canonical          | Crítico | Move só Mongo; não tocar Camada A
+Inconsistência Mongo/R2 markers  | Médio   | Mongo autoritativo; job reconciliação
+Falha mid copy/delete            | Alto    | Evitar copy/delete de PDFs; transação Mongo
+Preview quebrado após move       | Alto    | objectKey imutável; testes E2E
+Versões antigas órfãs            | Alto    | Não renomear keys por versão salva
+Performance listagem árvore      | Médio   | ancestorIds, paginação, cache counts
+Conflito nome irmão              | Baixo   | UNIQUE slug+parent; 409 claro
+Confusão folder vs category      | Médio   | UI distinta; docs; campos separados
+Upload sem fix prévio            | Crítico | Gate: corrigir BUG-001 antes fase 3
+Duplicar upload endpoint         | Médio   | Reusar analyze/confirm + folderId
+
+================================================================================
+8. PLANO DE IMPLEMENTAÇÃO POR FASES
+================================================================================
+
+PRÉ-REQUISITO (fora deste plano, mas bloqueante):
+  [P0] Correções regressão upload/Biblioteca validadas em produção/staging
+  [P0] Testes E2E upload → confirm → listagem estáveis
+
+--------------------------------------------------------------------------------
+FASE 1 — Pastas virtuais Mongo, sem mover R2
+--------------------------------------------------------------------------------
+
+Escopo:
+  - Coleção document_folders + CRUD Mongo
+  - GET/POST/PATCH/DELETE folders (sem r2PlaceholderKey ainda)
+  - folderId em documents (nullable)
+  - GET /api/file-explorer/items (Mongo only)
+  - Frontend: Nova pasta, navegação ?folder=, listar subpastas + docs
+  - Sem move/rename de arquivos; sem alteração upload
+
+Entregável: usuário cria pastas e navega; documentos existentes na raiz.
+
+Critério aceite:
+  - Pastas persistem no Mongo por tenant
+  - Não quebra listDocuments / Biblioteca atual
+
+--------------------------------------------------------------------------------
+FASE 2 — Placeholder R2 para pastas
+--------------------------------------------------------------------------------
+
+Escopo:
+  - folderStorageService: PUT/DELETE .folder markers
+  - POST/PATCH/DELETE folder atualiza R2
+  - Script audit:explorer-r2-consistency (read-only report)
+  - Falha R2 não impede operação Mongo (degraded mode)
+
+Critério aceite:
+  - Marker visível no console R2 por pasta
+  - Docs ainda sem alteração de objectKey
+
+--------------------------------------------------------------------------------
+FASE 3 — Upload para folderId
+--------------------------------------------------------------------------------
+
+Escopo:
+  - UploadContext.folderId no frontend
+  - confirm-analysis aceita folderId
+  - Documento salvo aparece na pasta correta
+  - invalidate file-explorer queries
+
+Critério aceite:
+  - Upload na pasta → doc na pasta sem reload
+  - IA/classificação inalterada
+
+--------------------------------------------------------------------------------
+FASE 4 — Mover/renomear arquivos (Mongo)
+--------------------------------------------------------------------------------
+
+Escopo:
+  - PATCH move, PATCH rename displayName
+  - Context menu + bulk move
+  - Audit document.moved_*
+  - ZERO copy/delete R2 de originals/previews
+
+Critério aceite:
+  - Move entre pastas; preview/download funcionam
+  - Tracking/audit registrados
+
+--------------------------------------------------------------------------------
+FASE 5 — Mover/renomear pastas
+--------------------------------------------------------------------------------
+
+Escopo:
+  - PATCH folder parentFolderId (move subtree)
+  - PATCH folder name (rename + logicalPath cascade)
+  - Atualizar R2 placeholders (markers only)
+  - Job assíncrono para subtrees grandes
+
+Critério aceite:
+  - Renomear pasta não quebra docs filhos
+  - Markers R2 alinhados
+
+--------------------------------------------------------------------------------
+FASE 6 — Permissões por pasta
+--------------------------------------------------------------------------------
+
+Escopo:
+  - Enforce accessGroupIds em folder
+  - Herança para documentos na pasta
+  - UI admin de permissões
+
+Fora do escopo v1; modelo preparado na fase 1.
+
+================================================================================
+9. O QUE NÃO FAZER AGORA
+================================================================================
+
+  [X] Implementar File Explorer antes de estabilizar upload/confirm atual
+  [X] Expor R2 token ou presigned PUT genérico ao frontend
+  [X] Usar R2 como única fonte da árvore
+  [X] Pastas só em localStorage
+  [X] Mover/copy objectKeys documents/.../preview ao mudar pasta
+  [X] Apagar objetos R2 sem confirmação + audit
+  [X] Substituir classId por folderId na governança
+  [X] Migrar todos os documentos para paths baseados em pasta no R2
+  [X] Permissões por pasta na fase 1
+  [X] Novo pipeline de upload paralelo ao analyze-pdf/confirm-analysis
+
+================================================================================
+10. TESTES PLANEJADOS (POR FASE)
+================================================================================
+
+Unit:
+  - folder slug uniqueness, ancestorIds, cycle detection
+  - logicalPath sanitization
+  - normalize folderId em confirm payload
+
+Integration:
+  - CRUD folder tenant isolation
+  - move document between folders + preview still works
+  - placeholder create/delete idempotency
+
+E2E:
+  - criar pasta → upload → aparece na pasta
+  - mover doc → lista correta → download OK
+  - renomear pasta → breadcrumbs atualizados
+
+Regressão obrigatória:
+  - confirm-analysis sem folderId (backward compatible)
+  - document versions immutability
+  - tracking events após move
+
+================================================================================
+11. ESTIMATIVA DE COMPLEXIDADE (ORDEM DE GRANDEZA)
+================================================================================
+
+  Fase 1: média-alta (modelo + API + UI navegação)
+  Fase 2: baixa-média (R2 markers + audit script)
+  Fase 3: média (integração upload — depende P0)
+  Fase 4: média (move/rename + context menu)
+  Fase 5: média-alta (subtree move + R2 markers cascade)
+  Fase 6: alta (permissões — escopo separado)
+
+================================================================================
+12. DECISÕES EM ABERTO (PARA ALINHAR COM PRODUTO)
+================================================================================
+
+  D1. Pastas na raiz são por usuário ou compartilhadas no tenant?
+      → Proposta: tenant-wide na v1; individual pool filtra ownerUserId
+
+  D2. Unificar "Espaços" (categorias) e pastas manuais na mesma árvore?
+      → Proposta: UI paralela; linkedCategoryId opcional
+
+  D3. Mover documento altera classId?
+      → Proposta: NÃO; só folderId
+
+  D4. Lixeira de pastas separada de documentos arquivados?
+      → Proposta: mesma UX "lixeira" com tipo folder|document
+
+  D5. Espelho físico R2 por pasta (copy PDF)?
+      → Proposta: NÃO na v1; somente markers
+
+================================================================================
+13. REFERÊNCIAS NO CÓDIGO ATUAL
+================================================================================
+
+  server/storage/storageKeys.ts       — padrão objectKey canônico
+  server/services/confirmAnalysisService.ts — criação documento/versão
+  server/services/documentService.ts  — listDocuments (categoryId → classId)
+  server/db/types.ts                — MongoDocument, MongoDocumentVersion
+  server/audit/documentAuditTypes.ts — eventos audit existentes
+  src/features/library/             — UI Biblioteca atual
+  src/features/upload/types.ts      — UploadContext (estender)
+  docs/RELATORIO_AUDITORIA_REGRESSOES_BACK_FRONT_BIBLIOTECA.txt
+  docs/RELATORIO_CORRECAO_REGRESSOES_BIBLIOTECA.txt
+
+================================================================================
+FIM DO PLANO
+================================================================================

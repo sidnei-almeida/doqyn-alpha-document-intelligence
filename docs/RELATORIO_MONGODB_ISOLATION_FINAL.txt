@@ -1,0 +1,171 @@
+DOQYN — Relatório consolidado de isolamento MongoDB
+Data: 2026-06-25T17:28:02.470Z
+Database: doqyn_dev
+Relatório sanitizado.
+
+================================================================================
+1. ESTADO ANTERIOR
+================================================================================
+- Coleções flat legadas coexistiam com prefixadas (*_company_dev).
+- documentService/processingService/auditService usavam Mongoose em coleções flat.
+- Grupos órfãos de desenvolvimento no flat e prefixado.
+
+================================================================================
+2. ESTADO ATUAL (pós-implementação)
+================================================================================
+Coleções totais: 25
+Flat legadas presentes: access_groups, document_classes, document_rules, documents, document_versions, processing_jobs, audit_logs
+Prefixadas: 13
+  access_groups_company_dev: 5 docs
+  access_groups_company_test_2: 1 docs
+  audit_logs_company_dev: 0 docs
+  audit_logs_company_test_2: 1 docs
+  document_classes_company_dev: 7 docs
+  document_classes_company_test_2: 1 docs
+  document_rules_company_dev: 7 docs
+  document_rules_company_test_2: 1 docs
+  document_versions_company_dev: 0 docs
+  document_versions_company_test_2: 1 docs
+  documents_company_dev: 0 docs
+  documents_company_test_2: 1 docs
+  processing_jobs_company_dev: 0 docs
+
+Tenant company_dev → documents=documents_company_dev
+
+================================================================================
+3. ENDPOINTS/SERVICES REFATORADOS
+================================================================================
+- server/services/documentService.ts → getTenantCollections
+- server/services/processingService.ts → getTenantCollections
+- server/services/auditService.ts → getTenantCollections (audit_logs prefixada)
+- Demais services admin já usavam getTenantCollections/requireBusinessAdminCollections
+
+================================================================================
+4. CAMADA DE TENANCY
+================================================================================
+- getTenantDbCollections(db, tenant)
+- assertTenantScopedCollectionAccess / assertNotFlatTenantCollection
+- resolveTenantCollectionPrefix com bloqueio de CPF/CNPJ em prefix
+- docs/MONGODB_TENANT_ISOLATION.md
+
+================================================================================
+5. ÍNDICES
+================================================================================
+DOQYN — Relatório de índices MongoDB
+Data: 2026-06-25T17:27:30.131Z
+Database: doqyn_dev
+Relatório sanitizado.
+
+================================================================================
+RESUMO
+================================================================================
+Índices criados: 24
+Índices já existentes: 24
+Erros: 0
+Tenants ativos processados: 1
+
+================================================================================
+DETALHES
+
+================================================================================
+6. MIGRAÇÃO FLAT → PREFIXADA
+================================================================================
+DOQYN — Migração flat → coleções prefixadas por tenant
+Data: 2026-06-25T17:27:31.051Z
+Database: doqyn_dev
+Tenant: company_dev | Prefix: company_dev
+Modo: DRY-RUN
+Delete legacy: NÃO
+Relatório sanitizado — sem PII.
+
+================================================================================
+CONTAGENS POR COLEÇÃO
+================================================================================
+
+access_groups → access_groups_company_dev
+  Origem: 9
+  Destino (antes): 5
+
+================================================================================
+7. TESTE SEGUNDO TENANT
+================================================================================
+DOQYN — Teste de isolamento entre tenants
+Data: 2026-06-25T17:27:48.528Z
+Database: doqyn_dev
+Tenants: company_dev vs company_test_2
+
+================================================================================
+RESULTADOS
+================================================================================
+PASS: 13
+FAIL: 0
+WARNING: 0
+[PASS] getTenantCollections(company_dev) — documents=documents_company_dev
+[PASS] getTenantCollections(company_test_2) — documents=documents_company_test_2
+[PASS] Documents company_dev não contém tenant company_test_2 — count=0
+[PASS] Documents company_test_2 não contém tenant company_dev — count=0
+
+================================================================================
+8. EVIDÊNCIA DE ISOLAMENTO
+================================================================================
+- company_dev consulta apenas documents_company_dev
+- company_test_2 consulta apenas documents_company_test_2
+- assertCanManageCompany bloqueia company_admin cross-tenant
+
+================================================================================
+9. NO-FLAT-WRITES
+================================================================================
+DOQYN — Verificação de writes em coleções flat tenant-scoped
+Data: 2026-06-25T17:27:00.822Z
+
+================================================================================
+RESULTADO
+================================================================================
+PASS — Nenhum fluxo produtivo escreve em coleções flat tenant-scoped.
+
+================================================================================
+EXCEÇÕES DOCUMENTADAS (caminhos ignorados)
+================================================================================
+  server/db/constants.ts
+  server/db/mongo.ts
+  server/db/setupMongo.ts
+  server/models/AuditEvent.ts
+
+================================================================================
+10. PENDÊNCIAS
+================================================================================
+- Remover coleções flat após backup e MIGRATION_DELETE_LEGACY=true
+- Desligar dual-write company_members quando tenant_members for único
+- Implementar shared_individual_pool completo
+- Worker de notificações (fora de escopo)
+
+================================================================================
+11. RISCOS RESTANTES
+================================================================================
+- Dados duplicados em flat até migração apply
+- Scripts legados .mjs ainda referenciam flat (testes)
+
+================================================================================
+12. RECOMENDAÇÃO PARA PRODUÇÃO
+================================================================================
+1. Executar db:ensure-indexes em staging
+2. MIGRATION_APPLY=true em janela de manutenção com backup
+3. test:tenant-isolation em CI antes de deploy
+4. audit:no-flat-writes em CI
+5. Nunca usar collectionPrefix com CPF/CNPJ
+
+================================================================================
+RELATÓRIOS GERADOS
+================================================================================
+- RELATORIO_AUDITORIA_MONGODB_SCHEMA.txt: ok
+- RELATORIO_AUDITORIA_USO_COLLECTIONS.txt: ok
+- RELATORIO_INDICES_MONGODB.txt: ok
+- RELATORIO_MIGRACAO_FLAT_TO_TENANT.txt: ok
+- RELATORIO_NO_FLAT_WRITES.txt: ok
+- RELATORIO_SEED_ISOLATION_TEST.txt: ok
+- RELATORIO_TESTE_TENANT_ISOLATION.txt: ok
+- RELATORIO_GRUPOS_ORFAOS_DUPLICADOS.txt: ok
+
+================================================================================
+FIM
+================================================================================

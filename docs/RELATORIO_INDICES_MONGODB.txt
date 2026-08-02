@@ -1,0 +1,198 @@
+DOQYN — Relatório de índices MongoDB
+Data: 2026-07-14T15:59:21.976Z
+Database: doqyn_dev
+Relatório sanitizado.
+
+================================================================================
+RESUMO
+================================================================================
+Índices criados: 0
+Índices já existentes: 178
+Erros: 0
+Tenants ativos processados: 5
+
+================================================================================
+DETALHES
+================================================================================
+tenants | tenantId_1 | existing
+tenants | taxIdHash_1 | existing
+tenants | slug_1 | existing
+tenants | status_1 | existing
+tenants | tenantType_1_status_1 | existing
+tenants | createdAt_1 | existing
+tenants | updatedAt_1 | existing
+tenant_members | tenantId_1_status_1 | existing
+tenant_members | tenantId_1_emailNormalized_1 | existing
+tenant_members | tenantId_1_authUserId_1 | existing
+tenant_members | authUserId_1_status_1 | existing
+tenant_members | tenantId_1_accessGroupIds_1 | existing
+tenant_members | tenantId_1_createdAt_1 | existing
+tenant_members | tenantId_1_updatedAt_1 | existing
+tenant_members | memberId_1 | existing
+analysis_jobs | tenantId_1_ownerUserId_1_createdAt_-1 | existing
+analysis_jobs | tenantId_1_status_1_createdAt_-1 | existing
+analysis_jobs | status_1_createdAt_-1 | existing
+document_categories_company_dev | tenantId_1_active_1 | existing
+document_categories_company_dev | tenantId_1_slug_1 | existing
+document_groups_company_dev | tenantId_1_active_1 | existing
+document_groups_company_dev | tenantId_1_slug_1 | existing
+document_group_members_company_dev | tenantId_1_groupId_1_active_1 | existing
+document_group_members_company_dev | tenantId_1_membershipId_1_active_1 | existing
+document_group_members_company_dev | tenantId_1_groupId_1_membershipId_1 | existing
+document_rules_company_dev | tenantId_1_groupId_1_categoryId_1 | existing
+document_rules_company_dev | tenantId_1_active_1 | existing
+document_extraction_rules_company_dev | tenantId_1_categoryId_1_active_1 | existing
+document_extraction_rules_company_dev | tenantId_1_categoryId_1_version_-1 | existing
+documents_company_dev | tenantId_1_status_1_updatedAt_-1 | existing
+documents_company_dev | tenantId_1_classId_1_updatedAt_-1 | existing
+documents_company_dev | tenantId_1_currentVersionId_1 | existing
+documents_company_dev | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
+documents_company_dev | tenantId_1_createdAt_-1 | existing
+documents_company_dev | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
+documents_company_dev | tenantId_1_searchMeta.people.nameNormalized_1 | existing
+documents_company_dev | tenantId_1_searchMeta.validityDate_1 | existing
+documents_company_dev | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
+document_versions_company_dev | tenantId_1_documentId_1_versionNumber_-1 | existing
+document_versions_company_dev | tenantId_1_file.sha256_1 | existing
+document_versions_company_dev | classification.classId_1_tenantId_1 | existing
+document_versions_company_dev | tenantId_1_createdAt_-1 | existing
+processing_jobs_company_dev | tenantId_1_documentId_1_createdAt_-1 | existing
+processing_jobs_company_dev | tenantId_1_status_1 | existing
+processing_jobs_company_dev | tenantId_1_updatedAt_1 | existing
+processing_jobs_company_dev | tenantId_1_versionId_1 | existing
+audit_logs_company_dev | tenantId_1_documentId_1_createdAt_-1 | existing
+audit_logs_company_dev | tenantId_1_action_1_createdAt_-1 | existing
+audit_logs_company_dev | actor.userId_1_tenantId_1_createdAt_-1 | existing
+audit_logs_company_dev | tenantId_1_createdAt_-1 | existing
+document_categories_company_alpha_consultoria | tenantId_1_active_1 | existing
+document_categories_company_alpha_consultoria | tenantId_1_slug_1 | existing
+document_groups_company_alpha_consultoria | tenantId_1_active_1 | existing
+document_groups_company_alpha_consultoria | tenantId_1_slug_1 | existing
+document_group_members_company_alpha_consultoria | tenantId_1_groupId_1_active_1 | existing
+document_group_members_company_alpha_consultoria | tenantId_1_membershipId_1_active_1 | existing
+document_group_members_company_alpha_consultoria | tenantId_1_groupId_1_membershipId_1 | existing
+document_rules_company_alpha_consultoria | tenantId_1_groupId_1_categoryId_1 | existing
+document_rules_company_alpha_consultoria | tenantId_1_active_1 | existing
+document_extraction_rules_company_alpha_consultoria | tenantId_1_categoryId_1_active_1 | existing
+document_extraction_rules_company_alpha_consultoria | tenantId_1_categoryId_1_version_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_status_1_updatedAt_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_classId_1_updatedAt_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_currentVersionId_1 | existing
+documents_company_alpha_consultoria | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_createdAt_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
+documents_company_alpha_consultoria | tenantId_1_searchMeta.people.nameNormalized_1 | existing
+documents_company_alpha_consultoria | tenantId_1_searchMeta.validityDate_1 | existing
+documents_company_alpha_consultoria | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
+document_versions_company_alpha_consultoria | tenantId_1_documentId_1_versionNumber_-1 | existing
+document_versions_company_alpha_consultoria | tenantId_1_file.sha256_1 | existing
+document_versions_company_alpha_consultoria | classification.classId_1_tenantId_1 | existing
+document_versions_company_alpha_consultoria | tenantId_1_createdAt_-1 | existing
+processing_jobs_company_alpha_consultoria | tenantId_1_documentId_1_createdAt_-1 | existing
+processing_jobs_company_alpha_consultoria | tenantId_1_status_1 | existing
+processing_jobs_company_alpha_consultoria | tenantId_1_updatedAt_1 | existing
+processing_jobs_company_alpha_consultoria | tenantId_1_versionId_1 | existing
+audit_logs_company_alpha_consultoria | tenantId_1_documentId_1_createdAt_-1 | existing
+audit_logs_company_alpha_consultoria | tenantId_1_action_1_createdAt_-1 | existing
+audit_logs_company_alpha_consultoria | actor.userId_1_tenantId_1_createdAt_-1 | existing
+audit_logs_company_alpha_consultoria | tenantId_1_createdAt_-1 | existing
+document_categories_company_horizonte_logistica | tenantId_1_active_1 | existing
+document_categories_company_horizonte_logistica | tenantId_1_slug_1 | existing
+document_groups_company_horizonte_logistica | tenantId_1_active_1 | existing
+document_groups_company_horizonte_logistica | tenantId_1_slug_1 | existing
+document_group_members_company_horizonte_logistica | tenantId_1_groupId_1_active_1 | existing
+document_group_members_company_horizonte_logistica | tenantId_1_membershipId_1_active_1 | existing
+document_group_members_company_horizonte_logistica | tenantId_1_groupId_1_membershipId_1 | existing
+document_rules_company_horizonte_logistica | tenantId_1_groupId_1_categoryId_1 | existing
+document_rules_company_horizonte_logistica | tenantId_1_active_1 | existing
+document_extraction_rules_company_horizonte_logistica | tenantId_1_categoryId_1_active_1 | existing
+document_extraction_rules_company_horizonte_logistica | tenantId_1_categoryId_1_version_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_status_1_updatedAt_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_classId_1_updatedAt_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_currentVersionId_1 | existing
+documents_company_horizonte_logistica | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_createdAt_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
+documents_company_horizonte_logistica | tenantId_1_searchMeta.people.nameNormalized_1 | existing
+documents_company_horizonte_logistica | tenantId_1_searchMeta.validityDate_1 | existing
+documents_company_horizonte_logistica | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
+document_versions_company_horizonte_logistica | tenantId_1_documentId_1_versionNumber_-1 | existing
+document_versions_company_horizonte_logistica | tenantId_1_file.sha256_1 | existing
+document_versions_company_horizonte_logistica | classification.classId_1_tenantId_1 | existing
+document_versions_company_horizonte_logistica | tenantId_1_createdAt_-1 | existing
+processing_jobs_company_horizonte_logistica | tenantId_1_documentId_1_createdAt_-1 | existing
+processing_jobs_company_horizonte_logistica | tenantId_1_status_1 | existing
+processing_jobs_company_horizonte_logistica | tenantId_1_updatedAt_1 | existing
+processing_jobs_company_horizonte_logistica | tenantId_1_versionId_1 | existing
+audit_logs_company_horizonte_logistica | tenantId_1_documentId_1_createdAt_-1 | existing
+audit_logs_company_horizonte_logistica | tenantId_1_action_1_createdAt_-1 | existing
+audit_logs_company_horizonte_logistica | actor.userId_1_tenantId_1_createdAt_-1 | existing
+audit_logs_company_horizonte_logistica | tenantId_1_createdAt_-1 | existing
+document_categories_company_metalprime_industrias | tenantId_1_active_1 | existing
+document_categories_company_metalprime_industrias | tenantId_1_slug_1 | existing
+document_groups_company_metalprime_industrias | tenantId_1_active_1 | existing
+document_groups_company_metalprime_industrias | tenantId_1_slug_1 | existing
+document_group_members_company_metalprime_industrias | tenantId_1_groupId_1_active_1 | existing
+document_group_members_company_metalprime_industrias | tenantId_1_membershipId_1_active_1 | existing
+document_group_members_company_metalprime_industrias | tenantId_1_groupId_1_membershipId_1 | existing
+document_rules_company_metalprime_industrias | tenantId_1_groupId_1_categoryId_1 | existing
+document_rules_company_metalprime_industrias | tenantId_1_active_1 | existing
+document_extraction_rules_company_metalprime_industrias | tenantId_1_categoryId_1_active_1 | existing
+document_extraction_rules_company_metalprime_industrias | tenantId_1_categoryId_1_version_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_status_1_updatedAt_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_classId_1_updatedAt_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_currentVersionId_1 | existing
+documents_company_metalprime_industrias | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_createdAt_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
+documents_company_metalprime_industrias | tenantId_1_searchMeta.people.nameNormalized_1 | existing
+documents_company_metalprime_industrias | tenantId_1_searchMeta.validityDate_1 | existing
+documents_company_metalprime_industrias | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
+document_versions_company_metalprime_industrias | tenantId_1_documentId_1_versionNumber_-1 | existing
+document_versions_company_metalprime_industrias | tenantId_1_file.sha256_1 | existing
+document_versions_company_metalprime_industrias | classification.classId_1_tenantId_1 | existing
+document_versions_company_metalprime_industrias | tenantId_1_createdAt_-1 | existing
+processing_jobs_company_metalprime_industrias | tenantId_1_documentId_1_createdAt_-1 | existing
+processing_jobs_company_metalprime_industrias | tenantId_1_status_1 | existing
+processing_jobs_company_metalprime_industrias | tenantId_1_updatedAt_1 | existing
+processing_jobs_company_metalprime_industrias | tenantId_1_versionId_1 | existing
+audit_logs_company_metalprime_industrias | tenantId_1_documentId_1_createdAt_-1 | existing
+audit_logs_company_metalprime_industrias | tenantId_1_action_1_createdAt_-1 | existing
+audit_logs_company_metalprime_industrias | actor.userId_1_tenantId_1_createdAt_-1 | existing
+audit_logs_company_metalprime_industrias | tenantId_1_createdAt_-1 | existing
+document_categories_company_nexserv_tecnologia | tenantId_1_active_1 | existing
+document_categories_company_nexserv_tecnologia | tenantId_1_slug_1 | existing
+document_groups_company_nexserv_tecnologia | tenantId_1_active_1 | existing
+document_groups_company_nexserv_tecnologia | tenantId_1_slug_1 | existing
+document_group_members_company_nexserv_tecnologia | tenantId_1_groupId_1_active_1 | existing
+document_group_members_company_nexserv_tecnologia | tenantId_1_membershipId_1_active_1 | existing
+document_group_members_company_nexserv_tecnologia | tenantId_1_groupId_1_membershipId_1 | existing
+document_rules_company_nexserv_tecnologia | tenantId_1_groupId_1_categoryId_1 | existing
+document_rules_company_nexserv_tecnologia | tenantId_1_active_1 | existing
+document_extraction_rules_company_nexserv_tecnologia | tenantId_1_categoryId_1_active_1 | existing
+document_extraction_rules_company_nexserv_tecnologia | tenantId_1_categoryId_1_version_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_status_1_updatedAt_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_classId_1_updatedAt_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_currentVersionId_1 | existing
+documents_company_nexserv_tecnologia | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_createdAt_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_searchMeta.people.nameNormalized_1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_searchMeta.validityDate_1 | existing
+documents_company_nexserv_tecnologia | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
+document_versions_company_nexserv_tecnologia | tenantId_1_documentId_1_versionNumber_-1 | existing
+document_versions_company_nexserv_tecnologia | tenantId_1_file.sha256_1 | existing
+document_versions_company_nexserv_tecnologia | classification.classId_1_tenantId_1 | existing
+document_versions_company_nexserv_tecnologia | tenantId_1_createdAt_-1 | existing
+processing_jobs_company_nexserv_tecnologia | tenantId_1_documentId_1_createdAt_-1 | existing
+processing_jobs_company_nexserv_tecnologia | tenantId_1_status_1 | existing
+processing_jobs_company_nexserv_tecnologia | tenantId_1_updatedAt_1 | existing
+processing_jobs_company_nexserv_tecnologia | tenantId_1_versionId_1 | existing
+audit_logs_company_nexserv_tecnologia | tenantId_1_documentId_1_createdAt_-1 | existing
+audit_logs_company_nexserv_tecnologia | tenantId_1_action_1_createdAt_-1 | existing
+audit_logs_company_nexserv_tecnologia | actor.userId_1_tenantId_1_createdAt_-1 | existing
+audit_logs_company_nexserv_tecnologia | tenantId_1_createdAt_-1 | existing
+
+================================================================================
+FIM
+================================================================================

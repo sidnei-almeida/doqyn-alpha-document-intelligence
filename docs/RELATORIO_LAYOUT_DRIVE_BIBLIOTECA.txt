@@ -1,0 +1,125 @@
+================================================================================
+RELATÓRIO — Layout Drive-inspired (sidebar, header, pastas)
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Objetivo: aproximar a estrutura visual do workspace da organização do Google Drive,
+sem clone literal, mantendo identidade DOQYN e toda a lógica funcional.
+
+================================================================================
+1. SIDEBAR
+================================================================================
+
+Removido:
+  - Seção "Espaços" (categorias duplicadas na sidebar)
+  - SidebarSpaceItem na navegação
+  - SidebarUserPanel no rodapé (avatar, tema, sair)
+  - Botão rápido "Enviar" separado do + Novo
+  - Rótulo "Arquivos" acima da navegação principal
+
+Mantido / reorganizado:
+  1. Logo DOQYN + botão colapsar
+  2. Botão "+ Novo" (upload contextual por ?space= preservado)
+  3. Navegação principal sem agrupamento pesado:
+     - Biblioteca
+     - Compartilhados comigo
+     - Recentes
+     - Favoritos
+     - Lixeira
+  4. Separador discreto (border-t)
+  5. Administração:
+     - Visão Geral, Regras, Usuários, Auditoria, Tracking, Configurações
+
+Pastas/categorias continuam apenas na área principal da Biblioteca.
+
+================================================================================
+2. USUÁRIO NO TOPO DIREITO
+================================================================================
+
+Novo componente: HeaderUserMenu.tsx
+
+  - Avatar circular + nome + papel/tenant (md+)
+  - Clique abre dropdown com:
+    · resumo da conta (nome, email, tenant)
+    · Perfil → /settings
+    · Configurações → /settings
+    · Tema (ThemeToggle)
+    · Sair
+
+WorkspaceTopBar simplificada:
+  - Busca em largura total à esquerda
+  - Ajuda (ícone discreto)
+  - HeaderUserMenu à direita
+  - Removidos: Settings/Bell duplicados, bloco estático de usuário
+
+SidebarUserPanel.tsx permanece no repositório (não usado) para referência.
+
+================================================================================
+3. PASTAS / CATEGORIAS
+================================================================================
+
+ExplorerFolderCard refatorado (estilo tile Drive):
+  - Classe drive-folder-tile
+  - min-h 44px, horizontal, flat
+  - Borda transparente → hover com borda sutil e fundo surface-hover
+  - Ícone Folder inline (sem caixa pesada)
+  - Título + contagem discreta ("itens")
+  - Sem descrição longa no card
+  - Menu ⋯ e info no hover
+
+ExplorerFolderGrid:
+  - Grade responsiva: 1 → 2 → 3 → 4 colunas
+  - gap reduzido (gap-1)
+  - Removida descrição "Categorias de governança..."
+
+================================================================================
+4. ÍCONES
+================================================================================
+
+Biblioteca escolhida: lucide-react (já no projeto)
+
+Motivo:
+  - Traço leve e consistente (LUCIDE_STROKE = 1.5)
+  - Sem nova dependência
+  - Alinhado ao visual minimalista solicitado
+
+Não foi instalado pacote adicional.
+
+================================================================================
+5. ARQUIVOS ALTERADOS / CRIADOS
+================================================================================
+
+Novos:
+  - src/components/layout/HeaderUserMenu.tsx
+  - tests/library-drive-layout.test.ts
+  - docs/RELATORIO_LAYOUT_DRIVE_BIBLIOTECA.txt
+
+Alterados:
+  - src/components/layout/Sidebar.tsx
+  - src/components/layout/WorkspaceTopBar.tsx
+  - src/components/layout/index.ts
+  - src/features/library/components/ExplorerFolderCard.tsx
+  - src/features/library/components/ExplorerFolderGrid.tsx
+  - src/styles/globals.css (.drive-folder-tile)
+  - tests/sidebar.test.ts
+  - tests/workspace-layout.test.ts
+  - tests/library-root-home.test.ts
+
+Preservados (sem alteração de lógica):
+  - Upload / analyze / confirm
+  - Viewer (DocumentViewerModal)
+  - Navegação por pasta (?space=)
+  - Context menus
+  - Detalhes sob demanda (popover + drawer)
+  - APIs e hooks de categorias (useDocumentCategories para upload)
+
+================================================================================
+6. VALIDAÇÃO
+================================================================================
+
+npm test          → 681 testes passando
+npm run lint      → OK
+npm run build     → OK
+npx tsc --noEmit  → OK
+
+================================================================================

@@ -1,0 +1,1854 @@
+{
+  "generatedAt": "2026-06-27T18:49:58.436Z",
+  "connection": {
+    "uriMasked": "mongodb+srv://sid***:***@doqyn-dev-cluster.4icoj2b.mongodb.net",
+    "databaseInUri": null
+  },
+  "runtime": {
+    "activeDatabase": "doqyn_dev",
+    "legacyDatabase": "doqyn_alpha",
+    "envMongoDatabase": "doqyn_dev",
+    "envMongoDbNameLegacy": null
+  },
+  "databases": [
+    {
+      "name": "admin",
+      "classification": "system_do_not_touch",
+      "sizeOnDisk": 0,
+      "collectionCount": 0
+    },
+    {
+      "name": "doqyn_dev",
+      "classification": "active_keep",
+      "sizeOnDisk": 3944448,
+      "collectionCount": 23
+    },
+    {
+      "name": "local",
+      "classification": "system_do_not_touch",
+      "sizeOnDisk": 0,
+      "collectionCount": 1
+    }
+  ],
+  "collections": [
+    {
+      "database": "doqyn_dev",
+      "collection": "audit_logs_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_action_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "action": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "actor.userId_1_tenantId_1_createdAt_-1",
+          "key": {
+            "actor.userId": 1,
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-24T17:19:06.382Z",
+      "sampleDocument": {
+        "_id": "audit_377e2012-eccf-47ae-a178-6cf7fbd7519f",
+        "companyId": "company_dev",
+        "documentId": "doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c",
+        "versionId": "ver_76b4c935-8f93-44ac-ad37-02ab72ca2491",
+        "actor": {
+          "userId": "user_test_no_ai",
+          "name": "Teste no_ai",
+          "role": "admin"
+        },
+        "action": "document.metadata.confirmed",
+        "description": "Documento criado a partir da análise automática confirmada pelo usuário.",
+        "metadata": {
+          "className": "Acordo de Confidencialidade",
+          "versionLabel": "v1.0",
+          "hasRecommendedFileName": true,
+          "hasDocumentCode": true
+        },
+        "createdAt": "2026-06-24T17:19:06.381Z",
+        "tenantId": "company_dev",
+        "migratedFrom": "flat_collection",
+        "migratedAt": "2026-06-25T17:32:47.022Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "audit_logs_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_action_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "action": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "actor.userId_1_tenantId_1_createdAt_-1",
+          "key": {
+            "actor.userId": 1,
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "audit_test2",
+        "action": "document.created",
+        "actor": {
+          "userId": "seed",
+          "name": "Seed",
+          "role": "system"
+        },
+        "companyId": "company_test_2",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "description": "Documento teste 2 criado pelo seed de isolamento",
+        "documentId": "doc_test2",
+        "tenantId": "company_test_2",
+        "versionId": "ver_test2"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "audit_logs_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerUserId_1_createdAt_-1",
+          "key": {
+            "ownerUserId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "action_1_createdAt_-1",
+          "key": {
+            "action": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T21:17:51.668Z",
+      "sampleDocument": {
+        "_id": "audit_bf4356f6-6b58-44ec-93da-52a7d2b1eece",
+        "tenantId": "individual_joao_cpf_teste_a0d797",
+        "companyId": "individual_joao_cpf_teste_a0d797",
+        "tenantType": "individual",
+        "ownerTenantId": "individual_joao_cpf_teste_a0d797",
+        "documentId": null,
+        "versionId": null,
+        "actor": {
+          "userId": "system",
+          "name": "DOQYN Provision",
+          "role": "system"
+        },
+        "action": "tenant.provision.started",
+        "description": "Provisionamento iniciado.",
+        "metadata": {},
+        "createdAt": "2026-06-25T21:17:50.433Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "auditevents",
+      "classification": "unknown_review_required",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1",
+          "key": {
+            "tenantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "documentId_1",
+          "key": {
+            "documentId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "companies",
+      "classification": "unknown_review_required",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "companyId_1",
+          "key": {
+            "companyId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "slug_1",
+          "key": {
+            "slug": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T16:45:22.397Z",
+      "sampleDocument": {
+        "_id": "company_dev_record",
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T19:16:23.762Z",
+        "name": "DOQYN Dev",
+        "slug": "doqyn-dev",
+        "status": "active",
+        "tenantId": "company_dev",
+        "updatedAt": "2026-06-25T16:45:22.397Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "company_members",
+      "classification": "unknown_review_required",
+      "estimatedDocumentCount": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "companyId_1_status_1",
+          "key": {
+            "companyId": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "companyId_1_email_1",
+          "key": {
+            "companyId": 1,
+            "email": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "companyId_1_userId_1",
+          "key": {
+            "companyId": 1,
+            "userId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "keycloakUserId_1_status_1",
+          "key": {
+            "keycloakUserId": 1,
+            "status": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T16:45:22.475Z",
+      "sampleDocument": {
+        "_id": "member_admin",
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T16:24:04.975Z",
+        "email": "ad***@doqyn.com",
+        "groupIds": [
+          "group_juridico",
+          "group_diretoria"
+        ],
+        "name": "Administrador DOQYN",
+        "position": "Gestão",
+        "role": "admin",
+        "status": "active",
+        "updatedAt": "2026-06-24T16:24:04.975Z",
+        "userId": "temp-admin"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_classes_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 11,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_active_1",
+          "key": {
+            "tenantId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_name_1",
+          "key": {
+            "tenantId": 1,
+            "name": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "tenantId_1_slug_1",
+          "key": {
+            "tenantId": 1,
+            "slug": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "tenantId_1_createdAt_1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-24T19:16:22.315Z",
+      "sampleDocument": {
+        "_id": "class_contract_supplier",
+        "active": true,
+        "color": "blue",
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T19:16:22.315Z",
+        "createdBy": "system",
+        "description": "Contratos firmados com fornecedores, prestadores de serviço e parceiros comerciais.",
+        "iconKey": "file-text",
+        "keywords": [
+          "contrato",
+          "contratante",
+          "contratada"
+        ],
+        "name": "Contrato de Fornecedor",
+        "negativeKeywords": [
+          "nota fiscal",
+          "nf-e",
+          "ordem de compra"
+        ],
+        "notifyGroups": [
+          "group_juridico",
+          "group_financeiro"
+        ],
+        "notifyOnUpdate": true,
+        "permissions": {
+          "view": [
+            "group_juridico",
+            "group_financeiro"
+          ],
+          "download": [],
+          "update": [],
+          "audit": [],
+          "share": []
+        },
+        "slug": "contrato-de-fornecedor",
+        "tenantId": "company_dev",
+        "updatedAt": "2026-06-24T19:16:22.315Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_classes_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_active_1",
+          "key": {
+            "tenantId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_slug_1",
+          "key": {
+            "tenantId": 1,
+            "slug": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "tenantId_1_name_1",
+          "key": {
+            "tenantId": 1,
+            "name": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "class_test2",
+        "active": true,
+        "color": "#16a34a",
+        "companyId": "company_test_2",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "createdBy": "seed",
+        "description": "Classe de isolamento",
+        "iconKey": "file",
+        "keywords": [
+          "teste"
+        ],
+        "name": "Classe Teste 2",
+        "notifyGroups": [],
+        "notifyOnUpdate": false,
+        "permissions": {
+          "view": [
+            "group_financeiro_test2"
+          ],
+          "download": [
+            "group_financeiro_test2"
+          ],
+          "update": [
+            "group_financeiro_test2"
+          ],
+          "audit": [
+            "group_financeiro_test2"
+          ],
+          "share": [
+            "group_financeiro_test2"
+          ]
+        },
+        "slug": "classe-teste-2",
+        "tenantId": "company_test_2",
+        "updatedAt": "2026-06-25T17:38:48.106Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_classes_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_active_1",
+          "key": {
+            "ownerTenantId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "scope_1_status_1",
+          "key": {
+            "scope": 1,
+            "status": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_rules_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 10,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_active_1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_version_-1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "version": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_accessGroupIds_1",
+          "key": {
+            "tenantId": 1,
+            "accessGroupIds": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-24T19:16:22.315Z",
+      "sampleDocument": {
+        "_id": "rule_contract_supplier_v1",
+        "active": true,
+        "classId": "class_contract_supplier",
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T19:16:22.315Z",
+        "createdBy": "system",
+        "fields": [
+          {
+            "key": "fornecedor",
+            "label": "Fornecedor",
+            "type": "string",
+            "required": true,
+            "aliases": [
+              "contratada",
+              "fornecedor",
+              "prestador"
+            ],
+            "description": "Nome da empresa fornecedora ou prestadora de serviço."
+          },
+          {
+            "key": "cnpj",
+            "label": "CNPJ",
+            "type": "string",
+            "required": false,
+            "aliases": [
+              "CNPJ",
+              "CNPJ/MF",
+              "cadastro nacional"
+            ],
+            "description": "CNPJ da empresa fornecedora."
+          },
+          {
+            "key": "data_assinatura",
+            "label": "Data de assinatura",
+            "type": "date",
+            "required": false,
+            "aliases": [
+              "data de assinatura",
+              "assinado em",
+              "celebrado em"
+            ],
+            "description": "Data de assinatura ou celebração do contrato."
+          }
+        ],
+        "minimumConfidence": 0.7,
+        "namingTemplate": "Contrato_{fornecedor}_{data_assinatura}_v{version}",
+        "onLowConfidence": "requires_review",
+        "tenantId": "company_dev",
+        "updatedAt": "2026-06-24T19:16:22.315Z",
+        "version": 1
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_rules_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_active_1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_version_-1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "version": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_accessGroupIds_1",
+          "key": {
+            "tenantId": 1,
+            "accessGroupIds": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "rule_test2",
+        "accessGroupIds": [
+          "group_financeiro_test2"
+        ],
+        "active": true,
+        "classId": "class_test2",
+        "className": "Classe Teste 2",
+        "companyId": "company_test_2",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "createdBy": "seed",
+        "fields": [
+          {
+            "key": "documentNumber",
+            "label": "Número do documento",
+            "type": "string",
+            "required": false,
+            "description": "Identificador interno do documento de teste."
+          }
+        ],
+        "tenantId": "company_test_2",
+        "updatedAt": "2026-06-25T17:38:48.106Z",
+        "version": 1,
+        "minimumConfidence": 0.5,
+        "namingTemplate": "Teste2_{documentNumber}_v{version}",
+        "onLowConfidence": "requires_review"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_rules_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_active_1",
+          "key": {
+            "ownerTenantId": 1,
+            "active": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "scope_1_status_1",
+          "key": {
+            "scope": 1,
+            "status": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_versions_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_versionNumber_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "versionNumber": -1
+          },
+          "unique": true
+        },
+        {
+          "name": "tenantId_1_file.sha256_1",
+          "key": {
+            "tenantId": 1,
+            "file.sha256": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "classification.classId_1_tenantId_1",
+          "key": {
+            "classification.classId": 1,
+            "tenantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:39:40.798Z",
+      "sampleDocument": {
+        "_id": "ver_76b4c935-8f93-44ac-ad37-02ab72ca2491",
+        "companyId": "company_dev",
+        "documentId": "doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c",
+        "versionNumber": 10,
+        "versionLabel": "v1.0",
+        "previousVersionId": null,
+        "originalFileName": "nda-no-ai-teste.pdf",
+        "recommendedFileName": "NDA_Sidnei_Alves_de_Almeida_2026-06-09_v1_0.pdf",
+        "finalFileName": "NDA_Sidnei_Alves_de_Almeida_2026-06-09_v1_0.pdf",
+        "file": {
+          "mimeType": "application/pdf",
+          "extension": "pdf",
+          "sizeBytes": 79606,
+          "sha256": "e4c08104a7b80963f760b4a20ca11fa15f474c8097e24c38b39c57ba9d81185f",
+          "pageCount": 1
+        },
+        "classification": {
+          "classId": "class_confidentiality_agreement",
+          "className": "Acordo de Confidencialidade",
+          "confidence": 0.99,
+          "requiresReview": false,
+          "reason": "Modo de desenvolvimento sem IA: classificação determinística para teste do workflow.",
+          "evidence": [
+            {
+              "pageNumber": 1,
+              "snippet": "Modo de desenvolvimento: evidência simulada para teste do workflow."
+            }
+          ]
+        },
+        "rule": {
+          "ruleId": "rule_confidentiality_agreement_v1",
+          "ruleVersion": 1
+        },
+        "metadata": {
+          "parte_reveladora": {
+            "label": "Parte reveladora",
+            "value": "Cristiano Rafael Baldissera",
+            "normalizedValue": "Cristiano Rafael Baldissera",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "parte_receptora": {
+            "label": "Parte receptora",
+            "value": "Sidnei Alves de Almeida",
+            "normalizedValue": "Sidnei Alves de Almeida",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "cpf_cnpj_receptora": "***",
+          "data_assinatura": {
+            "label": "Data de assinatura",
+            "value": "09 de junho de 2026",
+            "normalizedValue": "2026-06-09",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "prazo_vigencia": {
+            "label": "Prazo de vigência",
+            "value": "7 anos",
+            "normalizedValue": "7 anos",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "prazo_confidencialidade": {
+            "label": "Prazo de confidencialidade",
+            "value": "7 anos",
+            "normalizedValue": "7 anos",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "multa_penalidade": {
+            "label": "Multa ou penalidade",
+            "value": 500000,
+            "normalizedValue": 500000,
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "currency": "BRL",
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "foro": {
+            "label": "Foro",
+            "value": "Comarca de Caxias do Sul/RS",
+            "normalizedValue": "Comarca de Caxias do Sul/RS",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          },
+          "objeto_confidencialidade": {
+            "label": "Objeto da confidencialidade",
+            "value": "Informações confidenciais compartilhadas entre as partes",
+            "normalizedValue": "Informações confidenciais compartilhadas entre as partes",
+            "confidence": 0.99,
+            "source": "ai",
+            "page": 1,
+            "evidence": {
+              "pageNumber": 1,
+              "snippet": "Evidência simulada em modo de desenvolvimento."
+            }
+          }
+        },
+        "metadataIndex": [
+          {
+            "key": "parte_reveladora",
+            "type": "string",
+            "valueString": "cristiano rafael baldissera"
+          },
+          {
+            "key": "parte_receptora",
+            "type": "string",
+            "valueString": "sidnei alves de almeida"
+          },
+          {
+            "key": "cpf_cnpj_receptora",
+            "type": "string",
+            "valueString": "02790730095"
+          }
+        ],
+        "storage": {
+          "primary": {
+            "provider": "aws_s3",
+            "status": "pending",
+            "objectKey": "dev/company_dev/documents/doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c/v10.pdf",
+            "bucketAlias": "dev-local",
+            "storedAt": null
+          },
+          "backup": {
+            "provider": "cloudflare_r2",
+            "status": "pending",
+            "objectKey": "dev/company_dev/documents/doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c/v10.pdf",
+            "bucketAlias": "dev-backup",
+            "storedAt": null
+          }
+        },
+        "review": {
+          "required": false,
+          "reasons": [],
+          "reviewedBy": "user_test_no_ai",
+          "reviewedAt": "2026-06-24T17:19:06.381Z"
+        },
+        "createdBy": "user_test_no_ai",
+        "createdAt": "2026-06-24T17:19:06.381Z",
+        "tenantId": "company_dev",
+        "migratedFrom": "flat_collection",
+        "migratedAt": "2026-06-25T17:32:46.783Z",
+        "updatedAt": "2026-06-25T17:39:40.798Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_versions_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_versionNumber_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "versionNumber": -1
+          },
+          "unique": true
+        },
+        {
+          "name": "tenantId_1_file.sha256_1",
+          "key": {
+            "tenantId": 1,
+            "file.sha256": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "classification.classId_1_tenantId_1",
+          "key": {
+            "classification.classId": 1,
+            "tenantId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "ver_test2",
+        "classification": {
+          "classId": "class_test2",
+          "className": "Classe Teste 2",
+          "confidence": 1,
+          "requiresReview": false,
+          "reason": "seed"
+        },
+        "companyId": "company_test_2",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "createdBy": "seed",
+        "documentId": "doc_test2",
+        "file": {
+          "mimeType": "application/pdf",
+          "extension": "pdf",
+          "sizeBytes": 1024,
+          "sha256": "dev-seed-sha256-placeholder"
+        },
+        "finalFileName": "teste2.pdf",
+        "metadata": {},
+        "metadataIndex": [],
+        "originalFileName": "teste2.pdf",
+        "previousVersionId": null,
+        "recommendedFileName": "teste2.pdf",
+        "review": {
+          "required": false,
+          "reasons": [],
+          "reviewedBy": null,
+          "reviewedAt": null
+        },
+        "rule": {
+          "ruleId": "rule_test2",
+          "ruleVersion": 1
+        },
+        "storage": {
+          "primary": {
+            "provider": "aws_s3",
+            "status": "pending",
+            "objectKey": "dev/company_test_2/documents/doc_test2/v1.pdf",
+            "bucketAlias": "dev-local",
+            "storedAt": null
+          },
+          "backup": {
+            "provider": "cloudflare_r2",
+            "status": "pending",
+            "objectKey": "dev/company_test_2/documents/doc_test2/v1.pdf",
+            "bucketAlias": "dev-backup",
+            "storedAt": null
+          }
+        },
+        "tenantId": "company_test_2",
+        "updatedAt": "2026-06-25T17:38:48.106Z",
+        "versionLabel": "v1",
+        "versionNumber": 1
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "document_versions_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_documentId_1_versionNumber_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "documentId": 1,
+            "versionNumber": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "documents_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_status_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "status": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_ownerUserId_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "ownerUserId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_currentVersionId_1",
+          "key": {
+            "tenantId": 1,
+            "currentVersionId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "access.viewGroupIds_1_tenantId_1_updatedAt_-1",
+          "key": {
+            "access.viewGroupIds": 1,
+            "tenantId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-24T17:19:06.381Z",
+      "sampleDocument": {
+        "_id": "doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c",
+        "companyId": "company_dev",
+        "documentCode": "DOQYN-2026-000001",
+        "currentVersionId": "ver_76b4c935-8f93-44ac-ad37-02ab72ca2491",
+        "classId": "class_confidentiality_agreement",
+        "className": "Acordo de Confidencialidade",
+        "title": "Acordo de Confidencialidade — Sidnei Alves de Almeida",
+        "currentFileName": "NDA_Sidnei_Alves_de_Almeida_2026-06-09_v1_0.pdf",
+        "status": "active",
+        "processingStatus": "processed",
+        "access": {
+          "viewGroupIds": [
+            "group_juridico",
+            "group_diretoria"
+          ],
+          "downloadGroupIds": [
+            "group_juridico"
+          ],
+          "updateGroupIds": [
+            "group_juridico"
+          ],
+          "auditGroupIds": [
+            "group_diretoria",
+            "group_auditoria"
+          ],
+          "shareGroupIds": [
+            "group_juridico"
+          ]
+        },
+        "currentMetadataPreview": {
+          "parte_reveladora": "Cristiano Rafael Baldissera",
+          "parte_receptora": "Sidnei Alves de Almeida",
+          "cpf_cnpj_receptora": "***95",
+          "data_assinatura": "2026-06-09",
+          "prazo_vigencia": "7 anos",
+          "prazo_confidencialidade": "7 anos",
+          "multa_penalidade": 500000,
+          "foro": "Comarca de Caxias do Sul/RS",
+          "objeto_confidencialidade": "Informações confidenciais compartilhadas entre as partes"
+        },
+        "createdBy": "user_test_no_ai",
+        "createdAt": "2026-06-24T17:19:06.381Z",
+        "updatedAt": "2026-06-24T17:19:06.381Z",
+        "tenantId": "company_dev",
+        "migratedFrom": "flat_collection",
+        "migratedAt": "2026-06-25T17:32:46.671Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "documents_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_status_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "status": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_classId_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "classId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_currentVersionId_1",
+          "key": {
+            "tenantId": 1,
+            "currentVersionId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "access.viewGroupIds_1_tenantId_1_updatedAt_-1",
+          "key": {
+            "access.viewGroupIds": 1,
+            "tenantId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_ownerUserId_1_updatedAt_-1",
+          "key": {
+            "tenantId": 1,
+            "ownerUserId": 1,
+            "updatedAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "doc_test2",
+        "access": {
+          "viewGroupIds": [
+            "group_financeiro_test2"
+          ],
+          "downloadGroupIds": [
+            "group_financeiro_test2"
+          ],
+          "updateGroupIds": [
+            "group_financeiro_test2"
+          ],
+          "auditGroupIds": [
+            "group_financeiro_test2"
+          ],
+          "shareGroupIds": [
+            "group_financeiro_test2"
+          ]
+        },
+        "classId": "class_test2",
+        "className": "Classe Teste 2",
+        "companyId": "company_test_2",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "createdBy": "seed",
+        "currentFileName": "teste2.pdf",
+        "currentMetadataPreview": {},
+        "currentVersionId": "ver_test2",
+        "documentCode": "TST2-001",
+        "processingStatus": "processed",
+        "status": "active",
+        "tenantId": "company_test_2",
+        "title": "Documento Teste 2",
+        "updatedAt": "2026-06-25T17:38:48.106Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "documents_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_ownerUserId_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "ownerUserId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_classId_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "classId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_status_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "status": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantType_1_ownerTenantId_1",
+          "key": {
+            "tenantType": 1,
+            "ownerTenantId": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "processing_jobs_company_dev",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_status_1",
+          "key": {
+            "tenantId": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_versionId_1",
+          "key": {
+            "tenantId": 1,
+            "versionId": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-24T17:19:06.381Z",
+      "sampleDocument": {
+        "_id": "job_be948818-326c-4555-b712-7fc2cfa157d5",
+        "companyId": "company_dev",
+        "documentId": "doc_21ad37a9-5be7-4e62-a0f2-7f4f4920057c",
+        "versionId": "ver_76b4c935-8f93-44ac-ad37-02ab72ca2491",
+        "type": "pdf_analysis",
+        "status": "completed",
+        "steps": [
+          {
+            "key": "documento_recebido",
+            "label": "Documento recebido",
+            "status": "done",
+            "createdAt": "2026-06-24T17:19:06.381Z"
+          },
+          {
+            "key": "modo_de_desenvolvimento_sem_ia_ativo",
+            "label": "Modo de desenvolvimento sem IA ativo",
+            "status": "done",
+            "createdAt": "2026-06-24T17:19:06.381Z"
+          },
+          {
+            "key": "classe_simulada_identificada",
+            "label": "Classe simulada identificada",
+            "status": "done",
+            "createdAt": "2026-06-24T17:19:06.381Z"
+          }
+        ],
+        "error": null,
+        "createdBy": "user_test_no_ai",
+        "createdAt": "2026-06-24T17:19:06.381Z",
+        "completedAt": "2026-06-24T17:19:06.381Z",
+        "tenantId": "company_dev",
+        "migratedFrom": "flat_collection",
+        "migratedAt": "2026-06-25T17:32:46.891Z"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "processing_jobs_company_test_2",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_documentId_1_createdAt_-1",
+          "key": {
+            "tenantId": 1,
+            "documentId": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_status_1",
+          "key": {
+            "tenantId": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_versionId_1",
+          "key": {
+            "tenantId": 1,
+            "versionId": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:38:48.106Z",
+      "sampleDocument": {
+        "_id": "job_test2_seed",
+        "companyId": "company_test_2",
+        "completedAt": "2026-06-25T17:38:48.106Z",
+        "createdAt": "2026-06-25T17:38:48.106Z",
+        "createdBy": "seed",
+        "documentId": "doc_test2",
+        "error": null,
+        "status": "completed",
+        "steps": [
+          {
+            "key": "seed",
+            "label": "Seed",
+            "status": "done",
+            "createdAt": "2026-06-25T17:38:48.106Z"
+          }
+        ],
+        "tenantId": "company_test_2",
+        "type": "seed",
+        "updatedAt": "2026-06-25T17:38:48.106Z",
+        "versionId": "ver_test2"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "processing_jobs_compartilhado",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "ownerTenantId_1_status_1_createdAt_-1",
+          "key": {
+            "ownerTenantId": 1,
+            "status": 1,
+            "createdAt": -1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "tenant_members",
+      "classification": "unknown_review_required",
+      "estimatedDocumentCount": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_status_1",
+          "key": {
+            "tenantId": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_emailNormalized_1",
+          "key": {
+            "tenantId": 1,
+            "emailNormalized": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "keycloakUserId_1_status_1",
+          "key": {
+            "keycloakUserId": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_keycloakUserId_1",
+          "key": {
+            "tenantId": 1,
+            "keycloakUserId": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_accessGroupIds_1",
+          "key": {
+            "tenantId": 1,
+            "accessGroupIds": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_createdAt_1",
+          "key": {
+            "tenantId": 1,
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1_updatedAt_1",
+          "key": {
+            "tenantId": 1,
+            "updatedAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "memberId_1",
+          "key": {
+            "memberId": 1
+          },
+          "unique": true
+        }
+      ],
+      "latestTimestamp": "2026-06-25T17:27:39.838Z",
+      "sampleDocument": {
+        "_id": "member_sidnei",
+        "accessGroupIds": [],
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T19:16:23.834Z",
+        "email": "si***@gmail.com",
+        "emailNormalized": "si***@gmail.com",
+        "firstName": "Sidnei",
+        "keycloakUserId": "2806775c-c73d-4882-8a55-4f39d14a25ae",
+        "lastName": "Almeida",
+        "memberId": "member_sidnei",
+        "status": "active",
+        "tenantId": "company_dev",
+        "tenantRoles": [
+          "company_admin",
+          "user"
+        ],
+        "updatedAt": "2026-06-25T16:45:22.475Z",
+        "username": "sidnei"
+      }
+    },
+    {
+      "database": "doqyn_dev",
+      "collection": "tenants",
+      "classification": "active_keep",
+      "estimatedDocumentCount": 3,
+      "indexes": [
+        {
+          "name": "_id_",
+          "key": {
+            "_id": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantId_1",
+          "key": {
+            "tenantId": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "taxIdHash_1",
+          "key": {
+            "taxIdHash": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "slug_1",
+          "key": {
+            "slug": 1
+          },
+          "unique": true
+        },
+        {
+          "name": "status_1",
+          "key": {
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "tenantType_1_status_1",
+          "key": {
+            "tenantType": 1,
+            "status": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "createdAt_1",
+          "key": {
+            "createdAt": 1
+          },
+          "unique": false
+        },
+        {
+          "name": "updatedAt_1",
+          "key": {
+            "updatedAt": 1
+          },
+          "unique": false
+        }
+      ],
+      "latestTimestamp": "2026-06-25T21:17:50.375Z",
+      "sampleDocument": {
+        "_id": "tenant_dev_record",
+        "tenantId": "company_dev",
+        "companyId": "company_dev",
+        "createdAt": "2026-06-24T19:16:23.762Z",
+        "displayName": "DOQYN Dev",
+        "isolation": {
+          "strategy": "collection_prefix",
+          "collectionPrefix": "company_dev"
+        },
+        "legalName": "DOQYN Dev Environment",
+        "slug": "doqyn-dev",
+        "status": "active",
+        "taxIdHash": "***47",
+        "taxIdMasked": "***00",
+        "taxIdType": "***",
+        "tenantType": "business",
+        "updatedAt": "2026-06-25T16:45:22.397Z"
+      }
+    },
+    {
+      "database": "local",
+      "collection": "oplog.rs",
+      "classification": "system_do_not_touch",
+      "estimatedDocumentCount": 0,
+      "indexes": [],
+      "latestTimestamp": null,
+      "sampleDocument": null
+    }
+  ],
+  "summary": {
+    "databasesByClassification": {
+      "system_do_not_touch": 2,
+      "active_keep": 1
+    },
+    "collectionsByClassification": {
+      "active_keep": 19,
+      "unknown_review_required": 4,
+      "system_do_not_touch": 1
+    }
+  }
+}

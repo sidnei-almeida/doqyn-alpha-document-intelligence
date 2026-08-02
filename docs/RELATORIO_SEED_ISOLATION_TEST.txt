@@ -1,0 +1,32 @@
+DOQYN — Seed segundo tenant (isolamento)
+Data: 2026-06-25T17:38:48.106Z
+Database: doqyn_dev
+Tenant: company_test_2
+Prefix: company_test_2
+Relatório sanitizado.
+
+================================================================================
+COLEÇÕES CRIADAS/ATUALIZADAS
+================================================================================
+documents: documents_company_test_2 (1 docs)
+documentVersions: document_versions_company_test_2 (1 docs)
+processingJobs: processing_jobs_company_test_2 (1 docs)
+auditLogs: audit_logs_company_test_2 (1 docs)
+accessGroups: access_groups_company_test_2 (1 docs)
+documentClasses: document_classes_company_test_2 (1 docs)
+documentRules: document_rules_company_test_2 (1 docs)
+
+================================================================================
+DADOS MÍNIMOS
+================================================================================
+Grupo: group_financeiro_test2
+Classe: class_test2
+Regra: rule_test2
+Documento: doc_test2
+Versão: ver_test2
+Audit: audit_test2
+Member: member_test2_e1989c45 (keycloakUserId fake)
+
+================================================================================
+FIM
+================================================================================

@@ -1,0 +1,178 @@
+================================================================================
+RELATÓRIO — REFATORAÇÃO UX /biblioteca → FILE EXPLORER
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+================================================================================
+
+1. DIAGNÓSTICO DA UX ANTERIOR
+--------------------------------------------------------------------------------
+A tela /biblioteca estava organizada como um dashboard administrativo:
+- Cards de pastas no topo com comportamento de seleção (radio/checkbox).
+- Tabela de arquivos sempre visível abaixo, filtrada pela pasta selecionada.
+- Clicar em uma pasta não "abria" a pasta — apenas filtrava a tabela.
+- O usuário não sentia navegação em um gerenciador de arquivos.
+- Pastas e arquivos competiam pelo mesmo espaço visual sem hierarquia clara.
+
+2. NOVA EXPERIÊNCIA FILE EXPLORER
+--------------------------------------------------------------------------------
+Raiz (/biblioteca):
+- Breadcrumb: Biblioteca
+- Título: Biblioteca
+- Grid protagonista de pastas inteligentes (categorias de governança).
+- Cada pasta mostra ícone, nome, contagem, descrição (se houver), governança e menu.
+- Clique ou duplo clique abre a pasta.
+- Seção opcional "Sem categoria" para documentos sem classId.
+- Sem tabela administrativa gigante na raiz (toolbar de arquivos oculta).
+
+Dentro da pasta (/biblioteca?space={categoryId}):
+- Breadcrumb: Biblioteca / {Nome da categoria}
+- Título e subtítulo da categoria.
+- Arquivos como protagonistas (lista ou grade).
+- Empty state: "Esta pasta ainda está vazia" + botão "Enviar documento".
+- Botão direito na área vazia abre context menu contextual.
+- Painel de detalhes à direita para arquivo selecionado.
+
+3. ROTAS / ESTADO ESCOLHIDOS
+--------------------------------------------------------------------------------
+Opção A (mantida): query param ?space=
+- /biblioteca — raiz browse
+- /biblioteca?space=juridico — dentro da pasta Jurídico
+- Coleções virtuais: /biblioteca/recentes, /biblioteca/favoritos, etc.
+
+Hook useLibraryRouteState persiste space, q, view, sort, status na URL.
+Hook useLibraryExplorerMode deriva: isBrowseRoot, isInsideFolder, isSearchOrFilterAtRoot.
+
+Refresh e botão voltar do navegador funcionam.
+Breadcrumb "Biblioteca" volta à raiz (limpa ?space=).
+
+4. ARQUIVOS ALTERADOS / CRIADOS
+--------------------------------------------------------------------------------
+Criados:
+- src/features/library/hooks/useLibraryExplorerMode.ts
+- src/features/library/components/ExplorerShell.tsx
+- src/features/library/components/ExplorerFolderGrid.tsx
+- src/features/library/components/ExplorerFolderCard.tsx
+- src/features/library/components/ExplorerContextMenu.tsx
+- tests/library-explorer.test.ts
+
+Refatorados:
+- src/features/library/LibraryPage.tsx (orquestrador principal)
+- src/features/library/hooks/useLibraryMultiSelection.ts (+ selectFile)
+- src/features/library/components/FileRow.tsx (data-explorer-item, compact)
+- src/features/library/components/FileGridView.tsx (data-explorer-item)
+- src/features/library/components/FileTable.tsx (visual explorador)
+- src/features/library/components/EmptyFolderState.tsx
+- src/features/library/components/LibraryBreadcrumbs.tsx
+- src/features/library/components/LibraryContentDropZone.tsx
+- src/features/upload/review/ReviewDrawer.tsx (destino + mismatch IA)
+- src/styles/globals.css (estilos explorer-folder-card)
+- tests/library-layout.test.ts
+
+Preservados sem alteração crítica:
+- Backend upload/analyze/confirm/R2/Mongo
+- DocumentViewerModal, documentAccess, auth-service
+- UploadQueueProvider (toast de mismatch já existente)
+
+5. CATEGORIAS → PASTAS INTELIGENTES
+--------------------------------------------------------------------------------
+- useCategoryFolders + fetchDocumentCategories mapeiam categorias de Regras/Governança.
+- Contagem por categoria derivada dos documentos carregados (useDocuments).
+- Risco documentado: paginação atual pode subcontar se houver muitos documentos
+  fora da página carregada — não inventamos dados.
+
+6. UPLOAD CONTEXTUAL
+--------------------------------------------------------------------------------
+Quando o usuário está em /biblioteca?space={id}:
+- + Novo > Upload (Sidebar) passa UploadContext { categoryId, categoryName }.
+- Drag global (WorkspaceLayout) herda o espaço ativo.
+- Drag na área da Biblioteca (LibraryContentDropZone) usa uploadContext.
+- Context menu "Enviar documento nesta pasta" (pasta ou área vazia) usa contexto.
+- Context menu em pasta na raiz: startUploadInFolder(folder) sem precisar abrir.
+
+ReviewDrawer:
+- Mostra "Pasta atual: {nome}" quando há contexto.
+- Aviso se IA classificou em categoria diferente da pasta de upload.
+- Backend NÃO força classId — categoria final segue análise/confirmAnalysis.
+- Após salvar, toast em UploadQueueProvider avisa se documento foi para outra pasta.
+
+7. CONTEXT MENUS IMPLEMENTADOS
+--------------------------------------------------------------------------------
+Área vazia (raiz):
+- Enviar documento
+- Nova categoria (link Regras)
+- Atualizar
+- Alternar grade/lista
+
+Área vazia (dentro da pasta):
+- Enviar documento nesta pasta
+- Atualizar
+- Ver regras desta categoria
+- Alternar grade/lista
+
+Pasta:
+- Abrir
+- Enviar documento nesta pasta
+- Ver regras
+- Renomear / Arquivar (disabled — em breve)
+
+Arquivo:
+- Visualizar, Baixar, Atualizar versão (disabled), Mover (disabled),
+  Renomear (disabled), Ver tracking, Detalhes
+
+NÃO existe opção "Criar arquivo".
+
+8. DESABILITADO / EM BREVE
+--------------------------------------------------------------------------------
+- Renomear categoria
+- Arquivar/excluir categoria
+- Mover arquivo entre pastas manuais
+- Atualizar versão via context menu
+- Renomear metadados via context menu
+- Pastas físicas R2 / pastas manuais MongoDB
+- Forçar classId no backend durante upload
+
+9. PRESERVADO
+--------------------------------------------------------------------------------
+- Fluxo upload → IA → ReviewDrawer → confirmAnalysis → Mongo/R2
+- DocumentViewerModal
+- documentAccess e permissões por documento
+- /upload legado
+- auth/session, Google OAuth
+- Regras, Tracking, Usuários, Auditoria
+- UploadQueueProvider corrigido (pumpQueue, sem race na análise)
+
+10. VALIDAÇÃO
+--------------------------------------------------------------------------------
+npm test     → 639/639 passando
+npm run build → OK
+npm run lint  → OK (0 erros)
+npx tsc --noEmit → OK
+
+Testes novos/atualizados:
+- tests/library-explorer.test.ts (modo explorer, rotas, context menus, upload)
+- tests/library-layout.test.ts (ExplorerFolderGrid, ExplorerShell)
+
+11. PENDÊNCIAS — FASE PASTAS MANUAIS / R2
+--------------------------------------------------------------------------------
+Ver docs/PLANO_FILE_EXPLORER_R2_MONGO.txt:
+- Árvore lógica Mongo para pastas manuais
+- Mover documento entre pastas sem alterar objectKey R2
+- Markers de pasta no R2
+- Permissões por pasta
+- Contagem exata por categoria via agregação no backend (sem limite de paginação)
+
+12. CRITÉRIO DE ACEITE
+--------------------------------------------------------------------------------
+[OK] Usuário abre pasta e vê só arquivos daquela categoria
+[OK] Breadcrumb volta à raiz
+[OK] Raiz mostra pastas inteligentes em grid
+[OK] Context menus (vazio, pasta, arquivo)
+[OK] Upload/drag com contexto de categoria
+[OK] ReviewDrawer mostra destino e aviso de mismatch
+[OK] Duplo clique abre viewer; clique seleciona e mostra detalhes
+[OK] Sem opção "Criar arquivo"
+[OK] Backend crítico não alterado
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

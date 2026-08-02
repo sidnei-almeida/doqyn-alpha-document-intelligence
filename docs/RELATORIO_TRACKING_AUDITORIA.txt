@@ -1,0 +1,176 @@
+================================================================================
+RELATÓRIO — TRACKING / AUDITORIA DOCUMENTAL PROFISSIONAL
+DOQYN Alpha Document Intelligence
+Data: 07/07/2026
+================================================================================
+
+1. DIAGNÓSTICO DO TRACKING ANTERIOR
+--------------------------------------------------------------------------------
+- Escrita centralizada em server/audit/documentAuditLogService.ts → coleção audit_logs
+  (tenant-scoped via getTenantCollections).
+- Leitura de tracking: GET /api/tracking/document-events (ações document.*, access.*,
+  file_explorer.*).
+- Auditoria geral separada: GET /api/audit (ações de usuário/governança).
+- Eventos já emitidos: upload_completed, analysis_*, review_confirmed, version_created,
+  preview_viewed/failed, downloaded, storage_promoted (confirmAnalysis, preview, download).
+- Lacunas identificadas:
+  * Sem camada central de emissão com security snapshot.
+  * Sem status/actionGroup estruturados nos list items.
+  * Sem download_denied / preview_denied em 403.
+  * Sem eventos de cliente (viewer_opened, print_blocked, explorer).
+  * Sem API de summary agregado.
+  * Tela Tracking com poucos filtros/colunas e sem strip de métricas.
+  * MongoAuditLog desatualizado vs campos reais gravados.
+
+2. NOVO SCHEMA / CAMPOS
+--------------------------------------------------------------------------------
+Coleção: audit_logs (append-only, tenant-scoped — padrão existente preservado).
+
+Campos principais gravados:
+  _id, tenantId, documentId, versionId, actor (snapshot expandido), action, description,
+  area, result, severity, metadata (sanitizada), requestId, occurredAt, createdAt.
+
+Metadata enriquecida pelo trackingService:
+  status: success | failed | denied | pending
+  actionGroup: lifecycle | preview | download | access | storage | governance | explorer | user | system
+  security: { ipHash, userAgentHash, userAgentSummary, sessionIdHash, permissionResult, ... }
+  target, before, after, changes (quando aplicável)
+
+Listagem (DocumentTrackingListItem):
+  + status, actionGroup, result, sessionHash
+
+Detalhe (DocumentTrackingDetail):
+  + security (sanitizado na leitura)
+
+3. CAMADA CENTRAL
+--------------------------------------------------------------------------------
+server/services/tracking/
+  trackingService.ts      — emitTrackingEvent, emitAccessDeniedEvent, emitClientTrackingEvent
+  trackingSecurity.ts     — hash IP/UA/sessão, buildSecuritySnapshot
+  trackingTypes.ts        — taxonomia, allowlist cliente, resolveActionGroup/Status
+  trackingSummaryService.ts — agregações Mongo para dashboard
+
+Políticas:
+  - Falha de tracking NÃO derruba fluxo principal (catch silencioso em emitTrackingEvent).
+  - sanitizeAuditMetadata bloqueia token, cookie, objectKey, presignedUrl, OCR, etc.
+  - IP e User-Agent apenas como hash (+ resumo seguro de UA).
+
+4. EVENTOS IMPLEMENTADOS / EXPANDIDOS
+--------------------------------------------------------------------------------
+Novas ações tipadas (documentAuditTypes):
+  document.preview_denied, document.viewer_opened/closed, document.print_attempt_blocked,
+  document.download_attempted/denied, access.document_denied/allowed,
+  file_explorer.folder_opened, search_performed, filter_applied, details_opened
+
+Instrumentação adicionada:
+  - api/documents/download.ts: download_attempted, downloaded, download_denied (403)
+  - api/documents/preview.ts: preview_viewed via emitTrackingEvent, preview_denied (403),
+    preview_failed (outros erros)
+  - api/tracking/client-event.ts: POST allowlist para eventos do frontend
+  - DocumentViewerModal: viewer_opened, viewer_closed, print_attempt_blocked
+
+5. ENDPOINTS
+--------------------------------------------------------------------------------
+GET  /api/tracking/document-events
+     Filtros: documentId, versionId, action, severity, status, actionGroup, requestId,
+              actorUserId, from, to, q, category, cursor, limit (max 500)
+
+GET  /api/tracking/document-events/:id
+     Detalhe com security sanitizado
+
+GET  /api/tracking/summary
+     Métricas: totalEvents, previews, downloads, accessDenied, errors,
+               uniqueDocuments, uniqueActors, topDocuments, topDownloaders
+
+POST /api/tracking/client-event
+     Allowlist: viewer_opened/closed, print_attempt_blocked, file_explorer.*
+
+GET  /api/documents/timeline (existente)
+     Timeline por documento
+
+Pendente (não crítico para aceite):
+  - GET /api/tracking/users/:userId/activity
+  - Export CSV/JSON admin
+
+6. FRONTEND TRACKING
+--------------------------------------------------------------------------------
+TrackingPage refatorada:
+  - TrackingSummaryStrip: eventos, previews, downloads, negados, erros, docs, usuários
+  - Filtros: período, documento, categoria, grupo, resultado, severidade, ação, requestId, usuário
+  - Tabela: Data/hora, Ação, Documento, Versão, Usuário, Sessão (hash), Resultado, Severidade
+  - Drawer: actor, documento, alterações, requestId, sessão, seção Segurança (hash IP/UA)
+  - Links: filtrar por usuário/requestId, ver timeline do documento
+
+Cliente:
+  src/features/tracking/api/trackingClientEvents.ts — emissão segura com allowlist
+
+7. ÍNDICES MONGODB
+--------------------------------------------------------------------------------
+Adicionados em server/db/tenantIndexes.ts:
+  { tenantId, 'metadata.status', createdAt desc }
+  { tenantId, 'metadata.actionGroup', createdAt desc }
+
+Existentes preservados: tenantId+createdAt, documentId, actor.userId, action, requestId.
+
+8. RETENÇÃO
+--------------------------------------------------------------------------------
+Constantes documentadas (não aplicadas automaticamente):
+  TRACKING_RETENTION_DAYS_DEFAULT = 365
+  TRACKING_HIGH_VOLUME_RETENTION_DAYS_DEFAULT = 90
+
+Nenhuma exclusão automática implementada — aguarda política operacional.
+
+9. RBAC / TENANT ISOLATION
+--------------------------------------------------------------------------------
+- requireDocumentTrackingAccess: admins veem tracking amplo do tenant.
+- assertTrackingTenantScope + tenantScopeFilterFromContext em queries.
+- PF: ownerUserId respeitado via getTenantCollections.
+- Client-event: backend enriquece actor/tenant — frontend não envia userId confiável.
+
+10. TESTES
+--------------------------------------------------------------------------------
+Novos/atualizados:
+  tests/tracking-service.test.ts — actionGroup, status, sanitização, hash, allowlist
+  tests/tracking-page.test.ts — filtros, labels PT
+
+Existentes preservados:
+  tests/document-audit-log.test.ts
+  tests/document-tracking-rbac.test.ts
+
+Resultado: 773 testes passando.
+
+11. COMANDOS
+--------------------------------------------------------------------------------
+  npm test          → 773 pass, 0 fail
+  npm run build     → OK
+  npm run lint      → OK (0 errors)
+  npx tsc --noEmit  → OK
+  npm run db:setup  → OK
+
+12. CHECKLIST VALIDAÇÃO MANUAL
+--------------------------------------------------------------------------------
+[ ] Upload PDF → eventos upload/analysis na tela Tracking
+[ ] Confirmar revisão → review_confirmed, version_created, storage_promoted
+[ ] Abrir viewer → document.viewer_opened (client-event)
+[ ] Baixar documento → download_attempted + downloaded
+[ ] Acesso negado (usuário sem permissão) → download_denied ou preview_denied
+[ ] Tracking → filtrar por documentId
+[ ] Abrir detalhe → actor, requestId, session hash, IP/UA apenas como hash
+[ ] Conferir ausência de token/objectKey/URL R2 nos metadados
+[ ] Admin vê summary strip com métricas
+[ ] Usuário comum não acessa tracking amplo indevido
+
+13. PENDÊNCIAS FUTURAS (FORA DO ESCOPO IMEDIATO)
+--------------------------------------------------------------------------------
+- Migrar confirmAnalysis/upload flow inteiro para trackingService (parcial: download/preview)
+- Instrumentar file_explorer na LibraryPage (search/filter/folder)
+- Timeline visual integrada na TrackingPage (componente DocumentTimeline existe)
+- Export CSV/JSON para admin
+- Job de retenção configurável
+- GET /api/tracking/users/:userId/activity
+
+================================================================================
+CRITÉRIO DE ACEITE
+O Tracking permite investigar quem acessou, visualizou, baixou, alterou ou tentou
+acessar cada documento, quando e com qual resultado, sem vazar dados sensíveis.
+================================================================================

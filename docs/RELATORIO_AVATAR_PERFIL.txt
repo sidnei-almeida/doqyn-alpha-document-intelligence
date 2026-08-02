@@ -1,0 +1,119 @@
+================================================================================
+RELATÓRIO — FOTO DE PERFIL (AVATAR) COM R2
+DOQYN Alpha Document Intelligence
+Data: 07/07/2026
+================================================================================
+
+1. ARQUITETURA ESCOLHIDA (OPÇÃO B + METADADOS NO AUTH-SERVICE)
+--------------------------------------------------------------------------------
+Decisão: híbrida, menor risco.
+
+- **App principal (alpha):** upload, processamento sharp, storage R2/local, serving
+  autenticado da imagem.
+- **auth-service (Postgres):** metadados canônicos do avatar no `AuthUser`.
+- **Frontend:** nunca acessa R2; usa URLs `/api/profile/avatar?v={version}`.
+
+Motivo: reutiliza infra R2/sharp/multipart existente no alpha; mantém identidade
+do usuário como fonte de verdade no auth-service; evita duplicar R2 no auth-service.
+
+2. METADADOS (auth-service / Postgres)
+--------------------------------------------------------------------------------
+Campos em `auth_users`:
+  avatar_storage_provider, avatar_object_key (interno), avatar_content_type,
+  avatar_version, avatar_updated_at, avatar_size, avatar_status (active|removed)
+
+Exposto em `PublicUser` (sessão / verify):
+  avatarVersion, avatarUpdatedAt, avatarStatus
+  (NUNCA objectKey)
+
+Internal API (server-to-server, API key):
+  PATCH /internal/users/:id/avatar-metadata
+  GET   /internal/users/:id/avatar-metadata
+
+3. PADRÃO R2
+--------------------------------------------------------------------------------
+Prefixo separado de documentos:
+  profiles/users/{userId}/avatar/v{version}/avatar_{64|128|256}.webp
+
+Não usa: email, CPF/CNPJ, nome, filename original no path.
+
+Bucket: `R2_DEFAULT_BUCKET` (modo shared) — não mistura com paths `documents/`.
+
+4. ENDPOINTS (app principal)
+--------------------------------------------------------------------------------
+GET  /api/profile/me          — perfil + avatarUrl seguro
+GET  /api/profile/avatar      — serve próprio avatar (auth, Cache-Control private)
+POST /api/profile/avatar      — multipart campo `avatar`
+DELETE /api/profile/avatar    — remove avatar
+GET  /api/users/:userId/avatar — avatar de outro usuário (mesmo tenant, autenticado)
+
+Resposta nunca inclui objectKey nem URL R2 presigned.
+
+5. SEGURANÇA
+--------------------------------------------------------------------------------
+- Máx 5 MB (PROFILE_AVATAR_MAX_SIZE_MB)
+- Tipos: JPEG, PNG, WebP (magic bytes)
+- Bloqueio SVG/GIF
+- sharp: crop quadrado, resize 64/128/256, WebP, sem EXIF
+- IP/UA não aplicável ao blob; tracking em user.avatar_*
+
+6. FRONTEND
+--------------------------------------------------------------------------------
+- `UserAvatar` — componente reutilizável com fallback iniciais
+- `ProfileSettingsDialog` — alterar/remover foto, preview local
+- `HeaderUserMenu` — avatar no topbar + menu Perfil/Configurações de perfil
+- Sessão atualizada via `refreshUser()` após upload/remoção
+
+7. CACHE
+--------------------------------------------------------------------------------
+Backend: Cache-Control private, max-age=3600, ETag, Vary Cookie/Authorization
+Frontend: URL com `?v={avatarVersion}` invalida cache ao trocar foto
+
+8. TRACKING
+--------------------------------------------------------------------------------
+user.avatar_uploaded, user.avatar_removed, user.avatar_upload_failed
+(auth-service audit: user.avatar_updated, user.avatar_removed)
+
+9. ENV (.env.example)
+--------------------------------------------------------------------------------
+PROFILE_AVATAR_MAX_SIZE_MB=5
+PROFILE_AVATAR_ALLOWED_TYPES=image/jpeg,image/png,image/webp
+PROFILE_AVATAR_OUTPUT_FORMAT=webp
+PROFILE_AVATAR_SIZES=64,128,256
+
+10. ARQUIVOS PRINCIPAIS
+--------------------------------------------------------------------------------
+auth-service:
+  prisma/schema.prisma, migrations/20260707140000_add_user_avatar_fields
+  src/modules/users/users.service.ts
+  src/modules/internal/internal.routes.ts
+  tests/user-avatar.test.ts
+
+alpha:
+  server/services/profile/*
+  server/storage/profileAvatarKeys.ts
+  server/integrations/doqynAuthInternalClient.ts
+  api/profile/me.ts, api/profile/avatar.ts
+  api/users/[userId]/avatar.ts
+  src/components/ui/UserAvatar.tsx
+  src/features/profile/*
+  src/components/layout/HeaderUserMenu.tsx
+  tests/profile-avatar.test.ts
+
+11. COMANDOS
+--------------------------------------------------------------------------------
+alpha: npm test (779 pass), npm run build OK, lint OK
+auth-service: npm test (após prisma db push)
+
+12. CHECKLIST MANUAL
+--------------------------------------------------------------------------------
+[ ] Login → menu usuário → Perfil
+[ ] Upload JPG → avatar no topbar
+[ ] Recarregar → avatar persiste
+[ ] Remover → iniciais
+[ ] Rejeitar SVG / arquivo grande
+[ ] Conferir R2 prefixo profiles/users/
+[ ] Conferir ausência de objectKey no frontend/Network
+[ ] Tracking com user.avatar_uploaded
+
+================================================================================

@@ -1,0 +1,143 @@
+================================================================================
+RELATÓRIO — Regressão Upload / Biblioteca / Pasta Jurídico (2ª rodada)
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+================================================================================
+
+1. SINTOMA REPORTADO
+================================================================================
+
+- Upload de PDF pela Biblioteca
+- Toast/fila mostrava "Uploads concluídos" / "Concluído"
+- Biblioteca permanecia vazia (pastas 0, Recentes vazio, Jurídico vazio)
+
+================================================================================
+2. DIAGNÓSTICO POR ETAPA
+================================================================================
+
+confirmAnalysis era chamado?
+  SIM — status "done" na fila só é setado em UploadQueueProvider.confirmItem
+  após confirmAnalysis retornar documentId (único dispatch type:'done').
+
+Documento salvo no Mongo?
+  SIM — consulta direta em documents_company_dev mostrou documentos com:
+  classId cat_juridico, status active, processingStatus processed,
+  tenantType business, tenantId company_dev, ownerUserId preenchido.
+
+listDocuments retornava o documento?
+  SIM no backend (teste direto com admin/owner retornou 2 docs na raiz e
+  com categoryId=cat_juridico).
+
+Frontend recebia e escondia?
+  NÃO — causa principal nesta rodada: cache/refetch insuficiente após confirm.
+  invalidateQueries sem refetchQueries ativo + staleTime 30s faziam a Biblioteca
+  manter lista vazia mesmo com documento persistido.
+
+Diferença "análise concluída" vs "documento confirmado":
+  - analyze:success → análise/staging prontos; NÃO salva na Biblioteca
+  - status review → aguarda ReviewDrawer ou auto-confirm countdown
+  - confirm:success (201) → documento no Mongo; único momento de "salvo"
+  - Headline "Uploads concluídos" era enganosa (pendingCount=0 incluía só
+    done/error, mas o rótulo sugeria sucesso final mesmo sem documentId)
+
+Causa raiz 1ª rodada (mantida):
+  buildDocumentOwnershipFilter excluía docs legados sem tenantId — corrigido.
+
+Causa raiz 2ª rodada (esta correção):
+  Frontend não refetchava listDocuments de forma confiável após confirmAnalysis.
+
+Causa raiz 3ª rodada (definitiva — reproduzida no browser):
+  api.documents.list passava filtros com valores `undefined` para URLSearchParams,
+  que os serializa como strings literais "undefined":
+    GET /api/documents?search=undefined&categoryId=undefined&...
+  O backend interpretava search="undefined" e retornava lista VAZIA.
+  Tracking funcionava porque monta query params de forma segura (sem undefined).
+
+Evidência:
+  - Mongo: 3 docs em documents_company_dev (cat_juridico, active, processed)
+  - listDocuments backend direto: 3 itens
+  - curl ?excludeArchived=true: 3 itens
+  - curl ?search=undefined&...: 0 itens  ← bug
+  - Após fix serializeQueryParams: Biblioteca mostra 3 recentes + Jurídico 3 arquivos
+
+================================================================================
+3. CORREÇÕES APLICADAS (2ª RODADA)
+================================================================================
+
+Estados / UX da fila
+- UploadQueueDrawer: remove "Uploads concluídos"; headlines por estado real
+  (processamento, aguardando revisão, documentos salvos na Biblioteca)
+- Labels: review="Aguardando revisão", done="Salvo na Biblioteca"
+- countSavedDocuments / isItemSavedInLibrary — done só conta com documentId
+- Toast ao entrar em review: "Revise e confirme para salvar na Biblioteca"
+
+Logs DEV seguros
+- [upload] analyze:start, analyze:success, confirm:start, confirm:success
+- [library] documents:refetch-after-confirm { tenantId, refetch status }
+- Sem token, cookie, objectKey, OCR ou conteúdo PDF
+
+Cache / refetch
+- libraryQueryInvalidation.ts: invalidate + refetchQueries ativas
+- UploadQueueProvider: await invalidateLibrary() após confirm:success
+- useDocuments: enabled por isAuthenticated; log documents:list-success
+
+Query params (causa raiz)
+- src/lib/queryParams.ts — serializeQueryParams omite undefined/null/vazio
+- src/lib/api.ts — api.documents.list e audit.list usam serializeQueryParams
+- tests/query-params.test.ts — garante ausência de search=undefined
+
+Backend (rodada anterior, mantido)
+- documentOwnership.ts: filtro aceita docs canônicos e legados em coleção dedicada
+
+================================================================================
+4. ARQUIVOS ALTERADOS
+================================================================================
+
+src/features/library/utils/libraryQueryInvalidation.ts
+src/features/documents/hooks/useDocuments.ts
+src/features/upload/UploadQueueProvider.tsx
+src/features/upload/UploadQueueDrawer.tsx
+src/features/upload/queue/uploadQueueState.ts
+src/features/upload/utils/uploadDevLog.ts
+tests/library-upload-listing.test.ts
+tests/upload-queue.test.ts
+docs/RELATORIO_REGRESSAO_UPLOAD_BIBLIOTECA.txt
+
+================================================================================
+5. TESTES ADICIONADOS / ATUALIZADOS
+================================================================================
+
+- invalidateLibraryQueries invalida + refetchQueries
+- UploadQueueProvider await invalidateLibrary após confirm
+- useDocuments fallback companyId
+- review pendente vs done com documentId
+- drawer sem headline "Uploads concluídos"
+- fluxo upload→confirm→listagem (contratos cat_juridico)
+
+================================================================================
+6. RESULTADO DOS COMANDOS
+================================================================================
+
+npm test         → 826 passed
+npm run build    → OK
+npm run lint     → OK
+npx tsc --noEmit → OK
+
+================================================================================
+7. CHECKLIST MANUAL
+================================================================================
+
+[ ] Abrir /biblioteca (DevTools console aberto)
+[ ] Enviar PDF pelo + Novo
+[ ] Console: [upload] analyze:start → analyze:success
+[ ] Se auto-confirm OFF: status "Aguardando revisão", ReviewDrawer abre
+[ ] Confirmar: [upload] confirm:start → confirm:success
+[ ] Console: [library] documents:refetch-after-confirm
+[ ] Documento aparece em Recentes (raiz)
+[ ] Pasta Jurídico mostra contagem > 0 e lista o arquivo
+[ ] F5 — documento persiste
+[ ] Network: GET /api/documents retorna o documentId (sem listagem R2)
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

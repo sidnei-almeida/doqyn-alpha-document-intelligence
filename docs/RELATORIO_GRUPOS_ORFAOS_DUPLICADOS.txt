@@ -1,0 +1,33 @@
+DOQYN — Grupos órfãos e duplicados (dev)
+Data: 2026-06-25T17:28:01.319Z
+Database: doqyn_dev
+Tenant: company_dev
+Modo: DRY-RUN
+Grupos oficiais (jurídico, financeiro, RH, compras, diretoria, qualidade) nunca são apagados automaticamente.
+
+================================================================================
+RESUMO
+================================================================================
+Grupos analisados: 5
+Órfãos: 0
+Duplicados sugeridos: 0
+Ações aplicadas: 0
+
+================================================================================
+DETALHES
+================================================================================
+group_juridico | slug=juridico | ref=sim | sugestão=manter
+group_financeiro | slug=financeiro | ref=sim | sugestão=manter
+group_rh | slug=rh | ref=sim | sugestão=manter
+group_compras | slug=compras | ref=sim | sugestão=manter
+group_diretoria | slug=diretoria | ref=sim | sugestão=manter
+
+================================================================================
+PRÓXIMO PASSO
+================================================================================
+CLEANUP_APPLY=true npm run db:cleanup-orphan-groups
+Apenas grupos não oficiais órfãos serão marcados inactive.
+
+================================================================================
+FIM
+================================================================================

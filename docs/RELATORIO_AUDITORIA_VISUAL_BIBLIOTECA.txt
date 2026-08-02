@@ -1,0 +1,127 @@
+================================================================================
+RELATÓRIO — Auditoria visual e limpeza final (Biblioteca / File Explorer)
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Escopo: encontrar e remover resíduos do design antigo (gradientes, sombras pesadas,
+cards de dashboard, classes obsoletas, componentes duplicados) sem alterar backend,
+APIs ou fluxos funcionais.
+
+================================================================================
+1. RESÍDUOS VISUAIS ENCONTRADOS
+================================================================================
+
+Componentes legados (não usados em LibraryPage):
+  - FolderCard.tsx — cards altos (~148px) com borda, hover translate-y, stagger-enter
+  - FolderGrid.tsx — grade de cards de dashboard
+  - FileContextMenu.tsx — menu duplicado (substituído por ExplorerContextMenu)
+  - SelectionToolbar.tsx — toolbar de seleção não referenciada
+
+Classes / tokens obsoletos:
+  - .panel-glow — background-image none, mas ainda aplicada em ReviewDrawer e overlay
+  - .gradient-action — utilitário CSS redundante (token já é cor sólida)
+  - .stagger-enter — animação em cascata só usada em FolderCard legado
+  - --gradient-panel-glow — token sem efeito visual
+  - --folder-gradient-* — nomenclatura enganosa (valores eram cores sólidas)
+
+Padrões visuais conflitantes:
+  - UploadDropOverlay: panel-glow + shadow-action-glow + gradient-action inline
+  - Menus biblioteca: shadow-modal (pesada demais para dropdowns)
+  - ExplorerFolderCard: bg-doqyn-card/40 + prop index/stagger sem uso real
+  - LibraryContentDropZone: border-2 dashed + shadow-modal
+  - ReviewDrawer: cabeçalho com panel-glow e borda forte
+  - folderColors.ts: mapa FOLDER_GRADIENTS duplicando FOLDER_ACCENT_COLORS
+  - Ícones sidebar/upload com strokeWidth 1.75 fora do padrão LUCIDE_STROKE (1.5)
+
+================================================================================
+2. O QUE FOI LIMPO
+================================================================================
+
+Removidos (código morto, sem impacto funcional):
+  - src/features/library/components/FolderCard.tsx
+  - src/features/library/components/FolderGrid.tsx
+  - src/features/library/components/FileContextMenu.tsx
+  - src/features/library/components/SelectionToolbar.tsx
+
+CSS / tokens:
+  - Removidas classes .panel-glow, .gradient-action, .stagger-enter de globals.css
+  - Removido --gradient-panel-glow de tokens.css
+  - Renomeados tokens de pasta para --folder-accent-* com aliases --folder-gradient-*
+  - Novo token --shadow-dropdown (sombra leve para menus/dropdowns)
+  - Simplificado bloco .explorer-folder-card (hover apenas)
+
+Componentes alinhados ao visual flat/minimalista:
+  - ExplorerFolderCard — sem stagger, sem fundo card/40, hover surface
+  - ExplorerContextMenu, NewButtonMenu — shadow-dropdown
+  - LibraryContentDropZone — borda 1px, shadow-dropdown
+  - UploadDropOverlay — flat, bg-doqyn-accent-active, sem glow/gradiente
+  - ReviewDrawer — cabeçalho limpo, border-subtle, shadow-dropdown
+  - UploadQueueDrawer — barra de progresso com --accent-active direto
+  - Sidebar (collapse, enviar), ThemeToggle, BulkSelectionToolbar — LUCIDE_STROKE
+
+Utilitários:
+  - folderColors.ts — uma única fonte FOLDER_ACCENT_COLORS; getFolderGradient deprecated
+
+================================================================================
+3. COESÃO FINAL
+================================================================================
+
+A experiência da Biblioteca agora segue um único vocabulário visual:
+  - Superfícies flat com hover sutil (--bg-surface-hover)
+  - Seleção unificada (--bg-selected / explorer-selected)
+  - Ícones delicados (stroke 1.5)
+  - Menus com sombra dropdown discreta
+  - Sem animação stagger em cards de pasta
+  - Sem resquícios de dashboard (cards altos, bordas pesadas, translate-y)
+  - Upload integrado ao workspace com overlay flat, não neon
+
+Dark e light:
+  - --shadow-dropdown definido para ambos os temas
+  - Cores de pasta e seleção coerentes em light (#d2e3fc) e dark (rgba azul suave)
+
+================================================================================
+4. ARQUIVOS ALTERADOS
+================================================================================
+
+Removidos:
+  FolderCard.tsx, FolderGrid.tsx, FileContextMenu.tsx, SelectionToolbar.tsx
+
+Estilos:
+  src/styles/globals.css
+  src/styles/tokens.css
+  tailwind.config.js (shadow-dropdown)
+
+Biblioteca:
+  ExplorerFolderCard.tsx, ExplorerFolderGrid.tsx
+  ExplorerContextMenu.tsx, NewButtonMenu.tsx
+  LibraryContentDropZone.tsx, BulkSelectionToolbar.tsx
+  utils/folderColors.ts
+
+Workspace / upload (limpeza visual, fluxo intacto):
+  UploadDropOverlay.tsx, ReviewDrawer.tsx, UploadQueueDrawer.tsx
+  Sidebar.tsx, ThemeToggle.tsx
+
+Testes:
+  tests/library-visual-audit.test.ts (novo)
+  tests/library-polish.test.ts (atualizado)
+
+================================================================================
+5. VALIDAÇÃO
+================================================================================
+
+npm test          → 667 testes passando (+8 de auditoria visual)
+npm run lint      → OK
+npm run build     → OK
+npx tsc --noEmit  → OK
+
+================================================================================
+6. NÃO ALTERADO
+================================================================================
+
+- Backend, APIs, auth
+- Lógica de upload / analyze / confirm
+- Navegação e rotas
+- DocumentViewerModal
+- Páginas administrativas (Regras, Usuários, etc.) — fora do escopo desta auditoria
+
+================================================================================

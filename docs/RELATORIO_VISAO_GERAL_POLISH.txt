@@ -1,0 +1,141 @@
+RELATÓRIO — Polish visual da Visão Geral / Painel de controle
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. PROBLEMAS VISUAIS ENCONTRADOS
+================================================================================
+
+- KPIs com labels em uppercase pesado e aparência de botões genéricos
+- Painéis com headers duplicados (border-b + card border) e pouca variação de peso
+- Documentos recentes com divide-y (aspecto de tabela crua)
+- Atividade com linha vertical de timeline pesada
+- Empty states inconsistentes (EmptyState grande vs texto solto)
+- Governança com mini-cards soltos e labels uppercase
+- Saúde do ambiente sem badges claros OK/Pendente
+- Storage com mesma hierarquia visual dos blocos principais
+- Estilos locais repetidos em cada componente (sem tokens overview)
+
+================================================================================
+2. MELHORIAS DE TIPOGRAFIA
+================================================================================
+
+Tokens CSS em globals.css:
+- .overview-section-title — 13px semibold, tracking leve
+- .overview-section-subtitle — 12px muted
+- .overview-kpi-label — 12px medium, cor subtle (sem uppercase)
+- .overview-kpi-value — 26–28px semibold tabular-nums
+- .overview-kpi-subtext — 11px muted
+- .overview-governance-value — 20px semibold
+- .overview-timestamp — 11px subtle
+
+Microcopy refinada nos subtítulos dos painéis.
+
+================================================================================
+3. CARDS DE MÉTRICA (RESUMO EXECUTIVO)
+================================================================================
+
+- Ícones discretos por KPI (FileText, Loader, Clock, etc.)
+- Indicador de tom (dot) para atenção/erro — sem cor em excesso
+- Hover 150ms, active scale sutil
+- Altura mínima 6.25rem, gap interno consistente
+- Faixa única com divisores gap-px (hairline)
+
+================================================================================
+4. DOCUMENTOS RECENTES
+================================================================================
+
+- OverviewPanelShell compartilhado (variant primary)
+- OverviewLinkAction no lugar de Button ghost para "Ver todos"
+- Ícone de arquivo em tile 36px (coerente com explorer)
+- Linhas com .overview-interactive-row (hover suave, sem bordas)
+- Documento único com min-height para não parecer perdido
+- OverviewEmptyHint leve no lugar de EmptyState pesado
+
+================================================================================
+5. ATIVIDADE RECENTE
+================================================================================
+
+- Timeline por respiro (gap-4), sem linha vertical contínua
+- Pontos com ring discreto
+- Timestamps com .overview-timestamp
+- Ação do ator em medium; verbo em muted
+- OverviewEmptyHint quando sem eventos
+
+================================================================================
+6. SAÚDE, GOVERNANÇA E STORAGE
+================================================================================
+
+Saúde:
+- Badges pill OK / Pendente (.overview-health-badge)
+- Layout compacto label + status alinhados
+
+Governança:
+- Grid unificado com divisores gap-px (mesma linguagem dos KPIs)
+- Labels sem uppercase; hints discretos
+
+Storage:
+- Variant muted (menor peso visual)
+- Stats com overview-kpi-label
+- Erros: lista compacta ou linha muted elegante
+
+Distribuição:
+- Barras .overview-distribution-track/fill neutras
+- OverviewEmptyHint quando vazio
+
+================================================================================
+7. COMPONENTES NOVOS
+================================================================================
+
+- OverviewPanelShell.tsx — shell + header padronizado
+- OverviewLinkAction.tsx — ação secundária com chevron
+- OverviewEmptyHint.tsx — empty state minimalista
+
+================================================================================
+8. ARQUIVOS ALTERADOS
+================================================================================
+
+Novos:
+- src/features/dashboard/components/OverviewPanelShell.tsx
+- src/features/dashboard/components/OverviewLinkAction.tsx
+- src/features/dashboard/components/OverviewEmptyHint.tsx
+
+Alterados:
+- OverviewMetricCard.tsx, OverviewSummaryStrip.tsx
+- OverviewRecentDocumentsPanel.tsx, OverviewRecentActivityPanel.tsx
+- OverviewEnvironmentHealthCard.tsx, OverviewGovernancePanel.tsx
+- OverviewStoragePanel.tsx, OverviewDistributionPanel.tsx
+- OverviewPeriodSelector.tsx
+- DashboardPage.tsx (gaps 7/6)
+- src/styles/globals.css (tokens overview expandidos)
+- tests/dashboard-layout.test.ts
+
+Sem alteração em backend, APIs ou dados.
+
+================================================================================
+9. VALIDAÇÃO
+================================================================================
+
+npm test    → 762 pass, 0 fail
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+Funcionalidades preservadas:
+- Período 7/30/90 dias
+- Ir para Biblioteca
+- Viewer, tracking, governança admin-only
+- Dados reais (sem mock)
+
+================================================================================
+10. PENDÊNCIAS VISUAIS (OPCIONAL FUTURO)
+================================================================================
+
+- Sparkline ou tendência nos KPIs (requer dado histórico no backend)
+- Avatar do ator na timeline (se API passar URL)
+- Skeleton loading por painel (hoje loading global único)
+- Animação de entrada staggered (não solicitado — evitado)
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

@@ -1,0 +1,169 @@
+RELATÓRIO — Refatoração UX da tela de Configurações
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. DIAGNÓSTICO DA TELA ANTERIOR
+================================================================================
+
+Arquivo: src/features/documents/SettingsPage.tsx (monolítico)
+
+Problemas identificados:
+- Conteúdo centralizado em max-w-2xl, desperdiçando largura útil em telas grandes.
+- Três SectionCards empilhados (Upload, Autenticação, Segurança) sem navegação interna.
+- Formulário de alteração de senha sempre expandido, poluindo a tela.
+- Ausência de seção de Perfil integrada ao avatar (só modal separado).
+- Visual de formulário técnico, pouco alinhado ao workspace/Biblioteca/Dashboard.
+- Opções de upload/IA misturadas com auth e segurança na mesma coluna estreita.
+- Link legado #upload na fila de upload sem estado de seção na URL.
+
+================================================================================
+2. NOVA ESTRUTURA DE SETTINGS
+================================================================================
+
+Layout duas áreas dentro do canvas principal (PageShell):
+
+  [Menu interno]          [Painel da seção ativa]
+  - Perfil                Conteúdo contextual
+  - Preferências
+  - Upload e IA
+  - Segurança
+  - Autenticação
+  - Organização
+  - Sistema
+
+Componentes de shell:
+- SettingsPage          — orquestra seção ativa + PageShell
+- SettingsLayout        — grid menu + conteúdo
+- SettingsSidebarNav    — lista desktop (lg+) + tabs horizontais mobile
+
+URL / estado:
+- ?section=perfil|preferencias|upload-ia|seguranca|autenticacao|organizacao|sistema
+- Seção padrão: perfil (query omitida)
+- Migração legado: #upload → ?section=upload-ia
+
+================================================================================
+3. SEÇÕES CRIADAS
+================================================================================
+
+| Seção          | Arquivo                              | Conteúdo principal                          |
+|----------------|--------------------------------------|---------------------------------------------|
+| Perfil         | ProfileSettingsSection.tsx           | Avatar, nome, email, tenant, role, provider |
+| Preferências   | PreferencesSettingsSection.tsx       | Tema, view padrão Biblioteca, densidade*    |
+| Upload e IA    | UploadAiSettingsSection.tsx          | ReviewWorkflowSettingsPanel + resumo        |
+| Segurança      | SecuritySettingsSection.tsx          | Cards informativos + links Tracking/Audit   |
+| Autenticação   | AuthenticationSettingsSection.tsx    | Modo/provider + senha colapsável            |
+| Organização    | OrganizationSettingsSection.tsx      | Links Regras/Usuários + itens em breve      |
+| Sistema        | SystemSettingsSection.tsx            | Ambiente, versão, storage genérico          |
+
+* Densidade visual e idioma: marcados "Em breve" (SettingsInfoCard status=pending)
+
+================================================================================
+4. COMPONENTES CRIADOS / REFATORADOS
+================================================================================
+
+Novos:
+- src/features/settings/SettingsPage.tsx
+- src/features/settings/settingsSections.ts
+- src/features/settings/hooks/useSettingsSection.ts
+- src/features/settings/components/SettingsLayout.tsx
+- src/features/settings/components/SettingsSidebarNav.tsx
+- src/features/settings/components/SettingsSectionHeader.tsx
+- src/features/settings/components/SettingsCard.tsx
+- src/features/settings/components/SettingsInfoCard.tsx
+- src/features/settings/components/PasswordChangeCard.tsx
+- src/features/settings/components/sections/* (7 seções)
+- src/features/library/utils/libraryDefaultView.ts
+
+Reutilizados (sem remoção):
+- ChangePasswordForm.tsx
+- ReviewWorkflowSettingsPanel (variant inline)
+- UserAvatar, ThemeToggle, PageShell
+
+Refatorado:
+- src/features/documents/SettingsPage.tsx → re-export de features/settings
+
+CSS (globals.css):
+- .settings-page, .settings-layout, .settings-nav-item, .settings-card,
+  .settings-info-card, .settings-section-header, badges, pills, etc.
+
+================================================================================
+5. MELHOR USO DO ESPAÇO
+================================================================================
+
+- Removido max-w-2xl; layout em grid full-width do body do PageShell.
+- Menu interno fixo ~13–15rem à esquerda (sticky); conteúdo flexível à direita.
+- Upload e IA: grid lg:grid-cols-3 (resumo + painel inline em 2 colunas).
+- Segurança/Organização: grid md:grid-cols-2 de info cards.
+- Mobile: menu vira tabs horizontais com scroll; conteúdo empilha.
+
+================================================================================
+6. UPLOAD E IA — REORGANIZAÇÃO
+================================================================================
+
+- Seção dedicada com header, pill de resumo (auto/manual + delay).
+- Card lateral com snapshot: nomeação, revisão automática, comportamento em lote.
+- Painel principal preserva ReviewWorkflowSettingsPanel variant="inline".
+- Contexto useUploadQueueContext mantido (mesma persistência localStorage).
+- Links da fila/review atualizados: /settings?section=upload-ia
+
+================================================================================
+7. SEGURANÇA E AUTENTICAÇÃO — REORGANIZAÇÃO
+================================================================================
+
+Segurança:
+- Cinco SettingsInfoCard com ícones, status "Ativo" e microcopy de confiança.
+- Links para /tracking e /audit onde aplicável.
+
+Autenticação:
+- Card informativo com modo, provedor, sessão, OAuth.
+- PasswordChangeCard colapsável (fechado por padrão); expande ChangePasswordForm.
+- Condicional usesDoqynAuth() preservada.
+
+================================================================================
+8. URL SECTION
+================================================================================
+
+Implementado via useSettingsSection + parseSettingsSection.
+Refresh preserva seção. Hash #upload migrado automaticamente.
+
+================================================================================
+9. ARQUIVOS ALTERADOS (PRINCIPAIS)
+================================================================================
+
+src/features/settings/**                          (novo módulo)
+src/features/documents/SettingsPage.tsx           (re-export)
+src/features/library/hooks/useLibraryRouteState.ts (default view localStorage)
+src/features/library/utils/libraryDefaultView.ts  (novo)
+src/features/upload/UploadQueueDrawer.tsx         (link section)
+src/features/upload/review/ReviewDrawer.tsx       (link section)
+src/styles/globals.css                            (tokens settings)
+tests/settings-page-layout.test.ts                  (reescrito)
+tests/upload-queue-preferences.test.ts              (paths atualizados)
+tests/page-layout-full-height.test.ts              (path SettingsPage)
+
+================================================================================
+10. RESULTADO DOS COMANDOS
+================================================================================
+
+npm test        → 787 testes passando
+npm run build   → OK (tsc -b && vite build)
+npm run lint    → OK
+npx tsc --noEmit → OK
+
+================================================================================
+11. PENDÊNCIAS
+================================================================================
+
+- Densidade visual global (compact/comfortable): UI placeholder "Em breve".
+- Idioma da interface: não há i18n; marcado em breve.
+- Sessões ativas / revogação remota: requer API auth-service.
+- Categorias e grupos inline em Organização: links para Regras/Usuários; edição futura.
+- Telemetria e painel de integrações em Sistema: informativo / em breve.
+- Bucket mascarado no dashboard admin; Settings mostra apenas "Objeto na nuvem (R2)".
+- UploadWorkflowSettingsSection.tsx legado ainda existe; pode ser removido em cleanup futuro
+  se não houver outros consumidores.
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

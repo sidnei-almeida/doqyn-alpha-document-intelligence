@@ -1,0 +1,881 @@
+================================================================================
+  RELATORIO TECNICO — DOQYN
+  Integracao MongoDB Atlas, Groq/IA e Fluxo de Analise Documental
+================================================================================
+
+Data de referencia : junho de 2026 (suporte NDA + revisao manual)
+Projeto            : doqyn-alpha-document-intelligence
+Ambiente           : desenvolvimento experimental
+Formato            : relatorio tecnico interno (sem credenciais)
+
+AVISO DE SEGURANCA
+------------------
+Este documento nao contem segredos. Variaveis sensiveis sao referenciadas
+apenas pelo nome, com valores mascarados:
+
+  MONGODB_URI    = ***configurado***
+  GROQ_API_KEY   = ***configurado***
+  MONGODB_USERNAME / MONGODB_PASSWORD = ***configurado*** (se aplicavel)
+
+================================================================================
+1. VISAO GERAL DO PROJETO
+================================================================================
+
+O DOQYN e uma plataforma experimental de analise e governanca documental.
+Nesta fase, o objetivo e validar o fluxo ponta a ponta com PDFs textuais
+(texto selecionavel), sem OCR, sem storage externo e sem busca vetorial.
+
+Capacidades implementadas no codigo:
+
+  - Envio de PDF textual pelo frontend (tela /upload)
+  - Extracao e normalizacao de texto no backend
+  - Chunks temporarios em memoria + retriever hibrido
+  - Analise com Groq (classificacao + extracao de metadados)
+  - Geracao deterministica de nome recomendado no backend
+  - Validacao de JSON da IA antes de persistir
+  - Confirmacao de metadados pelo usuario
+  - Persistencia no MongoDB Atlas (documents, versoes, jobs, auditoria)
+  - Placeholders de storage AWS S3 / Cloudflare R2 (status pending)
+
+Capacidades explicitamente FORA desta fase:
+
+  - FAISS
+  - MongoDB Atlas Vector Search
+  - Embeddings persistentes
+  - Collection document_chunks
+  - Busca semantica global / chat documental
+  - OCR, Google Document AI, upload real para S3/R2
+
+Stack relevante:
+
+  - Frontend : React + Vite + TypeScript
+  - Backend  : API (pasta api/) + dev-server local (porta 3001)
+  - IA       : Groq SDK (somente backend)
+  - Retrieval: hibrido em memoria (server/services/hybridChunkRetriever.ts)
+  - Banco    : MongoDB Atlas via driver nativo mongodb (^7.x)
+  - Legado   : mongoose em modulos antigos (coexistencia; unificacao pendente)
+
+================================================================================
+2. DECISAO TECNICA FINAL SOBRE RETRIEVAL
+================================================================================
+
+2.1 O que NAO estamos usando nesta fase
+---------------------------------------
+  [X] FAISS
+  [X] MongoDB Atlas Vector Search
+  [X] Embeddings
+  [X] Collection document_chunks
+  [X] Persistencia vetorial
+  [X] Busca semantica global
+
+Nenhuma dependencia de FAISS, embeddings ou vector search esta instalada no
+package.json desta etapa.
+
+2.2 Abordagem escolhida: Retriever hibrido em memoria
+------------------------------------------------------
+Arquivos responsaveis:
+
+  - server/services/hybridChunkRetriever.ts  (scoring e selecao)
+  - server/services/retrievalProvider.ts     (abstracao; modo "hybrid")
+  - server/ai/services/documentChunker.ts    (criacao de chunks)
+  - server/ai/constants.ts                 (RETRIEVAL_MODE = "hybrid")
+
+O retriever pontua cada chunk por:
+
+  - keywords das classes (document_classes / mock fallback)
+  - nome e descricao da classe
+  - aliases, labels e descricoes dos campos (document_rules)
+  - regex de CNPJ
+  - regex de datas (dd/mm/yyyy e yyyy-mm-dd)
+  - regex de valores monetarios (R$)
+  - regex de numero de nota fiscal e numero de pedido
+  - termos juridicos/comerciais (contratante, contratada, vigencia, etc.)
+  - frequencia de matches (ate 3 ocorrencias por termo)
+  - diversidade de matches (bonus por variedade de termos)
+  - proximidade de aliases a valores (: nº CNPJ valor)
+  - bonus por posicao no documento (paginas 1-4)
+  - penalizacao de chunks muito curtos
+  - penalizacao por negativeKeywords da classe
+
+Cada chunk selecionado retorna:
+
+  - score          : pontuacao numerica
+  - matchedTerms   : termos que contribuiram
+  - reason         : justificativa textual curta do ranking
+  - pageNumber     : pagina de origem
+  - chunkIndex     : indice do trecho na pagina
+
+2.3 Motivo da decisao
+---------------------
+O objetivo atual do DOQYN NAO e chat documental nem busca semantica global.
+O objetivo e:
+
+  1. Receber PDF textual
+  2. Selecionar trechos relevantes por regras de negocio
+  3. Enviar contexto reduzido para Groq
+  4. Classificar dentro de classes cadastradas
+  5. Extrair metadados conforme document_rules
+  6. Gerar nome recomendado
+  7. Persistir apenas o resultado final no MongoDB
+
+Para isso, scoring deterministico em memoria e suficiente, testavel e seguro.
+
+================================================================================
+3. FLUXO ATUALIZADO DA ANALISE DOCUMENTAL
+================================================================================
+
+PDF textual
+  -> upload no frontend (/upload)
+  -> POST /api/ai/analyze-pdf (multipart, campo file)
+  -> validacao de tipo/tamanho (PDF, max 15MB)
+  -> extracao de texto (pdf-parse / PDFParse)
+  -> normalizacao do texto (textNormalization.ts)
+  -> divisao em chunks temporarios em memoria (documentChunker.ts)
+  -> selecao de trechos pelo retriever hibrido (retrievalProvider.ts)
+  -> envio dos trechos relevantes para Groq (classificador + extrator)
+  -> classificacao restrita as classes cadastradas
+  -> extracao restrita aos campos da regra ativa
+  -> validacao de JSON no backend (validation.ts, documentValidators.ts)
+  -> geracao de nome recomendado no backend (documentNaming.ts)
+  -> retorno JSON + logs de negocio ao frontend
+  -> usuario revisa e clica "Confirmar metadados"
+  -> POST /api/documents/confirm-analysis (autenticado)
+  -> persistencia em documents, document_versions, processing_jobs, audit_logs
+  -> descarte automatico de chunks e texto bruto ao fim da request
+
+Constantes de chunking/retrieval (server/ai/constants.ts):
+
+  CHUNK_SIZE                    = 1800
+  CHUNK_OVERLAP                 = 250
+  MAX_CHUNKS_FOR_CLASSIFICATION = 8
+  MAX_CHUNKS_FOR_EXTRACTION     = 10
+  MAX_CHUNKS_PER_FIELD          = 4
+  MIN_CLASSIFICATION_CONFIDENCE = 0.70
+  MIN_FIELD_CONFIDENCE          = 0.60
+
+================================================================================
+4. CHUNKS TEMPORARIOS
+================================================================================
+
+Regras obrigatorias nesta etapa:
+
+  - Chunks sao criados APENAS em memoria durante analyzePdfBuffer()
+  - Chunks NAO sao salvos no MongoDB
+  - Texto completo do PDF NAO e salvo no MongoDB
+  - Chunks sao descartados ao final da requisicao HTTP de analise
+  - Variaveis locais (extracted, chunks, classificationChunks, extractionChunks)
+    sao coletadas pelo garbage collector apos a resposta
+
+O que PODE ser salvo (somente apos confirmacao):
+
+  - Evidencias curtas em document_versions.metadata[campo].evidence
+  - Formato: { pageNumber?, snippet } com snippet limitado (~300 caracteres)
+  - Nunca o chunk inteiro nem o texto integral do documento
+
+Logs na UI (linguagem de negocio):
+  "Trechos relevantes selecionados para analise."
+
+Logs internos (backend, nivel debug):
+  - quantidade total de chunks criados
+  - topK selecionado para classificacao e extracao
+  - scores por chunk
+  - matchedTerms
+  - via logger.debug + buildRetrievalStats()
+
+================================================================================
+5. O QUE E SALVO NO MONGODB
+================================================================================
+
+Nesta etapa, o MongoDB armazena apenas dados de negocio e rastreabilidade:
+
+  document_classes   : classes/categorias permitidas para a IA
+  document_rules     : campos extraiveis, aliases, namingTemplate
+  documents          : documento logico (estado atual)
+  document_versions  : cada versao com metadados completos
+  processing_jobs    : etapas do processamento
+  audit_logs         : trilha append-only de acoes
+
+Conteudo salvo em document_versions (entre outros):
+
+  - classificacao (classId, className, confidence, reason, evidence)
+  - metadados extraidos por campo (value, normalizedValue, confidence)
+  - evidencias curtas (snippet + pageNumber)
+  - nome recomendado / finalFileName
+  - status de revisao (review.required, review.reasons)
+  - metadataIndex para busca otimizada
+  - placeholders storage (primary pending, backup pending)
+
+O que NAO e salvo: ver secao 6.
+
+================================================================================
+6. O QUE NAO E SALVO NO MONGODB
+================================================================================
+
+Explicitamente fora do escopo desta etapa:
+
+  [X] Chunks completos
+  [X] Texto completo extraido do PDF
+  [X] Embeddings
+  [X] Indice vetorial
+  [X] FAISS
+  [X] Collection document_chunks (nao existe)
+  [X] Arquivos PDF reais no MongoDB
+  [X] Dados brutos desnecessarios da analise
+  [X] Prompts completos enviados a Groq
+  [X] Connection strings ou credenciais
+
+================================================================================
+7. ESTADO ATUAL DO MONGODB ATLAS
+================================================================================
+
+7.1 Infraestrutura
+------------------
+  - Projeto/cluster Atlas: criado no ambiente de desenvolvimento
+  - Database planejado/usado: doqyn_dev
+  - Validacao operacional: npm run db:setup + Atlas Compass
+
+7.2 Variaveis de ambiente
+-------------------------
+  MONGODB_URI        = ***configurado***
+  MONGODB_DATABASE   = variavel principal (padrao: doqyn_dev)
+  MONGODB_DB_NAME    = LEGADO — nao usado pelo codigo (removido do .env.example)
+  MONGODB_COMPANY_ID = opcional; padrao company_dev
+  GROQ_API_KEY       = ***configurado***
+
+  Fonte unica do nome do database:
+    server/db/database.ts → getMongoDatabaseName()
+    Usado por: driver nativo (mongoClient.ts) e mongoose legado (mongo.ts)
+
+7.3 Por que os dados apareceram em doqyn_alpha
+----------------------------------------------
+  Causa: o .env local tinha MONGODB_DB_NAME=doqyn_alpha sem MONGODB_DATABASE.
+  O driver nativo antigo usava a cadeia:
+    MONGODB_DATABASE || MONGODB_DB_NAME || doqyn_dev
+  Como MONGODB_DATABASE estava ausente, o app gravava em doqyn_alpha.
+  O mongoose legado usava env.MONGODB_DB_NAME com default doqyn_alpha.
+
+7.4 Padronizacao aplicada (jun/2026)
+------------------------------------
+  Decisao: MONGODB_DATABASE e a unica variavel usada pelo app.
+  Fallback hardcoded: doqyn_dev (server/db/database.ts)
+  MONGODB_DB_NAME removido do codigo da aplicacao.
+  /api/health retorna o nome real do database (nao apenas "configured").
+
+  Acao recomendada no .env local:
+    MONGODB_DATABASE=doqyn_dev
+    Remover ou ignorar MONGODB_DB_NAME
+
+  Dados historicos em doqyn_alpha permanecem no Atlas ate migracao manual.
+  Apos padronizacao, npm run db:setup popula doqyn_dev com classes/regras.
+
+7.5 Conexao no backend
+----------------------
+  Cliente nativo (fluxo novo):
+    Arquivo  : server/db/mongoClient.ts
+    Funcoes  : getMongoClient(), getDb(), isMongoNativeConfigured()
+    Seguranca: nao loga URI completa nem senha
+
+  Cliente mongoose (legado):
+    Arquivo  : server/db/mongo.ts
+    Uso      : documentService, auditService antigos
+
+7.4 Regras de acesso
+--------------------
+  - MongoDB usado APENAS pelo backend
+  - Nao existe VITE_MONGODB_URI
+  - Frontend nunca recebe URI de conexao
+  - Queries de persistencia filtram por companyId (padrao: company_dev)
+  - Nunca buscar documento somente por _id sem companyId
+
+7.5 Setup de banco
+------------------
+  Script   : server/db/setupMongo.ts
+  Comando  : npm run db:setup
+  Funcao   : criar indices + seed idempotente de classes e regras
+  Idempotencia: $setOnInsert; pode rodar multiplas vezes
+
+Status runtime das collections:
+  - Criadas implicitamente no primeiro insert ou via setup
+  - Indices: definidos no codigo; execucao depende de npm run db:setup
+  - Seeds: 3 classes + 3 regras ativas para company_dev
+
+================================================================================
+8. COLLECTIONS — STATUS DETALHADO
+================================================================================
+
+8.1 document_classes
+--------------------
+Finalidade   : Classes permitidas; IA so classifica dentro desta lista
+Status       : IMPLEMENTADA (schema + seed + leitura)
+Campos-chave : _id, companyId, name, description, keywords, negativeKeywords,
+               permissions, active, timestamps
+Indices      : { companyId, active }; { companyId, name } unique
+Observacao   : Fonte de verdade para classificacao; carregada por documentRulesService
+
+8.2 document_rules
+------------------
+Finalidade   : Campos extraiveis, aliases, namingTemplate, minimumConfidence
+Status       : IMPLEMENTADA (schema + seed + leitura)
+Campos-chave : _id, companyId, classId, version, active, fields[], namingTemplate
+Indices      : { companyId, classId, active }; { companyId, classId, version: -1 }
+Observacao   : Regra ativa = maior version com active=true por classId
+
+8.3 documents
+-------------
+Finalidade   : Documento logico (estado atual do registro de negocio)
+Status       : IMPLEMENTADA (escrita em confirmAnalysisService)
+Campos-chave : _id, companyId, documentCode, currentVersionId, classId, className,
+               title, currentFileName, status, processingStatus, access,
+               currentMetadataPreview, timestamps
+Indices      : status+updatedAt; classId+updatedAt; currentVersionId;
+               access.viewGroupIds+updatedAt
+Observacao   : Preview de metadados; detalhe completo na versao
+
+8.4 document_versions
+---------------------
+Finalidade   : Cada versao real; historico imutavel
+Status       : IMPLEMENTADA (escrita em confirmAnalysisService)
+Campos-chave : versionNumber, versionLabel, classification, rule, metadata,
+               metadataIndex[], storage{}, review{}, file{}
+Indices      : { companyId, documentId, versionNumber } unique;
+               file.sha256; classification.classId;
+               metadataIndex (string/number/date)
+Observacao   : Evidencias curtas em metadata; storage placeholder pending
+
+8.5 processing_jobs
+-------------------
+Finalidade   : Registro das etapas de processamento
+Status       : IMPLEMENTADA (escrita em confirmAnalysisService)
+Campos-chave : documentId, versionId, type, status, steps[], error, timestamps
+Indices      : { companyId, documentId, createdAt: -1 }; { companyId, status }
+Observacao   : Inclui etapa "Metadados salvos" apos confirmacao
+
+8.6 audit_logs
+--------------
+Finalidade   : Trilha append-only de acoes importantes
+Status       : IMPLEMENTADA (escrita em confirmAnalysisService)
+Campos-chave : documentId, versionId, actor, action, description, metadata, createdAt
+Indices      : { companyId, documentId, createdAt: -1 }; { companyId, action, createdAt }
+Observacao   : Nunca editar logs antigos; acoes: document.created,
+               document.metadata.confirmed, etc.
+
+8.7 document_chunks
+-------------------
+Status       : NAO EXISTE — deliberadamente fora do escopo desta fase
+
+================================================================================
+9. DOCUMENTOS E VERSOES (CONCEITO)
+================================================================================
+
+  documents         = documento logico (entidade de negocio)
+  document_versions = cada versao do arquivo e seus metadados
+
+Regras:
+
+  1. Versoes antigas NUNCA devem ser apagadas
+  2. Nova atualizacao futura criara nova entrada em document_versions
+  3. documents.currentVersionId aponta para a versao corrente
+  4. documents guarda resumo; metadados completos ficam na versao
+
+Exemplo:
+  Documento logico : Contrato Acme Suprimentos
+  Versoes          : v1.0 (confirmacao inicial)
+                     v2.0 (futuro: reenvio/aditivo)
+
+Nesta etapa experimental, apenas v1.0 e criada no primeiro confirm.
+
+================================================================================
+10. STORAGE AWS S3 E CLOUDFLARE R2
+================================================================================
+
+Status: NAO IMPLEMENTADO (apenas placeholders)
+
+Em document_versions.storage:
+
+  primary:
+    provider    : aws_s3
+    status      : pending
+    objectKey   : null
+    bucketAlias : null
+    storedAt    : null
+
+  backup:
+    provider    : cloudflare_r2
+    status      : pending
+    objectKey   : null
+    bucketAlias : null
+    storedAt    : null
+
+Status possiveis no futuro: pending | stored | failed | skipped
+
+Regras atuais e futuras:
+
+  - Arquivo PDF real NAO e enviado para storage externo nesta etapa
+  - MongoDB NAO armazena PDF binario
+  - No futuro: MongoDB guardara apenas referencia segura (objectKey, bucketAlias)
+  - Backend gerara signed URLs sob demanda
+  - Frontend nunca acessara bucket diretamente
+
+Limitacao conhecida:
+  SHA256 atual no confirm e derivado de metadados do envio (nome, tamanho),
+  nao do binario do PDF, pois o arquivo nao e reenviado no confirm.
+
+================================================================================
+11. IA COM GROQ
+================================================================================
+
+Configuracao:
+  GROQ_API_KEY = ***configurado***
+  GROQ_MODEL   = opcional (fallback: llama-3.3-70b-versatile)
+
+Arquivo central: server/ai/services/groqClient.ts
+
+Regras:
+
+  - Groq chamada EXCLUSIVAMENTE pelo backend
+  - Nao existe GROQ_API_KEY no frontend (sem VITE_GROQ)
+  - Groq classifica documentos e extrai metadados
+  - Groq recebe contexto REDUZIDO (trechos selecionados), nao PDF inteiro
+  - response_format: json_object
+  - temperature: 0.1
+
+Restricoes impostas ao modelo (via prompt + validacao backend):
+
+  - Nao inventar classes
+  - Nao inventar campos fora de document_rules
+  - Se confidence insuficiente: requiresReview = true
+  - JSON validado antes de retornar ao frontend ou salvar
+
+Agentes:
+  - server/ai/services/documentClassifierAgent.ts
+  - server/ai/services/metadataExtractorAgent.ts
+
+================================================================================
+12. REGRAS DE CLASSE E EXTRACAO
+================================================================================
+
+document_classes:
+  - Define classes permitidas para classificacao
+  - IA deve escolher APENAS classes cadastradas
+  - classId fora da lista -> rejeitado / requiresReview
+
+document_rules:
+  - Define campos extraiveis, aliases, tipos, obrigatoriedade
+  - IA extrai APENAS campos da regra ativa
+  - Campos extras retornados pela IA sao descartados pelo backend
+
+Revisao obrigatoria quando:
+
+  - confidence de classificacao < 0.70
+  - confidence de campo obrigatorio < 0.60
+  - campos obrigatorios ausentes (missingFields)
+  - JSON invalido da IA
+  - classificacao.requiresReview ou extraction.requiresReview
+
+Validacao backend:
+  - server/ai/utils/validation.ts
+  - server/ai/services/documentValidators.ts
+  - server/services/confirmAnalysisService.ts (Zod + regras de negocio)
+
+================================================================================
+13. RETRIEVER HIBRIDO — DETALHES TECNICOS
+================================================================================
+
+13.1 Arquivos
+-------------
+  server/services/hybridChunkRetriever.ts   — implementacao do scoring
+  server/services/retrievalProvider.ts      — facade; modo "hybrid" ativo
+  server/ai/services/documentChunker.ts     — entrada: ExtractedPdfText
+  server/ai/services/analyzePdfService.ts   — orquestrador do fluxo
+
+Nota: caminho efetivo e server/services/ (nao server/src/services/).
+
+13.2 Tipos
+----------
+  DocumentChunk:
+    id, pageNumber?, chunkIndex, text, charStart?, charEnd?
+
+  RetrievedChunk (extends DocumentChunk):
+    score, matchedTerms[], reason
+
+13.3 Funcoes principais
+-----------------------
+  retrieveChunksForClassification({ chunks, classes, topK? })
+    -> top 8 chunks por score de classificacao
+
+  retrieveChunksForExtraction({ chunks, selectedClass, topK? })
+    -> merge por campo; top 10 chunks unicos
+
+  retrieveChunksForField({ chunks, field, selectedClass, topK? })
+    -> top 4 chunks por campo (usado internamente na extracao)
+
+  formatChunksForPrompt(chunks)
+    -> texto para Groq: [pagina N, trecho M] + conteudo
+
+  buildRetrievalStats({ totalChunks, classificationChunks, extractionChunks })
+    -> metricas internas para logger.debug
+
+13.4 Diferenca classificacao vs extracao
+----------------------------------------
+  Classificacao:
+    - Termos de TODAS as classes (keywords, nome, descricao)
+    - negativeKeywords penalizam
+    - Termos juridicos/comerciais genericos
+    - topK = 8
+
+  Extracao:
+    - Termos por CAMPO (aliases, label, descricao)
+    - Bonus de proximidade alias->valor
+    - Padroes regex (CNPJ, data, valor, numero)
+    - Merge dos melhores chunks por campo
+    - topK = 10
+
+13.5 UI vs logs internos
+------------------------
+  UI (logs de negocio):
+    "Trechos relevantes selecionados para analise."
+
+  UI NAO mostra:
+    retriever, regex, scoring, chunks, Groq, MongoDB, backend
+
+  Logs internos (JSON via logger):
+    totalChunks, classificationTopK, extractionTopK, scores, matchedTerms
+
+13.6 Modos futuros (retrievalProvider.ts)
+-----------------------------------------
+  RetrievalMode = "hybrid" | "faiss" | "atlas_vector" | "google"
+  Apenas "hybrid" esta implementado. Demais lancam erro se ativados.
+
+================================================================================
+14. FAISS, ATLAS VECTOR SEARCH E GOOGLE (DECISAO FUTURA)
+================================================================================
+
+Nesta fase:
+  - FAISS: NAO usado
+  - Atlas Vector Search: NAO usado
+  - Embeddings: NAO usados
+  - Google Document AI: NAO integrado
+
+Google Document AI sera avaliado posteriormente para:
+  - OCR e PDFs escaneados
+  - Layout e estruturacao
+  - Possivel classificacao/extracao documental nativa
+
+Vector search / FAISS / document_chunks serao reconsiderados SE e SOMENTE SE
+houver caso real de:
+  - Chat documental
+  - Busca semantica global
+  - Comparacao de clausulas entre documentos
+  - Perguntas sobre documentos ja salvos no acervo
+
+================================================================================
+15. SEGURANCA
+================================================================================
+
+  [x] .env no .gitignore (linha .env)
+  [x] Nenhum segredo neste relatorio
+  [x] GROQ_API_KEY somente no backend
+  [x] MONGODB_URI somente no backend
+  [x] Sem VITE_MONGODB_URI / VITE_GROQ_API_KEY
+  [x] Queries filtram por companyId
+  [x] Nunca buscar documento so por _id
+  [~] Permission check por grupo do usuario (parcial — admin/manager bypass;
+      confirm-analysis valida grupos update da classe via canConfirmDocuments)
+  [x] analyze-pdf exige autenticacao (requireAuth + canAnalyzeDocuments)
+  [x] confirm-analysis exige autenticacao
+  [x] Visualizar e baixar sao permissoes distintas no schema
+  [x] audit_logs append-only
+  [x] Versoes antigas nao devem ser apagadas (politica; sem delete implementado)
+  [x] Prompts e stack traces nao retornam ao frontend
+
+================================================================================
+16. ENDPOINTS — STATUS ATUAL
+================================================================================
+
+16.1 POST /api/ai/analyze-pdf
+  Finalidade : Analisar PDF textual com Groq + retriever hibrido
+  Entrada    : multipart/form-data, campo "file" (PDF, max 15MB)
+  Saida      : jobId, status, fileHash (SHA256 do binario), fileSizeBytes,
+               classification, extraction, recommendedFileName,
+               textExtraction, logs[]
+  Auth       : requireAuth (cookie de sessao) + canAnalyzeDocuments
+  Status     : IMPLEMENTADO e PROTEGIDO
+
+16.2 POST /api/documents/confirm-analysis
+  Finalidade : Persistir resultado confirmado no MongoDB
+  Entrada    : JSON (originalFileName, recommendedFileName, fileHash,
+               fileSizeBytes, classification, extraction, textExtraction, logs)
+  Saida      : { documentId, versionId, status: "saved", documentCode,
+               storageStatus: "pending" }
+  Auth       : requireAuth (cookie de sessao) + canConfirmDocuments
+  Status     : IMPLEMENTADO
+  Bloqueios  : requiresReview, classe/regra ausente, Mongo nao configurado,
+               sem permissao de update na classe
+
+16.3 GET /api/document-rules/active
+  Finalidade : Retornar classes e regras ativas da empresa
+  Entrada    : nenhuma (GET)
+  Saida      : { companyId, source: "mongodb"|"mock", classes[] }
+  Auth       : requireAuth
+  Status     : IMPLEMENTADO
+
+16.4 Outros endpoints legados (coexistencia)
+  POST /api/documents/upload  — mongoose legado
+  GET  /api/documents         — listagem legada
+  GET  /api/audit             — auditoria legada
+  POST /api/auth/login|logout — autenticacao temporaria
+  GET  /api/auth/me
+
+================================================================================
+17. COMO TESTAR (VALIDACAO PASSO A PASSO)
+================================================================================
+
+  1. Rodar projeto:
+       npm run dev
+
+  2. Confirmar variaveis no .env (sem expor valores):
+       MONGODB_URI=***configurado***
+       GROQ_API_KEY=***configurado***
+       MONGODB_DATABASE=doqyn_dev
+
+  3. Testar conexao e setup MongoDB:
+       npm run db:setup
+       Verificar no Atlas Compass: document_classes, document_rules
+
+  4. Login (auth temporaria): admin@doqyn.com
+
+  5. Enviar PDF textual em /upload
+
+  6. Verificar na UI:
+       - "Texto extraido"
+       - "Trechos relevantes selecionados para analise"
+       - Classificacao, metadados, nome recomendado
+       - SEM termos tecnicos (Groq, MongoDB, chunks, retriever)
+
+  7. Verificar resposta da analise (status completed ou requires_review)
+
+  8. Se completed: clicar "Confirmar metadados"
+
+  9. Verificar toast "Documento salvo com sucesso"
+
+ 10. No Atlas Compass, confirmar:
+       - documents (novo registro)
+       - document_versions (metadados + evidence + storage pending)
+       - processing_jobs (steps incluindo "Metadados salvos")
+       - audit_logs (document.created, document.metadata.confirmed)
+
+ 11. Confirmar que NAO existem:
+       - collection document_chunks
+       - texto integral do PDF salvo
+       - chunks completos em qualquer collection
+
+ 12. Logs internos da API (nivel debug):
+       - totalChunks, scores, matchedTerms via buildRetrievalStats
+
+Comandos uteis:
+  npm install
+  npm run db:setup
+  npm run dev
+  npm run build
+  npm run lint
+  npx tsx scripts/validate-flow-internal.mjs   (validacao E2E local)
+
+================================================================================
+18. CHECKLIST TECNICO ATUALIZADO
+================================================================================
+
+Legenda: [x] implementado e validado | [~] parcial | [ ] pendente
+
+[ x ] MongoDB conectado (npm run db:setup executado com sucesso)
+[ x ] MONGODB_URI protegido (backend only, sem VITE_; URI nao logada)
+[ x ] .env no .gitignore
+[ x ] Collections criadas (document_classes, document_rules, documents, etc.)
+[ x ] Indices criados (companyId_1_active_1, companyId_1_name_1, etc.)
+[ x ] Seeds inseridos (3 classes + 3 regras ativas para company_dev)
+[ x ] Groq funcionando no backend (groqClient.ts)
+[ x ] PDF textual analisado (analyze-pdf)
+[ x ] Chunks criados apenas em memoria (documentChunker.ts)
+[ x ] Retriever hibrido funcionando (hybridChunkRetriever.ts)
+[ x ] Trechos relevantes selecionados (retrievalProvider.ts)
+[ x ] Classes vindas do MongoDB (com fallback mock)
+[ x ] Metadados retornados em JSON
+[ x ] Nome recomendado gerado no backend
+[ x ] analyze-pdf exige autenticacao
+[ x ] fileHash SHA256 real no analyze-pdf
+[ x ] Confirmar metadados salva no MongoDB (confirm-analysis)
+[ x ] documents criado na confirmacao
+[ x ] document_versions criado na confirmacao
+[ x ] processing_jobs criado na confirmacao
+[ x ] audit_logs criado na confirmacao
+[ x ] AWS placeholder criado (storage.primary pending)
+[ x ] Cloudflare placeholder criado (storage.backup pending)
+[ x ] Nenhum chunk salvo no MongoDB
+[ x ] Nenhum embedding salvo
+[ x ] Nenhum FAISS usado
+[ x ] Nenhum Atlas Vector Search usado
+[ x ] companyId centralizado (getCompanyIdFromUser / resolveCompanyId)
+[ x ] Classe NDA no seed (class_confidentiality_agreement)
+[ x ] Regra NDA no seed (rule_confidentiality_agreement_v1)
+[ x ] PDF NDA classificado corretamente
+[ x ] Nome sugerido com prefixo NDA_
+[ x ] CPF/CNPJ opcional para NDA
+[ x ] Confirmar apos revisao (UI + backend)
+[ x ] Database unico padronizado (MONGODB_DATABASE via server/db/database.ts)
+[ x ] Driver nativo e mongoose usam mesmo database
+[ x ] NDA salvo com version correspondente (validado em doqyn_alpha)
+[ x ] processing_jobs e audit_logs existem para documento NDA
+
+================================================================================
+19. RESULTADO TECNICO
+================================================================================
+
+Build:
+  npm run build — PASSOU (tsc + vite build, jun/2026)
+
+Lint:
+  npm run lint — PASSOU (0 erros; 4 warnings pre-existentes nao relacionados)
+
+npm run db:setup (validacao real):
+  Status     : PASSOU
+  Database efetivo : doqyn_dev (apos padronizacao MONGODB_DATABASE)
+  Classes    : 4 (company_dev)
+  Regras     : 4 ativas (company_dev)
+  Indices    : criados/verificados em todas as collections do fluxo
+  Logs       : sem exposicao de MONGODB_URI
+
+Auditoria MongoDB (scripts/audit-mongodb-database.mjs):
+  Database efetivo do app     : doqyn_dev (MONGODB_DATABASE ausente → fallback)
+  Database legado com dados   : doqyn_alpha (gravado via MONGODB_DB_NAME antigo)
+  Motivo doqyn_alpha          : .env tinha MONGODB_DB_NAME sem MONGODB_DATABASE;
+                                driver antigo usava MONGODB_DB_NAME como fallback
+  Collections em doqyn_alpha  : 4 classes, 4 regras, 2 documents, 2 versions,
+                                2 jobs, 4 audit_logs
+  Collections em doqyn_dev    : populadas via npm run db:setup apos padronizacao
+  document_chunks             : ausente em ambos
+
+Validacao documento NDA salvo (doqyn_alpha — dados historicos):
+  documentId           : doc_204906da-da43-42a8-97a0-ee1a878bdecc
+  documentCode         : DOQYN-2026-000002
+  classId              : class_confidentiality_agreement
+  currentVersionId     : ver_bdf60734-516e-4084-b052-a24c985e9b95
+  versionExists        : SIM
+  storage placeholders : primary pending, backup pending
+  metadataFieldCount   : 9 campos
+  maxEvidenceSnippet   : 160 chars (sem chunk completo)
+  processing_jobs      : 1
+  audit_logs           : 2 (document.created + document.metadata.confirmed)
+  texto integral PDF   : NAO salvo
+  document_chunks      : NAO existe
+
+Validacao end-to-end (scripts/validate-flow-internal.mjs):
+  analyze-pdf sem auth     : 401 (bloqueado)
+  analyze-pdf com auth     : status completed
+  fileHash SHA256          : calculado do binario do PDF (64 hex)
+  confirm-analysis         : documento DOQYN-2026-000001 salvo
+  documents                : 1 registro
+  document_versions        : 1 registro (sha256 = fileHash da analise)
+  processing_jobs          : 1 registro
+  audit_logs               : 2 registros (document.created + metadata.confirmed)
+  document_chunks          : 0 (collection nao existe)
+
+Teste real com PDF de NDA (NDA - ACORDO DE CONFIDENCIALIDADE (2).pdf):
+  Problema anterior      : classificado como "Contrato de Fornecedor" por ausencia
+                           de classe NDA no seed (IA restrita as classes cadastradas)
+  Classe adicionada      : class_confidentiality_agreement (Acordo de Confidencialidade)
+  Regra adicionada       : rule_confidentiality_agreement_v1 (9 campos, CPF/CNPJ opcional)
+  Resultado apos ajuste  : status completed
+  Classificacao          : Acordo de Confidencialidade (confianca 0.99)
+  Nome sugerido          : NDA_SIDNEI_ALVES_DE_ALMEIDA_09_de_junho_de_2026_v1_0.pdf
+  Parte receptora        : SIDNEI ALVES DE ALMEIDA
+  Script de teste        : npx tsx scripts/test-nda-pdf.mjs
+
+Revisao manual:
+  UI                     : botao "Confirmar apos revisao" + checkbox de aceite
+  Backend                : manualReviewConfirmed no confirm-analysis
+  Audit                  : document.metadata.reviewed_confirmed quando salvo com revisao
+  processingStatus       : processed_with_review quando aplicavel
+
+Erros encontrados nesta etapa:
+  Nenhum erro de build ou lint apos endurecimento do fluxo.
+
+Limitacoes restantes:
+  - Apenas PDF textual (sem OCR)
+  - Dois clientes Mongo (mongoose legado + driver nativo)
+  - PDF nao reenviado no confirm (fileHash reutilizado da analise)
+  - Sem upload real para S3/R2
+  - Sem versionamento por reenvio na UI
+  - Permission check por grupo: admin/manager bypass; grupos do seed usam
+    prefixo group_* (ex.: group_juridico) — alinhar TEMP_USER_GROUPS no futuro
+  - TEMP_COMPANY_ID legado (doqyn-alpha) mapeado para MONGODB_COMPANY_ID
+    via resolveCompanyId em server/auth/companyContext.ts
+
+================================================================================
+20. RESOLUCAO DE companyId E SHA256 (ENDURECIMENTO)
+================================================================================
+
+companyId:
+  Arquivo    : server/auth/companyContext.ts
+  Funcoes    : resolveCompanyId(), getCompanyIdFromUser(), getCurrentCompanyId()
+  Comportamento:
+    - Le companyId da sessao JWT do usuario autenticado
+    - Mapeia ID legado "doqyn-alpha" para MONGODB_COMPANY_ID / company_dev
+    - Usado em analyze-pdf, confirm-analysis e document-rules/active
+  Padrao env : MONGODB_COMPANY_ID=company_dev, TEMP_COMPANY_ID=company_dev
+
+SHA256:
+  Calculo    : createHash('sha256').update(buffer).digest('hex') em analyzePdfService
+  Retorno    : fileHash + fileSizeBytes no JSON de analyze-pdf
+  Confirm    : confirmAnalysisSchema exige fileHash; persiste em document_versions.file.sha256
+  Status     : IMPLEMENTADO (hash real do binario, nao derivado de metadados)
+
+Autenticacao analyze-pdf:
+  Arquivo    : api/ai/analyze-pdf.ts
+  Mecanismo  : requireAuth + canAnalyzeDocuments (server/auth/permissions.ts)
+  Status     : IMPLEMENTADO
+
+Permission check:
+  analyze    : usuario autenticado (canAnalyzeDocuments)
+  confirm    : admin/manager OU grupo em docClass.permissions.update
+  queries    : sempre filtram por companyId resolvido
+
+================================================================================
+21. PROXIMOS PASSOS RECOMENDADOS
+================================================================================
+
+  1. Alinhar TEMP_COMPANY_ID e MONGODB_COMPANY_ID no .env de cada ambiente
+  2. Unificar driver Mongo (remover dependencia mongoose legada)
+  3. Integrar listagem real na pagina /documents
+  4. Melhorar validacao do JSON da IA (casos de borda)
+  5. Melhorar fallback quando confidence for baixa
+  6. Alinhar TEMP_USER_GROUPS com group_* do seed (group_juridico, etc.)
+  7. SO DEPOIS: avaliar Google Document AI (OCR, layout)
+  8. SO DEPOIS: avaliar vector search / FAISS se houver caso de busca semantica
+
+================================================================================
+22. CONCLUSAO
+================================================================================
+
+O DOQYN concluiu a validacao e endurecimento do fluxo experimental,
+incluindo suporte explicito a NDA / Acordo de Confidencialidade:
+
+  - Classe e regra NDA adicionadas ao seed (idempotente via npm run db:setup)
+  - Retriever hibrido com scoring por classe para distinguir NDA de contratos
+  - Validacao flexivel para NDA (CPF/CNPJ opcional; campos opcionais sem bloqueio)
+  - Fluxo de revisao manual com "Confirmar apos revisao"
+  - Teste real: PDF de NDA classificado como Acordo de Confidencialidade
+
+  - npm run db:setup funciona; collections e indices confirmados no Atlas
+  - Fluxo PDF -> Groq -> confirmacao -> MongoDB validado end-to-end
+  - analyze-pdf agora exige autenticacao
+  - companyId centralizado e alinhado ao tenant MongoDB
+  - SHA256 real do PDF calculado na analise e reutilizado na confirmacao
+  - Chunks permanecem temporarios; nenhum texto integral persistido
+  - Build e lint passando
+
+A arquitetura enxuta (retriever hibrido + Groq + MongoDB para metadados)
+permanece adequada para esta fase. Storage externo, Google Document AI e
+vector search ficam para fases futuras.
+
+================================================================================
+FIM DO RELATORIO
+================================================================================

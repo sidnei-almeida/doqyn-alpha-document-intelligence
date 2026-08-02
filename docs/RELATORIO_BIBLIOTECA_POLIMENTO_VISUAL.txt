@@ -1,0 +1,145 @@
+================================================================================
+RELATÓRIO — Polimento visual da Biblioteca / File Explorer
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Escopo: ícones, espaçamentos, microinterações, hovers, seleções, consistência,
+menus, botões, chips e feedback visual — sem alterar backend, APIs, upload ou
+lógica funcional.
+
+================================================================================
+1. ÍCONES
+================================================================================
+
+- Criado src/lib/iconDefaults.ts com LUCIDE_STROKE = 1.5 e ICON_SIZE (nav/md/sm).
+- FileTypeIcon, sidebar, toolbar, topbar, menus e linhas da biblioteca passam a
+  usar traço delicado e tamanhos coerentes.
+- Pastas: ícone Folder com fill sutil da cor de categoria (ExplorerFolderCard).
+- Arquivos: FileTypeIcon flat em cards e linhas, sem peso visual excessivo.
+
+================================================================================
+2. MICROINTERAÇÕES
+================================================================================
+
+Utilitários em src/styles/globals.css:
+  .explorer-interactive   — transições suaves de cor/opacidade
+  .explorer-selected      — fundo de seleção unificado (--bg-selected)
+  .explorer-icon-btn      — botões ⋯ com hover pill e scale no active
+  .explorer-focus-ring    — anel de foco discreto (--focus-ring)
+  .explorer-row-gap       — espaçamento entre linhas da tabela
+  .menu-enter             — animação de entrada em dropdowns/menus
+
+Aplicado em:
+  - hover de pasta (ExplorerFolderCard, FolderCard)
+  - hover de linha de arquivo (FileRow, ExplorerFileCompactRow, FileGridView)
+  - seleção (explorer-selected em vez de accent-active-bg solto)
+  - foco em busca global (GlobalSearchCommand)
+  - menu de contexto e + Novo (menu-enter + active:scale)
+  - chips de status (Badge com transition-colors)
+  - botão + Novo (chevron animado, itens com hover)
+  - ToolbarSelect / SegmentedIconToggle (pill ativo com bg-doqyn-selected)
+  - HoverCheckbox (transição no check e text-on-accent)
+
+================================================================================
+3. ESPAÇAMENTO
+================================================================================
+
+- Linhas explorer: py-2.5 / min-h-[48–52px], gap-2.5–3 entre ícone e texto.
+- Breadcrumbs: gap reduzido (0.5) para alinhamento mais compacto.
+- Toolbar pasta: py-1; controles h-9 com pills rounded-full.
+- Home raiz: gap-8 entre seções (ExplorerRootHome).
+- Tabela pasta: explorer-row-gap (2px entre linhas).
+
+================================================================================
+4. CONSISTÊNCIA
+================================================================================
+
+Seleção unificada:
+  --bg-selected dark: rgba(138, 180, 248, 0.16)
+  --bg-selected light: #d2e3fc
+  Tailwind: bg-doqyn-selected
+
+Componentes alinhados:
+  SidebarNavItem, SidebarSpaceItem, ToolbarSelect, SegmentedIconToggle,
+  FileRow, ExplorerFileCompactRow, FileGridView, FolderCard, ExplorerFolderCard,
+  WorkspaceTopBar (explorer-icon-btn), LibraryToolbar (refresh),
+  DetailsPanel (fechar), NewButtonMenu, ExplorerContextMenu.
+
+Inputs: fieldStyles com transição de borda/ring nos tokens de motion.
+
+================================================================================
+5. LIGHT MODE
+================================================================================
+
+- --bg-selected light (#d2e3fc) espelha o azul suave do Google Drive.
+- --accent-active-bg light (#e8f0fe) para estados de acento secundários.
+- Hovers usam --bg-surface-hover (#eef1f3) em superfícies brancas.
+- Chips e status mantêm cores semânticas dessaturadas em ambos os temas.
+
+================================================================================
+6. ARQUIVOS ALTERADOS (polimento)
+================================================================================
+
+Novos:
+  src/lib/iconDefaults.ts
+  tests/library-polish.test.ts
+  docs/RELATORIO_BIBLIOTECA_POLIMENTO_VISUAL.txt
+
+Estilos / tokens:
+  src/styles/tokens.css
+  src/styles/globals.css
+
+Componentes base:
+  src/components/ui/Badge.tsx
+  src/components/ui/FileTypeIcon.tsx
+  src/components/ui/HoverCheckbox.tsx
+  src/components/ui/fieldStyles.ts
+  src/components/ui/buttonVariants.ts (sessão anterior)
+  src/components/ui/IconButton.tsx (sessão anterior)
+  src/components/ui/ToolbarSelect.tsx (sessão anterior)
+  src/components/ui/SegmentedIconToggle.tsx (sessão anterior)
+
+Layout workspace:
+  src/components/layout/SidebarNavItem.tsx
+  src/components/layout/SidebarSpaceItem.tsx
+  src/components/layout/GlobalSearchCommand.tsx
+  src/components/layout/WorkspaceTopBar.tsx
+
+Biblioteca:
+  src/features/library/components/ExplorerFolderCard.tsx
+  src/features/library/components/ExplorerFileCompactRow.tsx
+  src/features/library/components/ExplorerContextMenu.tsx
+  src/features/library/components/NewButtonMenu.tsx
+  src/features/library/components/FileRow.tsx
+  src/features/library/components/FileGridView.tsx
+  src/features/library/components/FolderCard.tsx
+  src/features/library/components/LibraryToolbar.tsx
+  src/features/library/components/LibraryBreadcrumbs.tsx
+  src/features/library/components/DetailsPanel.tsx
+  src/features/library/components/ExplorerFolderFiles.tsx (sessão anterior)
+
+Testes:
+  tests/sidebar.test.ts (bg-doqyn-selected)
+  tests/library-layout.test.ts (assertions FileRowActions)
+  tests/library-polish.test.ts (novo)
+
+================================================================================
+7. VALIDAÇÃO
+================================================================================
+
+npm test          → 659 testes passando
+npm run lint      → OK
+npm run build     → OK (vite build ~3s)
+npx tsc --noEmit  → OK
+
+================================================================================
+8. NÃO ALTERADO (conforme pedido)
+================================================================================
+
+- Backend, APIs, auth-service
+- Upload / analyze / confirm
+- Navegação e rotas
+- Lógica de seleção, filtros, ordenação
+- DocumentViewerModal (lógica)
+
+================================================================================

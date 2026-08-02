@@ -1,0 +1,120 @@
+RELATÓRIO — Refatoração visual da Visão Geral / Painel de controle
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. RACIONAL DA REORGANIZAÇÃO
+================================================================================
+
+A tela anterior empilhava 6 MetricCards iguais, 3 cards de distribuição/saúde e
+depois o bloco principal — tudo com o mesmo peso visual. O usuário não percebia
+rapidamente o que importava.
+
+Nova narrativa (topo → base):
+
+1. Resumo executivo — faixa única de KPIs (estado geral em 3 segundos)
+2. Operação — documentos recentes (hero) + atividade (timeline lateral)
+3. Distribuição + saúde — contexto analítico secundário
+4. Governança — bloco dedicado para admins (mode full)
+5. Storage — rodapé operacional discreto
+
+A página usa max-width 1440px para não “esparramar” em widescreen e mantém o
+mesmo PageShell/WorkspacePageHeader do restante do workspace.
+
+================================================================================
+2. DECISÕES VISUAIS
+================================================================================
+
+- Superfícies: border-subtle, bg surface/40–55, border-radius 16px (rounded-2xl)
+- KPIs: uma faixa com gap-px (divisores hairline), sem 6 cards pesados
+- Tipografia: labels em uppercase 11px; números 2xl semibold tabular-nums
+- Cores de status: verde/âmbar/vermelho só em KPIs com atenção (análise, revisão, erros)
+- Documentos recentes: lista com hover suave, sem borda em cada linha
+- Atividade: timeline vertical com pontos discretos (não tabela apertada)
+- Saúde: ícones CheckCircle/Circle com verde sóbrio
+- Governança: grid interno de mini-stats em fundo card/40 (não 6 MetricCards soltos)
+- Período: pill rounded-full alinhado ao explorer (não botão azul forte)
+- CTA Biblioteca: variant secondary + ícone Library (menos competição com KPIs)
+
+================================================================================
+3. COMPONENTES CRIADOS
+================================================================================
+
+src/features/dashboard/components/
+- OverviewPeriodSelector.tsx
+- OverviewHeaderActions.tsx
+- OverviewMetricCard.tsx
+- OverviewSummaryStrip.tsx
+- OverviewDistributionPanel.tsx
+- OverviewRecentDocumentsPanel.tsx (+ RecentDocumentRow)
+- OverviewRecentActivityPanel.tsx (+ ActivityTimelineItem)
+- OverviewEnvironmentHealthCard.tsx
+- OverviewGovernancePanel.tsx
+- OverviewStoragePanel.tsx
+
+src/features/dashboard/utils/
+- buildOverviewMetrics.ts
+
+================================================================================
+4. ARQUIVOS ALTERADOS
+================================================================================
+
+- src/features/documents/DashboardPage.tsx — orquestrador enxuto (~130 linhas)
+- src/styles/globals.css — tokens .overview-page / .overview-panel
+- tests/dashboard-layout.test.ts
+- tests/dashboard-overview.test.ts
+- tests/page-layout-full-height.test.ts
+
+================================================================================
+5. FUNCIONALIDADES PRESERVADAS
+================================================================================
+
+- Endpoint real GET /api/dashboard/overview (sem mocks)
+- Período 7d / 30d / 90d
+- Navegação por KPI (biblioteca, tracking, audit)
+- DocumentViewerModal com canPreview / latestVersionId
+- Governança e storage apenas em mode full (admin)
+- Estados loading, erro e empty
+- Sem exposição de objectKey / R2
+- Upload/analyze/confirm, biblioteca, viewer inalterados
+
+================================================================================
+6. ESTRUTURA DA PÁGINA
+================================================================================
+
+PageShell
+├── OverviewHeaderActions (período + Ir para Biblioteca)
+├── OverviewSummaryStrip (6 KPIs)
+├── overview-main-grid [1.55fr | 1fr]
+│   ├── OverviewRecentDocumentsPanel
+│   └── OverviewRecentActivityPanel
+├── grid [status | categoria | saúde]
+├── OverviewGovernancePanel (se full)
+└── OverviewStoragePanel (se full)
+
+================================================================================
+7. TESTES E VALIDAÇÃO
+================================================================================
+
+npm test    → 762 pass, 0 fail
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+================================================================================
+8. CHECKLIST MANUAL SUGERIDO
+================================================================================
+
+[ ] Abrir /dashboard como admin — ver KPIs, docs, atividade, governança
+[ ] Abrir como usuário comum — governança/storage ocultos (mode operational)
+[ ] Trocar período 7d / 30d / 90d
+[ ] Clicar KPI → navega corretamente
+[ ] Abrir documento recente no viewer
+[ ] Ver tracking a partir da linha do documento
+[ ] Empty state sem documentos
+[ ] Responsivo: empilhamento em mobile/tablet
+[ ] Dark e light theme legíveis
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

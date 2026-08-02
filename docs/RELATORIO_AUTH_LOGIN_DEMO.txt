@@ -1,0 +1,176 @@
+================================================================================
+RELATÓRIO — RESTAURAÇÃO LOGIN DEMO E INTEGRAÇÃO AUTH
+DOQYN Alpha Document Intelligence + doqyn-auth-service
+Gerado em: 2026-07-07
+================================================================================
+
+1. CAUSA RAIZ
+--------------------------------------------------------------------------------
+
+O login falhava principalmente porque o banco Postgres do auth-service estava
+VAZIO (0 users, 0 tenants, 0 memberships).
+
+Sintoma: POST /auth/login → 401 INVALID_CREDENTIALS para admin.global@doqyn.dev.
+
+Fatores contribuintes:
+- Após `npx prisma migrate reset` ou volume Postgres novo, o seed demo não
+  havia sido executado.
+- `npm test` no auth-service apaga users/tenants/memberships no beforeEach quando
+  TEST_DATABASE_URL não está separado — pode esvaziar o banco de dev se
+  compartilhar DATABASE_URL (risco documentado em audit:auth-health).
+- Problema secundário já observado: processo `dev:api` desatualizado sem rotas
+  de profile → /api/profile/me retornava 404 até reiniciar o servidor.
+- Frontend: redirect pós-login apontava para /upload em vez de /biblioteca.
+- useProfileMe sem guardas podia disparar queries antes da sessão ou propagar
+  erro de avatar/profile de forma agressiva.
+
+NÃO era:
+- mock/fallback inseguro no frontend
+- senha demo alterada (permanece DevDoqyn@123)
+- tenant company_dev ausente no seed (existe após dev:seed:demo)
+- membership pending para admin global (fica active)
+
+================================================================================
+2. ALTERAÇÕES REALIZADAS
+--------------------------------------------------------------------------------
+
+AUTH-SERVICE (doqyn-auth-service)
+- src/dev/dockerStorageAudit.ts — hints de banco vazio agora apontam para
+  `npm run dev:seed:demo` e `.generated/doqyn-demo-accounts.md`
+- tests/docker-storage-audit.test.ts — atualizado para novo hint
+
+Seed demo (já existente, validado):
+- admin.global@doqyn.dev / DevDoqyn@123
+- tenant company_dev + 4 empresas business
+- memberships active, password hash válido
+- manifest e relatório em .generated/
+
+ALPHA (doqyn-alpha-document-intelligence)
+
+Frontend auth:
+- src/pages/Login.tsx — redirect padrão pós-login: /biblioteca
+- src/features/profile/hooks/useProfile.ts — enabled só com isAuthenticated;
+  retry: false; throwOnError: false
+- src/features/settings/components/sections/ProfileSettingsSection.tsx —
+  useProfileMe(Boolean(user?.id))
+
+Scripts e testes:
+- scripts/audit-demo-consistency.ts — novo
+- package.json — npm run audit:demo-consistency
+- tests/auth-login-demo.test.ts — cobertura de contrato login/sessão/avatar
+
+================================================================================
+3. CREDENCIAIS DEMO ATUAIS
+--------------------------------------------------------------------------------
+
+Admin global (login principal):
+  E-mail:  admin.global@doqyn.dev
+  Senha:   DevDoqyn@123
+  Tenant:  company_dev
+  Papéis:  doqyn_admin, company_admin, user
+  Status:  active
+
+Senha compartilhada dev (outros usuários seed): DevDoqyn@123
+
+Relatório completo:
+  ~/Documents/GitHub/doqyn-auth-service/.generated/doqyn-demo-accounts.md
+
+Tenants demo:
+  - company_dev
+  - company_alpha_consultoria
+  - company_horizonte_logistica
+  - company_metalprime_industrias
+  - company_nexserv_tecnologia
+
+================================================================================
+4. COMO RESETAR E SUBIR DO ZERO
+--------------------------------------------------------------------------------
+
+Terminal A — Auth DB + seed:
+  cd ~/Documents/GitHub/doqyn-auth-service
+  npx prisma migrate reset --force
+  npm run dev:seed:demo
+  npm run audit:auth-health        # users > 0, sem emptyDatabaseWarning
+  npm run dev                      # porta 4100
+
+Terminal B — Alpha Mongo + seed:
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+  npm run dev:reset:mongo -- --confirm-reset-doqyn-dev
+  npm run db:setup
+  npm run dev:seed:demo
+  npm run audit:demo-consistency   # 18 verificações OK
+  npm run dev:api                  # porta 3001
+
+Terminal C — Web:
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+  npm run dev:web                  # porta 5173
+
+Validação manual:
+  http://localhost:5173
+  Login: admin.global@doqyn.dev / DevDoqyn@123
+  Deve ir para /biblioteca
+  User menu, Configurações, Visão geral, Tracking, Logout → Login novamente
+
+IMPORTANTE: após `npm test` no auth-service, reexecute `npm run dev:seed:demo`
+se o banco de dev ficar vazio.
+
+================================================================================
+5. RESULTADOS DE VALIDAÇÃO (2026-07-07)
+--------------------------------------------------------------------------------
+
+Auth-service:
+  npm run dev:seed:demo          OK (12 users, 5 tenants, 12 memberships)
+  npm run audit:auth-health      OK após seed
+  npm test                       172 passed
+  npm run build                  OK
+  npm run lint                   OK
+  npx tsc --noEmit               OK
+
+Alpha:
+  npm run audit:demo-consistency 18/18 OK
+  npm test                       812 passed
+  npm run build                  OK
+  npm run lint                   OK
+  npx tsc --noEmit               OK
+
+Integração (curl):
+  POST /auth/login               HTTP 200, cookie doqyn_session setado
+  GET  /api/me (com cookie)      HTTP 200, membership active, tenant company_dev
+  GET  /api/profile/me           HTTP 200, avatar null (iniciais no UI)
+
+Serviços locais no momento do teste:
+  auth :4100  — rodando
+  api  :3001  — rodando
+  web  :5173  — não estava rodando (validação manual pendente no browser)
+
+================================================================================
+6. SESSÃO E CAMPOS OPCIONAIS
+--------------------------------------------------------------------------------
+
+Sessão mínima fornecida por /api/me:
+  user.id, user.email, firstName/lastName, tenant.tenantId, tenant.displayName,
+  membership.membershipId, membership.status=active, tenantRoles, accessGroupIds
+
+Campos opcionais (avatar):
+  avatarUrl, avatarVersion, avatarUpdatedAt, avatarStatus — null/0 quando ausente
+
+Frontend:
+  UserAvatar → iniciais quando avatarUrl null ou imagem falha
+  useProfileMe → não lança erro fatal; não retry automático
+  AuthProvider → isAuthenticated = Boolean(user); profile separado da sessão
+  ProtectedRoute → aguarda isLoading antes de redirecionar
+
+================================================================================
+7. PENDÊNCIAS
+--------------------------------------------------------------------------------
+
+- Validar fluxo completo no browser (web :5173) com user menu e settings.
+- Considerar TEST_DATABASE_URL separado no auth-service para evitar que testes
+  esvaziem o banco de desenvolvimento.
+- Volume Postgres duplicado detectado (deploy_postgres_auth_data vs
+  doqyn-auth-service_postgres_auth_data) — verificar qual volume o compose usa.
+- Google OAuth não foi prioridade; password login é o caminho demo principal.
+
+================================================================================
+FIM DO RELATÓIO
+================================================================================

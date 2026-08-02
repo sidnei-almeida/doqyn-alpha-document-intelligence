@@ -1,0 +1,78 @@
+RELATÓRIO — Unificação de preview em cards da Biblioteca
+=======================================================
+Data: 2026-07-07
+
+CAUSA DA INCONSISTÊNCIA ANTERIOR
+---------------------------------
+1. Dois cards diferentes: RecentFileCard (preview em cima, nome embaixo) vs
+   FileGridCard (nome em cima do preview) — layouts distintos.
+2. Recentes usava RecentFileCard; pastas usavam FileGridCard via FileGridView.
+3. Grid com grid-cols-N esticava cards à largura da coluna — documento único
+   na pasta ficava desproporcionalmente grande.
+4. Modo lista usava só FileTypeIcon, sem miniatura pequena.
+
+COMPONENTES UNIFICADOS
+----------------------
+Nova pasta: src/features/library/components/files/
+
+- documentFileUtils.ts — displayName, versionId, canPreview, meta
+- DocumentFileThumbnail.tsx — wrapper com chrome escuro + DocumentThumbnail
+- DocumentFileCard.tsx — card único (preview topo, nome rodapé, max 240px)
+- DocumentFileRow.tsx — linha compacta com miniatura row
+- DocumentFileRowIcon.tsx — ícone para FileRow em tabela explorer
+- DocumentFilesGrid.tsx — grid auto-fill minmax(200px, 240px)
+- DocumentItemMenu.tsx — menu ⋮ compartilhado
+
+Aliases de compatibilidade (delegam para os novos):
+- FileGridCard → DocumentFileCard
+- RecentFileCard → DocumentFileCard
+- RecentFilesGrid → DocumentFilesGrid
+- ExplorerFileCompactRow → DocumentFileRow
+
+ONDE O PREVIEW É USADO
+----------------------
+| Contexto              | Grade              | Lista              |
+|-----------------------|--------------------|--------------------|
+| Raiz / Recentes       | DocumentFileCard   | DocumentFileRow    |
+| Pasta (?space=)       | DocumentFileCard   | DocumentFileRowIcon + FileRow |
+| Sem categoria         | DocumentFileCard   | DocumentFileRow    |
+| Coleções / busca      | DocumentFileCard   | FileTable/FileRow  |
+
+CARD REDIMENSIONADO
+-------------------
+- max-width: 240px por card
+- Grid: repeat(auto-fill, minmax(200px, 240px)) — não estica com 1 item
+- Preview: aspect 4/3, object-contain, fundo --bg-thumbnail-chrome
+- Padding compacto (p-2), nome 12px, meta 11px
+- Checkbox e menu discretos nos cantos
+
+THUMBNAIL
+---------
+- resolveDocumentVersionId: latestVersionId ?? currentVersionId
+- documentCanPreview: permissão + versionId
+- Manifest + thumbnail autenticados (sem alteração de backend)
+- Skeleton / "Preparando visualização" / fallback ícone
+
+PRESERVADO
+----------
+- DocumentViewerModal, viewer seguro, permissões
+- Duplo clique, context menu, seleção múltipla
+- Upload, navegação, APIs
+
+ARQUIVOS CRIADOS
+----------------
+- src/features/library/components/files/* (7 arquivos)
+- tests/document-file-card.test.ts
+- docs/RELATORIO_PREVIEW_UNIFICADO_BIBLIOTECA.txt
+
+ARQUIVOS ALTERADOS
+------------------
+- FileGridView, FileGridCard, RecentFileCard, RecentFilesGrid
+- ExplorerRecentList, ExplorerRootHome, ExplorerFileCompactRow
+- FileRow (explorer usa DocumentFileRowIcon)
+- DocumentThumbnail, globals.css, tokens.css, tailwind.config.js
+- tests/document-thumbnail.test.ts, library-root-home.test.ts, library-polish.test.ts
+
+VALIDAÇÃO
+---------
+npm test, build, lint, tsc — executar após merge.

@@ -1,0 +1,245 @@
+================================================================================
+DOQYN — Relatório: solicitação de acesso, aprovação e notificações (base)
+================================================================================
+
+Data: 25 de junho de 2026
+
+
+================================================================================
+1. ARQUIVOS CRIADOS
+================================================================================
+
+Backend:
+  - server/utils/contactNormalize.ts
+  - server/services/accessRequestService.ts
+  - server/services/tenantMemberRepository.ts
+  - server/db/notificationTypes.ts (tipos planejados — worker futuro)
+
+Frontend:
+  - src/features/access-request/RequestAccessPage.tsx
+  - src/features/access-request/api/accessRequestApi.ts
+
+
+================================================================================
+2. ARQUIVOS ALTERADOS
+================================================================================
+
+Backend:
+  - server/db/types.ts
+  - server/auth/types.ts
+  - server/auth/memberAuth.ts
+  - server/services/userManagementService.ts
+  - server/services/memberSerialize.ts
+  - server/services/meService.ts (findTenantMemberByIdentity — etapa anterior)
+  - server/services/tenantMembersService.ts
+  - api/auth/access-requests.ts
+  - api/company-members/index.ts
+  - api/company-members/approve.ts
+  - api/company-members/reject.ts
+  - api/company-members/access.ts
+
+Frontend:
+  - src/app/routes.tsx
+  - src/auth/AuthProvider.tsx (rota pública /solicitar-acesso)
+  - src/auth/AccessGateScreen.tsx
+  - src/features/users/UsersPage.tsx
+  - src/features/users/api/usersApi.ts
+  - src/pages/Login.tsx
+
+
+================================================================================
+3. ENDPOINTS
+================================================================================
+
+POST /api/auth/access-requests (público, sem login)
+  - Cria/loca tenant por CPF/CNPJ (taxIdHash)
+  - Cria tenant_member status pending
+  - Cria usuário Keycloak (enabled, role user, senha temporária em dev)
+  - Audit USER_ACCESS_REQUESTED, KEYCLOAK_USER_CREATED
+
+GET /api/company-members (autenticado, admin)
+  - Lista tenant_members via listManagedTenantMembers
+
+POST /api/company-members/:id/approve
+  - tenantRoles, accessGroupIds, notificationPreferences
+  - Audit USER_APPROVED, USER_ACCESS_UPDATED, NOTIFICATION_PREFERENCES_UPDATED
+
+POST /api/company-members/:id/reject
+  - reason opcional, desabilita Keycloak se existir
+  - Audit USER_REJECTED
+
+PATCH /api/company-members/:id/access
+  - Atualiza roles, grupos e notificationPreferences
+
+
+================================================================================
+4. SCHEMA tenant_members (campos principais)
+================================================================================
+
+memberId, tenantId, keycloakUserId, email, emailNormalized,
+firstName, lastName, whatsapp, whatsappNormalized,
+status (pending|active|blocked|rejected),
+tenantRoles[], accessGroupIds[],
+requestedAccess{}, approvedAccess{}, notificationPreferences{}, consent{},
+timestamps, audit fields (approvedBy, rejectedBy, etc.)
+
+Dual-write: company_members (legado) espelhado via tenantMemberRepository.
+
+
+================================================================================
+5. requestedAccess
+================================================================================
+
+{
+  personType, taxIdType, taxIdMasked, taxIdHash,
+  tenantId, tenantDisplayName,
+  jobTitle, departmentText, reason,
+  requestedAt, source: "public_form"
+}
+
+CPF/CNPJ: apenas taxIdMasked + taxIdHash no MongoDB (nunca cru em logs).
+
+
+================================================================================
+6. approvedAccess
+================================================================================
+
+{
+  tenantRoles, accessGroupIds,
+  approvedBy, approvedAt
+}
+
+
+================================================================================
+7. notificationPreferences
+================================================================================
+
+{
+  email, whatsapp,
+  documentCreated, documentUpdated, documentRequiresSignature,
+  accessApproved, accessRejected
+}
+
+Persistido em tenant_members. Nenhum envio real nesta etapa.
+
+
+================================================================================
+8. FORMULÁRIO PÚBLICO
+================================================================================
+
+Rota: /solicitar-acesso (sem autenticação, sem init Keycloak forçado)
+
+Campos: tipo PF/PJ, CPF/CNPJ, razão social, nome, e-mail, WhatsApp,
+cargo, setor informado, motivo, consentimento operacional.
+
+Usuário NÃO escolhe roles, grupos ou permissões reais.
+
+
+================================================================================
+9. APROVAÇÃO ADMINISTRATIVA
+================================================================================
+
+Tela /users — sidnei (company_admin) ou doqyn_admin:
+  - Lista pending com setor informado
+  - Modal de aprovação com dados declarados
+  - Sugestão visual de grupo por setor (não aplica automaticamente)
+  - Admin confirma tenantRoles + accessGroupIds + notificationPreferences
+
+
+================================================================================
+10. SETOR INFORMADO vs GRUPOS REAIS
+================================================================================
+
+Setor/cargo/motivo: dados declarados em requestedAccess (apoio ao admin).
+Grupos reais: accessGroupIds definidos manualmente pelo admin.
+suggestGroupsFromDepartment() apenas sugere visualmente.
+
+
+================================================================================
+11. WHATSAPP E E-MAIL
+================================================================================
+
+Armazenados em tenant_members (whatsapp, whatsappNormalized, email).
+Uso futuro para notification_deliveries.
+Logs mascaram WhatsApp (maskWhatsappForLog).
+
+
+================================================================================
+12. CONSENTIMENTO
+================================================================================
+
+consent.operationalNotifications = true
+consent.acceptedAt, consent.consentTextVersion = operational-notifications-v1
+
+
+================================================================================
+13. KEYCLOAK — ESTRATÉGIA
+================================================================================
+
+Na solicitação pública:
+  - Cria ou reutiliza usuário por e-mail
+  - enabled=true, role global "user"
+  - Senha temporária apenas em APP_ENV != production (campo dev na resposta)
+  - membership pending no MongoDB bloqueia app via AccessGateScreen
+
+Na aprovação:
+  - Sincroniza tenantRoles no Keycloak via syncRealmRoles
+  - Habilita usuário se estava disabled
+
+
+================================================================================
+14. PREPARADO PARA NOTIFICAÇÕES FUTURAS
+================================================================================
+
+server/db/notificationTypes.ts:
+  - NotificationEventType (DOCUMENT_CREATED, USER_ACCESS_APPROVED, etc.)
+  - PlannedNotificationEvent, PlannedNotificationDelivery (não persistidos)
+
+Fluxo futuro documentado no pedido: evento → membros com grupo → preferences → delivery.
+
+
+================================================================================
+15. NÃO IMPLEMENTADO
+================================================================================
+
+- Envio real de e-mail / WhatsApp / SMTP / Twilio / Meta API
+- Worker de notification_deliveries
+- Cadastro com tema Keycloak customizado
+- HTTPS produção
+
+
+================================================================================
+16. TESTES
+================================================================================
+
+Build: SUCESSO (tsc + vite)
+Lint: SUCESSO (0 erros após correção; warnings pré-existentes)
+
+Testes manuais E2E (requer ambiente):
+  1. POST /solicitar-acesso com CNPJ dev
+  2. Login pending → tela Aguardando aprovação
+  3. sidnei aprova em /users
+  4. Usuário active acessa dashboard
+  5. Rejeição → status rejected
+  6. company_admin não aprova outro tenant (403)
+
+
+================================================================================
+17. COMO TESTAR
+================================================================================
+
+npm run dev
+Abrir http://localhost:5173/solicitar-acesso
+Preencher formulário e enviar
+Login Keycloak com usuário criado (senha temporária em dev no console)
+Admin: /users → aprovar com grupos e notificações
+
+curl exemplo:
+curl -s -X POST http://localhost:3001/api/auth/access-requests \
+  -H "Content-Type: application/json" \
+  -d '{"personType":"business","taxId":"00000000000100",...}'
+
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

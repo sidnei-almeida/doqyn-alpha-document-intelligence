@@ -1,0 +1,210 @@
+================================================================================
+DOQYN — Relatório: integração frontend Keycloak + GET /api/me
+================================================================================
+
+Data: 24 de junho de 2026
+Escopo: consumo de /api/me após login Keycloak, contexto user/tenant/membership
+
+
+================================================================================
+1. ARQUIVOS ALTERADOS
+================================================================================
+
+Frontend (novos):
+  - src/auth/sessionTypes.ts
+  - src/auth/sessionApi.ts          (getCurrentSession)
+  - src/auth/mapMeSession.ts
+  - src/auth/AccessGateScreen.tsx
+
+Frontend (alterados):
+  - src/auth/AuthProvider.tsx       (fluxo Keycloak → /api/me)
+  - src/auth/mapKeycloakUser.ts     (sem company_dev hardcoded)
+  - src/auth/index.ts               (exports)
+  - src/features/auth/authApi.ts    (meRequest compatível com novo payload)
+  - src/features/users/UsersPage.tsx
+  - src/features/users/UserManagementRoute.tsx
+  - src/features/rules/RulesPage.tsx
+  - src/components/layout/Sidebar.tsx
+
+Backend (ajuste mínimo para telas pending/blocked):
+  - server/services/tenantMembersService.ts  (findTenantMemberByIdentity)
+  - server/services/meService.ts             (/api/me retorna pending/blocked)
+
+
+================================================================================
+2. ONDE /api/me É CHAMADO
+================================================================================
+
+Função central:
+  src/auth/sessionApi.ts → getCurrentSession()
+  GET /api/me com Authorization: Bearer via authFetch
+
+Chamada no fluxo Keycloak:
+  src/auth/AuthProvider.tsx → loadKeycloakSession()
+    1. initKeycloak()
+    2. registerAuthTokenGetter(token)
+    3. getCurrentSession()
+
+Modo temporary (cookie):
+  src/features/auth/authApi.ts → meRequest()
+  GET /api/auth/me (reexport) — parseia legacyUser ou mapMeSessionToAuthUser
+
+
+================================================================================
+3. COMO O CONTEXTO É MONTADO
+================================================================================
+
+Após resposta de /api/me:
+
+  mapMeSessionToAuthUser(session) → AuthUser
+    - companyId  ← tenant.tenantId
+    - companyName ← tenant.displayName
+    - roles      ← membership.tenantRoles
+    - groups     ← membership.accessGroupIds
+
+AuthContext expõe:
+  user, tenant, membership, token, roles, accessGroupIds,
+  accessGate, isAuthenticated, hasRole, hasAnyRole, logout, ...
+
+Regras:
+  - roles preferencialmente de membership.tenantRoles
+  - tenantId oficial de tenant.tenantId (não hardcoded)
+  - isAuthenticated = user presente E accessGate === null
+
+
+================================================================================
+4. company_dev HARDCODED — CLASSIFICAÇÃO
+================================================================================
+
+Removido / não é mais fonte oficial em Keycloak:
+  src/auth/mapKeycloakUser.ts     → companyId: '' (fallback token apenas)
+
+Mantido como mock (VITE_AUTH_PROVIDER=mock):
+  src/auth/AuthProvider.tsx       → MOCK_DEV_USER.companyId = 'company_dev'
+
+Mantido como placeholder UI (doqyn_admin):
+  src/features/users/UsersPage.tsx → input companyId (sem fallback fixo)
+
+Aceitável (dados seed / mock rules):
+  src/features/rules/mockData.ts  → CURRENT_COMPANY_ID (mock local)
+
+Configuração dev backend (.env.example):
+  MONGODB_TENANT_ID=company_dev   (não é frontend Keycloak)
+
+
+================================================================================
+5. ESTADOS DE ACESSO (TELAS)
+================================================================================
+
+Componente: src/auth/AccessGateScreen.tsx
+
+403 MEMBER_NOT_LINKED (sem registro no MongoDB):
+  Título: Acesso pendente
+  Botão: Sair
+
+membership.status === "pending" (200 /api/me):
+  Título: Aguardando aprovação
+  Botão: Sair
+
+membership.status === "blocked":
+  Título: Acesso bloqueado
+  Botão: Sair
+
+membership.status === "active":
+  App liberado normalmente
+
+AuthProvider renderiza AccessGateScreen antes dos children quando accessGate != null.
+
+
+================================================================================
+6. RBAC SIMPLIFICADO
+================================================================================
+
+Helpers no contexto:
+  hasRole("company_admin")
+  hasRole("doqyn_admin")
+  hasAnyRole(["doqyn_admin", "company_admin"])
+
+Usado em:
+  - Sidebar (menu Usuários)
+  - UserManagementRoute (rota /users)
+  - RulesPage (isAdmin)
+
+
+================================================================================
+7. TESTE COM USUÁRIO SIDNEI
+================================================================================
+
+Teste automatizado backend (npm run db:keycloak-checkpoint):
+  [OK] resolveMeFromKeycloakClaims(sidnei) → company_dev, active
+
+Teste E2E frontend (manual — requer túnel SSH):
+  ssh -L 8080:127.0.0.1:8080 doqyn@187.77.59.114
+  VITE_AUTH_PROVIDER=keycloak no .env
+  npm run dev
+  Login sidnei em http://localhost:5173
+
+Esperado no DevTools (console DEV):
+  [auth] sessão carregada {
+    authProvider: "keycloak",
+    meOk: true,
+    tenantId: "company_dev",
+    membershipStatus: "active",
+    tenantRoles: ["company_admin", "user"]
+  }
+
+Nota: teste browser não executado nesta sessão (sem túnel ativo).
+Checkpoint MongoDB + lógica /api/me validados via script.
+
+
+================================================================================
+8. BUILD E LINT
+================================================================================
+
+npm run build  → SUCESSO
+npm run lint   → SUCESSO (0 erros, 4 warnings pré-existentes)
+
+
+================================================================================
+9. LOGS SEGUROS (DEV)
+================================================================================
+
+Logado em DEV apenas:
+  authProvider, meOk, tenantId, membershipStatus, tenantRoles
+
+Nunca logado:
+  access token, refresh token, client secret, senha, .env
+
+
+================================================================================
+10. PENDÊNCIAS
+================================================================================
+
+- Validar login sidnei no browser com túnel SSH (teste E2E manual)
+- Frontend ainda não re-chama /api/me após refreshToken automático
+  (token renovado; membership raramente muda em runtime)
+- Cadastro público CPF/CNPJ
+- Tela de solicitação de acesso integrada ao fluxo Keycloak
+- Escritas de gestão de usuários ainda em company_members no backend
+
+
+================================================================================
+COMO TESTAR
+================================================================================
+
+1. ssh -L 8080:127.0.0.1:8080 doqyn@187.77.59.114
+2. .env: VITE_AUTH_PROVIDER=keycloak + variáveis Keycloak
+3. npm run db:setup && npm run db:keycloak-checkpoint
+4. npm run dev
+5. Abrir http://localhost:5173 — login sidnei
+6. Verificar console [auth] sessão carregada e sidebar com DOQYN Dev
+7. curl opcional:
+   curl -s http://localhost:3001/api/me -H "Authorization: Bearer <token>" | jq
+
+Fallback mock:
+  VITE_AUTH_PROVIDER=mock — continua funcionando sem Keycloak
+
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

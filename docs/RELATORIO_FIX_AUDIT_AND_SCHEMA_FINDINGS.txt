@@ -1,0 +1,126 @@
+DOQYN — Correção de achados críticos e médios da auditoria MongoDB
+Data: 2026-06-25T17:40:00.000Z
+Relatório sanitizado — sem URI, secrets, PII ou conteúdo de documentos.
+
+================================================================================
+1. CRÍTICOS ORIGINAIS (4)
+================================================================================
+[audit_logs_company_dev] metadata.recommendedFileName em 2 audit logs
+[audit_logs_company_dev] metadata.documentCode em 2 audit logs
+
+Origem: confirmAnalysisService gravava nome de arquivo e código do documento
+diretamente em metadata de audit_logs após confirm-analysis.
+
+================================================================================
+2. POR QUE recommendedFileName/documentCode SÃO SENSÍVEIS
+================================================================================
+- Podem revelar título, tipo ou estrutura interna do documento.
+- documentCode pode ser correlacionável entre sistemas.
+- Audit logs devem registrar contexto mínimo (ação, classe, flags), não
+  conteúdo ou identificadores de arquivo.
+- Princípio: auditoria ≠ armazenamento de metadados de documento.
+
+================================================================================
+3. sanitizeAuditMetadata — IMPLEMENTAÇÃO
+================================================================================
+Arquivo: server/utils/sanitizeAuditMetadata.ts
+
+Comportamento:
+- Remove campos sensíveis (recommendedFileName, documentCode, tokens, PII, texto).
+- Converte recommendedFileName/documentCode em flags booleanas:
+  hasRecommendedFileName, hasDocumentCode.
+- Sanitiza objetos aninhados recursivamente.
+
+Aplicado em:
+- server/services/userAuditService.ts (createUserAuditLog)
+- server/services/auditService.ts (createAuditEvent)
+- server/services/documentService.ts (upload legacy)
+- server/services/confirmAnalysisService.ts (confirm-analysis)
+
+================================================================================
+4. AUDIT LOGS CORRIGIDOS
+================================================================================
+Script: scripts/sanitize-existing-audit-logs.ts
+Comando: npm run db:sanitize-audit-logs
+
+Dry-run: 4 logs afetados em audit_logs_company_dev
+Apply: SANITIZE_AUDIT_APPLY=true — 4 logs corrigidos
+
+Campos removidos (contagem agregada):
+- recommendedFileName: 2
+- documentCode: 2
+
+Relatório detalhado: docs/RELATORIO_SANITIZE_AUDIT_LOGS.txt
+
+================================================================================
+5. DOCUMENT_VERSIONS SEM objectKey/storage
+================================================================================
+Achados médios originais:
+- document_versions_company_dev (ver_76b4c935-...)
+- document_versions_company_test_2 (ver_test2)
+
+Correções:
+A) seed-second-tenant-isolation-test.ts — version com objectKey dev fake
+B) scripts/fix-dev-document-version-storage.ts — corrige versions existentes
+
+Dry-run: 1 version em company_dev sem objectKey
+Apply: FIX_VERSION_STORAGE_APPLY=true — 1 version corrigida
+
+Padrão objectKey: dev/<tenantId>/documents/<documentId>/v<N>.pdf
+
+Relatório: docs/RELATORIO_FIX_DOCUMENT_VERSION_STORAGE.txt
+
+================================================================================
+6. RULE ACTIVE SEM FIELDS (company_test_2)
+================================================================================
+Achado: rule_test2 com fields: []
+
+Correção em scripts/seed-second-tenant-isolation-test.ts:
+- fields com documentNumber (string, opcional)
+- namingTemplate, minimumConfidence, onLowConfidence adicionados
+
+Re-seed: npm run db:seed-isolation-test
+
+================================================================================
+7. db:ensure-indexes — COLEÇÕES INEXISTENTES
+================================================================================
+Problema: ns does not exist: doqyn_dev.processing_jobs_company_test_2
+
+Correção em scripts/ensure-mongodb-indexes.ts:
+- ensureCollectionExists() antes de createIndex
+- Seed cria processing_jobs_company_test_2 com job mínimo
+
+Resultado final: Criados: 8 | Existentes: 73 | Erros: 0
+
+================================================================================
+8. RESULTADOS FINAIS DE VALIDAÇÃO
+================================================================================
+npm run db:ensure-indexes        → OK (0 erros)
+npm run db:sanitize-audit-logs   → APPLY 4/4
+npm run db:fix-version-storage   → APPLY 1/1
+npm run test:tenant-isolation    → PASS 13 | FAIL 0
+npm run audit:no-flat-writes     → PASS
+npm run audit:mongodb-schema     → Críticos: 0 | Médios: 0
+npm run build                    → OK
+npm run lint                     → OK (0 errors, warnings pré-existentes)
+
+================================================================================
+9. PENDÊNCIAS RESTANTES
+================================================================================
+- Coleções flat legadas ainda existem (migração não aplicada)
+- processing_jobs_company_dev com job sem createdAt/updatedAt (BAIXO)
+- Grupos órfãos em access_groups flat (BAIXO)
+- Dual-write company_members / tenant_members
+- Worker de notificações (fora de escopo)
+
+================================================================================
+10. RECOMENDAÇÕES
+================================================================================
+1. Incluir db:sanitize-audit-logs e audit:mongodb-schema em CI pós-deploy staging
+2. Nunca adicionar metadata de documento em audit_logs sem sanitizeAuditMetadata
+3. Manter objectKey dev em seeds de teste para evitar falsos médios
+4. Executar db:ensure-indexes após criar novo tenant business
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

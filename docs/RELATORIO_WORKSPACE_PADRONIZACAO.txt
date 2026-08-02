@@ -1,0 +1,120 @@
+RELATÓRIO — Cards de pasta e padronização do workspace
+======================================================
+Data: 2026-07-07
+
+OBJETIVO
+--------
+1. Devolver presença visual aos cards de pasta (clicáveis, com fundo, hover elegante).
+2. Padronizar headers e ações entre telas do app (info button sempre no mesmo lugar).
+
+1. CARDS DE PASTA MELHORADOS
+----------------------------
+ExplorerFolderCard:
+- Container com bg-doqyn-surface, shadow-sm, rounded-xl
+- Borda sutil via .explorer-folder-card (color-mix)
+- Hover: fundo mais claro + shadow-md
+- Ícone em cápsula rounded-lg bg-doqyn-canvas
+- Altura min-h 48px, gap interno maior
+- Metadado: "N arquivo(s)" em vez de "item(s)"
+- Menu ⋮ e info no hover, botões workspace-action-btn
+
+CSS (globals.css):
+- .explorer-folder-card com borda suave e hover
+- .drive-folder-tile com background surface
+- .explorer-file-card para recentes com mesma linguagem
+
+ExplorerFolderGrid: gap-2 entre cards.
+
+RecentFileCard: bg-doqyn-surface, shadow-sm, borda sutil, hover shadow-md.
+
+2. PADRONIZAÇÃO DO WORKSPACE
+----------------------------
+Novos componentes em src/components/layout/:
+
+- WorkspacePageHeader — título à esquerda, ações à direita
+  - breadcrumb, eyebrow, title, subtitle, meta, toolbar
+- WorkspacePageActions — grupo de ações (gap consistente)
+- WorkspaceRefreshButton — botão atualizar padronizado (36px)
+
+PageShell e PageHeader passam a usar WorkspacePageHeader.
+Removida border-b pesada do header antigo.
+
+Tokens:
+- --workspace-page-action-size: 36px
+
+Classes CSS:
+- .workspace-page-title, .workspace-page-subtitle, .workspace-page-meta
+- .workspace-action-btn
+
+3. INFO BUTTON — POSIÇÃO CONSISTENTE
+------------------------------------
+Regra: ações à direita, info SEMPRE por último no grupo.
+
+Biblioteca raiz (ExplorerHomeHeader):
+  [ViewMode] [Refresh] [Info]
+
+Pasta interna / coleções (WorkspacePageHeader):
+  [ViewMode] [Refresh] [Info]  — quando toolbar ativa
+  [Info] apenas — quando sem toolbar
+
+ContextInfoButton:
+- Tamanho workspace-action-btn (36×36)
+- Popover alinhado à direita (right-0)
+
+LibraryToolbar:
+- showViewControls={false} dentro de pasta (view/refresh no header)
+- Evita duplicação de controles
+
+4. TELAS COM HEADER PADRONIZADO
+-------------------------------
+Via PageShell → WorkspacePageHeader:
+- Visão Geral (DashboardPage)
+- Regras (RulesPage)
+- Usuários (UsersPage)
+- Auditoria (AuditPage)
+- Tracking (TrackingPage)
+- Configurações (SettingsPage)
+- DocumentsPage
+
+Biblioteca:
+- Raiz: ExplorerHomeHeader (wrapper)
+- Pasta/coleções: WorkspacePageHeader direto
+
+5. PRESERVADO
+-------------
+- Navegação por pasta, viewer, context menu, drag/drop, upload
+- APIs e dados reais
+- Funcionalidade da Biblioteca intacta
+
+6. ARQUIVOS CRIADOS
+-------------------
+- src/components/layout/WorkspacePageHeader.tsx
+- src/components/layout/WorkspacePageActions.tsx
+- src/components/layout/WorkspaceRefreshButton.tsx
+- tests/workspace-page-header.test.ts
+- docs/RELATORIO_WORKSPACE_PADRONIZACAO.txt
+
+7. ARQUIVOS ALTERADOS
+---------------------
+- src/components/layout/PageShell.tsx
+- src/components/layout/PageHeader.tsx
+- src/components/layout/index.ts
+- src/features/library/LibraryPage.tsx
+- src/features/library/components/ExplorerHomeHeader.tsx
+- src/features/library/components/ExplorerFolderCard.tsx
+- src/features/library/components/ExplorerFolderGrid.tsx
+- src/features/library/components/RecentFileCard.tsx
+- src/features/library/components/ContextInfoButton.tsx
+- src/features/library/components/LibraryToolbar.tsx
+- src/lib/iconDefaults.ts
+- src/styles/globals.css
+- src/styles/tokens.css
+- tests/library-root-home.test.ts
+- tests/dashboard-layout.test.ts
+
+8. VALIDAÇÃO
+------------
+npm test     → 701 testes, 0 falhas
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK

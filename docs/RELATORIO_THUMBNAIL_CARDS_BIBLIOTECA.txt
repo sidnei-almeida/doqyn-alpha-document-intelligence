@@ -1,0 +1,93 @@
+RELATÓRIO — Thumbnails em cards da Biblioteca (modo grade)
+============================================================
+Data: 2026-07-07
+
+OBJETIVO
+--------
+Exibir preview real (miniatura) nos cards de arquivo do modo grade, usando os
+endpoints autenticados de preview já existentes — sem R2 direto, sem mocks.
+
+ENDPOINTS UTILIZADOS
+--------------------
+1. GET /api/documents/:documentId/versions/:versionId/preview/manifest
+   - fetchPreviewManifest (previewManifestApi.ts)
+   - trackView=false para não poluir tracking na grade
+
+2. URLs relativas do manifest (via authFetch):
+   - PDF: .../preview/thumbnails/:page (primeira página)
+   - Imagem: .../preview/image?size=small (thumbnailUrl do manifest)
+
+3. fetchPreviewAssetBlob(url) — baixa blob autenticado e cria objectURL local
+   - usePreviewAsset revoga objectURL no unmount/cleanup
+
+Não foi criado endpoint novo.
+
+COMPONENTES CRIADOS
+-------------------
+- src/features/documents/preview/DocumentThumbnail.tsx
+- src/features/documents/preview/useDocumentThumbnail.ts
+- src/features/documents/preview/documentThumbnailUtils.ts
+- src/features/documents/preview/index.ts
+- src/features/library/components/FileGridCard.tsx
+- tests/document-thumbnail.test.ts
+
+FLUXO DE CARREGAMENTO
+---------------------
+1. IntersectionObserver — só carrega quando card visível (rootMargin 160px)
+2. React Query manifest — key ['document-preview-manifest', documentId, versionId]
+   - staleTime 60s
+   - refetchInterval 4s enquanto status === 'processing'
+3. resolveThumbnailAssetUrl(manifest):
+   - pdf_pages → pages[0].thumbnailUrl
+   - image → image.thumbnailUrl
+4. usePreviewAsset(assetUrl) → objectURL para <img object-contain>
+
+PERMISSÕES E SEGURANÇA
+----------------------
+- canPreview=false no documento → não busca manifest
+- manifest.permissions.canPreview → bloqueia asset
+- previewStatus failed/skipped → previewBlocked
+- Sem objectKey, presigned URL ou URL R2 no frontend
+- Cookies/sessão via authFetch existente
+
+FALLBACK
+--------
+- Manifest failed / sem thumbnail → FileTypeIcon por extensão
+- processing → skeleton + "Preparando visualização"
+- loading → skeleton pulse
+- canPreview=false → ícone + sr-only
+
+CARDS ATUALIZADOS
+-----------------
+- FileGridView → FileGridCard com layout Drive-like:
+  - header: ícone tipo + nome + menu
+  - corpo: DocumentThumbnail aspect 4/3
+  - rodapé: categoria/data
+- ExplorerFolderFiles (pasta interna) — variant explorer
+- RecentFileCard — DocumentThumbnail direto
+- FileThumbnail (ui) — wrapper de compatibilidade
+
+SUBSTITUIÇÃO ANTERIOR
+---------------------
+useFileThumbnail antigo (pdfjs + download completo via /api/documents/preview)
+foi substituído por useDocumentThumbnail (manifest + thumbnail leve).
+useFileThumbnail.ts re-exporta useDocumentThumbnail para compatibilidade.
+
+PRESERVADO
+----------
+- DocumentViewerModal / viewer seguro
+- Watermark no backend (thumbnails já geradas com watermark)
+- Context menu, duplo clique, seleção
+- Modo lista inalterado (ícone pequeno)
+
+VALIDAÇÃO
+---------
+npm test     → 712 testes, 0 falhas
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+PENDÊNCIAS
+----------
+- Modo lista: miniatura pequena opcional (não implementado — foco em grade)
+- Documentos sem latestVersionId: fallback ícone (comportamento existente)
