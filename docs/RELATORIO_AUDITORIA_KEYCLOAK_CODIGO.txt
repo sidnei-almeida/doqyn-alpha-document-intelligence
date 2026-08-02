@@ -1,0 +1,386 @@
+================================================================================
+DOQYN - Auditoria: RELATORIO_KEYCLOAK_DOQYN.txt vs. código do repositório
+================================================================================
+
+Data da auditoria: junho de 2026
+Escopo: verificação estática do repositório (sem acesso à VPS)
+Arquivo auditado: docs/RELATORIO_KEYCLOAK_DOQYN.txt
+Método: leitura de código, grep e rastreamento de imports/rotas
+
+Legenda de status:
+  IMPLEMENTADO     = existe no código e está funcionalmente ligado
+  PARCIAL          = existe, mas incompleto, com fallback legado ou não integrado
+  NÃO IMPLEMENTADO = ausente ou apenas mencionado em documentação
+  VPS (DOC)        = afirmação sobre infraestrutura; não verificável no repositório
+
+
+================================================================================
+RESUMO EXECUTIVO
+================================================================================
+
+O relatório RELATORIO_KEYCLOAK_DOQYN.txt mistura corretamente três camadas, mas
+marca como [OK] no bloco "CÓDIGO DO PROJETO" alguns itens que estão PARCIAIS.
+
+Contagem dos itens auditados neste relatório (camada código):
+  IMPLEMENTADO:     22
+  PARCIAL:          11
+  NÃO IMPLEMENTADO:  4
+
+Principais divergências em relação ao relatório original:
+  1. Frontend Keycloak NÃO consome GET /api/me; usa mapKeycloakTokenToAuthUser
+     com companyId fixo "company_dev" (src/auth/mapKeycloakUser.ts).
+  2. Coleção tenant_members tem leitura + índices, mas escritas de membros ainda
+     vão para company_members (server/services/userManagementService.ts).
+  3. keycloakAdminService está implementado no código, mas depende de client
+     doqyn-admin-api na VPS + KEYCLOAK_ADMIN_CLIENT_SECRET (operação pendente).
+  4. Tela global "aguardando aprovação" para usuário pending após login: ausente.
+  5. Cadastro público com CPF/CNPJ: findOrCreateTenantByTaxId existe, mas não
+     há endpoint/UI que o utilize.
+
+Itens VPS marcados [OK] no relatório original: assumidos como documentação da
+infraestrutura; este repositório não permite confirmá-los.
+
+
+================================================================================
+SEPARAÇÃO: CÓDIGO vs VPS vs PLANEJADO
+================================================================================
+
+IMPLEMENTADO NO CÓDIGO (repositório)
+------------------------------------
+- keycloak-js, PKCE, AuthProvider, apiAuth, Bearer em authFetch
+- keycloakJwtVerifier (jose + JWKS), requireAuth, keycloakAdminService
+- GET /api/me e GET /api/auth/me (reexport)
+- tenants, tenantResolver, getTenantCollections
+- Endpoints invite/approve/reject/block/activate/access
+- POST /api/auth/access-requests
+- Tela /users com usersApi
+- .env.example com variáveis Keycloak corretas (sem secret no Vite)
+
+CONFIGURADO APENAS NA VPS (documentado, não verificável aqui)
+-------------------------------------------------------------
+- Docker Keycloak + Postgres
+- Realm doqyn, client doqyn-web, roles, usuário sidnei
+- Túnel SSH porta 8080
+- start-dev, porta 127.0.0.1
+
+PLANEJADO / PENDENTE (mencionado no relatório ou código incompleto)
+-------------------------------------------------------------------
+- Client doqyn-admin-api operacional na VPS
+- Frontend consumir /api/me no fluxo Keycloak
+- Escrita em tenant_members (migração de company_members)
+- Tela dedicada "aguardando aprovação" pós-login
+- Cadastro público CPF/CNPJ
+- HTTPS / Nginx reverse proxy / SMTP / backup Postgres
+- Teste ponta a ponta sidnei + MongoDB vinculado
+
+
+================================================================================
+TABELA DE AUDITORIA DETALHADA
+================================================================================
+
+---- FRONTEND ----
+
+Item: keycloak-js instalado
+Status real: IMPLEMENTADO
+Arquivo: package.json (dependência "keycloak-js": "^26.2.4")
+Observação: Dependência declarada e lockfile presente.
+Próxima ação: Nenhuma.
+
+Item: src/auth/keycloakClient.ts
+Status real: IMPLEMENTADO
+Arquivo: src/auth/keycloakClient.ts
+Observação: init com onLoad login-required, pkceMethod S256, checkLoginIframe false.
+Próxima ação: Nenhuma.
+
+Item: src/auth/AuthProvider.tsx
+Status real: IMPLEMENTADO
+Arquivo: src/auth/AuthProvider.tsx
+Observação: Suporta keycloak, mock e temporary.
+Próxima ação: Integrar /api/me no ramo Keycloak.
+
+Item: src/auth/apiAuth.ts (Bearer)
+Status real: IMPLEMENTADO
+Arquivo: src/auth/apiAuth.ts
+Observação: authFetch + withAuthHeaders adicionam Authorization Bearer quando
+             usesKeycloakAuth() é true.
+Próxima ação: Nenhuma.
+
+Item: Token mantido em memória (camada do app)
+Status real: IMPLEMENTADO
+Arquivo: src/auth/AuthProvider.tsx (useState token), registerAuthTokenGetter
+Observação: Não há localStorage/sessionStorage em src/auth/*. keycloak-js pode
+             manter estado interno próprio; camada DOQYN usa React state.
+Próxima ação: Documentar comportamento interno do keycloak-js se necessário.
+
+Item: Authorization Bearer nas chamadas API
+Status real: PARCIAL
+Arquivo: src/auth/apiAuth.ts, src/features/users/api/usersApi.ts
+Observação: Bearer é enviado apenas com VITE_AUTH_PROVIDER=keycloak. Rotas que
+             usam fetch() direto (ex.: authApi.ts login/me) não enviam Bearer.
+             usersApi e demais via authFetch: OK.
+Próxima ação: Unificar authApi.meRequest para usar authFetch + Bearer.
+
+Item: Fallback VITE_AUTH_PROVIDER=mock
+Status real: IMPLEMENTADO
+Arquivo: src/auth/authConfig.ts, src/auth/AuthProvider.tsx
+Observação: mock retorna MOCK_DEV_USER em memória.
+Próxima ação: Nenhuma.
+
+Item: Frontend consome GET /api/me
+Status real: NÃO IMPLEMENTADO (fluxo Keycloak)
+Arquivo: src/auth/AuthProvider.tsx (linhas 121-126), src/features/auth/authApi.ts
+Observação: Com keycloak, refreshUser usa mapKeycloakTokenToAuthUser(tokenParsed).
+             meRequest() chama /api/auth/me só no modo temporary (cookie).
+             Relatório marca [OK] incorretamente para integração frontend.
+Próxima ação: Após login Keycloak, chamar GET /api/me com Bearer e popular user
+               a partir de user+tenant+membership.
+
+Item: companyId hardcoded no frontend
+Status real: PARCIAL (problema ativo)
+Arquivo: src/auth/mapKeycloakUser.ts (companyId: 'company_dev')
+         src/auth/AuthProvider.tsx (MOCK_DEV_USER.companyId)
+         src/features/users/UsersPage.tsx (fallback 'company_dev')
+Observação: Usuário Keycloak não recebe tenant real do backend no frontend.
+Próxima ação: Consumir /api/me e remover constantes DEV_COMPANY_ID do map.
+
+---- BACKEND ----
+
+Item: Validação JWT com jose/JWKS
+Status real: IMPLEMENTADO
+Arquivo: server/auth/keycloakJwtVerifier.ts, package.json ("jose": "^6.2.3")
+Observação: Valida issuer, JWKS, audience/azp do client frontend.
+Próxima ação: Nenhuma.
+
+Item: Middleware requireAuth
+Status real: IMPLEMENTADO
+Arquivo: server/auth/requireAuth.ts
+Observação: Bearer → verifyKeycloakAccessToken → resolveAuthUserFromKeycloak;
+             fallback cookie via getSessionFromRequest.
+             Também exporta requireAnyRole, requireUserManager.
+Próxima ação: Tratar MEMBER_NOT_LINKED com 403 (hoje cai em 401 genérico).
+
+Item: GET /api/me
+Status real: IMPLEMENTADO
+Arquivo: api/me.ts, api/auth/me.ts (reexport), server/services/meService.ts
+Observação: Retorna { user, tenant, membership, legacyUser }.
+             Rota registrada em server/dev-server.ts.
+Próxima ação: Frontend Keycloak passar a consumir.
+
+Item: keycloakAdminService
+Status real: IMPLEMENTADO (código) / PARCIAL (operação)
+Arquivo: server/auth/keycloakAdminService.ts
+Observação: getAdminToken, createUser, enable/disable, setTemporaryPassword,
+             syncRealmRoles, etc. Exige KEYCLOAK_ADMIN_CLIENT_SECRET e client
+             doqyn-admin-api na VPS.
+Próxima ação: Criar client na VPS e configurar secret no .env do servidor.
+
+Item: tenantResolver
+Status real: IMPLEMENTADO
+Arquivo: server/tenancy/tenantResolver.ts
+Observação: resolveTenant, resolveActiveTenant, resolveTenantCollectionNames.
+Próxima ação: Nenhuma.
+
+Item: getTenantCollections
+Status real: IMPLEMENTADO
+Arquivo: server/tenancy/getTenantCollections.ts
+Observação: Retorna collections tipadas por tenant.
+Próxima ação: Nenhuma.
+
+Item: Coleção tenants
+Status real: IMPLEMENTADO
+Arquivo: server/db/types.ts (MongoTenant), server/services/tenantsService.ts,
+         server/db/setupMongo.ts (índices via ensureDevTenantSeed)
+Observação: Seed company_dev via ensureDevTenantSeed.
+Próxima ação: Nenhuma.
+
+Item: Coleção tenant_members
+Status real: PARCIAL
+Arquivo: server/db/types.ts (MongoTenantMember),
+         server/services/tenantMembersService.ts (leitura),
+         server/db/setupMongo.ts (índices)
+Observação: Leitura com fallback para company_members. Escritas de convite,
+             aprovação, bloqueio etc. ainda em REGISTRY_COLLECTIONS.companyMembers
+             (userManagementService.ts). Sem seed tenant_members.
+Próxima ação: Migrar escritas para tenant_members ou dual-write.
+
+Item: POST /api/company-members/invite
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/invite.ts
+Observação: Usa withUserManagementApi + inviteCompanyMember.
+Próxima ação: Testar com admin client Keycloak configurado.
+
+Item: POST /api/company-members/:id/approve
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/approve.ts
+
+Item: POST /api/company-members/:id/reject
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/reject.ts
+
+Item: POST /api/company-members/:id/block
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/block.ts
+
+Item: POST /api/company-members/:id/activate
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/activate.ts
+
+Item: PATCH /api/company-members/:id/access
+Status real: IMPLEMENTADO
+Arquivo: api/company-members/access.ts
+
+Item: POST /api/auth/access-requests (solicitação pública)
+Status real: IMPLEMENTADO
+Arquivo: api/auth/access-requests.ts
+Observação: Ainda usa companyId no input; não usa CPF/CNPJ/tenantType.
+Próxima ação: Evoluir payload para cadastro multi-tenant.
+
+Item: Tela /users no frontend
+Status real: IMPLEMENTADO
+Arquivo: src/features/users/UsersPage.tsx,
+         src/features/users/UserManagementRoute.tsx,
+         src/app/routes.tsx (path /users)
+Observação: Convite, aprovar, rejeitar, bloquear, reativar, editar acesso.
+Próxima ação: Garantir que usuário logado via Keycloak tenha membership no Mongo.
+
+Item: Tela "aguardando aprovação" para usuário pending pós-login
+Status real: NÃO IMPLEMENTADO
+Arquivo: (ausente rota dedicada)
+Observação: Existe painel admin em /rules (PendingApprovalsPanel), não bloqueio
+             de UX para usuário final pending após login Keycloak.
+Próxima ação: Criar rota/guard que leia status via /api/me.
+
+Item: Cadastro público CPF/CNPJ
+Status real: PARCIAL
+Arquivo: server/services/tenantsService.ts (findOrCreateTenantByTaxId)
+Observação: Função existe; não há endpoint/UI que a chame.
+Próxima ação: Criar fluxo de registro público.
+
+---- CONFIGURAÇÃO ----
+
+Item: .env.example variáveis Keycloak frontend
+Status real: IMPLEMENTADO
+Arquivo: .env.example (linhas 15-21)
+Observação: VITE_AUTH_PROVIDER, VITE_KEYCLOAK_URL, REALM, CLIENT_ID.
+Próxima ação: Nenhuma.
+
+Item: .env.example variáveis Keycloak backend
+Status real: IMPLEMENTADO
+Arquivo: .env.example (linhas 46-51)
+Observação: KEYCLOAK_BASE_URL, REALM, ADMIN_CLIENT_ID, ADMIN_CLIENT_SECRET,
+             FRONTEND_CLIENT_ID.
+Próxima ação: Nenhuma.
+
+Item: Nenhum secret em variáveis VITE_
+Status real: IMPLEMENTADO
+Arquivo: .env.example (auditoria grep em .env.example)
+Observação: KEYCLOAK_ADMIN_CLIENT_SECRET só no backend.
+Próxima ação: Garantir que .env local do desenvolvedor siga o mesmo padrão.
+
+Item: Backend espera KEYCLOAK_ADMIN_CLIENT_ID=doqyn-admin-api
+Status real: IMPLEMENTADO
+Arquivo: server/utils/keycloakEnv.ts (default 'doqyn-admin-api')
+Observação: Default no código se env ausente.
+Próxima ação: Criar client real na VPS.
+
+Item: companyId fixo em pontos críticos
+Status real: PARCIAL
+Arquivo: src/auth/mapKeycloakUser.ts (crítico para Keycloak UX)
+         server/db/constants.ts (DEV_TENANT_ID default company_dev — esperado dev)
+         server/services/userManagementService.ts (ainda nomenclatura companyId)
+Observação: Backend abstrai tenantId; frontend Keycloak ainda fixa company_dev.
+Próxima ação: Integrar /api/me no frontend.
+
+
+================================================================================
+CHECKLIST DO RELATÓRIO ORIGINAL — VALIDAÇÃO ITEM A ITEM
+================================================================================
+
+Seção "O que já está funcionando — INFRAESTRUTURA (VPS)"
+  [OK] Keycloak Docker VPS              -> VPS (DOC) — não verificável no repo
+  [OK] Postgres Keycloak                -> VPS (DOC)
+  [OK] Realm doqyn                      -> VPS (DOC)
+  [OK] Client doqyn-web                 -> VPS (DOC)
+  [OK] Roles globais                    -> VPS (DOC)
+  [OK] Usuário sidnei                   -> VPS (DOC)
+  [OK] Túnel SSH                        -> VPS (DOC)
+
+Seção "O que já está funcionando — CÓDIGO DO PROJETO"
+  [OK] keycloak-js PKCE token memória   -> IMPLEMENTADO (ver ressalva keycloak-js interno)
+  [OK] Bearer nas APIs                  -> PARCIAL (authFetch sim; authApi.ts não)
+  [OK] JWT JWKS backend                 -> IMPLEMENTADO
+  [OK] keycloakAdminService             -> IMPLEMENTADO código / PARCIAL operação
+  [OK] GET /api/me                      -> IMPLEMENTADO backend / NÃO no frontend Keycloak
+  [OK] tenants e tenant_members         -> PARCIAL (tenants OK; members leitura OK, escrita legado)
+  [OK] tenantResolver/getTenantCollections -> IMPLEMENTADO
+  [OK] Endpoints gestão usuários        -> IMPLEMENTADO
+  [OK] Tela /users                      -> IMPLEMENTADO
+
+Checklist seção 24 — INFRAESTRUTURA VPS (todos [OK])
+  -> VPS (DOC) para todos os 14 itens — coerente como documentação, não auditável aqui.
+
+Checklist seção 24 — CÓDIGO DO PROJETO
+  [OK] keycloak-js                      -> IMPLEMENTADO
+  [OK] PKCE S256                        -> IMPLEMENTADO
+  [OK] Token em memória                 -> IMPLEMENTADO (camada app)
+  [OK] Authorization Bearer             -> PARCIAL
+  [OK] Validação JWT jose+JWKS          -> IMPLEMENTADO
+  [OK] keycloakAdminService             -> IMPLEMENTADO / PARCIAL operação
+  [OK] GET /api/me                      -> PARCIAL (backend sim, frontend Keycloak não)
+  [OK] tenants e tenant_members         -> PARCIAL
+  [OK] tenantResolver/getTenantCollections -> IMPLEMENTADO
+  [OK] Endpoints invite/approve/block   -> IMPLEMENTADO
+  [OK] Tela /users                      -> IMPLEMENTADO
+  [OK] Variáveis .env.example           -> IMPLEMENTADO
+  [PENDENTE] Frontend consumir /api/me  -> Confirmado PENDENTE (correto no relatório)
+  [PENDENTE] Tela aguardando aprovação  -> Confirmado PENDENTE
+  [PENDENTE] Cadastro CPF/CNPJ UI       -> Confirmado PENDENTE
+  [PENDENTE] Migração collections       -> Confirmado PENDENTE
+  [PENDENTE] Teste E2E sidnei+Mongo     -> Confirmado PENDENTE
+
+
+================================================================================
+DIVERGÊNCIAS EXPLÍCITAS COM O RELATÓRIO ORIGINAL
+================================================================================
+
+1. O relatório afirma [OK] "Frontend com keycloak-js, PKCE, token em memória"
+   e lista separadamente [PENDENTE] consumo de /api/me — correto no pendente,
+   mas o resumo executivo pode sugerir integração completa. Na prática a
+   integração Keycloak→backend→tenant está INCOMPLETA no frontend.
+
+2. O relatório afirma [OK] "Coleções tenants e tenant_members". No código,
+   tenant_members é usada principalmente para LEITURA; persistência de membros
+   ainda é company_members.
+
+3. O relatório marca [OK] "Serviço administrativo Keycloak" sem distinguir que
+   o código existe mas a operação depende de client não verificado na VPS.
+
+4. authApi.meRequest espera resposta { user: AuthUser }, enquanto /api/me
+   retorna envelope expandido. O campo legacyUser existe, mas meRequest lê
+   data.user que no novo formato pode não ser AuthUser completo — risco PARCIAL
+   no modo temporary se /api/me mudou formato (verificar em runtime).
+
+5. requireAuth converte falha de membership (403 MEMBER_NOT_LINKED) em 401
+   INVALID_BEARER_TOKEN — comportamento diferente do documentado no relatório.
+
+
+================================================================================
+PRÓXIMAS AÇÕES RECOMENDADAS (ORDEM)
+================================================================================
+
+1. Criar/validar client doqyn-admin-api na VPS + KEYCLOAK_ADMIN_CLIENT_SECRET
+2. Vincular sidnei em company_members ou tenant_members ativo no MongoDB
+3. Alterar AuthProvider (modo keycloak) para chamar GET /api/me com Bearer
+4. Remover companyId hardcoded de mapKeycloakUser.ts
+5. Dual-write ou migrar userManagementService para tenant_members
+6. Tela/guard "aguardando aprovação" baseada em membership.status
+7. Endpoint/UI de cadastro com CPF/CNPJ usando findOrCreateTenantByTaxId
+8. Teste ponta a ponta: túnel SSH + login sidnei + /api/me + /users
+
+
+================================================================================
+FIM DO RELATÓRIO DE AUDITORIA
+================================================================================
+
+Arquivo gerado em:
+  docs/RELATORIO_AUDITORIA_KEYCLOAK_CODIGO.txt

@@ -1,0 +1,667 @@
+================================================================================
+RELATÓRIO DE AUDITORIA TÉCNICA — REGRESSÕES PÓS-REFATORAÇÃO BIBLIOTECA
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Data/hora da auditoria: 2026-07-07 (UTC-3)
+Branch: master
+Commit HEAD (último commit): 37889e0 — "antes do front end"
+Estado do repositório: refatoração da Biblioteca/upload em working tree NÃO commitada
+  (dezenas de arquivos modificados + novos em src/features/library/, src/features/upload/,
+   src/app/layout/WorkspaceLayout.tsx, etc.)
+
+Repositório auditado: ~/Documents/GitHub/doqyn-alpha-document-intelligence
+Integração considerada (somente leitura): ~/Documents/GitHub/doqyn-auth-service (sessão/OAuth)
+
+================================================================================
+1. RESUMO EXECUTIVO
+================================================================================
+
+A refatoração transformou o app em workspace estilo Google Drive (/biblioteca) com
+upload transversal (+ Novo → UploadQueueProvider → ReviewDrawer). O backend de
+análise, confirmação, Mongo e R2 NÃO foi alterado na working tree — os endpoints
+/api/ai/analyze-pdf e /api/documents/confirm-analysis permanecem os mesmos.
+
+Os sintomas relatados (IA “travada”, documentos não aparecendo) são explicados por
+uma combinação de:
+
+  A) BUG CONFIRMADO NO FRONTEND (crítico): race condition no useEffect do
+     UploadQueueProvider que cancela a chamada analyzePdf assim que o item entra
+     em status "analyzing", deixando o item permanentemente em "Analisando com IA…"
+     sem nunca receber resposta nem abrir revisão.
+
+  B) FLUXO DE GOVERNANÇA INTENCIONAL MAS MAL COMUNICADO: auto-confirmação desligada
+     por padrão (VITE_UPLOAD_AUTO_CONFIRM_ENABLED=false, autoReviewEnabled=false).
+     Após análise bem-sucedida, o fluxo normal é pausar em "Aguardando revisão" e
+     exigir ReviewDrawer + checkbox + Confirmar — se o usuário fecha o drawer ou
+     não percebe a fila no canto, parece que “travou”.
+
+  C) CONFIRMAÇÃO PODE FALHAR NO BACKEND (contrato): respostas de análise com
+     status requires_review frequentemente trazem extraction: null; o schema Zod
+     de confirm-analysis exige extraction como objeto — confirm retorna 400
+     INVALID_PAYLOAD.
+
+  D) LISTAGEM VAZIA — CAUSAS PLAUSÍVEIS APÓS CONFIRM BEM-SUCEDIDO:
+     - Filtro ?space= (categoria) aplicado na raiz da Biblioteca enquanto o
+       documento foi salvo com classId da IA (UploadContext.categoryId não é usado).
+     - Filtro de status "Processado" no UI filtra status=processed, mas documentos
+       confirmados são salvos com status=active (processingStatus=processed).
+     - Coleções "Compartilhados", "Favoritos", "Lixeira" recortam a listagem.
+     - Permissões de grupo (canUserListDocument) no backend.
+
+  E) CONTEXTO DE UPLOAD DESCONECTADO: categoryId do espaço aberto é gravado em
+     UploadQueueItem.context mas NUNCA é enviado a analyzePdf nem confirmAnalysis.
+
+Veredicto geral: o problema é predominantemente FRONTEND/INTEGRAÇÃO (fila nova
+incompleta e com bug de concorrência), com riscos de contrato backend já existentes
+(extraction obrigatório) que o fluxo antigo também herdava em cenários de revisão.
+
+================================================================================
+2. FUNCIONALIDADES QUEBRADAS / DEGRADADAS OBSERVADAS (POR EVIDÊNCIA DE CÓDIGO)
+================================================================================
+
+[CRÍTICO] Upload via + Novo / drag-drop global pode ficar eternamente em "analyzing"
+  → UploadQueueProvider.tsx useEffect + cleanup cancelled=true
+
+[CRÍTICO] Confirm de análises requires_review com extraction:null → 400 INVALID_PAYLOAD
+  → confirmAnalysisSchema.extraction obrigatório; analyzePdfService retorna null
+
+[ALTO] Documento salvo não aparece se usuário está em espaço (?space=) diferente
+  do classId classificado pela IA
+  → useLibraryView filtra categoryId; UploadContext ignorado na persistência
+
+[ALTO] Filtro de status "Processado" na toolbar não lista docs confirmados
+  → confirm salva status:'active'; FilterMenu oferece value:'processed'
+
+[ALTO] Fluxo novo exige revisão manual quase sempre (settings default)
+  → resolveQueueAnalysisAction → open_review; sem auto-save sem ação do usuário
+
+[MÉDIO] OAuth callback redireciona para /upload por padrão, não /biblioteca
+  → OAuthCallbackPage.tsx resolveDestination returnUrl default '/upload'
+
+[MÉDIO] DocumentSendPage (/upload legado) não invalida React Query ['documents']
+  → nenhum invalidateQueries no feature document-send
+
+[MÉDIO] Query key morta ['library-documents'] invalidada mas nunca usada
+  → UploadQueueProvider invalidateLibrary
+
+[BAIXO] VersioningPage ainda usa MOCK_DOCUMENTS
+  → src/features/versioning/VersioningPage.tsx
+
+[BAIXO] Features "Nova pasta", renomear/mover na Biblioteca → toast "em breve"
+
+================================================================================
+3. MAPA DE FLUXOS CRÍTICOS
+================================================================================
+
+FLUXO NOVO (Biblioteca):
+  + Novo / DnD global / drop na LibraryContentDropZone
+    → startUploadFromFiles (prepareUploadItems)
+    → UploadQueueProvider (reducer)
+    → analyzePdf → POST /api/ai/analyze-pdf
+    → resolveQueueAnalysisAction
+    → [auto_confirm | open_review | fail]
+    → ReviewDrawer (se open_review) OU scheduleAutoConfirm
+    → confirmAnalysis → POST /api/documents/confirm-analysis
+    → confirmAnalysisPersistence (Mongo + R2 + preview + audit)
+    → invalidateQueries ['documents'] (+ ['library-documents'] morta)
+    → useLibraryView → useDocuments → GET /api/documents
+
+FLUXO ANTIGO (legado, ainda em /upload):
+  DocumentSendPage → useBulkUploadQueue (loop próprio, sem UploadQueueProvider)
+    → mesmos analyzePdf / confirmAnalysis
+    → UploadResultPanel (UI inline, logs, workflow logger)
+    → SEM invalidação de cache da Biblioteca
+
+BACKEND (inalterado na refatoração UI):
+  POST /api/ai/analyze-pdf        → analyzePdfBuffer + storeAnalysisStaging (R2)
+  POST /api/documents/confirm-analysis → confirmAnalysisPersistence
+  GET  /api/documents             → listDocuments
+  GET  /api/document-categories   → listDocumentCategories (pastas da Biblioteca)
+
+================================================================================
+4. TABELA — UPLOAD + IA + CONFIRM + R2 + MONGO (16 ETAPAS)
+================================================================================
+
+Etapa | Arquivo/Função | Status | Evidência | Problema | Impacto
+------|----------------|--------|-----------|----------|--------
+1 Escolha PDF | NewButtonMenu / useGlobalDragDrop / LibraryPage | OK | startUploadFromFiles chamado com File[] | — | —
+2 Validação | prepareUploadItems → validateUploadFiles | OK | Mesmas regras legado PDF 15MB 20/lote | — | —
+3 Enfileirar | uploadQueueReducer enqueue | OK | UploadQueueProvider dispatch | — | —
+4 analyzePdf | upload/services/analyzePdf.ts (re-export) | PARCIAL | authFetch POST /api/ai/analyze-pdf | Chamada iniciada mas cancelada por race (etapa 5) | CRÍTICO
+5 Backend IA | api/ai/analyze-pdf.ts | OK (código) | analyzePdfBuffer + staging | Não testado runtime nesta auditoria | —
+6 Response | mapToExtractedMetadata | PARCIAL | metadata + raw no dispatch analysis | Nunca chega se etapa 4 cancelada | CRÍTICO
+7 ReviewDrawer | ReviewDrawer.tsx | PARCIAL | Abre se reviewItemId setado | Não abre se travado em analyzing; usuário pode fechar sem confirmar | ALTO
+8 Usuário confirma | ReviewDrawer handleConfirm | OK (código) | confirmReview → confirmItem | Checkbox obrigatório bloqueia sem marcar | UX
+9 confirmAnalysis | document-send/services/confirmAnalysis.ts | PARCIAL | POST /api/documents/confirm-analysis | Falha se extraction:null ou class/rule ausente | ALTO
+10 Mongo insert | confirmAnalysisPersistence | OK (código) | documents.insertOne status:'active' | Só executa se confirm chegar | —
+11 R2 promote | persistConfirmedVersionFile | OK (código) | loadAnalysisStaging(jobId) → storeUploadedDocumentFile | Exige jobId + staging prévio no analyze | ALTO se staging falhou
+12 Versão | confirmAnalysisPersistence | OK (código) | documentVersions.insertOne | — | —
+13 Preview | generateDocumentPreviewForVersion | OK (código) | Após primary stored | Falha não impede save (slot pending) | BAIXO
+14 Tracking/Audit | createDocumentAuditLogs | OK (código) | confirmAnalysisPersistence | — | —
+15 Invalidate | UploadQueueProvider.invalidateLibrary | PARCIAL | invalidateQueries ['documents'] | ['library-documents'] não usada; só após confirm ok | MÉDIO
+16 Listagem | useLibraryView → useDocuments | PARCIAL | GET /api/documents | Filtros space/status/coleção podem esconder doc | ALTO
+
+================================================================================
+5. POR QUE A ANÁLISE DA IA PARECE TRAVADA
+================================================================================
+
+CAUSA RAIZ CONFIRMADA (frontend):
+
+Arquivo: src/features/upload/UploadQueueProvider.tsx
+Linhas ~164-223: useEffect processa fila com dependência [items, ...].
+
+Sequência do bug:
+  1. Item queued → effect dispara analyzePdf async
+  2. dispatch({ type:'status', status:'analyzing' }) atualiza items
+  3. Effect reexecuta por mudança em items
+  4. Cleanup do effect anterior: cancelled = true
+  5. hasActiveItem(items) === true → effect retorna sem nova análise
+  6. Promise analyzePdf resolve com cancelled===true → return silencioso
+  7. Item permanece status:'analyzing' PARA SEMPRE
+
+Evidência no código:
+  - hasActiveItem só considera 'analyzing' | 'confirming' (uploadQueueState.ts:66-68)
+  - Não há timeout, retry automático nem transição analyzing→error
+  - UploadQueueDrawer mostra "Analisando com IA…" indefinidamente
+
+Comparação: useBulkUploadQueue (fluxo antigo) usa refs, isolamento de requests
+(bulkQueueIsolation.ts) e NÃO sofre este padrão de cleanup ao mudar status.
+
+CAUSAS SECUNDÁRIAS (comportamento esperado mal percebido):
+
+  a) Default reviewSettings.autoReviewEnabled = false
+  b) VITE_UPLOAD_AUTO_CONFIRM_ENABLED default false (uploadAutoConfirm.ts)
+  c) shouldPauseForReview default true para baixa confiança / campos ausentes
+  d) Após análise OK → status 'review' + ReviewDrawer; fechar drawer deixa item
+     em review sem bloquear fila — usuário precisa clicar "Revisar" no drawer
+     inferior (UploadQueueDrawer)
+
+  e) analyzePdf no novo fluxo passa só { context: { fileName } } — sem itemId/
+     requestId explícitos (menor impacto; requestId é gerado no serviço)
+
+Backend: endpoint /api/ai/analyze-pdf intacto. Se a requisição HTTP completasse,
+retornaria status completed | requires_review | ai_unavailable | failed.
+O travamento observado é frontend antes/depois da resposta.
+
+================================================================================
+6. POR QUE A BIBLIOTECA MOSTRA 0 ARQUIVOS
+================================================================================
+
+Hipótese                          | Status        | Evidência
+----------------------------------|---------------|------------------------------------------
+Não salvou no Mongo               | PLAUSÍVEL     | confirm nunca chamado (analyzing travado / review não confirmada)
+Salvou, listDocuments não retorna | A INVESTIGAR  | Requer teste manual GET /api/documents (runtime)
+listDocuments retorna, UI filtra  | CONFIRMADO    | useLibraryView + applyCollectionFilter + ?space= + ?status=
+Frontend não renderiza            | DESCARTADO    | FileTable renderiza documents[]; EmptyState só se length===0
+Cache stale                       | PARCIAL       | invalidate ['documents'] ok após confirm; reload manual deve mostrar
+Tenant errado                     | PLAUSÍVEL     | useDocuments queryKey inclui tenant?.tenantId
+Status incompatível               | CONFIRMADO    | Filtro UI "processed" ≠ Mongo status "active"
+Categoria incompatível            | CONFIRMADO    | ?space=categoryId vs classId da IA; context não força categoria
+
+Detalhes listagem:
+
+  - useDocuments: queryKey ['documents', tenant?.tenantId, filters]
+  - useLibraryView filters: { search: state.q, status: state.status,
+      categoryId: collection.id==='root' ? state.space : '' }
+  - listDocuments backend: filters.categoryId → query.classId
+  - Documento salvo: classId = docClass._id (document_categories governança)
+  - Pastas sidebar: mesma API /api/document-categories (IDs compatíveis SE IA
+    classificar na mesma categoria do espaço aberto)
+
+Coleções que esvaziam a vista:
+  - compartilhados: exclui ownerUserId === currentUser
+  - favoritos: só starredIds (localStorage)
+  - lixeira: só status === 'archived' (confirm salva 'active')
+  - recentes: slice 50 por updatedAt (deveria mostrar docs novos)
+
+================================================================================
+7. ESTADO DO R2 E STORAGE APÓS REFATORAÇÃO
+================================================================================
+
+O novo fluxo usa o MESMO confirmAnalysisPersistence do backend.
+
+Analyze (staging):
+  - api/ai/analyze-pdf.ts: storeAnalysisStaging após analyzePdfBuffer
+  - Chave: tenantId + ownerUserId + jobId (stagingStorage.ts)
+  - Se R2 não configurado: analyze pode funcionar mas confirm exige jobId
+    (STAGING_JOB_REQUIRED 400) quando storage configurado parcialmente
+
+Confirm (promote):
+  - persistConfirmedVersionFile: loadAnalysisStaging(jobId) → storeUploadedDocumentFile
+  - deleteAnalysisStaging após sucesso
+  - preview via generateDocumentPreviewForVersion
+
+Frontend NÃO envia buffer no confirm — correto; usa jobId do payload analyze.
+
+Cenários de falha R2 (sem alterar dados nesta auditoria):
+  [A] analyze nunca completa (bug frontend) → staging pode existir sem confirm
+  [B] staging expirado/deletado antes do confirm → STAGING_* errors
+  [C] confirm ok, Mongo ok, primary pending → doc listado mas sem preview/download
+  [D] Mongo referencia objectKey errado → listagem ok, preview falha
+
+Refatoração NÃO alterou adapters de storage no backend. Risco é indireto:
+se confirm não é chamado, R2 fica só com staging temporário.
+
+================================================================================
+8. REVIEWDRAWER VS UPLOADRESULTPANEL ANTIGO
+================================================================================
+
+UploadResultPanel (document-send/components/UploadResultPanel.tsx):
+  + Timeline de logs de processamento (logs prop)
+  + Abas resultado/logs
+  + Evidências expandíveis por campo
+  + Banner auto-countdown com pausar
+  + Estados saved / flowPhase saving / error
+  + onReprocess, onNextDocument
+  + metadataToFields completo
+  + Integrado na página /upload com workflow logger
+
+ReviewDrawer (upload/review/ReviewDrawer.tsx):
+  + Drawer lateral global (z-index 95)
+  + Checkbox obrigatório de revisão
+  + DocumentNamingSection condicional
+  + Até 8 campos extraídos
+  - SEM logs de processamento
+  - SEM reprocessar
+  - SEM indicador de documento salvo com ID/código
+  - SEM workflow logger
+  - Fechar drawer (Escape / backdrop) NÃO cancela item — fica em review
+
+Campos/payload confirm — comparativo:
+
+  | Campo                    | DocumentSendPage      | UploadQueueProvider    |
+  |--------------------------|----------------------|------------------------|
+  | manualReviewConfirmed    | requiresReview (bool)| requiresReview \|\| true (sempre true) |
+  | namingMode               | resolveEffective...  | igual                  |
+  | finalFileName            | resolveFinal...      | igual                  |
+  | jobId (no raw payload)   | do analyze           | igual                  |
+  | categoryId do espaço     | NÃO enviado          | NÃO enviado (context morto) |
+  | workflow requestId       | createRequestId()    | createRequestId()      |
+  | invalidate Biblioteca    | NÃO                  | SIM ['documents']      |
+
+Bug lógico em confirmReview (linha 244):
+  `await confirmItem(item, requiresReview || true, ...)` → manualReviewConfirmed
+  sempre true. Não impede save, mas mascara distinção completed vs requires_review.
+
+================================================================================
+9. CACHE/REFETCH: DOCUMENTOS NÃO APARECEM POR CACHE OU POR BACKEND?
+================================================================================
+
+Query keys em uso:
+  - useDocuments: ['documents', tenant?.tenantId, filters]
+  - useDocumentCategories: ['document-categories-options']
+  - useDashboardOverview: ['dashboard-overview', tenant?.tenantId, period]
+  - NENHUM hook usa ['library-documents']
+
+Invalidação pós-confirm (novo fluxo):
+  UploadQueueProvider.invalidateLibrary():
+    queryClient.invalidateQueries({ queryKey: ['documents'] })
+    queryClient.invalidateQueries({ queryKey: ['library-documents'] })  // INÚTIL
+
+TanStack Query v5: prefix match em ['documents'] invalida todas as variantes com
+filters diferentes — CORRETO se confirm completar.
+
+Se após reload manual (/biblioteca) ainda vazio:
+  → problema é backend/dados/filtros, não cache.
+
+Se aparece só após reload mas não após confirm:
+  → investigar await confirmItem + invalidate (improvável se confirm ok).
+
+DocumentSendPage: zero invalidação — docs salvos via /upload exigem reload manual
+na Biblioteca (regressão de UX, não de backend).
+
+================================================================================
+10. IMPACTO DAS MUDANÇAS DE ROTA
+================================================================================
+
+routes.tsx (estado working tree):
+  /biblioteca, /biblioteca/:collection → LibraryRoute
+  /documents → Navigate to /biblioteca
+  /upload → DocumentSendRoute (legado, comentado como fora da navegação)
+  / → /biblioteca
+  * → /biblioteca
+
+AppLayout → WorkspaceLayout → UploadQueueProvider envolve TODAS rotas autenticadas
+incluindo /upload e /dashboard.
+
+Sidebar: removido link direto "Envio de Documentos"; + Novo substitui.
+
+OAuthCallbackPage: returnUrl default '/upload' quando autenticado — desalinhado
+com nova home /biblioteca.
+
+DocumentsPage.tsx ainda existe mas rota redireciona — código morto parcial.
+
+Onboarding: /onboarding rota própria; ProtectedRoute não redireciona onboarding.
+
+================================================================================
+11. TENANT, SESSÃO E PERMISSÕES
+================================================================================
+
+useDocuments depende de tenant?.tenantId do useAuth (AuthProvider / session API).
+
+listDocuments backend:
+  - buildDocumentRequestContext(user) na API
+  - canUserListDocument filtra por grupos de acesso
+  - company_admin / doqyn_admin: verificar permissions.js (não alterado)
+
+analyze-pdf: canAnalyzeDocuments(user) — 403 se sem permissão.
+
+confirm-analysis: canConfirmDocuments implícito em confirmAnalysisPersistence.
+
+Risco: documento salvo no tenant da sessão ativa, mas usuário visualiza
+Biblioteca com filtros que escondem (não é cross-tenant).
+
+Auth-service: cookies de sessão usados via authFetch/getFetchCredentials —
+sem alteração auditada neste repo.
+
+================================================================================
+12. REGRESSÕES PROVÁVEIS AO ADAPTAR document-send PARA upload TRANSVERSAL
+================================================================================
+
+O que DocumentSendPage fazia e o novo fluxo perdeu/degradou:
+
+  1. Workflow logger estruturado (useWorkflowLogger) por item/lote
+  2. UploadResultPanel com logs timeline e reprocessamento
+  3. useBulkUploadQueue com isolamento de requests e bulk batch
+  4. Validação pré-confirm de classId / recommendedFileName com toasts específicos
+  5. Feedback pós-save (savedDocumentId, documentCode na UI)
+  6. Invalidação/atualização da listagem global de documentos
+  7. Página dedicada com estado de fluxo (não competindo com drawer global)
+  8. buildAnalysisDecision / eligibility helpers para bulk
+
+O que o UploadQueueProvider faz:
+  - Fila compacta canto inferior direito
+  - ReviewDrawer modal
+  - Mesmos serviços HTTP analyzePdf/confirmAnalysis (re-export)
+  - Preferências review via useReviewWorkflowSettingsState (localStorage)
+
+O que ficou faltando e explica sintomas:
+  - Processamento confiável pós-enqueue (BUG useEffect)
+  - UX clara de "análise terminou, revise aqui"
+  - Uso do UploadContext.categoryId na classificação/confirmação
+  - Paridade de validação pré-confirm do DocumentSendPage
+  - Tratamento de extraction:null antes de confirm
+
+================================================================================
+13. ARQUIVOS ALTERADOS PELA REFATORAÇÃO COM POTENCIAL DE REGRESSÃO
+================================================================================
+
+RISCO ALTO:
+  src/features/upload/UploadQueueProvider.tsx       — bug race analyzing
+  src/features/upload/config/resolveQueueAnalysisAction.ts
+  src/features/upload/review/ReviewDrawer.tsx
+  src/features/upload/queue/uploadQueueState.ts
+  src/features/library/hooks/useLibraryView.ts
+  src/features/library/LibraryPage.tsx
+  src/app/layout/WorkspaceLayout.tsx
+  src/features/document-send/DocumentSendPage.tsx   — desconectado da nav
+  server/services/confirmAnalysisService.ts         — (backend estável, mas contrato)
+  api/ai/analyze-pdf.ts / api/documents/confirm-analysis.ts
+
+RISCO MÉDIO:
+  src/app/routes.tsx, src/app/lazyRoutes.tsx
+  src/components/layout/Sidebar.tsx
+  src/features/library/collections.ts
+  src/features/library/components/FilterMenu.tsx
+  src/features/documents/hooks/useDocuments.ts
+  src/pages/OAuthCallbackPage.tsx
+  src/lib/constants.ts (NAV_ITEMS)
+
+RISCO BAIXO:
+  src/styles/tokens.css, tailwind.config.js
+  src/components/ui/* (design system)
+  tests/* (619 passando — não cobrem race do provider em runtime)
+
+Arquivos removidos:
+  src/features/upload/UploadPage.tsx (deleted) — substituído por fila global
+
+Arquivos novos principais:
+  src/features/library/** (feature completa)
+  src/features/upload/** (fila, drawer, drag-drop)
+  src/app/layout/WorkspaceLayout.tsx
+
+================================================================================
+14. BUGS CONFIRMADOS (COM ARQUIVO E LINHA)
+================================================================================
+
+BUG-001 [CRÍTICO] Race condition cancela analyzePdf
+  Arquivo: src/features/upload/UploadQueueProvider.tsx (~164-223)
+  Sintoma: status 'analyzing' permanente, IA "travada"
+  Mecanismo: useEffect depende de items; dispatch analyzing → cleanup cancelled
+
+BUG-002 [ALTO] extraction:null incompatível com confirmAnalysisSchema
+  Arquivo: server/services/confirmAnalysisService.ts:98 (extraction obrigatório)
+          server/ai/services/analyzePdfService.ts:313,356,412 (extraction:null)
+  Sintoma: confirm 400 INVALID_PAYLOAD em requires_review sem extração
+
+BUG-003 [ALTO] UploadContext.categoryId nunca usado após enqueue
+  Arquivo: UploadQueueProvider.tsx:182 (só fileName no analyze)
+          types.ts UploadContext definido mas ignorado na persistência
+
+BUG-004 [MÉDIO] Filtro status "processed" não corresponde a docs salvos
+  Arquivo: FilterMenu.tsx + confirmAnalysisPersistence status:'active'
+
+BUG-005 [BAIXO] Query key fantasma 'library-documents'
+  Arquivo: UploadQueueProvider.tsx:45
+
+BUG-006 [MÉDIO] confirmReview manualReviewConfirmed sempre true
+  Arquivo: UploadQueueProvider.tsx:244 (requiresReview || true)
+
+================================================================================
+15. HIPÓTESES FORTES AINDA NÃO CONFIRMADAS EM RUNTIME
+================================================================================
+
+  H1: CLASS_OR_RULE_NOT_FOUND em tenants sem governança seedada
+      (diagnoseClassAndRuleLookup em confirmAnalysisService)
+
+  H2: MONGODB_NOT_CONFIGURED em ambiente local sem MONGODB_URI
+
+  H3: Staging R2 expirado entre analyze e confirm em uploads lentos
+
+  H4: Permissões de grupo ocultam documentos na listagem para membros
+
+  H5: AI rate limit (ai_unavailable) interpretado como travamento se bug-001
+      não ocorrer mas UI não mostrar erro claro
+
+================================================================================
+16. O QUE ESTÁ FUNCIONANDO (EVIDÊNCIA)
+================================================================================
+
+  - Build produção: npm run build — sucesso
+  - Lint: npm run lint — sucesso
+  - Typecheck: npx tsc --noEmit — sucesso
+  - Testes: npm test — 619/619 passando
+  - Rotas /biblioteca renderizam LibraryPage com useDocuments real (não mock)
+  - Adapters analyzePdf/confirmAnalysis reutilizam implementação document-send
+  - Backend analyze/confirm/list inalterados na working tree
+  - GET /api/documents mapeia categoryId→classId corretamente no servidor
+  - Upload legado /upload ainda montado com DocumentSendPage + useBulkUploadQueue
+  - Dashboard usa fetchDashboardOverview real (queryKey própria)
+  - GlobalSearchCommand navega para /biblioteca?q=
+  - Invalidate ['documents'] após confirm bem-sucedido (novo fluxo)
+
+================================================================================
+17. O QUE NÃO ESTÁ FUNCIONANDO (RESUMO)
+================================================================================
+
+  - Fila global de upload: analyze pode cancelar (BUG-001)
+  - Confirmação em cenários requires_review + extraction null (BUG-002)
+  - Aparição do documento no espaço/categoria esperado pelo usuário (BUG-003)
+  - Filtro "Processado" na Biblioteca (BUG-004)
+  - Atualização automática da Biblioteca após save via /upload legado
+  - Versioning com dados reais (ainda mock)
+  - Várias ações de context menu Biblioteca (stubs toast)
+
+================================================================================
+18. RISCOS SE CORRIGIR DE FORMA APRESSADA
+================================================================================
+
+  - Religar auto-confirm global sem revisão → bypass de governança
+  - Remover checkbox do ReviewDrawer → não conformidade com requires_review
+  - Forçar categoryId do espaço sem validar regras IA → documentos mal classificados
+  - Invalidar queries com too broad refetch → performance em listas grandes
+  - "Consertar" useEffect removendo cleanup sem refs → memory leaks / duplo analyze
+  - Alterar schema extraction para nullable sem migração → dados inconsistentes
+
+================================================================================
+19. PLANO RECOMENDADO DE CORREÇÃO (ORDEM SEGURA — NÃO IMPLEMENTADO)
+================================================================================
+
+Fase 1 — CRÍTICA (desbloquear upload)
+  [C1] Corrigir UploadQueueProvider: separar effect de processamento da
+       dependência items (usar ref para item ativo, ou não cancelar analyze
+       in-flight). Adicionar timeout analyzing→error.
+  [C2] Teste de integração simulando analyze async + dispatch analyzing.
+
+Fase 2 — ALTA (confirm e persistência)
+  [A1] Antes de confirm: validar extraction !== null OU backend aceitar
+       extraction opcional com defaults para requires_review.
+  [A2] Portar validações pré-confirm do DocumentSendPage (classId, nomes).
+  [A3] Garantir jobId presente no raw antes de confirmItem.
+
+Fase 3 — ALTA (listagem Biblioteca)
+  [A4] Após confirm: refetch explícito ou navegar para /biblioteca sem ?space=
+       se classId difere do espaço anterior.
+  [A5] Decidir política: forçar classId do UploadContext ou avisar usuário
+       que espaço aberto não corresponde à classificação IA.
+  [A6] Alinhar FilterMenu: mapear "Processado" → status active ou filtrar
+       processingStatus no backend.
+
+Fase 4 — MÉDIA (paridade e rotas)
+  [M1] DocumentSendPage: invalidateQueries ['documents'] após save
+  [M2] OAuth default returnUrl → /biblioteca
+  [M3] Remover query key morta library-documents
+  [M4] ReviewDrawer: indicar claramente fim da análise; reabrir automaticamente?
+
+Fase 5 — BAIXA (UX/design)
+  [B1] VersioningPage conectar a API real
+  [B2] Completar ações de context menu
+  [B3] Logs no ReviewDrawer (opcional)
+
+================================================================================
+20. ITENS QUE NÃO DEVEM SER MEXIDOS (NESTA CORREÇÃO)
+================================================================================
+
+  - Contratos HTTP existentes sem coordenação backend (analyze-pdf, confirm-analysis)
+  - Schemas Mongo / collections tenant sem migration plan
+  - Buckets R2 / políticas de staging em produção
+  - auth-service (sessão) salvo redirect URLs
+  - auto-confirm em produção via env sem revisão legal/compliance
+  - Mock de Versioning até haver API dedicada
+
+================================================================================
+21. TESTES A ADICIONAR (RECOMENDAÇÃO)
+================================================================================
+
+  1. upload-queue-provider: analyze async não cancelado quando status→analyzing
+  2. E2E: upload PDF → review → confirm → documento visível em /biblioteca
+  3. Confirm com extraction:null → erro UI compreensível
+  4. Upload dentro de ?space=X → visibilidade conforme política definida
+  5. Filtro status processed vs active
+  6. invalidateQueries após confirm atualiza FileTable
+  7. Regressão /upload legado invalida biblioteca
+
+================================================================================
+22. COMANDOS EXECUTADOS E RESULTADOS
+================================================================================
+
+Git:
+  git status --short        → working tree extensa (library/, upload/, layout/)
+  git log --oneline -n 10   → 37889e0 antes do front end (HEAD)
+  git rev-parse HEAD        → 37889e02ef1df16e9572e15c8bfe10f13f34e9b7
+  git branch --show-current → master
+
+Qualidade:
+  npm test                  → 619 pass, 0 fail
+  npm run build             → sucesso (3.69s)
+  npm run lint              → sucesso
+  npx tsc --noEmit          → sucesso (sem erros)
+
+Buscas (rg):
+  confirmAnalysis           → document-send + upload (re-export)
+  analyzePdf                → document-send (+ upload re-export)
+  invalidateQueries         → UploadQueueProvider, userManagementQueries
+  library-documents         → só UploadQueueProvider (não usado em hooks)
+  listDocuments             → useDocuments, documentService, libraryApi
+  MOCK_DOCUMENTS            → VersioningPage, mock-data.ts (Biblioteca limpa)
+  useBulkUploadQueue        → DocumentSendPage apenas
+  ReviewDrawer              → WorkspaceLayout
+
+NÃO executados (sem necessidade / sem ambiente):
+  npm run audit:mongodb-schema (requer Mongo)
+  npm run r2:env-check (requer credenciais R2)
+  Testes manuais browser DevTools
+  Operações destrutivas em DB/R2
+
+================================================================================
+23. CHECKLIST MANUAL PARA REPRODUZIR (DESENVOLVEDOR)
+================================================================================
+
+Pré-requisitos: app rodando (npm run dev), usuário autenticado com tenant,
+Mongo e R2 configurados, regras/categorias ativas no tenant.
+
+PASSO 1 — Abrir DevTools → Network (Preserve log)
+
+PASSO 2 — Ir para /biblioteca (sem filtros ?space= ?status=)
+
+PASSO 3 — + Novo → Upload de arquivo → selecionar PDF válido
+
+PASSO 4 — Observar:
+  [ ] POST /api/ai/analyze-pdf — status HTTP?
+  [ ] Response: jobId, status (completed/requires_review/...)
+  [ ] UI fila: permanece "Analisando" > 60s? (indica BUG-001)
+  [ ] ReviewDrawer abriu?
+
+PASSO 5 — Se ReviewDrawer abriu:
+  [ ] Marcar checkbox
+  [ ] Confirmar e salvar
+  [ ] POST /api/documents/confirm-analysis — status 201?
+  [ ] Response: documentId, storageStatus
+
+PASSO 6 — Se confirm 400:
+  [ ] Ver body code: INVALID_PAYLOAD | REQUIRES_REVIEW | CLASS_OR_RULE_NOT_FOUND
+
+PASSO 7 — Recarregar /biblioteca (sem filtros)
+
+PASSO 8 — GET /api/documents — items contém documentId?
+
+PASSO 9 — Se vazio na UI mas API retorna:
+  [ ] Verificar ?space= ?status= coleção /biblioteca/compartilhados etc.
+
+PASSO 10 — Scripts seguros opcionais:
+  npm run r2:env-check
+  npm run audit:governance-rules (se Mongo local)
+
+Endpoints obrigatórios na observação:
+  POST /api/ai/analyze-pdf
+  POST /api/documents/confirm-analysis
+  GET  /api/documents
+  GET  /api/document-categories
+
+================================================================================
+24. CONCLUSÃO
+================================================================================
+
+A refatoração da Biblioteca desconectou o fluxo de upload da navegação antiga
+e introduziu uma nova orquestração (UploadQueueProvider) que REUTILIZA os
+endpoints corretos, mas contém um bug crítico de concorrência que impede a
+conclusão da análise na maioria dos casos — isso explica diretamente a percepção
+de "IA travada" e a ausência de documentos na listagem (confirm nunca roda).
+
+Mesmo com analyze funcionando, o fluxo padrão exige revisão manual no ReviewDrawer
+(auto-confirm desligado) e o contexto de categoria do espaço aberto não afeta
+a persistência — documentos podem ser salvos mas filtrados fora da vista atual.
+
+O backend de persistência (Mongo, R2 staging→promote, preview, audit) permanece
+coerente e não foi a causa primária da regressão; falhas adicionais vêm de
+contrato extraction obrigatório e governança CLASS_OR_RULE_NOT_FOUND em alguns
+tenants.
+
+Prioridade de correção: (1) bug do useEffect na fila, (2) validação/contrato
+confirm, (3) visibilidade na Biblioteca (filtros + contexto), (4) paridade com
+/upload legado e invalidação de cache.
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

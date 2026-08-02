@@ -1,0 +1,170 @@
+================================================================================
+RELATÓRIO DE CORREÇÃO — REGRESSÕES BIBLIOTECA / UPLOAD
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Data: 2026-07-07
+Branch: master (working tree com correções não commitadas)
+
+================================================================================
+1. CAUSA RAIZ CORRIGIDA
+================================================================================
+
+BUG-001 (crítico): race condition no UploadQueueProvider.
+O useEffect dependia de `items` e usava cleanup `cancelled=true`, cancelando
+analyzePdf assim que o status mudava para `analyzing`.
+
+Solução: orquestração via `pumpQueue` + `processingItemIdRef`, sem cancelar
+a promise in-flight por mudança de estado React. Timeout de 180s para analyzing.
+
+BUG-002: extraction:null causava 400 INVALID_PAYLOAD no confirm.
+Solução: normalizeAnalyzePayloadForConfirm no frontend antes do POST.
+
+BUG-003/004/005/006: filtros, query keys, manualReviewConfirmed, toast de pasta.
+
+================================================================================
+2. ARQUIVOS ALTERADOS
+================================================================================
+
+NOVOS:
+  src/features/document-send/services/normalizeConfirmPayload.ts
+  src/features/upload/queue/uploadQueueAnalysis.ts
+  tests/normalize-confirm-payload.test.ts
+
+MODIFICADOS:
+  src/features/upload/UploadQueueProvider.tsx
+  src/features/document-send/services/confirmAnalysis.ts
+  src/features/library/hooks/useLibraryView.ts
+  src/pages/OAuthCallbackPage.tsx
+  src/features/document-send/DocumentSendPage.tsx
+  tests/upload-queue.test.ts
+  tests/oauth-login.test.ts
+  tests/library-toolbar.test.ts
+
+================================================================================
+3. RACE CONDITION — COMO FOI CORRIGIDO
+================================================================================
+
+Antes:
+  useEffect([items]) → dispatch analyzing → items muda → cleanup cancelled →
+  analyzePdf resolve ignorado → item preso em analyzing.
+
+Depois:
+  - processingItemIdRef marca item em análise (não usa cancelled flag)
+  - pumpQueue só inicia se não há processingItemIdRef, hasActiveItem, countdown
+  - tryPumpQueue via queueMicrotask após conclusão/erro/review
+  - analyzeTimeoutRef: 180s → error "A análise demorou mais que o esperado"
+  - removeItem limpa processingItemIdRef se item removido durante análise
+
+================================================================================
+4. extraction:null — TRATAMENTO
+================================================================================
+
+Arquivo: normalizeConfirmPayload.ts
+
+Quando extraction é null, monta estrutura mínima:
+  { documentType, version:'v1.0', metadata:{}, missingFields:[],
+    requiresReview, reviewReasons }
+
+confirmAnalysis.ts aplica normalizeAnalyzePayloadForConfirm antes do JSON.
+
+validateConfirmableAnalysis bloqueia confirm sem classId ou jobId com mensagem
+clara na UI (toast + status error na fila).
+
+================================================================================
+5. ReviewDrawer / confirmAnalysis
+================================================================================
+
+- completed + autoConfirm=false → resolveQueueAnalysisAction → open_review →
+  ReviewDrawer abre (reviewItemId)
+- requires_review → sempre open_review
+- confirmReview usa needsManualReviewConfirmation (não mais requiresReview||true)
+- confirmItem valida payload, chama confirmAnalysis uma vez, fecha drawer em sucesso
+- Erros: toast + status error (item recuperável via retry)
+- Sucesso: status done, invalidateLibrary, toast com pasta se classId difere
+
+================================================================================
+6. QUERY KEYS INVALIDADAS
+================================================================================
+
+UploadQueueProvider e DocumentSendPage invalidam:
+  ['documents']                    — listagem Biblioteca (prefix match)
+  ['document-categories-options']  — pastas/espacos sidebar
+  ['dashboard-overview']           — painel admin
+
+Removido: ['library-documents'] (query key fantasma)
+
+================================================================================
+7. FILTRO "PROCESSADO"
+================================================================================
+
+useLibraryView mapeia:
+  state.status === 'processed' ? 'active' : state.status
+
+Motivo: confirmAnalysisPersistence salva status:'active' com
+processingStatus processed/processed_with_review. Backend listDocuments filtra
+por campo status, não processingStatus.
+
+================================================================================
+8. CATEGORIA DIFERENTE DO ESPAÇO ABERTO
+================================================================================
+
+UploadContext.categoryId continua como hint (não força backend).
+Após save, se context.categoryId !== classification.classId:
+  toast com ação "Abrir pasta" → /biblioteca?space={classId}
+
+Na raiz sem ?space=, documento aparece após invalidate sem reload.
+
+================================================================================
+9. /upload LEGADO E OAUTH
+================================================================================
+
+OAuthCallbackPage: default returnUrl /biblioteca (era /upload).
+
+DocumentSendPage: invalidateDocumentQueries após save single e bulk.
+/upload continua renderizando DocumentSendPage (não removido).
+Sidebar não voltou link para /upload.
+
+================================================================================
+10. RESULTADO DOS COMANDOS
+================================================================================
+
+npm test        → 627 pass, 0 fail
+npm run build   → sucesso
+npm run lint    → sucesso (0 warnings após fix deps)
+npx tsc --noEmit → sucesso
+
+Greps:
+  library-documents em src/     → 0 ocorrências
+  requiresReview || true        → 0 ocorrências
+  OAuth default /upload         → removido (agora /biblioteca)
+  processed → active mapping    → useLibraryView.ts
+
+================================================================================
+11. CHECKLIST MANUAL (PARA O DESENVOLVEDOR)
+================================================================================
+
+[ ] /biblioteca sem filtros → + Novo → PDF
+[ ] POST /api/ai/analyze-pdf completa
+[ ] Sai de "Analisando com IA"
+[ ] ReviewDrawer abre
+[ ] Checkbox + Confirmar → POST confirm-analysis 201
+[ ] Documento na Biblioteca sem reload
+[ ] Viewer e download
+[ ] Drag-and-drop global
+[ ] /upload legado salva e invalida listagem
+[ ] Upload em ?space= com classificação diferente → toast "Abrir pasta"
+[ ] Filtro "Processado" lista documentos ativos
+
+================================================================================
+12. PENDÊNCIAS RESTANTES
+================================================================================
+
+- VersioningPage ainda usa MOCK_DOCUMENTS (fora do escopo)
+- Ações de context menu da Biblioteca (mover/renomear) ainda stubs
+- Backend não filtra por processingStatus (só status) — extensão futura se necessário
+- UploadContext.categoryId não é hint para IA (só UX pós-save)
+
+================================================================================
+FIM
+================================================================================

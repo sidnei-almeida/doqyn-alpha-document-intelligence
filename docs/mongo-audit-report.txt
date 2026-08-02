@@ -1,0 +1,47 @@
+========================================================================
+AUDITORIA MONGODB DOQYN — READ ONLY
+========================================================================
+Gerado em: 2026-06-27T18:49:58.436Z
+MONGODB_URI (mascarada): mongodb+srv://sid***:***@doqyn-dev-cluster.4icoj2b.mongodb.net
+Database ativo (runtime): doqyn_dev
+Database legado (referência): doqyn_alpha
+Database no URI: não especificado (usa MONGODB_DATABASE)
+
+--- DATABASES ---
+  [system_do_not_touch] admin (0 collections)
+  [active_keep] doqyn_dev (23 collections)
+  [system_do_not_touch] local (1 collections)
+
+--- COLLECTIONS POR CLASSIFICAÇÃO ---
+  active_keep: 19
+  unknown_review_required: 4
+  system_do_not_touch: 1
+
+--- COLLECTIONS (detalhe) ---
+  [active_keep] doqyn_dev.audit_logs_company_dev — docs≈2 — latest: 2026-06-24T17:19:06.382Z
+  [active_keep] doqyn_dev.audit_logs_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.audit_logs_compartilhado — docs≈4 — latest: 2026-06-25T21:17:51.668Z
+  [unknown_review_required] doqyn_dev.auditevents — docs≈0
+  [unknown_review_required] doqyn_dev.companies — docs≈1 — latest: 2026-06-25T16:45:22.397Z
+  [unknown_review_required] doqyn_dev.company_members — docs≈4 — latest: 2026-06-25T16:45:22.475Z
+  [active_keep] doqyn_dev.document_classes_company_dev — docs≈11 — latest: 2026-06-24T19:16:22.315Z
+  [active_keep] doqyn_dev.document_classes_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.document_classes_compartilhado — docs≈0
+  [active_keep] doqyn_dev.document_rules_company_dev — docs≈10 — latest: 2026-06-24T19:16:22.315Z
+  [active_keep] doqyn_dev.document_rules_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.document_rules_compartilhado — docs≈0
+  [active_keep] doqyn_dev.document_versions_company_dev — docs≈1 — latest: 2026-06-25T17:39:40.798Z
+  [active_keep] doqyn_dev.document_versions_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.document_versions_compartilhado — docs≈0
+  [active_keep] doqyn_dev.documents_company_dev — docs≈1 — latest: 2026-06-24T17:19:06.381Z
+  [active_keep] doqyn_dev.documents_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.documents_compartilhado — docs≈0
+  [active_keep] doqyn_dev.processing_jobs_company_dev — docs≈1 — latest: 2026-06-24T17:19:06.381Z
+  [active_keep] doqyn_dev.processing_jobs_company_test_2 — docs≈1 — latest: 2026-06-25T17:38:48.106Z
+  [active_keep] doqyn_dev.processing_jobs_compartilhado — docs≈0
+  [unknown_review_required] doqyn_dev.tenant_members — docs≈2 — latest: 2026-06-25T17:27:39.838Z
+  [active_keep] doqyn_dev.tenants — docs≈3 — latest: 2026-06-25T21:17:50.375Z
+  [system_do_not_touch] local.oplog.rs — docs≈0
+
+Relatório JSON completo: docs/mongo-audit-report.json
+========================================================================

@@ -1,0 +1,113 @@
+================================================================================
+RELATÓRIO — Detalhes sob demanda na Biblioteca / File Explorer
+DOQYN Alpha Document Intelligence
+================================================================================
+
+Objetivo: remover o painel lateral direito fixo e redistribuir informações contextuais
+para popover e drawer opcional, no estilo Google Drive.
+
+================================================================================
+1. O QUE FOI REMOVIDO DO PAINEL FIXO
+================================================================================
+
+- Coluna lateral fixa `DetailsPanel` com `lg:flex` e `--library-details-width`
+- Prop `detailsPanel` do `ExplorerShell` (layout em duas colunas)
+- Abertura automática de detalhes ao selecionar arquivo (focus não abre mais drawer)
+- Overview da pasta/biblioteca sempre visível à direita
+
+================================================================================
+2. ONDE AS INFORMAÇÕES PASSARAM A APARECER
+================================================================================
+
+A. Biblioteca / pasta atual (contexto):
+   - Ícone "i" discreto no header (`ContextInfoButton`)
+   - Popover flutuante (`LibraryInfoPopover`) com:
+     · nome, descrição, tipo, quantidade de arquivos/pastas
+     · link "Ver regras" quando aplicável
+   - Menu de contexto (área vazia): "Ver informações" / "Ver informações da pasta atual"
+   - Tooltip nativo: title="Informações" no botão
+
+B. Arquivo:
+   - Menu de contexto: "Ver detalhes" → abre `OptionalDetailsDrawer`
+   - Drawer com metadados, Visualizar, Baixar, Tracking (conforme permissões)
+   - Seleção na linha continua funcionando (bulk toolbar) sem abrir drawer
+
+C. Pasta (card na raiz):
+   - Ícone "i" no hover do card (`explorer-folder-info-button`)
+   - Menu de contexto: "Ver informações" → abre drawer de pasta
+   - Drawer com nome, descrição, contagem, link para Regras
+
+================================================================================
+3. COMPONENTES CRIADOS / REFATORADOS
+================================================================================
+
+Novos:
+  - ContextInfoButton.tsx       — botão "i" + popover
+  - LibraryInfoPopover.tsx      — conteúdo do popover de contexto
+  - OptionalDetailsDrawer.tsx   — drawer lateral sob demanda
+  - detailsPanelTypes.ts        — tipo LibraryOverview
+
+Refatorados:
+  - ExplorerShell.tsx           — largura total, sem coluna de detalhes
+  - DetailsPanel.tsx            — re-export deprecated → OptionalDetailsDrawer
+  - ExplorerContextMenu.tsx     — itens "Ver informações" / "Ver detalhes"
+  - ExplorerFolderCard.tsx      — botão info no hover
+  - ExplorerFolderGrid.tsx      — prop onFolderInfo
+  - ExplorerRootHome.tsx        — repassa onFolderInfo
+  - LibraryPage.tsx             — orquestra popover + drawer
+  - useLibraryMultiSelection.ts — comentário atualizado (focus ≠ drawer)
+
+================================================================================
+4. ALTERAÇÕES NO LAYOUT
+================================================================================
+
+- Área principal ocupa 100% da largura (`w-full`, flex-col)
+- Sem gap reservado à direita (`gap-5 lg:gap-6` entre colunas removido)
+- Header com ícone de informação alinhado ao breadcrumb/título
+- Drawer overlay (`fixed inset-0`) só quando `detailsDrawer` está definido
+
+================================================================================
+5. ALTERAÇÕES NOS MENUS DE CONTEXTO
+================================================================================
+
+Área vazia:
+  + Ver informações / Ver informações da pasta atual
+
+Pasta:
+  + Ver informações (abre drawer)
+
+Arquivo:
+  · "Detalhes" renomeado para "Ver detalhes"
+  · Reordenado: Visualizar → Baixar → Ver detalhes → Ver tracking → ...
+
+================================================================================
+6. FUNCIONALIDADES PRESERVADAS
+================================================================================
+
+✓ Upload (drag-drop, + Novo, fila, analyze/confirm inalterados)
+✓ DocumentViewerModal (preview/details)
+✓ Navegação (breadcrumbs, pastas, ?space=)
+✓ Permissões (preview, download, tracking)
+✓ Seleção múltipla e bulk toolbar
+✓ Metadados: categoria, proprietário, datas, versão, status
+
+================================================================================
+7. TESTES
+================================================================================
+
+Novo: tests/library-on-demand-details.test.ts (10 casos)
+Atualizados:
+  - tests/library-details-panel.test.ts
+  - tests/library-layout.test.ts
+  - tests/library-folder-view.test.ts
+
+================================================================================
+8. VALIDAÇÃO
+================================================================================
+
+npm test          → 677 testes passando
+npm run lint      → OK
+npm run build     → OK
+npx tsc --noEmit  → OK
+
+================================================================================

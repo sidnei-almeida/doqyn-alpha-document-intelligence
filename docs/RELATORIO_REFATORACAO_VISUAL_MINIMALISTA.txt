@@ -1,0 +1,139 @@
+================================================================================
+RELATÓRIO — REFATORAÇÃO VISUAL MINIMALISTA (DRIVE-INSPIRED)
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+================================================================================
+
+1. OBJETIVO
+--------------------------------------------------------------------------------
+Refatorar a base visual do app para linguagem minimalista, flat e premium,
+inspirada estruturalmente em file managers modernos (dark/light), mantendo
+identidade DOQYN discreta — sem alterar backend, upload, auth ou lógica da
+Biblioteca.
+
+2. TOKENS NOVOS (src/styles/tokens.css)
+--------------------------------------------------------------------------------
+DARK
+- --bg-app: #0f1115
+- --bg-sidebar: #171717
+- --bg-surface: #1b1c1f
+- --bg-surface-2: #202124
+- --bg-hover / --bg-surface-hover: #2a2b2f
+- --bg-selected: rgba(138, 180, 248, 0.16)
+- --border-subtle: rgba(255,255,255,0.08)
+- --text-primary: #e8eaed
+- --text-secondary: #9aa0a6
+- --accent-active: #8ab4f8
+- --text-on-accent: #0f1115
+
+LIGHT
+- --bg-app: #f8f9fa
+- --bg-sidebar: #ffffff
+- --bg-surface: #ffffff
+- --bg-surface-2: #f1f3f4
+- --bg-hover: #eef1f3
+- --bg-selected: #d2e3fc
+- --border-subtle: rgba(60,64,67,0.12)
+- --text-primary: #202124
+- --accent-active: #1a73e8
+- --text-on-accent: #ffffff
+
+Outras mudanças globais:
+- Gradientes neon removidos (--gradient-action = accent sólido; --gradient-panel-glow: none)
+- Sombras muito mais leves (--shadow-sm, --shadow-modal reduzidos)
+- Pastas inteligentes com cores planas (sem gradientes saturados)
+- Logo tipográfica: Geist (Orbitron removido)
+- Radius maiores e discretos (--radius-lg: 12px, --radius-pill)
+- Novos tokens Tailwind: doqyn-on-accent, doqyn-selected
+
+3. COMPONENTES BASE REFATORADOS
+--------------------------------------------------------------------------------
+Layout
+- Sidebar.tsx — logo discreta, + Novo pill flat, nav em pills, seção Administração
+- SidebarNavItem.tsx — rounded-full, hover suave, ícones 18px
+- SidebarSection.tsx — labels sem uppercase pesado
+- SidebarSpaceItem.tsx — dots planos (getFolderAccentColor)
+- SidebarUserPanel.tsx — rodapé limpo, avatar sem borda pesada
+- WorkspaceTopBar.tsx — barra leve, sem backdrop blur pesado
+- GlobalSearchCommand.tsx — busca pill grande, estilo utilitário
+
+UI base
+- buttonVariants.ts — primary/action flat com text-on-accent; action = pill
+- fieldStyles.ts — inputs rounded-lg, bordas subtis, focus ring leve
+- EmptyState.tsx — sem borda pesada, ícone em círculo suave
+- Card.tsx — border-subtle, hover discreto
+- NewButtonMenu.tsx — sem gradiente inline
+
+Biblioteca (estilo superficial)
+- ExplorerFolderCard.tsx — sem lift/shadow no hover
+- ExplorerFolderGrid.tsx — empty state flat
+- FileTable.tsx — sem shadow, header limpo
+- LibraryToolbar.tsx — sem card/blur
+- ExplorerContextMenu.tsx — rounded-xl, border-subtle
+- DetailsPanel.tsx — border-subtle
+
+Marca
+- DoqynLogo.tsx — semibold, tracking reduzido, sem tagline na sidebar
+
+4. DARK / LIGHT — REORGANIZAÇÃO
+--------------------------------------------------------------------------------
+- Um único arquivo tokens.css com blocos [data-theme='dark'] e [data-theme='light']
+- Variáveis compartilhadas em :root (tipografia, espaçamento, workspace)
+- ThemeToggle existente continua alternando data-theme no documento
+- Tailwind mapeia cores via var() — componentes herdam automaticamente
+
+5. ARQUIVOS ALTERADOS
+--------------------------------------------------------------------------------
+src/styles/tokens.css
+src/styles/globals.css
+tailwind.config.js
+src/components/ui/buttonVariants.ts
+src/components/ui/fieldStyles.ts
+src/components/ui/EmptyState.tsx
+src/components/ui/Card.tsx
+src/components/brand/DoqynLogo.tsx
+src/components/layout/Sidebar.tsx
+src/components/layout/SidebarNavItem.tsx
+src/components/layout/SidebarSection.tsx
+src/components/layout/SidebarSpaceItem.tsx
+src/components/layout/SidebarUserPanel.tsx
+src/components/layout/WorkspaceTopBar.tsx
+src/components/layout/GlobalSearchCommand.tsx
+src/features/library/components/NewButtonMenu.tsx
+src/features/library/components/ExplorerFolderCard.tsx
+src/features/library/components/ExplorerFolderGrid.tsx
+src/features/library/components/FileTable.tsx
+src/features/library/components/LibraryToolbar.tsx
+src/features/library/components/ExplorerContextMenu.tsx
+src/features/library/components/DetailsPanel.tsx
+src/features/library/utils/folderColors.ts
+tests/sidebar.test.ts
+tests/workspace-layout.test.ts
+tests/design-system.test.ts
+
+6. PRESERVADO (SEM ALTERAÇÃO DE LÓGICA)
+--------------------------------------------------------------------------------
+- UploadQueueProvider, ReviewDrawer (lógica), confirmAnalysis
+- DocumentViewerModal, documentAccess, auth-service
+- Rotas e navegação da Biblioteca / File Explorer
+- APIs, R2, Mongo, permissões
+- Comportamento funcional de todos os menus e fluxos
+
+7. VALIDAÇÃO
+--------------------------------------------------------------------------------
+npm test     → 639/639 passando
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+8. RESULTADO VISUAL ESPERADO
+--------------------------------------------------------------------------------
+- App com aparência de produto maduro: superfícies suaves, pouco brilho
+- Sidebar e topbar arejadas, busca protagonista
+- + Novo como pill azul discreto (dark: #8ab4f8; light: #1a73e8)
+- Biblioteca mantém File Explorer funcional com visual mais limpo
+- Tema dark/light alternável via ThemeToggle na sidebar
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

@@ -1,0 +1,822 @@
+================================================================================
+1. TÍTULO
+================================================================================
+
+DOQYN - Relatório de Configuração e Arquitetura Keycloak
+
+Escopo: autenticação, identidade, integração com backend/frontend e multi-tenant
+Data de referência: junho de 2026
+
+IMPORTANTE: este documento NÃO contém segredos, senhas, tokens ou valores reais
+de variáveis de ambiente. Quando necessário, são usados placeholders como
+<SECRET>, <ADMIN_PASSWORD> e <CLIENT_SECRET>.
+
+
+================================================================================
+2. RESUMO EXECUTIVO
+================================================================================
+
+O que é o Keycloak dentro do DOQYN
+----------------------------------
+O Keycloak é o provedor de identidade (IdP) do DOQYN. Ele centraliza login,
+senha, emissão de tokens JWT, sessão do usuário e atribuição de roles globais
+da plataforma (doqyn_admin, company_admin, user). O aplicativo DOQYN não
+armazena senhas de usuários finais no MongoDB.
+
+Por que foi escolhido
+---------------------
+- Padrão de mercado para SSO e OpenID Connect.
+- Suporte nativo a Authorization Code + PKCE para SPAs.
+- Gestão de usuários, roles e políticas de senha sem reinventar autenticação.
+- Permite separar identidade (Keycloak) de autorização de negócio (MongoDB).
+
+O que já está funcionando
+-------------------------
+INFRAESTRUTURA (VPS):
+  [OK] Keycloak rodando em Docker na VPS HostGator.
+  [OK] Postgres dedicado ao Keycloak em container.
+  [OK] Realm "doqyn" criado e configurado.
+  [OK] Client público "doqyn-web" com PKCE.
+  [OK] Roles globais criadas: doqyn_admin, company_admin, user.
+  [OK] Usuário de teste "sidnei" com login validado.
+  [OK] Acesso administrativo via túnel SSH (porta 8080 em 127.0.0.1).
+
+CÓDIGO DO PROJETO (repositório local):
+  [OK] Frontend com keycloak-js, PKCE S256, token mantido em memória.
+  [OK] Envio de Authorization: Bearer <token> nas chamadas API.
+  [OK] Backend valida JWT via JWKS (biblioteca jose).
+  [OK] Serviço administrativo Keycloak no backend (client credentials).
+  [OK] Endpoint GET /api/me com contexto user + tenant + membership.
+  [OK] Coleções tenants e tenant_members (com fallback legado company_members).
+  [OK] tenantResolver e getTenantCollections para isolamento por cliente.
+  [OK] Endpoints de gestão de usuários (convite, aprovação, bloqueio, etc.).
+  [OK] Tela administrativa de usuários no frontend (/users).
+
+O que ainda falta implementar ou finalizar
+------------------------------------------
+INFRAESTRUTURA:
+  [PENDENTE] Expor Keycloak via domínio HTTPS (Nginx reverse proxy).
+  [PENDENTE] Sair do modo start-dev para homologação/produção.
+  [PENDENTE] Criar e validar client "doqyn-admin-api" no Keycloak da VPS.
+  [PENDENTE] Configurar SMTP no Keycloak para e-mails de ação/senha.
+  [PENDENTE] Backup automatizado do Postgres do Keycloak.
+
+APLICAÇÃO:
+  [PENDENTE] Frontend consumir /api/me em vez de mapear token localmente com
+             companyId fixo (company_dev).
+  [PENDENTE] Tela dedicada "aguardando aprovação" para usuários pending.
+  [PENDENTE] Cadastro público com CPF/CNPJ e seleção de tipo de cliente (UI).
+  [PENDENTE] Migração completa de dados legados para collections prefixadas.
+  [PENDENTE] Vincular usuários Keycloak (ex.: sidnei) em tenant_members ativos.
+  [PENDENTE] Validar fluxo ponta a ponta em ambiente com túnel + MongoDB real.
+
+
+================================================================================
+3. INFRAESTRUTURA ATUAL
+================================================================================
+
+Ambiente VPS
+------------
+- Provedor: HostGator VPS
+- Sistema operacional: Ubuntu 24.04 LTS
+- Nginx: instalado e funcionando
+- Firewall: UFW ativo
+- Docker: instalado
+- Docker Compose: instalado
+- Usuário Linux dedicado: doqyn
+
+Containers
+----------
+- keycloak-db: Postgres 16 Alpine (banco exclusivo do Keycloak)
+- keycloak: quay.io/keycloak/keycloak:26.6.3
+
+Exposição de rede
+-----------------
+- A porta 8080 do Keycloak está vinculada a 127.0.0.1 na VPS.
+- O Keycloak NÃO está exposto diretamente na internet neste momento.
+- O acesso atual é feito por túnel SSH a partir da máquina de desenvolvimento.
+
+Implicação de segurança
+-----------------------
+O painel administrativo e os endpoints OIDC só são acessíveis localmente na VPS
+ou através do túnel SSH. Isso é adequado para a fase inicial, mas não substitui
+HTTPS com domínio próprio em homologação/produção.
+
+
+================================================================================
+4. ESTRUTURA DE DIRETÓRIOS NA VPS
+================================================================================
+
+Padrão adotado:
+
+  /var/www/keycloak   -> docker-compose.yml e .env do Keycloak
+  /var/www/doqyn      -> reservado para deploy do app DOQYN
+  /var/doqyn/storage  -> storage local de documentos (até S3/R2 estar disponível)
+
+Função de cada diretório
+-------------------------
+/var/www/keycloak
+  Contém a stack Docker do Keycloak e Postgres. É o ponto de operação para
+  subir, parar, reiniciar e inspecionar logs do serviço de identidade.
+
+/var/www/doqyn
+  Destinado ao código/build do DOQYN (frontend, backend ou compose do app).
+  Ainda em preparação para deploy integrado na VPS.
+
+/var/doqyn/storage
+  Armazenamento local temporário de arquivos de documentos enquanto integrações
+  com AWS S3 ou Cloudflare R2 não estiverem em produção.
+
+
+================================================================================
+5. DOCKER COMPOSE DO KEYCLOAK
+================================================================================
+
+Serviços definidos
+------------------
+1. keycloak-db
+   - Imagem: Postgres 16 Alpine
+   - Função: persistir dados internos do Keycloak (realms, clients, usuários)
+   - Volume Docker para persistência
+
+2. keycloak
+   - Imagem: quay.io/keycloak/keycloak:26.6.3
+   - Comando atual: start-dev
+   - Depende do healthcheck do Postgres antes de iniciar
+
+Modo start-dev
+--------------
+O Keycloak está rodando com "start-dev". Esse modo é adequado para:
+  - Desenvolvimento inicial
+  - Homologação controlada com acesso restrito
+
+NÃO é recomendado para produção final porque:
+  - Não representa hardening completo de produção
+  - Configurações de cache, proxy e TLS precisam ser revisadas
+  - Deve ser substituído por "start" (ou equivalente) com variáveis de proxy/HTTPS
+
+Persistência
+------------
+O banco Postgres do Keycloak usa volume Docker. Os dados de realms, clients e
+usuários sobrevivem a reinícios de container, mas ainda dependem de estratégia
+de backup externa.
+
+
+================================================================================
+6. VARIÁVEIS DE AMBIENTE DO KEYCLOAK (VPS)
+================================================================================
+
+Arquivo esperado: /var/www/keycloak/.env
+
+Variáveis documentadas (valores NÃO incluídos neste relatório):
+
+  KC_BOOTSTRAP_ADMIN_USERNAME
+    Usuário administrativo inicial criado no primeiro boot do Keycloak.
+    Usado apenas para bootstrap; posteriormente substituído por admin permanente.
+
+  KC_BOOTSTRAP_ADMIN_PASSWORD
+    Senha do admin de bootstrap. Placeholder: <ADMIN_PASSWORD>
+    Nunca documentar o valor real.
+
+  KC_DB_DATABASE
+    Nome do banco Postgres usado pelo Keycloak.
+
+  KC_DB_USERNAME
+    Usuário de conexão do Keycloak ao Postgres.
+
+  KC_DB_PASSWORD
+    Senha do banco. Placeholder: <SECRET>
+
+Observação: variáveis do app DOQYN (frontend/backend) ficam no .env do projeto
+local ou em /var/www/doqyn quando em deploy. Não misturar com o .env do Keycloak.
+
+
+================================================================================
+7. ESTADO ATUAL DO KEYCLOAK
+================================================================================
+
+Realm master
+------------
+- Usado inicialmente para acesso administrativo ao console Keycloak.
+- Foi criado um usuário admin permanente no realm master.
+- O usuário temporário "admin" de bootstrap foi removido após validação.
+- O admin permanente serve APENAS para administrar o Keycloak (não para login do app).
+
+Realm doqyn
+-----------
+- Realm dedicado ao aplicativo DOQYN.
+- O frontend e o backend DEVEM usar este realm, nunca o master.
+- Issuer OIDC: http://127.0.0.1:8080/realms/doqyn (via túnel local)
+- Discovery: http://127.0.0.1:8080/realms/doqyn/.well-known/openid-configuration
+
+
+================================================================================
+8. CLIENT FRONTEND
+================================================================================
+
+Client ID: doqyn-web
+Tipo: OpenID Connect
+Finalidade: frontend React/Vite do DOQYN (SPA pública)
+
+Configuração
+------------
+  Client authentication:        Off
+  Standard flow:                On
+  Require PKCE:                 On
+  PKCE Method:                  S256
+  Direct access grants:         Off
+  Implicit flow:                Off
+  Service account roles:        Off
+
+URLs de desenvolvimento local
+-----------------------------
+  Root URL:                     http://localhost:5173
+  Home URL:                     http://localhost:5173
+  Valid redirect URIs:
+    - http://localhost:5173/*
+    - http://127.0.0.1:5173/*
+  Valid post logout redirect URIs:
+    - http://localhost:5173/*
+    - http://127.0.0.1:5173/*
+  Web origins:
+    - http://localhost:5173
+    - http://127.0.0.1:5173
+
+Por que PKCE e sem client secret
+--------------------------------
+O frontend é uma Single Page Application (SPA) pública. O código JavaScript
+não pode guardar segredos. Por isso:
+  - Usa Authorization Code Flow com PKCE (S256)
+  - Não usa client secret
+  - O token de acesso fica em memória (não em localStorage)
+
+
+================================================================================
+9. ROLES CRIADAS NO REALM DOQYN
+================================================================================
+
+doqyn_admin
+  Administrador geral da plataforma DOQYN. Pode gerenciar configurações
+  globais, clientes, usuários e recursos sistêmicos em qualquer tenant.
+
+company_admin
+  Administrador de um cliente/empresa (tenant business) ou contexto equivalente.
+  Gerencia usuários, grupos, classes documentais e regras dentro do seu escopo.
+
+user
+  Usuário padrão. Acessa, envia, processa e visualiza documentos conforme
+  permissões e grupos de acesso definidos no MongoDB.
+
+Decisão arquitetural sobre roles
+--------------------------------
+- Essas roles são GLOBAIS e ficam no Keycloak (realm roles).
+- Permissões finas (jurídico, financeiro, RH, diretoria, compras etc.) ficam
+  no MongoDB em accessGroupIds / grupos de acesso.
+- NÃO criar grupos Keycloak para cada área documental neste momento.
+- O backend sincroniza apenas roles globais com o Keycloak; grupos documentais
+  são exclusivamente MongoDB.
+
+
+================================================================================
+10. USUÁRIO DE TESTE
+================================================================================
+
+Username: sidnei
+Realm: doqyn
+Roles atribuídas:
+  - company_admin
+  - user
+
+Status: login validado com sucesso no Keycloak.
+
+Observação importante
+---------------------
+Para o usuário acessar o app DOQYN (não apenas o Keycloak), é necessário existir
+um registro ativo em tenant_members (ou company_members durante migração) no
+MongoDB, vinculado ao keycloakUserId ou e-mail do usuário. Sem esse vínculo, o
+backend retorna HTTP 403 com mensagem de usuário não vinculado a cliente ativo.
+
+Senha: NÃO documentada neste relatório.
+
+
+================================================================================
+11. COMO ACESSAR O KEYCLOAK HOJE
+================================================================================
+
+Comando de túnel SSH (executar no computador local):
+
+  ssh -L 8080:127.0.0.1:8080 doqyn@187.77.59.114
+
+Instruções
+----------
+1. Executar o comando acima em um terminal local.
+2. Manter o terminal do túnel aberto enquanto usar o Keycloak.
+3. Acessar o painel administrativo em:
+     http://127.0.0.1:8080/admin
+4. Validar o realm doqyn em:
+     http://127.0.0.1:8080/realms/doqyn/.well-known/openid-configuration
+
+O túnel redireciona a porta local 8080 para a porta 8080 da VPS (127.0.0.1).
+
+
+================================================================================
+12. CONFIGURAÇÃO ESPERADA NO FRONTEND DOQYN
+================================================================================
+
+Variáveis Vite (públicas — sem segredos):
+
+  VITE_AUTH_PROVIDER=keycloak
+  VITE_KEYCLOAK_URL=http://127.0.0.1:8080
+  VITE_KEYCLOAK_REALM=doqyn
+  VITE_KEYCLOAK_CLIENT_ID=doqyn-web
+
+Backend (privadas — nunca prefixo VITE_):
+  KEYCLOAK_BASE_URL=http://127.0.0.1:8080
+  KEYCLOAK_REALM=doqyn
+  KEYCLOAK_ADMIN_CLIENT_ID=doqyn-admin-api
+  KEYCLOAK_ADMIN_CLIENT_SECRET=<CLIENT_SECRET>
+  KEYCLOAK_FRONTEND_CLIENT_ID=doqyn-web
+
+MongoDB / tenant:
+  MONGODB_URI=<SECRET>
+  MONGODB_DATABASE=doqyn_dev
+  MONGODB_TENANT_ID=company_dev
+
+Fallback para desenvolvimento sem túnel:
+
+  VITE_AUTH_PROVIDER=mock
+
+Modos de autenticação no projeto
+--------------------------------
+  keycloak  -> login real via Keycloak (requer túnel SSH ou URL acessível)
+  mock      -> usuário fixo de desenvolvimento, sem Keycloak
+  temporary -> auth por cookie/sessão backend (legado, VITE_AUTH_MODE=temporary)
+
+Regras de token no frontend
+---------------------------
+  - Token NÃO deve ser salvo em localStorage.
+  - Token fica em memória via keycloak-js / AuthProvider.
+  - Chamadas API usam Authorization: Bearer <token> via authFetch.
+  - Renovação automática com updateToken antes de expirar.
+
+
+================================================================================
+13. LÓGICA DE AUTENTICAÇÃO
+================================================================================
+
+Fluxo implementado / planejado (código do projeto)
+--------------------------------------------------
+
+  1. Usuário acessa o DOQYN (frontend Vite).
+  2. Se VITE_AUTH_PROVIDER=keycloak, o frontend inicializa keycloak-js com PKCE.
+  3. Usuário é redirecionado para a tela de login do Keycloak (realm doqyn).
+  4. Após autenticação, Keycloak retorna access token ao frontend.
+  5. Frontend mantém token em memória e anexa em cada requisição:
+       Authorization: Bearer <token>
+  6. Backend (requireAuth) lê o Bearer token.
+  7. Backend valida assinatura JWT via JWKS:
+       {KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs
+  8. Backend valida issuer e audience/azp do client doqyn-web.
+  9. Backend extrai sub, email, username e realm_access.roles do token.
+ 10. Backend localiza membership ativo em tenant_members (fallback: company_members).
+ 11. Backend carrega tenant em tenants e monta contexto completo.
+ 12. GET /api/me retorna user + tenant + membership.
+ 13. Se não houver vínculo ativo: HTTP 403
+       "Seu usuário ainda não está vinculado a um cliente ativo no DOQYN."
+
+Arquivos principais no repositório
+----------------------------------
+  Frontend:
+    src/auth/keycloakClient.ts       -> init PKCE, token em memória
+    src/auth/AuthProvider.tsx        -> contexto de autenticação
+    src/auth/apiAuth.ts              -> authFetch com Bearer
+
+  Backend:
+    server/auth/keycloakJwtVerifier.ts  -> validação JWT (jose + JWKS)
+    server/auth/requireAuth.ts          -> middleware Bearer/cookie
+    server/auth/keycloakAdminService.ts -> Admin API (client credentials)
+    api/me.ts                           -> contexto autenticado
+    server/services/meService.ts        -> resolução user/tenant/membership
+
+
+================================================================================
+14. SEPARAÇÃO DE RESPONSABILIDADES
+================================================================================
+
+Keycloak é responsável por:
+  - Identidade do usuário (sub, email, username)
+  - Login e logout
+  - Senha e políticas de credencial
+  - Emissão e renovação de tokens JWT
+  - Sessão OIDC
+  - Roles globais: doqyn_admin, company_admin, user
+
+MongoDB é responsável por:
+  - Cliente/tenant (CPF ou CNPJ)
+  - Vínculo usuário <-> tenant (tenant_members)
+  - Status: pending, active, blocked, rejected
+  - Aprovação, convite, bloqueio
+  - Grupos de acesso documentais (accessGroupIds)
+  - Permissões por classe documental
+  - Classes e regras de documentos
+  - Auditoria de ações administrativas e documentais
+  - Resolução de collections por tenant (tenantResolver)
+  - Isolamento CPF (pool compartilhado) vs CNPJ (prefixo de collection)
+
+Regra de ouro
+-------------
+O frontend NUNCA chama a API administrativa do Keycloak.
+Apenas o backend usa credenciais do client doqyn-admin-api.
+
+
+================================================================================
+15. DECISÃO ARQUITETURAL SOBRE TENANTS
+================================================================================
+
+O conceito central deixa de ser apenas "empresa" e passa a ser "tenant/cliente".
+
+Tipos de tenant
+---------------
+  individual  -> Pessoa Física (CPF)
+  business    -> Pessoa Jurídica (CNPJ)
+
+Regras de isolamento
+--------------------
+  CPF (individual):
+    - strategy: shared_individual_pool
+    - Collections compartilhadas com prefixo "individual_pool"
+    - Partição lógica obrigatória por tenantId e ownerUserId em cada documento
+
+  CNPJ (business):
+    - strategy: collection_prefix
+    - Cada tenant tem prefixo interno único (ex.: company_dev, tenant_pj_xxx)
+    - Collections físicas separadas por cliente
+
+Fluxo de descoberta do tenant
+------------------------------
+  - Na criação de conta ou solicitação de acesso, o usuário informa CPF/CNPJ
+    e dados do cliente.
+  - Após login, o app descobre o tenant pelo vínculo em tenant_members.
+  - O frontend NÃO escolhe collection.
+  - O backend resolve collections via getTenantCollections(tenantId).
+
+Compatibilidade legada
+----------------------
+  - companyId ainda existe como alias temporário de tenantId.
+  - company_members ainda funciona como fallback durante migração.
+  - DEV_TENANT_ID padrão: company_dev
+
+
+================================================================================
+16. COLLECTIONS PLANEJADAS E IMPLEMENTADAS
+================================================================================
+
+Coleções centrais de registro (database único, não prefixadas)
+--------------------------------------------------------------
+  tenants          -> metadados do cliente (CPF/CNPJ, status, isolamento)
+  tenant_members   -> vínculo Keycloak <-> tenant (roles, grupos, status)
+
+Coleções de dados por tenant (resolvidas dinamicamente)
+-------------------------------------------------------
+  documents, document_versions, processing_jobs, audit_logs
+  access_groups, document_classes, document_rules (apenas business/CNPJ)
+
+Schema tenants (resumo)
+-----------------------
+  tenantId, tenantType, taxIdType, taxIdHash, taxIdMasked, displayName,
+  legalName, slug, status, isolation.strategy, isolation.collectionPrefix
+
+Schema tenant_members (resumo)
+------------------------------
+  memberId, tenantId, keycloakUserId, email, emailNormalized, status,
+  tenantRoles, accessGroupIds, campos de aprovação/bloqueio
+
+Observação sobre CPF/CNPJ
+-------------------------
+  - taxIdHash: SHA-256 do documento normalizado (busca e unicidade)
+  - taxIdMasked: exibição na UI (ex.: **.***.***-**)
+  - CPF/CNPJ NUNCA aparecem no nome de collections
+  - CPF/CNPJ NUNCA são logados em texto claro
+
+
+================================================================================
+17. ESTRATÉGIA DE ISOLAMENTO
+================================================================================
+
+Para CNPJ (business) — collection_prefix
+---------------------------------------
+  Exemplo com prefixo "tenant_randon_001":
+    documents_tenant_randon_001
+    document_versions_tenant_randon_001
+    processing_jobs_tenant_randon_001
+    audit_logs_tenant_randon_001
+    access_groups_tenant_randon_001
+    document_classes_tenant_randon_001
+    document_rules_tenant_randon_001
+
+  Tenant de desenvolvimento usa prefixo "company_dev":
+    documents_company_dev
+    access_groups_company_dev
+    etc.
+
+Para CPF (individual) — shared_individual_pool
+-----------------------------------------------
+  documents_individual_pool
+  document_versions_individual_pool
+  processing_jobs_individual_pool
+  audit_logs_individual_pool
+
+  Mesmo em pool compartilhado, TODOS os registros carregam:
+    tenantId  -> identifica o cliente CPF
+    ownerUserId -> identifica o usuário dono do documento
+
+Resolução centralizada
+----------------------
+  Nenhum endpoint monta nome de collection manualmente.
+  Todos usam:
+    server/tenancy/tenantResolver.ts
+    server/tenancy/getTenantCollections.ts
+
+
+================================================================================
+18. CRIAÇÃO DE USUÁRIOS PELO APP
+================================================================================
+
+Princípio
+---------
+O frontend NÃO chama a Admin REST API do Keycloak.
+O backend DOQYN cria/gerencia usuários via client confidencial de serviço.
+
+Client planejado: doqyn-admin-api
+---------------------------------
+Status na VPS: PENDENTE de criação/validação (código do backend já espera este client)
+
+Configuração planejada:
+  Client authentication:     On
+  Service account roles:     On
+  Standard flow:             Off
+  Direct access grants:      Off
+  Implicit flow:             Off
+
+Roles de serviço necessárias (realm-management):
+  - view-users
+  - query-users
+  - manage-users
+  - view-realm
+
+Variáveis backend (apenas servidor — NÃO no Vite):
+  KEYCLOAK_BASE_URL=http://127.0.0.1:8080
+  KEYCLOAK_REALM=doqyn
+  KEYCLOAK_ADMIN_CLIENT_ID=doqyn-admin-api
+  KEYCLOAK_ADMIN_CLIENT_SECRET=<CLIENT_SECRET>
+  KEYCLOAK_FRONTEND_CLIENT_ID=doqyn-web
+
+Implementado no código (server/auth/keycloakAdminService.ts)
+------------------------------------------------------------
+  - getAdminToken() via client_credentials
+  - findUserByEmail, createUser, enable/disable
+  - setTemporaryPassword, syncRealmRoles
+  - assignRealmRoles, removeRealmRoles
+
+Senha temporária
+----------------
+  - Gerada no backend, nunca salva no MongoDB.
+  - Retornada apenas em ambiente de desenvolvimento (APP_ENV != production).
+  - Em produção: preferir e-mail de ação do Keycloak (SMTP pendente).
+
+
+================================================================================
+19. FLUXOS DE USUÁRIO
+================================================================================
+
+Fluxo A: Primeiro admin de um cliente CNPJ
+------------------------------------------
+  1. doqyn_admin cria tenant business (tenants) com CNPJ.
+  2. doqyn_admin cria ou aprova primeiro company_admin.
+  3. Backend cria usuário no Keycloak (se não existir).
+  4. Backend cria tenant_member ativo no MongoDB.
+  5. Roles globais sincronizadas no Keycloak; grupos ficam no MongoDB.
+
+Fluxo B: Usuário solicita acesso (público)
+------------------------------------------
+  Endpoint: POST /api/auth/access-requests
+  1. Usuário informa dados + companyId/tenant (evolução: CPF/CNPJ).
+  2. Sistema valida tenant ativo.
+  3. Cria tenant_member com status "pending".
+  4. NÃO cria usuário ativo no Keycloak ainda.
+  5. Admin aprova posteriormente.
+
+Fluxo C: Admin convida usuário
+------------------------------
+  Endpoint: POST /api/company-members/invite
+  1. company_admin ou doqyn_admin envia convite.
+  2. Backend cria usuário no Keycloak (enabled=true).
+  3. Backend define senha temporária (dev) ou e-mail de ação (prod).
+  4. Cria tenant_member ativo com roles e accessGroupIds.
+  5. Sincroniza realm roles no Keycloak.
+
+Fluxo D: Aprovação de solicitação pendente
+------------------------------------------
+  Endpoint: POST /api/company-members/:memberId/approve
+  1. Verifica status pending.
+  2. Cria/ativa usuário no Keycloak.
+  3. Atualiza tenant_member para active.
+  4. Atribui roles globais e grupos de acesso.
+
+Fluxo E: Bloqueio
+-----------------
+  Endpoint: POST /api/company-members/:memberId/block
+  1. MongoDB: status "blocked".
+  2. Keycloak: usuário desabilitado (se keycloakUserId existir).
+  3. Auditoria registrada.
+  4. Preferir desativar em vez de deletar usuário no Keycloak.
+
+Fluxo F: Reativação
+-------------------
+  Endpoint: POST /api/company-members/:memberId/activate
+  1. MongoDB: status "active".
+  2. Keycloak: usuário habilitado novamente.
+
+
+================================================================================
+20. SEGURANÇA
+================================================================================
+
+Regras obrigatórias
+-------------------
+  [x] Nunca expor KEYCLOAK_ADMIN_CLIENT_SECRET no frontend.
+  [x] Nunca salvar senha de usuário no MongoDB.
+  [x] Nunca logar senha temporária.
+  [x] Nunca usar CPF/CNPJ no nome de collection.
+  [x] Nunca confiar em companyId/tenantId do frontend sem validar permissão.
+  [x] company_admin só atua no próprio tenant.
+  [x] doqyn_admin pode atuar em qualquer tenant.
+  [x] Usuário sem tenant_members ativo recebe 403 no backend.
+  [x] Preferir desativar usuário no Keycloak em vez de deletar.
+  [x] Auditar toda ação administrativa (USER_*, KEYCLOAK_*).
+
+Pendências de segurança de infraestrutura
+-----------------------------------------
+  [ ] HTTPS com certificado válido no Keycloak.
+  [ ] Keycloak fora do modo start-dev.
+  [ ] Rate limiting no reverse proxy.
+  [ ] Backup e restore testado do Postgres Keycloak.
+  [ ] Rotação de segredos do client doqyn-admin-api.
+
+
+================================================================================
+21. LIMITAÇÕES ATUAIS
+================================================================================
+
+Infraestrutura VPS
+------------------
+  - Keycloak ainda em start-dev.
+  - Keycloak não exposto por domínio HTTPS.
+  - Nginx reverse proxy para auth.<dominio> não configurado.
+  - SMTP do Keycloak não configurado.
+  - Client doqyn-admin-api pode não existir ainda na VPS.
+  - Backup automatizado do Postgres não documentado.
+
+Aplicação DOQYN
+---------------
+  - Frontend ainda mapeia token Keycloak localmente com companyId fixo
+    (src/auth/mapKeycloakUser.ts) em vez de consumir /api/me.
+  - Tela global "aguardando aprovação" para usuário pending não implementada.
+  - Cadastro público com CPF/CNPJ (UI) ainda não implementado.
+  - Migração de dados legados para collections prefixadas pendente.
+  - Usuário sidnei precisa de registro em tenant_members no MongoDB para usar o app.
+  - Pilha Mongoose legada (tenantId) ainda coexiste com pilha nativa MongoDB.
+  - Modo temporary/mock ainda usado em desenvolvimento paralelo ao Keycloak.
+
+
+================================================================================
+22. PRÓXIMOS PASSOS RECOMENDADOS
+================================================================================
+
+Ordem sugerida:
+
+  1.  Criar e validar client doqyn-admin-api no Keycloak da VPS.
+  2.  Configurar KEYCLOAK_ADMIN_CLIENT_SECRET no backend (valor real apenas no servidor).
+  3.  Rodar npm run db:setup para seeds tenant-aware (company_dev).
+  4.  Vincular usuário sidnei em tenant_members ativo no MongoDB.
+  5.  Testar login Keycloak + GET /api/me com túnel SSH ativo.
+  6.  Atualizar frontend para consumir /api/me (remover companyId hardcoded).
+  7.  Implementar tela "aguardando aprovação" para status pending.
+  8.  Implementar cadastro público com CPF/CNPJ e tipo de cliente.
+  9.  Migrar dados legados para collections prefixadas.
+ 10.  Configurar domínio e Cloudflare.
+ 11.  Configurar Nginx reverse proxy para Keycloak (ex.: auth.dominio.com).
+ 12.  Trocar Keycloak de start-dev para modo homologação/produção.
+ 13.  Configurar SMTP no Keycloak para e-mails de senha/ação.
+ 14.  Configurar backup do Postgres do Keycloak.
+ 15.  Desativar auth temporária/mock em ambientes integrados.
+
+
+================================================================================
+23. COMANDOS ÚTEIS
+================================================================================
+
+Na VPS (usuário doqyn):
+
+  Ver containers:
+    docker ps
+
+  Ver logs do Keycloak:
+    cd /var/www/keycloak
+    docker compose logs --tail=80 keycloak
+
+  Subir stack:
+    docker compose up -d
+
+  Parar stack:
+    docker compose down
+
+  Reiniciar Keycloak:
+    docker compose restart keycloak
+
+No computador local (túnel SSH):
+
+  ssh -L 8080:127.0.0.1:8080 doqyn@187.77.59.114
+
+No projeto DOQYN (desenvolvimento local):
+
+  Configurar .env com variáveis Keycloak (sem expor segredos no Vite).
+  Subir frontend: npm run dev
+  Subir backend dev: npm run dev:server (ou equivalente do projeto)
+  Setup MongoDB: npm run db:setup
+
+
+================================================================================
+24. CHECKLIST DO ESTADO ATUAL
+================================================================================
+
+INFRAESTRUTURA VPS
+  [OK]     VPS acessível por SSH
+  [OK]     Nginx instalado
+  [OK]     Firewall UFW ativo
+  [OK]     Docker instalado
+  [OK]     Docker Compose instalado
+  [OK]     Usuário Linux doqyn criado
+  [OK]     Container Keycloak rodando
+  [OK]     Container Postgres do Keycloak rodando
+  [OK]     Realm doqyn criado
+  [OK]     Client doqyn-web criado
+  [OK]     PKCE configurado (S256)
+  [OK]     Roles doqyn_admin, company_admin e user criadas
+  [OK]     Usuário de teste sidnei criado
+  [OK]     Login no Keycloak testado com sucesso
+  [PENDENTE] Client administrativo doqyn-admin-api na VPS
+  [PENDENTE] Reverse proxy e domínio HTTPS
+  [PENDENTE] Modo produção/homologação (sair de start-dev)
+  [PENDENTE] SMTP configurado
+  [PENDENTE] Backup Postgres Keycloak
+
+CÓDIGO DO PROJETO DOQYN
+  [OK]     Biblioteca keycloak-js no frontend
+  [OK]     PKCE S256 no frontend
+  [OK]     Token em memória (não localStorage)
+  [OK]     Authorization Bearer nas chamadas API
+  [OK]     Validação JWT no backend (jose + JWKS)
+  [OK]     keycloakAdminService (client credentials)
+  [OK]     GET /api/me implementado
+  [OK]     Coleções tenants e tenant_members (tipos + serviços)
+  [OK]     tenantResolver e getTenantCollections
+  [OK]     Endpoints de gestão de usuários (invite/approve/block/etc.)
+  [OK]     Tela /users no frontend
+  [OK]     Variáveis Keycloak documentadas em .env.example
+  [PENDENTE] Frontend consumir /api/me integralmente
+  [PENDENTE] Tela aguardando aprovação (usuário pending)
+  [PENDENTE] Cadastro público CPF/CNPJ (UI)
+  [PENDENTE] Migração completa de dados para collections prefixadas
+  [PENDENTE] Teste ponta a ponta com VPS + MongoDB + sidnei vinculado
+
+
+================================================================================
+25. CONCLUSÃO
+================================================================================
+
+O Keycloak já está funcional na VPS como provedor de autenticação inicial do
+DOQYN. O realm doqyn, o client público doqyn-web, as roles globais e o usuário
+de teste sidnei estão operacionais com acesso via túnel SSH.
+
+No repositório do projeto, a integração avançou significativamente: o backend
+valida JWT, expõe /api/me, possui serviço administrativo Keycloak, modelos
+multi-tenant (tenants/tenant_members), resolução de collections por cliente e
+endpoints de gestão de usuários. O frontend já suporta login Keycloak com PKCE
+e envio de Bearer token.
+
+Ainda é necessário fechar o ciclo operacional:
+  - Criar o client doqyn-admin-api na VPS e configurar o segredo no backend.
+  - Vincular usuários Keycloak a tenant_members no MongoDB.
+  - Fazer o frontend depender de /api/me em vez de dados hardcoded.
+  - Expor o Keycloak com HTTPS em domínio próprio.
+  - Sair do modo start-dev e configurar SMTP/backup.
+
+Com esses passos, o DOQYN terá autenticação corporativa real integrada ao modelo
+multi-tenant (CPF/CNPJ), com governança por cliente, aprovação de usuários e
+isolamento correto de dados documentais.
+
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

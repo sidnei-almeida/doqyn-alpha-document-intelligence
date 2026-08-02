@@ -1,0 +1,91 @@
+================================================================================
+RELATÓRIO — VISUALIZAÇÃO DENTRO DA PASTA (/biblioteca?space=)
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+================================================================================
+
+1. PROBLEMA ANTERIOR
+--------------------------------------------------------------------------------
+Dentro de uma pasta (ex.: Biblioteca / Jurídico), a UI parecia tabela
+administrativa: card com borda, cabeçalho de colunas pesado, muitas colunas
+(Proprietário, Tags, Versão), título grande e pouco respiro visual.
+
+2. O QUE MUDOU
+--------------------------------------------------------------------------------
+
+Cabeçalho da pasta
+- Breadcrumb + título discreto (18–20px, font-medium)
+- Contagem de arquivos inline, sem parágrafo descritivo longo
+
+Toolbar
+- Variant "folder": contagem à esquerda, controles à direita
+- Ordenação, filtro de status, toggle lista/grade
+- Botão Atualizar (RefreshCw) integrado
+
+Lista de arquivos (ExplorerFolderFiles)
+- Novo componente dedicado à visualização dentro da pasta
+- Sem wrapper com borda/card — lista flush no conteúdo
+- Colunas: Nome | Modificado | Status | Ações
+- Cabeçalho leve, sticky com blur sutil
+
+FileRow variant="explorer"
+- Ícone de tipo de arquivo flat (FileTypeIcon)
+- Checkbox no hover
+- Hover de linha suave, seleção com bg accent discreto
+- Menu ⋯ e favorito no hover
+- Duplo clique abre viewer; clique seleciona
+
+FileGridView variant="explorer"
+- Cards sem borda, hover em fundo
+- Ícone central, metadados discretos
+
+Empty state
+- Redesenhado: ícone circular, mensagem curta, botão Enviar documento
+- Sem componente EmptyState pesado
+
+Painel direito (DetailsPanel)
+- Layout horizontal compacto (ícone + nome à esquerda)
+- Metadados em lista chave/valor discreta
+- Ações: Visualizar, Baixar, Tracking
+- Removidas abas e rodapé pesado; contexto de pasta minimalista
+
+Context menu
+- Largura reduzida, sombra leve (shadow-sm)
+- Itens com rounded-md no hover, ícones em tom subtle
+
+3. ARQUIVOS ALTERADOS / CRIADOS
+--------------------------------------------------------------------------------
+Criados:
+- src/features/library/components/ExplorerFolderFiles.tsx
+- tests/library-folder-view.test.ts
+
+Alterados:
+- src/features/library/LibraryPage.tsx
+- src/features/library/components/FileRow.tsx
+- src/features/library/components/FileTable.tsx (legado busca/coleções)
+- src/features/library/components/FileGridView.tsx
+- src/features/library/components/LibraryToolbar.tsx
+- src/features/library/components/EmptyFolderState.tsx
+- src/features/library/components/DetailsPanel.tsx
+- src/features/library/components/ExplorerContextMenu.tsx
+- src/features/library/components/ExplorerShell.tsx
+- tests/library-layout.test.ts
+- tests/library-details-panel.test.ts
+
+4. PRESERVADO
+--------------------------------------------------------------------------------
+- Navegação ?space=, abrir pasta, filtros, ordenação
+- Upload contextual, context menus, viewer, permissões
+- FileTable legado para busca na raiz e coleções virtuais
+- Backend, upload/analyze/confirm inalterados
+
+5. VALIDAÇÃO
+--------------------------------------------------------------------------------
+npm test     → 652/652 passando
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

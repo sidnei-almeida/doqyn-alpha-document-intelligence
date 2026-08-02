@@ -1,0 +1,309 @@
+================================================================================
+DOQYN — Checkpoint de integração Keycloak + MongoDB (/api/me)
+================================================================================
+
+Data: 24 de junho de 2026
+Escopo: vínculo sidnei ↔ tenant company_dev, validação de /api/me, seed idempotente
+
+Este documento não contém secrets, tokens, senhas nem conteúdo completo de .env.
+
+
+================================================================================
+1. STATUS DO CLIENT doqyn-admin-api
+================================================================================
+
+Status: CRIADO E VALIDADO NA VPS (confirmado pelo operador)
+
+- Client: doqyn-admin-api
+- Grant type: client_credentials
+- Teste na VPS: access token gerado (tamanho ~1465)
+- Admin API: listagem de usuários do realm doqyn OK
+- Usuário sidnei localizado na listagem
+
+No repositório:
+- server/auth/keycloakAdminService.ts implementado
+- server/utils/keycloakEnv.ts — default KEYCLOAK_ADMIN_CLIENT_ID=doqyn-admin-api
+- isKeycloakAdminConfigured() retornou true no ambiente local (secret presente no .env)
+
+
+================================================================================
+2. TOKEN client_credentials
+================================================================================
+
+Status: FUNCIONANDO (validado na VPS pelo operador)
+
+O código local confirma configuração admin completa (base URL + realm + client id + secret).
+Nenhum secret foi registrado neste relatório.
+
+
+================================================================================
+3. ADMIN API — USUÁRIO SIDNEI
+================================================================================
+
+Status: CONFIRMADO NA VPS
+
+Dados validados no Keycloak:
+  id:        2806775c-c73d-4882-8a55-4f39d14a25ae
+  username:  sidnei
+  firstName: Sidnei
+  lastName:  Almeida
+  email:     sidnei.almeida1806@gmail.com
+  enabled:   true
+  emailVerified: true
+
+
+================================================================================
+4. SECRET NO BACKEND
+================================================================================
+
+Status: CONFIGURADO (sem revelar valor)
+
+- KEYCLOAK_ADMIN_CLIENT_SECRET definido apenas no .env local (não commitado)
+- .env.example mantém placeholder: KEYCLOAK_ADMIN_CLIENT_SECRET=change-me
+- Nenhuma variável VITE_* contém secret administrativo
+- Logs do checkpoint não imprimem secret
+
+
+================================================================================
+5. TENANT company_dev
+================================================================================
+
+Status: CRIADO/ATUALIZADO NO MONGODB (doqyn_dev)
+
+Coleção: tenants
+tenantId: company_dev
+
+Campos principais após seed:
+  tenantType: business
+  taxIdType: CNPJ
+  taxIdMasked: 00.000.000/0001-00  (placeholder dev — não é documento real)
+  taxIdHash: sha256 do CNPJ placeholder 00000000000100
+  displayName: DOQYN Dev
+  legalName: DOQYN Dev Environment
+  slug: doqyn-dev
+  status: active
+  isolation.strategy: collection_prefix
+  isolation.collectionPrefix: company_dev
+
+Função: ensureDevTenantSeed() em server/services/tenantsService.ts
+Executada via: npm run db:setup
+
+
+================================================================================
+6. tenant_member DO SIDNEI
+================================================================================
+
+Status: CRIADO/ATUALIZADO — ACTIVE
+
+Coleção primária: tenant_members
+_id / memberId: member_sidnei
+
+Campos:
+  tenantId: company_dev
+  keycloakUserId: 2806775c-c73d-4882-8a55-4f39d14a25ae
+  username: sidnei
+  email: sidnei.almeida1806@gmail.com
+  emailNormalized: sidnei.almeida1806@gmail.com
+  firstName: Sidnei
+  lastName: Almeida
+  status: active
+  tenantRoles: ["company_admin", "user"]
+  accessGroupIds: []
+
+Compatibilidade legado:
+  Registro espelhado em company_members (upsert idempotente) para fallback de leitura.
+  findActiveTenantMember consulta tenant_members PRIMEIRO, depois company_members.
+
+Função: ensureSidneiDevTenantMember() em server/services/tenantMembersService.ts
+Duplicidade: não detectada (upsert por keycloakUserId ou emailNormalized)
+
+
+================================================================================
+7. ROLES — KEYCLOAK vs MONGODB
+================================================================================
+
+Keycloak (realm roles — autenticação/token):
+  company_admin, user
+  Responsável por: identidade, login, emissão de JWT, roles no token
+
+MongoDB (tenant_members — autorização contextual):
+  tenantRoles: ["company_admin", "user"]
+  accessGroupIds: []  (permanecem no MongoDB, não no Keycloak)
+  status: active      (membership no cliente)
+
+Separação de responsabilidades:
+  Keycloak → quem é o usuário e quais roles globais o token carrega
+  MongoDB  → a qual tenant pertence, se está ativo/pending/blocked, grupos de acesso
+
+
+================================================================================
+8. STATUS DE /api/me
+================================================================================
+
+Endpoint: GET /api/me (api/me.ts)
+Alias:    GET /api/auth/me (reexport)
+
+Fluxo com Bearer (Keycloak):
+  1. readBearerToken
+  2. verifyKeycloakAccessToken (jose + JWKS)
+  3. resolveMeFromKeycloakClaims
+  4. findActiveTenantMember (tenant_members → fallback company_members)
+  5. getTenantById
+  6. Retorno user + tenant + membership (+ legacyUser)
+
+Testes automatizados (npm run db:keycloak-checkpoint):
+  [OK] resolveMeFromKeycloakClaims(sidnei) → tenant company_dev, status active
+  [OK] resolveMeFromKeycloakClaims(usuário sem vínculo) → 403 MEMBER_NOT_LINKED
+  [OK] requireAuth agora propaga 403 (não mais 401) para MEMBER_NOT_LINKED
+
+Teste HTTP E2E com JWT real:
+  Pendente de KEYCLOAK_TEST_ACCESS_TOKEN (login manual via túnel SSH)
+  Instruções na seção "Como testar" abaixo.
+
+
+================================================================================
+9. EXEMPLO SEGURO DE RESPOSTA /api/me (sidnei)
+================================================================================
+
+{
+  "user": {
+    "keycloakUserId": "2806775c-c73d-4882-8a55-4f39d14a25ae",
+    "username": "sidnei",
+    "email": "sidnei.almeida1806@gmail.com",
+    "firstName": "Sidnei",
+    "lastName": "Almeida"
+  },
+  "tenant": {
+    "tenantId": "company_dev",
+    "tenantType": "business",
+    "taxIdType": "CNPJ",
+    "displayName": "DOQYN Dev",
+    "status": "active",
+    "taxIdMasked": "00.000.000/0001-00"
+  },
+  "membership": {
+    "status": "active",
+    "tenantRoles": ["company_admin", "user"],
+    "accessGroupIds": []
+  }
+}
+
+Resposta 403 (usuário sem membership ativo):
+{
+  "message": "Seu usuário ainda não está vinculado a um cliente ativo no DOQYN.",
+  "code": "MEMBER_NOT_LINKED"
+}
+
+
+================================================================================
+10. AUDITORIA DE ARQUIVOS (TAREFA 1)
+================================================================================
+
+Arquivo                              | Existe | Funcional
+-------------------------------------|--------|----------
+server/auth/keycloakJwtVerifier.ts   | Sim    | Sim
+server/auth/requireAuth.ts           | Sim    | Sim (403 corrigido)
+server/auth/keycloakAdminService.ts  | Sim    | Sim
+api/me.ts                            | Sim    | Sim
+api/auth/me.ts                       | Sim    | Sim (reexport)
+server/services/meService.ts         | Sim    | Sim
+server/services/tenantsService.ts    | Sim    | Sim
+server/services/tenantMembersService.ts | Sim | Sim
+server/tenancy/tenantResolver.ts     | Sim    | Sim
+server/tenancy/getTenantCollections.ts | Sim  | Sim
+Coleção tenants                      | Sim    | Sim
+Coleção tenant_members               | Sim    | Sim (leitura + seed sidnei)
+Coleção company_members (legado)     | Sim    | Fallback leitura + espelho sidnei
+
+
+================================================================================
+11. PENDÊNCIAS RESTANTES
+================================================================================
+
+- Teste HTTP E2E com JWT real do sidnei (túnel SSH + login frontend)
+- Frontend Keycloak ainda não consome /api/me (usa company_dev hardcoded em mapKeycloakUser.ts)
+- Escritas de gestão de usuários (invite/approve/etc.) ainda em company_members
+- Tela "aguardando aprovação" para usuário pending pós-login
+- Cadastro público CPF/CNPJ
+- HTTPS / Nginx reverse proxy / SMTP / backup Postgres Keycloak
+- Migrar produção de start-dev para modo hardened
+
+
+================================================================================
+12. BUILD E LINT
+================================================================================
+
+npm run build  → SUCESSO (tsc -b && vite build)
+npm run lint   → SUCESSO (0 erros, 4 warnings pré-existentes react-refresh/no-var)
+
+
+================================================================================
+COMO TESTAR
+================================================================================
+
+Túnel SSH (Keycloak na VPS):
+  ssh -L 8080:127.0.0.1:8080 doqyn@187.77.59.114
+
+Variáveis locais (.env):
+  VITE_AUTH_PROVIDER=keycloak
+  VITE_KEYCLOAK_URL=http://127.0.0.1:8080
+  VITE_KEYCLOAK_REALM=doqyn
+  VITE_KEYCLOAK_CLIENT_ID=doqyn-web
+  KEYCLOAK_BASE_URL=http://127.0.0.1:8080
+  KEYCLOAK_REALM=doqyn
+  KEYCLOAK_ADMIN_CLIENT_ID=doqyn-admin-api
+  KEYCLOAK_ADMIN_CLIENT_SECRET=<seu secret>
+  KEYCLOAK_FRONTEND_CLIENT_ID=doqyn-web
+
+Seed / verificação MongoDB:
+  npm run db:setup
+  npm run db:keycloak-checkpoint
+
+Subir API + frontend:
+  npm run dev
+
+Login:
+  1. Abrir http://localhost:5173
+  2. Login Keycloak com sidnei
+  3. Obter access token (DevTools → rede ou keycloak.token)
+
+Testar /api/me manualmente:
+  curl -s http://localhost:3001/api/me \
+    -H "Authorization: Bearer <access_token>" | jq
+
+Ou definir token e rodar checkpoint HTTP:
+  KEYCLOAK_TEST_ACCESS_TOKEN=<token> npm run db:keycloak-checkpoint
+
+
+================================================================================
+ARQUIVOS CRIADOS NESTE CHECKPOINT
+================================================================================
+
+- scripts/verify-keycloak-checkpoint.ts
+- docs/RELATORIO_CHECKPOINT_KEYCLOAK_ME.txt
+
+
+================================================================================
+ARQUIVOS ALTERADOS NESTE CHECKPOINT
+================================================================================
+
+- server/services/tenantsService.ts       (ensureDevTenantSeed atualizado)
+- server/services/tenantMembersService.ts   (ensureSidneiDevTenantMember)
+- server/auth/requireAuth.ts              (403 MEMBER_NOT_LINKED)
+- server/db/setupMongo.ts                 (chama seed sidnei)
+- package.json                            (script db:keycloak-checkpoint)
+
+
+================================================================================
+COLEÇÕES MONGODB ALTERADAS
+================================================================================
+
+- tenants          → upsert company_dev (DOQYN Dev)
+- tenant_members   → upsert member_sidnei (sidnei active)
+- companies        → upsert legado company_dev
+- company_members  → upsert espelho sidnei (compatibilidade)
+
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

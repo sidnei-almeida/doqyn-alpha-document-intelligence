@@ -1,0 +1,85 @@
+DOQYN — Migração flat → coleções prefixadas por tenant
+Data: 2026-06-25T17:32:47.096Z
+Database: doqyn_dev
+Tenant: company_dev | Prefix: company_dev
+Modo: APPLY
+Delete legacy: NÃO
+Relatório sanitizado — sem PII.
+
+================================================================================
+CONTAGENS POR COLEÇÃO
+================================================================================
+
+access_groups → access_groups_company_dev
+  Origem: 9
+  Destino (antes): 5
+  Seriam migrados: 4
+  Migrados: 4
+  Ignorados (duplicidade _id): 5
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+document_classes → document_classes_company_dev
+  Origem: 11
+  Destino (antes): 7
+  Seriam migrados: 4
+  Migrados: 4
+  Ignorados (duplicidade _id): 7
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+document_rules → document_rules_company_dev
+  Origem: 10
+  Destino (antes): 7
+  Seriam migrados: 3
+  Migrados: 3
+  Ignorados (duplicidade _id): 7
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+documents → documents_company_dev
+  Origem: 1
+  Destino (antes): 0
+  Seriam migrados: 1
+  Migrados: 1
+  Ignorados (duplicidade _id): 0
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+document_versions → document_versions_company_dev
+  Origem: 1
+  Destino (antes): 0
+  Seriam migrados: 1
+  Migrados: 1
+  Ignorados (duplicidade _id): 0
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+processing_jobs → processing_jobs_company_dev
+  Origem: 1
+  Destino (antes): 0
+  Seriam migrados: 1
+  Migrados: 1
+  Ignorados (duplicidade _id): 0
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+audit_logs → audit_logs_company_dev
+  Origem: 2
+  Destino (antes): 0
+  Seriam migrados: 2
+  Migrados: 2
+  Ignorados (duplicidade _id): 0
+  Conflitos: 0
+  Incompatíveis (tenantId): 0
+
+================================================================================
+ROLLBACK MANUAL
+================================================================================
+Para reverter migração por coleção:
+  db.<target>.deleteMany({ migratedFrom: "flat_collection" })
+Coleções flat originais NÃO são removidas automaticamente.
+
+================================================================================
+FIM
+================================================================================

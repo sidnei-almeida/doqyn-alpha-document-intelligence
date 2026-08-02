@@ -1,0 +1,117 @@
+RELATÓRIO — Refinamento visual shell Drive-inspired (DOQYN Alpha)
+================================================================
+Data: 2026-07-07
+
+OBJETIVO
+--------
+Aproximar a composição espacial do workspace DOQYN da sensação do Google Drive
+(shell arredondado, canvas inset, menos divisórias, tipografia limpa), sem copiar
+branding Google e sem alterar backend, APIs, upload/analyze/confirm ou auth.
+
+1. APP SHELL / CONTAINER PRINCIPAL
+----------------------------------
+Estrutura em camadas:
+
+  app-chrome (fundo externo, padding inset)
+    └── app-shell (superfície arredondada, sombra sutil)
+          ├── Sidebar (integrada, sem border-r)
+          └── workspace-frame
+                ├── WorkspaceTopBar (sem border-b)
+                └── workspace-canvas
+                      └── workspace-canvas-inner (canvas arredondado, scroll)
+
+Arquivos:
+- src/app/layout/WorkspaceLayout.tsx — refatorado
+- src/styles/globals.css — classes .app-chrome, .app-shell, .workspace-canvas,
+  .workspace-canvas-inner
+- src/styles/tokens.css — tokens de superfície e raio
+- tailwind.config.js — cores chrome/shell/canvas, radius shell/workspace
+
+Tokens novos/ajustados:
+- --bg-chrome, --bg-shell, --bg-canvas
+- --radius-shell: 20px, --radius-workspace: 16px
+- --shell-inset: 10px
+- --shadow-shell (dark e light)
+
+2. DIVISÓRIAS REMOVIDAS / SUAVIZADAS
+------------------------------------
+- Sidebar: removido border-r; separador Admin usa h-px com opacidade (não border-t)
+- Topbar: removido border-b
+- Busca global: removida borda do atalho ⌘K; fundo mais suave (surface)
+- ExplorerFolderFiles: thead sem sticky/blur pesado; cabeçalhos discretos
+- ExplorerFolderCard: removido hover com borda; só hover de fundo
+- explorer-icon-btn: hover com overlay-hover (mais leve que bg-surface-2)
+
+3. TIPOGRAFIA
+-------------
+Fonte escolhida: Inter Variable (@fontsource-variable/inter)
+- Substituída Geist Sans como fonte principal do app
+- Geist Mono mantida apenas para monospace
+- tokens.css: --font-family-sans e --font-family-logo atualizados
+- tailwind.config.js: fontFamily.sans → Inter Variable
+
+4. ÍCONES
+---------
+Biblioteca mantida: lucide-react (já no projeto)
+- Stroke 1.5 via LUCIDE_STROKE
+- Ícones de arquivo/pasta sem caixa bg-doqyn-card no explorer
+- Tamanho 20px (h-5 w-5) em listas compactas
+
+5. PASTAS (RAIZ DA BIBLIOTECA)
+------------------------------
+ExplorerFolderCard:
+- Tile horizontal drive-folder-tile, min-h 44px
+- Ícone Folder à esquerda, metadado discreto (contagem)
+- Menu/info no hover à direita
+- Sem borda no hover — apenas bg-doqyn-surface-hover
+
+6. LISTAS / RECENTES / PASTA INTERNA
+------------------------------------
+- FileRow (variant explorer): ícone flat, sem caixa
+- ExplorerFileCompactRow: rounded-lg, ícone flat h-5 w-5
+- ExplorerFolderFiles: cabeçalho leve, sem backdrop administrativo
+
+7. O QUE FOI PRESERVADO
+-----------------------
+- Navegação da Biblioteca (/biblioteca, ?space=, views)
+- DocumentViewerModal, ExplorerContextMenu
+- Upload contextual (+ Novo, drag-drop global, fila, review)
+- OptionalDetailsDrawer / detalhes sob demanda
+- APIs e hooks existentes (useCategoryFolders, documentsApi, etc.)
+- Páginas admin com PageShell inalteradas no fluxo
+
+8. TESTES
+---------
+Novo: tests/library-drive-shell.test.ts (8 casos)
+Atualizados:
+- tests/workspace-layout.test.ts (tokens shell)
+- tests/library-drive-layout.test.ts (pastas sem border-transparent)
+
+9. VALIDAÇÃO
+------------
+npm test     → 689 testes, 0 falhas
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+10. ARQUIVOS ALTERADOS / CRIADOS
+--------------------------------
+Criados:
+- tests/library-drive-shell.test.ts
+- docs/RELATORIO_SHELL_DRIVE_BIBLIOTECA.txt
+
+Alterados:
+- package.json / package-lock.json (@fontsource-variable/inter)
+- src/app/layout/WorkspaceLayout.tsx
+- src/styles/tokens.css
+- src/styles/globals.css
+- tailwind.config.js
+- src/components/layout/Sidebar.tsx
+- src/components/layout/WorkspaceTopBar.tsx
+- src/components/layout/GlobalSearchCommand.tsx
+- src/features/library/components/ExplorerFolderCard.tsx
+- src/features/library/components/ExplorerFolderFiles.tsx
+- src/features/library/components/FileRow.tsx
+- src/features/library/components/ExplorerFileCompactRow.tsx
+- tests/workspace-layout.test.ts
+- tests/library-drive-layout.test.ts

@@ -1,0 +1,82 @@
+RELATÓRIO — LAYOUT BIBLIOTECA SEM DUPLICAÇÃO
+==========================================
+Data: 2026-07-07
+
+PROBLEMAS IDENTIFICADOS
+-----------------------
+1. LibraryPage renderizava dois caminhos de header (ExplorerHomeHeader vs WorkspacePageHeader).
+2. Ações duplicadas: ViewModeToggle + Refresh no header E na LibraryToolbar.
+3. Filtros duplicados em coleções virtuais (header + toolbar).
+4. Info button renderizado duas vezes em alguns fluxos.
+5. Popovers (info, user menu) sem collision detection — saíam da viewport à direita.
+6. LibraryToolbar misturava filtros/view/refresh com seleção em massa.
+
+CAUSA RAIZ
+----------
+Crescimento incremental: header padronizado foi adicionado sem remover a toolbar
+legada. showViewControls tentava mitigar mas não eliminava duplicação em
+Recentes/Compartilhados/Favoritos/Lixeira.
+
+SOLUÇÃO
+-------
+
+### Componentes consolidados
+- **ExplorerPageHeader** — header único para todas as views da Biblioteca
+- **ExplorerToolbarActions** — filtro, sort, view, refresh (um grupo)
+- **LibraryToolbar** — apenas BulkSelectionToolbar quando há seleção
+
+### LibraryPage
+- Um único ExplorerPageHeader para raiz, pasta, coleções virtuais
+- showFilterChips na raiz (chips discretos)
+- showFilterMenus em pasta/coleções/busca na raiz
+- toolbar do shell só com seleção em massa
+
+### Popovers
+- useAnchoredFloating: flip (bottom/top, start/end, left/right) + clamp viewport
+- Medição do painel via panelRef + requestAnimationFrame
+- maxHeight responsivo; overflow-y auto
+
+### ExplorerHomeHeader
+- Deprecated — delega para ExplorerPageHeader
+
+PÁGINAS AJUSTADAS
+-----------------
+- /biblioteca (raiz)
+- /biblioteca?space=...
+- /biblioteca/recentes, compartilhados, favoritos, lixeira
+- Busca/filtro na raiz
+
+PRESERVADO
+----------
+- DocumentViewerModal, upload, context menu, navegação por pasta
+- Sem alteração de backend/APIs
+
+ARQUIVOS PRINCIPAIS
+-------------------
+Criados:
+- ExplorerPageHeader.tsx
+- ExplorerToolbarActions.tsx
+- tests/library-layout-dedup.test.ts
+- docs/RELATORIO_LAYOUT_BIBLIOTECA_DEDUP.txt
+
+Alterados:
+- LibraryPage.tsx
+- LibraryToolbar.tsx
+- ExplorerHomeHeader.tsx (deprecated)
+- useAnchoredFloating.ts
+- AnchoredPopover.tsx
+- testes relacionados
+
+VALIDAÇÃO MANUAL
+----------------
+[ ] /biblioteca — um header, chips de filtro, sem toolbar duplicada
+[ ] Pasta Jurídico — breadcrumb + filtros no header
+[ ] Recentes/Compartilhados — sem header duplicado
+[ ] Info popover — dentro da tela (canto direito)
+[ ] User menu — alinhado à direita, dentro da viewport
+[ ] Janela estreita — popovers fazem flip/clamp
+[ ] Seleção múltipla — barra bulk abaixo do header
+
+COMANDOS
+--------
+npm test, npm run build, npm run lint, npx tsc --noEmit

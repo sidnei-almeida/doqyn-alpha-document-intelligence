@@ -1,0 +1,112 @@
+RELATÓRIO — Home da Biblioteca (/biblioteca) estilo File Explorer
+==================================================================
+Data: 2026-07-07
+
+OBJETIVO
+--------
+Refinar APENAS a raiz /biblioteca para parecer uma home de file explorer tipo
+"Meu Drive": limpa, flat, com pastas inteligentes, recentes em grade, chips de
+filtro e ações discretas — sem dashboard administrativo.
+
+1. REORGANIZAÇÃO DA HOME
+------------------------
+Estrutura da raiz:
+
+  ExplorerHomeHeader
+    ├── Título "Biblioteca" + chevron decorativo
+    ├── Subtítulo "Documentos e categorias deste ambiente"
+    └── Ações: grade/lista, atualizar, info (popover)
+
+  ExplorerFilterChips
+    ├── Status (chip pill)
+    └── Modificado / ordenação (chip pill)
+
+  ExplorerRootHome
+    ├── Pastas inteligentes (ExplorerFolderGrid)
+    ├── Recentes (grade ou lista)
+    └── Sem categoria (opcional, grade ou lista)
+
+O header anterior (só breadcrumb) foi substituído na raiz browse por este
+layout. Breadcrumbs permanecem em pastas e coleções virtuais.
+
+2. PASTAS INTELIGENTES
+----------------------
+- Seção renomeada para "Pastas inteligentes"
+- Cards horizontais compactos (drive-folder-tile, min-h 44px)
+- Grid responsivo: 1–4 colunas em modo grade; 1 coluna em modo lista
+- Ícone pasta, nome, contagem discreta, menu ⋮ no hover
+- Empty state sem borda tracejada pesada
+
+3. RECENTES
+-----------
+Novo modo grade (padrão):
+- RecentFilesGrid + RecentFileCard
+- Preview via FileThumbnail quando disponível (PDF/imagem)
+- Fallback para ícone de tipo de arquivo
+- Nome, categoria e data em metadado discreto
+- Menu ⋮ no hover
+
+Modo lista:
+- ExplorerFileCompactRow (linhas leves, não tabela)
+
+Empty state discreto (RecentEmptyState):
+- "Nenhum arquivo recente"
+- "Envie um documento para começar"
+- Botão pequeno "Enviar documento"
+- Pastas permanecem visíveis acima
+
+4. GRADE / LISTA
+----------------
+- ViewModeToggle no header da home (canto superior direito)
+- Padrão alterado para grade ('grid') em useLibraryRouteState
+- Toggle afeta pastas, recentes e sem categoria
+- Context menu na área vazia mantém "Alternar visualização"
+
+5. INFO POPOVER
+---------------
+- ContextInfoButton no header da home (não painel lateral fixo)
+- Popover com nome, pastas, arquivos, descrição e link para Regras
+- Preservado LibraryInfoPopover existente
+
+6. FILTROS
+----------
+- ExplorerFilterChips com estilo pill minimalista (.explorer-filter-chip)
+- Status e Modificado (ordenação) — ao ativar filtro de status na raiz,
+  a navegação muda para modo busca/filtro (comportamento existente)
+
+7. O QUE FOI PRESERVADO
+-----------------------
+- Navegação por pasta (?space=)
+- DocumentViewerModal (duplo clique / abrir)
+- ExplorerContextMenu (botão direito na área vazia, pasta, arquivo)
+- Upload contextual (+ Novo, drag-drop, fila)
+- OptionalDetailsDrawer sob demanda
+- APIs e dados reais (pickRecentDocuments por updatedAt)
+- Sem mocks
+
+8. ARQUIVOS CRIADOS
+-------------------
+- src/features/library/components/ExplorerHomeHeader.tsx
+- src/features/library/components/ExplorerFilterChips.tsx
+- src/features/library/components/RecentFileCard.tsx
+- src/features/library/components/RecentFilesGrid.tsx
+- src/features/library/components/RecentEmptyState.tsx
+- docs/RELATORIO_HOME_BIBLIOTECA_DRIVE.txt
+
+9. ARQUIVOS ALTERADOS
+---------------------
+- src/features/library/LibraryPage.tsx
+- src/features/library/components/ExplorerRootHome.tsx
+- src/features/library/components/ExplorerFolderGrid.tsx
+- src/features/library/components/ExplorerRecentList.tsx
+- src/features/library/components/ExplorerHomeSection.tsx
+- src/features/library/hooks/useLibraryRouteState.ts
+- src/styles/globals.css
+- tests/library-root-home.test.ts
+
+10. VALIDAÇÃO
+-------------
+npm test     → 693 testes, 0 falhas
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK

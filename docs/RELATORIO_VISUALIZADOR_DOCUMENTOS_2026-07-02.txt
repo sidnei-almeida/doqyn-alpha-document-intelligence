@@ -1,0 +1,411 @@
+================================================================================
+DOQYN ALPHA — RELATÓRIO DE IMPLEMENTAÇÃO
+Visualizador de Documentos (Documents Viewer)
+================================================================================
+
+Data do relatório  : 02 de julho de 2026
+Repositório         : doqyn-alpha-document-intelligence
+Escopo              : Tela Documentos, preview autenticado, viewer customizado,
+                      manifest dinâmico, permissões e segurança de visualização
+Status geral        : IMPLEMENTADO (MVP funcional) — evolução em 3 fases
+
+Referências cruzadas:
+  - docs/DOCUMENT_STORAGE_FLOW.md
+  - docs/security-notes.md
+  - api/documents/preview.ts
+  - api/documents/preview-manifest.ts
+  - src/features/documents/viewer/
+
+================================================================================
+SUMÁRIO
+================================================================================
+
+  1.  Contexto e evolução do trabalho
+  2.  Fase 1 — Tela Documentos conectada ao backend real
+  3.  Fase 2 — Conexão completa de preview, download e detalhes
+  4.  Fase 3 — Modal central e substituição do viewer nativo
+  5.  Fase 4 — Visualizador customizado com PDF.js
+  6.  Fase 5 — Arquitetura dinâmica com manifest de preview
+  7.  Backend — novos endpoints e regras de segurança
+  8.  Frontend — estrutura de arquivos do viewer
+  9.  Permissões e separação preview vs download
+ 10.  Performance e lazy loading
+ 11.  Cobertura de testes
+ 12.  Validação executada
+ 13.  Pendências e próximos passos
+ 14.  Checklist de validação manual
+
+================================================================================
+1. CONTEXTO E EVOLUÇÃO DO TRABALHO
+================================================================================
+
+PROBLEMA INICIAL
+----------------
+A seção Documentos existia de forma parcial: listagem sem integração completa,
+ações de visualizar/baixar/detalhes não funcionais, preview em drawer lateral
+com iframe do navegador (toolbar cinza nativa, fora do tema DOQYN).
+
+OBJETIVO FINAL
+--------------
+Entregar um Document Viewer extensível, seguro e alinhado ao tema DOQYN, capaz
+de suportar PDFs de vários tamanhos/proporções, imagens no futuro, e previews
+protegidos para usuários sem permissão de download.
+
+PRINCÍPIOS MANTIDOS EM TODAS AS FASES
+--------------------------------------
+- Preview sempre via backend autenticado (sem URL R2, sem presigned URL)
+- objectKey nunca exposto ao frontend
+- Isolamento por tenant respeitado
+- Tracking auditável (preview_viewed, downloaded)
+- Watermark DOQYN no preview PDF gerado pelo backend
+
+================================================================================
+2. FASE 1 — TELA DOCUMENTOS CONECTADA AO BACKEND REAL
+================================================================================
+
+IMPLEMENTADO
+------------
+- DocumentsPage lista documentos reais do MongoDB via hook useDocuments
+- Filtros: busca, categoria, status, intervalo de datas (from/to)
+- Colunas enriquecidas: categoria, status, preview, enviado por, versão, ações
+- Permissões por item: canPreview, canDownload, canViewTracking
+- Endpoint REST GET /api/documents/:documentId para detalhe
+- Remoção de dependência de MOCK_DOCUMENTS na listagem
+
+ARQUIVOS PRINCIPAIS
+-------------------
+- src/features/documents/DocumentsPage.tsx
+- src/features/documents/hooks/useDocuments.ts
+- src/features/documents/api/documentsApi.ts
+- api/documents/item.ts
+- server/services/documentService.ts (mapDocumentListItem enriquecido)
+
+================================================================================
+3. FASE 2 — CONEXÃO COMPLETA DE PREVIEW, DOWNLOAD E DETALHES
+================================================================================
+
+IMPLEMENTADO
+------------
+- fetchDocumentPreviewBlob / fetchDocumentDownloadBlob com authFetch
+- Blob handling correto no frontend (createObjectURL / revokeObjectURL)
+- Botões da tabela: Detalhes, Visualizar, Baixar, Tracking
+- DocumentDetailPanel com versões, metadados e preview
+- dev-server: método res.send() para respostas binárias (PDF)
+- Tracking preview_viewed no GET /api/documents/preview
+- Headers seguros: Cache-Control private no-store, X-Content-Type-Options
+
+CORREÇÕES
+---------
+- MeTenant usa tenantId (não id) no queryKey do react-query
+- hasOriginal verifica status 'stored' (não 'ready')
+- Fallback getDocument: path REST + query ?id= para compatibilidade
+
+ARQUIVOS PRINCIPAIS
+-------------------
+- src/features/documents/api/documentsApi.blobs.ts
+- api/documents/preview.ts
+- api/documents/download.ts
+- server/dev-server.ts
+
+================================================================================
+4. FASE 3 — MODAL CENTRAL
+================================================================================
+
+IMPLEMENTADO
+------------
+- Substituição do drawer lateral por modal central grande
+- Layout: ~96vw × 94vh, PDF como foco principal
+- Painel de detalhes recolhível à direita
+- Ações no header: baixar, tracking, detalhes, fechar
+- ESC e clique fora para fechar; foco gerenciado para acessibilidade
+
+ARQUIVOS
+--------
+- src/features/documents/viewer/DocumentViewerModal.tsx
+- src/features/documents/viewer/DocumentViewerShell.tsx
+- src/features/documents/viewer/DocumentViewerDetailsPanel.tsx
+- src/features/documents/components/DocumentViewerModal.tsx (re-export)
+
+================================================================================
+5. FASE 4 — VISUALIZADOR CUSTOMIZADO COM PDF.JS
+================================================================================
+
+PROBLEMA RESOLVIDO
+------------------
+O iframe/object do navegador exibia toolbar nativa cinza, inconsistente com o
+tema dark/minimalista DOQYN, sem controle de zoom/navegação customizado.
+
+IMPLEMENTADO
+------------
+- Dependência pdfjs-dist@4.10.38
+- Worker configurado para Vite (pdfWorkerSetup.ts)
+- Renderização de páginas em <canvas> via PdfPageCanvas
+- PdfDocumentViewer: zoom ±, fit width, fit page, scroll vertical
+- Toolbar DOQYN própria (DocumentViewerToolbar)
+- Fallback seguro: se PDF.js falhar, botão "Abrir preview em nova aba"
+  usando objectURL local (nunca URL R2)
+- Chunk vendor-pdfjs separado no bundle Vite
+
+ARQUIVOS (alguns mantidos como legado/fallback)
+-------------------------------------------------
+- src/features/documents/viewer/PdfDocumentViewer.tsx
+- src/features/documents/viewer/PdfPageCanvas.tsx
+- src/features/documents/viewer/usePdfDocument.ts
+- src/features/documents/viewer/pdfWorkerSetup.ts
+
+NOTA
+----
+Na fase 5, o fluxo principal migrou para manifest + imagens de página.
+PdfDocumentViewer permanece no repositório como camada legada.
+
+================================================================================
+6. FASE 5 — ARQUITETURA DINÂMICA COM MANIFEST DE PREVIEW
+================================================================================
+
+PRINCÍPIO CENTRAL
+-----------------
+O frontend não adivinha tipo/dimensões apenas pela extensão. O backend retorna
+um manifest JSON orientando viewerType, dimensões por página e URLs internas.
+
+ENDPOINT PRINCIPAL
+------------------
+GET /api/documents/:documentId/versions/:versionId/preview/manifest
+
+Resposta inclui:
+  - documentId, versionId, fileName, mimeType
+  - viewerType: pdf_pages | image | unsupported | deep_zoom_image (futuro)
+  - pageCount, pages[] com width, height, rotation, aspectRatio
+  - previewUrl e thumbnailUrl (URLs internas /api/..., nunca R2)
+  - image{} com resoluções small/medium/large (quando aplicável)
+  - permissions: canPreview, canDownload, canUpdate, canViewTracking
+  - status: ready | processing | failed
+
+ENDPOINTS DE ASSETS
+-------------------
+GET .../preview/pages/:page        → PNG da página (Ghostscript, 144 dpi)
+GET .../preview/thumbnails/:page   → miniatura (72 dpi)
+GET .../preview/image              → preview de imagem (quando existir)
+GET .../preview/image?size=medium  → resolução específica
+
+EXTRAÇÃO DE DIMENSÕES
+---------------------
+- pdf-lib extrai width/height/rotation por página do PDF watermarkado
+- Suporta A4 retrato, paisagem, carta, legal e páginas mistas no mesmo doc
+- Cache futuro: MongoPreviewManifest em MongoDocumentVersion.previewManifest
+
+VIEWER REGISTRY (FRONTEND)
+--------------------------
+viewerRegistry.ts escolhe componente automaticamente:
+
+  pdf_pages  → PdfPagesViewer
+  image      → ImageViewer
+  outros     → UnsupportedViewer
+
+COMPONENTES
+-----------
+PdfPagesViewer:
+  - Carrega páginas como imagens autenticadas (usePreviewAsset)
+  - Escala por width/height do manifest (não assume A4)
+  - fit width: escala = largura_disponível / page.width
+  - fit page: min(largura, altura) respeitando proporção
+  - Lazy load acima de 20 páginas
+  - Aviso para documentos grandes
+
+ImageViewer:
+  - Fit screen, fit width, zoom, pan/drag, rotação 90°
+  - Carrega resolução medium por padrão
+  - Placeholder funcional; pipeline de imagem no backend ainda parcial
+
+UnsupportedViewer:
+  - Mensagem amigável + opção de download se canDownload
+
+HOOKS
+-----
+- usePreviewManifest: react-query para manifest
+- usePreviewAsset: fetch autenticado + revokeObjectURL no unmount
+
+================================================================================
+7. BACKEND — NOVOS ENDPOINTS E REGRAS DE SEGURANÇA
+================================================================================
+
+NOVOS ARQUIVOS
+--------------
+- server/services/documentPreviewManifestService.ts
+- server/preview/pdfPageDimensions.ts
+- server/preview/pdfPageRenderer.ts
+- api/documents/preview-manifest.ts
+- api/documents/preview-page.ts
+- api/documents/preview-thumbnail.ts
+- api/documents/preview-image.ts
+
+BLOQUEIO DE BLOB PDF PARA USUÁRIOS SEM DOWNLOAD
+------------------------------------------------
+readDocumentPreviewFile() agora rejeita entrega do PDF completo quando
+canDownload=false, retornando código PREVIEW_BLOB_RESTRICTED (403).
+
+Usuários com apenas canPreview devem usar:
+  manifest → páginas/imagens renderizadas server-side
+
+Renderização interna (Ghostscript) usa allowBlobWithoutDownload:true apenas
+no servidor — o blob nunca chega ao browser nesses casos.
+
+ROTAS DEV-SERVER
+----------------
+Adicionadas rotas regex aninhadas antes de /api/documents/:documentId:
+  - .../versions/:versionId/preview/manifest
+  - .../versions/:versionId/preview/pages/:page
+  - .../versions/:versionId/preview/thumbnails/:page
+  - .../versions/:versionId/preview/image
+
+TIPOS MONGODB
+-------------
+Adicionados em server/db/types.ts:
+  - MongoPreviewManifest
+  - MongoPreviewManifestPage
+  - MongoPreviewManifestImage
+  - previewManifest?: MongoPreviewManifest em MongoDocumentVersion
+
+================================================================================
+8. FRONTEND — ESTRUTURA DE ARQUIVOS DO VIEWER
+================================================================================
+
+src/features/documents/viewer/
+  DocumentViewerModal.tsx      Orquestrador (manifest + registry)
+  DocumentViewerShell.tsx      Layout modal + classes viewer-shell
+  DocumentViewerToolbar.tsx    Toolbar comum PDF/imagem
+  viewerRegistry.ts            Escolha automática do viewer
+  PdfPagesViewer.tsx           PDF via páginas do manifest
+  ImageViewer.tsx              Viewer de imagem
+  UnsupportedViewer.tsx        Formatos não suportados
+  usePreviewManifest.ts        Hook do manifest
+  usePreviewAsset.ts           Hook de asset com cleanup
+  index.ts                     Exports públicos
+
+src/features/documents/api/
+  previewManifestApi.ts        Cliente API do manifest
+
+src/types/
+  preview-manifest.ts          Tipos TypeScript do contrato
+
+CLASSES CSS SEMÂNTICAS
+----------------------
+  viewer-shell, viewer-toolbar, viewer-canvas, viewer-page,
+  viewer-image, viewer-details-panel
+
+RESPONSIVIDADE
+--------------
+  Desktop: 96vw × 94vh
+  Mobile:  ~100vw × 100vh (max-sm)
+
+AVISO DE VISUALIZAÇÃO PROTEGIDA
+-------------------------------
+Quando canPreview=true e canDownload=false, exibe:
+  "Visualização protegida. Download indisponível para seu perfil."
+
+================================================================================
+9. PERMISSÕES E SEPARAÇÃO PREVIEW VS DOWNLOAD
+================================================================================
+
+| Permissão        | Efeito no viewer                                      |
+|------------------|-------------------------------------------------------|
+| canPreview       | Necessário para abrir modal e carregar manifest       |
+| canDownload      | Exibe botão baixar; permite blob PDF legado (antigo)  |
+| canUpdate        | Exibe botão atualizar (→ /upload?documentId=...)    |
+| canViewTracking  | Exibe botão tracking                                  |
+| canEditMetadata  | Mapeado para canUpdate no manifest                    |
+
+TRACKING
+--------
+- document.preview_viewed: ao servir manifest com trackView=true
+- document.downloaded: ao baixar original
+- Zoom/paginação NÃO geram eventos adicionais (evita spam)
+
+================================================================================
+10. PERFORMANCE E LAZY LOADING
+================================================================================
+
+PDF (PdfPagesViewer):
+  - pageCount <= 20: carrega/renderiza todas as páginas visíveis
+  - pageCount > 20: lazy load (página atual ± 1)
+  - Mensagem: "Algumas páginas serão carregadas sob demanda"
+
+IMAGEM (ImageViewer):
+  - Resolução medium por padrão
+  - Preparado para trocar para large em zoom alto (futuro)
+
+SERVIDOR:
+  - Páginas renderizadas on-demand via Ghostscript
+  - Dimensões extraídas uma vez por request de manifest (cache Mongo futuro)
+
+================================================================================
+11. COBERTURA DE TESTES
+================================================================================
+
+ARQUIVOS DE TESTE
+-----------------
+- tests/document-viewing.test.ts       (UI e integração geral)
+- tests/document-viewer-pdfjs.test.ts  (registry e ausência de iframe)
+- tests/preview-manifest.test.ts       (manifest backend + frontend)
+- tests/document-preview.test.ts       (preview existente)
+
+TOTAL NA VALIDAÇÃO FINAL
+------------------------
+  459 testes passando
+  build (tsc + vite) OK
+  lint OK
+
+================================================================================
+12. VALIDAÇÃO EXECUTADA
+================================================================================
+
+Comandos rodados com sucesso:
+  npm test
+  npm run build
+  npm run lint
+  npx tsc --noEmit
+
+================================================================================
+13. PENDÊNCIAS E PRÓXIMOS PASSOS
+================================================================================
+
+PRIORIDADE ALTA
+---------------
+1. Persistir previewManifest no Mongo durante geração do preview
+   (evitar re-leitura do PDF a cada request de manifest)
+2. Pipeline de preview para imagens (JPG/PNG/WebP) com watermark
+3. Testes de integração E2E com Ghostscript real em CI (opcional)
+
+PRIORIDADE MÉDIA
+----------------
+4. Sidebar de thumbnails com lazy load
+5. document.preview_page_viewed (auditoria avançada — opcional)
+6. Seleção de resolução large no ImageViewer quando zoom > threshold
+7. Remover/arquivar componentes legados (PdfDocumentViewer, ImageDocumentViewer)
+
+PRIORIDADE BAIXA / FASE 3
+-------------------------
+8. viewerType deep_zoom_image com tiles (OpenSeadragon)
+9. Text layer, busca e cópia no PDF (TODO já marcado no código)
+10. Suporte TIFF/HEIC via conversão backend para preview web
+
+================================================================================
+14. CHECKLIST DE VALIDAÇÃO MANUAL
+================================================================================
+
+[ ] Logar como admin e abrir Documentos
+[ ] Visualizar PDF A4 retrato — proporção correta, sem toolbar nativa
+[ ] Visualizar PDF paisagem — página não cortada no fit width
+[ ] PDF com várias páginas — navegação e indicador "Página X de Y"
+[ ] PDF grande (>20 págs) — aviso de lazy load
+[ ] Usuário canPreview sem canDownload — aviso "Visualização protegida"
+[ ] Usuário canPreview sem canDownload — NÃO recebe PDF blob (403 no endpoint legado)
+[ ] Usuário com canDownload — botão baixar funciona
+[ ] Tracking registra preview_viewed ao abrir
+[ ] Trocar versão no painel de detalhes recarrega preview
+[ ] Modal em tela pequena ocupa quase fullscreen
+[ ] Fechar modal (ESC / X) restaura scroll da página
+[ ] Watermark DOQYN visível no conteúdo das páginas
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

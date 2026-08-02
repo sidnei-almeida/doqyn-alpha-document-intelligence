@@ -1,0 +1,35 @@
+DOQYN — Sanitização de audit_logs existentes
+Data: 2026-06-25T17:43:48.989Z
+Database: doqyn_dev
+Modo: APPLY
+Valores sensíveis não são exibidos neste relatório.
+
+================================================================================
+RESUMO
+================================================================================
+Coleções processadas: 3
+Logs afetados: 0
+Logs corrigidos: 0
+
+================================================================================
+DETALHES POR COLEÇÃO
+================================================================================
+
+audit_logs
+  Escaneados: 2
+  Afetados: 0
+  Aplicados: 0
+
+audit_logs_company_dev
+  Escaneados: 2
+  Afetados: 0
+  Aplicados: 0
+
+audit_logs_company_test_2
+  Escaneados: 1
+  Afetados: 0
+  Aplicados: 0
+
+================================================================================
+FIM
+================================================================================

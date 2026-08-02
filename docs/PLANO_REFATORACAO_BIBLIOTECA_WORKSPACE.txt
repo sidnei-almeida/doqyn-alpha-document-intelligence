@@ -1,0 +1,982 @@
+PLANO TÉCNICO — REFATORAÇÃO UX, ARQUITETURA FRONTEND E DOCKER
+Projeto: DOQYN (doqyn-alpha-document-intelligence + doqyn-auth-service)
+Data: 2026-07-06 (revisão enriquecida)
+Status: PLANEJAMENTO — NÃO IMPLEMENTAR AINDA
+Referência visual: mock Biblioteca workspace (imagem fornecida pelo stakeholder)
+
+================================================================================
+0. RESUMO EXECUTIVO
+================================================================================
+
+O DOQYN hoje é um app administrativo com três entradas concorrentes para
+documentos (Visão Geral, Documentos, Envio de Documentos), sendo /upload a rota
+padrão. A Biblioteca já existe parcialmente em DocumentsPage (/documents), mas
+com aparência de tabela administrativa (PageShell + FilterBar + DataTable), não
+de workspace de arquivos.
+
+Objetivo: transformar o produto em workspace de documentos estilo Google Drive
+(arquitetura de informação), com identidade DOQYN (dark navy/graphite/obsidian,
+gradientes cyan/blue/purple só em ações), governança, IA, permissões,
+versionamento e tracking em telas próprias.
+
+Centro emocional do produto: Biblioteca / Meus Arquivos (/biblioteca).
+Upload deixa de ser página dominante e vira capacidade transversal.
+
+Estimativa: ALTO impacto, 10–15 semanas (1 dev sênior + QA).
+Risco principal: regressão no fluxo analyze→confirm e permissões de preview.
+
+================================================================================
+0.1 REFERÊNCIA VISUAL — MAPEAMENTO IMAGEM → IMPLEMENTAÇÃO
+================================================================================
+
+A imagem de referência NÃO é cópia pixel-perfect; define arquitetura de UI e
+hierarquia visual. Abaixo: o que adotar, adaptar ou rejeitar.
+
+ADOTAR DA REFERÊNCIA:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TOP BAR (novo — hoje não existe)                                            │
+│  · Logo DOQYN compacto à esquerda                                           │
+│  · Busca global central: "Buscar na Biblioteca" + atalho ⌘K                  │
+│  · Direita: ajuda, configurações, notificações, avatar + tenant             │
+│  Componentes: WorkspaceTopBar, GlobalSearchCommand, UserMenu                  │
+├──────────┬──────────────────────────────────────────────────┬─────────────┤
+│ SIDEBAR  │ ÁREA PRINCIPAL (Biblioteca)                      │ PAINEL DIR. │
+│          │                                                   │             │
+│ + Novo ▼ │ Breadcrumb: Biblioteca >                          │ Ícone pasta │
+│ (gradient│ Título + contagem: "5 pastas, 24 arquivos"        │ Nome        │
+│  cyan)   │ Toolbar: Filtro | grade/lista | Mais recentes ▼   │ Abas:       │
+│          │ ─────────────────────────────────────────────     │ Detalhes |  │
+│ Nav:     │ SEÇÃO PASTAS (grid horizontal, ícones gradiente)  │ Atividade   │
+│ Biblioteca│ Jurídico, Financeiro, RH, Compras, Operacional  │ Metadados   │
+│ Recentes │ ─────────────────────────────────────────────     │ Compartilh. │
+│ Compartilh│ TABELA ARQUIVOS (conteúdo principal)              │ Gerenciar   │
+│ Favoritos│ Colunas: Nome | Proprietário | Modificação | Status│ acesso      │
+│ Lixeira  │ Ícones tipo arquivo, estrela favorito, ⋮ menu    │             │
+│          │                                                   │             │
+│ Espaços ▼│                                                   │             │
+│ Jurídico │                                                   │             │
+│ Financeiro│                                                  │             │
+│ ...      │                                                   │             │
+│          │                                                   │             │
+│ Storage  │                                                   │             │
+│ 128/500GB│                                                   │             │
+└──────────┴──────────────────────────────────────────────────┴─────────────┘
+
+ADAPTAR (diferença intencional vs referência):
+- Botão "Enviar" separado abaixo de "+ Novo" na imagem → UNIFICAR em "+ Novo"
+  (Upload de arquivo / Upload de pasta). Atalho secundário opcional no empty state.
+- Faixa tracejada "Arraste e solte..." entre pastas e tabela na imagem → NÃO fixa
+  na Fase 1. Substituir por:
+  · DragDropOverlay fullscreen apenas durante drag (requisito explícito);
+  · EmptyFolderState com CTA discreto quando pasta vazia;
+  · Opcional Fase 2: faixa slim colapsável (não hero card).
+- Aba "Atividade" no painel direito → resumo de 3–5 eventos + link Tracking;
+  NÃO replicar feed completo de auditoria/tracking na Biblioteca.
+- Status "Sincronizado" na tabela → mapear para status real do documento
+  (processed, analyzing, pending_review) via StatusPill existente.
+- Widget "Armazenamento 128 GB / 500 GB" → Fase 4; Fase 1 placeholder ou omitir
+  até API de quota (R2 usage por tenant).
+
+REJEITAR DA REFERÊNCIA:
+- Qualquer aparência de dashboard com KPIs na área principal.
+- Upload hero gigante (já removido parcialmente em DocumentSendPage, mas rota
+  /upload ainda domina).
+- Copiar ícones/cores exatos do Google Drive.
+
+TOKENS VISUAIS (alinhar tokens.css existente):
+- Fundo app: --bg-app (#0e0e0e) ≈ obsidian
+- Sidebar: --bg-sidebar (#0a0a0a)
+- Superfícies: --bg-surface, --bg-surface-2
+- Bordas finas: --border-subtle, --border-default
+- Ação primária "+ Novo": gradiente cyan→purple (novo token --gradient-action)
+- Ícones de pasta: gradiente sutil por categoria (mapear em library/folderColors.ts)
+- Tipografia: manter sistema atual; título pasta = text-2xl semibold
+
+================================================================================
+1. DIAGNÓSTICO DO ESTADO ATUAL (DETALHADO)
+================================================================================
+
+1.1 Navegação e rotas (src/app/routes.tsx)
+- Default: / e * → Navigate to="/upload"
+- Rotas protegidas em AppLayout (sidebar + outlet simples, SEM top bar global)
+- /upload → DocumentSendRoute (DocumentSendPage)
+- /documents → DocumentsRoute (DocumentsPage) — dados reais, eyebrow "Biblioteca"
+- /dashboard, /rules, /users, /audit, /tracking, /settings — intactos
+- /versioning — mocks, fora da sidebar
+- OAuth: /auth/oauth/callback, /onboarding
+
+1.2 Sidebar atual (src/components/layout/Sidebar.tsx)
+- Largura fixa 200px; logo + subtitle "Document Intelligence"
+- NAV_ITEMS_PRIMARY: Visão Geral, Documentos, Envio
+- NAV_ITEMS_ADMIN: Regras, Usuários, Auditoria, Tracking, Configurações
+- SidebarUserPanel no rodapé (nome, email, tenant, health)
+- Sem: + Novo, Espaços, Storage, busca global
+
+1.3 Páginas de documentos — inventário de linhas/complexidade
+| Arquivo | Linhas | Papel | Mocks? |
+|---------|--------|-------|--------|
+| DocumentSendPage.tsx | ~1157 | Upload dominante | Não |
+| useBulkUploadQueue.ts | ~1514 | Fila analyze/confirm | Não |
+| DocumentsPage.tsx | ~311 | Listagem biblioteca | Não |
+| DashboardPage.tsx | ~511 | KPIs + feed atividade | Não |
+| UploadPage.tsx | órfã | Legado | Sim |
+| VersioningPage.tsx | fora nav | Versionamento | Sim |
+| GovernanceMapCanvas.tsx | ~967 | Mapa regras | Não |
+
+1.4 DocumentSendPage — componentes reutilizáveis (migração upload)
+Pasta src/features/document-send/ (58 arquivos):
+- MIGRAR para features/upload/: analyzePdf.ts, confirmAnalysis.ts,
+  useBulkUploadQueue.ts, UploadResultPanel → ReviewDrawer,
+  UploadProgressSummary, bulkEligibility, autoConfirm, validateUpload
+- DEPRECAR UI de página: UploadFlowPanel, UploadDropzoneArea (hero),
+  ProcessingHistoryPanel, WorkflowLogRow (logs ficam no drawer de fila, não na lib)
+- MANTER até paridade: DocumentSendPage como rota fallback com feature flag
+
+1.5 DocumentsPage — o que já funciona e reaproveitar
+- useDocuments(filters) → listDocuments API
+- fetchDocumentCategories → categorias tenant
+- DocumentViewerModal + download com permissões
+- FilterBar com search, status, category, datas
+- DataTable com ações Eye/Download/History
+- Gap vs referência: sem FolderGrid, sem painel direito persistente, sem
+  breadcrumb hierárquico, sem view mode grid, busca local (não global ⌘K)
+
+1.6 Viewer e permissões (NÃO TOCAR contrato)
+- DocumentViewerModal.tsx, DocumentViewerDetailsPanel.tsx, DocumentDetailPanel.tsx
+- server/tenancy/documentAccess.ts
+- Testes: secure-preview-permissions, preview-manifest, document-viewing
+
+1.7 Modelo de dados
+- MongoDB tenant-scoped via getTenantCollections()
+- document.classId ↔ categoryId na API (governança/IA)
+- document_categories: categorias configuráveis (Jurídico, Financeiro, etc.)
+- R2: storage físico; keys não refletem pastas
+- Sem folderId/parentFolderId hoje
+
+1.8 Auth / OAuth
+- auth-service: Postgres/Prisma, Google OAuth, Microsoft opcional
+- Proxy Vite: /auth, /oauth → :4100; /api → :3001
+- Env dev documentados em docs/OAUTH_SETUP.md
+
+1.9 Docker
+- auth-service: docker-compose.yml completo (postgres, migrate, auth-api)
+- alpha: sem Docker; dev-server.ts :3001; Vite :5173; Mongo Atlas externo
+
+1.10 Design system
+- src/styles/tokens.css, globals.css, tailwind.config.js
+- src/components/ui/* (Button, Card, DataTable, FilterBar, PageShell, etc.)
+- PageShell/PageHeader = padrão "admin"; Biblioteca precisa LibraryShell próprio
+
+1.11 Testes
+- ~544 testes alpha; ~169 auth-service
+- sidebar.test.ts, dashboard-layout.test.ts, upload-flow-layout.test.ts
+
+1.12 Débitos de legibilidade humana
+- Hooks gigantes misturando UI state + API + regra de negócio (useBulkUploadQueue)
+- document-send com 58 arquivos sem fronteira clara upload vs página
+- components/ui vs futuro shared/ui — duplicação de caminho
+- Comentários em uploadProgress.ts úteis; outros arquivos com comentários óbvios
+- mockData.ts em document-send ainda presente (não usado em produção?)
+- Nomes: DocumentsPage vs Biblioteca; DocumentSend vs Upload
+
+================================================================================
+2. ARQUIVOS PRINCIPAIS QUE PRECISAM MUDAR
+================================================================================
+
+SHELL / LAYOUT (novo modelo workspace)
+- CRIAR src/app/layout/WorkspaceLayout.tsx (sidebar + topbar + outlet)
+- CRIAR src/components/layout/WorkspaceTopBar.tsx
+- CRIAR src/components/layout/GlobalSearchCommand.tsx (⌘K)
+- MODIFICAR src/components/layout/AppLayout.tsx → usar WorkspaceLayout
+- MODIFICAR src/components/layout/Sidebar.tsx → nav workspace + Espaços + +Novo
+- CRIAR src/components/layout/SidebarStorageWidget.tsx (Fase 4 ou placeholder)
+
+NAVEGAÇÃO
+- src/lib/constants.ts → NAV_WORKSPACE, NAV_SPACES, NAV_ADMIN
+- src/app/routes.tsx → /biblioteca, redirects, default /
+- src/app/lazyRoutes.tsx → LibraryRoute
+
+FEATURE LIBRARY (nova)
+- src/features/library/LibraryPage.tsx
+- src/features/library/components/LibraryShell.tsx
+- src/features/library/components/LibraryToolbar.tsx
+- src/features/library/components/LibraryBreadcrumbs.tsx
+- src/features/library/components/NewButtonMenu.tsx
+- src/features/library/components/FolderGrid.tsx
+- src/features/library/components/FolderCard.tsx
+- src/features/library/components/FileTable.tsx
+- src/features/library/components/FileRow.tsx
+- src/features/library/components/FileGridView.tsx (modo grade)
+- src/features/library/components/FileTypeIcon.tsx
+- src/features/library/components/FileContextMenu.tsx
+- src/features/library/components/SelectionToolbar.tsx
+- src/features/library/components/DetailsPanel.tsx
+- src/features/library/components/DetailsPanelTabs.tsx
+- src/features/library/components/EmptyFolderState.tsx
+- src/features/library/components/ViewModeToggle.tsx
+- src/features/library/components/SortMenu.tsx
+- src/features/library/components/FilterMenu.tsx
+- src/features/library/hooks/useLibraryView.ts
+- src/features/library/hooks/useLibrarySelection.ts
+- src/features/library/hooks/useCategoryFolders.ts
+- src/features/library/hooks/useLibraryRouteState.ts (query: category, folder, view)
+- src/features/library/api/libraryApi.ts
+- src/features/library/types/library.ts
+- src/features/library/utils/folderColors.ts
+- src/features/library/utils/sortDocuments.ts
+
+FEATURE UPLOAD (transversal)
+- src/features/upload/UploadQueueProvider.tsx
+- src/features/upload/queue/useUploadQueue.ts
+- src/features/upload/queue/useBulkUploadQueue.ts (migrado)
+- src/features/upload/drag-drop/useGlobalDragDrop.ts
+- src/features/upload/drag-drop/UploadDropOverlay.tsx
+- src/features/upload/review/ReviewDrawer.tsx
+- src/features/upload/UploadQueueDrawer.tsx (canto inferior)
+- src/features/upload/services/analyzePdf.ts (movido)
+- src/features/upload/services/confirmAnalysis.ts (movido)
+- src/features/upload/startUploadFromFiles.ts
+
+DOCUMENTS (reorganizar)
+- MOVER viewer para src/features/documents/viewer/ (já está)
+- DocumentsPage.tsx → manter como redirect/wrapper temporário ou remover Fase 2
+- DocumentViewerDetailsPanel → base do DetailsPanel
+
+DOCUMENT-SEND (deprecar gradualmente)
+- DocumentSendPage.tsx — rota /upload até paridade upload queue
+- Componentes UI específicos de página — arquivar após migração
+
+DASHBOARD
+- DashboardPage.tsx — rebaixar; remover ou reduzir feed de atividade dominante
+
+ESTILOS
+- src/styles/tokens.css — adicionar --gradient-action, --library-panel-width
+- src/styles/library.css (opcional) — layout 3 colunas
+
+BACKEND Fase 1
+- Sem mudanças obrigatórias (listDocuments + categoryId já existem)
+
+BACKEND Fase 2
+- server/db/types.ts — MongoFolder
+- server/services/folderService.ts (novo)
+- api/folders/* (novo)
+- documentService — folderId em create/update/move
+
+BACKEND Fase 4
+- api/tenant/storage-usage (opcional, quota R2)
+
+DOCKER
+- deploy/docker-compose.yml
+- deploy/docker-compose.dev.yml
+- deploy/docker-compose.staging.yml
+- deploy/env/auth-service.env.example
+- deploy/env/app-api.env.example
+- deploy/env/app-web.env.example
+- Dockerfile (document-api)
+- docs/LOCAL_DEV.md
+- docs/VPS_DEPLOY.md
+
+================================================================================
+3. RISCOS TÉCNICOS
+================================================================================
+
+| Risco | Sev. | Mitigação |
+|-------|------|-----------|
+| Regressão analyze→confirm | Alta | Serviços intactos; feature flag; testes pipeline |
+| Permissões preview/download | Alta | Não alterar documentAccess; testes existentes |
+| Layout 3 colunas quebra mobile | Média | DetailsPanel como drawer em <lg; tabela responsiva |
+| ⌘K search sem backend dedicado | Baixa | Fase 1: filtro client + listDocuments search param |
+| Confusão categoria vs pasta manual | Média | Labels "Espaço" vs "Pasta"; ícones distintos Fase 2 |
+| useBulkUploadQueue refactor | Alta | Migração incremental; testes upload-progress |
+| TopBar + Sidebar duplicam settings | Baixa | Settings só no topbar ou só admin sidebar |
+| Widget storage sem dados reais | Baixa | Omitir Fase 1; não mockar quota |
+| OAuth cookies em Docker staging | Média | nginx same-site; COOKIE_DOMAIN documentado |
+| Performance FolderGrid + FileTable | Média | React Query staleTime; paginação cursor |
+| Context menu acessibilidade | Média | Radix/shadcn ContextMenu; teclado alternativo |
+| Escopo Fase 2 pastas | Alta | Gate de release; Fase 1 shippable isolada |
+
+================================================================================
+4. PLANO DE MIGRAÇÃO POR FASES
+================================================================================
+
+FASE 0 — Fundação (1–2 semanas)
+- Estrutura pastas features/library, features/upload, app/layout
+- Tokens workspace (--gradient-action, panel width)
+- Feature flags: VITE_LIBRARY_V2, VITE_UPLOAD_QUEUE
+- deploy/docker-compose.dev.yml (postgres-auth + mongo)
+- docs/LOCAL_DEV.md unificado (ambos repos)
+- Esqueleto LibraryPage renderizando "em construção" atrás da flag
+
+FASE 1 — Biblioteca MVP (3–4 semanas)
+Layout shell:
+- WorkspaceLayout com TopBar (busca, perfil) + Sidebar workspace
+- + Novo na sidebar (NewButtonMenu: Upload arquivo — Fase 1 mínimo)
+- Nav: Biblioteca, Compartilhados*, Recentes*, Favoritos*, Lixeira* (*disabled/soon)
+
+Biblioteca:
+- LibraryPage em /biblioteca; redirect /documents, / → /biblioteca
+- FolderGrid com categorias tenant (pastas inteligentes)
+- FileTable: Nome, Proprietário, Última modificação, Status
+- ViewModeToggle grid/lista (lista default)
+- SortMenu, FilterMenu discretos na toolbar
+- LibraryBreadcrumbs: Biblioteca / {categoria}
+- DetailsPanel colapsável; seleção pasta ou arquivo
+- DocumentViewerModal inalterado
+- Upload: + Novo → arquivo; UploadQueueDrawer canto; sem página /upload na nav
+- DragDropOverlay global (só durante drag)
+- EmptyFolderState discreto
+
+Admin:
+- Visão Geral, Usuários, Regras, Auditoria, Tracking, Config em grupo recolhível
+- Remover Envio e Documentos da nav primária
+
+FASE 2 — Upload unificado completo (2–3 semanas)
+- NewButtonMenu completo: Nova pasta*, Upload pasta, Solicitar documento
+- Context menu (vazio, pasta, arquivo)
+- ReviewDrawer (UploadResultPanel migrado)
+- useBulkUploadQueue na upload feature
+- Auto-confirm, lote, pausa
+- /upload → redirect /biblioteca
+- DocumentSendPage arquivada (código mantido, rota removida)
+
+FASE 3 — Pastas virtuais MongoDB (2–3 semanas)
+- Coleção document_folders
+- CRUD pastas; mover documentos (só MongoDB)
+- Breadcrumb multi-nível
+- Nova pasta no + Novo funcional
+- Espaços na sidebar com chevron expandindo subpastas (se houver)
+
+FASE 4 — Views secundárias e polish (2 semanas)
+- Compartilhados comigo (documentos com accessGroups do usuário)
+- Recentes (ordenar updatedAt, limite 50)
+- Favoritos (user_document_pins)
+- Lixeira (status archived)
+- SidebarStorageWidget com API quota
+- Faixa slim drag opcional (colapsável, não hero)
+- Aba Atividade no DetailsPanel (últimos N eventos)
+
+FASE 5 — Docker staging/VPS (1–2 semanas)
+- Dockerfile document-api + nginx SPA
+- compose staging completo
+- docs/VPS_DEPLOY.md
+- Healthchecks, TLS, env examples
+
+================================================================================
+5. ORDEM EXATA DE IMPLEMENTAÇÃO
+================================================================================
+
+ 1. Fase 0: deploy/docker-compose.dev.yml + docs/LOCAL_DEV.md
+ 2. tokens.css: --gradient-action, --library-panel-width
+ 3. WorkspaceLayout + WorkspaceTopBar (logo, busca placeholder, user menu)
+ 4. Sidebar workspace: estrutura nav sem remover admin ainda
+ 5. features/library/types + hooks/useLibraryRouteState
+ 6. LibraryShell + LibraryToolbar + LibraryBreadcrumbs
+ 7. FolderGrid + useCategoryFolders (API categorias + contagem)
+ 8. FileTable + FileRow + FileTypeIcon (dados useDocuments)
+ 9. ViewModeToggle + FileGridView
+10. SortMenu + FilterMenu (extrair lógica de DocumentsPage)
+11. DetailsPanel + DetailsPanelTabs (wrap DocumentViewerDetailsPanel)
+12. LibraryPage integrando tudo; feature flag VITE_LIBRARY_V2
+13. Rotas /biblioteca; redirects; atualizar constants.ts
+14. NewButtonMenu (+ Novo) na sidebar
+15. UploadQueueProvider + UploadQueueDrawer
+16. Migrar analyzePdf/confirmAnalysis para features/upload/services
+17. Integrar upload arquivo na fila
+18. UploadDropOverlay + useGlobalDragDrop no WorkspaceLayout
+19. ReviewDrawer (extrair UploadResultPanel)
+20. Migrar useBulkUploadQueue em fatias com testes
+21. NewButtonMenu: upload pasta, nova pasta (conforme fase)
+22. FileContextMenu
+23. Deprecar /upload; atualizar links (DocumentsPage tinha navigate('/upload'))
+24. Dashboard: reduzir feed; link para Tracking
+25. Testes library-* + upload-queue + global-drag-drop
+26. Remover feature flag quando estável
+27. Fase 3 backend folders + UI
+28. Fase 5 Docker staging
+
+================================================================================
+6. O QUE NÃO DEVE SER FEITO
+================================================================================
+
+- NÃO apagar DocumentSendPage antes da fila ter paridade funcional e testes.
+- NÃO substituir APIs reais por mock nas telas principais.
+- NÃO usar R2 como fonte de verdade de pastas; NÃO mover objetos R2 ao mover pasta.
+- NÃO fundir auth-service no monólito alpha.
+- NÃO expor OAuth secrets no frontend.
+- NÃO misturar feed completo de tracking/auditoria na Biblioteca ou DetailsPanel.
+- NÃO colocar KPIs, cards de métricas ou ProcessingHistoryPanel na Biblioteca.
+- NÃO manter faixa/hero de upload fixo dominante (rejeitar padrão DocumentSendPage).
+- NÃO reescrever DocumentViewerModal / preview manifest / documentAccess.
+- NÃO quebrar isolamento tenant ou testes existentes.
+- NÃO implementar permissões por pasta na Fase 1.
+- NÃO copiar visual Google Drive (só arquitetura de informação).
+- NÃO mockar quota de armazenamento sem API real.
+- NÃO habilitar Microsoft OAuth até Biblioteca Fase 1 estável.
+- NÃO adicionar dependências pesadas (ex.: biblioteca de file manager completa).
+
+================================================================================
+7. PROPOSTA DE NOVA ARQUITETURA FRONTEND
+================================================================================
+
+src/
+  app/
+    routes.tsx
+    lazyRoutes.tsx
+    providers.tsx          # + UploadQueueProvider
+    layout/
+      WorkspaceLayout.tsx
+      LibraryLayout.tsx      # opcional: 3 colunas com DetailsPanel
+  shared/
+    ui/                    # migrar gradualmente de components/ui
+    hooks/
+    api/                   # lib/api.ts evolui para cá
+    utils/
+    styles/
+      tokens.css
+      globals.css
+      library.css
+  components/
+    layout/                # TopBar, Sidebar (até migrar para app/layout)
+    brand/
+  features/
+    library/
+      LibraryPage.tsx
+      components/          # ver lista seção 2
+      hooks/
+      api/
+      types/
+      utils/
+    documents/
+      viewer/              # DocumentViewerModal, PdfPagesViewer, ...
+      components/          # DocumentDetailPanel (legado, usado por DetailsPanel)
+      hooks/useDocuments.ts
+      api/documentsApi.ts
+    upload/
+      queue/
+      drag-drop/
+      review/
+      services/
+    document-send/         # DEPRECAR — manter até Fase 2 completa
+    rules/
+    users/
+    tracking/
+    audit/
+    dashboard/
+    auth/
+
+PADRÃO CONTAINER / APRESENTAÇÃO:
+- LibraryPage = container (hooks, queries, handlers)
+- FileTable, FolderGrid = apresentação (props puras)
+- useLibraryView = view mode, sort, filter state
+- useLibrarySelection = selectedIds, single select para painel
+- useUploadQueue = fila; sem JSX
+
+MAPEAMENTO document-send → upload:
+| Origem | Destino |
+|--------|---------|
+| services/analyzePdf.ts | upload/services/analyzePdf.ts |
+| services/confirmAnalysis.ts | upload/services/confirmAnalysis.ts |
+| hooks/useBulkUploadQueue.ts | upload/queue/useBulkUploadQueue.ts |
+| components/UploadResultPanel.tsx | upload/review/ReviewDrawer.tsx |
+| components/UploadProgressSummary.tsx | upload/UploadQueueDrawer.tsx |
+| components/UploadDropzoneArea.tsx | NÃO migrar (hero); usar UploadDropOverlay |
+| DocumentSendPage.tsx | deprecar após paridade |
+
+API CLIENTS:
+- features/library/api/libraryApi.ts — listItems, getCategoryCounts
+- features/documents/api/documentsApi.ts — existente, reexportado
+- features/upload/api — se necessário endpoints dedicados
+
+TIPOS:
+- features/library/types/library.ts — LibraryItem, FolderItem, ViewMode, SortKey
+- types/document-library.ts — manter DocumentListItem; estender com folderId Fase 3
+
+================================================================================
+8. PROPOSTA DE NOVA NAVEGAÇÃO
+================================================================================
+
+SIDEBAR — ações primárias (topo, abaixo do logo compacto)
+  [+ Novo ▼]  gradiente cyan/purple
+    · Nova pasta          (Fase 2/3)
+    · Upload de arquivo   (Fase 1)
+    · Upload de pasta     (Fase 2)
+    · Solicitar documento → /solicitar-acesso ou fluxo interno
+
+SIDEBAR — workspace (ícones limpos, item ativo com highlight sutil)
+  Biblioteca            /biblioteca                 DEFAULT HOME
+  Compartilhados comigo /biblioteca/shared          Fase 4
+  Recentes              /biblioteca/recent          Fase 4
+  Favoritos             /biblioteca/starred         Fase 4
+  Lixeira               /biblioteca/trash           Fase 4
+
+SIDEBAR — Espaços (seção colapsável "Espaços ▼")
+  Dinâmico via document_categories:
+  Jurídico              /biblioteca?space=juridico
+  Financeiro            /biblioteca?space=financeiro
+  RH                    /biblioteca?space=rh
+  Compras               /biblioteca?space=compras
+  Operacional           /biblioteca?space=operacional
+  (Fase 3: chevron expande subpastas virtuais)
+
+SIDEBAR — rodapé
+  Armazenamento         Fase 4 (widget progress)
+  SidebarUserPanel      simplificado OU movido para TopBar
+
+SIDEBAR — Administração (grupo recolhível, tipografia menor, cor secundária)
+  Visão Geral           /dashboard
+  Usuários              /users
+  Regras                /rules
+  Auditoria             /audit
+  Tracking              /tracking
+  Configurações         /settings
+
+TOP BAR (global em todas as rotas autenticadas)
+  Esquerda: logo compacto (opcional se já na sidebar)
+  Centro: GlobalSearchCommand — "Buscar na Biblioteca" ⌘K
+  Direita: ? Ajuda | ⚙ Config | 🔔 Notificações (placeholder) | Avatar + Tenant
+
+REMOVIDO:
+  Envio de Documentos (/upload → redirect)
+  Documentos (/documents → redirect /biblioteca)
+  Visão Geral da nav primária (vai para admin)
+
+ROTAS LEGADAS (compatibilidade 2 releases):
+  /upload      → /biblioteca?legacyUpload=1 (banner "nova experiência")
+  /documents   → /biblioteca
+
+================================================================================
+9. PROPOSTA DE NOVO MODELO DE BIBLIOTECA
+================================================================================
+
+FASE 1 — Pastas inteligentes (categorias = espaços)
+Modelo mental:
+  · "Espaço" / pasta inteligente = document_category (classId no documento)
+  · Governança e IA definem classId; usuário navega como pasta
+
+Dados:
+  GET /api/document-categories (ou equivalente em documentsApi)
+  GET /api/documents?categoryId={classId}
+
+UI raiz (/biblioteca):
+  · FolderGrid: card por categoria + card "Sem classificação"
+  · Contagem por pasta: query com limit=0 ou endpoint count (otimizar Fase 1.1)
+  · FileTable abaixo: todos os docs OU filtrados se ?space= ativo
+  · Título: "Biblioteca" + "N pastas, M arquivos"
+
+UI dentro de espaço (/biblioteca?space=juridico):
+  · Breadcrumb: Biblioteca / Jurídico
+  · FolderGrid oculto ou só subcategorias futuras
+  · FileTable filtrada
+
+FASE 2 — Pastas virtuais manuais
+MongoDB document_folders:
+  {
+    _id, tenantId, name, slug, parentFolderId|null,
+    spaceId?: string,  // opcional: pasta dentro de um espaço
+    color?, icon?, createdBy, createdAt, updatedAt
+  }
+Documento:
+  + folderId?: string  // organização manual
+  classId mantido     // governança
+
+Operações sem tocar R2:
+  · createFolder, renameFolder, moveFolder, deleteFolder (soft)
+  · moveDocument(documentId, folderId)
+
+Breadcrumb Fase 2+:
+  Biblioteca / Jurídico / Contratos / 2026
+
+FASE 3 — Permissões por pasta
+  · Herdar de space/category ou ACL explícita por folderId
+  · Só após Fase 2 estável
+
+VIEWS FASE 4 (filtros sobre listDocuments):
+  · shared: accessGroups intersect user groups
+  · recent: sort=updatedAt desc, limit=50
+  · starred: join user_document_pins
+  · trash: status=archived
+
+================================================================================
+10. ESTRATÉGIA PARA UPLOAD UNIFICADO
+================================================================================
+
+PRINCÍPIO: upload é capacidade, não rota nem painel fixo.
+
+ENTRADAS (prioridade implementação):
+  1. Sidebar "+ Novo" → Upload de arquivo (Fase 1)
+  2. DragDropOverlay global ao arrastar arquivos sobre janela (Fase 1)
+  3. UploadQueueDrawer — progresso canto inferior direito (Fase 1)
+  4. "+ Novo" → Upload de pasta webkitdirectory (Fase 2)
+  5. Context menu → "Fazer upload aqui" (Fase 2)
+  6. EmptyFolderState → link discreto (Fase 1)
+  7. Atualizar versão → upload com documentId existente (manter fluxo atual)
+
+FLUXO TÉCNICO (inalterado em essência):
+  files → startUploadFromFiles(files, { spaceId?, folderId? })
+       → UploadQueueProvider.enqueue
+       → analyzePdf (POST /api/ai/analyze-pdf)
+       → estado: queued | analyzing | review | confirming | done | error
+       → se review: ReviewDrawer abre automaticamente
+       → confirmAnalysis (POST confirm)
+       → invalidateQueries ['library-documents', 'documents']
+       → toast sucesso; item some da fila após delay
+
+CONTEXTO:
+  · Dentro de espaço Jurídico: hint spaceId na metadata do analyze (estender API
+    se necessário; senão aplicar classId pós-confirm na Fase 1)
+  · Na raiz: IA classifica normalmente
+  · Lote: mesma semântica useBulkUploadQueue (pause, auto-confirm, retry)
+
+UI DA FILA (UploadQueueDrawer):
+  · Colapsável; lista compacta de arquivos com barra progresso
+  · Clique em item em review abre ReviewDrawer
+  · Sem WorkflowLogRow na Biblioteca — logs só dentro do drawer expandido
+
+O QUE SOME:
+  · Rota /upload como destino default
+  · UploadFlowPanel / UploadDropzoneArea como centro da tela
+  · Botão "Enviar documento" no header de DocumentsPage
+  · navigate('/upload') espalhado (grep e substituir)
+
+PRESERVAR:
+  · Limites: PDF, 15MB, 20/lote (uploadConstants.ts)
+  · reviewWorkflowSettings, autoConfirm, bulkEligibility
+  · Todos os testes upload-progress, upload-flow-layout, groq-analysis-pipeline
+
+================================================================================
+11. ESTRATÉGIA PARA PAINEL DE DETALHES
+================================================================================
+
+DetailsPanel — coluna direita ~320px, border-l, bg-surface-2
+Comportamento:
+  · Oculto por default em telas < lg (abre como drawer)
+  · Visível quando item selecionado em telas grandes
+  · Fechar com X ou clique fora
+
+NADA SELECIONADO (opcional Fase 1):
+  · Painel oculto OU resumo da pasta atual (nome, contagem, descrição espaço)
+
+PASTA / ESPAÇO SELECIONADO (clique no FolderCard):
+  · Ícone pasta grande com gradiente
+  · Nome + "N itens"
+  · Abas: Detalhes | Atividade (resumida)
+  · Detalhes: Tipo (Pasta/Espaço), Localização, Proprietário*, Criado em*,
+    Descrição da categoria
+  · Compartilhamento: avatares grupos com acesso + "Gerenciar acesso" → users/rules
+  · *campos quando disponíveis na API
+
+ARQUIVO SELECIONADO (clique na linha):
+  · Ícone tipo arquivo
+  · Nome, extensão, tamanho (se API fornecer)
+  · Categoria/espaço, pasta manual (Fase 2)
+  · Proprietário, última modificação, versão
+  · Tags/metadata (resumo)
+  · Permissões: badges canPreview, canDownload, canEdit
+  · Ações primárias: Visualizar | Baixar | Nova versão | Ver tracking
+  · Aba Atividade: últimos 3 eventos + link /tracking?documentId=
+
+NÃO INCLUIR:
+  · Feed completo tracking
+  · ProcessingHistoryPanel
+  · KPIs ou gráficos
+  · Logs de análise IA (ficam no ReviewDrawer durante upload)
+
+REUTILIZAR:
+  · DocumentViewerDetailsPanel.tsx — metadados e ações
+  · DocumentDetailPanel.tsx — permissões estendidas
+  · StatusPill, VersionBadge
+
+================================================================================
+12. ESTRATÉGIA VIEWER / PERMISSÕES
+================================================================================
+
+CONTRATO INTACTO:
+  · DocumentViewerModal
+  · GET /api/documents/:id/preview-manifest
+  · GET /api/documents/:id/preview-page/:page
+  · documentAccess.ts → resolveDocumentPermissions
+  · Watermark, bloqueio download, sem iframe raw
+
+INTEGRAÇÃO BIBLIOTECA:
+  · Duplo clique no arquivo → open preview mode
+  · Botão Visualizar no DetailsPanel ou context menu
+  · Ícone olho na FileRow (como DocumentsPage hoje)
+  · canPreview=false → ação desabilitada + tooltip explicativo
+  · Histórico versões → link /versioning?doc= ou modal futuro (não mock)
+
+ATUALIZAR VERSÃO:
+  · Context menu / DetailsPanel → abre upload queue com documentId target
+  · Reutilizar fluxo existente de versionamento no analyze payload
+
+TESTES OBRIGATÓRIOS VERDES ANTES DE MERGE:
+  · tests/secure-preview-permissions.test.ts
+  · tests/preview-manifest.test.ts
+  · tests/document-viewing.test.ts
+  · tests/document-tracking-rbac.test.ts
+
+================================================================================
+13. ESTRATÉGIA DOCKER / VPS
+================================================================================
+
+PRINCÍPIO: auth-service permanece repo e imagem separados; orquestração unificada.
+
+ESTRUTURA:
+deploy/
+  docker-compose.yml           # networks: doqyn_internal, volumes
+  docker-compose.dev.yml       # profile: infra-only
+  docker-compose.staging.yml   # profile: full stack
+  env/
+    auth-service.env.example
+    app-api.env.example
+    app-web.env.example
+  nginx/
+    staging.conf
+  Dockerfile.document-api      # multi-stage: build + node server
+
+SERVIÇOS:
+| Serviço | Imagem/Build | Porta host | Porta interna |
+|---------|--------------|------------|---------------|
+| postgres-auth | postgres:16 | 5433 | 5432 |
+| auth-migrate | auth-service Dockerfile | — | — |
+| auth-api | auth-service Dockerfile | 4100 | 4100 |
+| mongo | mongo:7 | 27017 | 27017 |
+| document-api | alpha Dockerfile | 3001 | 3001 |
+| web | nginx:alpine | 80/443 | 80 |
+| redis | (futuro) | — | 6379 |
+
+DEV LOCAL (recomendado):
+  docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up -d
+  # Sobe postgres-auth + mongo apenas
+  Terminal 1: cd doqyn-auth-service && npm run dev
+  Terminal 2: cd doqyn-alpha-document-intelligence && npm run dev
+  Vite proxy: /api→3001, /auth|/oauth→4100
+
+STAGING:
+  Todas as imagens buildadas
+  MONGODB_URI=mongodb://mongo:27017/doqyn
+  DOQYN_AUTH_BASE_URL=http://auth-api:4100
+  OAUTH_GOOGLE_REDIRECT_URI=https://auth.staging.example/oauth/google/callback
+  OAUTH_POST_LOGIN_REDIRECT_URL=https://app.staging.example/auth/oauth/callback
+  STORAGE_PROVIDER=r2 (credenciais via env, não no repo)
+
+NGINX routing:
+  /           → web (SPA)
+  /api/*      → document-api:3001
+  /auth/*     → auth-api:4100
+  /oauth/*    → auth-api:4100
+
+HEALTHCHECKS:
+  auth-api:     GET /health
+  document-api: GET /api/health
+  mongo:        mongosh --eval "db.adminCommand('ping')"
+  postgres:     pg_isready
+
+VOLUMES:
+  postgres_auth_data, mongo_data, local_storage (se STORAGE_PROVIDER=local)
+
+DOCS:
+  docs/LOCAL_DEV.md (alpha, referencia auth-service)
+  docs/VPS_DEPLOY.md (stack completa)
+  Atualizar doqyn-auth-service/docs/DEPLOY_VPS.md com link para stack unificada
+
+NÃO FAZER:
+  · Mover código auth-service para alpha
+  · Commitar .env com secrets
+  · Expor mongo/postgres sem auth em staging público
+
+================================================================================
+14. TESTES NECESSÁRIOS
+================================================================================
+
+NOVOS (alpha):
+  tests/library-navigation.test.ts
+    - /biblioteca registrada; / → /biblioteca; /documents redirect
+    - Sidebar: Biblioteca presente; Envio ausente
+  tests/library-layout.test.ts
+    - LibraryShell, FolderGrid, FileTable, DetailsPanel exportados
+    - WorkspaceTopBar com GlobalSearchCommand
+  tests/library-toolbar.test.ts
+    - ViewModeToggle, SortMenu, FilterMenu
+  tests/upload-queue.test.ts
+    - UploadQueueProvider estados; startUploadFromFiles mock
+  tests/global-drag-drop.test.ts
+    - Overlay renderiza só isDragging=true
+  tests/library-details-panel.test.ts
+    - Ações respeitam canPreview/canDownload
+  tests/workspace-layout.test.ts
+    - AppLayout usa WorkspaceLayout quando flag ativa
+
+ATUALIZAR:
+  tests/sidebar.test.ts — nova estrutura nav
+  tests/dashboard-layout.test.ts — se feed reduzido
+  tests/upload-flow-layout.test.ts — após migração componentes
+
+MANTER VERDES:
+  upload-progress, secure-preview-permissions, confirm-storage-pipeline,
+  groq-analysis-pipeline, individual-isolation, design-system
+
+AUTH-SERVICE:
+  oauth.test.ts — sem mudanças Fase 1 Biblioteca
+
+COBERTURA MÍNIMA Fase 1:
+  · Navegação e redirects
+  · Renderização LibraryPage com dados mockados em teste (mock de hook, não de tela)
+  · Upload queue enqueue sem regressão analyze
+
+================================================================================
+15. CHECKLIST MANUAL
+================================================================================
+
+AUTENTICAÇÃO
+[ ] Login email/senha funciona
+[ ] Google OAuth: start → callback → sessão → /biblioteca
+[ ] Microsoft desabilitado não mostra botão ou mostra disabled
+[ ] Logout limpa sessão
+
+BIBLIOTECA — NAVEGAÇÃO
+[ ] Login redireciona para /biblioteca (não /upload)
+[ ] Sidebar: Biblioteca ativa; sem "Envio de Documentos"
+[ ] /documents e /upload redirecionam para /biblioteca
+[ ] Espaços na sidebar filtram documentos
+[ ] Admin colapsável: Visão Geral, Regras, etc. acessíveis
+
+BIBLIOTECA — UI
+[ ] TopBar: busca funciona; ⌘K abre command palette
+[ ] FolderGrid mostra categorias com contagem
+[ ] FileTable: colunas Nome, Proprietário, Modificação, Status
+[ ] Toggle grade/lista alterna visualização
+[ ] Ordenação e filtros discretos funcionam
+[ ] Breadcrumb reflete espaço atual
+[ ] Sem KPIs, sem feed de logs na área principal
+
+SELEÇÃO E DETALHES
+[ ] Clique arquivo abre DetailsPanel à direita
+[ ] Clique pasta abre detalhes da categoria
+[ ] Aba Atividade mostra resumo (não feed infinito)
+[ ] Gerenciar acesso leva a fluxo correto
+
+VIEWER E PERMISSÕES
+[ ] Visualizar abre modal seguro
+[ ] Download bloqueado quando canDownload=false
+[ ] Preview manifest sem URL raw exposta
+
+UPLOAD
+[ ] + Novo → Upload arquivo abre seletor e fila no canto
+[ ] Drag arquivo: overlay aparece; soltar inicia upload
+[ ] Análise roda; revisão abre drawer
+[ ] Confirmar: documento aparece na lista
+[ ] Lote e auto-confirm funcionam como antes
+[ ] Sem painel hero de upload na tela
+
+ADMIN E ISOLAMENTO
+[ ] Dashboard acessível mas não é home
+[ ] Tracking, Auditoria, Regras, Usuários inalterados
+[ ] Tenant A não vê docs do tenant B
+
+DOCKER
+[ ] compose dev sobe postgres + mongo
+[ ] APIs locais conectam aos containers
+
+================================================================================
+16. COMANDOS DE VALIDAÇÃO
+================================================================================
+
+Alpha (sempre após cada fase):
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+  npm test
+  npm run build
+  npm run lint
+  npx tsc --noEmit
+
+Auth-service:
+  cd ~/Documents/GitHub/doqyn-auth-service
+  npm test
+  npm run build
+  npm run lint
+  npx tsc --noEmit
+
+Docker dev (Fase 0+):
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+  docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up -d
+  docker compose ps
+  docker compose logs mongo --tail 20
+
+Grep útil pré-merge:
+  rg "navigate\\('/upload'\\)" src/
+  rg "path: '/upload'" src/
+  rg "NAV_ITEMS_PRIMARY" src/
+
+================================================================================
+17. ESTIMATIVA DE IMPACTO
+================================================================================
+
+MÉTRICAS:
+  Arquivos novos:        55–75
+  Arquivos modificados:  30–45
+  Arquivos deprecados:   5–8 (rotas, UploadPage, partes DocumentSendPage UI)
+  Linhas movidas:        ~4500–6500
+  Testes novos:          20–30 casos
+  Componentes UI novos:  ~25
+
+RISCO POR ÁREA:
+  Upload/analyze:     ALTO (useBulkUploadQueue)
+  Layout shell:       MÉDIO (WorkspaceLayout novo)
+  Biblioteca lista:   MÉDIO (migração DocumentsPage)
+  Viewer/permissões:  BAIXO (reuso)
+  Docker:             MÉDIO (primeira vez alpha)
+  Auth OAuth:         BAIXO (sem mudança Fase 1)
+
+CALENDÁRIO (1 dev sênior):
+  Fase 0:  1–2 semanas
+  Fase 1:  3–4 semanas
+  Fase 2:  2–3 semanas
+  Fase 3:  2–3 semanas
+  Fase 4:  2 semanas
+  Fase 5:  1–2 semanas
+  Total:   11–16 semanas incluindo QA e buffer
+
+================================================================================
+18. MANUTENÇÃO E LEGIBILIDADE HUMANA
+================================================================================
+
+AÇÕES PLANEJADAS:
+  · Quebrar useBulkUploadQueue em: useQueueState, useAnalyzeStep, useConfirmStep
+  · LibraryPage máximo ~200 linhas; lógica nos hooks
+  · Remover mockData.ts de document-send após migração
+  · Remover UploadPage.tsx órfã
+  · Unificar comentários: português para regra de negócio, inglês para tipos/API
+  · Eliminar comentários óbvios ("// render button")
+  · Nomes: LibraryPage não DocumentsPage; UploadQueue não DocumentSend
+  · design tokens: --gradient-action documentado em tokens.css
+  · shared/ui: migrar components/ui gradualmente (não big-bang)
+
+ARQUIVOS ALVO PARA REDUÇÃO:
+  DocumentSendPage.tsx     → deletar após Fase 2 (lógica em upload/)
+  useBulkUploadQueue.ts    → dividir em 3 hooks
+  DocumentsPage.tsx        → substituído por LibraryPage
+  GovernanceMapCanvas.tsx  → fora do escopo; não mexer agora
+
+================================================================================
+19. CONFIRMAÇÃO FINAL ANTES DE IMPLEMENTAR
+================================================================================
+
+Decisões para stakeholder confirmar:
+
+ 1. Rota canônica /biblioteca com redirect de /documents e /upload?
+ 2. Fase 1: só categorias como pastas inteligentes (sem pasta manual)?
+ 3. Upload de pasta na Fase 2 (não Fase 1)?
+ 4. TopBar global com busca ⌘K em todas as rotas autenticadas?
+ 5. Botão "Enviar" separado da imagem → unificado só em "+ Novo"?
+ 6. Faixa drag fixa da imagem → rejeitada; só overlay on drag + empty state?
+ 7. Widget armazenamento omitido até Fase 4?
+ 8. Dashboard permanece em admin, não é home?
+ 9. Views Compartilhados/Recentes/Favoritos/Lixeira na Fase 4?
+10. Docker dev: infra em compose, APIs em npm run dev?
+11. Feature flag VITE_LIBRARY_V2 para rollout gradual?
+12. Microsoft OAuth permanece desabilitado até Fase 1 estável?
+
+APÓS CONFIRMAÇÃO → iniciar Fase 0 (compose dev + tokens + esqueleto library).
+
+================================================================================
+FIM DO PLANO
+================================================================================

@@ -1,0 +1,21 @@
+
+================================================================================
+Backfill documents.searchMeta
+================================================================================
+Database: doqyn_dev
+Modo: APPLY
+Unset peso morto: sim
+documents_company_dev: scanned=4 need=0 updated=0 noVersion=0 noMeta=0 previewUnset=0 indexUnset=0
+documents_company_alpha_consultoria: scanned=0 need=0 updated=0 noVersion=0 noMeta=0 previewUnset=0 indexUnset=0
+documents_company_horizonte_logistica: scanned=0 need=0 updated=0 noVersion=0 noMeta=0 previewUnset=0 indexUnset=0
+documents_company_metalprime_industrias: scanned=0 need=0 updated=0 noVersion=0 noMeta=0 previewUnset=0 indexUnset=0
+documents_company_nexserv_tecnologia: scanned=0 need=0 updated=0 noVersion=0 noMeta=0 previewUnset=0 indexUnset=0
+
+================================================================================
+TOTAIS
+================================================================================
+Docs: 4
+Precisam backfill: 0
+Atualizados: 0
+Preview unset: 0
+metadataIndex unset: 0

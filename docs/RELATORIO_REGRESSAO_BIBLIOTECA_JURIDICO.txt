@@ -1,0 +1,140 @@
+RELATÓRIO — Regressão Biblioteca / Pasta Jurídico
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. CAUSA RAIZ
+================================================================================
+
+Mismatch entre slug e categoryId real na query ?space=.
+
+O parâmetro ?space= na URL era repassado literalmente para listDocuments como
+categoryId, mas o Mongo armazena classId canônico (ex.: cat_juridico).
+
+Evidência Mongo (documents_company_dev, tenant company_dev):
+- Documento: doc_98b4957e-e272-4102-9010-851ec1018955
+- currentFileName: juridico_ACORDO_DE_CONFIDENCIALIDADE_...pdf
+- classId: cat_juridico
+- className: Jurídico
+- status: active
+- processingStatus: processed
+
+Consultas simuladas:
+- classId = cat_juridico  → 2 documentos
+- classId = juridico (slug) → 0 documentos
+
+A URL /biblioteca?space=juridico (slug) era válida semanticamente mas a API
+filtrava pelo valor errado. O documento continuava visível em Recentes/raiz
+(listagem sem categoryId), mas sumia ao abrir a pasta.
+
+Fatores agravantes corrigidos:
+- keepPreviousData reutilizava lista da raiz ao trocar de pasta (cache visual)
+- Abrir pasta não limpava filtros (q/status) herdados de outra view
+- Filtro "Processado" não incluía processingStatus processed_with_review
+- canUserListDocument exigia canPreview (corrigido para view OU download)
+
+================================================================================
+2. DOCUMENTO NO MONGO
+================================================================================
+
+SIM — 2 documentos jurídicos ativos em documents_company_dev com classId
+cat_juridico. Nenhum dado apagado ou resetado.
+
+================================================================================
+3. listDocuments
+================================================================================
+
+SIM — com categoryId=cat_juridico retorna os 2 documentos.
+NÃO — com categoryId=juridico (slug) retorna lista vazia.
+
+Serviço listDocuments validado via tsx direto no backend.
+
+================================================================================
+4. TIPO DE BUG
+================================================================================
+
+Principal: categoryId / slug (filtro)
+Secundários: cache React Query (keepPreviousData), filtros herdados na URL,
+mapeamento do filtro Processado, listagem atrelada a canPreview.
+
+Renderização/thumbnail NÃO era a causa — cards já tinham fallback de ícone.
+
+================================================================================
+5. CORREÇÕES APLICADAS
+================================================================================
+
+Novo utilitário resolveLibraryCategoryId / findLibraryCategory:
+- Resolve id, slug ou nome → categoryId canônico
+
+buildLibraryDocumentFilters:
+- Usa categorias do tenant para resolver ?space=
+- scope=all + busca remove categoryId (busca em toda biblioteca)
+- libraryListScopeKey para chave de escopo de listagem
+
+useLibraryView:
+- Carrega categorias; normaliza URL slug → id canônico
+- Passa categorias ao builder de filtros
+
+LibraryPage:
+- activeSpace via findLibraryCategory
+- openSpace limpa q/status/type/period/owner/scope ao entrar na pasta
+
+WorkspaceLayout:
+- Drag-and-drop resolve slug para categoryId
+
+useDocuments:
+- Removido keepPreviousData
+- queryKey inclui listScopeKey (não reutiliza cache raiz ↔ pasta)
+
+documentService (mínimo):
+- processingStatus=processed inclui processed_with_review
+
+documentAccess:
+- canUserListDocument permite listar com view OU download (não só preview)
+
+================================================================================
+6. ARQUIVOS ALTERADOS
+================================================================================
+
+src/features/library/utils/resolveLibraryCategory.ts          (novo)
+src/features/library/utils/libraryFilterUtils.ts
+src/features/library/hooks/useLibraryView.ts
+src/features/library/LibraryPage.tsx
+src/features/documents/hooks/useDocuments.ts
+src/app/layout/WorkspaceLayout.tsx
+server/services/documentService.ts
+server/tenancy/documentAccess.ts
+tests/library-category-space.test.ts                          (novo)
+tests/library-search-filters.test.ts
+tests/library-explorer.test.ts
+
+================================================================================
+7. TESTES ADICIONADOS
+================================================================================
+
+tests/library-category-space.test.ts:
+1. slug juridico → cat_juridico
+2. pasta com slug usa categoryId real na API
+3. status Todos sem processingStatus
+4. filtro Processado mapeado
+5. scope=all remove categoryId na busca global
+6. listScopeKey difere raiz vs pasta
+7. normalização URL em useLibraryView
+8. listScopeKey na query key (sem keepPreviousData)
+9. openSpace limpa filtros
+10. thumbnail fallback não remove card
+11. canUserListDocument ampliado
+12. backend processed_with_review
+
+================================================================================
+8. COMANDOS
+================================================================================
+
+npm test        → 799 testes passando
+npm run build   → OK
+npm run lint    → OK
+npx tsc --noEmit → OK
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

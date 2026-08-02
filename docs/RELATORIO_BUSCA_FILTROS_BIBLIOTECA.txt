@@ -1,0 +1,220 @@
+RELATÓRIO — Busca e filtros profissionais da Biblioteca
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+
+================================================================================
+1. RESUMO
+================================================================================
+
+A barra superior e os filtros da Biblioteca passaram a ser funcionais de ponta
+a ponta: estado na URL, debounce na busca, listDocuments com filtros reais no
+backend, chips removíveis, ordenação com direção e integração com React Query.
+
+Restrições respeitadas: sem alteração em upload/analyze/confirm, R2, objectKey,
+viewer, preview/cache/thumbnails, context menu ou navegação por pasta.
+
+================================================================================
+2. BUSCA (TopBar)
+================================================================================
+
+Implementação: GlobalSearchCommand.tsx + useDebouncedValue (400ms)
+
+Comportamento:
+- Digitar na Biblioteca atualiza ?q= após debounce (sem reload).
+- Enter navega/confirma /biblioteca?q=termo (replace=false no histórico).
+- ESC limpa busca ou remove foco.
+- Botão X limpa imediatamente (evita re-aplicar termo antigo via debounce).
+- Loading discreto via useIsFetching(['documents']) na WorkspaceTopBar.
+- Fora da Biblioteca, Enter redireciona para /biblioteca?q=.
+
+Placeholder atualizado: "Buscar documentos por nome, categoria ou proprietário..."
+(pessoas/pastas como entidades separadas permanecem pendentes — API só documentos).
+
+================================================================================
+3. CAMPOS PESQUISADOS (backend)
+================================================================================
+
+server/utils/documentListQuery.ts — buildDocumentSearchOrClause:
+- title, currentFileName, displayName, originalFileName
+- recommendedFileName, aiSuggestedFileName, finalFileName
+- className (categoria), documentType
+- ownerName, createdBy.displayName, createdBy.email
+- metadata.tags
+
+Regex sanitizado (escapeRegexLiteral, máx. 120 chars) — sem text index Mongo ainda.
+
+Pendentes / limitações:
+- Metadados extraídos além de tags (campos dinâmicos de extração).
+- Descrição dedicada (se existir no schema futuro).
+- Busca por pessoas como entidade (só match em owner/createdBy nos documentos).
+- Filtro "Erro" — processingStatus no schema não inclui error; não exposto na UI.
+
+================================================================================
+4. ESCOPO: RAIZ VS PASTA
+================================================================================
+
+URL:
+- /biblioteca?q=contrato
+- /biblioteca?space={categoryId}&q=nda
+- /biblioteca?space=juridico&q=nda&scope=all  → busca em toda a biblioteca
+
+buildLibraryDocumentFilters:
+- Raiz: categoryId = state.space (se em pasta) ou vazio.
+- Pasta + scope≠all: categoryId = state.space.
+- Pasta + scope=all: categoryId omitido (busca global).
+
+SearchScopeHint: "Buscando em {pasta}" + link "Buscar em toda a Biblioteca".
+
+================================================================================
+5. FILTROS FUNCIONAIS
+================================================================================
+
+A. Status (FilterMenu / chips)
+   - Todos, Ativo, Processado, Em análise, Aguardando revisão, Revisão necessária, Arquivado
+   - Mapeamento UI → API (libraryFilterUtils.mapStatusToApiFilters):
+     * processed → status=active + processingStatus=processed
+     * analyzing → processingStatus=pending
+     * pending_review / review_required → processingStatus=requires_review
+     * archived → status=archived
+     * active → status=active
+
+B. Categoria/Pasta
+   - Via ?space= (navegação existente). Filtro de categoria separado não duplicado
+     quando já dentro da pasta.
+
+C. Tipo (TypeFilterMenu): pdf | image | other — backend buildDocumentTypeClause
+
+D. Período (PeriodFilterMenu): today | 7d | 30d | month — filtra updatedAt (from/to ISO)
+
+E. Proprietário (OwnerFilterMenu): me | others — backend owner=me|others + ownerUserId
+
+Pendentes:
+- Filtro "Erro" (sem campo backend confiável).
+- Período personalizado (from/to na URL) — não implementado nesta fase.
+- Lista dinâmica de categorias no filtro (usa pastas via ?space=).
+
+================================================================================
+6. ORDENAÇÃO
+================================================================================
+
+URL: sort + direction
+Opções: Mais recentes/antigos, Nome A–Z/Z–A, Categoria, Status, Proprietário
+
+Backend: resolveDocumentListSort — campos permitidos:
+updatedAt, currentFileName (name), status, ownerUserId (owner), className (category)
+
+Fallback client-side: sortDocuments.ts (coleções virtuais e pós-filtro local).
+
+================================================================================
+7. URL COMO FONTE DE ESTADO
+================================================================================
+
+useLibraryRouteState persiste:
+q, space, status, type, period, owner, scope, sort, direction, view
+
+clearFilters() remove q, status, type, period, owner, scope (mantém sort/view/space).
+
+Exemplo:
+/biblioteca?space=juridico&q=nda&status=active&type=pdf&sort=updatedAt&direction=desc&view=grid
+
+================================================================================
+8. BACKEND
+================================================================================
+
+Arquivos:
+- server/utils/documentListQuery.ts (novo)
+- server/services/documentService.ts — listDocuments refatorado
+- api/documents/index.ts — query params expandidos
+
+GET /api/documents aceita:
+search, status, processingStatus, type, categoryId, from, to, sort, direction,
+owner, excludeArchived, limit, cursor
+
+Segurança:
+- tenant isolation (tenantScopeFilterFromContext)
+- permissões pós-query (canUserListDocument)
+- sort whitelist, direction asc|desc
+- limit 1–100
+- regex escapado
+- excludeArchived só quando status não definido
+- lixeira: status=archived forçado no frontend
+
+================================================================================
+9. CACHE / PERFORMANCE
+================================================================================
+
+useDocuments:
+- queryKey: ['documents', tenantId, serializeDocumentFilters(filters)]
+- placeholderData: keepPreviousData
+- staleTime: 30s
+
+viewMode não entra na query key — alternar grade/lista não refaz fetch.
+Thumbnails usam cache existente (documentId/versionId) — inalterado.
+
+================================================================================
+10. UI/UX
+================================================================================
+
+- ExplorerFilterChips na raiz (browse sem busca ativa).
+- ExplorerToolbarActions com filtros completos em pasta/busca/coleções virtuais.
+- ActiveFilterChips com remoção individual + "Limpar filtros".
+- Título "Resultados da busca" + subtítulo com contagem quando ?q= ativo.
+- Empty states diferenciados (sem resultados vs pasta vazia).
+- Indicador "Atualizando…" durante isFetching.
+
+================================================================================
+11. ARQUIVOS CRIADOS / ALTERADOS (principais)
+================================================================================
+
+Novos:
+- src/hooks/useDebouncedValue.ts
+- src/features/library/utils/libraryFilterUtils.ts
+- src/features/library/utils/libraryFilterOptions.ts
+- src/features/library/components/ActiveFilterChips.tsx
+- src/features/library/components/SearchScopeHint.tsx
+- src/features/library/components/TypeFilterMenu.tsx
+- src/features/library/components/PeriodFilterMenu.tsx
+- src/features/library/components/OwnerFilterMenu.tsx
+- server/utils/documentListQuery.ts
+- tests/library-search-filters.test.ts
+
+Alterados:
+- GlobalSearchCommand.tsx, WorkspaceTopBar.tsx
+- useLibraryRouteState.ts, useLibraryView.ts, useLibraryExplorerMode.ts
+- LibraryPage.tsx, ExplorerPageHeader.tsx, ExplorerToolbarActions.tsx
+- FilterMenu.tsx, SortMenu.tsx, ExplorerFilterChips.tsx
+- useDocuments.ts, document-library.ts (types)
+- documentService.ts, api/documents/index.ts
+- Vários testes atualizados
+
+================================================================================
+12. TESTES / BUILD
+================================================================================
+
+npm test    → 762 pass, 0 fail
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+Novos testes: library-search-filters.test.ts (frontend + documentListQuery backend)
+
+================================================================================
+13. CHECKLIST MANUAL (para QA)
+================================================================================
+
+[ ] Abrir /biblioteca e buscar "NDA" — resultados sem reload
+[ ] Limpar busca (X ou ESC)
+[ ] Entrar em pasta (Jurídico) e buscar dentro da pasta
+[ ] "Buscar em toda a Biblioteca" expande escopo
+[ ] Filtro status Ativo + tipo PDF
+[ ] Ordenar por nome A–Z — URL sort=name&direction=asc
+[ ] Limpar filtros via chips
+[ ] Termo inexistente → empty state correto
+[ ] Alternar grade/lista sem refetch visível
+[ ] Recentes / Favoritos / Compartilhados / Lixeira com filtros
+[ ] Refresh preserva URL
+[ ] Botão voltar do navegador restaura estado
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

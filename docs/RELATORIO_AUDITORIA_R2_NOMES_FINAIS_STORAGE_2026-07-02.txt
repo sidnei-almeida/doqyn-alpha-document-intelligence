@@ -1,0 +1,953 @@
+================================================================================
+DOQYN ALPHA — RELATÓRIO DE AUDITORIA
+Nomenclatura final de arquivos no Cloudflare R2 / Storage local
+================================================================================
+
+Data da auditoria : 02 de julho de 2026
+Repositório         : doqyn-alpha-document-intelligence
+Escopo              : Workflow upload → análise IA → confirm → storage definitivo
+Autor               : Auditoria automatizada (sessão de implementação + revisão)
+Status geral        : IMPLEMENTAÇÃO PARCIAL — fluxo principal ~85% completo
+
+Referências cruzadas:
+  - docs/DOCUMENT_STORAGE_FLOW.md          (DESATUALIZADO — ver seção 15)
+  - reports/DOQYN_R2_DOCUMENT_FLOW_AUDIT_2026-07-01.txt  (histórico pré-refatoração)
+  - reports/DOQYN_TENANT_STORAGE_SCOPE_AUDIT_2026-07-01.txt
+  - docs/TENANT_STORAGE_MODEL.md
+
+================================================================================
+SUMÁRIO
+================================================================================
+
+  1.  Contexto e problema original
+  2.  Objetivo de produto (spec recebida)
+  3.  Arquitetura do fluxo (antes vs depois)
+  4.  Mudanças implementadas (detalhamento por arquivo)
+  5.  Formato de objectKey esperado vs real
+  6.  Campos MongoDB — implementado vs spec
+  7.  Sanitização e segurança de nomes
+  8.  Auditoria / tracking documental
+  9.  Download e preview
+ 10.  Frontend — payload e paridade com backend
+ 11.  Upload legado (POST /api/documents/upload)
+ 12.  Compatibilidade com documentos antigos
+ 13.  Matriz de critérios de aceite (spec × status)
+ 14.  Cobertura de testes automatizados
+ 15.  Dívida documental
+ 16.  Pendências — o que falta implementar (priorizado)
+ 17.  Avaliação de riscos
+ 18.  Checklist de validação manual
+ 19.  Comandos de validação executados
+ 20.  Recomendações e próximos passos
+
+================================================================================
+1. CONTEXTO E PROBLEMA ORIGINAL
+================================================================================
+
+SINTOMA REPORTADO
+-----------------
+No Cloudflare R2, documentos confirmados apareciam com nomes genéricos:
+
+  documents/{documentId}/versions/{versionId}/original.pdf
+  documents/{documentId}/versions/{versionId}/preview/preview.pdf
+  (ou variantes equivalentes)
+
+Enquanto no MongoDB o nome final/sugerido pela IA já estava correto
+(finalFileName, recommendedFileName, currentFileName).
+
+CAUSA RAIZ IDENTIFICADA
+-----------------------
+1. PROMOÇÃO NO MOMENTO ERRADO (hipótese inicial do usuário):
+   - O fluxo principal NÃO grava storage definitivo no analyze-pdf.
+   - analyze-pdf grava apenas STAGING temporário.
+   - A promoção para storage definitivo ocorre em confirm-analysis.
+   - Portanto o problema não era "salvar antes da IA" no fluxo principal,
+     e sim a RESOLUÇÃO DO NOME no momento do confirm.
+
+2. BUG NA RESOLUÇÃO DE NOMES (causa confirmada):
+   - resolveStorageFileNames() em modo ai_suggested IGNORAVA input.finalFileName
+     enviado pelo frontend após revisão do usuário.
+   - confirmAnalysisService fazia fallback perigoso:
+       aiSuggestedFileName ?? recommendedFileName ?? originalFileName
+     Quando a IA ainda não tinha nome, caía em originalFileName do upload
+     (frequentemente "original.pdf" ou nome genérico do cliente).
+
+3. DOCUMENTAÇÃO DESATUALIZADA:
+   - docs/DOCUMENT_STORAGE_FLOW.md ainda descreve objectKey como original.pdf
+   - Relatório R2 de 01/07 descreve comportamento pré-refatoração
+
+IMPACTO
+-------
+- Rastreabilidade ruim no bucket R2 (inspeção manual, suporte, auditoria externa)
+- Inconsistência entre Mongo (nome lógico) e storage (nome físico)
+- Confusão em paths do tipo original/original.pdf quando upload é genérico
+
+================================================================================
+2. OBJETIVO DE PRODUTO (SPEC RECEBIDA)
+================================================================================
+
+REGRA CENTRAL
+-------------
+O nome físico do arquivo no storage final deve seguir o nome final do documento.
+
+Fonte da verdade (prioridade):
+  1. Nome sugerido pela IA (após análise)
+  2. Nome original do upload (modo original)
+  3. Nome manual do usuário (modo manual)
+  Conforme namingMode e configurações de revisão.
+
+FORMATO ESPERADO — BUSINESS
+---------------------------
+  documents/{documentId}/versions/{versionId}/original/{storageFileName}
+  documents/{documentId}/versions/{versionId}/preview/{previewStorageFileName}
+
+  Exemplo:
+    .../original/NDA_Confidencialidade_2026-07-02_v1.pdf
+    .../preview/NDA_Confidencialidade_2026-07-02_v1_preview.pdf
+
+FORMATO ESPERADO — INDIVIDUAL (PF)
+----------------------------------
+  individuals/<hash>/documents/{documentId}/versions/{versionId}/original/{storageFileName}
+  individuals/<hash>/documents/{documentId}/versions/{versionId}/preview/{previewStorageFileName}
+
+STAGING (pode permanecer genérico)
+----------------------------------
+  tmp/{jobId}/original.pdf          (R2)
+  staging/{tenant}/{user}/{jobId}/original.pdf   (local legado)
+
+MOMENTO DA MUDANÇA
+------------------
+  analyze-pdf  → staging genérico OK
+  confirm-analysis → resolver nomes + promover + preview + Mongo
+
+================================================================================
+3. ARQUITETURA DO FLUXO (ANTES VS DEPOIS)
+================================================================================
+
+ANTES (comportamento problemático)
+----------------------------------
+  [Upload PDF]
+       │
+       ▼
+  analyze-pdf ──► tmp/{jobId}/original.pdf  (staging — OK)
+       │
+       ▼
+  confirm-analysis
+       │ resolveStorageFileNames (bug: ignora finalFileName)
+       │ fallback → originalFileName ("original.pdf")
+       ▼
+  R2: .../original/original.pdf   ← ERRADO para novos docs
+  Mongo: finalFileName = "NDA_..."  ← correto, inconsistente
+
+DEPOIS (comportamento atual implementado)
+-----------------------------------------
+  [Upload PDF]
+       │
+       ▼
+  analyze-pdf ──► tmp/{jobId}/original.pdf  (staging — inalterado)
+       │         retorna recommendedFileName, jobId, fileHash
+       ▼
+  [UI revisão: usuário confirma namingMode + nome]
+       │
+       ▼
+  confirm-analysis
+       │ resolveStorageFileNames(finalFileName prioritário)
+       │ loadAnalysisStaging(jobId) → buffer
+       │ storeUploadedDocumentFile(storageFileName)
+       │ generateDocumentPreviewForVersion(previewStorageFileName)
+       │ Mongo insert + audit
+       │ deleteAnalysisStaging(jobId)
+       ▼
+  R2: .../original/NDA_Confidencialidade_2026-07-02_v1.pdf
+  R2: .../preview/NDA_Confidencialidade_2026-07-02_v1_preview.pdf
+  Mongo: storageFileName, previewStorageFileName, objectKeys alinhados
+
+DIAGRAMA DE SEQUÊNCIA (fluxo principal)
+---------------------------------------
+
+  Frontend                analyze-pdf           confirm-analysis         R2
+     │                        │                       │                  │
+     │── POST multipart ─────►│                       │                  │
+     │                        │── storeAnalysisStaging►│── tmp/.../original.pdf
+     │◄─ jobId, recommended ──│                       │                  │
+     │                        │                       │                  │
+     │ [revisão UI]           │                       │                  │
+     │── POST JSON ──────────────────────────────────►│                  │
+     │   finalFileName, namingMode, jobId             │                  │
+     │                        │                       │── copy/put ─────►│
+     │                        │                       │   .../original/{nome}.pdf
+     │                        │                       │── preview put ──►│
+     │                        │                       │   .../preview/{nome}_preview.pdf
+     │◄─ documentId, storageStatus ───────────────────│                  │
+
+================================================================================
+4. MUDANÇAS IMPLEMENTADAS (DETALHAMENTO POR ARQUIVO)
+================================================================================
+
+4.1 server/utils/resolveStorageFileNames.ts  [NÚCLEO DA CORREÇÃO]
+--------------------------------------------------------------------
+Status: IMPLEMENTADO (refatorado nesta sessão)
+
+Funções exportadas:
+  - resolveStorageFileNames(input) → ResolvedStorageFileNames
+  - buildPreviewStorageFileName(storageFileName) → "{base}_preview.pdf"
+  - buildStorageFileNameFallback(documentId, versionLabel) → "Documento_{token}_v{n}.pdf"
+
+Input aceito:
+  originalFileName, aiSuggestedFileName, namingMode, manualName,
+  finalFileName, documentId, versionLabel
+
+Lógica por modo:
+  ┌─────────────────┬──────────────────────────────────────────────────────┐
+  │ namingMode      │ Resolução de finalFileName                           │
+  ├─────────────────┼──────────────────────────────────────────────────────┤
+  │ ai_suggested    │ 1) finalFileName explícito (prioridade máxima)       │
+  │                 │ 2) aiSuggestedFileName sanitizado                    │
+  │                 │ 3) fallback Documento_{docId}_v{version}.pdf         │
+  ├─────────────────┼──────────────────────────────────────────────────────┤
+  │ original        │ 1) finalFileName explícito se presente               │
+  │                 │ 2) originalFileName sanitizado                       │
+  ├─────────────────┼──────────────────────────────────────────────────────┤
+  │ manual          │ manualName ou finalFileName (obrigatório)            │
+  └─────────────────┴──────────────────────────────────────────────────────┘
+
+Sanitização aplicada (sanitizeStorageFileName):
+  - stripEmailFromFileName (regex e-mail)
+  - sanitizeFileNameSegment (path traversal, caracteres inválidos, acentos)
+  - ensurePdfExtension + limitFileNameLength (180 chars)
+  - stripSensitiveIdentifiersFromFileName (CPF 11 dígitos, CNPJ 14 dígitos)
+  - INVALID_STORAGE_NAMES: ".", "..", ".pdf", "documento.pdf"
+  - NÃO inclui "original.pdf" na lista de inválidos (GAP — ver seção 16)
+
+Saída:
+  storageFileName      === finalFileName
+  previewStorageFileName === buildPreviewStorageFileName(storageFileName)
+
+
+4.2 server/services/confirmAnalysisService.ts  [PONTO DE PROMOÇÃO]
+--------------------------------------------------------------------
+Status: IMPLEMENTADO (ajustado nesta sessão)
+
+Função principal: confirmAnalysisPersistence()
+
+Schema Zod (confirmAnalysisSchema) — campos de naming:
+  originalFileName          (obrigatório)
+  recommendedFileName       (opcional)
+  aiSuggestedFileName       (opcional)
+  namingMode                (ai_suggested | original | manual, default ai_suggested)
+  finalFileName             (opcional)
+  selectedFileName          (opcional)
+  jobId                     (obrigatório para promoção com storage)
+
+Correções aplicadas:
+  ANTES:
+    const aiSuggestedFileName =
+      data.aiSuggestedFileName ?? data.recommendedFileName ?? data.originalFileName;
+
+  DEPOIS:
+    const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
+    Validação ai_suggested exige finalFileName OU aiSuggestedFileName (não originalFileName)
+
+  resolveStorageFileNames agora recebe documentId e versionLabel para fallback.
+
+Fluxo interno:
+  1. Validar classificação, permissões, revisão manual se necessário
+  2. resolveStorageFileNames()
+  3. persistConfirmedVersionFile():
+       - loadAnalysisStaging(jobId, expectedSha256)
+       - storeUploadedDocumentFile(storageFileName)
+       - deleteAnalysisStaging(jobId)
+  4. generateDocumentPreviewForVersion(previewStorageFileName)
+  5. Insert Mongo: document, document_versions, processing_jobs
+  6. Rollback R2 se insert Mongo falhar (deleteDocumentVersion)
+  7. Audit logs (review_confirmed, version_created, storage_promoted, preview_*)
+
+Campos Mongo gravados na versão (document_versions):
+  originalFileName
+  recommendedFileName (= aiSuggestedFileName resolvido)
+  aiSuggestedFileName
+  selectedFileName (se manual)
+  finalFileName
+  namingMode
+  storageFileName          ← NOVO/alinhado
+  previewStorageFileName   ← NOVO/alinhado
+  storage.primary.objectKey
+  storage.preview.objectKey
+
+Campos Mongo gravados no documento (documents):
+  currentFileName = resolvedNames.finalFileName
+  (NÃO grava originalFileName, aiSuggestedFileName, namingMode no documento — GAP)
+
+
+4.3 server/storage/storageKeys.ts  [CONSTRUÇÃO DE OBJECT KEYS]
+---------------------------------------------------------------
+Status: JÁ EXISTIA — formato correto, sem alteração nesta sessão
+
+buildDocumentVersionObjectKey:
+  {basePrefix}/{keyPrefix}/{documentId}/versions/{versionId}/original/{storageFileName}
+
+buildDocumentPreviewObjectKey:
+  {basePrefix}/{keyPrefix}/{documentId}/versions/{versionId}/preview/{previewStorageFileName}
+
+buildAnalysisStagingKey:
+  {basePrefix}/tmp/{jobId}/original.{ext}
+
+assertSafeStorageFileName:
+  Regex: ^[a-zA-Z0-9_.-]+\.pdf$
+  Rejeita path traversal (.., /, \)
+
+buildDocumentVersionStorageKey (local only, inclui tenantId no path):
+  documents/{tenantId}/{documentId}/versions/{versionId}/original/{storageFileName}
+
+
+4.4 server/storage/r2/r2StorageProvider.ts
+--------------------------------------------
+Status: JÁ CORRETO — usa buildDocumentVersionObjectKey + input.storageFileName
+
+storeDocumentVersion → PutObject com key derivada de storageFileName
+storeAnalysisStaging → buildAnalysisStagingKey (genérico)
+
+
+4.5 server/storage/localStorageProvider.ts
+------------------------------------------
+Status: JÁ CORRETO para storage final; staging usa path legado staging/...
+
+
+4.6 server/services/documentFileService.ts
+------------------------------------------
+Status: SEM ALTERAÇÃO — já passava storageFileName ao provider
+
+storeUploadedDocumentFile({ storageFileName }) → persistDocumentVersionFile
+
+readDocumentVersionFile:
+  - Lê storage.primary.objectKey do Mongo (fonte da verdade)
+  - NÃO reconstrói objectKey do zero
+  - Content-Disposition usa versionDoc.finalFileName || originalFileName
+
+
+4.7 server/services/documentPreviewService.ts
+---------------------------------------------
+Status: SEM ALTERAÇÃO estrutural — já recebia previewStorageFileName
+
+generateDocumentPreviewForVersion:
+  - buildDocumentPreviewObjectKey(previewStorageFileName)
+  - Lê original via primary.objectKey
+  - Gera PDF com watermark (Ghostscript)
+  - persistDocumentPreviewFile
+
+readDocumentPreviewFile:
+  - Lê storage.preview.objectKey do Mongo
+  - fileName: previewStorageFileName ?? finalFileName_preview ?? 'preview.pdf' (fallback legado)
+
+
+4.8 server/services/documentService.ts  [UPLOAD LEGADO]
+-------------------------------------------------------
+Status: AJUSTE PARCIAL nesta sessão
+
+Mudança:
+  namingMode: 'ai_suggested' → 'original'
+  Passa documentId, versionLabel para fallback
+
+Persistência física: usa resolvedNames.storageFileName ✅
+Mongo version: NÃO grava storageFileName, previewStorageFileName, namingMode ❌
+Mongo document: currentFileName = originalFileName (não resolvedNames) ❌
+Preview: não gera ❌
+
+
+4.9 api/ai/analyze-pdf.ts
+-------------------------
+Status: SEM ALTERAÇÃO — correto por design
+
+- Não grava storage definitivo
+- storeAnalysisStaging com originalFileName do upload (genérico OK)
+- Retorna recommendedFileName da IA
+
+
+4.10 api/documents/download.ts + api/documents/preview.ts
+---------------------------------------------------------
+Status: SEM ALTERAÇÃO — já usam services que leem objectKey do Mongo
+
+download: readDocumentVersionFile → finalFileName no header
+preview:  readDocumentPreviewFile → previewStorageFileName no header
+
+
+4.11 Frontend — src/features/document-send/
+---------------------------------------------
+Status: JÁ ENVIAVA finalFileName — backend é que ignorava
+
+confirmAnalysis.ts:
+  Envia namingMode, finalFileName, selectedFileName, aiSuggestedFileName
+
+resolveFinalFileNameForConfirm (reviewWorkflowSettings.ts):
+  Usa previewFinalFileName (resolveDocumentNaming.ts)
+
+DocumentSendPage.tsx / useBulkUploadQueue.ts:
+  Chamam resolveFinalFileNameForConfirm antes do confirm
+
+================================================================================
+5. FORMATO DE OBJECTKEY — ESPERADO VS REAL
+================================================================================
+
+BUSINESS (basePrefix vazio)
+---------------------------
+  ESPERADO:
+    documents/{documentId}/versions/{versionId}/original/{storageFileName}
+    documents/{documentId}/versions/{versionId}/preview/{previewStorageFileName}
+
+  IMPLEMENTADO: ✅ (via buildDocumentVersionObjectKey / buildDocumentPreviewObjectKey)
+
+INDIVIDUAL / PF (basePrefix opaco)
+----------------------------------
+  ESPERADO:
+    individuals/{hash16}/documents/{documentId}/versions/{versionId}/original/{storageFileName}
+
+  IMPLEMENTADO: ✅ (basePrefix injetado via TenantStorageScope)
+
+STAGING
+-------
+  R2:     tmp/{jobId}/original.pdf
+  Local:  staging/{tenantId}/{ownerUserId}/{jobId}/original.pdf
+
+  IMPLEMENTADO: ✅
+
+NÃO USAR MAIS (storage final)
+-----------------------------
+  .../original.pdf                    ← legado, não gerado para novos confirms
+  .../preview/preview.pdf             ← legado
+  .../preview.pdf (como nome de arquivo) ← legado
+
+  IMPLEMENTADO: ✅ para fluxo confirm — nenhum PutObject final usa esses padrões
+
+EXCEÇÃO RESIDUAL
+----------------
+  Modo namingMode=original + upload com nome "original.pdf"
+  → storageFileName pode ser "original.pdf"
+  → path físico: .../original/original.pdf
+  (pasta "original" + arquivo "original.pdf" — confuso mas tecnicamente válido)
+  Status: NÃO BLOQUEADO — pendência de produto (seção 16.1)
+
+================================================================================
+6. CAMPOS MONGODB — IMPLEMENTADO VS SPEC
+================================================================================
+
+SPEC PEDIA (documento + versão):
+  document.originalFileName
+  document.aiSuggestedFileName
+  document.finalFileName
+  document.namingMode
+  version.originalFileName
+  version.finalFileName
+  version.storageFileName
+  version.previewStorageFileName
+  version.storage.primary.objectKey
+  version.storage.primary.fileName (ou storageFileName)
+  version.storage.preview.objectKey
+  version.storage.preview.fileName (ou previewStorageFileName)
+
+ESTADO ATUAL — MongoDocument (documents):
+  ┌──────────────────────────┬──────────┬─────────────────────────────────────┐
+  │ Campo spec               │ Status   │ Observação                          │
+  ├──────────────────────────┼──────────┼─────────────────────────────────────┤
+  │ originalFileName         │ ❌       │ Não existe no schema MongoDocument  │
+  │ aiSuggestedFileName      │ ❌       │ Não existe no schema MongoDocument  │
+  │ finalFileName            │ ⚠️       │ Apenas currentFileName (equivalente)│
+  │ namingMode               │ ❌       │ Só na versão                        │
+  └──────────────────────────┴──────────┴─────────────────────────────────────┘
+
+ESTADO ATUAL — MongoDocumentVersion (document_versions):
+  ┌──────────────────────────┬──────────┬─────────────────────────────────────┐
+  │ Campo                    │ Status   │ Observação                          │
+  ├──────────────────────────┼──────────┼─────────────────────────────────────┤
+  │ originalFileName         │ ✅       │                                     │
+  │ recommendedFileName      │ ✅       │ Legado, mantido                     │
+  │ aiSuggestedFileName      │ ✅       │ Opcional no tipo                    │
+  │ selectedFileName         │ ✅       │ Opcional                            │
+  │ finalFileName            │ ✅       │                                     │
+  │ namingMode               │ ✅       │ Opcional no tipo                    │
+  │ storageFileName          │ ✅       │ Opcional no tipo                    │
+  │ previewStorageFileName   │ ✅       │ Opcional no tipo                    │
+  │ storage.primary.objectKey│ ✅       │                                     │
+  │ storage.primary.fileName │ ❌       │ MongoStorageSlot não tem fileName   │
+  │ storage.preview.objectKey│ ✅       │                                     │
+  │ storage.preview.fileName │ ❌       │ MongoPreviewStorageSlot sem fileName│
+  └──────────────────────────┴──────────┴─────────────────────────────────────┘
+
+NOTA: storageFileName na versão é suficiente para download/preview porque
+objectKey já contém o nome físico e finalFileName cobre o nome lógico.
+Campos storage.*.fileName seriam redundantes — baixa prioridade.
+
+================================================================================
+7. SANITIZAÇÃO E SEGURANÇA DE NOMES
+================================================================================
+
+REGRAS SPEC vs IMPLEMENTAÇÃO
+  ┌────────────────────────────────────┬──────────┬─────────────────────────┐
+  │ Regra                              │ Backend  │ Frontend (preview UI)   │
+  ├────────────────────────────────────┼──────────┼─────────────────────────┤
+  │ Remover path traversal (/ \)       │ ✅       │ ✅                      │
+  │ Remover caracteres inválidos       │ ✅       │ ✅                      │
+  │ Limitar tamanho (180)              │ ✅       │ ✅                      │
+  │ Forçar extensão .pdf               │ ✅       │ ✅                      │
+  │ Normalizar espaços → _             │ ✅       │ ✅                      │
+  │ Nome vazio → fallback              │ ✅       │ ❌ (mostra "—")         │
+  │ Remover CPF/CNPJ                   │ ✅       │ ❌                      │
+  │ Remover e-mail                     │ ✅       │ ❌                      │
+  │ Bloquear ".", "..", ".pdf"         │ ✅       │ ❌                      │
+  │ Bloquear "original.pdf" genérico   │ ❌       │ ❌                      │
+  │ preventSensitiveDataInFileName     │ N/A      │ Setting existe, não     │
+  │ (setting UI)                       │          │ propagada ao confirm    │
+  └────────────────────────────────────┴──────────┴─────────────────────────┘
+
+RISCO DE DIVERGÊNCIA UI vs R2
+-----------------------------
+O usuário pode ver na tela um nome com CPF parcial ou e-mail, mas o servidor
+grava versão sanitizada diferente. Exemplo:
+  UI:  "NDA_12345678901_Acme.pdf"
+  R2:  "NDA_Acme.pdf"
+
+Isso é intencional para segurança no backend, mas a UI não reflete a sanitização.
+
+================================================================================
+8. AUDITORIA / TRACKING DOCUMENTAL
+================================================================================
+
+EVENTOS IMPLEMENTADOS NO CONFIRM
+---------------------------------
+  document.review_confirmed     — metadata com namingMode, flags has*
+  document.version_created      — storageStatus
+  document.storage_promoted     — storageFileName, previewStorageFileName, namingMode
+  document.preview_generated    — previewStorageFileName
+  document.preview_failed       — código de erro
+
+EVENTO NÃO EMITIDO
+------------------
+  document.filename_updated     — definido em documentAuditTypes.ts mas NUNCA emitido
+                                  Deveria disparar quando usuário altera nome sugerido
+                                  (changes em review_confirmed cobre parcialmente)
+
+METADATA DE AUDIT — SPEC vs REAL
+---------------------------------
+  ┌─────────────────────────┬──────────────────────────────────────────────────┐
+  │ Campo spec              │ Status                                           │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ originalFileName        │ ❌ Removido por sanitizeAuditMetadata            │
+  │ aiSuggestedFileName     │ ⚠️ Em changes[] com valor cru (não sanitizado)   │
+  │ finalFileName           │ ⚠️ Em changes[] com valor cru                    │
+  │ storageFileName         │ ✅ Em storage_promoted (NÃO bloqueado)           │
+  │ previewStorageFileName  │ ✅ Em storage_promoted / preview_generated       │
+  │ namingMode              │ ✅                                               │
+  │ originalObjectKey       │ ❌ objectKey bloqueado em sanitizeAuditMetadata  │
+  │ previewObjectKey        │ ❌ idem                                          │
+  │ documentId, versionId   │ ✅ Campos top-level do evento                    │
+  │ actor                   │ ✅ via buildDocumentAuditContext                 │
+  └─────────────────────────┴──────────────────────────────────────────────────┘
+
+POLÍTICA sanitizeAuditMetadata (server/utils/sanitizeAuditMetadata.ts):
+  REMOVE: objectKey, storageKey, path, url, finalFileName, originalFileName, ...
+  PERMITE: storageFileName, previewStorageFileName (não estão na blocklist)
+  ARRAYS (changes): passam SEM sanitização recursiva dos valores
+
+CONTRADIÇÃO DE POLÍTICA
+-----------------------
+  - objectKey é bloqueado (correto para segurança)
+  - storageFileName é permitido (pode conter dados sensíveis residualmente)
+  - changes[].after.finalFileName persiste com nome completo
+
+Recomendação: alinhar política — hash ou flags para nomes em audit (seção 16.4)
+
+================================================================================
+9. DOWNLOAD E PREVIEW
+================================================================================
+
+DOWNLOAD — GET /api/documents/download
+---------------------------------------
+  Fonte objectKey: Mongo storage.primary.objectKey ✅
+  Não reconstrói path fixo antigo ✅
+  Nome no header: finalFileName || originalFileName ✅
+  Compatível com objectKey legado .../original.pdf ✅ (lê o que está salvo)
+  Audit: document.downloaded (sem expor objectKey) ✅
+
+PREVIEW — GET /api/documents/preview
+-------------------------------------
+  Fonte objectKey: Mongo storage.preview.objectKey ✅
+  Geração: apenas no confirm-analysis (não no analyze-pdf) ✅
+  Nome no header: previewStorageFileName com fallbacks ✅
+  Fallback 'preview.pdf' apenas se campos Mongo ausentes (docs antigos) ⚠️
+
+================================================================================
+10. FRONTEND — PAYLOAD E PARIDADE COM BACKEND
+================================================================================
+
+FLUXO DE CONFIRMAÇÃO (correto)
+------------------------------
+  1. analyzePdf() → recommendedFileName, jobId, fileHash
+  2. resolveFinalFileNameForConfirm() → finalFileName para UI e confirm
+  3. confirmAnalysis({ finalFileName, namingMode, selectedFileName, ... })
+
+ARQUIVOS RELEVANTES:
+  src/features/document-send/services/confirmAnalysis.ts
+  src/features/document-send/utils/reviewWorkflowSettings.ts
+  src/features/document-send/utils/resolveDocumentNaming.ts
+  src/features/document-send/DocumentSendPage.tsx
+  src/features/document-send/hooks/useBulkUploadQueue.ts
+
+GAP: previewFinalFileName (frontend) ≠ resolveStorageFileNames (backend)
+  - Frontend não aplica strip CPF/CNPJ/e-mail
+  - Setting preventSensitiveDataInFileName não afeta previewFinalFileName
+  - Setting não é enviada no payload de confirm
+  - Backend sempre faz strip em sanitizeStorageFileName
+
+GAP: DocumentsPage / Dashboard ainda usam MOCK_DOCUMENTS
+  - Listagem não reflete documentos reais confirmados
+  - Download na UI principal pode não estar exercitando fluxo real
+
+================================================================================
+11. UPLOAD LEGADO (POST /api/documents/upload)
+================================================================================
+
+Arquivo: server/services/documentService.ts → api/documents/upload.ts
+
+NÃO é o fluxo principal (Document Send usa analyze + confirm).
+
+Estado após ajuste parcial:
+  ✅ Usa resolveStorageFileNames com namingMode 'original'
+  ✅ Grava arquivo físico com storageFileName resolvido
+  ❌ Mongo version sem storageFileName, previewStorageFileName, namingMode
+  ❌ Mongo document.currentFileName = originalFileName (deveria ser finalFileName)
+  ❌ version.finalFileName = displayName (pode divergir de resolvedNames)
+  ❌ Sem geração de preview
+  ❌ IDs nanoid() sem prefixo doc_/ver_ (inconsistente com confirm)
+  ⚠️ Grava storage definitivo NO UPLOAD (sem passar por IA) — aceitável para
+     legado, mas metadata incompleta prejudica download/auditoria
+
+================================================================================
+12. COMPATIBILIDADE COM DOCUMENTOS ANTIGOS
+================================================================================
+
+LEITURA
+-------
+  readDocumentVersionFile e readDocumentPreviewFile usam objectKey salvo no Mongo.
+  Documentos com .../original.pdf continuam funcionando se objectKey antigo existir.
+  Teste: tests/tenant-storage-scope.test.ts — "download legado respeita bucketAlias"
+
+ESCRITA (novos documentos)
+--------------------------
+  Fluxo confirm gera paths com {storageFileName} — não sobrescreve legado.
+
+MIGRAÇÃO
+--------
+  ❌ NÃO EXISTE script de migração para renomear objetos R2 legados
+  ❌ NÃO EXISTE backfill Mongo para storageFileName em versões antigas
+  Script existente db:fix-version-storage usa path DEV legado
+    (dev/{tenant}/documents/{doc}/v{n}.pdf) — NÃO alinhado ao schema atual
+
+BUCKETS
+-------
+  Spec: não apagar objetos/buckets — respeitado ✅
+  Mistura de convenções no mesmo bucket é esperada até migração manual
+
+================================================================================
+13. MATRIZ DE CRITÉRIOS DE ACEITE (SPEC × STATUS)
+================================================================================
+
+  #  Critério                                              Status    Notas
+  --  ---------------------------------------------------  --------  -------------------------
+  1   Novos uploads não salvam final como original.pdf     ✅        Via confirm + resolver
+  2   Original R2 usa nome final sanitizado                ✅        storageFileName no path
+  3   Preview R2 usa nome + _preview                       ✅        previewStorageFileName
+  4   Mongo salva finalFileName, storageFileName, keys     ✅        Na versão; doc parcial
+  5   Download funciona                                    ✅        Lê objectKey Mongo
+  6   Preview funciona                                     ✅        Lê preview.objectKey
+  7   Documentos antigos não quebram                       ✅        objectKey salvo
+  8   Staging temporário genérico OK                       ✅        tmp/.../original.ext
+  9   CPF/CNPJ/e-mail não entram no nome físico            ✅        Backend strip
+ 10   Testes/build/lint/tsc passam                         ✅        347 testes; lint 1 pré-existente
+ 11   Promoção só após IA/usuário decidir nome             ✅        confirm-analysis
+ 12   Individual usa basePrefix + filename                 ✅        Testado
+ 13   Business sem basePrefix                              ✅        Testado
+ 14   buildPreviewStorageFileName → Nome_preview.pdf       ✅        Testado
+ 15   Audit storage_promoted com nomes                     ⚠️        Sem objectKey (bloqueado)
+ 16   document.filename_updated quando usuário altera      ❌        Não implementado
+ 17   Paridade UI/backend nos nomes                        ❌        Frontend sem strip
+ 18   document.* naming fields no Mongo                    ⚠️        Só currentFileName
+ 19   storage.primary.fileName no schema                   ❌        Não adicionado
+ 20   Migração objectKeys legados                          ❌        Não existe
+
+================================================================================
+14. COBERTURA DE TESTES AUTOMATIZADOS
+================================================================================
+
+TESTES DA SPEC (15 obrigatórios)
+---------------------------------
+  1.  confirm-analysis objectKey com storageFileName
+      ⚠️ Teste indireto via storeUploadedDocumentFile + resolveStorageFileNames
+      ❌ Sem teste integrado de confirmAnalysisPersistence com Mongo mock
+
+  2.  confirm-analysis preview com _preview
+      ✅ tests/document-preview.test.ts, resolve-storage-file-names.test.ts
+
+  3.  Não usa original.pdf como objectKey final
+      ✅ tests/resolve-storage-file-names.test.ts
+      ⚠️ Exceto modo original com arquivo literal "original.pdf"
+
+  4.  Staging tmp/{jobId}/original.pdf
+      ✅ tests/document-storage-flow.test.ts, tenant-storage-scope.test.ts
+
+  5.  Nome IA sanitizado
+      ✅ tests/resolve-storage-file-names.test.ts
+
+  6.  Nome manual sanitizado
+      ✅ tests/resolve-storage-file-names.test.ts
+
+  7.  CPF/CNPJ/e-mail removidos
+      ✅ tests/resolve-storage-file-names.test.ts, document-naming-sensitive.test.ts
+
+  8.  Download usa objectKey Mongo
+      ✅ Implícito em documentFileService + tenant-storage-scope (legado)
+
+  9.  Preview usa storage.preview.objectKey
+      ✅ document-preview.test.ts
+
+ 10.  Legado objectKey antigo funciona
+      ✅ tests/tenant-storage-scope.test.ts L301+
+
+ 11.  Individual basePrefix
+      ✅ tests/resolve-storage-file-names.test.ts, tenant-storage-scope.test.ts
+
+ 12.  Business sem basePrefix
+      ✅ tests/tenant-storage-scope.test.ts
+
+ 13.  buildPreviewStorageFileName
+      ✅ tests/resolve-storage-file-names.test.ts
+
+ 14.  storageFileName persistido Mongo
+      ⚠️ Código em confirmAnalysisService; sem assert em teste integrado
+
+ 15.  Audit storage_promoted
+      ❌ Sem teste automatizado do payload de audit
+
+ARQUIVOS DE TESTE RELEVANTES
+----------------------------
+  tests/resolve-storage-file-names.test.ts     — 12 casos (expandido nesta sessão)
+  tests/document-storage-flow.test.ts          — staging + promoção local
+  tests/document-preview.test.ts             — keys e geração preview
+  tests/document-naming-sensitive.test.ts      — IA naming + strip
+  tests/tenant-storage-scope.test.ts           — R2 scoped + legado
+  tests/review-workflow-settings.test.ts       — frontend naming policy
+  scripts/r2-smoke-test.ts                     — smoke manual R2
+
+GAPS DE TESTE (prioridade)
+--------------------------
+  P1 — confirmAnalysisPersistence integrado (storage + Mongo + audit)
+  P2 — documentService.uploadDocument naming + Mongo fields
+  P3 — Paridade previewFinalFileName vs resolveStorageFileNames
+  P4 — Download API Content-Disposition com finalFileName
+  P5 — Audit: storageFileName em storage_promoted; changes sanitization
+  P6 — Modo original + arquivo "original.pdf" → comportamento esperado
+
+RESULTADO ÚLTIMA EXECUÇÃO (02/07/2026)
+--------------------------------------
+  npm test        → 347 passed, 0 failed
+  npm run build   → OK
+  npx tsc --noEmit → OK
+  npm run r2:env-check → OK
+  npm run lint    → 1 erro pré-existente (scripts/demo-seed/syncMembers.ts)
+
+================================================================================
+15. DÍVIDA DOCUMENTAL
+================================================================================
+
+ARQUIVO                                    PROBLEMA
+-----------------------------------------  ------------------------------------
+docs/DOCUMENT_STORAGE_FLOW.md              Linhas 17-18, 62, 76-77 descrevem
+                                           objectKey como original.pdf — INCORRETO
+
+reports/DOQYN_R2_DOCUMENT_FLOW_AUDIT_      Seções 6.6, 8.4, 13 — comportamento
+2026-07-01.txt                             pré-refatoração; tratar como histórico
+
+docs/RELATORIO_FIX_DOCUMENT_VERSION_       Path dev legado não alinhado ao schema
+STORAGE.txt                                atual de versions/{versionId}/original/
+
+Este relatório (RELATORIO_AUDITORIA_R2_    Fonte de verdade pós-implementação
+NOMES_FINAIS_STORAGE_2026-07-02.txt)
+
+AÇÃO RECOMENDADA: Atualizar DOCUMENT_STORAGE_FLOW.md na próxima sprint.
+
+================================================================================
+16. PENDÊNCIAS — O QUE FALTA IMPLEMENTAR (PRIORIZADO)
+================================================================================
+
+─── PRIORIDADE ALTA ───────────────────────────────────────────────────────────
+
+16.1 Bloquear "original.pdf" como storageFileName
+     Mesmo em modo original, uploads genéricos não devem gerar
+     .../original/original.pdf
+     Ação: adicionar "original.pdf" a INVALID_STORAGE_NAMES ou forçar fallback
+     Arquivo: server/utils/resolveStorageFileNames.ts
+
+16.2 Paridade frontend/backend na sanitização de nomes
+     Opções:
+       A) Extrair sanitizeStorageFileName para pacote compartilhado
+       B) Endpoint de preview de nome server-side
+       C) Replicar strip CPF/CNPJ/e-mail em resolveDocumentNaming.ts
+     Arquivos: src/features/document-send/utils/resolveDocumentNaming.ts
+               server/utils/resolveStorageFileNames.ts
+
+16.3 Teste integrado confirmAnalysisPersistence
+     Mock Mongo + storage local; assert objectKey, campos version, audit events
+     Arquivo novo sugerido: tests/confirm-analysis-storage.test.ts
+
+16.4 Completar metadata Mongo no upload legado
+     Gravar storageFileName, previewStorageFileName, namingMode, currentFileName
+     Arquivo: server/services/documentService.ts
+
+─── PRIORIDADE MÉDIA ──────────────────────────────────────────────────────────
+
+16.5 Emitir document.filename_updated
+     Quando buildAuditChangeSet detectar alteração de finalFileName/selectedFileName
+     vs aiSuggestedFileName no confirm
+     Arquivo: server/services/confirmAnalysisService.ts
+
+16.6 Wire preventSensitiveDataInFileName
+     analyze-pdf → generateRecommendedFileName já suporta flag
+     Propagar setting do frontend no analyze ou confirm
+     Arquivos: server/ai/services/analyzePdfService.ts,
+               src/features/document-send (payload)
+
+16.7 Sanitizar audit changes[] e revisar storageFileName em audit
+     Estender sanitizeAuditMetadata para arrays ou hash de nomes
+     Arquivo: server/utils/sanitizeAuditMetadata.ts
+
+16.8 Campos naming no MongoDocument (opcional)
+     originalFileName, namingMode no documento raiz para queries sem join
+     Arquivo: server/db/types.ts + confirmAnalysisService
+
+16.9 Atualizar docs/DOCUMENT_STORAGE_FLOW.md
+     Refletir novo formato de objectKey e campos Mongo
+
+─── PRIORIDADE BAIXA / LONGO PRAZO ───────────────────────────────────────────
+
+16.10 Script migração R2 legado
+      Copy/rename objetos original.pdf → {storageFileName}
+      Update Mongo objectKey + storageFileName
+      Não apagar objetos antigos até validação
+
+16.11 storage.primary.fileName no schema
+      Redundante com storageFileName — só se produto exigir
+
+16.12 Nova versão de documento (re-upload)
+      Reutilizar resolveStorageFileNames no fluxo de versioning
+      Arquivo: features/versioning (hoje usa MOCK_DOCUMENTS)
+
+16.13 DocumentsPage com API real
+      Remover MOCK_DOCUMENTS; listar documentos confirmados do Mongo
+
+16.14 Alinhar script db:fix-version-storage ao schema atual
+
+16.15 Teste E2E manual automatizado (Playwright) upload → confirm → R2 inspect
+
+================================================================================
+17. AVALIAÇÃO DE RISCOS
+================================================================================
+
+  Risco                              Sev.    Mitigação atual
+  ---------------------------------  ------  ---------------------------------
+  UI mostra nome ≠ R2 salvo          MÉDIA   Backend sanitiza; UI não avisa
+  original/original.pdf              MÉDIA   Só em modo original + nome genérico
+  Audit vaza nomes em changes[]      MÉDIA   sanitizeAuditMetadata parcial
+  Mistura paths legado/novo no R2    MÉDIA   Leitura por objectKey salvo
+  Upload legado metadata incompleta  BAIXA   Fluxo secundário
+  Staging ausente pós-análise        MÉDIA   STAGING_FILE_NOT_FOUND — inalterado
+  Storage pending silencioso         MÉDIA   R2 misconfig → pending sem arquivo
+  Preview falha não bloqueia confirm BAIXA   preview status failed/skipped
+  Ghostscript ausente em prod        MÉDIA   preview skipped/failed
+
+================================================================================
+18. CHECKLIST DE VALIDAÇÃO MANUAL
+================================================================================
+
+  [ ] 1. Upload PDF pela Document Send Page
+  [ ] 2. Aguardar análise IA (recommendedFileName preenchido)
+  [ ] 3. Revisar naming (IA / original / manual)
+  [ ] 4. Confirmar análise
+  [ ] 5. Mongo — document_versions:
+         storageFileName, previewStorageFileName,
+         storage.primary.objectKey, storage.preview.objectKey
+  [ ] 6. Mongo — documents: currentFileName alinhado
+  [ ] 7. R2 — objeto em .../original/{nome_final}.pdf
+  [ ] 8. R2 — preview em .../preview/{nome_final}_preview.pdf
+  [ ] 9. R2 — tmp/{jobId}/ removido após confirm
+  [ ] 10. GET /api/documents/download — filename correto no header
+  [ ] 11. GET /api/documents/preview — preview inline OK
+  [ ] 12. Tracking (/tracking) — evento storage_promoted com storageFileName
+  [ ] 13. Upload com nome manual contendo caracteres inválidos
+  [ ] 14. Upload com CPF/CNPJ no nome sugerido — verificar ausência no R2
+  [ ] 15. Tenant individual — verificar basePrefix no objectKey
+  [ ] 16. Documento legado (se existir) — download ainda funciona
+  [ ] 17. npm run r2:smoke (opcional, cria bucket smoke)
+
+================================================================================
+19. COMANDOS DE VALIDAÇÃO (EXECUTADOS EM 02/07/2026)
+================================================================================
+
+  cd ~/Documents/GitHub/doqyn-alpha-document-intelligence
+  npm test              → 347 passed
+  npm run build         → OK
+  npm run lint          → 1 error (pré-existente, syncMembers.ts)
+  npx tsc --noEmit      → OK
+  npm run r2:env-check  → OK
+
+  Não executado (requer credenciais / ambiente):
+  npm run r2:smoke
+
+================================================================================
+20. RECOMENDAÇÕES E PRÓXIMOS PASSOS
+================================================================================
+
+SPRINT IMEDIATA (1-2 dias)
+  1. Bloquear original.pdf como storageFileName
+  2. Teste integrado confirmAnalysisPersistence
+  3. Atualizar DOCUMENT_STORAGE_FLOW.md
+  4. Paridade mínima UI: chamar mesma lógica de strip no previewFinalFileName
+
+SPRINT SEGUINTE (3-5 dias)
+  5. Completar upload legado (Mongo fields + preview)
+  6. document.filename_updated no confirm
+  7. Revisar política de audit para nomes (hash vs permitir storageFileName)
+  8. Validação manual completa em R2 real (checklist seção 18)
+
+BACKLOG
+  9. Script migração objectKeys legados
+  10. Versioning com naming
+  11. DocumentsPage API real
+  12. E2E Playwright
+
+================================================================================
+CONCLUSÃO
+================================================================================
+
+A refatoração do fluxo principal (analyze-pdf → confirm-analysis) está
+SUBSTANCIALMENTE IMPLEMENTADA. O nome de negócio (storageFileName) compõe o
+objectKey final em R2 e storage local; preview usa derivação _preview.pdf;
+Mongo na versão persiste os campos necessários; download/preview leem objectKey
+salvo sem reconstruir paths fixos.
+
+O bug central reportado — salvar com nome genérico apesar da IA ter sugerido nome
+— foi causado pela ignorância de finalFileName e fallback para originalFileName
+no confirm. Isso foi CORRIGIDO.
+
+Principais gaps restantes:
+  • Paridade frontend/backend na sanitização
+  • Bloqueio de original.pdf genérico
+  • Upload legado com metadata incompleta
+  • Audit filename_updated ausente
+  • Migração de documentos/objectKeys legados
+  • Documentação DOCUMENT_STORAGE_FLOW.md desatualizada
+  • Testes integrados do confirm completo
+
+Este documento deve ser usado como referência até a conclusão das pendências
+da seção 16.
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

@@ -1,0 +1,39 @@
+
+================================================================================
+Migração keycloakUserId → authUserId
+================================================================================
+Database: doqyn_dev
+Modo: DRY-RUN
+Campo legado: keycloakUserId
+Campo novo: authUserId
+
+================================================================================
+Collections com campo legado
+================================================================================
+(nenhuma collection com keycloakUserId)
+
+================================================================================
+Índices
+================================================================================
+  [dry-run] criaria índice tenant_members.tenantId_1_authUserId_1
+  [dry-run] criaria índice tenant_members.authUserId_1_status_1
+  [dry-run] criaria índice company_members.authUserId_1_status_1
+[dry-run] índices legados keycloakUserId seriam dropados após rename
+
+================================================================================
+Integridade ownerUserId ↔ membros
+================================================================================
+Owners checados: 3
+Owners sem membro correspondente: 1
+Amostras:
+  - company_dev/ffbd9ca2-39d1-4172-af62-c60afe2b250f
+
+================================================================================
+Resumo
+================================================================================
+Collections afetadas: 0
+Renomes aplicados: 0
+Duplicatas unset: 0
+Conflitos (ambos campos divergentes): 0
+Owners sem membro: 1
+Nenhuma alteração aplicada. Use --apply (ou MIGRATION_APPLY=true) para executar.

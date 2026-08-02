@@ -1,0 +1,28 @@
+DOQYN — Teste de isolamento entre tenants
+Data: 2026-06-25T17:39:50.629Z
+Database: doqyn_dev
+Tenants: company_dev vs company_test_2
+
+================================================================================
+RESULTADOS
+================================================================================
+PASS: 13
+FAIL: 0
+WARNING: 0
+[PASS] getTenantCollections(company_dev) — documents=documents_company_dev
+[PASS] getTenantCollections(company_test_2) — documents=documents_company_test_2
+[PASS] Documents company_dev não contém tenant company_test_2 — count=0
+[PASS] Documents company_test_2 não contém tenant company_dev — count=0
+[PASS] Rules isoladas A — leak=0
+[PASS] Rules isoladas B — leak=0
+[PASS] Access groups isolados A — leak=0
+[PASS] Access groups isolados B — leak=0
+[PASS] Audit logs isolados A — leak=0
+[PASS] Audit logs isolados B — leak=0
+[PASS] company_admin company_dev não aprova member company_test_2 — 403 FORBIDDEN
+[PASS] Cross-tenant currentVersionId — ok
+[PASS] Cross-tenant accessGroupIds — ok
+
+================================================================================
+FIM
+================================================================================

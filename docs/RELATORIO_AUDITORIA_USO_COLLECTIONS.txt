@@ -1,0 +1,403 @@
+DOQYN — Auditoria de uso de coleções MongoDB no código
+Data: 2026-06-25T17:28:46.460Z
+Relatório sanitizado — sem URI, secrets ou PII.
+
+================================================================================
+RESUMO
+================================================================================
+Ocorrências analisadas: 166
+Risco flat tenant-scoped: 0
+Precisam getTenantCollections: 0
+
+================================================================================
+DETALHES POR ARQUIVO
+================================================================================
+
+-- api/access-groups/index.ts
+   L18 | access_groups | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+   L38 | access_groups | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/access-groups/item.ts
+   L24 | access_groups | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/access-groups/toggle-active.ts
+   L23 | access_groups | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-classes/index.ts
+   L18 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+   L51 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-classes/item.ts
+   L32 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-classes/notifications.ts
+   L34 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-classes/permissions.ts
+   L25 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-classes/toggle-active.ts
+   L23 | document_classes | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-rules/index.ts
+   L19 | document_rules | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+   L59 | document_rules | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-rules/item.ts
+   L31 | document_rules | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- api/document-rules/toggle-active.ts
+   L23 | document_rules | OK_DOCUMENTATION
+   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- scripts/audit-etapa4-cleanup.mjs
+   L61 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L62 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L63 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/audit-mongodb-database.mjs
+   L9 | document_classes | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L10 | document_rules | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L11 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L12 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L13 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L14 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L25 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L25 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L30 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L30 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L40 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L40 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L40 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L46 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L46 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L51 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L51 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+
+-- scripts/audit-mongodb-schema.ts
+   L344 | access_groups | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L349 | access_groups | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L353 | access_groups | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L386 | document_classes | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L386 | document_classes | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L390 | document_classes | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L394 | document_rules | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L394 | document_rules | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L397 | document_rules | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L400 | document_rules | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L404 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L404 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L407 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L410 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L413 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L446 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L448 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L454 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L457 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L461 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L472 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L496 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L498 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L504 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L509 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L514 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L519 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L535 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L540 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L546 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L553 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L600 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L602 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L604 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L633 | access_groups | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+
+-- scripts/cleanup-dev-orphan-groups.ts
+   L50 | tenant_members | OK_GLOBAL_REGISTRY
+   Recomendação: Uso permitido — coleção de registry global.
+
+-- scripts/test-etapa3-api.mjs
+   L319 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L319 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L319 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L321 | company_members | OK_GLOBAL_REGISTRY
+   Recomendação: Uso permitido — coleção de registry global.
+   L321 | company_members | OK_GLOBAL_REGISTRY
+   Recomendação: Uso permitido — coleção de registry global.
+   L323 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L323 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L323 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L326 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L326 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L326 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/test-etapa5.mjs
+   L147 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L147 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L147 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L161 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L161 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L161 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L240 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L240 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L240 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L245 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L245 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L245 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L260 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L260 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L278 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L278 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L278 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L287 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L287 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L287 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L296 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L296 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L296 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L296 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L306 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L306 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L306 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L307 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L307 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L307 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L308 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L308 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L308 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L309 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L309 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L309 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/test-no-ai.mjs
+   L129 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L129 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L129 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L130 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L130 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L130 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L131 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L131 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L131 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L133 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L133 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L140 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L145 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L148 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L156 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L158 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L159 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L161 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L162 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/validate-flow-internal.mjs
+   L71 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L72 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L73 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L74 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L75 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L76 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L86 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L86 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L118 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L119 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L120 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L121 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L122 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L123 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/validate-flow.mjs
+   L143 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L144 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L145 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L146 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L147 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L148 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- server/db/constants.ts
+   L18 | access_groups | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L19 | document_classes | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L20 | document_rules | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L21 | documents | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L22 | document_versions | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L23 | processing_jobs | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L24 | audit_logs | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+
+-- server/tenancy/tenantResolver.ts
+   L9 | documents | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+
+-- src/features/documents/DocumentsPage.tsx
+   L30 | documents | OK_TEST_OR_MOCK
+   Recomendação: React Query key — não é coleção MongoDB.
+
+-- src/features/upload/UploadPage.tsx
+   L89 | documents | OK_TEST_OR_MOCK
+   Recomendação: React Query key — não é coleção MongoDB.
+
+================================================================================
+RISCOS (flat tenant-scoped em código produtivo)
+================================================================================
+Nenhum risco identificado em server/api.
+
+================================================================================
+FIM
+================================================================================

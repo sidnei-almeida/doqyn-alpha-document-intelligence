@@ -1,0 +1,90 @@
+================================================================================
+RELATÓRIO — HOME DA BIBLIOTECA (RAIZ /biblioteca)
+DOQYN Alpha Document Intelligence
+Data: 2026-07-07
+================================================================================
+
+1. DIAGNÓSTICO ANTERIOR
+--------------------------------------------------------------------------------
+A raiz mostrava pastas em cards verticais grandes (estilo dashboard) e, quando
+havia documentos sem categoria, uma tabela administrativa completa. O título
+grande "Biblioteca" competia com o conteúdo. A composição não parecia uma home
+de file manager.
+
+2. REORGANIZAÇÃO DA RAIZ
+--------------------------------------------------------------------------------
+Nova estrutura em ExplorerRootHome:
+
+  Breadcrumb: Biblioteca (sem título grande)
+  ├── Seção "Pastas" — categorias inteligentes (grid de cards horizontais)
+  ├── Seção "Recentes" — até 8 documentos por updatedAt (lista compacta)
+  └── Seção "Sem categoria" — até 6 itens, excluindo duplicatas dos recentes
+
+Empty state intencional quando não há pastas nem documentos:
+"Sua biblioteca está pronta" + botão Enviar documento.
+
+Loading: skeleton de pastas (sem flash de empty state).
+
+3. SEÇÕES CRIADAS
+--------------------------------------------------------------------------------
+- ExplorerHomeSection — wrapper com título discreto
+- ExplorerRootHome — orquestrador da home
+- ExplorerRecentList — arquivos recentes
+- ExplorerFileCompactRow — linha leve de arquivo (recentes / sem categoria)
+
+4. PASTAS REDESENHADAS
+--------------------------------------------------------------------------------
+ExplorerFolderCard — layout horizontal compacto (~52px):
+- Ícone de pasta simples com cor de categoria
+- Nome + contagem discreta
+- Menu ⋯ no hover
+- Fundo flat, hover suave, sem gradiente/glow/badge "Governado"
+- Grid 1–3 colunas responsivas
+
+5. RECENTES / SUGERIDOS
+--------------------------------------------------------------------------------
+Implementado com dados reais:
+- pickRecentDocuments() ordena por updatedAt decrescente
+- Limite: 8 documentos (RECENT_LIMIT)
+- Link "Ver todos" → /biblioteca/recentes quando há mais documentos
+- Base: listagem useDocuments já carregada na raiz (sem mocks)
+
+Nota: contagem limitada pela paginação atual da API — mesmo risco documentado
+na fase File Explorer.
+
+6. O QUE NÃO FOI FEITO
+--------------------------------------------------------------------------------
+- Tabela gigante na raiz (removida para sem categoria)
+- Toolbar de arquivos na raiz browse
+- KPIs, logs, tracking na home
+- Alteração de backend, upload ou navegação de pastas
+
+7. ARQUIVOS ALTERADOS / CRIADOS
+--------------------------------------------------------------------------------
+Criados:
+- src/features/library/components/ExplorerRootHome.tsx
+- src/features/library/components/ExplorerHomeSection.tsx
+- src/features/library/components/ExplorerRecentList.tsx
+- src/features/library/components/ExplorerFileCompactRow.tsx
+- src/features/library/utils/libraryHomeSections.ts
+- tests/library-root-home.test.ts
+
+Alterados:
+- src/features/library/LibraryPage.tsx
+- src/features/library/components/ExplorerFolderCard.tsx
+- src/features/library/components/ExplorerFolderGrid.tsx
+- src/features/library/components/ExplorerShell.tsx
+- src/styles/globals.css
+- tests/library-explorer.test.ts
+- tests/library-layout.test.ts
+
+8. VALIDAÇÃO
+--------------------------------------------------------------------------------
+npm test     → 646/646 passando
+npm run build → OK
+npm run lint  → OK
+npx tsc --noEmit → OK
+
+================================================================================
+FIM DO RELATÓRIO
+================================================================================

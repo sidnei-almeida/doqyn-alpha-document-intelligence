@@ -1,0 +1,61 @@
+RELATÓRIO — Z-INDEX E POPOVERS
+================================
+Data: 2026-07-07
+
+PROBLEMA
+--------
+Popovers e menus com position:absolute dentro de áreas com overflow
+(workspace-canvas-inner, app-shell, tabelas) ficavam escondidos atrás de
+cards e outros elementos com stacking context local (z-10 nos cards).
+
+CAUSA RAIZ
+----------
+1. Popovers renderizados no mesmo stacking context que o conteúdo scrollável.
+2. Cards/documentos com z-10 cobriam popovers absolute com z-50 no mesmo pai.
+3. app-shell { overflow: hidden } recortava menus da sidebar.
+4. Valores de z-index inconsistentes (z-30, z-50, z-70 espalhados).
+
+SOLUÇÃO
+-------
+1. Escala de z-index em tokens.css:
+   --z-local-elevated (10), --z-sticky (20), --z-dropdown (60),
+   --z-sidebar-flyout (70), --z-overlay (80), --z-drawer (85),
+   --z-context-menu (90), --z-modal (95), --z-confirm (100)
+
+2. Componente AnchoredPopover (portal + position:fixed):
+   - src/components/ui/popover/AnchoredPopover.tsx
+   - src/components/ui/popover/useAnchoredFloating.ts
+   - src/components/ui/popover/useDismissOnOutside.ts
+
+3. Migração para portal:
+   - ContextInfoButton (Biblioteca — info atrás dos cards)
+   - HeaderUserMenu (topbar)
+   - NewButtonMenu (sidebar + Novo)
+   - TableRowActionsMenu (tabelas)
+   - SidebarUserPanel (popover de sessão)
+
+4. CSS utilitário .popover-layer e .workspace-topbar com --z-sticky.
+
+ARQUIVOS ALTERADOS
+------------------
+- src/styles/tokens.css
+- src/styles/globals.css
+- src/components/ui/popover/*
+- src/components/ui/TableRowActionsMenu.tsx
+- src/components/ui/index.ts
+- src/components/layout/HeaderUserMenu.tsx
+- src/components/layout/SidebarUserPanel.tsx
+- src/components/layout/WorkspaceTopBar.tsx
+- src/features/library/components/ContextInfoButton.tsx
+- src/features/library/components/NewButtonMenu.tsx
+- tests/z-index-popovers.test.ts
+
+NOTAS
+-----
+- Modais/drawers fixed existentes mantidos; escala documentada para futura
+  unificação gradual.
+- DocumentFileCard mantém z-10 apenas para checkbox/menu local no hover.
+
+VALIDAÇÃO
+---------
+npm test, npm run build, npm run lint, npx tsc --noEmit
