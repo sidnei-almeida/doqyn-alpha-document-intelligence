@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  ExpiryAlertConfigSection,
+  type ExpiryAlertConfigValue,
+} from './ExpiryAlertConfigSection';
+import { DEFAULT_EXPIRY_ALERT_CONFIG } from './expiryAlertDefaults';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
@@ -28,8 +33,10 @@ interface ExtractionConfigDrawerProps {
       namingTemplate: string;
       minimumConfidence: number;
       active: boolean;
+      expiryAlerts: ExpiryAlertConfigValue;
     },
   ) => Promise<DocumentExtractionRule | null>;
+  groups?: Array<{ id: string; name: string }>;
 }
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
@@ -61,6 +68,7 @@ export function ExtractionConfigDrawer({
   rule,
   onClose,
   onSave,
+  groups = [],
 }: ExtractionConfigDrawerProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [description, setDescription] = useState('');
@@ -70,6 +78,9 @@ export function ExtractionConfigDrawer({
   const [minimumConfidence, setMinimumConfidence] = useState('0.7');
   const [active, setActive] = useState(true);
   const [fields, setFields] = useState<ExtractionField[]>([emptyField()]);
+  const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlertConfigValue>(
+    DEFAULT_EXPIRY_ALERT_CONFIG,
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -81,6 +92,7 @@ export function ExtractionConfigDrawer({
     setMinimumConfidence(String(rule?.minimumConfidence ?? 0.7));
     setActive(rule?.active ?? true);
     setFields(rule?.fields?.length ? rule.fields.map((f) => ({ ...f })) : [emptyField()]);
+    setExpiryAlerts(rule?.expiryAlerts ?? DEFAULT_EXPIRY_ALERT_CONFIG);
   }, [open, category, rule]);
 
   if (!open || !category) return null;
@@ -98,6 +110,7 @@ export function ExtractionConfigDrawer({
         namingTemplate: namingTemplate.trim(),
         minimumConfidence: Number(minimumConfidence) || 0.7,
         active,
+        expiryAlerts,
       });
       onClose();
     } finally {
@@ -271,6 +284,12 @@ export function ExtractionConfigDrawer({
                 ))}
               </div>
             </div>
+
+            <ExpiryAlertConfigSection
+              value={expiryAlerts}
+              onChange={setExpiryAlerts}
+              groups={groups}
+            />
           </div>
 
           <div className="flex justify-end gap-2 border-t border-doqyn-border px-6 py-4">

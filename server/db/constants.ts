@@ -23,6 +23,7 @@ export const SHARED_APP_COLLECTIONS = {
   documentSignatures: 'document_signatures',
   documentUploadApprovals: 'document_upload_approvals',
   analysisJobs: 'analysis_jobs',
+  documentExpiryAlerts: 'document_expiry_alerts',
 } as const;
 
 export const COLLECTIONS = {

@@ -35,6 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fields?: Array<Record<string, unknown>>;
           namingTemplate?: string;
           minimumConfidence?: number;
+          expiryAlerts?: Record<string, unknown>;
         };
 
         const categoryId = body.categoryId?.trim() || body.classId?.trim();
@@ -52,6 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fields: body.fields as never,
           namingTemplate: body.namingTemplate,
           minimumConfidence: body.minimumConfidence,
+          expiryAlerts: body.expiryAlerts as never,
         });
 
         logger.info('document extraction rule created', {
