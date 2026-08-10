@@ -2,6 +2,7 @@ import { REGISTRY_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type { MongoTenant, MongoTenantTrashSettings, TrashRetentionMode } from '../../db/types.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { invalidateTenantRegistryCache } from '../../tenancy/tenantRegistryCache.js';
 
 export const DEFAULT_TRASH_RETENTION_DAYS = 30;
 export const MIN_TRASH_RETENTION_DAYS = 1;
@@ -19,11 +20,8 @@ function clampRetentionDays(days: number): number {
 export function normalizeTrashSettings(
   input?: Partial<MongoTenantTrashSettings> | null,
 ): MongoTenantTrashSettings {
-  const mode: TrashRetentionMode =
-    input?.trashRetentionMode === 'manual' ? 'manual' : 'days';
-  const days = clampRetentionDays(
-    input?.trashRetentionDays ?? DEFAULT_TRASH_RETENTION_DAYS,
-  );
+  const mode: TrashRetentionMode = input?.trashRetentionMode === 'manual' ? 'manual' : 'days';
+  const days = clampRetentionDays(input?.trashRetentionDays ?? DEFAULT_TRASH_RETENTION_DAYS);
   return {
     trashRetentionMode: mode,
     trashRetentionDays: days,
@@ -83,6 +81,8 @@ export async function updateTrashRetentionSettings(
   if (result.matchedCount === 0) {
     throw new ServiceError('Tenant não encontrado.', 'TENANT_NOT_FOUND', 404);
   }
+
+  await invalidateTenantRegistryCache(tenantId);
 
   return next;
 }

@@ -3,6 +3,7 @@ import type { MongoTenant, TenantIsolationStrategy } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { isUnsafeCollectionPrefix } from './collectionGuard.js';
+import { getCachedTenant, setCachedTenant } from './tenantRegistryCache.js';
 import { SHARED_INDIVIDUAL_COLLECTION_PREFIX, LEGACY_INDIVIDUAL_POOL_PREFIX } from './taxId.js';
 
 export type TenantCollectionBaseKey =
@@ -50,12 +51,11 @@ export type ResolvedTenantCollectionNames = {
   documentExtractionRules?: string;
 };
 
-function resolvePrefixedName(base: string, prefix: string): string {
-  return `${base}_${prefix}`;
-}
-
 export function resolveTenantCollectionPrefix(tenant: MongoTenant): string {
-  if (tenant.tenantType === 'individual' && tenant.isolation.strategy === 'shared_individual_pool') {
+  if (
+    tenant.tenantType === 'individual' &&
+    tenant.isolation.strategy === 'shared_individual_pool'
+  ) {
     const configured = tenant.isolation.collectionPrefix?.trim();
     if (configured === LEGACY_INDIVIDUAL_POOL_PREFIX || !configured) {
       return SHARED_INDIVIDUAL_COLLECTION_PREFIX;
@@ -79,42 +79,26 @@ export function resolveTenantCollectionPrefix(tenant: MongoTenant): string {
   return prefix;
 }
 
-function resolveGovernanceCollections(prefix: string): Pick<
-  ResolvedTenantCollectionNames,
-  'documentCategories' | 'documentGroups' | 'documentGroupMembers' | 'documentRules' | 'documentExtractionRules'
-> {
+/**
+ * Todos os tenants compartilham o mesmo conjunto de coleções desde o Passo 7 do plano de escala:
+ * o isolamento vem do `tenantId` gravado em cada documento e presente no primeiro campo de todo
+ * índice, não do nome da coleção. Provisionar tenant novo deixou de criar namespace no Atlas.
+ *
+ * Não recebe o tenant porque o resultado não depende dele. Se um dia o plano enterprise voltar a
+ * ter coleção dedicada para poucos clientes, o parâmetro volta junto.
+ */
+export function resolveSharedCollections(): ResolvedTenantCollectionNames {
   return {
-    documentCategories: resolvePrefixedName(BASE_COLLECTION_NAMES.documentCategories, prefix),
-    documentGroups: resolvePrefixedName(BASE_COLLECTION_NAMES.documentGroups, prefix),
-    documentGroupMembers: resolvePrefixedName(BASE_COLLECTION_NAMES.documentGroupMembers, prefix),
-    documentRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentRules, prefix),
-    documentExtractionRules: resolvePrefixedName(BASE_COLLECTION_NAMES.documentExtractionRules, prefix),
-  };
-}
-
-export function resolveTenantCollectionNames(tenant: MongoTenant): ResolvedTenantCollectionNames {
-  const prefix = resolveTenantCollectionPrefix(tenant);
-
-  const core: ResolvedTenantCollectionNames = {
-    documents: resolvePrefixedName(BASE_COLLECTION_NAMES.documents, prefix),
-    documentVersions: resolvePrefixedName(BASE_COLLECTION_NAMES.documentVersions, prefix),
-    documentChunks: resolvePrefixedName(BASE_COLLECTION_NAMES.documentChunks, prefix),
-    processingJobs: resolvePrefixedName(BASE_COLLECTION_NAMES.processingJobs, prefix),
-    auditLogs: resolvePrefixedName(BASE_COLLECTION_NAMES.auditLogs, prefix),
-  };
-
-  const governance = resolveGovernanceCollections(prefix);
-
-  if (tenant.tenantType === 'business') {
-    return {
-      ...core,
-      ...governance,
-    };
-  }
-
-  return {
-    ...core,
-    ...governance,
+    documents: BASE_COLLECTION_NAMES.documents,
+    documentVersions: BASE_COLLECTION_NAMES.documentVersions,
+    documentChunks: BASE_COLLECTION_NAMES.documentChunks,
+    processingJobs: BASE_COLLECTION_NAMES.processingJobs,
+    auditLogs: BASE_COLLECTION_NAMES.auditLogs,
+    documentCategories: BASE_COLLECTION_NAMES.documentCategories,
+    documentGroups: BASE_COLLECTION_NAMES.documentGroups,
+    documentGroupMembers: BASE_COLLECTION_NAMES.documentGroupMembers,
+    documentRules: BASE_COLLECTION_NAMES.documentRules,
+    documentExtractionRules: BASE_COLLECTION_NAMES.documentExtractionRules,
   };
 }
 
@@ -132,6 +116,9 @@ export function assertTenantIsolationStrategy(
 }
 
 export async function resolveTenant(tenantId: string): Promise<MongoTenant> {
+  const cached = await getCachedTenant(tenantId);
+  if (cached) return cached;
+
   const db = await getDb();
   const tenant = await db.collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants).findOne({
     $or: [{ tenantId }, { companyId: tenantId }],
@@ -140,6 +127,8 @@ export async function resolveTenant(tenantId: string): Promise<MongoTenant> {
   if (!tenant) {
     throw new ServiceError('Cliente não encontrado.', 'TENANT_NOT_FOUND', 404);
   }
+
+  await setCachedTenant(tenantId, tenant);
 
   return tenant;
 }

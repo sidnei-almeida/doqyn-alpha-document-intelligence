@@ -115,12 +115,12 @@ describe('isolamento tenant — regras de classificação', () => {
 
     assert.deepEqual(filterA, {
       tenantType: 'individual',
-      ownerTenantId: 'individual_alice',
+      tenantId: 'individual_alice',
       ownerUserId: 'user_alice',
     });
     assert.deepEqual(filterB, {
       tenantType: 'individual',
-      ownerTenantId: 'individual_bob',
+      tenantId: 'individual_bob',
       ownerUserId: 'user_bob',
     });
     assert.equal(JSON.stringify(filterA).includes('global'), false);

@@ -4,7 +4,7 @@ import { COLLECTIONS, REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import {
   isForbiddenAuditMetadataKey,
   sanitizeAuditMetadata,
@@ -50,7 +50,7 @@ async function resolveAuditCollections(db: Awaited<ReturnType<typeof getDb>>): P
     .toArray();
 
   for (const tenant of tenants) {
-    const resolved = resolveTenantCollectionNames(tenant);
+    const resolved = resolveSharedCollections();
     if (resolved.auditLogs) names.add(resolved.auditLogs);
   }
 

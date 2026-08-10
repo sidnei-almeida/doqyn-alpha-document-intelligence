@@ -103,9 +103,12 @@ describe('demo seed mongo', () => {
     );
     const syncSource = readFileSync(join(repoRoot, 'scripts/demo-seed/syncMembers.ts'), 'utf8');
 
-    assert.ok(provisionSource.includes('document_categories_'));
-    assert.ok(provisionSource.includes('document_groups_'));
-    assert.ok(provisionSource.includes('document_extraction_rules_'));
+    // As coleções vêm do resolver compartilhado, não de nomes montados com sufixo de tenant.
+    assert.ok(provisionSource.includes('resolveSharedCollections'));
+    assert.ok(provisionSource.includes('documentCategories'));
+    assert.ok(provisionSource.includes('documentGroups'));
+    assert.ok(provisionSource.includes('documentExtractionRules'));
+    assert.equal(provisionSource.includes('document_categories_'), false);
     assert.ok(provisionSource.includes('REGISTRY_COLLECTIONS.tenants'));
     assert.equal(provisionSource.includes('REGISTRY_COLLECTIONS.companies'), false);
     assert.equal(provisionSource.includes('document_classes'), false);

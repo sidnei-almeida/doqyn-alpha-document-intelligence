@@ -4,6 +4,7 @@ import type { MongoTenant } from '../../server/db/types.js';
 import { ensureDevTenantSeed } from '../../server/services/tenantsService.js';
 import { provisionTenantEnvironment } from '../../server/services/tenantProvisionService.js';
 import { buildBusinessCollectionPrefix, hashTaxId, maskTaxId } from '../../server/tenancy/taxId.js';
+import { resolveSharedCollections } from '../../server/tenancy/tenantStorage.js';
 import { slugifyName } from '../../server/utils/slugify.js';
 import type { DemoSeedManifest, DemoSeedManifestCompany } from './manifest.js';
 import { buildGovernanceSeedForTenant } from './governance.js';
@@ -37,7 +38,7 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
     isolation: {
       strategy: 'collection_prefix',
       collectionPrefix: buildBusinessCollectionPrefix(company.tenantId),
-      storageMode: 'dedicated_collections',
+      storageMode: 'shared_collections',
     },
     updatedAt: now,
   };
@@ -58,12 +59,12 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
 async function seedGovernanceForTenant(tenantId: string) {
   const db = await getDb();
   const seed = buildGovernanceSeedForTenant(tenantId);
-  const prefix = buildBusinessCollectionPrefix(tenantId);
+  const shared = resolveSharedCollections();
 
-  const categoriesCollection = `document_categories_${prefix}`;
-  const groupsCollection = `document_groups_${prefix}`;
-  const rulesCollection = `document_rules_${prefix}`;
-  const extractionCollection = `document_extraction_rules_${prefix}`;
+  const categoriesCollection = shared.documentCategories!;
+  const groupsCollection = shared.documentGroups!;
+  const rulesCollection = shared.documentRules!;
+  const extractionCollection = shared.documentExtractionRules!;
 
   for (const category of seed.categories) {
     await db.collection(categoriesCollection).updateOne(

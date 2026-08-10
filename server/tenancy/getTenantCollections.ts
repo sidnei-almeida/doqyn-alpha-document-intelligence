@@ -17,7 +17,7 @@ import type {
 } from '../db/types.js';
 import {
   resolveActiveTenant,
-  resolveTenantCollectionNames,
+  resolveSharedCollections,
   type ResolvedTenantCollectionNames,
 } from './tenantResolver.js';
 import { resolveTenantStorageContext, type TenantStorageContext } from './tenantStorage.js';
@@ -61,7 +61,7 @@ export function getTenantDbCollections(
   tenant: MongoTenant,
   names?: ResolvedTenantCollectionNames,
 ): TenantDbCollections {
-  const resolvedNames = names ?? resolveTenantCollectionNames(tenant);
+  const resolvedNames = names ?? resolveSharedCollections();
 
   return {
     documents: db.collection<MongoDocument>(resolvedNames.documents),
