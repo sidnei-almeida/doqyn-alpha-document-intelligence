@@ -68,7 +68,9 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const category of seed.categories) {
     await db.collection(categoriesCollection).updateOne(
-      { _id: category._id } as Record<string, unknown>,
+      // `tenantId` no filtro é defesa em profundidade: o `_id` já vem com o tenant embutido, mas
+      // um id de seed que escape do namespace não pode sequestrar a linha de outro tenant.
+      { _id: category._id, tenantId: category.tenantId } as Record<string, unknown>,
       { $set: category },
       { upsert: true },
     );
@@ -76,7 +78,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const group of seed.groups) {
     await db.collection(groupsCollection).updateOne(
-      { _id: group._id } as Record<string, unknown>,
+      { _id: group._id, tenantId: group.tenantId } as Record<string, unknown>,
       { $set: group },
       { upsert: true },
     );
@@ -84,7 +86,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const rule of seed.accessRules) {
     await db.collection(rulesCollection).updateOne(
-      { _id: rule._id } as Record<string, unknown>,
+      { _id: rule._id, tenantId: rule.tenantId } as Record<string, unknown>,
       { $set: rule },
       { upsert: true },
     );
@@ -92,7 +94,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const extractionRule of seed.extractionRules) {
     await db.collection(extractionCollection).updateOne(
-      { _id: extractionRule._id } as Record<string, unknown>,
+      { _id: extractionRule._id, tenantId: extractionRule.tenantId } as Record<string, unknown>,
       { $set: extractionRule },
       { upsert: true },
     );
