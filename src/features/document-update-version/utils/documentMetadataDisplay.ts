@@ -32,7 +32,7 @@ function formatMetadataValue(value: unknown): string {
   return '—';
 }
 
-function fieldLabelFromRaw(key: string, value: unknown): string | null {
+function fieldLabelFromRaw(_key: string, value: unknown): string | null {
   if (typeof value === 'object' && value !== null && 'label' in value) {
     const label = (value as { label?: unknown }).label;
     if (typeof label === 'string' && label.trim()) return label.trim();
