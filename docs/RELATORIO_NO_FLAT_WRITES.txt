@@ -1,5 +1,5 @@
 DOQYN — Verificação de writes em coleções flat tenant-scoped
-Data: 2026-06-25T17:39:50.891Z
+Data: 2026-08-10T10:51:07.964Z
 
 ================================================================================
 RESULTADO
@@ -10,19 +10,24 @@ PASS — Nenhum fluxo produtivo escreve em coleções flat tenant-scoped.
 EXCEÇÕES DOCUMENTADAS (caminhos ignorados)
 ================================================================================
   server/db/constants.ts
-  server/db/mongo.ts
   server/db/setupMongo.ts
-  server/models/AuditEvent.ts
-  server/models/Document.ts
-  server/models/DocumentVersion.ts
-  server/models/ProcessingJob.ts
-  server/models/Rule.ts
   server/tenancy/collectionGuard.ts
+  server/tenancy/documentAccess.ts
+  server/tenancy/documentOwnership.ts
+  server/tenancy/documentRequestContext.ts
+  server/tenancy/documentShareAccess.ts
   server/tenancy/getTenantCollections.ts
+  server/tenancy/governanceAccessIndex.ts
+  server/tenancy/governanceAudit.ts
   server/tenancy/requireBusinessCollections.ts
+  server/tenancy/requireTenantDocumentCollections.ts
+  server/tenancy/resolveTenantStorageScope.ts
   server/tenancy/taxId.ts
   server/tenancy/tenantQuery.ts
+  server/tenancy/tenantQuotas.ts
+  server/tenancy/tenantRegistryCache.ts
   server/tenancy/tenantResolver.ts
+  server/tenancy/tenantStorage.ts
 
 ================================================================================
 FIM
