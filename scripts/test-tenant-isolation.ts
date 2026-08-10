@@ -6,7 +6,7 @@ import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/
 import type { AuthUser } from '../server/auth/types.js';
 import { assertCanManageCompany } from '../server/auth/memberAuth.js';
 import { getTenantCollections } from '../server/tenancy/getTenantCollections.js';
-import { tenantScopeFilter } from '../server/tenancy/tenantQuery.js';
+import { buildDocumentOwnershipFilter } from '../server/tenancy/documentOwnership.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_TESTE_TENANT_ISOLATION.txt');
@@ -22,6 +22,19 @@ function record(name: string, status: TestResult['status'], detail: string) {
   results.push({ name, status, detail });
 }
 
+function belongsTo(doc: Record<string, unknown>, tenantId: string): boolean {
+  return doc.tenantId === tenantId || doc.companyId === tenantId;
+}
+
+/**
+ * Teste de isolamento no modelo de coleções compartilhadas (Passo 7).
+ *
+ * A versão anterior comparava **nomes de coleção** (`documents_company_dev` vs
+ * `documents_company_test_2`) — checagem que perdeu o sentido: agora os dois tenants usam a mesma
+ * coleção física, de propósito. O isolamento passou a ser responsabilidade do filtro de ownership,
+ * então é ele que este script exercita: nenhuma consulta escopada por um tenant pode devolver
+ * documento de outro, nem documento sem dono.
+ */
 async function main() {
   if (!isMongoNativeConfigured()) {
     console.error('MONGODB_URI não configurada.');
@@ -32,52 +45,74 @@ async function main() {
   const colsB = await getTenantCollections(TENANT_B);
 
   record(
-    'getTenantCollections(company_dev)',
-    colsA.names.documents === `documents_${TENANT_A}` ? 'PASS' : 'FAIL',
+    'Tenants distintos compartilham a mesma coleção',
+    colsA.names.documents === colsB.names.documents ? 'PASS' : 'FAIL',
+    `A=${colsA.names.documents} B=${colsB.names.documents}`,
+  );
+
+  record(
+    'Nome de coleção não carrega tenant',
+    !colsA.names.documents.includes(TENANT_A) && !colsB.names.documents.includes(TENANT_B)
+      ? 'PASS'
+      : 'FAIL',
     `documents=${colsA.names.documents}`,
   );
 
+  const filterA = buildDocumentOwnershipFilter(colsA.storage);
+  const filterB = buildDocumentOwnershipFilter(colsB.storage);
+
+  // O teste que importa: a consulta escopada por A não pode alcançar documento de B.
+  const docsVisibleToA = await colsA.documents.find(filterA).toArray();
+  const leakedToA = docsVisibleToA.filter((doc) => belongsTo(doc, TENANT_B));
   record(
-    'getTenantCollections(company_test_2)',
-    colsB.names.documents === `documents_${TENANT_B}` ? 'PASS' : 'FAIL',
-    `documents=${colsB.names.documents}`,
+    'Consulta escopada em A não devolve documento de B',
+    leakedToA.length === 0 ? 'PASS' : 'FAIL',
+    `visíveis=${docsVisibleToA.length} vazados=${leakedToA.length}`,
   );
 
-  const docsInAfromB = await colsA.documents.countDocuments({
-    ...tenantScopeFilter(TENANT_B),
-  });
+  const docsVisibleToB = await colsB.documents.find(filterB).toArray();
+  const leakedToB = docsVisibleToB.filter((doc) => belongsTo(doc, TENANT_A));
   record(
-    'Documents company_dev não contém tenant company_test_2',
-    docsInAfromB === 0 ? 'PASS' : 'FAIL',
-    `count=${docsInAfromB}`,
+    'Consulta escopada em B não devolve documento de A',
+    leakedToB.length === 0 ? 'PASS' : 'FAIL',
+    `visíveis=${docsVisibleToB.length} vazados=${leakedToB.length}`,
   );
 
-  const docsInBfromA = await colsB.documents.countDocuments({
-    ...tenantScopeFilter(TENANT_A),
-  });
+  // Documento sem tenantId não pode ser visível para ninguém. Em coleção dedicada isso era
+  // tolerado; em coleção compartilhada seria vazamento para todos os tenants.
+  const orphanTotal = await colsA.documents.countDocuments({
+    tenantId: { $in: [null, undefined] },
+    companyId: { $in: [null, undefined] },
+  } as Record<string, unknown>);
+  const orphanVisible = docsVisibleToA.filter(
+    (doc) => !doc.tenantId && !(doc as Record<string, unknown>).companyId,
+  ).length;
   record(
-    'Documents company_test_2 não contém tenant company_dev',
-    docsInBfromA === 0 ? 'PASS' : 'FAIL',
-    `count=${docsInBfromA}`,
+    'Documento sem tenantId é invisível',
+    orphanVisible === 0 ? 'PASS' : 'FAIL',
+    `órfãos no banco=${orphanTotal} visíveis=${orphanVisible}`,
   );
 
-  const rulesLeakA = await colsA.documentRules!.countDocuments({ ...tenantScopeFilter(TENANT_B) });
-  record('Rules isoladas A', rulesLeakA === 0 ? 'PASS' : 'FAIL', `leak=${rulesLeakA}`);
+  for (const [label, cols, tenantId, otherTenantId] of [
+    ['A', colsA, TENANT_A, TENANT_B],
+    ['B', colsB, TENANT_B, TENANT_A],
+  ] as const) {
+    const scope = buildDocumentOwnershipFilter(cols.storage);
 
-  const rulesLeakB = await colsB.documentRules!.countDocuments({ ...tenantScopeFilter(TENANT_A) });
-  record('Rules isoladas B', rulesLeakB === 0 ? 'PASS' : 'FAIL', `leak=${rulesLeakB}`);
+    const rules = cols.documentRules
+      ? (await cols.documentRules.find(scope).toArray()).filter((row) =>
+          belongsTo(row as Record<string, unknown>, otherTenantId),
+        ).length
+      : 0;
+    record(`Regras isoladas em ${label}`, rules === 0 ? 'PASS' : 'FAIL', `vazados=${rules}`);
 
-  const groupsLeakA = await colsA.accessGroups!.countDocuments({ ...tenantScopeFilter(TENANT_B) });
-  record('Access groups isolados A', groupsLeakA === 0 ? 'PASS' : 'FAIL', `leak=${groupsLeakA}`);
+    const logs = (await cols.auditLogs.find(scope).limit(500).toArray()).filter((row) =>
+      belongsTo(row as Record<string, unknown>, otherTenantId),
+    ).length;
+    record(`Audit logs isolados em ${label}`, logs === 0 ? 'PASS' : 'FAIL', `vazados=${logs}`);
 
-  const groupsLeakB = await colsB.accessGroups!.countDocuments({ ...tenantScopeFilter(TENANT_A) });
-  record('Access groups isolados B', groupsLeakB === 0 ? 'PASS' : 'FAIL', `leak=${groupsLeakB}`);
-
-  const logsLeakA = await colsA.auditLogs.countDocuments({ ...tenantScopeFilter(TENANT_B) });
-  record('Audit logs isolados A', logsLeakA === 0 ? 'PASS' : 'FAIL', `leak=${logsLeakA}`);
-
-  const logsLeakB = await colsB.auditLogs.countDocuments({ ...tenantScopeFilter(TENANT_A) });
-  record('Audit logs isolados B', logsLeakB === 0 ? 'PASS' : 'FAIL', `leak=${logsLeakB}`);
+    void tenantId;
+  }
 
   const actorDev: AuthUser = {
     id: 'actor-dev',
@@ -97,54 +132,62 @@ async function main() {
     crossTenantBlocked = true;
   }
   record(
-    'company_admin company_dev não aprova member company_test_2',
+    'company_admin de A não administra B',
     crossTenantBlocked ? 'PASS' : 'FAIL',
     crossTenantBlocked ? '403 FORBIDDEN' : 'sem bloqueio',
   );
 
-  const devDocs = await colsA.documents.find({ ...tenantScopeFilter(TENANT_A) }).toArray();
-  let crossVersion = false;
-  for (const doc of devDocs) {
+  // Versão referenciada por documento de A não pode pertencer a B.
+  let crossVersion = 0;
+  for (const doc of docsVisibleToA) {
     if (!doc.currentVersionId) continue;
-    const ver = await colsB.documentVersions.findOne({ _id: doc.currentVersionId });
-    if (ver) crossVersion = true;
+    const version = await colsA.documentVersions.findOne({
+      _id: doc.currentVersionId,
+    } as Record<string, unknown>);
+    if (version && belongsTo(version as Record<string, unknown>, TENANT_B)) crossVersion += 1;
   }
-  record('Cross-tenant currentVersionId', crossVersion ? 'FAIL' : 'PASS', crossVersion ? 'versão cruzada' : 'ok');
+  record(
+    'currentVersionId não aponta para versão de outro tenant',
+    crossVersion === 0 ? 'PASS' : 'FAIL',
+    `cruzadas=${crossVersion}`,
+  );
 
   const db = await getDb();
-  const test2Groups = await colsB.accessGroups!.find({ ...tenantScopeFilter(TENANT_B) }).toArray();
-  const test2GroupIds = new Set(test2Groups.map((g) => g._id));
+  const groupsOfB = colsB.documentGroups
+    ? await colsB.documentGroups.find(filterB).toArray()
+    : [];
+  const groupIdsOfB = new Set(groupsOfB.map((group) => String(group._id)));
 
-  const devMembers = await db
+  let crossGroupRef = 0;
+  const membersOfA = await db
     .collection(REGISTRY_COLLECTIONS.tenantMembers)
-    .find({ ...tenantScopeFilter(TENANT_A), status: 'active' })
+    .find({ $or: [{ tenantId: TENANT_A }, { companyId: TENANT_A }], status: 'active' })
     .toArray();
 
-  let crossGroupRef = false;
-  for (const member of devMembers) {
-    for (const gid of member.accessGroupIds ?? []) {
-      if (test2GroupIds.has(gid)) crossGroupRef = true;
+  for (const member of membersOfA) {
+    for (const groupId of (member.accessGroupIds as string[]) ?? []) {
+      if (groupIdsOfB.has(String(groupId))) crossGroupRef += 1;
     }
   }
 
-  const devDocsWithGroups = await colsA.documents.find({ ...tenantScopeFilter(TENANT_A) }).toArray();
-  for (const doc of devDocsWithGroups) {
-    for (const gid of doc.access?.viewGroupIds ?? []) {
-      if (test2GroupIds.has(gid)) crossGroupRef = true;
+  for (const doc of docsVisibleToA) {
+    for (const groupId of doc.access?.viewGroupIds ?? []) {
+      if (groupIdsOfB.has(String(groupId))) crossGroupRef += 1;
     }
   }
 
   record(
-    'Cross-tenant accessGroupIds',
-    crossGroupRef ? 'FAIL' : 'PASS',
-    crossGroupRef ? 'referência cruzada' : 'ok',
+    'Sem referência cruzada a grupos de outro tenant',
+    crossGroupRef === 0 ? 'PASS' : 'FAIL',
+    `referências=${crossGroupRef}`,
   );
 
   const report = createReportWriter();
-  report.line('DOQYN — Teste de isolamento entre tenants');
+  report.line('DOQYN — Teste de isolamento entre tenants (coleções compartilhadas)');
   report.line(`Data: ${new Date().toISOString()}`);
   report.line(`Database: ${getMongoDatabaseName()}`);
   report.line(`Tenants: ${TENANT_A} vs ${TENANT_B}`);
+  report.line(`Coleção de documentos: ${colsA.names.documents} (compartilhada)`);
 
   report.section('RESULTADOS');
   const fails = results.filter((r) => r.status === 'FAIL');

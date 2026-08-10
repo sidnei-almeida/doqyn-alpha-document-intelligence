@@ -1,9 +1,8 @@
-import { REGISTRY_COLLECTIONS } from '../db/constants.js';
-import { getDb, isMongoNativeConfigured } from '../db/mongoClient.js';
-import type { MongoTenant } from '../db/types.js';
-import { redisIncrWithTtl } from '../redis/redisClient.js';
+import { isMongoNativeConfigured } from '../db/mongoClient.js';
+import { redisGetNumber, redisIncrWithTtl } from '../redis/redisClient.js';
 import { recordQuotaExceeded } from '../metrics/phaseAMetrics.js';
-import { ServiceError } from '../utils/serviceErrors.js';
+import { ServiceError, isServiceError } from '../utils/serviceErrors.js';
+import { resolveTenant } from './tenantResolver.js';
 
 export type TenantQuotaAction = 'analysis_per_day' | 'uploads_per_hour';
 
@@ -25,8 +24,14 @@ function readPositiveInt(value: unknown, fallback: number): number {
 
 function readQuotaLimitsFromEnv(): TenantQuotaLimits {
   return {
-    analysisPerDay: readPositiveInt(process.env.TENANT_QUOTA_ANALYSIS_PER_DAY, DEFAULT_QUOTAS.analysisPerDay),
-    uploadsPerHour: readPositiveInt(process.env.TENANT_QUOTA_UPLOADS_PER_HOUR, DEFAULT_QUOTAS.uploadsPerHour),
+    analysisPerDay: readPositiveInt(
+      process.env.TENANT_QUOTA_ANALYSIS_PER_DAY,
+      DEFAULT_QUOTAS.analysisPerDay,
+    ),
+    uploadsPerHour: readPositiveInt(
+      process.env.TENANT_QUOTA_UPLOADS_PER_HOUR,
+      DEFAULT_QUOTAS.uploadsPerHour,
+    ),
   };
 }
 
@@ -40,13 +45,16 @@ function isTenantQuotaEnabled(): boolean {
 async function loadTenantQuotaOverrides(tenantId: string): Promise<Partial<TenantQuotaLimits>> {
   if (!isMongoNativeConfigured()) return {};
 
-  const db = await getDb();
-  const tenant = await db
-    .collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants)
-    .findOne({ tenantId }, { projection: { quotas: 1 } });
-
-  const quotas = tenant?.quotas as Partial<TenantQuotaLimits> | undefined;
-  return quotas ?? {};
+  // Passa por `resolveTenant` para compartilhar o cache do registry com `getTenantCollections`,
+  // em vez de fazer uma segunda ida ao Atlas no caminho de upload.
+  try {
+    const tenant = await resolveTenant(tenantId);
+    const quotas = tenant.quotas as Partial<TenantQuotaLimits> | undefined;
+    return quotas ?? {};
+  } catch (error) {
+    if (isServiceError(error) && error.code === 'TENANT_NOT_FOUND') return {};
+    throw error;
+  }
 }
 
 export async function getTenantQuotaLimits(tenantId: string): Promise<TenantQuotaLimits> {
@@ -73,6 +81,44 @@ function quotaRedisKey(tenantId: string, action: TenantQuotaAction): string {
   return `quota:${tenantId}:${action}:${bucket}:${stamp}`;
 }
 
+function quotaExceededError(action: TenantQuotaAction, ttlSeconds: number): ServiceError {
+  recordQuotaExceeded(action);
+  return new ServiceError(
+    'Limite de uso do tenant excedido. Tente novamente mais tarde.',
+    'TENANT_QUOTA_EXCEEDED',
+    429,
+    { retryAfterSeconds: ttlSeconds },
+  );
+}
+
+/**
+ * Verifica a quota **sem** consumir slot.
+ *
+ * Serve para recusar cedo, antes de gastar CPU e memória com trabalho que será descartado — o
+ * upload chama isto antes de ler o corpo da requisição. Como não incrementa, uma requisição que
+ * falhe depois (arquivo grande demais, multipart malformado, cliente que desiste) não queima
+ * a cota horária do tenant.
+ */
+export async function assertTenantQuotaAvailable(
+  tenantId: string,
+  action: TenantQuotaAction,
+): Promise<void> {
+  if (!isTenantQuotaEnabled()) return;
+
+  const key = quotaRedisKey(tenantId, action);
+  const usage = await redisGetNumber(key);
+  // Sem Redis (ou sem contador ainda), nada a recusar — o consumo depois decide.
+  if (usage === null) return;
+
+  const limits = await getTenantQuotaLimits(tenantId);
+  const limit = action === 'analysis_per_day' ? limits.analysisPerDay : limits.uploadsPerHour;
+
+  if (usage >= limit) {
+    throw quotaExceededError(action, quotaWindowSeconds(action));
+  }
+}
+
+/** Consome um slot da quota. Chame apenas quando a operação vai de fato acontecer. */
 export async function assertTenantQuota(
   tenantId: string,
   action: TenantQuotaAction,
@@ -92,12 +138,6 @@ export async function assertTenantQuota(
   }
 
   if (usage > limit) {
-    recordQuotaExceeded(action);
-    throw new ServiceError(
-      'Limite de uso do tenant excedido. Tente novamente mais tarde.',
-      'TENANT_QUOTA_EXCEEDED',
-      429,
-      { retryAfterSeconds: ttlSeconds },
-    );
+    throw quotaExceededError(action, ttlSeconds);
   }
 }

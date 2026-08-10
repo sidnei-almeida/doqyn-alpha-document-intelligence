@@ -6,7 +6,7 @@ import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { withTenantFields } from '../server/tenancy/tenantQuery.js';
 import { buildDevStorageObjectKey } from './lib/devStorage.js';
 import { createReportWriter } from './lib/reportUtils.js';
@@ -48,7 +48,7 @@ async function main() {
     { upsert: true },
   );
 
-  const names = resolveTenantCollectionNames(tenant);
+  const names = resolveSharedCollections();
   const groupId = 'group_financeiro_test2';
   const categoryId = 'class_test2';
   const accessRuleId = 'access_rule_test2';

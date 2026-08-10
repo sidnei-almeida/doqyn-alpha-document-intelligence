@@ -144,22 +144,22 @@ describe('document audit service validation', () => {
 });
 
 describe('document audit tenant collections', () => {
-  it('business resolve audit_logs por tenant', () => {
+  it('business resolve a coleção compartilhada audit_logs', () => {
     const storage = resolveTenantStorageContextFromIds({
       tenantId: 'company_a',
       tenantType: 'business',
       collectionPrefix: 'company_a',
     });
-    assert.equal(storage.collections.auditLogs, 'audit_logs_company_a');
+    assert.equal(storage.collections.auditLogs, 'audit_logs');
   });
 
-  it('individual resolve audit_logs compartilhado', () => {
+  it('individual resolve a mesma coleção audit_logs', () => {
     const storage = resolveTenantStorageContextFromIds({
       tenantId: 'individual_alice',
       tenantType: 'individual',
       collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
       userId: 'user_alice',
     });
-    assert.equal(storage.collections.auditLogs, 'audit_logs_compartilhado');
+    assert.equal(storage.collections.auditLogs, 'audit_logs');
   });
 });

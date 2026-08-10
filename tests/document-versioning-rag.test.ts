@@ -165,7 +165,7 @@ describe('documentChunkService', () => {
         storage: {
           tenantId: 'tenant_1',
           tenantType: 'business',
-          storageMode: 'dedicated_collections',
+          storageMode: 'shared_collections',
           collectionPrefix: 'company_dev',
           collections: {
             documents: 'documents_company_dev',
@@ -194,7 +194,7 @@ describe('documentChunkService', () => {
         storage: {
           tenantId: 'tenant_1',
           tenantType: 'business',
-          storageMode: 'dedicated_collections',
+          storageMode: 'shared_collections',
           collectionPrefix: 'company_dev',
           collections: {
             documents: 'documents_company_dev',

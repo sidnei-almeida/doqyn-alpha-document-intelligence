@@ -5,7 +5,8 @@ import { REGISTRY_COLLECTIONS, SHARED_APP_COLLECTIONS } from '../server/db/const
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import type { ResolvedTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -110,7 +111,7 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
   ];
 }
 
-function tenantScopedIndexes(names: ReturnType<typeof resolveTenantCollectionNames>): Array<{
+function tenantScopedIndexes(names: ResolvedTenantCollectionNames): Array<{
   collection: string;
   indexes: IndexDescription[];
 }> {
@@ -236,11 +237,11 @@ async function main() {
     .find({ status: 'active' })
     .toArray();
 
-  for (const tenant of tenants) {
-    const names = resolveTenantCollectionNames(tenant);
-    for (const group of tenantScopedIndexes(names)) {
-      await ensureIndexes(group.collection, group.indexes);
-    }
+  // Conjunto compartilhado: garantido uma única vez. Antes o laço rodava por tenant ativo,
+  // porque cada um tinha suas próprias coleções; hoje todos resolvem para as mesmas, então
+  // repetir por tenant só refaria o mesmo trabalho N vezes.
+  for (const group of tenantScopedIndexes(resolveSharedCollections())) {
+    await ensureIndexes(group.collection, group.indexes);
   }
 
   const report = createReportWriter();

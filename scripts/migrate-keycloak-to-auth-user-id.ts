@@ -15,7 +15,7 @@ import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { createReportWriter, isApplyFlag } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_MIGRACAO_KEYCLOAK_TO_AUTH_USER_ID.txt');
@@ -196,7 +196,7 @@ async function verifyDocumentOwnerReferences(
   for (const tenant of tenants) {
     let names;
     try {
-      names = resolveTenantCollectionNames(tenant);
+      names = resolveSharedCollections();
     } catch {
       continue;
     }

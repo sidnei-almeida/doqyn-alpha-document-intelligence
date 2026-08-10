@@ -5,7 +5,7 @@ import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { createReportWriter, getEnvTenantId, isApplyFlag } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_MIGRACAO_FLAT_TO_TENANT.txt');
@@ -47,7 +47,7 @@ async function main() {
     process.exit(1);
   }
 
-  const names = resolveTenantCollectionNames(tenant);
+  const names = resolveSharedCollections();
   const targetMap: Record<string, string> = {
     access_groups: names.accessGroups ?? '',
     document_classes: names.documentClasses ?? '',

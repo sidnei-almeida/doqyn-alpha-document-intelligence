@@ -1,7 +1,7 @@
 import { COLLECTIONS } from '../db/constants.js';
 import type { MongoTenant } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import { resolveTenantCollectionNames } from './tenantResolver.js';
+import { resolveSharedCollections } from './tenantResolver.js';
 
 /** Nomes base flat — proibidos para leitura/escrita tenant-scoped em runtime produtivo. */
 export const FLAT_TENANT_SCOPED_COLLECTIONS = new Set<string>(Object.values(COLLECTIONS));
@@ -30,10 +30,8 @@ export function assertTenantScopedCollectionAccess(
 ): void {
   assertNotFlatTenantCollection(collectionName);
 
-  const expected = resolveTenantCollectionNames(tenant);
-  const allowed = new Set(
-    Object.values(expected).filter((name): name is string => Boolean(name)),
-  );
+  const expected = resolveSharedCollections();
+  const allowed = new Set(Object.values(expected).filter((name): name is string => Boolean(name)));
 
   if (!allowed.has(collectionName)) {
     throw new ServiceError(

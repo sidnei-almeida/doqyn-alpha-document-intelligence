@@ -42,10 +42,8 @@ describe('governance audit helpers', () => {
     assert.equal(resolved.ok, true);
     if (resolved.ok) {
       assert.equal(resolved.collectionPrefix, 'company_acme_ab12cd');
-      assert.equal(
-        resolved.names.documentCategories,
-        'document_categories_company_acme_ab12cd',
-      );
+      // O prefixo continua no registry (identifica o tenant), mas não nomeia mais coleção.
+      assert.equal(resolved.names.documentCategories, 'document_categories');
     }
   });
 
@@ -98,10 +96,7 @@ describe('governance audit helpers', () => {
     });
     assert.equal(resolved.ok, true);
     if (resolved.ok) {
-      assert.equal(
-        resolved.names.documentExtractionRules,
-        'document_extraction_rules_company_missing_collections',
-      );
+      assert.equal(resolved.names.documentExtractionRules, 'document_extraction_rules');
     }
   });
 

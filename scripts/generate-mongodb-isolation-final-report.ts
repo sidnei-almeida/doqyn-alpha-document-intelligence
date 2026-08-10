@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { COLLECTIONS, DEV_TENANT_ID } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { resolveActiveTenant } from '../server/tenancy/tenantResolver.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
@@ -57,7 +57,7 @@ async function main() {
     }
 
     const tenant = await resolveActiveTenant(DEV_TENANT_ID);
-    const tenantNames = resolveTenantCollectionNames(tenant);
+    const tenantNames = resolveSharedCollections();
     report.line(`\nTenant ${DEV_TENANT_ID} → documents=${tenantNames.documents}`);
   } else {
     report.line('MongoDB não configurado nesta execução.');
