@@ -133,14 +133,16 @@ function maskBucketName(bucketName: string | undefined | null): string | null {
   return `${name.slice(0, 14)}...${name.slice(-6)}`;
 }
 
-function buildAccessibleDocumentQuery(
+export function buildAccessibleDocumentQuery(
   storage: TenantStorageContext,
   user: AuthUser,
   isAdmin: boolean,
   governanceViewCategoryIds: string[] = [],
 ): Record<string, unknown> {
+  const tenantScope = tenantScopeFilterFromContext(storage);
+
   const query: Record<string, unknown> = {
-    ...tenantScopeFilterFromContext(storage),
+    ...tenantScope,
     status: 'active',
     deletedAt: { $in: [null, undefined] },
     permanentlyDeletedAt: { $in: [null, undefined] },
@@ -154,7 +156,12 @@ function buildAccessibleDocumentQuery(
       accessClauses.push({ classId: { $in: governanceViewCategoryIds } });
     }
 
-    query.$or = accessClauses;
+    // `$and` explícito porque o escopo de tenant empresarial JÁ é um `$or`
+    // (`{ $or: [{ tenantId }, { companyId }] }`). Atribuir `query.$or` aqui apagava esse escopo, e
+    // desde que os dados vivem em coleção compartilhada isso deixava a agregação sem nenhum filtro
+    // de tenant: o painel somaria documentos de outros tenants que o usuário possui.
+    delete query.$or;
+    query.$and = [tenantScope, { $or: accessClauses }];
   }
 
   return query;

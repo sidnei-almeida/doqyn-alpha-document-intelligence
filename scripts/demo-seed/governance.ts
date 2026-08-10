@@ -32,11 +32,38 @@ export function applyBusinessGovernanceOwnership<T extends Record<string, unknow
   };
 }
 
-function remapTenantGovernance<T extends { tenantId: string; companyId: string }>(
+/**
+ * `_id` do seed com o tenant embutido.
+ *
+ * As constantes de seed usam ids fixos (`cat_contratos`, `group_diretoria`). Enquanto cada tenant
+ * tinha coleções próprias isso era inofensivo; com as coleções compartilhadas o `_id` é global, e
+ * semear um segundo tenant colidiria com as linhas do primeiro.
+ */
+function scopeSeedId(id: string, tenantId: string): string {
+  return `${id}__${tenantId}`;
+}
+
+/**
+ * Reescreve `_id` e as referências entre linhas do seed para o tenant.
+ *
+ * `categoryId`, `classId` e `groupId` apontam para os mesmos ids fixos, então precisam do mesmo
+ * sufixo — senão a regra de acesso do tenant B continuaria apontando para a categoria do tenant A.
+ */
+function remapTenantGovernance<T extends { tenantId: string; companyId: string; _id: string }>(
   rows: T[],
   tenantId: string,
 ) {
-  return rows.map((row) => applyBusinessGovernanceOwnership(row, tenantId));
+  return rows.map((row) => {
+    const scoped = applyBusinessGovernanceOwnership(row, tenantId);
+    const references: Record<string, unknown> = {};
+
+    for (const field of ['categoryId', 'classId', 'groupId'] as const) {
+      const value = (row as Record<string, unknown>)[field];
+      if (typeof value === 'string' && value) references[field] = scopeSeedId(value, tenantId);
+    }
+
+    return { ...scoped, ...references, _id: scopeSeedId(row._id, tenantId) };
+  });
 }
 
 export type TenantGovernanceSeed = {

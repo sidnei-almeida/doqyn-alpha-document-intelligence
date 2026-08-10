@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { buildAccessibleDocumentQuery } from '../server/services/dashboardOverviewService.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -85,5 +86,42 @@ describe('dashboard sem varreduras — Passo 5 do plano de escala', () => {
     const indexes = read('server/db/tenantIndexes.ts');
 
     assert.ok(indexes.includes('{ key: { tenantId: 1, action: 1, createdAt: -1 } }'));
+  });
+});
+
+describe('dashboard — escopo de tenant na consulta de documentos', () => {
+  const businessStorage = {
+    tenantId: 'tenant_a',
+    tenantType: 'business',
+    storageMode: 'shared_collections',
+    collectionPrefix: 'tenant_a',
+    collections: {},
+  } as never;
+
+  const user = { id: 'user_x', name: 'Fulano' } as never;
+
+  it('usuário comum continua filtrado por tenant, não só por ownership', () => {
+    const query = buildAccessibleDocumentQuery(businessStorage, user, false, ['cat_1']);
+
+    // O escopo de tenant empresarial é um `$or`; atribuir `query.$or` com as cláusulas de acesso
+    // apagava esse escopo. Em coleção compartilhada isso somaria documentos de outros tenants
+    // que o usuário possui.
+    const and = query.$and as Record<string, unknown>[] | undefined;
+    assert.ok(Array.isArray(and), 'as duas condições precisam conviver, não se sobrescrever');
+
+    const serialized = JSON.stringify(and);
+    assert.ok(serialized.includes('tenant_a'), 'o filtro de tenant precisa sobreviver');
+    assert.ok(serialized.includes('user_x'));
+    assert.ok(serialized.includes('cat_1'));
+
+    // Nenhum `$or` solto no topo: seria justamente o que apagou o escopo antes.
+    assert.equal(query.$or, undefined);
+  });
+
+  it('admin mantém o escopo de tenant sem cláusula de acesso', () => {
+    const query = buildAccessibleDocumentQuery(businessStorage, user, true, []);
+
+    assert.equal(query.$and, undefined);
+    assert.ok(JSON.stringify(query.$or).includes('tenant_a'));
   });
 });

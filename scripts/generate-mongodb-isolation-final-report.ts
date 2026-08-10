@@ -71,7 +71,7 @@ async function main() {
 
   report.section('4. CAMADA DE TENANCY');
   report.line('- getTenantDbCollections(db, tenant)');
-  report.line('- assertTenantScopedCollectionAccess / assertNotFlatTenantCollection');
+  report.line('- tenantScopeFilterFromContext / buildDocumentOwnershipFilter (escopo por tenantId)');
   report.line('- resolveTenantCollectionPrefix com bloqueio de CPF/CNPJ em prefix');
   report.line('- docs/MONGODB_TENANT_ISOLATION.md');
 
