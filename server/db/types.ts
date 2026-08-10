@@ -348,6 +348,26 @@ export type MongoDocumentAccessRule = {
   scope?: 'global' | 'tenant';
 };
 
+/**
+ * Configuração de alerta de vencimento, por categoria.
+ *
+ * A data observada é `documents.searchMeta.validityDate`, que já é derivada dos campos de
+ * vencimento/validade da extração (ver `projectSearchMeta`) e pode ser corrigida à mão pelo
+ * usuário quando a IA não conseguir extrair.
+ */
+export type MongoDocumentExpiryAlertConfig = {
+  enabled: boolean;
+  /**
+   * Marcos de antecedência, em dias. `0` é o próprio dia do vencimento; negativos avisam depois
+   * de vencido. Um alerta por marco, sem repetição.
+   */
+  offsetsDays: number[];
+  /** Grupos documentais que recebem o alerta. Vazio = ninguém é avisado. */
+  notifyGroupIds: string[];
+  /** Continuar avisando depois de vencido, nos marcos negativos configurados. */
+  notifyAfterExpiry: boolean;
+};
+
 /** Regra de extração IA vinculada a uma categoria. */
 export type MongoDocumentExtractionRule = {
   _id: string;
@@ -364,10 +384,40 @@ export type MongoDocumentExtractionRule = {
   namingTemplate: string;
   minimumConfidence: number;
   onLowConfidence: 'requires_review';
+  expiryAlerts?: MongoDocumentExpiryAlertConfig;
   scope?: 'global' | 'tenant';
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type DocumentExpiryAlertStatus = 'unread' | 'read' | 'dismissed';
+
+/**
+ * Um alerta entregue a um usuário sobre o vencimento de um documento.
+ *
+ * Um registro por (documento, usuário, marco): a chave única impede que a avaliação diária
+ * reenvie o mesmo marco se rodar duas vezes no mesmo dia ou for reprocessada.
+ */
+export type MongoDocumentExpiryAlert = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  documentId: string;
+  documentName: string;
+  categoryId?: string;
+  categoryName?: string;
+  /** Destinatário. */
+  userId: string;
+  /** Marco que originou este alerta, em dias de antecedência. */
+  offsetDays: number;
+  /** Vencimento do documento no momento em que o alerta foi gerado. */
+  validityDate: Date;
+  /** Dias restantes quando gerado — negativo se já vencido. */
+  daysRemaining: number;
+  status: DocumentExpiryAlertStatus;
+  createdAt: Date;
+  readAt?: Date | null;
 };
 
 export type MongoStorageSlot = {

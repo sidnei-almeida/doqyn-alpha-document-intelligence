@@ -4,6 +4,11 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
+import {
+  scheduleDailyExpirySweep,
+  startExpiryAlertWorker,
+} from './queues/expiryAlertQueue.js';
+import { logger } from './utils/logger.js';
 import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
 import { initPrometheusMetrics, recordHttpRequest } from './metrics/prometheus.js';
 import { normalizeApiRouteLabel } from './metrics/apiRouteLabel.js';
@@ -58,6 +63,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/tracking/summary': () => import('../api/tracking/summary.js'),
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
+  '/api/expiry-alerts': () => import('../api/expiry-alerts/index.js'),
   '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
   '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
@@ -192,6 +198,16 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/documents\/([^/]+)\/favorite$/,
       loader: () => import('../api/documents/[documentId]/favorite.js'),
       paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/metadata$/,
+      loader: () => import('../api/documents/[documentId]/metadata.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/expiry-alerts\/([^/]+)$/,
+      loader: () => import('../api/expiry-alerts/[alertId].js'),
+      paramKeys: ['alertId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,
@@ -466,6 +482,17 @@ export async function startApiServer(): Promise<void> {
   initPrometheusMetrics();
   await connectRedisOnBoot();
   startInProcessAnalysisWorker();
+
+  // Alertas de vencimento: registra a varredura diária e sobe o consumidor. Sem Redis ambos são
+  // no-op — o recurso simplesmente não opera, em vez de derrubar o boot.
+  try {
+    await scheduleDailyExpirySweep();
+    startExpiryAlertWorker();
+  } catch (error) {
+    logger.error('failed to schedule expiry alerts', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
 
   const server = createServer(async (req, res) => {
     const startedAt = process.hrtime.bigint();

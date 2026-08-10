@@ -41,6 +41,8 @@ async function ensureRegistryIndexes() {
 
   const { ensureUserDocumentFavoritesIndexes } = await import('./userDocumentFavoritesIndexes.js');
   await ensureUserDocumentFavoritesIndexes();
+  const { ensureDocumentExpiryAlertIndexes } = await import('./documentExpiryAlertIndexes.js');
+  await ensureDocumentExpiryAlertIndexes();
   const { ensureDocumentShareGrantsIndexes } = await import('./documentShareGrantsIndexes.js');
   await ensureDocumentShareGrantsIndexes();
   const { ensureExternalDocumentShareGrantsIndexes } =

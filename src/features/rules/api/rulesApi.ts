@@ -1,5 +1,6 @@
 import type {
   DocumentExtractionRule,
+  ExpiryAlertConfig,
   ExtractionField,
   FieldType,
   GroupColor,
@@ -110,6 +111,7 @@ type ApiDocumentRule = {
   namingTemplate: string;
   minimumConfidence: number;
   onLowConfidence?: string;
+  expiryAlerts?: ExpiryAlertConfig;
   createdAt: string;
   updatedAt: string;
 };
@@ -362,6 +364,7 @@ export async function createDocumentRule(payload: {
   fields: ExtractionField[];
   namingTemplate: string;
   minimumConfidence?: number;
+  expiryAlerts?: ExpiryAlertConfig;
 }): Promise<ApiDocumentRule> {
   const data = await request<{ rule: ApiDocumentRule }>('/document-extraction-rules', {
     method: 'POST',
@@ -380,6 +383,7 @@ export async function updateDocumentRule(
     namingTemplate?: string;
     minimumConfidence?: number;
     active?: boolean;
+    expiryAlerts?: ExpiryAlertConfig;
     version?: number;
   },
 ): Promise<ApiDocumentRule> {
@@ -495,5 +499,6 @@ export function toExtractionRule(rule: ApiDocumentRule): DocumentExtractionRule 
     fields: rule.fields,
     namingTemplate: rule.namingTemplate,
     minimumConfidence: rule.minimumConfidence,
+    expiryAlerts: rule.expiryAlerts,
   };
 }

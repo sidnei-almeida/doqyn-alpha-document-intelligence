@@ -7,6 +7,7 @@ import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/
 import type { MongoTenant } from '../server/db/types.js';
 import type { ResolvedTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
+import { DOCUMENT_EXPIRY_ALERT_INDEXES } from '../server/db/documentExpiryAlertIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -107,6 +108,12 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
         { key: { tenantId: 1, status: 1, createdAt: -1 } },
         { key: { status: 1, createdAt: -1 } },
       ],
+    },
+    {
+      // Importado da definição canônica em vez de recopiado: este script mantém uma segunda lista
+      // de índices, e foi justamente a divergência entre as duas que já causou problema antes.
+      collection: SHARED_APP_COLLECTIONS.documentExpiryAlerts,
+      indexes: DOCUMENT_EXPIRY_ALERT_INDEXES,
     },
   ];
 }

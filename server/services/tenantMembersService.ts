@@ -40,6 +40,38 @@ function mapLegacyMemberToTenantMember(member: MongoCompanyMember): MongoTenantM
   };
 }
 
+/**
+ * IDs de autenticação dos membros ativos de um tenant.
+ *
+ * Usado por rotinas de fundo (varredura de vencimentos) que precisam agir em nome do usuário sem
+ * ter uma requisição: em tenant PF o filtro de ownership exige o `userId` do dono, que não existe
+ * em `tenants` — só na membership. Inclui o fallback de `company_members` legado, senão um tenant
+ * ainda não migrado ficaria sem ninguém para avisar.
+ */
+export async function listActiveTenantMemberUserIds(tenantId: string): Promise<string[]> {
+  const db = await getDb();
+
+  const [members, legacy] = await Promise.all([
+    db
+      .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
+      .find({ tenantId, status: 'active' } as Record<string, unknown>)
+      .toArray(),
+    db
+      .collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers)
+      .find({
+        $or: [{ tenantId }, { companyId: tenantId }],
+        status: 'active',
+      } as Record<string, unknown>)
+      .toArray(),
+  ]);
+
+  const userIds = [...members, ...legacy]
+    .map((member) => resolveMemberAuthUserId(member))
+    .filter((userId): userId is string => Boolean(userId));
+
+  return [...new Set(userIds)];
+}
+
 export async function findActiveTenantMember(input: {
   authUserId?: string;
   email?: string;
