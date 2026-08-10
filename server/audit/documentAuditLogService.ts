@@ -2,7 +2,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { MongoAuditLog } from '../db/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilterFromContext, withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
+import {
+  tenantScopeFilterFromContext,
+  withTenantFieldsFromContext,
+} from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { escapeRegexLiteral } from '../utils/documentListQuery.js';
@@ -46,11 +49,7 @@ function assertValidActor(ctx: DocumentAuditContext, action: string): void {
 
   if (isSystemAction) {
     if (ctx.actorUserId !== 'system') {
-      throw new ServiceError(
-        'Ação sistêmica exige actor system.',
-        'INVALID_AUDIT_ACTOR',
-        400,
-      );
+      throw new ServiceError('Ação sistêmica exige actor system.', 'INVALID_AUDIT_ACTOR', 400);
     }
     return;
   }
@@ -90,6 +89,11 @@ export async function createDocumentAuditLog(
 
   if (!isMongoNativeConfigured()) return null;
 
+  // `action` é normalizado na escrita para que as consultas possam usar o índice
+  // { tenantId, action, createdAt } sem `$options: 'i'` — regex case-insensitive anula o índice
+  // mesmo quando ancorada. Todas as actions já são constantes minúsculas; isto trava o contrato.
+  const action = event.action.trim().toLowerCase();
+
   const ownerUserId = ctx.ownerUserId ?? ctx.actorUserId;
   const { auditLogs, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ownerUserId,
@@ -97,8 +101,8 @@ export async function createDocumentAuditLog(
   });
 
   const now = event.occurredAt ?? new Date();
-  const result = event.result ?? (event.action.includes('failed') ? 'error' : 'success');
-  const severity = resolveSeverity(event.action, event.severity, result);
+  const result = event.result ?? (action.includes('failed') ? 'error' : 'success');
+  const severity = resolveSeverity(action, event.severity, result);
 
   const metadata = sanitizeAuditMetadata({
     ...(ctx.requestId ? { requestId: ctx.requestId } : {}),
@@ -120,7 +124,7 @@ export async function createDocumentAuditLog(
       documentId: event.documentId ?? null,
       versionId: event.versionId ?? null,
       actor: buildActor(ctx),
-      action: event.action,
+      action,
       description: event.description,
       area: event.area ?? (event.documentId ? 'Documentos' : 'Sistema'),
       result,
@@ -177,7 +181,9 @@ export async function listDocumentTimeline(input: {
   };
 
   if (input.actionPrefix?.trim()) {
-    query.action = { $regex: `^${input.actionPrefix.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` };
+    query.action = {
+      $regex: `^${input.actionPrefix.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+    };
   }
 
   if (input.cursor?.trim()) {
@@ -188,7 +194,11 @@ export async function listDocumentTimeline(input: {
   }
 
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
-  const rows = await auditLogs.find(query).sort({ createdAt: -1 }).limit(limit + 1).toArray();
+  const rows = await auditLogs
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
+    .toArray();
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
@@ -235,7 +245,7 @@ export async function listDocumentTimeline(input: {
 
   return {
     items,
-    nextCursor: hasMore ? items[items.length - 1]?.occurredAt ?? null : null,
+    nextCursor: hasMore ? (items[items.length - 1]?.occurredAt ?? null) : null,
   };
 }
 
@@ -245,7 +255,9 @@ export function hashAuditClientContext(value: string): string {
 
 const TRACKING_ACTION_PREFIX = /^(document\.|access\.|file_explorer\.)/;
 
-function resolveTrackingSecurity(metadata: Record<string, unknown>): Record<string, unknown> | undefined {
+function resolveTrackingSecurity(
+  metadata: Record<string, unknown>,
+): Record<string, unknown> | undefined {
   const securityContext =
     metadata.securityContext && typeof metadata.securityContext === 'object'
       ? (metadata.securityContext as Record<string, unknown>)
@@ -257,7 +269,9 @@ function resolveTrackingSecurity(metadata: Record<string, unknown>): Record<stri
   return securityContext ?? legacySecurity;
 }
 
-function stripRestrictedTrackingMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+function stripRestrictedTrackingMetadata(
+  metadata: Record<string, unknown>,
+): Record<string, unknown> {
   const result = { ...metadata };
   delete result.securityAuditRestricted;
   return result;
@@ -315,8 +329,7 @@ function mapTrackingRow(
     status: (metadata.status as DocumentTrackingListItem['status']) ?? undefined,
     actionGroup: typeof metadata.actionGroup === 'string' ? metadata.actionGroup : undefined,
     result: typeof row.result === 'string' ? row.result : undefined,
-    sessionHash:
-      typeof security?.sessionIdHash === 'string' ? security.sessionIdHash : undefined,
+    sessionHash: typeof security?.sessionIdHash === 'string' ? security.sessionIdHash : undefined,
   };
 }
 
@@ -409,10 +422,7 @@ function buildTrackingQuery(input: {
       query.$and = [
         ...(Array.isArray(query.$and) ? query.$and : []),
         {
-          $or: [
-            { occurredAt },
-            { occurredAt: { $exists: false }, createdAt: occurredAt },
-          ],
+          $or: [{ occurredAt }, { occurredAt: { $exists: false }, createdAt: occurredAt }],
         },
       ];
     }
@@ -543,9 +553,7 @@ export async function listDocumentTrackingEvents(input: {
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
-  const documentIds = page
-    .map((row) => row.documentId)
-    .filter((id): id is string => Boolean(id));
+  const documentIds = page.map((row) => row.documentId).filter((id): id is string => Boolean(id));
   const documentNames = await loadDocumentNames(documents, storage, documentIds);
 
   const items = page
@@ -554,7 +562,7 @@ export async function listDocumentTrackingEvents(input: {
 
   return {
     items,
-    nextCursor: hasMore ? items[items.length - 1]?.occurredAt ?? null : null,
+    nextCursor: hasMore ? (items[items.length - 1]?.occurredAt ?? null) : null,
   };
 }
 
