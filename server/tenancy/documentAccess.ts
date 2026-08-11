@@ -1,5 +1,4 @@
 import type { AuthUser } from '../auth/types.js';
-import { userHasRole } from '../auth/requireAuth.js';
 import { getTenantCollections } from './getTenantCollections.js';
 import { tenantScopeFilterFromContext } from './tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
@@ -20,12 +19,26 @@ export type DocumentAccessPermissions = {
   canTransferOwnership: boolean;
 };
 
-const DOCUMENT_ADMIN_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin']);
+/**
+ * Único papel com acesso amplo aos documentos do próprio tenant (D-01).
+ *
+ * Em PJ o documento é ativo da empresa e o funcionário é custodiante, então `company_admin` fica.
+ * `doqyn_admin` saiu porque nenhum papel de plataforma acessa documento de cliente.
+ * `individual_admin` saiu junto: `mapRolesToAuthRole` o mapeia para o papel legado `manager`, e
+ * enquanto ele estivesse aqui o caminho legado abaixo continuaria vivo.
+ */
+const DOCUMENT_ADMIN_ROLES = new Set(['company_admin']);
 
+/**
+ * Decide **apenas** por `platformRoles`, ou seja, apenas pela sessão verificada.
+ *
+ * O caminho legado pelos papéis `admin`/`manager` foi removido (D-03): ele promovia o campo `role`
+ * replicado no documento Mongo do membro a bypass de acesso, tornando a autorização dependente de
+ * dado sincronizado em vez da sessão verificada.
+ */
 export function isDocumentAdmin(user: AuthUser): boolean {
   const roles = user.platformRoles ?? [];
-  if (roles.some((role) => DOCUMENT_ADMIN_ROLES.has(role))) return true;
-  return userHasRole(user, ['admin', 'manager']);
+  return roles.some((role) => DOCUMENT_ADMIN_ROLES.has(role));
 }
 
 export function userHasDocumentGroupAccess(
@@ -64,14 +77,19 @@ export function resolveDocumentPermissions(
     isAdmin ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'upload');
 
-  const canUpdate = isAdmin;
-  const canTrash = isAdmin;
+  // O termo `isOwner` é obrigatório aqui (D-20). Sem ele, tirar `individual_admin` do set de admin
+  // deixaria o tenant PF somente-leitura sobre o próprio acervo: PF não tem `company_admin` nem
+  // regra de governança para compensar. Coerente com D-04 — ciclo de vida segue a leitura, e o dono
+  // lê o próprio documento.
+  const canUpdate = isAdmin || isOwner;
+  const canTrash = isAdmin || isOwner;
+  const canEditMetadata = isAdmin || isOwner;
   const canTransferOwnership = isAdmin || isOwner;
 
   return {
     canPreview,
     canDownload,
-    canEditMetadata: isAdmin,
+    canEditMetadata,
     canUpdate,
     canTrash,
     canContribute,
