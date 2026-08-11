@@ -240,7 +240,7 @@ export async function listDeactivatedDocuments(
   user: AuthUser,
   filters?: { search?: string; limit?: number },
 ) {
-  assertCanManageDeactivatedDocuments(user);
+  assertCanManageDeactivatedDocuments(user, ctx.storage);
 
   if (!isMongoNativeConfigured()) {
     return { items: [], documents: [], total: 0, pagination: { nextCursor: null } };
@@ -408,7 +408,7 @@ export async function reactivateDocument(
   user: AuthUser,
   documentId: string,
 ) {
-  assertCanManageDeactivatedDocuments(user);
+  assertCanManageDeactivatedDocuments(user, ctx.storage);
 
   const { doc } = await loadDocumentOrThrow(documentId, ctx);
 

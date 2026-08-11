@@ -604,7 +604,9 @@ export async function getDocumentDetail(
     canEditMetadata: perms.canEditMetadata,
     canUpdate: perms.canUpdate,
     canTransferOwnership: perms.canTransferOwnership,
-    canViewTracking: canViewDocumentTracking(user),
+    canViewTracking: canViewDocumentTracking(user, {
+      ownerUserId: (doc as MongoDocument).ownerUserId,
+    }),
     canShare: perms.canShare,
     sharedViaGrant: perms.sharedViaGrant,
   };

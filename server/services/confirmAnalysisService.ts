@@ -257,10 +257,10 @@ export async function confirmAnalysisPersistence(input: {
     share: categoryAccess.shareGroupIds,
   };
 
-  if (
-    !input.skipConfirmPermissionCheck &&
-    !canConfirmDocuments(input.user, legacyPermissions.update)
-  ) {
+  // Caminho de criação: o documento ainda não existe, então o dono em escopo é o dono que ele vai
+  // receber (`ownerUserId`, resolvido acima). Quem cria o próprio documento confirma o metadado
+  // dele sem depender de papel administrativo (D-09).
+  if (!input.skipConfirmPermissionCheck && !canConfirmDocuments(input.user, { ownerUserId })) {
     throw new ConfirmAnalysisError(
       'Você não tem permissão para confirmar metadados desta classe de documento.',
       'FORBIDDEN',

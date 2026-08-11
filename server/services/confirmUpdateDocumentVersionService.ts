@@ -172,7 +172,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     );
   }
 
-  if (!canConfirmDocuments(input.user, existingDoc.access?.updateGroupIds ?? [])) {
+  if (!canConfirmDocuments(input.user, { ownerUserId: existingDoc.ownerUserId })) {
     throw new ConfirmAnalysisError(
       'A confirmação de nova versão requer aprovação de um administrador.',
       'REQUIRES_ADMIN_APPROVAL',
