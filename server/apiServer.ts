@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createServer } from 'node:http';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
@@ -478,20 +478,46 @@ function toVercelRes(res: ServerResponse) {
 
 const PORT = Number(process.env.API_PORT ?? 3001);
 
-export async function startApiServer(): Promise<void> {
+/**
+ * Opções de boot da API.
+ *
+ * Todas são opcionais e **ligadas por padrão**, para que `server/dev-server.ts` e
+ * `server/production-server.ts` continuem se comportando exatamente como antes ao chamar
+ * `startApiServer()` sem argumento.
+ *
+ * Existem para que a suíte de integração consiga subir a API sem worker em processo, sem baixar a
+ * base GeoIP e em porta efêmera (`port: 0`).
+ */
+export type StartApiServerOptions = {
+  /** Porta de escuta. `0` faz o SO alocar porta efêmera. Default: `API_PORT` ou 3001. */
+  port?: number;
+  /** Sobe o worker de análise no mesmo processo. Default: true. */
+  inProcessWorkers?: boolean;
+  /** Inicializa o leitor GeoIP (baixa a base MaxMind no primeiro uso). Default: true. */
+  geoIp?: boolean;
+  /** Agenda a varredura de vencimento e sobe o consumidor de alertas. Default: true. */
+  expirySweep?: boolean;
+};
+
+export async function startApiServer(options?: StartApiServerOptions): Promise<Server> {
   initPrometheusMetrics();
   await connectRedisOnBoot();
-  startInProcessAnalysisWorker();
+
+  if (options?.inProcessWorkers !== false) {
+    startInProcessAnalysisWorker();
+  }
 
   // Alertas de vencimento: registra a varredura diária e sobe o consumidor. Sem Redis ambos são
   // no-op — o recurso simplesmente não opera, em vez de derrubar o boot.
-  try {
-    await scheduleDailyExpirySweep();
-    startExpiryAlertWorker();
-  } catch (error) {
-    logger.error('failed to schedule expiry alerts', {
-      message: error instanceof Error ? error.message : 'unknown',
-    });
+  if (options?.expirySweep !== false) {
+    try {
+      await scheduleDailyExpirySweep();
+      startExpiryAlertWorker();
+    } catch (error) {
+      logger.error('failed to schedule expiry alerts', {
+        message: error instanceof Error ? error.message : 'unknown',
+      });
+    }
   }
 
   const server = createServer(async (req, res) => {
@@ -554,16 +580,31 @@ export async function startApiServer(): Promise<void> {
     }
   });
 
-  server.listen(PORT, '0.0.0.0', () => {
-    const mode = process.env.NODE_ENV === 'production' ? 'produção' : 'desenvolvimento';
-    console.log(`DOQYN API (${mode}) em http://0.0.0.0:${PORT}`);
+  const listenPort = options?.port ?? PORT;
+
+  // Só resolve depois do callback de `listen`: com `port: 0` o SO só define a porta real nesse
+  // ponto, e quem chama precisa ler `server.address()` logo em seguida.
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(listenPort, '0.0.0.0', () => {
+      server.removeListener('error', reject);
+      const mode = process.env.NODE_ENV === 'production' ? 'produção' : 'desenvolvimento';
+      const address = server.address();
+      const boundPort = typeof address === 'object' && address ? address.port : listenPort;
+      console.log(`DOQYN API (${mode}) em http://0.0.0.0:${boundPort}`);
+      resolve();
+    });
   });
 
-  void initGeoIpCityReader()
-    .then(() => {
-      console.log('GeoIP City (GeoLite2) pronto para tracking.');
-    })
-    .catch(() => {
-      console.warn('GeoIP City indisponível — tracking usará fallback limitado.');
-    });
+  if (options?.geoIp !== false) {
+    void initGeoIpCityReader()
+      .then(() => {
+        console.log('GeoIP City (GeoLite2) pronto para tracking.');
+      })
+      .catch(() => {
+        console.warn('GeoIP City indisponível — tracking usará fallback limitado.');
+      });
+  }
+
+  return server;
 }
