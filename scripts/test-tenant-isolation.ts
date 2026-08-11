@@ -120,9 +120,13 @@ async function main() {
     name: 'Admin Dev',
     tenantId: TENANT_A,
     companyId: TENANT_A,
-    roles: ['company_admin'],
+    companyName: 'Tenant A',
+    // AuthRole não tem company_admin — esse valor é de platformRoles, logo abaixo.
+    // assertCanManageCompany decide por tenantId, então o caso de teste segue valendo.
+    role: 'admin',
+    area: 'Administração',
+    groups: [],
     platformRoles: ['company_admin'],
-    accessGroupIds: [],
   };
 
   let crossTenantBlocked = false;

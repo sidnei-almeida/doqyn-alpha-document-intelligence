@@ -305,8 +305,9 @@ async function main() {
 
   report.section('DADOS MÍNIMOS');
   report.line(`Grupo: ${groupId}`);
-  report.line(`Classe: ${classId}`);
-  report.line(`Regra: ${ruleId}`);
+  report.line(`Classe: ${categoryId}`);
+  report.line(`Regra de acesso: ${accessRuleId}`);
+  report.line(`Regra de extração: ${extractionRuleId}`);
   report.line(`Documento: ${documentId}`);
   report.line(`Versão: ${versionId}`);
   report.line(`Audit: ${auditId}`);
