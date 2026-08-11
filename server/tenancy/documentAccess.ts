@@ -3,6 +3,7 @@ import { getTenantCollections } from './getTenantCollections.js';
 import { tenantScopeFilterFromContext } from './tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import type { MongoDocument } from '../db/types.js';
+import type { TenantStorageContext } from './tenantStorage.js';
 import {
   type GovernanceAccessIndex,
   userHasGovernanceCategoryPermission,
@@ -39,6 +40,27 @@ const DOCUMENT_ADMIN_ROLES = new Set(['company_admin']);
 export function isDocumentAdmin(user: AuthUser): boolean {
   const roles = user.platformRoles ?? [];
   return roles.some((role) => DOCUMENT_ADMIN_ROLES.has(role));
+}
+
+/**
+ * Verdadeiro quando o usuário governa o escopo do tenant inteiro — não um documento específico.
+ *
+ * Serve às operações que não têm documento único em mãos (tracking do tenant, seção de
+ * desativados, configurações da lixeira). Dois caminhos, e só dois:
+ *
+ * - `company_admin`, pelo mesmo critério de `isDocumentAdmin` (D-01);
+ * - o usuário único de um tenant PF sobre o próprio pool individual. Em PF o indivíduo **é** o
+ *   tenant, então isto é reconhecimento de propriedade de tenant, não verbo novo de governança —
+ *   D-05 segue intacta. Sem este termo, tirar `individual_admin` do set de admin trancaria o
+ *   tenant PF fora do próprio acervo, que é a regressão T-01-10.
+ */
+export function userGovernsTenantScope(user: AuthUser, storage: TenantStorageContext): boolean {
+  if (isDocumentAdmin(user)) return true;
+
+  const userId = user.id?.trim();
+  if (!userId) return false;
+
+  return storage.storageMode === 'shared_individual_collection' && storage.userId === userId;
 }
 
 export function userHasDocumentGroupAccess(
@@ -166,9 +188,15 @@ export function assertCanPermanentDeleteDocument(
   }
 }
 
-/** Admin+ pode listar e reativar documentos na seção Desativados. */
-export function assertCanManageDeactivatedDocuments(user: AuthUser): void {
-  if (!isDocumentAdmin(user)) {
+/**
+ * Quem governa o escopo do tenant pode listar e reativar documentos na seção Desativados.
+ * Recebe o storage para que o tenant PF não fique trancado fora do próprio acervo (T-01-10).
+ */
+export function assertCanManageDeactivatedDocuments(
+  user: AuthUser,
+  storage: TenantStorageContext,
+): void {
+  if (!userGovernsTenantScope(user, storage)) {
     throw new ServiceError(
       'Somente administradores podem gerenciar documentos desativados.',
       'DOCUMENT_DEACTIVATED_ACCESS_DENIED',

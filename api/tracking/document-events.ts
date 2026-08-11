@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
 import { listDocumentTrackingEvents } from '../../server/audit/documentAuditLogService.js';
 import { requireDocumentTrackingAccess } from '../../server/audit/requireDocumentTrackingAccess.js';
-import { assertTrackingTenantScope } from '../../server/auth/permissions.js';
 import { assertQueryTenantMatchesSession } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
@@ -34,11 +33,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     assertQueryTenantMatchesSession(typeof tenantId === 'string' ? tenantId : undefined, auth.ctx);
-    assertTrackingTenantScope(
-      auth.user,
-      auth.ctx.tenantId,
-      typeof tenantId === 'string' ? tenantId : undefined,
-    );
 
     const parsedLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : undefined;
     const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
