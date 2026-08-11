@@ -6,6 +6,7 @@ import type { MongoDocument, MongoTenant } from '../../server/db/types.js';
 import { getTenantCollections } from '../../server/tenancy/getTenantCollections.js';
 import { invalidateTenantRegistryCache } from '../../server/tenancy/tenantRegistryCache.js';
 import { withTenantFieldsFromContext } from '../../server/tenancy/tenantQuery.js';
+import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from '../../server/tenancy/taxId.js';
 import { assertTestDatabase } from './assertTestDatabase.js';
 
 /**
@@ -52,6 +53,56 @@ export async function plantBusinessTenant(tenantId: string): Promise<MongoTenant
       mode: 'per_tenant',
       bucketName: `doqyn-test-${tenantId.replace(/_/g, '-')}`,
       bucketAlias: `Tenant de teste ${tenantId}`,
+      bucketStatus: 'ready',
+    },
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await db
+    .collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants)
+    .replaceOne({ _id: tenantId }, tenant, { upsert: true });
+
+  await invalidateTenantRegistryCache(tenantId);
+  plantedTenantIds.add(tenantId);
+
+  return tenant;
+}
+
+/**
+ * Tenant de pessoa física: pool individual compartilhado, escopado por `ownerTenantId` +
+ * `ownerUserId`. Um tenant PF tem um único usuário, e é esse usuário que governa o próprio escopo
+ * (`userGovernsTenantScope`) sem carregar papel administrativo nenhum.
+ */
+export async function plantIndividualTenant(
+  tenantId: string,
+  ownerUserId: string,
+): Promise<MongoTenant> {
+  assertTestDatabase();
+
+  const db = await getDb();
+  const now = new Date();
+
+  const tenant: MongoTenant = {
+    _id: tenantId,
+    tenantId,
+    companyId: tenantId,
+    tenantType: 'individual',
+    taxIdType: 'CPF',
+    taxIdMasked: '***.***.**1-**',
+    taxIdHash: `taxhash_${tenantId}`,
+    displayName: `Pessoa física de teste ${ownerUserId}`,
+    slug: tenantId.replace(/_/g, '-'),
+    status: 'active',
+    isolation: {
+      strategy: 'shared_individual_pool',
+      collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
+    },
+    storage: {
+      provider: 'cloudflare_r2',
+      mode: 'shared',
+      bucketName: 'doqyn-test-individual',
+      bucketAlias: 'Pool individual de teste',
       bucketStatus: 'ready',
     },
     createdAt: now,

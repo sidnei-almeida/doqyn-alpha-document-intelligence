@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { canConfirmDocuments } from '../server/auth/permissions.js';
+import type { AuthUser } from '../server/auth/types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -12,9 +14,52 @@ function read(relativePath: string): string {
 }
 
 describe('document upload approval', () => {
-  it('canConfirmDocuments restrito a administradores', () => {
-    const permissions = read('server/auth/permissions.ts');
-    assert.ok(permissions.includes('return isDocumentAdmin(user)'));
+  /**
+   * Chamada real a `canConfirmDocuments`, não leitura do texto-fonte de `permissions.ts` (D-19):
+   * inspeção de string não prova comportamento e quebra a cada refatoração de assinatura.
+   */
+  describe('canConfirmDocuments', () => {
+    const OWNER_ID = 'user_owner_approval';
+
+    function user(overrides: Partial<AuthUser> = {}): AuthUser {
+      return {
+        id: OWNER_ID,
+        email: 'owner@teste.doqyn',
+        name: 'Dono',
+        companyId: 'company_approval',
+        tenantId: 'company_approval',
+        role: 'user',
+        platformRoles: ['user'],
+        membershipStatus: 'active',
+        ...overrides,
+      };
+    }
+
+    it('o dono confirma metadado do próprio documento (D-09)', () => {
+      assert.equal(canConfirmDocuments(user(), { ownerUserId: OWNER_ID }), true);
+    });
+
+    it('company_admin confirma metadado de documento de terceiro (D-01)', () => {
+      assert.equal(
+        canConfirmDocuments(user({ platformRoles: ['company_admin'] }), {
+          ownerUserId: 'user_terceiro',
+        }),
+        true,
+      );
+    });
+
+    it('terceiro sem papel administrativo é enviado para aprovação', () => {
+      assert.equal(canConfirmDocuments(user(), { ownerUserId: 'user_terceiro' }), false);
+    });
+
+    it('o papel de plataforma eliminado não confirma documento de terceiro (D-02)', () => {
+      assert.equal(
+        canConfirmDocuments(user({ platformRoles: ['doqyn_admin'] }), {
+          ownerUserId: 'user_terceiro',
+        }),
+        false,
+      );
+    });
   });
 
   it('serviço de aprovação persiste pendências e aprova via confirmAnalysis', () => {
