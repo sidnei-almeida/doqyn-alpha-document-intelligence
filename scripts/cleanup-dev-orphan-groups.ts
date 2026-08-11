@@ -58,7 +58,8 @@ async function main() {
 
   const rules = await documentRules!.find({ ...tenantScopeFilter(tenantId) }).toArray();
   for (const rule of rules) {
-    for (const gid of rule.accessGroupIds ?? []) referencedIds.add(gid);
+    // MongoDocumentAccessRule guarda um grupo por regra (groupId), não uma lista.
+    if (rule.groupId) referencedIds.add(rule.groupId);
   }
 
   const classes = await db.collection(names.documentClasses!).find({ ...tenantScopeFilter(tenantId) }).toArray();

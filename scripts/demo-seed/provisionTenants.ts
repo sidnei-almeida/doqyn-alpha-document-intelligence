@@ -22,7 +22,7 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
   const db = await getDb();
   const now = new Date();
   const taxIdHash = hashTaxId(company.cnpj);
-  const taxIdMasked = maskTaxId(company.cnpj);
+  const taxIdMasked = maskTaxId(company.cnpj, 'CNPJ');
 
   const tenantFields: Partial<MongoTenant> & Record<string, unknown> = {
     tenantId: company.tenantId,

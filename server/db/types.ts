@@ -50,6 +50,13 @@ export type MongoTenant = {
   isolation: {
     strategy: TenantIsolationStrategy;
     collectionPrefix: string;
+    /**
+     * Gravado por tenantProvisionService (`isolation.storageMode`).
+     * Fonte de verdade do tipo: `TenantStorageMode` em `server/tenancy/tenantStorage.ts`
+     * — repetido inline aqui porque aquele módulo já importa `MongoTenant` deste,
+     * e importar de volta fecharia um ciclo neste módulo de tipos folha.
+     */
+    storageMode?: 'shared_collections' | 'shared_individual_collection';
   };
   storage?: MongoTenantStorage;
   settings?: MongoTenantSettings;
