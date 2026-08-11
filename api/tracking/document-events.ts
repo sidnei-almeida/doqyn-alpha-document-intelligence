@@ -9,9 +9,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
-  const auth = await requireDocumentTrackingAccess(req, res);
-  if (!auth) return;
-
   const {
     documentId,
     versionId,
@@ -28,6 +25,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cursor,
     limit,
   } = req.query;
+
+  // O documento filtrado entra como escopo da guarda: com ele, o dono vê a trilha do próprio
+  // documento sem governar o tenant (D-07); sem ele, a consulta cobre o tenant inteiro e exige
+  // governança de tenant.
+  const auth = await requireDocumentTrackingAccess(req, res, {
+    documentId: typeof documentId === 'string' ? documentId : undefined,
+  });
+  if (!auth) return;
 
   // O tenant vem exclusivamente da sessão verificada, via `buildDocumentAuditContext(auth.ctx, …)`.
   // O parâmetro de query de tenant foi apagado desta superfície (D-08).

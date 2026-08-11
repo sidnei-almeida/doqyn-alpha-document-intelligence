@@ -9,9 +9,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
-  const auth = await requireDocumentTrackingAccess(req, res);
-  if (!auth) return;
-
   const documentId =
     typeof req.query.documentId === 'string'
       ? req.query.documentId
@@ -25,6 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       code: 'MISSING_DOCUMENT_ID',
     });
   }
+
+  // Rota sempre de um documento único: o escopo entra na guarda para que o dono veja a linha do
+  // tempo do próprio documento sem governar o tenant (D-07).
+  const auth = await requireDocumentTrackingAccess(req, res, { documentId: documentId.trim() });
+  if (!auth) return;
 
   const limit =
     typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : undefined;

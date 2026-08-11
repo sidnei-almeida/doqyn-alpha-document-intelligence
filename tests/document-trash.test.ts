@@ -198,7 +198,10 @@ describe('document trash — endpoints e apiServer', () => {
     const api = read('api/settings/trash-retention.ts');
     assert.ok(api.includes('getTrashRetentionSettings'));
     assert.ok(api.includes('updateTrashRetentionSettings'));
-    assert.ok(api.includes('isDocumentAdmin'));
+    // A guarda passou a ser de escopo de tenant, não de papel: o usuário único de um tenant PF
+    // configura a própria lixeira sem papel administrativo. Comportamento provado por request real
+    // em `tests/tracking-access-http.test.ts`.
+    assert.ok(api.includes('userGovernsTenantScope'));
   });
 
   it('script trash:purge-expired desativa documentos expirados', () => {
