@@ -1,9 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getDocumentDetail, listDocuments } from '../../server/services/documentService.js';
-import {
-  assertQueryTenantMatchesSession,
-  requireDocumentAuthContext,
-} from '../../server/tenancy/documentRequestContext.js';
+import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -19,7 +16,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       type,
       area,
       categoryId,
-      tenantId,
       from,
       to,
       sort,
@@ -30,12 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cursor,
     } = req.query;
 
+    // O tenant vem exclusivamente da sessão verificada (`auth.ctx.tenantId`). O cliente não propõe
+    // tenant nesta rota — D-08 apagou o parâmetro em vez de endurecer a validação dele.
     try {
-      assertQueryTenantMatchesSession(
-        typeof tenantId === 'string' ? tenantId : undefined,
-        auth.ctx,
-      );
-
       if (id && typeof id === 'string') {
         const detail = await getDocumentDetail(
           id,
