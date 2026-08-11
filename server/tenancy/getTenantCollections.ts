@@ -58,7 +58,8 @@ export type TenantDbCollections = {
 
 export function getTenantDbCollections(
   db: Db,
-  tenant: MongoTenant,
+  /** Mantido na assinatura por compatibilidade: os nomes de coleção não dependem mais do tenant. */
+  _tenant: MongoTenant,
   names?: ResolvedTenantCollectionNames,
 ): TenantDbCollections {
   const resolvedNames = names ?? resolveSharedCollections();
