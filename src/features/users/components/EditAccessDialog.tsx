@@ -21,7 +21,6 @@ type EditAccessDialogProps = {
   memberName: string;
   initialForm: AccessFormState;
   documentGroups: DocumentGroupOption[];
-  canAssignDoqynAdmin: boolean;
   saving: boolean;
   onClose: () => void;
   onSave: (form: AccessFormState) => void;
@@ -32,7 +31,6 @@ export function EditAccessDialog({
   memberName,
   initialForm,
   documentGroups,
-  canAssignDoqynAdmin,
   saving,
   onClose,
   onSave,
@@ -109,7 +107,6 @@ export function EditAccessDialog({
           <PlatformRolesSection
             value={form.platformRoles}
             onChange={(platformRoles) => setForm((current) => ({ ...current, platformRoles }))}
-            canAssignDoqynAdmin={canAssignDoqynAdmin}
           />
           <DocumentGroupsSection
             groups={documentGroups}

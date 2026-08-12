@@ -34,7 +34,6 @@ export function AuditPage() {
 
   const {
     isAdmin,
-    isDoqynAdmin,
     overview,
     overviewLoading,
     overviewError,
@@ -243,7 +242,6 @@ export function AuditPage() {
         item={approveItem?.type === 'document_upload' ? null : approveItem}
         documentGroups={documentGroups}
         saving={approveMutation.isPending}
-        canAssignDoqynAdmin={isDoqynAdmin}
         onClose={() => setApproveItem(null)}
         onConfirm={(input) => {
           if (!approveItem) return;

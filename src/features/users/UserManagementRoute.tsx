@@ -13,7 +13,7 @@ export function UserManagementRoute() {
     );
   }
 
-  if (!hasAnyRole(['doqyn_admin', 'company_admin'])) {
+  if (!hasAnyRole(['company_admin'])) {
     return <Navigate to="/biblioteca" replace />;
   }
 

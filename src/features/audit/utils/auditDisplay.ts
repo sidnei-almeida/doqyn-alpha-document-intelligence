@@ -64,9 +64,8 @@ export function sanitizeAuditMetadataForDisplay(
 
 export function isAuditAdmin(roles: string[], legacyRole?: string): boolean {
   return (
-    roles.some((role) =>
-      ['doqyn_admin', 'company_admin', 'individual_admin'].includes(role),
-    ) || legacyRole === 'admin'
+    roles.some((role) => ['company_admin', 'individual_admin'].includes(role)) ||
+    legacyRole === 'admin'
   );
 }
 

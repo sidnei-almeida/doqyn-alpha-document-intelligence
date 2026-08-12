@@ -1,7 +1,7 @@
 /**
  * Espelho do gate de tracking do servidor, usado só para esconder menu e barrar rota — o gate real
- * é `requireDocumentTrackingAccess`. `doqyn_admin` saiu (D-02): nenhum papel de plataforma acessa
- * dado de cliente, e deixá-lo aqui ofereceria na UI uma ação que o backend agora nega.
+ * é `requireDocumentTrackingAccess`. Nenhum papel de plataforma entra aqui (D-02): papel de
+ * plataforma não acessa dado de cliente, e deixá-lo ofereceria na UI ação que o backend nega.
  * `individual_admin` fica porque é como o usuário de tenant PF se identifica no frontend, que não
  * tem o contexto de storage usado pelo servidor em `userGovernsTenantScope`.
  */

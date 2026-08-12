@@ -65,10 +65,8 @@ function memberToAccessForm(member: CompanyMemberDto): AccessFormState {
 }
 
 export function UsersPage() {
-  const { user, tenant, hasRole } = useAuth();
+  const { user, tenant } = useAuth();
   const queryClient = useQueryClient();
-  const isDoqynAdmin = hasRole('doqyn_admin');
-  const canAssignDoqynAdmin = isDoqynAdmin;
   const sessionTenantId = tenant?.tenantId ?? user?.companyId ?? '';
   const tenantDisplayName =
     tenant?.displayName ?? user?.companyName ?? sessionTenantId ?? 'sua empresa';
@@ -501,7 +499,6 @@ export function UsersPage() {
                   <PlatformRolesSection
                     value={inviteForm.platformRoles}
                     onChange={(platformRoles) => setInviteForm((f) => ({ ...f, platformRoles }))}
-                    canAssignDoqynAdmin={canAssignDoqynAdmin}
                   />
                   <div className="flex justify-end gap-2">
                     <Button variant="secondary" onClick={closeInviteModal}>
@@ -547,7 +544,6 @@ export function UsersPage() {
               <PlatformRolesSection
                 value={accessForm.platformRoles}
                 onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
-                canAssignDoqynAdmin={canAssignDoqynAdmin}
               />
               <DocumentGroupsSection
                 groups={documentGroups}
@@ -581,7 +577,6 @@ export function UsersPage() {
           memberName={memberDisplayName(editingMember)}
           initialForm={editAccessBaseline}
           documentGroups={documentGroups}
-          canAssignDoqynAdmin={canAssignDoqynAdmin}
           saving={updateAccessMutation.isPending}
           onClose={() => {
             setEditingMember(null);
