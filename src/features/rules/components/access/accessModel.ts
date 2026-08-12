@@ -40,7 +40,7 @@ export function listAvailableGroups(category: DocumentCategory, groups: Group[])
 
 /** Rótulo curto do nível mais alto de acesso (mesma hierarquia usada no backend). */
 export function permissionSummaryLabel(permissions: DocumentAccessPermissions): string {
-  if (permissions.upload) return 'pode enviar';
+  if (permissions.upload) return 'pode alterar';
   if (permissions.download) return 'pode baixar';
   if (permissions.view) return 'pode ver';
   return 'sem acesso';

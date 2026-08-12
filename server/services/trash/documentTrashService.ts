@@ -12,8 +12,8 @@ import {
   assertCanManageDeactivatedDocuments,
   canUserListDocument,
   loadDocumentAccessContext,
-  loadMemberDocumentGroupIds,
 } from '../../tenancy/documentAccess.js';
+import type { GovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
   buildDocumentMutationFields,
@@ -93,10 +93,23 @@ function isDeactivatedDocument(doc: MongoDocument): boolean {
   return Boolean(doc.deactivatedAt) || doc.lifecycleStatus === 'deactivated';
 }
 
+/**
+ * Carrega o documento **e** o índice de governança do tenant.
+ *
+ * O índice não era carregado aqui: `assertCanTrashDocument` recebia apenas os grupos do membro e
+ * resolvia as permissões com `governanceIndex` indefinido, ou seja, nenhuma regra do mapa de regras
+ * podia conceder arquivamento. Com D-24 ligando `canTrash` à permissão `update` configurada pelo
+ * tenant, deixar isso como estava tornaria a regra inócua exatamente no endpoint que ela existe
+ * para governar.
+ */
 async function loadDocumentOrThrow(
   documentId: string,
   ctx: DocumentRequestContext,
-): Promise<{ doc: MongoDocument; memberGroupIds: string[] }> {
+): Promise<{
+  doc: MongoDocument;
+  memberGroupIds: string[];
+  governanceIndex: GovernanceAccessIndex;
+}> {
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
@@ -113,13 +126,13 @@ async function loadDocumentOrThrow(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
 
-  return { doc: doc as MongoDocument, memberGroupIds };
+  return { doc: doc as MongoDocument, memberGroupIds, governanceIndex };
 }
 
 async function buildTrashListResponse(
@@ -282,7 +295,7 @@ export async function moveDocumentToTrash(
   documentId: string,
   reason?: string,
 ) {
-  const { doc, memberGroupIds } = await loadDocumentOrThrow(documentId, ctx);
+  const { doc, memberGroupIds, governanceIndex } = await loadDocumentOrThrow(documentId, ctx);
 
   if (isDeactivatedDocument(doc)) {
     throw new ServiceError(
@@ -296,7 +309,7 @@ export async function moveDocumentToTrash(
     throw new ServiceError('Documento já está na lixeira.', 'DOCUMENT_ALREADY_TRASHED', 409);
   }
 
-  assertCanTrashDocument(user, doc, memberGroupIds);
+  assertCanTrashDocument(user, doc, memberGroupIds, governanceIndex);
 
   const settings = await getTrashRetentionSettings(ctx.tenantId);
   const now = new Date();
@@ -345,7 +358,7 @@ export async function restoreDocumentFromTrash(
   user: AuthUser,
   documentId: string,
 ) {
-  const { doc, memberGroupIds } = await loadDocumentOrThrow(documentId, ctx);
+  const { doc, memberGroupIds, governanceIndex } = await loadDocumentOrThrow(documentId, ctx);
 
   if (isDeactivatedDocument(doc)) {
     throw new ServiceError(
@@ -363,7 +376,7 @@ export async function restoreDocumentFromTrash(
     throw new ServiceError('Documento foi excluído permanentemente.', 'DOCUMENT_PURGED', 410);
   }
 
-  assertCanTrashDocument(user, doc, memberGroupIds);
+  assertCanTrashDocument(user, doc, memberGroupIds, governanceIndex);
 
   const now = new Date();
   const actor = await resolveDocumentActorIdentity({ tenantId: ctx.tenantId, actor: user });

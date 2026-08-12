@@ -96,17 +96,32 @@ export function resolveDocumentPermissions(
     isOwner ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'download');
 
-  const canContribute =
-    isAdmin ||
-    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'upload');
+  /**
+   * Permissão `update` configurada pelo tenant no mapa de regras (categoria × grupo).
+   *
+   * Antes desta linha o ciclo de vida do documento era decidido só por papel fixo, ignorando o que
+   * a empresa tinha configurado — o motor de governança expunha o verbo e ninguém o consultava
+   * (D-24). Configuração de acesso a documento é do tenant, não nossa.
+   */
+  const hasGovernanceUpdate = userHasGovernanceCategoryPermission(
+    governanceIndex,
+    doc.classId,
+    memberGroupIds,
+    'update',
+  );
+
+  const canContribute = isAdmin || isOwner || hasGovernanceUpdate;
 
   // O termo `isOwner` é obrigatório aqui (D-20). Sem ele, tirar `individual_admin` do set de admin
   // deixaria o tenant PF somente-leitura sobre o próprio acervo: PF não tem `company_admin` nem
   // regra de governança para compensar. Coerente com D-04 — ciclo de vida segue a leitura, e o dono
   // lê o próprio documento.
-  const canUpdate = isAdmin || isOwner;
-  const canTrash = isAdmin || isOwner;
-  const canEditMetadata = isAdmin || isOwner;
+  const canUpdate = isAdmin || isOwner || hasGovernanceUpdate;
+  const canTrash = isAdmin || isOwner || hasGovernanceUpdate;
+  const canEditMetadata = isAdmin || isOwner || hasGovernanceUpdate;
+
+  // Transferir a propriedade não é ciclo de vida: é trocar o titular do ativo. Fica em admin+dono
+  // de propósito — o mapa de regras não tem verbo que signifique isso, e inventar um violaria D-05.
   const canTransferOwnership = isAdmin || isOwner;
 
   return {
