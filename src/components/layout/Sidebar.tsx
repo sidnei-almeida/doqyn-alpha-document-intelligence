@@ -27,14 +27,10 @@ export function Sidebar({ className }: SidebarProps) {
   const [searchParams] = useSearchParams();
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
 
-  const canManageUsers = hasAnyRole(['doqyn_admin', 'company_admin']);
+  const canManageUsers = hasAnyRole(['company_admin']);
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const canViewTracking = canViewDocumentTracking(roles, user?.role, membership?.status);
-  const canManageDeactivated = hasAnyRole([
-    'doqyn_admin',
-    'company_admin',
-    'individual_admin',
-  ]);
+  const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
 
   const libraryViewItems = NAV_ITEMS_LIBRARY_VIEWS;
 

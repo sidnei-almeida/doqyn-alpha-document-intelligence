@@ -109,11 +109,7 @@ export function LibraryPage() {
   const isDeactivatedView = collection.id === 'desativados';
   const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
-  const canManageDeactivated = hasAnyRole([
-    'doqyn_admin',
-    'company_admin',
-    'individual_admin',
-  ]);
+  const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {

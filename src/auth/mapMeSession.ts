@@ -2,7 +2,6 @@ import type { AuthUser, AuthRole } from '@/features/auth/types';
 import type { MeMembership, MeSession, AccessGateReason } from './sessionTypes';
 
 function mapTenantRolesToAuthRole(roles: string[]): AuthRole {
-  if (roles.includes('doqyn_admin')) return 'admin';
   if (roles.includes('company_admin')) return 'manager';
   if (roles.includes('viewer')) return 'viewer';
   return 'user';

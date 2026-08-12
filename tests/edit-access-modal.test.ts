@@ -7,7 +7,10 @@ import {
   cloneAccessFormState,
   isAccessFormDirty,
 } from '../src/features/users/accessFormState.js';
-import { PLATFORM_ROLE_LABELS } from '../src/features/users/platformRoleLabels.js';
+import {
+  ASSIGNABLE_PLATFORM_ROLES,
+  PLATFORM_ROLE_LABELS,
+} from '../src/features/users/platformRoleLabels.js';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
   email: true,
@@ -64,15 +67,27 @@ describe('modal Editar acesso — UX e dirty state', () => {
   });
 
   it('roles exibem labels amigáveis mantendo valores internos', () => {
-    assert.equal(PLATFORM_ROLE_LABELS.doqyn_admin.label, 'Administrador do sistema');
     assert.equal(PLATFORM_ROLE_LABELS.company_admin.label, 'Administrador da empresa');
+    assert.equal(PLATFORM_ROLE_LABELS.individual_admin.label, 'Administrador da conta');
     assert.equal(PLATFORM_ROLE_LABELS.user.label, 'Usuário');
     const chips = readSrc('components/ui/PlatformRoleChips.tsx');
     assert.ok(chips.includes('getPlatformRoleLabel'));
     assert.ok(chips.includes('{label}'));
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('getPlatformRoleMeta'));
-    assert.ok(sections.includes('permissões administrativas globais'));
+  });
+
+  it('não existe papel administrativo de plataforma para atribuir', () => {
+    // O papel global foi eliminado do produto. A tela de usuários não oferece rótulo, checkbox nem
+    // aviso para ele — se voltar a existir um papel de plataforma atribuível por sessão humana,
+    // este teste quebra antes de a UI voltar a prometê-lo.
+    const platformRoleKeys = Object.keys(PLATFORM_ROLE_LABELS);
+    assert.deepEqual(platformRoleKeys.sort(), ['company_admin', 'individual_admin', 'user']);
+    assert.deepEqual(ASSIGNABLE_PLATFORM_ROLES, ['company_admin', 'user']);
+
+    const sections = readSrc('features/users/components/AccessFormSections.tsx');
+    assert.equal(sections.includes('permissões administrativas globais'), false);
+    assert.equal(sections.includes('canAssignDoqynAdmin'), false);
   });
 
   it('Salvar desabilitado sem alterações e habilitado após mudança', () => {

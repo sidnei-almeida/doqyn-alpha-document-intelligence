@@ -1,4 +1,4 @@
-export const RULES_ADMIN_ROLES = ['doqyn_admin', 'company_admin', 'individual_admin'] as const;
+export const RULES_ADMIN_ROLES = ['company_admin', 'individual_admin'] as const;
 
 export function canAccessRulesPage(
   hasAnyRole: (roles: readonly string[]) => boolean,
