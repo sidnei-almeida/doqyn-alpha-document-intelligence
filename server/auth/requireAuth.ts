@@ -6,7 +6,6 @@ import {
   verifyDoqynAuthSession,
 } from './providers/doqynAuthProvider.js';
 import type { AuthUser } from './types.js';
-import { userIsDoqynAdmin } from './memberAuth.js';
 import { logger } from '../utils/logger.js';
 import { isServiceError } from '../utils/serviceErrors.js';
 
@@ -80,8 +79,13 @@ export function requireRole(user: AuthUser, role: string, res: VercelResponse): 
   return requireAnyRole(user, [role], res);
 }
 
+/**
+ * Gestão de usuários é operação **do tenant**, exercida pelo `company_admin` sobre a própria
+ * empresa. O papel global de plataforma estava nesta lista só para dar conveniência durante o
+ * desenvolvimento; com ele removido, quem não é `company_admin` toma 403 aqui.
+ */
 export function requireUserManager(user: AuthUser, res: VercelResponse): boolean {
-  return requireAnyRole(user, ['doqyn_admin', 'company_admin'], res);
+  return requireAnyRole(user, ['company_admin'], res);
 }
 
 export function userHasGroup(user: { groups: string[] }, group: string) {
@@ -91,9 +95,3 @@ export function userHasGroup(user: { groups: string[] }, group: string) {
 export function userHasAnyGroup(user: { groups: string[] }, groups: string[]) {
   return groups.some((group) => user.groups.includes(group));
 }
-
-export function userHasRole(user: { role: string }, roles: string[]) {
-  return roles.includes(user.role);
-}
-
-export { userIsDoqynAdmin };

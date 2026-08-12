@@ -1,9 +1,28 @@
 export type AuthProviderName = 'doqyn_auth' | 'temporary';
 
+const AUTH_PROVIDERS: readonly AuthProviderName[] = ['doqyn_auth', 'temporary'];
+
+/**
+ * Falha fechado (D-10 / critério 5 da fase). Antes, `AUTH_PROVIDER` ausente ou com valor
+ * desconhecido caía silenciosamente em `temporary` — um deploy que esquecesse a variável subia
+ * inteiro com a autenticação legada, sem nenhum sinal. Agora o valor precisa ser declarado.
+ */
 export function getAuthProvider(): AuthProviderName {
   const provider = process.env.AUTH_PROVIDER?.trim().toLowerCase();
-  if (provider === 'doqyn_auth') return 'doqyn_auth';
-  return 'temporary';
+
+  if (!provider) {
+    throw new Error(
+      `AUTH_PROVIDER é obrigatório e não foi definido. Valores aceitos: ${AUTH_PROVIDERS.join(', ')}.`,
+    );
+  }
+
+  if (!AUTH_PROVIDERS.includes(provider as AuthProviderName)) {
+    throw new Error(
+      `AUTH_PROVIDER="${provider}" é desconhecido. Valores aceitos: ${AUTH_PROVIDERS.join(', ')}.`,
+    );
+  }
+
+  return provider as AuthProviderName;
 }
 
 export function usesDoqynAuth(): boolean {

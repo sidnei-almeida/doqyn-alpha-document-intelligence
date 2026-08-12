@@ -26,7 +26,7 @@ function mapAuthStatus(status: string): TenantMemberStatus {
 }
 
 function mapPlatformRoles(roles: string[]): PlatformRole[] {
-  const allowed: PlatformRole[] = ['doqyn_admin', 'company_admin', 'individual_admin', 'user'];
+  const allowed: PlatformRole[] = ['company_admin', 'individual_admin', 'user'];
   const mapped = roles.filter((role): role is PlatformRole =>
     allowed.includes(role as PlatformRole),
   );

@@ -3,7 +3,6 @@ import {
   assertCanManageCompany,
   resolveTargetCompanyId,
   sanitizeAssignablePlatformRoles,
-  userIsDoqynAdmin,
 } from '../auth/memberAuth.js';
 import type { MongoTenantMember, NotificationPreferences, PlatformRole } from '../db/types.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
@@ -69,7 +68,7 @@ export async function inviteCompanyMember(
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
-  const tenantRoles = sanitizeAssignablePlatformRoles(actor, input.platformRoles);
+  const tenantRoles = sanitizeAssignablePlatformRoles(input.platformRoles);
   const accessGroupIds = input.accessGroupIds ?? [];
 
   await assertGroupIdsExist(tenantId, accessGroupIds, { requireActive: true });
@@ -138,7 +137,7 @@ export async function approveCompanyMember(
     throw new ServiceError('Somente solicitações pendentes podem ser aprovadas.', 'INVALID_STATUS', 400);
   }
 
-  const tenantRoles = sanitizeAssignablePlatformRoles(actor, resolvePlatformRoles(input));
+  const tenantRoles = sanitizeAssignablePlatformRoles(resolvePlatformRoles(input));
   const accessGroupIds = input.accessGroupIds ?? [];
   const notificationPreferences = mergeNotificationPreferences(input.notificationPreferences);
 
@@ -240,10 +239,6 @@ export async function blockCompanyMember(actor: AuthUser, memberId: string) {
   const member = await getMemberOrThrowForActor(actor, memberId);
   const tenantId = member.tenantId;
 
-  if (member.tenantRoles.includes('doqyn_admin') && !userIsDoqynAdmin(actor)) {
-    throw new ServiceError('Você não pode bloquear um administrador global.', 'FORBIDDEN', 403);
-  }
-
   const now = new Date();
   const updated = await updateTenantMemberFields(memberId, tenantId, {
     status: 'blocked',
@@ -294,7 +289,7 @@ export async function updateMemberAccess(
 ) {
   const member = await getMemberOrThrowForActor(actor, memberId);
   const tenantId = member.tenantId;
-  const tenantRoles = sanitizeAssignablePlatformRoles(actor, resolvePlatformRoles(input));
+  const tenantRoles = sanitizeAssignablePlatformRoles(resolvePlatformRoles(input));
   const accessGroupIds = input.accessGroupIds ?? [];
   const notificationPreferences = input.notificationPreferences
     ? mergeNotificationPreferences(input.notificationPreferences)
