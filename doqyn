@@ -173,15 +173,15 @@ cmd_up() {
     || warn "seed do alpha não aplicou — veja 'npm run dev:seed:demo'. Os serviços sobem mesmo assim."
 
   start_bg auth "$AUTH_DIR" npm run dev:server
-  wait_for_http "http://127.0.0.1:$AUTH_PORT/health" "auth-service ($AUTH_PORT)" \
+  wait_for_http "http://localhost:$AUTH_PORT/health" "auth-service ($AUTH_PORT)" \
     || die "auth-service não respondeu em $AUTH_PORT. Log: logs/dev/auth.log"
 
   start_bg api "$ALPHA_DIR" npm run dev:api
-  wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API ($API_PORT)" \
+  wait_for_http "http://localhost:$API_PORT/api/health" "API ($API_PORT)" \
     || die "API não respondeu em $API_PORT. Log: logs/dev/api.log"
 
   start_bg web "$ALPHA_DIR" npm run dev:web
-  wait_for_http "http://127.0.0.1:$WEB_PORT" "Vite ($WEB_PORT)" 90 \
+  wait_for_http "http://localhost:$WEB_PORT" "Vite ($WEB_PORT)" 90 \
     || warn "Vite ainda não respondeu — pode estar compilando. Veja logs/dev/web.log"
 
   printf '\n'
@@ -193,9 +193,9 @@ cmd_status() {
   mkdir -p "$RUN_DIR"
   printf 'SERVIÇO       PORTA  PROCESSO   HTTP\n'
   local rows=(
-    "auth $AUTH_PORT http://127.0.0.1:$AUTH_PORT/health"
-    "api $API_PORT http://127.0.0.1:$API_PORT/api/health"
-    "web $WEB_PORT http://127.0.0.1:$WEB_PORT"
+    "auth $AUTH_PORT http://localhost:$AUTH_PORT/health"
+    "api $API_PORT http://localhost:$API_PORT/api/health"
+    "web $WEB_PORT http://localhost:$WEB_PORT"
   )
   local row name port url proc http
   for row in "${rows[@]}"; do
