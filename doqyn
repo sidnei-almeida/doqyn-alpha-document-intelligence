@@ -70,7 +70,14 @@ start_bg() {
   local name="$1" dir="$2"; shift 2
   mkdir -p "$RUN_DIR"
   if pid_alive "$RUN_DIR/$name.pid"; then ok "$name já rodando (pid $(cat "$RUN_DIR/$name.pid"))"; return 0; fi
-  ( cd "$dir" && nohup "$@" >"$LOG_DIR/$name.log" 2>&1 & echo $! >"$RUN_DIR/$name.pid" )
+  # `setsid` + stdin de /dev/null: sem isso o filho herda o descritor de saída do
+  # shell e segura o pipe, então `./doqyn up | tee` nunca devolve o prompt — o
+  # mesmo sintoma de terminal preso que este script existe para eliminar.
+  #
+  # O pid é gravado DE DENTRO da nova sessão, não com `$!`: `setsid` bifurca e
+  # encerra, então `$!` seria o invólucro morto e o `down` não acharia o servidor.
+  ( cd "$dir" && setsid bash -c 'echo $$ >"$1"; shift; exec "$@"' _ \
+      "$RUN_DIR/$name.pid" "$@" </dev/null >"$LOG_DIR/$name.log" 2>&1 & )
   step "$name iniciado (log: logs/dev/$name.log)"
 }
 
