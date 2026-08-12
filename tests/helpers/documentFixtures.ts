@@ -2,10 +2,19 @@ import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { COLLECTIONS, REGISTRY_COLLECTIONS } from '../../server/db/constants.js';
 import { getDb } from '../../server/db/mongoClient.js';
-import type { MongoDocument, MongoTenant } from '../../server/db/types.js';
+import type {
+  MongoDocument,
+  MongoDocumentAccessPermissions,
+  MongoDocumentAccessRule,
+  MongoDocumentGroupMember,
+  MongoTenant,
+} from '../../server/db/types.js';
 import { getTenantCollections } from '../../server/tenancy/getTenantCollections.js';
 import { invalidateTenantRegistryCache } from '../../server/tenancy/tenantRegistryCache.js';
-import { withTenantFieldsFromContext } from '../../server/tenancy/tenantQuery.js';
+import {
+  withClassRuleFieldsFromContext,
+  withTenantFieldsFromContext,
+} from '../../server/tenancy/tenantQuery.js';
 import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from '../../server/tenancy/taxId.js';
 import { assertTestDatabase } from './assertTestDatabase.js';
 
@@ -168,6 +177,92 @@ export async function plantDocument(input: PlantDocumentInput): Promise<PlantedD
   plantedTenantIds.add(input.tenantId);
 
   return doc as unknown as MongoDocument;
+}
+
+/**
+ * Coloca um usuário num grupo documental do tenant.
+ *
+ * `loadMemberDocumentGroupIds` filtra por `userId`, `active: true` **e** `membershipId` quando a
+ * sessão traz um — plantar sem o `membershipId` da sessão forjada deixaria o membro invisível e o
+ * teste mediria "sem grupo" achando que mede "com grupo".
+ */
+export async function plantDocumentGroupMembership(input: {
+  tenantId: string;
+  userId: string;
+  membershipId: string;
+  groupId: string;
+}): Promise<void> {
+  assertTestDatabase();
+
+  const { documentGroupMembers, storage } = await getTenantCollections(input.tenantId, {
+    userId: input.userId,
+    membershipId: input.membershipId,
+  });
+
+  if (!documentGroupMembers) {
+    throw new Error(`Tenant ${input.tenantId} não expõe a coleção documentGroupMembers.`);
+  }
+
+  const payload = {
+    _id: `dgm_test_${randomUUID()}`,
+    groupId: input.groupId,
+    membershipId: input.membershipId,
+    userId: input.userId,
+    active: true,
+    addedBy: 'fixture',
+    addedAt: new Date(),
+  };
+
+  await documentGroupMembers.insertOne(
+    withTenantFieldsFromContext(storage, payload, input.userId) as unknown as MongoDocumentGroupMember,
+  );
+  plantedTenantIds.add(input.tenantId);
+}
+
+/**
+ * Regra de governança categoria × grupo, no formato que `listDocumentAccessRules` lê.
+ *
+ * `permissions` usa os nomes **persistidos** (`upload`, `manage`), não os verbos de autorização
+ * (`update`, `audit`) — a tradução é feita por `buildGovernanceAccessIndex`.
+ */
+export async function plantGovernanceRule(input: {
+  tenantId: string;
+  ownerUserId: string;
+  categoryId: string;
+  groupId: string;
+  permissions: MongoDocumentAccessPermissions;
+  active?: boolean;
+}): Promise<void> {
+  assertTestDatabase();
+
+  const { documentRules, storage } = await getTenantCollections(input.tenantId, {
+    userId: input.ownerUserId,
+  });
+
+  if (!documentRules) {
+    throw new Error(`Tenant ${input.tenantId} não expõe a coleção documentRules.`);
+  }
+
+  const now = new Date();
+  const payload = {
+    _id: `rule_test_${randomUUID()}`,
+    groupId: input.groupId,
+    categoryId: input.categoryId,
+    permissions: input.permissions,
+    active: input.active ?? true,
+    createdBy: 'fixture',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await documentRules.insertOne(
+    withClassRuleFieldsFromContext(
+      storage,
+      payload,
+      input.ownerUserId,
+    ) as unknown as MongoDocumentAccessRule,
+  );
+  plantedTenantIds.add(input.tenantId);
 }
 
 /**

@@ -83,7 +83,7 @@ describe('confirmUpdateSchema', () => {
 });
 
 describe('documentAccess canContribute', () => {
-  it('resolve canContribute via regra de governança (upload); canUpdate segue admin-only', async () => {
+  it('regra de governança "update" concede contribuir E alterar o ciclo de vida (D-24)', async () => {
     const { resolveDocumentPermissions } = await import('../server/tenancy/documentAccess.js');
     const { buildGovernanceAccessIndex } = await import(
       '../server/tenancy/governanceAccessIndex.js'
@@ -125,8 +125,15 @@ describe('documentAccess canContribute', () => {
     );
 
     assert.equal(perms.canContribute, true);
-    assert.equal(perms.canUpdate, false);
+    // Antes de D-24 estas três eram `false`: o backend decidia o ciclo de vida por papel fixo e
+    // ignorava o que a empresa tinha configurado. Agora a regra do tenant é honrada.
+    assert.equal(perms.canUpdate, true);
+    assert.equal(perms.canTrash, true);
+    assert.equal(perms.canEditMetadata, true);
+    // A regra concedeu só `upload`. Sem `view`, continua sem preview — verbo a verbo, sem herança.
     assert.equal(perms.canPreview, false);
+    // Trocar o titular do ativo não é ciclo de vida e não tem verbo no mapa de regras (D-05).
+    assert.equal(perms.canTransferOwnership, false);
   });
 });
 

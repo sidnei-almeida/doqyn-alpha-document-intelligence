@@ -1,7 +1,19 @@
 import type { MongoDocumentAccessPermissions, MongoDocumentAccessRule } from '../db/types.js';
 import { listDocumentAccessRules } from '../services/documentAccessRulesService.js';
 
-export type GovernancePermissionKey = keyof MongoDocumentAccessPermissions;
+/**
+ * Verbo de autorização, na linguagem do domínio.
+ *
+ * Deliberadamente **não** é `keyof MongoDocumentAccessPermissions`. Os campos persistidos ainda se
+ * chamam `upload` e `manage` por herança do primeiro desenho, mas os buckets que eles alimentam
+ * sempre foram `updateByCategory` e `auditByCategory`, e o frontend já fala `update`/`audit` no seu
+ * modelo de domínio (`src/features/rules/api/rulesApi.ts`). O único lugar que ainda obrigava a
+ * autorização a falar `'upload'` para perguntar "pode alterar?" era este alias.
+ *
+ * Renomear o campo persistido exigiria migração de dados no Mongo por ganho puramente cosmético;
+ * renomear o verbo não custa nada e deixa o call site honesto.
+ */
+export type GovernancePermissionKey = 'view' | 'download' | 'update' | 'audit' | 'share';
 
 export type GovernanceAccessIndex = {
   viewByCategory: Map<string, Set<string>>;
@@ -11,16 +23,25 @@ export type GovernanceAccessIndex = {
   shareByCategory: Map<string, Set<string>>;
 };
 
+/** Tradução campo persistido → bucket. É a única fronteira que conhece os nomes legados. */
 const PERMISSION_BUCKETS: Array<{
-  key: GovernancePermissionKey;
+  storedKey: keyof MongoDocumentAccessPermissions;
   target: keyof GovernanceAccessIndex;
 }> = [
-  { key: 'view', target: 'viewByCategory' },
-  { key: 'download', target: 'downloadByCategory' },
-  { key: 'upload', target: 'updateByCategory' },
-  { key: 'manage', target: 'auditByCategory' },
-  { key: 'share', target: 'shareByCategory' },
+  { storedKey: 'view', target: 'viewByCategory' },
+  { storedKey: 'download', target: 'downloadByCategory' },
+  { storedKey: 'upload', target: 'updateByCategory' },
+  { storedKey: 'manage', target: 'auditByCategory' },
+  { storedKey: 'share', target: 'shareByCategory' },
 ];
+
+const BUCKET_BY_PERMISSION: Record<GovernancePermissionKey, keyof GovernanceAccessIndex> = {
+  view: 'viewByCategory',
+  download: 'downloadByCategory',
+  update: 'updateByCategory',
+  audit: 'auditByCategory',
+  share: 'shareByCategory',
+};
 
 function createEmptyGovernanceAccessIndex(): GovernanceAccessIndex {
   return {
@@ -51,8 +72,8 @@ export function buildGovernanceAccessIndex(
     if (!rule.active) continue;
     if (!rule.categoryId || !rule.groupId) continue;
 
-    for (const { key, target } of PERMISSION_BUCKETS) {
-      if (!rule.permissions[key]) continue;
+    for (const { storedKey, target } of PERMISSION_BUCKETS) {
+      if (!rule.permissions[storedKey]) continue;
       addGroupToCategoryBucket(index[target], rule.categoryId, rule.groupId);
     }
   }
@@ -83,18 +104,7 @@ export function userHasGovernanceCategoryPermission(
 ): boolean {
   if (!index || !categoryId?.trim() || memberGroupIds.length === 0) return false;
 
-  const bucket =
-    permission === 'view'
-      ? index.viewByCategory
-      : permission === 'download'
-        ? index.downloadByCategory
-        : permission === 'upload'
-          ? index.updateByCategory
-          : permission === 'manage'
-            ? index.auditByCategory
-            : index.shareByCategory;
-
-  const allowedGroups = bucket.get(categoryId);
+  const allowedGroups = index[BUCKET_BY_PERMISSION[permission]].get(categoryId);
   if (!allowedGroups?.size) return false;
 
   return memberGroupIds.some((groupId) => allowedGroups.has(groupId));
