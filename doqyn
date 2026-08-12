@@ -129,7 +129,23 @@ cmd_up() {
   ok "postgres-auth no ar"
 
   step "Migrações do Prisma..."
-  ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
+  # prisma/schema.prisma exige DATABASE_URL_DIRECT (conexão sem pooler). Em dev
+  # ela é a mesma DATABASE_URL; se faltar no .env, passamos só para este comando
+  # em vez de morrer com o erro cru do Prisma. Escrever no .env é decisão sua.
+  local direct_url
+  direct_url="$(env_value "$AUTH_DIR/.env" DATABASE_URL_DIRECT)"
+  if [[ -z "$direct_url" ]]; then
+    direct_url="$(env_value "$AUTH_DIR/.env" DATABASE_URL)"
+    [[ -n "$direct_url" ]] || die "nem DATABASE_URL nem DATABASE_URL_DIRECT definidas no .env do auth-service."
+    warn "DATABASE_URL_DIRECT ausente no .env do auth-service — usando DATABASE_URL só nesta migração."
+    printf '%s  Para parar de ver este aviso, acrescente ao %s/.env:%s\n' "$C_DIM" "$AUTH_DIR" "$C_OFF"
+    printf '%s      DATABASE_URL_DIRECT=<mesmo valor de DATABASE_URL>%s\n' "$C_DIM" "$C_OFF"
+    ( cd "$AUTH_DIR" && DATABASE_URL_DIRECT="$direct_url" npx prisma migrate deploy >/dev/null 2>&1 ) \
+      || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
+  else
+    ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) \
+      || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
+  fi
   ok "schema em dia"
 
   if [[ ! -f "$MANIFEST" ]]; then
