@@ -26,7 +26,7 @@ const KNOWN_SHARED_APP = new Set(Object.values(SHARED_APP_COLLECTIONS));
 const KNOWN_BASE = new Set(Object.values(COLLECTIONS));
 
 const TENANT_MEMBER_STATUSES = new Set(['pending', 'active', 'blocked', 'rejected']);
-const PLATFORM_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin', 'user']);
+const PLATFORM_ROLES = new Set(['company_admin', 'individual_admin', 'user']);
 
 const SENSITIVE_FIELD_PATTERNS = [
   /password/i,

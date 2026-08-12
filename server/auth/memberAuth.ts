@@ -1,7 +1,6 @@
 import type { PlatformRole, MongoCompanyMember } from '../db/types.js';
 import type { AuthUser } from './types.js';
 
-const GLOBAL_ADMIN_ROLE: PlatformRole = 'doqyn_admin';
 const COMPANY_ADMIN_ROLE: PlatformRole = 'company_admin';
 
 export function getMemberPlatformRoles(member: MongoCompanyMember): PlatformRole[] {
@@ -17,7 +16,7 @@ export function getMemberAccessGroupIds(member: MongoCompanyMember): string[] {
 }
 
 export function mapLegacyRoleFromPlatformRoles(roles: PlatformRole[]): MongoCompanyMember['role'] {
-  if (roles.includes('doqyn_admin') || roles.includes('company_admin')) return 'admin';
+  if (roles.includes('company_admin')) return 'admin';
   if (roles.includes('user')) return 'member';
   return 'member';
 }
@@ -37,10 +36,7 @@ export function mapMemberToAuthUser(
     companyId: member.tenantId ?? member.companyId,
     tenantId: member.tenantId ?? member.companyId,
     companyName,
-    role:
-      platformRoles.includes('doqyn_admin') || platformRoles.includes('company_admin')
-        ? 'admin'
-        : 'user',
+    role: platformRoles.includes('company_admin') ? 'admin' : 'user',
     area: member.position ?? '',
     groups,
     memberId: member._id,
@@ -49,20 +45,20 @@ export function mapMemberToAuthUser(
   };
 }
 
-export function userIsDoqynAdmin(user: AuthUser): boolean {
-  return user.platformRoles?.includes(GLOBAL_ADMIN_ROLE) ?? false;
-}
-
 export function userIsCompanyAdmin(user: AuthUser): boolean {
-  return userIsDoqynAdmin(user) || user.platformRoles?.includes(COMPANY_ADMIN_ROLE) === true;
+  return user.platformRoles?.includes(COMPANY_ADMIN_ROLE) === true;
 }
 
 export function userCanManageUsers(user: AuthUser): boolean {
   return userIsCompanyAdmin(user);
 }
 
+/**
+ * Só governa o tenant da própria sessão. Não existe mais escape hatch de plataforma aqui — o antigo
+ * `if (userIsDoqynAdmin(user)) return;` era o que permitia gerir empresa de terceiro. Operação de
+ * plataforma cross-tenant volta na fase 2, por chave interna auditada, nunca por sessão humana.
+ */
 export function assertCanManageCompany(user: AuthUser, targetTenantId: string): void {
-  if (userIsDoqynAdmin(user)) return;
   const userTenantId = user.tenantId ?? user.companyId;
   if (userTenantId !== targetTenantId) {
     throw new Error('FORBIDDEN_COMPANY_SCOPE');
@@ -82,14 +78,16 @@ export function resolveTargetTenantId(user: AuthUser, requestedTenantId?: string
   return resolveTargetCompanyId(user, requestedTenantId);
 }
 
-export function sanitizeAssignablePlatformRoles(
-  actor: AuthUser,
-  roles: string[],
-): PlatformRole[] {
-  const allowed = new Set<PlatformRole>(['user', 'company_admin', 'individual_admin']);
-  if (userIsDoqynAdmin(actor)) {
-    allowed.add('doqyn_admin');
-  }
+/**
+ * Papéis que a gestão de usuários de um tenant PJ pode atribuir. `individual_admin` fica de fora de
+ * propósito: ele nasce com o tenant PF no auth-service, não é concedido por ninguém aqui. Antes, o
+ * único caminho para atribuí-lo era carregar o papel global de plataforma, que não existe mais.
+ *
+ * Não recebe mais o ator: sem papel de plataforma, o conjunto atribuível é o mesmo para todo mundo
+ * que passa por `requireUserManager`.
+ */
+export function sanitizeAssignablePlatformRoles(roles: string[]): PlatformRole[] {
+  const allowed = new Set<PlatformRole>(['user', 'company_admin']);
 
   const unique = [...new Set(roles)] as PlatformRole[];
   const filtered = unique.filter((role) => allowed.has(role));
@@ -98,11 +96,5 @@ export function sanitizeAssignablePlatformRoles(
     return ['user'];
   }
 
-  if (!userIsDoqynAdmin(actor)) {
-    return filtered.filter((role) => role !== 'doqyn_admin' && role !== 'individual_admin');
-  }
-
   return filtered;
 }
-
-export const PLATFORM_REALM_ROLES = ['doqyn_admin', 'company_admin', 'user'] as const;

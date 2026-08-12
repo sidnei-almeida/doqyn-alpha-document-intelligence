@@ -24,9 +24,10 @@ export type DocumentAccessPermissions = {
  * Único papel com acesso amplo aos documentos do próprio tenant (D-01).
  *
  * Em PJ o documento é ativo da empresa e o funcionário é custodiante, então `company_admin` fica.
- * `doqyn_admin` saiu porque nenhum papel de plataforma acessa documento de cliente.
- * `individual_admin` saiu junto: `mapRolesToAuthRole` o mapeia para o papel legado `manager`, e
- * enquanto ele estivesse aqui o caminho legado abaixo continuaria vivo.
+ * Nenhum papel de plataforma entra aqui — o papel global de desenvolvimento que existia foi
+ * eliminado do produto, e operação de plataforma passa a ser chave interna auditada, não sessão.
+ * `individual_admin` também não entra: `mapRolesToAuthRole` o mapeia para o papel legado `manager`,
+ * e enquanto ele estivesse aqui o caminho legado abaixo continuaria vivo.
  */
 const DOCUMENT_ADMIN_ROLES = new Set(['company_admin']);
 
@@ -168,21 +169,6 @@ export function assertCanTrashDocument(
     throw new ServiceError(
       'Você não tem permissão para excluir este documento.',
       'DOCUMENT_TRASH_DENIED',
-      403,
-    );
-  }
-}
-
-export function assertCanPermanentDeleteDocument(
-  user: AuthUser,
-  _doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
-  _memberGroupIds: string[],
-  _governanceIndex?: GovernanceAccessIndex,
-): void {
-  if (!isDocumentAdmin(user)) {
-    throw new ServiceError(
-      'Você não tem permissão para excluir permanentemente este documento.',
-      'DOCUMENT_PERMANENT_DELETE_DENIED',
       403,
     );
   }

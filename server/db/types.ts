@@ -118,7 +118,7 @@ export type MongoAccessGroup = {
   updatedAt: Date;
 };
 
-export type PlatformRole = 'doqyn_admin' | 'company_admin' | 'individual_admin' | 'user';
+export type PlatformRole = 'company_admin' | 'individual_admin' | 'user';
 
 export type AccessRequestSource = 'public_form' | 'admin_invite' | 'migration' | 'manual_seed';
 
