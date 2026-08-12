@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+# Entrypoint único do ambiente de desenvolvimento DOQYN.
+#
+#   ./doqyn up       sobe tudo, na ordem certa, em background
+#   ./doqyn status   o que está no ar e em que porta
+#   ./doqyn logs     acompanha os logs (Ctrl+C sai do log, não derruba nada)
+#   ./doqyn down     derruba os serviços que este script subiu
+#   ./doqyn reset    caminho destrutivo, explícito e separado do `up`
+#
+# `up` PRESERVA dados: só semeia quando o banco está vazio. Para recomeçar do
+# zero use `reset`, que se recusa a rodar contra banco que não seja de dev.
+set -euo pipefail
+
+ALPHA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AUTH_DIR="$(cd "$ALPHA_DIR/../doqyn-auth-service" 2>/dev/null && pwd || true)"
+LOG_DIR="$ALPHA_DIR/logs/dev"
+RUN_DIR="$LOG_DIR/run"
+MANIFEST="$AUTH_DIR/.generated/doqyn-demo-seed-manifest.json"
+
+AUTH_PORT=4100
+API_PORT=3001
+WEB_PORT=5173
+
+# ── saída ────────────────────────────────────────────────────────────────────
+if [[ -t 1 ]]; then
+  C_OK=$'\033[32m'; C_ERR=$'\033[31m'; C_WARN=$'\033[33m'; C_DIM=$'\033[2m'; C_OFF=$'\033[0m'
+else
+  C_OK=''; C_ERR=''; C_WARN=''; C_DIM=''; C_OFF=''
+fi
+step() { printf '%s→%s %s\n' "$C_DIM" "$C_OFF" "$1"; }
+ok()   { printf '%s✓%s %s\n' "$C_OK" "$C_OFF" "$1"; }
+warn() { printf '%s!%s %s\n' "$C_WARN" "$C_OFF" "$1"; }
+die()  { printf '%s✗%s %s\n' "$C_ERR" "$C_OFF" "$1" >&2; exit 1; }
+
+# ── utilidades ───────────────────────────────────────────────────────────────
+env_value() {
+  # Lê uma variável do .env sem exportar nada e sem imprimir o valor em log.
+  local file="$1" key="$2" line
+  line="$(grep -m1 "^${key}=" "$file" 2>/dev/null || true)"
+  line="${line#${key}=}"
+  line="${line%\"}"; line="${line#\"}"
+  line="${line%\'}"; line="${line#\'}"
+  printf '%s' "$line"
+}
+
+port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&- && return 0 || return 1; }
+
+wait_for_http() {
+  local url="$1" label="$2" tries="${3:-60}" i
+  for ((i = 1; i <= tries; i++)); do
+    if curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then ok "$label no ar"; return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+wait_for_file() {
+  local path="$1" label="$2" tries="${3:-60}" i
+  for ((i = 1; i <= tries; i++)); do
+    [[ -f "$path" ]] && { ok "$label pronto"; return 0; }
+    sleep 1
+  done
+  return 1
+}
+
+pid_alive() { [[ -f "$1" ]] && kill -0 "$(cat "$1")" 2>/dev/null; }
+
+start_bg() {
+  # start_bg <nome> <diretório> <comando...>
+  local name="$1" dir="$2"; shift 2
+  mkdir -p "$RUN_DIR"
+  if pid_alive "$RUN_DIR/$name.pid"; then ok "$name já rodando (pid $(cat "$RUN_DIR/$name.pid"))"; return 0; fi
+  ( cd "$dir" && nohup "$@" >"$LOG_DIR/$name.log" 2>&1 & echo $! >"$RUN_DIR/$name.pid" )
+  step "$name iniciado (log: logs/dev/$name.log)"
+}
+
+stop_bg() {
+  local name="$1" pid
+  if pid_alive "$RUN_DIR/$name.pid"; then
+    pid="$(cat "$RUN_DIR/$name.pid")"
+    # Mata o grupo: npm/concurrently/tsx deixam filhos que sobrevivem ao pai.
+    kill -TERM -- "-$(ps -o pgid= "$pid" | tr -d ' ')" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+    sleep 1
+    kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null || true
+    ok "$name parado"
+  fi
+  rm -f "$RUN_DIR/$name.pid"
+}
+
+mongo_is_local() {
+  local uri; uri="$(env_value "$ALPHA_DIR/.env" MONGODB_URI)"
+  [[ "$uri" == mongodb://localhost:* || "$uri" == mongodb://127.0.0.1:* ]]
+}
+
+require_dev_mongo() {
+  # Guarda do caminho destrutivo. O nome do banco é a fonte da verdade porque é
+  # o que `getDb()` de fato abre — a URI pode apontar para Atlas.
+  local db; db="$(env_value "$ALPHA_DIR/.env" MONGODB_DATABASE)"
+  [[ -n "$db" ]] || die "MONGODB_DATABASE não definida no .env — recuso resetar às cegas."
+  if [[ "$db" =~ (prod|production) ]]; then
+    die "MONGODB_DATABASE=\"$db\" parece produção. Recusado."
+  fi
+  if [[ ! "$db" =~ (^|_)(dev|test|local)($|_) ]]; then
+    die "MONGODB_DATABASE=\"$db\" não casa com padrão de dev (dev/test/local). Recusado."
+  fi
+  if ! mongo_is_local; then
+    warn "MONGODB_URI aponta para host REMOTO (Atlas) e o banco \"$db\" será apagado."
+    read -r -p "Digite o nome do banco para confirmar: " typed
+    [[ "$typed" == "$db" ]] || die "Confirmação não bateu. Nada foi apagado."
+  fi
+}
+
+preflight() {
+  [[ -n "$AUTH_DIR" ]] || die "doqyn-auth-service não encontrado em ../doqyn-auth-service (é vizinho deste repo)."
+  [[ -f "$ALPHA_DIR/.env" ]] || die "Falta .env no alpha. Copie de .env.example."
+  [[ -f "$AUTH_DIR/.env" ]] || die "Falta .env no auth-service. Copie de .env.example."
+  command -v docker >/dev/null || die "docker não encontrado no PATH."
+  docker info >/dev/null 2>&1 || die "docker instalado mas não responde — o daemon está rodando?"
+  command -v curl >/dev/null || die "curl não encontrado no PATH."
+  mkdir -p "$LOG_DIR" "$RUN_DIR"
+}
+
+# ── comandos ─────────────────────────────────────────────────────────────────
+cmd_up() {
+  preflight
+
+  step "Postgres do auth-service..."
+  ( cd "$AUTH_DIR" && docker compose up -d --wait postgres-auth >/dev/null ) || die "não subiu o postgres-auth."
+  ok "postgres-auth no ar"
+
+  step "Migrações do Prisma..."
+  ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
+  ok "schema em dia"
+
+  if [[ ! -f "$MANIFEST" ]]; then
+    step "Seed demo do auth (primeira vez — gera o manifest que o alpha consome)..."
+    ( cd "$AUTH_DIR" && npm run dev:seed:demo ) || die "seed demo do auth falhou."
+  else
+    ok "manifest do auth já existe — seed preservado"
+  fi
+
+  if mongo_is_local; then
+    step "Mongo local..."
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml up -d --wait mongo >/dev/null ) || die "não subiu o mongo."
+    ok "mongo no ar"
+  else
+    ok "MONGODB_URI é remoto (Atlas) — nenhum container de mongo necessário"
+  fi
+
+  step "Índices e collections do Mongo..."
+  ( cd "$ALPHA_DIR" && npm run db:setup >/dev/null 2>&1 ) || die "db:setup falhou. Rode 'npm run db:setup' para ver o erro."
+  ok "índices em dia"
+
+  step "Seed demo do alpha..."
+  ( cd "$ALPHA_DIR" && npm run dev:seed:demo >/dev/null 2>&1 ) \
+    && ok "seed do alpha aplicado" \
+    || warn "seed do alpha não aplicou — veja 'npm run dev:seed:demo'. Os serviços sobem mesmo assim."
+
+  start_bg auth "$AUTH_DIR" npm run dev:server
+  wait_for_http "http://127.0.0.1:$AUTH_PORT/health" "auth-service ($AUTH_PORT)" \
+    || die "auth-service não respondeu em $AUTH_PORT. Log: logs/dev/auth.log"
+
+  start_bg api "$ALPHA_DIR" npm run dev:api
+  wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API ($API_PORT)" \
+    || die "API não respondeu em $API_PORT. Log: logs/dev/api.log"
+
+  start_bg web "$ALPHA_DIR" npm run dev:web
+  wait_for_http "http://127.0.0.1:$WEB_PORT" "Vite ($WEB_PORT)" 90 \
+    || warn "Vite ainda não respondeu — pode estar compilando. Veja logs/dev/web.log"
+
+  printf '\n'
+  ok "Ambiente no ar — abra http://localhost:$WEB_PORT"
+  printf '%s  ./doqyn status · ./doqyn logs · ./doqyn down%s\n' "$C_DIM" "$C_OFF"
+}
+
+cmd_status() {
+  mkdir -p "$RUN_DIR"
+  printf 'SERVIÇO       PORTA  PROCESSO   HTTP\n'
+  local rows=(
+    "auth $AUTH_PORT http://127.0.0.1:$AUTH_PORT/health"
+    "api $API_PORT http://127.0.0.1:$API_PORT/api/health"
+    "web $WEB_PORT http://127.0.0.1:$WEB_PORT"
+  )
+  local row name port url proc http
+  for row in "${rows[@]}"; do
+    read -r name port url <<<"$row"
+    pid_alive "$RUN_DIR/$name.pid" && proc="up" || { port_busy "$port" && proc="externo" || proc="-"; }
+    curl -fsS --max-time 2 "$url" >/dev/null 2>&1 && http="ok" || http="-"
+    printf '%-13s %-6s %-10s %s\n' "$name" "$port" "$proc" "$http"
+  done
+  printf '\n'
+  [[ -f "$MANIFEST" ]] && ok "manifest do seed demo presente" || warn "manifest do seed demo ausente — rode ./doqyn up"
+  mongo_is_local && printf '%sMongo: container local%s\n' "$C_DIM" "$C_OFF" \
+                 || printf '%sMongo: remoto (Atlas)%s\n' "$C_DIM" "$C_OFF"
+}
+
+cmd_logs() {
+  mkdir -p "$LOG_DIR"
+  local files=()
+  local n
+  for n in auth api web; do [[ -f "$LOG_DIR/$n.log" ]] && files+=("$LOG_DIR/$n.log"); done
+  [[ ${#files[@]} -gt 0 ]] || die "nenhum log ainda. Rode ./doqyn up primeiro."
+  printf '%sCtrl+C sai do log — não derruba os serviços.%s\n\n' "$C_DIM" "$C_OFF"
+  tail -n 40 -f "${files[@]}"
+}
+
+cmd_down() {
+  mkdir -p "$RUN_DIR"
+  stop_bg web; stop_bg api; stop_bg auth
+  if [[ "${1:-}" == "--all" ]]; then
+    step "Parando containers..."
+    [[ -n "$AUTH_DIR" ]] && ( cd "$AUTH_DIR" && docker compose stop postgres-auth >/dev/null 2>&1 || true )
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml stop mongo >/dev/null 2>&1 || true )
+    ok "containers parados"
+  else
+    printf '%sBancos seguem no ar (mais rápido no próximo up). Use ./doqyn down --all para parar tudo.%s\n' "$C_DIM" "$C_OFF"
+  fi
+}
+
+cmd_reset() {
+  preflight
+  printf '%sDestrutivo:%s apaga o banco do auth-service E o banco do alpha, depois semeia do zero.\n' "$C_WARN" "$C_OFF"
+  require_dev_mongo
+
+  cmd_down >/dev/null 2>&1 || true
+
+  step "Postgres do auth-service..."
+  ( cd "$AUTH_DIR" && docker compose up -d --wait postgres-auth >/dev/null ) || die "não subiu o postgres-auth."
+
+  step "Reset do Postgres..."
+  ( cd "$AUTH_DIR" && npm run dev:reset:postgres -- --confirm-reset-doqyn-dev ) || die "reset do postgres falhou."
+
+  step "Seed demo do auth..."
+  ( cd "$AUTH_DIR" && npm run dev:seed:demo ) || die "seed demo do auth falhou."
+  wait_for_file "$MANIFEST" "manifest do auth" || die "manifest não apareceu após o seed."
+
+  if mongo_is_local; then
+    step "Mongo local..."
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml up -d --wait mongo >/dev/null ) || die "não subiu o mongo."
+  fi
+
+  step "Reset do Mongo..."
+  ( cd "$ALPHA_DIR" && npm run dev:reset:mongo -- --confirm-reset-doqyn-dev ) || die "reset do mongo falhou."
+
+  step "Índices..."
+  ( cd "$ALPHA_DIR" && npm run db:setup >/dev/null 2>&1 ) || die "db:setup falhou."
+
+  step "Seed demo do alpha..."
+  ( cd "$ALPHA_DIR" && npm run dev:seed:demo ) || die "seed demo do alpha falhou."
+
+  ok "Reset completo. Suba com ./doqyn up"
+}
+
+usage() {
+  cat <<'TXT'
+doqyn — ambiente de desenvolvimento
+
+  ./doqyn up              sobe tudo na ordem certa, em background, preservando dados
+  ./doqyn status          o que está no ar e em que porta
+  ./doqyn logs            acompanha os logs (Ctrl+C sai do log, não derruba nada)
+  ./doqyn down            para auth/api/web (bancos seguem no ar)
+  ./doqyn down --all      para também os containers de banco
+  ./doqyn reset           apaga os bancos e semeia do zero (pede confirmação)
+
+Portas: auth 4100 · API 3001 · web 5173
+Logs:   logs/dev/{auth,api,web}.log
+TXT
+}
+
+case "${1:-up}" in
+  up)     cmd_up ;;
+  status) cmd_status ;;
+  logs)   cmd_logs ;;
+  down)   shift || true; cmd_down "${1:-}" ;;
+  reset)  cmd_reset ;;
+  -h|--help|help) usage ;;
+  *) usage; die "comando desconhecido: $1" ;;
+esac
