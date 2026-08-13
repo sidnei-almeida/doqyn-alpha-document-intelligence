@@ -8,7 +8,35 @@ Escrito contra o código atual (`src/modules/oauth/`), não genérico.
 **Microsoft Entra admin center** — https://entra.microsoft.com
 (ou Azure Portal → Microsoft Entra ID; é o mesmo cadastro, o Entra é a interface nova)
 
-Não precisa de assinatura paga do Azure. Conta Microsoft comum cria app registration.
+## 0. Antes de tudo: você precisa de um diretório
+
+Entrando com conta Microsoft pessoal (@outlook, @hotmail, @gmail cadastrado na Microsoft), o portal
+responde:
+
+> *The ability to create applications outside of a directory has been deprecated. You may get a new
+> directory by joining the M365 Developer Program or signing up for Azure.*
+
+App registration precisa morar dentro de um diretório Entra, e conta pessoal não tem um.
+
+**Caminho mais direto:** criar conta Azure gratuita em https://azure.microsoft.com/free — o cadastro
+cria automaticamente um *Default Directory*, e o App registrations passa a aparecer. Pede cartão para
+verificação de identidade, mas app registration e OAuth ficam no **Entra ID Free**, que custa zero e
+não expira. O crédito de 12 meses e os serviços pagos do Azure são outra coisa, que este setup não usa.
+
+**O diretório não amarra o produto.** Ele é apenas o endereço de cadastro do app. Com
+`OAUTH_MICROSOFT_TENANT=organizations` ou `common`, quem faz login são usuários de *qualquer* outro
+tenant — cada empresa cliente usa o Microsoft 365 dela. O seu diretório só hospeda o registro e o
+client secret. Um diretório criado agora só para isso serve inclusive em produção.
+
+**Alternativas:**
+
+- **Conta corporativa existente** — se a empresa já usa Microsoft 365, o tenant já existe e serve.
+  É o caminho sem burocracia.
+- **M365 Developer Program** — dá tenant sandbox gratuito e renovável, mas a Microsoft apertou a
+  elegibilidade e passou a exigir assinatura Visual Studio ativa para novas adesões. Confirme antes
+  de contar com essa via.
+
+Depois que existir um diretório, siga a partir daqui.
 
 ## 1. Criar o app registration
 
