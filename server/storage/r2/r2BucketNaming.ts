@@ -36,15 +36,36 @@ export function deriveTenantShortHash(tenantId: string): string {
   return createHash('sha256').update(tenantId.trim().toLowerCase()).digest('hex').slice(0, 12);
 }
 
+/**
+ * Segmento legível do nome do bucket.
+ *
+ * Deriva do `tenantId` sempre que ele existir, e só cai em slug/displayName quando não houver —
+ * o que na prática não acontece. Dois motivos, os dois observados em 2026-08-13:
+ *
+ * 1. **Chamadores diferentes produziam nomes diferentes.** A precedência anterior era
+ *    `slug || displayName || tenantId`, então o nome dependia de quais campos quem chamou tinha em
+ *    mãos: `planTenantBucketName` passa `tenant.slug` e gerava `…-doqyn-dev-<hash>`, enquanto
+ *    `resolveTenantStorageScope` sem slug carregado gerava `…-company-dev-<hash>`. O mesmo tenant
+ *    ganhou dois buckets, e o desenho é um por tenant.
+ *
+ * 2. **Renomear a empresa renomeava o bucket.** Slug e displayName são editáveis pelo cliente; o
+ *    `tenantId` não. Com o nome derivado de campo mutável, uma troca de razão social apontaria para
+ *    um bucket novo e deixaria todo documento anterior inalcançável.
+ *
+ * O hash já era `sha256(tenantId)`. Agora o nome inteiro é função pura do `tenantId`.
+ *
+ * Tenant existente não é afetado: `resolveTenantStorageScope` lê `tenant.storage.bucketName` do
+ * registro antes de calcular qualquer coisa. Isto governa apenas provisionamento novo.
+ */
 export function deriveTenantBucketSlug(
   tenantDisplayName?: string,
   tenantSlug?: string,
   tenantId?: string,
 ): string {
+  const fromId = tenantId?.trim() ? slugifyName(tenantId) : '';
   const fromSlug = tenantSlug?.trim() ? slugifyName(tenantSlug) : '';
   const fromName = tenantDisplayName?.trim() ? slugifyName(tenantDisplayName) : '';
-  const fromId = tenantId?.trim() ? slugifyName(tenantId) : '';
-  return fromSlug || fromName || fromId || '';
+  return fromId || fromSlug || fromName || '';
 }
 
 export function isLegacyTenantBucketName(bucketName: string): boolean {
