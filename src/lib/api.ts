@@ -34,18 +34,6 @@ export const api = {
         `/documents/${documentId}/timeline${query}`,
       );
     },
-    upload: (formData: FormData) =>
-      authFetch(`${API_BASE}/documents/upload`, {
-        method: 'POST',
-        credentials: getFetchCredentials(),
-        body: formData,
-      }).then(async (res) => {
-        if (!res.ok) {
-          const error = await res.json().catch(() => ({ message: 'Erro no envio' }));
-          throw new Error(error.message);
-        }
-        return res.json();
-      }),
   },
 
   audit: {

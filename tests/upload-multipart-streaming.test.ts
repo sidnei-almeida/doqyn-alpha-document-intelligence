@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import type { IncomingMessage } from 'node:http';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -185,51 +185,16 @@ describe('upload multipart em streaming — Passo 6 do plano de escala', () => {
   });
 });
 
-describe('handler de upload — ordem de quota e teto de bytes', () => {
-  const handler = read('api/documents/upload.ts');
-
-  it('não mantém mais um parser multipart próprio', () => {
-    assert.ok(handler.includes("from '../../server/utils/parseMultipart.js'"));
-    assert.equal(handler.includes('async function parseMultipart'), false);
+describe('rota legada /api/documents/upload — removida', () => {
+  it('o handler não existe mais', () => {
+    assert.equal(existsSync(join(repoRoot, 'api/documents/upload.ts')), false);
   });
 
-  it('checa a quota antes de ler o corpo, mas só consome slot depois', () => {
-    const checkAt = handler.indexOf('assertTenantQuotaAvailable(');
-    const parseAt = handler.indexOf('await parseMultipart(');
-    const consumeAt = handler.indexOf('await assertTenantQuota(');
-
-    assert.ok(checkAt > -1 && parseAt > -1 && consumeAt > -1);
-    assert.ok(
-      checkAt < parseAt,
-      'a quota tem de ser verificada antes do parse, senão o tenant bloqueado ainda consome CPU',
-    );
-    assert.ok(
-      consumeAt > parseAt,
-      'consumir antes do parse queimaria a cota de uploads que falham (arquivo grande, abort)',
-    );
+  it('a rota não está registrada no dispatcher', () => {
+    assert.equal(read('server/apiServer.ts').includes("'/api/documents/upload'"), false);
   });
 
-  it('protege o JSON.parse de accessGroups', () => {
-    assert.ok(handler.includes('parseAccessGroups'));
-    assert.ok(handler.includes("'INVALID_ACCESS_GROUPS'"));
-    assert.equal(handler.includes('JSON.parse(fields.accessGroups)'), false);
-  });
-
-  it('dá folga ao envelope multipart no corte por Content-Length', () => {
-    assert.ok(handler.includes('MULTIPART_ENVELOPE_HEADROOM_BYTES'));
-    assert.ok(handler.includes('maxUploadBytes + MULTIPART_ENVELOPE_HEADROOM_BYTES'));
-  });
-
-  it('rejeita por Content-Length antes de qualquer byte do corpo', () => {
-    const declaredAt = handler.indexOf('declaredSizeExceedsLimit');
-    const parseAt = handler.indexOf('await parseMultipart(');
-
-    assert.ok(handler.includes("req.headers['content-length']"));
-    assert.ok(handler.includes("code: 'FILE_TOO_LARGE'"));
-    assert.ok(declaredAt > -1 && declaredAt < parseAt);
-  });
-
-  it('repassa o teto de storage ao parser', () => {
-    assert.ok(handler.includes('maxFileBytes: maxUploadBytes'));
+  it('o cliente do frontend não chama mais o endpoint', () => {
+    assert.equal(read('src/lib/api.ts').includes('/documents/upload'), false);
   });
 });

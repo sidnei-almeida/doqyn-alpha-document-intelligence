@@ -7,11 +7,19 @@ Ordem: por consequência, não por esforço.
 
 ---
 
-## 1. `api/documents/upload.ts` cria documento que nunca passa pela IA
+## 1. ~~`api/documents/upload.ts` cria documento que nunca passa pela IA~~ — RESOLVIDO
 
-**Severidade: média-alta.** Depende de a UI alcançar ou não esse caminho — não confirmado.
+**Fechado em 2026-08-13.** A UI **não** alcançava o endpoint: `api.documents.upload`
+(`src/lib/api.ts`) tinha zero chamadores, e o caminho real é
+`src/features/document-send/services/analyzePdf.ts` → `/api/documents/upload-url`. Rota legada,
+removida inteira — handler, registro no dispatcher, `uploadDocument` e os stubs `extractMetadata`
+/ `classifyDocument` no `documentService`, e o cliente no frontend. `parseMultipart` continua vivo
+(`api/profile/avatar.ts`, `parseAnalyzePdfRequest.ts`). Guarda de regressão em
+`tests/upload-multipart-streaming.test.ts`.
 
-### O que acontece
+O registro do que existia segue abaixo.
+
+### O que acontecia
 
 Existem dois caminhos de entrada de documento:
 
