@@ -35,7 +35,6 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/me': () => import('../api/me.js'),
   '/api/auth/logout': () => import('../api/auth/logout.js'),
   '/api/documents': () => import('../api/documents/index.js'),
-  '/api/documents/upload': () => import('../api/documents/upload.js'),
   '/api/documents/upload-url': () => import('../api/documents/upload-url.js'),
   '/api/documents/download': () => import('../api/documents/download.js'),
   '/api/documents/preview': () => import('../api/documents/preview.js'),
