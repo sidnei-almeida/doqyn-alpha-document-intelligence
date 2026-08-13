@@ -83,7 +83,16 @@ export function buildCompactClassifierPrompt(
 
 Regras:
 - Use somente classId da lista.
+- Decida pela NATUREZA do instrumento — o que ele É —, não pelos assuntos que ele cita de passagem.
+  Um relatório que fala sobre contratos não é um contrato; um e-mail que anexa uma nota fiscal não é
+  uma nota fiscal. Procure o que o documento faz: quem se obriga a quê, perante quem.
+- keywords e negativeKeywords são pistas configuradas pelo tenant, não gatilhos: a presença de uma
+  palavra-chave não classifica sozinha, e a ausência não desclassifica.
+- Se o documento não pertencer a nenhuma classe, classId=null com requiresReview=true. É resposta
+  correta e esperada, preferível a forçar a classe menos errada.
 - Se não houver confiança suficiente, requiresReview=true e classId=null.
+- Em evidence, cite os trechos que revelam a natureza do documento, não os que apenas repetem uma
+  palavra-chave.
 - Responda apenas JSON válido.
 
 Classes:
