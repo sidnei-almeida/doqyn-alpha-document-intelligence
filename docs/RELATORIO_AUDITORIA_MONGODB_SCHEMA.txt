@@ -1,210 +1,147 @@
 DOQYN — Relatório de auditoria MongoDB (schema, índices, tenant isolation)
-Data: 2026-06-25T17:39:53.867Z
+Data: 2026-08-13T11:03:06.101Z
 Database: doqyn_dev
 Observação: relatório sanitizado — sem URI, secrets, PII cru ou conteúdo de documentos.
 
 ================================================================================
 RESUMO EXECUTIVO
 ================================================================================
-Coleções encontradas: 26
-Tenants: 2
-Coleções vazias: 1
-Coleções legadas (flat): 7
-Coleções com prefixo de tenant: 14
+Coleções encontradas: 19
+Tenants: 5
+Coleções vazias: 9
+Coleções SHARED_APP: 7
+Coleções legadas (flat): 10
+Coleções com prefixo de tenant: 0
 Achados CRÍTICOS: 0
-Achados ALTOS: 0
-Achados MÉDIOS: 0
-Achados BAIXOS: 19
+Achados ALTOS: 1
+Achados MÉDIOS: 360
+Achados BAIXOS: 0
 
 ================================================================================
 COLEÇÕES E CONTAGENS
 ================================================================================
-access_groups: 9 docs [legacy_flat]
-access_groups_company_dev: 9 docs [tenant_prefixed, prefix=company_dev]
-access_groups_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
-audit_logs: 2 docs [legacy_flat]
-audit_logs_company_dev: 2 docs [tenant_prefixed, prefix=company_dev]
-audit_logs_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
-auditevents: 0 docs [other]
-companies: 1 docs [registry]
-company_members: 4 docs [registry]
-document_classes: 11 docs [legacy_flat]
-document_classes_company_dev: 11 docs [tenant_prefixed, prefix=company_dev]
-document_classes_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
-document_rules: 10 docs [legacy_flat]
-document_rules_company_dev: 10 docs [tenant_prefixed, prefix=company_dev]
-document_rules_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
+audit_logs: 45 docs [legacy_flat]
+document_categories: 30 docs [legacy_flat]
+document_chunks: 0 docs [legacy_flat]
+document_expiry_alerts: 0 docs [shared_app]
+document_extraction_rules: 30 docs [legacy_flat]
+document_group_members: 0 docs [legacy_flat]
+document_groups: 25 docs [legacy_flat]
+document_rules: 60 docs [legacy_flat]
+document_share_grants: 0 docs [shared_app]
+document_signature_requests: 0 docs [shared_app]
+document_signatures: 0 docs [shared_app]
+document_upload_approvals: 0 docs [shared_app]
 document_versions: 1 docs [legacy_flat]
-document_versions_company_dev: 1 docs [tenant_prefixed, prefix=company_dev]
-document_versions_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
 documents: 1 docs [legacy_flat]
-documents_company_dev: 1 docs [tenant_prefixed, prefix=company_dev]
-documents_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
+external_document_share_grants: 0 docs [shared_app]
 processing_jobs: 1 docs [legacy_flat]
-processing_jobs_company_dev: 1 docs [tenant_prefixed, prefix=company_dev]
-processing_jobs_company_test_2: 1 docs [tenant_prefixed, prefix=company_test_2]
-tenant_members: 2 docs [registry]
-tenants: 2 docs [registry]
+tenant_members: 7 docs [registry]
+tenants: 5 docs [registry]
+user_document_favorites: 0 docs [shared_app]
 
 ================================================================================
 ÍNDICES ATUAIS
 ================================================================================
--- access_groups
-   _id_: {"_id":1}
-   companyId_1_active_1: {"companyId":1,"active":1}
-   companyId_1_slug_1: {"companyId":1,"slug":1}
--- access_groups_company_dev
-   _id_: {"_id":1}
-   tenantId_1_active_1: {"tenantId":1,"active":1}
-   companyId_1_active_1: {"companyId":1,"active":1}
-   tenantId_1_slug_1: {"tenantId":1,"slug":1}
-   tenantId_1_status_1: {"tenantId":1,"status":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
--- access_groups_company_test_2
-   _id_: {"_id":1}
-   tenantId_1_active_1: {"tenantId":1,"active":1}
-   tenantId_1_slug_1: {"tenantId":1,"slug":1}
-   tenantId_1_status_1: {"tenantId":1,"status":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
 -- audit_logs
    _id_: {"_id":1}
-   companyId_1_documentId_1_createdAt_-1: {"companyId":1,"documentId":1,"createdAt":-1}
-   companyId_1_action_1_createdAt_-1: {"companyId":1,"action":1,"createdAt":-1}
--- audit_logs_company_dev
-   _id_: {"_id":1}
    tenantId_1_documentId_1_createdAt_-1: {"tenantId":1,"documentId":1,"createdAt":-1}
    tenantId_1_action_1_createdAt_-1: {"tenantId":1,"action":1,"createdAt":-1}
-   actor.userId_1_tenantId_1_createdAt_-1: {"actor.userId":1,"tenantId":1,"createdAt":-1}
+   tenantId_1_documentId_1_occurredAt_-1: {"tenantId":1,"documentId":1,"occurredAt":-1}
+   tenantId_1_actor.userId_1_createdAt_-1: {"tenantId":1,"actor.userId":1,"createdAt":-1}
+   tenantId_1_ownerUserId_1_createdAt_-1: {"tenantId":1,"ownerUserId":1,"createdAt":-1}
    tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
--- audit_logs_company_test_2
-   _id_: {"_id":1}
-   tenantId_1_documentId_1_createdAt_-1: {"tenantId":1,"documentId":1,"createdAt":-1}
-   tenantId_1_action_1_createdAt_-1: {"tenantId":1,"action":1,"createdAt":-1}
-   actor.userId_1_tenantId_1_createdAt_-1: {"actor.userId":1,"tenantId":1,"createdAt":-1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
--- auditevents
-   _id_: {"_id":1}
-   tenantId_1: {"tenantId":1}
-   documentId_1: {"documentId":1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
--- companies
-   _id_: {"_id":1}
-   companyId_1: {"companyId":1}
-   slug_1: {"slug":1}
-   status_1: {"status":1}
--- company_members
-   _id_: {"_id":1}
-   companyId_1_status_1: {"companyId":1,"status":1}
-   companyId_1_email_1: {"companyId":1,"email":1}
-   companyId_1_userId_1: {"companyId":1,"userId":1}
-   keycloakUserId_1_status_1: {"keycloakUserId":1,"status":1}
--- document_classes
-   _id_: {"_id":1}
-   companyId_1_active_1: {"companyId":1,"active":1}
-   companyId_1_name_1: {"companyId":1,"name":1}
-   companyId_1_slug_1: {"companyId":1,"slug":1}
--- document_classes_company_dev
-   _id_: {"_id":1}
-   tenantId_1_active_1: {"tenantId":1,"active":1}
-   tenantId_1_name_1: {"tenantId":1,"name":1}
-   tenantId_1_slug_1: {"tenantId":1,"slug":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
--- document_classes_company_test_2
+   tenantId_1_requestId_1: {"tenantId":1,"requestId":1}
+   tenantId_1_metadata.status_1_createdAt_-1: {"tenantId":1,"metadata.status":1,"createdAt":-1}
+   tenantId_1_metadata.actionGroup_1_createdAt_-1: {"tenantId":1,"metadata.actionGroup":1,"createdAt":-1}
+-- document_categories
    _id_: {"_id":1}
    tenantId_1_active_1: {"tenantId":1,"active":1}
    tenantId_1_slug_1: {"tenantId":1,"slug":1}
-   tenantId_1_name_1: {"tenantId":1,"name":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
+-- document_chunks
+   _id_: {"_id":1}
+   tenantId_1_documentId_1_versionId_1_chunkIndex_1: {"tenantId":1,"documentId":1,"versionId":1,"chunkIndex":1}
+   tenantId_1_documentId_1_isCurrentVersion_1_chunkIndex_1: {"tenantId":1,"documentId":1,"isCurrentVersion":1,"chunkIndex":1}
+   tenantId_1_documentId_1_versionLabel_1: {"tenantId":1,"documentId":1,"versionLabel":1}
+   tenantId_1_ownerUserId_1_documentId_1_isCurrentVersion_1: {"tenantId":1,"ownerUserId":1,"documentId":1,"isCurrentVersion":1}
+-- document_expiry_alerts
+   _id_: {"_id":1}
+   document_user_offset_unique: {"documentId":1,"userId":1,"offsetDays":1}
+   tenantId_1_userId_1_status_1_createdAt_-1: {"tenantId":1,"userId":1,"status":1,"createdAt":-1}
+   tenantId_1_userId_1_createdAt_-1: {"tenantId":1,"userId":1,"createdAt":-1}
+   tenantId_1_documentId_1: {"tenantId":1,"documentId":1}
+-- document_extraction_rules
+   _id_: {"_id":1}
+   tenantId_1_categoryId_1_active_1: {"tenantId":1,"categoryId":1,"active":1}
+   tenantId_1_categoryId_1_version_-1: {"tenantId":1,"categoryId":1,"version":-1}
+-- document_group_members
+   _id_: {"_id":1}
+   tenantId_1_groupId_1_active_1: {"tenantId":1,"groupId":1,"active":1}
+   tenantId_1_membershipId_1_active_1: {"tenantId":1,"membershipId":1,"active":1}
+   tenantId_1_groupId_1_membershipId_1: {"tenantId":1,"groupId":1,"membershipId":1}
+-- document_groups
+   _id_: {"_id":1}
+   tenantId_1_active_1: {"tenantId":1,"active":1}
+   tenantId_1_slug_1: {"tenantId":1,"slug":1}
 -- document_rules
    _id_: {"_id":1}
-   companyId_1_classId_1_active_1: {"companyId":1,"classId":1,"active":1}
-   companyId_1_classId_1_version_-1: {"companyId":1,"classId":1,"version":-1}
--- document_rules_company_dev
+   tenantId_1_groupId_1_categoryId_1: {"tenantId":1,"groupId":1,"categoryId":1}
+   tenantId_1_active_1: {"tenantId":1,"active":1}
+-- document_share_grants
    _id_: {"_id":1}
-   tenantId_1_classId_1_active_1: {"tenantId":1,"classId":1,"active":1}
-   tenantId_1_classId_1_version_-1: {"tenantId":1,"classId":1,"version":-1}
-   tenantId_1_accessGroupIds_1: {"tenantId":1,"accessGroupIds":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
--- document_rules_company_test_2
+   documentId_sharedWithUserId_active_unique: {"documentId":1,"sharedWithUserId":1}
+   sharedWithUserId_1_status_1_createdAt_-1: {"sharedWithUserId":1,"status":1,"createdAt":-1}
+   sharedByUserId_1_status_1_createdAt_-1: {"sharedByUserId":1,"status":1,"createdAt":-1}
+   documentId_1_status_1: {"documentId":1,"status":1}
+   tenantId_1_sharedWithUserId_1_status_1: {"tenantId":1,"sharedWithUserId":1,"status":1}
+-- document_signature_requests
    _id_: {"_id":1}
-   tenantId_1_classId_1_active_1: {"tenantId":1,"classId":1,"active":1}
-   tenantId_1_classId_1_version_-1: {"tenantId":1,"classId":1,"version":-1}
-   tenantId_1_accessGroupIds_1: {"tenantId":1,"accessGroupIds":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
+   signatureRequestId_1: {"signatureRequestId":1}
+   documentId_1_status_1_createdAt_-1: {"documentId":1,"status":1,"createdAt":-1}
+   signatureTokenHash_1: {"signatureTokenHash":1}
+   signers.userId_1_status_1_createdAt_-1: {"signers.userId":1,"status":1,"createdAt":-1}
+   signers.emailNormalized_1_status_1: {"signers.emailNormalized":1,"status":1}
+   tenantId_1_status_1: {"tenantId":1,"status":1}
+-- document_signatures
+   _id_: {"_id":1}
+   signatureId_1: {"signatureId":1}
+   signatureRequestId_1: {"signatureRequestId":1}
+   documentId_1_versionId_1: {"documentId":1,"versionId":1}
+   verificationCode_1: {"verificationCode":1}
+   signerEmailHash_1_signedAt_-1: {"signerEmailHash":1,"signedAt":-1}
+-- document_upload_approvals
+   _id_: {"_id":1}
+   tenantId_1_status_1_createdAt_-1: {"tenantId":1,"status":1,"createdAt":-1}
+   tenantId_1_submittedBy.userId_1_status_1: {"tenantId":1,"submittedBy.userId":1,"status":1}
+   tenantId_1_fileHash_1_status_1: {"tenantId":1,"fileHash":1,"status":1}
 -- document_versions
    _id_: {"_id":1}
-   companyId_1_documentId_1_versionNumber_-1: {"companyId":1,"documentId":1,"versionNumber":-1}
-   companyId_1_file.sha256_1: {"companyId":1,"file.sha256":1}
-   companyId_1_classification.classId_1: {"companyId":1,"classification.classId":1}
-   companyId_1_metadataIndex.key_1_metadataIndex.valueString_1: {"companyId":1,"metadataIndex.key":1,"metadataIndex.valueString":1}
-   companyId_1_metadataIndex.key_1_metadataIndex.valueNumber_1: {"companyId":1,"metadataIndex.key":1,"metadataIndex.valueNumber":1}
-   companyId_1_metadataIndex.key_1_metadataIndex.valueDate_1: {"companyId":1,"metadataIndex.key":1,"metadataIndex.valueDate":1}
--- document_versions_company_dev
-   _id_: {"_id":1}
    tenantId_1_documentId_1_versionNumber_-1: {"tenantId":1,"documentId":1,"versionNumber":-1}
    tenantId_1_file.sha256_1: {"tenantId":1,"file.sha256":1}
-   classification.classId_1_tenantId_1: {"classification.classId":1,"tenantId":1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
--- document_versions_company_test_2
-   _id_: {"_id":1}
-   tenantId_1_documentId_1_versionNumber_-1: {"tenantId":1,"documentId":1,"versionNumber":-1}
-   tenantId_1_file.sha256_1: {"tenantId":1,"file.sha256":1}
-   classification.classId_1_tenantId_1: {"classification.classId":1,"tenantId":1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
 -- documents
    _id_: {"_id":1}
-   companyId_1_status_1_updatedAt_-1: {"companyId":1,"status":1,"updatedAt":-1}
-   companyId_1_classId_1_updatedAt_-1: {"companyId":1,"classId":1,"updatedAt":-1}
-   companyId_1_currentVersionId_1: {"companyId":1,"currentVersionId":1}
-   companyId_1_access.viewGroupIds_1_updatedAt_-1: {"companyId":1,"access.viewGroupIds":1,"updatedAt":-1}
--- documents_company_dev
-   _id_: {"_id":1}
    tenantId_1_status_1_updatedAt_-1: {"tenantId":1,"status":1,"updatedAt":-1}
    tenantId_1_ownerUserId_1_updatedAt_-1: {"tenantId":1,"ownerUserId":1,"updatedAt":-1}
    tenantId_1_classId_1_updatedAt_-1: {"tenantId":1,"classId":1,"updatedAt":-1}
-   tenantId_1_currentVersionId_1: {"tenantId":1,"currentVersionId":1}
-   access.viewGroupIds_1_tenantId_1_updatedAt_-1: {"access.viewGroupIds":1,"tenantId":1,"updatedAt":-1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
--- documents_company_test_2
+   tenantId_1_searchMeta.people.nameNormalized_1: {"tenantId":1,"searchMeta.people.nameNormalized":1}
+   tenantId_1_searchMeta.validityDate_1: {"tenantId":1,"searchMeta.validityDate":1}
+   tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1: {"tenantId":1,"searchMeta.dates.kind":1,"searchMeta.dates.date":1}
+-- external_document_share_grants
    _id_: {"_id":1}
-   tenantId_1_status_1_updatedAt_-1: {"tenantId":1,"status":1,"updatedAt":-1}
-   tenantId_1_classId_1_updatedAt_-1: {"tenantId":1,"classId":1,"updatedAt":-1}
-   tenantId_1_currentVersionId_1: {"tenantId":1,"currentVersionId":1}
-   access.viewGroupIds_1_tenantId_1_updatedAt_-1: {"access.viewGroupIds":1,"tenantId":1,"updatedAt":-1}
-   tenantId_1_createdAt_-1: {"tenantId":1,"createdAt":-1}
-   tenantId_1_ownerUserId_1_updatedAt_-1: {"tenantId":1,"ownerUserId":1,"updatedAt":-1}
+   documentId_recipientEmail_active_pending_unique: {"documentId":1,"recipientEmailNormalized":1}
+   documentId_1_status_1: {"documentId":1,"status":1}
+   recipientEmailNormalized_1_status_1_createdAt_-1: {"recipientEmailNormalized":1,"status":1,"createdAt":-1}
+   inviteTokenHash_1: {"inviteTokenHash":1}
+   tenantId_1_status_1: {"tenantId":1,"status":1}
 -- processing_jobs
    _id_: {"_id":1}
-   companyId_1_documentId_1_createdAt_-1: {"companyId":1,"documentId":1,"createdAt":-1}
-   companyId_1_status_1: {"companyId":1,"status":1}
--- processing_jobs_company_dev
-   _id_: {"_id":1}
    tenantId_1_documentId_1_createdAt_-1: {"tenantId":1,"documentId":1,"createdAt":-1}
    tenantId_1_status_1: {"tenantId":1,"status":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
-   tenantId_1_versionId_1: {"tenantId":1,"versionId":1}
--- processing_jobs_company_test_2
-   _id_: {"_id":1}
-   tenantId_1_documentId_1_createdAt_-1: {"tenantId":1,"documentId":1,"createdAt":-1}
-   tenantId_1_status_1: {"tenantId":1,"status":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
-   tenantId_1_versionId_1: {"tenantId":1,"versionId":1}
 -- tenant_members
    _id_: {"_id":1}
    tenantId_1_status_1: {"tenantId":1,"status":1}
    tenantId_1_emailNormalized_1: {"tenantId":1,"emailNormalized":1}
-   keycloakUserId_1_status_1: {"keycloakUserId":1,"status":1}
-   tenantId_1_keycloakUserId_1: {"tenantId":1,"keycloakUserId":1}
-   tenantId_1_accessGroupIds_1: {"tenantId":1,"accessGroupIds":1}
-   tenantId_1_createdAt_1: {"tenantId":1,"createdAt":1}
-   tenantId_1_updatedAt_1: {"tenantId":1,"updatedAt":1}
-   memberId_1: {"memberId":1}
+   authUserId_1_status_1: {"authUserId":1,"status":1}
 -- tenants
    _id_: {"_id":1}
    tenantId_1: {"tenantId":1}
@@ -212,37 +149,36 @@ tenants: 2 docs [registry]
    slug_1: {"slug":1}
    status_1: {"status":1}
    tenantType_1_status_1: {"tenantType":1,"status":1}
-   createdAt_1: {"createdAt":1}
-   updatedAt_1: {"updatedAt":1}
+   companyId_1: {"companyId":1}
+-- user_document_favorites
+   _id_: {"_id":1}
+   userId_documentId_unique: {"userId":1,"documentId":1}
+   userId_1_deletedAt_1_createdAt_-1: {"userId":1,"deletedAt":1,"createdAt":-1}
+   documentId_1: {"documentId":1}
+   userId_1_tenantId_1_deletedAt_1: {"userId":1,"tenantId":1,"deletedAt":1}
 
 ================================================================================
 ÍNDICES RECOMENDADOS (ausentes)
 ================================================================================
-access_groups: tenantId, status, createdAt, updatedAt
-access_groups_company_test_2: companyId
-audit_logs: tenantId, status, updatedAt, versionId
-audit_logs_company_dev: companyId, status, updatedAt, versionId
-audit_logs_company_test_2: companyId, status, updatedAt, versionId
-auditevents: companyId, status, updatedAt, versionId
-companies: tenantId, createdAt, updatedAt
-company_members: tenantId, createdAt, updatedAt, emailNormalized, memberId, accessGroupIds
-document_classes: tenantId, status, createdAt, updatedAt, classId, accessGroupIds
-document_classes_company_dev: companyId, status, classId, accessGroupIds
-document_classes_company_test_2: companyId, status, classId, accessGroupIds
-document_rules: tenantId, status, createdAt, updatedAt, ruleId, accessGroupIds
-document_rules_company_dev: companyId, status, ruleId
-document_rules_company_test_2: companyId, status, ruleId
-document_versions: tenantId, status, createdAt, updatedAt, classId, accessGroupIds
-document_versions_company_dev: companyId, status, updatedAt, classId, accessGroupIds
-document_versions_company_test_2: companyId, status, updatedAt, classId, accessGroupIds
-documents: tenantId, createdAt, accessGroupIds
-documents_company_dev: companyId, accessGroupIds
-documents_company_test_2: companyId, accessGroupIds
-processing_jobs: tenantId, updatedAt, versionId
-processing_jobs_company_dev: companyId
-processing_jobs_company_test_2: companyId
-tenant_members: companyId
-tenants: companyId
+audit_logs: companyId, status, updatedAt, versionId
+document_categories: companyId, status, createdAt, updatedAt, classId, accessGroupIds
+document_chunks: companyId, status, createdAt, updatedAt, classId, accessGroupIds
+document_expiry_alerts: companyId, updatedAt, classId, accessGroupIds
+document_extraction_rules: companyId, status, createdAt, updatedAt, classId, ruleId, accessGroupIds
+document_group_members: companyId, status, createdAt, updatedAt, emailNormalized, authUserId, keycloakUserId, memberId, classId, accessGroupIds
+document_groups: companyId, status, createdAt, updatedAt, classId, accessGroupIds
+document_rules: companyId, status, createdAt, updatedAt, classId, ruleId, accessGroupIds
+document_share_grants: companyId, updatedAt, classId, accessGroupIds
+document_signature_requests: companyId, updatedAt, classId, accessGroupIds
+document_signatures: tenantId, companyId, status, createdAt, updatedAt, classId, accessGroupIds
+document_upload_approvals: companyId, updatedAt, classId, accessGroupIds
+document_versions: companyId, status, createdAt, updatedAt, classId, accessGroupIds
+documents: companyId, createdAt, accessGroupIds
+external_document_share_grants: companyId, updatedAt, classId, accessGroupIds
+processing_jobs: companyId, updatedAt, versionId
+tenant_members: companyId, createdAt, updatedAt, keycloakUserId, memberId, accessGroupIds
+tenants: createdAt, updatedAt
+user_document_favorites: companyId, status, updatedAt, classId, accessGroupIds
 
 ================================================================================
 PROBLEMAS CRÍTICOS
@@ -252,47 +188,394 @@ Nenhum.
 ================================================================================
 PROBLEMAS ALTOS
 ================================================================================
-Nenhum.
+[Segurança] tenant_members — Campo potencialmente sensível detectado (whatsapp) em amostra — valor não exibido. (≈6)
 
 ================================================================================
 PROBLEMAS MÉDIOS
 ================================================================================
-Nenhum.
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_dev). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_alpha_consultoria). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_horizonte_logistica). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_metalprime_industrias). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_juridico_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_financeiro_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_rh_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_compras_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_contratos__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_financeiro__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_juridico__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_rh__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_compras__company_nexserv_tecnologia). (≈1)
+[document_rules] document_rules — Rule active sem fields (rule_diretoria_cat_operacional__company_nexserv_tecnologia). (≈1)
 
 ================================================================================
 PROBLEMAS BAIXOS
 ================================================================================
-[processing_jobs] processing_jobs_company_dev — Job sem createdAt/updatedAt (job_be948818-326c-4555-b712-7fc2cfa157d5). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_juridico). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_financeiro). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_rh). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_compras). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_diretoria). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_qualidade). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_qualidade_m7ur). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_qualidade_mn7v). (≈1)
-[access_groups] access_groups — Grupo órfão não referenciado (group_qualidade_2cvv). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_juridico). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_financeiro). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_rh). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_compras). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_diretoria). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_qualidade). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_qualidade_m7ur). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_qualidade_mn7v). (≈1)
-[access_groups] access_groups_company_dev — Grupo órfão não referenciado (group_qualidade_2cvv). (≈1)
+Nenhum.
 
 ================================================================================
 VALIDAÇÃO DE ISOLAMENTO POR TENANT
 ================================================================================
 DEV_TENANT_ID esperado no projeto: company_dev
 - company_dev: type=business, strategy=collection_prefix, prefix=company_dev, status=active
-- company_test_2: type=business, strategy=collection_prefix, prefix=company_test_2, status=active
+- company_alpha_consultoria: type=business, strategy=collection_prefix, prefix=company_alpha_consultoria, status=active
+- company_horizonte_logistica: type=business, strategy=collection_prefix, prefix=company_horizonte_logistica, status=active
+- company_metalprime_industrias: type=business, strategy=collection_prefix, prefix=company_metalprime_industrias, status=active
+- company_nexserv_tecnologia: type=business, strategy=collection_prefix, prefix=company_nexserv_tecnologia, status=active
 Coleções legadas flat ainda presentes (migração incompleta):
-  - access_groups (9 docs)
-  - audit_logs (2 docs)
-  - document_classes (11 docs)
-  - document_rules (10 docs)
+  - audit_logs (45 docs)
+  - document_categories (30 docs)
+  - document_chunks (0 docs)
+  - document_extraction_rules (30 docs)
+  - document_group_members (0 docs)
+  - document_groups (25 docs)
+  - document_rules (60 docs)
   - document_versions (1 docs)
   - documents (1 docs)
   - processing_jobs (1 docs)
@@ -300,10 +583,10 @@ Coleções legadas flat ainda presentes (migração incompleta):
 ================================================================================
 VALIDAÇÃO DE RELAÇÕES
 ================================================================================
-Grupos carregados: 19
-Tenants com grupos: 2
-Tenants com classes: 2
-Tenants com documents: 2
+Grupos carregados: 0
+Tenants com grupos: 0
+Tenants com classes: 0
+Tenants com documents: 1
 
 ================================================================================
 MELHORIAS RECOMENDADAS

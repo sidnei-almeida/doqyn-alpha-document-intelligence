@@ -73,3 +73,6 @@ backups/
 NDA_*.png
 NDA_*.pdf
 *.local-fixture.*
+
+# Estado efêmero do GSD (sentinela de isolamento por execução)
+.gsd/

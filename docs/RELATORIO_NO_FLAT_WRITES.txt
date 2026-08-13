@@ -1,5 +1,5 @@
 DOQYN — Verificação de writes em coleções flat tenant-scoped
-Data: 2026-08-10T10:51:07.964Z
+Data: 2026-08-13T11:03:06.646Z
 
 ================================================================================
 RESULTADO
