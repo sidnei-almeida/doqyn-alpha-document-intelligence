@@ -172,6 +172,9 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, requestId: 1 } },
         { key: { tenantId: 1, 'metadata.status': 1, createdAt: -1 } },
         { key: { tenantId: 1, 'metadata.actionGroup': 1, createdAt: -1 } },
+        // A verificação da cadeia de integridade percorre o tenant inteiro em ordem de posição;
+        // sem este índice ela vira collection scan com sort em memória.
+        { key: { tenantId: 1, 'chain.seq': 1 } },
       ],
     },
   );

@@ -10,6 +10,7 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { escapeRegexLiteral } from '../utils/documentListQuery.js';
 import { assertCanAccessDocument } from '../tenancy/documentOwnership.js';
+import { reserveChainSlot, rollbackChainSlot } from './auditChain.js';
 import {
   DOCUMENT_AUDIT_ACTION_LABELS,
   SYSTEM_DOCUMENT_AUDIT_ACTIONS,
@@ -117,10 +118,28 @@ export async function createDocumentAuditLog(
     ...(event.metadata ?? {}),
   });
 
+  const id = `audit_${randomUUID()}`;
+
+  // O carimbo da cadeia é reservado antes da inserção porque depende do hash do evento anterior.
+  // Falhar aqui não pode impedir o registro do evento: uma trilha sem elo é um problema menor do
+  // que um evento que não existe — a verificação sabe reportar o elo faltante.
+  const chain = await reserveChainSlot(ctx.tenantId, {
+    id,
+    action,
+    description: event.description,
+    actorUserId: ctx.actorUserId,
+    documentId: event.documentId ?? null,
+    versionId: event.versionId ?? null,
+    result,
+    severity,
+    occurredAt: now,
+    metadata,
+  });
+
   const doc = withTenantFieldsFromContext(
     storage,
     {
-      _id: `audit_${randomUUID()}`,
+      _id: id,
       documentId: event.documentId ?? null,
       versionId: event.versionId ?? null,
       actor: buildActor(ctx),
@@ -134,11 +153,18 @@ export async function createDocumentAuditLog(
       severity,
       requestId: ctx.requestId,
       collectionPrefix: ctx.collectionPrefix,
+      ...(chain ? { chain } : {}),
     },
     ownerUserId,
   ) as MongoAuditLog & { occurredAt: Date; severity: string };
 
-  await auditLogs.insertOne(doc);
+  try {
+    await auditLogs.insertOne(doc);
+  } catch (error) {
+    if (chain) await rollbackChainSlot(ctx.tenantId, chain);
+    throw error;
+  }
+
   return { id: String(doc._id) };
 }
 

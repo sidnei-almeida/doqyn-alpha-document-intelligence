@@ -62,6 +62,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/audit/overview': () => import('../api/audit/overview.js'),
   '/api/tracking/document-events': () => import('../api/tracking/document-events.js'),
   '/api/tracking/summary': () => import('../api/tracking/summary.js'),
+  '/api/tracking/verify-chain': () => import('../api/tracking/verify-chain.js'),
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
   '/api/expiry-alerts': () => import('../api/expiry-alerts/index.js'),
