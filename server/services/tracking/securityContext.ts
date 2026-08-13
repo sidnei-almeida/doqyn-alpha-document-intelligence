@@ -209,16 +209,62 @@ function resolveTimezone(req: Pick<VercelRequest, 'headers'>): string | undefine
   );
 }
 
+const DEFAULT_IP_HASH_SALT = 'doqyn-ip-v1';
+
+/** Comprimento mínimo do segredo, igual ao exigido no `doqyn-auth-service`. */
+const MIN_SECRET_LENGTH = 32;
+
+const isProduction = () =>
+  (process.env.APP_ENV ?? process.env.NODE_ENV ?? '').toLowerCase() === 'production';
+
+/**
+ * Sal do hash de IP.
+ *
+ * O default é valor público deste repositório. O espaço IPv4 tem 2^32 endereços — pequeno o
+ * bastante para tabelar inteiro —, então hash com sal conhecido não protege o IP de ninguém: quem
+ * obtiver o banco reverte a coluna toda. Em produção isso passa a ser erro, não default silencioso.
+ */
 function resolveIpHashSalt(): string {
-  return process.env.TRACKING_IP_HASH_SALT?.trim() || 'doqyn-ip-v1';
+  const configured = process.env.TRACKING_IP_HASH_SALT?.trim();
+  if (configured) return configured;
+
+  if (isProduction()) {
+    throw new Error(
+      'TRACKING_IP_HASH_SALT é obrigatória em produção: o valor padrão é público e torna o hash de IP reversível.',
+    );
+  }
+  return DEFAULT_IP_HASH_SALT;
+}
+
+/**
+ * Deriva a chave AES-256 do segredo configurado.
+ *
+ * A saída do SHA-256 tem sempre 32 bytes, então a chave é *sempre* de 256 bits — mas a força real é
+ * a entropia do segredo de entrada, não o tamanho da saída. Sem piso de comprimento,
+ * `TRACKING_IP_ENCRYPTION_KEY=abc` produzia uma chave "de 256 bits" com a força de uma senha de três
+ * letras. O mínimo aqui é o mesmo do `doqyn-auth-service`, para que os dois serviços tenham o mesmo
+ * padrão — chaves distintas, mesma exigência.
+ *
+ * Gere com: `openssl rand -base64 32`
+ */
+function resolveIpEncryptionKey(): Buffer | null {
+  const secret = process.env.TRACKING_IP_ENCRYPTION_KEY?.trim();
+  if (!secret) return null;
+
+  if (secret.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `TRACKING_IP_ENCRYPTION_KEY deve ter pelo menos ${MIN_SECRET_LENGTH} caracteres (gere com: openssl rand -base64 32).`,
+    );
+  }
+
+  return createHash('sha256').update(secret).digest();
 }
 
 /** Criptografa IP completo para auditoria de segurança restrita (não exposto na UI comum). */
 export function encryptIpForSecurityAudit(ip: string): string | undefined {
-  const secret = process.env.TRACKING_IP_ENCRYPTION_KEY?.trim();
-  if (!secret || !ip.trim()) return undefined;
+  const key = resolveIpEncryptionKey();
+  if (!key || !ip.trim()) return undefined;
 
-  const key = createHash('sha256').update(secret).digest();
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(ip.trim(), 'utf8'), cipher.final()]);
