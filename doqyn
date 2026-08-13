@@ -127,6 +127,24 @@ preflight() {
   mkdir -p "$LOG_DIR" "$RUN_DIR"
 }
 
+# prisma/schema.prisma exige DATABASE_URL_DIRECT (conexão sem pooler). Em dev ela é a mesma
+# DATABASE_URL. Exporta o valor para todo comando prisma deste script em vez de repetir a regra em
+# cada chamada — foi assim que o `reset` ficou para trás quando o `up` foi corrigido.
+ensure_prisma_direct_url() {
+  [[ -n "${DATABASE_URL_DIRECT:-}" ]] && return 0
+
+  local direct
+  direct="$(env_value "$AUTH_DIR/.env" DATABASE_URL_DIRECT)"
+  if [[ -z "$direct" ]]; then
+    direct="$(env_value "$AUTH_DIR/.env" DATABASE_URL)"
+    [[ -n "$direct" ]] || die "nem DATABASE_URL nem DATABASE_URL_DIRECT definidas no .env do auth-service."
+    warn "DATABASE_URL_DIRECT ausente no .env do auth-service — usando DATABASE_URL nos comandos prisma."
+    printf '%s  Para parar de ver este aviso, acrescente ao %s/.env:%s\n' "$C_DIM" "$AUTH_DIR" "$C_OFF"
+    printf '%s      DATABASE_URL_DIRECT=<mesmo valor de DATABASE_URL>%s\n' "$C_DIM" "$C_OFF"
+  fi
+  export DATABASE_URL_DIRECT="$direct"
+}
+
 # ── comandos ─────────────────────────────────────────────────────────────────
 cmd_up() {
   preflight
@@ -136,23 +154,9 @@ cmd_up() {
   ok "postgres-auth no ar"
 
   step "Migrações do Prisma..."
-  # prisma/schema.prisma exige DATABASE_URL_DIRECT (conexão sem pooler). Em dev
-  # ela é a mesma DATABASE_URL; se faltar no .env, passamos só para este comando
-  # em vez de morrer com o erro cru do Prisma. Escrever no .env é decisão sua.
-  local direct_url
-  direct_url="$(env_value "$AUTH_DIR/.env" DATABASE_URL_DIRECT)"
-  if [[ -z "$direct_url" ]]; then
-    direct_url="$(env_value "$AUTH_DIR/.env" DATABASE_URL)"
-    [[ -n "$direct_url" ]] || die "nem DATABASE_URL nem DATABASE_URL_DIRECT definidas no .env do auth-service."
-    warn "DATABASE_URL_DIRECT ausente no .env do auth-service — usando DATABASE_URL só nesta migração."
-    printf '%s  Para parar de ver este aviso, acrescente ao %s/.env:%s\n' "$C_DIM" "$AUTH_DIR" "$C_OFF"
-    printf '%s      DATABASE_URL_DIRECT=<mesmo valor de DATABASE_URL>%s\n' "$C_DIM" "$C_OFF"
-    ( cd "$AUTH_DIR" && DATABASE_URL_DIRECT="$direct_url" npx prisma migrate deploy >/dev/null 2>&1 ) \
-      || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
-  else
-    ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) \
-      || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
-  fi
+  ensure_prisma_direct_url
+  ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) \
+    || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
   ok "schema em dia"
 
   if [[ ! -f "$MANIFEST" ]]; then
@@ -249,6 +253,8 @@ cmd_reset() {
 
   step "Postgres do auth-service..."
   ( cd "$AUTH_DIR" && docker compose up -d --wait postgres-auth >/dev/null ) || die "não subiu o postgres-auth."
+
+  ensure_prisma_direct_url
 
   step "Reset do Postgres..."
   ( cd "$AUTH_DIR" && npm run dev:reset:postgres -- --confirm-reset-doqyn-dev ) || die "reset do postgres falhou."
