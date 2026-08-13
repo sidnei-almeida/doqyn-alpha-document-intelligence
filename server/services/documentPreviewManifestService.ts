@@ -175,6 +175,9 @@ async function resolvePreviewVersion(input: {
     canUpdate: perms.canUpdate,
     canViewTracking: canViewDocumentTracking(input.user, {
       ownerUserId: (doc as MongoDocument).ownerUserId,
+      classId: (doc as MongoDocument).classId,
+      memberGroupIds,
+      governanceIndex,
     }),
   };
   assertCanPreviewDocument({

@@ -1,7 +1,7 @@
 import type { VercelRequest } from '@vercel/node';
 import type { AuthUser } from '../auth/types.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
-import { userGovernsTenantScope } from '../tenancy/documentAccess.js';
+import { loadDocumentAccessContext, userGovernsTenantScope } from '../tenancy/documentAccess.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import {
@@ -26,9 +26,10 @@ export type TrackingAccessScope = {
  * - **Sem documento em escopo** (ex.: `/api/tracking/summary`, que agrega o tenant inteiro): decide
  *   por `userGovernsTenantScope` — `company_admin` em PJ, usuário único do pool em PF. O usuário
  *   comum de PJ recebe 403 `TRACKING_FORBIDDEN`.
- * - **Com documento em escopo**: quem governa o tenant continua passando, e o dono do documento
- *   passa também. Sem este segundo caminho o dono não conseguiria ver a trilha do próprio documento,
- *   que é exatamente o que D-07 existe para garantir.
+ * - **Com documento em escopo**: quem governa o tenant continua passando, o dono do documento passa
+ *   também — sem este caminho o dono não veria a trilha do próprio documento, que é o que D-07
+ *   existe para garantir — e passa ainda quem pertence a grupo com o verbo `audit` na classe do
+ *   documento, porque essa é a configuração que o tenant faz no mapa de regras.
  *
  * O documento é buscado pelo filtro de escopo do tenant, então uma sonda cross-tenant (ou
  * cross-usuário no pool PF) devolve 404 antes de chegar na camada de permissão.
@@ -65,7 +66,20 @@ export async function requireDocumentTrackingAccess(
       return null;
     }
 
-    if (canViewDocumentTracking(auth.user, { ownerUserId: doc.ownerUserId })) {
+    const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
+      tenantId: auth.ctx.tenantId,
+      userId: auth.ctx.userId,
+      membershipId: auth.ctx.membershipId,
+    });
+
+    if (
+      canViewDocumentTracking(auth.user, {
+        ownerUserId: doc.ownerUserId,
+        classId: doc.classId,
+        memberGroupIds,
+        governanceIndex,
+      })
+    ) {
       return auth;
     }
   }

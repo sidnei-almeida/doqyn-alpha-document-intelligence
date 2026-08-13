@@ -285,7 +285,11 @@ export async function getDocumentDetail(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const { permissions: perms } = await resolveDocumentAccessWithShare({
+  const {
+    permissions: perms,
+    memberGroupIds,
+    governanceIndex,
+  } = await resolveDocumentAccessWithShare({
     user,
     doc: doc as MongoDocument,
     sharedWithUserId: user.id,
@@ -300,6 +304,9 @@ export async function getDocumentDetail(
     canTransferOwnership: perms.canTransferOwnership,
     canViewTracking: canViewDocumentTracking(user, {
       ownerUserId: (doc as MongoDocument).ownerUserId,
+      classId: (doc as MongoDocument).classId,
+      memberGroupIds,
+      governanceIndex,
     }),
     canShare: perms.canShare,
     sharedViaGrant: perms.sharedViaGrant,

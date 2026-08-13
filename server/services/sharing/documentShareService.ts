@@ -113,6 +113,7 @@ async function loadShareableDocument(
 ): Promise<{
   doc: MongoDocument;
   memberGroupIds: string[];
+  governanceIndex: GovernanceAccessIndex;
 }> {
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
@@ -139,13 +140,15 @@ async function loadShareableDocument(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  // O índice de governança é obrigatório aqui: sem ele o verbo `share` configurado pelo tenant não
+  // é consultado e sobram apenas admin e dono, tornando a coluna do mapa de regras inerte.
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
   });
 
-  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds)) {
+  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex)) {
     throw new ServiceError(
       'Você não tem permissão para compartilhar este documento.',
       'DOCUMENT_SHARE_DENIED',
@@ -156,6 +159,7 @@ async function loadShareableDocument(
   return {
     doc: doc as MongoDocument,
     memberGroupIds,
+    governanceIndex,
   };
 }
 
@@ -207,8 +211,12 @@ export async function listDocumentShareGrants(
   user: AuthUser,
   documentId: string,
 ) {
-  const { doc, memberGroupIds } = await loadShareableDocument(ctx, user, documentId);
-  if (!canUserShareDocument(user, doc, memberGroupIds)) {
+  const { doc, memberGroupIds, governanceIndex } = await loadShareableDocument(
+    ctx,
+    user,
+    documentId,
+  );
+  if (!canUserShareDocument(user, doc, memberGroupIds, governanceIndex)) {
     throw new ServiceError(
       'Você não tem permissão para ver compartilhamentos deste documento.',
       'DOCUMENT_SHARE_DENIED',
@@ -361,7 +369,7 @@ export async function revokeDocumentShareGrant(
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
   }
 
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
@@ -371,7 +379,7 @@ export async function revokeDocumentShareGrant(
     isDocumentAdmin(user) ||
     grant.sharedByUserId === user.id ||
     (doc as MongoDocument).ownerUserId === user.id ||
-    canUserShareDocument(user, doc as MongoDocument, memberGroupIds);
+    canUserShareDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex);
 
   if (!canRevoke) {
     throw new ServiceError(
@@ -538,6 +546,10 @@ export async function resolveDocumentAccessWithShare(input: {
 
   return {
     shareGrant,
+    // Devolvidos para quem precisa decidir mais coisas sobre o mesmo documento — tracking, por
+    // exemplo — sem recarregar grupos e regras do banco.
+    memberGroupIds,
+    governanceIndex,
     permissions: resolveDocumentPermissionsWithShare(
       input.user,
       input.doc,

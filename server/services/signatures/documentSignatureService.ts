@@ -19,7 +19,7 @@ import {
   buildDocumentOwnershipFilter,
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
-import { loadMemberDocumentGroupIds } from '../../tenancy/documentAccess.js';
+import { loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { resolveDocumentAccessWithShare } from '../sharing/documentShareService.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
@@ -330,7 +330,9 @@ async function loadSignableDocument(
   user: AuthUser,
   documentId: string,
 ): Promise<{ doc: MongoDocument; version: MongoDocumentVersion }> {
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  // Solicitar assinatura é uma forma de compartilhar: sem o índice de governança o verbo `share`
+  // configurado pelo tenant não vale e a permissão fica restrita a admin e dono.
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
@@ -348,7 +350,7 @@ async function loadSignableDocument(
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
   }
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
-  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds)) {
+  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex)) {
     throw new ServiceError('Sem permissão para solicitar assinatura.', 'SIGNATURE_FORBIDDEN', 403);
   }
 
