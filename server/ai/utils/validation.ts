@@ -2,6 +2,7 @@ import {
   AI_ERROR_MESSAGES,
   MIN_CLASSIFICATION_CONFIDENCE,
   MIN_FIELD_CONFIDENCE,
+  DERIVED_FIELD_CONFIDENCE,
 } from '../constants.js';
 import type {
   ClassificationResult,
@@ -12,6 +13,7 @@ import type {
 } from '../types/documentAi.types.js';
 import type { DocumentRuleField } from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from './documentClassHeuristics.js';
+import { deriveEndDates, normalizeDateValue } from './derivedDates.js';
 import {
   normalizeCurrency,
   normalizeCpf,
@@ -98,8 +100,20 @@ export function validateClassificationResult(
 function applyFieldNormalization(
   field: DocumentRuleField,
   value: string | number | null,
+  modelNormalized?: string | number | null,
 ): { value: string | number | null; normalizedValue: string | number | null; currency?: string } {
   const normalizedValue = normalizeStringFieldValue(value, field);
+
+  // Data: o prompt pede ISO em normalizedValue, mas esta função recalculava tudo a partir do
+  // `value` cru e não tratava data — então o ISO do modelo era descartado e o campo chegava ao
+  // banco por extenso. Aceita o ISO do modelo quando ele veio válido; senão converte aqui.
+  // Ter o ISO também é pré-requisito da derivação de data final (deriveEndDates).
+  if (field.type === 'date' && value !== null) {
+    const fromModel = normalizeDateValue(modelNormalized);
+    const fromValue = normalizeDateValue(value);
+    const iso = fromModel ?? fromValue;
+    if (iso) return { value, normalizedValue: iso };
+  }
 
   if (field.type === 'currency' && value !== null) {
     const { amount, currency } = normalizeCurrency(value);
@@ -174,7 +188,11 @@ export function validateMetadataResult(
         : 0;
 
     const evidence = parseEvidence(field.evidence);
-    const normalized = applyFieldNormalization(fieldDef, value);
+    const modelNormalized =
+      typeof field.normalizedValue === 'string' || typeof field.normalizedValue === 'number'
+        ? field.normalizedValue
+        : null;
+    const normalized = applyFieldNormalization(fieldDef, value, modelNormalized);
 
     metadata[key] = {
       label: fieldDef.label,
@@ -205,6 +223,30 @@ export function validateMetadataResult(
         reviewReasons.push(`Campo "${fieldDef.label}" sem evidência textual.`);
       }
     }
+  }
+
+  // Data final calculada a partir de âncora + prazo, em código e não pelo LLM: o modelo pequeno
+  // não faz essa aritmética (16 de 16 vazias na medição), o grande faz — então pelo LLM o
+  // resultado dependeria do modelo configurado. Ver server/ai/utils/derivedDates.ts.
+  for (const derived of deriveEndDates(selectedClass.fields, metadata)) {
+    const fieldDef = selectedClass.fields.find((f) => f.key === derived.targetKey);
+    if (!fieldDef) continue;
+
+    metadata[derived.targetKey] = {
+      label: fieldDef.label,
+      value: derived.value,
+      normalizedValue: derived.value,
+      confidence: DERIVED_FIELD_CONFIDENCE,
+      source: 'derived',
+      evidence: {
+        snippet:
+          `Calculado: ${derived.anchorValue} (${derived.anchorKey}) + ` +
+          `${derived.durationValue} (${derived.durationKey})`,
+      },
+    };
+
+    const stillMissing = missingFields.indexOf(derived.targetKey);
+    if (stillMissing >= 0) missingFields.splice(stillMissing, 1);
   }
 
   const parsedMissing = Array.isArray(data.missingFields)

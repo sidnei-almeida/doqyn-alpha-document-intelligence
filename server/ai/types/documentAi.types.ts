@@ -43,7 +43,7 @@ export type ExtractedMetadataField = {
   value: string | number | null;
   normalizedValue?: string | number | null;
   confidence: number;
-  source: 'document_text' | 'no_ai';
+  source: 'document_text' | 'no_ai' | 'derived';
   evidence?: EvidenceSnippet;
   currency?: string;
 };
