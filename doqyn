@@ -45,6 +45,15 @@ env_value() {
 
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&- && return 0 || return 1; }
 
+# Quantos usuários existem no Postgres do auth. Devolve 0 quando o container não responde ou a
+# tabela ainda não existe — nos dois casos o chamador trata como "precisa semear".
+auth_user_count() {
+  local container="doqyn-auth-service-postgres-auth-1" out
+  out="$(docker exec "$container" psql -U doqyn -d doqyn_auth -tAc \
+    'select count(*) from auth_users' 2>/dev/null | tr -d '[:space:]')"
+  [[ "$out" =~ ^[0-9]+$ ]] && printf '%s' "$out" || printf '0'
+}
+
 wait_for_http() {
   local url="$1" label="$2" tries="${3:-60}" i
   for ((i = 1; i <= tries; i++)); do
@@ -159,11 +168,22 @@ cmd_up() {
     || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
   ok "schema em dia"
 
-  if [[ ! -f "$MANIFEST" ]]; then
-    step "Seed demo do auth (primeira vez — gera o manifest que o alpha consome)..."
+  # O manifest é só um arquivo: ele sobrevive a um banco esvaziado por fora (uma suíte de testes
+  # apontada para o banco errado, um `prisma migrate reset` manual). Quando isso acontece, o `up`
+  # antes seguia em silêncio e o ambiente só se revelava quebrado no primeiro login, com
+  # INVALID_CREDENTIALS e nenhuma pista da causa. Agora quem manda é o banco.
+  local users_count
+  users_count="$(auth_user_count)"
+
+  if [[ ! -f "$MANIFEST" || "$users_count" == "0" ]]; then
+    if [[ -f "$MANIFEST" && "$users_count" == "0" ]]; then
+      warn "manifest presente mas o banco do auth está vazio — semeando de novo."
+    else
+      step "Seed demo do auth (primeira vez — gera o manifest que o alpha consome)..."
+    fi
     ( cd "$AUTH_DIR" && npm run dev:seed:demo ) || die "seed demo do auth falhou."
   else
-    ok "manifest do auth já existe — seed preservado"
+    ok "manifest do auth já existe — seed preservado ($users_count usuários)"
   fi
 
   if mongo_is_local; then
