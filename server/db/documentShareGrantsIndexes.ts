@@ -12,7 +12,7 @@ export const DOCUMENT_SHARE_GRANTS_INDEXES: IndexDescription[] = [
   { key: { sharedWithUserId: 1, status: 1, createdAt: -1 } },
   { key: { sharedByUserId: 1, status: 1, createdAt: -1 } },
   { key: { documentId: 1, status: 1 } },
-  { key: { documentTenantId: 1, sharedWithUserId: 1, status: 1 } },
+  { key: { tenantId: 1, sharedWithUserId: 1, status: 1 } },
 ];
 
 export async function ensureDocumentShareGrantsIndexes() {

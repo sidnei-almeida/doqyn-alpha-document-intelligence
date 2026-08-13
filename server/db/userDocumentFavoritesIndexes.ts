@@ -12,7 +12,7 @@ export const USER_DOCUMENT_FAVORITES_INDEXES: IndexDescription[] = [
   },
   { key: { userId: 1, deletedAt: 1, createdAt: -1 } },
   { key: { documentId: 1 } },
-  { key: { userId: 1, documentTenantId: 1, deletedAt: 1 } },
+  { key: { userId: 1, tenantId: 1, deletedAt: 1 } },
 ];
 
 export async function ensureUserDocumentFavoritesIndexes() {

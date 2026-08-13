@@ -128,9 +128,8 @@ export async function addDocumentFavorite(
       $set: {
         userId: ctx.userId,
         documentId,
-        documentTenantId: ctx.storage.tenantId,
+        tenantId: ctx.storage.tenantId,
         documentTenantType: ctx.storage.tenantType,
-        documentCollection: ctx.storage.collections.documents,
         documentClassId: doc.classId,
         versionId: doc.currentVersionId,
         updatedAt: now,
@@ -177,7 +176,7 @@ async function resolveFavoriteDocuments(
 
   const grouped = new Map<string, MongoUserDocumentFavorite[]>();
   for (const favorite of favorites) {
-    const tenantId = favorite.documentTenantId;
+    const tenantId = favorite.tenantId;
     if (!tenantId) continue;
     const bucket = grouped.get(tenantId) ?? [];
     bucket.push(favorite);

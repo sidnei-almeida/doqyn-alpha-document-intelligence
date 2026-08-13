@@ -69,10 +69,10 @@ async function loadGrantDocumentContext(
   }
 
   const storageScope = await resolveTenantStorageScopeById(
-    grant.documentTenantId,
+    grant.tenantId,
     grant.sharedByUserId,
   );
-  const { documents, documentVersions, storage } = await getTenantCollections(grant.documentTenantId, {
+  const { documents, documentVersions, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
 
@@ -121,7 +121,7 @@ async function readVersionFileBuffer(input: {
 
   const file = await provider.readDocumentVersion(
     storageKey,
-    input.grant.documentTenantId,
+    input.grant.tenantId,
     primaryStorage?.bucketAlias,
     input.storageScope,
   );
@@ -240,7 +240,7 @@ export async function getExternalSharePreviewManifest(token: string): Promise<Do
     const file = await readVersionFileBuffer({ grant, version, storageScope });
     persistedManifest = await buildPdfPreviewManifestFromBuffer(file.buffer, mimeType);
     await saveVersionPreviewManifest({
-      tenantId: grant.documentTenantId,
+      tenantId: grant.tenantId,
       ownerUserId: grant.sharedByUserId,
       documentId: grant.documentId,
       versionId: version._id,
@@ -320,7 +320,7 @@ export async function readExternalSharePreviewImageAsset(input: {
 
   const file = await provider.readDocumentVersion(
     objectKey,
-    grant.documentTenantId,
+    grant.tenantId,
     preview.bucketAlias,
     storageScope,
   );

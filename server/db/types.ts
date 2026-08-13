@@ -814,9 +814,8 @@ export type MongoUserDocumentFavorite = {
   _id: string;
   userId: string;
   documentId: string;
-  documentTenantId?: string;
+  tenantId?: string;
   documentTenantType?: TenantType;
-  documentCollection?: string;
   documentClassId?: string;
   versionId?: string;
   createdAt: Date;
@@ -836,9 +835,8 @@ export type DocumentSharePermissions = {
 export type MongoDocumentShareGrant = {
   _id: string;
   documentId: string;
-  documentTenantId: string;
+  tenantId: string;
   documentTenantType?: TenantType;
-  documentCollection?: string;
   sharedByUserId: string;
   sharedWithUserId: string;
   permissions: DocumentSharePermissions;
@@ -862,9 +860,8 @@ export type ExternalDocumentSharePermissions = {
 export type MongoExternalDocumentShareGrant = {
   _id: string;
   documentId: string;
-  documentTenantId: string;
+  tenantId: string;
   documentTenantType?: TenantType;
-  documentCollection?: string;
   sharedByUserId: string;
   sharedByNameSnapshot?: string;
   recipientEmail: string;
@@ -944,9 +941,8 @@ export type MongoDocumentSignatureRequest = {
   signatureRequestId: string;
   documentId: string;
   versionId: string;
-  documentTenantId: string;
+  tenantId: string;
   documentTenantType?: TenantType;
-  documentCollection?: string;
   requestedByUserId: string;
   requestedByNameSnapshot?: string | null;
   status: DocumentSignatureRequestStatus;

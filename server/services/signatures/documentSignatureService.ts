@@ -158,7 +158,7 @@ export async function requireAssignedInternalSignatureRequest(
   const collection = await getSignatureRequestsCollection();
   const request = await collection.findOne({
     signatureRequestId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
@@ -258,10 +258,10 @@ export async function loadSignatureRequestDocumentContext(
   }
 
   const storageScope = await resolveTenantStorageScopeById(
-    request.documentTenantId,
+    request.tenantId,
     request.requestedByUserId,
   );
-  const { documents, documentVersions, storage } = await getTenantCollections(request.documentTenantId, {
+  const { documents, documentVersions, storage } = await getTenantCollections(request.tenantId, {
     userId: request.requestedByUserId,
   });
 
@@ -313,7 +313,7 @@ export async function readSignatureRequestVersionFile(input: {
 
   const file = await provider.readDocumentVersion(
     storageKey,
-    input.request.documentTenantId,
+    input.request.tenantId,
     primaryStorage?.bucketAlias,
     input.storageScope,
   );
@@ -329,13 +329,13 @@ async function loadSignableDocument(
   ctx: DocumentRequestContext,
   user: AuthUser,
   documentId: string,
-): Promise<{ doc: MongoDocument; version: MongoDocumentVersion; documentCollection: string }> {
+): Promise<{ doc: MongoDocument; version: MongoDocumentVersion }> {
   const memberGroupIds = await loadMemberDocumentGroupIds({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
   });
-  const { documents, documentVersions, storage, names } = await getTenantCollections(ctx.tenantId, {
+  const { documents, documentVersions, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
@@ -367,7 +367,6 @@ async function loadSignableDocument(
   return {
     doc: doc as MongoDocument,
     version: version as MongoDocumentVersion,
-    documentCollection: names.documents,
   };
 }
 
@@ -440,7 +439,7 @@ export async function createDocumentSignatureRequest(
   origin?: string,
 ) {
   const signerType = input.signerType ?? 'external_guest';
-  const { doc, version, documentCollection } = await loadSignableDocument(ctx, user, documentId);
+  const { doc, version } = await loadSignableDocument(ctx, user, documentId);
   const config = resolveSignatureConfig();
   const now = new Date();
   const signatureRequestId = randomUUID();
@@ -477,9 +476,8 @@ export async function createDocumentSignatureRequest(
     signatureRequestId,
     documentId,
     versionId: version._id,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
     documentTenantType: (ctx.tenantType ?? 'business') as MongoDocumentSignatureRequest['documentTenantType'],
-    documentCollection,
     requestedByUserId: user.id,
     requestedByNameSnapshot: user.name ?? user.email ?? user.id,
     status: 'pending',
@@ -544,7 +542,7 @@ export async function listDocumentSignatureRequests(
   await loadSignableDocument(ctx, user, documentId);
   const collection = await getSignatureRequestsCollection();
   const items = await collection
-    .find({ documentId, documentTenantId: ctx.tenantId })
+    .find({ documentId, tenantId: ctx.tenantId })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
@@ -583,7 +581,7 @@ export async function getDocumentSignatureRequest(
   const collection = await getSignatureRequestsCollection();
   const request = await collection.findOne({
     signatureRequestId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
@@ -605,7 +603,7 @@ export async function listSignatureRequestsAssignedToMe(
   const collection = await getSignatureRequestsCollection();
   const items = await collection
     .find({
-      documentTenantId: ctx.tenantId,
+      tenantId: ctx.tenantId,
       'signers.userId': user.id,
       'signers.signerType': 'internal_user',
     })
@@ -772,7 +770,7 @@ export async function completeDocumentSignature(input: {
     throw new ServiceError('Documento já assinado.', 'SIGNATURE_ALREADY_COMPLETED', 409);
   }
 
-  const collections = await getTenantCollections(request.documentTenantId);
+  const collections = await getTenantCollections(request.tenantId);
   const doc = await collections.documents.findOne({ _id: request.documentId, ...ACTIVE_DOCUMENT_FILTER });
   const version = await collections.documentVersions.findOne({
     _id: request.versionId,
@@ -835,7 +833,7 @@ export async function completeDocumentSignature(input: {
   });
 
   const storageScope = await resolveTenantStorageScopeById(
-    request.documentTenantId,
+    request.tenantId,
     request.documentTenantType,
   );
   const signedPdfKey = buildSignatureArtifactObjectKey({
@@ -856,7 +854,7 @@ export async function completeDocumentSignature(input: {
   });
 
   const signedStored = await persistPreviewAsset({
-    tenantId: request.documentTenantId,
+    tenantId: request.tenantId,
     objectKey: signedPdfKey,
     buffer: pdfResult.signedPdfBuffer,
     contentType: 'application/pdf',
@@ -864,7 +862,7 @@ export async function completeDocumentSignature(input: {
     storageScope,
   });
   const evidenceStored = await persistPreviewAsset({
-    tenantId: request.documentTenantId,
+    tenantId: request.tenantId,
     objectKey: evidenceKey,
     buffer: Buffer.from(JSON.stringify(pdfResult.evidencePayload, null, 2), 'utf8'),
     contentType: 'application/json',
@@ -879,7 +877,7 @@ export async function completeDocumentSignature(input: {
     input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
 
   const promotedVersion = await promoteSignedPdfToDocumentVersion({
-    tenantId: request.documentTenantId,
+    tenantId: request.tenantId,
     documentId: request.documentId,
     sourceVersion: version as MongoDocumentVersion,
     doc: doc as MongoDocument,
@@ -981,7 +979,7 @@ export async function declineDocumentSignature(input: {
     },
   );
 
-  const collections = await getTenantCollections(request.documentTenantId);
+  const collections = await getTenantCollections(request.tenantId);
   await collections.documents.updateOne(
     { _id: request.documentId },
     { $set: { signatureStatus: 'declined', updatedAt: now } },
@@ -1020,7 +1018,7 @@ export async function cancelDocumentSignatureRequest(
   const collection = await getSignatureRequestsCollection();
   const request = await collection.findOne({
     signatureRequestId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
@@ -1106,7 +1104,7 @@ export async function readSignedPdfBufferForRequest(signatureRequestId: string):
   }
 
   const storageScope = await resolveTenantStorageScopeById(
-    request.documentTenantId,
+    request.tenantId,
     request.documentTenantType,
   );
   const provider = getStorageProvider();
@@ -1114,7 +1112,7 @@ export async function readSignedPdfBufferForRequest(signatureRequestId: string):
     throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
   }
 
-  const collections = await getTenantCollections(request.documentTenantId);
+  const collections = await getTenantCollections(request.tenantId);
   const doc = await collections.documents.findOne({
     _id: request.documentId,
     ...ACTIVE_DOCUMENT_FILTER,
@@ -1125,7 +1123,7 @@ export async function readSignedPdfBufferForRequest(signatureRequestId: string):
 
   const file = await provider.readDocumentVersion(
     signature.signedPdfR2Key,
-    request.documentTenantId,
+    request.tenantId,
     null,
     storageScope,
   );
@@ -1152,7 +1150,7 @@ export async function readSignedPdfForAuthenticatedRequest(
   const requests = await getSignatureRequestsCollection();
   const request = await requests.findOne({
     signatureRequestId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
   if (!request) {
     throw new ServiceError('Solicitação não encontrada.', 'SIGNATURE_REQUEST_NOT_FOUND', 404);
@@ -1188,7 +1186,7 @@ export async function readEvidenceJsonForAuthenticatedRequest(
   }
 
   const storageScope = await resolveTenantStorageScopeById(
-    file.request.documentTenantId,
+    file.request.tenantId,
     file.request.documentTenantType,
   );
   const provider = getStorageProvider();
@@ -1198,7 +1196,7 @@ export async function readEvidenceJsonForAuthenticatedRequest(
 
   const evidenceFile = await provider.readDocumentVersion(
     file.signature.evidenceJsonR2Key,
-    file.request.documentTenantId,
+    file.request.tenantId,
     null,
     storageScope,
   );
@@ -1246,10 +1244,10 @@ export function buildSignatureAuditContext(
   requestId?: string,
 ): DocumentAuditContext {
   return {
-    tenantId: request.documentTenantId,
+    tenantId: request.tenantId,
     tenantType: request.documentTenantType ?? 'business',
-    collectionPrefix: request.documentTenantId,
-    ownerTenantId: request.documentTenantId,
+    collectionPrefix: request.tenantId,
+    ownerTenantId: request.tenantId,
     ownerUserId: request.requestedByUserId,
     actorUserId: request.requestedByUserId,
     actorDisplayName: request.requestedByNameSnapshot ?? undefined,
@@ -1268,10 +1266,10 @@ export function buildExternalSignatureAuditContext(
     : 'unknown';
 
   return {
-    tenantId: request.documentTenantId,
+    tenantId: request.tenantId,
     tenantType: request.documentTenantType ?? 'business',
-    collectionPrefix: request.documentTenantId,
-    ownerTenantId: request.documentTenantId,
+    collectionPrefix: request.tenantId,
+    ownerTenantId: request.tenantId,
     ownerUserId: request.requestedByUserId,
     actorUserId: `external_guest:${emailHash}`,
     actorDisplayName: signer?.name ?? 'Convidado externo',

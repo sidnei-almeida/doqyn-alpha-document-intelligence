@@ -95,6 +95,91 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
     }
   });
 
+  it('nos demais arquivos de índice, todo prefixo fora do padrão é justificado', () => {
+    // O teste acima cobre só `tenantIndexes.ts`. Estes seis arquivos definem índice de dado de
+    // tenant e ficavam fora de qualquer guarda — foi por aí que `documentTenantId` sobreviveu como
+    // segundo nome de `tenantId` até 2026-08-13.
+    //
+    // Nem todo índice deve liderar por tenant, e exigir isso seria errado: quem chega com um token
+    // de assinatura ou de convite externo não tem tenant nenhum em mãos. O que esta guarda cobra é
+    // que cada exceção esteja NESTA lista, com motivo. Índice novo fora do padrão e fora da lista
+    // quebra o teste, que é o ponto.
+    const ALLOWED_NON_TENANT_PREFIX: Record<string, string> = {
+      // busca por identificador globalmente único — o índice já é seletivo sem o prefixo
+      documentId: 'documentId é único no pool inteiro (prefixo doc_)',
+      signatureRequestId: 'identificador único da solicitação',
+      signatureId: 'identificador único da assinatura',
+      // parte externa chega só com o segredo, sem sessão e sem tenant
+      signatureTokenHash: 'signatário externo chega apenas com o token',
+      inviteTokenHash: 'convidado externo chega apenas com o token',
+      verificationCode: 'verificação pública de assinatura, sem sessão',
+      // destinatário externo pode receber de vários tenants — cruzar tenant é o propósito
+      recipientEmailNormalized: 'destinatário externo recebe de múltiplos tenants',
+      'signers.userId': 'signatário pode ser externo ao tenant do documento',
+      'signers.emailNormalized': 'idem — busca por e-mail do signatário',
+      signerEmailHash: 'idem — histórico do signatário entre tenants',
+      // escopo por usuário, que já é mais estreito que o tenant
+      userId: 'favoritos e alertas são por usuário, escopo mais estreito que tenant',
+      sharedWithUserId: 'concessões recebidas por um usuário',
+      sharedByUserId: 'concessões emitidas por um usuário',
+    };
+
+    const files = [
+      'server/db/documentShareGrantsIndexes.ts',
+      'server/db/externalDocumentShareGrantsIndexes.ts',
+      'server/db/documentSignatureIndexes.ts',
+      'server/db/documentExpiryAlertIndexes.ts',
+      'server/db/documentUploadApprovalIndexes.ts',
+      'server/db/userDocumentFavoritesIndexes.ts',
+    ];
+
+    let total = 0;
+    for (const file of files) {
+      const keys = [...read(file).matchAll(/key:\s*\{\s*([A-Za-z'"][\w'".]*)\s*:/g)].map((m) =>
+        m[1].replace(/['"]/g, ''),
+      );
+      assert.ok(keys.length > 0, `${file} não declarou índice nenhum — o teste está lendo errado?`);
+      total += keys.length;
+
+      for (const first of keys) {
+        if (first === 'tenantId') continue;
+        assert.ok(
+          first in ALLOWED_NON_TENANT_PREFIX,
+          `${file}: índice liderado por "${first}" não lidera por tenantId nem consta na lista de ` +
+            `exceções justificadas. Ou ponha tenantId na frente, ou acrescente a exceção com o motivo.`,
+        );
+      }
+    }
+
+    assert.ok(total > 20, `esperava dezenas de índices nos seis arquivos, achei ${total}`);
+  });
+
+  it('nenhum arquivo de índice ressuscita documentTenantId como segundo nome de tenantId', () => {
+    // O trio documentTenantId/documentTenantType/documentCollection era denormalização do modelo
+    // por tenant: guardava onde o documento morava. Depois do Passo 7 a coleção é sempre a mesma,
+    // `documentCollection` virou campo morto (7 escritas, 0 leituras) e `documentTenantId` era só
+    // `tenantId` com outro nome — invisível para toda auditoria que procura `tenantId`.
+    const files = [
+      'server/db/types.ts',
+      'server/db/documentShareGrantsIndexes.ts',
+      'server/db/externalDocumentShareGrantsIndexes.ts',
+      'server/db/documentSignatureIndexes.ts',
+      'server/db/userDocumentFavoritesIndexes.ts',
+    ];
+
+    for (const file of files) {
+      const source = read(file);
+      assert.ok(
+        !source.includes('documentTenantId'),
+        `${file} voltou a usar documentTenantId — use tenantId, é o mesmo conceito`,
+      );
+      assert.ok(
+        !source.includes('documentCollection'),
+        `${file} voltou a usar documentCollection — a coleção é sempre a mesma desde o Passo 7`,
+      );
+    }
+  });
+
   it('o conjunto duplicado de índices por ownerTenantId foi removido', () => {
     const indexes = read('server/db/tenantIndexes.ts');
 
