@@ -114,7 +114,6 @@ async function loadShareableDocumentForExternal(
   documentId: string,
 ): Promise<{
   doc: MongoDocument;
-  documentCollection: string;
 }> {
   const memberGroupIds = await loadMemberDocumentGroupIds({
     tenantId: ctx.tenantId,
@@ -122,7 +121,7 @@ async function loadShareableDocumentForExternal(
     membershipId: ctx.membershipId,
   });
 
-  const { documents, storage, names } = await getTenantCollections(ctx.tenantId, {
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
@@ -159,7 +158,7 @@ async function loadShareableDocumentForExternal(
     );
   }
 
-  return { doc: doc as MongoDocument, documentCollection: names.documents };
+  return { doc: doc as MongoDocument };
 }
 
 export async function listDocumentExternalShareGrants(
@@ -170,7 +169,7 @@ export async function listDocumentExternalShareGrants(
   await loadShareableDocumentForExternal(ctx, user, documentId);
   const collection = await getExternalShareGrantsCollection();
   const grants = await collection
-    .find({ documentId, documentTenantId: ctx.tenantId })
+    .find({ documentId, tenantId: ctx.tenantId })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -232,7 +231,7 @@ export async function createDocumentExternalShareGrant(
 
   const phoneFields = resolveRecipientPhoneFields(input.recipientPhone);
 
-  const { doc, documentCollection } = await loadShareableDocumentForExternal(ctx, user, documentId);
+  const { doc } = await loadShareableDocumentForExternal(ctx, user, documentId);
   const permissions = defaultExternalPermissions(input.permissions);
   if (!permissions.canView) {
     throw new ServiceError('canView é obrigatório para compartilhamento.', 'INVALID_SHARE_PERMISSIONS', 400);
@@ -301,9 +300,8 @@ export async function createDocumentExternalShareGrant(
   const grant: MongoExternalDocumentShareGrant = {
     _id: `extshare_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
     documentTenantType: ctx.tenantType === 'individual' ? 'individual' : 'business',
-    documentCollection,
     sharedByUserId: user.id,
     sharedByNameSnapshot: user.name?.trim() || user.email,
     recipientEmail,
@@ -356,7 +354,7 @@ export async function revokeDocumentExternalShareGrant(
   const grant = await collection.findOne({
     _id: shareId,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
 
   if (!grant) {
@@ -404,7 +402,7 @@ export async function regenerateDocumentExternalShareGrant(
   const grant = await collection.findOne({
     _id: shareId,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
 
   if (!grant) {
@@ -534,7 +532,7 @@ export async function isExternalShareDocumentAvailable(
   grant: MongoExternalDocumentShareGrant,
 ): Promise<boolean> {
   if (!isMongoNativeConfigured()) return false;
-  const { documents, storage } = await getTenantCollections(grant.documentTenantId, {
+  const { documents, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
   const doc = await documents.findOne({
@@ -615,8 +613,8 @@ export async function getExternalSharePortalPayload(token: string) {
   }
 
   const grant = access.grant;
-  const tenant = await getTenantById(grant.documentTenantId);
-  const { documents, storage } = await getTenantCollections(grant.documentTenantId, {
+  const tenant = await getTenantById(grant.tenantId);
+  const { documents, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
   const doc = await documents.findOne({
@@ -639,7 +637,7 @@ export async function getExternalSharePortalPayload(token: string) {
     inviteExpiresAt: grant.inviteExpiresAt.toISOString(),
     sharedAt: grant.createdAt.toISOString(),
     sharedByName: grant.sharedByNameSnapshot ?? 'Usuário',
-    ownerTenantName: tenant?.displayName ?? grant.documentTenantId,
+    ownerTenantName: tenant?.displayName ?? grant.tenantId,
     recipientEmail: grant.recipientEmail,
     recipientName: grant.recipientName ?? null,
     recipientOrganizationName: grant.recipientOrganizationName ?? null,
@@ -680,10 +678,10 @@ export function buildExternalShareAuditContext(
   requestId?: string,
 ): DocumentAuditContext {
   return {
-    tenantId: grant.documentTenantId,
+    tenantId: grant.tenantId,
     tenantType: grant.documentTenantType ?? 'business',
-    collectionPrefix: grant.documentTenantId,
-    ownerTenantId: grant.documentTenantId,
+    collectionPrefix: grant.tenantId,
+    ownerTenantId: grant.tenantId,
     ownerUserId: grant.sharedByUserId,
     actorUserId: grant.sharedByUserId,
     actorDisplayName: grant.sharedByNameSnapshot,

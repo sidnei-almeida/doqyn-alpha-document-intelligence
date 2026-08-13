@@ -71,12 +71,12 @@ export async function findActiveShareGrantForUser(
 
 export async function findActiveShareGrantsForUser(
   sharedWithUserId: string,
-  documentTenantId: string,
+  tenantId: string,
 ): Promise<MongoDocumentShareGrant[]> {
   if (!isMongoNativeConfigured()) return [];
   const collection = await getShareGrantsCollection();
   return collection
-    .find(activeGrantFilter({ sharedWithUserId, documentTenantId }) as Record<string, unknown>)
+    .find(activeGrantFilter({ sharedWithUserId, tenantId }) as Record<string, unknown>)
     .sort({ createdAt: -1 })
     .toArray();
 }
@@ -113,9 +113,8 @@ async function loadShareableDocument(
 ): Promise<{
   doc: MongoDocument;
   memberGroupIds: string[];
-  documentCollection: string;
 }> {
-  const { documents, storage, names } = await getTenantCollections(ctx.tenantId, {
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
@@ -157,7 +156,6 @@ async function loadShareableDocument(
   return {
     doc: doc as MongoDocument,
     memberGroupIds,
-    documentCollection: names.documents,
   };
 }
 
@@ -264,7 +262,7 @@ export async function createDocumentShareGrant(
     throw new ServiceError('Você não pode compartilhar consigo mesmo.', 'SELF_SHARE_DENIED', 400);
   }
 
-  const { doc, documentCollection } = await loadShareableDocument(ctx, user, documentId);
+  const { doc } = await loadShareableDocument(ctx, user, documentId);
 
   const recipient = await resolveActiveTenantMemberByUserId(ctx.tenantId, sharedWithUserId);
   if (!recipient) {
@@ -310,9 +308,8 @@ export async function createDocumentShareGrant(
   const grant: MongoDocumentShareGrant = {
     _id: `share_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
     documentTenantType: ctx.tenantType === 'individual' ? 'individual' : 'business',
-    documentCollection,
     sharedByUserId: user.id,
     sharedWithUserId,
     permissions,

@@ -157,7 +157,7 @@ export async function loadSignatureSummariesForDocuments(
 
   const requestsCollection = await getSignatureRequestsCollection();
   const requests = await requestsCollection
-    .find({ documentTenantId: tenantId, documentId: { $in: documentIds } })
+    .find({ tenantId: tenantId, documentId: { $in: documentIds } })
     .sort({ createdAt: -1 })
     .toArray();
 

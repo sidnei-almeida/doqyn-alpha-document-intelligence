@@ -12,7 +12,7 @@ export const EXTERNAL_DOCUMENT_SHARE_GRANTS_INDEXES: IndexDescription[] = [
   { key: { documentId: 1, status: 1 } },
   { key: { recipientEmailNormalized: 1, status: 1, createdAt: -1 } },
   { key: { inviteTokenHash: 1 }, unique: true },
-  { key: { documentTenantId: 1, status: 1 } },
+  { key: { tenantId: 1, status: 1 } },
 ];
 
 export async function ensureExternalDocumentShareGrantsIndexes() {
