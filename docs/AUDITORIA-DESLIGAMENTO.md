@@ -1,5 +1,9 @@
 # O que sobrevive ao desligamento de um funcionário
 
+> **Os defeitos 1, 2 e 3 foram corrigidos em 2026-08-13.** O diagnóstico fica como registro; o
+> estado de cada um está no fim da respectiva seção, e a verificação depois da correção está em
+> "Depois da correção".
+
 Investigação de 2026-08-13 contra o tenant demo `company_vertex_engenharia_e_projetos_0d6dd3`.
 Método: uma funcionária (`juliana.prado@`) cria os dois tipos de compartilhamento, o membership dela
 é bloqueado pela API de admin do auth-service, e cada caminho de acesso é medido antes e depois.
@@ -69,21 +73,56 @@ Menos grave que o externo, porque o destinatário ainda é da empresa. Mas o efe
 o grant é justamente o mecanismo que dá acesso a **quem a matriz não daria**, e ele passa a ser um
 acesso que ninguém revisou, concedido por alguém que não está mais lá.
 
-## Sugestão de correção
+## A correção
 
-Duas frentes, independentes:
+Duas frentes, independentes, ambas implementadas:
 
-1. **Cortar as concessões no desligamento.** No mesmo ponto em que o auth-service revoga as sessões,
-   revogar os grants — internos e externos — criados por aquele membership. Como a revogação é do
-   lado do alpha, o caminho natural é um endpoint interno que o auth-service chama ao remover ou
-   bloquear, à imagem do `/api/internal/tenants/provision` usado no cadastro.
+**1. Cortar as concessões no desligamento.** `revokeSharesGrantedByMembership`
+(`server/services/sharing/membershipShareRevocationService.ts`) revoga os grants — internos e
+externos — concedidos por um `userId` dentro do tenant, exposto em
+`POST /api/internal/memberships/revoke-shares` e autenticado pela chave interna do app, mesmo
+desenho de `/api/internal/tenants/provision`. Do outro lado, `removeMember` e `blockMember`
+(`doqyn-auth-service`) chamam esse endpoint logo depois de revogar as sessões, e o resultado entra
+no metadata da trilha (`sharesRevoked` ou `sharesRevocationFailed`).
 
-2. **Teto de validade configurável.** Um máximo por tenant (ou global, com default sóbrio) para
-   `expiresAt`, recusando com `400` acima disso. Isso limita o estrago mesmo que a frente 1 falhe.
+A falha da chamada **não** derruba o desligamento: cortar a sessão é a parte urgente, e o app
+principal fora do ar não pode impedir um bloqueio de segurança. Por isso a falha vai para a trilha
+em vez de virar exceção. A operação é idempotente — o filtro só pega grant vivo.
 
-Vale considerar uma terceira, mais barata que as duas: uma tela de compartilhamentos ativos do
-tenant, para o admin ver o que está aberto e para quem. Hoje a listagem é por documento, então
-não existe visão do conjunto — ninguém descobre um link esquecido sem abrir documento por documento.
+**2. Teto de validade.** `assertExpirationWithinLimit` recusa data inválida, no passado, ou além de
+`maxExternalShareExpirationDays` (`server/config/externalSharingConfig.ts`, default 90 dias,
+ajustável por `EXTERNAL_SHARE_MAX_EXPIRATION_DAYS`). Vale na criação e na regeneração do convite.
+
+## Depois da correção
+
+Mesmo roteiro de antes, medido de novo:
+
+```
+teto de validade
+  10 anos -> 400 EXPIRES_AT_ABOVE_LIMIT
+  30 dias -> 201
+
+link externo (terceiro sem login)
+  ANTES  do desligamento: view 200 | download 200
+  DEPOIS do desligamento: view 403 | download 403
+
+compartilhamento interno (usuário comum, sem acesso pela matriz)
+  sem grant algum     -> 403
+  com grant           -> 200, aparece em /shared-with-me
+  após o desligamento -> 403 DOCUMENT_ACCESS_DENIED, some da lista
+```
+
+O caso interno precisa de um usuário comum para dizer alguma coisa: medido com um `company_admin`,
+o acesso continua em 200 depois da revogação — mas por causa do papel, não do grant.
+
+Guardas de regressão em `tests/offboarding-share-revocation.test.ts`.
+
+## O que ficou de fora
+
+Uma tela de compartilhamentos ativos do tenant, para o admin ver o que está aberto e para quem.
+Hoje a listagem é por documento, então não existe visão do conjunto — ninguém descobre um link
+esquecido sem abrir documento por documento. Com a revogação em cascata e o teto de validade o
+risco cai bastante, mas a falta de visibilidade continua.
 
 ## Achado lateral
 

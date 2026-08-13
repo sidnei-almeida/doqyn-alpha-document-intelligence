@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { Collection } from 'mongodb';
-import { resolveExternalSharingConfig } from '../../config/externalSharingConfig.js';
+import {
+  resolveExternalSharingConfig,
+  type ExternalSharingTenantConfig,
+} from '../../config/externalSharingConfig.js';
 import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type {
@@ -46,6 +49,32 @@ function addDays(base: Date, days: number): Date {
   const next = new Date(base);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+/**
+ * Recusa data inválida, no passado, ou além do teto de validade do ambiente.
+ *
+ * O acesso externo não é reavaliado depois de concedido: o link continua valendo mesmo quando quem
+ * o criou deixa a empresa. A validade é o único mecanismo que fecha o link sozinho, então deixá-la
+ * ilimitada equivalia a permitir acesso permanente a documento da empresa.
+ */
+function assertExpirationWithinLimit(
+  expiresAt: Date,
+  config: ExternalSharingTenantConfig,
+  now: Date,
+): void {
+  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
+    throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
+  }
+
+  const limit = addDays(now, config.maxExternalShareExpirationDays);
+  if (expiresAt.getTime() > limit.getTime()) {
+    throw new ServiceError(
+      `A validade do compartilhamento externo não pode passar de ${config.maxExternalShareExpirationDays} dias.`,
+      'EXPIRES_AT_ABOVE_LIMIT',
+      400,
+    );
+  }
 }
 
 function maskRecipientEmail(email: string): string {
@@ -245,9 +274,7 @@ export async function createDocumentExternalShareGrant(
   const expiresAt = input.expiresAt
     ? new Date(input.expiresAt)
     : addDays(new Date(), config.defaultExternalShareExpirationDays);
-  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
-    throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
-  }
+  assertExpirationWithinLimit(expiresAt, config, new Date());
 
   const collection = await getExternalShareGrantsCollection();
   const now = new Date();
@@ -419,9 +446,7 @@ export async function regenerateDocumentExternalShareGrant(
   let expiresAt = grant.expiresAt;
   if (input?.expiresAt) {
     expiresAt = new Date(input.expiresAt);
-    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
-      throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
-    }
+    assertExpirationWithinLimit(expiresAt, config, now);
   } else if (!expiresAt || expiresAt.getTime() <= now.getTime()) {
     expiresAt = addDays(now, config.defaultExternalShareExpirationDays);
   }

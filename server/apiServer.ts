@@ -49,6 +49,8 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/access-groups': () => import('../api/access-groups/index.js'),
   '/api/auth/access-requests': () => import('../api/auth/access-requests.js'),
   '/api/internal/tenants/provision': () => import('../api/internal/tenants/provision.js'),
+  '/api/internal/memberships/revoke-shares': () =>
+    import('../api/internal/memberships/revoke-shares.js'),
   '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
   '/api/company-members/invite': () => import('../api/company-members/invite.js'),
