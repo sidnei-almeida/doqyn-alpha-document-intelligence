@@ -14,7 +14,7 @@ import {
   assertCanAccessDocument,
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
-import { loadMemberDocumentGroupIds } from '../../tenancy/documentAccess.js';
+import { loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { getTenantById } from '../tenantsService.js';
@@ -115,7 +115,9 @@ async function loadShareableDocumentForExternal(
 ): Promise<{
   doc: MongoDocument;
 }> {
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  // Sem o índice de governança o verbo `share` do mapa de regras não é lido e só admin e dono
+  // conseguiriam compartilhar externamente.
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
@@ -150,7 +152,7 @@ async function loadShareableDocumentForExternal(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds)) {
+  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex)) {
     throw new ServiceError(
       'Você não tem permissão para compartilhar este documento externamente.',
       'DOCUMENT_EXTERNAL_SHARE_DENIED',

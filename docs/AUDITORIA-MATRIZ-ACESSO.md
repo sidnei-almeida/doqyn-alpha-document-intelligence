@@ -1,5 +1,8 @@
 # Auditoria da matriz de acesso (grupo × classe)
 
+> **Os três defeitos abaixo foram corrigidos em 2026-08-13.** O texto original fica como registro do
+> diagnóstico; o estado de cada um está anotado no fim da respectiva seção.
+
 Verificação empírica feita em 2026-08-13 contra o tenant demo `company_vertex_engenharia_e_projetos_0d6dd3`
 (ver `CONTA-DEMO-VERTEX.md`), com quatro usuários em quatro grupos e três documentos de dois donos
 diferentes. Cada verbo da matriz foi configurado isoladamente e o efeito medido pela API real.
@@ -53,8 +56,16 @@ matriz: Financeiro em Contratos = view + download + share, sem upload
 Note a segunda linha: a listagem **passa** o índice e reporta `canShare:true`, então a interface
 habilita a ação que o servidor recusa. O usuário clica em compartilhar e toma 403.
 
-Correção: passar o índice de governança nos cinco call sites, como
-`server/services/documentService.ts` já faz ao montar a listagem.
+**Corrigido.** Os cinco call sites passaram a carregar o contexto com `loadDocumentAccessContext`
+(grupos do membro e índice de governança numa ida só) e a repassar o índice.
+`resolveDocumentAccessWithShare` agora devolve `memberGroupIds` e `governanceIndex` junto das
+permissões, para quem precisa decidir mais de uma coisa sobre o mesmo documento não recarregar
+grupos e regras do banco. Medido depois da correção:
+
+```
+share:true   -> POST /shares 201, GET /shares 200
+share:false  -> POST /shares 403 DOCUMENT_SHARE_DENIED
+```
 
 ## Defeito 2 — o verbo `manage` (auditar) nunca concede permissão
 
@@ -77,8 +88,17 @@ GET /api/documents/:id/timeline  -> 403 TRACKING_FORBIDDEN
 O admin marca "auditar" no mapa de regras e nada acontece. Diferente do defeito 1, aqui a listagem
 também reporta `false` — servidor e interface concordam, mas ambos ignoram a configuração do tenant.
 
-Correção: `canViewDocumentTracking` precisa aceitar `classId` + `memberGroupIds` + índice e
-consultar `auditByCategory`, como `resolveDocumentPermissions` faz para `view`/`download`/`update`.
+**Corrigido.** `canViewDocumentTracking` passou a aceitar `classId`, `memberGroupIds` e
+`governanceIndex` no escopo, e consulta `auditByCategory` depois de admin e dono. Quem chama sem o
+índice mantém o comportamento anterior, então o braço novo só concede onde o tenant configurou.
+Ligado em quatro pontos: o guard das rotas (`server/audit/requireDocumentTrackingAccess.ts`), o
+detalhe do documento, a listagem e o manifesto de preview — os três últimos já tinham o índice em
+mãos. Medido depois da correção:
+
+```
+manage:true   -> GET /timeline 200, canViewTracking: true
+manage:false  -> GET /timeline 403 TRACKING_FORBIDDEN
+```
 
 ## Defeito 3 — `PUT /api/document-rules/matrix` aceita chave inexistente
 
@@ -101,8 +121,14 @@ Ou seja, a regra existe, aparece marcada na interface e não concede nada. A tel
 nessa armadilha porque `src/features/rules/api/rulesApi.ts:401` usa as chaves legadas, mas qualquer
 integração escrita a partir da resposta do `GET` cai.
 
-Correção: validar `permissions` com Zod no handler, recusando chave desconhecida com `400` — ou
-aceitar os dois vocabulários e normalizar antes de gravar.
+**Corrigido.** O handler valida `permissions` com um schema Zod `.strict()` que aceita os dois
+vocabulários e normaliza para o formato persistido antes de gravar: `update` vira `upload`, `audit`
+vira `manage`, e chave desconhecida derruba a requisição. Medido depois da correção:
+
+```
+{ …, escrever: true }              -> 400 INVALID_PERMISSIONS
+{ view, download, share, update, audit } -> 200, gravado como upload/manage
+```
 
 ## Como reproduzir
 
