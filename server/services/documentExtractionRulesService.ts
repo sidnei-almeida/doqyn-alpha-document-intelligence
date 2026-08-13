@@ -117,8 +117,10 @@ export async function createDocumentExtractionRule(
     userId,
   ) as MongoDocumentExtractionRule;
 
+  // Sem escopo: `_id` é global na coleção compartilhada. O id determinístico deriva do categoryId,
+  // que por sua vez deriva do nome da classe, então duas empresas com a mesma classe chegariam ao
+  // mesmo `ext_cat_contratos_v1` e a segunda quebraria no insert.
   const existing = await collections.documentExtractionRules.findOne({
-    ...scope,
     _id: rule._id,
   } as Record<string, unknown>);
 

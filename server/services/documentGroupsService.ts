@@ -113,11 +113,12 @@ export async function createDocumentGroup(
     throw new ServiceError('Já existe um grupo com este slug.', 'DUPLICATE_SLUG', 409);
   }
 
+  // A busca por `_id` NÃO leva o escopo do tenant: desde que as coleções são compartilhadas, o
+  // `_id` é global. Filtrar por tenant escondia o `group_diretoria` do vizinho, o código concluía
+  // que o id estava livre e o insert estourava E11000 — ou seja, a segunda empresa a criar um grupo
+  // "Diretoria" recebia 500. Nomes de grupo se repetem entre empresas por natureza.
   let id = `group_${slug.replace(/-/g, '_')}`;
-  const existingId = await collections.documentGroups.findOne({
-    ...scope,
-    _id: id,
-  } as Record<string, unknown>);
+  const existingId = await collections.documentGroups.findOne({ _id: id } as Record<string, unknown>);
 
   if (existingId) {
     id = `group_${randomUUID().slice(0, 8)}`;
