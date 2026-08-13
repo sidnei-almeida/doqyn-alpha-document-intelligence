@@ -130,6 +130,7 @@ export function IndividualSignupPage() {
               <Input
                 id="firstName"
                 label="Nome"
+                autoComplete="given-name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
@@ -137,6 +138,7 @@ export function IndividualSignupPage() {
               <Input
                 id="lastName"
                 label="Sobrenome"
+                autoComplete="family-name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
@@ -146,6 +148,7 @@ export function IndividualSignupPage() {
             <Input
               id="email"
               label="E-mail"
+              autoComplete="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -169,6 +172,7 @@ export function IndividualSignupPage() {
             <Input
               id="password"
               label="Senha"
+              autoComplete="new-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -178,6 +182,7 @@ export function IndividualSignupPage() {
             <Input
               id="confirmPassword"
               label="Confirmar senha"
+              autoComplete="new-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

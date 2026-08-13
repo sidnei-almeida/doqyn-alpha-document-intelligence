@@ -150,6 +150,7 @@ export function CompanySignupPage() {
             <Input
               id="companyName"
               label="Nome da empresa"
+              autoComplete="organization"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               required
@@ -167,6 +168,7 @@ export function CompanySignupPage() {
               <Input
                 id="firstName"
                 label="Nome do responsável"
+                autoComplete="given-name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
@@ -174,6 +176,7 @@ export function CompanySignupPage() {
               <Input
                 id="lastName"
                 label="Sobrenome"
+                autoComplete="family-name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
@@ -183,6 +186,7 @@ export function CompanySignupPage() {
             <Input
               id="email"
               label="E-mail corporativo"
+              autoComplete="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -198,6 +202,7 @@ export function CompanySignupPage() {
             <Input
               id="password"
               label="Senha"
+              autoComplete="new-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -207,6 +212,7 @@ export function CompanySignupPage() {
             <Input
               id="confirmPassword"
               label="Confirmar senha"
+              autoComplete="new-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
