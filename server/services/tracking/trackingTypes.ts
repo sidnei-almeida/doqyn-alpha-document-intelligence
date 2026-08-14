@@ -1,16 +1,21 @@
 /** Grupos de ação para filtros e agregações de tracking. */
-export type TrackingActionGroup =
-  | 'lifecycle'
-  | 'preview'
-  | 'download'
-  | 'access'
-  | 'storage'
-  | 'governance'
-  | 'explorer'
-  | 'user'
-  | 'system';
+export const TRACKING_ACTION_GROUPS = [
+  'lifecycle',
+  'preview',
+  'download',
+  'access',
+  'storage',
+  'governance',
+  'explorer',
+  'user',
+  'system',
+] as const;
 
-export type TrackingEventStatus = 'success' | 'failed' | 'denied' | 'pending';
+export type TrackingActionGroup = (typeof TRACKING_ACTION_GROUPS)[number];
+
+export const TRACKING_EVENT_STATUSES = ['success', 'failed', 'denied', 'pending'] as const;
+
+export type TrackingEventStatus = (typeof TRACKING_EVENT_STATUSES)[number];
 
 /** Eventos documentais com enriquecimento obrigatório de securityContext quando há request. */
 export const DOCUMENT_SECURITY_CONTEXT_ACTIONS = new Set([
@@ -52,7 +57,12 @@ export const CLIENT_TRACKING_ACTIONS = new Set([
   'file_explorer.details_opened',
 ]);
 
-const ACTION_GROUP_RULES: Array<{ prefix: string; group: TrackingActionGroup }> = [
+/**
+ * Ordem é contrato: `resolveTrackingActionGroup` para na primeira regra que casa, então
+ * `document.preview_` precisa vir antes do `document.` genérico. Quem reconstruir esta derivação
+ * como filtro de consulta (`buildTimelineActionGroupFilter`) tem de honrar a mesma precedência.
+ */
+export const ACTION_GROUP_RULES: ReadonlyArray<{ prefix: string; group: TrackingActionGroup }> = [
   { prefix: 'access.', group: 'access' },
   { prefix: 'storage.', group: 'storage' },
   { prefix: 'governance.', group: 'governance' },
@@ -87,10 +97,7 @@ export function resolveTrackingActionGroup(action: string): TrackingActionGroup 
   return 'system';
 }
 
-export function resolveTrackingEventStatus(
-  action: string,
-  result?: string,
-): TrackingEventStatus {
+export function resolveTrackingEventStatus(action: string, result?: string): TrackingEventStatus {
   if (action.includes('denied') || result === 'denied') return 'denied';
   if (action.includes('failed') || result === 'error') return 'failed';
   if (action.includes('pending') || result === 'pending') return 'pending';

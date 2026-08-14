@@ -17,13 +17,21 @@ import {
   type DocumentAuditContext,
   type DocumentAuditEventInput,
   type DocumentAuditSeverity,
+  type DocumentTimelineContext,
   type DocumentTimelineItem,
   type DocumentTrackingDetail,
   type DocumentTrackingListItem,
+  type TrackingListStatus,
 } from './documentAuditTypes.js';
 import { summarizeAuditAction } from './documentAuditHelpers.js';
 import { resolveTrackingDocumentName } from './documentNameSnapshot.js';
 import { resolveAuditSeverity } from '../services/auditService.js';
+import {
+  ACTION_GROUP_RULES,
+  resolveTrackingActionGroup,
+  resolveTrackingEventStatus,
+  type TrackingActionGroup,
+} from '../services/tracking/trackingTypes.js';
 
 const SYSTEM_ACTOR = {
   userId: 'system',
@@ -177,12 +185,213 @@ export async function createDocumentAuditLogs(
   }
 }
 
+/**
+ * `metadata.actionGroup` e `metadata.status` só são carimbados por `emitTrackingEvent`; evento
+ * escrito direto por `createDocumentAuditLog` não tem nenhum dos dois. O valor efetivo é o carimbo
+ * quando existe e a derivação da action quando não existe — e o filtro precisa cobrir os dois
+ * casos, senão a consulta esconde justamente os eventos que a resposta mostra preenchidos.
+ */
+function effectiveFieldFilter(
+  path: string,
+  value: string,
+  derived: Record<string, unknown> | null,
+): Record<string, unknown> {
+  return {
+    $or: [
+      { [path]: value },
+      ...(derived ? [{ $and: [{ [path]: { $exists: false } }, derived] }] : []),
+    ],
+  };
+}
+
+function actionPrefixFilter(prefix: string): Record<string, unknown> {
+  return { action: { $regex: `^${escapeRegexLiteral(prefix)}` } };
+}
+
+/** Reconstrói `resolveTrackingActionGroup` como consulta, honrando a precedência de primeira regra. */
+export function buildTimelineActionGroupFilter(group: string): Record<string, unknown> | null {
+  const normalized = group.trim();
+  if (!normalized) return null;
+
+  const clauses: Record<string, unknown>[] = [];
+  ACTION_GROUP_RULES.forEach((rule, index) => {
+    if (rule.group !== normalized) return;
+    const blockers = ACTION_GROUP_RULES.slice(0, index)
+      .filter((earlier) => earlier.group !== normalized)
+      .map((earlier) => actionPrefixFilter(earlier.prefix));
+    clauses.push(
+      blockers.length
+        ? { $and: [actionPrefixFilter(rule.prefix), { $nor: blockers }] }
+        : actionPrefixFilter(rule.prefix),
+    );
+  });
+
+  // `system` também é o destino de toda action que não casa com nenhuma regra.
+  if (normalized === 'system') {
+    clauses.push({ $nor: ACTION_GROUP_RULES.map((rule) => actionPrefixFilter(rule.prefix)) });
+  }
+
+  const derived =
+    clauses.length === 0 ? null : clauses.length === 1 ? clauses[0]! : { $or: clauses };
+  return effectiveFieldFilter('metadata.actionGroup', normalized, derived);
+}
+
+/** Ordem espelha `resolveTrackingEventStatus`: negado ganha de falho, que ganha de pendente. */
+const STATUS_DERIVATION: ReadonlyArray<{
+  status: Exclude<TrackingListStatus, 'success'>;
+  filter: Record<string, unknown>;
+}> = [
+  { status: 'denied', filter: { $or: [{ action: { $regex: 'denied' } }, { result: 'denied' }] } },
+  { status: 'failed', filter: { $or: [{ action: { $regex: 'failed' } }, { result: 'error' }] } },
+  {
+    status: 'pending',
+    filter: { $or: [{ action: { $regex: 'pending' } }, { result: 'pending' }] },
+  },
+];
+
+export function buildTimelineStatusFilter(status: string): Record<string, unknown> | null {
+  const normalized = status.trim();
+  if (!normalized) return null;
+
+  let derived: Record<string, unknown> | null = null;
+
+  if (normalized === 'success') {
+    derived = { $nor: STATUS_DERIVATION.map((entry) => entry.filter) };
+  } else {
+    const index = STATUS_DERIVATION.findIndex((entry) => entry.status === normalized);
+    if (index >= 0) {
+      const own = STATUS_DERIVATION[index]!.filter;
+      const earlier = STATUS_DERIVATION.slice(0, index).map((entry) => entry.filter);
+      derived = earlier.length ? { $and: [own, { $nor: earlier }] } : own;
+    }
+  }
+
+  return effectiveFieldFilter('metadata.status', normalized, derived);
+}
+
+/** Mesma tolerância de `buildTrackingQuery`: evento antigo só tem `createdAt`. */
+function buildTimelineRangeFilter(from?: string, to?: string): Record<string, unknown> | null {
+  const range: Record<string, Date> = {};
+
+  if (from) {
+    const fromDate = new Date(from);
+    if (!Number.isNaN(fromDate.getTime())) range.$gte = fromDate;
+  }
+  if (to) {
+    const toDate = new Date(to);
+    if (!Number.isNaN(toDate.getTime())) range.$lte = toDate;
+  }
+
+  if (Object.keys(range).length === 0) return null;
+
+  return {
+    $or: [{ occurredAt: range }, { occurredAt: { $exists: false }, createdAt: range }],
+  };
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function mapTimelineContext(
+  metadata: Record<string, unknown>,
+): DocumentTimelineContext | undefined {
+  const security = resolveTrackingSecurity(metadata);
+  if (!security) return undefined;
+
+  const deviceType = optionalString(security.deviceType);
+  const permissionResult = optionalString(security.permissionResult);
+
+  const context: DocumentTimelineContext = {
+    ipMasked: optionalString(security.ipAddressMasked),
+    country: optionalString(security.country),
+    region: optionalString(security.region),
+    city: optionalString(security.city),
+    timezone: optionalString(security.timezone),
+    browser: optionalString(security.browser),
+    browserVersion: optionalString(security.browserVersion),
+    os: optionalString(security.os),
+    osVersion: optionalString(security.osVersion),
+    deviceType: deviceType as DocumentTimelineContext['deviceType'],
+    sessionHash: optionalString(security.sessionIdHash),
+    authMethod: optionalString(security.authMethod),
+    isExternalGuest: optionalBoolean(security.isExternalGuest),
+    isLocalNetwork: optionalBoolean(security.isLocalNetwork),
+    permissionResult: permissionResult as DocumentTimelineContext['permissionResult'],
+    permissionReason: optionalString(security.permissionReason),
+    requiredPermission: optionalString(security.requiredPermission),
+  };
+
+  const present = Object.entries(context).filter(([, value]) => value !== undefined);
+  return present.length ? (Object.fromEntries(present) as DocumentTimelineContext) : undefined;
+}
+
+export function mapDocumentTimelineRow(row: MongoAuditLog): DocumentTimelineItem {
+  const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+  const actor = (row.actor ?? {}) as Record<string, unknown>;
+  const action = String(row.action);
+  const result = optionalString(row.result);
+  const occurredAt =
+    row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt);
+  const changes = Array.isArray(metadata.changes)
+    ? (metadata.changes as DocumentTimelineItem['changes'])
+    : undefined;
+
+  // O `securityContext` sai do `metadata` porque agora tem contrato próprio em `context`; deixá-lo
+  // nos dois lugares só devolveria a sopa que este campo existe para acabar.
+  const metadataForDisplay = { ...metadata };
+  delete metadataForDisplay.securityContext;
+  delete metadataForDisplay.security;
+  delete metadataForDisplay.securityAuditRestricted;
+
+  const roles = Array.isArray(actor.roles)
+    ? actor.roles.filter((role): role is string => typeof role === 'string')
+    : undefined;
+
+  return {
+    id: String(row._id),
+    action,
+    actionGroup:
+      (optionalString(metadata.actionGroup) as TrackingActionGroup | undefined) ??
+      resolveTrackingActionGroup(action),
+    status:
+      (optionalString(metadata.status) as TrackingListStatus | undefined) ??
+      resolveTrackingEventStatus(action, result),
+    result,
+    severity: (metadata.severity as DocumentAuditSeverity) ?? 'info',
+    occurredAt,
+    summary: summarizeAuditAction(action, DOCUMENT_AUDIT_ACTION_LABELS[action] ?? row.description),
+    actor: {
+      ...mapActor(actor),
+      role: optionalString(actor.role),
+      ...(roles?.length ? { roles } : {}),
+    },
+    context: mapTimelineContext(metadata),
+    documentId: row.documentId,
+    versionId: row.versionId,
+    changes,
+    metadata: sanitizeAuditMetadata(metadataForDisplay),
+    requestId:
+      optionalString(metadata.requestId) ??
+      optionalString((row as Record<string, unknown>).requestId),
+  };
+}
+
 export async function listDocumentTimeline(input: {
   ctx: DocumentAuditContext;
   documentId: string;
   limit?: number;
   cursor?: string;
   actionPrefix?: string;
+  actionGroup?: string;
+  status?: string;
+  actorUserId?: string;
+  from?: string;
+  to?: string;
 }): Promise<{ items: DocumentTimelineItem[]; nextCursor: string | null }> {
   if (!isMongoNativeConfigured()) {
     return { items: [], nextCursor: null };
@@ -212,6 +421,20 @@ export async function listDocumentTimeline(input: {
     };
   }
 
+  if (input.actorUserId?.trim()) {
+    query['actor.userId'] = input.actorUserId.trim();
+  }
+
+  const scopedFilters = [
+    input.actionGroup?.trim() ? buildTimelineActionGroupFilter(input.actionGroup) : null,
+    input.status?.trim() ? buildTimelineStatusFilter(input.status) : null,
+    buildTimelineRangeFilter(input.from, input.to),
+  ].filter((filter): filter is Record<string, unknown> => filter !== null);
+
+  if (scopedFilters.length) {
+    query.$and = scopedFilters;
+  }
+
   if (input.cursor?.trim()) {
     const cursorDate = new Date(input.cursor);
     if (!Number.isNaN(cursorDate.getTime())) {
@@ -228,46 +451,7 @@ export async function listDocumentTimeline(input: {
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
-  const items: DocumentTimelineItem[] = page.map((row) => {
-    const metadata = (row.metadata ?? {}) as Record<string, unknown>;
-    const actor = row.actor as Record<string, unknown>;
-    const occurredAt =
-      row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt);
-    const changes = Array.isArray(metadata.changes)
-      ? (metadata.changes as DocumentTimelineItem['changes'])
-      : undefined;
-
-    return {
-      id: String(row._id),
-      action: String(row.action),
-      severity: (metadata.severity as DocumentTimelineItem['severity']) ?? 'info',
-      occurredAt,
-      summary: summarizeAuditAction(
-        String(row.action),
-        DOCUMENT_AUDIT_ACTION_LABELS[String(row.action)] ?? row.description,
-      ),
-      actor: {
-        userId: String(actor.userId ?? ''),
-        displayName:
-          typeof actor.displayNameSnapshot === 'string'
-            ? actor.displayNameSnapshot
-            : typeof actor.name === 'string'
-              ? actor.name
-              : undefined,
-        email: typeof actor.emailSnapshot === 'string' ? actor.emailSnapshot : undefined,
-      },
-      documentId: row.documentId,
-      versionId: row.versionId,
-      changes,
-      metadata: sanitizeAuditMetadata(metadata),
-      requestId:
-        typeof metadata.requestId === 'string'
-          ? metadata.requestId
-          : typeof (row as Record<string, unknown>).requestId === 'string'
-            ? String((row as Record<string, unknown>).requestId)
-            : undefined,
-    };
-  });
+  const items: DocumentTimelineItem[] = page.map((row) => mapDocumentTimelineRow(row));
 
   return {
     items,
