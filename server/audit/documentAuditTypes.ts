@@ -1,4 +1,5 @@
 import type { TenantType } from '../db/types.js';
+import type { TrackingActionGroup } from '../services/tracking/trackingTypes.js';
 
 export type DocumentAuditSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critical';
 
@@ -131,7 +132,14 @@ export type DocumentAuditEventInput = {
   area?: string;
   result?: 'success' | 'warning' | 'error' | 'info';
   target?: {
-    type: 'document' | 'document_version' | 'analysis_job' | 'preview' | 'storage_object' | 'rule' | 'category';
+    type:
+      | 'document'
+      | 'document_version'
+      | 'analysis_job'
+      | 'preview'
+      | 'storage_object'
+      | 'rule'
+      | 'category';
     id?: string;
     nameSnapshot?: string;
   };
@@ -142,17 +150,52 @@ export type DocumentAuditEventInput = {
   occurredAt?: Date;
 };
 
+export type DocumentTimelineActor = {
+  userId: string;
+  displayName?: string;
+  email?: string;
+  role?: string;
+  roles?: string[];
+};
+
+/**
+ * Recorte do `securityContext` que a trilha do documento expõe com contrato próprio, em vez de
+ * despejar tudo dentro de `metadata` — quem consome não deveria precisar adivinhar o que existe lá.
+ * O IP completo nunca entra aqui: só a máscara, como o `TrackingSecurityContext` já garante.
+ */
+export type DocumentTimelineContext = {
+  ipMasked?: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  timezone?: string;
+  browser?: string;
+  browserVersion?: string;
+  os?: string;
+  osVersion?: string;
+  deviceType?: 'desktop' | 'mobile' | 'tablet' | 'unknown';
+  sessionHash?: string;
+  authMethod?: string;
+  isExternalGuest?: boolean;
+  isLocalNetwork?: boolean;
+  permissionResult?: 'allowed' | 'denied';
+  permissionReason?: string;
+  requiredPermission?: string;
+};
+
 export type DocumentTimelineItem = {
   id: string;
   action: string;
+  /** Carimbo de `emitTrackingEvent` quando existe; derivado da action quando não existe. */
+  actionGroup: TrackingActionGroup;
+  /** Idem: carimbo quando existe, derivação de action/result quando não. */
+  status: TrackingListStatus;
+  result?: string;
   severity: DocumentAuditSeverity;
   occurredAt: string;
   summary: string;
-  actor: {
-    userId: string;
-    displayName?: string;
-    email?: string;
-  };
+  actor: DocumentTimelineActor;
+  context?: DocumentTimelineContext;
   documentId?: string | null;
   versionId?: string | null;
   changes?: DocumentAuditChange[];
