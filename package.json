@@ -69,6 +69,7 @@
     "@fontsource/orbitron": "^5.2.8",
     "@google-cloud/vision": "^5.3.7",
     "@hookform/resolvers": "^5.0.1",
+    "@huggingface/transformers": "^4.2.0",
     "@tanstack/react-query": "^5.74.4",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.80.2",
