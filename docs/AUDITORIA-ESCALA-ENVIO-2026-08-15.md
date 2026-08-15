@@ -50,6 +50,9 @@ Node aguenta dezenas dessas em paralelo sem tocar no processador.
 **Correção:** subir `ANALYSIS_QUEUE_CONCURRENCY_GLOBAL` para a faixa de 8–12 e medir; o limite real
 passa a ser a conta da Groq (achado 2), não o container.
 
+**Resolvido em 2026-08-15**: `ANALYSIS_QUEUE_CONCURRENCY_GLOBAL` passou a 8 e
+`ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT` a 2, junto do limitador do achado 2.
+
 ### 2. Nenhum controle de vazão para a Groq — CRÍTICO
 
 Existe tratamento de 429 por requisição (respeita `retry-after`, tenta de novo, e marca o documento
@@ -63,6 +66,12 @@ resolver isto troca "fila lenta" por "IA indisponível" na tela de muita gente a
 **Correção:** limitador de vazão compartilhado no Redis (janela deslizante por minuto, dimensionado
 pelo plano da Groq), aplicado antes de cada chamada. Quando estourar, o job espera na fila em vez de
 falhar para o usuário.
+
+**Resolvido em 2026-08-15**: `server/ai/services/groqRateLimiter.ts`, aplicado dentro de
+`callGroqCompletion`, com janela de um minuto por requisições **e** por tokens estimados. Passar do
+teto de espera (75s) devolve o mesmo `GROQ_RATE_LIMIT` de sempre, então o resto do sistema não
+mudou. Ajuste `GROQ_MAX_REQUESTS_PER_MINUTE` e `GROQ_MAX_TOKENS_PER_MINUTE` ao plano contratado —
+os padrões (25 rpm / 20k tpm) são conservadores.
 
 ### 3. Confirmação faz trabalho pesado dentro do request — ALTO
 

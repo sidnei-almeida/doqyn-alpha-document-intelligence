@@ -11,6 +11,11 @@ import {
   shouldRetryWithoutResponseFormat,
 } from '../utils/classifierDiagnostics.js';
 import { AiAnalysisError } from '../utils/errors.js';
+import {
+  acquireGroqSlot,
+  estimateGroqTokens,
+  GroqRateLimitWaitTimeout,
+} from './groqRateLimiter.js';
 import { logger } from '../../utils/logger.js';
 import { recordAiProviderRequest } from '../../metrics/prometheus.js';
 import {
@@ -174,6 +179,23 @@ async function callGroqCompletion(
   try {
     const client = getGroqClient();
     const timeoutMs = getGroqRequestTimeoutMs();
+
+    // Espera a vez na vazão da conta antes de gastar a requisição. Ficar na fila alguns segundos
+    // é melhor que tomar 429 e derrubar o documento em "IA indisponível" — de onde ele só sai com
+    // ação humana.
+    try {
+      await acquireGroqSlot({
+        operation,
+        estimatedTokens: estimateGroqTokens(prompt.length, getGroqMaxOutputTokens()),
+      });
+    } catch (waitError) {
+      if (waitError instanceof GroqRateLimitWaitTimeout) {
+        // Vira o mesmo erro do 429 da própria Groq de propósito: a saturação é a mesma, e todo o
+        // caminho de cima já sabe tratar — documento em `ai_paused`, não em falha genérica.
+        throw new AiAnalysisError(AI_ERROR_MESSAGES.aiUnavailable, 'GROQ_RATE_LIMIT', 429);
+      }
+      throw waitError;
+    }
 
     const completion = await withGroqRequestTimeout(
       client.chat.completions.create({
