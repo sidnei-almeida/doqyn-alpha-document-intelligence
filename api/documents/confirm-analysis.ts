@@ -52,6 +52,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       logger.warn('confirm-analysis invalid payload', {
         requestId: reqCtx.requestId,
         durationMs: Date.now() - startedAt,
+        // Só caminho do campo e código do erro: sem isso o log diz que recusou e não diz o quê,
+        // e o diagnóstico vira adivinhação. O valor recusado fica de fora — é conteúdo do cliente.
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          code: issue.code,
+        })),
       });
       return res.status(400).json({
         message: 'Payload inválido para confirmação de metadados.',
