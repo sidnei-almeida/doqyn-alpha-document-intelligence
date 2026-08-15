@@ -113,8 +113,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         (id): id is string => Boolean(id && isDocumentCategoryId(id)),
       );
 
+      // Só avisa quando a IA mandou o arquivo para uma pasta diferente da escolhida no envio —
+      // aí o aviso carrega informação nova e o atalho para conferir. No caso normal a fila de
+      // upload já mostra "Salvo na Biblioteca" no próprio arquivo; repetir isso num aviso com o
+      // nome inteiro do arquivo era ruído em cima de ruído.
       if (uploadSpaceId && savedClassId && uploadSpaceId !== savedClassId) {
-        toast.success(`"${resolvedFinalName}" salvo em ${savedClassName}.`, {
+        toast.success(`Salvo em ${savedClassName}.`, {
+          description: resolvedFinalName,
           action: folderTargetId
             ? {
                 label: 'Abrir pasta',
@@ -123,10 +128,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
               }
             : undefined,
         });
-        return;
       }
-
-      toast.success(`"${resolvedFinalName}" disponível na Biblioteca.`);
     },
     [navigate],
   );

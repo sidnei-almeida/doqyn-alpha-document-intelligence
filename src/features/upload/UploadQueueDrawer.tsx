@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -11,6 +11,7 @@ import {
   countAwaitingApproval,
   countAwaitingReview,
   countSubmittedItems,
+  isItemSavedInLibrary,
 } from './queue/uploadQueueState';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
@@ -150,11 +151,30 @@ function QueueRow({
   );
 }
 
+/**
+ * Quanto a fila fica na tela depois que todo arquivo foi salvo.
+ *
+ * Não some enquanto sobrar item aguardando revisão, aprovação ou com erro: ali a fila é a única
+ * pista do que ficou pendente. E o relógio pausa enquanto o ponteiro está em cima, senão a fila
+ * some justamente de quem estava lendo.
+ */
+const AUTO_DISMISS_MS = 8000;
+
 /** Fila de uploads com progresso do lote e countdown de auto-confirmação. */
 export function UploadQueueDrawer() {
   const { items, pendingCount, clearFinished, autoConfirmCountdown, reviewSettings } =
     useUploadQueueContext();
   const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const allSaved = items.length > 0 && items.every(isItemSavedInLibrary);
+
+  useEffect(() => {
+    if (!allSaved || hovered) return;
+
+    const timer = window.setTimeout(clearFinished, AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timer);
+  }, [allSaved, hovered, items.length, clearFinished]);
 
   if (items.length === 0) return null;
 
@@ -190,6 +210,8 @@ export function UploadQueueDrawer() {
       className="queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal"
       aria-label="Fila de upload"
       data-testid="upload-queue-drawer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
