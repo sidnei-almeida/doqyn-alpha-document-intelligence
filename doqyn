@@ -194,14 +194,25 @@ cmd_up() {
     ok "MONGODB_URI é remoto (Atlas) — nenhum container de mongo necessário"
   fi
 
+  # Os dois passos abaixo falam com o Atlas e com o R2. Rede remota trava calada: sem `timeout` o
+  # `up` fica pendurado para sempre num passo opcional, e com a saída em /dev/null nem dá para
+  # saber onde parou. Log em arquivo + teto de tempo: no pior caso o ambiente sobe sem seed,
+  # dizendo onde olhar.
   step "Índices e collections do Mongo..."
-  ( cd "$ALPHA_DIR" && npm run db:setup >/dev/null 2>&1 ) || die "db:setup falhou. Rode 'npm run db:setup' para ver o erro."
+  ( cd "$ALPHA_DIR" && timeout 180 npm run db:setup >"$LOG_DIR/db-setup.log" 2>&1 ) \
+    || die "db:setup falhou ou passou de 180s. Log: logs/dev/db-setup.log"
   ok "índices em dia"
 
   step "Seed demo do alpha..."
-  ( cd "$ALPHA_DIR" && npm run dev:seed:demo >/dev/null 2>&1 ) \
-    && ok "seed do alpha aplicado" \
-    || warn "seed do alpha não aplicou — veja 'npm run dev:seed:demo'. Os serviços sobem mesmo assim."
+  local seed_status=0
+  ( cd "$ALPHA_DIR" && timeout 300 npm run dev:seed:demo >"$LOG_DIR/seed.log" 2>&1 ) || seed_status=$?
+  if [[ "$seed_status" == "0" ]]; then
+    ok "seed do alpha aplicado"
+  elif [[ "$seed_status" == "124" ]]; then
+    warn "seed do alpha passou de 300s e foi interrompido — subindo assim mesmo. Log: logs/dev/seed.log"
+  else
+    warn "seed do alpha não aplicou (código $seed_status). Log: logs/dev/seed.log"
+  fi
 
   start_bg auth "$AUTH_DIR" npm run dev:server
   wait_for_http "http://localhost:$AUTH_PORT/health" "auth-service ($AUTH_PORT)" \
