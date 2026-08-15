@@ -24,6 +24,11 @@ confirm da versão
   → $vectorSearch                  (filtro de tenant dentro do estágio)
 ```
 
+Em produção o loop de embedding sobe dentro do `runAnalysisWorker`. Em desenvolvimento use a
+entrada dedicada (`npm run dev:worker:embedding`): lá `ANALYSIS_SYNC_FALLBACK` é `true` por
+padrão, a fila de análise não existe e o worker de análise aborta na largada — o embedding não
+deve ficar refém dessa configuração.
+
 O embedding **nunca** roda no processo que responde o request: custa segundos por documento e
 carrega ~280 MB de modelo. Sem Redis ou com `EMBEDDING_ENABLED=false`, o chunk simplesmente nasce
 sem vetor — o upload continua rápido e a busca semântica fica atrasada até o backfill passar.
