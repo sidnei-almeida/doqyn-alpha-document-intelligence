@@ -44,4 +44,12 @@ describe('avisos não ficam presos na tela', () => {
     const source = read(TOASTER);
     assert.match(source, /duration=\{TOAST_DURATIONS\./);
   });
+
+  it('o aviso entra e sai com transição — `unstyled` desliga a do sonner', () => {
+    const css = read('src/styles/globals.css');
+
+    assert.match(css, /\.app-toast\s*\{[^}]*transition:/s);
+    assert.match(css, /\.app-toast\[data-mounted='true'\]/);
+    assert.match(css, /\.app-toast\[data-removed='true'\]/);
+  });
 });

@@ -160,21 +160,44 @@ function QueueRow({
  */
 const AUTO_DISMISS_MS = 8000;
 
+/**
+ * Tempo da saída. Precisa casar com `queue-drawer-leave` no CSS: se o React desmontar antes, a
+ * fila pisca e some seca, que é o defeito que a animação existe para tirar.
+ */
+const DISMISS_ANIMATION_MS = 260;
+
 /** Fila de uploads com progresso do lote e countdown de auto-confirmação. */
 export function UploadQueueDrawer() {
   const { items, pendingCount, clearFinished, autoConfirmCountdown, reviewSettings } =
     useUploadQueueContext();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const allSaved = items.length > 0 && items.every(isItemSavedInLibrary);
 
   useEffect(() => {
-    if (!allSaved || hovered) return;
+    if (!allSaved || hovered || leaving) return;
 
-    const timer = window.setTimeout(clearFinished, AUTO_DISMISS_MS);
+    const timer = window.setTimeout(() => setLeaving(true), AUTO_DISMISS_MS);
     return () => window.clearTimeout(timer);
-  }, [allSaved, hovered, items.length, clearFinished]);
+  }, [allSaved, hovered, leaving, items.length]);
+
+  // Some depois da animação, não junto com ela.
+  useEffect(() => {
+    if (!leaving) return;
+
+    const timer = window.setTimeout(() => {
+      setLeaving(false);
+      clearFinished();
+    }, DISMISS_ANIMATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving, clearFinished]);
+
+  // Arquivo novo chegando no meio da saída cancela a saída: a fila volta a ser útil.
+  useEffect(() => {
+    if (!allSaved) setLeaving(false);
+  }, [allSaved]);
 
   if (items.length === 0) return null;
 
@@ -207,7 +230,10 @@ export function UploadQueueDrawer() {
 
   return (
     <section
-      className="queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal"
+      className={cn(
+        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal',
+        leaving && 'queue-drawer-leave',
+      )}
       aria-label="Fila de upload"
       data-testid="upload-queue-drawer"
       onMouseEnter={() => setHovered(true)}
@@ -232,7 +258,7 @@ export function UploadQueueDrawer() {
             {pendingCount === 0 && (
               <button
                 type="button"
-                onClick={clearFinished}
+                onClick={() => setLeaving(true)}
                 className="rounded-md px-2 py-1 text-[11px] text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
                 Limpar
