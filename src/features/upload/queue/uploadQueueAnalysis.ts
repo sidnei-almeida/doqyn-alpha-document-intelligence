@@ -2,8 +2,18 @@ import type { ExtractedMetadata } from '@/features/document-send/types';
 import type { AnalyzePdfResponse } from '@/features/document-send/services/analyzePdf';
 
 const UPLOAD_ANALYZE_TIMEOUT_MIN_MS = 30_000;
-const UPLOAD_ANALYZE_TIMEOUT_MAX_MS = 90_000;
-const UPLOAD_ANALYZE_TIMEOUT_DEFAULT_MS = 60_000;
+/** Teto de configuração. Subiu junto do padrão: com fila, 90s já era menos que a espera normal. */
+const UPLOAD_ANALYZE_TIMEOUT_MAX_MS = 600_000;
+/**
+ * Teto do cliente esperando a análise.
+ *
+ * Eram 60s, herdados de quando a análise rodava dentro do request. Com fila, esse tempo passou a
+ * incluir a espera atrás de outros documentos e a espera pela vazão da Groq — e o servidor
+ * terminava o trabalho **depois** de o navegador desistir: documento analisado no banco, erro de
+ * "passou de 60s" na tela do usuário. Cinco minutos cobrem lote grande com a fila cheia; passado
+ * disso é problema de verdade, não fila.
+ */
+const UPLOAD_ANALYZE_TIMEOUT_DEFAULT_MS = 300_000;
 
 /** Interpreta VITE_UPLOAD_ANALYZE_TIMEOUT_MS (testável sem import.meta). */
 export function parseUploadAnalyzeTimeoutMs(
@@ -31,7 +41,8 @@ export const UPLOAD_ANALYZE_TIMEOUT_MS = parseUploadAnalyzeTimeoutMs(uploadAnaly
 export const UPLOAD_ANALYZE_TIMEOUT_SECONDS = Math.round(UPLOAD_ANALYZE_TIMEOUT_MS / 1000);
 
 export function uploadAnalyzeTimeoutMessage(): string {
-  return `A análise passou de ${UPLOAD_ANALYZE_TIMEOUT_SECONDS}s e foi cancelada. Tente novamente ou envie um PDF menor.`;
+  const minutos = Math.round(UPLOAD_ANALYZE_TIMEOUT_SECONDS / 60);
+  return `A análise passou de ${minutos} min sem resposta. O documento pode ter sido processado mesmo assim — confira na Biblioteca antes de reenviar.`;
 }
 
 export function analysisFailureMessage(

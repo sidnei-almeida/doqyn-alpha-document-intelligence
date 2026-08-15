@@ -5,6 +5,7 @@ import type { ExtractedMetadata } from '../src/features/document-send/types';
 import {
   findNextQueuedItem,
   getAutoSaveBlockers,
+  countParkedUploadItems,
   hasInFlightUploadItem,
   resolveAnalysisOutcome,
   resolveQueueAnalysisAction,
@@ -80,10 +81,24 @@ describe('uploadQueueCore', () => {
     assert.equal(findNextQueuedItem(items)?.id, 'queued-1');
   });
 
-  it('hasInFlightUploadItem detecta analyzing/review/confirming', () => {
+  it('hasInFlightUploadItem detecta quem ocupa a esteira', () => {
     assert.equal(hasInFlightUploadItem([makeUploadItem('queued')]), false);
     assert.equal(hasInFlightUploadItem([makeUploadItem('analyzing')]), true);
-    assert.equal(hasInFlightUploadItem([makeUploadItem('review')]), true);
+    assert.equal(hasInFlightUploadItem([makeUploadItem('confirming')]), true);
+  });
+
+  it('quem espera decisão humana não ocupa a esteira — senão um arquivo trava o lote', () => {
+    assert.equal(hasInFlightUploadItem([makeUploadItem('review')]), false);
+    assert.equal(hasInFlightUploadItem([makeUploadItem('ai_paused')]), false);
+    assert.equal(
+      countParkedUploadItems([
+        makeUploadItem('review'),
+        makeUploadItem('ai_paused'),
+        makeUploadItem('analyzing'),
+        makeUploadItem('done'),
+      ]),
+      2,
+    );
   });
 
   it('resolveAnalysisOutcome mapeia requires_review e ai_paused', () => {
@@ -113,10 +128,6 @@ describe('uploadQueueCore', () => {
       isAuthenticated: true,
     });
     assert.equal(action, 'ai_pause');
-  });
-
-  it('hasInFlightUploadItem detecta ai_paused', () => {
-    assert.equal(hasInFlightUploadItem([makeUploadItem('ai_paused')]), true);
   });
 
   it('getAutoSaveBlockers exige autenticação', () => {

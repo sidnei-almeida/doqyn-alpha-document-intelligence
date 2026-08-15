@@ -372,6 +372,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Os dois casos abaixo estacionam o arquivo e **seguem com o lote**. O que espera decisão
+      // humana sai da esteira; quem está limpo não paga por ele.
       if (action === 'open_review') {
         dispatch({ type: 'status', id: next.id, status: 'review' });
         setReviewItemId((current) => current ?? next.id);
@@ -381,6 +383,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             onClick: () => setReviewItemId(next.id),
           },
         });
+        tryPumpQueue();
         return;
       }
 
@@ -388,6 +391,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         const message = analysisFailureMessage(result.raw.status, result.raw.errorCode);
         dispatch({ type: 'ai_pause', id: next.id, message });
         toast.warning(message);
+        tryPumpQueue();
         return;
       }
 

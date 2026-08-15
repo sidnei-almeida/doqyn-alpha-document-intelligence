@@ -95,7 +95,7 @@ describe('fila de upload — transições de estado', () => {
     assert.equal(state[0].id, 'item-2');
   });
 
-  it('fila processa um por vez: hasActiveItem bloqueia durante review', () => {
+  it('fila processa um por vez, mas revisão pendente não trava o lote', () => {
     const analyzing = [
       makeItem({ id: 'a', status: 'analyzing' }),
       makeItem({ id: 'b', status: 'queued' }),
@@ -103,11 +103,12 @@ describe('fila de upload — transições de estado', () => {
     assert.equal(hasActiveItem(analyzing), true);
     assert.equal(nextQueuedItem(analyzing)?.id, 'b');
 
+    // Um arquivo mandado para revisão espera uma pessoa, não o servidor: os limpos seguem.
     const awaitingReview = [
       makeItem({ id: 'a', status: 'review' }),
       makeItem({ id: 'b', status: 'queued' }),
     ];
-    assert.equal(hasActiveItem(awaitingReview), true);
+    assert.equal(hasActiveItem(awaitingReview), false);
     assert.equal(nextQueuedItem(awaitingReview)?.id, 'b');
 
     const awaitingApproval = [
@@ -222,17 +223,23 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(provider.includes("status: 'review'"));
   });
 
-  it('open_review não dispara próxima análise antes de salvar', () => {
+  it('open_review estaciona o arquivo e segue com o lote', () => {
     const provider = readSrc('features/upload/UploadQueueProvider.tsx');
     assert.ok(provider.includes("toast.info('Análise concluída"));
-    assert.equal(
-      provider.includes("action === 'open_review'") &&
-        provider.includes("return;\n      }\n\n      dispatch({\n        type: 'error'"),
-      true,
+
+    // O que segue o lote: os dois desvios que estacionam o arquivo chamam tryPumpQueue antes de
+    // sair. Sem isso, um documento em revisão trava todos os outros até alguém abrir a tela.
+    const trechoRevisao = provider.slice(
+      provider.indexOf("action === 'open_review'"),
+      provider.indexOf("action === 'ai_pause'"),
     );
-    const state = readSrc('features/upload/queue/uploadQueueState.ts');
-    assert.ok(state.includes("item.status === 'review'") || state.includes('hasInFlightUploadItem'));
-    assert.ok(readSrc('features/upload/queue/uploadQueueCore.ts').includes('UPLOAD_IN_FLIGHT_STATUSES'));
+    assert.ok(trechoRevisao.includes('tryPumpQueue();'), 'open_review precisa liberar a fila');
+
+    const inicioPausa = provider.indexOf("action === 'ai_pause'");
+    const trechoPausa = provider.slice(inicioPausa, inicioPausa + 400);
+    assert.ok(trechoPausa.includes('tryPumpQueue();'), 'ai_pause precisa liberar a fila');
+
+    assert.ok(readSrc('features/upload/queue/uploadQueueCore.ts').includes('UPLOAD_PARKED_STATUSES'));
   });
 
   it('provider não cancela analyze in-flight ao mudar status para analyzing', () => {
@@ -252,11 +259,13 @@ describe('provider da fila — integração com contratos existentes', () => {
   });
 
   it('uploadQueueAnalysis — mensagens e timeout', () => {
-    assert.equal(UPLOAD_ANALYZE_TIMEOUT_MS, 60_000);
+    // Com fila, o tempo de espera inclui os documentos na frente. Um teto curto marcava erro na
+    // tela para um documento que o servidor terminou de analisar depois.
+    assert.equal(UPLOAD_ANALYZE_TIMEOUT_MS, 300_000);
     assert.equal(parseUploadAnalyzeTimeoutMs('45000'), 45_000);
-    assert.equal(parseUploadAnalyzeTimeoutMs('999999'), 90_000);
+    assert.equal(parseUploadAnalyzeTimeoutMs('9999999'), 600_000);
     assert.equal(parseUploadAnalyzeTimeoutMs('1000'), 30_000);
-    assert.match(uploadAnalyzeTimeoutMessage(), /60s/);
+    assert.match(uploadAnalyzeTimeoutMessage(), /confira na Biblioteca/);
     assert.match(analysisFailureMessage('ai_unavailable'), /Groq|limite/i);
     assert.match(analysisFailureMessage('ai_unavailable', 'GROQ_REQUEST_TIMEOUT'), /interrompida/i);
     assert.match(analysisFailureMessage('failed'), /falhou/i);

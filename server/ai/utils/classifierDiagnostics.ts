@@ -63,6 +63,12 @@ function isResponseFormatError(message: string): boolean {
     lower.includes('json_object') ||
     lower.includes('json schema') ||
     lower.includes('structured outputs') ||
+    // O modo JSON da Groq devolve `json_validate_failed` quando o modelo responde texto solto em
+    // vez de JSON — acontece com documento em inglês ou de layout incomum. Sem esta linha o erro
+    // não casava com nenhum padrão, a tentativa sem `response_format` nunca acontecia, e uma nota
+    // fiscal perfeitamente normal caía em "aguardando revisão" esperando alguém na tela.
+    lower.includes('json_validate_failed') ||
+    lower.includes('failed to generate json') ||
     (lower.includes('model') && lower.includes('not support'))
   );
 }
