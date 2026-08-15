@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import type { ExtractedMetadataField } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
@@ -72,12 +73,32 @@ const classificationSchema = z.object({
   evidence: z.array(evidenceSchema).optional().default([]),
 });
 
+/**
+ * Origens que o pipeline pode carimbar num campo extraído.
+ *
+ * O `Record` não é decoração: ele obriga o compilador a exigir uma entrada para cada membro de
+ * `ExtractedMetadataField['source']`. Foi a falta disso que quebrou o produto — `derived` entrou
+ * no pipeline (data final calculada a partir de âncora + prazo, em `deriveEndDates`) sem entrar
+ * aqui, e todo documento com data derivada era recusado no confirm com "Payload inválido", sem
+ * nada no log dizendo qual campo. Agora a fonte nova quebra o build, não o upload do cliente.
+ */
+const METADATA_FIELD_SOURCE_MAP: Record<ExtractedMetadataField['source'], true> = {
+  document_text: true,
+  no_ai: true,
+  derived: true,
+};
+
+const METADATA_FIELD_SOURCES = Object.keys(METADATA_FIELD_SOURCE_MAP) as [
+  ExtractedMetadataField['source'],
+  ...ExtractedMetadataField['source'][],
+];
+
 const metadataFieldSchema = z.object({
   label: z.string(),
   value: z.union([z.string(), z.number(), z.null()]),
   normalizedValue: z.union([z.string(), z.number(), z.null()]).optional(),
   confidence: z.number(),
-  source: z.enum(['document_text', 'no_ai']).optional().default('document_text'),
+  source: z.enum(METADATA_FIELD_SOURCES).optional().default('document_text'),
   evidence: evidenceSchema.optional(),
   currency: z.string().optional(),
 });
