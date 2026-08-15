@@ -77,7 +77,7 @@ export function LibraryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { tenant, user, hasAnyRole } = useAuth();
-  const { state, update, clearFilters, collection, categories, documents, isLoading, isFetching, isError, toggleStar, isStarred } =
+  const { state, update, clearFilters, collection, categories, documents, isLoading, isError, toggleStar, isStarred } =
     useLibraryView();
   const filterCapabilities = useMemo(
     () => resolveCollectionFilterCapabilities(collection.id),
@@ -691,11 +691,8 @@ export function LibraryPage() {
                       {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
                     </span>
                   ) : undefined}
-                  {isFetching && !isLoading ? (
-                    <span className="text-doqyn-subtle" aria-live="polite">
-                      Atualizando…
-                    </span>
-                  ) : null}
+                  {/* Sem aviso de "Atualizando…": a revalidação é silenciosa e a lista antiga
+                      fica na tela até a nova chegar. */}
                 </>
               }
               state={state}
