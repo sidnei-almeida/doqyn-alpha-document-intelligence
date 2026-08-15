@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { connectRedisOnBoot } from '../redis/redisClient.js';
 import { runAnalysisWorkerLoop } from './analysisWorker.js';
+import { runEmbeddingWorkerLoop } from './embeddingWorker.js';
 import {
   configurePrometheusService,
   initPrometheusMetrics,
@@ -13,6 +14,9 @@ async function main() {
   startStandaloneMetricsServer('worker');
   await connectRedisOnBoot();
   await runAnalysisWorkerLoop();
+  // Mesmo processo de propósito: o embedding mora onde a pilha de IA já mora, em vez de subir
+  // um container só para carregar mais um modelo no mesmo VPS.
+  await runEmbeddingWorkerLoop();
 }
 
 main().catch((error) => {
