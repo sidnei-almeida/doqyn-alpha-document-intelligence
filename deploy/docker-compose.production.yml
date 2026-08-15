@@ -202,6 +202,10 @@ services:
       REDIS_KEY_PREFIX: "doqyn:alpha:"
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
+      # Mesmo teto do worker: o contador é da conta Groq e vive no Redis, então todo processo que
+      # possa chamar a Groq precisa enxergar o mesmo limite.
+      GROQ_MAX_REQUESTS_PER_MINUTE: ${GROQ_MAX_REQUESTS_PER_MINUTE:-25}
+      GROQ_MAX_TOKENS_PER_MINUTE: ${GROQ_MAX_TOKENS_PER_MINUTE:-20000}
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-api
       METRICS_SERVICE_ROLE: api
@@ -263,9 +267,16 @@ services:
       REDIS_KEY_PREFIX: "doqyn:alpha:"
       ANALYSIS_SYNC_FALLBACK: "false"
       PREVIEW_SYNC_FALLBACK: "false"
-      # 2 vCPU: default do código é 10/2 — oversubscription de 5x. Ver Passo 1 do plano.
-      ANALYSIS_QUEUE_CONCURRENCY_GLOBAL: ${ANALYSIS_QUEUE_CONCURRENCY_GLOBAL:-2}
-      ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT: ${ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT:-1}
+      # Análise é espera de rede, não CPU: dos ~2,2s de um documento, ~2,1s são a Groq respondendo
+      # (medido em docs/AUDITORIA-ESCALA-ENVIO-2026-08-15.md). O teto de 2 tratava o job como se
+      # fosse CPU e limitava a plataforma inteira a ~55 documentos por minuto.
+      # Quem protege a conta da Groq agora é o limitador de vazão em groqRateLimiter.ts, não a
+      # concorrência da fila — subir este número sem GROQ_MAX_* configurado troca fila por 429.
+      ANALYSIS_QUEUE_CONCURRENCY_GLOBAL: ${ANALYSIS_QUEUE_CONCURRENCY_GLOBAL:-8}
+      ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT: ${ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT:-2}
+      # Teto da conta Groq, compartilhado por todos os workers. Ajuste ao plano contratado.
+      GROQ_MAX_REQUESTS_PER_MINUTE: ${GROQ_MAX_REQUESTS_PER_MINUTE:-25}
+      GROQ_MAX_TOKENS_PER_MINUTE: ${GROQ_MAX_TOKENS_PER_MINUTE:-20000}
       # Vetorização do RAG. Desligada por padrão: chunk novo nasce sem vetor e só entra na busca
       # semântica pelo backfill. O worker de análise é quem consome a fila.
       EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
