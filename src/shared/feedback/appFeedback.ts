@@ -13,12 +13,21 @@ export type AppToastInput = {
   action?: { label: string; onClick: () => void };
 };
 
-const TOAST_DURATIONS: Record<AppToastType, number> = {
+/**
+ * Nenhum aviso fica na tela para sempre — todo tipo tem teto.
+ *
+ * O tempo cresce com a gravidade porque o erro é o que precisa ser lido inteiro, e some por
+ * último. O `loading` era `Infinity`: dependia de quem abriu lembrar de fechar, e qualquer
+ * caminho de exceção que escapasse do `dismiss` deixava um "carregando" preso na tela até o
+ * usuário recarregar a página. Sessenta segundos é teto de segurança, não expectativa de
+ * duração: operação normal fecha o aviso muito antes, ao terminar.
+ */
+export const TOAST_DURATIONS: Record<AppToastType, number> = {
   success: 4000,
-  error: 6000,
-  warning: 5000,
   info: 4000,
-  loading: Infinity,
+  warning: 6000,
+  error: 10000,
+  loading: 60000,
 };
 
 export function showAppToast(input: AppToastInput): string | number {
