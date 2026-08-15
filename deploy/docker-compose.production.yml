@@ -247,6 +247,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.worker
+    # Com EMBEDDING_ENABLED=true o ONNX soma ~300 MB fora do heap do V8; suba
+    # DOQYN_WORKER_MEM_LIMIT para 1.5g antes de ligar a vetorização.
     mem_limit: ${DOQYN_WORKER_MEM_LIMIT:-1g}
     mem_reservation: 512m
     cpus: ${DOQYN_WORKER_CPUS:-0.8}
@@ -264,12 +266,19 @@ services:
       # 2 vCPU: default do código é 10/2 — oversubscription de 5x. Ver Passo 1 do plano.
       ANALYSIS_QUEUE_CONCURRENCY_GLOBAL: ${ANALYSIS_QUEUE_CONCURRENCY_GLOBAL:-2}
       ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT: ${ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT:-1}
+      # Vetorização do RAG. Desligada por padrão: chunk novo nasce sem vetor e só entra na busca
+      # semântica pelo backfill. O worker de análise é quem consome a fila.
+      EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
+      EMBEDDING_CACHE_DIR: /app/.cache/transformers
+      EMBEDDING_QUEUE_CONCURRENCY: ${EMBEDDING_QUEUE_CONCURRENCY:-1}
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-worker
       METRICS_SERVICE_ROLE: worker
       METRICS_PORT: 9100
     volumes:
       - ./secrets:/run/secrets:ro
+      # Sem volume, o ONNX (~280 MB) é rebaixado a cada restart de container.
+      - embedding_cache:/app/.cache/transformers
     depends_on:
       redis:
         condition: service_healthy
@@ -410,6 +419,7 @@ services:
       - doqyn
 
 volumes:
+  embedding_cache:
   postgres_auth_data:
   mongo_data:
   redis_data:
