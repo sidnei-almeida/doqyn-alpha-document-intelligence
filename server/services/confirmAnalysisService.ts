@@ -112,15 +112,29 @@ const extractionSchema = z.object({
   reviewReasons: z.array(z.string()),
 });
 
+/**
+ * Nome opcional que aceita `null` como "não veio".
+ *
+ * A análise devolve `recommendedFileName: null` sempre que não chega a sugerir nome — o caso
+ * normal quando a classificação fica inconclusiva. O cliente repassa esse `null` adiante, e um
+ * `.optional()` seco só aceita `undefined`: o documento era recusado com "Payload inválido" na
+ * confirmação, justamente no caminho em que o usuário revisou e decidiu salvar assim mesmo.
+ */
+const optionalName = z
+  .string()
+  .min(1)
+  .nullish()
+  .transform((value) => value ?? undefined);
+
 export const confirmAnalysisSchema = z.object({
   jobId: z.string().optional(),
   originalFileName: z.string().min(1),
-  mimeType: z.string().min(1).optional(),
-  recommendedFileName: z.string().min(1).optional(),
-  aiSuggestedFileName: z.string().min(1).optional(),
+  mimeType: optionalName,
+  recommendedFileName: optionalName,
+  aiSuggestedFileName: optionalName,
   namingMode: z.enum(['ai_suggested', 'original', 'manual']).optional().default('ai_suggested'),
-  finalFileName: z.string().min(1).optional(),
-  selectedFileName: z.string().min(1).optional(),
+  finalFileName: optionalName,
+  selectedFileName: optionalName,
   fileHash: z.string().regex(/^[a-f0-9]{64}$/, 'Hash SHA256 inválido'),
   fileSizeBytes: z.number().int().nonnegative(),
   textExtraction: z.object({

@@ -12,8 +12,8 @@
  *   npx tsx scripts/bulk-upload-load-test.ts --files 50 --parallel 10 --pdf caminho.pdf
  */
 import 'dotenv/config';
-import { readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, extname, join } from 'node:path';
 
 const AUTH_BASE = process.env.LOAD_TEST_AUTH_BASE ?? 'http://127.0.0.1:4100';
 const API_BASE = process.env.LOAD_TEST_API_BASE ?? 'http://127.0.0.1:3001';
@@ -28,9 +28,38 @@ function readFlag(name: string, fallback: string): string {
 const fileCount = Number(readFlag('files', '20'));
 const parallel = Number(readFlag('parallel', '5'));
 const pdfPath = readFlag('pdf', '/home/sidnei-almeida/Downloads/NDA_-_ACORDO_DE_CONFIDENCIALIDADE_2.pdf');
+/** Com `--dir`, o lote circula por todos os arquivos da pasta em vez de repetir um só. */
+const dirPath = readFlag('dir', '');
+
+const MIME_BY_EXT: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+};
+
+type SourceFile = { name: string; buffer: Buffer; mimeType: string };
+
+function loadSources(): SourceFile[] {
+  const paths = dirPath
+    ? readdirSync(dirPath)
+        .map((entry) => join(dirPath, entry))
+        .filter((entry) => statSync(entry).isFile() && MIME_BY_EXT[extname(entry).toLowerCase()])
+    : [pdfPath];
+
+  if (paths.length === 0) throw new Error(`nenhum arquivo suportado em ${dirPath}`);
+
+  return paths.map((path) => ({
+    name: basename(path),
+    buffer: readFileSync(path),
+    mimeType: MIME_BY_EXT[extname(path).toLowerCase()] ?? 'application/pdf',
+  }));
+}
 
 type ItemResult = {
   index: number;
+  fileName: string;
   ok: boolean;
   analyzeMs: number;
   waitMs: number;
@@ -75,16 +104,24 @@ async function waitForJob(
   throw new Error(`job ${jobId} não terminou em 10 minutos`);
 }
 
-async function sendOne(index: number, cookie: string, buffer: Buffer): Promise<ItemResult> {
+async function sendOne(index: number, cookie: string, source: SourceFile): Promise<ItemResult> {
   const startedAt = Date.now();
-  const result: ItemResult = { index, ok: false, analyzeMs: 0, waitMs: 0, confirmMs: 0, totalMs: 0 };
+  const result: ItemResult = {
+    index,
+    fileName: source.name,
+    ok: false,
+    analyzeMs: 0,
+    waitMs: 0,
+    confirmMs: 0,
+    totalMs: 0,
+  };
 
   try {
     const form = new FormData();
     form.append(
       'file',
-      new Blob([buffer], { type: 'application/pdf' }),
-      `carga-${index}-${basename(pdfPath)}`,
+      new Blob([source.buffer], { type: source.mimeType }),
+      `carga-${index}-${source.name}`,
     );
 
     const analyzeStartedAt = Date.now();
@@ -132,8 +169,9 @@ async function sendOne(index: number, cookie: string, buffer: Buffer): Promise<I
       body: JSON.stringify({
         ...payload,
         extraction,
-        manualReviewConfirmed: false,
-        namingMode: 'ai_suggested',
+        // Equivale ao usuário abrindo a revisão e confirmando: é o que interessa medir aqui.
+        manualReviewConfirmed: result.status === 'requires_review',
+        namingMode: payload.recommendedFileName ? 'ai_suggested' : 'original',
         aiSuggestedFileName: payload.recommendedFileName,
       }),
     });
@@ -162,13 +200,16 @@ function percentile(values: number[], p: number): number {
 }
 
 async function main(): Promise<void> {
-  const buffer = readFileSync(pdfPath);
+  const sources = loadSources();
   const cookie = await login();
 
   console.log(
-    `arquivo: ${basename(pdfPath)} (${(buffer.length / 1024).toFixed(0)} KB) · ` +
-      `${fileCount} envios · ${parallel} em paralelo`,
+    `${sources.length} arquivo(s) de origem · ${fileCount} envios · ${parallel} em paralelo`,
   );
+  for (const source of sources) {
+    console.log(`  ${source.name} (${(source.buffer.length / 1024).toFixed(0)} KB)`);
+  }
+  console.log('');
 
   const results: ItemResult[] = [];
   const startedAt = Date.now();
@@ -180,12 +221,14 @@ async function main(): Promise<void> {
       for (;;) {
         const index = next++;
         if (index >= fileCount) return;
-        const result = await sendOne(index, cookie, buffer);
+        const result = await sendOne(index, cookie, sources[index % sources.length]);
         results.push(result);
         const marca = result.ok ? 'ok  ' : 'FALHA';
         console.log(
-          `  ${marca} #${String(index).padStart(3)} · total ${String(result.totalMs).padStart(6)}ms ` +
+          `  ${marca} #${String(index).padStart(3)} ${result.fileName.slice(0, 28).padEnd(28)} ` +
+            `total ${String(result.totalMs).padStart(6)}ms ` +
             `(envio ${result.analyzeMs}ms, fila ${result.waitMs}ms, confirm ${result.confirmMs}ms)` +
+            (result.status ? ` · ${result.status}` : '') +
             (result.error ? ` · ${result.error}` : ''),
         );
       }
