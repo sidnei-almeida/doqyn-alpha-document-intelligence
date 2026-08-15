@@ -186,6 +186,7 @@ async function callGroqCompletion(
     try {
       await acquireGroqSlot({
         operation,
+        model,
         estimatedTokens: estimateGroqTokens(prompt.length, getGroqMaxOutputTokens()),
       });
     } catch (waitError) {

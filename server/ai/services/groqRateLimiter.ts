@@ -16,8 +16,16 @@ import { logger } from '../../utils/logger.js';
  * Sem Redis não há limitação — mesmo critério do resto do sistema em desenvolvimento.
  */
 
+/**
+ * Padrões dimensionados para o **plano gratuito**, que é o que está em uso hoje, e por modelo.
+ *
+ * Errar para baixo aqui custa fila; errar para cima custa 429 e documento parado esperando ação
+ * humana. Ao contratar plano pago, suba pelos números do contrato — os limites reais aparecem nos
+ * cabeçalhos `x-ratelimit-limit-requests` e `x-ratelimit-limit-tokens` de qualquer resposta da
+ * Groq, então não precisa ser adivinhação.
+ */
 const DEFAULT_REQUESTS_PER_MINUTE = 25;
-const DEFAULT_TOKENS_PER_MINUTE = 20_000;
+const DEFAULT_TOKENS_PER_MINUTE = 6_000;
 /**
  * Teto de espera. Precisa ser maior que a janela: um pedido que chega logo depois de a janela
  * saturar espera o minuto quase inteiro, e um teto menor que isso transformaria em erro justamente
@@ -31,6 +39,11 @@ export type GroqSlotRequest = {
   /** Estimativa de tokens do pedido, entrada mais saída. */
   estimatedTokens: number;
   operation: string;
+  /**
+   * O limite da Groq é **por modelo**, não por conta. Classificação (70b) e extração (8b) têm
+   * cotas separadas, então contá-las no mesmo balde jogaria fora metade da capacidade.
+   */
+  model: string;
 };
 
 export class GroqRateLimitWaitTimeout extends Error {
@@ -71,11 +84,14 @@ export function estimateGroqTokens(promptChars: number, maxOutputTokens: number)
 }
 
 /** Janela fixa de um minuto. Simples de raciocinar e barata: duas chaves com validade curta. */
-function windowKeys(now: number): { requests: string; tokens: string; resetInMs: number } {
+function windowKeys(
+  now: number,
+  model: string,
+): { requests: string; tokens: string; resetInMs: number } {
   const bucket = Math.floor(now / WINDOW_MS);
   return {
-    requests: prefixRedisKey(`groq:rpm:${bucket}`),
-    tokens: prefixRedisKey(`groq:tpm:${bucket}`),
+    requests: prefixRedisKey(`groq:rpm:${model}:${bucket}`),
+    tokens: prefixRedisKey(`groq:tpm:${model}:${bucket}`),
     resetInMs: (bucket + 1) * WINDOW_MS - now,
   };
 }
@@ -99,7 +115,7 @@ async function tryConsume(
   const client = await deps.getClient();
   if (!client) return { ok: true };
 
-  const { requests, tokens, resetInMs } = windowKeys(deps.now());
+  const { requests, tokens, resetInMs } = windowKeys(deps.now(), request.model);
   const requestLimit = getGroqRequestsPerMinute();
   const tokenLimit = getGroqTokensPerMinute();
 

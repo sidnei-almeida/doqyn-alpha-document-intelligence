@@ -68,7 +68,7 @@ describe('vazão da Groq', () => {
 
     for (let i = 0; i < 3; i += 1) {
       const result = await acquireGroqSlot(
-        { estimatedTokens: 100, operation: 'teste' },
+        { estimatedTokens: 100, operation: 'teste', model: 'modelo-teste' },
         { getClient: redis.getClient, now: clock.now, sleep: clock.sleep },
       );
       assert.equal(result.waitedMs, 0);
@@ -82,8 +82,8 @@ describe('vazão da Groq', () => {
     const clock = fakeClock();
     const deps = { getClient: redis.getClient, now: clock.now, sleep: clock.sleep };
 
-    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro' }, deps);
-    const segundo = await acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo' }, deps);
+    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro', model: 'modelo-teste' }, deps);
+    const segundo = await acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo', model: 'modelo-teste' }, deps);
 
     assert.ok(segundo.waitedMs > 0, 'o segundo pedido deveria ter esperado a janela virar');
     assert.ok(segundo.waitedMs <= 60_050, `esperou demais: ${segundo.waitedMs}ms`);
@@ -96,8 +96,8 @@ describe('vazão da Groq', () => {
     const clock = fakeClock();
     const deps = { getClient: redis.getClient, now: clock.now, sleep: clock.sleep };
 
-    await acquireGroqSlot({ estimatedTokens: 4000, operation: 'grande' }, deps);
-    const segundo = await acquireGroqSlot({ estimatedTokens: 4000, operation: 'grande' }, deps);
+    await acquireGroqSlot({ estimatedTokens: 4000, operation: 'grande', model: 'modelo-teste' }, deps);
+    const segundo = await acquireGroqSlot({ estimatedTokens: 4000, operation: 'grande', model: 'modelo-teste' }, deps);
 
     assert.ok(segundo.waitedMs > 0, 'o segundo estouraria o teto de tokens da janela');
   });
@@ -109,8 +109,8 @@ describe('vazão da Groq', () => {
     const clock = fakeClock();
     const deps = { getClient: redis.getClient, now: clock.now, sleep: clock.sleep };
 
-    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro' }, deps);
-    await acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo' }, deps);
+    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro', model: 'modelo-teste' }, deps);
+    await acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo', model: 'modelo-teste' }, deps);
 
     const contadores = [...redis.store.entries()].filter(([key]) => key.includes('groq:rpm'));
     for (const [, valor] of contadores) {
@@ -126,10 +126,10 @@ describe('vazão da Groq', () => {
     const clock = fakeClock();
     const deps = { getClient: redis.getClient, now: clock.now, sleep: clock.sleep };
 
-    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro' }, deps);
+    await acquireGroqSlot({ estimatedTokens: 10, operation: 'primeiro', model: 'modelo-teste' }, deps);
 
     await assert.rejects(
-      acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo' }, deps),
+      acquireGroqSlot({ estimatedTokens: 10, operation: 'segundo', model: 'modelo-teste' }, deps),
       (error: unknown) => error instanceof GroqRateLimitWaitTimeout,
     );
   });
@@ -140,8 +140,29 @@ describe('vazão da Groq', () => {
     const deps = { getClient: async () => null, now: clock.now, sleep: clock.sleep };
 
     for (let i = 0; i < 5; i += 1) {
-      const result = await acquireGroqSlot({ estimatedTokens: 10, operation: 'teste' }, deps);
+      const result = await acquireGroqSlot({ estimatedTokens: 10, operation: 'teste', model: 'modelo-teste' }, deps);
       assert.equal(result.waitedMs, 0);
     }
+  });
+});
+
+describe('cota por modelo', () => {
+  it('modelos diferentes não disputam a mesma cota — o limite da Groq é por modelo', async () => {
+    process.env.GROQ_MAX_REQUESTS_PER_MINUTE = '1';
+    process.env.GROQ_MAX_TOKENS_PER_MINUTE = '100000';
+    const redis = fakeRedis();
+    const clock = fakeClock();
+    const deps = { getClient: redis.getClient, now: clock.now, sleep: clock.sleep };
+
+    await acquireGroqSlot(
+      { estimatedTokens: 10, operation: 'classificacao', model: 'llama-3.3-70b-versatile' },
+      deps,
+    );
+    const outroModelo = await acquireGroqSlot(
+      { estimatedTokens: 10, operation: 'extracao', model: 'llama-3.1-8b-instant' },
+      deps,
+    );
+
+    assert.equal(outroModelo.waitedMs, 0, 'o segundo modelo tem cota própria e não deveria esperar');
   });
 });
