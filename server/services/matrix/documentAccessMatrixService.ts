@@ -28,6 +28,16 @@ import { listDocuments } from '../documentService.js';
  * que impede o administrador de tentar "revogar" na tela um acesso que vem de regra de categoria e
  * não sai por ali — ele sai mudando a regra, que vale para todos os documentos daquela categoria.
  */
+/**
+ * O documento como a listagem o entrega.
+ *
+ * Tipado a partir da própria `listDocuments` de propósito. Antes esta matriz lia o resultado como
+ * `Record<string, unknown>` e adivinhava os nomes dos campos — errou duas vezes seguidas
+ * (`classId` em vez de `categoryId`, `className` em vez de `categoryName`), e as duas vezes o
+ * sintoma foi coluna vazia, não erro. Com o tipo no lugar, um nome errado não compila.
+ */
+type ListedDocument = Awaited<ReturnType<typeof listDocuments>>['items'][number];
+
 export type DocumentAccessOrigin = 'owner' | 'admin' | 'governance' | 'share';
 
 export type DocumentAccessCell = {
@@ -139,10 +149,8 @@ export async function buildDocumentAccessMatrix(input: {
     excludeArchived: true,
   });
 
-  const documents = (listed.items ?? []) as Array<Record<string, unknown>>;
-  const documentIds = documents
-    .map((doc) => String(doc.id ?? doc._id ?? ''))
-    .filter((id) => id.length > 0);
+  const documents: ListedDocument[] = listed.items ?? [];
+  const documentIds = documents.map((doc) => doc.documentId).filter((id) => Boolean(id));
 
   if (documentIds.length === 0) {
     return { ...empty, pagination: { nextCursor: listed.pagination?.nextCursor ?? null } };
@@ -237,22 +245,22 @@ export async function buildDocumentAccessMatrix(input: {
   const groupCells: DocumentGroupAccessCell[] = [];
 
   for (const doc of documents) {
-    const documentId = String(doc.id ?? doc._id ?? '');
+    const documentId = doc.documentId;
     if (!documentId) continue;
 
-    // O item da lista expõe `categoryId` (o `classId` do Mongo já vem traduzido). Ler `classId`
-    // aqui devolvia `undefined` e a coluna de governança ficava vazia para todo mundo.
-    const categoryId = typeof doc.categoryId === 'string' ? doc.categoryId : undefined;
-    const ownerUserId = typeof doc.ownerUserId === 'string' ? doc.ownerUserId : undefined;
+    // `categoryId` e `categoryName` são os nomes que a listagem publica; o `classId`/`className` do
+    // Mongo já vem traduzido lá.
+    const categoryId = doc.categoryId ?? undefined;
+    const ownerUserId = doc.ownerUserId ?? undefined;
 
     rows.push({
       documentId,
-      fileName: String(doc.currentFileName ?? doc.title ?? documentId),
+      fileName: doc.currentFileName ?? doc.displayName ?? documentId,
       categoryId,
-      categoryName: typeof doc.className === 'string' ? doc.className : undefined,
+      categoryName: doc.categoryName ?? undefined,
       ownerUserId,
-      ownerName: typeof doc.ownerName === 'string' ? doc.ownerName : undefined,
-      updatedAt: typeof doc.updatedAt === 'string' ? doc.updatedAt : undefined,
+      ownerName: doc.ownerName ?? undefined,
+      updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
       externalShareCount: externalCountByDocument.get(documentId) ?? 0,
     });
 
