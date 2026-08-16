@@ -43,7 +43,8 @@ export type ExtractedMetadataField = {
   value: string | number | null;
   normalizedValue?: string | number | null;
   confidence: number;
-  source: 'document_text' | 'no_ai' | 'derived';
+  /** `manual` = preenchido por quem revisou o envio, antes de salvar. */
+  source: 'document_text' | 'no_ai' | 'derived' | 'manual';
   evidence?: EvidenceSnippet;
   currency?: string;
 };

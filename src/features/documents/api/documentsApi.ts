@@ -92,6 +92,33 @@ export async function transferDocumentOwnership(
   return response.json();
 }
 
+export type CategoryFieldSpec = {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  description?: string;
+};
+
+/**
+ * Campos que a categoria espera, para preencher à mão na revisão do envio.
+ *
+ * Rota separada da de administração (`/api/document-extraction-rules`) porque quem envia documento
+ * não é administrador — e sem a lista, escolher a categoria à mão deixava a revisão cega.
+ */
+export async function fetchCategoryFields(categoryId: string): Promise<CategoryFieldSpec[]> {
+  const response = await authFetch(
+    `/api/document-categories/${encodeURIComponent(categoryId)}/fields`,
+  );
+  if (!response.ok) {
+    // Categoria sem regra ativa não é erro de tela: a revisão segue com o que a IA extraiu.
+    if (response.status === 404) return [];
+    throw await parseDocumentApiError(response);
+  }
+  const data = (await response.json()) as { fields?: CategoryFieldSpec[] };
+  return data.fields ?? [];
+}
+
 export async function fetchDocumentCategories(): Promise<
   Array<{ id: string; name: string; description?: string; slug?: string }>
 > {

@@ -86,6 +86,9 @@ const METADATA_FIELD_SOURCE_MAP: Record<ExtractedMetadataField['source'], true> 
   document_text: true,
   no_ai: true,
   derived: true,
+  // Campo corrigido à mão na revisão do envio. Entra aqui porque o `Record` acima é o que impede
+  // uma origem nova de chegar ao confirm sem ninguém perceber.
+  manual: true,
 };
 
 const METADATA_FIELD_SOURCES = Object.keys(METADATA_FIELD_SOURCE_MAP) as [
@@ -160,9 +163,50 @@ export const confirmAnalysisSchema = z.object({
    * sempre, porque a confirmação exige uma classe e a análise não tinha nenhuma para dar.
    */
   manualClassId: optionalName,
+  /**
+   * Valores corrigidos à mão na revisão, por chave de campo.
+   *
+   * Chegam separados do `extraction` de propósito: o que a IA extraiu fica registrado como veio, e
+   * o que a pessoa corrigiu entra por cima com `source: 'manual'`. Sem essa separação a auditoria
+   * perderia a diferença entre "a IA acertou" e "alguém consertou".
+   */
+  metadataOverrides: z
+    .record(z.union([z.string(), z.number(), z.null()]))
+    .optional(),
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
+
+/**
+ * Junta o que a IA extraiu com o que a pessoa corrigiu na revisão.
+ *
+ * Chave que já existia mantém o rótulo original — o usuário mudou o valor, não o nome do campo.
+ * Chave nova (campo obrigatório que a extração não preencheu) entra com o rótulo igual à chave; a
+ * ficha de metadados e a regra da categoria dão o rótulo bonito depois.
+ */
+function applyMetadataOverrides(
+  metadata: ConfirmAnalysisInput['extraction']['metadata'],
+  overrides: Record<string, string | number | null> | undefined,
+): ConfirmAnalysisInput['extraction']['metadata'] {
+  if (!overrides || Object.keys(overrides).length === 0) return metadata;
+
+  const merged = { ...metadata };
+
+  for (const [key, value] of Object.entries(overrides)) {
+    const existing = merged[key];
+    merged[key] = {
+      ...(existing ?? { label: key, evidence: undefined, currency: undefined }),
+      label: existing?.label ?? key,
+      value,
+      normalizedValue: value,
+      // Quem olhou o documento e digitou não está estimando.
+      confidence: 1,
+      source: 'manual',
+    };
+  }
+
+  return merged;
+}
 
 async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string> {
   const { documents } = ctx.collections;
@@ -319,7 +363,9 @@ export async function confirmAnalysisPersistence(input: {
   const versionId = `ver_${randomUUID()}`;
   const jobId = data.jobId ?? `job_${randomUUID()}`;
 
-  const versionMetadata = mapVersionMetadata(data.extraction.metadata);
+  const versionMetadata = mapVersionMetadata(
+    applyMetadataOverrides(data.extraction.metadata, data.metadataOverrides),
+  );
   const searchMeta = projectDocumentSearchMeta(versionMetadata, rule.fields);
   const documentCode = await generateDocumentCode(input.ctx);
   const sha256 = data.fileHash;
