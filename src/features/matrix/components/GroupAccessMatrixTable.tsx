@@ -33,13 +33,15 @@ const PERMISSION_COLUMNS: Array<{
 export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
   const cellIndex = useMemo(() => {
     const index = new Map<string, AccessMatrixGroupCell>();
-    for (const cell of matrix.groupCells) {
+    // Campo opcional de propósito: durante um deploy a aba pode estar aberta contra uma API que
+    // ainda não devolve `groupCells`, e derrubar a tela inteira por isso é pior que uma tabela vazia.
+    for (const cell of matrix.groupCells ?? []) {
       index.set(`${cell.documentId}:${cell.groupId}`, cell);
     }
     return index;
   }, [matrix.groupCells]);
 
-  if (matrix.groups.length === 0) {
+  if ((matrix.groups ?? []).length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-doqyn-border-subtle px-6 py-12 text-center">
         <Icon name="groups" size={28} className="mx-auto text-doqyn-subtle" />
@@ -51,7 +53,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
     );
   }
 
-  if (matrix.documents.length === 0) {
+  if ((matrix.documents ?? []).length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-doqyn-border-subtle px-6 py-12 text-center">
         <Icon name="grid_off" size={28} className="mx-auto text-doqyn-subtle" />
