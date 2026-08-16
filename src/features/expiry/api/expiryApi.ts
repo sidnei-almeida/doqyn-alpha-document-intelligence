@@ -34,6 +34,8 @@ export type MetadataSheetRow = {
   required: boolean;
   description?: string;
   value: string | number | null;
+  /** Forma canônica do mesmo dado, quando a extração conseguiu normalizar (datas, sobretudo). */
+  normalizedValue?: string | number | null;
   source?: 'ai' | 'document_text' | 'manual';
   confidence?: number;
   fromRule: boolean;

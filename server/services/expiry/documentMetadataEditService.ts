@@ -243,6 +243,14 @@ export type MetadataSheetRow = {
   required: boolean;
   description?: string;
   value: string | number | null;
+  /**
+   * Mesmo dado em forma canônica, quando a extração conseguiu normalizar.
+   *
+   * A IA grava a data como o documento escreve — "09 de junho de 2026" — e guarda `2026-06-09` ao
+   * lado. A tela de detalhe mostra o texto original, mas um `<input type="date">` só aceita o
+   * canônico: sem ele, o campo abria vazio e parecia que o dado tinha sumido.
+   */
+  normalizedValue?: string | number | null;
   source?: MongoVersionMetadataField['source'];
   confidence?: number;
   /** Previsto pela regra da categoria (tenant). Falso = chave extra gravada à mão. */
@@ -297,6 +305,7 @@ export function buildMetadataSheetRows(
       required: field.required,
       description: field.description,
       value,
+      normalizedValue: present[field.key]?.normalizedValue ?? null,
       source: present[field.key]?.source,
       confidence: present[field.key]?.confidence,
       fromRule: true,
@@ -315,6 +324,7 @@ export function buildMetadataSheetRows(
       type: isValidityKey(key) ? 'date' : 'string',
       required: false,
       value: field.value ?? null,
+      normalizedValue: field.normalizedValue ?? null,
       source: field.source,
       confidence: field.confidence,
       fromRule: false,
