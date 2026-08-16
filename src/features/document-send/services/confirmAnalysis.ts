@@ -19,6 +19,11 @@ export type SubmitUploadApprovalResponse = {
 
 export type ConfirmAnalysisOptions = {
   manualReviewConfirmed?: boolean;
+  /**
+   * Categoria escolhida à mão na revisão. É o que resgata o documento que a IA não conseguiu
+   * classificar — sem ela, a confirmação é recusada por falta de classe.
+   */
+  manualClassId?: string;
   namingMode?: 'ai_suggested' | 'original' | 'manual';
   finalFileName?: string;
   selectedFileName?: string;
@@ -49,6 +54,7 @@ export async function confirmAnalysis(
     body: JSON.stringify({
       ...normalizedPayload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
+      manualClassId: options?.manualClassId,
       namingMode: effectiveNamingMode,
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,
@@ -105,6 +111,7 @@ export async function submitUploadForApproval(
     body: JSON.stringify({
       ...normalizedPayload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
+      manualClassId: options?.manualClassId,
       namingMode: effectiveNamingMode,
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,

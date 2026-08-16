@@ -13,9 +13,11 @@ import {
   resolveFinalFileNameForConfirm,
 } from '@/features/document-send/utils/reviewWorkflowSettings';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/auth/useAuth';
 import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { useUploadQueueContext } from '../uploadQueueContext';
+import { CategoryQuickPicker } from './CategoryQuickPicker';
 
 /**
  * Revisão pós-análise RAG na fila da Biblioteca — respeita preferências de nomeação e confirmação.
@@ -37,6 +39,8 @@ export function ReviewDrawer() {
   const [perItemNaming, setPerItemNaming] = useState<PerItemNamingChoice>({
     namingMode: 'ai_suggested',
   });
+  const [manualCategory, setManualCategory] = useState<{ id: string; name: string } | null>(null);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const item = useMemo(
     () => items.find((entry) => entry.id === reviewItemId) ?? null,
@@ -54,6 +58,8 @@ export function ReviewDrawer() {
     if (!item) return;
     setReviewChecked(false);
     setIsConfirming(false);
+    setManualCategory(null);
+    setShowCategoryPicker(false);
     setPerItemNaming(
       item.namingChoice ?? {
         namingMode:
@@ -89,8 +95,13 @@ export function ReviewDrawer() {
     perItem: perItemNaming,
   });
 
+  // Sem classe da IA, o documento só sai daqui com alguém escolhendo a categoria. Antes ele ficava
+  // preso: a confirmação exige classe e a análise não tinha nenhuma para dar.
+  const needsManualCategory = !aiClassId && !manualCategory;
+
   const canConfirm =
     reviewChecked &&
+    !needsManualCategory &&
     finalPreview !== '—' &&
     (!reviewSettings.defaultNamingPolicy ||
       reviewSettings.defaultNamingPolicy !== 'manual_required' ||
@@ -100,10 +111,15 @@ export function ReviewDrawer() {
     setIsConfirming(true);
     try {
       setItemNamingChoice(item.id, perItemNaming);
-      await confirmReview(item.id, perItemNaming);
+      await confirmReview(item.id, perItemNaming, manualCategory?.id);
     } finally {
       setIsConfirming(false);
     }
+  };
+
+  const handlePickCategory = (classId: string, className: string) => {
+    setManualCategory({ id: classId, name: className });
+    setShowCategoryPicker(false);
   };
 
   return (
@@ -154,6 +170,56 @@ export function ReviewDrawer() {
       }
     >
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          {/* Primeiro bloco da tela de propósito: sem categoria não há o que confirmar, e quem
+              revisa um lote precisa resolver isso num clique, não caçando o campo. */}
+          <div
+            className={cn(
+              'mb-3 rounded-lg border px-3 py-2.5',
+              needsManualCategory
+                ? 'border-doqyn-warning-border bg-doqyn-warning-bg'
+                : 'border-doqyn-border-subtle bg-doqyn-card/40',
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
+                  Categoria
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium text-doqyn-text">
+                  {manualCategory?.name ??
+                    (aiClassId ? aiClassName : 'A IA não conseguiu classificar')}
+                </p>
+                <p className="mt-0.5 text-[11px] text-doqyn-muted">
+                  {manualCategory
+                    ? 'Escolhida por você. A IA fica registrada na auditoria.'
+                    : aiClassId
+                      ? 'Sugerida pela análise automática.'
+                      : 'Escolha a categoria para salvar este documento.'}
+                </p>
+              </div>
+
+              {!needsManualCategory && (
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryPicker((current) => !current)}
+                  className="shrink-0 rounded-md px-2 py-1 text-[12px] font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
+                >
+                  {showCategoryPicker ? 'Fechar' : 'Trocar'}
+                </button>
+              )}
+            </div>
+
+            {(needsManualCategory || showCategoryPicker) && (
+              <div className="mt-2.5">
+                <CategoryQuickPicker
+                  selectedClassId={manualCategory?.id}
+                  suggestedClassId={aiClassId}
+                  onSelect={handlePickCategory}
+                />
+              </div>
+            )}
+          </div>
+
           {uploadDestination && (
             <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2">
               <div className="flex items-start gap-2.5">
