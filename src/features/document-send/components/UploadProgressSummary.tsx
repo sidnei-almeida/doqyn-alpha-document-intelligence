@@ -42,8 +42,7 @@ export function UploadProgressSummary({
   const safeTechnicalDetails = technicalDetails
     ? Object.fromEntries(
         Object.entries(technicalDetails).filter(
-          ([key]) =>
-            !/token|secret|password|objectKey|payload|hash/i.test(key),
+          ([key]) => !/token|secret|password|objectKey|payload|hash/i.test(key),
         ),
       )
     : undefined;
@@ -63,7 +62,12 @@ export function UploadProgressSummary({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="eyebrow-text">Progresso do envio</h2>
-          <p className={cn('mt-1 text-sm', isIdle ? 'font-medium text-doqyn-text' : 'text-doqyn-text')}>
+          <p
+            className={cn(
+              'mt-1 text-sm',
+              isIdle ? 'font-medium text-doqyn-text' : 'text-doqyn-text',
+            )}
+          >
             {state.label}
           </p>
         </div>
@@ -156,10 +160,10 @@ export function UploadProgressSummary({
       </div>
 
       {showTechnical && canShowTechnicalDetails && (
-        <div className="mt-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg/40 p-3 text-left text-xs text-doqyn-muted">
+        <div className="bg-doqyn-bg/40 mt-3 rounded-md border border-doqyn-border-subtle p-3 text-left text-xs text-doqyn-muted">
           {technicalHint && <p className="mb-2">{technicalHint}</p>}
           {safeTechnicalDetails && Object.keys(safeTechnicalDetails).length > 0 && (
-            <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-[11px]">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-micro">
               {JSON.stringify(safeTechnicalDetails, null, 2)}
             </pre>
           )}

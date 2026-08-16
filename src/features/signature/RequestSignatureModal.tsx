@@ -60,10 +60,7 @@ export function RequestSignatureModal({
   const documentId = document?.documentId ?? null;
   const usersQuery = useShareableUsersSearch(documentId, search);
 
-  const availableUsers = useMemo(
-    () => usersQuery.data ?? [],
-    [usersQuery.data],
-  );
+  const availableUsers = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
 
   useEffect(() => {
     if (!open) {
@@ -155,7 +152,7 @@ export function RequestSignatureModal({
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
+      className="modal-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="request-signature-modal-title"
@@ -165,13 +162,16 @@ export function RequestSignatureModal({
         <div className="border-b border-doqyn-border-subtle px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="request-signature-modal-title" className="text-base font-semibold text-doqyn-text">
+              <h2
+                id="request-signature-modal-title"
+                className="text-base font-semibold text-doqyn-text"
+              >
                 Solicitar assinatura
               </h2>
-              <p className="mt-1 truncate text-[13px] font-medium text-doqyn-text">
+              <p className="mt-1 truncate text-label text-doqyn-text">
                 {document.currentFileName ?? document.displayName}
               </p>
-              <p className="mt-0.5 text-[12px] text-doqyn-subtle">
+              <p className="mt-0.5 text-caption text-doqyn-subtle">
                 {document.categoryName ?? '—'}
                 {document.versionLabel ? ` · ${document.versionLabel}` : ''}
               </p>
@@ -191,7 +191,7 @@ export function RequestSignatureModal({
               type="button"
               onClick={() => setTab('internal')}
               className={[
-                'rounded-lg px-3 py-1.5 text-[12px] font-medium',
+                'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'internal'
                   ? 'bg-doqyn-accent/12 text-doqyn-accent'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
@@ -204,7 +204,7 @@ export function RequestSignatureModal({
               type="button"
               onClick={() => setTab('external')}
               className={[
-                'rounded-lg px-3 py-1.5 text-[12px] font-medium',
+                'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'external'
                   ? 'bg-doqyn-accent/12 text-doqyn-accent'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
@@ -236,10 +236,12 @@ export function RequestSignatureModal({
                   />
                   <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                     {usersQuery.isLoading ? (
-                      <p className="text-[12px] text-doqyn-subtle">Buscando usuários…</p>
+                      <p className="text-caption text-doqyn-subtle">Buscando usuários…</p>
                     ) : availableUsers.length === 0 ? (
-                      <p className="text-[12px] text-doqyn-subtle">
-                        {search.trim() ? 'Nenhum usuário encontrado.' : 'Digite para buscar usuários ativos.'}
+                      <p className="text-caption text-doqyn-subtle">
+                        {search.trim()
+                          ? 'Nenhum usuário encontrado.'
+                          : 'Digite para buscar usuários ativos.'}
                       </p>
                     ) : (
                       availableUsers.map((user) => {
@@ -256,15 +258,15 @@ export function RequestSignatureModal({
                                 : 'border-transparent hover:border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
                             ].join(' ')}
                           >
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-doqyn-surface-raised text-[11px] font-semibold text-doqyn-muted">
+                            <span className="bg-doqyn-surface-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-micro font-semibold text-doqyn-muted">
                               {(user.name || user.email || '?').slice(0, 2).toUpperCase()}
                             </span>
                             <span className="min-w-0">
-                              <span className="block truncate text-[13px] font-medium text-doqyn-text">
+                              <span className="block truncate text-label text-doqyn-text">
                                 {user.name}
                               </span>
                               {user.email ? (
-                                <span className="block truncate text-[11px] text-doqyn-subtle">
+                                <span className="block truncate text-micro text-doqyn-subtle">
                                   {user.email}
                                 </span>
                               ) : null}
@@ -277,7 +279,7 @@ export function RequestSignatureModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] text-doqyn-subtle">Expira em</label>
+                  <label className="mb-1 block text-caption text-doqyn-subtle">Expira em</label>
                   <Input
                     type="datetime-local"
                     value={internalExpiresAt}
@@ -286,7 +288,9 @@ export function RequestSignatureModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[12px] text-doqyn-subtle">Mensagem (opcional)</label>
+                  <label className="mb-1 block text-caption text-doqyn-subtle">
+                    Mensagem (opcional)
+                  </label>
                   <textarea
                     className="w-full rounded-lg border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm"
                     rows={3}
@@ -337,7 +341,7 @@ export function RequestSignatureModal({
                 aria-label="Organização"
               />
               <div>
-                <label className="mb-1 block text-[12px] text-doqyn-subtle">Expira em</label>
+                <label className="mb-1 block text-caption text-doqyn-subtle">Expira em</label>
                 <Input
                   type="datetime-local"
                   value={externalExpiresAt}
@@ -345,7 +349,9 @@ export function RequestSignatureModal({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[12px] text-doqyn-subtle">Mensagem (opcional)</label>
+                <label className="mb-1 block text-caption text-doqyn-subtle">
+                  Mensagem (opcional)
+                </label>
                 <textarea
                   className="w-full rounded-lg border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm"
                   rows={3}
@@ -353,7 +359,7 @@ export function RequestSignatureModal({
                   onChange={(event) => setExternalMessage(event.target.value)}
                 />
               </div>
-              <label className="flex items-center gap-2 text-[13px] text-doqyn-text">
+              <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
                 <input
                   type="checkbox"
                   checked={externalAllowDownload}

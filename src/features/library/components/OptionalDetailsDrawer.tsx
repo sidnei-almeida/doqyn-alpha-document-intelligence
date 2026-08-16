@@ -60,12 +60,12 @@ function FileDetailsBody({
   const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
   const canTracking = Boolean(doc.permissions?.canViewTracking);
   const canUpdate = Boolean(doc.permissions?.canUpdate);
-  const canTransferOwnership = Boolean(doc.permissions?.canTransferOwnership && onTransferOwnership);
+  const canTransferOwnership = Boolean(
+    doc.permissions?.canTransferOwnership && onTransferOwnership,
+  );
   const hasSignatureActivity =
     doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
-  const canDownloadSignedPdf = Boolean(
-    doc.signatureSummary?.hasSignedPdf && onDownloadSignedPdf,
-  );
+  const canDownloadSignedPdf = Boolean(doc.signatureSummary?.hasSignedPdf && onDownloadSignedPdf);
   const verificationCode = doc.signatureSummary?.verificationCode;
 
   const { data: detail, isLoading: detailLoading } = useDocumentDetail(doc.documentId);
@@ -76,12 +76,16 @@ function FileDetailsBody({
         <div className="flex gap-3 border-b border-doqyn-border-subtle pb-3">
           <div className="relative w-[108px] shrink-0">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome [&_img]:object-contain [&_img]:object-top">
-              <DocumentFileThumbnail document={doc} size="card" className="absolute inset-0 h-full w-full" />
+              <DocumentFileThumbnail
+                document={doc}
+                size="card"
+                className="absolute inset-0 h-full w-full"
+              />
               <DocumentFavoriteBadge document={doc} variant="overlay" />
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <TruncatedText className="text-[13px] font-medium leading-snug text-doqyn-text">
+            <TruncatedText className="text-label leading-snug text-doqyn-text">
               {name}
             </TruncatedText>
             <BadgeGroup className="mt-1.5">
@@ -127,7 +131,12 @@ function FileDetailsBody({
             </Link>
           )}
           {canUpdate && onUpdateDocument && (
-            <Button type="button" size="sm" variant="secondary" onClick={() => onUpdateDocument(doc)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => onUpdateDocument(doc)}
+            >
               <Icon name="upload" size={ICON_SIZE.sm} />
               Atualizar documento
             </Button>
@@ -157,7 +166,7 @@ function FileDetailsBody({
         </dl>
 
         {detailLoading ? (
-          <p className="py-2 text-[11px] text-doqyn-muted">Carregando ficha…</p>
+          <p className="py-2 text-micro text-doqyn-muted">Carregando ficha…</p>
         ) : (
           <div className="py-2">
             <DocumentStandardFicha metadata={detail?.metadata} searchMeta={detail?.searchMeta} />
@@ -165,10 +174,8 @@ function FileDetailsBody({
         )}
 
         <div className="border-t border-doqyn-border-subtle py-3">
-          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-            Assinatura
-          </p>
-          <p className="text-[12px] leading-relaxed text-doqyn-subtle">
+          <p className="mb-2 text-eyebrow uppercase text-doqyn-muted">Assinatura</p>
+          <p className="text-caption leading-relaxed text-doqyn-subtle">
             {signatureDetailSummaryText(doc.signatureSummary)}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -206,7 +213,7 @@ function FileDetailsBody({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col border-t border-doqyn-border-subtle pt-3">
-        <p className="mb-2 shrink-0 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
+        <p className="mb-2 shrink-0 text-eyebrow uppercase text-doqyn-muted">
           Histórico de versões
         </p>
         <DocumentVersionHistoryPanel
@@ -230,15 +237,15 @@ function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
           <Icon name="folder" filled color={accent} size={ICON_SIZE.md} />
         </span>
         <div>
-          <p className="text-[14px] font-medium text-doqyn-text">{folder.name}</p>
+          <p className="text-body font-medium text-doqyn-text">{folder.name}</p>
           {folder.description && (
-            <p className="mt-1 text-[12px] leading-relaxed text-doqyn-muted">
+            <p className="mt-1 text-caption leading-relaxed text-doqyn-muted">
               {folder.description}
             </p>
           )}
         </div>
       </div>
-      <dl className="space-y-2 border-t border-doqyn-border-subtle pt-3 text-[12px]">
+      <dl className="space-y-2 border-t border-doqyn-border-subtle pt-3 text-caption">
         <div className="flex justify-between gap-4">
           <dt className="text-doqyn-subtle">Tipo</dt>
           <dd className="text-doqyn-text">Categoria inteligente</dd>
@@ -246,14 +253,13 @@ function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
         <div className="flex justify-between gap-4">
           <dt className="text-doqyn-subtle">Arquivos</dt>
           <dd className="text-doqyn-text">
-            {folder.documentCount}{' '}
-            {folder.documentCount === 1 ? 'arquivo' : 'arquivos'}
+            {folder.documentCount} {folder.documentCount === 1 ? 'arquivo' : 'arquivos'}
           </dd>
         </div>
       </dl>
       <Link
         to="/rules"
-        className="inline-flex items-center gap-1.5 text-[12px] text-doqyn-muted hover:text-doqyn-text hover:underline"
+        className="inline-flex items-center gap-1.5 text-caption text-doqyn-muted hover:text-doqyn-text hover:underline"
       >
         Ver regras desta categoria
       </Link>

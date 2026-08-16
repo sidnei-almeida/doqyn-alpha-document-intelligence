@@ -87,10 +87,8 @@ export function UploadResultPanel({
   const requiresReview = metadata.analysisStatus === 'requires_review';
   const aiUnavailable = metadata.analysisStatus === 'ai_unavailable';
   const isSaved = Boolean(metadata.savedDocumentId);
-  const showConfirmActions =
-    activeTab === 'resultado' && !isSaved && flowPhase !== 'error';
-  const showAutoBanner =
-    autoCountdown !== null && autoCountdown > 0 && !autoPaused && !isSaved;
+  const showConfirmActions = activeTab === 'resultado' && !isSaved && flowPhase !== 'error';
+  const showAutoBanner = autoCountdown !== null && autoCountdown > 0 && !autoPaused && !isSaved;
   const showNamingSection =
     Boolean(originalFileName && aiSuggestedFileName) &&
     (policyRequiresPerItemChoice(reviewSettings.defaultNamingPolicy) ||
@@ -124,7 +122,7 @@ export function UploadResultPanel({
           <ConfidenceBadge score={metadata.confidenceScore} />
         </div>
 
-        <div className="flex items-center gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5">
+        <div className="bg-doqyn-bg/30 flex items-center gap-3 rounded-lg border border-doqyn-border-subtle px-3 py-2.5">
           <Icon name="description" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-primary" />
           <div className="min-w-0 flex-1">
             <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
@@ -141,7 +139,7 @@ export function UploadResultPanel({
         )}
 
         {showAutoBanner && (
-          <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-4 py-3">
+          <div className="bg-doqyn-bg/40 rounded-lg border border-doqyn-border-subtle px-4 py-3">
             <p className="text-xs font-medium text-doqyn-text">Análise concluída</p>
             <p className="mt-0.5 text-xs text-doqyn-muted">
               Salvando automaticamente em {autoCountdown}s
@@ -200,7 +198,7 @@ export function UploadResultPanel({
       <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
         {activeTab === 'logs' ? (
           <ol
-            className="min-h-0 flex-1 space-y-0 overflow-y-auto px-6 py-4 scrollbar-thin"
+            className="scrollbar-thin min-h-0 flex-1 space-y-0 overflow-y-auto px-6 py-4"
             aria-label="Logs de processamento"
           >
             {logs.map((log, index) => (
@@ -209,11 +207,15 @@ export function UploadResultPanel({
           </ol>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4 scrollbar-thin">
+            <div className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4">
               {aiUnavailable && (
                 <div className="shrink-0 rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <Icon name="warning" size={ICON_SIZE.xs} className="mt-0.5 shrink-0 text-orange-600" />
+                    <Icon
+                      name="warning"
+                      size={ICON_SIZE.xs}
+                      className="mt-0.5 shrink-0 text-orange-600"
+                    />
                     <div className="space-y-1 text-xs">
                       <p className="font-medium text-doqyn-text">Análise automática indisponível</p>
                       <p className="text-doqyn-muted">
@@ -228,7 +230,11 @@ export function UploadResultPanel({
               {requiresReview && (
                 <div className="shrink-0 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <Icon name="warning" size={ICON_SIZE.xs} className="mt-0.5 shrink-0 text-amber-600" />
+                    <Icon
+                      name="warning"
+                      size={ICON_SIZE.xs}
+                      className="mt-0.5 shrink-0 text-amber-600"
+                    />
                     <div className="space-y-1 text-xs">
                       <p className="font-medium text-doqyn-text">Revisão necessária</p>
                       <p className="text-doqyn-muted">
@@ -282,7 +288,7 @@ export function UploadResultPanel({
                       <div
                         key={field.label}
                         className={cn(
-                          'flex items-start justify-between gap-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-4 py-2.5',
+                          'bg-doqyn-bg/40 flex items-start justify-between gap-4 rounded-lg border border-doqyn-border-subtle px-4 py-2.5',
                           FULL_WIDTH_FIELDS.has(field.label) && 'lg:col-span-2',
                         )}
                       >
@@ -320,7 +326,7 @@ export function UploadResultPanel({
                           {metadata.classificationEvidence.map((item, index) => (
                             <div
                               key={`${item.snippet}-${index}`}
-                              className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/50 px-4 py-3"
+                              className="bg-doqyn-bg/50 rounded-lg border border-doqyn-border-subtle px-4 py-3"
                             >
                               <p className="text-xs leading-relaxed text-doqyn-muted">
                                 {item.pageNumber ? (
@@ -330,7 +336,7 @@ export function UploadResultPanel({
                                 ) : (
                                   <span className="font-medium text-doqyn-text">Trecho</span>
                                 )}
-                                <span className="mt-1 block line-clamp-4">
+                                <span className="mt-1 line-clamp-4 block">
                                   &ldquo;{item.snippet}&rdquo;
                                 </span>
                               </p>
@@ -352,12 +358,12 @@ export function UploadResultPanel({
                           return (
                             <div
                               key={field.key}
-                              className="flex flex-col rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 p-4"
+                              className="bg-doqyn-bg/30 flex flex-col rounded-lg border border-doqyn-border-subtle p-4"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <p className="text-xs font-medium text-doqyn-text">{field.label}</p>
                                 {field.confidence !== undefined && (
-                                  <span className="shrink-0 rounded-md border border-doqyn-border bg-doqyn-surface px-1.5 py-0.5 text-[10px] text-doqyn-muted">
+                                  <span className="shrink-0 rounded-md border border-doqyn-border bg-doqyn-surface px-1.5 py-0.5 text-micro text-doqyn-muted">
                                     {Math.round(field.confidence * 100)}%
                                   </span>
                                 )}
@@ -366,8 +372,8 @@ export function UploadResultPanel({
                                 {field.value}
                               </p>
                               {field.evidence && (
-                                <div className="mt-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2">
-                                  <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
+                                <div className="bg-doqyn-bg/40 mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2">
+                                  <p className="text-eyebrow uppercase text-doqyn-muted">
                                     Evidência
                                     {field.evidence.pageNumber
                                       ? ` · pág. ${field.evidence.pageNumber}`
@@ -385,7 +391,7 @@ export function UploadResultPanel({
                                     <button
                                       type="button"
                                       onClick={() => toggleEvidence(evidenceKey)}
-                                      className="mt-1 text-[10px] text-doqyn-primary hover:underline"
+                                      className="mt-1 text-micro text-doqyn-primary hover:underline"
                                     >
                                       {isExpanded ? 'Ver menos' : 'Ver mais'}
                                     </button>
@@ -415,14 +421,12 @@ export function UploadResultPanel({
 
             <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-sticky-footer">
               {showConfirmActions && requiresReview && (
-                <label className="mb-3 flex items-start gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5 text-xs text-doqyn-muted">
+                <label className="bg-doqyn-bg/30 mb-3 flex items-start gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2.5 text-xs text-doqyn-muted">
                   <input
                     type="checkbox"
                     className="mt-0.5"
                     checked={manualReviewChecked}
-                    onChange={(event) =>
-                      onManualReviewCheckedChange?.(event.target.checked)
-                    }
+                    onChange={(event) => onManualReviewCheckedChange?.(event.target.checked)}
                   />
                   <span>Revisei os campos e confirmo o salvamento manual.</span>
                 </label>

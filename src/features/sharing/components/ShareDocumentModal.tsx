@@ -8,8 +8,15 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { isCompleteWhatsapp, WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import type { DocumentListItem } from '@/types/document-library';
-import { useDocumentShares, useShareableUsersSearch, useShareDocumentMutations } from '../hooks/useShareDocumentMutations';
-import { useDocumentExternalShares, useExternalShareMutations } from '../hooks/useExternalShareMutations';
+import {
+  useDocumentShares,
+  useShareableUsersSearch,
+  useShareDocumentMutations,
+} from '../hooks/useShareDocumentMutations';
+import {
+  useDocumentExternalShares,
+  useExternalShareMutations,
+} from '../hooks/useExternalShareMutations';
 import type { ShareableUser } from '../api/shareApi';
 import type { ExternalDocumentShareEntry } from '../api/externalShareApi';
 
@@ -77,7 +84,7 @@ function ExternalShareActionBadge({
         onClick={onClick}
         data-testid={testId}
         className={[
-          'rounded-full border px-2 py-0.5 text-[10px] font-medium leading-none transition-colors',
+          'rounded-full border px-2 py-0.5 text-micro font-medium leading-none transition-colors',
           'disabled:cursor-not-allowed disabled:opacity-50',
           toneClass,
         ].join(' ')}
@@ -127,8 +134,8 @@ function ExternalShareListItem({
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-[13px] font-medium text-doqyn-text">{share.recipientEmail}</p>
-        <p className="text-[11px] text-doqyn-subtle">
+        <p className="truncate text-label text-doqyn-text">{share.recipientEmail}</p>
+        <p className="text-micro text-doqyn-subtle">
           {share.recipientOrganizationName || 'Sem organização'}
           {' · '}
           {formatStatusLabel(share.status)}
@@ -136,14 +143,14 @@ function ExternalShareListItem({
             ? ` · expira ${new Date(share.expiresAt).toLocaleDateString('pt-BR')}`
             : ''}
         </p>
-        <p className="text-[11px] text-doqyn-subtle">
+        <p className="text-micro text-doqyn-subtle">
           {share.permissions.canDownload ? 'Visualizar e baixar' : 'Somente visualizar'}
           {share.lastAccessAt
             ? ` · último acesso ${new Date(share.lastAccessAt).toLocaleString('pt-BR')}`
             : ''}
         </p>
         {share.recipientPhoneMasked ? (
-          <p className="text-[11px] text-doqyn-subtle">{share.recipientPhoneMasked}</p>
+          <p className="text-micro text-doqyn-subtle">{share.recipientPhoneMasked}</p>
         ) : null}
       </div>
     </div>
@@ -270,7 +277,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
+      className="modal-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-document-modal-title"
@@ -280,13 +287,16 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
         <div className="border-b border-doqyn-border-subtle px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="share-document-modal-title" className="text-base font-semibold text-doqyn-text">
+              <h2
+                id="share-document-modal-title"
+                className="text-base font-semibold text-doqyn-text"
+              >
                 Compartilhar documento
               </h2>
-              <p className="mt-1 truncate text-[13px] font-medium text-doqyn-text">
+              <p className="mt-1 truncate text-label text-doqyn-text">
                 {document.currentFileName ?? document.displayName}
               </p>
-              <p className="mt-0.5 text-[12px] text-doqyn-subtle">
+              <p className="mt-0.5 text-caption text-doqyn-subtle">
                 {document.categoryName ?? '—'}
                 {document.versionLabel ? ` · ${document.versionLabel}` : ''}
               </p>
@@ -306,7 +316,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               type="button"
               onClick={() => setTab('internal')}
               className={[
-                'rounded-lg px-3 py-1.5 text-[12px] font-medium',
+                'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'internal'
                   ? 'bg-doqyn-accent/12 text-doqyn-accent'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
@@ -319,7 +329,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               type="button"
               onClick={() => setTab('external')}
               className={[
-                'rounded-lg px-3 py-1.5 text-[12px] font-medium',
+                'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'external'
                   ? 'bg-doqyn-accent/12 text-doqyn-accent'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
@@ -343,10 +353,12 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                 />
                 <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                   {usersQuery.isLoading ? (
-                    <p className="text-[12px] text-doqyn-subtle">Buscando usuários…</p>
+                    <p className="text-caption text-doqyn-subtle">Buscando usuários…</p>
                   ) : availableUsers.length === 0 ? (
-                    <p className="text-[12px] text-doqyn-subtle">
-                      {search.trim() ? 'Nenhum usuário encontrado.' : 'Digite para buscar usuários ativos.'}
+                    <p className="text-caption text-doqyn-subtle">
+                      {search.trim()
+                        ? 'Nenhum usuário encontrado.'
+                        : 'Digite para buscar usuários ativos.'}
                     </p>
                   ) : (
                     availableUsers.map((user) => {
@@ -363,15 +375,15 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                               : 'border-transparent hover:border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
                           ].join(' ')}
                         >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-doqyn-surface-raised text-[11px] font-semibold text-doqyn-muted">
+                          <span className="bg-doqyn-surface-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-micro font-semibold text-doqyn-muted">
                             {(user.name || user.email || '?').slice(0, 2).toUpperCase()}
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-[13px] font-medium text-doqyn-text">
+                            <span className="block truncate text-label text-doqyn-text">
                               {user.name}
                             </span>
                             {user.email ? (
-                              <span className="block truncate text-[11px] text-doqyn-subtle">
+                              <span className="block truncate text-micro text-doqyn-subtle">
                                 {user.email}
                               </span>
                             ) : null}
@@ -384,7 +396,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               </div>
 
               {selectedUser && (
-                <label className="flex items-center gap-2 text-[13px] text-doqyn-text">
+                <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
                   <input
                     type="checkbox"
                     checked={allowDownload}
@@ -396,13 +408,15 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               )}
 
               <div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
+                <p className="mb-2 text-eyebrow uppercase text-doqyn-subtle">
                   Pessoas com acesso compartilhado
                 </p>
                 {sharesQuery.isLoading ? (
-                  <p className="text-[12px] text-doqyn-subtle">Carregando…</p>
+                  <p className="text-caption text-doqyn-subtle">Carregando…</p>
                 ) : (sharesQuery.data?.shares.length ?? 0) === 0 ? (
-                  <p className="text-[12px] text-doqyn-subtle">Ninguém com acesso compartilhado ainda.</p>
+                  <p className="text-caption text-doqyn-subtle">
+                    Ninguém com acesso compartilhado ainda.
+                  </p>
                 ) : (
                   <div className="space-y-1">
                     {sharesQuery.data?.shares.map((share) => (
@@ -411,11 +425,13 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                         className="flex items-center justify-between gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-[13px] font-medium text-doqyn-text">
+                          <p className="truncate text-label text-doqyn-text">
                             {share.sharedWithName}
                           </p>
-                          <p className="text-[11px] text-doqyn-subtle">
-                            {share.permissions.canDownload ? 'Visualizar e baixar' : 'Somente visualizar'}
+                          <p className="text-micro text-doqyn-subtle">
+                            {share.permissions.canDownload
+                              ? 'Visualizar e baixar'
+                              : 'Somente visualizar'}
                           </p>
                         </div>
                         <Button
@@ -435,7 +451,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
             </>
           ) : (
             <>
-              <p className="text-[12px] text-doqyn-subtle">
+              <p className="text-caption text-doqyn-subtle">
                 Convidados externos terão acesso apenas a este documento. O link pode ser revogado a
                 qualquer momento.
               </p>
@@ -479,17 +495,17 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                   placeholder="Empresa / organização (opcional)"
                   aria-label="Organização do destinatário"
                 />
-                <label className="block text-[12px] text-doqyn-subtle">
+                <label className="block text-caption text-doqyn-subtle">
                   Expira em
                   <input
                     type="datetime-local"
                     value={externalExpiresAt}
                     onChange={(event) => setExternalExpiresAt(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-doqyn-border bg-doqyn-surface px-3 py-2 text-[13px] text-doqyn-text"
+                    className="mt-1 w-full rounded-lg border border-doqyn-border bg-doqyn-surface px-3 py-2 text-label font-normal text-doqyn-text"
                     data-testid="external-share-expires-at"
                   />
                 </label>
-                <label className="flex items-center gap-2 text-[13px] text-doqyn-text">
+                <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
                   <input
                     type="checkbox"
                     checked={externalAllowDownload}
@@ -510,13 +526,13 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               ) : null}
 
               <div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
+                <p className="mb-2 text-eyebrow uppercase text-doqyn-subtle">
                   Pessoas externas com acesso
                 </p>
                 {externalSharesQuery.isLoading ? (
-                  <p className="text-[12px] text-doqyn-subtle">Carregando…</p>
+                  <p className="text-caption text-doqyn-subtle">Carregando…</p>
                 ) : (externalSharesQuery.data?.shares.length ?? 0) === 0 ? (
-                  <p className="text-[12px] text-doqyn-subtle">Nenhum convidado externo ainda.</p>
+                  <p className="text-caption text-doqyn-subtle">Nenhum convidado externo ainda.</p>
                 ) : (
                   <div className="space-y-1">
                     {externalSharesQuery.data?.shares.map((share) => (
@@ -540,11 +556,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
             Cancelar
           </Button>
           {tab === 'internal' ? (
-            <Button
-              type="button"
-              onClick={handleShare}
-              disabled={!selectedUser || isSubmitting}
-            >
+            <Button type="button" onClick={handleShare} disabled={!selectedUser || isSubmitting}>
               Compartilhar
             </Button>
           ) : (

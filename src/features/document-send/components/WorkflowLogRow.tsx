@@ -55,32 +55,24 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
   const hasDebugDetails = Object.keys(debugDetails).length > 0;
 
   return (
-    <li
-      className={cn(
-        'rounded-md border text-xs',
-        LEVEL_STYLES[event.level],
-        compact && 'py-1',
-      )}
-    >
+    <li className={cn('rounded-md border text-xs', LEVEL_STYLES[event.level], compact && 'py-1')}>
       <div
         className={cn(
           'grid w-full items-start gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[72px_minmax(120px,0.9fr)_minmax(0,2fr)_auto]',
           compact && 'py-1.5',
         )}
       >
-        <span className="font-mono text-[10px] opacity-70 sm:pt-0.5">{event.timestamp}</span>
+        <span className="font-mono text-micro opacity-70 sm:pt-0.5">{event.timestamp}</span>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="rounded bg-doqyn-bg/50 px-1.5 py-0.5 text-[10px] text-doqyn-text">
+          <span className="bg-doqyn-bg/50 rounded px-1.5 py-0.5 text-micro text-doqyn-text">
             {WORKFLOW_STAGE_LABELS[event.stage]}
           </span>
           {event.level !== 'info' && (
-            <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">
-              {levelLabel(event.level)}
-            </span>
+            <span className="text-eyebrow uppercase opacity-80">{levelLabel(event.level)}</span>
           )}
           {errorType && (
-            <span className="rounded bg-doqyn-bg/50 px-1.5 py-0.5 text-[10px] text-doqyn-text">
+            <span className="bg-doqyn-bg/50 rounded px-1.5 py-0.5 text-micro text-doqyn-text">
               {errorType}
             </span>
           )}
@@ -88,7 +80,9 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
 
         <div className="min-w-0 space-y-0.5">
           {event.fileName && (
-            <TruncatedText as="p" className="font-medium text-doqyn-text">{event.fileName}</TruncatedText>
+            <TruncatedText as="p" className="font-medium text-doqyn-text">
+              {event.fileName}
+            </TruncatedText>
           )}
           <p className={cn('break-words text-doqyn-text', event.level === 'debug' && 'opacity-80')}>
             {displayMessage}
@@ -110,24 +104,22 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
             <p>
               <Link
                 to={actionHref}
-                className="text-[11px] font-medium text-doqyn-primary underline-offset-2 hover:underline"
+                className="text-micro font-medium text-doqyn-primary underline-offset-2 hover:underline"
               >
                 {actionLabel}
               </Link>
             </p>
           )}
-          {devHint && showDebug && (
-            <p className="text-[10px] italic text-doqyn-muted">{devHint}</p>
-          )}
+          {devHint && showDebug && <p className="text-micro italic text-doqyn-muted">{devHint}</p>}
         </div>
 
         <div className="flex items-start justify-end gap-2 sm:pt-0.5">
-          {durationLabel && <span className="text-[10px] opacity-70">{durationLabel}</span>}
+          {durationLabel && <span className="text-micro opacity-70">{durationLabel}</span>}
           {hasDebugDetails && (
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
-              className="inline-flex items-center gap-0.5 text-[10px] text-doqyn-muted hover:text-doqyn-text"
+              className="inline-flex items-center gap-0.5 text-micro text-doqyn-muted hover:text-doqyn-text"
             >
               {expanded ? (
                 <Icon name="expand_more" size={12} />
@@ -141,7 +133,7 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
       </div>
 
       {showDebug && (code || requestId || endpoint) && (
-        <div className="border-t border-doqyn-border-subtle/60 px-3 py-1.5 font-mono text-[10px] text-doqyn-muted">
+        <div className="border-doqyn-border-subtle/60 border-t px-3 py-1.5 font-mono text-micro text-doqyn-muted">
           {code && <p>código: {code}</p>}
           {endpoint && <p>endpoint: {endpoint}</p>}
           {requestId && <p>requestId: {requestId}</p>}
@@ -149,7 +141,7 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
       )}
 
       {expanded && hasDebugDetails && (
-        <div className="border-t border-doqyn-border-subtle/60 px-3 py-2 font-mono text-[10px] text-doqyn-muted">
+        <div className="border-doqyn-border-subtle/60 border-t px-3 py-2 font-mono text-micro text-doqyn-muted">
           {Object.entries(debugDetails).map(([key, value]) => (
             <p key={key}>
               {key}: {value}

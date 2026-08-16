@@ -135,6 +135,10 @@ export default {
           'var(--text-caption)',
           { lineHeight: 'var(--leading-caption)', fontWeight: 'var(--weight-caption)' },
         ],
+        micro: [
+          'var(--text-micro)',
+          { lineHeight: 'var(--leading-micro)', fontWeight: 'var(--weight-micro)' },
+        ],
         xs: ['var(--text-caption)', { lineHeight: 'var(--leading-caption)' }],
         sm: ['var(--text-body)', { lineHeight: 'var(--leading-body)' }],
         base: ['var(--text-body)', { lineHeight: 'var(--leading-body)' }],

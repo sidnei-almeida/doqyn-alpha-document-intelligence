@@ -82,12 +82,12 @@ export function UploadDropzoneArea({
       onDrop={handleDrop}
       className={cn(
         'flex w-full max-w-xl cursor-pointer flex-col items-center justify-center',
-        'min-h-[168px] max-h-[220px] rounded-lg border border-dashed px-6 py-8',
+        'max-h-[220px] min-h-[168px] rounded-lg border border-dashed px-6 py-8',
         'transition-colors duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-surface',
         disabled && 'cursor-not-allowed opacity-60',
         isDragging
-          ? 'border-doqyn-accent-active bg-doqyn-accent-active-bg/40'
+          ? 'bg-doqyn-accent-active-bg/40 border-doqyn-accent-active'
           : 'border-doqyn-border-strong/55 bg-doqyn-bg/35 hover:border-doqyn-accent-active/45 hover:bg-doqyn-surface-hover',
         className,
       )}
@@ -117,13 +117,13 @@ export function UploadDropzoneArea({
         Arraste PDFs ou imagens (JPG, PNG, WebP) aqui ou clique para selecionar
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <Badge variant="neutral" dot={false} className="text-[11px]">
+        <Badge variant="neutral" dot={false} className="text-micro">
           PDF · JPG · PNG · WebP
         </Badge>
-        <Badge variant="neutral" dot={false} className="text-[11px]">
+        <Badge variant="neutral" dot={false} className="text-micro">
           até {MAX_FILE_SIZE_MB} MB
         </Badge>
-        <Badge variant="neutral" dot={false} className="text-[11px]">
+        <Badge variant="neutral" dot={false} className="text-micro">
           máx. {MAX_FILES_PER_BATCH} por lote
         </Badge>
       </div>

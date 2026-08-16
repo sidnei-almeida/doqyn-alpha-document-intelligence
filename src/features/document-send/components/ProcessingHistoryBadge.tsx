@@ -3,28 +3,26 @@ import type { HistoryStatus } from '../types';
 
 type DisplayStatus = 'completed' | 'processing' | 'error' | 'review';
 
-const DISPLAY_CONFIG: Record<
-  DisplayStatus,
-  { label: string; className: string; pulse?: boolean }
-> = {
-  completed: {
-    label: 'Concluído',
-    className: 'border-doqyn-success-border bg-doqyn-success-bg text-doqyn-success',
-  },
-  processing: {
-    label: 'Processando',
-    className: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
-    pulse: true,
-  },
-  error: {
-    label: 'Erro',
-    className: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
-  },
-  review: {
-    label: 'Requer revisão',
-    className: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
-  },
-};
+const DISPLAY_CONFIG: Record<DisplayStatus, { label: string; className: string; pulse?: boolean }> =
+  {
+    completed: {
+      label: 'Concluído',
+      className: 'border-doqyn-success-border bg-doqyn-success-bg text-doqyn-success',
+    },
+    processing: {
+      label: 'Processando',
+      className: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
+      pulse: true,
+    },
+    error: {
+      label: 'Erro',
+      className: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
+    },
+    review: {
+      label: 'Requer revisão',
+      className: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
+    },
+  };
 
 function mapHistoryStatus(status: HistoryStatus): DisplayStatus {
   if (status === 'analyzing') return 'processing';
@@ -45,7 +43,7 @@ export function ProcessingHistoryBadge({ status, className }: ProcessingHistoryB
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[10px] font-medium',
+        'inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-micro font-medium',
         config.className,
         config.pulse && 'animate-pulse',
         className,

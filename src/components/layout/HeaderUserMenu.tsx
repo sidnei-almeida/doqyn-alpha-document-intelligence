@@ -37,18 +37,13 @@ export function HeaderUserMenu() {
         aria-haspopup="menu"
         aria-label="Menu do usuário"
       >
-        <UserAvatar
-          name={displayName}
-          email={user?.email}
-          avatarUrl={user?.avatarUrl}
-          size="md"
-        />
+        <UserAvatar name={displayName} email={user?.email} avatarUrl={user?.avatarUrl} size="md" />
         <span className="hidden min-w-0 text-left md:block">
-          <span className="block max-w-[140px] truncate text-[13px] font-medium leading-tight text-doqyn-text lg:max-w-[180px]">
+          <span className="block max-w-[140px] truncate text-label leading-tight text-doqyn-text lg:max-w-[180px]">
             {displayName}
           </span>
           {(primaryRole || orgLabel) && (
-            <span className="block max-w-[140px] truncate text-[11px] leading-tight text-doqyn-muted lg:max-w-[180px]">
+            <span className="block max-w-[140px] truncate text-micro leading-tight text-doqyn-muted lg:max-w-[180px]">
               {primaryRole ? getPlatformRoleLabel(primaryRole) : orgLabel}
             </span>
           )}
@@ -74,19 +69,17 @@ export function HeaderUserMenu() {
               size="md"
             />
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-doqyn-text">{displayName}</p>
-              {user?.email && (
-                <p className="truncate text-[11px] text-doqyn-muted">{user.email}</p>
-              )}
+              <p className="truncate text-label text-doqyn-text">{displayName}</p>
+              {user?.email && <p className="truncate text-micro text-doqyn-muted">{user.email}</p>}
             </div>
           </div>
-          {orgLabel && <p className="mt-1 truncate text-[11px] text-doqyn-subtle">{orgLabel}</p>}
+          {orgLabel && <p className="mt-1 truncate text-micro text-doqyn-subtle">{orgLabel}</p>}
         </div>
 
         <Link
           to="/settings"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-doqyn-text hover:bg-doqyn-surface-hover"
+          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-text hover:bg-doqyn-surface-hover"
           onClick={() => setOpen(false)}
         >
           <Icon name="settings" size={ICON_SIZE.md} />
@@ -94,7 +87,7 @@ export function HeaderUserMenu() {
         </Link>
 
         <div className="flex items-center justify-between gap-2 px-3 py-2">
-          <span className="text-[13px] text-doqyn-text">Tema</span>
+          <span className="text-label font-normal text-doqyn-text">Tema</span>
           <ThemeToggle />
         </div>
 
@@ -103,7 +96,7 @@ export function HeaderUserMenu() {
         <button
           type="button"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
           onClick={() => {
             setOpen(false);
             logout();

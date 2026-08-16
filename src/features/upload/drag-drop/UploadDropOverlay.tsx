@@ -10,7 +10,7 @@ export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center bg-doqyn-bg/80 backdrop-blur-sm"
+      className="bg-doqyn-bg/80 pointer-events-none fixed inset-0 z-[90] flex items-center justify-center backdrop-blur-sm"
       role="presentation"
       data-testid="upload-drop-overlay"
     >
@@ -19,10 +19,10 @@ export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
           <Icon name="cloud_upload" size={28} />
         </span>
         <div>
-          <p className="text-[17px] font-medium tracking-tight text-doqyn-text">
+          <p className="text-h2 font-medium tracking-tight text-doqyn-text">
             Solte para enviar ao DOQYN
           </p>
-          <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-doqyn-muted">
+          <p className="mt-2 max-w-sm text-label font-normal leading-relaxed text-doqyn-muted">
             A IA analisará, classificará e preparará o documento para revisão antes de salvá-lo na
             Biblioteca.
           </p>

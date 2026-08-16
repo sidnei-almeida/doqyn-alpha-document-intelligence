@@ -50,7 +50,7 @@ function CollapsibleSettingsSection({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-doqyn-text hover:bg-doqyn-hover/50"
+        className="hover:bg-doqyn-hover/50 flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-doqyn-text"
       >
         {title}
         <Icon
@@ -435,7 +435,7 @@ export function ReviewWorkflowSettingsPanel({
   }, [open, variant]);
 
   const dropdownBody = (
-    <div className="max-h-[min(70vh,28rem)] overflow-y-auto scrollbar-thin">
+    <div className="scrollbar-thin max-h-[min(70vh,28rem)] overflow-y-auto">
       <CollapsibleSettingsSection title="Revisão automática">
         <AutoReviewControls settings={settings} patch={patch} adjustDelay={adjustDelay} />
       </CollapsibleSettingsSection>
@@ -452,10 +452,10 @@ export function ReviewWorkflowSettingsPanel({
         <BatchControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
       <CollapsibleSettingsSection title="Segurança">
-        <p className="text-[11px] leading-relaxed text-doqyn-muted">
+        <p className="text-micro leading-relaxed text-doqyn-muted">
           Nomes são sanitizados (sem barras ou path traversal), limitados a ~180 caracteres e
-          forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome sugerido quando
-          a proteção está ativa.
+          forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome sugerido quando a
+          proteção está ativa.
         </p>
       </CollapsibleSettingsSection>
     </div>
@@ -483,12 +483,7 @@ export function ReviewWorkflowSettingsPanel({
           description="Controle o que a IA pode sugerir automaticamente."
           className="settings-field-group--fill"
         >
-          <AiSuggestionControls
-            settings={settings}
-            patch={patch}
-            lockedFuture
-            size="comfortable"
-          />
+          <AiSuggestionControls settings={settings} patch={patch} lockedFuture size="comfortable" />
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
@@ -538,7 +533,7 @@ export function ReviewWorkflowSettingsPanel({
         disabled={disabled}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'inline-flex max-w-full items-center gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-xs font-medium text-doqyn-text transition-colors hover:bg-doqyn-hover/50',
+          'bg-doqyn-bg/40 hover:bg-doqyn-hover/50 inline-flex max-w-full items-center gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2 text-xs font-medium text-doqyn-text transition-colors',
           disabled && 'cursor-not-allowed opacity-50',
           open && 'border-doqyn-primary/40 bg-doqyn-primary/10',
         )}
@@ -548,7 +543,7 @@ export function ReviewWorkflowSettingsPanel({
         <Icon name="tune" size={14} className="shrink-0 text-doqyn-primary" />
         <span>Configurações da revisão</span>
         {summary && (
-          <Badge variant="default" className="text-[10px]">
+          <Badge variant="default" className="text-micro">
             {summary}
           </Badge>
         )}
@@ -567,7 +562,7 @@ export function ReviewWorkflowSettingsPanel({
         >
           <div className="border-b border-doqyn-border-subtle px-4 py-3">
             <p className="text-sm font-semibold text-doqyn-text">Configurações da revisão</p>
-            <p className="mt-0.5 text-[11px] text-doqyn-muted">
+            <p className="mt-0.5 text-micro text-doqyn-muted">
               Controle revisão automática, nomeação e comportamento em lote nesta sessão.
             </p>
           </div>

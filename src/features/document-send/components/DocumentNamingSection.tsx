@@ -73,11 +73,16 @@ export function DocumentNamingSection({
   };
 
   return (
-    <div className={cn('space-y-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 p-4', className)}>
+    <div
+      className={cn(
+        'bg-doqyn-bg/30 space-y-3 rounded-lg border border-doqyn-border-subtle p-4',
+        className,
+      )}
+    >
       <div>
         <p className="text-xs font-medium text-doqyn-text">Nome do arquivo salvo</p>
         {!settings.aiRenameEnabled && (
-          <p className="mt-1 text-[11px] text-doqyn-muted">
+          <p className="mt-1 text-micro text-doqyn-muted">
             Sugestão da IA (opcional):{' '}
             <span className="font-mono text-doqyn-text">{aiSuggestedFileName || '—'}</span>
           </p>
@@ -119,8 +124,8 @@ export function DocumentNamingSection({
         />
       )}
 
-      <div className="rounded-md border border-doqyn-border-subtle bg-doqyn-bg/50 px-3 py-2">
-        <p className="text-[10px] uppercase tracking-wide text-doqyn-muted">Preview do nome final</p>
+      <div className="bg-doqyn-bg/50 rounded-md border border-doqyn-border-subtle px-3 py-2">
+        <p className="text-eyebrow uppercase text-doqyn-muted">Preview do nome final</p>
         <p className="mt-1 break-all font-mono text-xs text-doqyn-text">{finalPreview}</p>
       </div>
     </div>

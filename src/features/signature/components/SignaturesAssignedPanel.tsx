@@ -49,7 +49,10 @@ function statusVariant(status: string): 'pending' | 'success' | 'danger' | 'warn
   }
 }
 
-function filterItems(items: AssignedSignatureRequestItem[], query: string): AssignedSignatureRequestItem[] {
+function filterItems(
+  items: AssignedSignatureRequestItem[],
+  query: string,
+): AssignedSignatureRequestItem[] {
   const q = query.trim().toLowerCase();
   if (!q) return items;
   return items.filter((item) => {
@@ -82,7 +85,10 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
 
   if (isError) {
     return (
-      <p className="text-[13px] text-doqyn-danger" data-testid="signatures-assigned-error">
+      <p
+        className="text-label font-normal text-doqyn-danger"
+        data-testid="signatures-assigned-error"
+      >
         Não foi possível carregar as assinaturas pendentes.
       </p>
     );
@@ -95,8 +101,10 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
         data-testid="signatures-assigned-empty"
       >
         <Icon name="draw" size={ICON_SIZE.md} className="text-doqyn-muted" />
-        <p className="text-sm font-medium text-doqyn-text">Nenhum documento pendente de assinatura.</p>
-        <p className="max-w-sm text-[13px] text-doqyn-subtle">
+        <p className="text-sm font-medium text-doqyn-text">
+          Nenhum documento pendente de assinatura.
+        </p>
+        <p className="max-w-sm text-label font-normal text-doqyn-subtle">
           Quando alguém solicitar sua assinatura em um documento, ele aparecerá aqui.
         </p>
       </div>
@@ -112,23 +120,27 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
           data-testid={`signature-assigned-item-${item.signatureRequestId}`}
         >
           <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-doqyn-text">{item.documentName}</p>
-            <p className="mt-0.5 text-[12px] text-doqyn-subtle">
+            <p className="truncate text-body font-medium text-doqyn-text">{item.documentName}</p>
+            <p className="mt-0.5 text-caption text-doqyn-subtle">
               Solicitado por {item.requestedBy}
               {item.versionLabel ? ` · v${item.versionLabel}` : ''}
             </p>
-            <p className="text-[11px] text-doqyn-muted">
+            <p className="text-micro text-doqyn-muted">
               {formatDate(item.requestedAt)}
               {item.expiresAt ? ` · expira ${formatDate(item.expiresAt)}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Badge variant={statusVariant(item.signerStatus)}>{statusLabel(item.signerStatus)}</Badge>
+            <Badge variant={statusVariant(item.signerStatus)}>
+              {statusLabel(item.signerStatus)}
+            </Badge>
             {item.canSign ? (
               <Button
                 type="button"
                 size="sm"
-                onClick={() => navigate(`/assinaturas/${encodeURIComponent(item.signatureRequestId)}`)}
+                onClick={() =>
+                  navigate(`/assinaturas/${encodeURIComponent(item.signatureRequestId)}`)
+                }
                 data-testid={`signature-assigned-open-${item.signatureRequestId}`}
               >
                 Abrir e assinar
