@@ -328,6 +328,23 @@ export function LibraryPage() {
     [openUpdateVersionDrawer],
   );
 
+  // Abrir um documento específico por link — é como o Tracking devolve o usuário ao arquivo que
+  // ele estava investigando, sem obrigá-lo a procurar o nome na Biblioteca.
+  useEffect(() => {
+    const previewId = searchParams.get('preview')?.trim();
+    if (!previewId) return;
+
+    setViewer({ documentId: previewId, mode: 'preview' });
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params);
+        next.delete('preview');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     const fromUrl = searchParams.get('updateVersion')?.trim();
     if (fromUrl) {
