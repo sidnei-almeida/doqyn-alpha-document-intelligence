@@ -153,6 +153,13 @@ export const confirmAnalysisSchema = z.object({
     }),
   ),
   manualReviewConfirmed: z.boolean().optional().default(false),
+  /**
+   * Categoria escolhida à mão por quem está revisando.
+   *
+   * É o resgate do documento que a IA não conseguiu classificar: sem isto ele ficava parado para
+   * sempre, porque a confirmação exige uma classe e a análise não tinha nenhuma para dar.
+   */
+  manualClassId: optionalName,
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
@@ -197,14 +204,18 @@ export async function confirmAnalysisPersistence(input: {
       mimeType: data.mimeType,
     }) ?? 'application/pdf';
 
+  // A escolha humana vence a da IA: quem revisou viu o documento.
+  const manualClassId = data.manualClassId?.trim() || undefined;
   const classId = requireConfirmClassification({
-    classId: data.classification.classId,
-    requiresReview: data.classification.requiresReview,
+    classId: manualClassId ?? data.classification.classId,
+    // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
+    // revisão continua valendo.
+    requiresReview: manualClassId ? false : data.classification.requiresReview,
     extractionRequiresReview: data.extraction.requiresReview,
     manualReviewConfirmed: data.manualReviewConfirmed,
   });
-  const needsReview =
-    data.classification.requiresReview || data.extraction.requiresReview;
+  const classificationRequiresReview = manualClassId ? false : data.classification.requiresReview;
+  const needsReview = classificationRequiresReview || data.extraction.requiresReview;
 
   const namingModeResolved = (data.namingMode ?? 'ai_suggested') as NamingMode;
   const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
@@ -424,6 +435,17 @@ export async function confirmAnalysisPersistence(input: {
         shareGroupIds: legacyPermissions.share,
       },
       searchMeta,
+      // Rastro de quem decidiu a categoria. A IA pode ter sugerido outra coisa (ou nada), e isso
+      // precisa sobreviver para auditoria e para a próxima vez que alguém treinar as regras.
+      classificationSource: manualClassId ? ('manual' as const) : ('ai' as const),
+      aiSuggestedClassId: data.classification.classId ?? null,
+      ...(manualClassId
+        ? {
+            manualClassificationOverride: true,
+            manualClassificationUpdatedAt: now,
+            manualClassificationUpdatedBy: input.user.id,
+          }
+        : {}),
       ownerUserId: ownershipFields.ownerUserId,
       ownerName: ownershipFields.ownerName,
       createdBy: ownershipFields.createdBy,
@@ -460,10 +482,15 @@ export async function confirmAnalysisPersistence(input: {
       },
       classification: {
         classId,
-        className: data.classification.className ?? docClass.name,
-        confidence: data.classification.confidence,
+        className: manualClassId
+          ? docClass.name
+          : data.classification.className ?? docClass.name,
+        // Confiança da IA não vale para escolha humana: 1 é a certeza de quem olhou o documento.
+        confidence: manualClassId ? 1 : data.classification.confidence,
         requiresReview: needsReview,
-        reason: data.classification.reason,
+        reason: manualClassId
+          ? 'Categoria escolhida manualmente na revisão do envio.'
+          : data.classification.reason,
         evidence: data.classification.evidence,
       },
       rule: {
@@ -612,6 +639,9 @@ export async function confirmAnalysisPersistence(input: {
         hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
         hasDocumentCode: Boolean(documentCode),
         manualReviewConfirmed: data.manualReviewConfirmed,
+        classificationSource: manualClassId ? 'manual' : 'ai',
+        aiSuggestedClassId: data.classification.classId ?? undefined,
+        manualClassId,
         legacyAction: auditAction,
         source: 'api',
       }),
