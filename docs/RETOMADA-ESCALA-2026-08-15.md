@@ -49,7 +49,9 @@ Ordem da auditoria (`docs/AUDITORIA-ESCALA-ENVIO-2026-08-15.md`), do que sobrou:
    `document-chunking` (`.planning/quick/260816-h2c-fatiamento-sai-do-request/`). Sobra do achado 3:
    o download do staging continua passando pela memória da API, que só some com cópia server-side
    no R2.
-2. Envio sobreposto no navegador, 2–3 em voo (achado 9)
+2. ~~Envio sobreposto no navegador, 2–3 em voo (achado 9)~~ — feito em 16/08/2026
+   (`.planning/quick/260816-k4d-envio-sobreposto-no-navegador/`). Falta conferir num lote real, no
+   navegador: o repo não tem harness de teste de componente.
 3. Recuo progressivo na consulta de status (achado 6)
 4. Posição na fila e estimativa na tela (achado 10)
 5. Reserva de slot de tenant com validade curta (achado 7)
