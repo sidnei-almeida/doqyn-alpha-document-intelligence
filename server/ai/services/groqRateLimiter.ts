@@ -1,4 +1,5 @@
 import { getRedisClient } from '../../redis/redisClient.js';
+import { getObservedGroqLimits, type ObservedGroqLimits } from './groqLimitCalibration.js';
 import { prefixRedisKey } from '../../redis/redisConfig.js';
 import { logger } from '../../utils/logger.js';
 
@@ -68,19 +69,91 @@ export function getGroqTokensPerMinute(): number {
   return readPositiveInt(process.env.GROQ_MAX_TOKENS_PER_MINUTE, DEFAULT_TOKENS_PER_MINUTE);
 }
 
+/**
+ * Limite em vigor para um modelo, na ordem: o que o operador fixou no `.env`, o que a Groq informou
+ * no cabeçalho da última resposta, e por último o padrão conservador.
+ *
+ * O env vem primeiro porque é intenção explícita — quem escreveu o número quis segurar a conta
+ * abaixo do limite dela. O observado vem antes do padrão porque é o número real da conta, e o
+ * padrão é chute.
+ */
+async function resolveEffectiveLimits(model: string): Promise<{ requests: number; tokens: number }> {
+  const envRequests = process.env.GROQ_MAX_REQUESTS_PER_MINUTE?.trim();
+  const envTokens = process.env.GROQ_MAX_TOKENS_PER_MINUTE?.trim();
+
+  let observed: ObservedGroqLimits | null = null;
+  if (!envRequests || !envTokens) {
+    observed = await getObservedGroqLimits(model).catch(() => null);
+  }
+
+  return {
+    requests: envRequests
+      ? getGroqRequestsPerMinute()
+      : observed?.requestsPerMinute ?? DEFAULT_REQUESTS_PER_MINUTE,
+    tokens: envTokens
+      ? getGroqTokensPerMinute()
+      : observed?.tokensPerMinute ?? DEFAULT_TOKENS_PER_MINUTE,
+  };
+}
+
 export function getGroqRateLimitMaxWaitMs(): number {
   return readPositiveInt(process.env.GROQ_RATE_LIMIT_MAX_WAIT_MS, DEFAULT_MAX_WAIT_MS);
+}
+
+/**
+ * Reserva de saída por chamada.
+ *
+ * Antes a reserva era o `max_tokens` inteiro — o **teto** de saída, não o gasto. Com teto de 2.000 e
+ * janela de 6.000, três documentos enchiam o minuto e o quarto esperava a virada, mesmo enviando um
+ * arquivo de cada vez: o usuário via minutos de espera para um documento sozinho, e a conta da Groq
+ * mal tinha sido tocada. Uma classificação real devolve algumas centenas de tokens.
+ *
+ * O número aqui é só a reserva do momento da chamada; logo depois `reconcileGroqUsage` acerta a
+ * janela com o gasto que a Groq reportou, então errar um pouco aqui não desalinha o contador.
+ */
+const DEFAULT_EXPECTED_OUTPUT_TOKENS = 400;
+
+export function getGroqExpectedOutputTokens(): number {
+  return readPositiveInt(
+    process.env.GROQ_EXPECTED_OUTPUT_TOKENS,
+    DEFAULT_EXPECTED_OUTPUT_TOKENS,
+  );
 }
 
 /**
  * Tokens de um prompt, por aproximação.
  *
  * Quatro caracteres por token é a regra de bolso da família GPT/Llama e erra para mais em
- * português, que é o lado seguro: superestimar gasta vaga à toa, subestimar estoura o limite real
- * da conta — que é exatamente o que este módulo existe para evitar.
+ * português — o lado seguro para a entrada, que é conhecida. A saída entra como reserva estimada,
+ * não como teto.
  */
-export function estimateGroqTokens(promptChars: number, maxOutputTokens: number): number {
-  return Math.ceil(promptChars / 4) + maxOutputTokens;
+export function estimateGroqTokens(promptChars: number, expectedOutputTokens?: number): number {
+  return Math.ceil(promptChars / 4) + (expectedOutputTokens ?? getGroqExpectedOutputTokens());
+}
+
+/**
+ * Acerta a janela com o gasto real informado pela Groq.
+ *
+ * Sem isto o limitador vive da estimativa: reservar mais que o gasto some com vaga que existia
+ * (fila inventada), reservar menos estoura o limite de verdade. Com o `usage` da resposta em mãos,
+ * a diferença é devolvida ou cobrada na mesma janela em que a chamada aconteceu.
+ */
+export async function reconcileGroqUsage(
+  input: { model: string; estimatedTokens: number; actualTokens: number },
+  deps: Pick<GroqLimiterDeps, 'getClient' | 'now'> = {},
+): Promise<void> {
+  const getClient = deps.getClient ?? getRedisClient;
+  const now = deps.now ?? Date.now;
+
+  const delta = input.actualTokens - input.estimatedTokens;
+  if (delta === 0) return;
+
+  const client = await getClient();
+  if (!client) return;
+
+  const { tokens } = windowKeys(now(), input.model);
+  await client.incrby(tokens, delta);
+  await client.expire(tokens, 120);
 }
 
 /** Janela fixa de um minuto. Simples de raciocinar e barata: duas chaves com validade curta. */
@@ -116,8 +189,7 @@ async function tryConsume(
   if (!client) return { ok: true };
 
   const { requests, tokens, resetInMs } = windowKeys(deps.now(), request.model);
-  const requestLimit = getGroqRequestsPerMinute();
-  const tokenLimit = getGroqTokensPerMinute();
+  const { requests: requestLimit, tokens: tokenLimit } = await resolveEffectiveLimits(request.model);
 
   const usedRequests = await client.incr(requests);
   const usedTokens = await client.incrby(tokens, request.estimatedTokens);

@@ -32,6 +32,16 @@ export async function extractMetadataWithRule(input: {
     const parsed = safeParseJsonFromModel<unknown>(raw);
 
     if (!parsed) {
+      // Já houve uma repetição dentro do cliente Groq; chegar aqui é resposta inutilizável duas
+      // vezes seguidas. Deixa rastro, senão só sobra "formato inválido" na tela do usuário.
+      logger.warn('metadata extraction: resposta sem JSON utilizável', {
+        requestId: input.context?.requestId,
+        jobId: input.context?.jobId,
+        className: input.selectedClass.name,
+        rawChars: raw.length,
+        rawPreview: raw.slice(0, 200),
+      });
+
       return {
         documentType: input.selectedClass.name,
         version: 'v1.0',
