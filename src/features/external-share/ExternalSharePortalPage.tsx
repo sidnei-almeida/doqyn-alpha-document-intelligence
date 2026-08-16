@@ -76,8 +76,8 @@ function PendingInvitePanel({
   accepting?: boolean;
 }) {
   return (
-    <section className="mx-auto w-full max-w-lg rounded-xl border border-doqyn-border bg-doqyn-surface p-6 sm:p-8">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
+    <section className="mx-auto w-full max-w-xl rounded-xl border border-doqyn-border bg-doqyn-surface p-6 sm:p-8">
+      <p className="text-eyebrow uppercase text-doqyn-subtle">
         Compartilhado por {payload.ownerTenantName}
       </p>
       <p className="mt-1 text-xs text-doqyn-muted">
@@ -276,12 +276,12 @@ export function ExternalSharePortalPage() {
       data-testid="external-share-portal"
     >
       <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
-        <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-4">
+        <div className="flex w-full items-center justify-between gap-4">
           <DoqynLogo size="sm" variant="horizontal" subtitle="Acesso seguro a documento" />
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 items-center justify-center px-4 py-10 sm:px-6">
+      <main className="mx-auto flex w-full max-w-xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
         {portal.kind === 'loading' ? <InviteLoadingState /> : null}
         {portal.kind === 'error' ? (
           <InviteErrorState message={portal.message} code={portal.code} />
@@ -297,7 +297,7 @@ export function ExternalSharePortalPage() {
       </main>
 
       <footer className="shrink-0 border-t border-doqyn-border px-4 py-3 text-center sm:px-6">
-        <p className="text-[11px] leading-relaxed text-doqyn-muted">
+        <p className="text-micro leading-relaxed text-doqyn-muted">
           Acesso limitado a este documento. O link pode ser revogado a qualquer momento pelo
           responsável.
         </p>

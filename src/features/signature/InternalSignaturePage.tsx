@@ -5,6 +5,7 @@ import { useAuth } from '@/auth/useAuth';
 import { Badge } from '@/components/ui/Badge';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Icon } from '@/components/ui/Icon';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -57,10 +58,10 @@ function PreviewLoadingPanel() {
 function PreviewUnavailablePanel({ message }: { message: string }) {
   return (
     <div
-      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-8 text-center"
+      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg/40 p-8 text-center"
       data-testid="internal-signature-preview-unavailable"
     >
-      <Icon name="visibility_off" size={ICON_SIZE.md} className="text-amber-600" />
+      <Icon name="visibility_off" size={ICON_SIZE.md} className="text-doqyn-warning" />
       <p className="text-sm font-medium text-doqyn-text">
         Preview indisponível para este documento.
       </p>
@@ -232,7 +233,7 @@ export function InternalSignaturePage() {
   if (completed) {
     return (
       <div className="mx-auto max-w-lg py-12 text-center" data-testid="internal-signature-success">
-        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-doqyn-success-bg text-doqyn-success">
           <Icon name="check_circle" size={ICON_SIZE.md} />
         </div>
         <h1 className="text-lg font-semibold">Documento assinado com sucesso</h1>
@@ -274,7 +275,7 @@ export function InternalSignaturePage() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:flex-row"
+      className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 sm:p-6 lg:flex-row"
       data-testid="internal-signature-page"
     >
       <section className="min-w-0 flex-1">
@@ -292,9 +293,9 @@ export function InternalSignaturePage() {
         ) : null}
       </section>
 
-      <aside className="w-full shrink-0 space-y-4 lg:w-96">
+      <aside className="w-full shrink-0 space-y-4 lg:w-80">
         <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-          <TruncatedText as="h2" className="text-base font-semibold">
+          <TruncatedText as="h2" className="text-h2">
             {payload?.documentName ?? 'Documento'}
           </TruncatedText>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -325,18 +326,14 @@ export function InternalSignaturePage() {
         </section>
 
         <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-          <p className="text-sm font-medium text-doqyn-text">Leia o documento antes de assinar.</p>
-          <p className="mt-2 text-xs leading-relaxed text-doqyn-subtle">{payload?.consentText}</p>
-          <label className="mt-4 flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={consentAccepted}
-              onChange={(event) => setConsentAccepted(event.target.checked)}
-              data-testid="internal-signature-consent-checkbox"
-              className="mt-0.5"
-            />
-            <span>{payload?.consentText}</span>
-          </label>
+          <p className="text-label text-doqyn-text">Leia o documento antes de assinar.</p>
+          <Checkbox
+            wrapperClassName="mt-4"
+            checked={consentAccepted}
+            onChange={(event) => setConsentAccepted(event.target.checked)}
+            data-testid="internal-signature-consent-checkbox"
+            label={<span className="text-caption leading-relaxed">{payload?.consentText}</span>}
+          />
         </section>
 
         {error ? <p className="text-sm text-doqyn-danger">{error}</p> : null}
