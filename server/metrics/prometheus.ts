@@ -116,6 +116,13 @@ export const analysisJobDurationSeconds = new Histogram({
   registers: [prometheusRegistry],
 });
 
+export const analysisSaturationRequeuesTotal = new Counter({
+  name: 'doqyn_analysis_saturation_requeues_total',
+  help: 'Jobs de análise devolvidos à fila por saturação da vazão da Groq',
+  labelNames: ['job_kind'] as const,
+  registers: [prometheusRegistry],
+});
+
 export const aiProviderRequestsTotal = new Counter({
   name: 'doqyn_ai_provider_requests_total',
   help: 'Chamadas ao provedor de IA',
@@ -224,6 +231,12 @@ export function recordAnalysisJobCompletion(input: {
   const labels = { job_kind: input.jobKind, status: input.status };
   analysisJobsTotal.inc(labels);
   analysisJobDurationSeconds.observe(labels, input.durationSeconds);
+}
+
+export function recordAnalysisSaturationRequeue(input: { jobKind: string }): void {
+  if (!isPrometheusEnabled()) return;
+
+  analysisSaturationRequeuesTotal.inc({ job_kind: input.jobKind });
 }
 
 export function recordAiProviderRequest(input: {

@@ -53,6 +53,11 @@ export type AnalysisQueueJobPayload = {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /**
+   * Quantas vezes o job já voltou para a fila por saturação da vazão da Groq. Vive no payload
+   * (Redis) porque `moveToDelayed` não consome tentativa do BullMQ.
+   */
+  saturationRequeues?: number;
 };
 
 export type AnalysisJobPollResponse = {

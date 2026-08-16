@@ -145,6 +145,38 @@ export async function markAnalysisJobProcessing(jobId: string): Promise<void> {
   job.updatedAt = now;
 }
 
+/**
+ * Devolve o job ao estado `queued` depois de o worker reenfileirá-lo por saturação da Groq.
+ *
+ * Sem isso o job fica em `processing` para sempre: `markAnalysisJobProcessing` só aceita
+ * `queued`/`failed`, então a próxima tentativa rodaria com o registro travado no estado anterior.
+ * O usuário vê "na fila", que é a verdade — não houve erro, só falta vaga.
+ */
+export async function markAnalysisJobQueuedForRetry(jobId: string): Promise<void> {
+  const now = new Date();
+  const collection = await getAnalysisJobsCollection();
+
+  if (collection) {
+    await collection.updateOne(
+      { _id: jobId },
+      {
+        $set: { status: 'queued', progress: 5, startedAt: null, updatedAt: now },
+        $unset: { errorCode: '', errorMessage: '' },
+      },
+    );
+    return;
+  }
+
+  const job = inMemoryJobs.get(jobId);
+  if (!job) return;
+  job.status = 'queued';
+  job.progress = 5;
+  job.startedAt = null;
+  job.updatedAt = now;
+  delete job.errorCode;
+  delete job.errorMessage;
+}
+
 export async function completeAnalysisJob(input: {
   jobId: string;
   result: AnalysisJobResult;

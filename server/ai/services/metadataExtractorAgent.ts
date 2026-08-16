@@ -9,6 +9,7 @@ import { safeParseJsonFromModel } from '../utils/jsonParsing.js';
 import { validateMetadataResult } from '../utils/validation.js';
 import { buildCompactExtractorPrompt } from '../utils/extractorPrompt.js';
 import { completeJsonPrompt, type GroqPromptContext } from './groqClient.js';
+import { isGroqSaturationError } from '../utils/groqSaturation.js';
 import { logger } from '../../utils/logger.js';
 
 export async function extractMetadataWithRule(input: {
@@ -48,6 +49,13 @@ export async function extractMetadataWithRule(input: {
       documentType: validated.documentType ?? input.selectedClass.name,
     };
   } catch (error) {
+    // Saturação da vazão não é falha de extração: engoli-la aqui devolve `requires_review` e joga
+    // o documento na revisão manual justamente sob carga. Relançada, o worker devolve o job para
+    // a fila. Só a saturação sobe — qualquer outro erro continua virando revisão.
+    if (isGroqSaturationError(error)) {
+      throw error;
+    }
+
     // O `catch` vazio anterior descartava a causa: o usuário via "a análise automática falhou" e
     // não sobrava nada no servidor para diagnosticar. Falha de extração é o caminho mais comum de
     // regressão de prompt e de modelo — precisa deixar rastro.
