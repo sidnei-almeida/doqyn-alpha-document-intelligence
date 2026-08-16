@@ -282,6 +282,9 @@ services:
       EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
       EMBEDDING_CACHE_DIR: /app/.cache/transformers
       EMBEDDING_QUEUE_CONCURRENCY: ${EMBEDDING_QUEUE_CONCURRENCY:-1}
+      # Fatiamento do PDF, que saiu do request de confirmação. É CPU e divide o processo com a
+      # análise: subir daqui troca latência de análise por vazão de fatiamento.
+      CHUNKING_QUEUE_CONCURRENCY: ${CHUNKING_QUEUE_CONCURRENCY:-1}
       METRICS_ENABLED: "true"
       METRICS_SERVICE_NAME: doqyn-worker
       METRICS_SERVICE_ROLE: worker
