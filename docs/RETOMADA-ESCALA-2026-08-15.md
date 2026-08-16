@@ -52,10 +52,12 @@ Ordem da auditoria (`docs/AUDITORIA-ESCALA-ENVIO-2026-08-15.md`), do que sobrou:
 2. ~~Envio sobreposto no navegador, 2–3 em voo (achado 9)~~ — feito em 16/08/2026
    (`.planning/quick/260816-k4d-envio-sobreposto-no-navegador/`). Falta conferir num lote real, no
    navegador: o repo não tem harness de teste de componente.
-3. Recuo progressivo na consulta de status (achado 6)
-4. Posição na fila e estimativa na tela (achado 10)
-5. Reserva de slot de tenant com validade curta (achado 7)
-6. Rate limit por usuário nas rotas caras (achado 5)
+3. ~~Recuo progressivo na consulta de status (achado 6)~~ e ~~posição na fila e estimativa na tela
+   (achado 10)~~ — feitos juntos em 16/08/2026, mesmo laço de consulta
+   (`.planning/quick/260816-m7p-posicao-na-fila-na-tela/`). Rodar `npm run db:ensure-indexes`: a
+   coleção `analysis_jobs` ganhou índices.
+4. Reserva de slot de tenant com validade curta (achado 7)
+5. Rate limit por usuário nas rotas caras (achado 5)
 
 ## Estado do ambiente
 
