@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateDocumentId } from '../mockData';
-import { analyzePdf, AnalyzePdfRequestError } from '../services/analyzePdf';
+import {
+  analyzePdf,
+  AnalyzePdfRequestError,
+  isAnalysisStillRunningError,
+} from '../services/analyzePdf';
 import { confirmAnalysis } from '../services/confirmAnalysis';
 import { BULK_NEXT_ITEM_DELAY_MS } from '../uploadConstants';
 import {
@@ -1142,6 +1146,27 @@ export function useBulkUploadQueue({
           return 'break';
         }
 
+        // Espera longa não é falha do documento: o servidor continua analisando e ele chega na
+        // Biblioteca sozinho. Marcar erro aqui empurra o usuário a reenviar e engordar a fila.
+        if (isAnalysisStillRunningError(error)) {
+          const stillRunningMessage = error.message;
+          patchItem(next.id, {
+            status: 'still_running',
+            errorMessage: stillRunningMessage,
+            finishedAt: formatNow(),
+            queueStatus: undefined,
+          });
+          workflow.logItem(next.id, next.originalFileName, {
+            level: 'warning',
+            stage: 'analysis',
+            message: 'Acompanhamento encerrado; análise segue no servidor.',
+            details: { itemId: next.id, requestId },
+          });
+          appendItemMessage(next.id, stillRunningMessage);
+          finishQueueItem(next.id);
+          return 'continue';
+        }
+
         const workflowError =
           error instanceof AnalyzePdfRequestError
             ? error.workflowError
@@ -1206,6 +1231,7 @@ export function useBulkUploadQueue({
       appendItemMessage,
       canApplyToItem,
       cancelCurrentCountdown,
+      finishQueueItem,
       getActiveSettings,
       getIsolationSnapshot,
       getItemById,

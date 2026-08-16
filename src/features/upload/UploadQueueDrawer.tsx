@@ -24,6 +24,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   confirming: 'Salvando na Biblioteca…',
   awaiting_approval: 'Aguardando aprovação do admin',
   ai_paused: 'IA indisponível — tente novamente',
+  still_running: 'Análise em andamento no servidor',
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
@@ -44,6 +45,10 @@ function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
   if (status === 'error' || status === 'ai_paused') {
     return <Icon name="error" size={ICON_SIZE.sm} className="text-doqyn-danger" />;
   }
+  // Nem erro nem espera vazia: o servidor está trabalhando, a aba é que parou de perguntar.
+  if (status === 'still_running') {
+    return <Icon name="cloud_sync" size={ICON_SIZE.sm} className="text-doqyn-info" />;
+  }
   if (status === 'review') {
     return <Icon name="visibility" size={ICON_SIZE.sm} className="text-doqyn-warning" />;
   }
@@ -63,7 +68,14 @@ function QueueRow({
   const { openReview, retryItem, removeItem, cancelAutoConfirm } = useUploadQueueContext();
 
   const subtitle = useMemo(() => {
-    if ((item.status === 'error' || item.status === 'ai_paused') && item.errorMessage) return item.errorMessage;
+    if (
+      (item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'still_running') &&
+      item.errorMessage
+    ) {
+      return item.errorMessage;
+    }
     if (item.status === 'done' && item.documentId) {
       return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
@@ -134,7 +146,10 @@ function QueueRow({
           Revisar
         </button>
       )}
-      {(item.status === 'error' || item.status === 'ai_paused') && (
+      {/* `still_running` também oferece reenvio: é decisão de quem está na tela, não automática. */}
+      {(item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'still_running') && (
         <button
           type="button"
           onClick={() => retryItem(item.id)}
@@ -144,7 +159,11 @@ function QueueRow({
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
       )}
-      {(item.status === 'done' || item.status === 'error' || item.status === 'ai_paused' || item.status === 'awaiting_approval') && (
+      {(item.status === 'done' ||
+        item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'still_running' ||
+        item.status === 'awaiting_approval') && (
         <button
           type="button"
           onClick={() => removeItem(item.id)}

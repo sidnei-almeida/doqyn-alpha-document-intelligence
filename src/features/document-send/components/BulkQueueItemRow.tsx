@@ -19,6 +19,7 @@ const STATUS_MAP: Record<
   saved: { label: 'Salvo', historyStatus: 'metadata_confirmed' },
   requires_review: { label: 'Revisão', historyStatus: 'requires_review' },
   ai_paused: { label: 'IA indisponível', historyStatus: 'error' },
+  still_running: { label: 'Analisando no servidor', historyStatus: 'analyzing' },
   unclassified: { label: 'Erro de análise', historyStatus: 'error' },
   error: { label: 'Erro', historyStatus: 'error' },
   skipped: { label: 'Pulado', historyStatus: 'processed' },

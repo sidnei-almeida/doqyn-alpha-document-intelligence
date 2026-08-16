@@ -16,6 +16,7 @@ export type UploadQueueAction =
   | { type: 'awaiting_approval'; id: string; approvalId: string }
   | { type: 'error'; id: string; message: string }
   | { type: 'ai_pause'; id: string; message: string }
+  | { type: 'still_running'; id: string; message: string }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'clear-finished' }
@@ -72,9 +73,25 @@ export function uploadQueueReducer(
           ? { ...item, status: 'ai_paused' as const, errorMessage: action.message }
           : item,
       );
+    case 'still_running':
+      return items.map((item) =>
+        item.id === action.id
+          ? {
+              ...item,
+              status: 'still_running' as const,
+              errorMessage: action.message,
+              queueStatus: undefined,
+            }
+          : item,
+      );
     case 'retry':
       return items.map((item) =>
-        item.id === action.id && (item.status === 'error' || item.status === 'ai_paused')
+        // `still_running` também aceita reenvio manual: é decisão de quem está olhando a tela, e
+        // aqui ele sabe que pode gerar duplicata. O caminho automático nunca reenvia sozinho.
+        item.id === action.id &&
+        (item.status === 'error' ||
+          item.status === 'ai_paused' ||
+          item.status === 'still_running')
           ? { ...item, status: 'queued' as const, errorMessage: undefined, analysis: undefined }
           : item,
       );

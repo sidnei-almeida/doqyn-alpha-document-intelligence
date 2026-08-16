@@ -5,7 +5,9 @@
  */
 export {
   analyzePdf,
+  AnalysisStillRunningError,
   AnalyzePdfRequestError,
+  isAnalysisStillRunningError,
   type AnalysisQueueStatus,
   type AnalyzePdfOptions,
   type AnalyzePdfResponse,

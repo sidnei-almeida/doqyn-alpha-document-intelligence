@@ -4,7 +4,12 @@ import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth'
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
 import { analysisPollDelayMs } from './analysisPollBackoff';
-import { UPLOAD_ANALYZE_TIMEOUT_MS } from '@/features/upload/queue/uploadQueueAnalysis';
+import {
+  UPLOAD_ANALYZE_MAX_POLL_FAILURES,
+  UPLOAD_ANALYZE_MAX_WAIT_MS,
+  uploadAnalyzePollFailureMessage,
+  uploadAnalyzeStillRunningMessage,
+} from '@/features/upload/queue/uploadQueueAnalysis';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 
 type EvidenceSnippet = {
@@ -221,6 +226,26 @@ export class AnalyzePdfRequestError extends Error {
   }
 }
 
+/**
+ * O navegador parou de acompanhar, o servidor não parou de analisar.
+ *
+ * Erro separado de propósito: quem trata precisa saber que **não** é falha do documento, e por isso
+ * não pode pintar de vermelho nem sugerir reenvio.
+ */
+export class AnalysisStillRunningError extends Error {
+  readonly jobId: string;
+
+  constructor(jobId: string) {
+    super(uploadAnalyzeStillRunningMessage());
+    this.name = 'AnalysisStillRunningError';
+    this.jobId = jobId;
+  }
+}
+
+export function isAnalysisStillRunningError(error: unknown): error is AnalysisStillRunningError {
+  return error instanceof AnalysisStillRunningError;
+}
+
 function formatNow(): string {
   const now = new Date();
   return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -340,13 +365,23 @@ function isTerminalAnalysisStatus(
   );
 }
 
+/**
+ * Acompanha o job até ele terminar.
+ *
+ * Enquanto o servidor responde `queued` ou `processing`, esperar é o certo — a demora é a vazão do
+ * modelo, não uma falha, e marcar erro num documento que está sendo analisado naquele instante
+ * empurra o usuário a reenviar e engordar a fila. Só três coisas interrompem a espera: o servidor
+ * dizer que falhou, o contato cair de vez, ou o teto de acompanhamento estourar — e esse último não
+ * é erro do documento, é a aba parando de perguntar.
+ */
 async function pollAnalysisJobResult(
   jobId: string,
   options?: Pick<AnalyzePdfOptions, 'signal' | 'onQueueStatus'>,
 ): Promise<AnalysisJobResult> {
-  const timeoutMs = UPLOAD_ANALYZE_TIMEOUT_MS;
+  const maxWaitMs = UPLOAD_ANALYZE_MAX_WAIT_MS;
   const startedAt = performance.now();
   let attempt = 0;
+  let consecutiveFailures = 0;
 
   while (true) {
     attempt += 1;
@@ -354,22 +389,50 @@ async function pollAnalysisJobResult(
       throw new DOMException('Aborted', 'AbortError');
     }
 
-    const response = await authFetch(`/api/ai/jobs/${encodeURIComponent(jobId)}`, {
-      method: 'GET',
-      credentials: getFetchCredentials(),
-      headers: withAuthHeaders({}, { json: true }),
-      signal: options?.signal,
-    });
+    let response: Response | null = null;
+    let payload: AnalysisJobPollResponse | null = null;
 
-    const payload = (await response.json().catch(() => null)) as AnalysisJobPollResponse | null;
-
-    if (!response.ok || !payload) {
-      const workflowError = parseWorkflowErrorPayload(
-        payload as WorkflowErrorApiResponse | null,
-        'Erro ao consultar análise',
-      );
-      throw new AnalyzePdfRequestError(workflowError);
+    try {
+      response = await authFetch(`/api/ai/jobs/${encodeURIComponent(jobId)}`, {
+        method: 'GET',
+        credentials: getFetchCredentials(),
+        headers: withAuthHeaders({}, { json: true }),
+        signal: options?.signal,
+      });
+      payload = (await response.json().catch(() => null)) as AnalysisJobPollResponse | null;
+    } catch (error) {
+      // Cancelamento é decisão de quem chamou, não falha de rede.
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      response = null;
+      payload = null;
     }
+
+    // Rede instável e 5xx passageiro não são motivo para desistir de um documento que o servidor
+    // pode estar analisando. `404` é: o job não existe mais e insistir não traz ele de volta.
+    if (!response || !response.ok || !payload) {
+      const isGone = response?.status === 404;
+      consecutiveFailures += 1;
+
+      if (isGone || consecutiveFailures >= UPLOAD_ANALYZE_MAX_POLL_FAILURES) {
+        const workflowError = parseWorkflowErrorPayload(
+          (payload as WorkflowErrorApiResponse | null) ?? {
+            error: {
+              code: isGone ? 'ANALYSIS_JOB_NOT_FOUND' : 'ANALYSIS_POLL_UNREACHABLE',
+              category: 'ai',
+              title: 'Análise sem acompanhamento',
+              message: uploadAnalyzePollFailureMessage(),
+            },
+          },
+          uploadAnalyzePollFailureMessage(),
+        );
+        throw new AnalyzePdfRequestError(workflowError);
+      }
+
+      await sleep(analysisPollDelayMs(attempt), options?.signal);
+      continue;
+    }
+
+    consecutiveFailures = 0;
 
     if (payload.status === 'failed') {
       const workflowError = parseWorkflowErrorPayload(
@@ -412,8 +475,9 @@ async function pollAnalysisJobResult(
       );
     }
 
-    if (performance.now() - startedAt >= timeoutMs) {
-      throw new Error('Tempo limite aguardando a conclusão da análise.');
+    // Teto de acompanhamento, não prazo de erro: quem trata sabe que o documento segue no servidor.
+    if (performance.now() - startedAt >= maxWaitMs) {
+      throw new AnalysisStillRunningError(jobId);
     }
 
     await sleep(analysisPollDelayMs(attempt), options?.signal);
