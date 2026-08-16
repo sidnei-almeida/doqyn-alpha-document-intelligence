@@ -61,12 +61,30 @@ export type DocumentAccessMatrixRow = {
   externalShareCount: number;
 };
 
+/**
+ * Acesso de um grupo inteiro a um documento, pela regra da categoria.
+ *
+ * É a visão que o gestor usa para conceder: pessoa entra e sai de grupo o tempo todo, a regra é o
+ * que permanece. Por isso a matriz tem as duas leituras — por pessoa, para conferir, e por grupo,
+ * para governar.
+ */
+export type DocumentGroupAccessCell = {
+  documentId: string;
+  groupId: string;
+  canView: boolean;
+  canDownload: boolean;
+  canUpdate: boolean;
+  canAudit: boolean;
+  canShare: boolean;
+};
+
 export type DocumentAccessMatrix = {
   members: DocumentAccessMatrixMember[];
-  groups: Array<{ groupId: string; name: string }>;
+  groups: Array<{ groupId: string; name: string; memberCount: number }>;
   documents: DocumentAccessMatrixRow[];
   /** Esparsa de propósito: só quem tem acesso vira célula, ausência é ausência de acesso. */
   cells: DocumentAccessCell[];
+  groupCells: DocumentGroupAccessCell[];
   pagination: { nextCursor: string | null };
 };
 
@@ -101,6 +119,7 @@ export async function buildDocumentAccessMatrix(input: {
     groups: [],
     documents: [],
     cells: [],
+    groupCells: [],
     pagination: { nextCursor: null },
   };
 
@@ -215,12 +234,15 @@ export async function buildDocumentAccessMatrix(input: {
 
   const rows: DocumentAccessMatrixRow[] = [];
   const cells: DocumentAccessCell[] = [];
+  const groupCells: DocumentGroupAccessCell[] = [];
 
   for (const doc of documents) {
     const documentId = String(doc.id ?? doc._id ?? '');
     if (!documentId) continue;
 
-    const categoryId = typeof doc.classId === 'string' ? doc.classId : undefined;
+    // O item da lista expõe `categoryId` (o `classId` do Mongo já vem traduzido). Ler `classId`
+    // aqui devolvia `undefined` e a coluna de governança ficava vazia para todo mundo.
+    const categoryId = typeof doc.categoryId === 'string' ? doc.categoryId : undefined;
     const ownerUserId = typeof doc.ownerUserId === 'string' ? doc.ownerUserId : undefined;
 
     rows.push({
@@ -236,7 +258,30 @@ export async function buildDocumentAccessMatrix(input: {
 
     const viewGroups = governanceGroupsFor(governance, categoryId, 'viewByCategory');
     const downloadGroups = governanceGroupsFor(governance, categoryId, 'downloadByCategory');
+    const updateGroups = governanceGroupsFor(governance, categoryId, 'updateByCategory');
+    const auditGroups = governanceGroupsFor(governance, categoryId, 'auditByCategory');
+    const shareGroups = governanceGroupsFor(governance, categoryId, 'shareByCategory');
     const docGrants = activeGrantsByDocument.get(documentId) ?? [];
+
+    for (const group of groupRows) {
+      const canView = viewGroups.has(group._id);
+      const canDownload = downloadGroups.has(group._id);
+      const canUpdate = updateGroups.has(group._id);
+      const canAudit = auditGroups.has(group._id);
+      const canShare = shareGroups.has(group._id);
+
+      if (!canView && !canDownload && !canUpdate && !canAudit && !canShare) continue;
+
+      groupCells.push({
+        documentId,
+        groupId: group._id,
+        canView,
+        canDownload,
+        canUpdate,
+        canAudit,
+        canShare,
+      });
+    }
 
     for (const member of matrixMembers) {
       const origins: DocumentAccessOrigin[] = [];
@@ -280,11 +325,23 @@ export async function buildDocumentAccessMatrix(input: {
     }
   }
 
+  const memberCountByGroup = new Map<string, number>();
+  for (const member of matrixMembers) {
+    for (const groupId of member.groupIds) {
+      memberCountByGroup.set(groupId, (memberCountByGroup.get(groupId) ?? 0) + 1);
+    }
+  }
+
   return {
     members: matrixMembers,
-    groups: groupRows.map((group) => ({ groupId: group._id, name: group.name })),
+    groups: groupRows.map((group) => ({
+      groupId: group._id,
+      name: group.name,
+      memberCount: memberCountByGroup.get(group._id) ?? 0,
+    })),
     documents: rows,
     cells,
+    groupCells,
     pagination: { nextCursor: listed.pagination?.nextCursor ?? null },
   };
 }

@@ -29,6 +29,8 @@ type ExplorerContextMenuProps = {
   onUpdateDocument?: (doc: DocumentListItem) => void;
   onMoveFile?: (doc: DocumentListItem) => void;
   onShareFile?: (doc: DocumentListItem) => void;
+  /** Ficha de metadados do documento — cada tipo tem campos diferentes, então é por documento. */
+  onEditMetadataFile?: (doc: DocumentListItem) => void;
   onRequestSignatureFile?: (doc: DocumentListItem) => void;
   onViewSignaturesFile?: (doc: DocumentListItem) => void;
   onDownloadSignedPdfFile?: (doc: DocumentListItem) => void;
@@ -101,6 +103,7 @@ export function ExplorerContextMenu({
   onUpdateDocument,
   onMoveFile,
   onShareFile,
+  onEditMetadataFile,
   onRequestSignatureFile,
   onViewSignaturesFile,
   onDownloadSignedPdfFile,
@@ -343,6 +346,18 @@ export function ExplorerContextMenu({
                           : undefined
                   }
                   onClick={() => run(() => onMoveFile?.(doc))}
+                />
+                <MenuItem
+                  compact
+                  label="Metadados"
+                  icon="list_alt"
+                  disabled={!onEditMetadataFile || archiveView}
+                  title={
+                    archiveView
+                      ? 'Documento arquivado não tem ficha editável.'
+                      : 'Conferir e corrigir os campos deste documento'
+                  }
+                  onClick={() => run(() => onEditMetadataFile?.(doc))}
                 />
                 <MenuItem
                   compact

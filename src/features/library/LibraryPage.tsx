@@ -56,6 +56,7 @@ import { useDeactivatedMutations } from './hooks/useDeactivatedMutations';
 import { useMoveDocumentMutations } from './hooks/useMoveDocumentMutations';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
+import { DocumentMetadataDrawer } from './components/DocumentMetadataDrawer';
 import { RequestSignatureModal } from '@/features/signature/RequestSignatureModal';
 import { SignaturesAssignedPanel } from '@/features/signature/components/SignaturesAssignedPanel';
 import { DocumentSignaturesDrawer } from '@/features/signature/DocumentSignaturesDrawer';
@@ -143,6 +144,7 @@ export function LibraryPage() {
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
+  const [metadataDoc, setMetadataDoc] = useState<DocumentListItem | null>(null);
   const [transferModalDoc, setTransferModalDoc] = useState<DocumentListItem | null>(null);
   const [signatureModalDoc, setSignatureModalDoc] = useState<DocumentListItem | null>(null);
   const [signaturesDrawerDoc, setSignaturesDrawerDoc] = useState<DocumentListItem | null>(null);
@@ -443,6 +445,10 @@ export function LibraryPage() {
     },
     [isLifecycleArchiveView, selectedCount],
   );
+
+  const handleEditMetadata = useCallback((doc: DocumentListItem) => {
+    setMetadataDoc(doc);
+  }, []);
 
   const handleRequestSignature = useCallback(
     (doc: DocumentListItem) => {
@@ -775,6 +781,7 @@ export function LibraryPage() {
         onUpdateDocument={handleUpdateDocument}
         onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
         onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
+        onEditMetadataFile={isLifecycleArchiveView ? undefined : handleEditMetadata}
         onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
         onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
         onDownloadSignedPdfFile={
@@ -794,6 +801,8 @@ export function LibraryPage() {
         documentId={updateVersionDocumentId}
         onClose={closeUpdateVersionDrawer}
       />
+
+      <DocumentMetadataDrawer document={metadataDoc} onClose={() => setMetadataDoc(null)} />
 
       <ShareDocumentModal
         open={Boolean(shareModalDoc)}
