@@ -28,17 +28,18 @@ Contratar plano pago da Groq. Definido com o gestor, ainda sem plano escolhido. 
    conservadores dimensionados para o plano gratuito).
 3. Só então a concorrência 8 da fila (`ANALYSIS_QUEUE_CONCURRENCY_GLOBAL`) passa a valer de verdade.
 
-## Pendência aberta que o ensaio revelou
+## Pendência que o ensaio revelou — resolvida em 16/08/2026
 
-**Saturação degrada a qualidade, não só a velocidade.** Quando a espera pelo limitador estoura os
-75s, o documento é marcado `ai_unavailable` e cai na revisão manual. Sob carga, o lote inteiro vira
-trabalho humano — o oposto do objetivo.
+**Saturação degradava a qualidade, não só a velocidade.** Quando a espera pelo limitador estourava
+os 75s, o documento era marcado `ai_unavailable` e caía na revisão manual. Sob carga, o lote inteiro
+virava trabalho humano — o oposto do objetivo.
 
-Correção pensada e **não implementada**: o worker devolve o job para a fila (`moveToDelayed` +
-`DelayedError`, mesmo mecanismo já usado para o slot de tenant) em vez de concluir o documento como
-`ai_unavailable`. Assim a lentidão continua lentidão, e não vira erro na tela.
+Corrigido: o worker devolve o job para a fila (`moveToDelayed` + `DelayedError`, mesmo mecanismo já
+usado para o slot de tenant), com recuo progressivo e teto de reenfileiramentos. A lentidão continua
+lentidão, e não vira erro na tela. O mesmo vale para a extração de metadados, que engolia o erro de
+rate limit e devolvia `requires_review` sem dizer por quê.
 
-Vale mesmo com plano pago: é a diferença entre "na fila" e "deu erro" em qualquer pico.
+Detalhes em `.planning/quick/260816-g8a-saturacao-devolve-o-job-a-fila/`.
 
 ## Resto da fila de melhorias
 
