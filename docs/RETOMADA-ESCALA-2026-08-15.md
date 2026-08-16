@@ -45,7 +45,10 @@ Detalhes em `.planning/quick/260816-g8a-saturacao-devolve-o-job-a-fila/`.
 
 Ordem da auditoria (`docs/AUDITORIA-ESCALA-ENVIO-2026-08-15.md`), do que sobrou:
 
-1. Fatiamento do PDF sai do request de confirmação (achado 3)
+1. ~~Fatiamento do PDF sai do request de confirmação (achado 3)~~ — feito em 16/08/2026, fila
+   `document-chunking` (`.planning/quick/260816-h2c-fatiamento-sai-do-request/`). Sobra do achado 3:
+   o download do staging continua passando pela memória da API, que só some com cópia server-side
+   no R2.
 2. Envio sobreposto no navegador, 2–3 em voo (achado 9)
 3. Recuo progressivo na consulta de status (achado 6)
 4. Posição na fila e estimativa na tela (achado 10)
