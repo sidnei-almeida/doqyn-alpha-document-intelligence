@@ -123,6 +123,20 @@ export function findNextQueuedItem<T extends { status: string }>(items: T[]): T 
   return items.find((item) => item.status === 'queued') ?? null;
 }
 
+/**
+ * Próximo enfileirado ignorando os que já foram despachados.
+ *
+ * Com mais de uma análise em voo, o despacho acontece antes de o React repintar a lista: os itens
+ * recém-iniciados ainda constam como `queued` no instantâneo, e sem a exclusão o mesmo arquivo
+ * seria enviado duas vezes na mesma rodada.
+ */
+export function findNextQueuedItemExcluding<T extends { id: string; status: string }>(
+  items: T[],
+  excludedIds: ReadonlySet<string>,
+): T | null {
+  return items.find((item) => item.status === 'queued' && !excludedIds.has(item.id)) ?? null;
+}
+
 export function hasInFlightItem<T extends { status: string }>(
   items: T[],
   inFlightStatuses: readonly string[],

@@ -244,9 +244,10 @@ describe('provider da fila — integração com contratos existentes', () => {
 
   it('provider não cancela analyze in-flight ao mudar status para analyzing', () => {
     const provider = readSrc('features/upload/UploadQueueProvider.tsx');
-    assert.ok(provider.includes('processingItemIdRef'));
+    // Uma entrada por arquivo em voo: o id único de antes era o que serializava o lote, e um
+    // `abort` global cancelaria o vizinho a cada novo despacho.
+    assert.ok(provider.includes('inFlightAnalysesRef'));
     assert.ok(provider.includes('UPLOAD_ANALYZE_TIMEOUT_MS'));
-    assert.ok(provider.includes('analyzeAbortRef'));
     assert.ok(provider.includes('uploadAnalyzeTimeoutMessage'));
     assert.equal(provider.includes('let cancelled = false'), false);
     assert.equal(provider.includes('cancelled = true'), false);
