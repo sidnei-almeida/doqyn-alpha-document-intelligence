@@ -43,8 +43,7 @@ export function MoveDocumentModal({
     if (!query) return activeCategories;
     return activeCategories.filter(
       (category) =>
-        category.name.toLowerCase().includes(query) ||
-        category.slug?.toLowerCase().includes(query),
+        category.name.toLowerCase().includes(query) || category.slug?.toLowerCase().includes(query),
     );
   }, [activeCategories, search]);
 
@@ -52,8 +51,7 @@ export function MoveDocumentModal({
   const currentCategoryId = singleDoc?.categoryId ?? null;
   const currentCategoryName = singleDoc?.categoryName ?? null;
   const allSameCategory =
-    documents.length > 0 &&
-    documents.every((doc) => doc.categoryId === documents[0]?.categoryId);
+    documents.length > 0 && documents.every((doc) => doc.categoryId === documents[0]?.categoryId);
 
   const selectedCategory = activeCategories.find((category) => category.id === selectedId) ?? null;
   const isSameAsCurrent =
@@ -89,22 +87,16 @@ export function MoveDocumentModal({
 
   if (!open) return null;
 
-  const title =
-    documents.length > 1
-      ? `Mover ${documents.length} documentos`
-      : 'Mover documento';
+  const title = documents.length > 1 ? `Mover ${documents.length} documentos` : 'Mover documento';
 
   const canSubmit =
-    Boolean(selectedId) &&
-    !isSubmitting &&
-    !isSameAsCurrent &&
-    activeCategories.length > 0;
+    Boolean(selectedId) && !isSubmitting && !isSameAsCurrent && activeCategories.length > 0;
 
   return (
     <div
       ref={overlayRef}
       onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
+      className="modal-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="move-document-modal-title"
@@ -116,7 +108,7 @@ export function MoveDocumentModal({
             <h2 id="move-document-modal-title" className="text-base font-semibold text-doqyn-text">
               {title}
             </h2>
-            <p className="mt-1 text-[12px] leading-relaxed text-doqyn-subtle">
+            <p className="mt-1 text-caption leading-relaxed text-doqyn-subtle">
               {documents.length > 1
                 ? 'Os documentos selecionados serão reclassificados para a categoria escolhida.'
                 : 'Escolha uma nova categoria para este documento. O arquivo e o histórico serão preservados.'}
@@ -134,16 +126,16 @@ export function MoveDocumentModal({
 
         <div className="space-y-4 px-5 py-4">
           {singleDoc && currentCategoryName && (
-            <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-surface-raised px-3 py-2.5">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
-                Categoria atual
-              </p>
-              <p className="mt-0.5 text-[13px] font-medium text-doqyn-text">{currentCategoryName}</p>
+            <div className="bg-doqyn-surface-raised rounded-lg border border-doqyn-border-subtle px-3 py-2.5">
+              <p className="text-eyebrow uppercase text-doqyn-subtle">Categoria atual</p>
+              <p className="mt-0.5 text-label text-doqyn-text">{currentCategoryName}</p>
             </div>
           )}
 
           {activeCategories.length === 0 ? (
-            <p className="text-[13px] text-doqyn-subtle">Nenhuma categoria disponível.</p>
+            <p className="text-label font-normal text-doqyn-subtle">
+              Nenhuma categoria disponível.
+            </p>
           ) : (
             <>
               {activeCategories.length > 6 && (
@@ -157,7 +149,9 @@ export function MoveDocumentModal({
 
               <div className="max-h-64 space-y-1 overflow-y-auto pr-0.5">
                 {filteredCategories.length === 0 ? (
-                  <p className="text-[13px] text-doqyn-subtle">Nenhuma categoria encontrada.</p>
+                  <p className="text-label font-normal text-doqyn-subtle">
+                    Nenhuma categoria encontrada.
+                  </p>
                 ) : (
                   filteredCategories.map((category) => {
                     const isCurrent = category.id === currentCategoryId;
@@ -181,17 +175,17 @@ export function MoveDocumentModal({
                           className="shrink-0 text-doqyn-subtle"
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-medium text-doqyn-text">
+                          <span className="block truncate text-label text-doqyn-text">
                             {category.name}
                           </span>
                           {category.description ? (
-                            <span className="block truncate text-[11px] text-doqyn-subtle">
+                            <span className="block truncate text-micro text-doqyn-subtle">
                               {category.description}
                             </span>
                           ) : null}
                         </span>
                         {isCurrent ? (
-                          <span className="shrink-0 rounded-full bg-doqyn-surface-raised px-2 py-0.5 text-[10px] font-medium text-doqyn-subtle">
+                          <span className="bg-doqyn-surface-raised shrink-0 rounded-full px-2 py-0.5 text-micro font-medium text-doqyn-subtle">
                             Atual
                           </span>
                         ) : null}
@@ -202,7 +196,7 @@ export function MoveDocumentModal({
               </div>
 
               {isSameAsCurrent && (
-                <p className="text-[12px] text-doqyn-warning">
+                <p className="text-caption text-doqyn-warning">
                   O documento já está nesta categoria.
                 </p>
               )}

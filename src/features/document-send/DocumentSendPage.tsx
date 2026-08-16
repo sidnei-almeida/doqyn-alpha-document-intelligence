@@ -22,12 +22,13 @@ import { confirmAnalysis } from './services/confirmAnalysis';
 import { confirmUpdateDocumentVersion } from './services/confirmUpdateDocumentVersion';
 import { getDocument } from '@/features/documents/api/documentsApi';
 import { nextMajorVersionLabel } from '@/features/documents/utils/versionLabel';
-import { useBulkUploadQueue, type BulkHistoryPayload, type BulkTerminalPayload } from './hooks/useBulkUploadQueue';
-import { useWorkflowLogger } from './hooks/useWorkflowLogger';
 import {
-  useSemiDeterminateProgress,
-  useSimulatedStepIndex,
-} from './hooks/useProcessingProgress';
+  useBulkUploadQueue,
+  type BulkHistoryPayload,
+  type BulkTerminalPayload,
+} from './hooks/useBulkUploadQueue';
+import { useWorkflowLogger } from './hooks/useWorkflowLogger';
+import { useSemiDeterminateProgress, useSimulatedStepIndex } from './hooks/useProcessingProgress';
 import {
   loadReviewWorkflowSettings,
   saveReviewWorkflowSettings,
@@ -57,10 +58,7 @@ import {
   formatDurationMs,
   mapProcessingLogsToWorkflowEvents,
 } from './utils/workflowLogHelpers';
-import {
-  buildWorkflowErrorLogDetails,
-  parseWorkflowErrorPayload,
-} from './utils/workflowErrors';
+import { buildWorkflowErrorLogDetails, parseWorkflowErrorPayload } from './utils/workflowErrors';
 import { formatHistoryDate } from './utils/historyFormat';
 
 type AnalysisSnapshot = {
@@ -159,11 +157,7 @@ export function DocumentSendPage() {
   const [searchParams] = useSearchParams();
   const updateTargetDocumentId = searchParams.get('documentId')?.trim() || null;
   const { isAuthenticated, roles, user, membership, tenant } = useAuth();
-  const canShowWorkflowDebug = canViewDocumentTracking(
-    roles,
-    user?.role,
-    membership?.status,
-  );
+  const canShowWorkflowDebug = canViewDocumentTracking(roles, user?.role, membership?.status);
   const abortRef = useRef<AbortController | null>(null);
   const analysisGenerationRef = useRef(0);
   const autoConfirmTriggeredRef = useRef(false);
@@ -235,10 +229,7 @@ export function DocumentSendPage() {
   const isProcessingView = flowPhase === 'analyzing' || flowPhase === 'completing';
   const isProcessingComplete = flowPhase === 'completing';
   const processingProgress = useSemiDeterminateProgress(isProcessingView, isProcessingComplete);
-  const simulatedStepIndex = useSimulatedStepIndex(
-    flowPhase === 'analyzing',
-    isProcessingComplete,
-  );
+  const simulatedStepIndex = useSimulatedStepIndex(flowPhase === 'analyzing', isProcessingComplete);
 
   const clearCompletingTimer = useCallback(() => {
     if (completingTimerRef.current !== null) {
@@ -251,56 +242,62 @@ export function DocumentSendPage() {
     void invalidateLibraryQueries(queryClient, tenant?.tenantId);
   }, [queryClient, tenant?.tenantId]);
 
-  const handleBulkItemSaved = useCallback(({ item, autoSaved }: BulkHistoryPayload) => {
-    if (!item.metadata) return;
+  const handleBulkItemSaved = useCallback(
+    ({ item, autoSaved }: BulkHistoryPayload) => {
+      if (!item.metadata) return;
 
-    const savedMetadata: ExtractedMetadata = {
-      ...item.metadata,
-      savedDocumentId: item.documentId,
-      savedVersionId: item.versionId,
-      suggestedName: item.finalFileName ?? item.metadata.suggestedName,
-    };
+      const savedMetadata: ExtractedMetadata = {
+        ...item.metadata,
+        savedDocumentId: item.documentId,
+        savedVersionId: item.versionId,
+        suggestedName: item.finalFileName ?? item.metadata.suggestedName,
+      };
 
-    const processedDoc: UploadedDocument = {
-      id: item.id,
-      originalName: item.originalFileName,
-      suggestedName: savedMetadata.suggestedName,
-      fileSize: item.sizeBytes,
-      mimeType: 'application/pdf',
-      category: savedMetadata.documentType,
-      status: 'confirmed',
-      version: savedMetadata.suggestedVersion,
-      metadata: savedMetadata,
-      uploadedAt: formatNow(),
-      lastActionAt: formatNow(),
-    };
+      const processedDoc: UploadedDocument = {
+        id: item.id,
+        originalName: item.originalFileName,
+        suggestedName: savedMetadata.suggestedName,
+        fileSize: item.sizeBytes,
+        mimeType: 'application/pdf',
+        category: savedMetadata.documentType,
+        status: 'confirmed',
+        version: savedMetadata.suggestedVersion,
+        metadata: savedMetadata,
+        uploadedAt: formatNow(),
+        lastActionAt: formatNow(),
+      };
 
-    workflow.logItem(item.id, item.originalFileName, {
-      level: 'success',
-      stage: 'history',
-      message: 'Item adicionado ao histórico da sessão.',
-      details: { finalStatus: 'saved', autoSaved },
-    });
+      workflow.logItem(item.id, item.originalFileName, {
+        level: 'success',
+        stage: 'history',
+        message: 'Item adicionado ao histórico da sessão.',
+        details: { finalStatus: 'saved', autoSaved },
+      });
 
-    setHistory((prev) => [
-      toHistoryItem(processedDoc, savedMetadata, {
-        lastActionLabel: autoSaved ? 'Salvo automaticamente' : 'Confirmado no lote',
-      }),
-      ...prev.filter((entry) => entry.id !== item.id),
-    ]);
-    invalidateDocumentQueries();
-  }, [workflow, invalidateDocumentQueries]);
+      setHistory((prev) => [
+        toHistoryItem(processedDoc, savedMetadata, {
+          lastActionLabel: autoSaved ? 'Salvo automaticamente' : 'Confirmado no lote',
+        }),
+        ...prev.filter((entry) => entry.id !== item.id),
+      ]);
+      invalidateDocumentQueries();
+    },
+    [workflow, invalidateDocumentQueries],
+  );
 
-  const handleBulkItemTerminal = useCallback(({ item, autoSaved }: BulkTerminalPayload) => {
-    if (item.status === 'saved') return;
+  const handleBulkItemTerminal = useCallback(
+    ({ item, autoSaved }: BulkTerminalPayload) => {
+      if (item.status === 'saved') return;
 
-    workflow.logItem(item.id, item.originalFileName, {
-      level: item.status === 'error' ? 'error' : 'warning',
-      stage: 'history',
-      message: 'Item finalizado (visível nos logs do lote).',
-      details: { finalStatus: item.status, autoSaved },
-    });
-  }, [workflow]);
+      workflow.logItem(item.id, item.originalFileName, {
+        level: item.status === 'error' ? 'error' : 'warning',
+        stage: 'history',
+        message: 'Item finalizado (visível nos logs do lote).',
+        details: { finalStatus: item.status, autoSaved },
+      });
+    },
+    [workflow],
+  );
 
   const bulkQueue = useBulkUploadQueue({
     reviewSettings,
@@ -311,21 +308,24 @@ export function DocumentSendPage() {
     onItemTerminal: handleBulkItemTerminal,
   });
 
-  const handleReviewSettingsChange = useCallback((next: WorkflowReviewSettings) => {
-    setReviewSettings(next);
-    saveReviewWorkflowSettings(next);
-    workflow.log({
-      level: 'info',
-      stage: 'auto',
-      message: next.autoReviewEnabled
-        ? `Configurações da revisão: Auto ligado (${next.autoAcceptDelaySeconds}s).`
-        : 'Configurações da revisão atualizadas.',
-      details: {
-        defaultNamingPolicy: next.defaultNamingPolicy,
-        aiRenameEnabled: next.aiRenameEnabled,
-      },
-    });
-  }, [workflow]);
+  const handleReviewSettingsChange = useCallback(
+    (next: WorkflowReviewSettings) => {
+      setReviewSettings(next);
+      saveReviewWorkflowSettings(next);
+      workflow.log({
+        level: 'info',
+        stage: 'auto',
+        message: next.autoReviewEnabled
+          ? `Configurações da revisão: Auto ligado (${next.autoAcceptDelaySeconds}s).`
+          : 'Configurações da revisão atualizadas.',
+        details: {
+          defaultNamingPolicy: next.defaultNamingPolicy,
+          aiRenameEnabled: next.aiRenameEnabled,
+        },
+      });
+    },
+    [workflow],
+  );
 
   const resetToIdle = useCallback(() => {
     abortRef.current?.abort();
@@ -348,261 +348,264 @@ export function DocumentSendPage() {
     setAnalysisError(null);
   }, [clearCompletingTimer]);
 
-  const processFile = useCallback(async (file: File) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const processFile = useCallback(
+    async (file: File) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    const generation = ++analysisGenerationRef.current;
-    const docId = generateDocumentId();
-    const timestamp = formatNow();
+      const generation = ++analysisGenerationRef.current;
+      const docId = generateDocumentId();
+      const timestamp = formatNow();
 
-    clearCompletingTimer();
-    setFlowPhase('analyzing');
-    itemStartedAtRef.current = Date.now();
-    workflow.setSelectedItemId(docId);
-    setAutoPaused(false);
-    setAutoCountdown(null);
-    autoConfirmTriggeredRef.current = false;
-    setActiveMetadata(null);
-    setRawAnalysis(null);
-    setManualReviewChecked(false);
-    setPerItemNaming({ namingMode: 'ai_suggested' });
-    setLastProcessedFile(file);
-    setCurrentDocId(docId);
-    filesByDocIdRef.current.set(docId, file);
-    setLogs(createInitialLogs());
-    setAnalysisError(null);
-    setHistory((prev) => [createAnalyzingHistoryItem(docId, file), ...prev]);
-
-    workflow.logItem(docId, file.name, {
-      level: 'info',
-      stage: 'queue',
-      message: 'Documento adicionado para análise.',
-      details: { sizeBytes: file.size },
-    });
-    workflow.logItem(docId, file.name, {
-      level: 'info',
-      stage: 'analysis',
-      message: 'Análise iniciada.',
-    });
-
-    try {
-      const response = await analyzePdf(file, {
-        signal: controller.signal,
-        documentId: updateTargetDocumentId ?? undefined,
-        context: {
-          itemId: docId,
-          fileName: file.name,
-          requestId: createRequestId(),
-        },
-      });
-      const { metadata, logs: apiLogs, raw } = response;
-
-      if (generation !== analysisGenerationRef.current) return;
+      clearCompletingTimer();
+      setFlowPhase('analyzing');
+      itemStartedAtRef.current = Date.now();
+      workflow.setSelectedItemId(docId);
+      setAutoPaused(false);
+      setAutoCountdown(null);
+      autoConfirmTriggeredRef.current = false;
+      setActiveMetadata(null);
+      setRawAnalysis(null);
+      setManualReviewChecked(false);
+      setPerItemNaming({ namingMode: 'ai_suggested' });
+      setLastProcessedFile(file);
+      setCurrentDocId(docId);
+      filesByDocIdRef.current.set(docId, file);
+      setLogs(createInitialLogs());
+      setAnalysisError(null);
+      setHistory((prev) => [createAnalyzingHistoryItem(docId, file), ...prev]);
 
       workflow.logItem(docId, file.name, {
-        level: 'success',
-        stage: 'analysis',
-        message: 'Resposta da análise recebida.',
-        details: {
-          httpStatus: response.httpStatus,
-          durationMs: response.durationMs,
-          requestId: response.requestId,
-        },
+        level: 'info',
+        stage: 'queue',
+        message: 'Documento adicionado para análise.',
+        details: { sizeBytes: file.size },
       });
-
-      for (const mapped of mapProcessingLogsToWorkflowEvents(apiLogs, {
-        itemId: docId,
-        fileName: file.name,
-      })) {
-        workflow.log(mapped);
-      }
-
-      const decision = buildAnalysisDecision(raw, metadata);
-      workflow.logItem(docId, file.name, {
-        level:
-          decision.action === 'error'
-            ? 'error'
-            : decision.action === 'save'
-              ? 'success'
-              : 'warning',
-        stage: decision.action === 'error' ? 'error' : 'review',
-        message:
-          decision.action === 'save'
-            ? 'Metadados identificados.'
-            : decision.action === 'error'
-              ? 'Erro na análise do documento.'
-              : 'Documento requer revisão.',
-        details: {
-          ...decision.details,
-          decision: decision.action,
-          reasons: decision.reasons,
-        },
-      });
-
-      const totalDurationMs = itemStartedAtRef.current
-        ? Date.now() - itemStartedAtRef.current
-        : response.durationMs;
       workflow.logItem(docId, file.name, {
         level: 'info',
         stage: 'analysis',
-        message: `Processado em ${formatDurationMs(totalDurationMs)}.`,
-        details: { durationMs: totalDurationMs },
+        message: 'Análise iniciada.',
       });
 
-      setLogs(apiLogs);
-      setActiveMetadata(metadata);
-      setRawAnalysis(raw);
-
-      const nextPhase =
-        metadata.analysisStatus === 'failed' || metadata.analysisStatus === 'ai_unavailable'
-          ? 'error'
-          : 'completed';
-      setFlowPhase('completing');
-
-      if (
-        reviewSettings.autoReviewEnabled &&
-        shouldPauseForReview(reviewSettings, { metadata, rawAnalysis: raw })
-      ) {
-        setAutoPaused(true);
-        workflow.logItem(docId, file.name, {
-          level: 'warning',
-          stage: 'auto',
-          message: 'Auto pausado por revisão.',
+      try {
+        const response = await analyzePdf(file, {
+          signal: controller.signal,
+          documentId: updateTargetDocumentId ?? undefined,
+          context: {
+            itemId: docId,
+            fileName: file.name,
+            requestId: createRequestId(),
+          },
         });
-      }
+        const { metadata, logs: apiLogs, raw } = response;
 
-      completingTimerRef.current = window.setTimeout(() => {
         if (generation !== analysisGenerationRef.current) return;
-        setFlowPhase(nextPhase);
-        completingTimerRef.current = null;
-      }, 260);
 
-      const processedDoc: UploadedDocument = {
-        id: docId,
-        originalName: file.name,
-        suggestedName: metadata.suggestedName,
-        fileSize: file.size,
-        mimeType: file.type || 'application/pdf',
-        category: metadata.documentType,
-        status:
-          metadata.analysisStatus === 'requires_review' ? 'requires_review' : 'name_generated',
-        version: metadata.suggestedVersion,
-        metadata,
-        uploadedAt: timestamp,
-        lastActionAt: formatNow(),
-      };
+        workflow.logItem(docId, file.name, {
+          level: 'success',
+          stage: 'analysis',
+          message: 'Resposta da análise recebida.',
+          details: {
+            httpStatus: response.httpStatus,
+            durationMs: response.durationMs,
+            requestId: response.requestId,
+          },
+        });
 
-      setHistory((prev) => {
-        const existing = prev.find((item) => item.id === docId);
-        return prev.map((item) =>
-          item.id === docId
-            ? toHistoryItem(processedDoc, metadata, {
-                logs: apiLogs,
-                uploadedAt: existing?.uploadedAt,
-                uploadedAtIso: existing?.uploadedAtIso,
-              })
-            : item,
+        for (const mapped of mapProcessingLogsToWorkflowEvents(apiLogs, {
+          itemId: docId,
+          fileName: file.name,
+        })) {
+          workflow.log(mapped);
+        }
+
+        const decision = buildAnalysisDecision(raw, metadata);
+        workflow.logItem(docId, file.name, {
+          level:
+            decision.action === 'error'
+              ? 'error'
+              : decision.action === 'save'
+                ? 'success'
+                : 'warning',
+          stage: decision.action === 'error' ? 'error' : 'review',
+          message:
+            decision.action === 'save'
+              ? 'Metadados identificados.'
+              : decision.action === 'error'
+                ? 'Erro na análise do documento.'
+                : 'Documento requer revisão.',
+          details: {
+            ...decision.details,
+            decision: decision.action,
+            reasons: decision.reasons,
+          },
+        });
+
+        const totalDurationMs = itemStartedAtRef.current
+          ? Date.now() - itemStartedAtRef.current
+          : response.durationMs;
+        workflow.logItem(docId, file.name, {
+          level: 'info',
+          stage: 'analysis',
+          message: `Processado em ${formatDurationMs(totalDurationMs)}.`,
+          details: { durationMs: totalDurationMs },
+        });
+
+        setLogs(apiLogs);
+        setActiveMetadata(metadata);
+        setRawAnalysis(raw);
+
+        const nextPhase =
+          metadata.analysisStatus === 'failed' || metadata.analysisStatus === 'ai_unavailable'
+            ? 'error'
+            : 'completed';
+        setFlowPhase('completing');
+
+        if (
+          reviewSettings.autoReviewEnabled &&
+          shouldPauseForReview(reviewSettings, { metadata, rawAnalysis: raw })
+        ) {
+          setAutoPaused(true);
+          workflow.logItem(docId, file.name, {
+            level: 'warning',
+            stage: 'auto',
+            message: 'Auto pausado por revisão.',
+          });
+        }
+
+        completingTimerRef.current = window.setTimeout(() => {
+          if (generation !== analysisGenerationRef.current) return;
+          setFlowPhase(nextPhase);
+          completingTimerRef.current = null;
+        }, 260);
+
+        const processedDoc: UploadedDocument = {
+          id: docId,
+          originalName: file.name,
+          suggestedName: metadata.suggestedName,
+          fileSize: file.size,
+          mimeType: file.type || 'application/pdf',
+          category: metadata.documentType,
+          status:
+            metadata.analysisStatus === 'requires_review' ? 'requires_review' : 'name_generated',
+          version: metadata.suggestedVersion,
+          metadata,
+          uploadedAt: timestamp,
+          lastActionAt: formatNow(),
+        };
+
+        setHistory((prev) => {
+          const existing = prev.find((item) => item.id === docId);
+          return prev.map((item) =>
+            item.id === docId
+              ? toHistoryItem(processedDoc, metadata, {
+                  logs: apiLogs,
+                  uploadedAt: existing?.uploadedAt,
+                  uploadedAtIso: existing?.uploadedAtIso,
+                })
+              : item,
+          );
+        });
+
+        snapshotsRef.current[docId] = {
+          metadata,
+          logs: apiLogs,
+          rawAnalysis: raw,
+          fileName: file.name,
+          fileSize: file.size,
+        };
+
+        workflow.logItem(docId, file.name, {
+          level: 'success',
+          stage: 'history',
+          message: 'Histórico da sessão atualizado.',
+          details: { status: metadata.analysisStatus },
+        });
+
+        if (metadata.analysisStatus === 'completed') {
+          toast.success('Análise concluída');
+        } else if (metadata.analysisStatus === 'requires_review') {
+          toast.message('Requer revisão', {
+            description: metadata.classificationReason,
+          });
+        } else if (metadata.analysisStatus === 'ai_unavailable') {
+          toast.warning('Análise automática indisponível', {
+            description: metadata.classificationReason,
+          });
+        }
+      } catch (error) {
+        if (controller.signal.aborted || generation !== analysisGenerationRef.current) return;
+
+        const workflowError =
+          error instanceof AnalyzePdfRequestError
+            ? error.workflowError
+            : parseWorkflowErrorPayload(
+                null,
+                error instanceof Error ? error.message : 'Erro ao analisar documento',
+              );
+
+        setAnalysisError(workflowError);
+
+        const errorLogs: ProcessingLogItem[] = [
+          {
+            id: 'log-error',
+            title: workflowError.title,
+            description: workflowError.message,
+            time: formatNow(),
+            status: 'error',
+          },
+        ];
+        setLogs(errorLogs);
+        setActiveMetadata(createErrorMetadata(file));
+        setFlowPhase('error');
+
+        const logDetails = buildWorkflowErrorLogDetails(workflowError, {
+          stage: 'Análise',
+          endpoint: workflowError.endpoint,
+          showDebug: false,
+        });
+
+        workflow.logItem(docId, file.name, {
+          level: 'error',
+          stage: 'analysis',
+          message: workflowError.title,
+          details: logDetails,
+        });
+        workflow.logItem(docId, file.name, {
+          level: 'error',
+          stage: 'history',
+          message: 'Histórico atualizado com erro.',
+          details: { category: workflowError.category },
+        });
+
+        setHistory((prev) =>
+          prev.map((item) =>
+            item.id === docId
+              ? {
+                  ...item,
+                  status: 'error' as const,
+                  suggestedName: '—',
+                  category: 'Indefinido',
+                  metadata: createErrorMetadata(file),
+                  logs: errorLogs,
+                  errorMessage: workflowError.message,
+                }
+              : item,
+          ),
         );
-      });
-
-      snapshotsRef.current[docId] = {
-        metadata,
-        logs: apiLogs,
-        rawAnalysis: raw,
-        fileName: file.name,
-        fileSize: file.size,
-      };
-
-      workflow.logItem(docId, file.name, {
-        level: 'success',
-        stage: 'history',
-        message: 'Histórico da sessão atualizado.',
-        details: { status: metadata.analysisStatus },
-      });
-
-      if (metadata.analysisStatus === 'completed') {
-        toast.success('Análise concluída');
-      } else if (metadata.analysisStatus === 'requires_review') {
-        toast.message('Requer revisão', {
-          description: metadata.classificationReason,
-        });
-      } else if (metadata.analysisStatus === 'ai_unavailable') {
-        toast.warning('Análise automática indisponível', {
-          description: metadata.classificationReason,
-        });
+        snapshotsRef.current[docId] = {
+          metadata: createErrorMetadata(file),
+          logs: errorLogs,
+          rawAnalysis: null,
+          fileName: file.name,
+          fileSize: file.size,
+        };
+        toast.error(workflowError.toastMessage);
       }
-    } catch (error) {
-      if (controller.signal.aborted || generation !== analysisGenerationRef.current) return;
-
-      const workflowError =
-        error instanceof AnalyzePdfRequestError
-          ? error.workflowError
-          : parseWorkflowErrorPayload(
-              null,
-              error instanceof Error ? error.message : 'Erro ao analisar documento',
-            );
-
-      setAnalysisError(workflowError);
-
-      const errorLogs: ProcessingLogItem[] = [
-        {
-          id: 'log-error',
-          title: workflowError.title,
-          description: workflowError.message,
-          time: formatNow(),
-          status: 'error',
-        },
-      ];
-      setLogs(errorLogs);
-      setActiveMetadata(createErrorMetadata(file));
-      setFlowPhase('error');
-
-      const logDetails = buildWorkflowErrorLogDetails(workflowError, {
-        stage: 'Análise',
-        endpoint: workflowError.endpoint,
-        showDebug: false,
-      });
-
-      workflow.logItem(docId, file.name, {
-        level: 'error',
-        stage: 'analysis',
-        message: workflowError.title,
-        details: logDetails,
-      });
-      workflow.logItem(docId, file.name, {
-        level: 'error',
-        stage: 'history',
-        message: 'Histórico atualizado com erro.',
-        details: { category: workflowError.category },
-      });
-
-      setHistory((prev) =>
-        prev.map((item) =>
-          item.id === docId
-            ? {
-                ...item,
-                status: 'error' as const,
-                suggestedName: '—',
-                category: 'Indefinido',
-                metadata: createErrorMetadata(file),
-                logs: errorLogs,
-                errorMessage: workflowError.message,
-              }
-            : item,
-        ),
-      );
-      snapshotsRef.current[docId] = {
-        metadata: createErrorMetadata(file),
-        logs: errorLogs,
-        rawAnalysis: null,
-        fileName: file.name,
-        fileSize: file.size,
-      };
-      toast.error(workflowError.toastMessage);
-    }
-  }, [clearCompletingTimer, reviewSettings, updateTargetDocumentId, workflow]);
+    },
+    [clearCompletingTimer, reviewSettings, updateTargetDocumentId, workflow],
+  );
 
   const handleFilesSelected = useCallback(
     (files: File[], invalidItems: Array<{ file: File; error: string }>) => {
@@ -705,7 +708,9 @@ export function DocumentSendPage() {
       workflow.logItem(currentDocId, lastProcessedFile.name, {
         level: 'info',
         stage: 'confirmation',
-        message: options?.autoSaved ? 'Salvamento automático iniciado.' : 'Confirmação manual iniciada.',
+        message: options?.autoSaved
+          ? 'Salvamento automático iniciado.'
+          : 'Confirmação manual iniciada.',
       });
 
       const confirmStartedAt = Date.now();
@@ -737,17 +742,14 @@ export function DocumentSendPage() {
           savedDocumentId: result.documentId,
           savedVersionId: result.versionId,
           suggestedVersion:
-            'versionLabel' in result
-              ? result.versionLabel
-              : activeMetadata.suggestedVersion,
-          documentCode: 'documentCode' in result ? result.documentCode : activeMetadata.documentCode,
+            'versionLabel' in result ? result.versionLabel : activeMetadata.suggestedVersion,
+          documentCode:
+            'documentCode' in result ? result.documentCode : activeMetadata.documentCode,
           storageStatus: result.storageStatus,
         };
 
         setActiveMetadata(savedMetadata);
-        const actionLabel = options?.autoSaved
-          ? 'Salvo automaticamente'
-          : 'Metadados confirmados';
+        const actionLabel = options?.autoSaved ? 'Salvo automaticamente' : 'Metadados confirmados';
 
         workflow.logItem(currentDocId, lastProcessedFile.name, {
           level: 'success',
@@ -821,7 +823,19 @@ export function DocumentSendPage() {
         setIsConfirming(false);
       }
     },
-    [activeMetadata, currentDocId, invalidateDocumentQueries, lastProcessedFile, manualReviewChecked, nextVersionLabel, perItemNaming, rawAnalysis, reviewSettings, updateTargetDocumentId, workflow],
+    [
+      activeMetadata,
+      currentDocId,
+      invalidateDocumentQueries,
+      lastProcessedFile,
+      manualReviewChecked,
+      nextVersionLabel,
+      perItemNaming,
+      rawAnalysis,
+      reviewSettings,
+      updateTargetDocumentId,
+      workflow,
+    ],
   );
 
   const handleCancelAuto = useCallback(() => {
@@ -896,7 +910,14 @@ export function DocumentSendPage() {
       itemId: currentDocId ?? undefined,
       fileName: lastProcessedFile?.name,
     });
-  }, [autoEligible, currentDocId, flowPhase, lastProcessedFile, reviewSettings.autoAcceptDelaySeconds, workflow]);
+  }, [
+    autoEligible,
+    currentDocId,
+    flowPhase,
+    lastProcessedFile,
+    reviewSettings.autoAcceptDelaySeconds,
+    workflow,
+  ]);
 
   useEffect(() => {
     if (autoCountdown === null || autoCountdown <= 0 || autoPaused || !autoEligible) {
@@ -948,8 +969,7 @@ export function DocumentSendPage() {
   }, [returnCountdown, flowPhase]);
 
   const showProcessing = isProcessingView && lastProcessedFile;
-  const showError =
-    flowPhase === 'error' && lastProcessedFile && activeMetadata && currentDocId;
+  const showError = flowPhase === 'error' && lastProcessedFile && activeMetadata && currentDocId;
   const showResult =
     (flowPhase === 'completed' || flowPhase === 'saving') && activeMetadata && currentDocId;
 
@@ -1031,8 +1051,7 @@ export function DocumentSendPage() {
   );
 
   const isResultView =
-    !isBulkActive &&
-    (flowPhase === 'completed' || flowPhase === 'saving' || flowPhase === 'error');
+    !isBulkActive && (flowPhase === 'completed' || flowPhase === 'saving' || flowPhase === 'error');
 
   const progressSummary = (
     <UploadProgressSummary
@@ -1065,10 +1084,10 @@ export function DocumentSendPage() {
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col gap-4 overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-3 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-[12px] text-doqyn-muted">
+      <div className="flex shrink-0 items-center justify-between gap-3 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-caption text-doqyn-muted">
         <span>
-          Esta tela de envio é o fluxo legado. O upload agora vive na Biblioteca — use o botão
-          “+ Novo” ou arraste arquivos para a janela.
+          Esta tela de envio é o fluxo legado. O upload agora vive na Biblioteca — use o botão “+
+          Novo” ou arraste arquivos para a janela.
         </span>
         <Link to="/biblioteca" className="shrink-0 font-medium text-doqyn-info hover:underline">
           Ir para a Biblioteca

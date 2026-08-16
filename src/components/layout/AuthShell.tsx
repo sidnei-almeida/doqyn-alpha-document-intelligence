@@ -42,11 +42,11 @@ export function AuthShell({
         <ThemeToggle />
       </div>
 
-      <div className={cn('w-full flow-enter', WIDTH_CLASS[width], className)}>
+      <div className={cn('flow-enter w-full', WIDTH_CLASS[width], className)}>
         <header className="mb-8 flex flex-col items-center text-center">
           <AuthBrandLogo subtitle={eyebrow} />
           {title ? (
-            <h1 className="mt-5 text-[15px] font-semibold tracking-tight text-doqyn-text">{title}</h1>
+            <h1 className="mt-5 text-body font-semibold tracking-tight text-doqyn-text">{title}</h1>
           ) : null}
           {description ? (
             <p className="mt-2 max-w-md text-sm leading-relaxed text-doqyn-muted">{description}</p>
@@ -56,7 +56,7 @@ export function AuthShell({
         {children}
 
         {showSecureBadge ? (
-          <p className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-doqyn-subtle">
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-micro text-doqyn-subtle">
             <Icon name="shield" size={ICON_SIZE.xs} />
             Ambiente corporativo seguro
           </p>
@@ -68,20 +68,9 @@ export function AuthShell({
   );
 }
 
-export function AuthCard({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function AuthCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-doqyn-border bg-doqyn-surface',
-        className,
-      )}
-    >
+    <div className={cn('rounded-xl border border-doqyn-border bg-doqyn-surface', className)}>
       {children}
     </div>
   );

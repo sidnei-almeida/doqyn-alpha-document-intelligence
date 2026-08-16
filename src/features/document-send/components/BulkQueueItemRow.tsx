@@ -8,7 +8,10 @@ import { ProcessingHistoryBadge } from './ProcessingHistoryBadge';
 
 const STATUS_MAP: Record<
   BulkUploadItem['status'],
-  { label: string; historyStatus: 'analyzing' | 'metadata_confirmed' | 'requires_review' | 'error' | 'processed' }
+  {
+    label: string;
+    historyStatus: 'analyzing' | 'metadata_confirmed' | 'requires_review' | 'error' | 'processed';
+  }
 > = {
   queued: { label: 'Na fila', historyStatus: 'processed' },
   analyzing: { label: 'Analisando', historyStatus: 'analyzing' },
@@ -46,7 +49,7 @@ export function BulkQueueItemRow({
         'flow-enter rounded-lg border transition-colors',
         isCurrent || isSelected
           ? 'border-doqyn-primary/40 bg-doqyn-primary/5'
-          : 'border-doqyn-border-subtle bg-doqyn-bg/20',
+          : 'bg-doqyn-bg/20 border-doqyn-border-subtle',
       )}
     >
       <div className="flex items-center gap-2 px-3 py-2.5">
@@ -86,7 +89,7 @@ export function BulkQueueItemRow({
               {item.errorMessage && ` · ${item.errorMessage}`}
             </p>
           </div>
-          <span className="shrink-0 text-[10px] text-doqyn-muted">{config.label}</span>
+          <span className="shrink-0 text-micro text-doqyn-muted">{config.label}</span>
           <ProcessingHistoryBadge status={config.historyStatus} />
         </button>
       </div>
@@ -94,7 +97,7 @@ export function BulkQueueItemRow({
       {expanded && hasLogs && (
         <ol className="space-y-1 border-t border-doqyn-border-subtle px-3 py-2">
           {item.logs.map((message, index) => (
-            <li key={`${item.id}-log-${index}`} className="text-[11px] text-doqyn-muted">
+            <li key={`${item.id}-log-${index}`} className="text-micro text-doqyn-muted">
               {message}
             </li>
           ))}

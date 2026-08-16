@@ -17,8 +17,8 @@ export function SidebarSpaceItem({ id, name, isActive, collapsed }: SidebarSpace
     <Link
       to={`/biblioteca?space=${encodeURIComponent(id)}`}
       className={cn(
-        'sidebar-nav-link group explorer-interactive flex h-10 items-center gap-3 rounded-full text-[13px] font-medium',
-        'focus-visible:outline-none focus-visible:shadow-[var(--sidebar-focus-ring)]',
+        'sidebar-nav-link explorer-interactive group flex h-10 items-center gap-3 rounded-full text-label',
+        'focus-visible:shadow-[var(--sidebar-focus-ring)] focus-visible:outline-none',
         collapsed ? 'justify-center px-0' : 'px-3',
         isActive
           ? 'sidebar-nav-link--active'

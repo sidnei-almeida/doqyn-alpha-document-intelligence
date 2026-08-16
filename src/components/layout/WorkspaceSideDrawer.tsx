@@ -60,7 +60,7 @@ export function WorkspaceSideDrawer({
   return (
     <div
       className={cn(
-        'fixed inset-0 flex justify-end modal-overlay-scrim backdrop-blur-[1px]',
+        'modal-overlay-scrim fixed inset-0 flex justify-end backdrop-blur-[1px]',
         zIndexClass,
       )}
       role="presentation"
@@ -79,9 +79,9 @@ export function WorkspaceSideDrawer({
         {header ?? (
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-doqyn-border-subtle px-4 py-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold text-doqyn-text">{title}</p>
+              <p className="text-caption font-semibold text-doqyn-text">{title}</p>
               {subtitle ? (
-                <TruncatedText className="mt-0.5 text-[11px] text-doqyn-muted">
+                <TruncatedText className="mt-0.5 text-micro text-doqyn-muted">
                   {subtitle}
                 </TruncatedText>
               ) : null}

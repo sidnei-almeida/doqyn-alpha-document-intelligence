@@ -21,12 +21,12 @@ export function ProcessingStepTimeline({ steps, className }: ProcessingStepTimel
         >
           <span
             className={cn(
-              'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] transition-colors duration-300',
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-micro transition-colors duration-300',
               step.status === 'done' &&
                 'border-doqyn-primary/40 bg-doqyn-primary/15 text-doqyn-primary',
               step.status === 'active' &&
-                'border-doqyn-primary/60 bg-doqyn-primary/10 text-doqyn-primary doc-step-active',
-              step.status === 'pending' && 'border-doqyn-border bg-doqyn-bg/40 text-doqyn-muted',
+                'border-doqyn-primary/60 bg-doqyn-primary/10 doc-step-active text-doqyn-primary',
+              step.status === 'pending' && 'bg-doqyn-bg/40 border-doqyn-border text-doqyn-muted',
             )}
           >
             {step.status === 'done' ? (

@@ -29,11 +29,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
 function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
   if (status === 'analyzing' || status === 'confirming') {
     return (
-      <Icon
-        name="progress_activity"
-        size={ICON_SIZE.sm}
-        className="animate-spin text-doqyn-info"
-      />
+      <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin text-doqyn-info" />
     );
   }
   if (status === 'done') {
@@ -61,7 +57,8 @@ function QueueRow({
   const { openReview, retryItem, removeItem, cancelAutoConfirm } = useUploadQueueContext();
 
   const subtitle = useMemo(() => {
-    if ((item.status === 'error' || item.status === 'ai_paused') && item.errorMessage) return item.errorMessage;
+    if ((item.status === 'error' || item.status === 'ai_paused') && item.errorMessage)
+      return item.errorMessage;
     if (item.status === 'done' && item.documentId) {
       return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
@@ -81,15 +78,22 @@ function QueueRow({
     <li className="flex items-center gap-3 border-t border-doqyn-border-subtle px-4 py-3 first:border-t-0">
       <StatusIcon status={item.status} />
       <div className="min-w-0 flex-1">
-        <TruncatedText as="p" className="text-[13px] font-medium text-doqyn-text">
+        <TruncatedText as="p" className="text-label text-doqyn-text">
           {item.fileName}
         </TruncatedText>
-        <p className={cn('text-[11px]', item.status === 'error' || item.status === 'ai_paused' ? 'text-doqyn-danger' : 'text-doqyn-muted')}>
+        <p
+          className={cn(
+            'text-micro',
+            item.status === 'error' || item.status === 'ai_paused'
+              ? 'text-doqyn-danger'
+              : 'text-doqyn-muted',
+          )}
+        >
           {subtitle}
         </p>
         {showProgress && (
           <div className="mt-2">
-            <div className="mb-1 flex justify-end text-[10px] tabular-nums text-doqyn-subtle">
+            <div className="mb-1 flex justify-end text-micro tabular-nums text-doqyn-subtle">
               {progress}%
             </div>
             <div
@@ -112,7 +116,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => cancelAutoConfirm(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-md px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
           Pausar
         </button>
@@ -121,7 +125,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => openReview(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-[12px] font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
+          className="shrink-0 rounded-md px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
         >
           Revisar
         </button>
@@ -136,7 +140,10 @@ function QueueRow({
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
       )}
-      {(item.status === 'done' || item.status === 'error' || item.status === 'ai_paused' || item.status === 'awaiting_approval') && (
+      {(item.status === 'done' ||
+        item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'awaiting_approval') && (
         <button
           type="button"
           onClick={() => removeItem(item.id)}
@@ -194,8 +201,12 @@ export function UploadQueueDrawer() {
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <Icon name="auto_awesome" size={ICON_SIZE.sm} className="shrink-0 text-doqyn-accent-active" />
-            <p className="truncate text-[13px] font-semibold text-doqyn-text">{headline}</p>
+            <Icon
+              name="auto_awesome"
+              size={ICON_SIZE.sm}
+              className="shrink-0 text-doqyn-accent-active"
+            />
+            <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
             <Tooltip label="Preferências de upload">
@@ -211,7 +222,7 @@ export function UploadQueueDrawer() {
               <button
                 type="button"
                 onClick={clearFinished}
-                className="rounded-md px-2 py-1 text-[11px] text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="rounded-md px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
                 Limpar
               </button>
@@ -231,7 +242,7 @@ export function UploadQueueDrawer() {
         </div>
         {totalCount > 1 && (
           <div className="mt-2.5">
-            <div className="mb-1 flex justify-between text-[10px] text-doqyn-subtle">
+            <div className="mb-1 flex justify-between text-micro text-doqyn-subtle">
               <span>
                 {submittedProgressCount}/{totalCount} processados
               </span>
@@ -251,7 +262,7 @@ export function UploadQueueDrawer() {
           </div>
         )}
       </header>
-      <ul className={cn('max-h-72 overflow-y-auto scrollbar-thin', collapsed && 'hidden')}>
+      <ul className={cn('scrollbar-thin max-h-72 overflow-y-auto', collapsed && 'hidden')}>
         {items.map((item) => (
           <QueueRow
             key={item.id}

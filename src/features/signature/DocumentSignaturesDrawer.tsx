@@ -84,17 +84,19 @@ function SignatureRequestCard({
   const verificationCode = entry.signature?.verificationCode;
 
   return (
-    <section className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-4">
+    <section className="bg-doqyn-bg/40 rounded-lg border border-doqyn-border-subtle p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}>
+        <Badge
+          variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
+        >
           {requestStatusLabel(entry.status)}
         </Badge>
         {verificationCode ? (
-          <span className="font-mono text-[11px] text-doqyn-subtle">{verificationCode}</span>
+          <span className="font-mono text-micro text-doqyn-subtle">{verificationCode}</span>
         ) : null}
       </div>
 
-      <dl className="mt-3 space-y-2 text-[12px]">
+      <dl className="mt-3 space-y-2 text-caption">
         <div>
           <dt className="text-doqyn-muted">Signatário</dt>
           <dd className="text-doqyn-text">{signer?.name ?? '—'}</dd>
@@ -127,7 +129,7 @@ function SignatureRequestCard({
       </dl>
 
       {entry.message ? (
-        <blockquote className="mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2 text-[12px] leading-relaxed text-doqyn-subtle">
+        <blockquote className="mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2 text-caption leading-relaxed text-doqyn-subtle">
           {entry.message}
         </blockquote>
       ) : null}
@@ -138,7 +140,7 @@ function SignatureRequestCard({
             type="button"
             size="sm"
             variant="ghost"
-            className="text-doqyn-danger hover:bg-doqyn-danger/10 hover:text-doqyn-danger"
+            className="hover:bg-doqyn-danger/10 text-doqyn-danger hover:text-doqyn-danger"
             disabled={revokingId === entry.signatureRequestId}
             onClick={() => onRevoke(entry)}
             data-testid="signature-drawer-revoke"
@@ -168,15 +170,13 @@ function SignatureRequestCard({
             disabled={downloadingEvidence === entry.signatureRequestId}
             onClick={() => onDownloadEvidence(entry.signatureRequestId)}
           >
-            {downloadingEvidence === entry.signatureRequestId
-              ? 'Baixando…'
-              : 'Baixar evidências'}
+            {downloadingEvidence === entry.signatureRequestId ? 'Baixando…' : 'Baixar evidências'}
           </Button>
         ) : null}
         {verificationCode ? (
           <Link
             to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-            className="inline-flex items-center gap-1 text-[12px] text-doqyn-accent hover:underline"
+            className="text-doqyn-accent inline-flex items-center gap-1 text-caption hover:underline"
             data-testid="signature-drawer-verification-link"
           >
             Abrir validador
@@ -302,9 +302,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       bodyClassName="py-4"
     >
       <div className="mb-4 border-b border-doqyn-border-subtle pb-3">
-        <TruncatedText className="text-[13px] font-medium text-doqyn-text">
-          {documentName}
-        </TruncatedText>
+        <TruncatedText className="text-label text-doqyn-text">{documentName}</TruncatedText>
         {summaryLabel ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant={signatureSummaryBadgeVariant(document.signatureSummary!.status)}>
@@ -314,18 +312,18 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
         ) : null}
       </div>
 
-      {isLoading ? (
-        <p className="text-[12px] text-doqyn-muted">Carregando assinaturas…</p>
-      ) : null}
+      {isLoading ? <p className="text-caption text-doqyn-muted">Carregando assinaturas…</p> : null}
       {isError ? (
         <div className="space-y-2">
-          <p className="text-[12px] text-doqyn-danger">Não foi possível carregar as assinaturas.</p>
+          <p className="text-caption text-doqyn-danger">
+            Não foi possível carregar as assinaturas.
+          </p>
           <Button type="button" size="sm" variant="secondary" onClick={() => void refetch()}>
             Tentar novamente
           </Button>
         </div>
       ) : null}
-      {error ? <p className="mb-3 text-[12px] text-doqyn-danger">{error}</p> : null}
+      {error ? <p className="mb-3 text-caption text-doqyn-danger">{error}</p> : null}
 
       <div className={cn('space-y-3')}>
         {data?.items.map((entry) => (
@@ -345,7 +343,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       </div>
 
       {!isLoading && !isError && data?.items.length === 0 ? (
-        <p className="text-[12px] text-doqyn-muted">Nenhuma assinatura solicitada.</p>
+        <p className="text-caption text-doqyn-muted">Nenhuma assinatura solicitada.</p>
       ) : null}
     </WorkspaceSideDrawer>
   );
