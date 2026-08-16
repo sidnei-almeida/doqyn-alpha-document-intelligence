@@ -60,6 +60,8 @@ export const NAV_ITEMS_LIBRARY_VIEWS = [
 export const NAV_ITEMS_ADMIN = [
   { label: 'Visão Geral', path: '/dashboard', icon: 'dashboard' },
   { label: 'Regras', path: '/rules', icon: 'account_tree', governanceOnly: true },
+  // Aberta para dono também: cada um enxerga a fatia dele, e é o servidor que decide o recorte.
+  { label: 'Matriz', path: '/matriz', icon: 'grid_on' },
   { label: 'Usuários', path: '/users', icon: 'group', managerOnly: true },
   { label: 'Auditoria', path: '/audit', icon: 'shield' },
   { label: 'Tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
