@@ -25,6 +25,74 @@ function buildPollUrl(jobId: string): string {
   return `/api/ai/jobs/${jobId}`;
 }
 
+/** Janela de conclusões usada para medir a vazão real da plataforma. */
+const THROUGHPUT_WINDOW_MS = 10 * 60_000;
+/**
+ * A vazão é a mesma para todo mundo que consulta, e a consulta acontece a cada poucos segundos por
+ * arquivo em voo. Sem este cache, cada arquivo pagaria duas contagens no Mongo por consulta.
+ */
+const THROUGHPUT_CACHE_MS = 15_000;
+
+let throughputCache: { jobsPerMinute: number | null; expiresAt: number } | null = null;
+
+async function measureJobsPerMinute(
+  collection: Collection<MongoAnalysisJob>,
+  now: number,
+): Promise<number | null> {
+  if (throughputCache && throughputCache.expiresAt > now) {
+    return throughputCache.jobsPerMinute;
+  }
+
+  const since = new Date(now - THROUGHPUT_WINDOW_MS);
+  const completed = await collection.countDocuments({
+    status: { $in: ['completed', 'requires_review', 'ai_unavailable'] },
+    completedAt: { $gte: since },
+  });
+
+  // Sem conclusão na janela não há vazão observada. `null` some com a estimativa na tela em vez de
+  // mostrar um número inventado.
+  const jobsPerMinute = completed > 0 ? completed / (THROUGHPUT_WINDOW_MS / 60_000) : null;
+  throughputCache = { jobsPerMinute, expiresAt: now + THROUGHPUT_CACHE_MS };
+  return jobsPerMinute;
+}
+
+/**
+ * Onde o documento está na fila e quanto isso deve custar de espera.
+ *
+ * Sem isso a tela mostra "Analisando com IA…" tanto para quem está sendo processado agora quanto
+ * para quem é o número 400 — e espera longa indistinguível de travamento é o que faz o usuário
+ * recarregar a página e reenviar, aumentando a carga que ele está esperando escoar.
+ */
+async function buildQueueInsight(job: MongoAnalysisJob): Promise<{
+  queuePosition?: number;
+  estimatedWaitSeconds?: number | null;
+}> {
+  if (job.status !== 'queued' && job.status !== 'processing') return {};
+
+  const collection = await getAnalysisJobsCollection();
+  if (!collection) return {};
+
+  const now = Date.now();
+
+  // Quem já está sendo analisado tem posição zero: não espera fila, espera a IA.
+  const ahead =
+    job.status === 'processing'
+      ? 0
+      : await collection.countDocuments({
+          status: 'queued',
+          createdAt: { $lt: job.createdAt },
+        });
+
+  const jobsPerMinute = await measureJobsPerMinute(collection, now);
+  if (!jobsPerMinute) {
+    return { queuePosition: ahead, estimatedWaitSeconds: null };
+  }
+
+  // O próprio documento entra na conta: ele também precisa ser analisado depois de chegar a vez.
+  const estimatedWaitSeconds = Math.max(1, Math.round(((ahead + 1) / jobsPerMinute) * 60));
+  return { queuePosition: ahead, estimatedWaitSeconds };
+}
+
 function toPollResponse(job: MongoAnalysisJob): AnalysisJobPollResponse {
   const terminal =
     job.status === 'completed' ||
@@ -122,7 +190,7 @@ export async function getAnalysisJobForUser(input: {
     return null;
   }
 
-  return toPollResponse(job);
+  return { ...toPollResponse(job), ...(await buildQueueInsight(job)) };
 }
 
 export async function markAnalysisJobProcessing(jobId: string): Promise<void> {

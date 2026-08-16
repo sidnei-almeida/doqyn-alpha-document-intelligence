@@ -627,6 +627,9 @@ export function useBulkUploadQueue({
             fileName: item.originalFileName,
             requestId,
           },
+          // O adiantado também mostra onde está: ele já está na fila do servidor, mesmo que a
+          // esteira ainda não tenha chegado nele.
+          onQueueStatus: (queueStatus) => patchItem(item.id, { queueStatus }),
         });
 
         // Quem consome trata o erro. Marcar aqui evita rejeição sem dono quando o adiantamento é
@@ -643,7 +646,7 @@ export function useBulkUploadQueue({
         });
       }
     },
-    [workflow],
+    [patchItem, workflow],
   );
 
   // Sair da tela não deixa análise adiantada rodando: sem isso o navegador continuaria consultando
@@ -780,6 +783,7 @@ export function useBulkUploadQueue({
               fileName: next.originalFileName,
               requestId,
             },
+            onQueueStatus: (queueStatus) => patchItem(next.id, { queueStatus }),
           });
 
         // Os vizinhos saem enquanto este espera: é aqui que o lote deixa de ser uma fila indiana.
@@ -914,6 +918,7 @@ export function useBulkUploadQueue({
             metadata,
             errorMessage: aiMessage,
             finishedAt: formatNow(),
+            queueStatus: undefined,
           });
 
           appendItemMessage(next.id, aiMessage);
@@ -945,6 +950,8 @@ export function useBulkUploadQueue({
           status: postStatus,
           result: raw,
           metadata,
+          // O lugar na fila deixa de valer no instante em que o resultado chega.
+          queueStatus: undefined,
           recommendedFileName,
           finalFileName: recommendedFileName,
           className,

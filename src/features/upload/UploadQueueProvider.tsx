@@ -380,6 +380,10 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       const result = await analyzePdf(file, {
         signal: analyzeController.signal,
         context: { fileName: next.fileName },
+        onQueueStatus: (queueStatus) => {
+          if (!inFlightAnalysesRef.current.has(next.id)) return;
+          dispatch({ type: 'queue_status', id: next.id, queueStatus });
+        },
       });
 
       // Deixou de estar em voo enquanto a resposta vinha: expirou, foi cancelado ou o arquivo saiu

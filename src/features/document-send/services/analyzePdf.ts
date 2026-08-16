@@ -3,6 +3,7 @@ import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/wo
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
+import { analysisPollDelayMs } from './analysisPollBackoff';
 import { UPLOAD_ANALYZE_TIMEOUT_MS } from '@/features/upload/queue/uploadQueueAnalysis';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 
@@ -100,6 +101,18 @@ type AnalysisJobPollResponse = {
   result?: AnalysisJobResult;
   errorCode?: string;
   errorMessage?: string;
+  /** Espelha `AnalysisJobPollResponse` do servidor. Ausente em resposta de versão antiga. */
+  queuePosition?: number;
+  estimatedWaitSeconds?: number | null;
+};
+
+/** Onde o documento está na fila da plataforma, do jeito que a tela precisa mostrar. */
+export type AnalysisQueueStatus = {
+  status: AnalysisJobPollResponse['status'];
+  /** Quantos estão na frente. `0` é "sendo analisado agora". */
+  queuePosition?: number;
+  /** `null` quando o servidor não tem vazão recente para estimar. */
+  estimatedWaitSeconds?: number | null;
 };
 
 export type AnalyzePdfOptions = {
@@ -107,6 +120,11 @@ export type AnalyzePdfOptions = {
   context?: WorkflowRequestContext;
   /** Quando informado, usa o endpoint de análise de atualização de versão. */
   documentId?: string;
+  /**
+   * Chamado a cada consulta de status enquanto o documento espera. É o que permite a tela dizer
+   * "3 na frente, ~2 min" em vez de "Analisando com IA…" para todo mundo igual.
+   */
+  onQueueStatus?: (queueStatus: AnalysisQueueStatus) => void;
 };
 
 type StagingUploadUrlResponse = {
@@ -324,13 +342,14 @@ function isTerminalAnalysisStatus(
 
 async function pollAnalysisJobResult(
   jobId: string,
-  options?: Pick<AnalyzePdfOptions, 'signal'>,
+  options?: Pick<AnalyzePdfOptions, 'signal' | 'onQueueStatus'>,
 ): Promise<AnalysisJobResult> {
   const timeoutMs = UPLOAD_ANALYZE_TIMEOUT_MS;
   const startedAt = performance.now();
-  const pollIntervalMs = 2_000;
+  let attempt = 0;
 
   while (true) {
+    attempt += 1;
     if (options?.signal?.aborted) {
       throw new DOMException('Aborted', 'AbortError');
     }
@@ -371,6 +390,12 @@ async function pollAnalysisJobResult(
       return payload.result;
     }
 
+    options?.onQueueStatus?.({
+      status: payload.status,
+      queuePosition: payload.queuePosition,
+      estimatedWaitSeconds: payload.estimatedWaitSeconds,
+    });
+
     if (isTerminalAnalysisStatus(payload.status) && !payload.result) {
       throw new AnalyzePdfRequestError(
         parseWorkflowErrorPayload(
@@ -391,7 +416,7 @@ async function pollAnalysisJobResult(
       throw new Error('Tempo limite aguardando a conclusão da análise.');
     }
 
-    await sleep(pollIntervalMs, options?.signal);
+    await sleep(analysisPollDelayMs(attempt), options?.signal);
   }
 }
 
