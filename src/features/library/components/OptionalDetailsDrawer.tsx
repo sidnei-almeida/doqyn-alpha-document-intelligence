@@ -34,6 +34,8 @@ type OptionalDetailsDrawerProps = {
   onViewSignatures?: (doc: DocumentListItem) => void;
   onDownloadSignedPdf?: (doc: DocumentListItem) => void;
   onTransferOwnership?: (doc: DocumentListItem) => void;
+  /** Abre a ficha de metadados do documento — campos variam por tipo, então é por documento. */
+  onEditMetadata?: (doc: DocumentListItem) => void;
 };
 
 function FileDetailsBody({
@@ -45,6 +47,7 @@ function FileDetailsBody({
   onViewSignatures,
   onDownloadSignedPdf,
   onTransferOwnership,
+  onEditMetadata,
 }: {
   doc: DocumentListItem;
   onPreview: (doc: DocumentListItem) => void;
@@ -54,6 +57,7 @@ function FileDetailsBody({
   onViewSignatures?: (doc: DocumentListItem) => void;
   onDownloadSignedPdf?: (doc: DocumentListItem) => void;
   onTransferOwnership?: (doc: DocumentListItem) => void;
+  onEditMetadata?: (doc: DocumentListItem) => void;
 }) {
   const name = doc.currentFileName ?? doc.displayName;
   const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
@@ -160,6 +164,21 @@ function FileDetailsBody({
           <p className="py-2 text-[11px] text-doqyn-muted">Carregando ficha…</p>
         ) : (
           <div className="py-2">
+            {/* Corrigir um campo errado não precisa de versão nova do arquivo: atualizar o
+                documento troca o PDF, isto aqui troca o dado. */}
+            {onEditMetadata && doc.permissions?.canEditMetadata && (
+              <div className="mb-1.5 flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEditMetadata(doc)}
+                >
+                  <Icon name="edit_note" size={ICON_SIZE.sm} />
+                  Editar metadados
+                </Button>
+              </div>
+            )}
             <DocumentStandardFicha metadata={detail?.metadata} searchMeta={detail?.searchMeta} />
           </div>
         )}
@@ -272,6 +291,7 @@ export function OptionalDetailsDrawer({
   onViewSignatures,
   onDownloadSignedPdf,
   onTransferOwnership,
+  onEditMetadata,
 }: OptionalDetailsDrawerProps) {
   if (!selection) return null;
 
@@ -298,6 +318,7 @@ export function OptionalDetailsDrawer({
           onViewSignatures={onViewSignatures}
           onDownloadSignedPdf={onDownloadSignedPdf}
           onTransferOwnership={onTransferOwnership}
+          onEditMetadata={onEditMetadata}
         />
       )}
       {selection.kind === 'folder' && <FolderDetailsBody folder={selection.folder} />}

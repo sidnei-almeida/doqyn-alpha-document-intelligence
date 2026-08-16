@@ -72,9 +72,17 @@ describe('metadados saíram da matriz e viraram ficha do documento', () => {
   it('cada tipo de documento tem campos próprios: a ficha é por documento', () => {
     const drawer = readRepoFile('src/features/library/components/DocumentMetadataDrawer.tsx');
     const menu = readRepoFile('src/features/library/components/ExplorerContextMenu.tsx');
+    const details = readRepoFile('src/features/library/components/OptionalDetailsDrawer.tsx');
 
     assert.match(drawer, /DocumentExpiryEditor/);
+    // Dois caminhos, porque são dois momentos: o menu do arquivo e o painel de detalhes aberto.
     assert.match(menu, /label="Metadados"/);
+    assert.match(details, /Editar metadados/);
+  });
+
+  it('o botão da ficha só aparece para quem pode editar', () => {
+    const details = readRepoFile('src/features/library/components/OptionalDetailsDrawer.tsx');
+    assert.match(details, /doc\.permissions\?\.canEditMetadata/);
   });
 
   it('a matriz passa a falar só de permissão', () => {

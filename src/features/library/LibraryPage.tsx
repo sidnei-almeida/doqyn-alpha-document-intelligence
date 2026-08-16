@@ -760,6 +760,7 @@ export function LibraryPage() {
           onViewSignatures={handleViewSignatures}
           onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
           onTransferOwnership={(doc) => setTransferModalDoc(doc)}
+          onEditMetadata={handleEditMetadata}
         />
       )}
 
