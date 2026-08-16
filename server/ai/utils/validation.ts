@@ -67,7 +67,13 @@ export function validateClassificationResult(
     typeof data.confidence === 'number' && Number.isFinite(data.confidence)
       ? Math.min(1, Math.max(0, data.confidence))
       : 0;
-  const reason = typeof data.reason === 'string' ? data.reason : fallback.reason;
+  // O JSON chegou e foi lido: o que falta é só a justificativa. Reaproveitar aqui o texto de
+  // "resposta em formato inválido" acusava a IA de um erro que não houve, e mandava o usuário
+  // procurar defeito no lugar errado.
+  const reason =
+    typeof data.reason === 'string' && data.reason.trim()
+      ? data.reason
+      : 'A IA não explicou a decisão.';
   const evidence = parseEvidenceList(data.evidence);
 
   let requiresReview = Boolean(data.requiresReview);
