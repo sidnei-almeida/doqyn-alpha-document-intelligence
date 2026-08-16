@@ -100,11 +100,14 @@ describe('metadados saíram da matriz e viraram ficha do documento', () => {
     assert.match(service, /updateByCategory/);
   });
 
-  it('a categoria do documento é lida do campo que a lista expõe', () => {
+  it('o item da lista é tipado, não adivinhado', () => {
     const service = readRepoFile('server/services/matrix/documentAccessMatrixService.ts');
 
-    // Ler `classId` aqui devolvia undefined e deixava a governança vazia para todo mundo.
-    assert.match(service, /doc\.categoryId === 'string'/);
-    assert.equal(service.includes("doc.classId === 'string'"), false);
+    // Ler o resultado como `Record<string, unknown>` foi o que deixou passar `classId` e
+    // `className` — nomes que a listagem não publica. Com o tipo, nome errado não compila.
+    assert.match(service, /type ListedDocument = Awaited<ReturnType<typeof listDocuments>>/);
+    assert.match(service, /const documents: ListedDocument\[\]/);
+    assert.equal(service.includes('doc.classId'), false);
+    assert.equal(service.includes('doc.className'), false);
   });
 });
