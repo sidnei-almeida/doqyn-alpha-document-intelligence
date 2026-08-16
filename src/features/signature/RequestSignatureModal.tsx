@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { ExternalInviteLinkField } from '@/components/ui/ExternalInviteLinkField';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { isCompleteWhatsapp } from '@/lib/identifiers';
@@ -288,11 +290,8 @@ export function RequestSignatureModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-caption text-doqyn-subtle">
-                    Mensagem (opcional)
-                  </label>
-                  <textarea
-                    className="w-full rounded-lg border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm"
+                  <Textarea
+                    label="Mensagem (opcional)"
                     rows={3}
                     value={internalMessage}
                     onChange={(event) => setInternalMessage(event.target.value)}
@@ -349,25 +348,18 @@ export function RequestSignatureModal({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-caption text-doqyn-subtle">
-                  Mensagem (opcional)
-                </label>
-                <textarea
-                  className="w-full rounded-lg border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm"
+                <Textarea
+                  label="Mensagem (opcional)"
                   rows={3}
                   value={externalMessage}
                   onChange={(event) => setExternalMessage(event.target.value)}
                 />
               </div>
-              <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
-                <input
-                  type="checkbox"
-                  checked={externalAllowDownload}
-                  onChange={(event) => setExternalAllowDownload(event.target.checked)}
-                  className="rounded border-doqyn-border"
-                />
-                Permitir baixar PDF assinado
-              </label>
+              <Checkbox
+                checked={externalAllowDownload}
+                onChange={(event) => setExternalAllowDownload(event.target.checked)}
+                label="Permitir baixar PDF assinado"
+              />
             </>
           )}
 

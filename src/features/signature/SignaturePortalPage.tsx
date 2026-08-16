@@ -6,6 +6,7 @@ import { DoqynLogo } from '@/components/brand';
 import { Badge } from '@/components/ui/Badge';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Icon } from '@/components/ui/Icon';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -58,10 +59,10 @@ function PreviewLoadingPanel() {
 function PreviewUnavailablePanel({ message }: { message: string }) {
   return (
     <div
-      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-8 text-center"
+      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg/40 p-8 text-center"
       data-testid="signature-preview-unavailable"
     >
-      <Icon name="visibility_off" size={ICON_SIZE.md} className="text-amber-600" />
+      <Icon name="visibility_off" size={ICON_SIZE.md} className="text-doqyn-warning" />
       <p className="text-sm font-medium text-doqyn-text">
         Preview indisponível para este documento.
       </p>
@@ -264,7 +265,7 @@ export function SignaturePortalPage() {
       >
         <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
         <div className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-8 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-doqyn-success-bg text-doqyn-success">
             <Icon name="check_circle" size={ICON_SIZE.md} />
           </div>
           <h1 className="text-lg font-semibold">Documento assinado com sucesso</h1>
@@ -305,7 +306,7 @@ export function SignaturePortalPage() {
       data-testid="signature-portal"
     >
       <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4">
           <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
           <div className="text-right">
             <p className="text-xs text-doqyn-muted">Solicitado por</p>
@@ -317,13 +318,16 @@ export function SignaturePortalPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 sm:p-6 lg:flex-row">
+      <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 p-4 sm:p-6 lg:flex-row">
         <section className="min-w-0 flex-1">
           {preview.kind === 'loading' ? <PreviewLoadingPanel /> : null}
           {preview.kind === 'ready' && payload ? (
             <div data-testid="signature-preview-ready">
               <GuestSignatureViewer manifest={preview.manifest} payload={payload} />
-              <p className="mt-2 text-xs text-emerald-600" data-testid="signature-document-loaded">
+              <p
+                className="mt-2 text-xs text-doqyn-success"
+                data-testid="signature-document-loaded"
+              >
                 Documento carregado
               </p>
             </div>
@@ -338,7 +342,7 @@ export function SignaturePortalPage() {
           ) : null}
         </section>
 
-        <aside className="w-full shrink-0 space-y-4 lg:w-96">
+        <aside className="w-full shrink-0 space-y-4 lg:w-80">
           <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
             <TruncatedText as="h2" className="text-base font-semibold">
               {payload?.documentName ?? 'Documento'}
@@ -352,7 +356,7 @@ export function SignaturePortalPage() {
               ) : null}
             </div>
             {payload?.isVersionStale && payload.versionLabel ? (
-              <p className="mt-3 text-xs leading-relaxed text-amber-700">
+              <p className="mt-3 text-xs leading-relaxed text-doqyn-warning">
                 Esta solicitação se refere à versão v{payload.versionLabel} deste documento.
               </p>
             ) : null}
@@ -379,23 +383,17 @@ export function SignaturePortalPage() {
           </section>
 
           <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-            <p className="text-sm font-medium text-doqyn-text">
-              Leia o documento antes de assinar.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-doqyn-subtle">{payload?.consentText}</p>
-            <label className="mt-4 flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={consentAccepted}
-                onChange={(event) => setConsentAccepted(event.target.checked)}
-                data-testid="signature-consent-checkbox"
-                className="mt-0.5"
-              />
-              <span>{payload?.consentText}</span>
-            </label>
+            <p className="text-label text-doqyn-text">Leia o documento antes de assinar.</p>
+            <Checkbox
+              wrapperClassName="mt-4"
+              checked={consentAccepted}
+              onChange={(event) => setConsentAccepted(event.target.checked)}
+              data-testid="signature-consent-checkbox"
+              label={<span className="text-caption leading-relaxed">{payload?.consentText}</span>}
+            />
           </section>
 
-          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+          {error ? <p className="text-sm text-doqyn-danger">{error}</p> : null}
 
           <Button
             type="button"
