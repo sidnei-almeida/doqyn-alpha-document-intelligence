@@ -18,6 +18,7 @@ import { useAuth } from '@/auth/useAuth';
 import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { useUploadQueueContext } from '../uploadQueueContext';
 import { CategoryQuickPicker } from './CategoryQuickPicker';
+import { QuickFieldsEditor } from './QuickFieldsEditor';
 
 /**
  * Revisão pós-análise RAG na fila da Biblioteca — respeita preferências de nomeação e confirmação.
@@ -41,6 +42,7 @@ export function ReviewDrawer() {
   });
   const [manualCategory, setManualCategory] = useState<{ id: string; name: string } | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [fieldOverrides, setFieldOverrides] = useState<Record<string, string>>({});
 
   const item = useMemo(
     () => items.find((entry) => entry.id === reviewItemId) ?? null,
@@ -60,6 +62,7 @@ export function ReviewDrawer() {
     setIsConfirming(false);
     setManualCategory(null);
     setShowCategoryPicker(false);
+    setFieldOverrides({});
     setPerItemNaming(
       item.namingChoice ?? {
         namingMode:
@@ -111,7 +114,7 @@ export function ReviewDrawer() {
     setIsConfirming(true);
     try {
       setItemNamingChoice(item.id, perItemNaming);
-      await confirmReview(item.id, perItemNaming, manualCategory?.id);
+      await confirmReview(item.id, perItemNaming, manualCategory?.id, fieldOverrides);
     } finally {
       setIsConfirming(false);
     }
@@ -120,6 +123,13 @@ export function ReviewDrawer() {
   const handlePickCategory = (classId: string, className: string) => {
     setManualCategory({ id: classId, name: className });
     setShowCategoryPicker(false);
+    // Trocar de categoria troca a lista de campos; o que foi digitado para a categoria anterior
+    // não vale para a nova e seria pior manter na tela.
+    setFieldOverrides({});
+  };
+
+  const handleFieldChange = (key: string, value: string) => {
+    setFieldOverrides((current) => ({ ...current, [key]: value }));
   };
 
   return (
@@ -239,6 +249,17 @@ export function ReviewDrawer() {
               </div>
             </div>
           )}
+
+          {/* Conferir e corrigir antes de salvar: consertar uma data errada não pode exigir salvar
+              o documento primeiro e abrir a ficha depois. */}
+          <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2.5">
+            <QuickFieldsEditor
+              categoryId={manualCategory?.id ?? aiClassId ?? null}
+              metadata={metadata}
+              overrides={fieldOverrides}
+              onChange={handleFieldChange}
+            />
+          </div>
 
           {hasCategoryMismatch && (
             <div className="mb-3 flex gap-2 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">

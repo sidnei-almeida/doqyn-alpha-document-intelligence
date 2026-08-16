@@ -24,6 +24,8 @@ export type ConfirmAnalysisOptions = {
    * classificar — sem ela, a confirmação é recusada por falta de classe.
    */
   manualClassId?: string;
+  /** Campos corrigidos à mão na revisão, por chave. Entram com origem manual na auditoria. */
+  metadataOverrides?: Record<string, string | number | null>;
   namingMode?: 'ai_suggested' | 'original' | 'manual';
   finalFileName?: string;
   selectedFileName?: string;
@@ -55,6 +57,7 @@ export async function confirmAnalysis(
       ...normalizedPayload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
       manualClassId: options?.manualClassId,
+      metadataOverrides: options?.metadataOverrides,
       namingMode: effectiveNamingMode,
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,
@@ -112,6 +115,7 @@ export async function submitUploadForApproval(
       ...normalizedPayload,
       manualReviewConfirmed: options?.manualReviewConfirmed ?? false,
       manualClassId: options?.manualClassId,
+      metadataOverrides: options?.metadataOverrides,
       namingMode: effectiveNamingMode,
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,

@@ -178,6 +178,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       manualReviewConfirmed: boolean,
       perItem?: PerItemNamingChoice,
       manualClassId?: string,
+      metadataOverrides?: Record<string, string>,
     ) => {
       if (!item.analysis) return;
 
@@ -221,6 +222,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         const confirmOptions = {
           manualReviewConfirmed,
           manualClassId,
+          metadataOverrides,
           namingMode: effectiveNamingMode,
           finalFileName: resolvedFinalName,
           selectedFileName: effectiveNamingMode === 'manual' ? namingChoice?.manualName : undefined,
@@ -538,7 +540,12 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   );
 
   const confirmReview = useCallback(
-    async (itemId: string, perItem?: PerItemNamingChoice, manualClassId?: string) => {
+    async (
+      itemId: string,
+      perItem?: PerItemNamingChoice,
+      manualClassId?: string,
+      metadataOverrides?: Record<string, string>,
+    ) => {
       const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item || !item.analysis) return;
 
@@ -549,7 +556,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       setReviewItemId(null);
       clearAutoTimer();
       setAutoConfirmCountdown(null);
-      await confirmItem(item, manualReviewConfirmed, perItem ?? item.namingChoice, manualClassId);
+      await confirmItem(
+        item,
+        manualReviewConfirmed,
+        perItem ?? item.namingChoice,
+        manualClassId,
+        metadataOverrides,
+      );
     },
     [confirmItem, clearAutoTimer],
   );

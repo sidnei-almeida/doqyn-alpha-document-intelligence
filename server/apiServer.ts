@@ -141,6 +141,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/document-categories\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-categories/toggle-active.js'),
     },
+    {
+      regex: /^\/api\/document-categories\/([^/]+)\/fields$/,
+      paramKeys: ['categoryId'],
+      loader: () => import('../api/document-categories/fields.js'),
+    },
     { regex: /^\/api\/document-categories\/([^/]+)$/, loader: () => import('../api/document-categories/item.js') },
     {
       regex: /^\/api\/document-groups\/([^/]+)\/members$/,

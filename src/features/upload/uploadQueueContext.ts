@@ -23,6 +23,8 @@ export type UploadQueueContextValue = {
     perItem?: PerItemNamingChoice,
     /** Categoria escolhida à mão quando a IA não classificou (ou quando quem revisa discorda). */
     manualClassId?: string,
+    /** Campos conferidos e corrigidos na revisão, por chave. */
+    metadataOverrides?: Record<string, string>,
   ) => Promise<void>;
   setItemNamingChoice: (itemId: string, choice: PerItemNamingChoice) => void;
   cancelAutoConfirm: (itemId: string) => void;
