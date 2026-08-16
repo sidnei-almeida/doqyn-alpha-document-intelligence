@@ -14,7 +14,7 @@ import {
   resolveFinalFileNameForConfirm,
 } from '@/features/document-send/utils/reviewWorkflowSettings';
 import type { UploadContext, UploadQueueItem } from './types';
-import { analyzePdf } from './services/analyzePdf';
+import { analyzePdf, isAnalysisStillRunningError } from './services/analyzePdf';
 import { confirmAnalysis, submitUploadForApproval } from './services/confirmAnalysis';
 import { prepareUploadItems } from './services/startUploadFromFiles';
 import { UploadQueueContext, type AutoConfirmCountdown, type UploadQueueContextValue } from './uploadQueueContext';
@@ -25,8 +25,8 @@ import { useReviewWorkflowSettingsState } from './hooks/useReviewWorkflowSetting
 import {
   analysisFailureMessage,
   needsManualReviewConfirmation,
-  UPLOAD_ANALYZE_TIMEOUT_MS,
-  uploadAnalyzeTimeoutMessage,
+  UPLOAD_ANALYZE_MAX_WAIT_MS,
+  uploadAnalyzeStillRunningMessage,
 } from './queue/uploadQueueAnalysis';
 import {
   normalizeUploadQueueAnalysis,
@@ -363,16 +363,14 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'status', id: next.id, status: 'analyzing' });
 
     const analyzeController = new AbortController();
+    // Rede de segurança do laço de consulta, não prazo de erro: se o acompanhamento não se encerrar
+    // sozinho, o item vira "continua no servidor" — nunca vermelho.
     const timeout = setTimeout(() => {
       if (!inFlightAnalysesRef.current.has(next.id)) return;
       abortAnalysis(next.id);
-      dispatch({
-        type: 'error',
-        id: next.id,
-        message: uploadAnalyzeTimeoutMessage(),
-      });
+      dispatch({ type: 'still_running', id: next.id, message: uploadAnalyzeStillRunningMessage() });
       tryPumpQueue();
-    }, UPLOAD_ANALYZE_TIMEOUT_MS);
+    }, UPLOAD_ANALYZE_MAX_WAIT_MS + 30_000);
 
     inFlightAnalysesRef.current.set(next.id, { controller: analyzeController, timeout });
 
@@ -455,11 +453,20 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       });
       tryPumpQueue();
     } catch (error) {
-      // Cancelado por fora (expirou ou o arquivo saiu da fila) já teve o erro registrado lá.
+      // Cancelado por fora (rede de segurança ou o arquivo saiu da fila) já foi tratado lá.
       if (!finishAnalysis(next.id)) return;
+
+      // Espera longa não é falha: o documento continua sendo analisado no servidor e chega na
+      // Biblioteca sozinho. Marcar erro aqui convida ao reenvio, que só aumenta a fila.
+      if (isAnalysisStillRunningError(error)) {
+        dispatch({ type: 'still_running', id: next.id, message: error.message });
+        tryPumpQueue();
+        return;
+      }
+
       const message =
         error instanceof DOMException && error.name === 'AbortError'
-          ? uploadAnalyzeTimeoutMessage()
+          ? uploadAnalyzeStillRunningMessage()
           : error instanceof Error
             ? error.message
             : 'Erro ao analisar o documento.';

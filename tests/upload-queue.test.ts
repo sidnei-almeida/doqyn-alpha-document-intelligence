@@ -20,9 +20,9 @@ import { prepareUploadItems } from '../src/features/upload/services/startUploadF
 import {
   analysisFailureMessage,
   needsManualReviewConfirmation,
-  UPLOAD_ANALYZE_TIMEOUT_MS,
-  parseUploadAnalyzeTimeoutMs,
-  uploadAnalyzeTimeoutMessage,
+  UPLOAD_ANALYZE_MAX_WAIT_MS,
+  parseUploadAnalyzeMaxWaitMs,
+  uploadAnalyzeStillRunningMessage,
 } from '../src/features/upload/queue/uploadQueueAnalysis.ts';
 import type { UploadQueueItem } from '../src/features/upload/types.ts';
 import type { AnalyzePdfResponse } from '../src/features/document-send/services/analyzePdf.ts';
@@ -247,8 +247,8 @@ describe('provider da fila — integração com contratos existentes', () => {
     // Uma entrada por arquivo em voo: o id único de antes era o que serializava o lote, e um
     // `abort` global cancelaria o vizinho a cada novo despacho.
     assert.ok(provider.includes('inFlightAnalysesRef'));
-    assert.ok(provider.includes('UPLOAD_ANALYZE_TIMEOUT_MS'));
-    assert.ok(provider.includes('uploadAnalyzeTimeoutMessage'));
+    assert.ok(provider.includes('UPLOAD_ANALYZE_MAX_WAIT_MS'));
+    assert.ok(provider.includes('uploadAnalyzeStillRunningMessage'));
     assert.equal(provider.includes('let cancelled = false'), false);
     assert.equal(provider.includes('cancelled = true'), false);
   });
@@ -259,14 +259,17 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(provider.includes('needsManualReviewConfirmation'));
   });
 
-  it('uploadQueueAnalysis — mensagens e timeout', () => {
-    // Com fila, o tempo de espera inclui os documentos na frente. Um teto curto marcava erro na
-    // tela para um documento que o servidor terminou de analisar depois.
-    assert.equal(UPLOAD_ANALYZE_TIMEOUT_MS, 300_000);
-    assert.equal(parseUploadAnalyzeTimeoutMs('45000'), 45_000);
-    assert.equal(parseUploadAnalyzeTimeoutMs('9999999'), 600_000);
-    assert.equal(parseUploadAnalyzeTimeoutMs('1000'), 30_000);
-    assert.match(uploadAnalyzeTimeoutMessage(), /confira na Biblioteca/);
+  it('uploadQueueAnalysis — mensagens e teto de acompanhamento', () => {
+    // O teto acompanha, não julga: enquanto o servidor responde que o documento está na fila,
+    // esperar é o certo. Meia hora cobre lote atrás de lote na vazão do plano gratuito.
+    assert.equal(UPLOAD_ANALYZE_MAX_WAIT_MS, 1_800_000);
+    assert.equal(parseUploadAnalyzeMaxWaitMs('900000'), 900_000);
+    assert.equal(parseUploadAnalyzeMaxWaitMs('99999999'), 7_200_000);
+    // Piso: um valor curto como o antigo 60s vira 5 min — senão fila normal viraria aviso.
+    assert.equal(parseUploadAnalyzeMaxWaitMs('60000'), 300_000);
+    // O documento não falhou; o texto não pode dizer que falhou nem pedir reenvio.
+    assert.match(uploadAnalyzeStillRunningMessage(), /continua no servidor/);
+    assert.match(uploadAnalyzeStillRunningMessage(), /não precisa reenviar/);
     assert.match(analysisFailureMessage('ai_unavailable'), /Groq|limite/i);
     assert.match(analysisFailureMessage('ai_unavailable', 'GROQ_REQUEST_TIMEOUT'), /interrompida/i);
     assert.match(analysisFailureMessage('failed'), /falhou/i);

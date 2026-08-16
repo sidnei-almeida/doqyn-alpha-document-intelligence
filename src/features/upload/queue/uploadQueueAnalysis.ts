@@ -1,24 +1,27 @@
 import type { ExtractedMetadata } from '@/features/document-send/types';
 import type { AnalyzePdfResponse } from '@/features/document-send/services/analyzePdf';
 
-const UPLOAD_ANALYZE_TIMEOUT_MIN_MS = 30_000;
-/** Teto de configuração. Subiu junto do padrão: com fila, 90s já era menos que a espera normal. */
-const UPLOAD_ANALYZE_TIMEOUT_MAX_MS = 600_000;
 /**
- * Teto do cliente esperando a análise.
+ * Quanto o navegador acompanha a análise antes de soltar o acompanhamento.
  *
- * Eram 60s, herdados de quando a análise rodava dentro do request. Com fila, esse tempo passou a
- * incluir a espera atrás de outros documentos e a espera pela vazão da Groq — e o servidor
- * terminava o trabalho **depois** de o navegador desistir: documento analisado no banco, erro de
- * "passou de 60s" na tela do usuário. Cinco minutos cobrem lote grande com a fila cheia; passado
- * disso é problema de verdade, não fila.
+ * Isto **não é um prazo de erro**. Enquanto o servidor responde que o documento está na fila ou
+ * sendo analisado, esperar é o comportamento correto: a demora é a vazão do modelo, não uma falha.
+ * O relógio antigo media a coisa errada — ele contava o tempo total e marcava erro vermelho num
+ * documento que o servidor estava analisando naquele instante, e que aparecia na Biblioteca logo
+ * depois. Chamar isso de erro é mentir para o usuário e convidar ao reenvio, que só aumenta a fila.
+ *
+ * O que sobra aqui é um teto de acompanhamento: passado ele, a aba para de perguntar e o item
+ * avisa que a análise **continua no servidor**. Generoso de propósito — no plano gratuito, um lote
+ * atrás de outros pode legitimamente levar meia hora.
  */
-const UPLOAD_ANALYZE_TIMEOUT_DEFAULT_MS = 300_000;
+const UPLOAD_ANALYZE_MAX_WAIT_MIN_MS = 300_000;
+const UPLOAD_ANALYZE_MAX_WAIT_MAX_MS = 7_200_000;
+const UPLOAD_ANALYZE_MAX_WAIT_DEFAULT_MS = 1_800_000;
 
-/** Interpreta VITE_UPLOAD_ANALYZE_TIMEOUT_MS (testável sem import.meta). */
-export function parseUploadAnalyzeTimeoutMs(
+/** Interpreta VITE_UPLOAD_ANALYZE_MAX_WAIT_MS (testável sem import.meta). */
+export function parseUploadAnalyzeMaxWaitMs(
   envValue: string | undefined | null,
-  fallback = UPLOAD_ANALYZE_TIMEOUT_DEFAULT_MS,
+  fallback = UPLOAD_ANALYZE_MAX_WAIT_DEFAULT_MS,
 ): number {
   if (envValue === undefined || envValue === null || envValue.trim() === '') {
     return fallback;
@@ -27,22 +30,36 @@ export function parseUploadAnalyzeTimeoutMs(
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return fallback;
   }
-  return Math.min(UPLOAD_ANALYZE_TIMEOUT_MAX_MS, Math.max(UPLOAD_ANALYZE_TIMEOUT_MIN_MS, parsed));
+  return Math.min(UPLOAD_ANALYZE_MAX_WAIT_MAX_MS, Math.max(UPLOAD_ANALYZE_MAX_WAIT_MIN_MS, parsed));
 }
 
-const uploadAnalyzeTimeoutEnv =
+const uploadAnalyzeMaxWaitEnv =
   typeof import.meta !== 'undefined'
-    ? import.meta.env?.VITE_UPLOAD_ANALYZE_TIMEOUT_MS
+    ? import.meta.env?.VITE_UPLOAD_ANALYZE_MAX_WAIT_MS
     : undefined;
 
-/** Tempo máximo aguardando analyzePdf antes de marcar erro na fila. */
-export const UPLOAD_ANALYZE_TIMEOUT_MS = parseUploadAnalyzeTimeoutMs(uploadAnalyzeTimeoutEnv);
+/**
+ * Teto de acompanhamento do navegador.
+ *
+ * O antigo `VITE_UPLOAD_ANALYZE_TIMEOUT_MS` foi retirado de circulação em vez de renomeado: ele
+ * media tempo total de espera como se fosse falha, e quem tinha 60s configurado colhia erro em
+ * todo documento que pegasse fila. Pode sair do `.env`.
+ */
+export const UPLOAD_ANALYZE_MAX_WAIT_MS = parseUploadAnalyzeMaxWaitMs(uploadAnalyzeMaxWaitEnv);
 
-export const UPLOAD_ANALYZE_TIMEOUT_SECONDS = Math.round(UPLOAD_ANALYZE_TIMEOUT_MS / 1000);
+export const UPLOAD_ANALYZE_MAX_WAIT_SECONDS = Math.round(UPLOAD_ANALYZE_MAX_WAIT_MS / 1000);
 
-export function uploadAnalyzeTimeoutMessage(): string {
-  const minutos = Math.round(UPLOAD_ANALYZE_TIMEOUT_SECONDS / 60);
-  return `A análise passou de ${minutos} min sem resposta. O documento pode ter sido processado mesmo assim — confira na Biblioteca antes de reenviar.`;
+/** Quantas consultas seguidas podem falhar antes de o navegador considerar que perdeu o contato. */
+export const UPLOAD_ANALYZE_MAX_POLL_FAILURES = 5;
+
+/** O documento não falhou: o navegador é que parou de acompanhar. O texto precisa dizer isso. */
+export function uploadAnalyzeStillRunningMessage(): string {
+  return 'A análise continua no servidor. O documento aparece na Biblioteca assim que terminar — não precisa reenviar.';
+}
+
+/** Aqui sim houve falha, mas é de contato com o servidor, não do documento. */
+export function uploadAnalyzePollFailureMessage(): string {
+  return 'Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado — confira na Biblioteca antes de reenviar.';
 }
 
 export function analysisFailureMessage(

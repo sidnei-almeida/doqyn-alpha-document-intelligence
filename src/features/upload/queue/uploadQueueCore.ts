@@ -46,7 +46,7 @@ export type AutoSaveParams = {
 export const UPLOAD_IN_FLIGHT_STATUSES = ['analyzing', 'confirming'] as const;
 
 /** Estados parados esperando decisão humana. Saem da esteira sem sair da fila. */
-export const UPLOAD_PARKED_STATUSES = ['review', 'ai_paused'] as const;
+export const UPLOAD_PARKED_STATUSES = ['review', 'ai_paused', 'still_running'] as const;
 export const BULK_IN_FLIGHT_STATUSES = ['analyzing', 'saving', 'auto_countdown'] as const;
 
 export function sleep(ms: number): Promise<void> {

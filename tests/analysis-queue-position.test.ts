@@ -5,6 +5,13 @@ import {
   formatWaitSeconds,
 } from '../src/features/upload/queue/queueWaitLabel';
 import { analysisPollDelayMs } from '../src/features/document-send/services/analysisPollBackoff';
+import { uploadAnalyzeStillRunningMessage } from '../src/features/upload/queue/uploadQueueAnalysis';
+import {
+  hasActiveItem,
+  uploadQueueReducer,
+} from '../src/features/upload/queue/uploadQueueState';
+import { countParkedUploadItems } from '../src/features/upload/queue/uploadQueueCore';
+import type { UploadQueueItem } from '../src/features/upload/types';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
 
 describe('texto de espera na tela', () => {
@@ -65,6 +72,44 @@ describe('recuo progressivo na consulta de status', () => {
 
   it('dispersa para os arquivos em voo não perguntarem em uníssono', () => {
     assert.equal(analysisPollDelayMs(1, () => 0.5), 2_250);
+  });
+});
+
+describe('espera longa não é erro', () => {
+  it('o item vai para `still_running`, não para `error`, e guarda o aviso', () => {
+    const items: UploadQueueItem[] = [
+      { id: 'a', fileName: 'contrato.pdf', fileSize: 10, status: 'analyzing' },
+    ];
+
+    const state = uploadQueueReducer(items, {
+      type: 'still_running',
+      id: 'a',
+      message: uploadAnalyzeStillRunningMessage(),
+    });
+
+    assert.equal(state[0].status, 'still_running');
+    assert.match(state[0].errorMessage ?? '', /continua no servidor/);
+  });
+
+  it('`still_running` sai da esteira sem sair da fila', () => {
+    const items: UploadQueueItem[] = [
+      { id: 'a', fileName: 'contrato.pdf', fileSize: 10, status: 'still_running' },
+      { id: 'b', fileName: 'outro.pdf', fileSize: 10, status: 'queued' },
+    ];
+
+    // Não ocupa vaga de análise: o próximo arquivo segue.
+    assert.equal(hasActiveItem(items), false);
+    assert.equal(countParkedUploadItems(items), 1);
+  });
+
+  it('reenviar é decisão de quem está na tela, e continua disponível', () => {
+    const items: UploadQueueItem[] = [
+      { id: 'a', fileName: 'contrato.pdf', fileSize: 10, status: 'still_running' },
+    ];
+
+    const state = uploadQueueReducer(items, { type: 'retry', id: 'a' });
+    assert.equal(state[0].status, 'queued');
+    assert.equal(state[0].errorMessage, undefined);
   });
 });
 

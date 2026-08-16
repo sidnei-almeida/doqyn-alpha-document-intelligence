@@ -11,6 +11,11 @@ export type BulkUploadItemStatus =
   | 'saved'
   | 'requires_review'
   | 'ai_paused'
+  /**
+   * O navegador parou de acompanhar; o servidor continua analisando. Não é erro: o documento chega
+   * na Biblioteca sozinho.
+   */
+  | 'still_running'
   | 'unclassified'
   | 'error'
   | 'skipped';

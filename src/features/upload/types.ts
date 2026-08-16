@@ -9,6 +9,11 @@ export type UploadQueueItemStatus =
   | 'confirming'
   | 'awaiting_approval'
   | 'ai_paused'
+  /**
+   * O navegador parou de acompanhar; o servidor continua analisando. Não é erro, e por isso não
+   * mora junto de `error`: o documento aparece na Biblioteca quando terminar.
+   */
+  | 'still_running'
   | 'done'
   | 'error';
 
