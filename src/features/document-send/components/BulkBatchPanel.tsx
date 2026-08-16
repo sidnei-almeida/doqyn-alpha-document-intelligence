@@ -18,15 +18,16 @@ interface BulkBatchPanelProps {
   batchPhase: BulkBatchPhase;
   currentItem: BulkUploadItem | null;
   autoCountdown: number | null;
-  manualGate: boolean;
   statusMessage: string | null;
   reviewSettings: WorkflowReviewSettings;
   isAuthenticated: boolean;
-  onPerItemNamingChange: (choice: PerItemNamingChoice) => void;
+  /** Todas as ações recebem o item alvo: a revisão acontece no documento estacionado que a pessoa
+   *  selecionou, não obrigatoriamente no que a esteira está processando agora. */
+  onPerItemNamingChange: (choice: PerItemNamingChoice, itemId?: string) => void;
   onCancelAuto?: () => void;
-  onConfirmContinue: () => void;
-  onSkip: () => void;
-  onReprocess: () => void;
+  onConfirmContinue: (itemId?: string) => void;
+  onSkip: (itemId?: string) => void;
+  onReprocess: (itemId?: string) => void;
   onPause: () => void;
   onResume: () => void;
   onCancel: () => void;
@@ -77,7 +78,6 @@ export function BulkBatchPanel({
   batchPhase,
   currentItem,
   autoCountdown,
-  manualGate,
   statusMessage,
   reviewSettings,
   isAuthenticated,
@@ -101,23 +101,38 @@ export function BulkBatchPanel({
   const processedCount =
     stats.saved + stats.requiresReview + stats.errors + stats.skipped;
 
-  const canConfirmCurrent =
-    manualGate &&
-    Boolean(currentItem) &&
-    (currentItem?.status === 'analyzed' || currentItem?.status === 'requires_review') &&
-    Boolean(currentItem.result) &&
-    Boolean(currentItem.metadata) &&
+  /**
+   * Documento que os botões de revisão atacam.
+   *
+   * Antes era sempre o item corrente, e só enquanto a esteira estava travada esperando alguém —
+   * por isso o lote precisava parar. Agora é o que a pessoa selecionou na lista; sem seleção, cai
+   * no item corrente, que é o comportamento antigo.
+   */
+  const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
+  const reviewTarget =
+    selectedItem && (selectedItem.status === 'analyzed' || selectedItem.status === 'requires_review')
+      ? selectedItem
+      : currentItem;
+
+  const canConfirmTarget =
+    Boolean(reviewTarget) &&
+    (reviewTarget?.status === 'analyzed' || reviewTarget?.status === 'requires_review') &&
+    Boolean(reviewTarget?.result) &&
+    Boolean(reviewTarget?.metadata) &&
     canBulkManualConfirm({
       isAuthenticated,
-      metadata: currentItem.metadata ?? null,
-      rawAnalysis: currentItem.result ?? null,
+      metadata: reviewTarget?.metadata ?? null,
+      rawAnalysis: reviewTarget?.result ?? null,
       settings: reviewSettings,
-      perItem: currentItem.perItemNaming,
+      perItem: reviewTarget?.perItemNaming,
     });
 
+  // Há o que revisar sempre que existir um documento estacionado — não depende mais de a esteira
+  // estar parada.
+  const showReviewActions = Boolean(reviewTarget) && !isCompleted;
+
   const showNamingGate =
-    manualGate &&
-    Boolean(currentItem?.result) &&
+    Boolean(reviewTarget?.result) &&
     (policyRequiresPerItemChoice(reviewSettings.defaultNamingPolicy) ||
       reviewSettings.defaultNamingPolicy === 'manual_required');
 
@@ -216,17 +231,15 @@ export function BulkBatchPanel({
                 </div>
               )}
 
-              {showNamingGate && currentItem?.result && (
+              {showNamingGate && reviewTarget?.result && (
                 <DocumentNamingSection
                   settings={reviewSettings}
-                  originalFileName={currentItem.result.originalFileName}
+                  originalFileName={reviewTarget.result.originalFileName}
                   aiSuggestedFileName={
-                    currentItem.result.recommendedFileName ?? currentItem.result.originalFileName
+                    reviewTarget.result.recommendedFileName ?? reviewTarget.result.originalFileName
                   }
-                  perItemChoice={
-                    currentItem.perItemNaming ?? { namingMode: 'ai_suggested' }
-                  }
-                  onPerItemChoiceChange={onPerItemNamingChange}
+                  perItemChoice={reviewTarget.perItemNaming ?? { namingMode: 'ai_suggested' }}
+                  onPerItemChoiceChange={(choice) => onPerItemNamingChange(choice, reviewTarget.id)}
                 />
               )}
 
@@ -269,25 +282,38 @@ export function BulkBatchPanel({
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {manualGate && (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="primary"
-                        disabled={!canConfirmCurrent}
-                        onClick={onConfirmContinue}
-                      >
-                        <Icon name="check_circle" size={ICON_SIZE.xs} />
-                        Confirmar e continuar
-                      </Button>
-                      <Button type="button" variant="secondary" onClick={onSkip}>
-                        <Icon name="skip_next" size={ICON_SIZE.xs} />
-                        Pular documento
-                      </Button>
-                      <Button type="button" variant="secondary" onClick={onReprocess}>
-                        <Icon name="refresh" size={ICON_SIZE.xs} />
-                        Reprocessar
-                      </Button>
+                  {showReviewActions && reviewTarget && (
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-xs text-doqyn-muted">
+                        Revisando: <span className="text-doqyn-text">{reviewTarget.originalFileName}</span>
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="primary"
+                          disabled={!canConfirmTarget}
+                          onClick={() => onConfirmContinue(reviewTarget.id)}
+                        >
+                          <Icon name="check_circle" size={ICON_SIZE.xs} />
+                          Confirmar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => onSkip(reviewTarget.id)}
+                        >
+                          <Icon name="skip_next" size={ICON_SIZE.xs} />
+                          Pular documento
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => onReprocess(reviewTarget.id)}
+                        >
+                          <Icon name="refresh" size={ICON_SIZE.xs} />
+                          Reprocessar
+                        </Button>
+                      </div>
                     </div>
                   )}
 

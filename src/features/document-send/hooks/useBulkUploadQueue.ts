@@ -1009,31 +1009,25 @@ export function useBulkUploadQueue({
           }, settings);
           markItemReview(next.id, reason);
 
-          if (
-            settings.autoReviewEnabled &&
-            !settings.pauseOnConflict &&
-            settings.continueWhenSafe
-          ) {
-            setStatusMessage('Preparando próximo envio...');
-            await sleep(BULK_NEXT_ITEM_DELAY_MS);
-            setStatusMessage(null);
-            return 'continue';
-          }
-
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando ação manual');
-          return 'manual';
+          // Revisão espera uma pessoa, não o servidor: o documento sai da esteira e o lote segue.
+          // Enquanto a esteira parava aqui, um único arquivo duvidoso obrigava alguém sentado na
+          // tela antes de o próximo sequer ser enviado.
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (
           policyRequiresPerItemChoice(settings.defaultNamingPolicy) ||
           settings.defaultNamingPolicy === 'manual_required'
         ) {
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando escolha do nome do arquivo');
-          return 'manual';
+          // Escolher nome também é decisão humana: estaciona o documento e continua o lote.
+          markItemReview(next.id, 'Escolha o nome do arquivo para salvar.');
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (!autoEligible) {
@@ -1056,10 +1050,13 @@ export function useBulkUploadQueue({
             return 'continue';
           }
 
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando confirmação manual');
-          return 'manual';
+          // Não elegível ao salvamento automático é caso de conferência humana, não de esteira
+          // parada: estaciona com o motivo e segue para o próximo.
+          markItemReview(next.id, autoSaveBlockers[0] ?? 'Confirmação manual necessária.');
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (settings.autoReviewEnabled && autoEligible) {
@@ -1135,10 +1132,13 @@ export function useBulkUploadQueue({
           return 'continue';
         }
 
-        setManualGate(true);
-        manualGateRef.current = true;
-        setStatusMessage('Aguardando confirmação manual');
-        return 'manual';
+        // Modo Auto desligado: cada documento espera confirmação, mas espera **estacionado**. O
+        // lote continua analisando enquanto as confirmações acontecem no ritmo de quem revisa.
+        markItemReview(next.id, 'Aguardando sua confirmação.');
+        setStatusMessage('Preparando próximo envio...');
+        await sleep(BULK_NEXT_ITEM_DELAY_MS);
+        setStatusMessage(null);
+        return 'continue';
       } catch (error) {
         activeAnalysisRequestRef.current = null;
 
@@ -1395,8 +1395,15 @@ export function useBulkUploadQueue({
     [appendItemMessage, createQueueItem, finishQueueItem, onReviewSettingsChange, resetCurrentProcessingState, workflow],
   );
 
-  const confirmCurrentAndContinue = useCallback(async () => {
-    const itemId = currentItemIdRef.current;
+  /**
+   * Confirma um documento parado, sem depender de ele ser "o item da vez".
+   *
+   * Antes as ações só sabiam agir sobre o item corrente, e por isso a esteira precisava parar e
+   * esperar a pessoa. Recebendo o `itemId`, a revisão acontece em paralelo: o lote segue analisando
+   * enquanto alguém resolve os que ficaram para trás.
+   */
+  const confirmItemAndContinue = useCallback(async (targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const current = getItemById(itemId);
@@ -1432,11 +1439,14 @@ export function useBulkUploadQueue({
     scheduleQueueWorker();
   }, [getActiveSettings, getItemById, saveItem, scheduleQueueWorker]);
 
-  const updateCurrentItemNaming = useCallback((choice: PerItemNamingChoice) => {
-    const itemId = currentItemIdRef.current;
-    if (!itemId) return;
-    patchItem(itemId, { perItemNaming: choice });
-  }, [patchItem]);
+  const updateItemNaming = useCallback(
+    (choice: PerItemNamingChoice, targetItemId?: string) => {
+      const itemId = targetItemId ?? currentItemIdRef.current;
+      if (!itemId) return;
+      patchItem(itemId, { perItemNaming: choice });
+    },
+    [patchItem],
+  );
 
   const cancelAutoCountdown = useCallback(() => {
     cancelCurrentCountdown('cancelado pelo usuário');
@@ -1448,13 +1458,14 @@ export function useBulkUploadQueue({
       }
     }
     setAutoCountdown(null);
-    setManualGate(true);
-    manualGateRef.current = true;
-    setStatusMessage('Auto cancelado — aguardando confirmação manual');
-  }, [cancelCurrentCountdown, getItemById, patchItem]);
+    // Cancelar o automático é pedir para olhar **este** documento, não para o lote inteiro parar.
+    // O item fica estacionado esperando confirmação e a esteira segue.
+    setStatusMessage('Auto cancelado — documento aguardando sua confirmação');
+    scheduleQueueWorker();
+  }, [cancelCurrentCountdown, getItemById, patchItem, scheduleQueueWorker]);
 
-  const skipCurrent = useCallback(() => {
-    const itemId = currentItemIdRef.current;
+  const skipItem = useCallback((targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const item = getItemById(itemId);
@@ -1472,12 +1483,16 @@ export function useBulkUploadQueue({
     scheduleQueueWorker();
   }, [appendItemMessage, finishQueueItem, getItemById, patchItem, scheduleQueueWorker, workflow]);
 
-  const reprocessCurrent = useCallback(() => {
-    const itemId = currentItemIdRef.current;
+  const reprocessItem = useCallback((targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const item = getItemById(itemId);
-    resetCurrentProcessingState('reprocessar item');
+    // Só limpa o estado corrente quando é o próprio item da vez: reprocessar um documento parado
+    // não pode derrubar a análise que está acontecendo agora.
+    if (itemId === currentItemIdRef.current) {
+      resetCurrentProcessingState('reprocessar item');
+    }
     patchItem(itemId, {
       status: 'queued',
       errorMessage: undefined,
@@ -1501,8 +1516,10 @@ export function useBulkUploadQueue({
 
     setManualGate(false);
     manualGateRef.current = false;
-    setCurrentItemId(null);
-    currentItemIdRef.current = null;
+    if (itemId === currentItemIdRef.current) {
+      setCurrentItemId(null);
+      currentItemIdRef.current = null;
+    }
     scheduleQueueWorker();
   }, [getItemById, patchItem, resetCurrentProcessingState, scheduleQueueWorker, workflow]);
 
@@ -1604,15 +1621,15 @@ export function useBulkUploadQueue({
     statusMessage,
     batchReviewSettings,
     startBatch,
-    confirmCurrentAndContinue,
-    skipCurrent,
-    reprocessCurrent,
+    confirmItemAndContinue,
+    skipItem,
+    reprocessItem,
     pauseBatch,
     resumeBatch,
     cancelBatch,
     resetBatch,
     clearCompleted,
     cancelAutoCountdown,
-    updateCurrentItemNaming,
+    updateItemNaming,
   };
 }
