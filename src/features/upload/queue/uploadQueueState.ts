@@ -1,6 +1,10 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
-import { findNextQueuedItem, hasInFlightUploadItem } from './uploadQueueCore';
+import {
+  findNextQueuedItem,
+  findNextQueuedItemExcluding,
+  hasInFlightUploadItem,
+} from './uploadQueueCore';
 
 export type UploadQueueAction =
   | { type: 'enqueue'; items: UploadQueueItem[] }
@@ -83,6 +87,14 @@ export function uploadQueueReducer(
 /** Próximo item enfileirado ainda não iniciado. */
 export function nextQueuedItem(items: UploadQueueItem[]): UploadQueueItem | null {
   return findNextQueuedItem(items);
+}
+
+/** Próximo enfileirado que ainda não foi despachado nesta rodada. */
+export function nextQueuedItemExcluding(
+  items: UploadQueueItem[],
+  excludedIds: ReadonlySet<string>,
+): UploadQueueItem | null {
+  return findNextQueuedItemExcluding(items, excludedIds);
 }
 
 /**
