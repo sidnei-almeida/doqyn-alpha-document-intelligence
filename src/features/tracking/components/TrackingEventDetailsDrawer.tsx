@@ -68,7 +68,7 @@ export function TrackingEventDetailsDrawer({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex justify-end modal-overlay-scrim backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-50 flex justify-end backdrop-blur-sm"
       onClick={(clickEvent) => {
         if (clickEvent.target === overlayRef.current) onClose();
       }}
@@ -131,7 +131,7 @@ export function TrackingEventDetailsDrawer({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="mt-1 h-auto px-0 text-xs text-doqyn-accent"
+                    className="mt-1 h-auto px-0 text-xs text-doqyn-accent-active"
                     onClick={() => onFilterByUser(event.actor.userId)}
                   >
                     Filtrar por este usuário
@@ -151,7 +151,7 @@ export function TrackingEventDetailsDrawer({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="mt-1 h-auto px-0 text-xs text-doqyn-accent"
+                      className="mt-1 h-auto px-0 text-xs text-doqyn-accent-active"
                       onClick={() =>
                         navigate(
                           `/tracking?documentId=${encodeURIComponent(event.document.documentId!)}`,
@@ -203,7 +203,7 @@ export function TrackingEventDetailsDrawer({
               ) : null}
 
               {(event.requestId || event.sessionHash || typeof event.durationMs === 'number') && (
-                <div className="rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs space-y-1">
+                <div className="space-y-1 rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs">
                   {event.requestId && (
                     <div className="flex items-center justify-between gap-2">
                       <span>requestId: {event.requestId}</span>
@@ -220,9 +220,7 @@ export function TrackingEventDetailsDrawer({
                       )}
                     </div>
                   )}
-                  {event.sessionHash && (
-                    <p>sessão: {formatSessionOrigin(event.sessionHash)}</p>
-                  )}
+                  {event.sessionHash && <p>sessão: {formatSessionOrigin(event.sessionHash)}</p>}
                   {typeof event.durationMs === 'number' && <p>duração: {event.durationMs}ms</p>}
                 </div>
               )}
@@ -234,10 +232,12 @@ export function TrackingEventDetailsDrawer({
                   </p>
                   <div className="space-y-1 rounded-md border border-doqyn-border/50 bg-doqyn-bg/30 p-3 text-xs text-doqyn-muted">
                     <p>
-                      <span className="text-doqyn-subtle">Dispositivo:</span> {securityDisplay.deviceLabel}
+                      <span className="text-doqyn-subtle">Dispositivo:</span>{' '}
+                      {securityDisplay.deviceLabel}
                     </p>
                     <p>
-                      <span className="text-doqyn-subtle">Tipo:</span> {securityDisplay.deviceTypeLabel}
+                      <span className="text-doqyn-subtle">Tipo:</span>{' '}
+                      {securityDisplay.deviceTypeLabel}
                     </p>
                     <p>
                       <span className="text-doqyn-subtle">Local aproximado:</span>{' '}
@@ -247,7 +247,8 @@ export function TrackingEventDetailsDrawer({
                       <span className="text-doqyn-subtle">IP:</span> {securityDisplay.ipLabel}
                     </p>
                     <p>
-                      <span className="text-doqyn-subtle">Sessão:</span> {securityDisplay.sessionLabel}
+                      <span className="text-doqyn-subtle">Sessão:</span>{' '}
+                      {securityDisplay.sessionLabel}
                     </p>
                     {securityDisplay.occurredAtLabel ? (
                       <p>
@@ -268,7 +269,8 @@ export function TrackingEventDetailsDrawer({
                     ) : null}
                     {'permissionReason' in security && security.permissionReason != null ? (
                       <p>
-                        <span className="text-doqyn-subtle">Motivo:</span> {String(security.permissionReason)}
+                        <span className="text-doqyn-subtle">Motivo:</span>{' '}
+                        {String(security.permissionReason)}
                       </p>
                     ) : null}
                   </div>

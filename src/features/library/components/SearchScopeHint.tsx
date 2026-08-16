@@ -24,7 +24,7 @@ export function SearchScopeHint({ state, folderName, onStateChange }: SearchScop
       {' · '}
       <button
         type="button"
-        className="font-medium text-doqyn-accent hover:underline"
+        className="font-medium text-doqyn-accent-active hover:underline"
         onClick={() => onStateChange({ scope: 'all' })}
       >
         Buscar em toda a Biblioteca

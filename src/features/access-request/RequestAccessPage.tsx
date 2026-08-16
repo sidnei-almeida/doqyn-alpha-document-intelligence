@@ -245,7 +245,7 @@ export function RequestAccessPage() {
         }
         showSecureBadge
         footer={
-          <Link to="/login" className="font-medium text-doqyn-accent hover:underline">
+          <Link to="/login" className="font-medium text-doqyn-accent-active hover:underline">
             Ir para login
           </Link>
         }
@@ -272,225 +272,228 @@ export function RequestAccessPage() {
       }
       showSecureBadge
     >
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-        >
-          <div className="space-y-8">
-            <FormSection
-              title={employeeFlow ? 'Empresa' : 'Dados do cliente'}
-              description={
-                employeeFlow
-                  ? 'Informe o CNPJ da empresa que já utiliza o DOQYN.'
-                  : 'Identificação da pessoa física ou jurídica que será vinculada ao acesso.'
-              }
-            >
-              {!employeeFlow && (
-                <div className="flex flex-col gap-2">
-                  <span className="form-label block">Tipo de cliente</span>
-                  <PersonTypeSegment value={personType} onChange={handlePersonTypeChange} />
-                </div>
-              )}
-
-              <TaxIdInput
-                id="taxId"
-                kind={taxIdKind}
-                label={employeeFlow || personType === 'business' ? 'CNPJ da empresa' : 'CPF'}
-                value={taxId}
-                onChange={setTaxId}
-                required
-              />
-
-              {!employeeFlow && (
-                <Input
-                  id="tenantDisplayName"
-                  label={personType === 'business' ? 'Razão social' : 'Nome completo do cliente'}
-                  value={tenantDisplayName}
-                  onChange={(e) => setTenantDisplayName(e.target.value)}
-                  placeholder={
-                    personType === 'business' ? 'Empresa Exemplo Ltda.' : 'Nome completo'
-                  }
-                  required
-                />
-              )}
-            </FormSection>
-
-            <div className="h-px bg-doqyn-border-subtle" />
-
-            <FormSection title="Seus dados" description="Informações de contato e contexto do acesso.">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  id="firstName"
-                  label="Nome"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  autoComplete="given-name"
-                  required
-                />
-                <Input
-                  id="lastName"
-                  label="Sobrenome"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  autoComplete="family-name"
-                  required
-                />
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
+      >
+        <div className="space-y-8">
+          <FormSection
+            title={employeeFlow ? 'Empresa' : 'Dados do cliente'}
+            description={
+              employeeFlow
+                ? 'Informe o CNPJ da empresa que já utiliza o DOQYN.'
+                : 'Identificação da pessoa física ou jurídica que será vinculada ao acesso.'
+            }
+          >
+            {!employeeFlow && (
+              <div className="flex flex-col gap-2">
+                <span className="form-label block">Tipo de cliente</span>
+                <PersonTypeSegment value={personType} onChange={handlePersonTypeChange} />
               </div>
+            )}
 
+            <TaxIdInput
+              id="taxId"
+              kind={taxIdKind}
+              label={employeeFlow || personType === 'business' ? 'CNPJ da empresa' : 'CPF'}
+              value={taxId}
+              onChange={setTaxId}
+              required
+            />
+
+            {!employeeFlow && (
               <Input
-                id="email"
-                label="E-mail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu.email@empresa.com"
-                autoComplete="email"
+                id="tenantDisplayName"
+                label={personType === 'business' ? 'Razão social' : 'Nome completo do cliente'}
+                value={tenantDisplayName}
+                onChange={(e) => setTenantDisplayName(e.target.value)}
+                placeholder={personType === 'business' ? 'Empresa Exemplo Ltda.' : 'Nome completo'}
                 required
               />
+            )}
+          </FormSection>
 
+          <div className="h-px bg-doqyn-border-subtle" />
+
+          <FormSection
+            title="Seus dados"
+            description="Informações de contato e contexto do acesso."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <Input
-                id="password"
-                label="Senha de acesso"
+                id="firstName"
+                label="Nome"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="given-name"
+                required
+              />
+              <Input
+                id="lastName"
+                label="Sobrenome"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                autoComplete="family-name"
+                required
+              />
+            </div>
+
+            <Input
+              id="email"
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu.email@empresa.com"
+              autoComplete="email"
+              required
+            />
+
+            <Input
+              id="password"
+              label="Senha de acesso"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              autoComplete="new-password"
+              required
+              minLength={8}
+            />
+
+            {employeeFlow && (
+              <Input
+                id="confirmPassword"
+                label="Confirmar senha"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
                 required
                 minLength={8}
               />
+            )}
 
-              {employeeFlow && (
-                <Input
-                  id="confirmPassword"
-                  label="Confirmar senha"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                />
-              )}
+            <WhatsappInput
+              id="whatsapp"
+              label="WhatsApp"
+              value={whatsapp}
+              onChange={setWhatsapp}
+              required
+            />
 
-              <WhatsappInput
-                id="whatsapp"
-                label="WhatsApp"
-                value={whatsapp}
-                onChange={setWhatsapp}
-                required
-              />
+            <Input
+              id="jobTitle"
+              label="Cargo ou função"
+              value={jobTitle}
+              onChange={(e) => setJobTitle(e.target.value)}
+              placeholder="Ex.: Analista Financeiro"
+              required
+            />
 
+            <div>
               <Input
-                id="jobTitle"
-                label="Cargo ou função"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                placeholder="Ex.: Analista Financeiro"
+                id="departmentText"
+                label="Setor informado"
+                value={departmentText}
+                onChange={(e) => setDepartmentText(e.target.value)}
+                placeholder="Ex.: Financeiro, Jurídico, RH"
                 required
               />
+              <p className="mt-1.5 text-xs text-doqyn-subtle">
+                Informação declarada — o administrador definirá seus grupos reais de acesso.
+              </p>
+            </div>
 
-              <div>
-                <Input
-                  id="departmentText"
-                  label="Setor informado"
-                  value={departmentText}
-                  onChange={(e) => setDepartmentText(e.target.value)}
-                  placeholder="Ex.: Financeiro, Jurídico, RH"
-                  required
-                />
-                <p className="mt-1.5 text-xs text-doqyn-subtle">
-                  Informação declarada — o administrador definirá seus grupos reais de acesso.
-                </p>
-              </div>
+            <Textarea
+              id="reason"
+              label="Motivo do acesso"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              placeholder="Descreva brevemente por que você precisa acessar o DOQYN."
+              required
+            />
+          </FormSection>
 
-              <Textarea
-                id="reason"
-                label="Motivo do acesso"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={4}
-                placeholder="Descreva brevemente por que você precisa acessar o DOQYN."
-                required
-              />
-            </FormSection>
+          <div className="h-px bg-doqyn-border-subtle" />
 
-            <div className="h-px bg-doqyn-border-subtle" />
+          <div className="space-y-4">
+            <TermsAcceptanceCheckbox
+              checked={acceptedTerms}
+              onChange={(value) => {
+                setAcceptedTerms(value);
+                if (value) setTermsError(null);
+              }}
+              error={termsError}
+              privacyHref={undefined}
+              required
+            />
 
-            <div className="space-y-4">
-              <TermsAcceptanceCheckbox
-                checked={acceptedTerms}
-                onChange={(value) => {
-                  setAcceptedTerms(value);
-                  if (value) setTermsError(null);
-                }}
-                error={termsError}
-                privacyHref={undefined}
-                required
-              />
-
-              {employeeFlow && (
-                <Checkbox
-                  checked={informationDeclaration}
-                  onChange={(event) => {
-                    setInformationDeclaration(event.target.checked);
-                    if (event.target.checked) setDeclarationError(null);
-                  }}
-                  required
-                  wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-                  label={
-                    <span className="text-sm leading-relaxed text-doqyn-muted">
-                      Declaro que as informações fornecidas são verdadeiras e que solicito acesso à
-                      empresa informada.
-                    </span>
-                  }
-                  description={
-                    declarationError ? (
-                      <span className="form-error text-xs">{declarationError}</span>
-                    ) : undefined
-                  }
-                />
-              )}
-
+            {employeeFlow && (
               <Checkbox
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
+                checked={informationDeclaration}
+                onChange={(event) => {
+                  setInformationDeclaration(event.target.checked);
+                  if (event.target.checked) setDeclarationError(null);
+                }}
                 required
                 wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-                label={<span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>}
+                label={
+                  <span className="text-sm leading-relaxed text-doqyn-muted">
+                    Declaro que as informações fornecidas são verdadeiras e que solicito acesso à
+                    empresa informada.
+                  </span>
+                }
+                description={
+                  declarationError ? (
+                    <span className="form-error text-xs">{declarationError}</span>
+                  ) : undefined
+                }
               />
-            </div>
-          </div>
+            )}
 
-          <div className="mt-8 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Link
-              to={employeeFlow ? '/acesso' : '/login'}
-              className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
-            >
-              {employeeFlow ? 'Voltar' : 'Já tenho conta'}
-            </Link>
-            <Button type="submit" className="w-full sm:w-auto">
-              Solicitar acesso
-            </Button>
+            <Checkbox
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              required
+              wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+              label={
+                <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
+              }
+            />
           </div>
-        </form>
+        </div>
 
-        <ReviewBeforeSubmitDialog
-          open={reviewOpen}
-          title={REQUEST_ACCESS_REVIEW_COPY.title}
-          description={REQUEST_ACCESS_REVIEW_COPY.description}
-          attentionMessage={REQUEST_ACCESS_REVIEW_COPY.attentionMessage}
-          sections={reviewSections}
-          submitting={submitting}
-          confirmLabel={REQUEST_ACCESS_REVIEW_COPY.confirmLabel}
-          onCancel={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onEdit={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onConfirm={handleConfirmSubmit}
-        />
+        <div className="mt-8 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            to={employeeFlow ? '/acesso' : '/login'}
+            className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
+          >
+            {employeeFlow ? 'Voltar' : 'Já tenho conta'}
+          </Link>
+          <Button type="submit" className="w-full sm:w-auto">
+            Solicitar acesso
+          </Button>
+        </div>
+      </form>
+
+      <ReviewBeforeSubmitDialog
+        open={reviewOpen}
+        title={REQUEST_ACCESS_REVIEW_COPY.title}
+        description={REQUEST_ACCESS_REVIEW_COPY.description}
+        attentionMessage={REQUEST_ACCESS_REVIEW_COPY.attentionMessage}
+        sections={reviewSections}
+        submitting={submitting}
+        confirmLabel={REQUEST_ACCESS_REVIEW_COPY.confirmLabel}
+        onCancel={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onEdit={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onConfirm={handleConfirmSubmit}
+      />
     </AuthShell>
   );
 }

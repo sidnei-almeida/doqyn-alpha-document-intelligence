@@ -96,9 +96,9 @@ export function ChangeEmailCard() {
         </SettingsRowList>
 
         {pendingStatus ? (
-          <p className="mt-4 rounded-md border border-doqyn-border bg-doqyn-surface-2 px-3 py-2 text-sm text-doqyn-muted">
-            Confirmação pendente para <strong>{pendingStatus.newEmail}</strong>. Verifique a
-            caixa de entrada do novo e-mail e clique no link recebido.
+          <p className="mt-4 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-sm text-doqyn-muted">
+            Confirmação pendente para <strong>{pendingStatus.newEmail}</strong>. Verifique a caixa
+            de entrada do novo e-mail e clique no link recebido.
           </p>
         ) : null}
 

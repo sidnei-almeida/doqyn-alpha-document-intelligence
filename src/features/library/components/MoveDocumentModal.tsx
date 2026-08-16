@@ -126,7 +126,7 @@ export function MoveDocumentModal({
 
         <div className="space-y-4 px-5 py-4">
           {singleDoc && currentCategoryName && (
-            <div className="bg-doqyn-surface-raised rounded-lg border border-doqyn-border-subtle px-3 py-2.5">
+            <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-3 py-2.5">
               <p className="text-eyebrow uppercase text-doqyn-subtle">Categoria atual</p>
               <p className="mt-0.5 text-label text-doqyn-text">{currentCategoryName}</p>
             </div>
@@ -164,7 +164,7 @@ export function MoveDocumentModal({
                         className={[
                           'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
                           isSelected
-                            ? 'border-doqyn-accent/40 bg-doqyn-accent/8'
+                            ? 'border-doqyn-accent-active/40 bg-doqyn-accent-active/8'
                             : 'border-transparent hover:border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
                         ].join(' ')}
                         aria-pressed={isSelected}
@@ -185,7 +185,7 @@ export function MoveDocumentModal({
                           ) : null}
                         </span>
                         {isCurrent ? (
-                          <span className="bg-doqyn-surface-raised shrink-0 rounded-full px-2 py-0.5 text-micro font-medium text-doqyn-subtle">
+                          <span className="shrink-0 rounded-full bg-doqyn-card px-2 py-0.5 text-micro font-medium text-doqyn-subtle">
                             Atual
                           </span>
                         ) : null}

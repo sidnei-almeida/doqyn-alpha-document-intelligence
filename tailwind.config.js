@@ -5,78 +5,137 @@ export default {
     extend: {
       colors: {
         doqyn: {
-          bg: 'var(--bg-app)',
-          chrome: 'var(--bg-chrome)',
-          shell: 'var(--bg-shell)',
-          canvas: 'var(--bg-canvas)',
-          'thumbnail-chrome': 'var(--bg-thumbnail-chrome)',
-          sidebar: 'var(--bg-sidebar)',
-          surface: 'var(--bg-surface)',
-          'surface-hover': 'var(--bg-surface-hover)',
-          panel: 'var(--bg-surface)',
-          card: 'var(--bg-surface-2)',
-          panelSoft: 'var(--bg-surface-3)',
-          overlay: 'var(--bg-surface-2)',
-          border: 'var(--border-default)',
-          'border-subtle': 'var(--border-subtle)',
-          'border-strong': 'var(--border-strong)',
-          text: 'var(--text-primary)',
-          foreground: 'var(--text-primary)',
-          muted: 'var(--text-secondary)',
-          subtle: 'var(--text-tertiary)',
-          disabled: 'var(--text-disabled)',
-          hint: 'var(--text-hint)',
-          action: 'var(--accent-active)',
-          actionHover: 'var(--accent-hover)',
-          primary: 'var(--accent-active)',
-          'primary-hover': 'var(--accent-hover)',
-          'primary-soft': 'var(--accent-active-bg)',
-          'primary-bg': 'var(--accent-active-bg)',
-          success: 'var(--status-ok-text)',
-          'success-bg': 'var(--status-ok-bg)',
-          'success-border': 'var(--status-ok-border)',
-          'success-dot': 'var(--status-ok-dot)',
-          warning: 'var(--status-warn-text)',
-          'warning-bg': 'var(--status-warn-bg)',
-          'warning-border': 'var(--status-warn-border)',
-          'warning-dot': 'var(--status-warn-dot)',
-          danger: 'var(--status-danger-text)',
-          'danger-bg': 'var(--status-danger-bg)',
-          'danger-border': 'var(--status-danger-border)',
-          'danger-dot': 'var(--status-danger-dot)',
-          pending: 'var(--status-pending-text)',
-          'pending-bg': 'var(--status-pending-bg)',
-          'pending-border': 'var(--status-pending-border)',
-          'pending-dot': 'var(--status-pending-dot)',
-          info: 'var(--status-info-text)',
-          'info-bg': 'var(--status-info-bg)',
-          'info-border': 'var(--status-info-border)',
-          'info-dot': 'var(--status-info-dot)',
-          neutral: 'var(--status-neutral-text)',
-          'neutral-bg': 'var(--status-neutral-bg)',
-          'neutral-border': 'var(--status-neutral-border)',
-          'neutral-dot': 'var(--status-neutral-dot)',
-          hover: 'var(--overlay-hover)',
-          active: 'var(--overlay-active)',
-          logo: 'var(--logo-text)',
-          'logo-muted': 'var(--logo-muted)',
-          'accent-active': 'var(--accent-active)',
-          'accent-active-bg': 'var(--accent-active-bg)',
-          'accent-hover': 'var(--accent-hover)',
-          'on-accent': 'var(--text-on-accent)',
-          selected: 'var(--bg-selected)',
-          'sidebar-selected': 'var(--sidebar-selected-bg)',
-          'sidebar-selected-border': 'var(--sidebar-selected-border)',
-          'sidebar-selected-text': 'var(--sidebar-selected-text)',
-          'sidebar-selected-icon': 'var(--sidebar-selected-icon)',
-          'sidebar-item-hover': 'var(--sidebar-item-hover-bg)',
-          'new-button': 'var(--new-button-bg)',
-        'new-button-hover': 'var(--new-button-bg-hover)',
-        'new-button-active': 'var(--new-button-bg-active)',
-        'new-button-text': 'var(--new-button-text)',
-        'new-button-border': 'var(--new-button-border)',
-        'new-menu': 'var(--new-menu-bg)',
-        'new-menu-icon': 'var(--new-menu-icon)',
+          bg: 'color-mix(in srgb, var(--bg-app) calc(<alpha-value> * 100%), transparent)',
+          chrome: 'color-mix(in srgb, var(--bg-chrome) calc(<alpha-value> * 100%), transparent)',
+          shell: 'color-mix(in srgb, var(--bg-shell) calc(<alpha-value> * 100%), transparent)',
+          canvas: 'color-mix(in srgb, var(--bg-canvas) calc(<alpha-value> * 100%), transparent)',
+          'thumbnail-chrome':
+            'color-mix(in srgb, var(--bg-thumbnail-chrome) calc(<alpha-value> * 100%), transparent)',
+          sidebar: 'color-mix(in srgb, var(--bg-sidebar) calc(<alpha-value> * 100%), transparent)',
+          surface: 'color-mix(in srgb, var(--bg-surface) calc(<alpha-value> * 100%), transparent)',
+          'surface-hover':
+            'color-mix(in srgb, var(--bg-surface-hover) calc(<alpha-value> * 100%), transparent)',
+          panel: 'color-mix(in srgb, var(--bg-surface) calc(<alpha-value> * 100%), transparent)',
+          card: 'color-mix(in srgb, var(--bg-surface-2) calc(<alpha-value> * 100%), transparent)',
+          panelSoft:
+            'color-mix(in srgb, var(--bg-surface-3) calc(<alpha-value> * 100%), transparent)',
+          overlay:
+            'color-mix(in srgb, var(--bg-surface-2) calc(<alpha-value> * 100%), transparent)',
+          border:
+            'color-mix(in srgb, var(--border-default) calc(<alpha-value> * 100%), transparent)',
+          'border-subtle':
+            'color-mix(in srgb, var(--border-subtle) calc(<alpha-value> * 100%), transparent)',
+          'border-strong':
+            'color-mix(in srgb, var(--border-strong) calc(<alpha-value> * 100%), transparent)',
+          text: 'color-mix(in srgb, var(--text-primary) calc(<alpha-value> * 100%), transparent)',
+          foreground:
+            'color-mix(in srgb, var(--text-primary) calc(<alpha-value> * 100%), transparent)',
+          muted:
+            'color-mix(in srgb, var(--text-secondary) calc(<alpha-value> * 100%), transparent)',
+          subtle:
+            'color-mix(in srgb, var(--text-tertiary) calc(<alpha-value> * 100%), transparent)',
+          disabled:
+            'color-mix(in srgb, var(--text-disabled) calc(<alpha-value> * 100%), transparent)',
+          hint: 'color-mix(in srgb, var(--text-hint) calc(<alpha-value> * 100%), transparent)',
+          action:
+            'color-mix(in srgb, var(--accent-active) calc(<alpha-value> * 100%), transparent)',
+          actionHover:
+            'color-mix(in srgb, var(--accent-hover) calc(<alpha-value> * 100%), transparent)',
+          primary:
+            'color-mix(in srgb, var(--accent-active) calc(<alpha-value> * 100%), transparent)',
+          'primary-hover':
+            'color-mix(in srgb, var(--accent-hover) calc(<alpha-value> * 100%), transparent)',
+          'primary-soft':
+            'color-mix(in srgb, var(--accent-active-bg) calc(<alpha-value> * 100%), transparent)',
+          'primary-bg':
+            'color-mix(in srgb, var(--accent-active-bg) calc(<alpha-value> * 100%), transparent)',
+          success:
+            'color-mix(in srgb, var(--status-ok-text) calc(<alpha-value> * 100%), transparent)',
+          'success-bg':
+            'color-mix(in srgb, var(--status-ok-bg) calc(<alpha-value> * 100%), transparent)',
+          'success-border':
+            'color-mix(in srgb, var(--status-ok-border) calc(<alpha-value> * 100%), transparent)',
+          'success-dot':
+            'color-mix(in srgb, var(--status-ok-dot) calc(<alpha-value> * 100%), transparent)',
+          warning:
+            'color-mix(in srgb, var(--status-warn-text) calc(<alpha-value> * 100%), transparent)',
+          'warning-bg':
+            'color-mix(in srgb, var(--status-warn-bg) calc(<alpha-value> * 100%), transparent)',
+          'warning-border':
+            'color-mix(in srgb, var(--status-warn-border) calc(<alpha-value> * 100%), transparent)',
+          'warning-dot':
+            'color-mix(in srgb, var(--status-warn-dot) calc(<alpha-value> * 100%), transparent)',
+          danger:
+            'color-mix(in srgb, var(--status-danger-text) calc(<alpha-value> * 100%), transparent)',
+          'danger-bg':
+            'color-mix(in srgb, var(--status-danger-bg) calc(<alpha-value> * 100%), transparent)',
+          'danger-border':
+            'color-mix(in srgb, var(--status-danger-border) calc(<alpha-value> * 100%), transparent)',
+          'danger-dot':
+            'color-mix(in srgb, var(--status-danger-dot) calc(<alpha-value> * 100%), transparent)',
+          pending:
+            'color-mix(in srgb, var(--status-pending-text) calc(<alpha-value> * 100%), transparent)',
+          'pending-bg':
+            'color-mix(in srgb, var(--status-pending-bg) calc(<alpha-value> * 100%), transparent)',
+          'pending-border':
+            'color-mix(in srgb, var(--status-pending-border) calc(<alpha-value> * 100%), transparent)',
+          'pending-dot':
+            'color-mix(in srgb, var(--status-pending-dot) calc(<alpha-value> * 100%), transparent)',
+          info: 'color-mix(in srgb, var(--status-info-text) calc(<alpha-value> * 100%), transparent)',
+          'info-bg':
+            'color-mix(in srgb, var(--status-info-bg) calc(<alpha-value> * 100%), transparent)',
+          'info-border':
+            'color-mix(in srgb, var(--status-info-border) calc(<alpha-value> * 100%), transparent)',
+          'info-dot':
+            'color-mix(in srgb, var(--status-info-dot) calc(<alpha-value> * 100%), transparent)',
+          neutral:
+            'color-mix(in srgb, var(--status-neutral-text) calc(<alpha-value> * 100%), transparent)',
+          'neutral-bg':
+            'color-mix(in srgb, var(--status-neutral-bg) calc(<alpha-value> * 100%), transparent)',
+          'neutral-border':
+            'color-mix(in srgb, var(--status-neutral-border) calc(<alpha-value> * 100%), transparent)',
+          'neutral-dot':
+            'color-mix(in srgb, var(--status-neutral-dot) calc(<alpha-value> * 100%), transparent)',
+          hover: 'color-mix(in srgb, var(--overlay-hover) calc(<alpha-value> * 100%), transparent)',
+          active:
+            'color-mix(in srgb, var(--overlay-active) calc(<alpha-value> * 100%), transparent)',
+          logo: 'color-mix(in srgb, var(--logo-text) calc(<alpha-value> * 100%), transparent)',
+          'logo-muted':
+            'color-mix(in srgb, var(--logo-muted) calc(<alpha-value> * 100%), transparent)',
+          'accent-active':
+            'color-mix(in srgb, var(--accent-active) calc(<alpha-value> * 100%), transparent)',
+          'accent-active-bg':
+            'color-mix(in srgb, var(--accent-active-bg) calc(<alpha-value> * 100%), transparent)',
+          'accent-hover':
+            'color-mix(in srgb, var(--accent-hover) calc(<alpha-value> * 100%), transparent)',
+          'on-accent':
+            'color-mix(in srgb, var(--text-on-accent) calc(<alpha-value> * 100%), transparent)',
+          selected:
+            'color-mix(in srgb, var(--bg-selected) calc(<alpha-value> * 100%), transparent)',
+          'sidebar-selected':
+            'color-mix(in srgb, var(--sidebar-selected-bg) calc(<alpha-value> * 100%), transparent)',
+          'sidebar-selected-border':
+            'color-mix(in srgb, var(--sidebar-selected-border) calc(<alpha-value> * 100%), transparent)',
+          'sidebar-selected-text':
+            'color-mix(in srgb, var(--sidebar-selected-text) calc(<alpha-value> * 100%), transparent)',
+          'sidebar-selected-icon':
+            'color-mix(in srgb, var(--sidebar-selected-icon) calc(<alpha-value> * 100%), transparent)',
+          'sidebar-item-hover':
+            'color-mix(in srgb, var(--sidebar-item-hover-bg) calc(<alpha-value> * 100%), transparent)',
+          'new-button':
+            'color-mix(in srgb, var(--new-button-bg) calc(<alpha-value> * 100%), transparent)',
+          'new-button-hover':
+            'color-mix(in srgb, var(--new-button-bg-hover) calc(<alpha-value> * 100%), transparent)',
+          'new-button-active':
+            'color-mix(in srgb, var(--new-button-bg-active) calc(<alpha-value> * 100%), transparent)',
+          'new-button-text':
+            'color-mix(in srgb, var(--new-button-text) calc(<alpha-value> * 100%), transparent)',
+          'new-button-border':
+            'color-mix(in srgb, var(--new-button-border) calc(<alpha-value> * 100%), transparent)',
+          'new-menu':
+            'color-mix(in srgb, var(--new-menu-bg) calc(<alpha-value> * 100%), transparent)',
+          'new-menu-icon':
+            'color-mix(in srgb, var(--new-menu-icon) calc(<alpha-value> * 100%), transparent)',
         },
       },
       fontFamily: {
@@ -146,6 +205,16 @@ export default {
         xl: ['var(--text-h1)', { lineHeight: 'var(--leading-h1)' }],
         '2xl': ['var(--text-display)', { lineHeight: 'var(--leading-display)' }],
       },
+      // Degraus fora da escala padrão do Tailwind já usados nas telas.
+      // Sem eles o modificador é descartado em silêncio e a classe não gera regra.
+      opacity: {
+        8: '0.08',
+        12: '0.12',
+        15: '0.15',
+        35: '0.35',
+        45: '0.45',
+        55: '0.55',
+      },
       fontWeight: {
         normal: 'var(--weight-body)',
         medium: 'var(--weight-label)',
@@ -162,7 +231,7 @@ export default {
         'new-button': 'var(--radius-new-button)',
       },
       spacing: {
-        'field': 'var(--field-height)',
+        field: 'var(--field-height)',
         'icon-btn': 'var(--icon-button-size)',
       },
       height: {

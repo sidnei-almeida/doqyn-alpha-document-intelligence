@@ -28,7 +28,9 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showCredentialForm =
-    AUTH_MODE === 'temporary' || AUTH_MODE === 'mock' || import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
+    AUTH_MODE === 'temporary' ||
+    AUTH_MODE === 'mock' ||
+    import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/biblioteca';
 
@@ -62,7 +64,7 @@ export function Login() {
       description="Plataforma corporativa para gestão segura de documentos e rastreabilidade."
       showSecureBadge
       footer={
-        <Link to="/acesso" className="text-doqyn-accent transition-colors hover:underline">
+        <Link to="/acesso" className="text-doqyn-accent-active transition-colors hover:underline">
           Não tem acesso ainda?
         </Link>
       }
@@ -99,7 +101,9 @@ export function Login() {
             {showCredentialForm && (
               <div className="flex items-center gap-3 pt-1">
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">ou</span>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
+                  ou
+                </span>
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
               </div>
             )}

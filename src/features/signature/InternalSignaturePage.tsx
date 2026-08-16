@@ -44,7 +44,11 @@ function PreviewLoadingPanel() {
       className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-border bg-doqyn-surface"
       data-testid="internal-signature-preview-loading"
     >
-      <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+      <Icon
+        name="progress_activity"
+        size={ICON_SIZE.md}
+        className="animate-spin text-doqyn-muted"
+      />
       <p className="text-sm text-doqyn-subtle">Carregando documento…</p>
     </div>
   );
@@ -57,7 +61,9 @@ function PreviewUnavailablePanel({ message }: { message: string }) {
       data-testid="internal-signature-preview-unavailable"
     >
       <Icon name="visibility_off" size={ICON_SIZE.md} className="text-amber-600" />
-      <p className="text-sm font-medium text-doqyn-text">Preview indisponível para este documento.</p>
+      <p className="text-sm font-medium text-doqyn-text">
+        Preview indisponível para este documento.
+      </p>
       <p className="max-w-md text-sm leading-relaxed text-doqyn-subtle">{message}</p>
     </div>
   );
@@ -199,7 +205,11 @@ export function InternalSignaturePage() {
         data-testid="internal-signature-page"
       >
         <div className="flex flex-col items-center gap-3">
-          <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+          <Icon
+            name="progress_activity"
+            size={ICON_SIZE.md}
+            className="animate-spin text-doqyn-muted"
+          />
           <p className="text-sm text-doqyn-subtle">Carregando assinatura…</p>
         </div>
       </div>
@@ -235,7 +245,7 @@ export function InternalSignaturePage() {
         {verificationCode ? (
           <Link
             to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-            className="mt-4 inline-block text-sm text-doqyn-accent hover:underline"
+            className="mt-4 inline-block text-sm text-doqyn-accent-active hover:underline"
           >
             Validar assinatura
           </Link>
@@ -263,13 +273,18 @@ export function InternalSignaturePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:flex-row" data-testid="internal-signature-page">
+    <div
+      className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:flex-row"
+      data-testid="internal-signature-page"
+    >
       <section className="min-w-0 flex-1">
         {preview.kind === 'loading' ? <PreviewLoadingPanel /> : null}
         {preview.kind === 'ready' && payload ? (
           <InternalSignatureViewer manifest={preview.manifest} payload={payload} />
         ) : null}
-        {preview.kind === 'unavailable' ? <PreviewUnavailablePanel message={preview.message} /> : null}
+        {preview.kind === 'unavailable' ? (
+          <PreviewUnavailablePanel message={preview.message} />
+        ) : null}
         {preview.kind === 'error' ? (
           <PreviewUnavailablePanel
             message={`${preview.message} Você ainda pode prosseguir com a assinatura após confirmar o aceite.`}
@@ -303,7 +318,7 @@ export function InternalSignaturePage() {
           </dl>
 
           {payload?.message ? (
-            <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-surface-raised px-3 py-2 text-sm leading-relaxed">
+            <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 text-sm leading-relaxed">
               {payload.message}
             </blockquote>
           ) : null}

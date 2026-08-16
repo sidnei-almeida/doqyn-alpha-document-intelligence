@@ -19,13 +19,7 @@ type ActiveFilterChipsProps = {
   filterCapabilities?: LibraryCollectionFilterCapabilities;
 };
 
-function RemovableChip({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}) {
+function RemovableChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="explorer-filter-chip explorer-filter-chip--active inline-flex items-center gap-1 pr-1">
       <span className="max-w-[12rem] truncate">{label}</span>
@@ -148,7 +142,7 @@ export function ActiveFilterChips({
       ))}
       <button
         type="button"
-        className="text-[12px] font-medium text-doqyn-accent hover:underline"
+        className="text-[12px] font-medium text-doqyn-accent-active hover:underline"
         onClick={onClearAll}
       >
         Limpar filtros
