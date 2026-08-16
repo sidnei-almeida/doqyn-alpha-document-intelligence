@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Icon } from '@/components/ui/Icon';
@@ -6,24 +6,21 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
 import { createDocumentShare, revokeDocumentShare } from '@/features/sharing/api/shareApi';
-import {
-  fetchAccessMatrix,
-  fetchMetadataMatrix,
-  updateDocumentMetadataField,
-  type MetadataMatrixColumn,
-} from './api/matrixApi';
+import { fetchAccessMatrix } from './api/matrixApi';
 import { AccessMatrixTable } from './components/AccessMatrixTable';
-import { MetadataMatrixTable } from './components/MetadataMatrixTable';
+import { GroupAccessMatrixTable } from './components/GroupAccessMatrixTable';
 
 /**
  * Matriz de documentos.
  *
- * Duas perguntas que a Biblioteca não responde: "quem alcança cada documento, e por quê" e "quais
- * documentos desta categoria estão com campo faltando". São matrizes separadas porque as colunas
- * são de naturezas diferentes — pessoas de um lado, campos da categoria do outro — e misturar as
- * duas produziria uma tabela que não serve para nenhuma das duas perguntas.
+ * Responde a pergunta que a Biblioteca não responde: quem alcança cada documento, e por qual
+ * caminho. Duas leituras da mesma verdade — por pessoa, para conferir caso a caso, e por grupo,
+ * para governar, porque pessoa entra e sai de grupo o tempo todo e a regra é o que permanece.
+ *
+ * Metadados ficaram de fora de propósito: cada tipo de documento tem campos diferentes, então a
+ * ficha é por documento (botão no próprio arquivo), não uma coluna que só existe para um tipo.
  */
-type MatrixTab = 'access' | 'metadata';
+type MatrixTab = 'people' | 'groups';
 
 function TabButton({
   active,
@@ -72,11 +69,10 @@ function TabButton({
 
 export function MatrixPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<MatrixTab>('access');
+  const [tab, setTab] = useState<MatrixTab>('people');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [busyCellKey, setBusyCellKey] = useState<string | null>(null);
-  const [savingKey, setSavingKey] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['document-categories-options'],
@@ -84,20 +80,10 @@ export function MatrixPage() {
     staleTime: 5 * 60_000,
   });
 
-  // A matriz de metadados exige categoria: as colunas saem da regra dela. Sem escolha explícita,
-  // a primeira categoria é um ponto de partida melhor que uma tela vazia.
-  const metadataCategoryId = categoryId || categories[0]?.id || '';
-
   const accessQuery = useQuery({
     queryKey: ['matrix-access', search, categoryId],
-    queryFn: () => fetchAccessMatrix({ search: search || undefined, categoryId: categoryId || undefined }),
-    enabled: tab === 'access',
-  });
-
-  const metadataQuery = useQuery({
-    queryKey: ['matrix-metadata', metadataCategoryId, search],
-    queryFn: () => fetchMetadataMatrix({ categoryId: metadataCategoryId, search: search || undefined }),
-    enabled: tab === 'metadata' && Boolean(metadataCategoryId),
+    queryFn: () =>
+      fetchAccessMatrix({ search: search || undefined, categoryId: categoryId || undefined }),
   });
 
   const shareMutation = useMutation({
@@ -125,56 +111,32 @@ export function MatrixPage() {
     onSettled: () => setBusyCellKey(null),
   });
 
-  const metadataMutation = useMutation({
-    mutationFn: (input: {
-      documentId: string;
-      column: MetadataMatrixColumn;
-      value: string;
-    }) =>
-      updateDocumentMetadataField({
-        documentId: input.documentId,
-        key: input.column.key,
-        label: input.column.label,
-        value: input.value === '' ? null : input.value,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['matrix-metadata'] });
-    },
-    onError: (error: Error) => toast.error(error.message),
-    onSettled: () => setSavingKey(null),
-  });
-
-  const activeCategoryName = useMemo(
-    () => categories.find((category) => category.id === metadataCategoryId)?.name,
-    [categories, metadataCategoryId],
-  );
-
-  const isLoading = tab === 'access' ? accessQuery.isLoading : metadataQuery.isLoading;
-  const error = tab === 'access' ? accessQuery.error : metadataQuery.error;
+  const isLoading = accessQuery.isLoading;
+  const error = accessQuery.error;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-6">
       <header>
         <h1 className="text-[18px] font-semibold text-doqyn-text">Matriz de documentos</h1>
         <p className="mt-0.5 text-[12px] text-doqyn-muted">
-          Quem alcança cada documento e o que está preenchido — em uma tela só.
+          Quem alcança cada documento, e por qual caminho.
         </p>
       </header>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:max-w-2xl">
         <TabButton
-          active={tab === 'access'}
-          onClick={() => setTab('access')}
-          icon="admin_panel_settings"
-          label="Acesso"
-          hint="Quem lê cada documento, e por qual caminho"
+          active={tab === 'people'}
+          onClick={() => setTab('people')}
+          icon="group"
+          label="Por pessoa"
+          hint="Quem lê cada documento, e de onde vem o acesso"
         />
         <TabButton
-          active={tab === 'metadata'}
-          onClick={() => setTab('metadata')}
-          icon="table_rows"
-          label="Metadados"
-          hint="Campos da categoria, lado a lado e editáveis"
+          active={tab === 'groups'}
+          onClick={() => setTab('groups')}
+          icon="admin_panel_settings"
+          label="Por grupo"
+          hint="O que a regra concede a cada grupo, verbo a verbo"
         />
       </div>
 
@@ -195,12 +157,12 @@ export function MatrixPage() {
         </label>
 
         <select
-          value={tab === 'metadata' ? metadataCategoryId : categoryId}
+          value={categoryId}
           onChange={(event) => setCategoryId(event.target.value)}
           className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-[13px] text-doqyn-text"
           aria-label="Categoria"
         >
-          {tab === 'access' && <option value="">Todas as categorias</option>}
+          <option value="">Todas as categorias</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -208,9 +170,13 @@ export function MatrixPage() {
           ))}
         </select>
 
-        {tab === 'metadata' && activeCategoryName && (
+        {accessQuery.data && (
           <span className="text-[11px] text-doqyn-subtle">
-            Colunas definidas pela regra de {activeCategoryName}
+            {accessQuery.data.documents.length} documento
+            {accessQuery.data.documents.length === 1 ? '' : 's'} ·{' '}
+            {tab === 'people'
+              ? `${accessQuery.data.members.length} pessoa${accessQuery.data.members.length === 1 ? '' : 's'}`
+              : `${accessQuery.data.groups.length} grupo${accessQuery.data.groups.length === 1 ? '' : 's'}`}
           </span>
         )}
       </div>
@@ -233,7 +199,7 @@ export function MatrixPage() {
           </div>
         )}
 
-        {!isLoading && !error && tab === 'access' && accessQuery.data && (
+        {!isLoading && !error && tab === 'people' && accessQuery.data && (
           <AccessMatrixTable
             matrix={accessQuery.data}
             busyCellKey={busyCellKey}
@@ -249,15 +215,8 @@ export function MatrixPage() {
           />
         )}
 
-        {!isLoading && !error && tab === 'metadata' && metadataQuery.data && (
-          <MetadataMatrixTable
-            matrix={metadataQuery.data}
-            savingKey={savingKey}
-            onCommitField={(input) => {
-              setSavingKey(`${input.documentId}:${input.column.key}`);
-              metadataMutation.mutate(input);
-            }}
-          />
+        {!isLoading && !error && tab === 'groups' && accessQuery.data && (
+          <GroupAccessMatrixTable matrix={accessQuery.data} />
         )}
       </div>
     </div>

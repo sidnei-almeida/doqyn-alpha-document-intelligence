@@ -74,7 +74,6 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/ai/analyze-pdf-update': () => import('../api/ai/analyze-pdf-update.js'),
   '/api/documents/rag-query': () => import('../api/documents/rag-query.js'),
   '/api/documents/matrix/access': () => import('../api/documents/matrix/access.js'),
-  '/api/documents/matrix/metadata': () => import('../api/documents/matrix/metadata.js'),
   '/api/trash/documents': () => import('../api/trash/documents.js'),
   '/api/deactivated/documents': () => import('../api/deactivated/documents.js'),
   '/api/settings/trash-retention': () => import('../api/settings/trash-retention.js'),

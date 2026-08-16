@@ -31,39 +31,22 @@ export type AccessMatrixDocument = {
   externalShareCount: number;
 };
 
+export type AccessMatrixGroupCell = {
+  documentId: string;
+  groupId: string;
+  canView: boolean;
+  canDownload: boolean;
+  canUpdate: boolean;
+  canAudit: boolean;
+  canShare: boolean;
+};
+
 export type AccessMatrix = {
   members: AccessMatrixMember[];
-  groups: Array<{ groupId: string; name: string }>;
+  groups: Array<{ groupId: string; name: string; memberCount: number }>;
   documents: AccessMatrixDocument[];
   cells: AccessMatrixCell[];
-  pagination: { nextCursor: string | null };
-};
-
-export type MetadataMatrixColumn = {
-  key: string;
-  label: string;
-  type: string;
-  required: boolean;
-  isValidity: boolean;
-};
-
-export type MetadataMatrixRow = {
-  documentId: string;
-  versionId?: string;
-  fileName: string;
-  ownerName?: string;
-  updatedAt?: string;
-  canEdit: boolean;
-  values: Record<string, string | number | null>;
-  sources: Record<string, string | undefined>;
-  missingRequired: string[];
-};
-
-export type MetadataMatrix = {
-  categoryId: string;
-  categoryName?: string;
-  columns: MetadataMatrixColumn[];
-  rows: MetadataMatrixRow[];
+  groupCells: AccessMatrixGroupCell[];
   pagination: { nextCursor: string | null };
 };
 
@@ -91,43 +74,4 @@ export async function fetchAccessMatrix(params: {
 
   const response = await authFetch(`/api/documents/matrix/access?${query.toString()}`);
   return parseJson<AccessMatrix>(response);
-}
-
-export async function fetchMetadataMatrix(params: {
-  categoryId: string;
-  search?: string;
-  limit?: number;
-}): Promise<MetadataMatrix> {
-  const query = new URLSearchParams();
-  query.set('categoryId', params.categoryId);
-  if (params.search) query.set('search', params.search);
-  query.set('limit', String(params.limit ?? 25));
-
-  const response = await authFetch(`/api/documents/matrix/metadata?${query.toString()}`);
-  return parseJson<MetadataMatrix>(response);
-}
-
-/**
- * Grava um campo de um documento.
- *
- * Reaproveita a rota da ficha de metadados: é a mesma operação, com a mesma trilha de auditoria —
- * a matriz é só outro lugar de onde disparar.
- */
-export async function updateDocumentMetadataField(input: {
-  documentId: string;
-  key: string;
-  label: string;
-  value: string | number | null;
-}): Promise<void> {
-  const response = await authFetch(
-    `/api/documents/${encodeURIComponent(input.documentId)}/metadata`,
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: [{ key: input.key, label: input.label, value: input.value }],
-      }),
-    },
-  );
-  await parseJson<unknown>(response);
 }

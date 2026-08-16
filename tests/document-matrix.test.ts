@@ -54,34 +54,49 @@ describe('matriz de acesso — contrato do serviço', () => {
   });
 });
 
-describe('matriz de metadados — contrato do serviço', () => {
-  const service = readRepoFile('server/services/matrix/documentMetadataMatrixService.ts');
-
-  it('as colunas saem da regra da categoria', () => {
-    assert.match(service, /getMongoClassAndRule\(\{/);
-    assert.match(service, /classAndRule\?\.rule\.fields/);
-  });
-
-  it('carrega as versões da página numa consulta só', () => {
-    assert.match(service, /_id: \{ \$in: versionIds \}/);
-  });
-
-  it('marca o que falta nos campos obrigatórios', () => {
-    assert.match(service, /missingRequired\.push\(column\.key\)/);
-  });
-});
-
 describe('registro das rotas da matriz', () => {
-  it('as duas rotas estão no dispatcher', () => {
+  it('a rota da matriz está no dispatcher', () => {
     const server = readRepoFile('server/apiServer.ts');
 
     // Arquivo em api/ não vira rota sozinho fora da Vercel.
     assert.match(server, /'\/api\/documents\/matrix\/access'/);
-    assert.match(server, /'\/api\/documents\/matrix\/metadata'/);
   });
 
   it('a seção está no menu e na rota do app', () => {
     assert.match(readRepoFile('src/lib/constants.ts'), /path: '\/matriz'/);
     assert.match(readRepoFile('src/app/routes.tsx'), /path: '\/matriz'/);
+  });
+});
+
+describe('metadados saíram da matriz e viraram ficha do documento', () => {
+  it('cada tipo de documento tem campos próprios: a ficha é por documento', () => {
+    const drawer = readRepoFile('src/features/library/components/DocumentMetadataDrawer.tsx');
+    const menu = readRepoFile('src/features/library/components/ExplorerContextMenu.tsx');
+
+    assert.match(drawer, /DocumentExpiryEditor/);
+    assert.match(menu, /label="Metadados"/);
+  });
+
+  it('a matriz passa a falar só de permissão', () => {
+    const page = readRepoFile('src/features/matrix/MatrixPage.tsx');
+
+    assert.match(page, /'people' \| 'groups'/);
+    assert.equal(page.includes('MetadataMatrixTable'), false);
+  });
+
+  it('a leitura por grupo mostra o verbo, não só o acesso', () => {
+    const service = readRepoFile('server/services/matrix/documentAccessMatrixService.ts');
+
+    assert.match(service, /canUpdate: boolean/);
+    assert.match(service, /canAudit: boolean/);
+    assert.match(service, /updateByCategory/);
+  });
+
+  it('a categoria do documento é lida do campo que a lista expõe', () => {
+    const service = readRepoFile('server/services/matrix/documentAccessMatrixService.ts');
+
+    // Ler `classId` aqui devolvia undefined e deixava a governança vazia para todo mundo.
+    assert.match(service, /doc\.categoryId === 'string'/);
+    assert.equal(service.includes("doc.classId === 'string'"), false);
   });
 });
