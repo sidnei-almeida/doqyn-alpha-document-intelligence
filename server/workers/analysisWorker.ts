@@ -9,8 +9,14 @@ import {
   failAnalysisJob,
   loadAnalysisJobPayload,
   markAnalysisJobProcessing,
+  markAnalysisJobQueuedForRetry,
 } from '../services/analysis/analysisJobService.js';
-import type { AnalysisQueueJobPayload } from '../services/analysis/analysisJobTypes.js';
+import type {
+  AnalysisJobResult,
+  AnalysisQueueJobPayload,
+} from '../services/analysis/analysisJobTypes.js';
+import { isGroqSaturationCode, isGroqSaturationError } from '../ai/utils/groqSaturation.js';
+import { requeueAnalysisJobOnSaturation } from './analysisSaturationRequeue.js';
 import { startAnalysisWorker } from '../queues/analysisQueue.js';
 import {
   releaseTenantAnalysisSlot,
@@ -86,6 +92,33 @@ async function runAnalysisForPayload(
   });
 }
 
+function isSaturationResult(result: AnalysisJobResult): boolean {
+  return result.status === 'ai_unavailable' && isGroqSaturationCode(result.errorCode);
+}
+
+/**
+ * Devolve o job para a fila e sinaliza ao chamador que ele deve lançar `DelayedError`.
+ *
+ * O `DelayedError` fica com o chamador de propósito: quem lança é quem está dentro do `try` do
+ * worker, onde o `catch` já sabe repassá-lo sem marcar o job como falho.
+ */
+async function tryRequeueOnSaturation(
+  job: Job<AnalysisQueueJobPayload>,
+  payload: AnalysisQueueJobPayload,
+  origin: 'result' | 'error',
+  errorCode?: string,
+): Promise<boolean> {
+  const outcome = await requeueAnalysisJobOnSaturation({
+    job,
+    payload,
+    origin,
+    errorCode,
+    markJobQueued: markAnalysisJobQueuedForRetry,
+  });
+
+  return outcome.requeued;
+}
+
 async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<void> {
   const payload = job.data;
   const jobKind = payload.jobKind ?? 'initial';
@@ -123,6 +156,16 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
 
     const result = await runAnalysisForPayload(payload, buffer);
 
+    // Saturação da vazão não é resultado: é o pedido que não chegou a ser atendido. Enquanto
+    // houver crédito de reenfileiramento, o documento volta para a fila em vez de cair na revisão
+    // manual como "IA indisponível".
+    if (isSaturationResult(result)) {
+      const requeued = await tryRequeueOnSaturation(job, payload, 'result', result.errorCode);
+      if (requeued) {
+        throw new DelayedError('Vazão da Groq saturada: análise devolvida à fila.');
+      }
+    }
+
     await completeAnalysisJob({ jobId: payload.jobId, result });
 
     recordAnalysisJobCompletion({
@@ -154,6 +197,16 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
   } catch (error) {
     if (error instanceof DelayedError) {
       throw error;
+    }
+
+    // Mesma saturação, outro caminho: aqui ela chega como erro lançado (o 429 da Groq ou o teto de
+    // espera do limitador local) em vez de resultado.
+    if (isGroqSaturationError(error)) {
+      const errorCode = String((error as { code?: unknown }).code);
+      const requeued = await tryRequeueOnSaturation(job, payload, 'error', errorCode);
+      if (requeued) {
+        throw new DelayedError('Vazão da Groq saturada: análise devolvida à fila.');
+      }
     }
 
     pipelineError('analysisWorker', 'job failed', error, {
