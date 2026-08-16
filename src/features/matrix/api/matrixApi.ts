@@ -46,7 +46,8 @@ export type AccessMatrix = {
   groups: Array<{ groupId: string; name: string; memberCount: number }>;
   documents: AccessMatrixDocument[];
   cells: AccessMatrixCell[];
-  groupCells: AccessMatrixGroupCell[];
+  /** Opcional para sobreviver a uma API mais antiga durante o deploy. */
+  groupCells?: AccessMatrixGroupCell[];
   pagination: { nextCursor: string | null };
 };
 
