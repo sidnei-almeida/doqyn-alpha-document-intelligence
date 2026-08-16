@@ -1,6 +1,6 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
 import type { ExtractedMetadata } from '@/features/document-send/types';
-import type { AnalyzePdfResponse } from './services/analyzePdf';
+import type { AnalysisQueueStatus, AnalyzePdfResponse } from './services/analyzePdf';
 
 export type UploadQueueItemStatus =
   | 'queued'
@@ -35,4 +35,6 @@ export type UploadQueueItem = {
   errorMessage?: string;
   /** Escolha de nomeação por arquivo (quando policy = ask_each_file ou revisão manual). */
   namingChoice?: PerItemNamingChoice;
+  /** Onde o documento está na fila da plataforma, atualizado a cada consulta de status. */
+  queueStatus?: AnalysisQueueStatus;
 };

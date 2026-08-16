@@ -8,6 +8,7 @@ import type { MongoTenant } from '../server/db/types.js';
 import type { ResolvedTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
 import { DOCUMENT_EXPIRY_ALERT_INDEXES } from '../server/db/documentExpiryAlertIndexes.js';
+import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -102,12 +103,10 @@ function registryIndexes(): Array<{ collection: string; indexes: IndexDescriptio
 function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescription[] }> {
   return [
     {
+      // Mesma definição canônica que o `setupMongo` aplica — a lista morava só aqui, e quem subia
+      // pelo outro caminho ficava sem índice nenhum nesta coleção.
       collection: SHARED_APP_COLLECTIONS.analysisJobs,
-      indexes: [
-        { key: { tenantId: 1, ownerUserId: 1, createdAt: -1 } },
-        { key: { tenantId: 1, status: 1, createdAt: -1 } },
-        { key: { status: 1, createdAt: -1 } },
-      ],
+      indexes: ANALYSIS_JOB_INDEXES,
     },
     {
       // Importado da definição canônica em vez de recopiado: este script mantém uma segunda lista

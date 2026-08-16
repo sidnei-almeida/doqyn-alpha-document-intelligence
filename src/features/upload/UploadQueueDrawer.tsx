@@ -13,6 +13,7 @@ import {
   countSubmittedItems,
   isItemSavedInLibrary,
 } from './queue/uploadQueueState';
+import { formatQueueWaitLabel } from './queue/queueWaitLabel';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
 
@@ -71,6 +72,12 @@ function QueueRow({
     }
     if (autoCountdown !== null) {
       return `Salvando automaticamente em ${autoCountdown}s · ${formatFileSize(item.fileSize)}`;
+    }
+    // Onde ele está na fila vale mais que "Analisando com IA…", que é igual para quem está sendo
+    // processado agora e para quem é o número 400.
+    const waitLabel = formatQueueWaitLabel(item.queueStatus);
+    if (waitLabel && (item.status === 'analyzing' || item.status === 'queued')) {
+      return `${waitLabel} · ${formatFileSize(item.fileSize)}`;
     }
     return `${STATUS_LABELS[item.status]} · ${formatFileSize(item.fileSize)}`;
   }, [item, autoCountdown]);

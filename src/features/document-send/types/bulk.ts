@@ -1,4 +1,4 @@
-import type { AnalyzePdfResponse } from '../services/analyzePdf';
+import type { AnalysisQueueStatus, AnalyzePdfResponse } from '../services/analyzePdf';
 import type { ExtractedMetadata } from '../types';
 import type { PerItemNamingChoice } from './reviewWorkflowSettings';
 
@@ -34,6 +34,8 @@ export type BulkUploadItem = {
   logs: string[];
   startedAt?: string;
   finishedAt?: string;
+  /** Onde o documento está na fila da plataforma enquanto espera a análise. */
+  queueStatus?: AnalysisQueueStatus;
 };
 
 export type BulkBatchLogLevel = 'info' | 'success' | 'warning' | 'error';

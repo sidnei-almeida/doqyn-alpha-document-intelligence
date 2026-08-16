@@ -1,4 +1,5 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
+import type { AnalysisQueueStatus } from '../services/analyzePdf';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
 import {
   findNextQueuedItem,
@@ -9,6 +10,7 @@ import {
 export type UploadQueueAction =
   | { type: 'enqueue'; items: UploadQueueItem[] }
   | { type: 'status'; id: string; status: UploadQueueItemStatus }
+  | { type: 'queue_status'; id: string; queueStatus: AnalysisQueueStatus }
   | { type: 'analysis'; id: string; analysis: UploadQueueItemAnalysis }
   | { type: 'done'; id: string; documentId: string }
   | { type: 'awaiting_approval'; id: string; approvalId: string }
@@ -30,9 +32,16 @@ export function uploadQueueReducer(
       return items.map((item) =>
         item.id === action.id ? { ...item, status: action.status } : item,
       );
+    case 'queue_status':
+      return items.map((item) =>
+        item.id === action.id ? { ...item, queueStatus: action.queueStatus } : item,
+      );
     case 'analysis':
       return items.map((item) =>
-        item.id === action.id ? { ...item, analysis: action.analysis } : item,
+        // O lugar na fila deixa de valer no instante em que o resultado chega.
+        item.id === action.id
+          ? { ...item, analysis: action.analysis, queueStatus: undefined }
+          : item,
       );
     case 'done':
       return items.map((item) =>

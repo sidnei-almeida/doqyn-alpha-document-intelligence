@@ -6,6 +6,7 @@
 export {
   analyzePdf,
   AnalyzePdfRequestError,
+  type AnalysisQueueStatus,
   type AnalyzePdfOptions,
   type AnalyzePdfResponse,
 } from '@/features/document-send/services/analyzePdf';
