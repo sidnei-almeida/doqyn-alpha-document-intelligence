@@ -193,7 +193,7 @@ export function RequestSignatureModal({
               className={[
                 'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'internal'
-                  ? 'bg-doqyn-accent/12 text-doqyn-accent'
+                  ? 'bg-doqyn-accent-active/12 text-doqyn-accent-active'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
               ].join(' ')}
               data-testid="request-signature-tab-internal"
@@ -206,7 +206,7 @@ export function RequestSignatureModal({
               className={[
                 'rounded-lg px-3 py-1.5 text-caption font-medium',
                 tab === 'external'
-                  ? 'bg-doqyn-accent/12 text-doqyn-accent'
+                  ? 'bg-doqyn-accent-active/12 text-doqyn-accent-active'
                   : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
               ].join(' ')}
               data-testid="request-signature-tab-external"
@@ -254,11 +254,11 @@ export function RequestSignatureModal({
                             className={[
                               'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left',
                               isSelected
-                                ? 'border-doqyn-accent/40 bg-doqyn-accent/8'
+                                ? 'border-doqyn-accent-active/40 bg-doqyn-accent-active/8'
                                 : 'border-transparent hover:border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
                             ].join(' ')}
                           >
-                            <span className="bg-doqyn-surface-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-micro font-semibold text-doqyn-muted">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-doqyn-card text-micro font-semibold text-doqyn-muted">
                               {(user.name || user.email || '?').slice(0, 2).toUpperCase()}
                             </span>
                             <span className="min-w-0">

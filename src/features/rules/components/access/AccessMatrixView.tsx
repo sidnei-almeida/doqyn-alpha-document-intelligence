@@ -101,7 +101,7 @@ export function AccessMatrixView({
       <div className="overflow-x-auto rounded-xl border border-doqyn-border-subtle">
         <table className="w-full min-w-[640px] border-collapse">
           <thead>
-            <tr className="bg-doqyn-surface-2">
+            <tr className="bg-doqyn-card">
               <th className="type-label px-4 py-3 text-left text-doqyn-muted">Categoria</th>
               {groups.map((group) => (
                 <th

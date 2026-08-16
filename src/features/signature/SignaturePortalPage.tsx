@@ -45,7 +45,11 @@ function PreviewLoadingPanel() {
       className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-border bg-doqyn-surface"
       data-testid="signature-preview-loading"
     >
-      <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+      <Icon
+        name="progress_activity"
+        size={ICON_SIZE.md}
+        className="animate-spin text-doqyn-muted"
+      />
       <p className="text-sm text-doqyn-subtle">Carregando documento…</p>
     </div>
   );
@@ -58,7 +62,9 @@ function PreviewUnavailablePanel({ message }: { message: string }) {
       data-testid="signature-preview-unavailable"
     >
       <Icon name="visibility_off" size={ICON_SIZE.md} className="text-amber-600" />
-      <p className="text-sm font-medium text-doqyn-text">Preview indisponível para este documento.</p>
+      <p className="text-sm font-medium text-doqyn-text">
+        Preview indisponível para este documento.
+      </p>
       <p className="max-w-md text-sm leading-relaxed text-doqyn-subtle">{message}</p>
     </div>
   );
@@ -185,10 +191,7 @@ export function SignaturePortalPage() {
           signatureRequestId: payload.signatureRequestId,
         });
         if (user?.id) {
-          await invalidateSignatureQueries(
-            queryClient,
-            tenant?.tenantId ?? user.companyId,
-          );
+          await invalidateSignatureQueries(queryClient, tenant?.tenantId ?? user.companyId);
         }
       }
       setVerificationCode(result.verificationCode);
@@ -226,7 +229,11 @@ export function SignaturePortalPage() {
         data-testid="signature-portal"
       >
         <div className="flex flex-col items-center gap-3">
-          <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+          <Icon
+            name="progress_activity"
+            size={ICON_SIZE.md}
+            className="animate-spin text-doqyn-muted"
+          />
           <p className="text-sm text-doqyn-subtle">Carregando assinatura…</p>
         </div>
       </div>
@@ -270,7 +277,7 @@ export function SignaturePortalPage() {
           {verificationCode ? (
             <Link
               to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-              className="mt-4 inline-block text-sm text-doqyn-accent hover:underline"
+              className="mt-4 inline-block text-sm text-doqyn-accent-active hover:underline"
               data-testid="signature-verification-link"
             >
               Validar assinatura
@@ -293,7 +300,10 @@ export function SignaturePortalPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text" data-testid="signature-portal">
+    <div
+      className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text"
+      data-testid="signature-portal"
+    >
       <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4">
           <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
@@ -318,7 +328,9 @@ export function SignaturePortalPage() {
               </p>
             </div>
           ) : null}
-          {preview.kind === 'unavailable' ? <PreviewUnavailablePanel message={preview.message} /> : null}
+          {preview.kind === 'unavailable' ? (
+            <PreviewUnavailablePanel message={preview.message} />
+          ) : null}
           {preview.kind === 'error' ? (
             <PreviewUnavailablePanel
               message={`${preview.message} Você ainda pode prosseguir com a assinatura após confirmar o aceite.`}
@@ -360,14 +372,16 @@ export function SignaturePortalPage() {
             </dl>
 
             {payload?.message ? (
-              <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-surface-raised px-3 py-2 text-sm leading-relaxed">
+              <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 text-sm leading-relaxed">
                 {payload.message}
               </blockquote>
             ) : null}
           </section>
 
           <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-            <p className="text-sm font-medium text-doqyn-text">Leia o documento antes de assinar.</p>
+            <p className="text-sm font-medium text-doqyn-text">
+              Leia o documento antes de assinar.
+            </p>
             <p className="mt-2 text-xs leading-relaxed text-doqyn-subtle">{payload?.consentText}</p>
             <label className="mt-4 flex items-start gap-2 text-sm">
               <input

@@ -27,7 +27,7 @@ function ManifestPageImage({
   return (
     <div
       data-page-number={page.page}
-      className="viewer-page mx-auto flex w-full justify-center scroll-mt-4"
+      className="viewer-page mx-auto flex w-full scroll-mt-4 justify-center"
       style={{ maxWidth: displayWidth }}
     >
       {state === 'loading' && (
@@ -35,7 +35,11 @@ function ManifestPageImage({
           className="viewer-page-surface flex items-center justify-center"
           style={{ width: displayWidth, height: Math.min(Math.round(page.height * scale), 480) }}
         >
-          <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+          <Icon
+            name="progress_activity"
+            size={ICON_SIZE.md}
+            className="animate-spin text-doqyn-muted"
+          />
         </div>
       )}
       {state === 'ready' && objectUrl && (
@@ -70,12 +74,18 @@ function ThumbnailButton({
       className={cn(
         'flex w-full flex-col items-center gap-1 rounded-md border p-1 transition-colors',
         isActive
-          ? 'border-doqyn-accent bg-doqyn-accent/10'
+          ? 'border-doqyn-accent-active bg-doqyn-accent-active/10'
           : 'border-doqyn-border-subtle hover:border-doqyn-border',
       )}
     >
       <div className="viewer-page-surface flex h-20 w-full items-center justify-center overflow-hidden rounded">
-        {state === 'loading' && <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin text-doqyn-muted" />}
+        {state === 'loading' && (
+          <Icon
+            name="progress_activity"
+            size={ICON_SIZE.xs}
+            className="animate-spin text-doqyn-muted"
+          />
+        )}
         {state === 'ready' && objectUrl && (
           <img
             src={objectUrl}
@@ -111,9 +121,7 @@ export function PdfPagesViewer({
   const pagesToRender = useMemo(() => {
     if (!pages.length) return [];
     if (!useLazyRender) return pages;
-    return pages.filter(
-      (page) => page.page >= currentPage - 1 && page.page <= currentPage + 1,
-    );
+    return pages.filter((page) => page.page >= currentPage - 1 && page.page <= currentPage + 1);
   }, [pages, useLazyRender, currentPage]);
 
   const activePageMeta = pages.find((page) => page.page === currentPage) ?? pages[0] ?? null;
@@ -220,7 +228,12 @@ export function PdfPagesViewer({
 
   if (!pages.length) {
     return (
-      <div className={cn('viewer-canvas flex h-full items-center justify-center px-6 text-center', className)}>
+      <div
+        className={cn(
+          'viewer-canvas flex h-full items-center justify-center px-6 text-center',
+          className,
+        )}
+      >
         <p className="text-sm text-doqyn-muted">Nenhuma página disponível para visualização.</p>
       </div>
     );
@@ -262,7 +275,7 @@ export function PdfPagesViewer({
           </div>
         )}
 
-        <div ref={scrollRef} className="viewer-canvas-stage h-full overflow-y-auto scrollbar-thin">
+        <div ref={scrollRef} className="viewer-canvas-stage scrollbar-thin h-full overflow-y-auto">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6">
             {useLazyRender && (
               <p className="rounded-md border border-doqyn-border bg-doqyn-bg/80 px-3 py-2 text-xs text-doqyn-muted">

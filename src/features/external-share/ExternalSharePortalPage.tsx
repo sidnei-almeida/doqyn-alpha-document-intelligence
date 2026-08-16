@@ -41,7 +41,11 @@ function formatShareDate(iso: string): string {
 function InviteLoadingState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <Icon name="progress_activity" size={ICON_SIZE.md} className="animate-spin text-doqyn-muted" />
+      <Icon
+        name="progress_activity"
+        size={ICON_SIZE.md}
+        className="animate-spin text-doqyn-muted"
+      />
       <p className="text-sm text-doqyn-subtle">Carregando convite…</p>
     </div>
   );
@@ -113,7 +117,7 @@ function PendingInvitePanel({
       </dl>
 
       {payload.message ? (
-        <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-surface-raised px-4 py-3 text-sm leading-relaxed text-doqyn-text">
+        <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-4 py-3 text-sm leading-relaxed text-doqyn-text">
           {payload.message}
         </blockquote>
       ) : null}
@@ -151,7 +155,9 @@ export function ExternalSharePortalPage() {
     }
 
     const { payload } = portal;
-    const versionSuffix = payload.document.versionLabel ? ` · ${payload.document.versionLabel}` : '';
+    const versionSuffix = payload.document.versionLabel
+      ? ` · ${payload.document.versionLabel}`
+      : '';
     return {
       title: `${payload.document.displayName}${versionSuffix} · DOQYN`,
       description:
@@ -190,7 +196,8 @@ export function ExternalSharePortalPage() {
         if (cancelled) return;
         const message =
           error instanceof Error ? error.message : 'Não foi possível abrir este compartilhamento.';
-        const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
+        const code =
+          typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
         setPortal({ kind: 'error', message, code });
       }
     }
@@ -217,13 +224,18 @@ export function ExternalSharePortalPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Não foi possível aceitar este convite.';
-      const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
+      const code =
+        typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
       setPortal({ kind: 'error', message, code });
     }
   };
 
   const handleDownload = async () => {
-    if (portal.kind !== 'ready' || portal.payload.status !== 'active' || !portal.payload.permissions.canDownload) {
+    if (
+      portal.kind !== 'ready' ||
+      portal.payload.status !== 'active' ||
+      !portal.payload.permissions.canDownload
+    ) {
       return;
     }
     setDownloading(true);
@@ -242,9 +254,7 @@ export function ExternalSharePortalPage() {
 
   const isPendingInvite = portal.kind === 'ready' && portal.payload.status === 'pending';
   const isActiveWithPreview =
-    portal.kind === 'ready' &&
-    portal.payload.status === 'active' &&
-    portal.manifest !== null;
+    portal.kind === 'ready' && portal.payload.status === 'active' && portal.manifest !== null;
 
   if (isActiveWithPreview && portal.kind === 'ready' && portal.manifest) {
     return (
@@ -261,7 +271,10 @@ export function ExternalSharePortalPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text" data-testid="external-share-portal">
+    <div
+      className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text"
+      data-testid="external-share-portal"
+    >
       <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
         <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-4">
           <DoqynLogo size="sm" variant="horizontal" subtitle="Acesso seguro a documento" />
@@ -270,7 +283,9 @@ export function ExternalSharePortalPage() {
 
       <main className="mx-auto flex w-full max-w-lg flex-1 items-center justify-center px-4 py-10 sm:px-6">
         {portal.kind === 'loading' ? <InviteLoadingState /> : null}
-        {portal.kind === 'error' ? <InviteErrorState message={portal.message} code={portal.code} /> : null}
+        {portal.kind === 'error' ? (
+          <InviteErrorState message={portal.message} code={portal.code} />
+        ) : null}
         {portal.kind === 'ready' && isPendingInvite ? (
           <PendingInvitePanel
             payload={portal.payload}

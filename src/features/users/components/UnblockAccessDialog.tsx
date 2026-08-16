@@ -35,7 +35,7 @@ export function UnblockAccessDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -64,7 +64,7 @@ export function UnblockAccessDialog({
             O usuário voltará a ter acesso a esta empresa. Outras empresas não serão afetadas.
           </p>
 
-          <dl className="grid gap-2 rounded-md border border-doqyn-border bg-doqyn-surface-elevated p-3 text-xs">
+          <dl className="grid gap-2 rounded-md border border-doqyn-border bg-doqyn-card p-3 text-xs">
             <div className="flex justify-between gap-4">
               <dt className="text-doqyn-muted">Usuário</dt>
               <dd className="text-right font-medium">{memberName}</dd>

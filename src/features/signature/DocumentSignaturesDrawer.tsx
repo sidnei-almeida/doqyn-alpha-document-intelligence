@@ -84,7 +84,7 @@ function SignatureRequestCard({
   const verificationCode = entry.signature?.verificationCode;
 
   return (
-    <section className="bg-doqyn-bg/40 rounded-lg border border-doqyn-border-subtle p-4">
+    <section className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
@@ -140,7 +140,7 @@ function SignatureRequestCard({
             type="button"
             size="sm"
             variant="ghost"
-            className="hover:bg-doqyn-danger/10 text-doqyn-danger hover:text-doqyn-danger"
+            className="text-doqyn-danger hover:bg-doqyn-danger/10 hover:text-doqyn-danger"
             disabled={revokingId === entry.signatureRequestId}
             onClick={() => onRevoke(entry)}
             data-testid="signature-drawer-revoke"
@@ -176,7 +176,7 @@ function SignatureRequestCard({
         {verificationCode ? (
           <Link
             to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-            className="text-doqyn-accent inline-flex items-center gap-1 text-caption hover:underline"
+            className="inline-flex items-center gap-1 text-caption text-doqyn-accent-active hover:underline"
             data-testid="signature-drawer-verification-link"
           >
             Abrir validador

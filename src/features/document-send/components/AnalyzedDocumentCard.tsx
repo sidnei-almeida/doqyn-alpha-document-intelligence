@@ -45,18 +45,13 @@ export function AnalyzedDocumentCard({
   className,
 }: AnalyzedDocumentCardProps) {
   return (
-    <Card
-      className={cn(
-        'h-fit w-full self-start border-doqyn-border bg-doqyn-surface',
-        className,
-      )}
-    >
+    <Card className={cn('h-fit w-full self-start border-doqyn-border bg-doqyn-surface', className)}>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Documento analisado</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-start gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-doqyn-surface-soft">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-doqyn-card">
             <Icon name="description" size={ICON_SIZE.nav} className="text-doqyn-primary" />
           </div>
           <div className="min-w-0 flex-1">

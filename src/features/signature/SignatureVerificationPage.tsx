@@ -26,28 +26,40 @@ export function SignatureVerificationPage() {
   }, [verificationCode]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-doqyn-bg p-6">Validando…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-doqyn-bg p-6">
+        Validando…
+      </div>
+    );
   }
 
   if (error || !result) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-doqyn-bg p-6 text-doqyn-text" data-testid="signature-verification">
+      <div
+        className="flex min-h-screen items-center justify-center bg-doqyn-bg p-6 text-doqyn-text"
+        data-testid="signature-verification"
+      >
         {error ?? 'Assinatura não encontrada.'}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 bg-doqyn-bg p-6 text-doqyn-text" data-testid="signature-verification">
+    <div
+      className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 bg-doqyn-bg p-6 text-doqyn-text"
+      data-testid="signature-verification"
+    >
       <h1 className="text-xl font-semibold">Validação de assinatura eletrônica DOQYN</h1>
       <p>Status: {String(result.status)}</p>
       <p>Integridade: {String(result.integrityStatus)}</p>
       <p>Signatário: {String(result.signerNameMasked)}</p>
       <p>E-mail: {String(result.signerEmailMasked)}</p>
       <p>Assinado em: {String(result.signedAt)}</p>
-      <p className="break-all text-sm">Hash original: {String(result.originalDocumentHashSha256)}</p>
+      <p className="break-all text-sm">
+        Hash original: {String(result.originalDocumentHashSha256)}
+      </p>
       <p className="break-all text-sm">Hash assinado: {String(result.signedPdfHashSha256)}</p>
-      <p className="text-sm text-doqyn-text-muted">Método: {String(result.method)}</p>
+      <p className="text-sm text-doqyn-muted">Método: {String(result.method)}</p>
     </div>
   );
 }

@@ -62,7 +62,7 @@ export function ExplorerFolderCard({
         }
       }}
       className={cn(
-        'group explorer-folder-card drive-folder-tile explorer-interactive explorer-focus-ring relative flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left',
+        'explorer-folder-card drive-folder-tile explorer-interactive explorer-focus-ring group relative flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left',
         'bg-doqyn-surface shadow-sm',
         'hover:bg-doqyn-surface-hover hover:shadow-md active:scale-[0.995]',
         isSelected && 'explorer-item-selected explorer-selected',
@@ -70,7 +70,7 @@ export function ExplorerFolderCard({
       aria-selected={isSelected}
       aria-label={`Abrir pasta ${folder.name}`}
     >
-      <span className="folder-icon-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doqyn-surface-2">
+      <span className="folder-icon-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doqyn-card">
         <Icon
           name="folder"
           filled
@@ -80,7 +80,9 @@ export function ExplorerFolderCard({
       </span>
 
       <div className="min-w-0 flex-1 pr-12">
-        <TruncatedText className="text-label font-medium text-doqyn-text">{folder.name}</TruncatedText>
+        <TruncatedText className="text-label font-medium text-doqyn-text">
+          {folder.name}
+        </TruncatedText>
         <p className="truncate text-caption text-doqyn-subtle">{countLabel}</p>
       </div>
 

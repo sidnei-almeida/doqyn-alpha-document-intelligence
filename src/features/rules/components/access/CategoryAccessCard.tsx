@@ -50,7 +50,7 @@ function GroupChip({
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          'bg-doqyn-surface-2 inline-flex h-[30px] items-center gap-1.5 rounded-full border border-doqyn-border-subtle px-2.5',
+          'inline-flex h-[30px] items-center gap-1.5 rounded-full border border-doqyn-border-subtle bg-doqyn-card px-2.5',
           'font-display text-[12.5px] font-medium text-doqyn-text transition-colors',
           disabled ? 'cursor-default' : 'hover:border-doqyn-border',
         )}

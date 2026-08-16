@@ -161,12 +161,12 @@ export function ReviewDrawer() {
     >
       <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {uploadDestination && (
-          <div className="bg-doqyn-card/40 mb-3 rounded-lg border border-doqyn-border-subtle px-3 py-2">
+          <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2">
             <div className="flex items-start gap-2.5">
               <Icon
                 name="folder_open"
                 size={ICON_SIZE.sm}
-                className="text-doqyn-accent mt-0.5 shrink-0"
+                className="mt-0.5 shrink-0 text-doqyn-accent-active"
               />
               <div className="min-w-0">
                 <p className="text-caption font-medium text-doqyn-text">
