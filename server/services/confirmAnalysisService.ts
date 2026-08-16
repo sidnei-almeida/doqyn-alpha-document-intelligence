@@ -38,7 +38,7 @@ import {
   type NamingMode,
 } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
-import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
+import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import {
   buildInitialDocumentOwnershipFields,
@@ -514,7 +514,7 @@ export async function confirmAnalysisPersistence(input: {
     await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer) {
-      await persistChunksAfterVersionConfirm({
+      await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
         documentId,
@@ -523,6 +523,7 @@ export async function confirmAnalysisPersistence(input: {
         categoryId: docClass._id,
         createdBy: ownerUserId,
         isCurrentVersion: true,
+        mimeType: contentMimeType,
       });
     }
 

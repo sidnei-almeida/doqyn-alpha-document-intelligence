@@ -60,7 +60,7 @@ import {
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { loadDocumentAccessContext, resolveDocumentPermissions } from '../tenancy/documentAccess.js';
 import { getMongoDatabaseName } from '../db/database.js';
-import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
+import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
@@ -381,7 +381,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer) {
-      await persistChunksAfterVersionConfirm({
+      await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
         documentId,
@@ -390,6 +390,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
         categoryId: docClass._id,
         createdBy: input.user.id,
         isCurrentVersion: true,
+        mimeType: contentMimeType,
       });
     }
 
