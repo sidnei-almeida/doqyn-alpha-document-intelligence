@@ -46,7 +46,10 @@ function toDateInputValue(raw: string | number | null | undefined): string {
 }
 
 function toInputValue(row: MetadataSheetRow): string {
-  if (row.type === 'date') return toDateInputValue(row.value);
+  // Campo de data usa o valor canônico quando existe: a extração grava a data como o documento
+  // escreve ("09 de junho de 2026") e guarda `2026-06-09` ao lado. Sem preferir o canônico, o
+  // `<input type="date">` não reconhece o texto e abre vazio — o dado parece ter sumido.
+  if (row.type === 'date') return toDateInputValue(row.normalizedValue ?? row.value);
   return row.value === null || row.value === undefined ? '' : String(row.value);
 }
 
