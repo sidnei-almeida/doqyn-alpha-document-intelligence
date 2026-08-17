@@ -308,26 +308,22 @@ export function SignaturePortalPage() {
       <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
         <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4">
           <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
-          <div className="text-right">
-            <p className="text-xs text-doqyn-muted">Solicitado por</p>
-            <p className="text-sm font-medium">{payload?.issuerName}</p>
-            <Badge variant="pending" className="mt-1">
-              Assinatura pendente
-            </Badge>
+          <div className="flex items-center gap-3">
+            <p className="text-caption text-doqyn-muted">
+              Solicitado por <span className="text-doqyn-text">{payload?.issuerName}</span>
+            </p>
+            <Badge variant="pending">Assinatura pendente</Badge>
           </div>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 p-4 sm:p-6 lg:flex-row">
-        <section className="min-w-0 flex-1">
+        <section className="min-w-0 flex-1 lg:min-h-0">
           {preview.kind === 'loading' ? <PreviewLoadingPanel /> : null}
           {preview.kind === 'ready' && payload ? (
-            <div data-testid="signature-preview-ready">
+            <div className="lg:h-full" data-testid="signature-preview-ready">
               <GuestSignatureViewer manifest={preview.manifest} payload={payload} />
-              <p
-                className="mt-2 text-xs text-doqyn-success"
-                data-testid="signature-document-loaded"
-              >
+              <p className="sr-only" data-testid="signature-document-loaded">
                 Documento carregado
               </p>
             </div>
