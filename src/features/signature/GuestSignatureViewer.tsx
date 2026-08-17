@@ -74,7 +74,7 @@ export function GuestSignatureViewer({
     <PreviewAssetFetchProvider fetchAsset={fetchSignaturePreviewAssetBlob}>
       <DocumentViewerFrame
         className={cn(
-          'h-[min(70vh,720px)] w-full rounded-lg border border-doqyn-border shadow-none',
+          'h-[min(70vh,720px)] w-full rounded-lg border border-doqyn-border shadow-none lg:h-full',
           className,
         )}
         toolbar={{
@@ -90,14 +90,15 @@ export function GuestSignatureViewer({
           onZoomOut: () => viewerActionsRef.current?.zoomOut(),
           onFitWidth: () => viewerActionsRef.current?.fitWidth(),
           onFitPage: () => viewerActionsRef.current?.fitPage(),
-          onPreviousPage: isPdfViewer
-            ? () => viewerActionsRef.current?.previousPage()
-            : undefined,
+          onPreviousPage: isPdfViewer ? () => viewerActionsRef.current?.previousPage() : undefined,
           onNextPage: isPdfViewer ? () => viewerActionsRef.current?.nextPage() : undefined,
           onDownload: permissions.canDownload && onDownload ? onDownload : undefined,
         }}
       >
-        <div className="doqyn-secure-viewer flex h-full min-h-0 flex-col" data-testid="signature-preview-viewer">
+        <div
+          className="doqyn-secure-viewer flex h-full min-h-0 flex-col"
+          data-testid="signature-preview-viewer"
+        >
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
             Visualização protegida. Leia o documento antes de assinar.
           </p>
