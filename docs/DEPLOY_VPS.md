@@ -9,6 +9,24 @@ Stack de produção do DOQYN: auth (PostgreSQL), API principal (MongoDB), **Redi
 - Repositórios lado a lado:
   - `doqyn-auth-service`
   - `doqyn-alpha-document-intelligence`
+- **Domínio apontado para a VPS + TLS na frente** — não é opcional, ver abaixo
+
+### Domínio e TLS são pré-requisito, não acabamento
+
+O auth-service marca o cookie de sessão como `Secure` sempre que `NODE_ENV=production`
+(`src/security/cookies.ts`) — **não há variável que desligue isso**. Navegador descarta
+cookie `Secure` em origem `http://`.
+
+Consequência prática: subir a stack e abrir `http://<IP-da-VPS>` **não loga**. O login
+completa no servidor, o cookie é descartado no caminho, e a tela volta para o login sem
+mensagem de erro em lugar nenhum. `COOKIE_DOMAIN` apontando para um domínio que não bate
+com o host acessado tem o mesmo efeito.
+
+Ordem correta: DNS apontado → TLS na frente (Cloudflare com proxy laranja é o mais
+simples na Hostinger) → `setup-production-env.sh` com a URL `https://` → deploy.
+
+`setup-production-env.sh` avisa e pede confirmação se a URL não for `https://`, e
+`validate-vps-ready.sh` falha (exit 1) nesse caso.
 
 ### Ubuntu 24.04 — notas rápidas
 
@@ -45,8 +63,14 @@ Por padrão na VPS (`setup-production-env.sh`):
 
 | Variável | Padrão produção | Função |
 |----------|-----------------|--------|
-| `DOQYN_API_REPLICAS` | `2` | Instâncias `doqyn-api` |
-| `AUTH_API_REPLICAS` | `2` | Instâncias `auth-api` |
+| `DOQYN_API_REPLICAS` | `1` | Instâncias `doqyn-api` |
+| `AUTH_API_REPLICAS` | `1` | Instâncias `auth-api` |
+
+> **Por que 1 e não 2:** numa VPS de 2 vCPU, cada réplica reserva CPU e RAM que os três
+> processos Node (api, worker, worker-preview) já disputam entre si. Com 2/2 a soma de
+> `mem_limit` passa de 6,8 GiB antes de contar Mongo local e observabilidade. Suba as
+> réplicas junto com o plano da VPS, depois de medir — `validate-vps-ready.sh` avisa
+> quando o valor não cabe no host.
 
 O Nginx resolve `doqyn-api` e `auth-api` via DNS interno Docker (`resolve` + `least_conn`). O Prometheus descobre todas as réplicas da API com `dns_sd_configs`.
 
@@ -102,8 +126,20 @@ Dev local (como hoje): `MONGODB_USE_ATLAS=true` + URI Atlas no `.env` raiz — s
 ```bash
 cd doqyn-alpha-document-intelligence
 ./deploy/scripts/setup-production-env.sh   # primeira vez
-./deploy/scripts/deploy-production.sh
+./deploy/scripts/deploy-production.sh      # ou: ./deploy/start.sh (mesmo script)
 ```
+
+`deploy-production.sh` é o único caminho suportado e faz tudo de uma vez:
+
+1. Roda `validate-vps-ready.sh` **antes do build** — erro de `.env` aparece em segundos,
+   não depois de 20 minutos compilando (`SKIP_VALIDATION=1` pula, num redeploy consciente)
+2. Libera a porta 80 do nginx do Ubuntu
+3. Constrói as imagens, aplica migrations, sobe a stack na ordem certa
+4. **Verifica e afirma o estado no fim:** API, auth, deep health, todos os containers de
+   pé, e a raiz servindo a SPA — não a página default do nginx
+
+Se qualquer verificação falhar, o script diz qual passo, qual comando de diagnóstico
+rodar, e **sai com código 1**. Deploy que termina em silêncio verde é deploy verificado.
 
 ## Variáveis importantes (Fase A)
 
@@ -114,8 +150,9 @@ Definidas em `deploy/.env` (ver `deploy/env/.env.production.example` ou `setup-p
 | `REDIS_URL` | Ex.: `redis://redis:6379` |
 | `REDIS_ENABLED` | `true` em produção |
 | `ANALYSIS_SYNC_FALLBACK` | `false` — análise via fila assíncrona |
-| `ANALYSIS_QUEUE_CONCURRENCY_GLOBAL` | Jobs simultâneos no worker (padrão: 10) |
-| `ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT` | Slots por tenant (padrão: 2) |
+| `ANALYSIS_QUEUE_CONCURRENCY_GLOBAL` | Jobs simultâneos no worker (padrão VPS: `2`; default do código: 10) |
+| `ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT` | Slots por tenant (padrão VPS: `1`; default do código: 2) |
+| `PREVIEW_QUEUE_CONCURRENCY_GLOBAL` | Ghostscript simultâneos (padrão VPS: `1`; default do código: 4) |
 | `TENANT_QUOTA_ENABLED` | Controle de quotas por tenant |
 | `TENANT_QUOTA_ANALYSIS_PER_DAY` | Limite diário de análises |
 | `TENANT_QUOTA_UPLOADS_PER_HOUR` | Limite horário de uploads |
@@ -158,7 +195,11 @@ Após o deploy principal:
 ./deploy/scripts/up-observability.sh
 ```
 
-Ou automaticamente no deploy se `OBSERVABILITY_ENABLE=true` em `deploy/.env` (padrão no `setup-production-env.sh`).
+Ou automaticamente no deploy se `OBSERVABILITY_ENABLE=true` em `deploy/.env`.
+
+> **Padrão é `false`.** Prometheus + Grafana + redis-exporter somam ~960 MiB de teto. Com
+> Mongo local a stack passa de 7 GiB numa VPS de 8 GiB. Ligue quando tiver folga, ou rode
+> com MongoDB Atlas.
 
 Gerenciamento manual:
 

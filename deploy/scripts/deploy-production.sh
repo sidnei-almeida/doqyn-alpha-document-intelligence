@@ -53,6 +53,18 @@ read_replicas() {
 
 cd "$DEPLOY_DIR"
 
+# Validação na entrada: erro de .env (URL sem https, chaves internas fora de
+# sincronia, teto de memória acima da RAM) aparece antes do build, não depois de
+# 20 minutos compilando. SKIP_VALIDATION=1 para pular num redeploy consciente.
+if [[ "${SKIP_VALIDATION:-0}" != "1" ]]; then
+  info "Validando configuração antes de construir..."
+  if ! "$SCRIPT_DIR/validate-vps-ready.sh"; then
+    error "Validação falhou — corrija deploy/.env e rode de novo."
+    echo "Para ignorar (não recomendado): SKIP_VALIDATION=1 $0"
+    exit 1
+  fi
+fi
+
 AUTH_API_REPLICAS="$(read_replicas AUTH_API_REPLICAS 1)"
 DOQYN_API_REPLICAS="$(read_replicas DOQYN_API_REPLICAS 1)"
 
@@ -104,41 +116,102 @@ compose up -d doqyn-worker-preview
 info "Subindo nginx (SPA + proxy)..."
 compose up -d --wait nginx
 
-sleep 2
-
 HTTP_PORT="${HTTP_PORT:-80}"
 PUBLIC_URL="${DOQYN_PUBLIC_APP_URL:-http://localhost:${HTTP_PORT}}"
+BASE="http://127.0.0.1:${HTTP_PORT}"
 
-if curl -fsS "http://127.0.0.1:${HTTP_PORT}/api/health" >/dev/null; then
-  info "API OK: http://127.0.0.1:${HTTP_PORT}/api/health"
+echo ""
+info "Verificando o serviço (o deploy só termina se isto passar)..."
+
+DEPLOY_FAILED=0
+step_fail() {
+  error "$1"
+  echo "    $2"
+  DEPLOY_FAILED=1
+}
+
+# Espera o nginx passar a atender de fato. `--wait` garante container saudável,
+# não que a rota pública responda.
+wait_for() {
+  local url="$1"
+  local tries="${2:-30}"
+  local i
+  for ((i = 0; i < tries; i++)); do
+    if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+if wait_for "${BASE}/api/health" 45; then
+  info "API responde em ${BASE}/api/health"
 else
-  warn "Health da API ainda não respondeu — veja: compose logs doqyn-api"
+  step_fail "API não respondeu em 90s." "Diagnóstico: compose logs doqyn-api"
 fi
 
-if curl -fsS "http://127.0.0.1:${HTTP_PORT}/health" >/dev/null; then
-  info "Auth OK: http://127.0.0.1:${HTTP_PORT}/health"
+if wait_for "${BASE}/health" 15; then
+  info "Auth responde em ${BASE}/health"
 else
-  warn "Health do auth ainda não respondeu — veja: compose logs auth-api"
+  step_fail "Auth não respondeu." "Diagnóstico: compose logs auth-api postgres-auth pgbouncer"
 fi
 
-DEEP_JSON="$(curl -fsS "http://127.0.0.1:${HTTP_PORT}/api/health/deep" 2>/dev/null || true)"
-if [[ -n "$DEEP_JSON" ]]; then
-  DEEP_STATUS="$(printf '%s' "$DEEP_JSON" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')"
-  if [[ "$DEEP_STATUS" == "ok" ]]; then
-    info "Deep health OK"
-  else
-    warn "Deep health: ${DEEP_STATUS:-unknown} — verifique redis, worker e storage"
-  fi
+# O buraco de verificação que interessa: o IP pode responder 200 servindo a
+# página default do nginx (do host ou de uma imagem velha) em vez da SPA. Testar
+# só o status code não distingue os dois casos.
+ROOT_BODY="$(curl -fsS --max-time 10 "${BASE}/" 2>/dev/null || true)"
+if [[ -z "$ROOT_BODY" ]]; then
+  step_fail "A raiz (${BASE}/) não respondeu." "Diagnóstico: compose logs nginx"
+elif printf '%s' "$ROOT_BODY" | grep -qi 'Welcome to nginx'; then
+  step_fail "A raiz devolveu a página default do nginx, não o DOQYN." \
+    "O nginx do host ainda ocupa a porta ${HTTP_PORT}: sudo ./deploy/scripts/prepare-ubuntu-host.sh"
+elif printf '%s' "$ROOT_BODY" | grep -q 'id="root"'; then
+  info "Frontend servido pelo container (SPA encontrada na raiz)"
 else
-  warn "Deep health ainda não respondeu — veja: compose logs doqyn-api"
+  step_fail "A raiz respondeu, mas o conteúdo não é a SPA do DOQYN." \
+    "Reconstrua o frontend: compose build --no-cache nginx && compose up -d nginx"
+fi
+
+DEEP_JSON="$(curl -fsS --max-time 10 "${BASE}/api/health/deep" 2>/dev/null || true)"
+DEEP_STATUS="$(printf '%s' "$DEEP_JSON" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')"
+case "$DEEP_STATUS" in
+  ok)
+    info "Deep health OK (mongo, redis, fila, auth, storage)"
+    ;;
+  degraded)
+    warn "Deep health: degraded — a app sobe, mas algo está fora do ar."
+    printf '%s' "$DEEP_JSON" | tr ',' '\n' | grep -i '"ok":false' >/dev/null 2>&1 \
+      && echo "    Detalhe: curl -s ${BASE}/api/health/deep"
+    ;;
+  *)
+    step_fail "Deep health não respondeu ou está down (${DEEP_STATUS:-sem resposta})." \
+      "Diagnóstico: compose logs doqyn-api redis"
+    ;;
+esac
+
+# Container que morreu depois de subir não aparece no --wait.
+STOPPED="$(compose ps --status exited --status dead --format '{{.Service}}' 2>/dev/null \
+  | grep -v -E '^(auth-migrate|doqyn-api-indexes)$' || true)"
+if [[ -n "$STOPPED" ]]; then
+  step_fail "Containers parados: $(printf '%s' "$STOPPED" | tr '\n' ' ')" \
+    "Diagnóstico: compose logs $(printf '%s' "$STOPPED" | tr '\n' ' ')"
+else
+  info "Todos os containers de regime seguem de pé"
 fi
 
 echo ""
 info "Status dos containers:"
 compose ps
 
+if [[ "$DEPLOY_FAILED" -ne 0 ]]; then
+  echo ""
+  error "Deploy NÃO concluído — veja os passos marcados com ✗ acima."
+  exit 1
+fi
+
 echo ""
-info "Deploy concluído."
+info "Deploy concluído e verificado."
 echo ""
 echo "  App:  ${PUBLIC_URL}"
 echo "  Logs: cd deploy && docker compose -f docker-compose.production.yml --env-file .env logs -f"
@@ -152,6 +225,10 @@ else
 fi
 
 echo ""
-warn "HTTPS: este compose expõe porta ${HTTP_PORT} (HTTP). Use Certbot/Nginx no host ou Cloudflare para TLS."
-echo "Validação pré-deploy: ./deploy/scripts/validate-vps-ready.sh"
+warn "HTTPS: o container expõe a porta ${HTTP_PORT} em HTTP puro. O TLS termina fora"
+warn "daqui (Cloudflare com proxy laranja, ou Certbot no host)."
+warn "Acessar a app pelo IP em http:// não loga: o auth-service marca o cookie de"
+warn "sessão como Secure em produção e o navegador o descarta. Use ${PUBLIC_URL}."
+echo ""
+echo "Validação avulsa: ./deploy/scripts/validate-vps-ready.sh"
 echo "Guia completo: docs/DEPLOY_VPS.md"
