@@ -8,7 +8,7 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
 describe('Fase B.4 — réplicas API e auth', () => {
   it('nginx usa DNS Docker + least_conn para múltiplas réplicas', () => {
-    const nginx = read('deploy/nginx/default.conf');
+    const nginx = read('deploy/nginx/default.conf.template');
     assert.ok(nginx.includes('resolver 127.0.0.11'));
     assert.ok(nginx.includes('least_conn'));
     assert.ok(nginx.includes('server doqyn-api:3001 resolve'));
