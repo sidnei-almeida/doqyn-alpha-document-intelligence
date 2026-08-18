@@ -59,6 +59,12 @@ services:
     cpus: 0.1
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}
+      # postgres:16 guarda a senha em scram-sha-256 (padrão desde o PG 14), mas o
+      # entrypoint da imagem usa auth_type=md5 por default e grava um hash md5 no
+      # userlist.txt. O servidor recusa com "FATAL: server login failed: wrong
+      # password type". Com scram-sha-256 o entrypoint grava a senha em claro no
+      # userlist e o pgbouncer negocia SCRAM com o Postgres.
+      AUTH_TYPE: scram-sha-256
       POOL_MODE: transaction
       MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-500}
       DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-25}
