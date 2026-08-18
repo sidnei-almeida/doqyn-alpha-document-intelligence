@@ -1,3 +1,8 @@
+# Renderizado pelo entrypoint da imagem nginx (envsubst sobre /etc/nginx/templates).
+# Só variáveis com prefixo LETSENCRYPT_ são substituídas (NGINX_ENVSUBST_FILTER no
+# compose) — as variáveis do próprio nginx ($host, $uri, ...) passam intactas porque
+# o envsubst da imagem só troca a forma ${NOME}.
+
 # DNS interno Docker — necessário para balancear múltiplas réplicas (compose scale).
 resolver 127.0.0.11 valid=10s ipv6=off;
 
@@ -20,9 +25,48 @@ map $http_user_agent $is_social_bot {
   ~*(facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|googlebot|bingbot|applebot|embedly) 1;
 }
 
+# Porta 80: só desafio ACME e redirect. Nada da app responde em texto claro — o
+# cookie de sessão é Secure, então servir a SPA aqui só produziria login quebrado.
 server {
   listen 80;
   server_name _;
+
+  # Healthcheck do container. Precisa de resposta própria: seguir o 301 levaria o
+  # wget ao domínio público, que de dentro do container pode nem resolver.
+  location = /nginx-health {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 "ok\n";
+  }
+
+  # Raiz do webroot compartilhada com o container certbot na renovação.
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+    default_type "text/plain";
+  }
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ${LETSENCRYPT_DOMAIN};
+
+  ssl_certificate     /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/privkey.pem;
+
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
+  ssl_session_tickets off;
+
+  # 6 meses. Sem preload: entrar na lista é praticamente irreversível e travaria
+  # qualquer subdomínio futuro que ainda não tenha certificado.
+  add_header Strict-Transport-Security "max-age=15768000" always;
 
   client_max_body_size 30m;
   root /usr/share/nginx/html;
