@@ -164,6 +164,24 @@ if [[ -f "$ENV_FILE" ]]; then
     warn "COOKIE_SECURE=${COOKIE_SECURE:-vazio} — irrelevante: NODE_ENV=production já força Secure"
   fi
 
+  # O https acima é só uma string no .env. Quem realmente termina TLS é o nginx do
+  # compose, e ele só sobe se o certificado do LETSENCRYPT_DOMAIN existir no
+  # volume. Domínio divergente do público = nginx servindo cert para outro nome.
+  LE_DOMAIN="${LETSENCRYPT_DOMAIN:-}"
+  if [[ -z "$LE_DOMAIN" ]]; then
+    fail "LETSENCRYPT_DOMAIN ausente — o nginx não sobe sem saber para qual domínio é o certificado"
+  elif [[ -n "$PUBLIC_HOST" && "$LE_DOMAIN" != "$PUBLIC_HOST" ]]; then
+    fail "LETSENCRYPT_DOMAIN=${LE_DOMAIN} difere do host público (${PUBLIC_HOST}) — o navegador rejeita o certificado"
+  else
+    ok "LETSENCRYPT_DOMAIN=${LE_DOMAIN} cobre o host público"
+  fi
+
+  if [[ -z "${LETSENCRYPT_EMAIL:-}" ]]; then
+    fail "LETSENCRYPT_EMAIL ausente — o certbot não emite sem contato de registro"
+  else
+    ok "LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}"
+  fi
+
   if [[ -z "${ALLOWED_ORIGINS:-}" ]]; then
     fail "ALLOWED_ORIGINS ausente — CORS do auth bloqueia o front"
   elif [[ ",${ALLOWED_ORIGINS}," == *",${PUBLIC_URL},"* ]]; then
@@ -429,21 +447,46 @@ fi
 info_section "Health (opcional — se stack já estiver rodando)"
 
 HTTP_PORT="${HTTP_PORT:-80}"
-if curl -fsS --max-time 3 "http://127.0.0.1:${HTTP_PORT}/api/health" >/dev/null 2>&1; then
-  ok "GET /api/health"
-  if curl -fsS --max-time 5 "http://127.0.0.1:${HTTP_PORT}/api/health/deep" | grep -q '"status":"ok"'; then
-    ok "GET /api/health/deep (ok)"
-  else
-    warn "deep health não está ok — verifique redis/worker/storage"
+HTTPS_PORT="${HTTPS_PORT:-443}"
+LE_DOMAIN="${LETSENCRYPT_DOMAIN:-}"
+
+# A app não responde mais em texto claro: a porta 80 só faz redirect e desafio
+# ACME. Testar por 127.0.0.1 em https exige --resolve, senão o certificado (emitido
+# para o domínio) não bate com o host pedido e o curl recusa a conexão.
+if [[ -n "$LE_DOMAIN" ]]; then
+  CURL_APP=(curl -fsS --resolve "${LE_DOMAIN}:${HTTPS_PORT}:127.0.0.1")
+  APP_BASE="https://${LE_DOMAIN}"
+  if [[ "$HTTPS_PORT" != "443" ]]; then
+    APP_BASE="https://${LE_DOMAIN}:${HTTPS_PORT}"
   fi
-  METRICS_HTTP="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:${HTTP_PORT}/api/metrics" || echo 000)"
-  if [[ "$METRICS_HTTP" == "403" ]]; then
-    ok "/api/metrics bloqueado no nginx (403)"
-  else
-    warn "/api/metrics retornou HTTP $METRICS_HTTP (esperado 403 via nginx)"
+
+  REDIRECT_CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:${HTTP_PORT}/" || echo 000)"
+  case "$REDIRECT_CODE" in
+    301) ok "Porta ${HTTP_PORT} redireciona para HTTPS (301)" ;;
+    000) warn "Stack não está rodando localmente — health checks ignorados" ;;
+    *)   warn "Porta ${HTTP_PORT} devolveu HTTP ${REDIRECT_CODE} (esperado 301)" ;;
+  esac
+
+  if "${CURL_APP[@]}" --max-time 3 "${APP_BASE}/api/health" >/dev/null 2>&1; then
+    ok "GET /api/health via HTTPS (certificado aceito)"
+    if "${CURL_APP[@]}" --max-time 5 "${APP_BASE}/api/health/deep" | grep -q '"status":"ok"'; then
+      ok "GET /api/health/deep (ok)"
+    else
+      warn "deep health não está ok — verifique redis/worker/storage"
+    fi
+    METRICS_HTTP="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+      --resolve "${LE_DOMAIN}:${HTTPS_PORT}:127.0.0.1" "${APP_BASE}/api/metrics" || echo 000)"
+    if [[ "$METRICS_HTTP" == "403" ]]; then
+      ok "/api/metrics bloqueado no nginx (403)"
+    else
+      warn "/api/metrics retornou HTTP $METRICS_HTTP (esperado 403 via nginx)"
+    fi
+  elif [[ "$REDIRECT_CODE" != "000" ]]; then
+    warn "HTTPS não respondeu — o certificado de ${LE_DOMAIN} já foi emitido?"
+    echo "    Emitir: ./deploy/scripts/issue-tls-cert.sh"
   fi
 else
-  warn "Stack não está rodando localmente — health checks ignorados"
+  warn "LETSENCRYPT_DOMAIN ausente — health checks ignorados"
 fi
 
 echo ""
