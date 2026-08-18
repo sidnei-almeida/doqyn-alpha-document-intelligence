@@ -52,7 +52,9 @@ services:
       - doqyn
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.23.1-p2
+    # Prefixo "v" obrigatório: o repositório trocou a convenção de tag na 1.23.0
+    # (1.22.1-p0 → v1.23.0-p0). Sem ele o pull falha com "not found".
+    image: edoburu/pgbouncer:v1.23.1-p2
     mem_limit: 64m
     cpus: 0.1
     environment:
