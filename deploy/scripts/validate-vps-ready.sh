@@ -356,12 +356,24 @@ info_section "Dimensionamento de memória"
 # rodam e saem, não concorrem com o regime normal.
 if docker compose version >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
   HOST_MEM_MB="$(awk '/^MemTotal:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || echo 0)"
+
+  # Serviço de profile inativo some do `config`, então somar com o wrapper padrão
+  # deixaria prometheus + grafana + redis-exporter (~960 MiB) de fora justamente
+  # quando deploy-production.sh vai subir os três no fim do deploy.
+  if [[ "${OBSERVABILITY_ENABLE:-false}" == "true" ]]; then
+    SIZING_COMPOSE=compose_production_observability
+    SIZING_SCOPE="stack + observabilidade"
+  else
+    SIZING_COMPOSE=compose_production
+    SIZING_SCOPE="stack principal"
+  fi
+
   # --format json em vez do YAML padrão: o módulo json é builtin, PyYAML não é e
   # costuma faltar numa VPS Ubuntu recém-instalada.
   SIZING="$(
     AUTH_API_REPLICAS="${AUTH_API_REPLICAS:-1}" \
     DOQYN_API_REPLICAS="${DOQYN_API_REPLICAS:-1}" \
-    compose_production "$DEPLOY_DIR" config --format json 2>/dev/null \
+    "$SIZING_COMPOSE" "$DEPLOY_DIR" config --format json 2>/dev/null \
       | AUTH_API_REPLICAS="${AUTH_API_REPLICAS:-1}" DOQYN_API_REPLICAS="${DOQYN_API_REPLICAS:-1}" python3 -c '
 import json, os, sys
 
@@ -389,7 +401,7 @@ sys.stdout.write("%.0f|%s" % (total, ",".join(unbounded)))
   UNBOUNDED="${SIZING#*|}"
 
   if [[ "$RESERVED_MB" =~ ^[0-9]+$ ]] && [[ "$RESERVED_MB" -gt 0 ]]; then
-    ok "Teto somado dos containers: ${RESERVED_MB} MiB"
+    ok "Teto somado dos containers (${SIZING_SCOPE}): ${RESERVED_MB} MiB"
     if [[ -n "$UNBOUNDED" ]]; then
       fail "Serviços sem mem_limit (podem consumir a RAM toda): ${UNBOUNDED}"
     fi
