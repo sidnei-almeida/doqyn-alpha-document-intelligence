@@ -85,7 +85,7 @@ Interno Docker:
   postgres-auth, mongo, auth-api, doqyn-api
 ```
 
-**Arquivos:** `deploy/docker-compose.production.yml`, `deploy/nginx/default.conf`, `docker/Dockerfile.api`, `docker/Dockerfile.nginx`.
+**Arquivos:** `deploy/docker-compose.production.yml`, `deploy/nginx/default.conf.template`, `docker/Dockerfile.api`, `docker/Dockerfile.nginx`.
 
 ### 2.2 Gargalos críticos identificados no código
 
@@ -1204,7 +1204,7 @@ VERTEX_GEMINI_MODEL=gemini-2.0-flash  # se classificação via LLM Google
 | Arquivo | Responsabilidade |
 |---------|------------------|
 | `deploy/docker-compose.production.yml` | Stack produção |
-| `deploy/nginx/default.conf` | Proxy |
+| `deploy/nginx/default.conf.template` | Proxy |
 | `docker/Dockerfile.api` | API container |
 | `docker/Dockerfile.nginx` | Nginx + SPA |
 | `server/dev-server.ts` | Router API local |

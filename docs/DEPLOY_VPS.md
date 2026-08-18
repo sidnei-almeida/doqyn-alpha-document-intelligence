@@ -257,7 +257,7 @@ Na VPS Ubuntu 24.04 costuma vir **nginx do sistema** na porta 80 (página defaul
 
 | | Nginx do Ubuntu | Nginx do DOQYN |
 |--|-----------------|----------------|
-| Onde | `/etc/nginx/` no host | Container Docker (`deploy/nginx/default.conf`) |
+| Onde | `/etc/nginx/` no host | Container Docker (`deploy/nginx/default.conf.template`) |
 | Configurar? | **Não** para o app | Já vem no repositório |
 | Porta 80 | Deve ficar **livre** | Container publica `:80` |
 

@@ -50,7 +50,7 @@ else
   fail "auth-service não encontrado: $AUTH_SERVICE_DIR"
 fi
 
-for rel in docker-compose.production.yml scripts/deploy-production.sh scripts/scale-api-replicas.sh scripts/sync-mongodb-indexes.sh scripts/lib/compose-production.sh nginx/default.conf scripts/validate-vps-ready.sh; do
+for rel in docker-compose.production.yml scripts/deploy-production.sh scripts/scale-api-replicas.sh scripts/sync-mongodb-indexes.sh scripts/lib/compose-production.sh nginx/default.conf.template scripts/validate-vps-ready.sh; do
   if [[ -f "$DEPLOY_DIR/$rel" ]]; then
     ok "$rel"
   else
@@ -260,11 +260,11 @@ if [[ -f "$ENV_FILE" ]]; then
     ok "PREVIEW_QUEUE_CONCURRENCY_GLOBAL=${PREVIEW_GLOBAL}"
   fi
 
-  if [[ -f "$DEPLOY_DIR/nginx/default.conf" ]]; then
-    if grep -q 'least_conn' "$DEPLOY_DIR/nginx/default.conf" && grep -q '127.0.0.11' "$DEPLOY_DIR/nginx/default.conf"; then
+  if [[ -f "$DEPLOY_DIR/nginx/default.conf.template" ]]; then
+    if grep -q 'least_conn' "$DEPLOY_DIR/nginx/default.conf.template" && grep -q '127.0.0.11' "$DEPLOY_DIR/nginx/default.conf.template"; then
       ok "nginx configurado para balanceamento dinâmico"
     else
-      fail "nginx/default.conf sem least_conn ou resolver Docker"
+      fail "nginx/default.conf.template sem least_conn ou resolver Docker"
     fi
   fi
 fi
@@ -333,8 +333,8 @@ if [[ -f "$ENV_FILE" ]]; then
     fail "prometheus.generated.yml ausente"
   fi
 
-  if [[ -f "$DEPLOY_DIR/nginx/default.conf" ]] && grep -q '/api/metrics' "$DEPLOY_DIR/nginx/default.conf"; then
-    if grep -q 'return 403' "$DEPLOY_DIR/nginx/default.conf"; then
+  if [[ -f "$DEPLOY_DIR/nginx/default.conf.template" ]] && grep -q '/api/metrics' "$DEPLOY_DIR/nginx/default.conf.template"; then
+    if grep -q 'return 403' "$DEPLOY_DIR/nginx/default.conf.template"; then
       ok "/api/metrics bloqueado no nginx"
     else
       warn "nginx não bloqueia /api/metrics publicamente"
