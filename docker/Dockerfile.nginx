@@ -20,7 +20,10 @@ ENV VITE_PRESIGNED_UPLOAD_ENABLED=$VITE_PRESIGNED_UPLOAD_ENABLED
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-COPY index.html vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json postcss.config.js tailwind.config.js ./
+# tsconfig.server.json entra junto porque tsconfig.json o lista em "references", e o
+# plugin vite:build-html percorre as três referências ao ler o index.html. Sem o
+# arquivo, o build morre com ENOENT antes de transformar um único módulo.
+COPY index.html vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json tsconfig.server.json postcss.config.js tailwind.config.js ./
 COPY src ./src
 COPY shared ./shared
 COPY public ./public
