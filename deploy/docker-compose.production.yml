@@ -351,6 +351,11 @@ services:
         VITE_PRESIGNED_UPLOAD_ENABLED: ${VITE_PRESIGNED_UPLOAD_ENABLED:-false}
     mem_limit: 128m
     cpus: 0.2
+    environment:
+      # Interpolado no template do nginx (envsubst no entrypoint da imagem). O
+      # filtro impede que o envsubst toque em qualquer outra ${...} da conf.
+      LETSENCRYPT_DOMAIN: ${LETSENCRYPT_DOMAIN:?defina LETSENCRYPT_DOMAIN em deploy/.env}
+      NGINX_ENVSUBST_FILTER: "^LETSENCRYPT_"
     depends_on:
       doqyn-api:
         condition: service_healthy
@@ -358,6 +363,34 @@ services:
         condition: service_healthy
     ports:
       - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # O nginx só lê: quem escreve nesses volumes é o container certbot.
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    restart: unless-stopped
+    networks:
+      - doqyn
+
+  # Renovação do certificado. A emissão inicial é feita por
+  # deploy/scripts/issue-tls-cert.sh (desafio standalone, nginx parado); daqui em
+  # diante é webroot, que renova com o nginx no ar e sem downtime.
+  certbot:
+    image: certbot/certbot:v3.1.0
+    mem_limit: 128m
+    cpus: 0.1
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: /bin/sh
+    # `sleep & wait` em vez de `sleep` direto: o wait é interrompível, então o
+    # container responde ao SIGTERM na hora em vez de esperar o docker matá-lo.
+    command: >-
+      -c "trap exit TERM;
+      while :; do
+      certbot renew --webroot -w /var/www/certbot --quiet;
+      sleep 12h & wait;
+      done"
     restart: unless-stopped
     networks:
       - doqyn
@@ -438,6 +471,8 @@ volumes:
   redis_data:
   grafana_data:
   prometheus_data:
+  letsencrypt:
+  certbot_www:
 
 networks:
   doqyn:
