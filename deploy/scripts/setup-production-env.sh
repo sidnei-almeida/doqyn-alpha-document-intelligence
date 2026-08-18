@@ -95,6 +95,28 @@ info "Configuração de produção — stack DOQYN (auth + alpha)"
 echo ""
 
 PUBLIC_APP_URL="$(prompt_default "URL pública do app (com https)" "https://app.doqyn.com.br")"
+
+# O auth-service força cookie Secure quando NODE_ENV=production
+# (doqyn-auth-service/src/security/cookies.ts) — não há flag que desligue isso.
+# Cookie Secure em origem http:// é descartado pelo navegador: o login completa no
+# servidor e o usuário volta para a tela de login, sem erro visível em lugar nenhum.
+if [[ "$PUBLIC_APP_URL" != https://* ]]; then
+  echo ""
+  warn "URL pública sem https: ${PUBLIC_APP_URL}"
+  warn "O login NÃO vai funcionar. O auth-service marca o cookie de sessão como"
+  warn "Secure em produção, e o navegador descarta cookie Secure em origem http://."
+  warn "Acessar a app pelo IP da VPS tem o mesmo problema."
+  echo ""
+  echo "  Caminho suportado: domínio apontado para a VPS + TLS na frente do nginx"
+  echo "  (Cloudflare com proxy laranja é o mais simples — ver docs/DEPLOY_VPS.md)."
+  echo ""
+  read -r -p "Continuar mesmo assim (só faz sentido para teste sem login)? [y/N] " http_ack
+  if [[ ! "$http_ack" =~ ^[Yy]$ ]]; then
+    info "Operação cancelada. Configure o domínio e rode de novo."
+    exit 0
+  fi
+fi
+
 PUBLIC_HOST="$(extract_domain_from_url "$PUBLIC_APP_URL")"
 COOKIE_DOMAIN="$(prompt_default "Domínio do cookie (com ponto inicial)" ".${PUBLIC_HOST}")"
 HTTP_PORT="$(prompt_default "Porta HTTP exposta no servidor" "80")"
@@ -118,13 +140,25 @@ fi
 
 POSTGRES_DB="$(prompt_default "Postgres — nome do banco (auth)" "doqyn_auth")"
 POSTGRES_USER="$(prompt_default "Postgres — usuário" "doqyn_auth")"
-echo -n "Postgres — senha (vazio = gerar automaticamente): "
-read -r -s POSTGRES_PASSWORD
-echo ""
-if [[ -z "$POSTGRES_PASSWORD" ]]; then
-  POSTGRES_PASSWORD="$(generate_hex_secret)"
-  info "Senha Postgres gerada automaticamente."
-fi
+# A senha entra crua na DATABASE_URL do pgbouncer e nos fallbacks do compose, então
+# caractere reservado de URL quebra a conexão de um jeito difícil de diagnosticar.
+# A senha gerada é hex — sempre segura. A digitada é validada.
+while :; do
+  echo -n "Postgres — senha (vazio = gerar automaticamente): "
+  read -r -s POSTGRES_PASSWORD
+  echo ""
+  if [[ -z "$POSTGRES_PASSWORD" ]]; then
+    POSTGRES_PASSWORD="$(generate_hex_secret)"
+    info "Senha Postgres gerada automaticamente."
+    break
+  fi
+  if [[ "$POSTGRES_PASSWORD" =~ [^A-Za-z0-9._~-] ]]; then
+    warn "Senha rejeitada: use só letras, números e . _ ~ -"
+    warn "Outros caracteres (@ : / # ? & espaço) quebram a URL do Postgres/PgBouncer."
+    continue
+  fi
+  break
+done
 
 echo ""
 info "Storage (Cloudflare R2 — recomendado em produção)"
@@ -298,8 +332,10 @@ PGBOUNCER_MAX_CLIENT_CONN=500
 PGBOUNCER_DEFAULT_POOL_SIZE=25
 
 # Réplicas HTTP (nginx least_conn + DNS Docker)
-AUTH_API_REPLICAS=2
-DOQYN_API_REPLICAS=2
+# 1/1 é o padrão para VPS de 2 vCPU: cada réplica extra reserva CPU e RAM que os
+# 3 processos Node já disputam. Suba só depois de medir, e junto com o plano da VPS.
+AUTH_API_REPLICAS=1
+DOQYN_API_REPLICAS=1
 
 # Upload presigned R2 (Fase B.5)
 PRESIGNED_UPLOAD_ENABLED=true
@@ -307,14 +343,18 @@ PRESIGNED_UPLOAD_TTL_SECONDS=900
 VITE_PRESIGNED_UPLOAD_ENABLED=true
 
 # Fila de análise assíncrona
+# Dimensionado para 2 vCPU. O default do código é 10/2 — oversubscription de 5x.
+# Este arquivo tem precedência sobre os defaults do docker-compose: mexer aqui é
+# mexer no que o worker realmente usa.
 ANALYSIS_SYNC_FALLBACK=false
-ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=10
-ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT=2
+ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=2
+ANALYSIS_QUEUE_CONCURRENCY_PER_TENANT=1
 ANALYSIS_JOB_TTL_HOURS=24
 
 # Fila de preview assíncrona (Ghostscript fora da API)
+# Cada job gera um Ghostscript CPU-bound: 1 por vez em 2 vCPU.
 PREVIEW_SYNC_FALLBACK=false
-PREVIEW_QUEUE_CONCURRENCY_GLOBAL=4
+PREVIEW_QUEUE_CONCURRENCY_GLOBAL=1
 PREVIEW_JOB_TTL_HOURS=24
 
 # MongoDB pool
@@ -337,10 +377,13 @@ METRICS_SERVICE_NAME=doqyn-api
 METRICS_PORT=9100
 
 # Observabilidade (profile opcional)
+# Desligada por padrão: Prometheus + Grafana somam ~900 MB de teto e, com Mongo
+# local, a stack passa de 7 GB numa VPS de 8 GB. Suba sob demanda com
+# ./deploy/scripts/up-observability.sh, ou ligue aqui se a VPS tiver folga.
 PROMETHEUS_PORT=9090
 GRAFANA_PORT=3000
 GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-OBSERVABILITY_ENABLE=true
+OBSERVABILITY_ENABLE=false
 
 TRACKING_IP_ENCRYPTION_KEY=${TRACKING_IP_ENCRYPTION_KEY}
 TRACKING_IP_HASH_SALT=${TRACKING_IP_HASH_SALT}
