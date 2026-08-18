@@ -7,9 +7,13 @@
  * arriscar o gerador do documento principal, que já está estável. O CSS é uma
  * cópia do estilo daquele documento, para os dois PDFs saírem da mesma família.
  *
+ * O PDF fica fora do repo, em ~/Documents, junto dos demais relatórios de
+ * entrega. Aqui ficam só o gerador e o HTML.
+ *
  * PDF: node docs/generate-relatorio-sso.mjs && chromium --headless \
- *      --print-to-pdf=docs/RELATORIO_SSO_MICROSOFT_GOOGLE.pdf \
- *      --no-pdf-header-footer docs/RELATORIO_SSO_MICROSOFT_GOOGLE.html
+ *      --no-pdf-header-footer \
+ *      --print-to-pdf=~/Documents/RELATORIO_SSO_MICROSOFT_GOOGLE.pdf \
+ *      docs/RELATORIO_SSO_MICROSOFT_GOOGLE.html
  */
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
