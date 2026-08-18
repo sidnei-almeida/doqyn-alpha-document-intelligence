@@ -85,7 +85,30 @@ if [[ -f "$ENV_FILE" ]]; then
   require_var R2_ACCESS_KEY_ID
   require_var R2_SECRET_ACCESS_KEY
   require_var DOQYN_INTERNAL_API_KEY
+  require_var DOQYN_AUTH_INTERNAL_API_KEY
   require_var DATA_ENCRYPTION_KEY
+
+  # Mesma chave com dois nomes: o auth lê DOQYN_INTERNAL_API_KEY, a alpha lê
+  # DOQYN_AUTH_INTERNAL_API_KEY. Editar só um lado faz todo request da alpha ao
+  # auth virar 401 — e o sintoma aparece como "sessão inválida" no navegador.
+  # Nunca imprime valor, só o veredito.
+  if [[ -n "${DOQYN_INTERNAL_API_KEY:-}" && -n "${DOQYN_AUTH_INTERNAL_API_KEY:-}" ]]; then
+    if [[ "${DOQYN_INTERNAL_API_KEY}" == "${DOQYN_AUTH_INTERNAL_API_KEY}" ]]; then
+      ok "DOQYN_INTERNAL_API_KEY == DOQYN_AUTH_INTERNAL_API_KEY"
+    else
+      fail "DOQYN_AUTH_INTERNAL_API_KEY difere de DOQYN_INTERNAL_API_KEY — alpha não autentica no auth (401)"
+    fi
+  fi
+
+  if [[ -n "${DOQYN_AUTH_COOKIE_NAME:-}" && -n "${SESSION_COOKIE_NAME:-}" ]]; then
+    if [[ "${DOQYN_AUTH_COOKIE_NAME}" == "${SESSION_COOKIE_NAME}" ]]; then
+      ok "DOQYN_AUTH_COOKIE_NAME == SESSION_COOKIE_NAME (${SESSION_COOKIE_NAME})"
+    else
+      fail "DOQYN_AUTH_COOKIE_NAME=${DOQYN_AUTH_COOKIE_NAME} difere de SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME} — a alpha lê um cookie que o auth nunca emite"
+    fi
+  else
+    warn "DOQYN_AUTH_COOKIE_NAME ou SESSION_COOKIE_NAME ausente — ambos devem valer doqyn_session"
+  fi
 
   if [[ "${REDIS_ENABLED:-}" == "true" ]]; then
     ok "REDIS_ENABLED=true"
@@ -97,6 +120,65 @@ if [[ -f "$ENV_FILE" ]]; then
     ok "ANALYSIS_SYNC_FALLBACK=false (fila assíncrona)"
   else
     warn "ANALYSIS_SYNC_FALLBACK não é false"
+  fi
+fi
+
+info_section "URL pública, TLS e cookie de sessão"
+
+# O auth-service força cookie Secure quando NODE_ENV=production
+# (doqyn-auth-service/src/security/cookies.ts) — sem flag para desligar. Origem
+# http:// (ou o IP cru da VPS) faz o navegador descartar o cookie: o login
+# completa no servidor e a tela volta para o login, sem erro em lugar nenhum.
+if [[ -f "$ENV_FILE" ]]; then
+  PUBLIC_URL="${DOQYN_PUBLIC_APP_URL:-}"
+  if [[ -z "$PUBLIC_URL" ]]; then
+    fail "DOQYN_PUBLIC_APP_URL ausente"
+  elif [[ "$PUBLIC_URL" == https://* ]]; then
+    ok "DOQYN_PUBLIC_APP_URL usa https (${PUBLIC_URL})"
+  else
+    fail "DOQYN_PUBLIC_APP_URL=${PUBLIC_URL} não é https — login impossível (cookie Secure descartado)"
+  fi
+
+  PUBLIC_HOST="$(printf '%s' "$PUBLIC_URL" | sed -E 's#^https?://##; s#/.*$##; s#:[0-9]+$##')"
+
+  if [[ -n "$PUBLIC_HOST" ]]; then
+    if [[ "$PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      fail "DOQYN_PUBLIC_APP_URL aponta para um IP (${PUBLIC_HOST}) — cookie de sessão exige domínio + TLS"
+    else
+      ok "Domínio público: ${PUBLIC_HOST}"
+    fi
+  fi
+
+  COOKIE_DOM="${COOKIE_DOMAIN:-}"
+  if [[ -z "$COOKIE_DOM" ]]; then
+    warn "COOKIE_DOMAIN vazio — cookie fica restrito ao host exato que respondeu"
+  elif [[ "$PUBLIC_HOST" == "${COOKIE_DOM#.}" || "$PUBLIC_HOST" == *"${COOKIE_DOM}" ]]; then
+    ok "COOKIE_DOMAIN=${COOKIE_DOM} cobre ${PUBLIC_HOST}"
+  else
+    fail "COOKIE_DOMAIN=${COOKIE_DOM} não cobre ${PUBLIC_HOST} — navegador rejeita o cookie de sessão"
+  fi
+
+  if [[ "${COOKIE_SECURE:-}" == "true" ]]; then
+    ok "COOKIE_SECURE=true"
+  else
+    warn "COOKIE_SECURE=${COOKIE_SECURE:-vazio} — irrelevante: NODE_ENV=production já força Secure"
+  fi
+
+  if [[ -z "${ALLOWED_ORIGINS:-}" ]]; then
+    fail "ALLOWED_ORIGINS ausente — CORS do auth bloqueia o front"
+  elif [[ ",${ALLOWED_ORIGINS}," == *",${PUBLIC_URL},"* ]]; then
+    ok "ALLOWED_ORIGINS contém ${PUBLIC_URL}"
+  else
+    fail "ALLOWED_ORIGINS não contém ${PUBLIC_URL} — CORS do auth bloqueia o front"
+  fi
+
+  if [[ "${OAUTH_GOOGLE_ENABLED:-false}" == "true" ]]; then
+    if [[ "${OAUTH_GOOGLE_REDIRECT_URI:-}" == "${PUBLIC_URL%/}/oauth/google/callback" ]]; then
+      ok "OAUTH_GOOGLE_REDIRECT_URI na origem pública"
+      warn "Confirme essa mesma URI cadastrada no Google Cloud Console"
+    else
+      fail "OAUTH_GOOGLE_REDIRECT_URI=${OAUTH_GOOGLE_REDIRECT_URI:-vazio} fora da origem pública"
+    fi
   fi
 fi
 
@@ -132,14 +214,33 @@ fi
 info_section "Réplicas (Fase B.4)"
 
 if [[ -f "$ENV_FILE" ]]; then
+  HOST_CPUS="$(nproc 2>/dev/null || echo 0)"
+
   for name in AUTH_API_REPLICAS DOQYN_API_REPLICAS; do
     raw="${!name:-}"
-    if [[ "$raw" =~ ^[0-9]+$ ]] && [[ "$raw" -ge 1 ]]; then
-      ok "${name}=${raw}"
-    else
+    if [[ ! "$raw" =~ ^[0-9]+$ ]] || [[ "$raw" -lt 1 ]]; then
       fail "${name} inválido ou ausente (use inteiro >= 1)"
+    elif [[ "$raw" -gt 1 && "$HOST_CPUS" -gt 0 && "$HOST_CPUS" -le 2 ]]; then
+      warn "${name}=${raw} com ${HOST_CPUS} vCPU — réplicas disputam os mesmos núcleos dos 3 processos Node. Use 1."
+    else
+      ok "${name}=${raw}"
     fi
   done
+
+  # As filas: o .env tem precedência sobre os defaults do compose, então é aqui
+  # que o valor real do worker é decidido.
+  ANALYSIS_GLOBAL="${ANALYSIS_QUEUE_CONCURRENCY_GLOBAL:-10}"
+  PREVIEW_GLOBAL="${PREVIEW_QUEUE_CONCURRENCY_GLOBAL:-4}"
+  if [[ "$HOST_CPUS" -gt 0 && "$ANALYSIS_GLOBAL" -gt "$HOST_CPUS" ]]; then
+    warn "ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=${ANALYSIS_GLOBAL} acima de ${HOST_CPUS} vCPU"
+  else
+    ok "ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=${ANALYSIS_GLOBAL}"
+  fi
+  if [[ "$PREVIEW_GLOBAL" -gt 1 && "$HOST_CPUS" -gt 0 && "$HOST_CPUS" -le 2 ]]; then
+    warn "PREVIEW_QUEUE_CONCURRENCY_GLOBAL=${PREVIEW_GLOBAL} com ${HOST_CPUS} vCPU — cada job é um Ghostscript CPU-bound. Use 1."
+  else
+    ok "PREVIEW_QUEUE_CONCURRENCY_GLOBAL=${PREVIEW_GLOBAL}"
+  fi
 
   if [[ -f "$DEPLOY_DIR/nginx/default.conf" ]]; then
     if grep -q 'least_conn' "$DEPLOY_DIR/nginx/default.conf" && grep -q '127.0.0.11' "$DEPLOY_DIR/nginx/default.conf"; then
@@ -184,7 +285,7 @@ if [[ -f "$ENV_FILE" ]]; then
     require_var METRICS_TOKEN
     require_var GRAFANA_ADMIN_PASSWORD
   else
-    warn "OBSERVABILITY_ENABLE não é true — Prometheus/Grafana não sobem no deploy automático"
+    ok "OBSERVABILITY_ENABLE=false (padrão) — suba sob demanda com ./deploy/scripts/up-observability.sh"
     if [[ -n "${METRICS_TOKEN:-}" ]]; then
       ok "METRICS_TOKEN definido"
     else
@@ -246,6 +347,71 @@ if docker compose version >/dev/null 2>&1; then
   fi
 else
   warn "docker compose não disponível neste host — pulando validação compose"
+fi
+
+info_section "Dimensionamento de memória"
+
+# Soma os mem_limit direto do compose resolvido, para o número não divergir do
+# arquivo. Serviços one-shot (auth-migrate, doqyn-api-indexes) ficam de fora:
+# rodam e saem, não concorrem com o regime normal.
+if docker compose version >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  HOST_MEM_MB="$(awk '/^MemTotal:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || echo 0)"
+  # --format json em vez do YAML padrão: o módulo json é builtin, PyYAML não é e
+  # costuma faltar numa VPS Ubuntu recém-instalada.
+  SIZING="$(
+    AUTH_API_REPLICAS="${AUTH_API_REPLICAS:-1}" \
+    DOQYN_API_REPLICAS="${DOQYN_API_REPLICAS:-1}" \
+    compose_production "$DEPLOY_DIR" config --format json 2>/dev/null \
+      | AUTH_API_REPLICAS="${AUTH_API_REPLICAS:-1}" DOQYN_API_REPLICAS="${DOQYN_API_REPLICAS:-1}" python3 -c '
+import json, os, sys
+
+doc = json.load(sys.stdin) or {}
+# One-shot: rodam e saem, não concorrem com o regime normal.
+one_shot = {"auth-migrate", "doqyn-api-indexes"}
+replicas = {
+    "auth-api": int(os.environ.get("AUTH_API_REPLICAS", "1") or 1),
+    "doqyn-api": int(os.environ.get("DOQYN_API_REPLICAS", "1") or 1),
+}
+total = 0.0
+unbounded = []
+for name, svc in (doc.get("services") or {}).items():
+    if name in one_shot:
+        continue
+    limit = svc.get("mem_limit")
+    if limit is None:
+        unbounded.append(name)
+        continue
+    total += int(limit) / 1024 / 1024 * replicas.get(name, 1)
+sys.stdout.write("%.0f|%s" % (total, ",".join(unbounded)))
+' 2>/dev/null || true)"
+
+  RESERVED_MB="${SIZING%%|*}"
+  UNBOUNDED="${SIZING#*|}"
+
+  if [[ "$RESERVED_MB" =~ ^[0-9]+$ ]] && [[ "$RESERVED_MB" -gt 0 ]]; then
+    ok "Teto somado dos containers: ${RESERVED_MB} MiB"
+    if [[ -n "$UNBOUNDED" ]]; then
+      fail "Serviços sem mem_limit (podem consumir a RAM toda): ${UNBOUNDED}"
+    fi
+    if [[ "$HOST_MEM_MB" -gt 0 ]]; then
+      # 1 GiB para kernel, dockerd, sshd e o próprio build.
+      BUDGET_MB=$(( HOST_MEM_MB - 1024 ))
+      if [[ "$RESERVED_MB" -gt "$HOST_MEM_MB" ]]; then
+        fail "Teto ${RESERVED_MB} MiB acima da RAM do host (${HOST_MEM_MB} MiB) — OOM garantido sob carga"
+      elif [[ "$RESERVED_MB" -gt "$BUDGET_MB" ]]; then
+        warn "Teto ${RESERVED_MB} MiB deixa menos de 1 GiB para o SO (RAM: ${HOST_MEM_MB} MiB)"
+        warn "Reduza réplicas, use MongoDB Atlas ou desligue OBSERVABILITY_ENABLE"
+      else
+        ok "Cabe na RAM do host (${HOST_MEM_MB} MiB, sobra ≥1 GiB para o SO)"
+      fi
+    else
+      warn "RAM do host não detectada — confira o teto contra o plano da VPS"
+    fi
+  else
+    warn "Não foi possível somar os mem_limit — confira manualmente"
+  fi
+else
+  warn "docker compose ou python3 ausente — pulando checagem de memória"
 fi
 
 info_section "Health (opcional — se stack já estiver rodando)"
