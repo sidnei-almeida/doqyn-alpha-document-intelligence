@@ -76,3 +76,7 @@ backups/
 NDA_*.png
 NDA_*.pdf
 *.local-fixture.*
+
+# Relatórios em PDF ficam fora do repo (~/Documents), junto do handover.
+# O gerador e o HTML continuam versionados — o PDF é só o artefato de entrega.
+docs/*.pdf
