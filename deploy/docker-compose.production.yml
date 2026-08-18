@@ -107,7 +107,10 @@ services:
       NODE_ENV: production
       # Abaixo do mem_limit: heap não é toda a memória do processo.
       NODE_OPTIONS: --max-old-space-size=384
-      DATABASE_URL: postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}
+      # DATABASE_URL do .env tem a senha percent-encoded (setup-production-env.sh).
+      # O fallback abaixo interpola a senha crua e só funciona com senha sem
+      # caractere reservado de URL (@ / : # ? &) — por isso o .env vem primeiro.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}}
       DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
@@ -136,6 +139,11 @@ services:
   mongo:
     profiles: ["local-mongo"]
     image: mongo:7
+    # Sem limite o WiredTiger dimensiona o cache por (RAM_total - 1GB) / 2 e come a
+    # folga que a API e os workers precisam. Com mem_limit ele lê o limite do cgroup.
+    mem_limit: ${MONGO_MEM_LIMIT:-1g}
+    mem_reservation: 512m
+    cpus: ${MONGO_CPUS:-0.5}
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -350,6 +358,8 @@ services:
   redis-exporter:
     profiles: ["observability"]
     image: oliver006/redis_exporter:v1.66.0
+    mem_limit: 64m
+    cpus: 0.1
     environment:
       REDIS_ADDR: redis://redis:6379
     depends_on:
@@ -362,6 +372,9 @@ services:
   prometheus:
     profiles: ["observability"]
     image: prom/prometheus:v2.53.0
+    # Observabilidade é opcional e disputa a mesma RAM da stack — teto explícito.
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-512m}
+    cpus: ${PROMETHEUS_CPUS:-0.3}
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -390,6 +403,8 @@ services:
   grafana:
     profiles: ["observability"]
     image: grafana/grafana:11.4.0
+    mem_limit: ${GRAFANA_MEM_LIMIT:-384m}
+    cpus: ${GRAFANA_CPUS:-0.3}
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Defina GRAFANA_ADMIN_PASSWORD em deploy/.env}
