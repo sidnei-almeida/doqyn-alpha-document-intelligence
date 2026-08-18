@@ -38,12 +38,14 @@ FROM nginx:1.27-alpine AS runner
 COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80 443
+# Recarga periódica para captar o certificado renovado pelo certbot. Vai como
+# hook do entrypoint em vez de CMD: o entrypoint da imagem só roda os scripts de
+# /docker-entrypoint.d (incluindo o envsubst dos templates) quando o primeiro
+# argumento é `nginx`, então sobrescrever o CMD faria o template acima nunca ser
+# renderizado. O CMD da imagem base fica como está.
+COPY --chmod=755 docker/nginx-reload-loop.sh /docker-entrypoint.d/99-reload-loop.sh
 
-# O certbot renova o certificado no volume compartilhado, mas o nginx só passa a
-# usá-lo depois de reler os arquivos. Sem este loop, o certificado renovado fica
-# em disco e o navegador continua vendo o antigo até expirar.
-CMD ["sh", "-c", "while :; do sleep 6h & wait $!; nginx -s reload; done & exec nginx -g 'daemon off;'"]
+EXPOSE 80 443
 
 # Bate na porta 80, que responde 200 direto sem redirect. Seguir o 301 mandaria o
 # wget ao domínio público — resolução e rota que não existem dentro do container.
