@@ -38,6 +38,14 @@ if [[ ! -d "$AUTH_SERVICE_DIR" ]]; then
   exit 1
 fi
 
+# Checado aqui e não só no validador porque SKIP_VALIDATION=1 pula aquele caminho,
+# e sem esta variável o compose do nginx nem interpola o certificado.
+if [[ -z "${LETSENCRYPT_DOMAIN:-}" ]]; then
+  error "LETSENCRYPT_DOMAIN ausente em deploy/.env — o nginx não sobe sem TLS."
+  echo "Defina o domínio público (ex.: LETSENCRYPT_DOMAIN=app.doqyn.com) e rode de novo."
+  exit 1
+fi
+
 export AUTH_SERVICE_DIR
 
 read_replicas() {
@@ -113,12 +121,34 @@ compose up -d doqyn-worker
 info "Subindo worker de preview (Ghostscript)..."
 compose up -d doqyn-worker-preview
 
-info "Subindo nginx (SPA + proxy)..."
+# Antes do nginx: ele aponta ssl_certificate para o arquivo do Let's Encrypt e se
+# recusa a subir se não existir. O script é idempotente — se o certificado já está
+# no volume, sai na hora sem falar com o Let's Encrypt.
+info "Garantindo certificado TLS de ${LETSENCRYPT_DOMAIN:-<sem domínio>}..."
+if ! "$SCRIPT_DIR/issue-tls-cert.sh"; then
+  error "Não foi possível emitir o certificado TLS — o nginx não sobe sem ele."
+  echo "Diagnóstico: ./deploy/scripts/issue-tls-cert.sh --staging"
+  exit 1
+fi
+
+info "Subindo nginx (SPA + proxy + TLS)..."
 compose up -d --wait nginx
 
+info "Subindo certbot (renovação automática)..."
+compose up -d certbot
+
 HTTP_PORT="${HTTP_PORT:-80}"
-PUBLIC_URL="${DOQYN_PUBLIC_APP_URL:-http://localhost:${HTTP_PORT}}"
-BASE="http://127.0.0.1:${HTTP_PORT}"
+HTTPS_PORT="${HTTPS_PORT:-443}"
+PUBLIC_URL="${DOQYN_PUBLIC_APP_URL:-https://${LETSENCRYPT_DOMAIN:-localhost}}"
+
+# Verificação por HTTPS resolvendo o domínio no loopback: valida de uma vez o
+# listener 443, o certificado e o roteamento, sem depender de sair para a internet
+# e voltar. Em http a app não responde mais nada além do redirect.
+BASE="https://${LETSENCRYPT_DOMAIN}"
+if [[ "$HTTPS_PORT" != "443" ]]; then
+  BASE="https://${LETSENCRYPT_DOMAIN}:${HTTPS_PORT}"
+fi
+CURL_RESOLVE=(--resolve "${LETSENCRYPT_DOMAIN}:${HTTPS_PORT}:127.0.0.1")
 
 echo ""
 info "Verificando o serviço (o deploy só termina se isto passar)..."
@@ -137,7 +167,7 @@ wait_for() {
   local tries="${2:-30}"
   local i
   for ((i = 0; i < tries; i++)); do
-    if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
+    if curl -fsS "${CURL_RESOLVE[@]}" --max-time 5 "$url" >/dev/null 2>&1; then
       return 0
     fi
     sleep 2
@@ -160,7 +190,7 @@ fi
 # O buraco de verificação que interessa: o IP pode responder 200 servindo a
 # página default do nginx (do host ou de uma imagem velha) em vez da SPA. Testar
 # só o status code não distingue os dois casos.
-ROOT_BODY="$(curl -fsS --max-time 10 "${BASE}/" 2>/dev/null || true)"
+ROOT_BODY="$(curl -fsS "${CURL_RESOLVE[@]}" --max-time 10 "${BASE}/" 2>/dev/null || true)"
 if [[ -z "$ROOT_BODY" ]]; then
   step_fail "A raiz (${BASE}/) não respondeu." "Diagnóstico: compose logs nginx"
 elif printf '%s' "$ROOT_BODY" | grep -qi 'Welcome to nginx'; then
@@ -173,7 +203,7 @@ else
     "Reconstrua o frontend: compose build --no-cache nginx && compose up -d nginx"
 fi
 
-DEEP_JSON="$(curl -fsS --max-time 10 "${BASE}/api/health/deep" 2>/dev/null || true)"
+DEEP_JSON="$(curl -fsS "${CURL_RESOLVE[@]}" --max-time 10 "${BASE}/api/health/deep" 2>/dev/null || true)"
 DEEP_STATUS="$(printf '%s' "$DEEP_JSON" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')"
 case "$DEEP_STATUS" in
   ok)
@@ -189,6 +219,16 @@ case "$DEEP_STATUS" in
       "Diagnóstico: compose logs doqyn-api redis"
     ;;
 esac
+
+# A porta 80 não serve mais a app: só ACME e redirect. Se ela voltar a responder
+# 200, alguma conf velha sobreviveu e o tráfego seguiria em texto claro.
+REDIRECT_CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${HTTP_PORT}/" || echo 000)"
+if [[ "$REDIRECT_CODE" == "301" ]]; then
+  info "Porta ${HTTP_PORT} redireciona para HTTPS (301)"
+else
+  step_fail "Porta ${HTTP_PORT} devolveu HTTP ${REDIRECT_CODE}, esperado 301." \
+    "Conf antiga no container: compose build --no-cache nginx && compose up -d nginx"
+fi
 
 # Container que morreu depois de subir não aparece no --wait.
 STOPPED="$(compose ps --status exited --status dead --format '{{.Service}}' 2>/dev/null \
@@ -225,10 +265,11 @@ else
 fi
 
 echo ""
-warn "HTTPS: o container expõe a porta ${HTTP_PORT} em HTTP puro. O TLS termina fora"
-warn "daqui (Cloudflare com proxy laranja, ou Certbot no host)."
-warn "Acessar a app pelo IP em http:// não loga: o auth-service marca o cookie de"
-warn "sessão como Secure em produção e o navegador o descarta. Use ${PUBLIC_URL}."
+info "HTTPS: o nginx do compose termina TLS na porta ${HTTPS_PORT} com certificado"
+info "Let's Encrypt. A renovação roda no container certbot (a cada 12h) e o nginx"
+info "recarrega sozinho a cada 6h para captar o certificado novo."
+warn "Acessar a app pelo IP ou em http:// não loga: o auth-service marca o cookie de"
+warn "sessão como Secure e o navegador o descarta. Use ${PUBLIC_URL}."
 echo ""
 echo "Validação avulsa: ./deploy/scripts/validate-vps-ready.sh"
 echo "Guia completo: docs/DEPLOY_VPS.md"

@@ -22,8 +22,9 @@ completa no servidor, o cookie é descartado no caminho, e a tela volta para o l
 mensagem de erro em lugar nenhum. `COOKIE_DOMAIN` apontando para um domínio que não bate
 com o host acessado tem o mesmo efeito.
 
-Ordem correta: DNS apontado → TLS na frente (Cloudflare com proxy laranja é o mais
-simples na Hostinger) → `setup-production-env.sh` com a URL `https://` → deploy.
+Ordem correta: DNS apontado para o IP da VPS → `setup-production-env.sh` com a URL
+`https://` e o `LETSENCRYPT_DOMAIN` correspondente → deploy. O TLS é terminado pelo
+próprio nginx do compose, com certificado Let's Encrypt emitido durante o deploy.
 
 `setup-production-env.sh` avisa e pede confirmação se a URL não for `https://`, e
 `validate-vps-ready.sh` falha (exit 1) nesse caso.
@@ -34,8 +35,8 @@ simples na Hostinger) → `setup-production-env.sh` com a URL `https://` → dep
 |--------|----------------|
 | Docker | [Instalação oficial](https://docs.docker.com/engine/install/ubuntu/) (`docker-ce` + `docker-compose-plugin`) |
 | Porta 80 | **Não configure** `/etc/nginx` do Ubuntu. Rode `sudo ./deploy/scripts/prepare-ubuntu-host.sh` antes do deploy (automático no `deploy-production.sh`) |
-| Nginx do sistema | Parar + desabilitar + mascarar; o DOQYN usa **nginx no Docker** (`deploy/nginx/default.conf`) |
-| Firewall | `ufw allow 80/tcp` (e `443` se TLS no host); **não** abra 9090/3000 (Grafana/Prometheus ficam em localhost) |
+| Nginx do sistema | Parar + desabilitar + mascarar; o DOQYN usa **nginx no Docker** (`deploy/nginx/default.conf.template`) |
+| Firewall | `ufw allow 80/tcp` **e** `ufw allow 443/tcp` (a 80 continua necessária: é por ela que o Let's Encrypt valida o domínio); **não** abra 9090/3000 (Grafana/Prometheus ficam em localhost) |
 | SSH | Necessário para deploy e túnel à observabilidade (`ssh -L 3000:127.0.0.1:3000 ...`) |
 
 ## Serviços
@@ -286,10 +287,13 @@ O `deploy-production.sh` chama esse script automaticamente quando `HTTP_PORT=80`
 
 ### TLS (HTTPS)
 
-Com nginx **só no Docker**, opções:
-
-1. **Cloudflare** (recomendado na Hostinger) — proxy laranja no DNS, HTTP na origem :80
-2. **Certbot no host** — exige nginx no host como terminador (modo avançado; não é o padrão DOQYN)
+| Sintoma | Causa | Solução |
+|---------|-------|---------|
+| nginx não sobe, log cita `cannot load certificate` | Certificado ainda não emitido | `./deploy/scripts/issue-tls-cert.sh` |
+| `Bind for 0.0.0.0:443 failed` | Algo já ocupa a 443 no host | `sudo ss -lntp \| grep :443` e pare o processo |
+| Emissão falha com `Timeout during connect` | Porta 80 fechada de fora | `sudo ufw allow 80/tcp` e confira o firewall do provedor |
+| Emissão falha com `too many failed authorizations` | Limite do Let's Encrypt (5 falhas/hora) | Espere 1h; use `--staging` para testar o fluxo sem consumir o limite |
+| Certificado válido mas login não persiste | `COOKIE_DOMAIN` não cobre o host | Veja "URL pública, TLS e cookie" acima |
 
 ## Logs
 
@@ -300,4 +304,46 @@ docker compose -f docker-compose.production.yml --env-file .env logs -f doqyn-ap
 
 ## TLS
 
-O compose expõe HTTP na porta configurada (`HTTP_PORT`, padrão 80). Use Certbot no host, Cloudflare ou outro terminador TLS na frente do Nginx.
+O TLS termina no nginx do próprio compose. Não há terminador externo.
+
+**Variáveis** (`deploy/.env`):
+
+| Variável | Exemplo | Papel |
+|----------|---------|-------|
+| `LETSENCRYPT_DOMAIN` | `app.doqyn.com` | Domínio do certificado. Precisa ser igual ao host de `DOQYN_PUBLIC_APP_URL` |
+| `LETSENCRYPT_EMAIL` | `voce@exemplo.com` | Contato de registro; recebe aviso de expiração |
+| `HTTPS_PORT` | `443` | Porta TLS publicada (raramente muda) |
+
+**Como funciona**
+
+A porta 80 não serve mais a aplicação: só responde o desafio ACME
+(`/.well-known/acme-challenge/`), o healthcheck interno e um 301 para HTTPS. Toda a app
+vive no server `:443`.
+
+A emissão inicial é um problema de ovo e galinha — o nginx aponta `ssl_certificate` para
+um arquivo que ainda não existe e se recusa a subir. Por isso `issue-tls-cert.sh` usa o
+desafio **standalone**: para o nginx por alguns segundos e deixa o próprio certbot
+atender a porta 80. Da segunda vez em diante a renovação é **webroot**, feita pelo
+container `certbot` a cada 12h com o nginx no ar, sem downtime.
+
+O nginx recarrega a configuração a cada 6h (loop no `CMD` da imagem). Sem isso o
+certificado renovado ficaria em disco enquanto o navegador continuaria vendo o antigo.
+
+**Comandos**
+
+```bash
+# Emissão inicial (idempotente — sai na hora se o certificado já existir).
+# Roda sozinho dentro do deploy-production.sh.
+./deploy/scripts/issue-tls-cert.sh
+
+# Testar o fluxo sem gastar o limite de emissões do Let's Encrypt.
+# O certificado emitido NÃO é confiável no navegador.
+./deploy/scripts/issue-tls-cert.sh --staging
+
+# Reemitir por cima de um certificado existente.
+./deploy/scripts/issue-tls-cert.sh --force
+
+# Conferir validade e data de expiração.
+cd deploy && docker compose -f docker-compose.production.yml --env-file .env \
+  run --rm --entrypoint certbot certbot certificates
+```
