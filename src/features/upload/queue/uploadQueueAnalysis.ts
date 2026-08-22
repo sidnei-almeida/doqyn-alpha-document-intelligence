@@ -40,7 +40,7 @@ export function analysisFailureMessage(
 ): string {
   if (status === 'ai_unavailable') {
     if (errorCode === 'GROQ_DAILY_TOKEN_LIMIT') {
-      return 'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset (~1h) ou altere GROQ_MODEL para llama-3.1-8b-instant.';
+      return 'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset (~1h) ou altere GROQ_MODEL para openai/gpt-oss-20b.';
     }
     if (errorCode === 'GROQ_CONTEXT_LIMIT') {
       return 'O documento é grande demais para o modelo atual. Reduza o tamanho do PDF ou ajuste PDF_ANALYSIS_MAX_INPUT_CHARS.';

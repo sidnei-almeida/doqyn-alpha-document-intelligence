@@ -1,4 +1,10 @@
-export const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
+/**
+ * `llama-3.1-8b-instant` foi descontinuado pela Groq em 17/06/2026 para as contas free e
+ * developer. O gpt-oss-120b é o substituto: modelo de produção, 131k de contexto, e a
+ * diferença de custo para a alternativa mais barata (gpt-oss-20b) é inferior a um dólar por
+ * mil documentos no nosso volume de entrada — barato demais para justificar errar metadado.
+ */
+export const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
 export const DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 1200;
 export const DEFAULT_GROQ_REQUEST_TIMEOUT_MS = 25_000;
 /**
