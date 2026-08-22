@@ -1,6 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
@@ -11,6 +11,8 @@ import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDial
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
+import { CountrySelect } from '@/components/ui/CountrySelect';
+import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
@@ -28,9 +30,13 @@ const COMPANY_AUTHORIZATION_TEXT =
 
 export function CompanySignupPage() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
+
+  /** Ver `IndividualSignupPage`: sessão existente sem espaço de trabalho. */
+  const fromAuthenticatedSession = Boolean(user);
 
   const [companyName, setCompanyName] = useState('');
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [taxId, setTaxId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -46,9 +52,25 @@ export function CompanySignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) return;
+    setEmail((current) => current || user.email);
+    setFirstName((current) => current || user.firstName || user.name.split(' ')[0] || '');
+    setLastName(
+      (current) => current || user.lastName || user.name.split(' ').slice(1).join(' ') || '',
+    );
+  }, [user]);
+
+  function handleCountryChange(next: CountryCode) {
+    setCountry(next);
+    setTaxId('');
+    setWhatsapp('');
+  }
+
   const formValues = useMemo<CompanySignupFormValues>(
     () => ({
       companyName,
+      country,
       taxId,
       firstName,
       lastName,
@@ -58,9 +80,11 @@ export function CompanySignupPage() {
       confirmPassword,
       acceptedTerms,
       companyAuthorization,
+      fromAuthenticatedSession,
     }),
     [
       companyName,
+      country,
       taxId,
       firstName,
       lastName,
@@ -70,6 +94,7 @@ export function CompanySignupPage() {
       confirmPassword,
       acceptedTerms,
       companyAuthorization,
+      fromAuthenticatedSession,
     ],
   );
 
@@ -154,10 +179,17 @@ export function CompanySignupPage() {
               onChange={(e) => setCompanyName(e.target.value)}
               required
             />
+            <CountrySelect
+              id="country"
+              label="País"
+              value={country}
+              onChange={handleCountryChange}
+            />
             <TaxIdInput
               id="taxId"
-              kind="CNPJ"
-              label="CNPJ"
+              country={country}
+              personType="company"
+              label={getTaxIdSpec(country, 'company').label}
               value={taxId}
               onChange={setTaxId}
               required
@@ -186,33 +218,44 @@ export function CompanySignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              disabled={fromAuthenticatedSession}
+              required={!fromAuthenticatedSession}
             />
+            {fromAuthenticatedSession && (
+              <p className="type-label -mt-2 text-doqyn-muted">
+                E-mail confirmado pela conta com que você entrou.
+              </p>
+            )}
             <WhatsappInput
               id="whatsapp"
               label="WhatsApp"
+              country={country}
               value={whatsapp}
               onChange={setWhatsapp}
               required
             />
-            <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <Input
-              id="confirmPassword"
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
+            {!fromAuthenticatedSession && (
+              <>
+                <Input
+                  id="password"
+                  label="Senha"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+                <Input
+                  id="confirmPassword"
+                  label="Confirmar senha"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </>
+            )}
 
             <TermsAcceptanceCheckbox
               checked={acceptedTerms}

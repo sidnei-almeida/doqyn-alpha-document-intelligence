@@ -2,15 +2,20 @@ import { getAuthBasePath } from '@/auth/authConfig';
 
 export type CompanySignupInput = {
   companyName: string;
+  /** ISO 3166-1 alpha-2. Obrigatório: o backend valida documento e telefone por país. */
+  country: string;
+  /** `cnpj` no Brasil, `tax_id` nos demais países. */
+  taxIdType: string;
   taxId: string;
   firstName: string;
   lastName: string;
-  email: string;
   whatsapp: string;
-  password: string;
-  confirmPassword: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /** Ver `individualSignupApi.ts`: ausentes no cadastro a partir de sessão existente. */
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
 };
 
 export type CompanySignupResponse = {

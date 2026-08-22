@@ -1,21 +1,35 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useFormattedInput } from '@/hooks/useFormattedInput';
 import {
-  formatTaxId,
-  isCompleteTaxId,
-  taxIdPlaceholder,
-  type TaxIdKind,
+  getTaxIdSpec,
+  type CountryCode,
+  type PersonType,
+  type TaxIdSpec,
 } from '@/lib/identifiers';
 import { Input, type InputProps } from './Input';
 
 export interface TaxIdInputProps extends Omit<InputProps, 'value' | 'onChange' | 'type'> {
-  kind: TaxIdKind;
+  /** País do cadastro — decide máscara, rótulo e regra de completude. */
+  country: CountryCode;
+  personType: PersonType;
   value: string;
   onChange: (value: string) => void;
 }
 
-export function TaxIdInput({ kind, value, onChange, error, ...props }: TaxIdInputProps) {
-  const format = useCallback((raw: string) => formatTaxId(raw, kind), [kind]);
+export function TaxIdInput({
+  country,
+  personType,
+  value,
+  onChange,
+  error,
+  ...props
+}: TaxIdInputProps) {
+  const spec: TaxIdSpec = useMemo(
+    () => getTaxIdSpec(country, personType),
+    [country, personType],
+  );
+
+  const format = useCallback((raw: string) => spec.format(raw), [spec]);
 
   const inputProps = useFormattedInput({
     value,
@@ -23,16 +37,17 @@ export function TaxIdInput({ kind, value, onChange, error, ...props }: TaxIdInpu
     format,
   });
 
-  const incomplete = value.length > 0 && !isCompleteTaxId(value, kind);
-  const validationError = incomplete ? `${kind} incompleto.` : undefined;
+  const incomplete = value.length > 0 && !spec.isComplete(value);
+  const validationError = incomplete ? `${spec.label} incompleto.` : undefined;
 
   return (
     <Input
       {...props}
       {...inputProps}
-      inputMode="numeric"
+      // Fora do BR o documento pode ter letras (NIF/CIF espanhol, VAT europeu).
+      inputMode={country === 'BR' ? 'numeric' : 'text'}
       autoComplete="off"
-      placeholder={props.placeholder ?? taxIdPlaceholder(kind)}
+      placeholder={props.placeholder ?? spec.placeholder}
       error={error ?? validationError}
     />
   );

@@ -11,7 +11,7 @@ import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDial
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
-import { formatTaxId } from '@/lib/identifiers';
+import { DEFAULT_COUNTRY, formatTaxId } from '@/lib/identifiers';
 import { Textarea } from '@/components/ui/Textarea';
 import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
 import { usesDoqynAuth } from '@/auth/authConfig';
@@ -118,7 +118,7 @@ export function RequestAccessPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const taxIdKind = employeeFlow || personType === 'business' ? 'CNPJ' : 'CPF';
+  const taxIdPersonType = employeeFlow || personType === 'business' ? 'company' : 'individual';
 
   const formValues = useMemo<RequestAccessFormValues>(
     () => ({
@@ -294,7 +294,10 @@ export function RequestAccessPage() {
 
             <TaxIdInput
               id="taxId"
-              kind={taxIdKind}
+              // Pedido de acesso é sempre a um tenant que já existe no Brasil; o seletor de
+              // país existe apenas nos cadastros, onde o tenant é criado.
+              country={DEFAULT_COUNTRY}
+              personType={taxIdPersonType}
               label={employeeFlow || personType === 'business' ? 'CNPJ da empresa' : 'CPF'}
               value={taxId}
               onChange={setTaxId}

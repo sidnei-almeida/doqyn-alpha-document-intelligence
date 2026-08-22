@@ -1,5 +1,10 @@
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
-import { toTaxIdApiValue, toWhatsappApiValue } from '../../lib/identifiers';
+import {
+  getCountryName,
+  getTaxIdSpec,
+  toPhoneApiValue,
+  type CountryCode,
+} from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
@@ -11,6 +16,7 @@ import {
 
 export type CompanySignupFormValues = {
   companyName: string;
+  country: CountryCode;
   taxId: string;
   firstName: string;
   lastName: string;
@@ -20,6 +26,8 @@ export type CompanySignupFormValues = {
   confirmPassword: string;
   acceptedTerms: boolean;
   companyAuthorization: boolean;
+  /** Ver `individualSignupReview.ts`: cadastro a partir de sessão já existente, sem senha. */
+  fromAuthenticatedSession: boolean;
 };
 
 export function validateCompanySignupForm(
@@ -41,7 +49,7 @@ export function validateCompanySignupForm(
     };
   }
 
-  if (values.password !== values.confirmPassword) {
+  if (!values.fromAuthenticatedSession && values.password !== values.confirmPassword) {
     return { valid: false, error: 'As senhas não conferem.' };
   }
 
@@ -49,17 +57,29 @@ export function validateCompanySignupForm(
 }
 
 export function buildCompanySignupPayload(values: CompanySignupFormValues) {
-  return {
+  const taxIdSpec = getTaxIdSpec(values.country, 'company');
+
+  const base = {
     companyName: values.companyName,
-    taxId: toTaxIdApiValue(values.taxId),
+    country: values.country,
+    taxIdType: taxIdSpec.type,
+    taxId: taxIdSpec.toApiValue(values.taxId),
     firstName: values.firstName,
     lastName: values.lastName,
+    whatsapp: toPhoneApiValue(values.country, values.whatsapp),
+    acceptedTerms: true as const,
+    acceptedTermsVersion: DOQYN_TERMS_VERSION,
+  };
+
+  if (values.fromAuthenticatedSession) {
+    return base;
+  }
+
+  return {
+    ...base,
     email: values.email,
-    whatsapp: toWhatsappApiValue(values.whatsapp),
     password: values.password,
     confirmPassword: values.confirmPassword,
-    acceptedTerms: true,
-    acceptedTermsVersion: DOQYN_TERMS_VERSION,
   };
 }
 
@@ -71,9 +91,13 @@ export function buildCompanySignupReviewSections(
       title: 'Empresa',
       fields: [
         { label: 'Nome da empresa', value: safeDisplayValue(values.companyName) },
+        { label: 'País', value: getCountryName(values.country) },
         {
-          label: 'CNPJ',
-          value: formatDocumentForReview(values.taxId, 'CNPJ'),
+          label: getTaxIdSpec(values.country, 'company').label,
+          value:
+            values.country === 'BR'
+              ? formatDocumentForReview(values.taxId, 'CNPJ')
+              : safeDisplayValue(values.taxId),
         },
       ],
     },
@@ -107,10 +131,14 @@ export function buildCompanySignupReviewSections(
         },
       ],
     },
-    {
-      title: 'Segurança',
-      fields: [{ label: 'Senha', value: PASSWORD_REVIEW_LABEL }],
-    },
+    ...(values.fromAuthenticatedSession
+      ? []
+      : [
+          {
+            title: 'Segurança',
+            fields: [{ label: 'Senha', value: PASSWORD_REVIEW_LABEL }],
+          },
+        ]),
   ];
 }
 
