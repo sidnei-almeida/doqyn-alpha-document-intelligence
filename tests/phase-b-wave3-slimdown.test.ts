@@ -55,9 +55,11 @@ describe('phase-b wave3 slim-down (Mounjaro)', () => {
       existsSync(join(root, 'server/services/documentClassificationService.ts')),
       false,
     );
+    // Os stubs viveram inline no documentService enquanto o upload legado existia. Com a rota
+    // /api/documents/upload removida, saíram junto: metadado e classe vêm do pipeline de IA.
     const docService = read('server/services/documentService.ts');
-    assert.match(docService, /async function extractMetadata/);
-    assert.match(docService, /async function classifyDocument/);
+    assert.equal(docService.includes('async function extractMetadata'), false);
+    assert.equal(docService.includes('async function classifyDocument'), false);
   });
 
   it('accessGroupsService permanece como stub 410', () => {

@@ -17,6 +17,7 @@ import { DocumentPreviewViewer } from './DocumentPreviewViewer';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useDocumentDetail } from '../hooks/useDocuments';
 import { DocumentApiError } from '../api/documentsApi.errors';
+import { DocumentExpiryEditor } from '@/features/expiry/components/DocumentExpiryEditor';
 import { DocumentStandardFicha } from './DocumentDetailsShared';
 
 type DocumentDetailPanelProps = {
@@ -201,6 +202,17 @@ export function DocumentDetailPanel({
         {(data.searchMeta || Object.keys(data.metadata).length > 0) && (
           <CardContent>
             <DocumentStandardFicha metadata={data.metadata} searchMeta={data.searchMeta} />
+          </CardContent>
+        )}
+
+        {documentId && (
+          <CardContent className="border-t border-border pt-4">
+            <p className="mb-3 text-sm font-medium">Vencimento e metadados</p>
+            <DocumentExpiryEditor
+              documentId={documentId}
+              currentValidityDate={data.searchMeta?.validityDate ?? null}
+              canEdit={Boolean(data.permissions.canUpdate)}
+            />
           </CardContent>
         )}
       </Card>

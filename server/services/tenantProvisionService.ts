@@ -4,15 +4,16 @@ import type { TenantType } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import {
   ensureRegistryTenantIndexes,
-  ensureSharedIndividualIndexes,
-  ensureTenantDataIndexes,
-  listTenantCollectionNames,
+  ensureSharedCollectionIndexes,
   type IndexEnsureResult,
 } from '../db/tenantIndexes.js';
 import { isUnsafeCollectionPrefix } from '../tenancy/collectionGuard.js';
-import { resolveTenantCollectionNames } from '../tenancy/tenantResolver.js';
-import { resolveTenantStorageContextFromIds } from '../tenancy/tenantStorage.js';
-import { buildBusinessCollectionPrefix, SHARED_INDIVIDUAL_COLLECTION_PREFIX } from '../tenancy/taxId.js';
+import { invalidateTenantRegistryCache } from '../tenancy/tenantRegistryCache.js';
+import { resolveSharedCollections, type TenantStorageMode } from '../tenancy/tenantStorage.js';
+import {
+  buildBusinessCollectionPrefix,
+  SHARED_INDIVIDUAL_COLLECTION_PREFIX,
+} from '../tenancy/taxId.js';
 import { isSafeTenantIdentifier } from '../utils/tenantId.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
@@ -31,7 +32,7 @@ export type ProvisionTenantOutput = {
   ok: true;
   tenantId: string;
   tenantType: TenantType;
-  storageMode: 'dedicated_collections' | 'shared_individual_collection';
+  storageMode: TenantStorageMode;
   collectionPrefix: string;
   createdCollections: string[];
   createdIndexes: string[];
@@ -82,15 +83,9 @@ async function writeProvisionAudit(
   description: string,
   metadata?: Record<string, unknown>,
 ): Promise<void> {
-  const storage = resolveTenantStorageContextFromIds({
-    tenantId,
-    tenantType,
-    collectionPrefix:
-      tenantType === 'individual' ? SHARED_INDIVIDUAL_COLLECTION_PREFIX : tenantId,
-  });
   const dbHandle = await getDb();
 
-  await dbHandle.collection(storage.collections.auditLogs).insertOne({
+  await dbHandle.collection(resolveSharedCollections().auditLogs).insertOne({
     _id: `audit_${randomUUID()}`,
     tenantId,
     companyId: tenantId,
@@ -146,7 +141,7 @@ export async function provisionTenantEnvironment(
       isolation: {
         strategy: isolationStrategy,
         collectionPrefix,
-        storageMode: isBusiness ? 'dedicated_collections' : 'shared_individual_collection',
+        storageMode: isBusiness ? 'shared_collections' : 'shared_individual_collection',
       },
       createdAt: now,
       updatedAt: now,
@@ -154,9 +149,9 @@ export async function provisionTenantEnvironment(
 
     await db.collection(REGISTRY_COLLECTIONS.tenants).insertOne(tenantDoc);
   } else {
-    await db.collection(REGISTRY_COLLECTIONS.tenants).updateOne(
-      { tenantId: input.tenantId } as Record<string, unknown>,
-      {
+    await db
+      .collection(REGISTRY_COLLECTIONS.tenants)
+      .updateOne({ tenantId: input.tenantId } as Record<string, unknown>, {
         $set: {
           displayName: input.displayName.trim(),
           status: 'active',
@@ -165,13 +160,14 @@ export async function provisionTenantEnvironment(
           'isolation.strategy': isolationStrategy,
           'isolation.collectionPrefix': collectionPrefix,
           'isolation.storageMode': isBusiness
-            ? 'dedicated_collections'
+            ? 'shared_collections'
             : 'shared_individual_collection',
           updatedAt: now,
         },
-      },
-    );
+      });
   }
+
+  await invalidateTenantRegistryCache(input.tenantId, existing?.companyId);
 
   await writeProvisionAudit(
     input.tenantId,
@@ -180,33 +176,17 @@ export async function provisionTenantEnvironment(
     'Provisionamento iniciado.',
   );
 
-  let indexResults: IndexEnsureResult[] = [];
+  // Provisionar tenant não cria mais coleção nem índice próprio: desde o Passo 7 todos os tenants
+  // dividem o mesmo conjunto compartilhado. A chamada permanece porque o primeiro provisionamento
+  // de uma instalação nova ainda precisa materializar esse conjunto — do segundo tenant em diante
+  // ela não cria namespace nenhum, que é exatamente o ponto.
+  const indexResults: IndexEnsureResult[] = await ensureSharedCollectionIndexes();
 
-  if (isBusiness) {
-    const tenant = (await getTenantById(input.tenantId))!;
-    const names = resolveTenantCollectionNames(tenant);
-    indexResults = await ensureTenantDataIndexes(names);
-
-    for (const name of listTenantCollectionNames(tenant)) {
-      const hasCreated = indexResults.some(
-        (r) => r.collection === name && (r.status === 'created' || r.name === '_collection_'),
-      );
-      if (hasCreated) createdCollections.push(name);
-    }
-  } else {
-    indexResults = await ensureSharedIndividualIndexes();
-    const sharedNames = resolveTenantStorageContextFromIds({
-      tenantId: input.tenantId,
-      tenantType: 'individual',
-      collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
-    }).collections;
-
-    for (const name of Object.values(sharedNames).filter(Boolean) as string[]) {
-      const hasCreated = indexResults.some(
-        (r) => r.collection === name && (r.status === 'created' || r.name === '_collection_'),
-      );
-      if (hasCreated) createdCollections.push(name);
-    }
+  for (const name of Object.values(resolveSharedCollections()).filter(Boolean) as string[]) {
+    const hasCreated = indexResults.some(
+      (r) => r.collection === name && (r.status === 'created' || r.name === '_collection_'),
+    );
+    if (hasCreated) createdCollections.push(name);
   }
 
   for (const result of indexResults) {
@@ -244,7 +224,7 @@ export async function provisionTenantEnvironment(
     ok: true,
     tenantId: input.tenantId,
     tenantType: input.tenantType,
-    storageMode: isBusiness ? 'dedicated_collections' : 'shared_individual_collection',
+    storageMode: isBusiness ? 'shared_collections' : 'shared_individual_collection',
     collectionPrefix,
     createdCollections: [...new Set(createdCollections)],
     createdIndexes,

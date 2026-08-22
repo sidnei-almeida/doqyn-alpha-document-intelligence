@@ -2,27 +2,23 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import type { TenantStorageContext } from './tenantStorage.js';
 
 /**
- * Coleções dedicadas (documents_{tenant}) já isolam por tenant.
- * Inclui documentos canônicos (tenantId/companyId) e legados sem esses campos.
+ * Escopo de tenant empresarial em coleção compartilhada.
+ *
+ * O filtro é estrito de propósito. Até o Passo 7 ele também casava documentos **sem** `tenantId`
+ * nem `companyId`, para tolerar registros legados — inofensivo enquanto a coleção já pertencia a um
+ * único tenant, mas num pool compartilhado esse ramo faria todo tenant enxergar todo documento sem
+ * dono. Documento sem `tenantId` agora simplesmente não é visível por ninguém, que é o
+ * comportamento seguro.
  */
-function buildDedicatedBusinessOwnershipFilter(tenantId: string): Record<string, unknown> {
+function buildBusinessOwnershipFilter(tenantId: string): Record<string, unknown> {
   return {
-    $or: [
-      { tenantId },
-      { companyId: tenantId },
-      {
-        tenantId: { $exists: false },
-        companyId: { $exists: false },
-      },
-      {
-        tenantId: { $in: [null, undefined] },
-        companyId: { $in: [null, undefined] },
-      },
-    ],
+    $or: [{ tenantId }, { companyId: tenantId }],
   };
 }
 
-export function buildDocumentOwnershipFilter(context: TenantStorageContext): Record<string, unknown> {
+export function buildDocumentOwnershipFilter(
+  context: TenantStorageContext,
+): Record<string, unknown> {
   if (context.storageMode === 'shared_individual_collection') {
     if (!context.userId) {
       throw new ServiceError(
@@ -32,18 +28,23 @@ export function buildDocumentOwnershipFilter(context: TenantStorageContext): Rec
       );
     }
 
+    // Lidera por `tenantId` (idêntico a `ownerTenantId` na gravação) para usar os mesmos índices
+    // da coleção compartilhada. `ownerUserId` continua no filtro: um tenant PF tem um único
+    // usuário, e manter a checagem é isolamento mais estreito, de graça.
     return {
+      tenantId: context.tenantId,
       tenantType: 'individual',
-      ownerTenantId: context.tenantId,
       ownerUserId: context.userId,
     };
   }
 
-  return buildDedicatedBusinessOwnershipFilter(context.tenantId);
+  return buildBusinessOwnershipFilter(context.tenantId);
 }
 
 /** Classes/regras: sempre tenant-scoped — business por tenantId; PF por ownership do usuário. */
-export function buildClassRuleOwnershipFilter(context: TenantStorageContext): Record<string, unknown> {
+export function buildClassRuleOwnershipFilter(
+  context: TenantStorageContext,
+): Record<string, unknown> {
   return buildDocumentOwnershipFilter(context);
 }
 
@@ -52,7 +53,8 @@ export function applyClassRuleOwnershipOnInsert<T extends Record<string, unknown
   context: TenantStorageContext,
   opts?: { scope?: 'global' | 'tenant' },
 ): ReturnType<typeof applyDocumentOwnershipOnInsert<T>> & { scope?: string } {
-  const scope = opts?.scope ?? (context.storageMode === 'shared_individual_collection' ? 'tenant' : undefined);
+  const scope =
+    opts?.scope ?? (context.storageMode === 'shared_individual_collection' ? 'tenant' : undefined);
   const base = applyDocumentOwnershipOnInsert(payload, context);
   return scope ? { ...base, scope } : base;
 }
@@ -67,7 +69,8 @@ export function applyDocumentOwnershipOnInsert<T extends Record<string, unknown>
   ownerTenantId: string;
   ownerUserId?: string;
 } {
-  const ownerUserId = context.userId ?? (typeof payload.ownerUserId === 'string' ? payload.ownerUserId : undefined);
+  const ownerUserId =
+    context.userId ?? (typeof payload.ownerUserId === 'string' ? payload.ownerUserId : undefined);
 
   if (context.storageMode === 'shared_individual_collection') {
     if (!ownerUserId) {
@@ -126,14 +129,9 @@ export function assertCanAccessDocument(
     return;
   }
 
-  if (context.storageMode === 'dedicated_collections') {
-    const tenantId = document.tenantId ?? document.companyId;
-    if (tenantId && tenantId !== context.tenantId) {
-      throw new ServiceError('Documento inacessível.', 'DOCUMENT_FORBIDDEN', 403);
-    }
-    return;
-  }
-
+  // Igualdade estrita: documento sem `tenantId` não pertence a ninguém. O ramo anterior
+  // (`if (tenantId && ...)`) deixava passar documento sem dono — tolerável quando a coleção já era
+  // de um tenant só, vazamento direto num pool compartilhado.
   const tenantId = document.tenantId ?? document.companyId;
   if (tenantId !== context.tenantId) {
     throw new ServiceError('Documento inacessível.', 'DOCUMENT_FORBIDDEN', 403);

@@ -49,7 +49,9 @@ export function assertDemoMongoSeedSafe(): { mongoUri: string; databaseName: str
     throw new Error('Demo seed bloqueado: MONGODB_URI parece produção.');
   }
 
-  const databaseName = getMongoDatabaseName(mongoUri);
+  // Valida o mesmo database que getDb() abre — o cliente resolve por MONGODB_DATABASE
+  // (fallback doqyn_dev) e ignora o segmento de path da URI.
+  const databaseName = getMongoDatabaseName();
   if (/prod|production/i.test(databaseName)) {
     throw new Error(`Demo seed bloqueado: database "${databaseName}" parece produção.`);
   }

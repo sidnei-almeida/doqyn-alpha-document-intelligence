@@ -89,9 +89,7 @@ export function mapApiMember(member: ApiMember) {
 
 function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
   if (
-    platformRoles.some((role) =>
-      role === 'doqyn_admin' || role === 'company_admin' || role === 'individual_admin',
-    )
+    platformRoles.some((role) => role === 'company_admin' || role === 'individual_admin')
   ) {
     return 'admin';
   }

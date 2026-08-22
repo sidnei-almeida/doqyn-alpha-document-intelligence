@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import type { BulkUploadItem } from '../types/bulk';
+import { formatQueueWaitLabel } from '@/features/upload/queue/queueWaitLabel';
 import { ProcessingHistoryBadge } from './ProcessingHistoryBadge';
 
 const STATUS_MAP: Record<
@@ -21,6 +22,7 @@ const STATUS_MAP: Record<
   saved: { label: 'Salvo', historyStatus: 'metadata_confirmed' },
   requires_review: { label: 'Revisão', historyStatus: 'requires_review' },
   ai_paused: { label: 'IA indisponível', historyStatus: 'error' },
+  still_running: { label: 'Analisando no servidor', historyStatus: 'analyzing' },
   unclassified: { label: 'Erro de análise', historyStatus: 'error' },
   error: { label: 'Erro', historyStatus: 'error' },
   skipped: { label: 'Pulado', historyStatus: 'processed' },
@@ -42,6 +44,12 @@ export function BulkQueueItemRow({
   const [expanded, setExpanded] = useState(false);
   const config = STATUS_MAP[item.status];
   const hasLogs = item.logs.length > 0;
+  // Enquanto espera, onde ele está na fila diz mais que "Na fila"/"Analisando", que é igual para
+  // quem está sendo processado agora e para quem tem 400 na frente.
+  const waitLabel =
+    item.status === 'queued' || item.status === 'analyzing'
+      ? formatQueueWaitLabel(item.queueStatus)
+      : null;
 
   return (
     <li
@@ -84,9 +92,13 @@ export function BulkQueueItemRow({
               {item.originalFileName}
             </TruncatedText>
             <p className="mt-0.5 truncate text-xs text-doqyn-muted">
-              {item.className ?? '—'}
-              {item.confidence !== undefined && ` · ${Math.round(item.confidence * 100)}%`}
-              {item.errorMessage && ` · ${item.errorMessage}`}
+              {waitLabel ?? (
+                <>
+                  {item.className ?? '—'}
+                  {item.confidence !== undefined && ` · ${Math.round(item.confidence * 100)}%`}
+                  {item.errorMessage && ` · ${item.errorMessage}`}
+                </>
+              )}
             </p>
           </div>
           <span className="shrink-0 text-micro text-doqyn-muted">{config.label}</span>

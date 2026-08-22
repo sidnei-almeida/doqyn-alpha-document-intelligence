@@ -14,6 +14,8 @@ export function uploadStatusProgress(status: UploadQueueItemStatus): number {
       return 100;
     case 'ai_paused':
       return 100;
+    case 'still_running':
+      return 100;
     case 'done':
       return 100;
     case 'error':

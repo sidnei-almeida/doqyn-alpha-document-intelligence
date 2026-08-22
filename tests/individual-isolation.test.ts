@@ -39,16 +39,17 @@ function businessCtx(tenantId: string): TenantStorageContext {
 }
 
 describe('storage resolver', () => {
-  it('business usa collections dedicadas', () => {
+  it('business usa as coleções compartilhadas', () => {
     const ctx = businessCtx(BUSINESS);
-    assert.equal(ctx.collections.documents, `documents_${BUSINESS}`);
-    assert.equal(ctx.storageMode, 'dedicated_collections');
+    assert.equal(ctx.collections.documents, 'documents');
+    assert.equal(ctx.storageMode, 'shared_collections');
+    assert.ok(!ctx.collections.documents.includes(BUSINESS));
   });
 
-  it('individual usa somente compartilhado', () => {
+  it('individual usa as mesmas coleções, sem sufixo', () => {
     const ctx = individualCtx(TENANT_A, USER_A);
-    assert.equal(ctx.collections.documents, 'documents_compartilhado');
-    assert.equal(ctx.collections.documentCategories, 'document_categories_compartilhado');
+    assert.equal(ctx.collections.documents, 'documents');
+    assert.equal(ctx.collections.documentCategories, 'document_categories');
     assert.equal(ctx.collections.accessGroups, undefined);
     assert.equal(ctx.collections.documentClasses, undefined);
     assert.ok(!ctx.collections.documents.includes('individual_'));
@@ -67,9 +68,9 @@ describe('isolamento CPF A vs B', () => {
 
   it('filtro de documentos de A não inclui B', () => {
     const filterA = buildDocumentOwnershipFilter(ctxA);
-    assert.equal(filterA.ownerTenantId, TENANT_A);
+    assert.equal(filterA.tenantId, TENANT_A);
     assert.equal(filterA.ownerUserId, USER_A);
-    assert.notEqual(filterA.ownerTenantId, TENANT_B);
+    assert.notEqual(filterA.tenantId, TENANT_B);
   });
 
   it('CPF A não acessa documento de B', () => {
@@ -96,8 +97,8 @@ describe('isolamento CPF A vs B', () => {
     assert.equal(filter.scope, undefined);
     assert.equal(filter.$or, undefined);
     assert.deepEqual(filter, {
+      tenantId: TENANT_A,
       tenantType: 'individual',
-      ownerTenantId: TENANT_A,
       ownerUserId: USER_A,
     });
   });
@@ -154,14 +155,19 @@ describe('OWNER_USER_REQUIRED', () => {
 });
 
 describe('cross-tenant type isolation', () => {
-  it('business não resolve para compartilhado', () => {
-    const ctx = businessCtx(BUSINESS);
-    assert.notEqual(ctx.collections.documents, 'documents_compartilhado');
-  });
+  it('business e individual dividem a coleção, e o isolamento vem do filtro', () => {
+    const business = businessCtx(BUSINESS);
+    const individual = individualCtx(TENANT_A, USER_A);
 
-  it('individual não resolve para company collection', () => {
-    const ctx = individualCtx(TENANT_A, USER_A);
-    assert.notEqual(ctx.collections.documents, `documents_${BUSINESS}`);
+    // Mesma coleção física...
+    assert.equal(business.collections.documents, individual.collections.documents);
+
+    // ...e nenhum dos dois filtros alcança o outro.
+    const businessFilter = JSON.stringify(buildDocumentOwnershipFilter(business));
+    const individualFilter = JSON.stringify(buildDocumentOwnershipFilter(individual));
+
+    assert.equal(businessFilter.includes(TENANT_A), false);
+    assert.equal(individualFilter.includes(BUSINESS), false);
   });
 });
 

@@ -37,7 +37,9 @@ ENV NODE_ENV=production
 COPY --from=builder /app/dist ./dist
 COPY public ./public
 
-RUN mkdir -p docs \
+# `.cache/transformers` nasce no build para o volume nomeado herdar o dono nodejs. Volume
+# criado direto sobre caminho inexistente vira root e o worker não consegue gravar o ONNX.
+RUN mkdir -p docs .cache/transformers \
   && chown -R nodejs:nodejs /app /home/nodejs
 
 ENV HOME=/home/nodejs

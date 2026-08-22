@@ -81,6 +81,9 @@ export const MAX_NEGATIVE_KEYWORDS_PER_CLASS = 6;
 
 export const MIN_CLASSIFICATION_CONFIDENCE = 0.7;
 export const MIN_FIELD_CONFIDENCE = 0.6;
+/** Confianca de campo calculado em codigo (ancora + prazo). Alta: a aritmetica e exata; o que
+ *  pode falhar e a leitura da ancora ou do prazo, que ja carregam a propria confianca. */
+export const DERIVED_FIELD_CONFIDENCE = 0.85;
 
 /** @deprecated use MIN_CLASSIFICATION_CONFIDENCE */
 export const CLASSIFICATION_CONFIDENCE_THRESHOLD = MIN_CLASSIFICATION_CONFIDENCE;

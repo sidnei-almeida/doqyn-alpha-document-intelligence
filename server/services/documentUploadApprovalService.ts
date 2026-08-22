@@ -46,7 +46,7 @@ function assertCanSubmitUpload(input: {
       input.governanceIndex,
       input.classId,
       input.memberGroupIds,
-      'upload',
+      'update',
     )
   ) {
     return;

@@ -1,0 +1,68 @@
+# Ponto de retomada — escala do envio (15/08/2026)
+
+Trabalho parado por decisão do usuário: o gargalo virou decisão comercial (contratar plano pago da
+Groq), e o resto pode esperar.
+
+## Onde parou
+
+Ensaio de carga com 30 envios sobre `~/Downloads/random_docs` (5 arquivos reais), 6 em paralelo,
+pelo caminho HTTP real. Interrompido na metade — os números já bastavam.
+
+| Medição | Valor |
+|---|---|
+| envio (upload + enfileirar) | ~1s |
+| confirmação | ~20ms |
+| espera na fila | 58s a 497s |
+| vazão sustentada | ~3 documentos/minuto na plataforma inteira |
+
+Praticamente todo o tempo é espera pela vazão da Groq. O plano gratuito é o teto: cada documento
+gasta ~2.000 tokens na classificação (70b) e ~4.600 na extração (8b).
+
+## A decisão que destrava
+
+Contratar plano pago da Groq. Definido com o gestor, ainda sem plano escolhido. Ao fechar:
+
+1. Ler os limites reais nos cabeçalhos `x-ratelimit-limit-requests` e `x-ratelimit-limit-tokens`
+   de qualquer resposta da Groq — não adivinhar.
+2. Ajustar `GROQ_MAX_REQUESTS_PER_MINUTE` e `GROQ_MAX_TOKENS_PER_MINUTE` (hoje 25 e 6.000, chutes
+   conservadores dimensionados para o plano gratuito).
+3. Só então a concorrência 8 da fila (`ANALYSIS_QUEUE_CONCURRENCY_GLOBAL`) passa a valer de verdade.
+
+## Pendência que o ensaio revelou — resolvida em 16/08/2026
+
+**Saturação degradava a qualidade, não só a velocidade.** Quando a espera pelo limitador estourava
+os 75s, o documento era marcado `ai_unavailable` e caía na revisão manual. Sob carga, o lote inteiro
+virava trabalho humano — o oposto do objetivo.
+
+Corrigido: o worker devolve o job para a fila (`moveToDelayed` + `DelayedError`, mesmo mecanismo já
+usado para o slot de tenant), com recuo progressivo e teto de reenfileiramentos. A lentidão continua
+lentidão, e não vira erro na tela. O mesmo vale para a extração de metadados, que engolia o erro de
+rate limit e devolvia `requires_review` sem dizer por quê.
+
+Detalhes em `.planning/quick/260816-g8a-saturacao-devolve-o-job-a-fila/`.
+
+## Resto da fila de melhorias
+
+Ordem da auditoria (`docs/AUDITORIA-ESCALA-ENVIO-2026-08-15.md`), do que sobrou:
+
+1. ~~Fatiamento do PDF sai do request de confirmação (achado 3)~~ — feito em 16/08/2026, fila
+   `document-chunking` (`.planning/quick/260816-h2c-fatiamento-sai-do-request/`). Sobra do achado 3:
+   o download do staging continua passando pela memória da API, que só some com cópia server-side
+   no R2.
+2. ~~Envio sobreposto no navegador, 2–3 em voo (achado 9)~~ — feito em 16/08/2026
+   (`.planning/quick/260816-k4d-envio-sobreposto-no-navegador/`). Falta conferir num lote real, no
+   navegador: o repo não tem harness de teste de componente.
+3. ~~Recuo progressivo na consulta de status (achado 6)~~ e ~~posição na fila e estimativa na tela
+   (achado 10)~~ — feitos juntos em 16/08/2026, mesmo laço de consulta
+   (`.planning/quick/260816-m7p-posicao-na-fila-na-tela/`). Rodar `npm run db:ensure-indexes`: a
+   coleção `analysis_jobs` ganhou índices.
+4. Reserva de slot de tenant com validade curta (achado 7)
+5. Rate limit por usuário nas rotas caras (achado 5)
+
+## Estado do ambiente
+
+- `doqyn up` no ar: auth 4100, API 3001, web 5173.
+- A API foi subida à mão com `ANALYSIS_SYNC_FALLBACK=false` e o worker de análise com
+  `ANALYSIS_QUEUE_CONCURRENCY_GLOBAL=8` — nenhum dos dois sobrevive a um `./doqyn down`.
+- O banco de desenvolvimento tem documentos do ensaio (cópias de `carga-N-<arquivo>`) e alguns
+  `requires_review` sem classe. Lixo de teste, não foi limpo.

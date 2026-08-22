@@ -14,18 +14,19 @@ import {
   resolveFinalFileNameForConfirm,
 } from '@/features/document-send/utils/reviewWorkflowSettings';
 import type { UploadContext, UploadQueueItem } from './types';
-import { analyzePdf } from './services/analyzePdf';
+import { analyzePdf, isAnalysisStillRunningError } from './services/analyzePdf';
 import { confirmAnalysis, submitUploadForApproval } from './services/confirmAnalysis';
 import { prepareUploadItems } from './services/startUploadFromFiles';
 import { UploadQueueContext, type AutoConfirmCountdown, type UploadQueueContextValue } from './uploadQueueContext';
 import { isUploadAutoConfirmEnabled } from './config/uploadAutoConfirm';
+import { getUploadAnalysisConcurrency } from './config/uploadConcurrency';
 import { resolveQueueAnalysisAction } from './config/resolveQueueAnalysisAction';
 import { useReviewWorkflowSettingsState } from './hooks/useReviewWorkflowSettingsState';
 import {
   analysisFailureMessage,
   needsManualReviewConfirmation,
-  UPLOAD_ANALYZE_TIMEOUT_MS,
-  uploadAnalyzeTimeoutMessage,
+  UPLOAD_ANALYZE_MAX_WAIT_MS,
+  uploadAnalyzeStillRunningMessage,
 } from './queue/uploadQueueAnalysis';
 import {
   normalizeUploadQueueAnalysis,
@@ -35,8 +36,7 @@ import {
 import { logUploadDev } from './utils/uploadDevLog';
 import {
   countPendingItems,
-  hasActiveItem,
-  nextQueuedItem,
+  nextQueuedItemExcluding,
   uploadQueueReducer,
 } from './queue/uploadQueueState';
 
@@ -54,13 +54,20 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   const itemsRef = useRef(items);
   const countdownHandleRef = useRef<CountdownHandle | null>(null);
   const autoPausedRef = useRef(new Set<string>());
-  const processingItemIdRef = useRef<string | null>(null);
-  const analyzeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const analyzeAbortRef = useRef<AbortController | null>(null);
+  /**
+   * Análises em voo, uma entrada por arquivo. Antes era um id só, e era esse "um só" que serializava
+   * o lote inteiro: enquanto um arquivo esperava a Groq, nenhum outro saía do navegador.
+   */
+  const inFlightAnalysesRef = useRef(
+    new Map<string, { controller: AbortController; timeout: ReturnType<typeof setTimeout> }>(),
+  );
+  /**
+   * Espera da contagem regressiva do auto-confirmar, em ordem de chegada. A contagem é uma só na
+   * tela; o que passou a ser paralelo é a análise, não a decisão.
+   */
+  const pendingAutoConfirmRef = useRef<string[]>([]);
   const pumpQueueRef = useRef<() => void>(() => undefined);
-  const autoConfirmCountdownRef = useRef(autoConfirmCountdown);
   itemsRef.current = items;
-  autoConfirmCountdownRef.current = autoConfirmCountdown;
 
   const deployAutoConfirm = isUploadAutoConfirmEnabled();
 
@@ -75,28 +82,38 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     countdownHandleRef.current = null;
   }, []);
 
-  const clearAnalyzeTimeout = useCallback(() => {
-    if (analyzeTimeoutRef.current) {
-      clearTimeout(analyzeTimeoutRef.current);
-      analyzeTimeoutRef.current = null;
+  /** Encerra o acompanhamento de uma análise: some o timeout e a vaga volta para a fila. */
+  const finishAnalysis = useCallback((itemId: string) => {
+    const inFlight = inFlightAnalysesRef.current.get(itemId);
+    if (!inFlight) return false;
+    clearTimeout(inFlight.timeout);
+    inFlightAnalysesRef.current.delete(itemId);
+    return true;
+  }, []);
+
+  const abortAnalysis = useCallback(
+    (itemId: string) => {
+      const inFlight = inFlightAnalysesRef.current.get(itemId);
+      if (!inFlight) return;
+      inFlight.controller.abort();
+      finishAnalysis(itemId);
+    },
+    [finishAnalysis],
+  );
+
+  const abortAllAnalyses = useCallback(() => {
+    for (const [, inFlight] of inFlightAnalysesRef.current) {
+      clearTimeout(inFlight.timeout);
+      inFlight.controller.abort();
     }
-  }, []);
-
-  const clearAnalyzeAbort = useCallback(() => {
-    analyzeAbortRef.current = null;
-  }, []);
-
-  const abortInFlightAnalyze = useCallback(() => {
-    analyzeAbortRef.current?.abort();
-    analyzeAbortRef.current = null;
+    inFlightAnalysesRef.current.clear();
   }, []);
 
   const tryPumpQueue = useCallback(() => {
     queueMicrotask(() => {
-      if (processingItemIdRef.current) return;
-      if (autoConfirmCountdownRef.current) return;
-      if (hasActiveItem(itemsRef.current)) return;
-      if (!nextQueuedItem(itemsRef.current)) return;
+      if (inFlightAnalysesRef.current.size >= getUploadAnalysisConcurrency()) return;
+      const excluded = new Set(inFlightAnalysesRef.current.keys());
+      if (!nextQueuedItemExcluding(itemsRef.current, excluded)) return;
       pumpQueueRef.current();
     });
   }, []);
@@ -113,8 +130,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         (id): id is string => Boolean(id && isDocumentCategoryId(id)),
       );
 
+      // Só avisa quando a IA mandou o arquivo para uma pasta diferente da escolhida no envio —
+      // aí o aviso carrega informação nova e o atalho para conferir. No caso normal a fila de
+      // upload já mostra "Salvo na Biblioteca" no próprio arquivo; repetir isso num aviso com o
+      // nome inteiro do arquivo era ruído em cima de ruído.
       if (uploadSpaceId && savedClassId && uploadSpaceId !== savedClassId) {
-        toast.success(`"${resolvedFinalName}" salvo em ${savedClassName}.`, {
+        toast.success(`Salvo em ${savedClassName}.`, {
+          description: resolvedFinalName,
           action: folderTargetId
             ? {
                 label: 'Abrir pasta',
@@ -123,10 +145,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
               }
             : undefined,
         });
-        return;
       }
-
-      toast.success(`"${resolvedFinalName}" disponível na Biblioteca.`);
     },
     [navigate],
   );
@@ -154,7 +173,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const confirmItem = useCallback(
-    async (item: UploadQueueItem, manualReviewConfirmed: boolean, perItem?: PerItemNamingChoice) => {
+    async (
+      item: UploadQueueItem,
+      manualReviewConfirmed: boolean,
+      perItem?: PerItemNamingChoice,
+      manualClassId?: string,
+      metadataOverrides?: Record<string, string>,
+    ) => {
       if (!item.analysis) return;
 
       const { raw, metadata } = item.analysis;
@@ -196,6 +221,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       try {
         const confirmOptions = {
           manualReviewConfirmed,
+          manualClassId,
+          metadataOverrides,
           namingMode: effectiveNamingMode,
           finalFileName: resolvedFinalName,
           selectedFileName: effectiveNamingMode === 'manual' ? namingChoice?.manualName : undefined,
@@ -243,12 +270,48 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     [reviewSettings, invalidateLibrary, clearAutoTimer, notifySavedDocument, tryPumpQueue, isDocumentAdmin, queryClient],
   );
 
+  const scheduleAutoConfirmRef = useRef<(item: UploadQueueItem, manual: boolean) => void>(
+    () => undefined,
+  );
+
+  /**
+   * Passa a vez para o próximo arquivo que ficou esperando contagem regressiva.
+   *
+   * Chamado assim que a contagem atual termina — não quando o `confirmAnalysis` responde. Esperar a
+   * gravação para começar a próxima contagem devolveria em série justamente o que este trabalho
+   * tirou de série.
+   */
+  const startNextPendingAutoConfirm = useCallback(() => {
+    while (pendingAutoConfirmRef.current.length > 0) {
+      const nextId = pendingAutoConfirmRef.current.shift();
+      if (!nextId) return;
+      if (autoPausedRef.current.has(nextId)) continue;
+
+      const nextItem = itemsRef.current.find((entry) => entry.id === nextId);
+      if (!nextItem?.analysis || nextItem.status !== 'review') continue;
+
+      scheduleAutoConfirmRef.current(nextItem, false);
+      return;
+    }
+  }, []);
+
   const scheduleAutoConfirm = useCallback(
     (item: UploadQueueItem, manualReviewConfirmed: boolean) => {
       const delaySeconds = reviewSettings.autoAcceptDelaySeconds;
 
       if (!reviewSettings.autoReviewEnabled || delaySeconds <= 0) {
         void confirmItem(item, manualReviewConfirmed, item.namingChoice);
+        return;
+      }
+
+      // Uma contagem por vez: a tela mostra um relógio só, e dois relógios correndo juntos seriam
+      // duas decisões automáticas que o usuário não consegue acompanhar. Os outros ficam visíveis
+      // como revisão pendente e entram por ordem de chegada.
+      if (countdownHandleRef.current) {
+        dispatch({ type: 'status', id: item.id, status: 'review' });
+        if (!pendingAutoConfirmRef.current.includes(item.id)) {
+          pendingAutoConfirmRef.current.push(item.id);
+        }
         return;
       }
 
@@ -273,25 +336,25 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           countdownHandleRef.current = null;
         }
         setAutoConfirmCountdown(null);
-        if (!finished) return;
 
-        const current = itemsRef.current.find((entry) => entry.id === item.id);
-        if (current?.analysis) {
-          void confirmItem(current, manualReviewConfirmed, current.namingChoice);
+        if (finished) {
+          const current = itemsRef.current.find((entry) => entry.id === item.id);
+          if (current?.analysis) {
+            void confirmItem(current, manualReviewConfirmed, current.namingChoice);
+          }
         }
+
+        startNextPendingAutoConfirm();
       });
     },
-    [reviewSettings, confirmItem, clearAutoTimer],
+    [reviewSettings, confirmItem, clearAutoTimer, startNextPendingAutoConfirm],
   );
 
-  const pumpQueue = useCallback(async () => {
-    if (processingItemIdRef.current) return;
-    if (autoConfirmCountdownRef.current) return;
-    if (hasActiveItem(itemsRef.current)) return;
+  useEffect(() => {
+    scheduleAutoConfirmRef.current = scheduleAutoConfirm;
+  }, [scheduleAutoConfirm]);
 
-    const next = nextQueuedItem(itemsRef.current);
-    if (!next) return;
-
+  const analyzeQueuedItem = useCallback(async (next: UploadQueueItem) => {
     const file = filesRef.current.get(next.id);
     if (!file) {
       dispatch({ type: 'error', id: next.id, message: 'Arquivo indisponível. Tente novamente.' });
@@ -305,38 +368,33 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       contextCategoryId: next.context?.categoryId ?? null,
     });
 
-    processingItemIdRef.current = next.id;
     dispatch({ type: 'status', id: next.id, status: 'analyzing' });
 
-    abortInFlightAnalyze();
     const analyzeController = new AbortController();
-    analyzeAbortRef.current = analyzeController;
-
-    clearAnalyzeTimeout();
-    analyzeTimeoutRef.current = setTimeout(() => {
-      if (processingItemIdRef.current !== next.id) return;
-      processingItemIdRef.current = null;
-      clearAnalyzeTimeout();
-      abortInFlightAnalyze();
-      dispatch({
-        type: 'error',
-        id: next.id,
-        message: uploadAnalyzeTimeoutMessage(),
-      });
+    // Rede de segurança do laço de consulta, não prazo de erro: se o acompanhamento não se encerrar
+    // sozinho, o item vira "continua no servidor" — nunca vermelho.
+    const timeout = setTimeout(() => {
+      if (!inFlightAnalysesRef.current.has(next.id)) return;
+      abortAnalysis(next.id);
+      dispatch({ type: 'still_running', id: next.id, message: uploadAnalyzeStillRunningMessage() });
       tryPumpQueue();
-    }, UPLOAD_ANALYZE_TIMEOUT_MS);
+    }, UPLOAD_ANALYZE_MAX_WAIT_MS + 30_000);
+
+    inFlightAnalysesRef.current.set(next.id, { controller: analyzeController, timeout });
 
     try {
       const result = await analyzePdf(file, {
         signal: analyzeController.signal,
         context: { fileName: next.fileName },
+        onQueueStatus: (queueStatus) => {
+          if (!inFlightAnalysesRef.current.has(next.id)) return;
+          dispatch({ type: 'queue_status', id: next.id, queueStatus });
+        },
       });
 
-      if (processingItemIdRef.current !== next.id) return;
-
-      clearAnalyzeTimeout();
-      clearAnalyzeAbort();
-      processingItemIdRef.current = null;
+      // Deixou de estar em voo enquanto a resposta vinha: expirou, foi cancelado ou o arquivo saiu
+      // da fila. O resultado não vale mais.
+      if (!finishAnalysis(next.id)) return;
 
       const analysis = normalizeUploadQueueAnalysis(result.metadata, result.raw);
       dispatch({ type: 'analysis', id: next.id, analysis });
@@ -367,9 +425,14 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
 
       if (action === 'auto_confirm') {
         scheduleAutoConfirm(enrichedItem, false);
+        // A vaga da análise já foi devolvida acima: o próximo arquivo sai enquanto este espera a
+        // contagem e a gravação. Era exatamente esse encadeamento que serializava o lote.
+        tryPumpQueue();
         return;
       }
 
+      // Os dois casos abaixo estacionam o arquivo e **seguem com o lote**. O que espera decisão
+      // humana sai da esteira; quem está limpo não paga por ele.
       if (action === 'open_review') {
         dispatch({ type: 'status', id: next.id, status: 'review' });
         setReviewItemId((current) => current ?? next.id);
@@ -379,6 +442,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             onClick: () => setReviewItemId(next.id),
           },
         });
+        tryPumpQueue();
         return;
       }
 
@@ -386,6 +450,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
         const message = analysisFailureMessage(result.raw.status, result.raw.errorCode);
         dispatch({ type: 'ai_pause', id: next.id, message });
         toast.warning(message);
+        tryPumpQueue();
         return;
       }
 
@@ -396,13 +461,20 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       });
       tryPumpQueue();
     } catch (error) {
-      if (processingItemIdRef.current !== next.id) return;
-      clearAnalyzeTimeout();
-      clearAnalyzeAbort();
-      processingItemIdRef.current = null;
+      // Cancelado por fora (rede de segurança ou o arquivo saiu da fila) já foi tratado lá.
+      if (!finishAnalysis(next.id)) return;
+
+      // Espera longa não é falha: o documento continua sendo analisado no servidor e chega na
+      // Biblioteca sozinho. Marcar erro aqui convida ao reenvio, que só aumenta a fila.
+      if (isAnalysisStillRunningError(error)) {
+        dispatch({ type: 'still_running', id: next.id, message: error.message });
+        tryPumpQueue();
+        return;
+      }
+
       const message =
         error instanceof DOMException && error.name === 'AbortError'
-          ? uploadAnalyzeTimeoutMessage()
+          ? uploadAnalyzeStillRunningMessage()
           : error instanceof Error
             ? error.message
             : 'Erro ao analisar o documento.';
@@ -414,11 +486,32 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     deployAutoConfirm,
     isAuthenticated,
     scheduleAutoConfirm,
-    clearAnalyzeTimeout,
-    clearAnalyzeAbort,
-    abortInFlightAnalyze,
+    abortAnalysis,
+    finishAnalysis,
     tryPumpQueue,
   ]);
+
+  /**
+   * Despacha análises até encher as vagas.
+   *
+   * O laço é síncrono de propósito: `dispatch` só repinta a lista depois, então os itens já
+   * despachados nesta rodada saem pela exclusão, não pelo status.
+   */
+  const pumpQueue = useCallback(() => {
+    const maxInFlight = getUploadAnalysisConcurrency();
+    // Também segura o arquivo que falhou antes de ocupar vaga (sumiu do `filesRef`): sem isso o
+    // laço reencontraria o mesmo item `queued` para sempre.
+    const dispatched = new Set<string>();
+
+    while (inFlightAnalysesRef.current.size < maxInFlight) {
+      const excluded = new Set([...inFlightAnalysesRef.current.keys(), ...dispatched]);
+      const next = nextQueuedItemExcluding(itemsRef.current, excluded);
+      if (!next) return;
+
+      dispatched.add(next.id);
+      void analyzeQueuedItem(next);
+    }
+  }, [analyzeQueuedItem]);
 
   useEffect(() => {
     pumpQueueRef.current = () => {
@@ -441,14 +534,18 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   useEffect(
     () => () => {
       clearAutoTimer();
-      clearAnalyzeTimeout();
-      abortInFlightAnalyze();
+      abortAllAnalyses();
     },
-    [clearAutoTimer, clearAnalyzeTimeout, abortInFlightAnalyze],
+    [clearAutoTimer, abortAllAnalyses],
   );
 
   const confirmReview = useCallback(
-    async (itemId: string, perItem?: PerItemNamingChoice) => {
+    async (
+      itemId: string,
+      perItem?: PerItemNamingChoice,
+      manualClassId?: string,
+      metadataOverrides?: Record<string, string>,
+    ) => {
       const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item || !item.analysis) return;
 
@@ -459,7 +556,13 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       setReviewItemId(null);
       clearAutoTimer();
       setAutoConfirmCountdown(null);
-      await confirmItem(item, manualReviewConfirmed, perItem ?? item.namingChoice);
+      await confirmItem(
+        item,
+        manualReviewConfirmed,
+        perItem ?? item.namingChoice,
+        manualClassId,
+        metadataOverrides,
+      );
     },
     [confirmItem, clearAutoTimer],
   );
@@ -474,8 +577,10 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       clearAutoTimer();
       setAutoConfirmCountdown(null);
       setReviewItemId(itemId);
+      // Quem estava esperando a vez não pode ficar preso à decisão que o usuário assumiu.
+      startNextPendingAutoConfirm();
     },
-    [clearAutoTimer],
+    [clearAutoTimer, startNextPendingAutoConfirm],
   );
 
   const retryItem = useCallback((itemId: string) => {
@@ -486,19 +591,24 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     (itemId: string) => {
       filesRef.current.delete(itemId);
       autoPausedRef.current.delete(itemId);
-      if (processingItemIdRef.current === itemId) {
-        processingItemIdRef.current = null;
-        clearAnalyzeTimeout();
-        abortInFlightAnalyze();
-      }
+      pendingAutoConfirmRef.current = pendingAutoConfirmRef.current.filter((id) => id !== itemId);
+      abortAnalysis(itemId);
       if (autoConfirmCountdown?.itemId === itemId) {
         clearAutoTimer();
         setAutoConfirmCountdown(null);
+        startNextPendingAutoConfirm();
       }
       setReviewItemId((current) => (current === itemId ? null : current));
       dispatch({ type: 'remove', id: itemId });
+      tryPumpQueue();
     },
-    [autoConfirmCountdown, clearAutoTimer, clearAnalyzeTimeout, abortInFlightAnalyze],
+    [
+      autoConfirmCountdown,
+      clearAutoTimer,
+      abortAnalysis,
+      startNextPendingAutoConfirm,
+      tryPumpQueue,
+    ],
   );
 
   const clearFinished = useCallback(() => {

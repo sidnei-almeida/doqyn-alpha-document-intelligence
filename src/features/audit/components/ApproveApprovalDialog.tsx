@@ -20,7 +20,6 @@ type ApproveApprovalDialogProps = {
   item: PendingApprovalItem | null;
   documentGroups: DocumentGroupOption[];
   saving?: boolean;
-  canAssignDoqynAdmin?: boolean;
   onClose: () => void;
   onConfirm: (input: {
     platformRoles: PlatformRole[];
@@ -35,7 +34,6 @@ export function ApproveApprovalDialog({
   item,
   documentGroups,
   saving,
-  canAssignDoqynAdmin = false,
   onClose,
   onConfirm,
 }: ApproveApprovalDialogProps) {
@@ -100,7 +98,6 @@ export function ApproveApprovalDialog({
           <PlatformRolesSection
             value={platformRoles}
             onChange={setPlatformRoles}
-            canAssignDoqynAdmin={canAssignDoqynAdmin}
           />
           <DocumentGroupsSection
             groups={documentGroups}

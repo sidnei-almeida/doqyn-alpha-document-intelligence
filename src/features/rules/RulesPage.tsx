@@ -221,6 +221,7 @@ export function RulesPage() {
             rule={extractionCategory ? getRuleForClass(extractionCategory.id) : null}
             onClose={() => setExtractionCategory(null)}
             onSave={saveExtractionRule}
+            groups={groups}
           />
         </>
       )}

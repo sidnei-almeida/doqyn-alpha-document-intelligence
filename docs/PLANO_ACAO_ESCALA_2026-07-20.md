@@ -57,12 +57,12 @@ duas vezes, pare e reavalie — não empilhe correção sobre correção.
 - [x] **Passo 1** — Concorrência e limites de recurso *(aplicado 2026-07-20, não deployado)*
 - [x] **Passo 2** — Redis: `maxmemory` e `noeviction` *(aplicado 2026-07-20, não deployado)*
 - [x] **Passo 1b** — Dois bugs bloqueantes no Compose, achados na validação *(ver abaixo)*
-- [ ] **Passo 0** — Decisão de arquitetura de coleções *(bloqueia o Passo 7)*
+- [x] **Passo 0** — Decisão de arquitetura de coleções *(Opção A, decidida 2026-08-10)*
 - [x] **Passo 3** — Índice `companyId` *(commitado em master `4a76fe4`; falta rodar contra o Atlas)*
-- [ ] **Passo 4** — Cache do documento de tenant
-- [ ] **Passo 5** — Dashboard: eliminar as varreduras
-- [ ] **Passo 6** — Upload: teto de bytes e ordem de quota
-- [ ] **Passo 7** — Modelo de coleções *(depende do Passo 0)*
+- [x] **Passo 4** — Cache do documento de tenant *(aplicado 2026-08-10; falta medir contra o Atlas)*
+- [x] **Passo 5** — Dashboard: eliminar as varreduras *(aplicado 2026-08-10; falta medir com tenant grande)*
+- [x] **Passo 6** — Upload: teto de bytes e ordem de quota *(aplicado 2026-08-10; falta medir sob carga)*
+- [x] **Passo 7** — Modelo de coleções *(aplicado 2026-08-10, corte seco sem migração)*
 - [ ] **Passo 8** — Gate de capacidade: sair de 8GB/2vCPU
 - [ ] **Passo 9** — Upload e download diretos no R2
 - [ ] **Passo 10** — Sessão: TTL longo com invalidação por evento
@@ -386,11 +386,19 @@ Pequenos e médios no pool compartilhado; grandes em coleções dedicadas, com p
 abaixo e `docs/ARCHITECTURE_SCALE.md` linha 722 atualizada.
 
 ```
-Decisão: ____________________
-Data: ____________________
-Responsável: ____________________
-Justificativa: ____________________
+Decisão: Opção A — coleções compartilhadas, isolamento por tenantId no documento
+Data: 2026-08-10
+Responsável: Sidnei Alves de Almeida
+Justificativa: o teto medido é ~49 tenants no M0 (500 coleções ÷ 10 por tenant + 8 fixas),
+               não 4.000. A meta do primeiro ano bate na parede muito antes do previsto,
+               e subir de tier só move o teto — não o remove.
 ```
+
+**Sem migração.** O MongoDB de produção ainda não existe: o ambiente é de desenvolvimento e o banco
+será zerado. Isso descarta os 4 passos com flag e leitura dupla que esta seção descrevia — eles
+existiam para migrar dado vivo, e não há dado vivo. Virou corte seco: o código passou a usar as
+coleções compartilhadas, os caminhos legados foram **apagados** em vez de preservados atrás de
+flag, e não há script de migração.
 
 ---
 
@@ -477,6 +485,52 @@ vale na requisição seguinte.
 
 **Commit:** `perf(tenancy): cache tenant registry doc in redis with explicit invalidation`
 
+### Execução (2026-08-10)
+
+Implementado em `server/tenancy/tenantRegistryCache.ts`, ligado em `resolveTenant()` e consumido
+por `loadTenantQuotaOverrides()` — que **deixou de consultar o registry direto** e passa por
+`resolveTenant`, então a segunda ida ao Atlas no upload some junto. TTL padrão 90s,
+`TENANT_REGISTRY_CACHE_ENABLED` / `TENANT_REGISTRY_CACHE_TTL_SECONDS` no `.env.example`.
+
+Três detalhes que não estavam no plano e apareceram na execução:
+
+- **`Date` não sobrevive ao JSON.** O round-trip por `redisSetJson` devolveria `createdAt`,
+  `updatedAt`, `storage.bucketCreatedAt` e `storage.bucketLastCheckedAt` como string, e o documento
+  cacheado deixaria de ser intercambiável com o do driver. `reviveTenant()` reidrata esses campos.
+- **Cache de projeção envenenaria o cache.** `loadTenantQuotaOverrides` lia com
+  `projection: { quotas: 1 }`; cachear esse documento parcial sob a mesma chave quebraria
+  `getTenantCollections`. Por isso a leitura passou a ser o documento inteiro via `resolveTenant`,
+  com `TENANT_NOT_FOUND` traduzido de volta para "sem overrides".
+- **`redisDel` não existia** em `server/redis/redisClient.ts`. Adicionado no mesmo formato dos
+  outros helpers: sem cliente ou com erro, engole e segue — invalidação nunca derruba o write.
+
+Invalidação explícita em todos os writers do registry: `tenantProvisionService`,
+`tenantStorageConfigService` (3 pontos), `trashRetentionSettings`, `tenantsService` (seed de dev).
+Não há hoje nenhum writer de `quotas` — elas vêm só de env; o gancho já está pronto para quando
+houver.
+
+**Falta:** a medição de validação (contagem de consultas ao registry) contra o Atlas — o ambiente
+local não tem Redis nem o banco de produção. Sem ela o passo está aplicado, não comprovado.
+
+#### Correções da revisão de código (2026-08-10)
+
+Dois defeitos de coerência do cache, achados na revisão do próprio diff:
+
+- **Invalidação alcançava só metade das chaves.** O documento é gravado sob `tenantId` **e**
+  `companyId`, mas `tenantStorageConfigService` e `trashRetentionSettings` só conhecem o id que
+  receberam. Para tenant onde os dois diferem, `markTenantBucketReady(tenantId)` deixava
+  `tenant:registry:<companyId>` servindo `bucketStatus: 'pending'` pelo TTL inteiro. Resolvido
+  dentro do módulo: a invalidação lê o documento cacheado, descobre o alias irmão e apaga os dois —
+  todos os chamadores ficam corretos sem precisar saber disso.
+- **Corrida entre leitura e gravação.** Se um writer invalidava entre o `findOne` e o
+  `setCachedTenant` de um request já em voo, o retrato velho voltava e sobrevivia 90s — o oposto do
+  contrato do passo. Fechado com marca de invalidação de vida curta (15s) que o `setCachedTenant`
+  consulta antes de gravar.
+
+Também: `reviveTenant` coagia data ausente para epoch, o que faria um tenant legado sem `createdAt`
+aparecer como 01/01/1970 no caminho cacheado e vazio no direto. Agora campo ausente continua
+ausente.
+
 ---
 
 ## Passo 5 — Dashboard: eliminar as varreduras
@@ -510,6 +564,38 @@ antes e depois e confirmar `IXSCAN` na consulta de auditoria.
 cresce com o tamanho do tenant.
 
 **Commit:** `perf(dashboard): replace full collection scans with $facet aggregation`
+
+### Execução (2026-08-10)
+
+`aggregateDocumentFacets()` em `dashboardOverviewService.ts` reduz **cinco consultas a uma**. O
+plano previa juntar só as duas varreduras; os três `countDocuments` (total, hoje, período) entraram
+no mesmo `$facet` porque o `$match` já precisa percorrer o conjunto acessível para agrupar — os
+ramos de data pegam carona sem custo extra e economizam duas idas ao Atlas.
+
+Ramos: `total`, `today`, `inPeriod`, `byStatus`, `byCategory`, `withoutCategory`. O `$sort`+`$limit`
+de categorias passou para o servidor (`CATEGORY_FACET_LIMIT = 8`), então o retorno é uma dúzia de
+linhas independentemente do tamanho do tenant.
+
+Dois detalhes de fidelidade:
+
+- O código antigo fazia `.trim()` em `classId`/`className` no Node, então documento com o campo
+  só de espaços contava como "sem categoria". Reproduzido com `$trim` num `$project` antes do
+  `$facet` — sem isso a contagem de governança mudaria silenciosamente.
+- `mapStatusBucket` continua em TypeScript, aplicado sobre as ~6 linhas agrupadas. Traduzir a regra
+  para expressão de agregação duplicaria a lógica em dois lugares sem ganho.
+
+**Regex de auditoria:** `$options: 'i'` removido da contagem do dashboard. Para isso ser seguro,
+`createDocumentAuditLog` agora normaliza `action` para minúsculas **na escrita**. Todas as actions
+já eram constantes minúsculas (verificado em `documentAuditTypes.ts` — zero chaves com maiúscula),
+então **não é preciso o `updateMany` de normalização** que o plano previa. A normalização trava o
+contrato para o futuro.
+
+**Dívida deixada:** `auditService.ts`/`documentAuditLogService.ts` ainda têm ~7 outros filtros com
+`$options: 'i'` sobre `action` (abas do audit center, filtros de tracking). Mesma causa, mesmo
+efeito no índice — mas estão fora do Passo 5 e não entraram, para não misturar escopo.
+
+**Falta:** medir latência antes/depois com tenant de 50k+ documentos e confirmar `IXSCAN` na
+consulta de auditoria. Sem ambiente com dado real, o passo está aplicado, não comprovado.
 
 ---
 
@@ -551,6 +637,73 @@ andamento, e arquivo acima do teto é rejeitado antes do buffer.
 
 **Commit:** `fix(upload): stream multipart with size limit and enforce quota before parsing`
 
+### Execução (2026-08-10)
+
+Os três itens, na ordem do plano:
+
+1. `assertTenantQuota(ctx.tenantId, 'uploads_per_hour')` subiu para **antes** do parse.
+2. `declaredSizeExceedsLimit()` rejeita por `Content-Length` com `413` antes de ler byte. É defesa
+   de conveniência, não de segurança — cliente pode mentir no cabeçalho ou usar
+   `Transfer-Encoding: chunked`; quem garante o teto é o busboy.
+3. Parser artesanal trocado por **busboy** em streaming, com `limits.fileSize`, `files: 1`,
+   `fields: 32` e `fieldSize: 1 MB`.
+
+**O parser era duplicado.** Havia duas cópias do mesmo código: uma local em `api/documents/upload.ts`
+e outra em `server/utils/parseMultipart.ts`, esta consumida também por `api/profile/avatar.ts` e
+`server/utils/parseAnalyzePdfRequest.ts`. Reescrevi o módulo compartilhado e apaguei a cópia local,
+então os **três** caminhos de upload deixaram de bloquear o event loop — é o mesmo achado C3, não
+escopo novo. O de avatar passou a usar o próprio teto (`PROFILE_AVATAR_MAX_SIZE_MB`, 5 MB) em vez do
+teto de documentos, então imagem grande morre no stream.
+
+O erro de tamanho virou `ServiceError('...', 'FILE_TOO_LARGE', 413)`, que os três handlers já
+traduzem para HTTP pelo `catch` existente — nenhum precisou de tratamento novo.
+
+Detalhe que custou atenção: ao abortar por limite é preciso `req.unpipe()` **e** `req.resume()`.
+Sem drenar o resto do corpo, o socket fica pendurado até o timeout do cliente — o oposto do que o
+passo quer.
+
+`busboy@^1.6.0` entrou em `dependencies`, `@types/busboy` em `devDependencies`. Bundle de produção
+(`npm run build:server`) resolve normalmente.
+
+**Ainda em memória:** o arquivo continua sendo materializado em `Buffer` porque `uploadDocument`
+recebe buffer. O que sumiu foi o `toString('binary')` + `split` síncronos e a ausência de teto.
+Eliminar o buffer é o Passo 9.
+
+**Falta:** medir latência de um `GET /api/documents` concorrente durante upload de 50 MB. Sem
+ambiente, aplicado e testado em unidade, não comprovado sob carga.
+
+#### Correções da revisão de código (2026-08-10)
+
+A troca para busboy introduziu um vazamento pior do que o problema original, achado na revisão e
+**reproduzido antes de corrigir**:
+
+- **Cliente que abandona o upload pendurava a promise para sempre.** `req.pipe(bb)` não propaga
+  erro nem fim prematuro da origem para o destino: com `req.destroy()` silencioso o busboy não
+  emitia `close` nem `error`, e `parseMultipart` nunca assentava — o handler, o socket e o buffer já
+  acumulado (até `maxUploadBytes`) ficavam presos na heap a **cada** upload interrompido. Com erro
+  no destroy era pior: o `'error'` do `req` não tinha ouvinte e derrubava o processo. O parser
+  antigo rejeitava com `ERR_STREAM_PREMATURE_CLOSE`, então isto era regressão. Corrigido com
+  handlers de `error`, `aborted` e `close` prematuro; coberto por dois testes.
+- **Drenagem do corpo recusado era ilimitada.** `req.resume()` após o 413 lia e descartava todo o
+  resto — um corpo de 5 GB custava 5 GB de leitura mesmo já recusado, na máquina que o passo existe
+  para proteger. Agora drena até 2 MB (o bastante para o cliente ler a resposta) e corta a conexão.
+- **Campo de texto truncado virava erro 500.** O busboy trunca campo acima de `fieldSize` e emite
+  `'field'` assim mesmo; o valor parcial ia para `JSON.parse(fields.accessGroups)` e estourava como
+  `SyntaxError`, que não é `ServiceError` e virava 500 com a mensagem do parser. Agora vira
+  `FIELD_TOO_LARGE` (413), e o `JSON.parse` ficou protegido por `INVALID_ACCESS_GROUPS` (400).
+
+Dois ajustes de comportamento no handler:
+
+- **`Content-Length` recusava arquivo no tamanho exato do limite.** O cabeçalho mede o corpo
+  inteiro (boundary, cabeçalhos de parte, campos), o teto do busboy mede só os bytes do arquivo.
+  Arquivo de exatamente 25 MB era recusado pelo envelope. Adicionada folga de 1 MB.
+- **Quota era queimada por upload que nunca acontecia.** Mover `assertTenantQuota` para antes do
+  parse — como o plano pedia — fez `INCR` acontecer também para arquivo grande demais, multipart
+  malformado ou cliente que desiste: cinco tentativas de enviar um arquivo acima do teto gastavam
+  cinco slots da hora sem um único write. Separado em `assertTenantQuotaAvailable()` (só verifica,
+  antes do parse) e `assertTenantQuota()` (consome, depois do parse). O objetivo do plano — não
+  gastar CPU com tenant já bloqueado — continua atendido.
+
 ---
 
 > **Ponto de corte.** Os Passos 1-6 cabem em dias e resolvem o risco imediato. Antes de seguir,
@@ -560,7 +713,7 @@ andamento, e arquivo acima do teto é rejeitado antes do buffer.
 
 ## Passo 7 — Modelo de coleções
 
-**Bloqueado pelo Passo 0.** O conteúdo depende da opção escolhida.
+**Concluído em 2026-08-10** com a Opção A do Passo 0.
 
 **Objetivo:** remover o teto de namespaces do Atlas.
 
@@ -568,26 +721,66 @@ andamento, e arquivo acima do teto é rejeitado antes do buffer.
 `server/tenancy/getTenantCollections.ts`, `server/db/tenantIndexes.ts`,
 `server/services/tenantProvisionService.ts` (linhas 196, 205)
 
-**Se a decisão for a Opção A:**
+### Execução (2026-08-10) — corte seco, Opção A
 
-1. Escrever o script de migração e **testar em cópia restaurada**, nunca direto em produção.
-2. Fazer o código ler dos dois modelos (compartilhado com fallback para prefixado), atrás de flag.
-3. Migrar tenant a tenant, do menor para o maior, validando isolamento a cada lote.
-4. Só então cortar o caminho legado.
+**O resultado que importa:** provisionar tenant novo **não cria mais nenhum namespace**. Antes eram
+10 coleções + 43 índices = 53 por tenant. Agora são 10 coleções fixas, garantidas uma vez, para
+qualquer número de tenants. O teto de ~49 tenants do M0 deixou de existir.
 
-Obrigatório em cada lote:
+Um teste trava isso: mil tenants resolvidos em sequência produzem exatamente 10 nomes de coleção
+(`tests/shared-collection-model.test.ts`).
 
-```bash
-npm run test:tenant-isolation
-```
+**O que já estava pronto e barateou o passo.** `applyDocumentOwnershipOnInsert` sempre gravou
+`tenantId`, `companyId`, `tenantType`, `ownerTenantId` e `ownerUserId` em todo documento — nenhum
+backfill foi necessário. E o caminho de pessoa física já era um pool compartilhado filtrado por
+ownership, ou seja, a Opção A já rodava para metade dos tenants. Como a auditoria previu, os índices
+já lideravam por `tenantId`; dentro de uma coleção dedicada esse prefixo tinha cardinalidade 1 e era
+desperdiçado — agora ele trabalha, sem nenhuma alteração nos índices.
 
-Rodar a migração **fora do VPS** (máquina local ou job efêmero contra o Atlas). Um script de
-migração competindo por 2 vCPU com o produto em produção é receita de indisponibilidade.
+**O buraco de isolamento, que era o risco real.** `buildDedicatedBusinessOwnershipFilter` tinha um
+ramo casando documentos **sem** `tenantId` nem `companyId`, e `assertCanAccessDocument` fazia
+`if (tenantId && tenantId !== context.tenantId)` — deixando passar documento sem dono. Inofensivo
+enquanto a coleção pertencia a um único tenant; em pool compartilhado seria vazamento de todo
+documento órfão para **todos** os tenants. Os dois ramos foram removidos: a comparação virou
+igualdade estrita e documento sem `tenantId` não é visível para ninguém. É o único ponto do passo
+que teria virado incidente de segurança se passasse batido.
 
-**Pronto quando:** provisionar tenant novo não cria coleção nova, e o teste de isolamento passa
-para uma amostra de tenants migrados.
+**Redução extra não prevista no plano.** O segundo conjunto de índices, liderado por
+`ownerTenantId` (`sharedIndividualIndexSpecs`), foi apagado. Com PF e PJ na mesma coleção e
+`ownerTenantId` recebendo o mesmo valor de `tenantId` na gravação, ele seria duplicata exata —
+dobraria os namespaces, justo o custo que o passo corta. O filtro de PF passou a liderar por
+`tenantId` (mantendo `ownerUserId`, que é isolamento mais estreito) e reaproveita os índices
+existentes. Só faltava `{ tenantId, ownerUserId, createdAt }` em `audit_logs`, adicionado.
 
-**Commit:** um por lote — `refactor(tenancy): migrate tenant <id> to shared collection model`
+**Consolidação.** `resolveTenantCollectionNames(tenant)` ficou idêntica a `resolveSharedCollections()`
+— dois nomes para a mesma coisa. Unificadas numa só, com os 14 chamadores atualizados.
+`listTenantCollectionNames` ficou sem uso e foi removida.
+
+**Fora do núcleo, mas quebrado pelo passo:**
+
+- `scripts/test-tenant-isolation.ts` foi **reescrito**. Ele comparava nomes de coleção
+  (`documents_company_dev` vs `documents_company_test_2`) — checagem que virou vácuo, e pior:
+  contar documentos de B na "coleção de A" agora acusaria vazamento falso, porque é a mesma
+  coleção. Passou a exercitar o que de fato isola: consulta escopada por um tenant não devolve
+  documento de outro, nem documento sem dono.
+- `scripts/ensure-mongodb-indexes.ts` garantia índices num laço por tenant ativo. Com todos
+  resolvendo para as mesmas coleções, isso refaria o mesmo trabalho N vezes — passou a rodar uma
+  vez só.
+- `assert-no-flat-tenant-writes` **continua valendo, e vale mais**: escrever direto em
+  `db.collection('documents')` agora grava no pool compartilhado sem escopo de tenant. A checagem
+  não mudou, só a justificativa.
+- Seed de demo, backfill de `searchMeta` e auditoria de governança montavam nomes prefixados à mão.
+
+**Verificação:** typecheck limpo (server e scripts, sem erro novo); ESLint no baseline (8 arquivos,
+nenhum tocado por este passo); `build:server` OK; `audit:no-flat-writes` PASS; suíte com 248 testes
+passando e as mesmas 42 falhas pré-existentes do baseline. 8 testes que codificavam o modelo antigo
+foram reescritos para o novo, mais `tests/shared-collection-model.test.ts` com 7 casos novos.
+
+**Falta:** rodar `npm run test:tenant-isolation` contra um banco de verdade, com dois tenants
+semeados. Sem Mongo no ambiente, o passo está aplicado e coberto por teste de unidade, não
+verificado contra dado real.
+
+**Commit:** `refactor(tenancy): move tenant data to shared collections scoped by tenantId`
 
 ---
 

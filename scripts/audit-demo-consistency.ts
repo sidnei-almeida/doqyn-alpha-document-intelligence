@@ -49,11 +49,15 @@ async function main() {
   const manifest = readDemoSeedManifest(manifestPath);
   results.push(check('manifest auth', true, manifestPath));
   results.push(
+    // A chave `globalAdmin` do manifest é contrato cross-repo e ficou; a conta por trás dela deixou
+    // de ser administrador de plataforma e virou o admin da empresa demo. O check afirma também que
+    // ela NÃO carrega papel de plataforma — é o que impede o seed de recriar o que a fase removeu.
     check(
-      'admin global',
-      manifest.globalAdmin.email === 'admin.global@doqyn.dev' &&
-        manifest.globalAdmin.status === 'active',
-      `${manifest.globalAdmin.email} (${manifest.globalAdmin.tenantId})`,
+      'admin da empresa demo',
+      manifest.globalAdmin.email === 'rafael.mendes@doqyn.dev' &&
+        manifest.globalAdmin.status === 'active' &&
+        manifest.globalAdmin.roles.every((role) => role === 'company_admin' || role === 'user'),
+      `${manifest.globalAdmin.email} (${manifest.globalAdmin.tenantId}) — ${manifest.globalAdmin.roles.join(', ')}`,
     ),
   );
 

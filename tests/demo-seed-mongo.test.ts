@@ -47,6 +47,38 @@ describe('demo seed mongo', () => {
     }
   });
 
+  it('dois tenants não compartilham _id no seed de governança', () => {
+    const alpha = buildGovernanceSeedForTenant('company_alpha');
+    const beta = buildGovernanceSeedForTenant('company_beta');
+
+    // Com coleções compartilhadas o `_id` é global: ids fixos fariam o segundo seed sobrescrever
+    // o `tenantId` das linhas do primeiro, transferindo a governança inteira para o último tenant.
+    const idsOf = (seed: typeof alpha) =>
+      [...seed.categories, ...seed.groups, ...seed.accessRules, ...seed.extractionRules].map(
+        (row) => row._id,
+      );
+
+    const alphaIds = new Set(idsOf(alpha));
+    const collisions = idsOf(beta).filter((id) => alphaIds.has(id));
+    assert.deepEqual(collisions, []);
+  });
+
+  it('as referências entre linhas do seed apontam para o próprio tenant', () => {
+    const seed = buildGovernanceSeedForTenant('company_alpha');
+    const categoryIds = new Set(seed.categories.map((category) => category._id));
+    const groupIds = new Set(seed.groups.map((group) => group._id));
+
+    // Renomear só o `_id` deixaria a regra de acesso apontando para a categoria de outro tenant.
+    for (const rule of seed.accessRules) {
+      assert.ok(categoryIds.has(rule.categoryId), `categoria órfã em ${rule._id}`);
+      assert.ok(groupIds.has(rule.groupId), `grupo órfão em ${rule._id}`);
+    }
+
+    for (const extractionRule of seed.extractionRules) {
+      assert.ok(categoryIds.has(extractionRule.categoryId), `categoria órfã em ${extractionRule._id}`);
+    }
+  });
+
   it('seed demo passa pelo mesmo filtro de ownership usado no pipeline', () => {
     const seed = buildGovernanceSeedForTenant(DEMO_TENANT_ID);
     const counts = countSeedRowsMatchingPipelineFilter(seed, DEMO_TENANT_ID);
@@ -103,9 +135,12 @@ describe('demo seed mongo', () => {
     );
     const syncSource = readFileSync(join(repoRoot, 'scripts/demo-seed/syncMembers.ts'), 'utf8');
 
-    assert.ok(provisionSource.includes('document_categories_'));
-    assert.ok(provisionSource.includes('document_groups_'));
-    assert.ok(provisionSource.includes('document_extraction_rules_'));
+    // As coleções vêm do resolver compartilhado, não de nomes montados com sufixo de tenant.
+    assert.ok(provisionSource.includes('resolveSharedCollections'));
+    assert.ok(provisionSource.includes('documentCategories'));
+    assert.ok(provisionSource.includes('documentGroups'));
+    assert.ok(provisionSource.includes('documentExtractionRules'));
+    assert.equal(provisionSource.includes('document_categories_'), false);
     assert.ok(provisionSource.includes('REGISTRY_COLLECTIONS.tenants'));
     assert.equal(provisionSource.includes('REGISTRY_COLLECTIONS.companies'), false);
     assert.equal(provisionSource.includes('document_classes'), false);

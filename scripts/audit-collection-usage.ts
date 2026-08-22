@@ -95,7 +95,7 @@ function classify(file: string, collection: string, snippet: string): Occurrence
     (lowerSnippet.includes('resolvedtenantcollectionnames') || lowerSnippet.includes('names.'))
   ) {
     classification = 'OK_MIGRATION_SCRIPT';
-    recommendation = 'Setup usa nomes prefixados via resolveTenantCollectionNames.';
+    recommendation = 'Setup usa as coleções compartilhadas via resolveSharedCollections.';
     needsGetTenantCollections = false;
   } else if (
     lower.includes('/api/') &&

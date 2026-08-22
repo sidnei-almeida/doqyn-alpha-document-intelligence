@@ -1,6 +1,11 @@
 import type { PlatformRole } from './api/usersApi';
 
-export const ASSIGNABLE_PLATFORM_ROLES: PlatformRole[] = ['doqyn_admin', 'company_admin', 'user'];
+/**
+ * Papéis que o admin da empresa pode marcar na tela de usuários. Espelha
+ * `sanitizeAssignablePlatformRoles` no servidor — `individual_admin` fica de fora porque nasce com
+ * o tenant PF no auth-service, não é concedido por ninguém aqui.
+ */
+export const ASSIGNABLE_PLATFORM_ROLES: PlatformRole[] = ['company_admin', 'user'];
 
 export type PlatformRoleMeta = {
   label: string;
@@ -9,10 +14,6 @@ export type PlatformRoleMeta = {
 
 /** Labels amigáveis para exibição no frontend (valores internos permanecem os slugs do auth). */
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, PlatformRoleMeta> = {
-  doqyn_admin: {
-    label: 'Administrador do sistema',
-    description: 'Acesso administrativo global da plataforma DOQYN.',
-  },
   company_admin: {
     label: 'Administrador da empresa',
     description: 'Gerencia usuários, grupos e regras da empresa.',
@@ -29,7 +30,6 @@ export const PLATFORM_ROLE_LABELS: Record<PlatformRole, PlatformRoleMeta> = {
 
 /** Ordem de prioridade para exibir o papel principal do usuário. */
 export const PLATFORM_ROLE_PRIORITY: PlatformRole[] = [
-  'doqyn_admin',
   'company_admin',
   'individual_admin',
   'user',

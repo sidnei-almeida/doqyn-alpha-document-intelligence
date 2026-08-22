@@ -4,6 +4,7 @@ import type { MongoTenant, TenantStatus, TenantType } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
+import { invalidateTenantRegistryCache } from '../tenancy/tenantRegistryCache.js';
 import {
   buildBusinessCollectionPrefix,
   buildIndividualPoolPrefix,
@@ -82,9 +83,15 @@ export async function ensureDevTenantSeed(): Promise<MongoTenant> {
     { upsert: true },
   );
 
+  await invalidateTenantRegistryCache(DEV_TENANT_ID);
+
   const tenant = await getTenantById(DEV_TENANT_ID);
   if (!tenant) {
-    throw new ServiceError('Falha ao garantir tenant de desenvolvimento.', 'TENANT_SEED_FAILED', 500);
+    throw new ServiceError(
+      'Falha ao garantir tenant de desenvolvimento.',
+      'TENANT_SEED_FAILED',
+      500,
+    );
   }
   return tenant;
 }

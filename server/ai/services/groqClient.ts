@@ -11,6 +11,14 @@ import {
   shouldRetryWithoutResponseFormat,
 } from '../utils/classifierDiagnostics.js';
 import { AiAnalysisError } from '../utils/errors.js';
+import {
+  acquireGroqSlot,
+  estimateGroqTokens,
+  GroqRateLimitWaitTimeout,
+  reconcileGroqUsage,
+} from './groqRateLimiter.js';
+import { parseGroqLimitHeaders, rememberGroqLimits } from './groqLimitCalibration.js';
+import { safeParseJsonFromModel } from '../utils/jsonParsing.js';
 import { logger } from '../../utils/logger.js';
 import { recordAiProviderRequest } from '../../metrics/prometheus.js';
 import {
@@ -158,7 +166,7 @@ async function callGroqCompletion(
   useResponseFormat: boolean,
   model: string,
   operation: string,
-): Promise<{ content: string; durationMs: number }> {
+): Promise<{ content: string; durationMs: number; finishReason?: string | null }> {
   const startedAt = Date.now();
 
   pipelineDebug('groq.call', 'enviando chat.completions.create', {
@@ -175,24 +183,53 @@ async function callGroqCompletion(
     const client = getGroqClient();
     const timeoutMs = getGroqRequestTimeoutMs();
 
-    const completion = await withGroqRequestTimeout(
-      client.chat.completions.create({
+    // Espera a vez na vazão da conta antes de gastar a requisição. Ficar na fila alguns segundos
+    // é melhor que tomar 429 e derrubar o documento em "IA indisponível" — de onde ele só sai com
+    // ação humana.
+    const estimatedTokens = estimateGroqTokens(prompt.length);
+
+    try {
+      await acquireGroqSlot({
+        operation,
         model,
-        temperature: 0.1,
-        max_tokens: getGroqMaxOutputTokens(),
-        ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
-        messages: [
-          {
-            role: 'system',
-            content: useResponseFormat
-              ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
-              : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      }),
+        estimatedTokens,
+      });
+    } catch (waitError) {
+      if (waitError instanceof GroqRateLimitWaitTimeout) {
+        // Vira o mesmo erro do 429 da própria Groq de propósito: a saturação é a mesma, e todo o
+        // caminho de cima já sabe tratar — documento em `ai_paused`, não em falha genérica.
+        throw new AiAnalysisError(AI_ERROR_MESSAGES.aiUnavailable, 'GROQ_RATE_LIMIT', 429);
+      }
+      throw waitError;
+    }
+
+    // `withResponse` em vez de só o corpo: os limites reais da conta vêm nos cabeçalhos, e é deles
+    // que o limitador se calibra em vez de viver do chute conservador do `.env`.
+    const { data: completion, response } = await withGroqRequestTimeout(
+      client.chat.completions
+        .create({
+          model,
+          temperature: 0.1,
+          max_tokens: getGroqMaxOutputTokens(),
+          ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
+          messages: [
+            {
+              role: 'system',
+              content: useResponseFormat
+                ? 'Você é um assistente documental do DOQYN. Responda apenas com JSON válido.'
+                : 'Você é um assistente documental do DOQYN. Responda apenas com um objeto JSON válido, sem markdown e sem texto fora do JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        })
+        .withResponse(),
       timeoutMs,
     );
+
+    const observedLimits = parseGroqLimitHeaders(response?.headers);
+    if (observedLimits) {
+      await rememberGroqLimits(model, observedLimits).catch(() => undefined);
+    }
 
     const content = completion.choices[0]?.message?.content;
     const finishReason = completion.choices[0]?.finish_reason;
@@ -210,6 +247,17 @@ async function callGroqCompletion(
     }
 
     const durationMs = Date.now() - startedAt;
+
+    // A janela do limitador foi debitada por estimativa; aqui ela passa a refletir o gasto que a
+    // própria Groq reportou. Sem isso, sobra de reserva vira fila que não existe.
+    if (usage?.total_tokens) {
+      await reconcileGroqUsage({
+        model,
+        estimatedTokens,
+        actualTokens: usage.total_tokens,
+      }).catch(() => undefined);
+    }
+
     recordAiProviderRequest({
       provider: 'groq',
       operation,
@@ -229,7 +277,7 @@ async function callGroqCompletion(
       responsePreview: previewText(content, 280),
     });
 
-    return { content: content.trim(), durationMs };
+    return { content: content.trim(), durationMs, finishReason };
   } catch (error) {
     recordAiProviderRequest({
       provider: 'groq',
@@ -245,6 +293,67 @@ async function callGroqCompletion(
       promptChars: prompt.length,
     });
     throw error;
+  }
+}
+
+/**
+ * Uma segunda chance quando o JSON volta quebrado.
+ *
+ * Mesmo com `response_format: json_object` o texto às vezes chega inutilizável — quase sempre porque
+ * a resposta bateu no teto de `max_tokens` e foi cortada no meio de uma chave. O usuário via
+ * "a resposta da IA veio em formato inválido" e o documento caía na revisão manual por um problema
+ * que uma repetição resolve.
+ *
+ * A repetição é única e leva o motivo junto: repetir mais que isso troca lentidão por lentidão, e é
+ * exatamente a vazão que a conta gratuita não tem para dar.
+ */
+async function repairInvalidJsonAnswer(input: {
+  answer: { content: string; durationMs: number; finishReason?: string | null };
+  prompt: string;
+  model: string;
+  operation: string;
+  context?: GroqPromptContext;
+}): Promise<{ content: string; retried: boolean; extraDurationMs?: number }> {
+  if (safeParseJsonFromModel<unknown>(input.answer.content)) {
+    return { content: input.answer.content, retried: false };
+  }
+
+  const truncated = input.answer.finishReason === 'length';
+
+  logger.warn('groq json inválido; repetindo uma vez', {
+    requestId: input.context?.requestId,
+    jobId: input.context?.jobId,
+    operation: input.operation,
+    model: input.model,
+    finishReason: input.answer.finishReason,
+    truncated,
+    responseChars: input.answer.content.length,
+    responsePreview: previewText(input.answer.content, 200),
+  });
+
+  const correction = truncated
+    ? 'A resposta anterior foi cortada antes de fechar o JSON. Responda de novo, mais curta: mesmo formato, sem trechos longos em evidence/snippet.'
+    : 'A resposta anterior não era um JSON válido. Responda de novo apenas com o objeto JSON pedido, sem markdown e sem texto fora dele.';
+
+  try {
+    const retry = await callGroqCompletion(
+      `${input.prompt}\n\n${correction}`,
+      true,
+      input.model,
+      input.operation,
+    );
+
+    return { content: retry.content, retried: true, extraDurationMs: retry.durationMs };
+  } catch (error) {
+    logger.warn('repeticao do JSON tambem falhou', {
+      requestId: input.context?.requestId,
+      jobId: input.context?.jobId,
+      operation: input.operation,
+      model: input.model,
+      reason: error instanceof Error ? error.message : 'unknown',
+    });
+    // Devolve a resposta original: quem chamou já sabe tratar conteúdo inválido.
+    return { content: input.answer.content, retried: true };
   }
 }
 
@@ -290,6 +399,13 @@ export async function completeJsonPrompt(
 
   try {
     const first = await callGroqCompletion(prompt, true, model, operation);
+    const repaired = await repairInvalidJsonAnswer({
+      answer: first,
+      prompt,
+      model,
+      operation,
+      context,
+    });
 
     logger.info('groq completion request completed', {
       requestId: context?.requestId,
@@ -299,13 +415,15 @@ export async function completeJsonPrompt(
       model,
       responseFormat,
       groqCalled: true,
-      groqDurationMs: first.durationMs,
-      responseChars: first.content.length,
+      groqDurationMs: first.durationMs + (repaired.extraDurationMs ?? 0),
+      responseChars: repaired.content.length,
+      finishReason: first.finishReason,
+      jsonRepairRetried: repaired.retried,
       retriedWithoutResponseFormat: false,
       retriedAfterRateLimit: false,
     });
 
-    return first.content;
+    return repaired.content;
   } catch (firstError) {
     const firstDiag = diagnoseClassifierError(firstError);
 

@@ -57,6 +57,55 @@ function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorFiel
   }));
 }
 
+/**
+ * Contrato de normalização — genérico, vale para qualquer tipo documental.
+ *
+ * Medido em 2026-08-12 (`docs/ESTUDO-PROMPTS-EXTRACAO-2026-08-12.md`): de 12 campos avaliados, 10
+ * acertavam sempre. Os dois que falhavam não falhavam por leitura — `data_assinatura` errou 30 de
+ * 32 devolvendo "09 de junho de 2026" em vez de `2026-06-09` (o modelo achava a data certa e não a
+ * padronizava), e `data_validade` faltou 16 de 16 por exigir aritmética que ninguém pedia.
+ *
+ * `applyFieldNormalization` (validation.ts) cobre currency, cpf e cnpj — e nada para data. Como o
+ * schema já separa `value` (o que está escrito) de `normalizedValue` (a forma padronizada), o
+ * caminho mais barato é o próprio modelo entregar as duas.
+ */
+function normalizationContract(): string {
+  return `
+PADRONIZAÇÃO — obrigatória para todo campo preenchido:
+Cada campo tem dois lados. \`value\` é o que está literalmente escrito no documento. \`normalizedValue\`
+é a forma padronizada, e é ela que o sistema usa para buscar, ordenar, comparar e alertar. Preencher
+value e repetir o mesmo texto cru em normalizedValue desperdiça o campo.
+
+Padronize \`normalizedValue\` conforme o \`type\` declarado do campo:
+- type "date": sempre \`yyyy-mm-dd\`. "09 de junho de 2026" → "2026-06-09"; "15/01/2026" → "2026-01-15";
+  "jan/2026" sem dia → "2026-01-01" e confidence mais baixa. Ano com 2 dígitos: resolva pelo século
+  do documento. Nunca deixe data por extenso ou em dd/mm/aaaa no normalizedValue.
+- type "currency" ou "number": só o número, ponto decimal, sem separador de milhar e sem símbolo.
+  "R$ 27.500,00" → 27500.00. O símbolo/moeda fica no value.
+- campos de CPF/CNPJ: só dígitos, sem ponto, barra ou hífen.
+- type "string": colapse espaços e quebras de linha vindas do OCR, remova rótulo que não faz parte
+  do dado ("CONTRATANTE:", "Nome:"), preserve a grafia própria de nomes e razões sociais.
+- type "boolean": true ou false.
+
+VALORES DERIVADOS:
+Quando o documento traz uma data âncora e um prazo relativo em vez da data final, calcule.
+Exemplo do padrão: âncora 2026-06-09 + "7 (sete) anos" → 2033-06-09. Vale para vigência, validade,
+garantia, carência, renovação — qualquer par âncora+prazo. Registre no evidence.snippet que o valor
+foi calculado e de quais trechos. Sem âncora explícita no texto, o campo é null: nunca use a data de
+hoje, de upload ou de criação do arquivo como âncora.
+
+ABSTENÇÃO:
+null é resposta correta e frequente. Preencher um campo com valor plausível mas não comprovado é
+pior do que deixá-lo vazio, porque alguém vai decidir com base nele. Se você precisa supor, inferir
+de contexto ou juntar pedaços distantes sem ligação explícita, o campo é null.
+
+CAMPOS PARECIDOS:
+Um documento costuma conter vários valores do mesmo formato — várias datas, vários prazos, vários
+nomes, vários valores. Formato igual não significa mesmo papel. Antes de preencher, confira que o
+trecho encontrado desempenha exatamente o papel descrito em \`description\`. Proximidade no texto não
+é evidência.`;
+}
+
 function confidentialityExtractionHints(): string {
   return `
 DOCUMENTO DE CONFIDENCIALIDADE / NDA — instruções obrigatórias:
@@ -74,12 +123,10 @@ DOCUMENTO DE CONFIDENCIALIDADE / NDA — instruções obrigatórias:
    - rótulos soltos ("RECEPTOR", "REVELADOR", "ao receptor", "no contexto de negociações")
 6. Se não encontrar o nome de uma parte nos trechos, use null — não invente nem copie o título.
 7. CPF/CNPJ servem só para confirmar a parte; o value deve ser o NOME, não o documento.
-8. Datas e vigência (PRIORIDADE MÁXIMA junto com as partes):
-   - data_assinatura é OBRIGATÓRIA quando o documento tiver prazo/vigência. Procure com agressividade: preâmbulo, cláusula de vigência, "assinado/firmado/celebrado em", "aos X dias de [mês] de [ano]", rodapé e bloco de assinaturas.
-   - Extraia prazo_vigencia relativo ("7 anos", "24 meses", "pelo prazo de 5 anos"). Não confunda prazo com data absoluta.
-   - Se tiver data âncora (assinatura/emissão) E prazo_vigencia, CALCULE data_validade = âncora + prazo (yyyy-mm-dd) e cite no evidence.snippet que foi calculado.
-   - Sem data âncora no texto: data_validade = null. Nunca use data de hoje, upload ou criação do arquivo.
-   - Se estiver em dúvida entre duas datas, prefira a de assinatura/celebração à data de emissão de anexo.
+8. Havendo dúvida entre duas datas para a assinatura, prefira a de assinatura/celebração do
+   instrumento à data de emissão de um anexo.
+   (O restante do tratamento de datas, prazos e cálculo de validade está no contrato de padronização
+   acima — vale para todo tipo documental, não só para este.)
 
 Exemplo de metadados corretos para NDA:
 {"parte_reveladora":{"value":"Paulão Comércio Ltda","normalizedValue":"Paulão Comércio Ltda","confidence":0.92,"evidence":{"snippet":"PARTE REVELADORA: Paulão Comércio Ltda"}},"parte_receptora":{"value":"Cliente Beta S.A.","normalizedValue":"Cliente Beta S.A.","confidence":0.9,"evidence":{"snippet":"PARTE RECEPTORA: Cliente Beta S.A."}},"data_assinatura":{"value":"2024-03-10","normalizedValue":"2024-03-10","confidence":0.9,"evidence":{"snippet":"assinado em 10 de março de 2024"}},"prazo_vigencia":{"value":"5 anos","normalizedValue":"5 anos","confidence":0.88,"evidence":{"snippet":"vigência de 5 anos"}},"data_validade":{"value":"2029-03-10","normalizedValue":"2029-03-10","confidence":0.86,"evidence":{"snippet":"Calculado: 2024-03-10 + 5 anos"}}}`;
@@ -100,9 +147,17 @@ export function buildCompactExtractorPrompt(
   const fields = toCompactFields(selectedClass);
   const ndaHints = isConfidentialityClassRule(selectedClass) ? confidentialityExtractionHints() : '';
 
-  const prompt = `Você extrai metadados estruturados de documentos PDF para o DOQYN.
+  const prompt = `Você extrai metadados estruturados de documentos para o DOQYN.
 
 Tarefa: preencher os campos listados em "fields" usando SOMENTE os trechos fornecidos.
+
+Trabalhe em duas etapas, nesta ordem:
+ETAPA 1 — localizar. Para cada campo, encontre nos trechos a passagem literal que o comprova. Sem
+passagem, o campo é null. O texto pode vir de OCR, com erro de caractere, quebra de linha no meio da
+frase e ordem de leitura trocada — isso exige ler o trecho inteiro antes de concluir que a
+informação não está lá, mas não autoriza adivinhar.
+ETAPA 2 — preencher. Só então escreva o valor, derivado da passagem localizada. Todo value precisa
+ser sustentado pelo seu snippet.
 
 Regras gerais:
 1. Extraia apenas os campos em fields — respeite key, label, type e aliases de cada um.
@@ -112,6 +167,7 @@ Regras gerais:
 5. missingFields = keys dos campos required que ficaram null.
 6. requiresReview=true se faltar campo obrigatório ou se a confiança for baixa.
 7. Responda APENAS com JSON válido, sem markdown.
+${normalizationContract()}
 ${ndaHints}
 
 Classe documental: ${selectedClass.name}
@@ -120,8 +176,8 @@ Descrição: ${selectedClass.description?.trim() || '—'}
 fields (ordem de prioridade):
 ${JSON.stringify(fields, null, 2)}
 
-Formato de resposta:
-{"documentType":"string","version":"v1.0","metadata":{"campo":{"label":"...","value":"...","normalizedValue":"...","confidence":0.9,"source":"document_text","evidence":{"pageNumber":1,"snippet":"..."}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
+Formato de resposta (repare em value × normalizedValue nos dois exemplos):
+{"documentType":"string","version":"v1.0","metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
 
 Trechos do documento:
 ${formatChunksForPrompt(compactChunks)}`;

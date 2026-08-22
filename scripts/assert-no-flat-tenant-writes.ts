@@ -6,6 +6,15 @@ import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_NO_FLAT_WRITES.txt');
 
+/**
+ * Nomes de coleção de dados de tenant.
+ *
+ * Quando cada tenant tinha suas próprias coleções, escrever nestes nomes "chapados" significava
+ * gravar fora do tenant. Desde o Passo 7 eles **são** as coleções reais — e por isso a checagem
+ * ficou mais importante, não menos: escrever via `db.collection('documents').updateOne(...)` agora
+ * grava no pool compartilhado sem passar por `getTenantCollections`, ou seja, sem escopo de
+ * tenant. Toda escrita em dado de tenant tem que vir do handle escopado.
+ */
 const FLAT = new Set(Object.values(COLLECTIONS));
 
 const ALLOWED_PATH_PATTERNS = [

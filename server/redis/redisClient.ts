@@ -102,11 +102,7 @@ export async function redisGetJson<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function redisSetJson(
-  key: string,
-  value: unknown,
-  ttlSeconds: number,
-): Promise<void> {
+export async function redisSetJson(key: string, value: unknown, ttlSeconds: number): Promise<void> {
   const client = await getRedisClient();
   if (!client) return;
   try {
@@ -116,10 +112,53 @@ export async function redisSetJson(
   }
 }
 
-export async function redisIncrWithTtl(
-  key: string,
-  ttlSeconds: number,
-): Promise<number | null> {
+export async function redisGetNumber(key: string): Promise<number | null> {
+  const client = await getRedisClient();
+  if (!client) return null;
+  try {
+    const raw = await client.get(prefixRedisKey(key));
+    if (raw === null) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function redisExistsAny(...keys: string[]): Promise<boolean> {
+  if (keys.length === 0) return false;
+  const client = await getRedisClient();
+  if (!client) return false;
+  try {
+    const found = await client.exists(...keys.map((key) => prefixRedisKey(key)));
+    return found > 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function redisSetRaw(key: string, value: string, ttlSeconds: number): Promise<void> {
+  const client = await getRedisClient();
+  if (!client) return;
+  try {
+    await client.set(prefixRedisKey(key), value, 'EX', ttlSeconds);
+  } catch {
+    // com `noeviction` o Redis cheio recusa escrita — nunca pode derrubar o request
+  }
+}
+
+export async function redisDel(...keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const client = await getRedisClient();
+  if (!client) return;
+  try {
+    await client.del(...keys.map((key) => prefixRedisKey(key)));
+  } catch {
+    // sem Redis a leitura cai para o banco; a chave expira pelo TTL
+  }
+}
+
+export async function redisIncrWithTtl(key: string, ttlSeconds: number): Promise<number | null> {
   const client = await getRedisClient();
   if (!client) return null;
 

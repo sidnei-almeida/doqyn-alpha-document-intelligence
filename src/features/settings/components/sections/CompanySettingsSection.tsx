@@ -17,7 +17,7 @@ type CompanySettingsSectionProps = {
 
 export function CompanySettingsSection({ tab, onTabChange }: CompanySettingsSectionProps) {
   const { hasAnyRole } = useAuth();
-  const canManageRetention = hasAnyRole(['doqyn_admin', 'company_admin']);
+  const canManageRetention = hasAnyRole(['company_admin']);
   const canAccessRules = canAccessRulesPage(hasAnyRole);
 
   const tabs = useMemo(

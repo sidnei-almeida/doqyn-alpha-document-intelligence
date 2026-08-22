@@ -6,7 +6,7 @@ import { COLLECTIONS, DEV_TENANT_ID, REGISTRY_COLLECTIONS, SHARED_APP_COLLECTION
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { isForbiddenAuditMetadataKey } from '../server/utils/sanitizeAuditMetadata.js';
 
 type Severity = 'CRITICO' | 'ALTO' | 'MEDIO' | 'BAIXO';
@@ -26,7 +26,7 @@ const KNOWN_SHARED_APP = new Set(Object.values(SHARED_APP_COLLECTIONS));
 const KNOWN_BASE = new Set(Object.values(COLLECTIONS));
 
 const TENANT_MEMBER_STATUSES = new Set(['pending', 'active', 'blocked', 'rejected']);
-const PLATFORM_ROLES = new Set(['doqyn_admin', 'company_admin', 'individual_admin', 'user']);
+const PLATFORM_ROLES = new Set(['company_admin', 'individual_admin', 'user']);
 
 const SENSITIVE_FIELD_PATTERNS = [
   /password/i,
@@ -609,7 +609,7 @@ async function main() {
 
   for (const tenant of tenants) {
     try {
-      const names = resolveTenantCollectionNames(tenant);
+      const names = resolveSharedCollections();
       const scopedCollections = Object.values(names).filter(Boolean) as string[];
       for (const collectionName of scopedCollections) {
         if (!collectionNames.includes(collectionName)) continue;

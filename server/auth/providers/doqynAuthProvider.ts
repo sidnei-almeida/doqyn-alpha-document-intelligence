@@ -74,7 +74,6 @@ const VERIFY_CODE_TO_HTTP: Record<string, number> = {
 };
 
 function mapRolesToAuthRole(roles: PlatformRole[]): AuthRole {
-  if (roles.includes('doqyn_admin')) return 'admin';
   if (roles.includes('company_admin') || roles.includes('individual_admin')) return 'manager';
   return 'user';
 }

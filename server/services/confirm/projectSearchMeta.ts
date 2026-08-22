@@ -50,7 +50,7 @@ const DATE_KEY_KINDS: Record<string, string> = {
   validade: 'validade',
 };
 
-const VALIDITY_SOURCE_KEYS = new Set([
+export const VALIDITY_SOURCE_KEYS = new Set([
   'data_vencimento',
   'data_validade',
   'vigencia_fim',

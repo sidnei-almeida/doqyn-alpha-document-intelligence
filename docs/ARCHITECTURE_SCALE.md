@@ -718,8 +718,8 @@ Monitorar crescimento de `documents_compartilhado`. Se > 5M docs:
 | Prática | Status atual | Ação |
 |---------|--------------|------|
 | Índices por tenantId | `ensure-mongodb-indexes.ts` | CI pós-deploy |
-| Collections prefixadas (business) | `tenantResolver.ts` | manter |
-| Pool compartilhado (individual) | `compartilhado` | monitorar |
+| ~~Collections prefixadas (business)~~ | **removido em 2026-08-10** | Passo 7 do plano de ação |
+| Collections compartilhadas (todos os tenants) | `resolveSharedCollections()` | escopo por `tenantId`; nunca `db.collection()` direto |
 | TTL em jobs/staging | parcial | A.3 — TTL `processing_jobs` |
 | Writes idempotentes | confirm usa `jobId` | reforçar testes |
 | Transações multi-doc | onde necessário | revisar `confirmAnalysisService` |

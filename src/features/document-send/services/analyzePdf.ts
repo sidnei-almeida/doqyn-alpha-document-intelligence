@@ -3,7 +3,13 @@ import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/wo
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
 import { parseWorkflowErrorPayload } from '../utils/workflowErrors';
-import { UPLOAD_ANALYZE_TIMEOUT_MS } from '@/features/upload/queue/uploadQueueAnalysis';
+import { analysisPollDelayMs } from './analysisPollBackoff';
+import {
+  UPLOAD_ANALYZE_MAX_POLL_FAILURES,
+  UPLOAD_ANALYZE_MAX_WAIT_MS,
+  uploadAnalyzePollFailureMessage,
+  uploadAnalyzeStillRunningMessage,
+} from '@/features/upload/queue/uploadQueueAnalysis';
 import type { ExtractedMetadata, ProcessingLogItem } from '../types';
 
 type EvidenceSnippet = {
@@ -100,6 +106,18 @@ type AnalysisJobPollResponse = {
   result?: AnalysisJobResult;
   errorCode?: string;
   errorMessage?: string;
+  /** Espelha `AnalysisJobPollResponse` do servidor. Ausente em resposta de versão antiga. */
+  queuePosition?: number;
+  estimatedWaitSeconds?: number | null;
+};
+
+/** Onde o documento está na fila da plataforma, do jeito que a tela precisa mostrar. */
+export type AnalysisQueueStatus = {
+  status: AnalysisJobPollResponse['status'];
+  /** Quantos estão na frente. `0` é "sendo analisado agora". */
+  queuePosition?: number;
+  /** `null` quando o servidor não tem vazão recente para estimar. */
+  estimatedWaitSeconds?: number | null;
 };
 
 export type AnalyzePdfOptions = {
@@ -107,6 +125,11 @@ export type AnalyzePdfOptions = {
   context?: WorkflowRequestContext;
   /** Quando informado, usa o endpoint de análise de atualização de versão. */
   documentId?: string;
+  /**
+   * Chamado a cada consulta de status enquanto o documento espera. É o que permite a tela dizer
+   * "3 na frente, ~2 min" em vez de "Analisando com IA…" para todo mundo igual.
+   */
+  onQueueStatus?: (queueStatus: AnalysisQueueStatus) => void;
 };
 
 type StagingUploadUrlResponse = {
@@ -201,6 +224,26 @@ export class AnalyzePdfRequestError extends Error {
     this.code = workflowError.code;
     this.workflowError = workflowError;
   }
+}
+
+/**
+ * O navegador parou de acompanhar, o servidor não parou de analisar.
+ *
+ * Erro separado de propósito: quem trata precisa saber que **não** é falha do documento, e por isso
+ * não pode pintar de vermelho nem sugerir reenvio.
+ */
+export class AnalysisStillRunningError extends Error {
+  readonly jobId: string;
+
+  constructor(jobId: string) {
+    super(uploadAnalyzeStillRunningMessage());
+    this.name = 'AnalysisStillRunningError';
+    this.jobId = jobId;
+  }
+}
+
+export function isAnalysisStillRunningError(error: unknown): error is AnalysisStillRunningError {
+  return error instanceof AnalysisStillRunningError;
 }
 
 function formatNow(): string {
@@ -322,35 +365,74 @@ function isTerminalAnalysisStatus(
   );
 }
 
+/**
+ * Acompanha o job até ele terminar.
+ *
+ * Enquanto o servidor responde `queued` ou `processing`, esperar é o certo — a demora é a vazão do
+ * modelo, não uma falha, e marcar erro num documento que está sendo analisado naquele instante
+ * empurra o usuário a reenviar e engordar a fila. Só três coisas interrompem a espera: o servidor
+ * dizer que falhou, o contato cair de vez, ou o teto de acompanhamento estourar — e esse último não
+ * é erro do documento, é a aba parando de perguntar.
+ */
 async function pollAnalysisJobResult(
   jobId: string,
-  options?: Pick<AnalyzePdfOptions, 'signal'>,
+  options?: Pick<AnalyzePdfOptions, 'signal' | 'onQueueStatus'>,
 ): Promise<AnalysisJobResult> {
-  const timeoutMs = UPLOAD_ANALYZE_TIMEOUT_MS;
+  const maxWaitMs = UPLOAD_ANALYZE_MAX_WAIT_MS;
   const startedAt = performance.now();
-  const pollIntervalMs = 2_000;
+  let attempt = 0;
+  let consecutiveFailures = 0;
 
   while (true) {
+    attempt += 1;
     if (options?.signal?.aborted) {
       throw new DOMException('Aborted', 'AbortError');
     }
 
-    const response = await authFetch(`/api/ai/jobs/${encodeURIComponent(jobId)}`, {
-      method: 'GET',
-      credentials: getFetchCredentials(),
-      headers: withAuthHeaders({}, { json: true }),
-      signal: options?.signal,
-    });
+    let response: Response | null = null;
+    let payload: AnalysisJobPollResponse | null = null;
 
-    const payload = (await response.json().catch(() => null)) as AnalysisJobPollResponse | null;
-
-    if (!response.ok || !payload) {
-      const workflowError = parseWorkflowErrorPayload(
-        payload as WorkflowErrorApiResponse | null,
-        'Erro ao consultar análise',
-      );
-      throw new AnalyzePdfRequestError(workflowError);
+    try {
+      response = await authFetch(`/api/ai/jobs/${encodeURIComponent(jobId)}`, {
+        method: 'GET',
+        credentials: getFetchCredentials(),
+        headers: withAuthHeaders({}, { json: true }),
+        signal: options?.signal,
+      });
+      payload = (await response.json().catch(() => null)) as AnalysisJobPollResponse | null;
+    } catch (error) {
+      // Cancelamento é decisão de quem chamou, não falha de rede.
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      response = null;
+      payload = null;
     }
+
+    // Rede instável e 5xx passageiro não são motivo para desistir de um documento que o servidor
+    // pode estar analisando. `404` é: o job não existe mais e insistir não traz ele de volta.
+    if (!response || !response.ok || !payload) {
+      const isGone = response?.status === 404;
+      consecutiveFailures += 1;
+
+      if (isGone || consecutiveFailures >= UPLOAD_ANALYZE_MAX_POLL_FAILURES) {
+        const workflowError = parseWorkflowErrorPayload(
+          (payload as WorkflowErrorApiResponse | null) ?? {
+            error: {
+              code: isGone ? 'ANALYSIS_JOB_NOT_FOUND' : 'ANALYSIS_POLL_UNREACHABLE',
+              category: 'ai',
+              title: 'Análise sem acompanhamento',
+              message: uploadAnalyzePollFailureMessage(),
+            },
+          },
+          uploadAnalyzePollFailureMessage(),
+        );
+        throw new AnalyzePdfRequestError(workflowError);
+      }
+
+      await sleep(analysisPollDelayMs(attempt), options?.signal);
+      continue;
+    }
+
+    consecutiveFailures = 0;
 
     if (payload.status === 'failed') {
       const workflowError = parseWorkflowErrorPayload(
@@ -371,6 +453,12 @@ async function pollAnalysisJobResult(
       return payload.result;
     }
 
+    options?.onQueueStatus?.({
+      status: payload.status,
+      queuePosition: payload.queuePosition,
+      estimatedWaitSeconds: payload.estimatedWaitSeconds,
+    });
+
     if (isTerminalAnalysisStatus(payload.status) && !payload.result) {
       throw new AnalyzePdfRequestError(
         parseWorkflowErrorPayload(
@@ -387,11 +475,12 @@ async function pollAnalysisJobResult(
       );
     }
 
-    if (performance.now() - startedAt >= timeoutMs) {
-      throw new Error('Tempo limite aguardando a conclusão da análise.');
+    // Teto de acompanhamento, não prazo de erro: quem trata sabe que o documento segue no servidor.
+    if (performance.now() - startedAt >= maxWaitMs) {
+      throw new AnalysisStillRunningError(jobId);
     }
 
-    await sleep(pollIntervalMs, options?.signal);
+    await sleep(analysisPollDelayMs(attempt), options?.signal);
   }
 }
 

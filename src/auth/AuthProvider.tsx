@@ -89,7 +89,7 @@ const MOCK_DEV_USER: AuthUser = {
   role: 'admin',
   area: 'Gestão',
   groups: ['admin', 'juridico', 'financeiro'],
-  roles: ['doqyn_admin', 'company_admin', 'user'],
+  roles: ['company_admin', 'user'],
 };
 
 function logSessionLoaded(input: {

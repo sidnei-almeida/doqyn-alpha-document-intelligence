@@ -4,6 +4,7 @@ import type { MongoTenant } from '../../server/db/types.js';
 import { ensureDevTenantSeed } from '../../server/services/tenantsService.js';
 import { provisionTenantEnvironment } from '../../server/services/tenantProvisionService.js';
 import { buildBusinessCollectionPrefix, hashTaxId, maskTaxId } from '../../server/tenancy/taxId.js';
+import { resolveSharedCollections } from '../../server/tenancy/tenantStorage.js';
 import { slugifyName } from '../../server/utils/slugify.js';
 import type { DemoSeedManifest, DemoSeedManifestCompany } from './manifest.js';
 import { buildGovernanceSeedForTenant } from './governance.js';
@@ -21,7 +22,7 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
   const db = await getDb();
   const now = new Date();
   const taxIdHash = hashTaxId(company.cnpj);
-  const taxIdMasked = maskTaxId(company.cnpj);
+  const taxIdMasked = maskTaxId(company.cnpj, 'CNPJ');
 
   const tenantFields: Partial<MongoTenant> & Record<string, unknown> = {
     tenantId: company.tenantId,
@@ -37,7 +38,7 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
     isolation: {
       strategy: 'collection_prefix',
       collectionPrefix: buildBusinessCollectionPrefix(company.tenantId),
-      storageMode: 'dedicated_collections',
+      storageMode: 'shared_collections',
     },
     updatedAt: now,
   };
@@ -58,16 +59,18 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
 async function seedGovernanceForTenant(tenantId: string) {
   const db = await getDb();
   const seed = buildGovernanceSeedForTenant(tenantId);
-  const prefix = buildBusinessCollectionPrefix(tenantId);
+  const shared = resolveSharedCollections();
 
-  const categoriesCollection = `document_categories_${prefix}`;
-  const groupsCollection = `document_groups_${prefix}`;
-  const rulesCollection = `document_rules_${prefix}`;
-  const extractionCollection = `document_extraction_rules_${prefix}`;
+  const categoriesCollection = shared.documentCategories!;
+  const groupsCollection = shared.documentGroups!;
+  const rulesCollection = shared.documentRules!;
+  const extractionCollection = shared.documentExtractionRules!;
 
   for (const category of seed.categories) {
     await db.collection(categoriesCollection).updateOne(
-      { _id: category._id } as Record<string, unknown>,
+      // `tenantId` no filtro é defesa em profundidade: o `_id` já vem com o tenant embutido, mas
+      // um id de seed que escape do namespace não pode sequestrar a linha de outro tenant.
+      { _id: category._id, tenantId: category.tenantId } as Record<string, unknown>,
       { $set: category },
       { upsert: true },
     );
@@ -75,7 +78,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const group of seed.groups) {
     await db.collection(groupsCollection).updateOne(
-      { _id: group._id } as Record<string, unknown>,
+      { _id: group._id, tenantId: group.tenantId } as Record<string, unknown>,
       { $set: group },
       { upsert: true },
     );
@@ -83,7 +86,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const rule of seed.accessRules) {
     await db.collection(rulesCollection).updateOne(
-      { _id: rule._id } as Record<string, unknown>,
+      { _id: rule._id, tenantId: rule.tenantId } as Record<string, unknown>,
       { $set: rule },
       { upsert: true },
     );
@@ -91,7 +94,7 @@ async function seedGovernanceForTenant(tenantId: string) {
 
   for (const extractionRule of seed.extractionRules) {
     await db.collection(extractionCollection).updateOne(
-      { _id: extractionRule._id } as Record<string, unknown>,
+      { _id: extractionRule._id, tenantId: extractionRule.tenantId } as Record<string, unknown>,
       { $set: extractionRule },
       { upsert: true },
     );

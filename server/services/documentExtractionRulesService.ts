@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import type { MongoDocumentExtractionRule, MongoRuleField } from '../db/types.js';
+import type {
+  MongoDocumentExpiryAlertConfig,
+  MongoDocumentExtractionRule,
+  MongoRuleField,
+} from '../db/types.js';
 import { assertDocumentCategoryExists } from './documentCategoriesService.js';
+import { normalizeExpiryAlertConfig } from './expiry/documentExpiryAlertService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -31,6 +36,7 @@ function serializeExtractionRule(rule: MongoDocumentExtractionRule) {
     namingTemplate: rule.namingTemplate,
     minimumConfidence: rule.minimumConfidence,
     onLowConfidence: rule.onLowConfidence,
+    expiryAlerts: normalizeExpiryAlertConfig(rule.expiryAlerts),
     createdBy: rule.createdBy,
     createdAt: rule.createdAt.toISOString(),
     updatedAt: rule.updatedAt.toISOString(),
@@ -79,6 +85,7 @@ export async function createDocumentExtractionRule(
     fields: MongoRuleField[];
     namingTemplate: string;
     minimumConfidence?: number;
+    expiryAlerts?: Partial<MongoDocumentExpiryAlertConfig>;
   },
 ) {
   await assertDocumentCategoryExists(tenantId, input.categoryId, { ownerUserId: userId });
@@ -102,6 +109,7 @@ export async function createDocumentExtractionRule(
       namingTemplate: input.namingTemplate.trim(),
       minimumConfidence: input.minimumConfidence ?? 0.7,
       onLowConfidence: 'requires_review' as const,
+      expiryAlerts: normalizeExpiryAlertConfig(input.expiryAlerts),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -109,8 +117,10 @@ export async function createDocumentExtractionRule(
     userId,
   ) as MongoDocumentExtractionRule;
 
+  // Sem escopo: `_id` é global na coleção compartilhada. O id determinístico deriva do categoryId,
+  // que por sua vez deriva do nome da classe, então duas empresas com a mesma classe chegariam ao
+  // mesmo `ext_cat_contratos_v1` e a segunda quebraria no insert.
   const existing = await collections.documentExtractionRules.findOne({
-    ...scope,
     _id: rule._id,
   } as Record<string, unknown>);
 
@@ -130,6 +140,7 @@ export async function updateDocumentExtractionRule(
     namingTemplate?: string;
     minimumConfidence?: number;
     active?: boolean;
+    expiryAlerts?: Partial<MongoDocumentExpiryAlertConfig>;
   },
   opts?: ServiceOpts,
 ) {
@@ -156,6 +167,11 @@ export async function updateDocumentExtractionRule(
 
   if (input.namingTemplate !== undefined) patch.namingTemplate = input.namingTemplate.trim();
   if (input.minimumConfidence !== undefined) patch.minimumConfidence = input.minimumConfidence;
+  if (input.expiryAlerts !== undefined) {
+    // Normaliza aqui, e não no handler, para que qualquer caminho de escrita — API, seed ou
+    // script — grave a mesma forma: marcos deduplicados, ordenados e dentro do limite.
+    patch.expiryAlerts = normalizeExpiryAlertConfig(input.expiryAlerts);
+  }
 
   await collections.documentExtractionRules.updateOne(
     { ...scope, _id: ruleId } as Record<string, unknown>,

@@ -1,15 +1,22 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
+import type { AnalysisQueueStatus } from '../services/analyzePdf';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
-import { findNextQueuedItem, hasInFlightUploadItem } from './uploadQueueCore';
+import {
+  findNextQueuedItem,
+  findNextQueuedItemExcluding,
+  hasInFlightUploadItem,
+} from './uploadQueueCore';
 
 export type UploadQueueAction =
   | { type: 'enqueue'; items: UploadQueueItem[] }
   | { type: 'status'; id: string; status: UploadQueueItemStatus }
+  | { type: 'queue_status'; id: string; queueStatus: AnalysisQueueStatus }
   | { type: 'analysis'; id: string; analysis: UploadQueueItemAnalysis }
   | { type: 'done'; id: string; documentId: string }
   | { type: 'awaiting_approval'; id: string; approvalId: string }
   | { type: 'error'; id: string; message: string }
   | { type: 'ai_pause'; id: string; message: string }
+  | { type: 'still_running'; id: string; message: string }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'clear-finished' }
@@ -26,9 +33,16 @@ export function uploadQueueReducer(
       return items.map((item) =>
         item.id === action.id ? { ...item, status: action.status } : item,
       );
+    case 'queue_status':
+      return items.map((item) =>
+        item.id === action.id ? { ...item, queueStatus: action.queueStatus } : item,
+      );
     case 'analysis':
       return items.map((item) =>
-        item.id === action.id ? { ...item, analysis: action.analysis } : item,
+        // O lugar na fila deixa de valer no instante em que o resultado chega.
+        item.id === action.id
+          ? { ...item, analysis: action.analysis, queueStatus: undefined }
+          : item,
       );
     case 'done':
       return items.map((item) =>
@@ -59,9 +73,25 @@ export function uploadQueueReducer(
           ? { ...item, status: 'ai_paused' as const, errorMessage: action.message }
           : item,
       );
+    case 'still_running':
+      return items.map((item) =>
+        item.id === action.id
+          ? {
+              ...item,
+              status: 'still_running' as const,
+              errorMessage: action.message,
+              queueStatus: undefined,
+            }
+          : item,
+      );
     case 'retry':
       return items.map((item) =>
-        item.id === action.id && (item.status === 'error' || item.status === 'ai_paused')
+        // `still_running` também aceita reenvio manual: é decisão de quem está olhando a tela, e
+        // aqui ele sabe que pode gerar duplicata. O caminho automático nunca reenvia sozinho.
+        item.id === action.id &&
+        (item.status === 'error' ||
+          item.status === 'ai_paused' ||
+          item.status === 'still_running')
           ? { ...item, status: 'queued' as const, errorMessage: undefined, analysis: undefined }
           : item,
       );
@@ -83,6 +113,14 @@ export function uploadQueueReducer(
 /** Próximo item enfileirado ainda não iniciado. */
 export function nextQueuedItem(items: UploadQueueItem[]): UploadQueueItem | null {
   return findNextQueuedItem(items);
+}
+
+/** Próximo enfileirado que ainda não foi despachado nesta rodada. */
+export function nextQueuedItemExcluding(
+  items: UploadQueueItem[],
+  excludedIds: ReadonlySet<string>,
+): UploadQueueItem | null {
+  return findNextQueuedItemExcluding(items, excludedIds);
 }
 
 /**

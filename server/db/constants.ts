@@ -23,6 +23,9 @@ export const SHARED_APP_COLLECTIONS = {
   documentSignatures: 'document_signatures',
   documentUploadApprovals: 'document_upload_approvals',
   analysisJobs: 'analysis_jobs',
+  documentExpiryAlerts: 'document_expiry_alerts',
+  /** Ponteiro da cadeia de integridade da trilha de auditoria, um por tenant. */
+  auditChainHeads: 'audit_chain_heads',
 } as const;
 
 export const COLLECTIONS = {

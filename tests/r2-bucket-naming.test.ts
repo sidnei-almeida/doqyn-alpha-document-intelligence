@@ -11,6 +11,9 @@ import {
   resolveR2AppEnv,
 } from '../server/storage/r2/r2BucketNaming.js';
 
+// O segmento legível deriva do `tenantId`, não de slug ou displayName: os dois últimos são
+// editáveis pelo cliente, e derivar deles fazia o mesmo tenant ganhar buckets diferentes conforme o
+// chamador e renomear o bucket a cada troca de razão social. Ver server/storage/r2/r2BucketNaming.ts.
 describe('buildTenantBucketName', () => {
   const ORIGINAL_ENV = { ...process.env };
 
@@ -37,7 +40,7 @@ describe('buildTenantBucketName', () => {
     });
 
     assert.equal(first.bucketName, second.bucketName);
-    assert.match(first.bucketName, /^doqyn-dev-t-alpha-consultoria-[a-f0-9]{12}$/);
+    assert.match(first.bucketName, /^doqyn-dev-t-company-alpha-consultoria-[a-f0-9]{12}$/);
     assert.equal(first.shortHash, deriveTenantShortHash('company_alpha_consultoria'));
   });
 
@@ -52,7 +55,7 @@ describe('buildTenantBucketName', () => {
     assert.equal(result.bucketName.includes('cnpj'), false);
     assert.equal(result.bucketName.includes('@'), false);
     assert.equal(result.bucketName.includes('12345678901'), false);
-    assert.match(result.bucketName, /^doqyn-dev-t-nexserv-tecnologia-[a-f0-9]{12}$/);
+    assert.match(result.bucketName, /^doqyn-dev-t-company-nexserv-[a-f0-9]{12}$/);
   });
 
   it('sanitiza acentos, underscore e espaços', () => {
@@ -67,7 +70,7 @@ describe('buildTenantBucketName', () => {
       tenantDisplayName: 'Company Dev',
       tenantSlug: 'company_dev',
     });
-    assert.match(result.bucketName, /^doqyn-dev-t-company-dev-[a-f0-9]{12}$/);
+    assert.match(result.bucketName, /^doqyn-dev-t-tenant-1-[a-f0-9]{12}$/);
   });
 
   it('empresas com mesmo nome mas tenantId diferente geram buckets diferentes', () => {
@@ -120,7 +123,10 @@ describe('buildTenantBucketName', () => {
       tenantSlug: 'doqyn-dev',
       env: 'dev',
     });
-    assert.match(bucket, /^doqyn-dev-t-doqyn-dev-[a-f0-9]{12}$/);
+    // Este é o caso exato que produziu dois buckets para o mesmo tenant em 2026-08-13: com a
+    // precedência antiga o slug 'doqyn-dev' vencia e gerava `…-t-doqyn-dev-…`, enquanto quem
+    // chamava sem slug gerava `…-t-company-dev-…`. Agora só o tenantId manda.
+    assert.match(bucket, /^doqyn-dev-t-company-dev-[a-f0-9]{12}$/);
   });
 });
 

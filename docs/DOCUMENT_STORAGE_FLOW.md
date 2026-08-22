@@ -2,12 +2,14 @@
 
 ## Visão geral
 
-O PDF original é persistido em **dois momentos distintos**, conforme o fluxo:
+Existe um único fluxo de entrada de documento:
 
 | Fluxo | Quando o binário é gravado | Mongo `storage.primary` |
 |-------|---------------------------|-------------------------|
 | **Envio com IA** (UI principal) | Staging no `analyze-pdf`; promoção no `confirm-analysis` | `status=stored`, `objectKey` com `storageFileName` |
-| **Upload legado** (`POST /api/documents/upload`) | Durante o upload | Idem |
+
+O upload legado (`POST /api/documents/upload`) foi removido — gravava o documento sem passar pela
+IA e sem sinalizar isso, e a UI nunca o alcançava.
 
 O **nome físico final** no storage segue `storageFileName`, derivado de `finalFileName` (IA, original ou manual).
 

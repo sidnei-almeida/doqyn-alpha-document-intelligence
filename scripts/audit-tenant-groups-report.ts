@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { closeMongoConnection, getDb } from '../server/db/mongoClient.js';
 import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 
 type TenantSummary = {
   tenantId: string;
@@ -40,7 +40,7 @@ async function main() {
     const tenantId = String(tenant.tenantId ?? '');
     if (!tenantId) continue;
 
-    const names = resolveTenantCollectionNames(tenant);
+    const names = resolveSharedCollections();
 
     summaries.push({
       tenantId,

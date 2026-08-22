@@ -20,7 +20,7 @@ const SMTP_PRESETS = [
 
 export function TenantEmailSettingsSection() {
   const { hasAnyRole, user } = useAuth();
-  const canManage = hasAnyRole(['doqyn_admin', 'company_admin']);
+  const canManage = hasAnyRole(['company_admin']);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, refetch } = useQuery({

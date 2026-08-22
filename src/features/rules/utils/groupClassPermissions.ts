@@ -4,7 +4,8 @@ import type { DocumentAccessPermissions } from '../api/rulesApi';
 export const PERMISSION_LABELS: Record<keyof DocumentAccessPermissions, string> = {
   view: 'Visualizar',
   download: 'Baixar',
-  upload: 'Enviar',
+  /** Ver `PERMISSION_HINTS.upload`: desde D-24 este flag concede enviar + editar + arquivar. */
+  upload: 'Alterar',
   share: 'Compartilhar',
   manage: 'Gerenciar',
 };

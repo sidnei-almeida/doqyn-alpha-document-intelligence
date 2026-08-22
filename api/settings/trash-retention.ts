@@ -3,7 +3,7 @@ import {
   getTrashRetentionSettings,
   updateTrashRetentionSettings,
 } from '../../server/services/trash/trashRetentionSettings.js';
-import { isDocumentAdmin } from '../../server/tenancy/documentAccess.js';
+import { userGovernsTenantScope } from '../../server/tenancy/documentAccess.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { ServiceError } from '../../server/utils/serviceErrors.js';
@@ -12,7 +12,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireDocumentAuthContext(req, res);
   if (!auth) return;
 
-  if (!isDocumentAdmin(auth.user)) {
+  // Governança de tenant, não de documento: o usuário único de um tenant PF configura a própria
+  // lixeira sem depender de papel administrativo (T-01-10).
+  if (!userGovernsTenantScope(auth.user, auth.ctx.storage)) {
     return res.status(403).json({
       message: 'Somente administradores podem alterar as configurações da lixeira.',
       code: 'TRASH_SETTINGS_FORBIDDEN',

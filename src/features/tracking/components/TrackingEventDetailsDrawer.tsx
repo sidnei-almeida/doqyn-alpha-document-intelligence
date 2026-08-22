@@ -147,19 +147,36 @@ export function TrackingEventDetailsDrawer({
                     <p className="mt-1 font-mono text-[11px] text-doqyn-subtle">
                       {event.document.documentId}
                     </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="mt-1 h-auto px-0 text-xs text-doqyn-accent-active"
-                      onClick={() =>
-                        navigate(
-                          `/tracking?documentId=${encodeURIComponent(event.document.documentId!)}`,
-                        )
-                      }
-                    >
-                      Ver timeline do documento
-                    </Button>
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto px-0 text-xs text-doqyn-accent-active"
+                        onClick={() =>
+                          navigate(
+                            `/tracking?documentId=${encodeURIComponent(event.document.documentId!)}`,
+                          )
+                        }
+                      >
+                        Ver timeline do documento
+                      </Button>
+                      {/* Investigar termina em "deixa eu ver esse documento": o atalho evita
+                          copiar o nome e procurar na Biblioteca. */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto px-0 text-xs text-doqyn-info"
+                        onClick={() =>
+                          navigate(
+                            `/biblioteca?preview=${encodeURIComponent(event.document.documentId!)}`,
+                          )
+                        }
+                      >
+                        Abrir documento
+                      </Button>
+                    </div>
                   </>
                 )}
                 {event.document.versionLabel && (

@@ -48,7 +48,8 @@ describe('r2 bucket naming', () => {
       tenantSlug: 'acme-corp',
     }).bucketName;
 
-    assert.match(bucket, /^doqyn-dev-t-acme-corp-[a-f0-9]{12}$/);
+    // Deriva do tenantId, não do slug — ver r2BucketNaming.ts.
+    assert.match(bucket, /^doqyn-dev-t-company-acme-corp-[a-f0-9]{12}$/);
     assert.equal(bucket.includes('cnpj'), false);
     assert.equal(bucket.includes('@'), false);
   });

@@ -1071,7 +1071,7 @@ export function DocumentSendPage() {
       technicalHint={analysisError?.devHint}
       onRetry={
         isBulkActive
-          ? bulkQueue.reprocessCurrent
+          ? () => bulkQueue.reprocessItem()
           : flowPhase === 'error'
             ? handleReprocess
             : undefined
@@ -1136,17 +1136,16 @@ export function DocumentSendPage() {
                 batchPhase={bulkQueue.batchPhase}
                 currentItem={bulkQueue.currentItem}
                 autoCountdown={bulkQueue.autoCountdown}
-                manualGate={bulkQueue.manualGate}
                 statusMessage={bulkQueue.statusMessage}
                 reviewSettings={bulkQueue.batchReviewSettings ?? reviewSettings}
                 isAuthenticated={isAuthenticated}
                 selectedItemId={workflow.selectedItemId}
                 onSelectItem={workflow.setSelectedItemId}
-                onPerItemNamingChange={bulkQueue.updateCurrentItemNaming}
-                onConfirmContinue={() => void bulkQueue.confirmCurrentAndContinue()}
+                onPerItemNamingChange={bulkQueue.updateItemNaming}
+                onConfirmContinue={(itemId) => void bulkQueue.confirmItemAndContinue(itemId)}
                 onCancelAuto={bulkQueue.cancelAutoCountdown}
-                onSkip={bulkQueue.skipCurrent}
-                onReprocess={bulkQueue.reprocessCurrent}
+                onSkip={bulkQueue.skipItem}
+                onReprocess={bulkQueue.reprocessItem}
                 onPause={bulkQueue.pauseBatch}
                 onResume={bulkQueue.resumeBatch}
                 onCancel={bulkQueue.cancelBatch}

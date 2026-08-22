@@ -89,11 +89,11 @@ export async function createDocumentCategory(
     throw new ServiceError('Já existe uma categoria com este slug.', 'DUPLICATE_SLUG', 409);
   }
 
+  // Sem escopo de tenant de propósito: `_id` é global na coleção compartilhada, então checar dentro
+  // do tenant não enxerga a `cat_contratos` da empresa vizinha e o insert estoura E11000. "Contratos"
+  // e "Financeiro" são nomes que toda empresa usa.
   let id = `cat_${slug.replace(/-/g, '_')}`;
-  const existingId = await collections.documentCategories.findOne({
-    ...scope,
-    _id: id,
-  } as Record<string, unknown>);
+  const existingId = await collections.documentCategories.findOne({ _id: id } as Record<string, unknown>);
 
   if (existingId) {
     id = `cat_${randomUUID().slice(0, 8)}`;

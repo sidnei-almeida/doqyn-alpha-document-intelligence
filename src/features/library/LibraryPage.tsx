@@ -56,6 +56,7 @@ import { useDeactivatedMutations } from './hooks/useDeactivatedMutations';
 import { useMoveDocumentMutations } from './hooks/useMoveDocumentMutations';
 import { MoveDocumentModal } from './components/MoveDocumentModal';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
+import { DocumentMetadataDrawer } from './components/DocumentMetadataDrawer';
 import { RequestSignatureModal } from '@/features/signature/RequestSignatureModal';
 import { SignaturesAssignedPanel } from '@/features/signature/components/SignaturesAssignedPanel';
 import { DocumentSignaturesDrawer } from '@/features/signature/DocumentSignaturesDrawer';
@@ -77,7 +78,7 @@ export function LibraryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { tenant, user, hasAnyRole } = useAuth();
-  const { state, update, clearFilters, collection, categories, documents, isLoading, isFetching, isError, toggleStar, isStarred } =
+  const { state, update, clearFilters, collection, categories, documents, isLoading, isError, toggleStar, isStarred } =
     useLibraryView();
   const filterCapabilities = useMemo(
     () => resolveCollectionFilterCapabilities(collection.id),
@@ -109,11 +110,7 @@ export function LibraryPage() {
   const isDeactivatedView = collection.id === 'desativados';
   const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
-  const canManageDeactivated = hasAnyRole([
-    'doqyn_admin',
-    'company_admin',
-    'individual_admin',
-  ]);
+  const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
@@ -147,6 +144,7 @@ export function LibraryPage() {
   const [detailsDrawer, setDetailsDrawer] = useState<LibrarySelection>(null);
   const [moveModalDocs, setMoveModalDocs] = useState<DocumentListItem[] | null>(null);
   const [shareModalDoc, setShareModalDoc] = useState<DocumentListItem | null>(null);
+  const [metadataDoc, setMetadataDoc] = useState<DocumentListItem | null>(null);
   const [transferModalDoc, setTransferModalDoc] = useState<DocumentListItem | null>(null);
   const [signatureModalDoc, setSignatureModalDoc] = useState<DocumentListItem | null>(null);
   const [signaturesDrawerDoc, setSignaturesDrawerDoc] = useState<DocumentListItem | null>(null);
@@ -330,6 +328,23 @@ export function LibraryPage() {
     [openUpdateVersionDrawer],
   );
 
+  // Abrir um documento específico por link — é como o Tracking devolve o usuário ao arquivo que
+  // ele estava investigando, sem obrigá-lo a procurar o nome na Biblioteca.
+  useEffect(() => {
+    const previewId = searchParams.get('preview')?.trim();
+    if (!previewId) return;
+
+    setViewer({ documentId: previewId, mode: 'preview' });
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params);
+        next.delete('preview');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     const fromUrl = searchParams.get('updateVersion')?.trim();
     if (fromUrl) {
@@ -447,6 +462,10 @@ export function LibraryPage() {
     },
     [isLifecycleArchiveView, selectedCount],
   );
+
+  const handleEditMetadata = useCallback((doc: DocumentListItem) => {
+    setMetadataDoc(doc);
+  }, []);
 
   const handleRequestSignature = useCallback(
     (doc: DocumentListItem) => {
@@ -695,11 +714,8 @@ export function LibraryPage() {
                       {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
                     </span>
                   ) : undefined}
-                  {isFetching && !isLoading ? (
-                    <span className="text-doqyn-subtle" aria-live="polite">
-                      Atualizando…
-                    </span>
-                  ) : null}
+                  {/* Sem aviso de "Atualizando…": a revalidação é silenciosa e a lista antiga
+                      fica na tela até a nova chegar. */}
                 </>
               }
               state={state}
@@ -761,6 +777,7 @@ export function LibraryPage() {
           onViewSignatures={handleViewSignatures}
           onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
           onTransferOwnership={(doc) => setTransferModalDoc(doc)}
+          onEditMetadata={handleEditMetadata}
         />
       )}
 
@@ -782,6 +799,7 @@ export function LibraryPage() {
         onUpdateDocument={handleUpdateDocument}
         onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
         onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
+        onEditMetadataFile={isLifecycleArchiveView ? undefined : handleEditMetadata}
         onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
         onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
         onDownloadSignedPdfFile={
@@ -801,6 +819,8 @@ export function LibraryPage() {
         documentId={updateVersionDocumentId}
         onClose={closeUpdateVersionDrawer}
       />
+
+      <DocumentMetadataDrawer document={metadataDoc} onClose={() => setMetadataDoc(null)} />
 
       <ShareDocumentModal
         open={Boolean(shareModalDoc)}
