@@ -80,3 +80,8 @@ NDA_*.pdf
 # Relatórios em PDF ficam fora do repo (~/Documents), junto do handover.
 # O gerador e o HTML continuam versionados — o PDF é só o artefato de entrega.
 docs/*.pdf
+
+# Artefatos de planejamento e instruções de agente — só local
+.planning/
+CLAUDE.md
+.claude/
