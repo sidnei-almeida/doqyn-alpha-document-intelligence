@@ -222,7 +222,12 @@ GRAFANA_ADMIN_PASSWORD="$(generate_base64_32)"
 
 ENCODED_PASSWORD="$(urlencode "$POSTGRES_PASSWORD")"
 DATABASE_URL_DIRECT="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@postgres-auth:5432/${POSTGRES_DB}"
-DATABASE_URL="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@pgbouncer:5432/${POSTGRES_DB}"
+# `?pgbouncer=true` é obrigatório: o pgbouncer roda em pool_mode=transaction, onde as
+# prepared statements do Prisma vazam entre clientes e o segundo a conectar recebe
+# `42P05: prepared statement "s0" already exists`. Sem o parâmetro, o auth-api entra em
+# loop de restart a cada recreate de container. Não vale para DATABASE_URL_DIRECT, que
+# fala direto com o Postgres (migrações).
+DATABASE_URL="postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@pgbouncer:5432/${POSTGRES_DB}?pgbouncer=true"
 
 OAUTH_GOOGLE_REDIRECT_URI="${PUBLIC_APP_URL%/}/oauth/google/callback"
 OAUTH_MICROSOFT_REDIRECT_URI="${PUBLIC_APP_URL%/}/oauth/microsoft/callback"

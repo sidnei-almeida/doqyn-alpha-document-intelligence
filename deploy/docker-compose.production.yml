@@ -118,7 +118,7 @@ services:
       # DATABASE_URL do .env tem a senha percent-encoded (setup-production-env.sh).
       # O fallback abaixo interpola a senha crua e só funciona com senha sem
       # caractere reservado de URL (@ / : # ? &) — por isso o .env vem primeiro.
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-doqyn_auth}?pgbouncer=true}
       DATABASE_URL_DIRECT: ${DATABASE_URL_DIRECT:-postgresql://${POSTGRES_USER:-doqyn_auth}:${POSTGRES_PASSWORD}@postgres-auth:5432/${POSTGRES_DB:-doqyn_auth}}
       REDIS_URL: redis://redis:6379
       REDIS_ENABLED: "true"
