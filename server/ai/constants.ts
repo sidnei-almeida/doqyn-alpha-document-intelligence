@@ -113,7 +113,7 @@ export const AI_ERROR_MESSAGES = {
   aiUnavailableReviewReason:
     'Limite temporário da IA atingido. Tente novamente mais tarde.',
   groqDailyTokenLimit:
-    'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset da cota ou use um modelo menor (ex.: llama-3.1-8b-instant).',
+    'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset da cota ou use um modelo menor (ex.: openai/gpt-oss-20b).',
   groqContextLimit:
     'O documento excede o limite de contexto do modelo. Reduza PDF_ANALYSIS_MAX_INPUT_CHARS ou envie um PDF menor.',
   groqRequestTimeout:

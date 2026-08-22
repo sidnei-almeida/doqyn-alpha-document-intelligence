@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
-describe('Auditoria B.7 — Vision OCR + pipeline debug + Groq Scout', () => {
+describe('Auditoria B.7 — Vision OCR + pipeline debug + modelo Groq', () => {
   it('credenciais Vision estão fora do git e path documentado', () => {
     assert.equal(existsSync(join(ROOT, 'axial-entropy-499915-b5-047358a41e9d.json')), false);
     const gitignore = read('.gitignore');
@@ -42,10 +42,12 @@ describe('Auditoria B.7 — Vision OCR + pipeline debug + Groq Scout', () => {
     assert.ok(extractor.includes('Vision NÃO chamado') || extractor.includes('ocrFallbackUsed: false'));
   });
 
-  it('.env.example recomenda Llama 4 Scout (não 70B)', () => {
+  it('.env.example documenta os modelos Groq em produção hoje', () => {
     const env = read('.env.example');
-    assert.ok(env.includes('meta-llama/llama-4-scout-17b-16e-instruct'));
-    assert.ok(env.includes('llama-3.3-70b-versatile'));
+    // A recomendação era Llama 4 Scout; a família llama-3.1-8b foi descontinuada pela Groq em
+    // 17/06/2026 e os gpt-oss passaram a ser os modelos de produção com cache de prompt.
+    assert.ok(env.includes('GROQ_MODEL=openai/gpt-oss-120b'));
+    assert.ok(env.includes('openai/gpt-oss-20b'));
   });
 
   it('health visionOcr não quebra status quando OCR desligado', async () => {

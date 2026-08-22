@@ -67,13 +67,13 @@ describe('pipeline Groq — remoção de no_ai', () => {
     }
   });
 
-  it('B. default GROQ_MODEL é llama-3.1-8b-instant', () => {
+  it('B. default GROQ_MODEL é openai/gpt-oss-120b', () => {
     const original = process.env.GROQ_MODEL;
     delete process.env.GROQ_MODEL;
 
     try {
-      assert.equal(DEFAULT_GROQ_MODEL, 'llama-3.1-8b-instant');
-      assert.equal(getGroqModelFromEnv(), 'llama-3.1-8b-instant');
+      assert.equal(DEFAULT_GROQ_MODEL, 'openai/gpt-oss-120b');
+      assert.equal(getGroqModelFromEnv(), 'openai/gpt-oss-120b');
     } finally {
       if (original !== undefined) {
         process.env.GROQ_MODEL = original;
@@ -149,7 +149,7 @@ describe('pipeline Groq — remoção de no_ai', () => {
   it('.env.example documenta Groq sem AI_MODE=no_ai', () => {
     const envExample = readFileSync(join(repoRoot, '.env.example'), 'utf8');
     assert.ok(envExample.includes('GROQ_API_KEY='));
-    assert.ok(envExample.includes('GROQ_MODEL=llama-3.1-8b-instant'));
+    assert.ok(envExample.includes('GROQ_MODEL=openai/gpt-oss-120b'));
     assert.ok(envExample.includes('GROQ_MAX_OUTPUT_TOKENS=1200'));
     assert.ok(envExample.includes('PDF_ANALYSIS_MAX_INPUT_CHARS=30000'));
     assert.equal(envExample.includes('AI_MODE=no_ai'), false);
