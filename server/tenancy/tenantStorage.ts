@@ -1,10 +1,20 @@
-import { COLLECTIONS } from '../db/constants.js';
 import type { MongoTenant, TenantType } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import type { ResolvedTenantCollectionNames } from './tenantResolver.js';
+import { resolveSharedCollections, type ResolvedTenantCollectionNames } from './tenantResolver.js';
 import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from './taxId.js';
 
-export type TenantStorageMode = 'dedicated_collections' | 'shared_individual_collection';
+// Reexportado daqui porque a maior parte do código já importa nomes de coleção via tenantStorage.
+export { resolveSharedCollections };
+
+/**
+ * Como as consultas do tenant são filtradas. **Não** define mais quais coleções ele usa: desde o
+ * Passo 7 todos os tenants compartilham o mesmo conjunto (ver `resolveSharedCollections`).
+ *
+ * - `shared_collections` — empresarial: escopo por `tenantId`.
+ * - `shared_individual_collection` — pessoa física: escopo por `ownerTenantId` + `ownerUserId`,
+ *   isolamento mais estreito porque um tenant PF tem um único usuário.
+ */
+export type TenantStorageMode = 'shared_collections' | 'shared_individual_collection';
 
 export type TenantStorageContext = {
   tenantId: string;
@@ -16,46 +26,6 @@ export type TenantStorageContext = {
   collections: ResolvedTenantCollectionNames;
 };
 
-function resolvePrefixedName(base: string, prefix: string): string {
-  return `${base}_${prefix}`;
-}
-
-function resolveGovernanceCollections(prefix: string): Pick<
-  ResolvedTenantCollectionNames,
-  'documentCategories' | 'documentGroups' | 'documentGroupMembers' | 'documentRules' | 'documentExtractionRules'
-> {
-  return {
-    documentCategories: resolvePrefixedName(COLLECTIONS.documentCategories, prefix),
-    documentGroups: resolvePrefixedName(COLLECTIONS.documentGroups, prefix),
-    documentGroupMembers: resolvePrefixedName(COLLECTIONS.documentGroupMembers, prefix),
-    documentRules: resolvePrefixedName(COLLECTIONS.documentRules, prefix),
-    documentExtractionRules: resolvePrefixedName(COLLECTIONS.documentExtractionRules, prefix),
-  };
-}
-
-function resolveBusinessCollections(prefix: string): ResolvedTenantCollectionNames {
-  return {
-    documents: resolvePrefixedName(COLLECTIONS.documents, prefix),
-    documentVersions: resolvePrefixedName(COLLECTIONS.documentVersions, prefix),
-    documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
-    processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
-    auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
-    ...resolveGovernanceCollections(prefix),
-  };
-}
-
-function resolveSharedIndividualCollections(): ResolvedTenantCollectionNames {
-  const prefix = SHARED_INDIVIDUAL_COLLECTION_PREFIX;
-  return {
-    documents: resolvePrefixedName(COLLECTIONS.documents, prefix),
-    documentVersions: resolvePrefixedName(COLLECTIONS.documentVersions, prefix),
-    documentChunks: resolvePrefixedName(COLLECTIONS.documentChunks, prefix),
-    processingJobs: resolvePrefixedName(COLLECTIONS.processingJobs, prefix),
-    auditLogs: resolvePrefixedName(COLLECTIONS.auditLogs, prefix),
-    ...resolveGovernanceCollections(prefix),
-  };
-}
-
 export function resolveTenantStorageContext(input: {
   tenant: MongoTenant;
   userId?: string;
@@ -64,15 +34,14 @@ export function resolveTenantStorageContext(input: {
   const { tenant } = input;
 
   if (tenant.tenantType === 'business') {
-    const collectionPrefix = tenant.isolation.collectionPrefix?.trim() || tenant.tenantId;
     return {
       tenantId: tenant.tenantId,
       tenantType: 'business',
-      storageMode: 'dedicated_collections',
-      collectionPrefix,
+      storageMode: 'shared_collections',
+      collectionPrefix: tenant.isolation.collectionPrefix?.trim() || tenant.tenantId,
       userId: input.userId,
       membershipId: input.membershipId,
-      collections: resolveBusinessCollections(collectionPrefix),
+      collections: resolveSharedCollections(),
     };
   }
 
@@ -84,7 +53,7 @@ export function resolveTenantStorageContext(input: {
       collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
       userId: input.userId,
       membershipId: input.membershipId,
-      collections: resolveSharedIndividualCollections(),
+      collections: resolveSharedCollections(),
     };
   }
 
@@ -99,15 +68,14 @@ export function resolveTenantStorageContextFromIds(input: {
   membershipId?: string;
 }): TenantStorageContext {
   if (input.tenantType === 'business') {
-    const collectionPrefix = input.collectionPrefix?.trim() || input.tenantId;
     return {
       tenantId: input.tenantId,
       tenantType: 'business',
-      storageMode: 'dedicated_collections',
-      collectionPrefix,
+      storageMode: 'shared_collections',
+      collectionPrefix: input.collectionPrefix?.trim() || input.tenantId,
       userId: input.userId,
       membershipId: input.membershipId,
-      collections: resolveBusinessCollections(collectionPrefix),
+      collections: resolveSharedCollections(),
     };
   }
 
@@ -118,7 +86,7 @@ export function resolveTenantStorageContextFromIds(input: {
     collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
     userId: input.userId,
     membershipId: input.membershipId,
-    collections: resolveSharedIndividualCollections(),
+    collections: resolveSharedCollections(),
   };
 }
 
@@ -127,6 +95,10 @@ export function assertStorageModeAccess(
   expected: TenantStorageMode,
 ): void {
   if (context.storageMode !== expected) {
-    throw new ServiceError('Operação não permitida para este tipo de tenant.', 'STORAGE_MODE_MISMATCH', 403);
+    throw new ServiceError(
+      'Operação não permitida para este tipo de tenant.',
+      'STORAGE_MODE_MISMATCH',
+      403,
+    );
   }
 }

@@ -87,6 +87,7 @@ export function TrackingEventsTable({
             <TrackingDocumentCell
               name={item.document.name}
               versionLabel={item.document.versionLabel}
+              documentId={item.document.documentId ?? undefined}
             />
           ),
         },

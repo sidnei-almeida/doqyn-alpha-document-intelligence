@@ -2,6 +2,7 @@ import { useIsFetching } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
+import { ExpiryAlertsBell } from '@/features/expiry/components/ExpiryAlertsBell';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
 /** Barra superior — busca protagonista, ações discretas e usuário à direita. */
@@ -19,6 +20,7 @@ export function WorkspaceTopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        <ExpiryAlertsBell className={iconButtonClass} />
         <a
           href="https://doqyn.com"
           target="_blank"

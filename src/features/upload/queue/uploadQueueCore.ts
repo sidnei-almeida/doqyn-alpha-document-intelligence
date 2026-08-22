@@ -35,7 +35,18 @@ export type AutoSaveParams = {
   perItem?: PerItemNamingChoice | null;
 };
 
-export const UPLOAD_IN_FLIGHT_STATUSES = ['analyzing', 'confirming', 'review', 'ai_paused'] as const;
+/**
+ * Estados que ocupam a esteira: enquanto um deles existe, o próximo arquivo não começa.
+ *
+ * `review` e `ai_paused` **não** entram aqui, e essa é a diferença que importa. Eles esperam uma
+ * pessoa, não o servidor. Enquanto contavam como ocupados, um único arquivo mandado para revisão
+ * parava o lote inteiro: os outros vinte ficavam em "Na fila" até alguém abrir a tela e resolver o
+ * primeiro. Numa empresa enviando o acervo, isso obriga uma pessoa sentada na tela a cada arquivo.
+ */
+export const UPLOAD_IN_FLIGHT_STATUSES = ['analyzing', 'confirming'] as const;
+
+/** Estados parados esperando decisão humana. Saem da esteira sem sair da fila. */
+export const UPLOAD_PARKED_STATUSES = ['review', 'ai_paused', 'still_running'] as const;
 export const BULK_IN_FLIGHT_STATUSES = ['analyzing', 'saving', 'auto_countdown'] as const;
 
 export function sleep(ms: number): Promise<void> {
@@ -112,6 +123,20 @@ export function findNextQueuedItem<T extends { status: string }>(items: T[]): T 
   return items.find((item) => item.status === 'queued') ?? null;
 }
 
+/**
+ * Próximo enfileirado ignorando os que já foram despachados.
+ *
+ * Com mais de uma análise em voo, o despacho acontece antes de o React repintar a lista: os itens
+ * recém-iniciados ainda constam como `queued` no instantâneo, e sem a exclusão o mesmo arquivo
+ * seria enviado duas vezes na mesma rodada.
+ */
+export function findNextQueuedItemExcluding<T extends { id: string; status: string }>(
+  items: T[],
+  excludedIds: ReadonlySet<string>,
+): T | null {
+  return items.find((item) => item.status === 'queued' && !excludedIds.has(item.id)) ?? null;
+}
+
 export function hasInFlightItem<T extends { status: string }>(
   items: T[],
   inFlightStatuses: readonly string[],
@@ -121,6 +146,13 @@ export function hasInFlightItem<T extends { status: string }>(
 
 export function hasInFlightUploadItem(items: UploadQueueItem[]): boolean {
   return hasInFlightItem(items, UPLOAD_IN_FLIGHT_STATUSES);
+}
+
+/** Quantos arquivos estão parados esperando alguém decidir. */
+export function countParkedUploadItems(items: UploadQueueItem[]): number {
+  return items.filter((item) =>
+    UPLOAD_PARKED_STATUSES.includes(item.status as (typeof UPLOAD_PARKED_STATUSES)[number]),
+  ).length;
 }
 
 export function hasInFlightBulkItem(items: BulkUploadItem[]): boolean {

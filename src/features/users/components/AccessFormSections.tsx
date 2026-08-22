@@ -69,17 +69,18 @@ export function GroupsEmptyState({
   );
 }
 
+/**
+ * Não recebe mais um gate de papel global: o papel administrativo de plataforma foi eliminado do
+ * produto, então não há checkbox a desabilitar nem aviso de "permissões globais" a exibir. Todo
+ * papel listado aqui é atribuível por quem já passou pelo guard de gestão de usuários.
+ */
 export function PlatformRolesSection({
   value,
   onChange,
-  canAssignDoqynAdmin,
 }: {
   value: PlatformRole[];
   onChange: (roles: PlatformRole[]) => void;
-  canAssignDoqynAdmin: boolean;
 }) {
-  const showsDoqynAdminWarning = value.includes('doqyn_admin');
-
   return (
     <AccessFormSection
       title="Roles do sistema"
@@ -88,7 +89,6 @@ export function PlatformRolesSection({
       <div className="space-y-2">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
           const meta = getPlatformRoleMeta(role);
-          const disabled = role === 'doqyn_admin' && !canAssignDoqynAdmin;
           const checked = value.includes(role);
 
           return (
@@ -98,7 +98,6 @@ export function PlatformRolesSection({
             >
               <Checkbox
                 checked={checked}
-                disabled={disabled}
                 onChange={() => {
                   if (checked) {
                     onChange(value.filter((item) => item !== role));
@@ -113,12 +112,6 @@ export function PlatformRolesSection({
           );
         })}
       </div>
-      {showsDoqynAdminWarning && (
-        <p className="rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-          Essa role concede permissões administrativas globais. Use apenas para administradores da
-          plataforma.
-        </p>
-      )}
     </AccessFormSection>
   );
 }

@@ -4,7 +4,7 @@ import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import { createReportWriter, isApplyFlag } from './lib/reportUtils.js';
 import { buildDevStorageObjectKey } from './lib/devStorage.js';
 
@@ -42,7 +42,7 @@ async function main() {
   const details: string[] = [];
 
   for (const tenant of tenants) {
-    const names = resolveTenantCollectionNames(tenant);
+    const names = resolveSharedCollections();
     const col = db.collection(names.documentVersions);
     const versions = await col.find({}).toArray();
 

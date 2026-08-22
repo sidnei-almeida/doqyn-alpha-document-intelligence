@@ -615,6 +615,11 @@
     bottom: 1.25rem;
   }
 
+  /* `unstyled: true` no Toaster desliga o CSS do sonner inteiro, animação de entrada e saída
+     junto — por isso o aviso aparecia e sumia seco. O sonner continua marcando o estado em
+     `data-mounted` / `data-removed`, então a transição fica por nossa conta.
+     A duração é menor que os 200ms que o sonner espera antes de desmontar: transição mais longa
+     que isso é cortada no meio e volta o corte seco. */
   .app-toast {
     display: flex;
     align-items: center;
@@ -628,6 +633,21 @@
     color: var(--toast-text);
     box-shadow: var(--toast-shadow);
     pointer-events: auto;
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 180ms ease,
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-toast[data-mounted='true'] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .app-toast[data-removed='true'] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
   }
 
   .app-toast [data-icon] {
@@ -2600,13 +2620,35 @@
     }
   }
 
+  /* Saída da fila de upload. A duração casa com DISMISS_ANIMATION_MS em UploadQueueDrawer.tsx —
+     mexer aqui sem mexer lá faz a fila sumir seca no meio da animação. */
+  .queue-drawer-leave {
+    animation: queue-drawer-leave 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  @keyframes queue-drawer-leave {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .workspace-enter,
     .drawer-enter-right,
     .overlay-scale-in,
     .queue-drawer-enter,
+    .queue-drawer-leave,
     .menu-enter {
       animation: none !important;
+    }
+
+    .app-toast {
+      transition: none !important;
     }
   }
 

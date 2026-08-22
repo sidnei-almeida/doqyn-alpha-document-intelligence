@@ -6,13 +6,11 @@ import {
   removeProfileAvatar,
   uploadProfileAvatar,
 } from '../../server/services/profile/profileAvatarService.js';
+import { getProfileAvatarConfig } from '../../server/services/profile/profileAvatarConfig.js';
 import { emitTrackingEvent } from '../../server/services/tracking/trackingService.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
-function setAvatarCacheHeaders(
-  res: VercelResponse,
-  etag?: string,
-): void {
+function setAvatarCacheHeaders(res: VercelResponse, etag?: string): void {
   res.setHeader('Cache-Control', 'private, max-age=3600');
   res.setHeader('Vary', 'Cookie, Authorization');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -25,8 +23,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     try {
-      const sizeRaw = typeof req.query.size === 'string' ? Number.parseInt(req.query.size, 10) : undefined;
-      const versionRaw = typeof req.query.v === 'string' ? Number.parseInt(req.query.v, 10) : undefined;
+      const sizeRaw =
+        typeof req.query.size === 'string' ? Number.parseInt(req.query.size, 10) : undefined;
+      const versionRaw =
+        typeof req.query.v === 'string' ? Number.parseInt(req.query.v, 10) : undefined;
       const file = await readProfileAvatarBytes({
         userId: user.id,
         size: Number.isFinite(sizeRaw) ? sizeRaw : undefined,
@@ -52,9 +52,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { file } = await parseMultipart(req);
+      // Corte no stream com o teto do próprio avatar (5 MB por padrão), não com o de documentos.
+      const { file } = await parseMultipart(req, {
+        maxFileBytes: getProfileAvatarConfig().maxBytes,
+      });
       if (!file) {
-        return res.status(400).json({ message: 'Campo avatar é obrigatório.', code: 'AVATAR_MISSING' });
+        return res
+          .status(400)
+          .json({ message: 'Campo avatar é obrigatório.', code: 'AVATAR_MISSING' });
       }
 
       const profile = await uploadProfileAvatar({
@@ -70,7 +75,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (isServiceError(error)) {
         const auditCtx = {
           tenantId: user.tenantId ?? user.companyId,
-          tenantType: user.tenantType === 'individual' ? ('individual' as const) : ('business' as const),
+          tenantType:
+            user.tenantType === 'individual' ? ('individual' as const) : ('business' as const),
           collectionPrefix: user.tenantId ?? user.companyId,
           ownerUserId: user.id,
           actorUserId: user.id,
@@ -80,14 +86,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           actorEmail: user.email,
           actorRole: user.role,
         };
-        await emitTrackingEvent(auditCtx, {
-          action: 'user.avatar_upload_failed',
-          description: 'Falha no upload de avatar.',
-          metadata: {
-            reason: error.message,
-            code: error.code,
+        await emitTrackingEvent(
+          auditCtx,
+          {
+            action: 'user.avatar_upload_failed',
+            description: 'Falha no upload de avatar.',
+            metadata: {
+              reason: error.message,
+              code: error.code,
+            },
           },
-        }, req).catch(() => undefined);
+          req,
+        ).catch(() => undefined);
 
         return res.status(error.statusCode).json({ message: error.message, code: error.code });
       }

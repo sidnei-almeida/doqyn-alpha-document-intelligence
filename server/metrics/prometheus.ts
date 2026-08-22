@@ -116,6 +116,28 @@ export const analysisJobDurationSeconds = new Histogram({
   registers: [prometheusRegistry],
 });
 
+export const chunkingJobsTotal = new Counter({
+  name: 'doqyn_chunking_jobs_total',
+  help: 'Jobs de fatiamento de PDF por resultado',
+  labelNames: ['status'] as const,
+  registers: [prometheusRegistry],
+});
+
+export const chunkingJobDurationSeconds = new Histogram({
+  name: 'doqyn_chunking_job_duration_seconds',
+  help: 'Duração do fatiamento de PDF no worker',
+  labelNames: ['status'] as const,
+  buckets: [0.5, 1, 2, 5, 10, 20, 30, 45, 60, 120],
+  registers: [prometheusRegistry],
+});
+
+export const analysisSaturationRequeuesTotal = new Counter({
+  name: 'doqyn_analysis_saturation_requeues_total',
+  help: 'Jobs de análise devolvidos à fila por saturação da vazão da Groq',
+  labelNames: ['job_kind'] as const,
+  registers: [prometheusRegistry],
+});
+
 export const aiProviderRequestsTotal = new Counter({
   name: 'doqyn_ai_provider_requests_total',
   help: 'Chamadas ao provedor de IA',
@@ -224,6 +246,23 @@ export function recordAnalysisJobCompletion(input: {
   const labels = { job_kind: input.jobKind, status: input.status };
   analysisJobsTotal.inc(labels);
   analysisJobDurationSeconds.observe(labels, input.durationSeconds);
+}
+
+export function recordChunkingJobCompletion(input: {
+  status: 'completed' | 'failed';
+  durationSeconds: number;
+}): void {
+  if (!isPrometheusEnabled()) return;
+
+  const labels = { status: input.status };
+  chunkingJobsTotal.inc(labels);
+  chunkingJobDurationSeconds.observe(labels, input.durationSeconds);
+}
+
+export function recordAnalysisSaturationRequeue(input: { jobKind: string }): void {
+  if (!isPrometheusEnabled()) return;
+
+  analysisSaturationRequeuesTotal.inc({ job_kind: input.jobKind });
 }
 
 export function recordAiProviderRequest(input: {

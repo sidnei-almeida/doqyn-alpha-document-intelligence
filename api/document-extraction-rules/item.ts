@@ -23,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             namingTemplate: body.namingTemplate as string | undefined,
             minimumConfidence: body.minimumConfidence as number | undefined,
             active: body.active as boolean | undefined,
+            expiryAlerts: body.expiryAlerts as never,
           },
           { ownerUserId: user.id },
         );

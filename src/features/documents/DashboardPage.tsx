@@ -23,7 +23,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [period, setPeriod] = useState<DashboardPeriodKey>('30d');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
-  const { data, isLoading, isError, refetch, isFetching } = useDashboardOverview(period);
+  const { data, isLoading, isError, refetch } = useDashboardOverview(period);
 
   const metrics = useMemo(
     () => (data ? buildOverviewMetrics(data, period) : []),
@@ -68,12 +68,9 @@ export function DashboardPage() {
       actions={<OverviewHeaderActions period={period} onPeriodChange={setPeriod} />}
       bodyClassName="overview-page w-full gap-6"
     >
-      {isFetching && !isLoading && (
-        <p className="shrink-0 text-xs text-doqyn-subtle" aria-live="polite">
-          Atualizando métricas…
-        </p>
-      )}
-
+      {/* Revalidação é silenciosa: o aviso "Atualizando métricas…" entrava e saía do fluxo do
+          layout a cada refetch, empurrando o painel inteiro para baixo. O dado antigo continua
+          na tela até o novo chegar — não há nada que o usuário precise fazer com essa espera. */}
       <OverviewSummaryStrip metrics={metrics} onNavigate={(path) => navigate(path)} />
 
       <div className="overview-main-grid grid min-h-0 flex-1 gap-6 xl:grid-cols-[1.55fr_1fr] xl:items-stretch">

@@ -1,48 +1,28 @@
 DOQYN — Auditoria de uso de coleções MongoDB no código
-Data: 2026-06-25T17:28:46.460Z
+Data: 2026-08-13T11:03:06.361Z
 Relatório sanitizado — sem URI, secrets ou PII.
 
 ================================================================================
 RESUMO
 ================================================================================
-Ocorrências analisadas: 166
-Risco flat tenant-scoped: 0
-Precisam getTenantCollections: 0
+Ocorrências analisadas: 194
+Risco flat tenant-scoped: 25
+Precisam getTenantCollections: 25
 
 ================================================================================
 DETALHES POR ARQUIVO
 ================================================================================
-
--- api/access-groups/index.ts
-   L18 | access_groups | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-   L38 | access_groups | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-
--- api/access-groups/item.ts
-   L24 | access_groups | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-
--- api/access-groups/toggle-active.ts
-   L23 | access_groups | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-
--- api/document-classes/index.ts
-   L18 | document_classes | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-   L51 | document_classes | OK_DOCUMENTATION
-   Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-classes/item.ts
    L32 | document_classes | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-classes/notifications.ts
-   L34 | document_classes | OK_DOCUMENTATION
+   L39 | document_classes | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-classes/permissions.ts
-   L25 | document_classes | OK_DOCUMENTATION
+   L27 | document_classes | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-classes/toggle-active.ts
@@ -52,16 +32,30 @@ DETALHES POR ARQUIVO
 -- api/document-rules/index.ts
    L19 | document_rules | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
-   L59 | document_rules | OK_DOCUMENTATION
+   L56 | document_rules | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-rules/item.ts
-   L31 | document_rules | OK_DOCUMENTATION
+   L51 | document_rules | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
 
 -- api/document-rules/toggle-active.ts
    L23 | document_rules | OK_DOCUMENTATION
    Recomendação: Metadata de log de API — não é acesso MongoDB direto.
+
+-- scripts/assert-no-flat-tenant-writes.ts
+   L14 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L14 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L14 | documents | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+
+-- scripts/audit-demo-consistency.ts
+   L74 | tenants | OK_GLOBAL_REGISTRY
+   Recomendação: Uso permitido — coleção de registry global.
+   L74 | tenants | OK_GLOBAL_REGISTRY
+   Recomendação: Uso permitido — coleção de registry global.
 
 -- scripts/audit-etapa4-cleanup.mjs
    L61 | access_groups | OK_TEST_OR_MOCK
@@ -108,80 +102,147 @@ DETALHES POR ARQUIVO
    Recomendação: Script operacional — acesso legado permitido com dry-run.
 
 -- scripts/audit-mongodb-schema.ts
-   L344 | access_groups | OK_MIGRATION_SCRIPT
+   L359 | access_groups | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L349 | access_groups | OK_MIGRATION_SCRIPT
+   L364 | access_groups | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L353 | access_groups | OK_MIGRATION_SCRIPT
+   L368 | access_groups | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L386 | document_classes | OK_MIGRATION_SCRIPT
+   L401 | document_classes | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L386 | document_classes | OK_MIGRATION_SCRIPT
+   L401 | document_classes | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L390 | document_classes | OK_MIGRATION_SCRIPT
+   L405 | document_classes | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L394 | document_rules | OK_MIGRATION_SCRIPT
+   L409 | document_rules | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L394 | document_rules | OK_MIGRATION_SCRIPT
+   L409 | document_rules | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L397 | document_rules | OK_MIGRATION_SCRIPT
+   L412 | document_rules | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L400 | document_rules | OK_MIGRATION_SCRIPT
+   L415 | document_rules | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L404 | documents | OK_MIGRATION_SCRIPT
+   L419 | documents | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L404 | document_versions | OK_MIGRATION_SCRIPT
+   L419 | document_versions | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L407 | documents | OK_MIGRATION_SCRIPT
+   L422 | documents | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L410 | documents | OK_MIGRATION_SCRIPT
+   L425 | documents | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L413 | documents | OK_MIGRATION_SCRIPT
-   Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L446 | document_versions | OK_MIGRATION_SCRIPT
-   Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L448 | document_versions | OK_MIGRATION_SCRIPT
-   Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L454 | document_versions | OK_MIGRATION_SCRIPT
-   Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L457 | document_versions | OK_MIGRATION_SCRIPT
+   L428 | documents | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
    L461 | document_versions | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L463 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L469 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
    L472 | document_versions | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L496 | processing_jobs | OK_MIGRATION_SCRIPT
+   L476 | document_versions | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L498 | processing_jobs | OK_MIGRATION_SCRIPT
+   L487 | document_versions | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L504 | processing_jobs | OK_MIGRATION_SCRIPT
+   L511 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L509 | processing_jobs | OK_MIGRATION_SCRIPT
-   Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L514 | processing_jobs | OK_MIGRATION_SCRIPT
+   L513 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
    L519 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L535 | audit_logs | OK_MIGRATION_SCRIPT
+   L524 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L540 | audit_logs | OK_MIGRATION_SCRIPT
+   L529 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L546 | audit_logs | OK_MIGRATION_SCRIPT
+   L534 | processing_jobs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L553 | audit_logs | OK_MIGRATION_SCRIPT
+   L550 | audit_logs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L600 | document_versions | OK_MIGRATION_SCRIPT
+   L555 | audit_logs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L602 | processing_jobs | OK_MIGRATION_SCRIPT
+   L561 | audit_logs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L604 | audit_logs | OK_MIGRATION_SCRIPT
+   L563 | audit_logs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
-   L633 | access_groups | OK_MIGRATION_SCRIPT
+   L570 | audit_logs | OK_MIGRATION_SCRIPT
    Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L617 | document_versions | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L619 | processing_jobs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L621 | audit_logs | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+   L650 | access_groups | OK_MIGRATION_SCRIPT
+   Recomendação: Script operacional — acesso legado permitido com dry-run.
+
+-- scripts/audit-tenant-groups-report.ts
+   L56 | access_groups | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L56 | access_groups | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L56 | access_groups | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
 
 -- scripts/cleanup-dev-orphan-groups.ts
    L50 | tenant_members | OK_GLOBAL_REGISTRY
    Recomendação: Uso permitido — coleção de registry global.
+
+-- scripts/drop-empty-legacy-collections.ts
+   L16 | document_classes | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L17 | access_groups | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- scripts/mongo-cleanup/classification.mjs
+   L10 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L11 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L13 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L17 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L19 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L20 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L21 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L46 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L47 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L49 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L53 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L55 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L56 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L67 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L68 | document_versions | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L70 | document_classes | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L74 | document_rules | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L76 | processing_jobs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L77 | audit_logs | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+   L78 | access_groups | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
+
+-- scripts/r2-env-check.mjs
+   L121 | documents | OK_TEST_OR_MOCK
+   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
 
 -- scripts/test-etapa3-api.mjs
    L319 | access_groups | OK_TEST_OR_MOCK
@@ -281,46 +342,6 @@ DETALHES POR ARQUIVO
    L309 | audit_logs | OK_TEST_OR_MOCK
    Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
 
--- scripts/test-no-ai.mjs
-   L129 | documents | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L129 | documents | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L129 | documents | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L130 | document_versions | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L130 | document_versions | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L130 | document_versions | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L131 | processing_jobs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L131 | processing_jobs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L131 | processing_jobs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L133 | audit_logs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L133 | audit_logs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L140 | documents | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L145 | documents | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L148 | document_versions | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L156 | document_versions | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L158 | processing_jobs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L159 | processing_jobs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L161 | audit_logs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-   L162 | audit_logs | OK_TEST_OR_MOCK
-   Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
-
 -- scripts/validate-flow-internal.mjs
    L71 | document_classes | OK_TEST_OR_MOCK
    Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
@@ -365,38 +386,148 @@ DETALHES POR ARQUIVO
    L148 | audit_logs | OK_TEST_OR_MOCK
    Recomendação: Teste/mock — atualizar para coleções prefixadas quando possível.
 
+-- server/apiServer.ts
+   L429 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- server/audit/documentAuditLogService.ts
+   L474 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
 -- server/db/constants.ts
-   L18 | access_groups | OK_TENANCY_LAYER
+   L31 | access_groups | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L19 | document_classes | OK_TENANCY_LAYER
+   L33 | document_classes | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L20 | document_rules | OK_TENANCY_LAYER
+   L38 | document_rules | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L21 | documents | OK_TENANCY_LAYER
+   L41 | documents | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L22 | document_versions | OK_TENANCY_LAYER
+   L42 | document_versions | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L23 | processing_jobs | OK_TENANCY_LAYER
+   L44 | processing_jobs | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
-   L24 | audit_logs | OK_TENANCY_LAYER
+   L45 | audit_logs | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+
+-- server/services/documentRulesService.ts
+   L152 | document_rules | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L172 | document_classes | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L173 | document_rules | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- server/storage/storageConfig.ts
+   L46 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- server/storage/storageKeys.ts
+   L99 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L117 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L154 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L175 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L218 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- server/tenancy/resolveTenantStorageScope.ts
+   L52 | documents | OK_TENANCY_LAYER
+   Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
+   L114 | documents | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
 
 -- server/tenancy/tenantResolver.ts
-   L9 | documents | OK_TENANCY_LAYER
+   L10 | documents | OK_TENANCY_LAYER
    Recomendação: Camada de tenancy — define nomes base, não acessa dados flat em runtime.
 
--- src/features/documents/DocumentsPage.tsx
-   L30 | documents | OK_TEST_OR_MOCK
+-- src/components/layout/WorkspaceTopBar.tsx
+   L11 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/features/dashboard/utils/buildOverviewMetrics.ts
+   L21 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/features/documents/hooks/useDocuments.ts
+   L23 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/features/expiry/components/DocumentExpiryEditor.tsx
+   L190 | documents | OK_TEST_OR_MOCK
    Recomendação: React Query key — não é coleção MongoDB.
 
--- src/features/upload/UploadPage.tsx
-   L89 | documents | OK_TEST_OR_MOCK
-   Recomendação: React Query key — não é coleção MongoDB.
+-- src/features/library/hooks/useFavorites.ts
+   L54 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/features/library/utils/libraryQueryInvalidation.ts
+   L11 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L11 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+   L13 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/features/tenant/tenantLiveSync.ts
+   L24 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
+
+-- src/legal/terms.ts
+   L45 | documents | RISK_TENANT_SCOPED_FLAT_COLLECTION
+   Recomendação: Substituir por getTenantCollections(tenantId).
+   → Trocar por getTenantCollections(tenantId)
 
 ================================================================================
 RISCOS (flat tenant-scoped em código produtivo)
 ================================================================================
-Nenhum risco identificado em server/api.
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/apiServer.ts:429 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/audit/documentAuditLogService.ts:474 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/services/documentRulesService.ts:152 — document_rules
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/services/documentRulesService.ts:172 — document_classes
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/services/documentRulesService.ts:173 — document_rules
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageConfig.ts:46 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageKeys.ts:99 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageKeys.ts:117 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageKeys.ts:154 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageKeys.ts:175 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] server/storage/storageKeys.ts:218 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/components/layout/WorkspaceTopBar.tsx:11 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/dashboard/utils/buildOverviewMetrics.ts:21 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/documents/hooks/useDocuments.ts:23 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/library/hooks/useFavorites.ts:54 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/library/utils/libraryQueryInvalidation.ts:11 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/library/utils/libraryQueryInvalidation.ts:11 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/library/utils/libraryQueryInvalidation.ts:13 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/features/tenant/tenantLiveSync.ts:24 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] src/legal/terms.ts:45 — documents
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] scripts/audit-tenant-groups-report.ts:56 — access_groups
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] scripts/audit-tenant-groups-report.ts:56 — access_groups
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] scripts/audit-tenant-groups-report.ts:56 — access_groups
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] scripts/drop-empty-legacy-collections.ts:16 — document_classes
+[RISK_TENANT_SCOPED_FLAT_COLLECTION] scripts/drop-empty-legacy-collections.ts:17 — access_groups
 
 ================================================================================
 FIM

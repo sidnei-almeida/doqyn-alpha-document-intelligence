@@ -22,7 +22,7 @@ import type {
   MongoVersionMetadataField,
 } from '../server/db/types.js';
 import { projectDocumentSearchMeta } from '../server/services/confirm/projectSearchMeta.js';
-import { resolveTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
+import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
 import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from '../server/tenancy/taxId.js';
 import { createReportWriter, isApplyFlag } from './lib/reportUtils.js';
 
@@ -170,18 +170,12 @@ async function main() {
     .find({ status: { $in: ['active', 'pending'] } })
     .toArray();
 
-  const pairs = new Map<string, { documents: string; versions: string }>();
-
-  for (const tenant of tenants) {
-    const names = resolveTenantCollectionNames(tenant);
-    pairs.set(names.documents, { documents: names.documents, versions: names.documentVersions });
-  }
-
-  // Pool individual compartilhado
-  pairs.set(`documents_${SHARED_INDIVIDUAL_COLLECTION_PREFIX}`, {
-    documents: `documents_${SHARED_INDIVIDUAL_COLLECTION_PREFIX}`,
-    versions: `document_versions_${SHARED_INDIVIDUAL_COLLECTION_PREFIX}`,
-  });
+  // Coleções compartilhadas: um único par para todos os tenants. O laço por tenant sumiu junto
+  // com as coleções prefixadas.
+  const shared = resolveSharedCollections();
+  const pairs = new Map<string, { documents: string; versions: string }>([
+    [shared.documents, { documents: shared.documents, versions: shared.documentVersions }],
+  ]);
 
   const allStats: PairStats[] = [];
   for (const pair of pairs.values()) {

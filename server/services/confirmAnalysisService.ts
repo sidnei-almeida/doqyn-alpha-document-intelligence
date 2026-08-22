@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import type { ExtractedMetadataField } from '../ai/types/documentAi.types.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
@@ -37,16 +38,12 @@ import {
   type NamingMode,
 } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
-import { persistChunksAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
+import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import {
   buildInitialDocumentOwnershipFields,
 } from '../utils/documentMutationFields.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
-import { sanitizeFileExtension } from '../storage/storageKeys.js';
-import {
-  extensionFromFileName,
-} from '../../shared/storageFileName.js';
 import {
   ConfirmAnalysisError,
   assertAiSuggestedNamePresent,
@@ -76,12 +73,35 @@ const classificationSchema = z.object({
   evidence: z.array(evidenceSchema).optional().default([]),
 });
 
+/**
+ * Origens que o pipeline pode carimbar num campo extraído.
+ *
+ * O `Record` não é decoração: ele obriga o compilador a exigir uma entrada para cada membro de
+ * `ExtractedMetadataField['source']`. Foi a falta disso que quebrou o produto — `derived` entrou
+ * no pipeline (data final calculada a partir de âncora + prazo, em `deriveEndDates`) sem entrar
+ * aqui, e todo documento com data derivada era recusado no confirm com "Payload inválido", sem
+ * nada no log dizendo qual campo. Agora a fonte nova quebra o build, não o upload do cliente.
+ */
+const METADATA_FIELD_SOURCE_MAP: Record<ExtractedMetadataField['source'], true> = {
+  document_text: true,
+  no_ai: true,
+  derived: true,
+  // Campo corrigido à mão na revisão do envio. Entra aqui porque o `Record` acima é o que impede
+  // uma origem nova de chegar ao confirm sem ninguém perceber.
+  manual: true,
+};
+
+const METADATA_FIELD_SOURCES = Object.keys(METADATA_FIELD_SOURCE_MAP) as [
+  ExtractedMetadataField['source'],
+  ...ExtractedMetadataField['source'][],
+];
+
 const metadataFieldSchema = z.object({
   label: z.string(),
   value: z.union([z.string(), z.number(), z.null()]),
   normalizedValue: z.union([z.string(), z.number(), z.null()]).optional(),
   confidence: z.number(),
-  source: z.enum(['document_text', 'no_ai']).optional().default('document_text'),
+  source: z.enum(METADATA_FIELD_SOURCES).optional().default('document_text'),
   evidence: evidenceSchema.optional(),
   currency: z.string().optional(),
 });
@@ -95,15 +115,29 @@ const extractionSchema = z.object({
   reviewReasons: z.array(z.string()),
 });
 
+/**
+ * Nome opcional que aceita `null` como "não veio".
+ *
+ * A análise devolve `recommendedFileName: null` sempre que não chega a sugerir nome — o caso
+ * normal quando a classificação fica inconclusiva. O cliente repassa esse `null` adiante, e um
+ * `.optional()` seco só aceita `undefined`: o documento era recusado com "Payload inválido" na
+ * confirmação, justamente no caminho em que o usuário revisou e decidiu salvar assim mesmo.
+ */
+const optionalName = z
+  .string()
+  .min(1)
+  .nullish()
+  .transform((value) => value ?? undefined);
+
 export const confirmAnalysisSchema = z.object({
   jobId: z.string().optional(),
   originalFileName: z.string().min(1),
-  mimeType: z.string().min(1).optional(),
-  recommendedFileName: z.string().min(1).optional(),
-  aiSuggestedFileName: z.string().min(1).optional(),
+  mimeType: optionalName,
+  recommendedFileName: optionalName,
+  aiSuggestedFileName: optionalName,
   namingMode: z.enum(['ai_suggested', 'original', 'manual']).optional().default('ai_suggested'),
-  finalFileName: z.string().min(1).optional(),
-  selectedFileName: z.string().min(1).optional(),
+  finalFileName: optionalName,
+  selectedFileName: optionalName,
   fileHash: z.string().regex(/^[a-f0-9]{64}$/, 'Hash SHA256 inválido'),
   fileSizeBytes: z.number().int().nonnegative(),
   textExtraction: z.object({
@@ -122,9 +156,57 @@ export const confirmAnalysisSchema = z.object({
     }),
   ),
   manualReviewConfirmed: z.boolean().optional().default(false),
+  /**
+   * Categoria escolhida à mão por quem está revisando.
+   *
+   * É o resgate do documento que a IA não conseguiu classificar: sem isto ele ficava parado para
+   * sempre, porque a confirmação exige uma classe e a análise não tinha nenhuma para dar.
+   */
+  manualClassId: optionalName,
+  /**
+   * Valores corrigidos à mão na revisão, por chave de campo.
+   *
+   * Chegam separados do `extraction` de propósito: o que a IA extraiu fica registrado como veio, e
+   * o que a pessoa corrigiu entra por cima com `source: 'manual'`. Sem essa separação a auditoria
+   * perderia a diferença entre "a IA acertou" e "alguém consertou".
+   */
+  metadataOverrides: z
+    .record(z.union([z.string(), z.number(), z.null()]))
+    .optional(),
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
+
+/**
+ * Junta o que a IA extraiu com o que a pessoa corrigiu na revisão.
+ *
+ * Chave que já existia mantém o rótulo original — o usuário mudou o valor, não o nome do campo.
+ * Chave nova (campo obrigatório que a extração não preencheu) entra com o rótulo igual à chave; a
+ * ficha de metadados e a regra da categoria dão o rótulo bonito depois.
+ */
+function applyMetadataOverrides(
+  metadata: ConfirmAnalysisInput['extraction']['metadata'],
+  overrides: Record<string, string | number | null> | undefined,
+): ConfirmAnalysisInput['extraction']['metadata'] {
+  if (!overrides || Object.keys(overrides).length === 0) return metadata;
+
+  const merged = { ...metadata };
+
+  for (const [key, value] of Object.entries(overrides)) {
+    const existing = merged[key];
+    merged[key] = {
+      ...(existing ?? { label: key, evidence: undefined, currency: undefined }),
+      label: existing?.label ?? key,
+      value,
+      normalizedValue: value,
+      // Quem olhou o documento e digitou não está estimando.
+      confidence: 1,
+      source: 'manual',
+    };
+  }
+
+  return merged;
+}
 
 async function generateDocumentCode(ctx: DocumentRequestContext): Promise<string> {
   const { documents } = ctx.collections;
@@ -166,14 +248,18 @@ export async function confirmAnalysisPersistence(input: {
       mimeType: data.mimeType,
     }) ?? 'application/pdf';
 
+  // A escolha humana vence a da IA: quem revisou viu o documento.
+  const manualClassId = data.manualClassId?.trim() || undefined;
   const classId = requireConfirmClassification({
-    classId: data.classification.classId,
-    requiresReview: data.classification.requiresReview,
+    classId: manualClassId ?? data.classification.classId,
+    // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
+    // revisão continua valendo.
+    requiresReview: manualClassId ? false : data.classification.requiresReview,
     extractionRequiresReview: data.extraction.requiresReview,
     manualReviewConfirmed: data.manualReviewConfirmed,
   });
-  const needsReview =
-    data.classification.requiresReview || data.extraction.requiresReview;
+  const classificationRequiresReview = manualClassId ? false : data.classification.requiresReview;
+  const needsReview = classificationRequiresReview || data.extraction.requiresReview;
 
   const namingModeResolved = (data.namingMode ?? 'ai_suggested') as NamingMode;
   const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
@@ -261,10 +347,10 @@ export async function confirmAnalysisPersistence(input: {
     share: categoryAccess.shareGroupIds,
   };
 
-  if (
-    !input.skipConfirmPermissionCheck &&
-    !canConfirmDocuments(input.user, legacyPermissions.update)
-  ) {
+  // Caminho de criação: o documento ainda não existe, então o dono em escopo é o dono que ele vai
+  // receber (`ownerUserId`, resolvido acima). Quem cria o próprio documento confirma o metadado
+  // dele sem depender de papel administrativo (D-09).
+  if (!input.skipConfirmPermissionCheck && !canConfirmDocuments(input.user, { ownerUserId })) {
     throw new ConfirmAnalysisError(
       'Você não tem permissão para confirmar metadados desta classe de documento.',
       'FORBIDDEN',
@@ -277,7 +363,9 @@ export async function confirmAnalysisPersistence(input: {
   const versionId = `ver_${randomUUID()}`;
   const jobId = data.jobId ?? `job_${randomUUID()}`;
 
-  const versionMetadata = mapVersionMetadata(data.extraction.metadata);
+  const versionMetadata = mapVersionMetadata(
+    applyMetadataOverrides(data.extraction.metadata, data.metadataOverrides),
+  );
   const searchMeta = projectDocumentSearchMeta(versionMetadata, rule.fields);
   const documentCode = await generateDocumentCode(input.ctx);
   const sha256 = data.fileHash;
@@ -393,6 +481,17 @@ export async function confirmAnalysisPersistence(input: {
         shareGroupIds: legacyPermissions.share,
       },
       searchMeta,
+      // Rastro de quem decidiu a categoria. A IA pode ter sugerido outra coisa (ou nada), e isso
+      // precisa sobreviver para auditoria e para a próxima vez que alguém treinar as regras.
+      classificationSource: manualClassId ? ('manual' as const) : ('ai' as const),
+      aiSuggestedClassId: data.classification.classId ?? null,
+      ...(manualClassId
+        ? {
+            manualClassificationOverride: true,
+            manualClassificationUpdatedAt: now,
+            manualClassificationUpdatedBy: input.user.id,
+          }
+        : {}),
       ownerUserId: ownershipFields.ownerUserId,
       ownerName: ownershipFields.ownerName,
       createdBy: ownershipFields.createdBy,
@@ -429,10 +528,15 @@ export async function confirmAnalysisPersistence(input: {
       },
       classification: {
         classId,
-        className: data.classification.className ?? docClass.name,
-        confidence: data.classification.confidence,
+        className: manualClassId
+          ? docClass.name
+          : data.classification.className ?? docClass.name,
+        // Confiança da IA não vale para escolha humana: 1 é a certeza de quem olhou o documento.
+        confidence: manualClassId ? 1 : data.classification.confidence,
         requiresReview: needsReview,
-        reason: data.classification.reason,
+        reason: manualClassId
+          ? 'Categoria escolhida manualmente na revisão do envio.'
+          : data.classification.reason,
         evidence: data.classification.evidence,
       },
       rule: {
@@ -483,7 +587,7 @@ export async function confirmAnalysisPersistence(input: {
     await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer) {
-      await persistChunksAfterVersionConfirm({
+      await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
         documentId,
@@ -492,6 +596,7 @@ export async function confirmAnalysisPersistence(input: {
         categoryId: docClass._id,
         createdBy: ownerUserId,
         isCurrentVersion: true,
+        mimeType: contentMimeType,
       });
     }
 
@@ -580,6 +685,9 @@ export async function confirmAnalysisPersistence(input: {
         hasRecommendedFileName: Boolean(data.recommendedFileName?.trim()),
         hasDocumentCode: Boolean(documentCode),
         manualReviewConfirmed: data.manualReviewConfirmed,
+        classificationSource: manualClassId ? 'manual' : 'ai',
+        aiSuggestedClassId: data.classification.classId ?? undefined,
+        manualClassId,
         legacyAction: auditAction,
         source: 'api',
       }),

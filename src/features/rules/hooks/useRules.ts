@@ -8,6 +8,7 @@ import type {
   CompanyMember,
   DocumentCategory,
   DocumentExtractionRule,
+  ExpiryAlertConfig,
   Group,
   GroupColor,
 } from '@/types/rules';
@@ -300,6 +301,7 @@ export function useRules(actorName: string) {
         namingTemplate: string;
         minimumConfidence: number;
         active: boolean;
+        expiryAlerts?: ExpiryAlertConfig;
       },
     ) => {
       try {
@@ -318,6 +320,7 @@ export function useRules(actorName: string) {
             namingTemplate: payload.namingTemplate,
             minimumConfidence: payload.minimumConfidence,
             active: payload.active,
+            expiryAlerts: payload.expiryAlerts,
           });
           savedRule = toExtractionRule(updated);
           setRules((prev) => prev.map((r) => (r.id === existing.id ? savedRule : r)));
@@ -329,6 +332,7 @@ export function useRules(actorName: string) {
             fields: payload.fields,
             namingTemplate: payload.namingTemplate,
             minimumConfidence: payload.minimumConfidence,
+            expiryAlerts: payload.expiryAlerts,
           });
           savedRule = toExtractionRule(created);
           setRules((prev) => [...prev, savedRule]);

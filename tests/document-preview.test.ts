@@ -371,6 +371,21 @@ describe('document preview quality', () => {
 });
 
 describe('GET /api/documents/preview', () => {
+  // `getAuthProvider()` falha fechado: sem `AUTH_PROVIDER` declarado o processo não escolhe provider
+  // por conta própria. O teste declara o provider real em vez de depender do antigo default
+  // silencioso `temporary`.
+  let previousAuthProvider: string | undefined;
+
+  beforeEach(() => {
+    previousAuthProvider = process.env.AUTH_PROVIDER;
+    process.env.AUTH_PROVIDER = 'doqyn_auth';
+  });
+
+  afterEach(() => {
+    if (previousAuthProvider === undefined) delete process.env.AUTH_PROVIDER;
+    else process.env.AUTH_PROVIDER = previousAuthProvider;
+  });
+
   it('exige autenticação', async () => {
     const status = mock.fn();
     const json = mock.fn();

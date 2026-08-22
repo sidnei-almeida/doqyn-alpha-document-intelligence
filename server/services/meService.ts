@@ -164,11 +164,7 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
       companyId: activeMembership.tenantId,
       tenantId: activeMembership.tenantId,
       companyName: activeMembership.tenantDisplayName ?? activeMembership.tenantId,
-      role: activeMembership.roles.includes('doqyn_admin')
-        ? 'admin'
-        : activeMembership.roles.includes('company_admin')
-          ? 'manager'
-          : 'user',
+      role: activeMembership.roles.includes('company_admin') ? 'manager' : 'user',
       area: '',
       groups: activeMembership.accessGroupIds,
       memberId: activeMembership.membershipId,

@@ -4,7 +4,7 @@ import { doqynUsersApi } from './doqynUsersApi';
 
 const API_BASE = '/api';
 
-export type PlatformRole = 'doqyn_admin' | 'company_admin' | 'individual_admin' | 'user';
+export type PlatformRole = 'company_admin' | 'individual_admin' | 'user';
 export type MemberStatus = 'pending' | 'active' | 'blocked' | 'rejected';
 
 export type NotificationPreferencesDto = {

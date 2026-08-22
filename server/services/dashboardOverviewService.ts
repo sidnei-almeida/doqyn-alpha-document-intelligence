@@ -1,3 +1,4 @@
+import type { Collection } from 'mongodb';
 import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
@@ -91,11 +92,11 @@ export type DashboardOverviewResponse = {
   };
 };
 
-function resolvePeriod(input: {
-  period?: string;
-  from?: string;
-  to?: string;
-}): { from: Date; to: Date; key: DashboardPeriodKey } {
+function resolvePeriod(input: { period?: string; from?: string; to?: string }): {
+  from: Date;
+  to: Date;
+  key: DashboardPeriodKey;
+} {
   const now = new Date();
   const to = input.to?.trim() ? new Date(input.to.trim()) : now;
   if (Number.isNaN(to.getTime())) {
@@ -132,14 +133,16 @@ function maskBucketName(bucketName: string | undefined | null): string | null {
   return `${name.slice(0, 14)}...${name.slice(-6)}`;
 }
 
-function buildAccessibleDocumentQuery(
+export function buildAccessibleDocumentQuery(
   storage: TenantStorageContext,
   user: AuthUser,
   isAdmin: boolean,
   governanceViewCategoryIds: string[] = [],
 ): Record<string, unknown> {
+  const tenantScope = tenantScopeFilterFromContext(storage);
+
   const query: Record<string, unknown> = {
-    ...tenantScopeFilterFromContext(storage),
+    ...tenantScope,
     status: 'active',
     deletedAt: { $in: [null, undefined] },
     permanentlyDeletedAt: { $in: [null, undefined] },
@@ -153,7 +156,12 @@ function buildAccessibleDocumentQuery(
       accessClauses.push({ classId: { $in: governanceViewCategoryIds } });
     }
 
-    query.$or = accessClauses;
+    // `$and` explícito porque o escopo de tenant empresarial JÁ é um `$or`
+    // (`{ $or: [{ tenantId }, { companyId }] }`). Atribuir `query.$or` aqui apagava esse escopo, e
+    // desde que os dados vivem em coleção compartilhada isso deixava a agregação sem nenhum filtro
+    // de tenant: o painel somaria documentos de outros tenants que o usuário possui.
+    delete query.$or;
+    query.$and = [tenantScope, { $or: accessClauses }];
   }
 
   return query;
@@ -175,6 +183,114 @@ const STATUS_LABELS: Record<string, string> = {
   error: 'Com erro',
   other: 'Outros',
 };
+
+/** Quantas categorias o painel exibe. Recortado no servidor, não no Node. */
+const CATEGORY_FACET_LIMIT = 8;
+
+type DocumentFacets = {
+  totalDocuments: number;
+  documentsUploadedToday: number;
+  documentsUploadedInPeriod: number;
+  statusCounts: Map<string, number>;
+  categories: { categoryId: string; categoryName: string; count: number }[];
+  documentsWithoutCategory: number;
+};
+
+type FacetCountRow = { count?: number };
+type FacetStatusRow = { _id?: string | null; count?: number };
+type FacetCategoryRow = { _id?: string | null; categoryName?: string | null; count?: number };
+
+function firstCount(rows: FacetCountRow[] | undefined): number {
+  return rows?.[0]?.count ?? 0;
+}
+
+/**
+ * Um único `aggregate` no lugar de cinco consultas — três `countDocuments` e duas varreduras
+ * completas que traziam todos os documentos do tenant para a memória do Node só para contar.
+ *
+ * O agrupamento acontece no servidor, então o volume trafegado é constante: não cresce com o
+ * tamanho do tenant. Os ramos de data pegam carona no mesmo `$match`, que já precisa varrer o
+ * conjunto acessível para agrupar status e categoria.
+ */
+async function aggregateDocumentFacets(
+  documents: Collection<MongoDocument>,
+  docQuery: Record<string, unknown>,
+  startOfToday: Date,
+  period: { from: Date; to: Date },
+): Promise<DocumentFacets> {
+  const hasCategory = { $and: [{ $ne: ['$_classId', ''] }, { $ne: ['$_className', ''] }] };
+
+  const [row] = await documents
+    .aggregate<{
+      total?: FacetCountRow[];
+      today?: FacetCountRow[];
+      inPeriod?: FacetCountRow[];
+      byStatus?: FacetStatusRow[];
+      byCategory?: FacetCategoryRow[];
+      withoutCategory?: FacetCountRow[];
+    }>([
+      { $match: docQuery },
+      {
+        $project: {
+          _id: 0,
+          createdAt: 1,
+          processingStatus: 1,
+          // `$trim` reproduz o `.trim()` que o código fazia em memória, para que documento com
+          // classId só de espaços continue contando como "sem categoria".
+          _classId: { $trim: { input: { $ifNull: ['$classId', ''] } } },
+          _className: { $trim: { input: { $ifNull: ['$className', ''] } } },
+        },
+      },
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          today: [{ $match: { createdAt: { $gte: startOfToday } } }, { $count: 'count' }],
+          inPeriod: [
+            { $match: { createdAt: { $gte: period.from, $lte: period.to } } },
+            { $count: 'count' },
+          ],
+          byStatus: [{ $group: { _id: '$processingStatus', count: { $sum: 1 } } }],
+          byCategory: [
+            { $match: { $expr: hasCategory } },
+            {
+              $group: {
+                _id: '$_classId',
+                categoryName: { $first: '$_className' },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { count: -1 } },
+            { $limit: CATEGORY_FACET_LIMIT },
+          ],
+          withoutCategory: [{ $match: { $expr: { $not: hasCategory } } }, { $count: 'count' }],
+        },
+      },
+    ])
+    .toArray();
+
+  // `mapStatusBucket` continua no Node: são no máximo uma dúzia de linhas agrupadas, e manter a
+  // regra em TypeScript evita duplicá-la em expressão de agregação.
+  const statusCounts = new Map<string, number>();
+  for (const status of row?.byStatus ?? []) {
+    const bucket = mapStatusBucket(status._id ?? undefined);
+    statusCounts.set(bucket, (statusCounts.get(bucket) ?? 0) + (status.count ?? 0));
+  }
+
+  return {
+    totalDocuments: firstCount(row?.total),
+    documentsUploadedToday: firstCount(row?.today),
+    documentsUploadedInPeriod: firstCount(row?.inPeriod),
+    statusCounts,
+    categories: (row?.byCategory ?? [])
+      .filter((item): item is FacetCategoryRow & { _id: string } => Boolean(item._id))
+      .map((item) => ({
+        categoryId: item._id,
+        categoryName: item.categoryName ?? item._id,
+        count: item.count ?? 0,
+      })),
+    documentsWithoutCategory: firstCount(row?.withoutCategory),
+  };
+}
 
 export async function getDashboardOverview(input: {
   tenantId: string;
@@ -279,11 +395,7 @@ export async function getDashboardOverview(input: {
   startOfToday.setHours(0, 0, 0, 0);
 
   const [
-    totalDocuments,
-    documentsUploadedToday,
-    documentsUploadedInPeriod,
-    docsForStatus,
-    docsForCategory,
+    documentFacets,
     totalVersions,
     previewReady,
     previewFailed,
@@ -294,20 +406,7 @@ export async function getDashboardOverview(input: {
     recentEventsResult,
     recentErrorsResult,
   ] = await Promise.all([
-    collections.documents.countDocuments(docQuery),
-    collections.documents.countDocuments({
-      ...docQuery,
-      createdAt: { $gte: startOfToday },
-    }),
-    collections.documents.countDocuments({
-      ...docQuery,
-      createdAt: { $gte: period.from, $lte: period.to },
-    }),
-    collections.documents.find(docQuery).project({ processingStatus: 1 }).toArray(),
-    collections.documents
-      .find(docQuery)
-      .project({ classId: 1, className: 1 })
-      .toArray(),
+    aggregateDocumentFacets(collections.documents, docQuery, startOfToday, period),
     collections.documentVersions.countDocuments(scope as Record<string, unknown>),
     collections.documentVersions.countDocuments({
       ...scope,
@@ -327,9 +426,12 @@ export async function getDashboardOverview(input: {
       action: 'document.preview_viewed',
       createdAt: { $gte: period.from, $lte: period.to },
     } as Record<string, unknown>),
+    // Sem `$options: 'i'`: regex case-insensitive anula o índice
+    // { tenantId, action, createdAt } mesmo ancorada. `action` é gravada em minúsculas
+    // (`documentAuditLogService.createDocumentAuditLog`), então a busca sensível a caixa basta.
     collections.auditLogs.countDocuments({
       ...scope,
-      action: { $regex: '^document\\.', $options: 'i' },
+      action: { $regex: '^document\\.' },
       createdAt: { $gte: period.from, $lte: period.to },
     } as Record<string, unknown>),
     listDocuments({
@@ -356,34 +458,18 @@ export async function getDashboardOverview(input: {
     }),
   ]);
 
-  const statusCounts = new Map<string, number>();
-  let documentsInAnalysis = 0;
-  let documentsAwaitingReview = 0;
-  let documentsProcessed = 0;
+  const {
+    totalDocuments,
+    documentsUploadedToday,
+    documentsUploadedInPeriod,
+    statusCounts,
+    documentsWithoutCategory,
+  } = documentFacets;
 
-  for (const doc of docsForStatus as MongoDocument[]) {
-    const bucket = mapStatusBucket(doc.processingStatus);
-    statusCounts.set(bucket, (statusCounts.get(bucket) ?? 0) + 1);
-    if (bucket === 'in_analysis') documentsInAnalysis += 1;
-    if (bucket === 'awaiting_review') documentsAwaitingReview += 1;
-    if (bucket === 'processed') documentsProcessed += 1;
-  }
-
+  const documentsInAnalysis = statusCounts.get('in_analysis') ?? 0;
+  const documentsAwaitingReview = statusCounts.get('awaiting_review') ?? 0;
+  const documentsProcessed = statusCounts.get('processed') ?? 0;
   const documentsWithErrors = previewFailed + (statusCounts.get('other') ?? 0);
-
-  const categoryMap = new Map<string, { categoryId: string; categoryName: string; count: number }>();
-  let documentsWithoutCategory = 0;
-  for (const doc of docsForCategory as MongoDocument[]) {
-    const categoryId = doc.classId?.trim();
-    const categoryName = doc.className?.trim();
-    if (!categoryId || !categoryName) {
-      documentsWithoutCategory += 1;
-      continue;
-    }
-    const existing = categoryMap.get(categoryId);
-    if (existing) existing.count += 1;
-    else categoryMap.set(categoryId, { categoryId, categoryName, count: 1 });
-  }
 
   const documentsByStatus = ['processed', 'in_analysis', 'awaiting_review', 'error']
     .map((status) => ({
@@ -400,16 +486,21 @@ export async function getDashboardOverview(input: {
     }))
     .filter((item) => item.count > 0);
 
-  const documentsByCategory = [...categoryMap.values()]
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
+  // Já vem ordenado e recortado pelo `$facet` — o Node não reordena nada.
+  const documentsByCategory = documentFacets.categories;
 
   const [activeCategories, activeExtractionRules] = await Promise.all([
     collections.documentCategories
-      ? collections.documentCategories.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+      ? collections.documentCategories.countDocuments({ ...scope, active: true } as Record<
+          string,
+          unknown
+        >)
       : Promise.resolve(0),
     collections.documentExtractionRules
-      ? collections.documentExtractionRules.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+      ? collections.documentExtractionRules.countDocuments({ ...scope, active: true } as Record<
+          string,
+          unknown
+        >)
       : Promise.resolve(0),
   ]);
 
@@ -421,11 +512,17 @@ export async function getDashboardOverview(input: {
       await Promise.all([
         Promise.resolve(activeCategories),
         collections.documentGroups
-          ? collections.documentGroups.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+          ? collections.documentGroups.countDocuments({ ...scope, active: true } as Record<
+              string,
+              unknown
+            >)
           : Promise.resolve(0),
         Promise.resolve(activeExtractionRules),
         collections.documentRules
-          ? collections.documentRules.countDocuments({ ...scope, active: true } as Record<string, unknown>)
+          ? collections.documentRules.countDocuments({ ...scope, active: true } as Record<
+              string,
+              unknown
+            >)
           : Promise.resolve(0),
         listOperationalTenantMembers(tenantId),
         collections.documentVersions
@@ -464,7 +561,8 @@ export async function getDashboardOverview(input: {
       }
     }
 
-    const bucketRaw = collections.tenant.storage?.bucketName ?? collections.tenant.storage?.bucketAlias;
+    const bucketRaw =
+      collections.tenant.storage?.bucketName ?? collections.tenant.storage?.bucketAlias;
     storage = {
       originalFiles,
       previewFiles,
@@ -483,9 +581,7 @@ export async function getDashboardOverview(input: {
       label: DOCUMENT_AUDIT_ACTION_LABELS[event.action] ?? event.description,
       documentId: event.documentId,
       documentName:
-        typeof event.metadata?.documentName === 'string'
-          ? event.metadata.documentName
-          : undefined,
+        typeof event.metadata?.documentName === 'string' ? event.metadata.documentName : undefined,
       actorName: event.actorName,
       severity: event.severity,
       occurredAt: event.createdAt,
@@ -497,9 +593,7 @@ export async function getDashboardOverview(input: {
       id: event.id,
       action: event.action,
       documentName:
-        typeof event.metadata?.documentName === 'string'
-          ? event.metadata.documentName
-          : undefined,
+        typeof event.metadata?.documentName === 'string' ? event.metadata.documentName : undefined,
       message: event.description,
       occurredAt: event.createdAt,
     }));
@@ -520,7 +614,10 @@ export async function getDashboardOverview(input: {
         : 'Regras de IA ainda não configuradas pelo administrador.',
     );
   }
-  if (collections.tenant.storage?.bucketName && isLegacyTenantBucketName(collections.tenant.storage.bucketName)) {
+  if (
+    collections.tenant.storage?.bucketName &&
+    isLegacyTenantBucketName(collections.tenant.storage.bucketName)
+  ) {
     warnings.push('Bucket de storage usa nomenclatura legada.');
   }
 

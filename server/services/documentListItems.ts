@@ -225,7 +225,14 @@ export async function buildDocumentListItems(input: {
       canShare: perms.canShare,
       canTransferOwnership: perms.canTransferOwnership,
       sharedViaGrant: perms.sharedViaGrant,
-      canViewTracking: user ? canViewDocumentTracking(user) : false,
+      canViewTracking: user
+        ? canViewDocumentTracking(user, {
+            ownerUserId: doc.ownerUserId,
+            classId: doc.classId,
+            memberGroupIds,
+            governanceIndex,
+          })
+        : false,
     };
     const docRecord = doc as Record<string, unknown>;
     const versionMetaFromDoc = versionMap.get(doc.currentVersionId ?? '');

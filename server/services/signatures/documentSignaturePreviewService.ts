@@ -123,7 +123,7 @@ export async function getSignaturePreviewManifest(token: string): Promise<Docume
     const file = await readSignatureRequestVersionFile({ request, version, storageScope });
     persistedManifest = await buildPdfPreviewManifestFromBuffer(file.buffer, mimeType);
     await saveVersionPreviewManifest({
-      tenantId: request.documentTenantId,
+      tenantId: request.tenantId,
       ownerUserId: request.requestedByUserId,
       documentId: request.documentId,
       versionId: version._id,
@@ -209,7 +209,7 @@ export async function readSignaturePreviewImageAsset(input: {
 
   const file = await provider.readDocumentVersion(
     objectKey,
-    request.documentTenantId,
+    request.tenantId,
     preview.bucketAlias,
     storageScope,
   );
@@ -318,7 +318,7 @@ async function buildSignaturePreviewManifestForRequest(
     const file = await readSignatureRequestVersionFile({ request, version, storageScope });
     persistedManifest = await buildPdfPreviewManifestFromBuffer(file.buffer, mimeType);
     await saveVersionPreviewManifest({
-      tenantId: request.documentTenantId,
+      tenantId: request.tenantId,
       ownerUserId: request.requestedByUserId,
       documentId: request.documentId,
       versionId: version._id,
@@ -430,7 +430,7 @@ export async function readInternalSignaturePreviewImageAsset(input: {
 
   const file = await provider.readDocumentVersion(
     objectKey,
-    request.documentTenantId,
+    request.tenantId,
     preview.bucketAlias,
     storageScope,
   );

@@ -2,8 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
 import { listDocumentTrackingEvents } from '../../server/audit/documentAuditLogService.js';
 import { requireDocumentTrackingAccess } from '../../server/audit/requireDocumentTrackingAccess.js';
-import { assertTrackingTenantScope } from '../../server/auth/permissions.js';
-import { assertQueryTenantMatchesSession } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -11,11 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
-  const auth = await requireDocumentTrackingAccess(req, res);
-  if (!auth) return;
-
   const {
-    tenantId,
     documentId,
     versionId,
     action,
@@ -32,14 +26,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     limit,
   } = req.query;
 
-  try {
-    assertQueryTenantMatchesSession(typeof tenantId === 'string' ? tenantId : undefined, auth.ctx);
-    assertTrackingTenantScope(
-      auth.user,
-      auth.ctx.tenantId,
-      typeof tenantId === 'string' ? tenantId : undefined,
-    );
+  // O documento filtrado entra como escopo da guarda: com ele, o dono vê a trilha do próprio
+  // documento sem governar o tenant (D-07); sem ele, a consulta cobre o tenant inteiro e exige
+  // governança de tenant.
+  const auth = await requireDocumentTrackingAccess(req, res, {
+    documentId: typeof documentId === 'string' ? documentId : undefined,
+  });
+  if (!auth) return;
 
+  // O tenant vem exclusivamente da sessão verificada, via `buildDocumentAuditContext(auth.ctx, …)`.
+  // O parâmetro de query de tenant foi apagado desta superfície (D-08).
+  try {
     const parsedLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : undefined;
     const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
 

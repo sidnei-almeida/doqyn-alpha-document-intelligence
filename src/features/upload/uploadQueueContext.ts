@@ -18,7 +18,14 @@ export type UploadQueueContextValue = {
   startUploadFromFiles: (files: File[], context?: UploadContext) => void;
   openReview: (itemId: string) => void;
   closeReview: () => void;
-  confirmReview: (itemId: string, perItem?: PerItemNamingChoice) => Promise<void>;
+  confirmReview: (
+    itemId: string,
+    perItem?: PerItemNamingChoice,
+    /** Categoria escolhida à mão quando a IA não classificou (ou quando quem revisa discorda). */
+    manualClassId?: string,
+    /** Campos conferidos e corrigidos na revisão, por chave. */
+    metadataOverrides?: Record<string, string>,
+  ) => Promise<void>;
   setItemNamingChoice: (itemId: string, choice: PerItemNamingChoice) => void;
   cancelAutoConfirm: (itemId: string) => void;
   retryItem: (itemId: string) => void;

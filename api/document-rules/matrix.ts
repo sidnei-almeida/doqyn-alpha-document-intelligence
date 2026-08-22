@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { z } from 'zod';
 import {
   getDocumentGovernanceMatrix,
   updateDocumentGovernanceMatrixCell,
@@ -7,6 +8,35 @@ import type { DocumentAccessPermissions } from '../../server/services/documentAc
 import { withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { logger } from '../../server/utils/logger.js';
+
+/**
+ * Os campos persistidos herdaram os nomes `upload` e `manage` do primeiro desenho, enquanto o
+ * domínio (e a resposta do próprio GET desta rota) fala `update` e `audit` — a tradução vive em
+ * `server/tenancy/governanceAccessIndex.ts`. Sem validação, um corpo escrito a partir da resposta do
+ * GET era gravado cru: a regra respondia 200, aparecia marcada na tela e não concedia nada, porque
+ * o índice de autorização lê `upload`/`manage`.
+ *
+ * Aqui os dois vocabulários são aceitos e normalizados para o formato persistido, e qualquer chave
+ * desconhecida derruba a requisição com 400 em vez de virar regra inerte.
+ */
+const permissionsSchema = z
+  .object({
+    view: z.boolean(),
+    download: z.boolean(),
+    share: z.boolean(),
+    upload: z.boolean().optional(),
+    manage: z.boolean().optional(),
+    update: z.boolean().optional(),
+    audit: z.boolean().optional(),
+  })
+  .strict()
+  .transform((value) => ({
+    view: value.view,
+    download: value.download,
+    share: value.share,
+    upload: value.upload ?? value.update ?? false,
+    manage: value.manage ?? value.audit ?? false,
+  }));
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
@@ -48,11 +78,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           };
         }
 
+        const parsedPermissions = permissionsSchema.safeParse(body.permissions);
+        if (!parsedPermissions.success) {
+          return {
+            status: 400,
+            body: {
+              message:
+                'Permissões inválidas. Use view, download, share e update/audit (ou upload/manage).',
+              code: 'INVALID_PERMISSIONS',
+              details: parsedPermissions.error.issues.map((issue) => ({
+                path: issue.path.join('.'),
+                message: issue.message,
+              })),
+            },
+          };
+        }
+
         try {
           const result = await updateDocumentGovernanceMatrixCell(companyId, user.id, {
             groupId: body.groupId.trim(),
             categoryId,
-            permissions: body.permissions,
+            permissions: parsedPermissions.data,
           });
 
           logger.info('document governance matrix updated', {

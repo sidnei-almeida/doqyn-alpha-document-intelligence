@@ -1,6 +1,6 @@
 export type AuthRole = 'admin' | 'manager' | 'user' | 'viewer';
 
-export type PlatformRole = 'doqyn_admin' | 'company_admin' | 'individual_admin' | 'user';
+export type PlatformRole = 'company_admin' | 'individual_admin' | 'user';
 
 export type AuthUser = {
   id: string;

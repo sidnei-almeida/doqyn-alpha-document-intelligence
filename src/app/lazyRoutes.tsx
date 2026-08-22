@@ -23,6 +23,11 @@ const LazyRulesRoute = lazyNamed(
   () => import('@/features/rules/RulesRoute'),
   'RulesRoute',
 );
+const LazyMatrixPage = lazyNamed(() => import('@/features/matrix/MatrixPage'), 'MatrixPage');
+const LazyExpiryAlertsPage = lazyNamed(
+  () => import('@/features/expiry/ExpiryAlertsPage'),
+  'ExpiryAlertsPage',
+);
 const LazyLibraryPage = lazyNamed(() => import('@/features/library/LibraryPage'), 'LibraryPage');
 const LazyDocumentSendPage = lazyNamed(
   () => import('@/features/document-send/DocumentSendPage'),
@@ -101,6 +106,8 @@ export const SignatureVerificationRoute = withRouteSuspense(LazySignatureVerific
 export const InternalSignatureRoute = withRouteSuspense(LazyInternalSignaturePage);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesRoute);
+export const ExpiryAlertsRoute = withRouteSuspense(LazyExpiryAlertsPage);
+export const MatrixRoute = withRouteSuspense(LazyMatrixPage);
 export const LibraryRoute = withRouteSuspense(LazyLibraryPage);
 export const DocumentSendRoute = withRouteSuspense(LazyDocumentSendPage);
 export const UserManagementRouteLazy = withRouteSuspense(LazyUserManagementRoute);

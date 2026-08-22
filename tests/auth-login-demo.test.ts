@@ -72,13 +72,18 @@ describe('login demo e robustez de auth', () => {
 describe('demo seed constants auth-service', () => {
   const authRoot = join(__dirname, '..', '..', 'doqyn-auth-service');
 
-  it('demo seed define admin.global@doqyn.dev e senha DevDoqyn@123', () => {
+  it('demo seed define o admin da empresa demo e a senha DevDoqyn@123', () => {
     const constants = readFileSync(
       join(authRoot, 'src/demo/demoSeed.constants.ts'),
       'utf8',
     );
-    assert.ok(constants.includes('admin.global@doqyn.dev'));
+    // A conta `admin.global@doqyn.dev` foi substituída: carregava o papel administrativo de
+    // plataforma e, por isso, nunca exercitava as regras de governança que o produto vende.
+    assert.ok(constants.includes('rafael.mendes@doqyn.dev'));
     assert.ok(constants.includes('DevDoqyn@123'));
-    assert.ok(constants.includes("DEMO_GLOBAL_ADMIN_TENANT_ID = 'company_dev'"));
+    assert.ok(constants.includes("DEMO_COMPANY_TENANT_ID = 'company_dev'"));
+    // Nenhum papel de plataforma nas contas demo — se voltar, o seed recria o que a fase removeu.
+    // (O e-mail antigo ainda aparece no comentário histórico do arquivo, de propósito.)
+    assert.equal(constants.includes("'doqyn_admin'"), false);
   });
 });

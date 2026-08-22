@@ -2,6 +2,7 @@ import { REGISTRY_COLLECTIONS } from '../db/constants.js';
 import { getDb } from '../db/mongoClient.js';
 import type { MongoTenant, MongoTenantStorage } from '../db/types.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
+import { invalidateTenantRegistryCache } from '../tenancy/tenantRegistryCache.js';
 import {
   buildTenantBucketName,
   isLegacyTenantBucketName,
@@ -51,7 +52,9 @@ function storageFromTenant(tenant: MongoTenant): MongoTenantStorage | null {
   return tenant.storage?.bucketName ? tenant.storage : null;
 }
 
-export function planTenantBucketName(tenant: Pick<MongoTenant, 'tenantId' | 'displayName' | 'slug'>): BuildTenantBucketNameResult {
+export function planTenantBucketName(
+  tenant: Pick<MongoTenant, 'tenantId' | 'displayName' | 'slug'>,
+): BuildTenantBucketNameResult {
   return buildTenantBucketName({
     tenantId: tenant.tenantId,
     tenantDisplayName: tenant.displayName,
@@ -83,7 +86,9 @@ export async function findLegacyBucketAliasFromDocuments(tenantId: string): Prom
   return typeof bucket === 'string' && bucket.trim() ? bucket.trim() : null;
 }
 
-export async function getTenantStorageFromRegistry(tenantId: string): Promise<MongoTenantStorage | null> {
+export async function getTenantStorageFromRegistry(
+  tenantId: string,
+): Promise<MongoTenantStorage | null> {
   const db = await getDb();
   const tenant = await db.collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants).findOne({
     $or: [{ tenantId }, { companyId: tenantId }],
@@ -97,15 +102,16 @@ export async function upsertTenantStorageRegistry(
 ): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  await db.collection(REGISTRY_COLLECTIONS.tenants).updateOne(
-    { $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>,
-    {
+  await db
+    .collection(REGISTRY_COLLECTIONS.tenants)
+    .updateOne({ $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>, {
       $set: {
         storage,
         updatedAt: now,
       },
-    },
-  );
+    });
+
+  await invalidateTenantRegistryCache(tenantId);
 }
 
 export async function resolveTenantBucketRegistry(
@@ -185,9 +191,9 @@ export async function registerTenantStoragePlan(
 export async function markTenantBucketReady(tenantId: string, bucketName: string): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  await db.collection(REGISTRY_COLLECTIONS.tenants).updateOne(
-    { $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>,
-    {
+  await db
+    .collection(REGISTRY_COLLECTIONS.tenants)
+    .updateOne({ $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>, {
       $set: {
         'storage.bucketName': bucketName,
         'storage.bucketStatus': 'ready',
@@ -198,8 +204,9 @@ export async function markTenantBucketReady(tenantId: string, bucketName: string
       $unset: {
         'storage.bucketProvisionError': '',
       },
-    },
-  );
+    });
+
+  await invalidateTenantRegistryCache(tenantId);
 }
 
 export async function markTenantBucketFailed(
@@ -208,17 +215,18 @@ export async function markTenantBucketFailed(
 ): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  await db.collection(REGISTRY_COLLECTIONS.tenants).updateOne(
-    { $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>,
-    {
+  await db
+    .collection(REGISTRY_COLLECTIONS.tenants)
+    .updateOne({ $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>, {
       $set: {
         'storage.bucketStatus': 'failed',
         'storage.bucketProvisionError': errorMessage.slice(0, 500),
         'storage.bucketLastCheckedAt': now,
         updatedAt: now,
       },
-    },
-  );
+    });
+
+  await invalidateTenantRegistryCache(tenantId);
 }
 
 export async function ensureTenantStorageBucket(

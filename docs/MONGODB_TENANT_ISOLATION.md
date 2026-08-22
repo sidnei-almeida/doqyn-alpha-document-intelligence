@@ -126,7 +126,6 @@ Coleções sem prefixo (`documents`, `access_groups`, …) são **legado**.
 | `npm run audit:mongodb-schema` | Auditoria de schema e índices |
 | `npm run audit:collection-usage` | Uso de coleções flat no código |
 | `npm run db:ensure-indexes` | Índices canônicos idempotentes |
-| `npm run db:migrate-flat-to-tenant` | Migração flat → prefixada (dry-run padrão) |
 | `npm run db:seed-isolation-test` | Segundo tenant de teste |
 | `npm run test:tenant-isolation` | Testes de isolamento entre tenants |
 | `npm run audit:no-flat-writes` | Verifica ausência de writes flat produtivos |
@@ -137,7 +136,9 @@ Estado atual em `doqyn_dev`:
 
 - Coleções prefixadas `*_company_dev` são a **fonte canônica**.
 - Coleções flat coexistem com dados de desenvolvimento duplicados.
-- Migração: `scripts/migrate-flat-to-tenant-prefixed.ts` (dry-run por padrão).
+- A migração achatado → prefixado foi revertida como modelo: desde o Passo 7 as coleções
+  são achatadas e compartilhadas, escopadas por campo `tenantId`. O script de migração foi
+  retirado por migrar na direção contrária à vigente.
 - `company_members` será desligado quando `tenant_members` for fonte única.
 
 ## 10. Referências no código

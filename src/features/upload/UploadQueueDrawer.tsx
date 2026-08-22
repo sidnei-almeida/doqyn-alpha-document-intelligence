@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -11,7 +11,9 @@ import {
   countAwaitingApproval,
   countAwaitingReview,
   countSubmittedItems,
+  isItemSavedInLibrary,
 } from './queue/uploadQueueState';
+import { formatQueueWaitLabel } from './queue/queueWaitLabel';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
 
@@ -22,6 +24,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   confirming: 'Salvando na Biblioteca…',
   awaiting_approval: 'Aguardando aprovação do admin',
   ai_paused: 'IA indisponível — tente novamente',
+  still_running: 'Análise em andamento no servidor',
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
@@ -37,6 +40,10 @@ function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
   }
   if (status === 'error' || status === 'ai_paused') {
     return <Icon name="error" size={ICON_SIZE.sm} className="text-doqyn-danger" />;
+  }
+  // Nem erro nem espera vazia: o servidor está trabalhando, a aba é que parou de perguntar.
+  if (status === 'still_running') {
+    return <Icon name="cloud_sync" size={ICON_SIZE.sm} className="text-doqyn-info" />;
   }
   if (status === 'review') {
     return <Icon name="visibility" size={ICON_SIZE.sm} className="text-doqyn-warning" />;
@@ -57,8 +64,14 @@ function QueueRow({
   const { openReview, retryItem, removeItem, cancelAutoConfirm } = useUploadQueueContext();
 
   const subtitle = useMemo(() => {
-    if ((item.status === 'error' || item.status === 'ai_paused') && item.errorMessage)
+    if (
+      (item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'still_running') &&
+      item.errorMessage
+    ) {
       return item.errorMessage;
+    }
     if (item.status === 'done' && item.documentId) {
       return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
@@ -67,6 +80,12 @@ function QueueRow({
     }
     if (autoCountdown !== null) {
       return `Salvando automaticamente em ${autoCountdown}s · ${formatFileSize(item.fileSize)}`;
+    }
+    // Onde ele está na fila vale mais que "Analisando com IA…", que é igual para quem está sendo
+    // processado agora e para quem é o número 400.
+    const waitLabel = formatQueueWaitLabel(item.queueStatus);
+    if (waitLabel && (item.status === 'analyzing' || item.status === 'queued')) {
+      return `${waitLabel} · ${formatFileSize(item.fileSize)}`;
     }
     return `${STATUS_LABELS[item.status]} · ${formatFileSize(item.fileSize)}`;
   }, [item, autoCountdown]);
@@ -130,7 +149,10 @@ function QueueRow({
           Revisar
         </button>
       )}
-      {(item.status === 'error' || item.status === 'ai_paused') && (
+      {/* `still_running` também oferece reenvio: é decisão de quem está na tela, não automática. */}
+      {(item.status === 'error' ||
+        item.status === 'ai_paused' ||
+        item.status === 'still_running') && (
         <button
           type="button"
           onClick={() => retryItem(item.id)}
@@ -143,6 +165,7 @@ function QueueRow({
       {(item.status === 'done' ||
         item.status === 'error' ||
         item.status === 'ai_paused' ||
+        item.status === 'still_running' ||
         item.status === 'awaiting_approval') && (
         <button
           type="button"
@@ -157,11 +180,53 @@ function QueueRow({
   );
 }
 
+/**
+ * Quanto a fila fica na tela depois que todo arquivo foi salvo.
+ *
+ * Não some enquanto sobrar item aguardando revisão, aprovação ou com erro: ali a fila é a única
+ * pista do que ficou pendente. E o relógio pausa enquanto o ponteiro está em cima, senão a fila
+ * some justamente de quem estava lendo.
+ */
+const AUTO_DISMISS_MS = 8000;
+
+/**
+ * Tempo da saída. Precisa casar com `queue-drawer-leave` no CSS: se o React desmontar antes, a
+ * fila pisca e some seca, que é o defeito que a animação existe para tirar.
+ */
+const DISMISS_ANIMATION_MS = 260;
+
 /** Fila de uploads com progresso do lote e countdown de auto-confirmação. */
 export function UploadQueueDrawer() {
   const { items, pendingCount, clearFinished, autoConfirmCountdown, reviewSettings } =
     useUploadQueueContext();
   const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  const allSaved = items.length > 0 && items.every(isItemSavedInLibrary);
+
+  useEffect(() => {
+    if (!allSaved || hovered || leaving) return;
+
+    const timer = window.setTimeout(() => setLeaving(true), AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timer);
+  }, [allSaved, hovered, leaving, items.length]);
+
+  // Some depois da animação, não junto com ela.
+  useEffect(() => {
+    if (!leaving) return;
+
+    const timer = window.setTimeout(() => {
+      setLeaving(false);
+      clearFinished();
+    }, DISMISS_ANIMATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving, clearFinished]);
+
+  // Arquivo novo chegando no meio da saída cancela a saída: a fila volta a ser útil.
+  useEffect(() => {
+    if (!allSaved) setLeaving(false);
+  }, [allSaved]);
 
   if (items.length === 0) return null;
 
@@ -194,9 +259,14 @@ export function UploadQueueDrawer() {
 
   return (
     <section
-      className="queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal"
+      className={cn(
+        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal',
+        leaving && 'queue-drawer-leave',
+      )}
       aria-label="Fila de upload"
       data-testid="upload-queue-drawer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
@@ -221,7 +291,7 @@ export function UploadQueueDrawer() {
             {pendingCount === 0 && (
               <button
                 type="button"
-                onClick={clearFinished}
+                onClick={() => setLeaving(true)}
                 className="rounded-md px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
                 Limpar

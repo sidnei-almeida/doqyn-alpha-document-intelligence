@@ -3,7 +3,7 @@ import { DEV_TENANT_ID } from '../constants.js';
 
 const now = new Date();
 
-/** Seed inicial — admin temporário e membros de exemplo para desenvolvimento. */
+/** Seed inicial — admin da empresa e membros de exemplo para desenvolvimento. */
 export const SEED_COMPANY_MEMBERS: MongoCompanyMember[] = [
   {
     _id: 'member_admin',
@@ -14,7 +14,7 @@ export const SEED_COMPANY_MEMBERS: MongoCompanyMember[] = [
     email: 'admin@doqyn.com',
     position: 'Gestão',
     role: 'admin',
-    platformRoles: ['doqyn_admin', 'company_admin', 'user'],
+    platformRoles: ['company_admin', 'user'],
     status: 'active',
     groupIds: ['group_juridico', 'group_diretoria'],
     createdAt: now,

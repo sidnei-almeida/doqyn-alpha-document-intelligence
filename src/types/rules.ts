@@ -104,6 +104,15 @@ export interface ExtractionField {
   description?: string;
 }
 
+/** Alertas de vencimento configurados para a categoria da regra. */
+export interface ExpiryAlertConfig {
+  enabled: boolean;
+  /** Marcos de antecedência em dias; negativos avisam após o vencimento. */
+  offsetsDays: number[];
+  notifyGroupIds: string[];
+  notifyAfterExpiry: boolean;
+}
+
 export interface DocumentExtractionRule {
   id: string;
   classId: string;
@@ -112,6 +121,7 @@ export interface DocumentExtractionRule {
   fields: ExtractionField[];
   namingTemplate: string;
   minimumConfidence: number;
+  expiryAlerts?: ExpiryAlertConfig;
 }
 
 export interface RulesState {

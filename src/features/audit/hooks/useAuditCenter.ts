@@ -35,10 +35,9 @@ const EMPTY_OVERVIEW: AuditOverview = {
 const EVENTS_PAGE_SIZE = 50;
 
 export function useAuditCenter(documentId?: string) {
-  const { user, roles, hasRole } = useAuth();
+  const { user, roles } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = isAuditAdmin(roles, user?.role);
-  const isDoqynAdmin = hasRole('doqyn_admin');
   const tenantId = user?.companyId ?? '';
 
   const [eventsTab, setEventsTab] = useState<Exclude<AuditTabId, 'pending'>>('events');
@@ -65,7 +64,9 @@ export function useAuditCenter(documentId?: string) {
 
   const pendingQuery = useQuery({
     queryKey: ['audit-pending', tenantId],
-    queryFn: () => listPendingApprovals(isDoqynAdmin ? tenantId : undefined),
+    // O tenant vem sempre da sessão no servidor. O ramo que enviava um tenant explícito só servia
+    // ao papel global de plataforma, que não existe mais.
+    queryFn: () => listPendingApprovals(),
     enabled: Boolean(tenantId) && isAdmin,
     ...tenantLiveSyncQueryOptions(),
   });
@@ -114,7 +115,6 @@ export function useAuditCenter(documentId?: string) {
           documentGroupIds,
           notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
         },
-        isDoqynAdmin ? tenantId : undefined,
       ),
     onSuccess: async () => {
       toast.success('Solicitação aprovada com sucesso.');
@@ -128,7 +128,7 @@ export function useAuditCenter(documentId?: string) {
       if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
         return rejectDocumentUploadApproval(item.documentUpload.approvalId, reason).then(() => undefined);
       }
-      return usersApi.reject(item.membershipId, reason, isDoqynAdmin ? tenantId : undefined);
+      return usersApi.reject(item.membershipId, reason);
     },
     onSuccess: async () => {
       toast.success('Solicitação rejeitada.');
@@ -180,7 +180,6 @@ export function useAuditCenter(documentId?: string) {
 
   return {
     isAdmin,
-    isDoqynAdmin,
     overview,
     overviewLoading: overviewQuery.isLoading,
     overviewError: overviewQuery.isError,

@@ -14,7 +14,9 @@ import {
   OAuthCallbackRoute,
   OnboardingRoute,
   RequestAccessRoute,
+  MatrixRoute,
   RulesRoute,
+  ExpiryAlertsRoute,
   SettingsRoute,
   TermsRoute,
   TrackingRoute,
@@ -58,6 +60,8 @@ export const router = createBrowserRouter([
           // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.
           { path: '/upload', element: <DocumentSendRoute /> },
           { path: '/rules', element: <RulesRoute /> },
+          { path: '/matriz', element: <MatrixRoute /> },
+          { path: '/vencimentos', element: <ExpiryAlertsRoute /> },
           { path: '/users', element: <UserManagementRouteLazy /> },
           { path: '/documents', element: <Navigate to="/biblioteca" replace /> },
           { path: '/versioning', element: <VersioningRoute /> },

@@ -1,9 +1,6 @@
 import { COLLECTIONS } from '../db/constants.js';
 import type { MongoTenant, TenantIsolationStrategy, TenantType } from '../db/types.js';
-import {
-  resolveTenantCollectionNames,
-  type ResolvedTenantCollectionNames,
-} from './tenantResolver.js';
+import { resolveSharedCollections, type ResolvedTenantCollectionNames } from './tenantResolver.js';
 import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from './taxId.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
@@ -71,8 +68,7 @@ export function normalizeTenantForAudit(
     tenantType,
     isolation: {
       strategy: isolation?.strategy ?? fallback.strategy,
-      collectionPrefix:
-        isolation?.collectionPrefix?.trim() || fallback.collectionPrefix,
+      collectionPrefix: isolation?.collectionPrefix?.trim() || fallback.collectionPrefix,
     },
   };
 }
@@ -98,7 +94,7 @@ export function safeResolveTenantCollectionNames(
       };
     }
 
-    const names = resolveTenantCollectionNames(normalized);
+    const names = resolveSharedCollections();
     return {
       ok: true,
       names,
@@ -130,9 +126,7 @@ export function buildGovernanceAuditTargets(input: {
   tenantFilter?: string;
 }): GovernanceAuditTarget[] {
   const inferredPrefixes = inferCollectionPrefixesFromDb(input.dbCollectionNames);
-  const registryById = new Map(
-    input.registryTenants.map((tenant) => [tenant.tenantId, tenant]),
-  );
+  const registryById = new Map(input.registryTenants.map((tenant) => [tenant.tenantId, tenant]));
 
   if (input.tenantFilter) {
     const registryTenant = registryById.get(input.tenantFilter);
@@ -153,9 +147,10 @@ export function buildGovernanceAuditTargets(input: {
     return [
       {
         tenantId: input.tenantFilter,
-        tenantType: inferredMatch && input.tenantFilter === SHARED_INDIVIDUAL_COLLECTION_PREFIX
-          ? 'individual'
-          : 'unknown',
+        tenantType:
+          inferredMatch && input.tenantFilter === SHARED_INDIVIDUAL_COLLECTION_PREFIX
+            ? 'individual'
+            : 'unknown',
         source: inferredMatch ? 'inferred_collections' : 'registry',
         collectionPrefix: inferredMatch ? input.tenantFilter : undefined,
         pfAuditNote:
@@ -266,7 +261,9 @@ export function sanitizeGovernanceDocumentSample(
 
   if (Array.isArray(doc.fields)) {
     sample.fieldKeys = doc.fields
-      .map((field) => (field && typeof field === 'object' ? (field as { key?: string }).key : undefined))
+      .map((field) =>
+        field && typeof field === 'object' ? (field as { key?: string }).key : undefined,
+      )
       .filter((key): key is string => typeof key === 'string' && key.length > 0);
   }
 
@@ -290,7 +287,9 @@ export function parseGovernanceAuditTenantArg(argv: string[]): string | undefine
     if (arg.startsWith('--tenant=')) {
       const value = arg.slice('--tenant='.length).trim();
       if (!value) {
-        throw new Error('Flag --tenant= requer um valor (ex.: --tenant=company_alpha_consultoria).');
+        throw new Error(
+          'Flag --tenant= requer um valor (ex.: --tenant=company_alpha_consultoria).',
+        );
       }
       return value;
     }
@@ -303,10 +302,7 @@ export function parseGovernanceAuditTenantArg(argv: string[]): string | undefine
   return undefined;
 }
 
-export function formatTenantNotFoundMessage(
-  tenantId: string,
-  inferredPrefixes: string[],
-): string {
+export function formatTenantNotFoundMessage(tenantId: string, inferredPrefixes: string[]): string {
   const examples = inferredPrefixes.slice(0, 8);
   const suffix =
     examples.length > 0

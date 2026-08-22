@@ -1,8 +1,5 @@
-import { nanoid } from 'nanoid';
-import { createHash } from 'node:crypto';
-import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
-import type { MongoDocument, MongoDocumentVersion, MongoVersionMetadataField } from '../db/types.js';
+import type { MongoDocument, MongoVersionMetadataField } from '../db/types.js';
 import {
   buildDocumentSearchOrClause,
   buildDocumentTypeClause,
@@ -12,22 +9,14 @@ import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import {
   assertCanAccessDocument,
   tenantScopeFilterFromContext,
-  withTenantFieldsFromContext,
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
-import { createDocumentAuditLog } from '../audit/documentAuditLogService.js';
-import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
-import { createProcessingJob } from './processingService.js';
-import { storeUploadedDocumentFile } from './documentFileService.js';
-import { resolveStorageFileNames } from '../utils/resolveStorageFileNames.js';
 import type { AuthUser } from '../auth/types.js';
 import type { MongoPreviewStorageSlot } from '../db/types.js';
 import {
   loadMemberDocumentGroupIds,
 } from '../tenancy/documentAccess.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
-import { logger } from '../utils/logger.js';
 import { buildDocumentListItems } from './documentListItems.js';
 import {
   loadDocumentSignatureSummary,
@@ -39,46 +28,6 @@ import {
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
 import { dedupeMetadataRecord } from '../../shared/metadataKeyNormalize.js';
-import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
-
-/** Stub legado do upload simulado — pipeline real usa analyze/confirm. */
-async function extractMetadata(input: {
-  originalFileName: string;
-  mimeType: string;
-  fileSize: number;
-  documentType: string;
-}) {
-  return {
-    fileName: input.originalFileName,
-    mimeType: input.mimeType,
-    fileSize: input.fileSize,
-    documentType: input.documentType,
-    extractedAt: new Date().toISOString(),
-    fields: {
-      detectedLanguage: 'pt-BR',
-      pageCount: input.mimeType === 'application/pdf' ? 3 : 1,
-    },
-  };
-}
-
-async function classifyDocument(
-  documentType: string,
-  metadata: Record<string, unknown>,
-) {
-  const categoryMap: Record<string, string> = {
-    Contrato: 'legal',
-    'Nota Fiscal': 'financial',
-    Relatório: 'report',
-    'Política Interna': 'policy',
-    Comprovante: 'receipt',
-  };
-
-  return {
-    category: categoryMap[documentType] ?? 'general',
-    confidence: 0.92,
-    metadata,
-  };
-}
 
 export type DocumentListItemPermissions = {
   canPreview: boolean;
@@ -88,266 +37,11 @@ export type DocumentListItemPermissions = {
   canUpdate: boolean;
 };
 
-export interface UploadInput {
-  tenantId: string;
-  ownerUserId: string;
-  ownerName: string;
-  originalFileName: string;
-  displayName: string;
-  documentType: string;
-  accessGroups: string[];
-  notes?: string;
-  fileSize: number;
-  mimeType: string;
-  fileBuffer?: Buffer;
-  storageScope?: TenantStorageScope;
-}
-
 function requireTenantId(tenantId?: string): string {
   if (!tenantId?.trim()) {
     throw new ServiceError('tenantId é obrigatório.', 'TENANT_REQUIRED', 400);
   }
   return tenantId.trim();
-}
-
-export async function uploadDocument(input: UploadInput) {
-  const tenantId = requireTenantId(input.tenantId);
-  const hash = input.fileBuffer
-    ? createHash('sha256').update(input.fileBuffer).digest('hex')
-    : `sim-${nanoid(16)}`;
-
-  const area = input.accessGroups[0] ?? 'Geral';
-  const versionId = nanoid();
-  const documentId = nanoid();
-  const ownershipFields = buildInitialDocumentOwnershipFields({
-    ownerUserId: input.ownerUserId,
-    ownerName: input.ownerName,
-  });
-  const now = ownershipFields.createdAt;
-
-  if (!isMongoNativeConfigured()) {
-    logger.info('Upload simulado (sem MongoDB)', { fileName: input.originalFileName });
-    const simulatedDoc = {
-      id: documentId,
-      tenantId,
-      originalFileName: input.originalFileName,
-      displayName: input.displayName,
-      documentType: input.documentType,
-      status: 'analyzing' as const,
-      version: 1,
-      currentVersionId: versionId,
-      ownerUserId: input.ownerUserId,
-      ownerName: input.ownerName,
-      area,
-      accessGroups: input.accessGroups,
-      metadata: await extractMetadata(input),
-      processingStatus: 'in_progress' as const,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-    return { document: simulatedDoc, versionId };
-  }
-
-  const { documents, documentVersions, storage } = await getTenantCollections(tenantId, {
-    userId: input.ownerUserId,
-  });
-  const metadata = await extractMetadata(input);
-  const classification = await classifyDocument(input.documentType, metadata);
-
-  const resolvedNames = resolveStorageFileNames({
-    originalFileName: input.originalFileName,
-    aiSuggestedFileName: input.displayName,
-    namingMode: 'original',
-    finalFileName: input.displayName !== input.originalFileName ? input.displayName : undefined,
-    documentId,
-    versionLabel: 'v1.0',
-  });
-
-  const skippedPreviewSlot: MongoDocumentVersion['storage']['preview'] = {
-    provider: 'cloudflare_r2',
-    status: 'skipped',
-    bucketAlias: null,
-    objectKey: null,
-    errorCode: 'PREVIEW_NOT_GENERATED',
-    errorMessage: 'Preview não gerado no upload legado.',
-  };
-
-  const document = withTenantFieldsFromContext(
-    storage,
-    {
-    _id: documentId,
-    documentCode: `UP-${documentId.slice(0, 8).toUpperCase()}`,
-    originalFileName: input.originalFileName,
-    displayName: input.displayName,
-    documentType: input.documentType,
-    title: resolvedNames.finalFileName,
-    currentFileName: resolvedNames.finalFileName,
-    classId: 'unclassified',
-    className: input.documentType,
-    status: 'active',
-    processingStatus: 'pending',
-    version: 1,
-    currentVersionId: versionId,
-    currentVersionLabel: 'v1.0',
-    versionCount: 1,
-    ownerUserId: ownershipFields.ownerUserId,
-    ownerName: ownershipFields.ownerName,
-    access: {
-      viewGroupIds: input.accessGroups,
-      downloadGroupIds: input.accessGroups,
-      updateGroupIds: input.accessGroups,
-      auditGroupIds: input.accessGroups,
-      shareGroupIds: input.accessGroups,
-    },
-    searchMeta: { people: [], dates: [] },
-    createdBy: ownershipFields.createdBy,
-    updatedBy: ownershipFields.updatedBy,
-    updatedByName: ownershipFields.updatedByName,
-    createdAt: ownershipFields.createdAt,
-    updatedAt: ownershipFields.updatedAt,
-  },
-    input.ownerUserId,
-  );
-
-  await documents.insertOne(document as unknown as MongoDocument);
-
-  let versionStorage: MongoDocumentVersion['storage'] = {
-    primary: { provider: 'aws_s3', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
-    backup: { provider: 'cloudflare_r2', status: 'pending', objectKey: null, bucketAlias: null, storedAt: null },
-  };
-
-  if (input.fileBuffer && input.fileBuffer.length > 0) {
-    try {
-      versionStorage = await storeUploadedDocumentFile({
-        tenantId,
-        documentId,
-        versionId,
-        buffer: input.fileBuffer,
-        mimeType: input.mimeType,
-        originalFileName: input.originalFileName,
-        storageFileName: resolvedNames.storageFileName,
-        storageScope: input.storageScope,
-      });
-    } catch (error) {
-      await documents.deleteOne({ _id: documentId } as Record<string, unknown>);
-      throw error;
-    }
-  }
-
-  versionStorage = {
-    ...versionStorage,
-    preview: skippedPreviewSlot,
-  };
-
-  const version = withTenantFieldsFromContext(
-    storage,
-    {
-    _id: versionId,
-    documentId,
-    versionNumber: 1,
-    versionLabel: 'v1.0',
-    previousVersionId: null,
-    originalFileName: input.originalFileName,
-    recommendedFileName: resolvedNames.aiSuggestedFileName || input.displayName,
-    aiSuggestedFileName: resolvedNames.aiSuggestedFileName || input.displayName,
-    finalFileName: resolvedNames.finalFileName,
-    namingMode: resolvedNames.namingMode,
-    storageFileName: resolvedNames.storageFileName,
-    previewStorageFileName: resolvedNames.previewStorageFileName,
-    selectedFileName: resolvedNames.selectedFileName,
-    file: {
-      mimeType: input.mimeType,
-      extension: input.originalFileName.split('.').pop() ?? '',
-      sizeBytes: input.fileSize,
-      sha256: hash,
-    },
-    classification: {
-      classId: 'unclassified',
-      className: input.documentType,
-      confidence: 0,
-      requiresReview: true,
-      reason: 'upload_legacy',
-    },
-    rule: { ruleId: 'none', ruleVersion: 0 },
-    metadata: {},
-    storage: versionStorage,
-    review: { required: true, reasons: ['upload_legacy'], reviewedBy: null, reviewedAt: null },
-    changeNotes: input.notes,
-    uploadedBy: input.ownerName,
-    createdBy: input.ownerUserId,
-    createdAt: now,
-    updatedAt: now,
-  },
-    input.ownerUserId,
-  );
-
-  await documentVersions.insertOne(version as unknown as MongoDocumentVersion);
-
-  const uploadNameSnapshot = buildDocumentNameSnapshot({
-    finalFileName: input.displayName,
-    originalFileName: input.displayName,
-  });
-
-  await createDocumentAuditLog(
-    {
-      tenantId,
-      tenantType: storage.tenantType === 'individual' ? 'individual' : 'business',
-      collectionPrefix: storage.collectionPrefix,
-      ownerTenantId: storage.tenantId,
-      ownerUserId: input.ownerUserId,
-      actorUserId: input.ownerUserId,
-      actorDisplayName: input.ownerName,
-    },
-    {
-      action: 'document.upload_completed',
-      description: `${input.displayName} enviado para análise`,
-      documentId,
-      versionId,
-      area,
-      target: {
-        type: 'document',
-        id: documentId,
-        nameSnapshot: uploadNameSnapshot,
-      },
-      metadata: sanitizeAuditMetadata({
-        documentName: uploadNameSnapshot,
-        mimeType: input.mimeType,
-        sizeBytes: input.fileSize,
-        checksumSha256: hash,
-        source: 'upload_legacy',
-      }),
-      occurredAt: now,
-    },
-  );
-
-  await createProcessingJob({
-    tenantId,
-    documentId,
-    versionId,
-    ownerUserId: input.ownerUserId,
-  });
-
-  return {
-    document: {
-      id: documentId,
-      tenantId,
-      originalFileName: input.originalFileName,
-      displayName: input.displayName,
-      documentType: input.documentType,
-      status: 'analyzing',
-      version: 1,
-      currentVersionId: versionId,
-      ownerUserId: input.ownerUserId,
-      ownerName: input.ownerName,
-      area,
-      accessGroups: input.accessGroups,
-      metadata: { ...metadata, classification },
-      processingStatus: 'in_progress',
-      createdAt: now,
-      updatedAt: now,
-    },
-    versionId,
-  };
 }
 
 function mapPreviewStatus(
@@ -591,7 +285,11 @@ export async function getDocumentDetail(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const { permissions: perms } = await resolveDocumentAccessWithShare({
+  const {
+    permissions: perms,
+    memberGroupIds,
+    governanceIndex,
+  } = await resolveDocumentAccessWithShare({
     user,
     doc: doc as MongoDocument,
     sharedWithUserId: user.id,
@@ -604,7 +302,12 @@ export async function getDocumentDetail(
     canEditMetadata: perms.canEditMetadata,
     canUpdate: perms.canUpdate,
     canTransferOwnership: perms.canTransferOwnership,
-    canViewTracking: canViewDocumentTracking(user),
+    canViewTracking: canViewDocumentTracking(user, {
+      ownerUserId: (doc as MongoDocument).ownerUserId,
+      classId: (doc as MongoDocument).classId,
+      memberGroupIds,
+      governanceIndex,
+    }),
     canShare: perms.canShare,
     sharedViaGrant: perms.sharedViaGrant,
   };

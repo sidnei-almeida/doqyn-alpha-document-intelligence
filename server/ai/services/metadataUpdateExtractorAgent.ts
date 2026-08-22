@@ -17,6 +17,7 @@ import {
   type VersionComparisonResult,
 } from '../utils/versionComparison.js';
 import { completeJsonPrompt, type GroqPromptContext } from './groqClient.js';
+import { isGroqSaturationError } from '../utils/groqSaturation.js';
 
 export type VersionUpdateExtractionResult = MetadataExtractionResult & {
   versionComparison: VersionComparisonResult;
@@ -180,7 +181,13 @@ export async function extractMetadataForVersionUpdate(input: {
       changedFields: versionComparison.changedFields,
       riskWarnings,
     };
-  } catch {
+  } catch (error) {
+    // Saturação da vazão sobe para o worker devolver o job à fila; o resto continua virando
+    // revisão manual da nova versão.
+    if (isGroqSaturationError(error)) {
+      throw error;
+    }
+
     return buildFallback(requiredFieldKeys, input.selectedClass.name, input.previousVersion.expectedNextVersionLabel);
   }
 }

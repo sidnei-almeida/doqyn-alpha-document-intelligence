@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { Collection } from 'mongodb';
-import { resolveExternalSharingConfig } from '../../config/externalSharingConfig.js';
+import {
+  resolveExternalSharingConfig,
+  type ExternalSharingTenantConfig,
+} from '../../config/externalSharingConfig.js';
 import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type {
@@ -14,7 +17,7 @@ import {
   assertCanAccessDocument,
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
-import { loadMemberDocumentGroupIds } from '../../tenancy/documentAccess.js';
+import { loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { getTenantById } from '../tenantsService.js';
@@ -46,6 +49,32 @@ function addDays(base: Date, days: number): Date {
   const next = new Date(base);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+/**
+ * Recusa data inválida, no passado, ou além do teto de validade do ambiente.
+ *
+ * O acesso externo não é reavaliado depois de concedido: o link continua valendo mesmo quando quem
+ * o criou deixa a empresa. A validade é o único mecanismo que fecha o link sozinho, então deixá-la
+ * ilimitada equivalia a permitir acesso permanente a documento da empresa.
+ */
+function assertExpirationWithinLimit(
+  expiresAt: Date,
+  config: ExternalSharingTenantConfig,
+  now: Date,
+): void {
+  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
+    throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
+  }
+
+  const limit = addDays(now, config.maxExternalShareExpirationDays);
+  if (expiresAt.getTime() > limit.getTime()) {
+    throw new ServiceError(
+      `A validade do compartilhamento externo não pode passar de ${config.maxExternalShareExpirationDays} dias.`,
+      'EXPIRES_AT_ABOVE_LIMIT',
+      400,
+    );
+  }
 }
 
 function maskRecipientEmail(email: string): string {
@@ -114,15 +143,16 @@ async function loadShareableDocumentForExternal(
   documentId: string,
 ): Promise<{
   doc: MongoDocument;
-  documentCollection: string;
 }> {
-  const memberGroupIds = await loadMemberDocumentGroupIds({
+  // Sem o índice de governança o verbo `share` do mapa de regras não é lido e só admin e dono
+  // conseguiriam compartilhar externamente.
+  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
     userId: user.id,
     membershipId: ctx.membershipId,
   });
 
-  const { documents, storage, names } = await getTenantCollections(ctx.tenantId, {
+  const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
@@ -151,7 +181,7 @@ async function loadShareableDocumentForExternal(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds)) {
+  if (!canUserShareDocument(user, doc as MongoDocument, memberGroupIds, governanceIndex)) {
     throw new ServiceError(
       'Você não tem permissão para compartilhar este documento externamente.',
       'DOCUMENT_EXTERNAL_SHARE_DENIED',
@@ -159,7 +189,7 @@ async function loadShareableDocumentForExternal(
     );
   }
 
-  return { doc: doc as MongoDocument, documentCollection: names.documents };
+  return { doc: doc as MongoDocument };
 }
 
 export async function listDocumentExternalShareGrants(
@@ -170,7 +200,7 @@ export async function listDocumentExternalShareGrants(
   await loadShareableDocumentForExternal(ctx, user, documentId);
   const collection = await getExternalShareGrantsCollection();
   const grants = await collection
-    .find({ documentId, documentTenantId: ctx.tenantId })
+    .find({ documentId, tenantId: ctx.tenantId })
     .sort({ createdAt: -1 })
     .toArray();
 
@@ -232,7 +262,7 @@ export async function createDocumentExternalShareGrant(
 
   const phoneFields = resolveRecipientPhoneFields(input.recipientPhone);
 
-  const { doc, documentCollection } = await loadShareableDocumentForExternal(ctx, user, documentId);
+  const { doc } = await loadShareableDocumentForExternal(ctx, user, documentId);
   const permissions = defaultExternalPermissions(input.permissions);
   if (!permissions.canView) {
     throw new ServiceError('canView é obrigatório para compartilhamento.', 'INVALID_SHARE_PERMISSIONS', 400);
@@ -244,9 +274,7 @@ export async function createDocumentExternalShareGrant(
   const expiresAt = input.expiresAt
     ? new Date(input.expiresAt)
     : addDays(new Date(), config.defaultExternalShareExpirationDays);
-  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
-    throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
-  }
+  assertExpirationWithinLimit(expiresAt, config, new Date());
 
   const collection = await getExternalShareGrantsCollection();
   const now = new Date();
@@ -301,9 +329,8 @@ export async function createDocumentExternalShareGrant(
   const grant: MongoExternalDocumentShareGrant = {
     _id: `extshare_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
     documentTenantType: ctx.tenantType === 'individual' ? 'individual' : 'business',
-    documentCollection,
     sharedByUserId: user.id,
     sharedByNameSnapshot: user.name?.trim() || user.email,
     recipientEmail,
@@ -356,7 +383,7 @@ export async function revokeDocumentExternalShareGrant(
   const grant = await collection.findOne({
     _id: shareId,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
 
   if (!grant) {
@@ -404,7 +431,7 @@ export async function regenerateDocumentExternalShareGrant(
   const grant = await collection.findOne({
     _id: shareId,
     documentId,
-    documentTenantId: ctx.tenantId,
+    tenantId: ctx.tenantId,
   });
 
   if (!grant) {
@@ -419,9 +446,7 @@ export async function regenerateDocumentExternalShareGrant(
   let expiresAt = grant.expiresAt;
   if (input?.expiresAt) {
     expiresAt = new Date(input.expiresAt);
-    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
-      throw new ServiceError('Data de expiração inválida.', 'INVALID_EXPIRES_AT', 400);
-    }
+    assertExpirationWithinLimit(expiresAt, config, now);
   } else if (!expiresAt || expiresAt.getTime() <= now.getTime()) {
     expiresAt = addDays(now, config.defaultExternalShareExpirationDays);
   }
@@ -534,7 +559,7 @@ export async function isExternalShareDocumentAvailable(
   grant: MongoExternalDocumentShareGrant,
 ): Promise<boolean> {
   if (!isMongoNativeConfigured()) return false;
-  const { documents, storage } = await getTenantCollections(grant.documentTenantId, {
+  const { documents, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
   const doc = await documents.findOne({
@@ -615,8 +640,8 @@ export async function getExternalSharePortalPayload(token: string) {
   }
 
   const grant = access.grant;
-  const tenant = await getTenantById(grant.documentTenantId);
-  const { documents, storage } = await getTenantCollections(grant.documentTenantId, {
+  const tenant = await getTenantById(grant.tenantId);
+  const { documents, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
   const doc = await documents.findOne({
@@ -639,7 +664,7 @@ export async function getExternalSharePortalPayload(token: string) {
     inviteExpiresAt: grant.inviteExpiresAt.toISOString(),
     sharedAt: grant.createdAt.toISOString(),
     sharedByName: grant.sharedByNameSnapshot ?? 'Usuário',
-    ownerTenantName: tenant?.displayName ?? grant.documentTenantId,
+    ownerTenantName: tenant?.displayName ?? grant.tenantId,
     recipientEmail: grant.recipientEmail,
     recipientName: grant.recipientName ?? null,
     recipientOrganizationName: grant.recipientOrganizationName ?? null,
@@ -680,10 +705,10 @@ export function buildExternalShareAuditContext(
   requestId?: string,
 ): DocumentAuditContext {
   return {
-    tenantId: grant.documentTenantId,
+    tenantId: grant.tenantId,
     tenantType: grant.documentTenantType ?? 'business',
-    collectionPrefix: grant.documentTenantId,
-    ownerTenantId: grant.documentTenantId,
+    collectionPrefix: grant.tenantId,
+    ownerTenantId: grant.tenantId,
     ownerUserId: grant.sharedByUserId,
     actorUserId: grant.sharedByUserId,
     actorDisplayName: grant.sharedByNameSnapshot,

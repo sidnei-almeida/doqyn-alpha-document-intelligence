@@ -1,0 +1,431 @@
+#!/usr/bin/env bash
+# Entrypoint único do ambiente de desenvolvimento DOQYN.
+#
+#   ./doqyn up       sobe tudo, na ordem certa, em background
+#   ./doqyn status   o que está no ar e em que porta
+#   ./doqyn logs     acompanha os logs (Ctrl+C sai do log, não derruba nada)
+#   ./doqyn down     derruba os serviços que este script subiu
+#   ./doqyn reset    caminho destrutivo, explícito e separado do `up`
+#
+# `up` PRESERVA dados: só semeia quando o banco está vazio. Para recomeçar do
+# zero use `reset`, que se recusa a rodar contra banco que não seja de dev.
+set -euo pipefail
+
+ALPHA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AUTH_DIR="$(cd "$ALPHA_DIR/../doqyn-auth-service" 2>/dev/null && pwd || true)"
+LOG_DIR="$ALPHA_DIR/logs/dev"
+RUN_DIR="$LOG_DIR/run"
+MANIFEST="$AUTH_DIR/.generated/doqyn-demo-seed-manifest.json"
+
+AUTH_PORT=4100
+API_PORT=3001
+WEB_PORT=5173
+
+# ── saída ────────────────────────────────────────────────────────────────────
+if [[ -t 1 ]]; then
+  C_OK=$'\033[32m'; C_ERR=$'\033[31m'; C_WARN=$'\033[33m'; C_DIM=$'\033[2m'; C_OFF=$'\033[0m'
+else
+  C_OK=''; C_ERR=''; C_WARN=''; C_DIM=''; C_OFF=''
+fi
+step() { printf '%s→%s %s\n' "$C_DIM" "$C_OFF" "$1"; }
+ok()   { printf '%s✓%s %s\n' "$C_OK" "$C_OFF" "$1"; }
+warn() { printf '%s!%s %s\n' "$C_WARN" "$C_OFF" "$1"; }
+die()  { printf '%s✗%s %s\n' "$C_ERR" "$C_OFF" "$1" >&2; exit 1; }
+
+# ── utilidades ───────────────────────────────────────────────────────────────
+env_value() {
+  # Lê uma variável do .env sem exportar nada e sem imprimir o valor em log.
+  local file="$1" key="$2" line
+  line="$(grep -m1 "^${key}=" "$file" 2>/dev/null || true)"
+  line="${line#${key}=}"
+  line="${line%\"}"; line="${line#\"}"
+  line="${line%\'}"; line="${line#\'}"
+  printf '%s' "$line"
+}
+
+port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&- && return 0 || return 1; }
+
+# Quantos usuários existem no Postgres do auth. Devolve 0 quando o container não responde ou a
+# tabela ainda não existe — nos dois casos o chamador trata como "precisa semear".
+auth_user_count() {
+  local container="doqyn-auth-service-postgres-auth-1" out
+  out="$(docker exec "$container" psql -U doqyn -d doqyn_auth -tAc \
+    'select count(*) from auth_users' 2>/dev/null | tr -d '[:space:]')"
+  [[ "$out" =~ ^[0-9]+$ ]] && printf '%s' "$out" || printf '0'
+}
+
+wait_for_http() {
+  local url="$1" label="$2" tries="${3:-60}" i
+  for ((i = 1; i <= tries; i++)); do
+    if curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then ok "$label no ar"; return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+wait_for_file() {
+  local path="$1" label="$2" tries="${3:-60}" i
+  for ((i = 1; i <= tries; i++)); do
+    [[ -f "$path" ]] && { ok "$label pronto"; return 0; }
+    sleep 1
+  done
+  return 1
+}
+
+pid_alive() { [[ -f "$1" ]] && kill -0 "$(cat "$1")" 2>/dev/null; }
+
+start_bg() {
+  # start_bg <nome> <diretório> <comando...>
+  local name="$1" dir="$2"; shift 2
+  mkdir -p "$RUN_DIR"
+  if pid_alive "$RUN_DIR/$name.pid"; then ok "$name já rodando (pid $(cat "$RUN_DIR/$name.pid"))"; return 0; fi
+  # `setsid` + stdin de /dev/null: sem isso o filho herda o descritor de saída do
+  # shell e segura o pipe, então `./doqyn up | tee` nunca devolve o prompt — o
+  # mesmo sintoma de terminal preso que este script existe para eliminar.
+  #
+  # O pid é gravado DE DENTRO da nova sessão, não com `$!`: `setsid` bifurca e
+  # encerra, então `$!` seria o invólucro morto e o `down` não acharia o servidor.
+  ( cd "$dir" && setsid bash -c 'echo $$ >"$1"; shift; exec "$@"' _ \
+      "$RUN_DIR/$name.pid" "$@" </dev/null >"$LOG_DIR/$name.log" 2>&1 & )
+  step "$name iniciado (log: logs/dev/$name.log)"
+}
+
+stop_bg() {
+  local name="$1" pid
+  if pid_alive "$RUN_DIR/$name.pid"; then
+    pid="$(cat "$RUN_DIR/$name.pid")"
+    # Mata o grupo: npm/concurrently/tsx deixam filhos que sobrevivem ao pai.
+    kill -TERM -- "-$(ps -o pgid= "$pid" | tr -d ' ')" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+    sleep 1
+    kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null || true
+    ok "$name parado"
+  fi
+  rm -f "$RUN_DIR/$name.pid"
+}
+
+mongo_is_local() {
+  local uri; uri="$(env_value "$ALPHA_DIR/.env" MONGODB_URI)"
+  [[ "$uri" == mongodb://localhost:* || "$uri" == mongodb://127.0.0.1:* ]]
+}
+
+require_dev_mongo() {
+  # Guarda do caminho destrutivo. O nome do banco é a fonte da verdade porque é
+  # o que `getDb()` de fato abre — a URI pode apontar para Atlas.
+  local db; db="$(env_value "$ALPHA_DIR/.env" MONGODB_DATABASE)"
+  [[ -n "$db" ]] || die "MONGODB_DATABASE não definida no .env — recuso resetar às cegas."
+  if [[ "$db" =~ (prod|production) ]]; then
+    die "MONGODB_DATABASE=\"$db\" parece produção. Recusado."
+  fi
+  if [[ ! "$db" =~ (^|_)(dev|test|local)($|_) ]]; then
+    die "MONGODB_DATABASE=\"$db\" não casa com padrão de dev (dev/test/local). Recusado."
+  fi
+  if ! mongo_is_local; then
+    warn "MONGODB_URI aponta para host REMOTO (Atlas) e o banco \"$db\" será apagado."
+    read -r -p "Digite o nome do banco para confirmar: " typed
+    [[ "$typed" == "$db" ]] || die "Confirmação não bateu. Nada foi apagado."
+  fi
+}
+
+preflight() {
+  [[ -n "$AUTH_DIR" ]] || die "doqyn-auth-service não encontrado em ../doqyn-auth-service (é vizinho deste repo)."
+  [[ -f "$ALPHA_DIR/.env" ]] || die "Falta .env no alpha. Copie de .env.example."
+  [[ -f "$AUTH_DIR/.env" ]] || die "Falta .env no auth-service. Copie de .env.example."
+  command -v docker >/dev/null || die "docker não encontrado no PATH."
+  docker info >/dev/null 2>&1 || die "docker instalado mas não responde — o daemon está rodando?"
+  command -v curl >/dev/null || die "curl não encontrado no PATH."
+  mkdir -p "$LOG_DIR" "$RUN_DIR"
+}
+
+# prisma/schema.prisma exige DATABASE_URL_DIRECT (conexão sem pooler). Em dev ela é a mesma
+# DATABASE_URL. Exporta o valor para todo comando prisma deste script em vez de repetir a regra em
+# cada chamada — foi assim que o `reset` ficou para trás quando o `up` foi corrigido.
+ensure_prisma_direct_url() {
+  [[ -n "${DATABASE_URL_DIRECT:-}" ]] && return 0
+
+  local direct
+  direct="$(env_value "$AUTH_DIR/.env" DATABASE_URL_DIRECT)"
+  if [[ -z "$direct" ]]; then
+    direct="$(env_value "$AUTH_DIR/.env" DATABASE_URL)"
+    [[ -n "$direct" ]] || die "nem DATABASE_URL nem DATABASE_URL_DIRECT definidas no .env do auth-service."
+    warn "DATABASE_URL_DIRECT ausente no .env do auth-service — usando DATABASE_URL nos comandos prisma."
+    printf '%s  Para parar de ver este aviso, acrescente ao %s/.env:%s\n' "$C_DIM" "$AUTH_DIR" "$C_OFF"
+    printf '%s      DATABASE_URL_DIRECT=<mesmo valor de DATABASE_URL>%s\n' "$C_DIM" "$C_OFF"
+  fi
+  export DATABASE_URL_DIRECT="$direct"
+}
+
+# ── comandos ─────────────────────────────────────────────────────────────────
+cmd_up() {
+  preflight
+
+  step "Postgres do auth-service..."
+  ( cd "$AUTH_DIR" && docker compose up -d --wait postgres-auth >/dev/null ) || die "não subiu o postgres-auth."
+  ok "postgres-auth no ar"
+
+  step "Migrações do Prisma..."
+  ensure_prisma_direct_url
+  ( cd "$AUTH_DIR" && npx prisma migrate deploy >/dev/null 2>&1 ) \
+    || die "prisma migrate deploy falhou. Rode em $AUTH_DIR para ver o erro."
+  ok "schema em dia"
+
+  # O manifest é só um arquivo: ele sobrevive a um banco esvaziado por fora (uma suíte de testes
+  # apontada para o banco errado, um `prisma migrate reset` manual). Quando isso acontece, o `up`
+  # antes seguia em silêncio e o ambiente só se revelava quebrado no primeiro login, com
+  # INVALID_CREDENTIALS e nenhuma pista da causa. Agora quem manda é o banco.
+  local users_count
+  users_count="$(auth_user_count)"
+
+  if [[ ! -f "$MANIFEST" || "$users_count" == "0" ]]; then
+    if [[ -f "$MANIFEST" && "$users_count" == "0" ]]; then
+      warn "manifest presente mas o banco do auth está vazio — semeando de novo."
+    else
+      step "Seed demo do auth (primeira vez — gera o manifest que o alpha consome)..."
+    fi
+    ( cd "$AUTH_DIR" && npm run dev:seed:demo ) || die "seed demo do auth falhou."
+  else
+    ok "manifest do auth já existe — seed preservado ($users_count usuários)"
+  fi
+
+  if mongo_is_local; then
+    step "Mongo local..."
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml up -d --wait mongo >/dev/null ) || die "não subiu o mongo."
+    ok "mongo no ar"
+  else
+    ok "MONGODB_URI é remoto (Atlas) — nenhum container de mongo necessário"
+  fi
+
+  # Os dois passos abaixo falam com o Atlas e com o R2. Rede remota trava calada: sem `timeout` o
+  # `up` fica pendurado para sempre num passo opcional, e com a saída em /dev/null nem dá para
+  # saber onde parou. Log em arquivo + teto de tempo: no pior caso o ambiente sobe sem seed,
+  # dizendo onde olhar.
+  step "Índices e collections do Mongo..."
+  ( cd "$ALPHA_DIR" && timeout 180 npm run db:setup >"$LOG_DIR/db-setup.log" 2>&1 ) \
+    || die "db:setup falhou ou passou de 180s. Log: logs/dev/db-setup.log"
+  ok "índices em dia"
+
+  step "Seed demo do alpha..."
+  local seed_status=0
+  ( cd "$ALPHA_DIR" && timeout 300 npm run dev:seed:demo >"$LOG_DIR/seed.log" 2>&1 ) || seed_status=$?
+  if [[ "$seed_status" == "0" ]]; then
+    ok "seed do alpha aplicado"
+  elif [[ "$seed_status" == "124" ]]; then
+    warn "seed do alpha passou de 300s e foi interrompido — subindo assim mesmo. Log: logs/dev/seed.log"
+  else
+    warn "seed do alpha não aplicou (código $seed_status). Log: logs/dev/seed.log"
+  fi
+
+  start_bg auth "$AUTH_DIR" npm run dev:server
+  wait_for_http "http://localhost:$AUTH_PORT/health" "auth-service ($AUTH_PORT)" \
+    || die "auth-service não respondeu em $AUTH_PORT. Log: logs/dev/auth.log"
+
+  start_bg api "$ALPHA_DIR" npm run dev:api
+  wait_for_http "http://localhost:$API_PORT/api/health" "API ($API_PORT)" \
+    || die "API não respondeu em $API_PORT. Log: logs/dev/api.log"
+
+  start_bg web "$ALPHA_DIR" npm run dev:web
+  wait_for_http "http://localhost:$WEB_PORT" "Vite ($WEB_PORT)" 90 \
+    || warn "Vite ainda não respondeu — pode estar compilando. Veja logs/dev/web.log"
+
+  printf '\n'
+  ok "Ambiente no ar — abra http://localhost:$WEB_PORT"
+  printf '%s  ./doqyn status · ./doqyn logs · ./doqyn down%s\n' "$C_DIM" "$C_OFF"
+}
+
+cmd_status() {
+  mkdir -p "$RUN_DIR"
+  printf 'SERVIÇO       PORTA  PROCESSO   HTTP\n'
+  local rows=(
+    "auth $AUTH_PORT http://localhost:$AUTH_PORT/health"
+    "api $API_PORT http://localhost:$API_PORT/api/health"
+    "web $WEB_PORT http://localhost:$WEB_PORT"
+  )
+  local row name port url proc http
+  for row in "${rows[@]}"; do
+    read -r name port url <<<"$row"
+    pid_alive "$RUN_DIR/$name.pid" && proc="up" || { port_busy "$port" && proc="externo" || proc="-"; }
+    curl -fsS --max-time 2 "$url" >/dev/null 2>&1 && http="ok" || http="-"
+    printf '%-13s %-6s %-10s %s\n' "$name" "$port" "$proc" "$http"
+  done
+  printf '\n'
+  [[ -f "$MANIFEST" ]] && ok "manifest do seed demo presente" || warn "manifest do seed demo ausente — rode ./doqyn up"
+  mongo_is_local && printf '%sMongo: container local%s\n' "$C_DIM" "$C_OFF" \
+                 || printf '%sMongo: remoto (Atlas)%s\n' "$C_DIM" "$C_OFF"
+}
+
+cmd_logs() {
+  mkdir -p "$LOG_DIR"
+  local files=()
+  local n
+  for n in auth api web; do [[ -f "$LOG_DIR/$n.log" ]] && files+=("$LOG_DIR/$n.log"); done
+  [[ ${#files[@]} -gt 0 ]] || die "nenhum log ainda. Rode ./doqyn up primeiro."
+  printf '%sCtrl+C sai do log — não derruba os serviços.%s\n\n' "$C_DIM" "$C_OFF"
+  tail -n 40 -f "${files[@]}"
+}
+
+cmd_down() {
+  mkdir -p "$RUN_DIR"
+  stop_bg web; stop_bg api; stop_bg auth
+  if [[ "${1:-}" == "--all" ]]; then
+    step "Parando containers..."
+    [[ -n "$AUTH_DIR" ]] && ( cd "$AUTH_DIR" && docker compose stop postgres-auth >/dev/null 2>&1 || true )
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml stop mongo >/dev/null 2>&1 || true )
+    ok "containers parados"
+  else
+    printf '%sBancos seguem no ar (mais rápido no próximo up). Use ./doqyn down --all para parar tudo.%s\n' "$C_DIM" "$C_OFF"
+  fi
+}
+
+cmd_reset() {
+  preflight
+  printf '%sDestrutivo:%s apaga o banco do auth-service E o banco do alpha, depois semeia do zero.\n' "$C_WARN" "$C_OFF"
+  require_dev_mongo
+
+  cmd_down >/dev/null 2>&1 || true
+
+  step "Postgres do auth-service..."
+  ( cd "$AUTH_DIR" && docker compose up -d --wait postgres-auth >/dev/null ) || die "não subiu o postgres-auth."
+
+  ensure_prisma_direct_url
+
+  step "Reset do Postgres..."
+  ( cd "$AUTH_DIR" && npm run dev:reset:postgres -- --confirm-reset-doqyn-dev ) || die "reset do postgres falhou."
+
+  step "Seed demo do auth..."
+  ( cd "$AUTH_DIR" && npm run dev:seed:demo ) || die "seed demo do auth falhou."
+  wait_for_file "$MANIFEST" "manifest do auth" || die "manifest não apareceu após o seed."
+
+  if mongo_is_local; then
+    step "Mongo local..."
+    ( cd "$ALPHA_DIR" && docker compose -f deploy/docker-compose.dev.yml up -d --wait mongo >/dev/null ) || die "não subiu o mongo."
+  fi
+
+  step "Reset do Mongo..."
+  ( cd "$ALPHA_DIR" && npm run dev:reset:mongo -- --confirm-reset-doqyn-dev ) || die "reset do mongo falhou."
+
+  step "Índices..."
+  ( cd "$ALPHA_DIR" && npm run db:setup >/dev/null 2>&1 ) || die "db:setup falhou."
+
+  step "Seed demo do alpha..."
+  ( cd "$ALPHA_DIR" && npm run dev:seed:demo ) || die "seed demo do alpha falhou."
+
+  ok "Reset completo. Suba com ./doqyn up"
+}
+
+# ── produção (VPS Hostinger) ─────────────────────────────────────────────────
+# Mesmos verbos do dev, apontando para deploy/scripts. O que você aprende aqui
+# vale lá: `up` sobe, `status` mostra, `logs` acompanha, `down` derruba.
+DEPLOY_SCRIPTS="$ALPHA_DIR/deploy/scripts"
+
+deploy_compose() {
+  # shellcheck source=deploy/scripts/lib/compose-production.sh
+  source "$DEPLOY_SCRIPTS/lib/compose-production.sh"
+  compose_production "$ALPHA_DIR/deploy" "$@"
+}
+
+deploy_usage() {
+  cat <<'TXT'
+doqyn deploy — stack de produção (VPS Ubuntu / Hostinger)
+
+  ./doqyn deploy docker     instala Docker Engine + plugin Compose (sudo, VPS nova)
+  ./doqyn deploy host       libera a porta 80 do nginx/apache do sistema (sudo)
+  ./doqyn deploy setup      gera deploy/.env a partir do exemplo
+  ./doqyn deploy check      valida env, compose e secrets antes de subir
+  ./doqyn deploy up         sobe a stack completa
+  ./doqyn deploy status     containers e estado
+  ./doqyn deploy logs       acompanha os logs da stack
+  ./doqyn deploy down       derruba a stack
+
+Ordem numa VPS limpa: docker → host → setup → check → up
+TXT
+}
+
+cmd_deploy() {
+  local sub="${1:-}"; shift || true
+  [[ -d "$DEPLOY_SCRIPTS" ]] || die "deploy/scripts não encontrado."
+  case "$sub" in
+    docker) exec "$DEPLOY_SCRIPTS/install-docker-ubuntu.sh" "$@" ;;
+    host)   exec "$DEPLOY_SCRIPTS/prepare-ubuntu-host.sh" "$@" ;;
+    setup)  exec "$DEPLOY_SCRIPTS/setup-production-env.sh" "$@" ;;
+    check)  exec "$DEPLOY_SCRIPTS/validate-vps-ready.sh" "$@" ;;
+    up)     exec "$DEPLOY_SCRIPTS/deploy-production.sh" "$@" ;;
+    status) deploy_compose ps ;;
+    logs)   deploy_compose logs -f --tail=100 "$@" ;;
+    down)   deploy_compose down ;;
+    ''|-h|--help|help) deploy_usage ;;
+    *) deploy_usage; die "subcomando de deploy desconhecido: $sub" ;;
+  esac
+}
+
+usage() {
+  cat <<'TXT'
+doqyn — ambiente de desenvolvimento
+
+  ./doqyn up              sobe tudo na ordem certa, em background, preservando dados
+  ./doqyn status          o que está no ar e em que porta
+  ./doqyn logs            acompanha os logs (Ctrl+C sai do log, não derruba nada)
+  ./doqyn down            para auth/api/web (bancos seguem no ar)
+  ./doqyn down --all      para também os containers de banco
+  ./doqyn reset           apaga os bancos e semeia do zero (pede confirmação)
+  ./doqyn doctor          confere o que falta instalar para tudo funcionar
+
+  ./doqyn deploy          mesmos verbos, na VPS de produção (veja: ./doqyn deploy --help)
+
+Portas: auth 4100 · API 3001 · web 5173
+Logs:   logs/dev/{auth,api,web}.log
+TXT
+}
+
+cmd_doctor() {
+  local missing=0
+  printf 'FERRAMENTA   ESTADO   PARA QUE SERVE\n'
+  check_tool() {
+    local bin="$1" need="$2" why="$3" state
+    if command -v "$bin" >/dev/null 2>&1; then state="ok"
+    else state="FALTA"; [[ "$need" == "obrigatório" ]] && missing=$((missing + 1)); fi
+    printf '%-12s %-8s %s\n' "$bin" "$state" "$why"
+  }
+  check_tool docker    obrigatório "sobe os bancos em dev e a stack inteira em produção"
+  check_tool node      obrigatório "runtime da API, do worker e dos scripts"
+  check_tool npm       obrigatório "instala dependências e roda os scripts"
+  check_tool curl      obrigatório "health check do ./doqyn up e do deploy"
+  check_tool git       obrigatório "deploy puxa os dois repos na VPS"
+  check_tool openssl   opcional    "gera segredos em setup-production-env.sh"
+  check_tool mongodump opcional    "npm run mongo:backup — backup antes de limpeza"
+  check_tool gs        opcional    "Ghostscript: preview de PDF fora do Docker (dev:worker:preview)"
+
+  printf '\n'
+  if command -v docker >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
+    warn "docker instalado mas o daemon não responde"
+    missing=$((missing + 1))
+  fi
+
+  local node_major; node_major="$(node -v 2>/dev/null | sed 's/^v\([0-9]*\).*/\1/')"
+  if [[ -n "$node_major" && "$node_major" != "22" ]]; then
+    warn "Node local é v$node_major; as imagens Docker fixam node:22-bookworm-slim."
+    printf '%s  Diferença de major não quebra hoje, mas o que passa aqui pode falhar lá.%s\n' "$C_DIM" "$C_OFF"
+  fi
+
+  [[ -f "$ALPHA_DIR/.env" ]] || { warn "falta .env no alpha (copie de .env.example)"; missing=$((missing + 1)); }
+  [[ -n "$AUTH_DIR" && -f "$AUTH_DIR/.env" ]] || { warn "falta .env no auth-service"; missing=$((missing + 1)); }
+  [[ -d "$ALPHA_DIR/node_modules" ]] || { warn "alpha sem node_modules — rode npm ci"; missing=$((missing + 1)); }
+  [[ -n "$AUTH_DIR" && -d "$AUTH_DIR/node_modules" ]] || { warn "auth-service sem node_modules — rode npm ci"; missing=$((missing + 1)); }
+
+  printf '\n'
+  if [[ "$missing" -eq 0 ]]; then
+    ok "Nada obrigatório faltando — ./doqyn up deve rodar."
+  else
+    die "$missing item(ns) obrigatório(s) pendente(s)."
+  fi
+}
+
+case "${1:-up}" in
+  up)     cmd_up ;;
+  status) cmd_status ;;
+  logs)   cmd_logs ;;
+  down)   shift || true; cmd_down "${1:-}" ;;
+  reset)  cmd_reset ;;
+  doctor) cmd_doctor ;;
+  deploy) shift || true; cmd_deploy "$@" ;;
+  -h|--help|help) usage ;;
+  *) usage; die "comando desconhecido: $1" ;;
+esac

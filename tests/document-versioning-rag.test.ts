@@ -165,7 +165,7 @@ describe('documentChunkService', () => {
         storage: {
           tenantId: 'tenant_1',
           tenantType: 'business',
-          storageMode: 'dedicated_collections',
+          storageMode: 'shared_collections',
           collectionPrefix: 'company_dev',
           collections: {
             documents: 'documents_company_dev',
@@ -194,7 +194,7 @@ describe('documentChunkService', () => {
         storage: {
           tenantId: 'tenant_1',
           tenantType: 'business',
-          storageMode: 'dedicated_collections',
+          storageMode: 'shared_collections',
           collectionPrefix: 'company_dev',
           collections: {
             documents: 'documents_company_dev',
@@ -269,14 +269,16 @@ describe('updateExtractorPrompt', () => {
 describe('integração version-aware RAG — wiring', () => {
   it('confirmAnalysis persiste chunks após confirmação inicial', () => {
     const source = read('server/services/confirmAnalysisService.ts');
-    assert.ok(source.includes('persistChunksAfterVersionConfirm'));
+    // O fatiamento saiu do request: a confirmação agenda, e o worker (ou a queda para inline)
+    // persiste. Ver server/queues/chunkingQueue.ts.
+    assert.ok(source.includes('scheduleChunkPersistenceAfterVersionConfirm'));
     assert.ok(source.includes('isCurrentVersion: true'));
   });
 
   it('confirmUpdate persiste chunks sem apagar histórico', () => {
     const confirmUpdate = read('server/services/confirmUpdateDocumentVersionService.ts');
     const chunkService = read('server/services/documentChunkService.ts');
-    assert.ok(confirmUpdate.includes('persistChunksAfterVersionConfirm'));
+    assert.ok(confirmUpdate.includes('scheduleChunkPersistenceAfterVersionConfirm'));
     assert.ok(chunkService.includes('isCurrentVersion: false'));
     assert.ok(chunkService.includes('insertMany'));
     assert.equal(chunkService.includes('deleteMany'), false);

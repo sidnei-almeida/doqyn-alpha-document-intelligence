@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateDocumentId } from '../mockData';
-import { analyzePdf, AnalyzePdfRequestError } from '../services/analyzePdf';
+import {
+  analyzePdf,
+  AnalyzePdfRequestError,
+  isAnalysisStillRunningError,
+} from '../services/analyzePdf';
 import { confirmAnalysis } from '../services/confirmAnalysis';
 import { BULK_NEXT_ITEM_DELAY_MS } from '../uploadConstants';
 import {
@@ -46,6 +50,7 @@ import {
   NON_EXTRACTABLE_TEXT_MESSAGE,
   validateBulkQueueFile,
 } from '../utils/bulkFileValidation';
+import { getUploadAnalysisConcurrency } from '../../upload/config/uploadConcurrency';
 import {
   buildWorkflowErrorLogDetails,
   parseWorkflowErrorPayload,
@@ -548,6 +553,118 @@ export function useBulkUploadQueue({
     [appendItemMessage, canApplyToItem, finishQueueItem, getActiveSettings, getItemById, onItemSaved, patchItem, workflow],
   );
 
+  /**
+   * Análise adiantada dos próximos arquivos da fila.
+   *
+   * A esteira do lote continua um item por vez — é ela que garante que a resposta pertence ao item
+   * atual e que a revisão manual para o mundo. O que passou a acontecer em paralelo é o envio: o
+   * arquivo seguinte sobe e é analisado enquanto o atual espera revisão ou gravação, e quando chega
+   * a vez dele a resposta já está na mão.
+   *
+   * O arquivo adiantado continua `queued` de propósito: nada no estado da esteira muda, e um
+   * adiantamento cancelado não deixa item preso em `analyzing`.
+   */
+  const analysisPrefetchRef = useRef(
+    new Map<
+      string,
+      {
+        controller: AbortController;
+        requestId: string;
+        promise: ReturnType<typeof analyzePdf>;
+      }
+    >(),
+  );
+
+  const takeAnalysisPrefetch = useCallback((itemId: string) => {
+    const entry = analysisPrefetchRef.current.get(itemId);
+    if (!entry) return null;
+    analysisPrefetchRef.current.delete(itemId);
+    return entry;
+  }, []);
+
+  const cancelAnalysisPrefetches = useCallback(
+    (reason: string) => {
+      if (analysisPrefetchRef.current.size === 0) return;
+      const canceladas = analysisPrefetchRef.current.size;
+      for (const [, entry] of analysisPrefetchRef.current) {
+        entry.controller.abort();
+      }
+      analysisPrefetchRef.current.clear();
+      workflow.logBatch({
+        level: 'info',
+        stage: 'queue',
+        message: 'Análises adiantadas canceladas.',
+        details: { reason, canceladas },
+      });
+    },
+    [workflow],
+  );
+
+  const scheduleAnalysisPrefetch = useCallback(
+    (currentItemId: string) => {
+      const maxInFlight = getUploadAnalysisConcurrency();
+      // 1 é o comportamento antigo: nada sai na frente.
+      if (maxInFlight <= 1) return;
+      if (batchPhaseRef.current !== 'running') return;
+
+      const slots = maxInFlight - 1 - analysisPrefetchRef.current.size;
+      if (slots <= 0) return;
+
+      const candidates = itemsRef.current
+        .filter(
+          (item) =>
+            item.status === 'queued' &&
+            item.id !== currentItemId &&
+            !analysisPrefetchRef.current.has(item.id) &&
+            validateBulkQueueFile(item.file).valid,
+        )
+        .slice(0, slots);
+
+      for (const item of candidates) {
+        const controller = new AbortController();
+        const requestId = createRequestId();
+        const promise = analyzePdf(item.file, {
+          signal: controller.signal,
+          context: {
+            batchId: batchIdRef.current ?? undefined,
+            itemId: item.id,
+            fileName: item.originalFileName,
+            requestId,
+          },
+          // O adiantado também mostra onde está: ele já está na fila do servidor, mesmo que a
+          // esteira ainda não tenha chegado nele.
+          onQueueStatus: (queueStatus) => patchItem(item.id, { queueStatus }),
+        });
+
+        // Quem consome trata o erro. Marcar aqui evita rejeição sem dono quando o adiantamento é
+        // cancelado antes de chegar a vez do arquivo.
+        void promise.catch(() => undefined);
+
+        analysisPrefetchRef.current.set(item.id, { controller, requestId, promise });
+
+        workflow.logItem(item.id, item.originalFileName, {
+          level: 'info',
+          stage: 'analysis',
+          message: 'Análise adiantada enquanto o item anterior é processado.',
+          details: { itemId: item.id, requestId, batchId: batchIdRef.current },
+        });
+      }
+    },
+    [patchItem, workflow],
+  );
+
+  // Sair da tela não deixa análise adiantada rodando: sem isso o navegador continuaria consultando
+  // o status de um arquivo que ninguém mais vai revisar.
+  useEffect(() => {
+    const prefetches = analysisPrefetchRef.current;
+    return () => {
+      for (const [, entry] of prefetches) {
+        entry.controller.abort();
+      }
+      prefetches.clear();
+    };
+  }, []);
+
   const processSingleItem = useCallback(
     async (itemId: string, workerRunId: number): Promise<'continue' | 'break' | 'manual'> => {
       const next = getItemById(itemId);
@@ -596,10 +713,14 @@ export function useBulkUploadQueue({
         details: { itemId: next.id, queueIndex },
       });
 
-      const controller = new AbortController();
+      // Se este arquivo já foi adiantado, herda a requisição em voo em vez de mandar outra: o
+      // `requestId` precisa ser o mesmo que o servidor recebeu, senão a validação de posse recusa
+      // a resposta.
+      const prefetched = takeAnalysisPrefetch(next.id);
+      const controller = prefetched?.controller ?? new AbortController();
       abortRef.current = controller;
 
-      const requestId = createRequestId();
+      const requestId = prefetched?.requestId ?? createRequestId();
       const inFlightCounts = getIsolationSnapshot().inFlight;
       const fileCheck = validateBulkQueueFile(next.file);
 
@@ -656,15 +777,23 @@ export function useBulkUploadQueue({
       });
 
       try {
-        const response = await analyzePdf(next.file, {
-          signal: controller.signal,
-          context: {
-            batchId: batchIdRef.current ?? undefined,
-            itemId: next.id,
-            fileName: next.originalFileName,
-            requestId,
-          },
-        });
+        const analysis =
+          prefetched?.promise ??
+          analyzePdf(next.file, {
+            signal: controller.signal,
+            context: {
+              batchId: batchIdRef.current ?? undefined,
+              itemId: next.id,
+              fileName: next.originalFileName,
+              requestId,
+            },
+            onQueueStatus: (queueStatus) => patchItem(next.id, { queueStatus }),
+          });
+
+        // Os vizinhos saem enquanto este espera: é aqui que o lote deixa de ser uma fila indiana.
+        scheduleAnalysisPrefetch(next.id);
+
+        const response = await analysis;
 
         workflow.logItem(next.id, next.originalFileName, {
           level: 'info',
@@ -793,6 +922,7 @@ export function useBulkUploadQueue({
             metadata,
             errorMessage: aiMessage,
             finishedAt: formatNow(),
+            queueStatus: undefined,
           });
 
           appendItemMessage(next.id, aiMessage);
@@ -824,6 +954,8 @@ export function useBulkUploadQueue({
           status: postStatus,
           result: raw,
           metadata,
+          // O lugar na fila deixa de valer no instante em que o resultado chega.
+          queueStatus: undefined,
           recommendedFileName,
           finalFileName: recommendedFileName,
           className,
@@ -877,31 +1009,25 @@ export function useBulkUploadQueue({
           }, settings);
           markItemReview(next.id, reason);
 
-          if (
-            settings.autoReviewEnabled &&
-            !settings.pauseOnConflict &&
-            settings.continueWhenSafe
-          ) {
-            setStatusMessage('Preparando próximo envio...');
-            await sleep(BULK_NEXT_ITEM_DELAY_MS);
-            setStatusMessage(null);
-            return 'continue';
-          }
-
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando ação manual');
-          return 'manual';
+          // Revisão espera uma pessoa, não o servidor: o documento sai da esteira e o lote segue.
+          // Enquanto a esteira parava aqui, um único arquivo duvidoso obrigava alguém sentado na
+          // tela antes de o próximo sequer ser enviado.
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (
           policyRequiresPerItemChoice(settings.defaultNamingPolicy) ||
           settings.defaultNamingPolicy === 'manual_required'
         ) {
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando escolha do nome do arquivo');
-          return 'manual';
+          // Escolher nome também é decisão humana: estaciona o documento e continua o lote.
+          markItemReview(next.id, 'Escolha o nome do arquivo para salvar.');
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (!autoEligible) {
@@ -924,10 +1050,13 @@ export function useBulkUploadQueue({
             return 'continue';
           }
 
-          setManualGate(true);
-          manualGateRef.current = true;
-          setStatusMessage('Aguardando confirmação manual');
-          return 'manual';
+          // Não elegível ao salvamento automático é caso de conferência humana, não de esteira
+          // parada: estaciona com o motivo e segue para o próximo.
+          markItemReview(next.id, autoSaveBlockers[0] ?? 'Confirmação manual necessária.');
+          setStatusMessage('Preparando próximo envio...');
+          await sleep(BULK_NEXT_ITEM_DELAY_MS);
+          setStatusMessage(null);
+          return 'continue';
         }
 
         if (settings.autoReviewEnabled && autoEligible) {
@@ -1003,15 +1132,39 @@ export function useBulkUploadQueue({
           return 'continue';
         }
 
-        setManualGate(true);
-        manualGateRef.current = true;
-        setStatusMessage('Aguardando confirmação manual');
-        return 'manual';
+        // Modo Auto desligado: cada documento espera confirmação, mas espera **estacionado**. O
+        // lote continua analisando enquanto as confirmações acontecem no ritmo de quem revisa.
+        markItemReview(next.id, 'Aguardando sua confirmação.');
+        setStatusMessage('Preparando próximo envio...');
+        await sleep(BULK_NEXT_ITEM_DELAY_MS);
+        setStatusMessage(null);
+        return 'continue';
       } catch (error) {
         activeAnalysisRequestRef.current = null;
 
         if (controller.signal.aborted || workerRunId !== workerRunIdRef.current) {
           return 'break';
+        }
+
+        // Espera longa não é falha do documento: o servidor continua analisando e ele chega na
+        // Biblioteca sozinho. Marcar erro aqui empurra o usuário a reenviar e engordar a fila.
+        if (isAnalysisStillRunningError(error)) {
+          const stillRunningMessage = error.message;
+          patchItem(next.id, {
+            status: 'still_running',
+            errorMessage: stillRunningMessage,
+            finishedAt: formatNow(),
+            queueStatus: undefined,
+          });
+          workflow.logItem(next.id, next.originalFileName, {
+            level: 'warning',
+            stage: 'analysis',
+            message: 'Acompanhamento encerrado; análise segue no servidor.',
+            details: { itemId: next.id, requestId },
+          });
+          appendItemMessage(next.id, stillRunningMessage);
+          finishQueueItem(next.id);
+          return 'continue';
         }
 
         const workflowError =
@@ -1078,6 +1231,7 @@ export function useBulkUploadQueue({
       appendItemMessage,
       canApplyToItem,
       cancelCurrentCountdown,
+      finishQueueItem,
       getActiveSettings,
       getIsolationSnapshot,
       getItemById,
@@ -1087,6 +1241,8 @@ export function useBulkUploadQueue({
       patchItem,
       resetCurrentProcessingState,
       saveItem,
+      scheduleAnalysisPrefetch,
+      takeAnalysisPrefetch,
       workflow,
     ],
   );
@@ -1239,8 +1395,15 @@ export function useBulkUploadQueue({
     [appendItemMessage, createQueueItem, finishQueueItem, onReviewSettingsChange, resetCurrentProcessingState, workflow],
   );
 
-  const confirmCurrentAndContinue = useCallback(async () => {
-    const itemId = currentItemIdRef.current;
+  /**
+   * Confirma um documento parado, sem depender de ele ser "o item da vez".
+   *
+   * Antes as ações só sabiam agir sobre o item corrente, e por isso a esteira precisava parar e
+   * esperar a pessoa. Recebendo o `itemId`, a revisão acontece em paralelo: o lote segue analisando
+   * enquanto alguém resolve os que ficaram para trás.
+   */
+  const confirmItemAndContinue = useCallback(async (targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const current = getItemById(itemId);
@@ -1276,11 +1439,14 @@ export function useBulkUploadQueue({
     scheduleQueueWorker();
   }, [getActiveSettings, getItemById, saveItem, scheduleQueueWorker]);
 
-  const updateCurrentItemNaming = useCallback((choice: PerItemNamingChoice) => {
-    const itemId = currentItemIdRef.current;
-    if (!itemId) return;
-    patchItem(itemId, { perItemNaming: choice });
-  }, [patchItem]);
+  const updateItemNaming = useCallback(
+    (choice: PerItemNamingChoice, targetItemId?: string) => {
+      const itemId = targetItemId ?? currentItemIdRef.current;
+      if (!itemId) return;
+      patchItem(itemId, { perItemNaming: choice });
+    },
+    [patchItem],
+  );
 
   const cancelAutoCountdown = useCallback(() => {
     cancelCurrentCountdown('cancelado pelo usuário');
@@ -1292,13 +1458,14 @@ export function useBulkUploadQueue({
       }
     }
     setAutoCountdown(null);
-    setManualGate(true);
-    manualGateRef.current = true;
-    setStatusMessage('Auto cancelado — aguardando confirmação manual');
-  }, [cancelCurrentCountdown, getItemById, patchItem]);
+    // Cancelar o automático é pedir para olhar **este** documento, não para o lote inteiro parar.
+    // O item fica estacionado esperando confirmação e a esteira segue.
+    setStatusMessage('Auto cancelado — documento aguardando sua confirmação');
+    scheduleQueueWorker();
+  }, [cancelCurrentCountdown, getItemById, patchItem, scheduleQueueWorker]);
 
-  const skipCurrent = useCallback(() => {
-    const itemId = currentItemIdRef.current;
+  const skipItem = useCallback((targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const item = getItemById(itemId);
@@ -1316,12 +1483,16 @@ export function useBulkUploadQueue({
     scheduleQueueWorker();
   }, [appendItemMessage, finishQueueItem, getItemById, patchItem, scheduleQueueWorker, workflow]);
 
-  const reprocessCurrent = useCallback(() => {
-    const itemId = currentItemIdRef.current;
+  const reprocessItem = useCallback((targetItemId?: string) => {
+    const itemId = targetItemId ?? currentItemIdRef.current;
     if (!itemId) return;
 
     const item = getItemById(itemId);
-    resetCurrentProcessingState('reprocessar item');
+    // Só limpa o estado corrente quando é o próprio item da vez: reprocessar um documento parado
+    // não pode derrubar a análise que está acontecendo agora.
+    if (itemId === currentItemIdRef.current) {
+      resetCurrentProcessingState('reprocessar item');
+    }
     patchItem(itemId, {
       status: 'queued',
       errorMessage: undefined,
@@ -1345,13 +1516,16 @@ export function useBulkUploadQueue({
 
     setManualGate(false);
     manualGateRef.current = false;
-    setCurrentItemId(null);
-    currentItemIdRef.current = null;
+    if (itemId === currentItemIdRef.current) {
+      setCurrentItemId(null);
+      currentItemIdRef.current = null;
+    }
     scheduleQueueWorker();
   }, [getItemById, patchItem, resetCurrentProcessingState, scheduleQueueWorker, workflow]);
 
   const pauseBatch = useCallback(() => {
     runIdRef.current += 1;
+    cancelAnalysisPrefetches('pausar lote');
     resetCurrentProcessingState('pausar lote');
     setBatchPhase('paused');
     batchPhaseRef.current = 'paused';
@@ -1361,7 +1535,7 @@ export function useBulkUploadQueue({
       stage: 'queue',
       message: 'Lote pausado.',
     });
-  }, [resetCurrentProcessingState, workflow]);
+  }, [cancelAnalysisPrefetches, resetCurrentProcessingState, workflow]);
 
   const resumeBatch = useCallback(() => {
     setBatchPhase('running');
@@ -1377,6 +1551,7 @@ export function useBulkUploadQueue({
 
   const cancelBatch = useCallback(() => {
     runIdRef.current += 1;
+    cancelAnalysisPrefetches('cancelar lote');
     resetCurrentProcessingState('cancelar lote');
     setItems((prev) => {
       const next = prev.map((item) => {
@@ -1402,10 +1577,11 @@ export function useBulkUploadQueue({
       stage: 'queue',
       message: 'Lote cancelado.',
     });
-  }, [resetCurrentProcessingState, workflow]);
+  }, [cancelAnalysisPrefetches, resetCurrentProcessingState, workflow]);
 
   const resetBatch = useCallback(() => {
     runIdRef.current += 1;
+    cancelAnalysisPrefetches('resetar lote');
     resetCurrentProcessingState('resetar lote');
     setItems([]);
     itemsRef.current = [];
@@ -1422,7 +1598,7 @@ export function useBulkUploadQueue({
     batchSettingsRef.current = null;
     batchStartedAtRef.current = null;
     itemStartedAtRef.current.clear();
-  }, [resetCurrentProcessingState, workflow]);
+  }, [cancelAnalysisPrefetches, resetCurrentProcessingState, workflow]);
 
   const clearCompleted = useCallback(() => {
     setItems((prev) => {
@@ -1445,15 +1621,15 @@ export function useBulkUploadQueue({
     statusMessage,
     batchReviewSettings,
     startBatch,
-    confirmCurrentAndContinue,
-    skipCurrent,
-    reprocessCurrent,
+    confirmItemAndContinue,
+    skipItem,
+    reprocessItem,
     pauseBatch,
     resumeBatch,
     cancelBatch,
     resetBatch,
     clearCompleted,
     cancelAutoCountdown,
-    updateCurrentItemNaming,
+    updateItemNaming,
   };
 }

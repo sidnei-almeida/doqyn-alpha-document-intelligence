@@ -5,7 +5,10 @@
  */
 export {
   analyzePdf,
+  AnalysisStillRunningError,
   AnalyzePdfRequestError,
+  isAnalysisStillRunningError,
+  type AnalysisQueueStatus,
   type AnalyzePdfOptions,
   type AnalyzePdfResponse,
 } from '@/features/document-send/services/analyzePdf';

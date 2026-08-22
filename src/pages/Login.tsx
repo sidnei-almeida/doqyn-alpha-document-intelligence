@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { AlertBanner } from '@/components/ui/AlertBanner';
@@ -10,12 +10,14 @@ import { useAuth } from '@/features/auth/useAuth';
 import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
 import { SessionApiError } from '@/auth/sessionApi';
+import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
 import { getAuthErrorActions } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
 export function Login() {
   const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
+  const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -25,6 +27,18 @@ export function Login() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(searchParams.get('oauthMessage'));
   const [errorCode, setErrorCode] = useState<string | null>(searchParams.get('oauthCode'));
+
+  // Só desenha botão de provedor que o auth-service tem configurado. Sem isto, clicar num provedor
+  // sem credencial devolvia um JSON de 404 na cara do usuário.
+  useEffect(() => {
+    let active = true;
+    void fetchEnabledOAuthProviders().then((providers) => {
+      if (active) setEnabledProviders(providers);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showCredentialForm =
@@ -71,32 +85,38 @@ export function Login() {
     >
       <AuthCard className="p-6">
         <p className="mb-5 text-xs text-doqyn-muted">
-          {supportsOAuth
-            ? 'Use sua conta Google, Microsoft ou credenciais DOQYN.'
+          {enabledProviders.length > 0
+            ? `Use sua conta ${enabledProviders
+                .map((p) => (p === 'google' ? 'Google' : 'Microsoft'))
+                .join(', ')} ou credenciais DOQYN.`
             : 'Acesse sua área para enviar e gerenciar documentos.'}
         </p>
 
-        {supportsOAuth && (
+        {supportsOAuth && enabledProviders.length > 0 && (
           <div className="mb-4 space-y-2.5">
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isSubmitting}
-              onClick={() => loginWithGoogle(from)}
-            >
-              <Icon name="key" size={ICON_SIZE.sm} />
-              Continuar com Google
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              disabled={isSubmitting}
-              onClick={() => loginWithMicrosoft(from)}
-            >
-              <Icon name="key" size={ICON_SIZE.sm} />
-              Continuar com Microsoft
-            </Button>
+            {enabledProviders.includes('google') && (
+              <Button
+                type="button"
+                className="w-full"
+                disabled={isSubmitting}
+                onClick={() => loginWithGoogle(from)}
+              >
+                <Icon name="key" size={ICON_SIZE.sm} />
+                Continuar com Google
+              </Button>
+            )}
+            {enabledProviders.includes('microsoft') && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isSubmitting}
+                onClick={() => loginWithMicrosoft(from)}
+              >
+                <Icon name="key" size={ICON_SIZE.sm} />
+                Continuar com Microsoft
+              </Button>
+            )}
 
             {showCredentialForm && (
               <div className="flex items-center gap-3 pt-1">
