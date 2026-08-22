@@ -34,7 +34,9 @@ async function loadJobBuffer(payload: AnalysisQueueJobPayload): Promise<Buffer> 
     throw new Error('Storage não configurado para processamento assíncrono.');
   }
 
-  const storageScope = await resolveTenantStorageScopeById(payload.tenantId);
+  // O dono precisa acompanhar o tenant: em pessoa física o bucket é compartilhado e o
+  // caminho do objeto é escopado por usuário, então sem `ownerUserId` o storage nem resolve.
+  const storageScope = await resolveTenantStorageScopeById(payload.tenantId, payload.ownerUserId);
   return loadAnalysisStaging({
     tenantId: payload.tenantId,
     ownerUserId: payload.ownerUserId,

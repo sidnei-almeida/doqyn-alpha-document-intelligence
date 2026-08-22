@@ -29,7 +29,8 @@ async function processPreviewJob(job: Job<PreviewQueueJobPayload>): Promise<void
     throw new Error('Original da versão ainda não está armazenado.');
   }
 
-  const storageScope = await resolveTenantStorageScopeById(payload.tenantId);
+  // Mesmo motivo do analysisWorker: sem o dono, storage de pessoa física não resolve.
+  const storageScope = await resolveTenantStorageScopeById(payload.tenantId, payload.ownerUserId);
   const previewStorageFileName =
     payload.previewStorageFileName.trim() ||
     version.previewStorageFileName?.trim() ||
