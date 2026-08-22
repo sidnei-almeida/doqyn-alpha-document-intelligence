@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
   { path: '/criar-empresa', element: <CompanySignupRoute /> },
   { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
   { path: '/onboarding', element: <OnboardingRoute /> },
-  { path: '/auth/oauth/callback', element: <OAuthCallbackRoute /> },
+  { path: '/sso/callback', element: <OAuthCallbackRoute /> },
   { path: '/termos', element: <TermsRoute /> },
   {
     element: <PublicRoute />,
