@@ -85,6 +85,13 @@ Exemplo de metadados corretos para NDA:
 {"parte_reveladora":{"value":"Paulão Comércio Ltda","normalizedValue":"Paulão Comércio Ltda","confidence":0.92,"evidence":{"snippet":"PARTE REVELADORA: Paulão Comércio Ltda"}},"parte_receptora":{"value":"Cliente Beta S.A.","normalizedValue":"Cliente Beta S.A.","confidence":0.9,"evidence":{"snippet":"PARTE RECEPTORA: Cliente Beta S.A."}},"data_assinatura":{"value":"2024-03-10","normalizedValue":"2024-03-10","confidence":0.9,"evidence":{"snippet":"assinado em 10 de março de 2024"}},"prazo_vigencia":{"value":"5 anos","normalizedValue":"5 anos","confidence":0.88,"evidence":{"snippet":"vigência de 5 anos"}},"data_validade":{"value":"2029-03-10","normalizedValue":"2029-03-10","confidence":0.86,"evidence":{"snippet":"Calculado: 2024-03-10 + 5 anos"}}}`;
 }
 
+/**
+ * Tudo que não muda entre documentos vem antes dos trechos, de propósito: o cache de prompt da
+ * Groq casa por prefixo e desconta 50% do que reaproveitar. Como instruções, campos da classe e
+ * formato de resposta são idênticos para todo documento da mesma classe, deixá-los no início
+ * transforma essa parte em prefixo cacheável; o texto do documento, que é sempre diferente,
+ * fica no fim.
+ */
 export function buildCompactExtractorPrompt(
   chunks: RetrievedChunk[],
   selectedClass: DocumentClassRule,
@@ -113,11 +120,11 @@ Descrição: ${selectedClass.description?.trim() || '—'}
 fields (ordem de prioridade):
 ${JSON.stringify(fields, null, 2)}
 
-Trechos do documento:
-${formatChunksForPrompt(compactChunks)}
-
 Formato de resposta:
-{"documentType":"string","version":"v1.0","metadata":{"campo":{"label":"...","value":"...","normalizedValue":"...","confidence":0.9,"source":"document_text","evidence":{"pageNumber":1,"snippet":"..."}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}`;
+{"documentType":"string","version":"v1.0","metadata":{"campo":{"label":"...","value":"...","normalizedValue":"...","confidence":0.9,"source":"document_text","evidence":{"pageNumber":1,"snippet":"..."}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
+
+Trechos do documento:
+${formatChunksForPrompt(compactChunks)}`;
 
   return { prompt, compactChunks };
 }

@@ -89,11 +89,11 @@ Regras:
 Classes:
 ${classesJson}
 
-Trechos:
-${formatChunksForPrompt(compactChunks)}
-
 Formato:
-{"classId":"id_ou_null","className":"nome_ou_null","confidence":0.0,"requiresReview":false,"reason":"curta","evidence":[{"pageNumber":1,"snippet":"trecho"}]}`;
+{"classId":"id_ou_null","className":"nome_ou_null","confidence":0.0,"requiresReview":false,"reason":"curta","evidence":[{"pageNumber":1,"snippet":"trecho"}]}
+
+Trechos:
+${formatChunksForPrompt(compactChunks)}`;
 
   return { prompt, compactChunks, compactClasses };
 }
