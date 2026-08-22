@@ -15,6 +15,7 @@ import { CountrySelect } from '@/components/ui/CountrySelect';
 import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { submitCompanySignup } from './api/companySignupApi';
 import {
@@ -30,10 +31,12 @@ const COMPANY_AUTHORIZATION_TEXT =
 
 export function CompanySignupPage() {
   const navigate = useNavigate();
-  const { refreshUser, user } = useAuth();
+  const { refreshUser } = useAuth();
 
-  /** Ver `IndividualSignupPage`: sessão existente sem espaço de trabalho. */
-  const fromAuthenticatedSession = Boolean(user);
+  /** Ver `IndividualSignupPage`: sessão existente, resolvida direto no servidor. */
+  const sessionIdentity = useSignupSessionIdentity();
+  const fromAuthenticatedSession = sessionIdentity.status === 'authenticated';
+  const resolvingSession = sessionIdentity.status === 'loading';
 
   const [companyName, setCompanyName] = useState('');
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
@@ -53,13 +56,11 @@ export function CompanySignupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    setEmail((current) => current || user.email);
-    setFirstName((current) => current || user.firstName || user.name.split(' ')[0] || '');
-    setLastName(
-      (current) => current || user.lastName || user.name.split(' ').slice(1).join(' ') || '',
-    );
-  }, [user]);
+    if (sessionIdentity.status !== 'authenticated') return;
+    setEmail((current) => current || sessionIdentity.email);
+    setFirstName((current) => current || sessionIdentity.firstName);
+    setLastName((current) => current || sessionIdentity.lastName);
+  }, [sessionIdentity]);
 
   function handleCountryChange(next: CountryCode) {
     setCountry(next);
@@ -234,7 +235,7 @@ export function CompanySignupPage() {
               onChange={setWhatsapp}
               required
             />
-            {!fromAuthenticatedSession && (
+            {!fromAuthenticatedSession && !resolvingSession && (
               <>
                 <Input
                   id="password"
@@ -299,7 +300,7 @@ export function CompanySignupPage() {
             <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
               Voltar
             </Link>
-            <Button type="submit" className="w-full sm:w-auto">
+            <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
               Cadastrar empresa
             </Button>
           </div>

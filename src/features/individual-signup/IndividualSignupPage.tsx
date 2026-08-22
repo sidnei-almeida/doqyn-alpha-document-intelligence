@@ -13,6 +13,7 @@ import { CountrySelect } from '@/components/ui/CountrySelect';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
 import { submitIndividualSignup } from './api/individualSignupApi';
@@ -26,14 +27,16 @@ import {
 
 export function IndividualSignupPage() {
   const navigate = useNavigate();
-  const { refreshUser, user } = useAuth();
+  const { refreshUser } = useAuth();
 
   /**
    * Sessão já existente — hoje, quem entrou pelo Google e ainda não tem espaço de trabalho.
-   * Note que `isAuthenticated` é falso nesse estado (o access gate barra por falta de
-   * membership), então quem responde pela existência da sessão é o próprio `user`.
+   * Vem direto do servidor, e não do AuthProvider: nas rotas de cadastro ele limpa a sessão
+   * de propósito, o que faria o formulário pedir uma senha que o backend descarta.
    */
-  const fromAuthenticatedSession = Boolean(user);
+  const sessionIdentity = useSignupSessionIdentity();
+  const fromAuthenticatedSession = sessionIdentity.status === 'authenticated';
+  const resolvingSession = sessionIdentity.status === 'loading';
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -54,13 +57,11 @@ export function IndividualSignupPage() {
    * vezes traz apelido — e o e-mail não, porque é ele que identifica a conta já verificada.
    */
   useEffect(() => {
-    if (!user) return;
-    setEmail((current) => current || user.email);
-    setFirstName((current) => current || user.firstName || user.name.split(' ')[0] || '');
-    setLastName(
-      (current) => current || user.lastName || user.name.split(' ').slice(1).join(' ') || '',
-    );
-  }, [user]);
+    if (sessionIdentity.status !== 'authenticated') return;
+    setEmail((current) => current || sessionIdentity.email);
+    setFirstName((current) => current || sessionIdentity.firstName);
+    setLastName((current) => current || sessionIdentity.lastName);
+  }, [sessionIdentity]);
 
   /** Trocar de país muda a máscara: reformata o que já foi digitado em vez de deixar sujeira. */
   function handleCountryChange(next: CountryCode) {
@@ -225,7 +226,7 @@ export function IndividualSignupPage() {
               onChange={setTaxId}
               required
             />
-            {!fromAuthenticatedSession && (
+            {!fromAuthenticatedSession && !resolvingSession && (
               <>
                 <Input
                   id="password"
@@ -270,7 +271,7 @@ export function IndividualSignupPage() {
             <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
               Voltar
             </Link>
-            <Button type="submit" className="w-full sm:w-auto">
+            <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
               Criar acesso CPF
             </Button>
           </div>
