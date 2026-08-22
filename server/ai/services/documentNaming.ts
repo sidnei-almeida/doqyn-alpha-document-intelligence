@@ -131,6 +131,57 @@ function formatFieldValueForName(
   return sanitizeFileNameSegment(value, 'Documento');
 }
 
+
+/**
+ * Marcadores de campo ausente produzidos por `formatFieldValueForName`.
+ *
+ * Todos contêm underscore, e o nome é limpo com `split('_')` — então eles nunca casavam com o
+ * filtro de segmento e vazavam para o arquivo final, gerando coisas como `sem_data_v1_0.pdf`.
+ * Precisam sair antes de qualquer split.
+ */
+const ABSENT_FIELD_TOKENS = ['sem_data', 'sem_numero', 'sem_pedido'];
+
+function dropAbsentFieldTokens(name: string): string {
+  let result = name;
+  for (const token of ABSENT_FIELD_TOKENS) {
+    result = result.replace(new RegExp(`(^|_)${token}(?=_|$)`, 'gi'), '_');
+  }
+  return result.replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+}
+
+/**
+ * Remove repetição de blocos vizinhos: o título e a parte extraída costumam trazer o mesmo
+ * nome de empresa, e o resultado saía como `Fornada_de_Casa_Fornada_de_Casa_...`.
+ */
+function collapseRepeatedSegmentRuns(segments: string[]): string[] {
+  const result = [...segments];
+
+  for (let size = Math.floor(result.length / 2); size >= 1; size -= 1) {
+    let index = 0;
+    while (index + size * 2 <= result.length) {
+      const first = result.slice(index, index + size).map((value) => value.toLowerCase());
+      const second = result.slice(index + size, index + size * 2).map((value) => value.toLowerCase());
+
+      if (first.join('_') === second.join('_')) {
+        result.splice(index + size, size);
+        continue;
+      }
+      index += 1;
+    }
+  }
+
+  return result;
+}
+
+/** Limpeza única do nome gerado: marcadores de ausência, segmentos vazios e repetições. */
+function cleanGeneratedName(name: string): string {
+  const segments = dropAbsentFieldTokens(name)
+    .split('_')
+    .filter((segment) => segment && segment !== 'Documento');
+
+  return collapseRepeatedSegmentRuns(segments).join('_');
+}
+
 function normalizeVersion(version: string): string {
   const cleaned = version.replace(/^v/i, '').trim();
   return cleaned ? cleaned.replace('.', '_') : '1';
@@ -174,8 +225,7 @@ const BARE_TYPE_TOKENS = new Set([
 const TEMPLATE_CONNECTOR_SEGMENTS = new Set(['e']);
 
 function meaningfulNameSegments(name: string): string[] {
-  return name
-    .replace(/\.pdf$/i, '')
+  return dropAbsentFieldTokens(name.replace(/\.pdf$/i, ''))
     .split('_')
     .map((segment) => segment.trim())
     .filter(
@@ -291,10 +341,28 @@ function buildDisambiguatedBaseName(
   if (fornecedor && fornecedor !== 'Documento') parts.push(fornecedor);
   else if (cliente && cliente !== 'Documento') parts.push(cliente);
   else if (beneficiario && beneficiario !== 'Documento') parts.push(beneficiario);
+  else {
+    // Sem nenhuma parte identificada, sobrava só a categoria e a data — `Contratos_2026-06-09`
+    // não diz o que o documento é. Aqui o título genérico é aceito de propósito: para um NDA
+    // com partes conhecidas ele é pior que os nomes das partes, mas sem parte alguma
+    // "Acordo de Confidencialidade" é a informação mais útil que resta.
+    const titulo = getFieldDisplayValue('titulo', metadata.titulo);
+    const isClassNameEcho =
+      !!titulo && normalizeCompareToken(titulo) === normalizeCompareToken(selectedClass.name);
+
+    if (titulo && !isClassNameEcho && normalizeCompareToken(titulo) !== 'documento') {
+      const formatted = sanitizeFileNameSegment(titulo, '');
+      if (formatted) parts.push(formatted);
+    }
+  }
 
   if (numeroNota !== 'sem_numero') parts.push(numeroNota);
   if (numeroPedido !== 'sem_pedido') parts.push(numeroPedido);
   if (data !== 'sem_data') parts.push(data);
+
+  // Só o nome da categoria não identifica documento nenhum — `Documentos.pdf` vale menos que o
+  // nome que o próprio arquivo trazia. Devolver vazio faz o fallback usar o original.
+  if (parts.length === 1) return '';
 
   return parts.join('_');
 }
@@ -382,10 +450,7 @@ function applyNamingTemplate(input: {
     name = name.replace(placeholder, value);
   }
 
-  return name
-    .split('_')
-    .filter((segment) => segment && segment !== 'sem_data' && segment !== 'Documento')
-    .join('_');
+  return cleanGeneratedName(name);
 }
 
 /** Remove CPF/CNPJ (11 ou 14 dígitos) de segmentos de nome de arquivo. */
@@ -439,10 +504,7 @@ export function generateRecommendedFileName(input: {
     name = buildRichFallbackName({ ...input, metadata });
   }
 
-  name = name
-    .split('_')
-    .filter((segment) => segment && segment !== 'sem_data' && segment !== 'Documento')
-    .join('_');
+  name = cleanGeneratedName(name);
 
   if (!name || isBareGenericFileName(name)) {
     name = buildRichFallbackName({ ...input, metadata });
