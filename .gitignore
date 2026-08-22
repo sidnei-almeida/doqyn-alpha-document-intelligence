@@ -85,3 +85,7 @@ docs/*.pdf
 .planning/
 CLAUDE.md
 .claude/
+
+# Documentos internos: nada de PDF versionado (exceto a fixture usada pelos scripts)
+*.pdf
+!scripts/fixtures/*.pdf
