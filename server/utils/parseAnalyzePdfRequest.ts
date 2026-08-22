@@ -71,7 +71,14 @@ export async function parseAnalyzePdfRequest(req: IncomingMessage): Promise<Pars
   const contentType = req.headers['content-type'] ?? '';
 
   if (contentType.includes('application/json')) {
-    const body = await readJsonBody(req);
+    // O dispatcher (`server/apiServer.ts`) já consome o stream e entrega o corpo desserializado
+    // em `req.body` para POSTs que não são multipart. Reler o stream aqui devolvia vazio, e o
+    // upload com URL pré-assinada morria com JOB_ID_REQUIRED mesmo mandando o jobId — nada no
+    // corpo chegava a ser lido. O fallback para leitura direta segue valendo para quem invocar
+    // o handler sem passar pelo dispatcher.
+    const preParsedBody = (req as IncomingMessage & { body?: unknown }).body;
+    const body = preParsedBody === undefined ? await readJsonBody(req) : preParsedBody;
+
     return {
       mode: 'staging',
       staging: parseStagingBody(body),
