@@ -3,13 +3,21 @@ import { getAuthBasePath } from '@/auth/authConfig';
 export type IndividualSignupInput = {
   firstName: string;
   lastName: string;
-  email: string;
+  /** ISO 3166-1 alpha-2. Obrigatório: o backend valida documento e telefone por país. */
+  country: string;
+  /** `cpf` no Brasil, `tax_id` nos demais países. */
+  taxIdType: string;
   whatsapp: string;
   taxId: string;
-  password: string;
-  confirmPassword: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /**
+   * Ausentes quando o cadastro parte de uma sessão que já existe (login social sem espaço de
+   * trabalho): nesse caso a identidade vem da sessão e não há senha a definir.
+   */
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
 };
 
 export type IndividualSignupResponse = {

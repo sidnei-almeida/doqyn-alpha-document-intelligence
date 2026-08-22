@@ -1,6 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
@@ -9,10 +9,12 @@ import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
+import { CountrySelect } from '@/components/ui/CountrySelect';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
+import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
 import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
@@ -24,11 +26,19 @@ import {
 
 export function IndividualSignupPage() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
+
+  /**
+   * Sessão já existente — hoje, quem entrou pelo Google e ainda não tem espaço de trabalho.
+   * Note que `isAuthenticated` é falso nesse estado (o access gate barra por falta de
+   * membership), então quem responde pela existência da sessão é o próprio `user`.
+   */
+  const fromAuthenticatedSession = Boolean(user);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [whatsapp, setWhatsapp] = useState('');
   const [taxId, setTaxId] = useState('');
   const [password, setPassword] = useState('');
@@ -39,18 +49,51 @@ export function IndividualSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Preenche o que o provedor já entregou. Nome fica editável — perfil de rede social muitas
+   * vezes traz apelido — e o e-mail não, porque é ele que identifica a conta já verificada.
+   */
+  useEffect(() => {
+    if (!user) return;
+    setEmail((current) => current || user.email);
+    setFirstName((current) => current || user.firstName || user.name.split(' ')[0] || '');
+    setLastName(
+      (current) => current || user.lastName || user.name.split(' ').slice(1).join(' ') || '',
+    );
+  }, [user]);
+
+  /** Trocar de país muda a máscara: reformata o que já foi digitado em vez de deixar sujeira. */
+  function handleCountryChange(next: CountryCode) {
+    setCountry(next);
+    setTaxId('');
+    setWhatsapp('');
+  }
+
   const formValues = useMemo<IndividualSignupFormValues>(
     () => ({
       firstName,
       lastName,
       email,
+      country,
       whatsapp,
       taxId,
       password,
       confirmPassword,
       acceptedTerms,
+      fromAuthenticatedSession,
     }),
-    [firstName, lastName, email, whatsapp, taxId, password, confirmPassword, acceptedTerms],
+    [
+      firstName,
+      lastName,
+      email,
+      country,
+      whatsapp,
+      taxId,
+      password,
+      confirmPassword,
+      acceptedTerms,
+      fromAuthenticatedSession,
+    ],
   );
 
   const reviewSections = useMemo(
@@ -143,47 +186,67 @@ export function IndividualSignupPage() {
               />
             </div>
 
-            <Input
-              id="email"
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+            <div className="flex flex-col gap-1.5">
+              <Input
+                id="email"
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={fromAuthenticatedSession}
+                required={!fromAuthenticatedSession}
+              />
+              {fromAuthenticatedSession && (
+                <p className="type-label text-doqyn-muted">
+                  E-mail confirmado pela conta com que você entrou.
+                </p>
+              )}
+            </div>
+            <CountrySelect
+              id="country"
+              label="País"
+              value={country}
+              onChange={handleCountryChange}
             />
             <WhatsappInput
               id="whatsapp"
               label="WhatsApp"
+              country={country}
               value={whatsapp}
               onChange={setWhatsapp}
               required
             />
             <TaxIdInput
               id="taxId"
-              kind="CPF"
-              label="CPF"
+              country={country}
+              personType="individual"
+              label={getTaxIdSpec(country, 'individual').label}
               value={taxId}
               onChange={setTaxId}
               required
             />
-            <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <Input
-              id="confirmPassword"
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
+            {!fromAuthenticatedSession && (
+              <>
+                <Input
+                  id="password"
+                  label="Senha"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+                <Input
+                  id="confirmPassword"
+                  label="Confirmar senha"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </>
+            )}
 
             <TermsAcceptanceCheckbox
               checked={acceptedTerms}
