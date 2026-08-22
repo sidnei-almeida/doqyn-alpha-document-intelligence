@@ -31,10 +31,10 @@ const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/criar-empresa',
   '/criar-acesso-cpf',
   '/onboarding',
-  '/auth/oauth/callback',
+  '/sso/callback',
 ];
 
-const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/auth/oauth/callback'];
+const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/sso/callback'];
 
 function applyPartialUserFromSessionError(
   err: SessionApiError,

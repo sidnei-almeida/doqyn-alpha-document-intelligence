@@ -22,7 +22,7 @@ OAUTH_MICROSOFT_CLIENT_SECRET=
 OAUTH_MICROSOFT_TENANT=common
 OAUTH_MICROSOFT_REDIRECT_URI=http://127.0.0.1:4100/oauth/microsoft/callback
 
-OAUTH_POST_LOGIN_REDIRECT_URL=http://localhost:5173/auth/oauth/callback
+OAUTH_POST_LOGIN_REDIRECT_URL=http://localhost:5173/sso/callback
 OAUTH_ERROR_REDIRECT_URL=http://localhost:5173/login
 ```
 
@@ -63,7 +63,7 @@ Em produção, use **HTTPS** em todos os redirect URIs.
 1. Login → **Continuar com Google/Microsoft**
 2. Provedor autentica
 3. Auth-service cria sessão DOQYN
-4. Redirect para `/auth/oauth/callback`
+4. Redirect para `/sso/callback`
 5. Frontend valida sessão:
    - tenant ativo → app (`/upload`)
    - sem membership → `/onboarding` (CPF / CNPJ / pedir acesso)

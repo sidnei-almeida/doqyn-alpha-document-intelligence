@@ -46,7 +46,7 @@ auth-service; o frontend não recebe client secret algum.
 
 ```
 OAUTH_GOOGLE_REDIRECT_URI=http://127.0.0.1:4100/oauth/google/callback
-OAUTH_POST_LOGIN_REDIRECT_URL=http://localhost:5173/auth/oauth/callback
+OAUTH_POST_LOGIN_REDIRECT_URL=http://localhost:5173/sso/callback
 OAUTH_ERROR_REDIRECT_URL=http://localhost:5173/login
 OAUTH_MICROSOFT_ENABLED=false
 ```
