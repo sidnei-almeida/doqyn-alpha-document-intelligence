@@ -44,7 +44,7 @@ function resolveDestination(input: {
 export function OAuthCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { refreshUser, isAuthenticated, accessGate } = useAuth();
+  const { refreshUser, isAuthenticated, accessGate, isLoading } = useAuth();
   const [message, setMessage] = useState('Concluindo autenticação...');
 
   useEffect(() => {
@@ -67,6 +67,10 @@ export function OAuthCallbackPage() {
   }, [navigate, refreshUser, searchParams]);
 
   useEffect(() => {
+    // Enquanto a sessão está sendo carregada, `isAuthenticated` ainda é falso e o destino
+    // calculado seria o fallback `/login` — justamente para quem acabou de autenticar.
+    if (isLoading) return;
+
     const status = searchParams.get('status');
     const destination = resolveDestination({
       status,
@@ -78,7 +82,7 @@ export function OAuthCallbackPage() {
     if (destination) {
       navigate(destination, { replace: true });
     }
-  }, [accessGate, isAuthenticated, navigate, searchParams]);
+  }, [accessGate, isAuthenticated, isLoading, navigate, searchParams]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-doqyn-bg px-4">

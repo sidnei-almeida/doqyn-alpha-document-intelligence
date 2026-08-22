@@ -31,9 +31,16 @@ const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/criar-empresa',
   '/criar-acesso-cpf',
   '/onboarding',
-  '/sso/callback',
 ];
 
+/**
+ * `/sso/callback` fica de fora de PUBLIC_UNAUTHENTICATED_PATHS de propósito: a única função
+ * daquela página é carregar a sessão recém-criada pelo provedor. Tratá-la como rota anônima
+ * fazia o `refreshUser()` apagar a sessão no instante seguinte ao login, e o usuário era
+ * mandado de volta ao formulário de login com o servidor já tendo registrado sucesso.
+ * Continua no bypass do access gate abaixo, porque quem chega ali ainda pode não ter
+ * membership.
+ */
 const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/sso/callback'];
 
 function applyPartialUserFromSessionError(
