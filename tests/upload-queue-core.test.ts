@@ -4,6 +4,7 @@ import type { AnalyzePdfResponse } from '../src/features/document-send/services/
 import type { ExtractedMetadata } from '../src/features/document-send/types';
 import {
   findNextQueuedItem,
+  getAnalysisClassificationError,
   getAutoSaveBlockers,
   countParkedUploadItems,
   hasInFlightUploadItem,
@@ -152,4 +153,24 @@ describe('uploadQueueCore', () => {
     assert.equal(finished, true);
     assert.deepEqual(ticks, [0]);
   });
+});
+
+it('documento sem classe vai para revisão, não para falha', () => {
+  // Regressão: tratar ausência de classe como falha matava o documento — o arquivo já está no R2 e
+  // o registro só nasce na confirmação, então ele ficava no bucket sem aparecer em lugar nenhum.
+  const raw = {
+    status: 'completed',
+    originalFileName: 'pitch.pdf',
+    recommendedFileName: 'pitch.pdf',
+    classification: { classId: null, className: null, confidence: 0, reason: 'inconclusivo' },
+  } as unknown as Parameters<typeof resolveAnalysisOutcome>[1];
+
+  const metadata = { analysisStatus: 'completed' } as unknown as Parameters<
+    typeof resolveAnalysisOutcome
+  >[0];
+
+  const outcome = resolveAnalysisOutcome(metadata, raw);
+  assert.equal(outcome.status, 'requires_review');
+  assert.equal(outcome.classificationError, null);
+  assert.equal(getAnalysisClassificationError(raw, metadata), null);
 });

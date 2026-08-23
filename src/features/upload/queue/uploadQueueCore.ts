@@ -15,10 +15,7 @@ import {
 import type { PostAnalysisAction } from '../config/uploadAutoConfirm';
 import type { UploadQueueItem, UploadQueueItemAnalysis } from '../types';
 import type { BulkUploadItem } from '../../document-send/types/bulk';
-import {
-  analysisFailureMessage,
-  needsManualReviewConfirmation,
-} from './uploadQueueAnalysis';
+import { analysisFailureMessage, needsManualReviewConfirmation } from './uploadQueueAnalysis';
 
 export type AnalysisOutcomeStatus = 'analyzed' | 'requires_review' | 'ai_paused' | 'failed';
 
@@ -169,8 +166,7 @@ export function getAnalysisClassificationError(
 ): string | null {
   if (raw.status === 'ai_unavailable' || raw.classification.errorCode === 'GROQ_RATE_LIMIT') {
     return (
-      raw.classification.reason ||
-      analysisFailureMessage(raw.status, raw.classification.errorCode)
+      raw.classification.reason || analysisFailureMessage(raw.status, raw.classification.errorCode)
     );
   }
 
@@ -178,13 +174,9 @@ export function getAnalysisClassificationError(
     return metadata.classificationReason || 'A análise não foi concluída.';
   }
 
-  if (!raw.classification.classId || !raw.classification.className) {
-    return (
-      raw.classification.reason ||
-      'A análise não retornou identificação de classe para este documento.'
-    );
-  }
-
+  // Ausência de classe não entra aqui de propósito: quem chama isto trata o retorno como erro que
+  // interrompe o envio, e classe faltando é decisão pendente — resolvida na revisão ou pela pasta
+  // "Sem categoria".
   return null;
 }
 
@@ -215,13 +207,12 @@ export function resolveAnalysisOutcome(
     return { status: 'requires_review', classificationError: null };
   }
 
+  // Sem classe não é falha: é decisão pendente. Tratar como `failed` matava o documento — o arquivo
+  // já está no R2 e o registro só nasce na confirmação, então ele ficava no bucket sem aparecer em
+  // lugar nenhum. Vai para a revisão, onde a pessoa escolhe a categoria; se ela não escolher, a
+  // confirmação arquiva em "Sem categoria".
   if (!raw.classification.classId || !raw.classification.className) {
-    return {
-      status: 'failed',
-      classificationError:
-        getAnalysisClassificationError(raw, metadata) ??
-        'A análise não retornou identificação de classe para este documento.',
-    };
+    return { status: 'requires_review', classificationError: null };
   }
 
   return { status: 'analyzed', classificationError: null };
