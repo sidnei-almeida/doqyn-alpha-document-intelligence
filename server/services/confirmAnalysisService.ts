@@ -303,6 +303,10 @@ export async function confirmAnalysisPersistence(input: {
     companyId: tenantId,
     classId,
     ownerUserId,
+    // Confirmar é decidir em que pasta o documento fica, não extrair campos. Categoria ativa sem
+    // regra — criada antes de a regra padrão existir — deixa de ser motivo para recusar o
+    // documento e perdê-lo com o binário já no R2.
+    allowMissingRule: true,
   });
 
   if (!classAndRule) {

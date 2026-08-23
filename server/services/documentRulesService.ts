@@ -437,10 +437,44 @@ export async function diagnoseClassAndRuleLookup(input: {
   };
 }
 
+/**
+ * Regra vazia para categoria ativa que não tem regra própria.
+ *
+ * O consumidor usa a regra para dois fins: projetar os campos no índice de busca (`rule.fields`) e
+ * guardar de qual regra o documento saiu. Ambos sobrevivem a uma regra sem campos — o documento
+ * entra sem metadados extraídos, que é exatamente o estado real dele. Recusar a confirmação, como
+ * se fazia, transformava a ausência de configuração em documento perdido: o binário já estava no
+ * R2 e o registro nunca nascia.
+ */
+function emptyRuleFor(companyId: string, classId: string): MongoDocumentExtractionRule {
+  const now = new Date();
+  return {
+    _id: `ext_${classId}_ausente`,
+    tenantId: companyId,
+    companyId,
+    categoryId: classId,
+    classId,
+    version: 0,
+    active: false,
+    fields: [],
+    namingTemplate: '',
+    minimumConfidence: 0,
+    onLowConfidence: 'requires_review',
+    createdBy: 'system',
+    createdAt: now,
+    updatedAt: now,
+  } as MongoDocumentExtractionRule;
+}
+
 export async function getMongoClassAndRule(input: {
   companyId: string;
   classId: string;
   ownerUserId?: string;
+  /**
+   * Aceita categoria ativa sem regra ativa, devolvendo uma regra vazia no lugar. Para quem só
+   * precisa saber em que pasta o documento vai — a confirmação — em vez de extrair campos.
+   */
+  allowMissingRule?: boolean;
 }): Promise<{
   docClass: MongoDocumentCategory | MongoDocumentClass;
   rule: MongoDocumentExtractionRule | MongoDocumentRule;
@@ -453,14 +487,19 @@ export async function getMongoClassAndRule(input: {
     const docClass = governance.categories.find((c) => c._id === input.classId && c.active);
     const rule = governance.extractionRules.find((r) => r.categoryId === input.classId && r.active);
     if (docClass && rule) return { docClass, rule };
+    if (docClass && input.allowMissingRule) return { docClass, rule: emptyRuleFor(input.companyId, input.classId) };
   }
 
   const legacy = await loadFromLegacyCollections(input.companyId, { ownerUserId: input.ownerUserId });
   if (!legacy) return null;
 
   const docClass = legacy.categories.find((c) => c._id === input.classId && c.active);
+  if (!docClass) return null;
+
   const rule = legacy.extractionRules.find((r) => r.classId === input.classId && r.active);
-  if (!docClass || !rule) return null;
+  if (!rule) {
+    return input.allowMissingRule ? { docClass, rule: emptyRuleFor(input.companyId, input.classId) } : null;
+  }
 
   return { docClass, rule };
 }
