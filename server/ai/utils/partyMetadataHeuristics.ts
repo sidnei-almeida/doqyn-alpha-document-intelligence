@@ -32,7 +32,59 @@ const PARTY_LABEL_PATTERNS: Array<{ key: keyof InferredParties; pattern: RegExp 
 ];
 
 const BOTH_PARTIES_PATTERN =
-  /de\s+um\s+lado[,\s]+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^,;.\n]{2,70}?)[,;\s]+e\s+de\s+outro[,\s]+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^,;.\n]{2,70}?)(?=[,;.]|$)/i;
+  /de\s+um\s+lado[:,\s]+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^,;.\n]{2,70}?)[,;\s]+e[,\s]*de\s+outro(?:\s+lado)?[:,\s]+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^,;.\n]{2,70}?)(?=[,;.]|$)/i;
+
+/**
+ * Cláusula de denominação — o idioma padrão do contrato brasileiro.
+ *
+ * O nome abre o bloco e o papel só aparece no fim, depois de toda a qualificação:
+ *
+ *   CRISTIANO RAFAEL BALDISSERA, brasileiro, casado, inscrito no CPF nº ..., residente e
+ *   domiciliado em Caxias do Sul/RS, doravante denominado REVELADOR;
+ *
+ * Os padrões antigos só reconheciam rótulo **antes** do nome (`PARTE REVELADORA: Fulano`), então
+ * um NDA inteiramente legível saía com "SemPartesIdentificadas" no nome do arquivo.
+ */
+const DENOMINATION_ROLE_PATTERNS: Array<{ key: keyof InferredParties; role: RegExp }> = [
+  { key: 'parte_reveladora', role: /REVELADOR(?:A)?/i },
+  { key: 'parte_receptora', role: /RECEPTOR(?:A)?/i },
+  { key: 'parte_reveladora', role: /CONTRATANTE/i },
+  { key: 'parte_receptora', role: /CONTRATAD[AO]/i },
+];
+
+/**
+ * O nome vem logo depois do marcador de lado, e o marcador pode estar no meio da frase:
+ * "Pelo presente instrumento particular, de um lado: MARIA...". Corta a partir da última
+ * ocorrência; sem marcador nenhum, o nome abre o próprio bloco.
+ */
+const SIDE_MARKER_PATTERN = /de\s+(?:um|outro)\s+lado\s*[:,-]?\s*/i;
+
+function inferPartiesFromDenomination(text: string): InferredParties {
+  const parties: InferredParties = {};
+
+  // O bloco de cada parte termina em `;` ou quebra de linha dupla — não em qualquer quebra, senão
+  // a qualificação (que ocupa várias linhas) seria cortada antes de chegar ao papel.
+  const blocks = text.split(/;|\n{2,}/);
+
+  for (const block of blocks) {
+    const flat = block.replace(/\s+/g, ' ').trim();
+    const denomination = flat.match(/doravante\s+denominad[oa]?\s+(?:a\s+|o\s+)?([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]{2,30})$/i);
+    if (!denomination) continue;
+
+    const role = denomination[1]?.trim() ?? '';
+    const match = DENOMINATION_ROLE_PATTERNS.find((item) => item.role.test(role));
+    if (!match || parties[match.key]) continue;
+
+    const afterMarker = flat.split(SIDE_MARKER_PATTERN).pop() ?? flat;
+    const nameCandidate = afterMarker.match(/^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^,\n]{2,70})/);
+    if (!nameCandidate) continue;
+
+    const cleaned = cleanPartyCandidate(nameCandidate[1] ?? '');
+    if (cleaned) parties[match.key] = cleaned;
+  }
+
+  return parties;
+}
 
 function cleanPartyCandidate(raw: string): string | null {
   const cleaned = raw
@@ -51,12 +103,20 @@ function inferPartiesFromText(text: string): InferredParties {
   const parties: InferredParties = {};
   const haystack = text.replace(/\s+/g, ' ');
 
+  // A denominação vem primeiro por ser a mais explícita: o documento diz quem é quem.
+  // Roda sobre o texto original, não achatado, porque os blocos são separados por linha.
+  const denominated = inferPartiesFromDenomination(text);
+  if (denominated.parte_reveladora) parties.parte_reveladora = denominated.parte_reveladora;
+  if (denominated.parte_receptora) parties.parte_receptora = denominated.parte_receptora;
+
   const both = haystack.match(BOTH_PARTIES_PATTERN);
   if (both) {
     const first = cleanPartyCandidate(both[1] ?? '');
     const second = cleanPartyCandidate(both[2] ?? '');
-    if (first) parties.parte_reveladora = first;
-    if (second) parties.parte_receptora = second;
+    // Não sobrescreve a denominação: lá o documento nomeia o papel explicitamente, aqui a
+    // posição no texto é que sugere quem é quem.
+    if (first && !parties.parte_reveladora) parties.parte_reveladora = first;
+    if (second && !parties.parte_receptora) parties.parte_receptora = second;
   }
 
   for (const { key, pattern } of PARTY_LABEL_PATTERNS) {
