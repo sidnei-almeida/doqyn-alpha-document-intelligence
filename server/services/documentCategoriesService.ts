@@ -94,7 +94,10 @@ export async function createDocumentCategory(
   // do tenant não enxerga a `cat_contratos` da empresa vizinha e o insert estoura E11000. "Contratos"
   // e "Financeiro" são nomes que toda empresa usa.
   let id = `cat_${slug.replace(/-/g, '_')}`;
-  const existingId = await collections.documentCategories.findOne({ _id: id } as Record<string, unknown>);
+  const existingId = await collections.documentCategories.findOne({ _id: id } as Record<
+    string,
+    unknown
+  >);
 
   if (existingId) {
     id = `cat_${randomUUID().slice(0, 8)}`;
@@ -254,4 +257,46 @@ export async function countGroupsWithAccessToCategory(
     categoryId,
     active: true,
   });
+}
+
+/** Slug da pasta onde cai o documento que a IA não soube classificar. */
+export const UNCATEGORIZED_CATEGORY_SLUG = 'sem-categoria';
+export const UNCATEGORIZED_CATEGORY_NAME = 'Sem categoria';
+
+/**
+ * Garante a categoria "Sem categoria" do tenant e devolve o id dela.
+ *
+ * Existe porque `classId` é estrutural: é obrigatório no documento e na versão, e as regras de
+ * acesso são chaveadas por classe. Um documento sem classificação não tinha onde existir, então
+ * ficava só no R2 — invisível na Biblioteca, impossível de reclassificar ou apagar. Como categoria
+ * de verdade, ele aparece numa pasta e o resto do sistema não precisa saber que ela é especial.
+ *
+ * Idempotente: chamada na provisão do tenant e de novo na confirmação, para tenant provisionado
+ * antes desta pasta existir.
+ */
+export async function ensureUncategorizedCategory(
+  tenantId: string,
+  userId: string,
+): Promise<string> {
+  const { collections, scope } = await resolveContext(tenantId, { ownerUserId: userId });
+
+  const existing = await collections.documentCategories.findOne({
+    ...scope,
+    slug: UNCATEGORIZED_CATEGORY_SLUG,
+  } as Record<string, unknown>);
+
+  if (existing) return (existing as MongoDocumentCategory)._id;
+
+  const created = await createDocumentCategory(tenantId, userId, {
+    name: UNCATEGORIZED_CATEGORY_NAME,
+    slug: UNCATEGORIZED_CATEGORY_SLUG,
+    description:
+      'Documentos que chegaram sem classificação. Reclassifique quando souber onde eles moram.',
+    iconKey: 'folder',
+    color: 'neutral',
+    // Última na lista: é destino de exceção, não uma escolha que se oferece primeiro.
+    sortOrder: 999,
+  });
+
+  return created.id;
 }

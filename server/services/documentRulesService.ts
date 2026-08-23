@@ -105,10 +105,7 @@ export function mapCategoryExtractionRules(
     .filter((item): item is DocumentClassRule => Boolean(item));
 }
 
-async function loadFromGovernanceCollections(
-  tenantId: string,
-  opts?: { ownerUserId?: string },
-) {
+async function loadFromGovernanceCollections(tenantId: string, opts?: { ownerUserId?: string }) {
   const collections = await getTenantCollections(tenantId, { userId: opts?.ownerUserId });
   if (
     !collections.documentCategories ||
@@ -144,9 +141,7 @@ async function loadFromLegacyCollections(tenantId: string, opts?: { ownerUserId?
   if (!collections.documentClasses) return null;
 
   const scope = buildClassRuleOwnershipFilter(collections.storage);
-  const categories = await collections.documentClasses
-    .find({ ...scope, active: true })
-    .toArray();
+  const categories = await collections.documentClasses.find({ ...scope, active: true }).toArray();
 
   const legacyRulesCollectionName = collections.names.documentRules?.replace(
     'document_rules',
@@ -198,7 +193,11 @@ export async function loadActiveDocumentClassRules(
 ): Promise<DocumentRulesLoadResult> {
   const tenantId = companyId?.trim();
   if (!tenantId) {
-    throw new ServiceError('Não foi possível identificar a empresa/tenant ativo da sessão.', 'TENANT_REQUIRED', 400);
+    throw new ServiceError(
+      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'TENANT_REQUIRED',
+      400,
+    );
   }
 
   const database = getMongoDatabaseName();
@@ -299,15 +298,18 @@ export async function loadActiveDocumentClassRules(
   }
 
   if (!activeAccessRulesCount) {
-    logger.warn('Matriz de acesso vazia — análise permitida, conexões podem estar pendentes no mapa.', {
-      companyId: tenantId,
-      database,
-      activeCategoriesCount,
-      activeExtractionRulesCount,
-      activeAccessRulesCount,
-      mappedRulesCount: mapped.length,
-      collectionsConsulted,
-    } as Record<string, unknown>);
+    logger.warn(
+      'Matriz de acesso vazia — análise permitida, conexões podem estar pendentes no mapa.',
+      {
+        companyId: tenantId,
+        database,
+        activeCategoriesCount,
+        activeExtractionRulesCount,
+        activeAccessRulesCount,
+        mappedRulesCount: mapped.length,
+        collectionsConsulted,
+      } as Record<string, unknown>,
+    );
   }
 
   const result: DocumentRulesLoadResult = {
@@ -334,13 +336,14 @@ export async function getActiveDocumentClassRules(
   return loaded.rules;
 }
 
-export async function getActiveRulesPayload(
-  companyId: string,
-  opts?: { ownerUserId?: string },
-) {
+export async function getActiveRulesPayload(companyId: string, opts?: { ownerUserId?: string }) {
   const tenantId = companyId?.trim();
   if (!tenantId) {
-    throw new ServiceError('Não foi possível identificar a empresa/tenant ativo da sessão.', 'TENANT_REQUIRED', 400);
+    throw new ServiceError(
+      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'TENANT_REQUIRED',
+      400,
+    );
   }
 
   if (!isMongoNativeConfigured()) {
@@ -408,7 +411,9 @@ export async function diagnoseClassAndRuleLookup(input: {
     };
   }
 
-  const governance = await loadFromGovernanceCollections(tenantId, { ownerUserId: input.ownerUserId });
+  const governance = await loadFromGovernanceCollections(tenantId, {
+    ownerUserId: input.ownerUserId,
+  });
   if (!governance) {
     return {
       companyId: tenantId,
@@ -487,10 +492,13 @@ export async function getMongoClassAndRule(input: {
     const docClass = governance.categories.find((c) => c._id === input.classId && c.active);
     const rule = governance.extractionRules.find((r) => r.categoryId === input.classId && r.active);
     if (docClass && rule) return { docClass, rule };
-    if (docClass && input.allowMissingRule) return { docClass, rule: emptyRuleFor(input.companyId, input.classId) };
+    if (docClass && input.allowMissingRule)
+      return { docClass, rule: emptyRuleFor(input.companyId, input.classId) };
   }
 
-  const legacy = await loadFromLegacyCollections(input.companyId, { ownerUserId: input.ownerUserId });
+  const legacy = await loadFromLegacyCollections(input.companyId, {
+    ownerUserId: input.ownerUserId,
+  });
   if (!legacy) return null;
 
   const docClass = legacy.categories.find((c) => c._id === input.classId && c.active);
@@ -498,7 +506,9 @@ export async function getMongoClassAndRule(input: {
 
   const rule = legacy.extractionRules.find((r) => r.classId === input.classId && r.active);
   if (!rule) {
-    return input.allowMissingRule ? { docClass, rule: emptyRuleFor(input.companyId, input.classId) } : null;
+    return input.allowMissingRule
+      ? { docClass, rule: emptyRuleFor(input.companyId, input.classId) }
+      : null;
   }
 
   return { docClass, rule };

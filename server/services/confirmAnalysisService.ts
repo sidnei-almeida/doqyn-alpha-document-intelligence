@@ -8,11 +8,7 @@ import {
   buildDocumentOwnershipFilter,
   withTenantFieldsFromContext,
 } from '../tenancy/tenantQuery.js';
-import type {
-  MongoDocument,
-  MongoDocumentVersion,
-  MongoProcessingJob,
-} from '../db/types.js';
+import type { MongoDocument, MongoDocumentVersion, MongoProcessingJob } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
 import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
 import { buildFilenameUpdatedAuditEvent } from '../audit/buildFilenameUpdatedAuditEvent.js';
@@ -20,10 +16,7 @@ import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
 import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
-import {
-  diagnoseClassAndRuleLookup,
-  getMongoClassAndRule,
-} from './documentRulesService.js';
+import { diagnoseClassAndRuleLookup, getMongoClassAndRule } from './documentRulesService.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
@@ -33,16 +26,12 @@ import {
   scheduleDocumentPreviewForVersion,
 } from './preview/documentPreviewScheduling.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import {
-  resolveStorageFileNames,
-  type NamingMode,
-} from '../utils/resolveStorageFileNames.js';
+import { resolveStorageFileNames, type NamingMode } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
+import { ensureUncategorizedCategory } from './documentCategoriesService.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
-import {
-  buildInitialDocumentOwnershipFields,
-} from '../utils/documentMutationFields.js';
+import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
 import {
   ConfirmAnalysisError,
@@ -170,9 +159,7 @@ export const confirmAnalysisSchema = z.object({
    * o que a pessoa corrigiu entra por cima com `source: 'manual'`. Sem essa separação a auditoria
    * perderia a diferença entre "a IA acertou" e "alguém consertou".
    */
-  metadataOverrides: z
-    .record(z.union([z.string(), z.number(), z.null()]))
-    .optional(),
+  metadataOverrides: z.record(z.union([z.string(), z.number(), z.null()])).optional(),
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
@@ -250,8 +237,18 @@ export async function confirmAnalysisPersistence(input: {
 
   // A escolha humana vence a da IA: quem revisou viu o documento.
   const manualClassId = data.manualClassId?.trim() || undefined;
+
+  // Sem classe da IA e sem escolha humana, o documento ia para "Sem categoria" em vez de ser
+  // recusado. Recusar custava o documento inteiro: o binário já está no R2 e o registro em Mongo só
+  // nasce aqui, então o arquivo ficava no bucket sem existir para ninguém. Numa pasta ele aparece
+  // na Biblioteca e pode ser reclassificado depois.
+  const fallbackClassId =
+    manualClassId || data.classification.classId
+      ? undefined
+      : await ensureUncategorizedCategory(tenantId, ownerUserId ?? input.user.id);
+
   const classId = requireConfirmClassification({
-    classId: manualClassId ?? data.classification.classId,
+    classId: manualClassId ?? data.classification.classId ?? fallbackClassId ?? null,
     // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
     // revisão continua valendo.
     requiresReview: manualClassId ? false : data.classification.requiresReview,
@@ -532,9 +529,7 @@ export async function confirmAnalysisPersistence(input: {
       },
       classification: {
         classId,
-        className: manualClassId
-          ? docClass.name
-          : data.classification.className ?? docClass.name,
+        className: manualClassId ? docClass.name : (data.classification.className ?? docClass.name),
         // Confiança da IA não vale para escolha humana: 1 é a certeza de quem olhou o documento.
         confidence: manualClassId ? 1 : data.classification.confidence,
         requiresReview: needsReview,

@@ -15,8 +15,10 @@ import {
   SHARED_INDIVIDUAL_COLLECTION_PREFIX,
 } from '../tenancy/taxId.js';
 import { isSafeTenantIdentifier } from '../utils/tenantId.js';
+import { logger } from '../utils/logger.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
+import { ensureUncategorizedCategory } from './documentCategoriesService.js';
 import { getTenantById } from './tenantsService.js';
 
 export type ProvisionTenantInput = {
@@ -209,6 +211,17 @@ export async function provisionTenantEnvironment(
     'Índices garantidos.',
     { createdIndexes },
   );
+  // Tenant novo nascia sem categoria nenhuma, e sem categoria o classificador não tem para onde
+  // classificar: todo primeiro envio falhava e o arquivo ficava no R2 sem virar documento. Esta é a
+  // pasta que garante que sempre existe um destino, mesmo antes de alguém configurar governança.
+  await ensureUncategorizedCategory(input.tenantId, input.createdByUserId).catch((error) => {
+    // Falha aqui não invalida o provisionamento — a categoria é recriada na primeira confirmação.
+    logger.warn('provisão: não foi possível semear a categoria padrão', {
+      tenantId: input.tenantId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+
   await writeProvisionAudit(
     input.tenantId,
     input.tenantType,
