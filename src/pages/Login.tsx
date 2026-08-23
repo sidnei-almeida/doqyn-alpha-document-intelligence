@@ -11,7 +11,7 @@ import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
 import { SessionApiError } from '@/auth/sessionApi';
 import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
-import { getAuthErrorActions } from '@/lib/authErrorMessages';
+import { getAuthErrorActions, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
@@ -25,8 +25,15 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState<string | null>(searchParams.get('oauthMessage'));
-  const [errorCode, setErrorCode] = useState<string | null>(searchParams.get('oauthCode'));
+  const oauthCode = searchParams.get('oauthCode');
+  // A mensagem do auth-service vem na URL e é o último recurso: o texto que o usuário lê é o nosso,
+  // pelo código, para que o app diga a mesma coisa em todo lugar e possa explicar a saída.
+  const [error, setError] = useState<string | null>(
+    oauthCode
+      ? getFriendlyAuthErrorMessage(oauthCode, searchParams.get('oauthMessage') ?? undefined)
+      : searchParams.get('oauthMessage'),
+  );
+  const [errorCode, setErrorCode] = useState<string | null>(oauthCode);
 
   // Só desenha botão de provedor que o auth-service tem configurado. Sem isto, clicar num provedor
   // sem credencial devolvia um JSON de 404 na cara do usuário.

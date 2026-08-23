@@ -6,7 +6,10 @@ export function getLoginAlertVariant(code: string | null): AlertBannerVariant {
   if (
     code === 'MEMBERSHIP_PENDING' ||
     code === 'NO_ACTIVE_TENANT' ||
-    code === 'TENANT_REQUIRED'
+    code === 'TENANT_REQUIRED' ||
+    // Não é falha do sistema: o provedor simplesmente não provou posse do endereço. O caminho de
+    // saída existe (senha, ou aprovação do administrador), então avisar vale mais que alarmar.
+    code === 'OAUTH_EMAIL_NOT_VERIFIED'
   ) {
     return 'warning';
   }
@@ -39,6 +42,11 @@ export function getLoginAlertTitle(code: string | null): string | undefined {
     case 'SESSION_EXPIRED':
     case 'INVALID_SESSION':
       return 'Sessão expirada';
+    case 'OAUTH_EMAIL_NOT_VERIFIED':
+      return 'E-mail não verificado pelo provedor';
+    case 'OAUTH_CALLBACK_FAILED':
+    case 'OAUTH_PROVIDER_DISABLED':
+      return 'Login social indisponível';
     default:
       return undefined;
   }

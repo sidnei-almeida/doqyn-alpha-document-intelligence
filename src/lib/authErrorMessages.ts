@@ -29,6 +29,10 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   AUTH_SERVICE_UNAVAILABLE: 'Não foi possível validar sua sessão agora. Tente novamente.',
   RATE_LIMIT: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
   USER_NOT_ACTIVE: 'Esta conta não está ativa.',
+  OAUTH_EMAIL_NOT_VERIFIED:
+    'O provedor não confirmou que este e-mail é seu, então não podemos vincular a conta existente. Entre com e-mail e senha ou peça ao administrador para liberar o acesso.',
+  OAUTH_CALLBACK_FAILED: 'Não foi possível concluir o login social. Tente novamente.',
+  OAUTH_PROVIDER_DISABLED: 'Este provedor de login não está disponível no momento.',
 };
 
 export function getFriendlyAuthErrorMessage(
