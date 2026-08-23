@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { MongoDocumentCategory } from '../db/types.js';
+import { ensureDefaultExtractionRule } from './documentDefaultExtractionRule.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
 import { isDocumentGroupId } from '../utils/entityIds.js';
@@ -125,6 +126,11 @@ export async function createDocumentCategory(
   ) as MongoDocumentCategory;
 
   await collections.documentCategories.insertOne(category as Record<string, unknown>);
+
+  // Categoria sem regra ativa é uma pasta que não aceita documento: a confirmação exige classe E
+  // regra (`getMongoClassAndRule`) e o classificador só recebe as classes que têm regra. Nasce com
+  // a regra padrão para que a categoria funcione desde já; quem quiser campos próprios edita depois.
+  await ensureDefaultExtractionRule(tenantId, category._id, userId);
 
   return serializeDocumentCategory(category);
 }
