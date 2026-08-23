@@ -371,6 +371,7 @@ export async function analyzePdfUpdateBuffer(input: {
     metadata: enrichedMetadata,
     version: extraction.version,
     sourceChunks: extractionChunks,
+    namingRoles: extraction.naming,
   });
 
   const requiresReview =

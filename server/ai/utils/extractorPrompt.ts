@@ -167,6 +167,17 @@ Regras gerais:
 5. missingFields = keys dos campos required que ficaram null.
 6. requiresReview=true se faltar campo obrigatório ou se a confiança for baixa.
 7. Responda APENAS com JSON válido, sem markdown.
+
+Além dos campos, preencha "naming" com o que VOCÊ entendeu do documento — não se limite à
+classe informada, que é apenas a pasta onde ele será arquivado:
+- naming.tipo: o que o documento É, em uma ou duas palavras, em MAIÚSCULAS. Use o termo que a
+  pessoa usaria ao procurá-lo: NDA, RECEITA, NOTA FISCAL, REEMBOLSO, DESENHO TECNICO, LAUDO,
+  CURRICULO, PROPOSTA. Nunca use o nome da classe nem palavras vazias como DOCUMENTO ou ARQUIVO.
+- naming.sujeitos: uma ou duas entidades que distinguem ESTE documento de outro do mesmo tipo —
+  as partes de um contrato, o paciente e quem prescreve numa receita, o fornecedor de uma nota,
+  a peça de um desenho. Nomes próprios ou razão social, sem qualificação nem documento fiscal.
+- naming.dataReferencia: a data que identifica o documento (assinatura, emissão, validade ou
+  revisão), em yyyy-mm-dd. Use null se o documento não trouxer data.
 ${normalizationContract()}
 ${ndaHints}
 
@@ -177,7 +188,7 @@ fields (ordem de prioridade):
 ${JSON.stringify(fields, null, 2)}
 
 Formato de resposta (repare em value × normalizedValue nos dois exemplos):
-{"documentType":"string","version":"v1.0","metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
+{"documentType":"string","version":"v1.0","naming":{"tipo":"NDA","sujeitos":["Cristiano Baldissera","Sidnei Almeida"],"dataReferencia":"2026-06-09"},"metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
 
 Trechos do documento:
 ${formatChunksForPrompt(compactChunks)}`;

@@ -49,6 +49,23 @@ export type ExtractedMetadataField = {
   currency?: string;
 };
 
+/**
+ * Papéis de nomeação — o que o modelo entendeu do documento, em vez de campos que alguém
+ * precisou autorar antes.
+ *
+ * Campo por classe não sobrevive a classe inventada pelo usuário: ninguém vai cadastrar os
+ * campos de "desenho técnico" ou "receita" antes do primeiro upload. Estes três papéis existem
+ * em qualquer documento, então o modelo de nome passa a valer para tipo que ninguém previu.
+ */
+export type DocumentNamingRoles = {
+  /** O que o documento é, em uma ou duas palavras: NDA, RECEITA, NOTA FISCAL, DESENHO TECNICO. */
+  tipo: string | null;
+  /** Uma ou duas entidades que distinguem este documento de outro do mesmo tipo. */
+  sujeitos: string[];
+  /** Data que identifica o documento — assinatura, emissão, validade ou revisão (yyyy-mm-dd). */
+  dataReferencia: string | null;
+};
+
 export type MetadataExtractionResult = {
   documentType: string | null;
   version: string;
@@ -56,6 +73,8 @@ export type MetadataExtractionResult = {
   missingFields: string[];
   requiresReview: boolean;
   reviewReasons: string[];
+  /** Ausente quando o modelo não devolveu o bloco ou devolveu algo inaproveitável. */
+  naming?: DocumentNamingRoles;
 };
 
 export type ProcessingLogItem = {

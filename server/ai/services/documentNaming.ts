@@ -1,4 +1,9 @@
-import type { DocumentClassRule, ExtractedMetadataField, RetrievedChunk } from '../types/documentAi.types.js';
+import type {
+  DocumentClassRule,
+  DocumentNamingRoles,
+  ExtractedMetadataField,
+  RetrievedChunk,
+} from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
 import {
   ensurePdfExtension,
@@ -458,6 +463,74 @@ export function stripSensitiveIdentifiersFromFileName(fileName: string): string 
   return stripSensitiveIdentifiersFromFileNameCore(fileName);
 }
 
+
+/**
+ * Nome a partir dos papéis que o modelo entendeu do documento.
+ *
+ * Este é o caminho preferencial, e o motivo é estrutural: o template da classe cita campos que
+ * alguém precisou autorar (`{parte_reveladora}` só existe em NDA), então classe inventada pelo
+ * usuário — receita, desenho técnico, laudo — nunca teria nome decente. Tipo, sujeitos e data
+ * existem em qualquer documento, então a mesma regra serve para tipo que ninguém previu:
+ * `RECEITA_Maria_Silva_Dr_Souza_2026-06-09`, `NDA_Cristiano_Sidnei_2026-06-09`.
+ */
+
+/**
+ * Sujeito é mais amplo que parte contratual.
+ *
+ * A validação de partes (`isValidPartyName`) existe para recusar fragmento jurídico onde deveria
+ * haver nome de pessoa ou empresa. Aplicá-la ao sujeito descartava coisa legítima: "Flange DN200"
+ * num desenho técnico, "Fornada de Casa" numa proposta. Aqui basta recusar o que não identifica
+ * nada — vazio, palavra genérica, ou texto que começa por conector.
+ */
+function isUsableSubject(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length < 2 || trimmed.length > 60) return false;
+  if (!/[A-Za-zÀ-ÿ]/.test(trimmed)) return false;
+  if (/^(?:de|do|da|dos|das|e|o|a|os|as|para|por|com)\b/i.test(trimmed)) return false;
+
+  const normalized = normalizeCompareToken(trimmed);
+  return !GENERIC_SUBJECT_TOKENS.has(normalized);
+}
+
+const GENERIC_SUBJECT_TOKENS = new Set([
+  'documento',
+  'documentos',
+  'arquivo',
+  'empresa',
+  'cliente',
+  'fornecedor',
+  'parte',
+  'partes',
+  'contratante',
+  'contratada',
+  'titular',
+  'nao informado',
+  'nao identificado',
+]);
+
+function buildNameFromRoles(roles: DocumentNamingRoles | undefined): string | null {
+  if (!roles?.tipo) return null;
+
+  const tipo = sanitizeFileNameSegment(roles.tipo, '');
+  if (!tipo) return null;
+
+  const parts = [tipo];
+
+  for (const subject of roles.sujeitos) {
+    if (!isUsableSubject(subject)) continue;
+    const formatted = sanitizeFileNameSegment(subject, '');
+    if (formatted) parts.push(formatted);
+  }
+
+  if (roles.dataReferencia) parts.push(roles.dataReferencia);
+
+  // Só o tipo não distingue dois documentos do mesmo tipo — sem sujeito nem data, é melhor deixar
+  // o caminho antigo tentar com os campos da classe.
+  if (parts.length === 1) return null;
+
+  return parts.join('_');
+}
+
 export function generateRecommendedFileName(input: {
   originalFileName: string;
   selectedClass: DocumentClassRule;
@@ -465,6 +538,8 @@ export function generateRecommendedFileName(input: {
   version: string;
   preventSensitiveDataInFileName?: boolean;
   sourceChunks?: RetrievedChunk[];
+  /** Papéis devolvidos pelo extrator. Preferidos ao template da classe quando presentes. */
+  namingRoles?: DocumentNamingRoles;
 }): string {
   const metadata = enrichMetadataWithPartyHeuristics({
     chunks: input.sourceChunks ?? [],
@@ -472,11 +547,15 @@ export function generateRecommendedFileName(input: {
     metadata: input.metadata,
   });
 
-  let name = applyNamingTemplate({
-    selectedClass: input.selectedClass,
-    metadata,
-    version: input.version,
-  });
+  const fromRoles = buildNameFromRoles(input.namingRoles);
+
+  let name =
+    fromRoles ??
+    applyNamingTemplate({
+      selectedClass: input.selectedClass,
+      metadata,
+      version: input.version,
+    });
 
   name = stripCategorySlugPrefix(name);
 

@@ -525,6 +525,7 @@ export async function analyzePdfBuffer(input: {
     metadata: enrichedMetadata,
     version: extraction.version,
     sourceChunks: extractionChunks,
+    namingRoles: extraction.naming,
   });
 
   logs.push(

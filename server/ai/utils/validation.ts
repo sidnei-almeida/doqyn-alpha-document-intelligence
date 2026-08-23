@@ -9,6 +9,7 @@ import type {
   DocumentClassRule,
   EvidenceSnippet,
   ExtractedMetadataField,
+  DocumentNamingRoles,
   MetadataExtractionResult,
 } from '../types/documentAi.types.js';
 import type { DocumentRuleField } from '../types/documentAi.types.js';
@@ -138,6 +139,56 @@ function applyFieldNormalization(
     value,
     normalizedValue: normalizedValue ?? value,
   };
+}
+
+
+/** Palavras que não identificam nada — se o modelo devolver isso como tipo, é como não devolver. */
+const EMPTY_TYPE_TOKENS = new Set([
+  'documento',
+  'documentos',
+  'arquivo',
+  'arquivos',
+  'pdf',
+  'anexo',
+  'geral',
+  'gerais',
+  'outros',
+]);
+
+/**
+ * Sanitiza os papéis de nomeação devolvidos pelo modelo.
+ *
+ * Estes valores entram no nome do arquivo, então tudo que não for aproveitável vira ausência em
+ * vez de virar sujeira no nome — foi assim que marcadores de campo vazio acabaram batizando
+ * arquivos como `sem_data_v1_0.pdf`.
+ */
+function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const data = raw as Record<string, unknown>;
+
+  const rawType = typeof data.tipo === 'string' ? data.tipo.trim() : '';
+  const normalizedType = rawType.toLowerCase();
+  const tipo =
+    rawType &&
+    rawType.length <= 40 &&
+    !EMPTY_TYPE_TOKENS.has(normalizedType) &&
+    normalizedType !== className.trim().toLowerCase()
+      ? rawType
+      : null;
+
+  const sujeitos = Array.isArray(data.sujeitos)
+    ? data.sujeitos
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 2 && item.length <= 80)
+        .slice(0, 2)
+    : [];
+
+  const rawDate = typeof data.dataReferencia === 'string' ? data.dataReferencia.trim() : '';
+  const dataReferencia = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+
+  if (!tipo && sujeitos.length === 0 && !dataReferencia) return undefined;
+  return { tipo, sujeitos, dataReferencia };
 }
 
 export function validateMetadataResult(
@@ -298,5 +349,6 @@ export function validateMetadataResult(
     missingFields: mergedMissing,
     requiresReview,
     reviewReasons: allReviewReasons,
+    naming: parseNamingRoles(data.naming, selectedClass.name),
   };
 }
