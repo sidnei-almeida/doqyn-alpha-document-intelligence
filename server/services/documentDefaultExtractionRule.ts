@@ -1,5 +1,6 @@
 import type { MongoDocumentExtractionRule, MongoRuleField } from '../db/types.js';
 import { normalizeExpiryAlertConfig } from './expiry/documentExpiryAlertService.js';
+import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
 import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
 
@@ -54,8 +55,12 @@ export async function ensureDefaultExtractionRule(
   userId: string,
 ): Promise<MongoDocumentExtractionRule | null> {
   const collections = await requireTenantGovernanceCollections(tenantId, { userId });
+  const scope = buildClassRuleOwnershipFilter(collections.storage);
 
+  // Com escopo: na coleção compartilhada dos tenants PF, procurar só por `categoryId` enxergaria a
+  // regra do vizinho e concluiria, errado, que este tenant já está configurado.
   const existing = await collections.documentExtractionRules.findOne({
+    ...scope,
     categoryId,
   } as Record<string, unknown>);
   if (existing) return null;
@@ -90,6 +95,14 @@ export async function ensureDefaultExtractionRule(
     rule._id = `ext_${categoryId}_v1_${Date.now().toString(36)}`;
   }
 
-  await collections.documentExtractionRules.insertOne(rule as Record<string, unknown>);
+  try {
+    await collections.documentExtractionRules.insertOne(rule as Record<string, unknown>);
+  } catch (error) {
+    // Duas criações concorrentes da mesma categoria: a checagem de `_id` acima passou nas duas antes
+    // de qualquer insert acontecer. Perder a corrida não é erro — a regra do outro serve.
+    if (/E11000|duplicate key/i.test(error instanceof Error ? error.message : '')) return null;
+    throw error;
+  }
+
   return rule;
 }

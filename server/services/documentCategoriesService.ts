@@ -287,16 +287,35 @@ export async function ensureUncategorizedCategory(
 
   if (existing) return (existing as MongoDocumentCategory)._id;
 
-  const created = await createDocumentCategory(tenantId, userId, {
-    name: UNCATEGORIZED_CATEGORY_NAME,
-    slug: UNCATEGORIZED_CATEGORY_SLUG,
-    description:
-      'Documentos que chegaram sem classificação. Reclassifique quando souber onde eles moram.',
-    iconKey: 'folder',
-    color: 'neutral',
-    // Última na lista: é destino de exceção, não uma escolha que se oferece primeiro.
-    sortOrder: 999,
-  });
+  try {
+    const created = await createDocumentCategory(tenantId, userId, {
+      name: UNCATEGORIZED_CATEGORY_NAME,
+      slug: UNCATEGORIZED_CATEGORY_SLUG,
+      description:
+        'Documentos que chegaram sem classificação. Reclassifique quando souber onde eles moram.',
+      iconKey: 'folder',
+      color: 'neutral',
+      // Última na lista: é destino de exceção, não uma escolha que se oferece primeiro.
+      sortOrder: 999,
+    });
 
-  return created.id;
+    return created.id;
+  } catch (error) {
+    // Dois envios sem classe confirmando ao mesmo tempo chegam aqui juntos: ambos leem "não existe"
+    // e ambos tentam criar. Perder a corrida não é erro — a pasta que o outro criou serve.
+    const isDuplicate =
+      error instanceof ServiceError
+        ? error.code === 'DUPLICATE_SLUG'
+        : /E11000|duplicate key/i.test(error instanceof Error ? error.message : '');
+
+    if (!isDuplicate) throw error;
+
+    const raced = await collections.documentCategories.findOne({
+      ...scope,
+      slug: UNCATEGORIZED_CATEGORY_SLUG,
+    } as Record<string, unknown>);
+
+    if (!raced) throw error;
+    return (raced as MongoDocumentCategory)._id;
+  }
 }
