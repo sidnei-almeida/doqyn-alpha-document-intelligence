@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { BRAND_ASSETS } from './brandAssets';
+import { DoqynMark } from './DoqynMark';
 
 type SidebarBrandLogoProps = {
   collapsed?: boolean;
@@ -7,46 +7,30 @@ type SidebarBrandLogoProps = {
 };
 
 /**
- * Logo da sidebar — horizontal com wordmark quando expandida;
- * ícone isolado quando recolhida.
+ * Logo da sidebar — marca em SVG mais wordmark tipográfico.
+ *
+ * Eram três PNG: um claro, um escuro e um ícone isolado, trocados por tema. A
+ * marca desenhada em código segue o token de acento sozinha, dispensa o par
+ * claro/escuro, não fica devendo nitidez em tela densa e some junto com o
+ * wordmark quando a barra recolhe.
  */
 export function SidebarBrandLogo({ collapsed = false, className }: SidebarBrandLogoProps) {
-  if (collapsed) {
-    return (
-      <div
-        className={cn('sidebar-brand-logo flex w-10 items-center justify-center', className)}
-        aria-label="DOQYN"
-      >
-        <img
-          src={BRAND_ASSETS.sidebarIcon}
-          alt=""
-          className="h-10 w-10 shrink-0 object-contain object-center"
-          draggable={false}
-        />
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
-        'sidebar-brand-logo flex w-full items-center justify-center px-1',
+        'flex items-center',
+        collapsed ? 'w-10 justify-center' : 'w-full gap-2.5 px-1',
         className,
       )}
+      role="img"
       aria-label="DOQYN"
     >
-      <img
-        src={BRAND_ASSETS.sidebarForDarkTheme}
-        alt=""
-        className="sidebar-brand-logo__img sidebar-brand-logo__img--dark-theme h-auto w-full max-h-16 max-w-full object-contain object-center"
-        draggable={false}
-      />
-      <img
-        src={BRAND_ASSETS.sidebarForLightTheme}
-        alt=""
-        className="sidebar-brand-logo__img sidebar-brand-logo__img--light-theme h-auto w-full max-h-16 max-w-full object-contain object-center"
-        draggable={false}
-      />
+      <DoqynMark size={collapsed ? 24 : 26} className="shrink-0 text-doqyn-accent-active" />
+      {collapsed ? null : (
+        <span className="font-display text-[17px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
+          Doqyn
+        </span>
+      )}
     </div>
   );
 }

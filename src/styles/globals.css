@@ -412,34 +412,6 @@
     box-shadow: none;
   }
 
-  /* ===== Sidebar — logo por tema ===== */
-
-  .sidebar-brand-logo__img {
-    display: none;
-  }
-
-  [data-theme='dark'] .sidebar-brand-logo__img--dark-theme {
-    display: block;
-  }
-
-  [data-theme='light'] .sidebar-brand-logo__img--light-theme {
-    display: block;
-  }
-
-  /* ===== Auth — mesma logo da sidebar ===== */
-
-  .auth-brand-logo__img {
-    display: none;
-  }
-
-  [data-theme='dark'] .auth-brand-logo__img--dark-theme {
-    display: block;
-  }
-
-  [data-theme='light'] .auth-brand-logo__img--light-theme {
-    display: block;
-  }
-
   /* ===== Sidebar — botão "+ Novo" (Material filled, flat) ===== */
 
   .sidebar-new-button {
@@ -918,8 +890,14 @@
     @apply type-eyebrow mb-0;
   }
 
+  /* Título de página em serifada — 24px está acima do piso de 20px que o kit
+     fixou para a Newsreader. É a mesma voz da porta de entrada, agora dentro do
+     app. Abaixo desse tamanho a serifada continua proibida. */
   .workspace-page-title {
     @apply type-h1;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.012em;
   }
 
   .workspace-page-subtitle {

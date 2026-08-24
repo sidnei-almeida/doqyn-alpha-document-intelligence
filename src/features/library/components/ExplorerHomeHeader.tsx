@@ -17,7 +17,7 @@ type ExplorerHomeHeaderProps = {
  */
 export function ExplorerHomeHeader({
   title = 'Biblioteca',
-  subtitle = 'Documentos e categorias deste ambiente',
+  subtitle,
   viewMode,
   onViewModeChange,
   onRefresh,
