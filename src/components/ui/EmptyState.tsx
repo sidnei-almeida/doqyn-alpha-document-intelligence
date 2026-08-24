@@ -28,14 +28,14 @@ export function EmptyState({
       role="status"
     >
       {icon ? (
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-doqyn-border-subtle bg-doqyn-surface text-doqyn-muted">
-          {icon}
-        </div>
+        <div className="mb-4 flex items-center justify-center text-doqyn-border-strong">{icon}</div>
       ) : (
         <div className="mb-5 h-px w-10 bg-doqyn-border-subtle" aria-hidden />
       )}
-      <p className="type-h2 text-doqyn-text">{title}</p>
-      {description && <p className="caption-text mt-2 max-w-sm">{description}</p>}
+      <p className="text-label font-medium text-doqyn-text">{title}</p>
+      {description && (
+        <p className="caption-text mt-1.5 max-w-[42ch] leading-relaxed">{description}</p>
+      )}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
