@@ -1,11 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
+import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
-import type { AccessMatrix, AccessMatrixCell, DocumentAccessOrigin } from '../api/matrixApi';
+import type {
+  AccessMatrix,
+  AccessMatrixCell,
+  AccessMatrixDocument,
+  AccessMatrixMember,
+  DocumentAccessOrigin,
+} from '../api/matrixApi';
 import { ORIGIN_PRIORITY, primaryOrigin } from './accessOrigin';
 
 /**
@@ -45,6 +52,211 @@ function initialsOf(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '?';
 }
 
+const VERB_ROWS: Array<{ key: 'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare'; label: string }> = [
+  { key: 'canView', label: 'Ver' },
+  { key: 'canDownload', label: 'Baixar' },
+  { key: 'canUpdate', label: 'Alterar' },
+  { key: 'canAudit', label: 'Auditar' },
+  { key: 'canShare', label: 'Compartilhar' },
+];
+
+/**
+ * Célula da grade — o cartão abre no hover e vive em portal.
+ *
+ * Antes ele era filho da célula: nascia dentro do contêiner rolável e a grade criava uma barra de
+ * rolagem para caber um cartão que deveria flutuar por cima dela. Em portal, a grade só rola
+ * quando os documentos passam do limite, que é quando rolar significa alguma coisa.
+ *
+ * Abre no hover porque a célula é para ler, não para acionar: pedir um clique para descobrir o que
+ * uma marca significa é cobrar pedágio em cada célula da matriz. O clique continua valendo (é o
+ * caminho do toque) e o foco pelo teclado abre igual.
+ */
+function AccessCell({
+  document: doc,
+  member,
+  cell,
+  origin,
+  isBusy,
+  groupNameById,
+  onShare,
+  onRevoke,
+}: {
+  document: AccessMatrixDocument;
+  member: AccessMatrixMember;
+  cell?: AccessMatrixCell;
+  origin: DocumentAccessOrigin | null;
+  isBusy: boolean;
+  groupNameById: Map<string, string>;
+  onShare: (documentId: string, member: { userId: string; name: string }) => void;
+  onRevoke: (documentId: string, shareGrantId: string, memberName: string) => void;
+}) {
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // A folga na saída é o que permite atravessar o vão entre a célula e o cartão
+  // sem que ele feche no meio do caminho.
+  const scheduleOpen = useCallback(() => {
+    clearTimer();
+    timerRef.current = window.setTimeout(() => setOpen(true), 90);
+  }, [clearTimer]);
+
+  const scheduleClose = useCallback(() => {
+    clearTimer();
+    timerRef.current = window.setTimeout(() => setOpen(false), 160);
+  }, [clearTimer]);
+
+  useEffect(() => clearTimer, [clearTimer]);
+
+  const permissions = cell?.permissions;
+  const key = `${doc.documentId}:${member.membershipId}`;
+
+  return (
+    <>
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={scheduleClose}
+        onFocus={() => setOpen(true)}
+        onBlur={scheduleClose}
+        disabled={isBusy}
+        aria-label={`${member.name} — ${origin ? ORIGIN_LABEL[origin] : 'sem acesso'}`}
+        aria-expanded={open}
+        className={cn(
+          'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
+          origin ? ORIGIN_INK[origin] : 'text-doqyn-subtle/60',
+          'hover:bg-doqyn-hover/60 focus-visible:outline-none focus-visible:bg-doqyn-hover/60',
+          isBusy && 'opacity-50',
+          open && 'bg-doqyn-hover/60',
+        )}
+        data-testid={`access-cell-${key}`}
+      >
+        {isBusy ? (
+          <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
+        ) : origin ? (
+          <Icon name={ORIGIN_ICON[origin]} size={ICON_SIZE.xs} />
+        ) : (
+          <span className="text-caption leading-none">·</span>
+        )}
+      </button>
+
+      <AnchoredPopover
+        anchorRef={anchorRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        placement="bottom-start"
+        className="w-64"
+        aria-label={`Acesso de ${member.name}`}
+      >
+        <div className="p-3" onMouseEnter={clearTimer} onMouseLeave={scheduleClose}>
+          <p className="text-label font-medium text-doqyn-text">{member.name}</p>
+          <p className="truncate font-mono text-micro text-doqyn-subtle">{member.email}</p>
+
+          <div className="mt-3 border-t border-doqyn-border-subtle pt-2.5">
+            <p className="matrix-head-label">Origem</p>
+            <div className="mt-1.5 space-y-1">
+              {cell?.origins.length ? (
+                cell.origins.map((entry) => (
+                  <p
+                    key={entry}
+                    className="flex items-center gap-1.5 text-caption text-doqyn-muted"
+                  >
+                    <Icon
+                      name={ORIGIN_ICON[entry]}
+                      size={ICON_SIZE.xs}
+                      className="shrink-0 text-doqyn-subtle"
+                    />
+                    {ORIGIN_LABEL[entry]}
+                    {entry === 'governance' && cell.viaGroupIds.length > 0 && (
+                      <span className="truncate text-doqyn-subtle">
+                        (
+                        {cell.viaGroupIds
+                          .map((groupId) => groupNameById.get(groupId) ?? groupId)
+                          .join(', ')}
+                        )
+                      </span>
+                    )}
+                  </p>
+                ))
+              ) : (
+                <p className="text-caption text-doqyn-muted">Sem acesso a este documento.</p>
+              )}
+            </div>
+          </div>
+
+          {permissions && (
+            <div className="mt-3 border-t border-doqyn-border-subtle pt-2.5">
+              <p className="matrix-head-label">Pode</p>
+              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
+                {VERB_ROWS.map((verb) => {
+                  const granted = permissions[verb.key];
+                  return (
+                    <p
+                      key={verb.key}
+                      className={cn(
+                        'flex items-center gap-1.5 text-caption',
+                        granted ? 'text-doqyn-text' : 'text-doqyn-subtle/60',
+                      )}
+                    >
+                      {granted ? (
+                        <Icon name="check" size={ICON_SIZE.xs} className="shrink-0" />
+                      ) : (
+                        <span className="w-4 shrink-0 text-center leading-none">·</span>
+                      )}
+                      {verb.label}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-col items-start gap-1.5 border-t border-doqyn-border-subtle pt-2.5">
+            {cell?.shareGrantId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onRevoke(doc.documentId, cell.shareGrantId as string, member.name);
+                }}
+                className="text-caption font-medium text-doqyn-danger hover:underline"
+              >
+                Revogar compartilhamento
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onShare(doc.documentId, { userId: member.userId, name: member.name });
+                }}
+                className="text-caption font-medium text-doqyn-text hover:underline"
+              >
+                Compartilhar com {member.name.split(' ')[0]}
+              </button>
+            )}
+
+            {cell?.origins.includes('governance') && (
+              <Link to="/rules" className="text-caption text-doqyn-muted hover:underline">
+                Este acesso vem da regra — abrir Regras
+              </Link>
+            )}
+          </div>
+        </div>
+      </AnchoredPopover>
+    </>
+  );
+}
+
 export function AccessMatrixTable({
   matrix,
   onShare,
@@ -56,7 +268,6 @@ export function AccessMatrixTable({
   onRevoke: (documentId: string, shareGrantId: string, memberName: string) => void;
   busyCellKey: string | null;
 }) {
-  const [openCell, setOpenCell] = useState<string | null>(null);
   // Linha e coluna acendem juntas: é o dedo percorrendo a grade, e sem isso
   // ninguém acerta qual coluna é qual sete pessoas adiante.
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
@@ -155,123 +366,26 @@ export function AccessMatrixTable({
                   const key = `${document.documentId}:${member.membershipId}`;
                   const cell = cellIndex.get(key);
                   const origin = cell ? primaryOrigin(cell.origins) : null;
-                  const isBusy = busyCellKey === key;
-                  const isOpen = openCell === key;
 
                   return (
                     <td
                       key={member.membershipId}
                       onMouseEnter={() => setHoverColumn(member.membershipId)}
                       className={cn(
-                        'relative px-1 py-2 text-center',
+                        'px-1 py-2 text-center',
                         hoverColumn === member.membershipId && 'matrix-col-active',
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setOpenCell(isOpen ? null : key)}
-                        disabled={isBusy}
-                        aria-label={`${member.name} — ${
-                          origin ? ORIGIN_LABEL[origin] : 'sem acesso'
-                        }`}
-                        className={cn(
-                          'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
-                          origin ? ORIGIN_INK[origin] : 'text-doqyn-subtle/60',
-                          'hover:bg-doqyn-hover/60',
-                          isBusy && 'opacity-50',
-                          isOpen && 'bg-doqyn-hover/60',
-                        )}
-                        data-testid={`access-cell-${key}`}
-                      >
-                        {isBusy ? (
-                          <Icon
-                            name="progress_activity"
-                            size={ICON_SIZE.xs}
-                            className="animate-spin"
-                          />
-                        ) : origin ? (
-                          <Icon name={ORIGIN_ICON[origin]} size={ICON_SIZE.xs} />
-                        ) : (
-                          <span className="text-caption leading-none">·</span>
-                        )}
-                      </button>
-
-                      {isOpen && (
-                        <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-[4px] border border-doqyn-border-subtle bg-doqyn-card p-3 text-left shadow-lg">
-                          <p className="text-label font-medium text-doqyn-text">{member.name}</p>
-                          <p className="truncate font-mono text-micro text-doqyn-subtle">
-                            {member.email}
-                          </p>
-
-                          <div className="mt-2.5 space-y-1.5 border-t border-doqyn-border-subtle pt-2.5">
-                            {cell?.origins.length ? (
-                              cell.origins.map((entry) => (
-                                <p
-                                  key={entry}
-                                  className="flex items-center gap-1.5 text-caption text-doqyn-muted"
-                                >
-                                  <Icon
-                                    name={ORIGIN_ICON[entry]}
-                                    size={ICON_SIZE.xs}
-                                    className="text-doqyn-subtle"
-                                  />
-                                  {ORIGIN_LABEL[entry]}
-                                  {entry === 'governance' && cell.viaGroupIds.length > 0 && (
-                                    <span className="text-doqyn-subtle">
-                                      (
-                                      {cell.viaGroupIds
-                                        .map((groupId) => groupNameById.get(groupId) ?? groupId)
-                                        .join(', ')}
-                                      )
-                                    </span>
-                                  )}
-                                </p>
-                              ))
-                            ) : (
-                              <p className="text-caption text-doqyn-muted">Sem acesso.</p>
-                            )}
-                          </div>
-
-                          <div className="mt-2.5 flex flex-col items-start gap-1.5 border-t border-doqyn-border-subtle pt-2.5">
-                            {cell?.shareGrantId ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenCell(null);
-                                  onRevoke(
-                                    document.documentId,
-                                    cell.shareGrantId as string,
-                                    member.name,
-                                  );
-                                }}
-                                className="text-caption font-medium text-doqyn-danger hover:underline"
-                              >
-                                Revogar compartilhamento
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenCell(null);
-                                  onShare(document.documentId, {
-                                    userId: member.userId,
-                                    name: member.name,
-                                  });
-                                }}
-                                className="text-caption font-medium text-doqyn-text hover:underline"
-                              >
-                                Compartilhar com {member.name.split(' ')[0]}
-                              </button>
-                            )}
-
-                            {cell?.origins.includes('governance') && (
-                              <Link to="/rules" className="text-caption text-doqyn-muted hover:underline">
-                                Este acesso vem da regra — abrir Regras
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <AccessCell
+                        document={document}
+                        member={member}
+                        cell={cell}
+                        origin={origin}
+                        isBusy={busyCellKey === key}
+                        groupNameById={groupNameById}
+                        onShare={onShare}
+                        onRevoke={onRevoke}
+                      />
                     </td>
                   );
                 })}

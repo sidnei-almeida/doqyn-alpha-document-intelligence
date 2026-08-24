@@ -11,11 +11,21 @@ export type AccessMatrixMember = {
   groupIds: string[];
 };
 
+export type AccessMatrixVerbs = {
+  canView: boolean;
+  canDownload: boolean;
+  canUpdate: boolean;
+  canAudit: boolean;
+  canShare: boolean;
+};
+
 export type AccessMatrixCell = {
   documentId: string;
   membershipId: string;
   origins: DocumentAccessOrigin[];
   canDownload: boolean;
+  /** Opcional para sobreviver a uma API mais antiga durante o deploy. */
+  permissions?: AccessMatrixVerbs;
   viaGroupIds: string[];
   shareGrantId?: string;
 };
