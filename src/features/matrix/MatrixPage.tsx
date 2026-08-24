@@ -25,33 +25,56 @@ import { GroupAccessMatrixTable } from './components/GroupAccessMatrixTable';
  */
 type MatrixTab = 'people' | 'groups';
 
+const LENSES: Array<{ key: MatrixTab; label: string; description: string }> = [
+  {
+    key: 'people',
+    label: 'Por pessoa',
+    description: 'Quem lê cada documento, e de onde vem o acesso.',
+  },
+  {
+    key: 'groups',
+    label: 'Por grupo',
+    description: 'O que a regra concede a cada grupo, verbo a verbo.',
+  },
+];
+
 /**
- * Lente — não é aba nem cartão: é a escolha de por onde ler a mesma grade. Como
- * é controle horizontal, o escolhido marca com régua de acento embaixo.
+ * Troca de lente — duas leituras da mesma grade, no lugar onde as outras telas
+ * põem seus controles de vista: à direita do título. Ocupava seis linhas de
+ * cartão para dizer duas palavras; a explicação de cada lente desceu para o
+ * subtítulo da página, que muda junto e só precisa existir uma vez.
  */
-function LensOption({
-  active,
-  onClick,
-  label,
-  hint,
+function LensSwitch({
+  value,
+  onChange,
 }: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  hint: string;
+  value: MatrixTab;
+  onChange: (tab: MatrixTab) => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="matrix-lens" aria-pressed={active}>
-      <span
-        className={cn(
-          'block text-label font-medium transition-colors',
-          active ? 'text-doqyn-text' : 'text-doqyn-muted',
-        )}
-      >
-        {label}
-      </span>
-      <span className="mt-0.5 block text-caption text-doqyn-subtle">{hint}</span>
-    </button>
+    <div className="flex h-9 items-stretch gap-1" role="group" aria-label="Lente da matriz">
+      {LENSES.map((lens) => {
+        const isActive = value === lens.key;
+        return (
+          <button
+            key={lens.key}
+            type="button"
+            onClick={() => onChange(lens.key)}
+            aria-pressed={isActive}
+            className={cn(
+              'relative rounded-[4px] px-2.5 text-caption font-medium transition-colors duration-150',
+              'after:absolute after:inset-x-2.5 after:bottom-0 after:h-[2px] after:transition-colors after:duration-150',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30',
+              isActive
+                ? 'text-doqyn-text after:bg-doqyn-accent-active'
+                : 'text-doqyn-muted after:bg-transparent hover:text-doqyn-text',
+            )}
+          >
+            {lens.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -165,6 +188,7 @@ export function MatrixPage() {
   const error = accessQuery.error;
   const data = accessQuery.data;
 
+  const activeLens = LENSES.find((lens) => lens.key === tab) ?? LENSES[0];
   const documentCount = data?.documents.length ?? 0;
   const axisCount = tab === 'people' ? (data?.members.length ?? 0) : (data?.groups.length ?? 0);
   const axisNoun = tab === 'people' ? 'pessoa' : 'grupo';
@@ -173,29 +197,10 @@ export function MatrixPage() {
     <PageShell
       eyebrow="Governança"
       title="Matriz de documentos"
-      description="Quem alcança cada documento, e por qual caminho."
+      description={activeLens.description}
+      actions={<LensSwitch value={tab} onChange={setTab} />}
       bodyClassName="matrix-page w-full gap-6"
     >
-      <div className="flex flex-col gap-3">
-        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-          Lente
-        </span>
-        <div className="grid max-w-2xl gap-x-8 gap-y-3 sm:grid-cols-2">
-          <LensOption
-            active={tab === 'people'}
-            onClick={() => setTab('people')}
-            label="Por pessoa"
-            hint="Quem lê cada documento, e de onde vem o acesso"
-          />
-          <LensOption
-            active={tab === 'groups'}
-            onClick={() => setTab('groups')}
-            label="Por grupo"
-            hint="O que a regra concede a cada grupo, verbo a verbo"
-          />
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
         {/* "Buscar na matriz", e não "Buscar documento": a busca do topo abre o
             documento, esta reduz a grade. Dois campos com o mesmo rótulo na
