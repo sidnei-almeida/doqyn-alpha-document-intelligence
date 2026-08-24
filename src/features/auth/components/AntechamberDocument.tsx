@@ -18,8 +18,8 @@ type Anno = { top: string; label: string; value: string; delay: number };
 /** Cada extração assenta no instante em que a varredura cruza a linha dela. */
 const ANNOTATIONS: Anno[] = [
   { top: '22%', label: 'Partes', value: 'Nortis Engenharia · Vetor Log', delay: 1500 },
-  { top: '46%', label: 'Vigência', value: '24 meses · 12 ago 2028', delay: 1960 },
-  { top: '78%', label: 'Assinatura', value: '12 ago 2026', delay: 2380 },
+  { top: '42%', label: 'Vigência', value: '24 meses · 12 ago 2028', delay: 1960 },
+  { top: '80%', label: 'Assinatura', value: '12 ago 2026', delay: 2380 },
 ];
 
 /** A página é montada em blocos com cláusula nomeada, não como um bloco único
@@ -30,8 +30,9 @@ type Block = { clause?: string; lines: number[] };
 
 const BLOCKS: Block[] = [
   { lines: [92, 88, 96, 64] },
-  { clause: 'Cláusula 1ª — Do objeto', lines: [94, 90, 71] },
-  { clause: 'Cláusula 4ª — Da vigência', lines: [88, 96, 62] },
+  { clause: 'Cláusula 1ª — Do objeto', lines: [94, 90, 96, 71] },
+  { clause: 'Cláusula 4ª — Da vigência', lines: [88, 96, 90, 62] },
+  { clause: 'Cláusula 7ª — Do preço e do pagamento', lines: [92, 86, 94, 68] },
   { clause: 'Cláusula 9ª — Do foro', lines: [90, 54] },
 ];
 
@@ -41,7 +42,7 @@ export function AntechamberDocument() {
       {/* o par página + extrações é centrado como um conjunto só; centrar apenas
           a página deixaria a massa visual pendendo para a direita */}
       <div className="flex items-stretch">
-        <div className="relative w-[min(38vh,376px)]">
+        <div className="relative w-[min(46vh,464px)]">
           {/* a página, em proporção A4 */}
           <div className="auth-page relative flex aspect-[1/1.414] flex-col rounded-[3px] bg-[#FBFCFC] px-8 py-7 shadow-[0_2px_8px_rgba(0,0,0,.45),0_28px_70px_-12px_rgba(0,0,0,.6)]">
             <span className="absolute inset-y-0 left-[22px] w-px bg-[#EBEFF1]" aria-hidden />

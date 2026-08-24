@@ -4,6 +4,15 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 
+/**
+ * Alternador de tema — glifo solto, sem moldura.
+ *
+ * Era um botão com borda e fundo próprio. Num canto de tela, essa caixa competia
+ * com o conteúdo sem precisar: um controle secundário e sempre presente não
+ * precisa de moldura para ser encontrado. Os dois glifos ficam empilhados e
+ * trocam por rotação e opacidade, para que a mudança de tema seja lida como uma
+ * volta e não como um pisca.
+ */
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -14,14 +23,32 @@ export function ThemeToggle({ className }: { className?: string }) {
         type="button"
         onClick={toggleTheme}
         className={cn(
-          'inline-flex h-icon-btn min-h-icon-btn w-icon-btn min-w-icon-btn cursor-pointer items-center justify-center rounded-md border border-doqyn-border bg-doqyn-surface text-doqyn-muted transition-colors duration-100',
-          'hover:border-doqyn-border-strong hover:bg-doqyn-surface-hover hover:text-doqyn-text',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-sidebar',
+          'group relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full',
+          'text-doqyn-subtle transition-colors duration-150 hover:text-doqyn-text',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/40',
+          'focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-bg',
           className,
         )}
         aria-label="Alternar tema claro/escuro"
       >
-        <Icon name={isDark ? 'light_mode' : 'dark_mode'} size={ICON_SIZE.sm} />
+        <span
+          aria-hidden
+          className={cn(
+            'absolute inline-flex transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.2,0,0,1)]',
+            isDark ? 'rotate-0 opacity-100' : '-rotate-90 opacity-0',
+          )}
+        >
+          <Icon name="light_mode" size={ICON_SIZE.sm} />
+        </span>
+        <span
+          aria-hidden
+          className={cn(
+            'absolute inline-flex transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.2,0,0,1)]',
+            isDark ? 'rotate-90 opacity-0' : 'rotate-0 opacity-100',
+          )}
+        >
+          <Icon name="dark_mode" size={ICON_SIZE.sm} />
+        </span>
       </button>
     </Tooltip>
   );
