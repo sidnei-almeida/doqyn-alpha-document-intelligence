@@ -1,4 +1,4 @@
-@import 'material-symbols/rounded.css';
+@import 'material-symbols/sharp.css';
 @import '@fontsource-variable/geist-mono/wght.css';
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/newsreader/wght.css';
@@ -2428,14 +2428,26 @@
   .document-file-card__preview {
     background: var(--viewer-page-bg);
     isolation: isolate;
+    box-shadow: var(--shadow-page-thumb);
+    border: 1px solid var(--border-page-thumb);
   }
 
+  .document-file-card:hover .document-file-card__preview {
+    box-shadow: var(--shadow-page-thumb-hover);
+  }
+
+  /* Ações rápidas: canto reto e sem vidro. A pílula desfocada era um material
+     que não existe em nenhum outro lugar do sistema — e ela pousa em cima de
+     uma folha branca, onde borrão de fundo não tem o que borrar. Fica uma
+     superfície chapada com fio, como todo o resto. */
   .explorer-quick-actions {
     border: 1px solid var(--explorer-quick-actions-border);
     background: var(--explorer-quick-actions-bg);
-    box-shadow: var(--explorer-quick-actions-shadow);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    box-shadow: none;
+  }
+
+  .explorer-quick-actions .explorer-icon-btn {
+    border-radius: 3px;
   }
 
   .explorer-quick-actions .explorer-icon-btn {

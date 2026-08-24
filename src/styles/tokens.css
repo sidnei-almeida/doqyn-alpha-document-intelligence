@@ -29,8 +29,8 @@
   --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 42%, transparent);
 
   /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
-  --explorer-quick-actions-bg: rgba(22, 27, 32, 0.84);
-  --explorer-quick-actions-border: rgba(255, 255, 255, 0.14);
+  --explorer-quick-actions-bg: #1c2228;
+  --explorer-quick-actions-border: #2a323a;
   --explorer-quick-actions-icon: #d3d9de;
   --explorer-quick-actions-icon-hover: #e8edf0;
   --explorer-quick-actions-icon-hover-bg: rgba(255, 255, 255, 0.1);
@@ -137,6 +137,11 @@
   --shadow-action-glow: none;
   --shadow-card-hover: none;
   --shadow-viewer-page: var(--shadow-elevation-2);
+  /* Miniatura de documento: sobre o grafite, a sombra é o que separa a folha da
+     mesa, então ela pode ser funda. */
+  --shadow-page-thumb: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 26px -8px rgba(0, 0, 0, 0.45);
+  --shadow-page-thumb-hover: 0 2px 4px rgba(0, 0, 0, 0.36), 0 18px 38px -10px rgba(0, 0, 0, 0.55);
+  --border-page-thumb: transparent;
   --overlay-scrim: rgba(0, 0, 0, 0.6);
   --viewer-page-bg: #ffffff;
 
@@ -204,8 +209,8 @@
   --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
 
   /* Menu rápido sobre preview — vidro claro */
-  --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
-  --explorer-quick-actions-border: rgba(218, 220, 224, 0.92);
+  --explorer-quick-actions-bg: #ffffff;
+  --explorer-quick-actions-border: #d3d9de;
   --explorer-quick-actions-icon: #5a6068;
   --explorer-quick-actions-icon-hover: #1a1d21;
   --explorer-quick-actions-icon-hover-bg: rgba(60, 64, 67, 0.08);
@@ -313,6 +318,13 @@
   --shadow-action-glow: none;
   --shadow-card-hover: none;
   --shadow-viewer-page: var(--shadow-elevation-2);
+  /* No claro a mesma sombra fica pesada: papel branco sobre base quase branca
+     não precisa de profundidade, precisa de contorno. A sombra recua e um fio
+     assume o trabalho de dizer onde a folha termina. */
+  --shadow-page-thumb: 0 1px 2px rgba(60, 64, 67, 0.08), 0 4px 10px -4px rgba(60, 64, 67, 0.12);
+  --shadow-page-thumb-hover:
+    0 1px 3px rgba(60, 64, 67, 0.12), 0 8px 18px -6px rgba(60, 64, 67, 0.16);
+  --border-page-thumb: var(--border-default);
   --overlay-scrim: rgba(32, 33, 36, 0.45);
   --viewer-page-bg: #ffffff;
 

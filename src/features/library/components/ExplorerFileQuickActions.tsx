@@ -31,7 +31,7 @@ export function ExplorerFileQuickActions({
   return (
     <div
       className={cn(
-        'explorer-quick-actions absolute right-1.5 top-1.5 z-20 flex items-center gap-0.5 rounded-lg p-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+        'explorer-quick-actions absolute right-1.5 top-1.5 z-20 flex items-center gap-0.5 rounded-[4px] p-0.5 opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
         className,
       )}
       data-testid="explorer-file-quick-actions"

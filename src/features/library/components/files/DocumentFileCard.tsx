@@ -107,9 +107,10 @@ export function DocumentFileCard({
           // No hover a página sobe um pouco; é o único movimento aqui, e ele
           // confirma que o item responde ao toque.
           'document-file-card__preview relative mb-2.5 aspect-[1/1.414] w-full overflow-hidden rounded-[2px] bg-[#FBFCFC]',
-          'shadow-[0_1px_2px_rgba(0,0,0,.32),0_10px_26px_-8px_rgba(0,0,0,.45)]',
+          // A sombra vem de token, porque ela precisa mudar por tema: ver
+          // --shadow-page-thumb em tokens.css.
           'transition-[transform,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
-          'group-hover:-translate-y-0.5 group-hover:shadow-[0_2px_4px_rgba(0,0,0,.36),0_18px_38px_-10px_rgba(0,0,0,.55)]',
+          'group-hover:-translate-y-0.5',
           isSelected &&
             'explorer-item-selected__preview ring-2 ring-doqyn-accent-active ring-offset-2 ring-offset-doqyn-bg',
         )}

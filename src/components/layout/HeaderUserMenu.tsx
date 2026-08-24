@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/auth/useAuth';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import {
@@ -67,7 +66,7 @@ export function HeaderUserMenu() {
         data-testid="header-user-menu-dropdown"
         className="w-56 max-w-[calc(100vw-1rem)] py-1"
       >
-        <div className="border-b border-doqyn-border-subtle px-3 py-2.5">
+        <div className="border-b border-doqyn-border-subtle px-3.5 py-3">
           <div className="flex items-center gap-2.5">
             <UserAvatar
               name={displayName}
@@ -80,30 +79,29 @@ export function HeaderUserMenu() {
               {user?.email && <p className="truncate text-micro text-doqyn-muted">{user.email}</p>}
             </div>
           </div>
-          {orgLabel && <p className="mt-1 truncate text-micro text-doqyn-subtle">{orgLabel}</p>}
+          {orgLabel && (
+            <p className="mt-2 truncate font-mono text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
+              {orgLabel}
+            </p>
+          )}
         </div>
 
         <Link
           to="/settings"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-text hover:bg-doqyn-surface-hover"
+          className="explorer-interactive relative flex w-full items-center gap-2.5 rounded-none px-3.5 py-2 text-left text-label font-normal text-doqyn-text before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:before:bg-doqyn-accent-active"
           onClick={() => setOpen(false)}
         >
           <Icon name="settings" size={ICON_SIZE.md} />
           Configurações da conta
         </Link>
 
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
-          <span className="text-label font-normal text-doqyn-text">Tema</span>
-          <ThemeToggle />
-        </div>
-
         <div className="my-1 border-t border-doqyn-border-subtle" />
 
         <button
           type="button"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="explorer-interactive relative flex w-full items-center gap-2.5 rounded-none px-3.5 py-2 text-left text-label font-normal text-doqyn-muted before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:text-doqyn-text hover:before:bg-doqyn-accent-active"
           onClick={() => {
             setOpen(false);
             logout();
