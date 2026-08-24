@@ -52,6 +52,21 @@ function ManifestPageImage({
           draggable={false}
         />
       )}
+      {/* Sem este ramo, uma página que falha ao carregar não desenhava nada e o
+          visualizador ficava um retângulo vazio — enquanto o cabeçalho seguia
+          anunciando "Preview disponível", porque o manifesto tinha vindo certo.
+          Um estado que existe precisa ter nome na tela. */}
+      {state === 'error' && (
+        <div
+          className="viewer-page-surface flex flex-col items-center justify-center gap-2 px-6 text-center"
+          style={{ width: displayWidth, height: Math.min(Math.round(page.height * scale), 480) }}
+        >
+          <Icon name="broken_image" size={ICON_SIZE.md} className="text-doqyn-subtle" />
+          <p className="text-caption text-doqyn-muted">
+            Não foi possível carregar a página {page.page}.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
