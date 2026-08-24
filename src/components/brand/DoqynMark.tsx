@@ -1,5 +1,3 @@
-import { useId } from 'react';
-
 type DoqynMarkProps = {
   /** Lado do quadrado em px. */
   size?: number;
@@ -7,12 +5,26 @@ type DoqynMarkProps = {
 };
 
 /**
- * Marca DOQYN em SVG — documento com dobra, linhas de velocidade e selo "@",
- * gradiente azul→roxo. Funciona em dark e light (o selo usa o fundo do tema).
+ * Marca DOQYN — direção "Selo".
+ *
+ * A letra Q é a única com forma própria em DOQYN, e é dela que a marca sai: o
+ * anel externo é a borda de um selo cunhado, o anel interno é a impressão, e a
+ * cauda é a marca da batida. Nada de ícone genérico de documento — aquele
+ * qualquer produto de arquivo usa.
+ *
+ * Herda `currentColor`, então acompanha o token de quem a desenha nos dois
+ * temas. Não existe cor travada aqui.
+ *
+ * O traço engrossa e o anel interno some conforme o tamanho cai: em 20px ou
+ * menos a impressão vira borrão, então o desenho prevê a própria simplificação
+ * em vez de deixar o navegador resolver.
  */
 export function DoqynMark({ size = 32, className }: DoqynMarkProps) {
-  const gradientId = useId();
-  const stroke = `url(#${gradientId})`;
+  const scale = size >= 32 ? 'lg' : size >= 20 ? 'md' : 'sm';
+
+  const ring = scale === 'lg' ? 3 : scale === 'md' ? 3.6 : 5;
+  const tail = scale === 'lg' ? 4.6 : scale === 'md' ? 5.2 : 6.5;
+  const press = scale === 'lg' ? 1.6 : 2;
 
   return (
     <svg
@@ -23,60 +35,18 @@ export function DoqynMark({ size = 32, className }: DoqynMarkProps) {
       aria-hidden
       className={className}
     >
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1="8"
-          y1="6"
-          x2="42"
-          y2="44"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#4aa8f0" />
-          <stop offset="1" stopColor="#8b5cf6" />
-        </linearGradient>
-      </defs>
+      {/* borda do selo */}
+      <circle cx="22" cy="22" r="15" stroke="currentColor" strokeWidth={ring} />
 
-      {/* linhas de velocidade */}
-      <path d="M4 16h7M2 24h9M4 32h7" stroke={stroke} strokeWidth="2.6" strokeLinecap="round" />
+      {/* impressão — só onde ainda é legível */}
+      {scale !== 'sm' ? (
+        <circle cx="22" cy="22" r="10" stroke="currentColor" strokeWidth={press} opacity="0.5" />
+      ) : null}
 
-      {/* folha com dobra no canto superior direito */}
-      <path
-        d="M20 5h11l9.5 9.5V39a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4Z"
-        stroke={stroke}
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M31 5v7.5a2 2 0 0 0 2 2h7.5"
-        stroke={stroke}
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-      />
-
-      {/* linhas de texto */}
-      <path d="M22 22.5h12M22 28.5h12" stroke={stroke} strokeWidth="2.4" strokeLinecap="round" />
-
-      {/* selo IA sobre o canto inferior esquerdo */}
-      <circle
-        cx="19"
-        cy="37.5"
-        r="6.75"
-        fill="var(--bg-sidebar, #ffffff)"
-        stroke={stroke}
-        strokeWidth="2.2"
-      />
-      <text
-        x="19"
-        y="40.4"
-        textAnchor="middle"
-        fontSize="8.5"
-        fontFamily="var(--font-display)"
-        fontWeight="600"
-        fill={stroke}
-      >
-        @
-      </text>
+      {/* A cauda nasce dentro do anel e atravessa a borda. É esse cruzamento
+          que faz a forma ler como Q e não como lupa: no ícone de busca o cabo
+          encosta na circunferência por fora, nunca sai de dentro dela. */}
+      <path d="M25.5 25.5 L38 38" stroke="currentColor" strokeWidth={tail} strokeLinecap="round" />
     </svg>
   );
 }

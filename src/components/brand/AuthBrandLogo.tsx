@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { BRAND_ASSETS } from './brandAssets';
+import { DoqynMark } from './DoqynMark';
 
 type AuthBrandLogoProps = {
   subtitle?: string;
@@ -7,29 +7,29 @@ type AuthBrandLogoProps = {
 };
 
 /**
- * Logo das telas públicas — mesmos assets PNG da sidebar expandida.
+ * Lockup das telas públicas — marca em SVG mais wordmark tipográfico.
+ *
+ * Antes eram dois PNG trocados por tema. Desenhada em código, a marca segue o
+ * token de acento sozinha, não precisa de par claro/escuro e não fica devendo
+ * nitidez em tela densa.
+ *
+ * A entreletra do wordmark é 0.16em. O valor antigo, 0.3em, espalhava as letras
+ * a ponto de a palavra parar de ser lida como palavra.
  */
 export function AuthBrandLogo({ subtitle, className }: AuthBrandLogoProps) {
   return (
-    <div className={cn('flex flex-col items-center text-center', className)} aria-label="DOQYN">
-      <div className="auth-brand-logo flex w-full max-w-[220px] items-center justify-center">
-        <img
-          src={BRAND_ASSETS.sidebarForDarkTheme}
-          alt=""
-          className="auth-brand-logo__img auth-brand-logo__img--dark-theme h-auto max-h-14 w-full object-contain"
-          draggable={false}
-        />
-        <img
-          src={BRAND_ASSETS.sidebarForLightTheme}
-          alt=""
-          className="auth-brand-logo__img auth-brand-logo__img--light-theme h-auto max-h-14 w-full object-contain"
-          draggable={false}
-        />
-      </div>
+    <div className={cn('flex flex-col items-center gap-2.5 text-center', className)}>
+      <span className="flex items-center gap-3" aria-label="DOQYN" role="img">
+        <DoqynMark size={38} className="shrink-0 text-doqyn-accent-active" />
+        <span className="font-display text-[26px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
+          Doqyn
+        </span>
+      </span>
+
       {subtitle ? (
-        <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.24em] text-doqyn-logo-muted">
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
           {subtitle}
-        </p>
+        </span>
       ) : null}
     </div>
   );

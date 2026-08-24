@@ -313,7 +313,7 @@
   }
 
   .badge-text {
-    @apply font-display font-medium leading-none tracking-[0.01em] normal-case;
+    @apply font-display font-medium normal-case leading-none tracking-[0.01em];
   }
 
   .eyebrow-text {
@@ -1970,7 +1970,8 @@
     background: var(--status-danger-text);
   }
 
-  .settings-password-strength[data-level='medium'] .settings-password-strength__segment:nth-child(-n + 2) {
+  .settings-password-strength[data-level='medium']
+    .settings-password-strength__segment:nth-child(-n + 2) {
     background: var(--status-warn-text);
   }
 
@@ -2681,6 +2682,163 @@
     animation: flow-enter 0.28s ease-out both;
   }
 
+  /* ── Antessala: a entrada da porta da frente ──────────────────────────
+     Uma sequência só, no carregamento, e depois parado. A regra do kit é que
+     nada pisca — movimento ocioso disputa atenção. Chegar não é piscar.      */
+
+  .auth-stage {
+    animation: auth-rise 0.5s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .auth-page {
+    animation: auth-rise 0.72s cubic-bezier(0.2, 0, 0, 1) both;
+    animation-delay: 0.04s;
+  }
+
+  /* O texto se escreve: cada linha cresce da margem para fora. */
+  .auth-line {
+    animation: auth-write-line 0.34s cubic-bezier(0.2, 0, 0, 1) both;
+    transform-origin: left center;
+  }
+
+  .auth-write {
+    animation: auth-fade 0.42s ease-out both;
+  }
+
+  /* A varredura desce a página uma vez, lendo. Não volta. */
+  .auth-scan {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--accent-active) 13%, transparent) 62%,
+      color-mix(in srgb, var(--accent-active) 42%, transparent)
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-active) 62%, transparent);
+    animation: auth-scan 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.16s both;
+  }
+
+  @keyframes auth-write-line {
+    from {
+      opacity: 0;
+      transform: scaleX(0.04);
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes auth-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes auth-scan {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(265%);
+      opacity: 0;
+    }
+  }
+  .auth-stage--caption {
+    animation-delay: 0.94s;
+  }
+  .auth-stage--mark {
+    animation-delay: 0.1s;
+  }
+  .auth-stage--title {
+    animation-delay: 0.2s;
+  }
+  .auth-stage--form {
+    animation-delay: 0.31s;
+  }
+  .auth-stage--foot {
+    animation-delay: 0.44s;
+  }
+
+  /* O fio da extração cresce da página para fora, e o rótulo vem junto. */
+  .auth-anno {
+    animation: auth-anno 0.44s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes auth-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes auth-anno {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* ── Campo com linha, não com caixa ───────────────────────────────────
+     Formulário em papel é linha pautada, não caixinha. A régua engrossa e
+     assume o acento no foco; o rótulo acompanha. Sem brilho, sem halo.      */
+
+  .auth-field input {
+    height: 44px;
+    border-radius: 0;
+    border-width: 0 0 1px 0;
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .auth-field input:hover {
+    border-bottom-color: var(--border-strong);
+  }
+
+  .auth-field input:focus-visible {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+    box-shadow: none;
+    outline: none;
+  }
+
+  .auth-field:focus-within label {
+    color: var(--accent-active);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-stage,
+    .auth-anno,
+    .auth-page,
+    .auth-line,
+    .auth-write,
+    .auth-scan {
+      animation: none;
+    }
+
+    .auth-scan {
+      display: none;
+    }
+  }
+
   @keyframes flow-enter {
     from {
       opacity: 0;
@@ -2709,12 +2867,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.12),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
     animation: processing-shimmer 1.6s ease-in-out infinite;
   }
 
