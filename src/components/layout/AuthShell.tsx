@@ -17,6 +17,11 @@ type AuthShellProps = {
   width?: keyof typeof WIDTH_CLASS;
   eyebrow?: string;
   title?: string;
+  /**
+   * Só passe quando a frase disser algo que o título não diz. Descrição que
+   * parafraseia o título ("Como você quer começar?" seguido de "Escolha como
+   * deseja começar") é ruído: o leitor lê duas vezes para saber a mesma coisa.
+   */
   description?: string;
   footer?: ReactNode;
   showSecureBadge?: boolean;
@@ -25,6 +30,10 @@ type AuthShellProps = {
 
 /**
  * Layout minimalista compartilhado por login, cadastro e primeiro acesso.
+ *
+ * A hierarquia é o trabalho principal deste componente: a marca identifica, o
+ * título manda, e a descrição — quando existe — apoia. Antes, título e descrição
+ * tinham os mesmos 14px e nada dominava a composição.
  */
 export function AuthShell({
   children,
@@ -43,13 +52,24 @@ export function AuthShell({
       </div>
 
       <div className={cn('flow-enter w-full', WIDTH_CLASS[width], className)}>
-        <header className="mb-8 flex flex-col items-center text-center">
+        <header className="mb-7 flex flex-col items-center gap-5 text-center">
           <AuthBrandLogo subtitle={eyebrow} />
-          {title ? (
-            <h1 className="mt-5 text-body font-semibold tracking-tight text-doqyn-text">{title}</h1>
-          ) : null}
-          {description ? (
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-doqyn-muted">{description}</p>
+
+          {title || description ? (
+            <div className="flex flex-col items-center gap-2">
+              {title ? (
+                /* Primeira aplicação da serifada do kit: só a partir de 20px,
+                   onde ela carrega autoridade sem virar ruído. */
+                <h1 className="text-balance font-serif text-[27px] font-medium leading-[1.15] tracking-[-0.012em] text-doqyn-text">
+                  {title}
+                </h1>
+              ) : null}
+              {description ? (
+                <p className="max-w-[34ch] text-caption leading-relaxed text-doqyn-muted">
+                  {description}
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </header>
 
@@ -62,7 +82,7 @@ export function AuthShell({
           </p>
         ) : null}
 
-        {footer ? <div className="mt-4 text-center text-sm">{footer}</div> : null}
+        {footer ? <div className="mt-4 text-center text-caption">{footer}</div> : null}
       </div>
     </main>
   );

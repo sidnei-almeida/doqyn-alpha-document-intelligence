@@ -27,7 +27,9 @@ function AccessOptionCard({
         <Icon name={icon} size={ICON_SIZE.xs} />
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-doqyn-text group-hover:underline">{title}</span>
+        <span className="block text-sm font-medium text-doqyn-text group-hover:underline">
+          {title}
+        </span>
         <span className="mt-1 block text-xs leading-relaxed text-doqyn-muted">{subtitle}</span>
       </span>
     </Link>
@@ -37,7 +39,10 @@ function AccessOptionCard({
 export function AccessChoicePage({
   eyebrow = 'Primeiro acesso',
   title,
-  description = 'Escolha como deseja começar no DOQYN.',
+  // Sem descrição por padrão: "Escolha como deseja começar no DOQYN" só
+  // reescrevia o título como afirmação. Quem chama pode passar uma frase que
+  // acrescente algo.
+  description,
 }: {
   eyebrow?: string;
   title?: string;
@@ -59,19 +64,19 @@ export function AccessChoicePage({
         <AccessOptionCard
           to="/solicitar-acesso"
           title="Pedir acesso à minha empresa"
-          subtitle="Para funcionários de uma empresa que já usa o DOQYN."
+          subtitle="Para quem trabalha numa empresa que já usa o DOQYN."
           icon="person_add"
         />
         <AccessOptionCard
           to="/criar-empresa"
           title="Cadastrar minha empresa"
-          subtitle="Para criar um novo ambiente da empresa no DOQYN."
+          subtitle="Para abrir um ambiente novo para a sua empresa."
           icon="business"
         />
         <AccessOptionCard
           to="/criar-acesso-cpf"
           title="Acessar como pessoa física"
-          subtitle="Para clientes CPF que precisam acessar documentos próprios no DOQYN."
+          subtitle="Para quem guarda documentos próprios, sem empresa."
           icon="person"
         />
       </div>

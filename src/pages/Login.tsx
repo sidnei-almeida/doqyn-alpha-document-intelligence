@@ -80,9 +80,10 @@ export function Login() {
 
   return (
     <AuthShell
-      eyebrow="Document Intelligence"
+      /* Sem eyebrow aqui: "Document Intelligence" é assinatura de marca, não
+         orientação. Em /acesso o mesmo slot carrega "Primeiro acesso", que
+         situa a pessoa no fluxo e por isso ganha o lugar. */
       title="Entrar no sistema"
-      description="Plataforma corporativa para gestão segura de documentos e rastreabilidade."
       showSecureBadge
       footer={
         <Link to="/acesso" className="text-doqyn-accent-active transition-colors hover:underline">
@@ -91,19 +92,12 @@ export function Login() {
       }
     >
       <AuthCard className="p-6">
-        <p className="mb-5 text-xs text-doqyn-muted">
-          {enabledProviders.length > 0
-            ? `Use sua conta ${enabledProviders
-                .map((p) => (p === 'google' ? 'Google' : 'Microsoft'))
-                .join(', ')} ou credenciais DOQYN.`
-            : 'Acesse sua área para enviar e gerenciar documentos.'}
-        </p>
-
         {supportsOAuth && enabledProviders.length > 0 && (
           <div className="mb-4 space-y-2.5">
             {enabledProviders.includes('google') && (
               <Button
                 type="button"
+                variant="secondary"
                 className="w-full"
                 disabled={isSubmitting}
                 onClick={() => loginWithGoogle(from)}
@@ -128,7 +122,7 @@ export function Login() {
             {showCredentialForm && (
               <div className="flex items-center gap-3 pt-1">
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
+                <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
                   ou
                 </span>
                 <span className="h-px flex-1 bg-doqyn-border-subtle" />
