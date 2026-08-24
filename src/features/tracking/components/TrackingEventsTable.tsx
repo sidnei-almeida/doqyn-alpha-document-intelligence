@@ -6,7 +6,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { VersionBadge } from '@/components/ui/VersionBadge';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { DocumentTrackingListItem, TrackingListStatus } from '@/types/document-tracking';
 import {
   formatSessionOrigin,
@@ -66,7 +66,7 @@ export function TrackingEventsTable({
           header: 'Data/hora',
           render: (item) => (
             <span className="whitespace-nowrap text-xs tabular-nums text-doqyn-muted">
-              {formatDate(item.occurredAt)}
+              {formatDateTime(item.occurredAt)}
             </span>
           ),
         },
@@ -97,7 +97,11 @@ export function TrackingEventsTable({
           render: (item) => {
             const label =
               item.document.versionLabel ?? (item.versionId ? item.versionId.slice(0, 8) : null);
-            return label ? <VersionBadge version={label} size="xs" /> : <span className="text-[11px] text-doqyn-muted">—</span>;
+            return label ? (
+              <VersionBadge version={label} size="xs" />
+            ) : (
+              <span className="text-[11px] text-doqyn-muted">—</span>
+            );
           },
         },
         {

@@ -3,13 +3,9 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import {
-  AUDIT_ACTION_LABELS,
-  AUDIT_SEVERITY_LABELS,
-  AUDIT_SOURCE_LABELS,
-} from '@/types/audit';
+import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
 import { sanitizeAuditMetadataForDisplay } from '../utils/auditDisplay';
 
 const SEVERITY_VARIANTS = {
@@ -45,7 +41,7 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(clickEvent) => {
         if (clickEvent.target === overlayRef.current) onClose();
       }}
@@ -83,7 +79,7 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
             </div>
             <div>
               <p className="text-xs text-doqyn-muted">Data/hora</p>
-              <p className="text-doqyn-text">{formatDate(event.createdAt)}</p>
+              <p className="text-doqyn-text">{formatDateTime(event.createdAt)}</p>
             </div>
             <div>
               <p className="text-xs text-doqyn-muted">Severidade</p>

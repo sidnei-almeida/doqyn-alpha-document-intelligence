@@ -4,7 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
@@ -62,7 +62,7 @@ export function PendingApprovalReviewDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -112,7 +112,7 @@ export function PendingApprovalReviewDialog({
             <div className="detail-item min-w-0">
               <dt className="text-xs text-doqyn-muted">Data</dt>
               <dd className="detail-value mt-0.5 whitespace-nowrap text-doqyn-text">
-                {formatDate(item.requestedAt)}
+                {formatDateTime(item.requestedAt)}
               </dd>
             </div>
           </dl>
@@ -137,7 +137,9 @@ export function PendingApprovalReviewDialog({
           )}
 
           {item.type === 'document_upload' && item.documentUpload && (
-            <div className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4 space-y-3')}>
+            <div
+              className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+            >
               <div>
                 <p className="text-xs text-doqyn-muted">Arquivo</p>
                 <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">

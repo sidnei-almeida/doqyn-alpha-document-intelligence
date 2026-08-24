@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
@@ -30,7 +30,7 @@ export function ActivityTimelineItem({
           <span className="text-doqyn-muted">{label.toLowerCase()}</span>
         </p>
         <time className="overview-timestamp shrink-0 whitespace-nowrap tabular-nums">
-          {formatDate(occurredAt)}
+          {formatDateTime(occurredAt)}
         </time>
       </div>
       {documentName && (

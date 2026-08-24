@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { VersionBadge } from '@/components/ui/VersionBadge';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { listDocumentVersions } from '@/features/documents/api/documentsApi';
 import type { DocumentListItem } from '@/types/document-library';
@@ -75,7 +75,7 @@ export function DocumentVersionHistoryPanel({
                 {version.finalFileName ?? version.originalFileName ?? '—'}
               </p>
               <p className="text-[11px] text-doqyn-muted">
-                {version.createdAt ? formatDate(version.createdAt) : '—'}
+                {version.createdAt ? formatDateTime(version.createdAt) : '—'}
                 {version.createdByDisplayName ? ` · ${version.createdByDisplayName}` : ''}
               </p>
             </div>

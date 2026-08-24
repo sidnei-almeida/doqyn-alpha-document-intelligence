@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { DocumentTrackingDetail, TrackingListStatus } from '@/types/document-tracking';
 import {
   formatSecurityContextDisplay,
@@ -104,7 +104,7 @@ export function TrackingEventDetailsDrawer({
                     {formatTrackingStatus(event.status)}
                   </Badge>
                 )}
-                <span className="text-doqyn-muted">{formatDate(event.occurredAt)}</span>
+                <span className="text-doqyn-muted">{formatDateTime(event.occurredAt)}</span>
               </div>
 
               <div>
@@ -270,7 +270,7 @@ export function TrackingEventDetailsDrawer({
                     {securityDisplay.occurredAtLabel ? (
                       <p>
                         <span className="text-doqyn-subtle">Horário:</span>{' '}
-                        {formatDate(securityDisplay.occurredAtLabel)}
+                        {formatDateTime(securityDisplay.occurredAtLabel)}
                       </p>
                     ) : null}
                     {securityDisplay.isExternalGuest ? (

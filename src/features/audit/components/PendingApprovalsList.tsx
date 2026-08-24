@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
 import { TruncatedText } from '@/components/ui/TruncatedText';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 import { AuditEmptyState } from './AuditEmptyState';
@@ -92,7 +92,7 @@ export function PendingApprovalsList({
           key: 'requestedAt',
           header: 'Data',
           render: (item) => (
-            <span className="text-sm text-doqyn-muted">{formatDate(item.requestedAt)}</span>
+            <span className="text-sm text-doqyn-muted">{formatDateTime(item.requestedAt)}</span>
           ),
         },
         {
@@ -115,7 +115,12 @@ export function PendingApprovalsList({
                   <Button type="button" size="sm" onClick={() => onApprove(item)}>
                     Aprovar
                   </Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={() => onReject(item)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onReject(item)}
+                  >
                     Rejeitar
                   </Button>
                 </>

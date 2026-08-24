@@ -1,4 +1,4 @@
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { formatWhatsapp } from '@/lib/identifiers';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
@@ -134,7 +134,7 @@ export function AccessRequestDetailsPanel({
         <div className="detail-item min-w-0">
           <dt className="text-xs text-doqyn-muted">Data da solicitação</dt>
           <dd className="detail-value mt-0.5 text-sm text-doqyn-text">
-            {access?.requestedAt ? formatDate(access.requestedAt) : '—'}
+            {access?.requestedAt ? formatDateTime(access.requestedAt) : '—'}
           </dd>
         </div>
         <div className="detail-item min-w-0 sm:col-span-2">
@@ -147,9 +147,7 @@ export function AccessRequestDetailsPanel({
           <dt className="text-xs text-doqyn-muted">Notificações operacionais</dt>
           <dd className="detail-value mt-0.5 break-words text-sm text-doqyn-text">
             {consentLabel}
-            {resolvedConsent?.acceptedAt
-              ? ` · ${formatDate(resolvedConsent.acceptedAt)}`
-              : ''}
+            {resolvedConsent?.acceptedAt ? ` · ${formatDateTime(resolvedConsent.acceptedAt)}` : ''}
           </dd>
         </div>
         <div className="detail-item min-w-0">
@@ -167,7 +165,9 @@ export function AccessRequestDetailsPanel({
         <dl className="detail-grid grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3">
           <div className="detail-item min-w-0">
             <dt className="text-xs text-doqyn-muted">Termos de uso</dt>
-            <dd className="detail-value mt-0.5 break-words text-sm text-doqyn-text">{termsLabel}</dd>
+            <dd className="detail-value mt-0.5 break-words text-sm text-doqyn-text">
+              {termsLabel}
+            </dd>
           </div>
           <div className="detail-item min-w-0">
             <dt className="text-xs text-doqyn-muted">Versão dos termos</dt>
@@ -178,7 +178,7 @@ export function AccessRequestDetailsPanel({
           <div className="detail-item min-w-0 sm:col-span-2">
             <dt className="text-xs text-doqyn-muted">Aceite registrado em</dt>
             <dd className="detail-value mt-0.5 break-words text-sm text-doqyn-text">
-              {resolvedTerms?.acceptedAt ? formatDate(resolvedTerms.acceptedAt) : '—'}
+              {resolvedTerms?.acceptedAt ? formatDateTime(resolvedTerms.acceptedAt) : '—'}
             </dd>
           </div>
         </dl>

@@ -1,5 +1,5 @@
 import { VersionBadge } from '@/components/ui/VersionBadge';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { DocumentVersionSummary } from '@/types/document-library';
 
 type VersionHistorySummaryProps = {
@@ -66,7 +66,7 @@ export function VersionHistorySummary({
                   </p>
                 </div>
                 <span className="shrink-0 text-[11px] text-doqyn-muted">
-                  {version.createdAt ? formatDate(version.createdAt) : '—'}
+                  {version.createdAt ? formatDateTime(version.createdAt) : '—'}
                 </span>
               </li>
             ))}

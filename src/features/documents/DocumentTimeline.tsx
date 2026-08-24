@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { DocumentTimelineItem } from '@/types/document-audit';
 
 type DocumentTimelineProps = {
@@ -26,11 +26,13 @@ function TimelineEntry({ item }: { item: DocumentTimelineItem }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-doqyn-text">{item.summary}</p>
-            <Badge variant={item.severity === 'error' ? 'danger' : 'default'}>{item.severity}</Badge>
+            <Badge variant={item.severity === 'error' ? 'danger' : 'default'}>
+              {item.severity}
+            </Badge>
           </div>
           <p className="mt-1 text-xs text-doqyn-muted">
             {item.actor.displayName ?? item.actor.email ?? item.actor.userId} ·{' '}
-            {formatDate(item.occurredAt)}
+            {formatDateTime(item.occurredAt)}
           </p>
           {item.versionId ? (
             <p className="mt-1 text-xs text-doqyn-muted">Versão: {item.versionId}</p>

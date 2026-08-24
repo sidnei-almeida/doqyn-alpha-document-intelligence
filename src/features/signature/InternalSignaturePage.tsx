@@ -29,7 +29,7 @@ type PreviewState =
   | { kind: 'unavailable'; message: string }
   | { kind: 'error'; message: string };
 
-function formatDate(iso: string): string {
+function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -160,7 +160,7 @@ export function InternalSignaturePage() {
 
   const expiresLabel = useMemo(() => {
     if (!payload?.expiresAt) return null;
-    return formatDate(payload.expiresAt);
+    return formatDateTime(payload.expiresAt);
   }, [payload?.expiresAt]);
 
   const handleSign = async () => {

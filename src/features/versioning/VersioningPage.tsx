@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { UploadDropzone } from '@/components/ui/UploadDropzone';
 import { VersionBadge } from '@/components/ui/VersionBadge';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import { MOCK_DOCUMENTS } from '@/features/documents/mock-data';
 import type { DocumentVersion } from '@/types/document';
 import { Icon } from '@/components/ui/Icon';
@@ -123,7 +123,7 @@ export function VersioningPage() {
                     <VersionBadge version={versions[0].version} />
                     <p className="mt-2 text-doqyn-text">{versions[0].changeNotes}</p>
                     <p className="mt-1 text-xs text-doqyn-muted">
-                      {formatDate(versions[0].uploadedAt)}
+                      {formatDateTime(versions[0].uploadedAt)}
                     </p>
                   </div>
                   <div className="rounded-md border border-doqyn-primary/30 bg-doqyn-primary/5 p-3">
@@ -131,7 +131,7 @@ export function VersioningPage() {
                     <VersionBadge version={versions[1].version} isCurrent />
                     <p className="mt-2 text-doqyn-text">{versions[1].changeNotes}</p>
                     <p className="mt-1 text-xs text-doqyn-muted">
-                      {formatDate(versions[1].uploadedAt)}
+                      {formatDateTime(versions[1].uploadedAt)}
                     </p>
                   </div>
                 </div>
@@ -156,11 +156,14 @@ export function VersioningPage() {
                 className="flex items-center justify-between rounded-md border border-doqyn-border bg-doqyn-surface p-4"
               >
                 <div className="flex items-center gap-3">
-                  <VersionBadge version={ver.version} isCurrent={ver.version === document.version} />
+                  <VersionBadge
+                    version={ver.version}
+                    isCurrent={ver.version === document.version}
+                  />
                   <div>
                     <p className="text-sm font-medium text-doqyn-text">{ver.changeNotes}</p>
                     <p className="text-xs text-doqyn-muted">
-                      {ver.uploadedBy} · {formatDate(ver.uploadedAt)}
+                      {ver.uploadedBy} · {formatDateTime(ver.uploadedAt)}
                     </p>
                   </div>
                 </div>

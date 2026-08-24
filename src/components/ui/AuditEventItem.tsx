@@ -1,4 +1,4 @@
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, type AuditEvent } from '@/types/audit';
 import { Badge } from './Badge';
 
@@ -50,7 +50,7 @@ export function AuditEventItem({ event, isSelected, onClick }: AuditEventItemPro
           </>
         )}
         <span>·</span>
-        <span>{formatDate(event.createdAt)}</span>
+        <span>{formatDateTime(event.createdAt)}</span>
       </div>
     </button>
   );

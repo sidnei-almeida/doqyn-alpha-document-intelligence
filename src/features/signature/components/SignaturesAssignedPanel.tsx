@@ -7,7 +7,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AssignedSignatureRequestItem } from '@/features/signature/api/signatureApi';
 import { useAssignedSignatureRequests } from '@/features/signature/hooks/useAssignedSignatureRequests';
 
-function formatDate(iso: string | null): string {
+function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit',
@@ -126,8 +126,8 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
               {item.versionLabel ? ` · v${item.versionLabel}` : ''}
             </p>
             <p className="text-micro text-doqyn-muted">
-              {formatDate(item.requestedAt)}
-              {item.expiresAt ? ` · expira ${formatDate(item.expiresAt)}` : ''}
+              {formatDateTime(item.requestedAt)}
+              {item.expiresAt ? ` · expira ${formatDateTime(item.expiresAt)}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">

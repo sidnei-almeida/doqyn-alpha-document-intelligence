@@ -3,13 +3,9 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
-import { formatDate } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import {
-  AUDIT_ACTION_LABELS,
-  AUDIT_SEVERITY_LABELS,
-  AUDIT_SOURCE_LABELS,
-} from '@/types/audit';
+import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
 import { AuditEmptyState } from './AuditEmptyState';
 
 const SEVERITY_VARIANTS = {
@@ -60,7 +56,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           header: 'Data/hora',
           render: (event) => (
             <span className="whitespace-nowrap text-sm text-doqyn-muted">
-              {formatDate(event.createdAt)}
+              {formatDateTime(event.createdAt)}
             </span>
           ),
         },
@@ -115,7 +111,12 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           header: '',
           className: 'w-[100px]',
           render: (event) => (
-            <Button type="button" size="sm" variant="secondary" onClick={() => onOpenDetails(event)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => onOpenDetails(event)}
+            >
               <Icon name="visibility" size={14} />
               Detalhes
             </Button>
