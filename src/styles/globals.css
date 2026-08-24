@@ -992,6 +992,44 @@
     min-height: var(--workspace-page-action-size);
   }
 
+  /* ===== Campo em linha fora da antessala ================================
+     Mesma anatomia do campo de `.auth-route`: régua embaixo, sem caixa. Vive
+     aqui, e não lá, porque as telas internas vão migrando uma a uma e o campo
+     não pode ser redesenhado de novo em cada uma. O fio mora no invólucro para
+     que o ícone de busca fique dentro do mesmo controle que o texto.        */
+
+  .field-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .field-rule:hover {
+    border-bottom-color: var(--border-strong);
+  }
+
+  .field-rule:focus-within {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+  }
+
+  .field-rule input {
+    height: 100%;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-primary);
+  }
+
+  .field-rule input:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
   /* ===== Visão Geral — o painel é um boletim, não um mosaico ==============
      Eram nove cards com borda, sombra e canto de 14px flutuando sobre o fundo:
      a mesma moldura repetida nove vezes, sem que nenhuma delas separasse nada
@@ -1203,6 +1241,82 @@
   .overview-main-grid > *,
   .overview-insights-grid > * {
     min-height: 0;
+  }
+
+  /* ===== Matriz — cruzamento é registro ==================================
+     A matriz não é uma tabela decorada: é o cruzamento de duas listas. Então
+     não há card em volta, o cabeçalho é rótulo de registro em monoespaçado, e
+     o que ajuda a ler é o cruzamento em si — linha e coluna acendem juntas sob
+     o cursor, que é o gesto de quem percorre uma grade com o dedo.          */
+
+  .matrix-grid {
+    border-top: 1px solid var(--border-default);
+  }
+
+  .matrix-head-label {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  /* A primeira coluna acompanha o rolamento horizontal, então repete o fundo
+     da página e fecha com um fio — sem ele o nome do documento flutua por
+     cima das células quando a grade rola. */
+  .matrix-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg-app);
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .matrix-row {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 75%, transparent);
+  }
+
+  .matrix-row:hover,
+  .matrix-row:hover .matrix-sticky-col {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+  }
+
+  .matrix-col-active {
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
+  }
+
+  /* Lente — dois modos de ler a mesma verdade. Controle horizontal, então o
+     escolhido marca com régua embaixo; o card com borda saiu. */
+  .matrix-lens {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0 0 0.625rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .matrix-lens:hover {
+    border-bottom-color: var(--border-strong);
+  }
+
+  .matrix-lens[aria-pressed='true'] {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+  }
+
+  /* O anel padrão desenhava uma caixa em volta de um controle que existe
+     justamente para não ser caixa. O foco marca como o resto do sistema:
+     régua no acento e a superfície acendendo. */
+  .matrix-lens:focus-visible {
+    outline: none;
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
   }
 
   /* ===== Settings — layout e seções ===== */

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -30,7 +30,19 @@ const PERMISSION_COLUMNS: Array<{
   { key: 'canShare', label: 'Compartilhar', icon: 'share' },
 ];
 
+function EmptyNotice({ icon, title, hint }: { icon: string; title: string; hint?: string }) {
+  return (
+    <div className="flex min-h-[12rem] flex-col items-center justify-center px-6 py-12 text-center">
+      <Icon name={icon} size={ICON_SIZE.md} className="mb-4 text-doqyn-border-strong" />
+      <p className="text-label font-medium text-doqyn-text">{title}</p>
+      {hint && <p className="mt-1.5 max-w-[42ch] text-caption text-doqyn-muted">{hint}</p>}
+    </div>
+  );
+}
+
 export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
+  const [hoverColumn, setHoverColumn] = useState<string | null>(null);
+
   const cellIndex = useMemo(() => {
     const index = new Map<string, AccessMatrixGroupCell>();
     // Campo opcional de propósito: durante um deploy a aba pode estar aberta contra uma API que
@@ -43,34 +55,44 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
 
   if ((matrix.groups ?? []).length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-doqyn-border-subtle px-6 py-12 text-center">
-        <Icon name="groups" size={28} className="mx-auto text-doqyn-subtle" />
-        <p className="mt-2 text-sm text-doqyn-text">Nenhum grupo configurado.</p>
-        <p className="mt-1 text-xs text-doqyn-muted">
-          Crie grupos em Regras para governar o acesso por equipe em vez de pessoa a pessoa.
-        </p>
-      </div>
+      <EmptyNotice
+        icon="groups"
+        title="Nenhum grupo configurado"
+        hint="Crie grupos em Regras para governar o acesso por equipe em vez de pessoa a pessoa."
+      />
     );
   }
 
   if ((matrix.documents ?? []).length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-doqyn-border-subtle px-6 py-12 text-center">
-        <Icon name="grid_off" size={28} className="mx-auto text-doqyn-subtle" />
-        <p className="mt-2 text-sm text-doqyn-text">Nenhum documento nesta seleção.</p>
-      </div>
+      <EmptyNotice
+        icon="grid_off"
+        title="Nenhum documento nesta seleção"
+        hint="Ajuste a busca ou a categoria para ver a matriz."
+      />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-doqyn-border-subtle">
+    <div className="matrix-grid" onMouseLeave={() => setHoverColumn(null)}>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+        <table className="w-full table-fixed border-collapse text-left">
+          <colgroup>
+            <col className="w-[32%] min-w-[18rem]" />
+            {matrix.groups.map((group) =>
+              PERMISSION_COLUMNS.map((column) => (
+                <col
+                  key={`${group.groupId}:${column.key}`}
+                  style={{ width: `${68 / (matrix.groups.length * PERMISSION_COLUMNS.length)}%` }}
+                />
+              )),
+            )}
+          </colgroup>
           <thead>
-            <tr className="border-b border-doqyn-border-subtle bg-doqyn-card/60">
+            <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 z-20 min-w-[260px] bg-doqyn-card/95 px-4 py-2.5 align-bottom text-[11px] font-medium uppercase tracking-wide text-doqyn-muted backdrop-blur"
+                className="matrix-sticky-col matrix-head-label z-20 min-w-[18rem] px-4 py-3 text-left align-bottom"
               >
                 Documento
               </th>
@@ -78,49 +100,51 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                 <th
                   key={group.groupId}
                   colSpan={PERMISSION_COLUMNS.length}
-                  className="border-l border-doqyn-border-subtle px-2 py-2 text-center"
+                  className="border-l border-doqyn-border-subtle px-2 pb-2 pt-3 text-center"
                 >
-                  <span className="block truncate text-[12px] font-medium text-doqyn-text">
+                  <span className="block truncate text-label font-medium text-doqyn-text">
                     {group.name}
                   </span>
-                  <span className="block text-[10px] text-doqyn-subtle">
+                  <span className="mt-0.5 block font-mono text-micro tabular-nums text-doqyn-subtle">
                     {group.memberCount} pessoa{group.memberCount === 1 ? '' : 's'}
                   </span>
                 </th>
               ))}
             </tr>
-            <tr className="border-b border-doqyn-border-subtle bg-doqyn-card/40">
+            <tr className="border-b border-doqyn-border-subtle">
               {matrix.groups.map((group) =>
-                PERMISSION_COLUMNS.map((column, index) => (
-                  <th
-                    key={`${group.groupId}:${column.key}`}
-                    className={cn(
-                      'min-w-[38px] px-1 pb-1.5 text-center',
-                      index === 0 && 'border-l border-doqyn-border-subtle',
-                    )}
-                  >
-                    <Tooltip label={`${column.label} — ${group.name}`}>
-                      <span className="flex justify-center text-doqyn-subtle">
-                        <Icon name={column.icon} size={ICON_SIZE.xs} />
-                      </span>
-                    </Tooltip>
-                  </th>
-                )),
+                PERMISSION_COLUMNS.map((column, index) => {
+                  const columnKey = `${group.groupId}:${column.key}`;
+                  return (
+                    <th
+                      key={columnKey}
+                      onMouseEnter={() => setHoverColumn(columnKey)}
+                      className={cn(
+                        'min-w-[2.5rem] px-1 pb-2 text-center',
+                        index === 0 && 'border-l border-doqyn-border-subtle',
+                        hoverColumn === columnKey && 'matrix-col-active',
+                      )}
+                    >
+                      <Tooltip label={`${column.label} — ${group.name}`}>
+                        <span className="flex justify-center text-doqyn-subtle">
+                          <Icon name={column.icon} size={ICON_SIZE.xs} />
+                        </span>
+                      </Tooltip>
+                    </th>
+                  );
+                }),
               )}
             </tr>
           </thead>
 
           <tbody>
             {matrix.documents.map((document) => (
-              <tr
-                key={document.documentId}
-                className="group border-b border-doqyn-border-subtle last:border-b-0 hover:bg-doqyn-surface-hover/40"
-              >
-                <td className="sticky left-0 z-10 bg-doqyn-bg/95 px-4 py-2.5 backdrop-blur group-hover:bg-doqyn-surface-hover/60">
-                  <TruncatedText as="p" className="text-[13px] font-medium text-doqyn-text">
+              <tr key={document.documentId} className="matrix-row group">
+                <td className="matrix-sticky-col px-4 py-3">
+                  <TruncatedText as="p" className="text-label font-medium text-doqyn-text">
                     {document.fileName}
                   </TruncatedText>
-                  <p className="mt-0.5 text-[11px] text-doqyn-muted">
+                  <p className="mt-1 text-caption text-doqyn-muted">
                     {document.categoryName ?? 'Sem categoria'}
                     {document.ownerName && ` · ${document.ownerName}`}
                   </p>
@@ -131,28 +155,29 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
 
                   return PERMISSION_COLUMNS.map((column, index) => {
                     const granted = Boolean(cell?.[column.key]);
+                    const columnKey = `${group.groupId}:${column.key}`;
 
                     return (
                       <td
-                        key={`${group.groupId}:${column.key}`}
+                        key={columnKey}
+                        onMouseEnter={() => setHoverColumn(columnKey)}
                         className={cn(
                           'px-1 py-2 text-center',
                           index === 0 && 'border-l border-doqyn-border-subtle',
+                          hoverColumn === columnKey && 'matrix-col-active',
                         )}
                       >
                         <span
                           className={cn(
-                            'mx-auto flex h-5 w-5 items-center justify-center rounded',
-                            granted
-                              ? 'bg-doqyn-accent/15 text-doqyn-accent'
-                              : 'text-doqyn-subtle/50',
+                            'mx-auto flex h-5 w-5 items-center justify-center',
+                            granted ? 'text-doqyn-text' : 'text-doqyn-subtle/60',
                           )}
                           aria-label={`${column.label}: ${granted ? 'permitido' : 'não permitido'}`}
                         >
                           {granted ? (
                             <Icon name="check" size={ICON_SIZE.xs} />
                           ) : (
-                            <span className="text-[12px] leading-none">·</span>
+                            <span className="text-caption leading-none">·</span>
                           )}
                         </span>
                       </td>
@@ -165,16 +190,16 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-doqyn-border-subtle bg-doqyn-card/40 px-4 py-2 text-[11px] text-doqyn-muted">
-        <span className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3">
+        <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
           {PERMISSION_COLUMNS.map((column) => (
-            <span key={column.key} className="flex items-center gap-1">
+            <span key={column.key} className="flex items-center gap-1.5 text-caption text-doqyn-muted">
               <Icon name={column.icon} size={ICON_SIZE.xs} className="text-doqyn-subtle" />
               {column.label}
             </span>
           ))}
         </span>
-        <Link to="/rules" className="text-doqyn-info hover:underline">
+        <Link to="/rules" className="text-caption font-medium text-doqyn-muted hover:text-doqyn-text">
           Conceder ou remover em Regras
         </Link>
       </div>

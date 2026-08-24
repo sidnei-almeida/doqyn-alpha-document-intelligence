@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { PageShell } from '@/components/layout/PageShell';
+import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
+import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
 import { createDocumentShare, revokeDocumentShare } from '@/features/sharing/api/shareApi';
 import { fetchAccessMatrix } from './api/matrixApi';
@@ -22,48 +25,95 @@ import { GroupAccessMatrixTable } from './components/GroupAccessMatrixTable';
  */
 type MatrixTab = 'people' | 'groups';
 
-function TabButton({
+/**
+ * Lente — não é aba nem cartão: é a escolha de por onde ler a mesma grade. Como
+ * é controle horizontal, o escolhido marca com régua de acento embaixo.
+ */
+function LensOption({
   active,
   onClick,
-  icon,
   label,
   hint,
 }: {
   active: boolean;
   onClick: () => void;
-  icon: string;
   label: string;
   hint: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors',
-        active
-          ? 'border-doqyn-primary/40 bg-doqyn-primary/5'
-          : 'border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
-      )}
-      aria-pressed={active}
-    >
-      <Icon
-        name={icon}
-        size={ICON_SIZE.sm}
-        className={active ? 'text-doqyn-primary' : 'text-doqyn-muted'}
-      />
-      <span className="min-w-0">
-        <span
-          className={cn(
-            'block text-[13px] font-medium',
-            active ? 'text-doqyn-text' : 'text-doqyn-muted',
-          )}
-        >
-          {label}
-        </span>
-        <span className="block text-[11px] text-doqyn-subtle">{hint}</span>
+    <button type="button" onClick={onClick} className="matrix-lens" aria-pressed={active}>
+      <span
+        className={cn(
+          'block text-label font-medium transition-colors',
+          active ? 'text-doqyn-text' : 'text-doqyn-muted',
+        )}
+      >
+        {label}
       </span>
+      <span className="mt-0.5 block text-caption text-doqyn-subtle">{hint}</span>
     </button>
+  );
+}
+
+/** Filtro de categoria — mesma anatomia dos filtros da Biblioteca: texto e fio. */
+function CategoryFilter({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const isActive = value !== '';
+  const label = options.find((option) => option.value === value)?.label ?? 'Todas as categorias';
+
+  return (
+    <div className="relative">
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className={
+          isActive ? 'explorer-filter-chip explorer-filter-chip--active' : 'explorer-filter-chip'
+        }
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label="Filtrar por categoria"
+      >
+        <span className="max-w-[11rem] truncate">{label}</span>
+        <Icon
+          name="keyboard_arrow_down"
+          size={ICON_SIZE.xs}
+          className={cn('shrink-0 opacity-70 transition-transform', open && 'rotate-180')}
+        />
+      </button>
+
+      <AnchoredPopover
+        anchorRef={anchorRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        placement="bottom-start"
+        role="listbox"
+        aria-label="Categoria"
+        className="min-w-[12rem] max-w-[min(18rem,calc(100vw-1rem))] py-1"
+      >
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            selected={option.value === value}
+            onClick={() => {
+              onChange(option.value);
+              setOpen(false);
+            }}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </AnchoredPopover>
+    </div>
   );
 }
 
@@ -113,95 +163,94 @@ export function MatrixPage() {
 
   const isLoading = accessQuery.isLoading;
   const error = accessQuery.error;
+  const data = accessQuery.data;
+
+  const documentCount = data?.documents.length ?? 0;
+  const axisCount = tab === 'people' ? (data?.members.length ?? 0) : (data?.groups.length ?? 0);
+  const axisNoun = tab === 'people' ? 'pessoa' : 'grupo';
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
-      <header>
-        <h1 className="text-[18px] font-semibold text-doqyn-text">Matriz de documentos</h1>
-        <p className="mt-0.5 text-[12px] text-doqyn-muted">
-          Quem alcança cada documento, e por qual caminho.
-        </p>
-      </header>
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:max-w-2xl">
-        <TabButton
-          active={tab === 'people'}
-          onClick={() => setTab('people')}
-          icon="group"
-          label="Por pessoa"
-          hint="Quem lê cada documento, e de onde vem o acesso"
-        />
-        <TabButton
-          active={tab === 'groups'}
-          onClick={() => setTab('groups')}
-          icon="admin_panel_settings"
-          label="Por grupo"
-          hint="O que a regra concede a cada grupo, verbo a verbo"
-        />
+    <PageShell
+      eyebrow="Governança"
+      title="Matriz de documentos"
+      description="Quem alcança cada documento, e por qual caminho."
+      bodyClassName="matrix-page w-full gap-6"
+    >
+      <div className="flex flex-col gap-3">
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+          Lente
+        </span>
+        <div className="grid max-w-2xl gap-x-8 gap-y-3 sm:grid-cols-2">
+          <LensOption
+            active={tab === 'people'}
+            onClick={() => setTab('people')}
+            label="Por pessoa"
+            hint="Quem lê cada documento, e de onde vem o acesso"
+          />
+          <LensOption
+            active={tab === 'groups'}
+            onClick={() => setTab('groups')}
+            label="Por grupo"
+            hint="O que a regra concede a cada grupo, verbo a verbo"
+          />
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="relative flex-1 sm:max-w-xs">
-          <Icon
-            name="search"
-            size={ICON_SIZE.sm}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-doqyn-subtle"
-          />
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        {/* "Buscar na matriz", e não "Buscar documento": a busca do topo abre o
+            documento, esta reduz a grade. Dois campos com o mesmo rótulo na
+            mesma tela ensinam que fazem a mesma coisa. */}
+        <label className="field-rule w-full sm:max-w-xs">
+          <Icon name="search" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar documento"
-            className="w-full rounded-lg border border-doqyn-border-subtle bg-doqyn-bg py-1.5 pl-8 pr-3 text-[13px] text-doqyn-text placeholder:text-doqyn-subtle"
+            placeholder="Buscar na matriz"
+            className="text-label placeholder:text-doqyn-subtle"
+            aria-label="Buscar na matriz"
           />
         </label>
 
-        <select
+        <CategoryFilter
           value={categoryId}
-          onChange={(event) => setCategoryId(event.target.value)}
-          className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-[13px] text-doqyn-text"
-          aria-label="Categoria"
-        >
-          <option value="">Todas as categorias</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+          onChange={setCategoryId}
+          options={[
+            { value: '', label: 'Todas as categorias' },
+            ...categories.map((category) => ({ value: category.id, label: category.name })),
+          ]}
+        />
 
-        {accessQuery.data && (
-          <span className="text-[11px] text-doqyn-subtle">
-            {accessQuery.data.documents.length} documento
-            {accessQuery.data.documents.length === 1 ? '' : 's'} ·{' '}
-            {tab === 'people'
-              ? `${accessQuery.data.members.length} pessoa${accessQuery.data.members.length === 1 ? '' : 's'}`
-              : `${accessQuery.data.groups.length} grupo${accessQuery.data.groups.length === 1 ? '' : 's'}`}
+        {data && (
+          <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
+            {documentCount} documento{documentCount === 1 ? '' : 's'} · {axisCount} {axisNoun}
+            {axisCount === 1 ? '' : 's'}
           </span>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
         {isLoading && (
-          <div className="rounded-xl border border-doqyn-border-subtle px-6 py-12 text-center">
-            <Icon
-              name="progress_activity"
-              size={24}
-              className="mx-auto animate-spin text-doqyn-muted"
-            />
-            <p className="mt-2 text-[12px] text-doqyn-muted">Montando a matriz…</p>
+          <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 text-caption text-doqyn-muted">
+            <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
+            Montando a matriz
           </div>
         )}
 
         {!isLoading && error && (
-          <div className="rounded-xl border border-doqyn-danger-border bg-doqyn-danger-bg px-6 py-8 text-center">
-            <p className="text-[13px] text-doqyn-danger">{(error as Error).message}</p>
+          <div className="flex min-h-[12rem] flex-col items-center justify-center px-6 text-center">
+            <p className="text-label font-medium text-doqyn-text">
+              Não foi possível montar a matriz
+            </p>
+            <p className="mt-1.5 max-w-[42ch] text-caption text-doqyn-muted">
+              {(error as Error).message}
+            </p>
           </div>
         )}
 
-        {!isLoading && !error && tab === 'people' && accessQuery.data && (
+        {!isLoading && !error && tab === 'people' && data && (
           <AccessMatrixTable
-            matrix={accessQuery.data}
+            matrix={data}
             busyCellKey={busyCellKey}
             onShare={(documentId, member) => {
               const cellKey = `${documentId}:${member.userId}`;
@@ -215,11 +264,11 @@ export function MatrixPage() {
           />
         )}
 
-        {!isLoading && !error && tab === 'groups' && accessQuery.data && (
-          <GroupAccessMatrixTable matrix={accessQuery.data} />
+        {!isLoading && !error && tab === 'groups' && data && (
+          <GroupAccessMatrixTable matrix={data} />
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }
 
