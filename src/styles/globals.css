@@ -390,26 +390,43 @@
   }
 
   /* Sidebar — itens de navegação (ativo sem borda no dark; borda suave no light) */
+  /* ── Sidebar: régua, não pílula ───────────────────────────────────────
+     O item ativo era uma pílula preenchida e arredondada — a assinatura de
+     qualquer app de arquivos. Agora ele reage como tudo o mais no sistema: um
+     fio de acento na borda esquerda, do mesmo jeito que a régua do campo assume
+     no foco e a linha de escolha assume no hover. O canto vira reto porque o
+     arredondado é o que fazia a barra inteira parecer produto de consumo.   */
+
   .sidebar-nav-link {
-    border: 1px solid transparent;
+    position: relative;
+    border-radius: var(--radius-sm);
     transition:
       background-color var(--transition-duration) var(--ease-standard),
-      color var(--transition-duration) var(--ease-standard),
-      border-color var(--transition-duration) var(--ease-standard);
+      color var(--transition-duration) var(--ease-standard);
+  }
+
+  .sidebar-nav-link::before {
+    content: '';
+    position: absolute;
+    inset-block: 4px;
+    left: 0;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background-color var(--transition-duration) var(--ease-standard);
   }
 
   .sidebar-nav-link--active {
-    background-color: var(--sidebar-selected-bg);
-    color: var(--sidebar-selected-text);
+    background-color: transparent;
+    color: var(--text-primary);
   }
 
-  [data-theme='light'] .sidebar-nav-link--active {
-    border-color: var(--sidebar-selected-border);
+  .sidebar-nav-link--active::before {
+    background: var(--accent-active);
   }
 
-  [data-theme='dark'] .sidebar-nav-link--active {
-    border-color: transparent;
-    box-shadow: none;
+  .sidebar-nav-link:hover:not(.sidebar-nav-link--active) {
+    background-color: var(--sidebar-item-hover-bg);
   }
 
   /* ===== Sidebar — botão "+ Novo" (Material filled, flat) ===== */
@@ -2356,8 +2373,11 @@
     justify-content: start;
   }
 
+  /* A miniatura é papel, e papel é branco nos dois temas. Antes ela herdava
+     o grafite da moldura e o documento sumia dentro da própria interface —
+     exatamente o contrário da tese do kit. */
   .document-file-card__preview {
-    background: var(--bg-thumbnail-chrome);
+    background: var(--viewer-page-bg);
     isolation: isolate;
   }
 
@@ -2407,26 +2427,28 @@
     background: var(--bg-surface);
   }
 
+  /* ── Filtro: controle de texto, não pílula ───────────────────────────
+     A pílula preenchida e arredondada era a assinatura do Drive. Aqui o filtro
+     é um controle de texto com fio embaixo: pesa o quanto deve pesar (é ajuste,
+     não ação) e some no ruído quando não está em uso. Quando há filtro ativo,
+     o fio assume o acento — é o que diz que a lista abaixo não é a lista
+     inteira.                                                                */
+
   .explorer-filter-chip {
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     height: 2rem;
-    padding: 0 0.75rem;
-    border-radius: var(--radius-pill);
+    padding: 0 0.125rem;
+    border-radius: 0;
+    border-bottom: 1px solid var(--border-subtle);
     @apply type-label text-doqyn-muted;
-    background: var(--bg-surface);
+    background: transparent;
     transition:
-      background-color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard),
       color var(--transition-duration-fast) var(--ease-standard);
     cursor: pointer;
-  }
-
-  /* Light — pills de filtro estilo Drive: cinza container + texto primário */
-  [data-theme='light'] .explorer-filter-chip {
-    background: var(--color-surface-container);
-    color: var(--text-primary);
   }
 
   [data-theme='light'] .toolbar-pill-idle {
@@ -2435,12 +2457,14 @@
   }
 
   .explorer-filter-chip:hover {
-    background: var(--bg-surface-hover);
+    border-bottom-color: var(--border-strong);
     color: var(--text-primary);
   }
 
   .explorer-filter-chip--active {
-    background: var(--bg-selected);
+    background: transparent;
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
     color: var(--text-primary);
   }
 

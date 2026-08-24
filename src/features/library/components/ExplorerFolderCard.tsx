@@ -62,15 +62,18 @@ export function ExplorerFolderCard({
         }
       }}
       className={cn(
-        'explorer-folder-card drive-folder-tile explorer-interactive explorer-focus-ring group relative flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left',
-        'bg-doqyn-surface shadow-sm',
-        'hover:bg-doqyn-surface-hover hover:shadow-md active:scale-[0.995]',
+        // Linha de registro, não card: sem caixa, sem sombra, separada por fio.
+        // O acento entra como régua na borda esquerda no hover — a mesma reação
+        // do campo no foco e da linha de escolha da antessala.
+        'explorer-folder-card explorer-interactive explorer-focus-ring group relative flex min-h-[52px] w-full cursor-pointer items-center gap-3 rounded-none border-b border-doqyn-border-subtle px-3 py-3 pl-4 text-left',
+        'before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent before:transition-colors',
+        'hover:bg-doqyn-hover/40 hover:before:bg-doqyn-accent-active',
         isSelected && 'explorer-item-selected explorer-selected',
       )}
       aria-selected={isSelected}
       aria-label={`Abrir pasta ${folder.name}`}
     >
-      <span className="folder-icon-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doqyn-card">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center">
         <Icon
           name="folder"
           filled
@@ -83,7 +86,7 @@ export function ExplorerFolderCard({
         <TruncatedText className="text-label font-medium text-doqyn-text">
           {folder.name}
         </TruncatedText>
-        <p className="truncate text-caption text-doqyn-subtle">{countLabel}</p>
+        <p className="truncate font-mono text-micro tabular-nums text-doqyn-subtle">{countLabel}</p>
       </div>
 
       {onShowInfo && (

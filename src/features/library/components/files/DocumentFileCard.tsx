@@ -14,11 +14,7 @@ import { handleExplorerItemKeyDown } from '../../utils/explorerItemKeyboard';
 import { DocumentFileThumbnail } from './DocumentFileThumbnail';
 import { DocumentFavoriteBadge } from './DocumentFavoriteBadge';
 import { DocumentSignatureBadge } from './DocumentSignatureBadge';
-import {
-  documentDisplayName,
-  documentOwnerName,
-  documentSecondaryMeta,
-} from './documentFileUtils';
+import { documentDisplayName, documentOwnerName, documentSecondaryMeta } from './documentFileUtils';
 
 type DocumentFileCardProps = {
   document: DocumentListItem;
@@ -86,12 +82,11 @@ export function DocumentFileCard({
         openFileContextMenu(doc, event.clientX, event.clientY);
       }}
       className={cn(
-        'group document-file-card explorer-file-card explorer-interactive relative flex w-full max-w-[240px] cursor-pointer flex-col rounded-xl border p-2 text-left outline-none active:scale-[0.99]',
-        'border-transparent bg-doqyn-surface shadow-sm',
-        'focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/40 focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-bg',
-        isSelected
-          ? 'explorer-item-selected explorer-selected'
-          : 'hover:bg-doqyn-surface-hover hover:shadow-md',
+        // Sem card: a moldura sai e sobra o documento. O que dá volume é a
+        // sombra da própria página, não uma caixa em volta dela.
+        'document-file-card explorer-file-card explorer-interactive group relative flex w-full max-w-[188px] cursor-pointer flex-col text-left outline-none',
+        'focus-visible:outline-none',
+        isSelected && 'explorer-item-selected explorer-selected',
       )}
       aria-selected={isSelected}
     >
@@ -107,19 +102,29 @@ export function DocumentFileCard({
 
       <div
         className={cn(
-          'document-file-card__preview relative mb-2 aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-doqyn-thumbnail-chrome',
-          isSelected && 'explorer-item-selected__preview',
+          // Proporção A4 e sombra de página: sobre o grafite, o documento é a
+          // coisa mais luminosa da tela — a mesma tese da porta de entrada.
+          // No hover a página sobe um pouco; é o único movimento aqui, e ele
+          // confirma que o item responde ao toque.
+          'document-file-card__preview relative mb-2.5 aspect-[1/1.414] w-full overflow-hidden rounded-[2px] bg-[#FBFCFC]',
+          'shadow-[0_1px_2px_rgba(0,0,0,.32),0_10px_26px_-8px_rgba(0,0,0,.45)]',
+          'transition-[transform,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
+          'group-hover:-translate-y-0.5 group-hover:shadow-[0_2px_4px_rgba(0,0,0,.36),0_18px_38px_-10px_rgba(0,0,0,.55)]',
+          isSelected &&
+            'explorer-item-selected__preview ring-2 ring-doqyn-accent-active ring-offset-2 ring-offset-doqyn-bg',
         )}
       >
         <DocumentFileThumbnail document={doc} size="card" className="absolute inset-0" />
         <DocumentFavoriteBadge document={doc} variant="overlay" />
       </div>
 
-      <TruncatedText className="px-0.5 text-[12px] font-medium leading-snug text-doqyn-text">
+      <TruncatedText className="text-caption font-medium leading-snug text-doqyn-text">
         {name}
       </TruncatedText>
-      <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 px-0.5">
-        <span className="truncate text-[11px] text-doqyn-subtle">{secondary}</span>
+      <p className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className="truncate font-mono text-micro tabular-nums text-doqyn-subtle">
+          {secondary}
+        </span>
         <DocumentSignatureBadge
           summary={doc.signatureSummary}
           size="xs"
@@ -128,8 +133,10 @@ export function DocumentFileCard({
       </p>
 
       {showStatus && (
-        <div className="mt-1.5 flex items-center justify-between gap-2 px-0.5">
-          <span className="truncate text-[10px] text-doqyn-subtle">{documentOwnerName(doc)}</span>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span className="truncate font-mono text-micro text-doqyn-subtle">
+            {documentOwnerName(doc)}
+          </span>
           <BadgeGroup align="end">
             <StatusPill status={(doc.status as DocumentStatus) ?? 'active'} size="xs" dot />
             <VersionBadge
