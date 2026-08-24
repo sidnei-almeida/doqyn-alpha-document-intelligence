@@ -20,7 +20,6 @@ type ExplorerFilterChipsProps = {
 };
 
 type FilterChipProps = {
-  icon: string;
   label: string;
   value: string;
   options: Array<{ value: string; label: string }>;
@@ -28,7 +27,7 @@ type FilterChipProps = {
   defaultValue?: string;
 };
 
-function FilterChip({ icon, label, value, options, onChange, defaultValue = '' }: FilterChipProps) {
+function FilterChip({ label, value, options, onChange, defaultValue = '' }: FilterChipProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== defaultValue;
@@ -47,7 +46,10 @@ function FilterChip({ icon, label, value, options, onChange, defaultValue = '' }
         aria-haspopup="listbox"
         aria-label={label}
       >
-        <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0" />
+        {/* Sem o glifo à esquerda. Cinco ícones genéricos enfileirados eram o
+            que fazia a barra de filtros ler como a do Drive — e nenhum deles
+            informava: "funil", "documento" e "pessoa" não dizem qual filtro é.
+            Quem diz é o próprio rótulo, que já está aqui. */}
         {/* 7rem cortava o próprio rótulo padrão: "Todos os status" virava
             "Todos os stat...". Um filtro que não cabe o nome do estado em
             que está não informa nada. O truncamento continua valendo para
@@ -97,13 +99,14 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
 
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      // Sem os ícones, os rótulos precisam de ar entre si para não
+      // virarem uma frase corrida.
+      className="flex flex-wrap items-center gap-x-7 gap-y-2"
       data-testid="explorer-filter-chips"
       role="group"
       aria-label="Filtros da biblioteca"
     >
       <FilterChip
-        icon="filter_list"
         label="Filtrar por status"
         value={state.status}
         defaultValue=""
@@ -111,7 +114,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(status) => onStateChange({ status })}
       />
       <FilterChip
-        icon="draft"
         label="Filtrar por tipo"
         value={state.type}
         defaultValue=""
@@ -119,7 +121,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(type) => onStateChange({ type: type as LibraryRouteState['type'] })}
       />
       <FilterChip
-        icon="calendar_month"
         label="Filtrar por período"
         value={state.period}
         defaultValue=""
@@ -127,7 +128,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(period) => onStateChange({ period: period as LibraryRouteState['period'] })}
       />
       <FilterChip
-        icon="person"
         label="Filtrar por proprietário"
         value={state.owner}
         defaultValue=""
@@ -135,7 +135,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(owner) => onStateChange({ owner: owner as LibraryRouteState['owner'] })}
       />
       <FilterChip
-        icon="swap_vert"
         label="Ordenar por"
         value={sortValue}
         defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
