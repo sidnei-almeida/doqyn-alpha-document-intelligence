@@ -2556,11 +2556,15 @@
     pointer-events: none;
   }
 
+  /* A seleção não abre uma caixa. Era um painel de largura total, com borda e
+     fundo próprios, que aparecia entre os filtros e o conteúdo e empurrava a
+     página para baixo — muita cerimônia para um estado que dura segundos, e um
+     deslocamento de layout a cada clique. Agora ela vive na própria linha dos
+     filtros: a contagem em monoespaçado e as ações em texto, sem moldura.     */
   .explorer-selection-toolbar {
-    border-radius: var(--radius-lg);
-    border: 1px solid color-mix(in srgb, var(--accent-active) 18%, var(--border-subtle));
-    background: color-mix(in srgb, var(--bg-surface) 92%, var(--accent-active-bg));
-    padding: 0.375rem 0.5rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
   }
 
   .explorer-icon-btn {
