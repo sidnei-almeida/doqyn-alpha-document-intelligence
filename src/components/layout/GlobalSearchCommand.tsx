@@ -104,13 +104,16 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
         placeholder="Buscar documentos"
         aria-label="Buscar documentos"
         className={cn(
-          // Busca em linha, como os campos: sem cápsula preenchida. A régua
-          // assume o acento no foco, que é a mesma reação de todo campo do
-          // sistema — a barra inteira deixa de parecer a de um navegador.
-          'search-command h-11 w-full rounded-none border-0 border-b border-doqyn-border-subtle bg-transparent pl-9 pr-[4.75rem] text-body text-doqyn-text',
-          'transition-[border-color] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
-          'placeholder:text-doqyn-subtle hover:border-doqyn-border-strong',
-          'focus:border-b-2 focus:border-doqyn-accent-active focus:outline-none',
+          // Sem régua própria. Empilhada com o fio do header e com as réguas
+          // dos filtros logo abaixo, ela virava a terceira linha horizontal em
+          // poucos pixels — pauta de caderno, não hierarquia. Em repouso a
+          // busca é só o glifo e o texto dentro da barra; a superfície aparece
+          // quando a pessoa vai usar, que é quando o campo precisa ter limite.
+          'search-command h-10 w-full rounded-[4px] border-0 bg-transparent pl-9 pr-[4.75rem] text-body text-doqyn-text',
+          'transition-[background-color,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
+          'placeholder:text-doqyn-subtle hover:bg-doqyn-hover/50',
+          'focus:bg-doqyn-panel focus:outline-none',
+          'focus:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent-active)_45%,transparent)]',
         )}
       />
       <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">

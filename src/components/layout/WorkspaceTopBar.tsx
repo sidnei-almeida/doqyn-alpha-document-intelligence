@@ -2,6 +2,7 @@ import { useIsFetching } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { ExpiryAlertsBell } from '@/features/expiry/components/ExpiryAlertsBell';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
@@ -33,6 +34,10 @@ export function WorkspaceTopBar() {
         >
           <Icon name="help" size={ICON_SIZE.nav} />
         </a>
+        <ThemeToggle className="text-doqyn-subtle hover:text-doqyn-text" />
+        {/* Fio curto separando os controles do bloco de identidade: são coisas
+            de naturezas diferentes na mesma ponta da barra. */}
+        <span aria-hidden className="mx-1 h-5 w-px bg-doqyn-border-subtle" />
         <HeaderUserMenu />
       </div>
     </header>

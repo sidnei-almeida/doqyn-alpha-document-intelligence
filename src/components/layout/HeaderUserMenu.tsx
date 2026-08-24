@@ -29,9 +29,12 @@ export function HeaderUserMenu() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'explorer-interactive flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 sm:pr-3',
-          'hover:bg-doqyn-surface-hover',
-          open && 'bg-doqyn-surface-hover',
+          // Canto de 4px em vez de pílula, e o cargo em monoespaçado: ele é
+          // rótulo de registro, não segunda linha de nome. Antes as duas linhas
+          // tinham o mesmo peso e o bloco competia com o conteúdo da página.
+          'explorer-interactive flex items-center gap-2.5 rounded-[4px] py-1 pl-1 pr-2 sm:pr-2.5',
+          'transition-colors hover:bg-doqyn-hover/60',
+          open && 'bg-doqyn-hover/60',
         )}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -39,11 +42,15 @@ export function HeaderUserMenu() {
       >
         <UserAvatar name={displayName} email={user?.email} avatarUrl={user?.avatarUrl} size="md" />
         <span className="hidden min-w-0 text-left md:block">
-          <span className="block max-w-[140px] truncate text-label leading-tight text-doqyn-text lg:max-w-[180px]">
+          <span className="block max-w-[140px] truncate text-caption font-medium leading-tight text-doqyn-text lg:max-w-[160px]">
             {displayName}
           </span>
+          {/* O cargo em monoespaçado, sem caixa alta nem entreletra larga: em
+              "Administrador da empresa" isso estourava a largura e o rótulo
+              saía cortado na borda. O mono sozinho já dá o caráter de registro,
+              e separa o cargo do nome sem competir com ele. */}
           {(primaryRole || orgLabel) && (
-            <span className="block max-w-[140px] truncate text-micro leading-tight text-doqyn-muted lg:max-w-[180px]">
+            <span className="mt-0.5 block max-w-[150px] truncate font-mono text-[10px] leading-tight text-doqyn-subtle lg:max-w-[190px]">
               {primaryRole ? getPlatformRoleLabel(primaryRole) : orgLabel}
             </span>
           )}
