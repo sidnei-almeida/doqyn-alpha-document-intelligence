@@ -5,9 +5,9 @@ import { HeaderUserMenu } from './HeaderUserMenu';
 import { ExpiryAlertsBell } from '@/features/expiry/components/ExpiryAlertsBell';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
-/** Barra superior — busca protagonista, ações discretas e usuário à direita. */
+/** Barra superior — fio de separação, busca contida e glifos soltos. */
 export function WorkspaceTopBar() {
-  const iconButtonClass = 'explorer-icon-btn h-10 w-10';
+  const iconButtonClass = 'topbar-glyph-btn';
   const documentsFetching = useIsFetching({ queryKey: ['documents'] }) > 0;
 
   return (
@@ -15,8 +15,12 @@ export function WorkspaceTopBar() {
       className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-5"
       data-testid="workspace-topbar"
     >
+      {/* A busca não ocupa mais a largura toda: numa barra que virou fio, um
+          campo de ponta a ponta volta a parecer moldura. */}
       <div className="flex min-w-0 flex-1 items-center">
-        <GlobalSearchCommand isFetching={documentsFetching} />
+        <div className="w-full max-w-[440px]">
+          <GlobalSearchCommand isFetching={documentsFetching} />
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

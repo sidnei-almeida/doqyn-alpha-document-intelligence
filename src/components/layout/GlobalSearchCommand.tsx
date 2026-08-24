@@ -101,7 +101,7 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
             else inputRef.current?.blur();
           }
         }}
-        placeholder="Buscar documentos por nome, categoria ou proprietário..."
+        placeholder="Buscar documentos"
         aria-label="Buscar documentos"
         className={cn(
           // Busca em linha, como os campos: sem cápsula preenchida. A régua

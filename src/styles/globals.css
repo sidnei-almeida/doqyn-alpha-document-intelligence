@@ -933,9 +933,38 @@
     @apply type-caption mt-1 text-doqyn-subtle;
   }
 
+  /* ── Barra superior: fio, não faixa ───────────────────────────────────
+     Era um bloco preenchido separando a marca do conteúdo — a assinatura de
+     chrome de navegador. Agora a barra divide a base do app e é separada por um
+     fio de cabelo, do mesmo jeito que as seções da página. O que existe ali é
+     conteúdo, não moldura.                                                   */
+
   .workspace-topbar {
     z-index: var(--z-sticky);
-    background: var(--bg-chrome);
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  /* Glifo solto: um controle secundário e sempre presente não precisa de caixa
+     para ser encontrado. Mesma decisão do alternador de tema. */
+  .topbar-glyph-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-pill);
+    color: var(--text-subtle, var(--text-tertiary));
+    transition: color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .topbar-glyph-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .topbar-glyph-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
   }
 
   .workspace-action-btn {
