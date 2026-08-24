@@ -1,3 +1,6 @@
+import { useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import { DoqynMark } from '@/components/brand/DoqynMark';
 
 /**
@@ -37,6 +40,14 @@ const BLOCKS: Block[] = [
 ];
 
 export function AntechamberDocument() {
+  const location = useLocation();
+  // A leitura se repete a cada navegação — trocar de tela é ato deliberado, e
+  // um pulso por gesto não é o movimento ocioso que a regra "nada pisca" veta.
+  // Só a varredura remonta; o texto já está escrito e não se reescreve.
+  const first = useRef(true);
+  const isFirst = first.current;
+  first.current = false;
+
   return (
     <div className="flex h-full w-full items-center justify-center overflow-hidden px-8">
       {/* o par página + extrações é centrado como um conjunto só; centrar apenas
@@ -44,7 +55,7 @@ export function AntechamberDocument() {
       <div className="flex items-stretch">
         <div className="relative w-[min(46vh,464px)]">
           {/* a página, em proporção A4 */}
-          <div className="auth-page relative flex aspect-[1/1.414] flex-col rounded-[3px] bg-[#FBFCFC] px-8 py-7 shadow-[0_2px_8px_rgba(0,0,0,.45),0_28px_70px_-12px_rgba(0,0,0,.6)]">
+          <div className="auth-page relative flex aspect-[1/1.414] flex-col overflow-hidden rounded-[3px] bg-[#FBFCFC] px-8 py-7 shadow-[0_2px_8px_rgba(0,0,0,.45),0_28px_70px_-12px_rgba(0,0,0,.6)]">
             <span className="absolute inset-y-0 left-[22px] w-px bg-[#EBEFF1]" aria-hidden />
 
             <p className="auth-write font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#8B979E] [animation-delay:420ms]">
@@ -104,9 +115,11 @@ export function AntechamberDocument() {
               </span>
             </div>
 
-            {/* a varredura: desce uma vez, lendo */}
+            {/* a varredura: desce uma vez a cada entrada de tela, lendo */}
             <span
+              key={location.pathname}
               className="auth-scan pointer-events-none absolute inset-x-0 top-0 h-[38%]"
+              style={{ animationDelay: isFirst ? '1.16s' : '0.18s' }}
               aria-hidden
             />
           </div>

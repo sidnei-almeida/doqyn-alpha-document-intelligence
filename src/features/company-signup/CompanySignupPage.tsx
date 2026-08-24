@@ -1,10 +1,8 @@
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
-import { Button } from '@/components/ui/Button';
+import { AUTH_PRIMARY_BUTTON, AUTH_QUIET_BUTTON } from '@/features/auth/components/authControls';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
@@ -163,12 +161,8 @@ export function CompanySignupPage() {
         description="Use esta opção se a sua empresa ainda não tem um ambiente no DOQYN."
       />
 
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-      >
-        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-          <Icon name="business" size={ICON_SIZE.xs} />
+      <form onSubmit={handleSubmit}>
+        <div className="mb-5 border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
           Dados da empresa
         </div>
 
@@ -260,6 +254,7 @@ export function CompanySignupPage() {
           )}
 
           <TermsAcceptanceCheckbox
+            wrapperClassName="border-0 bg-transparent px-0 py-1"
             checked={acceptedTerms}
             onChange={(value) => {
               setAcceptedTerms(value);
@@ -277,7 +272,7 @@ export function CompanySignupPage() {
               if (event.target.checked) setAuthorizationError(null);
             }}
             required
-            wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+            wrapperClassName="border-0 bg-transparent px-0 py-1"
             label={
               <span className="text-sm leading-relaxed text-doqyn-muted">
                 {COMPANY_AUTHORIZATION_TEXT}
@@ -298,12 +293,12 @@ export function CompanySignupPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+          <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
             Voltar
           </Link>
-          <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
+          <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>
             Cadastrar empresa
-          </Button>
+          </button>
         </div>
       </form>
 

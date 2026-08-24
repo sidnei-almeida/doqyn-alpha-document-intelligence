@@ -1,10 +1,8 @@
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
-import { Button } from '@/components/ui/Button';
+import { AUTH_PRIMARY_BUTTON, AUTH_QUIET_BUTTON } from '@/features/auth/components/authControls';
 import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
@@ -160,12 +158,8 @@ export function IndividualSignupPage() {
         description="Para quem guarda documentos próprios, sem vínculo com uma empresa."
       />
 
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-      >
-        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-          <Icon name="person" size={ICON_SIZE.xs} />
+      <form onSubmit={handleSubmit}>
+        <div className="mb-5 border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
           Dados pessoais
         </div>
 
@@ -250,6 +244,7 @@ export function IndividualSignupPage() {
           )}
 
           <TermsAcceptanceCheckbox
+            wrapperClassName="border-0 bg-transparent px-0 py-1"
             checked={acceptedTerms}
             onChange={(value) => {
               setAcceptedTerms(value);
@@ -268,12 +263,12 @@ export function IndividualSignupPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+          <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
             Voltar
           </Link>
-          <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
+          <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>
             Criar acesso CPF
-          </Button>
+          </button>
         </div>
       </form>
 

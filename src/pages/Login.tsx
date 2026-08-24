@@ -4,8 +4,13 @@ import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
+import { cn } from '@/lib/utils';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { GoogleGlyph, MicrosoftGlyph } from '@/features/auth/components/BrandGlyph';
+import {
+  AUTH_PRIMARY_BUTTON,
+  AUTH_SECONDARY_BUTTON,
+} from '@/features/auth/components/authControls';
 import { useAuth } from '@/features/auth/useAuth';
 import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
@@ -13,25 +18,6 @@ import { SessionApiError } from '@/auth/sessionApi';
 import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
 import { getAuthErrorActions, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
-
-/* Canto de 4px, altura de 44px e nada de sombra: canto seco e superfície chapada
-   leem como instrumento. O SSO fica em contorno para que o acento preenchido
-   sobre apenas na ação principal do formulário. */
-const CONTROL_BASE =
-  'inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-[4px] text-label font-medium ' +
-  'transition-colors duration-[var(--transition-duration-fast)] ease-[var(--ease-standard)] ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/40 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-bg ' +
-  'disabled:pointer-events-none disabled:opacity-45';
-
-const SSO_BUTTON =
-  CONTROL_BASE +
-  ' border border-doqyn-border bg-transparent text-doqyn-text hover:border-doqyn-border-strong hover:bg-doqyn-hover';
-
-const PRIMARY_BUTTON =
-  CONTROL_BASE +
-  ' mt-1 bg-doqyn-accent-active text-doqyn-on-accent hover:bg-doqyn-accent-hover ' +
-  'disabled:bg-doqyn-card disabled:text-doqyn-subtle';
 
 export function Login() {
   const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
@@ -107,7 +93,7 @@ export function Login() {
               type="button"
               disabled={isSubmitting}
               onClick={() => loginWithGoogle(from)}
-              className={SSO_BUTTON}
+              className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
             >
               <GoogleGlyph />
               Continuar com Google
@@ -118,7 +104,7 @@ export function Login() {
               type="button"
               disabled={isSubmitting}
               onClick={() => loginWithMicrosoft(from)}
-              className={SSO_BUTTON}
+              className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
             >
               <MicrosoftGlyph />
               Continuar com Microsoft
@@ -200,7 +186,7 @@ export function Login() {
           <button
             type="submit"
             disabled={isSubmitting || !email.trim() || !password}
-            className={PRIMARY_BUTTON}
+            className={cn(AUTH_PRIMARY_BUTTON, 'mt-1 w-full')}
           >
             {isSubmitting ? 'Entrando...' : 'Entrar'}
           </button>

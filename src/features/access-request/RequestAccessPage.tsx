@@ -276,10 +276,7 @@ export function RequestAccessPage() {
         }
       />
 
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-      >
+      <form onSubmit={handleSubmit}>
         <div className="space-y-8">
           <FormSection
             title={employeeFlow ? 'Empresa' : 'Dados do cliente'}
@@ -427,6 +424,7 @@ export function RequestAccessPage() {
 
           <div className="space-y-4">
             <TermsAcceptanceCheckbox
+              wrapperClassName="border-0 bg-transparent px-0 py-1"
               checked={acceptedTerms}
               onChange={(value) => {
                 setAcceptedTerms(value);
@@ -445,7 +443,7 @@ export function RequestAccessPage() {
                   if (event.target.checked) setDeclarationError(null);
                 }}
                 required
-                wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+                wrapperClassName="border-0 bg-transparent px-0 py-1"
                 label={
                   <span className="text-sm leading-relaxed text-doqyn-muted">
                     Declaro que as informações fornecidas são verdadeiras e que solicito acesso à
@@ -464,7 +462,7 @@ export function RequestAccessPage() {
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
               required
-              wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
+              wrapperClassName="border-0 bg-transparent px-0 py-1"
               label={
                 <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
               }

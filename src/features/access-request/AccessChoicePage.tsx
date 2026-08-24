@@ -2,36 +2,35 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
-import { cn } from '@/lib/utils';
+import { AUTH_CHOICE_ROW } from '@/features/auth/components/authControls';
 
-function AccessOptionCard({
+function AccessOption({
   to,
+  index,
   title,
   subtitle,
-  icon,
 }: {
   to: string;
+  index: number;
   title: string;
   subtitle: string;
-  icon: string;
 }) {
   return (
-    <Link
-      to={to}
-      className={cn(
-        'group flex items-start gap-3 rounded-xl border border-doqyn-border bg-doqyn-surface p-4',
-        'transition-colors hover:border-doqyn-border-strong hover:bg-doqyn-bg',
-      )}
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-doqyn-border bg-doqyn-bg text-doqyn-text">
-        <Icon name={icon} size={ICON_SIZE.xs} />
+    <Link to={to} className={AUTH_CHOICE_ROW}>
+      {/* A numeração é referência, não enfeite: são três caminhos excludentes e
+          a pessoa escolhe um. Em monoespaçado, como todo rótulo de registro. */}
+      <span className="font-mono text-micro tabular-nums text-doqyn-subtle transition-colors group-hover:text-doqyn-accent-active">
+        {String(index).padStart(2, '0')}
       </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-doqyn-text group-hover:underline">
-          {title}
-        </span>
-        <span className="mt-1 block text-xs leading-relaxed text-doqyn-muted">{subtitle}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-label font-medium text-doqyn-text">{title}</span>
+        <span className="mt-1 block text-caption leading-relaxed text-doqyn-muted">{subtitle}</span>
       </span>
+      <Icon
+        name="arrow_forward"
+        size={ICON_SIZE.xs}
+        className="shrink-0 -translate-x-1 text-doqyn-subtle opacity-0 transition-all group-hover:translate-x-0 group-hover:text-doqyn-accent-active group-hover:opacity-100"
+      />
     </Link>
   );
 }
@@ -50,24 +49,24 @@ export function AccessChoicePage({
     <>
       <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
 
-      <div className="space-y-2.5">
-        <AccessOptionCard
+      <div className="border-t border-doqyn-border-subtle">
+        <AccessOption
           to="/solicitar-acesso"
+          index={1}
           title="Pedir acesso à minha empresa"
           subtitle="Para quem trabalha numa empresa que já usa o DOQYN."
-          icon="person_add"
         />
-        <AccessOptionCard
+        <AccessOption
           to="/criar-empresa"
+          index={2}
           title="Cadastrar minha empresa"
           subtitle="Para abrir um ambiente novo para a sua empresa."
-          icon="business"
         />
-        <AccessOptionCard
+        <AccessOption
           to="/criar-acesso-cpf"
+          index={3}
           title="Acessar como pessoa física"
           subtitle="Para quem guarda documentos próprios, sem empresa."
-          icon="person"
         />
       </div>
 
