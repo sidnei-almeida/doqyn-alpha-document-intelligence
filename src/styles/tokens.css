@@ -77,30 +77,30 @@
   --accent-active-bg: #10303A;
   --text-on-accent: #0F1115;
 
-  --status-ok-bg: #1e3b26;
-  --status-ok-text: #81c995;
-  --status-ok-border: color-mix(in srgb, #81c995 32%, transparent);
-  --status-ok-dot: #81c995;
+  --status-ok-bg: #1B3128;
+  --status-ok-text: #57C08A;
+  --status-ok-border: color-mix(in srgb, #57C08A 32%, transparent);
+  --status-ok-dot: #57C08A;
 
-  --status-danger-bg: #3c2422;
-  --status-danger-text: #f28b82;
-  --status-danger-border: color-mix(in srgb, #f28b82 32%, transparent);
-  --status-danger-dot: #f28b82;
+  --status-danger-bg: #35201E;
+  --status-danger-text: #EC7B72;
+  --status-danger-border: color-mix(in srgb, #EC7B72 32%, transparent);
+  --status-danger-dot: #EC7B72;
 
-  --status-warn-bg: #3d3222;
-  --status-warn-text: #fdd663;
-  --status-warn-border: color-mix(in srgb, #fdd663 32%, transparent);
-  --status-warn-dot: #fdd663;
+  --status-warn-bg: #33290F;
+  --status-warn-text: #E0AE47;
+  --status-warn-border: color-mix(in srgb, #E0AE47 32%, transparent);
+  --status-warn-dot: #E0AE47;
 
-  --status-pending-bg: #3d3222;
-  --status-pending-text: #fdd663;
-  --status-pending-border: color-mix(in srgb, #fdd663 28%, transparent);
-  --status-pending-dot: #fdd663;
+  --status-pending-bg: #33290F;
+  --status-pending-text: #E0AE47;
+  --status-pending-border: color-mix(in srgb, #E0AE47 28%, transparent);
+  --status-pending-dot: #E0AE47;
 
-  --status-info-bg: #1d2a3a;
-  --status-info-text: #8ab4f8;
-  --status-info-border: color-mix(in srgb, #8ab4f8 32%, transparent);
-  --status-info-dot: #8ab4f8;
+  --status-info-bg: #17263F;
+  --status-info-text: #7FAEF5;
+  --status-info-border: color-mix(in srgb, #7FAEF5 32%, transparent);
+  --status-info-dot: #7FAEF5;
 
   --status-neutral-bg: #1D2128;
   --status-neutral-text: #9BA3AE;
@@ -247,30 +247,30 @@
   --accent-active-bg: var(--color-primary-surface);
   --text-on-accent: #ffffff;
 
-  --status-ok-bg: #e6f4ea;
-  --status-ok-text: #1e8e3e;
-  --status-ok-border: color-mix(in srgb, #1e8e3e 24%, transparent);
-  --status-ok-dot: #1e8e3e;
+  --status-ok-bg: #E4F4EC;
+  --status-ok-text: #1F7C51;
+  --status-ok-border: color-mix(in srgb, #2E9E6B 24%, transparent);
+  --status-ok-dot: #1F7C51;
 
-  --status-danger-bg: #fce8e6;
-  --status-danger-text: #d93025;
-  --status-danger-border: color-mix(in srgb, #d93025 24%, transparent);
-  --status-danger-dot: #d93025;
+  --status-danger-bg: #FBE9E7;
+  --status-danger-text: #B03A32;
+  --status-danger-border: color-mix(in srgb, #D2544B 24%, transparent);
+  --status-danger-dot: #B03A32;
 
-  --status-warn-bg: #fef7e0;
-  --status-warn-text: #b06000;
-  --status-warn-border: color-mix(in srgb, #f9ab00 28%, transparent);
-  --status-warn-dot: #f9ab00;
+  --status-warn-bg: #FBF1DC;
+  --status-warn-text: #8A5E06;
+  --status-warn-border: color-mix(in srgb, #C98A14 28%, transparent);
+  --status-warn-dot: #8A5E06;
 
-  --status-pending-bg: #fef7e0;
-  --status-pending-text: #b06000;
-  --status-pending-border: color-mix(in srgb, #f9ab00 24%, transparent);
-  --status-pending-dot: #f9ab00;
+  --status-pending-bg: #FBF1DC;
+  --status-pending-text: #8A5E06;
+  --status-pending-border: color-mix(in srgb, #C98A14 24%, transparent);
+  --status-pending-dot: #8A5E06;
 
-  --status-info-bg: var(--color-primary-surface);
-  --status-info-text: var(--color-primary);
-  --status-info-border: color-mix(in srgb, #1a73e8 20%, transparent);
-  --status-info-dot: var(--color-primary);
+  --status-info-bg: #E3ECFB;
+  --status-info-text: #1B62C9;
+  --status-info-border: color-mix(in srgb, #1B62C9 20%, transparent);
+  --status-info-dot: #1B62C9;
 
   --status-neutral-bg: var(--color-surface-container);
   --status-neutral-text: var(--color-text-secondary);
