@@ -1,6 +1,7 @@
 @import 'material-symbols/rounded.css';
 @import '@fontsource-variable/geist-mono/wght.css';
 @import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/newsreader/wght.css';
 @import './tokens.css';
 
 @tailwind base;

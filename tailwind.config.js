@@ -141,6 +141,7 @@ export default {
       fontFamily: {
         sans: ['var(--font-body)'],
         display: ['var(--font-display)'],
+        serif: ['var(--font-serif)'],
         body: ['var(--font-body)'],
         logo: ['var(--font-display)'],
         mono: ['var(--font-family-mono)'],
