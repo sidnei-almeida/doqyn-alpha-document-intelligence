@@ -431,49 +431,64 @@
 
   /* ===== Sidebar — botão "+ Novo" (Material filled, flat) ===== */
 
+  /* ── Enviar documento: linha de ação, não bloco ───────────────────────
+     Era um retângulo preenchido de largura total no topo do rail — a coisa mais
+     alta da tela para uma ação entre muitas, e o último pedaço de outro app
+     sobrando aqui. Agora é a primeira linha do índice, separada das demais por
+     um fio: o acento vive só no glifo, e a linha reage como qualquer item de
+     navegação.                                                               */
+
   .sidebar-new-button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
     width: 100%;
-    min-height: var(--field-height);
-    padding: 0 0.75rem;
-    /* 4px: o CTA continua sendo o único elemento preenchido no acento, mas
-       o canto reto tira dele a cara de pílula de aplicativo de consumo. */
+    min-height: 2.5rem;
+    padding: 0 0.75rem 0 0.875rem;
     border-radius: var(--radius-sm);
     border: none;
-    background: var(--new-button-bg);
-    color: var(--new-button-text);
+    background: transparent;
+    color: var(--text-primary);
     font-family: var(--font-display);
     font-size: var(--text-label);
     font-weight: var(--weight-label);
     line-height: 1;
     letter-spacing: var(--tracking-label);
-    box-shadow: var(--shadow-new-button);
     cursor: pointer;
     user-select: none;
-    transition:
-      background-color var(--transition-duration-fast) var(--ease-standard),
-      box-shadow var(--transition-duration-fast) var(--ease-standard);
+    text-align: left;
+    transition: background-color var(--transition-duration-fast) var(--ease-standard);
   }
 
-  .sidebar-new-button:hover:not(:disabled) {
-    background: var(--new-button-bg-hover);
-    box-shadow: var(--shadow-new-button-hover);
+  .sidebar-new-button__label {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .sidebar-new-button:active:not(:disabled) {
-    background: var(--new-button-bg-active);
+  .sidebar-new-button__glyph {
+    color: var(--accent-active);
+    flex: none;
+  }
+
+  .sidebar-new-button__chevron {
+    color: var(--text-tertiary);
+    flex: none;
+  }
+
+  .sidebar-new-button:hover:not(:disabled),
+  .sidebar-new-button[aria-expanded='true'] {
+    background: var(--sidebar-item-hover-bg);
   }
 
   .sidebar-new-button:focus-visible {
     outline: none;
-    box-shadow: var(--new-button-focus-ring);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
   }
 
-  .sidebar-new-button[aria-expanded='true'] {
-    background: var(--new-button-bg-active);
+  .sidebar-new-button--collapsed {
+    width: 2.5rem;
+    justify-content: center;
+    padding: 0;
   }
 
   .sidebar-new-button[aria-expanded='true']:hover:not(:disabled) {

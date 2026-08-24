@@ -44,16 +44,16 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
       aria-haspopup="menu"
       aria-expanded={open}
       aria-label={collapsed ? 'Novo' : undefined}
-      className={cn(
-        'sidebar-new-button',
-        collapsed && 'sidebar-new-button--collapsed',
-      )}
+      className={cn('sidebar-new-button', collapsed && 'sidebar-new-button--collapsed')}
       data-testid="new-button"
     >
-      <Icon name="add" size={ICON_SIZE.md} aria-hidden />
+      {/* O acento fica só no glifo. O bloco preenchido de largura total era a
+          coisa mais alta da tela para uma ação entre muitas, e era o último
+          pedaço de outro app sobrando no rail. */}
+      <Icon name="add" size={ICON_SIZE.md} className="sidebar-new-button__glyph" aria-hidden />
       {!collapsed && (
         <>
-          <span className="sidebar-new-button__label">Novo</span>
+          <span className="sidebar-new-button__label">Enviar documento</span>
           <Icon
             name="keyboard_arrow_down"
             size={ICON_SIZE.sm}
@@ -103,12 +103,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
       >
         <Tooltip label="Pastas manuais chegam em uma próxima fase" wrapperClassName="block w-full">
           <span className="block w-full">
-            <button
-              type="button"
-              role="menuitem"
-              className="sidebar-new-menu__item"
-              disabled
-            >
+            <button type="button" role="menuitem" className="sidebar-new-menu__item" disabled>
               <Icon
                 name="create_new_folder"
                 size={ICON_SIZE.md}

@@ -75,9 +75,11 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
         </div>
 
+        {/* Fio separando a ação do índice: a linha de enviar pertence ao rail,
+            mas não é um destino de navegação como as de baixo. */}
         <NewButtonMenu
           uploadContext={uploadContext}
-          className={collapsed ? 'w-10' : 'w-full'}
+          className={cn(collapsed ? 'w-10' : 'w-full border-b border-doqyn-border-subtle pb-2')}
           collapsed={collapsed}
         />
       </header>
