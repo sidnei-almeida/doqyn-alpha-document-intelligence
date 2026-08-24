@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { PageShell } from '@/components/layout/PageShell';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
+import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
 import { createDocumentShare, revokeDocumentShare } from '@/features/sharing/api/shareApi';
 import { fetchAccessMatrix } from './api/matrixApi';
@@ -37,46 +38,6 @@ const LENSES: Array<{ key: MatrixTab; label: string; description: string }> = [
     description: 'O que a regra concede a cada grupo, verbo a verbo.',
   },
 ];
-
-/**
- * Troca de lente — duas leituras da mesma grade, no lugar onde as outras telas
- * põem seus controles de vista: à direita do título. Ocupava seis linhas de
- * cartão para dizer duas palavras; a explicação de cada lente desceu para o
- * subtítulo da página, que muda junto e só precisa existir uma vez.
- */
-function LensSwitch({
-  value,
-  onChange,
-}: {
-  value: MatrixTab;
-  onChange: (tab: MatrixTab) => void;
-}) {
-  return (
-    <div className="flex h-9 items-stretch gap-1" role="group" aria-label="Lente da matriz">
-      {LENSES.map((lens) => {
-        const isActive = value === lens.key;
-        return (
-          <button
-            key={lens.key}
-            type="button"
-            onClick={() => onChange(lens.key)}
-            aria-pressed={isActive}
-            className={cn(
-              'relative rounded-[4px] px-2.5 text-caption font-medium transition-colors duration-150',
-              'after:absolute after:inset-x-2.5 after:bottom-0 after:h-[2px] after:transition-colors after:duration-150',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30',
-              isActive
-                ? 'text-doqyn-text after:bg-doqyn-accent-active'
-                : 'text-doqyn-muted after:bg-transparent hover:text-doqyn-text',
-            )}
-          >
-            {lens.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /** Filtro de categoria — mesma anatomia dos filtros da Biblioteca: texto e fio. */
 function CategoryFilter({
@@ -198,7 +159,14 @@ export function MatrixPage() {
       eyebrow="Governança"
       title="Matriz de documentos"
       description={activeLens.description}
-      actions={<LensSwitch value={tab} onChange={setTab} />}
+      actions={
+        <SegmentedTextToggle
+          value={tab}
+          options={LENSES.map((lens) => ({ value: lens.key, label: lens.label }))}
+          onChange={setTab}
+          aria-label="Lente da matriz"
+        />
+      }
       bodyClassName="matrix-page w-full gap-6"
     >
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3">

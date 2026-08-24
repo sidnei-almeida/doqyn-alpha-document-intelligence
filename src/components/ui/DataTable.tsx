@@ -29,18 +29,26 @@ export type DataTableProps<T> = {
   density?: 'comfortable' | 'compact';
 };
 
+/**
+ * A tabela é registro, não card.
+ *
+ * Era uma caixa com borda, canto de 8px e cabeçalho preenchido — a moldura em
+ * volta de uma lista que o espaço já separava. Agora abre com um fio, o
+ * cabeçalho é rótulo de registro em monoespaçado e as linhas se separam por
+ * fio, como as pastas da Biblioteca e a grade da Matriz.
+ */
 const DENSITY_STYLES = {
   comfortable: {
-    head: 'type-label px-4 py-3 text-left uppercase tracking-wide text-doqyn-muted',
-    cell: 'type-body px-4 py-3.5 align-middle',
+    head: 'register-label px-4 py-3 text-left text-doqyn-subtle',
+    cell: 'type-label px-4 py-3.5 align-middle',
     footer: 'px-4 py-3',
-    thead: 'border-b border-doqyn-border bg-doqyn-card',
+    thead: 'border-b border-doqyn-border-subtle',
   },
   compact: {
-    head: 'type-label px-3 py-2 text-left text-[11px] uppercase tracking-wide text-doqyn-muted',
-    cell: 'type-body px-3 py-2 align-middle leading-snug',
+    head: 'register-label px-3 py-2 text-left text-doqyn-subtle',
+    cell: 'type-label px-3 py-2 align-middle leading-snug',
     footer: 'px-3 py-2',
-    thead: 'border-b border-doqyn-border-subtle bg-doqyn-surface',
+    thead: 'border-b border-doqyn-border-subtle',
   },
 } as const;
 
@@ -81,7 +89,7 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        'flex flex-col overflow-hidden rounded-lg border border-doqyn-border bg-doqyn-surface',
+        'flex flex-col border-t border-doqyn-border',
         stretch && 'min-h-[420px] flex-1',
         className,
       )}
@@ -110,10 +118,13 @@ export function DataTable<T>({
                   key={key}
                   onClick={() => onRowClick?.(item)}
                   className={cn(
-                    'border-b border-doqyn-border-subtle transition-colors last:border-0',
-                    (onRowClick || density === 'compact') &&
-                      'cursor-pointer hover:bg-doqyn-surface-hover/70',
-                    isSelected && 'bg-doqyn-primary-bg',
+                    // A régua de acento vem de `box-shadow` interno, não de um
+                    // `::before`: pseudo-elemento filho de <tr> vira célula
+                    // anônima e empurra a linha inteira uma coluna para a
+                    // direita — o nome aparecia debaixo do cabeçalho do e-mail.
+                    'data-table-row border-b border-doqyn-border-subtle/75 transition-colors last:border-0',
+                    (onRowClick || density === 'compact') && 'cursor-pointer',
+                    isSelected && 'data-table-row--selected',
                   )}
                 >
                   {columns.map((col) => (
@@ -130,7 +141,7 @@ export function DataTable<T>({
 
       {showSparseFooter && (
         <div className="flex flex-1 flex-col items-center justify-center border-t border-doqyn-border-subtle px-6 py-10 text-center">
-          <p className="text-sm font-medium text-doqyn-text">{sparseMessage}</p>
+          <p className="text-label font-medium text-doqyn-text">{sparseMessage}</p>
           {sparseDescription && (
             <p className="caption-text mt-1 max-w-md">{sparseDescription}</p>
           )}

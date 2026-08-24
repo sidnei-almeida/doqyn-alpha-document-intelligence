@@ -992,6 +992,19 @@
     min-height: var(--workspace-page-action-size);
   }
 
+  /* Rótulo de registro — cabeçalho de coluna, eyebrow de bloco, contagem.
+     Monoespaçado em caixa alta porque é rótulo, não frase. Vive aqui, e não
+     dentro de uma tela, porque três telas já o tinham redesenhado por conta. */
+
+  .register-label {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
   /* ===== Campo em linha fora da antessala ================================
      Mesma anatomia do campo de `.auth-route`: régua embaixo, sem caixa. Vive
      aqui, e não lá, porque as telas internas vão migrando uma a uma e o campo
@@ -1057,14 +1070,8 @@
     flex: 1;
   }
 
-  /* Rótulo de registro — a mesma voz do eyebrow da página, um nível abaixo. */
   .overview-register-label {
-    font-family: var(--font-family-mono);
-    font-size: var(--text-micro);
-    font-weight: 500;
-    line-height: 1.3;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    @apply register-label;
   }
 
   .overview-section-title {
@@ -1243,6 +1250,26 @@
     min-height: 0;
   }
 
+  /* Linha de tabela — fio embaixo, régua de acento à esquerda no hover e na
+     escolhida. A régua é sombra interna porque `::before` dentro de <tr> vira
+     célula anônima e desalinha a linha inteira. */
+
+  .data-table-row {
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      box-shadow var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .data-table-row:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
+  .data-table-row--selected {
+    background: color-mix(in srgb, var(--overlay-hover) 40%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
   /* ===== Matriz — cruzamento é registro ==================================
      A matriz não é uma tabela decorada: é o cruzamento de duas listas. Então
      não há card em volta, o cabeçalho é rótulo de registro em monoespaçado, e
@@ -1254,11 +1281,7 @@
   }
 
   .matrix-head-label {
-    font-family: var(--font-family-mono);
-    font-size: var(--text-micro);
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    @apply register-label;
     color: var(--text-tertiary);
   }
 

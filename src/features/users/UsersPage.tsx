@@ -7,8 +7,10 @@ import { MemberStatusBadge } from '@/components/ui/MemberStatusBadge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { DataTable } from '@/components/ui/DataTable';
-import { FilterBar, FilterBarField } from '@/components/ui/FilterBar';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
+import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { PlatformRoleChips } from '@/components/ui/PlatformRoleChips';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
@@ -307,39 +309,43 @@ export function UsersPage() {
 
   return (
     <PageShell
+      eyebrow="Administração"
       title="Usuários"
       description={`Convide, aprove e gerencie acessos de ${tenantDisplayName}.`}
       actions={<Button onClick={openInviteModal}>Convidar usuário</Button>}
       bodyClassName="min-h-0"
     >
-      <FilterBar summary={`${members.length} ${members.length === 1 ? 'usuário' : 'usuários'}`}>
-        <FilterBarField span={2} className="lg:col-span-2">
-          <Input
+      {/* A barra de filtros era um card com borda em volta de um campo e cinco
+          botões preenchidos — cinco ações principais para uma escolha que é
+          ajuste de vista. Agora é campo em régua, status em régua e a contagem
+          em monoespaçado na outra ponta. */}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <label className="field-rule w-full sm:max-w-xs">
+          <Icon name="search" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
+          <input
             id="users-search"
-            label="Buscar"
-            placeholder="Nome ou e-mail..."
+            type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Buscar por nome ou e-mail"
+            className="text-label placeholder:text-doqyn-subtle"
+            aria-label="Buscar usuário"
           />
-        </FilterBarField>
-        <FilterBarField span={2} className="lg:col-span-2">
-          <div>
-            <p className="form-label mb-1.5">Status</p>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => (
-                <Button
-                  key={status}
-                  variant={statusFilter === status ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setStatusFilter(status)}
-                >
-                  {STATUS_FILTER_LABELS[status]}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </FilterBarField>
-      </FilterBar>
+        </label>
+
+        <SegmentedTextToggle
+          value={statusFilter}
+          options={(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map(
+            (status) => ({ value: status, label: STATUS_FILTER_LABELS[status] }),
+          )}
+          onChange={setStatusFilter}
+          aria-label="Filtrar por status"
+        />
+
+        <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
+          {members.length} {members.length === 1 ? 'usuário' : 'usuários'}
+        </span>
+      </div>
 
       {membersQuery.isError ? (
         <InlineErrorHint
