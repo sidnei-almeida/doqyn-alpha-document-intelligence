@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
+import { cn } from '@/lib/utils';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
@@ -102,7 +103,15 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
         }}
         placeholder="Buscar documentos por nome, categoria ou proprietário..."
         aria-label="Buscar documentos"
-        className="search-command explorer-focus-ring focus:ring-doqyn-accent-active/15 h-11 w-full rounded-full border border-transparent bg-doqyn-surface pl-11 pr-[4.75rem] text-body text-doqyn-text transition-[background-color,box-shadow] duration-[var(--transition-duration)] ease-[var(--ease-standard)] placeholder:text-doqyn-subtle hover:bg-doqyn-surface-hover focus:bg-doqyn-surface focus:outline-none focus:ring-1"
+        className={cn(
+          // Busca em linha, como os campos: sem cápsula preenchida. A régua
+          // assume o acento no foco, que é a mesma reação de todo campo do
+          // sistema — a barra inteira deixa de parecer a de um navegador.
+          'search-command h-11 w-full rounded-none border-0 border-b border-doqyn-border-subtle bg-transparent pl-9 pr-[4.75rem] text-body text-doqyn-text',
+          'transition-[border-color] duration-[var(--transition-duration)] ease-[var(--ease-standard)]',
+          'placeholder:text-doqyn-subtle hover:border-doqyn-border-strong',
+          'focus:border-b-2 focus:border-doqyn-accent-active focus:outline-none',
+        )}
       />
       <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
         {isFetching && isLibrary && (

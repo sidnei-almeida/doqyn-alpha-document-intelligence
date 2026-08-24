@@ -439,7 +439,9 @@
     width: 100%;
     min-height: var(--field-height);
     padding: 0 0.75rem;
-    border-radius: var(--radius-new-button);
+    /* 4px: o CTA continua sendo o único elemento preenchido no acento, mas
+       o canto reto tira dele a cara de pílula de aplicativo de consumo. */
+    border-radius: var(--radius-sm);
     border: none;
     background: var(--new-button-bg);
     color: var(--new-button-text);
@@ -2362,14 +2364,14 @@
     background: var(--bg-surface);
   }
 
-  .explorer-file-card {
-    border: 1px solid color-mix(in srgb, var(--border-subtle) 45%, transparent);
-  }
+  /* A borda do card saiu junto com o card: o que delimita o documento agora é
+     a sombra da própria folha. Sobrando, ela desenhava um retângulo fantasma em
+     volta do nome do arquivo. */
 
   .document-files-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 188px));
+    gap: 1.75rem 1.5rem;
     justify-content: start;
   }
 
