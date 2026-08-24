@@ -1,80 +1,81 @@
 /**
  * DOQYN — design tokens (dark + light)
  * Linguagem minimalista inspirada em file managers modernos: superfícies suaves,
- * bordas discretas, acento azul contido. Identidade DOQYN discreta.
+ * bordas discretas, acento único em teal corporativo sobre neutros grafite frios.
+ * Identidade DOQYN discreta.
  */
 
 [data-theme='dark'] {
   /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
-  --bg-chrome: #121212;
+  --bg-chrome: #0F1115;
   --bg-shell: var(--bg-chrome);
-  --bg-canvas: #1e1e1e;
-  --bg-thumbnail-chrome: #1e1e1e;
+  --bg-canvas: #171A1F;
+  --bg-thumbnail-chrome: #171A1F;
   --bg-app: var(--bg-chrome);
   --bg-sidebar: var(--bg-shell);
-  --bg-surface: #1e1e1e;
-  --bg-surface-2: #242424;
-  --bg-surface-3: #2c2c2c;
-  --bg-surface-hover: #2c2c2c;
-  --bg-hover: #2c2c2c;
-  --bg-selected: #1d2a3a;
+  --bg-surface: #171A1F;
+  --bg-surface-2: #1D2128;
+  --bg-surface-3: #242932;
+  --bg-surface-hover: #242932;
+  --bg-hover: #242932;
+  --bg-selected: #14343C;
 
-  /* Sidebar — item ativo índigo/violeta discreto (harmonia com + Novo, sem competir) */
-  --sidebar-selected-bg: rgba(99, 102, 241, 0.18);
+  /* Sidebar — item ativo no acento teal, translúcido sobre a base grafite */
+  --sidebar-selected-bg: rgba(79, 195, 207, 0.16);
   --sidebar-selected-border: transparent;
-  --sidebar-selected-text: #f5f7ff;
-  --sidebar-selected-icon: #a5b4fc;
+  --sidebar-selected-text: #E6F6F8;
+  --sidebar-selected-icon: #4FC3CF;
   --sidebar-item-hover-bg: rgba(148, 163, 184, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 42%, transparent);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 42%, transparent);
 
   /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
-  --explorer-quick-actions-bg: rgba(30, 30, 30, 0.84);
+  --explorer-quick-actions-bg: rgba(23, 26, 31, 0.84);
   --explorer-quick-actions-border: rgba(255, 255, 255, 0.14);
-  --explorer-quick-actions-icon: #d2d5da;
-  --explorer-quick-actions-icon-hover: #f1f3f4;
+  --explorer-quick-actions-icon: #D5D9DF;
+  --explorer-quick-actions-icon-hover: #E6E9ED;
   --explorer-quick-actions-icon-hover-bg: rgba(255, 255, 255, 0.1);
   --explorer-quick-actions-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
 
   /* Badge de favorito sobre preview */
-  --document-favorite-badge-bg: rgba(30, 30, 30, 0.78);
+  --document-favorite-badge-bg: rgba(23, 26, 31, 0.78);
   --document-favorite-badge-shadow: 0 1px 4px rgba(0, 0, 0, 0.32);
 
   /* Marquee selection — retângulo de seleção no file explorer */
   --marquee-bg: rgba(148, 163, 184, 0.06);
   --marquee-border: rgba(148, 163, 184, 0.22);
 
-  /* Botão "+ Novo" — índigo flat (Material filled, sem elevação pesada) */
-  --new-button-bg: #5c5cf0;
-  --new-button-bg-hover: #6d6df2;
-  --new-button-bg-active: #4f46e5;
-  --new-button-text: #ffffff;
-  --new-button-chevron: rgba(255, 255, 255, 0.9);
+  /* Botão "+ Novo" — acento teal flat (Material filled, sem elevação pesada) */
+  --new-button-bg: var(--accent-active);
+  --new-button-bg-hover: var(--accent-hover);
+  --new-button-bg-active: #3DB2BE;
+  --new-button-text: var(--text-on-accent);
+  --new-button-chevron: rgba(15, 17, 21, 0.9);
   --new-button-border: transparent;
   --shadow-new-button: none;
   --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 55%, transparent);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 55%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--bg-surface);
   --new-menu-border: var(--border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: rgba(99, 102, 241, 0.12);
-  --new-menu-item-active: rgba(99, 102, 241, 0.18);
-  --new-menu-icon: #818cf8;
+  --new-menu-item-hover: rgba(79, 195, 207, 0.12);
+  --new-menu-item-active: rgba(79, 195, 207, 0.18);
+  --new-menu-icon: var(--accent-active);
 
   --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: #333333;
-  --border-strong: #3f3f3f;
+  --border-default: #262A31;
+  --border-strong: #333945;
 
-  --text-primary: #e8eaed;
-  --text-secondary: #9aa0a6;
-  --text-tertiary: #80868b;
-  --text-disabled: #5f6368;
+  --text-primary: #E6E9ED;
+  --text-secondary: #9BA3AE;
+  --text-tertiary: #7F8792;
+  --text-disabled: #5C636D;
 
-  --accent-active: #8ab4f8;
-  --accent-hover: #aecbfa;
-  --accent-active-bg: #1d2a3a;
-  --text-on-accent: #121212;
+  --accent-active: #4FC3CF;
+  --accent-hover: #6FD6E0;
+  --accent-active-bg: #10303A;
+  --text-on-accent: #0F1115;
 
   --status-ok-bg: #1e3b26;
   --status-ok-text: #81c995;
@@ -101,10 +102,10 @@
   --status-info-border: color-mix(in srgb, #8ab4f8 32%, transparent);
   --status-info-dot: #8ab4f8;
 
-  --status-neutral-bg: #242424;
-  --status-neutral-text: #9aa0a6;
-  --status-neutral-border: #3f3f3f;
-  --status-neutral-dot: #80868b;
+  --status-neutral-bg: #1D2128;
+  --status-neutral-text: #9BA3AE;
+  --status-neutral-border: #333945;
+  --status-neutral-dot: #7F8792;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -132,20 +133,20 @@
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — superfície inverse Material, sem borda */
-  --toast-bg: #3c4043;
-  --toast-text: #e8eaed;
-  --toast-muted: #bdc1c6;
-  --toast-action: #8ab4f8;
+  --toast-bg: #2A2F37;
+  --toast-text: #E6E9ED;
+  --toast-muted: #B7BEC7;
+  --toast-action: #6FD6E0;
   --toast-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #3c4043;
-  --tooltip-text: #e8eaed;
+  --tooltip-bg: #2A2F37;
+  --tooltip-text: #E6E9ED;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(255, 255, 255, 0.16);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
-  --selection-bg: rgba(138, 180, 248, 0.3);
+  --selection-bg: rgba(79, 195, 207, 0.28);
 
   --governance-flow-card-bg: var(--bg-surface-3);
   --governance-flow-card-border: color-mix(
@@ -162,16 +163,16 @@
 [data-theme='light'] {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;
-  --color-surface: #f8f9fa;
-  --color-surface-container: #f1f3f4;
-  --color-border: #dadce0;
-  --color-border-subtle: #e8eaed;
-  --color-text-primary: #202124;
-  --color-text-secondary: #5f6368;
-  --color-icon-neutral: #5f6368;
-  --color-primary: #1a73e8;
-  --color-primary-hover: #1967d2;
-  --color-primary-surface: #e8f0fe;
+  --color-surface: #F7F8FA;
+  --color-surface-container: #EFF1F4;
+  --color-border: #D6DAE0;
+  --color-border-subtle: #E5E8EC;
+  --color-text-primary: #1A1D21;
+  --color-text-secondary: #5A6068;
+  --color-icon-neutral: #5A6068;
+  --color-primary: #0E6E7A;
+  --color-primary-hover: #14818F;
+  --color-primary-surface: #E0F1F3;
 
   --bg-chrome: var(--color-surface);
   --bg-shell: var(--color-surface);
@@ -181,24 +182,24 @@
   --bg-sidebar: var(--bg-shell);
   --bg-surface: var(--color-background);
   --bg-surface-2: var(--color-surface-container);
-  --bg-surface-3: #e8eaed;
+  --bg-surface-3: #E5E8EC;
   --bg-surface-hover: var(--color-surface-container);
   --bg-hover: var(--color-surface-container);
   --bg-selected: var(--color-primary-surface);
 
-  /* Sidebar — item ativo índigo/violeta suave (fundo sólido claro, distinto do dark translúcido) */
-  --sidebar-selected-bg: #eef2ff;
-  --sidebar-selected-border: #c7d2fe;
-  --sidebar-selected-text: #312e81;
-  --sidebar-selected-icon: #6366f1;
-  --sidebar-item-hover-bg: rgba(99, 102, 241, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 35%, transparent);
+  /* Sidebar — item ativo em teal suave (fundo sólido claro, distinto do dark translúcido) */
+  --sidebar-selected-bg: #E0F1F3;
+  --sidebar-selected-border: #B7DDE2;
+  --sidebar-selected-text: #0B4A52;
+  --sidebar-selected-icon: #0E6E7A;
+  --sidebar-item-hover-bg: rgba(14, 110, 122, 0.08);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
 
   /* Menu rápido sobre preview — vidro claro */
   --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
   --explorer-quick-actions-border: rgba(218, 220, 224, 0.92);
-  --explorer-quick-actions-icon: #5f6368;
-  --explorer-quick-actions-icon-hover: #202124;
+  --explorer-quick-actions-icon: #5A6068;
+  --explorer-quick-actions-icon-hover: #1A1D21;
   --explorer-quick-actions-icon-hover-bg: rgba(60, 64, 67, 0.08);
   --explorer-quick-actions-shadow: 0 1px 4px rgba(60, 64, 67, 0.12);
 
@@ -207,39 +208,39 @@
   --document-favorite-badge-shadow: 0 1px 3px rgba(60, 64, 67, 0.14);
 
   /* Marquee selection — retângulo de seleção no file explorer */
-  --marquee-bg: rgba(99, 102, 241, 0.1);
-  --marquee-border: rgba(99, 102, 241, 0.38);
+  --marquee-bg: rgba(14, 110, 122, 0.1);
+  --marquee-border: rgba(14, 110, 122, 0.38);
 
-  /* Botão "+ Novo" — índigo flat (Material filled) */
-  --new-button-bg: #4f46e5;
-  --new-button-bg-hover: #4338ca;
-  --new-button-bg-active: #3730a3;
-  --new-button-text: #ffffff;
+  /* Botão "+ Novo" — acento teal flat (Material filled) */
+  --new-button-bg: var(--accent-active);
+  --new-button-bg-hover: var(--accent-hover);
+  --new-button-bg-active: #0A5A64;
+  --new-button-text: var(--text-on-accent);
   --new-button-chevron: rgba(255, 255, 255, 0.92);
   --new-button-border: transparent;
   --shadow-new-button: none;
   --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 40%, transparent);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--color-background);
   --new-menu-border: var(--color-border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: #f1f3f4;
-  --new-menu-item-active: #e8eaed;
-  --new-menu-icon: #4f46e5;
+  --new-menu-item-hover: #EFF1F4;
+  --new-menu-item-active: #E5E8EC;
+  --new-menu-icon: var(--accent-active);
 
   --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border);
-  --border-strong: #c4c7c5;
+  --border-strong: #C2C7CE;
 
-  --text-primary: #202124;
-  --text-secondary: #5f6368;
+  --text-primary: #1A1D21;
+  --text-secondary: #5A6068;
   /* Terciário precisa ficar acima de 4.5:1 sobre branco (AA) e ainda assim mais
-     claro que o secundário — #70757a dá 4.65:1 contra os 6.05:1 do secundário.
-     O #80868b do tema escuro reprovaria aqui (3.68:1). */
-  --text-tertiary: #70757a;
-  --text-disabled: #9aa0a6;
+     claro que o secundário: 4.98:1 contra os 6.35:1 do secundário. O terciário
+     do tema escuro é mais claro e reprovaria aqui. */
+  --text-tertiary: #6B7079;
+  --text-disabled: #9CA2AA;
 
   --accent-active: var(--color-primary);
   --accent-hover: var(--color-primary-hover);
@@ -274,7 +275,7 @@
   --status-neutral-bg: var(--color-surface-container);
   --status-neutral-text: var(--color-text-secondary);
   --status-neutral-border: var(--color-border-subtle);
-  --status-neutral-dot: #9aa0a6;
+  --status-neutral-dot: #9CA2AA;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -302,20 +303,20 @@
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — inverse surface (igual em light/dark, padrão Google) */
-  --toast-bg: #323232;
-  --toast-text: #f1f3f4;
-  --toast-muted: #dadce0;
-  --toast-action: #aecbfa;
+  --toast-bg: #2A2F37;
+  --toast-text: #E6E9ED;
+  --toast-muted: #B7BEC7;
+  --toast-action: #6FD6E0;
   --toast-shadow: 0 2px 8px rgba(60, 64, 67, 0.28), 0 4px 16px rgba(60, 64, 67, 0.16);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #3c4043;
-  --tooltip-text: #f1f3f4;
+  --tooltip-bg: #2A2F37;
+  --tooltip-text: #E6E9ED;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(60, 64, 67, 0.28);
   --scrollbar-thumb-hover: rgba(60, 64, 67, 0.45);
-  --selection-bg: rgba(26, 115, 232, 0.18);
+  --selection-bg: rgba(14, 110, 122, 0.18);
 
   --governance-flow-card-bg: var(--color-background);
   --governance-flow-card-border: var(--border-default);
