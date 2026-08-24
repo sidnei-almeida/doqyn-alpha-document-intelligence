@@ -2529,17 +2529,15 @@
     color: var(--explorer-quick-actions-icon-hover);
   }
 
+  /* A marca de favorito pousa direto na folha — a folha é branca nos dois
+     temas, então a tinta é fixa e um halo de 1px a sustenta sobre qualquer
+     miniatura. O disco com blur saiu: era uma bolha escura sobre papel. */
   .document-favorite-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: var(--radius-pill);
-    background: var(--document-favorite-badge-bg);
-    box-shadow: var(--document-favorite-badge-shadow);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    color: var(--document-favorite-ink);
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9));
   }
 
   .explorer-marquee-selection {

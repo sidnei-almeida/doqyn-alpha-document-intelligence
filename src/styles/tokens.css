@@ -37,8 +37,9 @@
   --explorer-quick-actions-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
 
   /* Badge de favorito sobre preview */
-  --document-favorite-badge-bg: rgba(22, 27, 32, 0.78);
-  --document-favorite-badge-shadow: 0 1px 4px rgba(0, 0, 0, 0.32);
+  /* Tinta da marca de favorito na miniatura — fixa nos dois temas porque
+     pousa sobre a folha, e a folha nunca escurece. */
+  --document-favorite-ink: #3f4a52;
 
   /* Marquee selection — retângulo de seleção no file explorer */
   --marquee-bg: rgba(148, 163, 184, 0.06);
@@ -217,8 +218,7 @@
   --explorer-quick-actions-shadow: 0 1px 4px rgba(60, 64, 67, 0.12);
 
   /* Badge de favorito sobre preview */
-  --document-favorite-badge-bg: rgba(255, 255, 255, 0.94);
-  --document-favorite-badge-shadow: 0 1px 3px rgba(60, 64, 67, 0.14);
+  --document-favorite-ink: #3f4a52;
 
   /* Marquee selection — retângulo de seleção no file explorer */
   --marquee-bg: rgba(14, 110, 106, 0.1);

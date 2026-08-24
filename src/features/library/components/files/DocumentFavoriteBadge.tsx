@@ -11,7 +11,12 @@ type DocumentFavoriteBadgeProps = {
   className?: string;
 };
 
-/** Estrela persistente — só para o usuário que favoritou (preferência pessoal). */
+/**
+ * Marca de favorito — estrela cheia, sem disco em volta e sem cor de estado.
+ * O disco desenhava uma bolha escura sobre a folha branca da miniatura, e o
+ * âmbar dizia "alerta" para uma preferência pessoal. O que distingue a marca
+ * agora é a forma: tudo no sistema é ícone de traço, só o favorito é cheio.
+ */
 export function DocumentFavoriteBadge({
   document,
   variant = 'inline',
@@ -27,7 +32,7 @@ export function DocumentFavoriteBadge({
         title="Favorito"
         aria-hidden
       >
-        <Icon name="star" filled size={ICON_SIZE.xs} className="text-doqyn-warning" />
+        <Icon name="star" filled size={ICON_SIZE.xs} />
       </span>
     );
   }
@@ -37,7 +42,7 @@ export function DocumentFavoriteBadge({
       name="star"
       filled
       size={ICON_SIZE.xs}
-      className={cn('shrink-0 text-doqyn-warning', className)}
+      className={cn('shrink-0 text-doqyn-text', className)}
       aria-label="Favorito"
     />
   );
