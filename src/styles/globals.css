@@ -992,48 +992,55 @@
     min-height: var(--workspace-page-action-size);
   }
 
-  /* ===== Visão Geral / Painel de controle ===== */
+  /* ===== Visão Geral — o painel é um boletim, não um mosaico ==============
+     Eram nove cards com borda, sombra e canto de 14px flutuando sobre o fundo:
+     a mesma moldura repetida nove vezes, sem que nenhuma delas separasse nada
+     que já não estivesse separado pelo espaço. Agora a página lê como um
+     documento — cada bloco abre com um fio, o rótulo do bloco é monoespaçado
+     como cabeçalho de registro, e a lista é linha, não pilha de caixas.      */
 
   .overview-page {
-    --overview-panel-radius: 0.875rem;
+    --overview-rule: color-mix(in srgb, var(--border-subtle) 75%, transparent);
+    --overview-rule-strong: var(--border-default);
     --overview-transition: 150ms;
-    --overview-panel-border: var(--border-default);
-    --overview-panel-bg: var(--bg-surface);
-    --overview-panel-bg-primary: var(--bg-surface);
-    --overview-panel-bg-muted: var(--bg-surface-2);
   }
 
+  /* Bloco de conteúdo: fio de abertura em cima, nada em volta. */
   .overview-panel {
-    border: 1px solid var(--overview-panel-border);
-    background: var(--overview-panel-bg);
-    border-radius: var(--overview-panel-radius);
-    box-shadow: var(--shadow-elevation-1);
-    transition: border-color var(--overview-transition) var(--ease-standard);
+    border-top: 1px solid var(--overview-rule-strong);
+    background: transparent;
   }
 
-  .overview-panel--primary {
-    background: var(--overview-panel-bg-primary);
+  .overview-panel-header {
+    border-bottom: 1px solid var(--overview-rule);
   }
 
-  .overview-panel--secondary {
-    background: var(--overview-panel-bg);
+  .overview-panel-body {
+    flex: 1;
   }
 
-  .overview-panel--muted {
-    background: var(--overview-panel-bg-muted);
-    border-color: color-mix(in srgb, var(--border-subtle) 45%, transparent);
+  /* Rótulo de registro — a mesma voz do eyebrow da página, um nível abaixo. */
+  .overview-register-label {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 
   .overview-section-title {
-    @apply type-h2;
+    @apply overview-register-label;
+    color: var(--text-secondary);
   }
 
   .overview-section-subtitle {
-    @apply type-body text-doqyn-muted;
+    @apply type-caption text-doqyn-subtle;
   }
 
   .overview-kpi-label {
-    @apply type-label text-doqyn-subtle;
+    @apply overview-register-label;
+    color: var(--text-tertiary);
   }
 
   .overview-kpi-value {
@@ -1041,98 +1048,161 @@
   }
 
   .overview-kpi-subtext {
-    @apply type-caption;
+    @apply type-caption text-doqyn-subtle;
   }
 
   .overview-governance-value {
     @apply type-display text-doqyn-text;
   }
 
-  .overview-stat-text {
-    @apply type-h2;
-  }
-
   .overview-row-meta {
-    @apply type-caption;
+    @apply type-caption text-doqyn-muted;
   }
 
+  /* Data em coluna é registro: mono, tabular, alinhada. */
   .overview-timestamp {
-    @apply type-caption text-doqyn-subtle;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
   }
 
-  .overview-interactive-row {
+  /* ── Linha de registro ────────────────────────────────────────────────
+     Separada por fio, marcada por régua de acento no hover. Mesma gramática
+     das pastas da Biblioteca e da lista de assinaturas.                    */
+
+  .overview-row {
+    position: relative;
+    border-bottom: 1px solid var(--overview-rule);
     transition: background-color var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-interactive-row:hover {
-    background: color-mix(in srgb, var(--bg-surface-hover) 55%, transparent);
+  .overview-row::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 2px;
+    background: transparent;
+    transition: background-color var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-activity-item + .overview-activity-item {
-    margin-top: 0;
+  .overview-row:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
   }
 
-  .overview-health-badge {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 9999px;
-    padding: 0.2rem 0.55rem;
-    @apply type-label uppercase;
+  .overview-row:hover::before,
+  .overview-row:focus-within::before {
+    background: var(--accent-active);
   }
 
-  .overview-health-badge--ok {
-    background: var(--status-ok-bg);
+  .overview-row:last-child {
+    border-bottom-color: transparent;
+  }
+
+  /* ── Faixa de números ─────────────────────────────────────────────────
+     Célula sem fundo próprio, dividida por fio vertical. O hover marca com
+     régua embaixo — controle horizontal marca embaixo, lista marca à esquerda. */
+
+  .overview-metric-cell {
+    position: relative;
+    min-height: 6.75rem;
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  .overview-metric-cell::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  .overview-metric-cell:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
+  }
+
+  .overview-metric-cell:hover::after,
+  .overview-metric-cell:focus-visible::after {
+    background: var(--accent-active);
+  }
+
+  .overview-metric-cell:focus-visible {
+    outline: none;
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
+  }
+
+  /* ── Estado ───────────────────────────────────────────────────────────
+     Atestado é texto, alerta é etiqueta preenchida. A separação de forma é o
+     que impede que "está tudo certo" e "olhe para isto" leiam igual.        */
+
+  .overview-status-mark {
+    @apply overview-register-label;
+    color: var(--text-tertiary);
+  }
+
+  .overview-status-mark--ok {
     color: var(--status-ok-text);
   }
 
-  .overview-health-badge--pending {
+  .overview-status-tag {
+    @apply overview-register-label;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 2px;
+    padding: 0.15rem 0.35rem;
     background: var(--status-warn-bg);
     color: var(--status-warn-text);
   }
 
-  .overview-health-badge--restricted {
-    background: var(--status-neutral-bg);
-    color: var(--status-neutral-text);
-  }
+  /* ── Medidor de distribuição ──────────────────────────────────────────
+     Fio grosso, ponta reta. Preenchimento é neutro de propósito: o acento
+     significa interativo, e uma barra de contagem não é clicável.           */
 
-  .overview-distribution-track {
-    height: 0.375rem;
+  .overview-meter {
+    height: 3px;
     overflow: hidden;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--bg-surface-2) 80%, transparent);
+    background: color-mix(in srgb, var(--border-subtle) 85%, transparent);
   }
 
-  .overview-distribution-fill {
+  .overview-meter-fill {
     height: 100%;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--text-primary) 22%, transparent);
+    background: color-mix(in srgb, var(--text-primary) 32%, transparent);
     transition: width var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-metric-cell {
-    min-height: 7.5rem;
+  /* ── Grade de números por bloco ───────────────────────────────────────
+     O fio de 1px entre células é o fundo da grade aparecendo pelo vão; a
+     célula repete o fundo da página para que só o vão marque.               */
+
+  .overview-stat-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--overview-rule);
+  }
+
+  .overview-stat-cell {
+    background: var(--bg-app);
+  }
+
+  .overview-stat {
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  button.overview-stat:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+  }
+
+  button.overview-stat:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent-active) 35%, transparent);
+    outline-offset: -2px;
   }
 
   .overview-main-grid > *,
   .overview-insights-grid > * {
     min-height: 0;
-  }
-
-  .overview-insights-grid > * > * {
-    height: 100%;
-  }
-
-  .overview-governance-stat:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent-active) 35%, transparent);
-    outline-offset: -2px;
-  }
-
-  .overview-panel-header {
-    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
-  }
-
-  .overview-panel-body {
-    flex: 1;
   }
 
   /* ===== Settings — layout e seções ===== */

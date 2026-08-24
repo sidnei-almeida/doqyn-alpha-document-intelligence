@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { OverviewPanelShell } from './OverviewPanelShell';
 import {
-  OverviewPanelFooter,
   OverviewPanelStat,
   OverviewPanelStatCell,
   OverviewPanelStatGrid,
@@ -73,15 +72,6 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
           />
         </OverviewPanelStatCell>
       </OverviewPanelStatGrid>
-
-      <OverviewPanelFooter
-        links={[
-          { label: 'Mapa de regras', path: '/rules' },
-          { label: 'Usuários', path: '/users' },
-          { label: 'Upload e IA', path: '/settings?section=upload-ia' },
-        ]}
-        onNavigate={navigate}
-      />
     </OverviewPanelShell>
   );
 }

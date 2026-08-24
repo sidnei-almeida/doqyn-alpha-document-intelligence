@@ -7,36 +7,45 @@ const PERIOD_OPTIONS: Array<{ key: DashboardPeriodKey; label: string }> = [
   { key: '90d', label: '90 dias' },
 ];
 
-type OverviewPeriodSelectorProps = {
+/**
+ * Período — controle horizontal, então o escolhido marca com régua embaixo.
+ * A cápsula preenchida saiu: preenchimento em acento é da ação principal.
+ */
+export function OverviewPeriodSelector({
+  value,
+  onChange,
+}: {
   value: DashboardPeriodKey;
   onChange: (period: DashboardPeriodKey) => void;
-};
-
-/** Seletor de período — pill discreto, alinhado ao workspace. */
-export function OverviewPeriodSelector({ value, onChange }: OverviewPeriodSelectorProps) {
+}) {
   return (
     <div
-      className="flex h-9 items-center rounded-full bg-doqyn-card/60 p-0.5"
+      className="flex h-9 items-stretch gap-1"
       role="group"
       aria-label="Período do painel"
       data-testid="overview-period-selector"
     >
-      {PERIOD_OPTIONS.map((option) => (
-        <button
-          key={option.key}
-          type="button"
-          onClick={() => onChange(option.key)}
-          aria-pressed={value === option.key}
-          className={cn(
-            'h-full rounded-full px-3 text-xs font-medium transition-[color,background-color,box-shadow] duration-150',
-            value === option.key
-              ? 'bg-doqyn-selected text-doqyn-text shadow-sm'
-              : 'text-doqyn-muted hover:text-doqyn-text',
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
+      {PERIOD_OPTIONS.map((option) => {
+        const isActive = value === option.key;
+        return (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => onChange(option.key)}
+            aria-pressed={isActive}
+            className={cn(
+              'relative rounded-[4px] px-2.5 text-caption font-medium transition-colors duration-150',
+              'after:absolute after:inset-x-2.5 after:bottom-0 after:h-[2px] after:transition-colors after:duration-150',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30',
+              isActive
+                ? 'text-doqyn-text after:bg-doqyn-accent-active'
+                : 'text-doqyn-muted after:bg-transparent hover:text-doqyn-text',
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

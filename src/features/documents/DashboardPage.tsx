@@ -38,9 +38,9 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-doqyn-muted">
+        <div className="flex items-center gap-2 text-caption text-doqyn-muted">
           <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-          Carregando visão geral...
+          Carregando visão geral
         </div>
       </div>
     );
@@ -49,7 +49,7 @@ export function DashboardPage() {
   if (isError || !data) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm text-doqyn-danger">Não foi possível carregar a visão geral agora.</p>
+        <p className="text-label text-doqyn-text">Não foi possível carregar a visão geral</p>
         <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()}>
           Tentar novamente
         </Button>
@@ -66,14 +66,14 @@ export function DashboardPage() {
       title="Painel de controle"
       description={`Panorama de ${data.tenant.displayName} — documentos, atividade e governança`}
       actions={<OverviewHeaderActions period={period} onPeriodChange={setPeriod} />}
-      bodyClassName="overview-page w-full gap-6"
+      bodyClassName="overview-page w-full gap-8"
     >
       {/* Revalidação é silenciosa: o aviso "Atualizando métricas…" entrava e saía do fluxo do
           layout a cada refetch, empurrando o painel inteiro para baixo. O dado antigo continua
           na tela até o novo chegar — não há nada que o usuário precise fazer com essa espera. */}
       <OverviewSummaryStrip metrics={metrics} onNavigate={(path) => navigate(path)} />
 
-      <div className="overview-main-grid grid min-h-0 flex-1 gap-6 xl:grid-cols-[1.55fr_1fr] xl:items-stretch">
+      <div className="overview-main-grid grid items-start gap-8 xl:grid-cols-[1.55fr_1fr]">
         <OverviewRecentDocumentsPanel
           documents={data.recentDocuments}
           isEmpty={isEmpty}
@@ -82,10 +82,11 @@ export function DashboardPage() {
         <OverviewRecentActivityPanel events={data.recentTrackingEvents} />
       </div>
 
-      <div className="overview-insights-grid grid gap-6 lg:grid-cols-2 xl:grid-cols-12 xl:items-stretch">
+      <div className="overview-insights-grid grid items-start gap-x-8 gap-y-8 lg:grid-cols-2 xl:grid-cols-12">
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
             title="Por status"
+            subtitle="Onde os documentos pararam"
             items={data.documentsByStatus.map((item) => ({
               label: item.label,
               count: item.count,
@@ -96,6 +97,7 @@ export function DashboardPage() {
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
             title="Por categoria"
+            subtitle="Como o acervo se divide"
             items={data.documentsByCategory.map((item) => ({
               label: item.categoryName,
               count: item.count,
@@ -116,7 +118,7 @@ export function DashboardPage() {
       </div>
 
       {isAdmin && data.governance && data.storage && (
-        <div className="grid gap-6 xl:grid-cols-2 xl:items-stretch">
+        <div className="grid items-start gap-8 xl:grid-cols-2">
           <OverviewGovernancePanel governance={data.governance} />
           <OverviewStoragePanel
             storage={data.storage}
