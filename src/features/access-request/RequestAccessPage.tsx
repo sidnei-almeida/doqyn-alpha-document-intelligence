@@ -13,7 +13,8 @@ import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { DEFAULT_COUNTRY, formatTaxId } from '@/lib/identifiers';
 import { Textarea } from '@/components/ui/Textarea';
-import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
+import { AuthCard } from '@/components/layout/AuthShell';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { usesDoqynAuth } from '@/auth/authConfig';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { cn } from '@/lib/utils';
@@ -234,22 +235,16 @@ export function RequestAccessPage() {
 
   if (submitted) {
     return (
-      <AuthShell
-        width="md"
-        eyebrow="Solicitação de acesso"
-        title="Solicitação enviada"
-        description={
-          employeeFlow
-            ? 'Sua solicitação foi enviada. Um administrador da empresa precisará aprovar seu acesso.'
-            : 'Seu acesso será analisado pelo administrador responsável. Você receberá notificações quando houver atualização.'
-        }
-        showSecureBadge
-        footer={
-          <Link to="/login" className="font-medium text-doqyn-accent-active hover:underline">
-            Ir para login
-          </Link>
-        }
-      >
+      <>
+        <AuthHeading
+          title="Solicitação enviada"
+          description={
+            employeeFlow
+              ? 'Um administrador da empresa precisa aprovar o seu acesso.'
+              : 'O administrador responsável vai analisar. Você recebe aviso quando houver resposta.'
+          }
+        />
+
         <AuthCard className="p-6">
           <AlertBanner
             variant="success"
@@ -257,21 +252,30 @@ export function RequestAccessPage() {
             message="Acompanhe seu e-mail para atualizações sobre a aprovação."
           />
         </AuthCard>
-      </AuthShell>
+
+        <AuthFooterLink>
+          <Link
+            to="/login"
+            className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+          >
+            Ir para o login
+          </Link>
+        </AuthFooterLink>
+      </>
     );
   }
 
   return (
-    <AuthShell
-      width="lg"
-      eyebrow={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitação de acesso'}
-      description={
-        employeeFlow
-          ? 'Use esta opção se sua empresa já utiliza o DOQYN e você precisa que um administrador aprove seu acesso.'
-          : 'Preencha os dados abaixo para solicitar acesso à plataforma. Um administrador revisará seu pedido e definirá seus grupos de acesso.'
-      }
-      showSecureBadge
-    >
+    <>
+      <AuthHeading
+        title={employeeFlow ? 'Pedir acesso à empresa' : 'Solicitar acesso'}
+        description={
+          employeeFlow
+            ? 'Para quem trabalha numa empresa que já usa o DOQYN. Um administrador aprova o pedido.'
+            : 'Um administrador revisa o pedido e define os seus grupos de acesso.'
+        }
+      />
+
       <form
         onSubmit={handleSubmit}
         className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
@@ -497,6 +501,16 @@ export function RequestAccessPage() {
         }}
         onConfirm={handleConfirmSubmit}
       />
-    </AuthShell>
+
+      <AuthFooterLink>
+        Já tenho conta —{' '}
+        <Link
+          to="/login"
+          className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+        >
+          entrar
+        </Link>
+      </AuthFooterLink>
+    </>
   );
 }

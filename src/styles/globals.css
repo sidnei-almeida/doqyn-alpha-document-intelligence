@@ -2690,6 +2690,23 @@
     animation: auth-rise 0.5s cubic-bezier(0.2, 0, 0, 1) both;
   }
 
+  /* Transição entre as telas da antessala: só a coluna da direita se move,
+     porque o painel do documento persiste na rota de layout. */
+  .auth-route {
+    animation: auth-route 0.34s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes auth-route {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .auth-page {
     animation: auth-rise 0.72s cubic-bezier(0.2, 0, 0, 1) both;
     animation-delay: 0.04s;
@@ -2797,11 +2814,17 @@
   }
 
   /* ── Campo com linha, não com caixa ───────────────────────────────────
-     Formulário em papel é linha pautada, não caixinha. A régua engrossa e
-     assume o acento no foco; o rótulo acompanha. Sem brilho, sem halo.      */
+     Formulário em papel é linha pautada. A régua engrossa e assume o acento no
+     foco; o rótulo acompanha. Sem brilho, sem halo.
 
-  .auth-field input {
-    height: 44px;
+     O escopo é a antessala inteira (`.auth-route`), não um wrapper por campo:
+     com dez campos numa tela de cadastro, marcar cada um à mão garantiria que
+     alguém esquecesse um e a tela ficasse com dois tratamentos. Checkbox e
+     radio ficam de fora — ali a caixa é a própria affordance.                */
+
+  .auth-route input:not([type='checkbox']):not([type='radio']),
+  .auth-route select,
+  .auth-route textarea {
     border-radius: 0;
     border-width: 0 0 1px 0;
     background: transparent;
@@ -2809,23 +2832,37 @@
     padding-right: 0;
   }
 
-  .auth-field input:hover {
+  /* 38px, não 44: com a caixa alta o texto centraliza longe da régua e o
+     rótulo parece órfão. O campo de linha pede o texto assentado sobre ela. */
+  .auth-route input:not([type='checkbox']):not([type='radio']),
+  .auth-route select {
+    height: 38px;
+    padding-bottom: 2px;
+  }
+
+  .auth-route select {
+    /* o chevron do Select é posicionado por dentro; sem folga ele encosta no texto */
+    padding-right: 26px;
+  }
+
+  .auth-route input:not([type='checkbox']):not([type='radio']):hover,
+  .auth-route select:hover,
+  .auth-route textarea:hover {
     border-bottom-color: var(--border-strong);
   }
 
-  .auth-field input:focus-visible {
+  .auth-route input:not([type='checkbox']):not([type='radio']):focus-visible,
+  .auth-route select:focus-visible,
+  .auth-route textarea:focus-visible {
     border-bottom-width: 2px;
     border-bottom-color: var(--accent-active);
     box-shadow: none;
     outline: none;
   }
 
-  .auth-field:focus-within label {
-    color: var(--accent-active);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .auth-stage,
+    .auth-route,
     .auth-anno,
     .auth-page,
     .auth-line,

@@ -4,7 +4,7 @@ import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
-import { AuthSplitShell } from '@/components/layout/AuthSplitShell';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { GoogleGlyph, MicrosoftGlyph } from '@/features/auth/components/BrandGlyph';
 import { useAuth } from '@/features/auth/useAuth';
 import { AUTH_MODE } from '@/lib/constants';
@@ -97,20 +97,9 @@ export function Login() {
   }
 
   return (
-    <AuthSplitShell
-      title="Entrar no sistema"
-      footer={
-        <span className="text-doqyn-muted">
-          Não tem acesso ainda?{' '}
-          <Link
-            to="/acesso"
-            className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
-          >
-            Criar acesso
-          </Link>
-        </span>
-      }
-    >
+    <>
+      <AuthHeading title="Entrar no sistema" />
+
       {supportsOAuth && enabledProviders.length > 0 && (
         <div className="flex flex-col gap-2.5">
           {enabledProviders.includes('google') && (
@@ -150,32 +139,28 @@ export function Login() {
 
       {showCredentialForm && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="auth-field">
-            <Input
-              id="email"
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@empresa.com"
-              autoComplete="email"
-              required
-            />
-          </div>
+          <Input
+            id="email"
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@empresa.com"
+            autoComplete="email"
+            required
+          />
 
-          <div className="auth-field">
-            <Input
-              id="password"
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              revealable
-              required
-            />
-          </div>
+          <Input
+            id="password"
+            label="Senha"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            revealable
+            required
+          />
 
           <div className="flex items-center justify-between gap-3">
             <Checkbox
@@ -229,6 +214,16 @@ export function Login() {
           message={error}
         />
       ) : null}
-    </AuthSplitShell>
+
+      <AuthFooterLink>
+        Não tem acesso ainda?{' '}
+        <Link
+          to="/acesso"
+          className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+        >
+          Criar acesso
+        </Link>
+      </AuthFooterLink>
+    </>
   );
 }

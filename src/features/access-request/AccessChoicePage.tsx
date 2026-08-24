@@ -1,7 +1,7 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
-import { AuthShell } from '@/components/layout/AuthShell';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { cn } from '@/lib/utils';
 
 function AccessOptionCard({
@@ -37,29 +37,19 @@ function AccessOptionCard({
 }
 
 export function AccessChoicePage({
-  eyebrow = 'Primeiro acesso',
   title,
   // Sem descrição por padrão: "Escolha como deseja começar no DOQYN" só
   // reescrevia o título como afirmação. Quem chama pode passar uma frase que
   // acrescente algo.
   description,
 }: {
-  eyebrow?: string;
   title?: string;
   description?: string;
 } = {}) {
   return (
-    <AuthShell
-      width="md"
-      eyebrow={eyebrow}
-      title={title ?? 'Como você quer começar?'}
-      description={description}
-      footer={
-        <Link to="/login" className="text-doqyn-muted transition-colors hover:text-doqyn-text">
-          Já tenho conta — entrar
-        </Link>
-      }
-    >
+    <>
+      <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
+
       <div className="space-y-2.5">
         <AccessOptionCard
           to="/solicitar-acesso"
@@ -80,6 +70,16 @@ export function AccessChoicePage({
           icon="person"
         />
       </div>
-    </AuthShell>
+
+      <AuthFooterLink>
+        Já tenho conta —{' '}
+        <Link
+          to="/login"
+          className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+        >
+          entrar
+        </Link>
+      </AuthFooterLink>
+    </>
   );
 }

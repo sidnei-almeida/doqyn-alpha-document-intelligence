@@ -11,7 +11,7 @@ import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox
 import { TaxIdInput } from '@/components/ui/TaxIdInput';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
-import { AuthShell } from '@/components/layout/AuthShell';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { useAuth } from '@/features/auth/useAuth';
 import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
@@ -154,150 +154,155 @@ export function IndividualSignupPage() {
   }
 
   return (
-    <AuthShell
-      width="md"
-      eyebrow="Pessoa física"
-      description="Para clientes CPF que precisam acessar documentos pessoais no DOQYN."
-      showSecureBadge
-    >
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
-        >
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
-            <Icon name="person" size={ICON_SIZE.xs} />
-            Dados pessoais
+    <>
+      <AuthHeading
+        title="Acessar como pessoa física"
+        description="Para quem guarda documentos próprios, sem vínculo com uma empresa."
+      />
+
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6"
+      >
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-doqyn-text">
+          <Icon name="person" size={ICON_SIZE.xs} />
+          Dados pessoais
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              id="firstName"
+              label="Nome"
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+            />
+            <Input
+              id="lastName"
+              label="Sobrenome"
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
           </div>
 
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                id="firstName"
-                label="Nome"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <Input
-                id="lastName"
-                label="Sobrenome"
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Input
-                id="email"
-                label="E-mail"
-                autoComplete="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={fromAuthenticatedSession}
-                required={!fromAuthenticatedSession}
-              />
-              {fromAuthenticatedSession && (
-                <p className="type-label text-doqyn-muted">
-                  E-mail confirmado pela conta com que você entrou.
-                </p>
-              )}
-            </div>
-            <CountrySelect
-              id="country"
-              label="País"
-              value={country}
-              onChange={handleCountryChange}
+          <div className="flex flex-col gap-1.5">
+            <Input
+              id="email"
+              label="E-mail"
+              autoComplete="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={fromAuthenticatedSession}
+              required={!fromAuthenticatedSession}
             />
-            <WhatsappInput
-              id="whatsapp"
-              label="WhatsApp"
-              country={country}
-              value={whatsapp}
-              onChange={setWhatsapp}
-              required
-            />
-            <TaxIdInput
-              id="taxId"
-              country={country}
-              personType="individual"
-              label={getTaxIdSpec(country, 'individual').label}
-              value={taxId}
-              onChange={setTaxId}
-              required
-            />
-            {!fromAuthenticatedSession && !resolvingSession && (
-              <>
-                <Input
-                  id="password"
-                  label="Senha"
-                  autoComplete="new-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  required
-                />
-                <Input
-                  id="confirmPassword"
-                  label="Confirmar senha"
-                  autoComplete="new-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={8}
-                  required
-                />
-              </>
+            {fromAuthenticatedSession && (
+              <p className="type-label text-doqyn-muted">
+                E-mail confirmado pela conta com que você entrou.
+              </p>
             )}
-
-            <TermsAcceptanceCheckbox
-              checked={acceptedTerms}
-              onChange={(value) => {
-                setAcceptedTerms(value);
-                if (value) setTermsError(null);
-              }}
-              error={termsError}
-              privacyHref={undefined}
-              required
-            />
           </div>
+          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <WhatsappInput
+            id="whatsapp"
+            label="WhatsApp"
+            country={country}
+            value={whatsapp}
+            onChange={setWhatsapp}
+            required
+          />
+          <TaxIdInput
+            id="taxId"
+            country={country}
+            personType="individual"
+            label={getTaxIdSpec(country, 'individual').label}
+            value={taxId}
+            onChange={setTaxId}
+            required
+          />
+          {!fromAuthenticatedSession && !resolvingSession && (
+            <>
+              <Input
+                id="password"
+                label="Senha"
+                autoComplete="new-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+              <Input
+                id="confirmPassword"
+                label="Confirmar senha"
+                autoComplete="new-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+            </>
+          )}
 
-          {error ? (
-            <div className="mt-4">
-              <AlertBanner variant="error" message={error} />
-            </div>
-          ) : null}
+          <TermsAcceptanceCheckbox
+            checked={acceptedTerms}
+            onChange={(value) => {
+              setAcceptedTerms(value);
+              if (value) setTermsError(null);
+            }}
+            error={termsError}
+            privacyHref={undefined}
+            required
+          />
+        </div>
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
-              Voltar
-            </Link>
-            <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
-              Criar acesso CPF
-            </Button>
+        {error ? (
+          <div className="mt-4">
+            <AlertBanner variant="error" message={error} />
           </div>
-        </form>
+        ) : null}
 
-        <ReviewBeforeSubmitDialog
-          open={reviewOpen}
-          title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-          description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-          attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
-          sections={reviewSections}
-          submitting={submitting}
-          confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
-          onCancel={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onEdit={() => {
-            if (!submitting) setReviewOpen(false);
-          }}
-          onConfirm={handleConfirmSubmit}
-        />
-    </AuthShell>
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Link to="/acesso" className="text-center text-sm text-doqyn-muted hover:text-doqyn-text">
+            Voltar
+          </Link>
+          <Button type="submit" className="w-full sm:w-auto" disabled={resolvingSession}>
+            Criar acesso CPF
+          </Button>
+        </div>
+      </form>
+
+      <ReviewBeforeSubmitDialog
+        open={reviewOpen}
+        title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
+        description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
+        attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+        sections={reviewSections}
+        submitting={submitting}
+        confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+        onCancel={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onEdit={() => {
+          if (!submitting) setReviewOpen(false);
+        }}
+        onConfirm={handleConfirmSubmit}
+      />
+
+      <AuthFooterLink>
+        Já tenho conta —{' '}
+        <Link
+          to="/login"
+          className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+        >
+          entrar
+        </Link>
+      </AuthFooterLink>
+    </>
   );
 }

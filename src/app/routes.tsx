@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Login } from '@/pages/Login';
 import { ProtectedRoute, PublicRoute } from '@/features/auth/ProtectedRoute';
+import { AuthSplitShell } from '@/components/layout/AuthSplitShell';
 import {
   AcceptInviteRoute,
   AccessChoiceRoute,
@@ -35,17 +36,22 @@ export const router = createBrowserRouter([
   { path: '/sign/:token', element: <SignaturePortalRoute /> },
   { path: '/verify/signature/:verificationCode', element: <SignatureVerificationRoute /> },
   { path: '/convite/:token', element: <AcceptInviteRoute /> },
-  { path: '/acesso', element: <AccessChoiceRoute /> },
-  { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
-  { path: '/criar-empresa', element: <CompanySignupRoute /> },
-  { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
-  { path: '/onboarding', element: <OnboardingRoute /> },
+  // A antessala é rota de layout: o painel do documento fica montado enquanto a
+  // pessoa circula entre entrar, escolher como começar e se cadastrar. Só a
+  // coluna do formulário transiciona.
+  {
+    element: <AuthSplitShell />,
+    children: [
+      { element: <PublicRoute />, children: [{ path: '/login', element: <Login /> }] },
+      { path: '/acesso', element: <AccessChoiceRoute /> },
+      { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
+      { path: '/criar-empresa', element: <CompanySignupRoute /> },
+      { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
+      { path: '/onboarding', element: <OnboardingRoute /> },
+    ],
+  },
   { path: '/sso/callback', element: <OAuthCallbackRoute /> },
   { path: '/termos', element: <TermsRoute /> },
-  {
-    element: <PublicRoute />,
-    children: [{ path: '/login', element: <Login /> }],
-  },
   {
     element: <ProtectedRoute />,
     children: [
