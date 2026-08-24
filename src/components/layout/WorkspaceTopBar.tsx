@@ -15,12 +15,11 @@ export function WorkspaceTopBar() {
       className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-5"
       data-testid="workspace-topbar"
     >
-      {/* A busca não ocupa mais a largura toda: numa barra que virou fio, um
-          campo de ponta a ponta volta a parecer moldura. */}
+      {/* Largura total. Contida em 440px ela ficava perdida no meio da barra;
+          a régua de ponta a ponta lê como pauta de documento, não como a
+          cápsula preenchida que existia antes. */}
       <div className="flex min-w-0 flex-1 items-center">
-        <div className="w-full max-w-[440px]">
-          <GlobalSearchCommand isFetching={documentsFetching} />
-        </div>
+        <GlobalSearchCommand isFetching={documentsFetching} />
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

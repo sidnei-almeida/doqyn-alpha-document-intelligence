@@ -373,7 +373,11 @@
   .workspace-sidebar {
     width: var(--workspace-sidebar-width);
     min-width: var(--workspace-sidebar-width);
-    overflow: hidden;
+    /* O fio existe sempre: é ele que separa índice de conteúdo. O acento só
+       entra por cima quando o divisor está sendo apontado — ver
+       SidebarEdgeToggle. */
+    border-right: 1px solid var(--border-subtle);
+    overflow: visible;
   }
 
   .workspace-sidebar-nav {
