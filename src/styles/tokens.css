@@ -7,32 +7,32 @@
 
 [data-theme='dark'] {
   /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
-  --bg-chrome: #0F1115;
+  --bg-chrome: #0f1115;
   --bg-shell: var(--bg-chrome);
-  --bg-canvas: #171A1F;
-  --bg-thumbnail-chrome: #171A1F;
+  --bg-canvas: #171a1f;
+  --bg-thumbnail-chrome: #171a1f;
   --bg-app: var(--bg-chrome);
   --bg-sidebar: var(--bg-shell);
-  --bg-surface: #171A1F;
-  --bg-surface-2: #1D2128;
+  --bg-surface: #171a1f;
+  --bg-surface-2: #1d2128;
   --bg-surface-3: #242932;
   --bg-surface-hover: #242932;
   --bg-hover: #242932;
-  --bg-selected: #14343C;
+  --bg-selected: #14343c;
 
   /* Sidebar — item ativo no acento teal, translúcido sobre a base grafite */
   --sidebar-selected-bg: rgba(79, 195, 207, 0.16);
   --sidebar-selected-border: transparent;
-  --sidebar-selected-text: #E6F6F8;
-  --sidebar-selected-icon: #4FC3CF;
+  --sidebar-selected-text: #e6f6f8;
+  --sidebar-selected-icon: #4fc3cf;
   --sidebar-item-hover-bg: rgba(148, 163, 184, 0.08);
   --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 42%, transparent);
 
   /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
   --explorer-quick-actions-bg: rgba(23, 26, 31, 0.84);
   --explorer-quick-actions-border: rgba(255, 255, 255, 0.14);
-  --explorer-quick-actions-icon: #D5D9DF;
-  --explorer-quick-actions-icon-hover: #E6E9ED;
+  --explorer-quick-actions-icon: #d5d9df;
+  --explorer-quick-actions-icon-hover: #e6e9ed;
   --explorer-quick-actions-icon-hover-bg: rgba(255, 255, 255, 0.1);
   --explorer-quick-actions-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
 
@@ -47,7 +47,7 @@
   /* Botão "+ Novo" — acento teal flat (Material filled, sem elevação pesada) */
   --new-button-bg: var(--accent-active);
   --new-button-bg-hover: var(--accent-hover);
-  --new-button-bg-active: #3DB2BE;
+  --new-button-bg-active: #3db2be;
   --new-button-text: var(--text-on-accent);
   --new-button-chevron: rgba(15, 17, 21, 0.9);
   --new-button-border: transparent;
@@ -64,48 +64,48 @@
   --new-menu-icon: var(--accent-active);
 
   --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: #262A31;
+  --border-default: #262a31;
   --border-strong: #333945;
 
-  --text-primary: #E6E9ED;
-  --text-secondary: #9BA3AE;
-  --text-tertiary: #7F8792;
-  --text-disabled: #5C636D;
+  --text-primary: #e6e9ed;
+  --text-secondary: #9ba3ae;
+  --text-tertiary: #7f8792;
+  --text-disabled: #5c636d;
 
-  --accent-active: #4FC3CF;
-  --accent-hover: #6FD6E0;
-  --accent-active-bg: #10303A;
-  --text-on-accent: #0F1115;
+  --accent-active: #4fc3cf;
+  --accent-hover: #6fd6e0;
+  --accent-active-bg: #10303a;
+  --text-on-accent: #0f1115;
 
-  --status-ok-bg: #1B3128;
-  --status-ok-text: #57C08A;
-  --status-ok-border: color-mix(in srgb, #57C08A 32%, transparent);
-  --status-ok-dot: #57C08A;
+  --status-ok-bg: #1b3128;
+  --status-ok-text: #57c08a;
+  --status-ok-border: color-mix(in srgb, #57c08a 32%, transparent);
+  --status-ok-dot: #57c08a;
 
-  --status-danger-bg: #35201E;
-  --status-danger-text: #EC7B72;
-  --status-danger-border: color-mix(in srgb, #EC7B72 32%, transparent);
-  --status-danger-dot: #EC7B72;
+  --status-danger-bg: #35201e;
+  --status-danger-text: #ec7b72;
+  --status-danger-border: color-mix(in srgb, #ec7b72 32%, transparent);
+  --status-danger-dot: #ec7b72;
 
-  --status-warn-bg: #33290F;
-  --status-warn-text: #E0AE47;
-  --status-warn-border: color-mix(in srgb, #E0AE47 32%, transparent);
-  --status-warn-dot: #E0AE47;
+  --status-warn-bg: #33290f;
+  --status-warn-text: #e0ae47;
+  --status-warn-border: color-mix(in srgb, #e0ae47 32%, transparent);
+  --status-warn-dot: #e0ae47;
 
-  --status-pending-bg: #33290F;
-  --status-pending-text: #E0AE47;
-  --status-pending-border: color-mix(in srgb, #E0AE47 28%, transparent);
-  --status-pending-dot: #E0AE47;
+  --status-pending-bg: #33290f;
+  --status-pending-text: #e0ae47;
+  --status-pending-border: color-mix(in srgb, #e0ae47 28%, transparent);
+  --status-pending-dot: #e0ae47;
 
-  --status-info-bg: #17263F;
-  --status-info-text: #7FAEF5;
-  --status-info-border: color-mix(in srgb, #7FAEF5 32%, transparent);
-  --status-info-dot: #7FAEF5;
+  --status-info-bg: #17263f;
+  --status-info-text: #7faef5;
+  --status-info-border: color-mix(in srgb, #7faef5 32%, transparent);
+  --status-info-dot: #7faef5;
 
-  --status-neutral-bg: #1D2128;
-  --status-neutral-text: #9BA3AE;
+  --status-neutral-bg: #1d2128;
+  --status-neutral-text: #9ba3ae;
   --status-neutral-border: #333945;
-  --status-neutral-dot: #7F8792;
+  --status-neutral-dot: #7f8792;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -133,15 +133,15 @@
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — superfície inverse Material, sem borda */
-  --toast-bg: #2A2F37;
-  --toast-text: #E6E9ED;
-  --toast-muted: #B7BEC7;
-  --toast-action: #6FD6E0;
+  --toast-bg: #2a2f37;
+  --toast-text: #e6e9ed;
+  --toast-muted: #b7bec7;
+  --toast-action: #6fd6e0;
   --toast-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #2A2F37;
-  --tooltip-text: #E6E9ED;
+  --tooltip-bg: #2a2f37;
+  --tooltip-text: #e6e9ed;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(255, 255, 255, 0.16);
@@ -163,16 +163,16 @@
 [data-theme='light'] {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;
-  --color-surface: #F7F8FA;
-  --color-surface-container: #EFF1F4;
-  --color-border: #D6DAE0;
-  --color-border-subtle: #E5E8EC;
-  --color-text-primary: #1A1D21;
-  --color-text-secondary: #5A6068;
-  --color-icon-neutral: #5A6068;
-  --color-primary: #0E6E7A;
-  --color-primary-hover: #14818F;
-  --color-primary-surface: #E0F1F3;
+  --color-surface: #f7f8fa;
+  --color-surface-container: #eff1f4;
+  --color-border: #d6dae0;
+  --color-border-subtle: #e5e8ec;
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5a6068;
+  --color-icon-neutral: #5a6068;
+  --color-primary: #0e6e7a;
+  --color-primary-hover: #14818f;
+  --color-primary-surface: #e0f1f3;
 
   --bg-chrome: var(--color-surface);
   --bg-shell: var(--color-surface);
@@ -182,24 +182,24 @@
   --bg-sidebar: var(--bg-shell);
   --bg-surface: var(--color-background);
   --bg-surface-2: var(--color-surface-container);
-  --bg-surface-3: #E5E8EC;
+  --bg-surface-3: #e5e8ec;
   --bg-surface-hover: var(--color-surface-container);
   --bg-hover: var(--color-surface-container);
   --bg-selected: var(--color-primary-surface);
 
   /* Sidebar — item ativo em teal suave (fundo sólido claro, distinto do dark translúcido) */
-  --sidebar-selected-bg: #E0F1F3;
-  --sidebar-selected-border: #B7DDE2;
-  --sidebar-selected-text: #0B4A52;
-  --sidebar-selected-icon: #0E6E7A;
+  --sidebar-selected-bg: #e0f1f3;
+  --sidebar-selected-border: #b7dde2;
+  --sidebar-selected-text: #0b4a52;
+  --sidebar-selected-icon: #0e6e7a;
   --sidebar-item-hover-bg: rgba(14, 110, 122, 0.08);
   --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
 
   /* Menu rápido sobre preview — vidro claro */
   --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
   --explorer-quick-actions-border: rgba(218, 220, 224, 0.92);
-  --explorer-quick-actions-icon: #5A6068;
-  --explorer-quick-actions-icon-hover: #1A1D21;
+  --explorer-quick-actions-icon: #5a6068;
+  --explorer-quick-actions-icon-hover: #1a1d21;
   --explorer-quick-actions-icon-hover-bg: rgba(60, 64, 67, 0.08);
   --explorer-quick-actions-shadow: 0 1px 4px rgba(60, 64, 67, 0.12);
 
@@ -214,7 +214,7 @@
   /* Botão "+ Novo" — acento teal flat (Material filled) */
   --new-button-bg: var(--accent-active);
   --new-button-bg-hover: var(--accent-hover);
-  --new-button-bg-active: #0A5A64;
+  --new-button-bg-active: #0a5a64;
   --new-button-text: var(--text-on-accent);
   --new-button-chevron: rgba(255, 255, 255, 0.92);
   --new-button-border: transparent;
@@ -226,56 +226,56 @@
   --new-menu-bg: var(--color-background);
   --new-menu-border: var(--color-border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: #EFF1F4;
-  --new-menu-item-active: #E5E8EC;
+  --new-menu-item-hover: #eff1f4;
+  --new-menu-item-active: #e5e8ec;
   --new-menu-icon: var(--accent-active);
 
   --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border);
-  --border-strong: #C2C7CE;
+  --border-strong: #c2c7ce;
 
-  --text-primary: #1A1D21;
-  --text-secondary: #5A6068;
+  --text-primary: #1a1d21;
+  --text-secondary: #5a6068;
   /* Terciário precisa ficar acima de 4.5:1 sobre branco (AA) e ainda assim mais
      claro que o secundário: 4.98:1 contra os 6.35:1 do secundário. O terciário
      do tema escuro é mais claro e reprovaria aqui. */
-  --text-tertiary: #6B7079;
-  --text-disabled: #9CA2AA;
+  --text-tertiary: #6b7079;
+  --text-disabled: #9ca2aa;
 
   --accent-active: var(--color-primary);
   --accent-hover: var(--color-primary-hover);
   --accent-active-bg: var(--color-primary-surface);
   --text-on-accent: #ffffff;
 
-  --status-ok-bg: #E4F4EC;
-  --status-ok-text: #1F7C51;
-  --status-ok-border: color-mix(in srgb, #2E9E6B 24%, transparent);
-  --status-ok-dot: #1F7C51;
+  --status-ok-bg: #e4f4ec;
+  --status-ok-text: #1f7c51;
+  --status-ok-border: color-mix(in srgb, #2e9e6b 24%, transparent);
+  --status-ok-dot: #1f7c51;
 
-  --status-danger-bg: #FBE9E7;
-  --status-danger-text: #B03A32;
-  --status-danger-border: color-mix(in srgb, #D2544B 24%, transparent);
-  --status-danger-dot: #B03A32;
+  --status-danger-bg: #fbe9e7;
+  --status-danger-text: #b03a32;
+  --status-danger-border: color-mix(in srgb, #d2544b 24%, transparent);
+  --status-danger-dot: #b03a32;
 
-  --status-warn-bg: #FBF1DC;
-  --status-warn-text: #8A5E06;
-  --status-warn-border: color-mix(in srgb, #C98A14 28%, transparent);
-  --status-warn-dot: #8A5E06;
+  --status-warn-bg: #fbf1dc;
+  --status-warn-text: #8a5e06;
+  --status-warn-border: color-mix(in srgb, #c98a14 28%, transparent);
+  --status-warn-dot: #8a5e06;
 
-  --status-pending-bg: #FBF1DC;
-  --status-pending-text: #8A5E06;
-  --status-pending-border: color-mix(in srgb, #C98A14 24%, transparent);
-  --status-pending-dot: #8A5E06;
+  --status-pending-bg: #fbf1dc;
+  --status-pending-text: #8a5e06;
+  --status-pending-border: color-mix(in srgb, #c98a14 24%, transparent);
+  --status-pending-dot: #8a5e06;
 
-  --status-info-bg: #E3ECFB;
-  --status-info-text: #1B62C9;
-  --status-info-border: color-mix(in srgb, #1B62C9 20%, transparent);
-  --status-info-dot: #1B62C9;
+  --status-info-bg: #e3ecfb;
+  --status-info-text: #1b62c9;
+  --status-info-border: color-mix(in srgb, #1b62c9 20%, transparent);
+  --status-info-dot: #1b62c9;
 
   --status-neutral-bg: var(--color-surface-container);
   --status-neutral-text: var(--color-text-secondary);
   --status-neutral-border: var(--color-border-subtle);
-  --status-neutral-dot: #9CA2AA;
+  --status-neutral-dot: #9ca2aa;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -303,15 +303,15 @@
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — inverse surface (igual em light/dark, padrão Google) */
-  --toast-bg: #2A2F37;
-  --toast-text: #E6E9ED;
-  --toast-muted: #B7BEC7;
-  --toast-action: #6FD6E0;
+  --toast-bg: #2a2f37;
+  --toast-text: #e6e9ed;
+  --toast-muted: #b7bec7;
+  --toast-action: #6fd6e0;
   --toast-shadow: 0 2px 8px rgba(60, 64, 67, 0.28), 0 4px 16px rgba(60, 64, 67, 0.16);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #2A2F37;
-  --tooltip-text: #E6E9ED;
+  --tooltip-bg: #2a2f37;
+  --tooltip-text: #e6e9ed;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(60, 64, 67, 0.28);
