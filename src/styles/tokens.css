@@ -341,9 +341,9 @@
   --color-text-tertiary: var(--text-tertiary);
   --color-text-disabled: var(--text-disabled);
 
-  /* Tipografia — Google Sans Flex (display/UI) + Roboto (corpo) */
-  --font-display: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif;
-  --font-body: 'Roboto', system-ui, sans-serif;
+  /* Tipografia — Inter variável, auto-hospedada (display/UI e corpo) */
+  --font-display: 'Inter Variable', Inter, system-ui, sans-serif;
+  --font-body: 'Inter Variable', Inter, system-ui, sans-serif;
 
   --text-eyebrow: 11px;
   --weight-eyebrow: 500;
