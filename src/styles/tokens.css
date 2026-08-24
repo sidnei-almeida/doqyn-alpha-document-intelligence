@@ -482,13 +482,18 @@
   --gradient-action-soft: var(--accent-active-bg);
 
   /* Cores de pasta (sólidas) */
-  --folder-accent-juridico: #5b8fc7;
-  --folder-accent-financeiro: #4a9b7f;
-  --folder-accent-rh: #8b6bb8;
-  --folder-accent-compras: #c49252;
-  --folder-accent-operacional: #5a94c4;
-  --folder-accent-contratos: #6b7ec4;
-  --folder-accent-default: #80868b;
+  /* Cor por categoria é a exceção deliberada à regra de acento único: num
+     gerenciador de arquivos ela identifica a pasta, não sinaliza interação.
+     Por isso o croma é baixo — lê como aba de índice arquivística, não como
+     ícone de aplicativo, e não disputa com o verdigris. Todas passam 3:1 sobre
+     as duas bases (medido; são glifos preenchidos, não texto). */
+  --folder-accent-juridico: #6485a9;
+  --folder-accent-financeiro: #5a8e7b;
+  --folder-accent-rh: #98718f;
+  --folder-accent-compras: #a47f52;
+  --folder-accent-operacional: #6f8e95;
+  --folder-accent-contratos: #7d82ab;
+  --folder-accent-default: #767f88;
 
   --color-cat-juridico: var(--folder-accent-juridico);
   --color-cat-financeiro: var(--folder-accent-financeiro);
