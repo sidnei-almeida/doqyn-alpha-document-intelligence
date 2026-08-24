@@ -113,7 +113,7 @@ export function CountrySelect({
             esquerda dos itens da lista. Antes ela era uma caixa dentro de um
             wrapper com padding próprio, o que a deixava 6px mais para dentro
             que a lista inteira. */}
-        <div className="border-b border-doqyn-border-subtle px-3 pb-2 pt-1">
+        <div className="border-b border-doqyn-border-subtle px-3.5 pb-2 pt-1">
           <input
             ref={searchRef}
             type="text"
@@ -125,20 +125,12 @@ export function CountrySelect({
         </div>
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="type-body px-3 py-3 text-doqyn-muted">Nenhum país encontrado.</p>
+            <p className="type-body px-3.5 py-3 text-doqyn-muted">Nenhum país encontrado.</p>
           ) : (
             filtered.map((country) => (
               <DropdownMenuItem
                 key={country.code}
                 selected={country.code === value}
-                /* Canto reto e régua de acento no item escolhido, no lugar da
-                   pílula preenchida: é a mesma reação que a régua do campo tem
-                   no foco e que a linha de escolha tem no hover. */
-                className={cn(
-                  'relative rounded-none',
-                  country.code === value &&
-                    'before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-doqyn-accent-active',
-                )}
                 onClick={() => {
                   onChange(country.code);
                   setOpen(false);

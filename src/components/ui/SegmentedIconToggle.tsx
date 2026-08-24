@@ -28,7 +28,11 @@ export function SegmentedIconToggle<T extends string>({
   return (
     <div
       className={cn(
-        'flex items-center gap-0.5 rounded-full bg-doqyn-card/80 p-0.5',
+        // Sem cápsula: o grupo era uma pílula preenchida com um botão preenchido
+        // dentro — dois níveis de superfície para escolher entre duas vistas.
+        // Agora são dois glifos soltos, e o ativo é marcado por um fio embaixo,
+        // como a régua que o resto do sistema usa.
+        'flex items-center gap-1',
         className,
       )}
       role="group"
@@ -44,15 +48,15 @@ export function SegmentedIconToggle<T extends string>({
               aria-pressed={isActive}
               aria-label={option.label}
               className={cn(
-                'explorer-interactive flex h-8 w-9 items-center justify-center rounded-full active:scale-95',
+                'explorer-interactive relative flex h-8 w-8 items-center justify-center rounded-[3px]',
+                'after:absolute after:inset-x-1.5 after:bottom-0 after:h-[2px] after:bg-transparent',
                 isActive
-                  ? 'bg-doqyn-selected text-doqyn-text shadow-sm'
-                  : 'text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text',
+                  ? 'text-doqyn-text after:bg-doqyn-accent-active'
+                  : 'text-doqyn-subtle hover:text-doqyn-text',
               )}
             >
               <Icon
                 name={option.icon}
-                filled={isActive}
                 size={ICON_SIZE.sm}
                 className={isActive ? 'text-doqyn-text' : undefined}
               />

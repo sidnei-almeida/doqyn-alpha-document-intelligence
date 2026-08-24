@@ -2583,7 +2583,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-pill);
+    border-radius: 3px;
     padding: 0.375rem;
     color: var(--text-tertiary);
     transition:
@@ -2592,8 +2592,11 @@
       opacity var(--transition-duration-fast) var(--ease-standard);
   }
 
+  /* Glifo de ação: sem fundo no hover. O preenchimento em pílula era o que
+     dava a esses controles a cara de barra do Drive — a cor do próprio glifo já
+     confirma que ele respondeu. */
   .explorer-icon-btn:hover {
-    background-color: var(--overlay-hover);
+    background-color: transparent;
     color: var(--text-primary);
   }
 

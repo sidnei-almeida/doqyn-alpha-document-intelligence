@@ -93,7 +93,7 @@ export function HeaderUserMenu() {
           onClick={() => setOpen(false)}
         >
           <Icon name="settings" size={ICON_SIZE.md} />
-          Configurações da conta
+          Configurações
         </Link>
 
         <div className="my-1 border-t border-doqyn-border-subtle" />
