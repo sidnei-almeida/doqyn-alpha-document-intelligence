@@ -50,7 +50,7 @@ export function AnchoredPopover({
       data-testid={testId}
       style={{ ...style, ...panelStyle }}
       className={cn(
-        'popover-layer menu-enter overflow-x-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface shadow-dropdown',
+        'popover-layer menu-enter overflow-x-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel shadow-dropdown',
         className,
       )}
     >

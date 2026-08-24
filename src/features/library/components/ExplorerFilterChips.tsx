@@ -98,14 +98,19 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
   const sortValue = encodeSortOptionValue(state.sort, state.direction);
 
   return (
+    // Filtrar e ordenar são naturezas diferentes: o filtro reduz o conjunto, a
+    // ordenação reorganiza o mesmo conjunto. Enfileirados juntos pareciam cinco
+    // controles iguais. A ordenação vai para a outra ponta, e um rótulo em
+    // monoespaçado abre a fila dizendo o que aquilo é.
     <div
-      // Sem os ícones, os rótulos precisam de ar entre si para não
-      // virarem uma frase corrida.
-      className="flex flex-wrap items-center gap-x-7 gap-y-2"
+      className="flex w-full flex-wrap items-center gap-x-7 gap-y-2"
       data-testid="explorer-filter-chips"
       role="group"
       aria-label="Filtros da biblioteca"
     >
+      <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+        Filtrar
+      </span>
       <FilterChip
         label="Filtrar por status"
         value={state.status}
@@ -134,21 +139,26 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         options={OWNER_FILTER_OPTIONS}
         onChange={(owner) => onStateChange({ owner: owner as LibraryRouteState['owner'] })}
       />
-      <FilterChip
-        label="Ordenar por"
-        value={sortValue}
-        defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
-        options={SORT_FILTER_OPTIONS.map((option) => ({
-          value: encodeSortOptionValue(option.sort, option.direction),
-          label: option.label,
-        }))}
-        onChange={(next) => {
-          const match = SORT_FILTER_OPTIONS.find(
-            (option) => encodeSortOptionValue(option.sort, option.direction) === next,
-          );
-          if (match) onStateChange({ sort: match.sort, direction: match.direction });
-        }}
-      />
+      <span className="ml-auto flex items-center gap-3">
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+          Ordenar
+        </span>
+        <FilterChip
+          label="Ordenar por"
+          value={sortValue}
+          defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
+          options={SORT_FILTER_OPTIONS.map((option) => ({
+            value: encodeSortOptionValue(option.sort, option.direction),
+            label: option.label,
+          }))}
+          onChange={(next) => {
+            const match = SORT_FILTER_OPTIONS.find(
+              (option) => encodeSortOptionValue(option.sort, option.direction) === next,
+            );
+            if (match) onStateChange({ sort: match.sort, direction: match.direction });
+          }}
+        />
+      </span>
     </div>
   );
 }
