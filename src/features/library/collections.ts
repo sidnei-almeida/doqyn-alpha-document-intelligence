@@ -74,7 +74,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     slug: 'lixeira',
     label: 'Lixeira',
     description:
-      'Documentos excluídos neste ambiente. Restaure antes do prazo; depois eles passam para Desativados.',
+      'Restaure antes do prazo; depois vão para Desativados.',
     emptyTitle: 'A lixeira está vazia',
     emptyDescription:
       'Documentos excluídos aparecem aqui durante o período de retenção.',
