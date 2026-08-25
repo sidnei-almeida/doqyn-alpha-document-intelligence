@@ -4,7 +4,6 @@ import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionHeader } from '../SettingsSectionHeader';
 import { SettingsRegisterList } from '../SettingsRegisterList';
 import { SettingsSaveBar } from '../SettingsSaveBar';
-import { TenantEmailSettingsSection } from './TenantEmailSettingsSection';
 import { TrashRetentionSettingsSection } from './TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './UploadAiSettingsSection';
 import { governsOrganization } from '../../settingsSections';
@@ -22,8 +21,9 @@ export function OrganizationSection() {
     isCompanyAdmin: hasAnyRole(['company_admin']),
   });
   const canAccessRules = canAccessRulesPage(hasAnyRole);
-  const { upload, trashRetention, outboundEmail, dirty, saving, save, discard } =
-    useOrganizationSettings({ governs });
+  const { upload, trashRetention, dirty, saving, save, discard } = useOrganizationSettings({
+    governs,
+  });
 
   const canEdit = upload.canManage || governs;
 
@@ -60,27 +60,6 @@ export function OrganizationSection() {
             draft={trashRetention.draft}
             onChange={trashRetention.setDraft}
             isLoading={trashRetention.isLoading}
-          />
-        </section>
-      ) : null}
-
-      {governs ? (
-        <section className="settings-block">
-          <SettingsSectionHeader
-            title="E-mail de saída"
-            description="Servidor SMTP usado para convites e avisos da organização."
-            className="settings-block__header"
-          />
-          <TenantEmailSettingsSection
-            draft={outboundEmail.draft}
-            onChange={outboundEmail.setDraft}
-            config={outboundEmail.config}
-            isLoading={outboundEmail.isLoading}
-            isError={outboundEmail.isError}
-            onRetry={() => void outboundEmail.refetch()}
-            onTest={outboundEmail.test}
-            testing={outboundEmail.testing}
-            canTest={outboundEmail.canTest}
           />
         </section>
       ) : null}
