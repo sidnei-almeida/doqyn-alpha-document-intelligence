@@ -1004,9 +1004,12 @@
     gap: 0.25rem;
   }
 
+  /* Verbo é rótulo de leitura, não carimbo: minúscula, e o fio de acento diz o que vale. */
   .permission-verbs__mark {
-    @apply register-label;
-    padding: 0.0625rem 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    padding: 0.0625rem 0.125rem;
     border-bottom: 2px solid transparent;
     color: var(--text-tertiary);
     transition:
@@ -1050,19 +1053,19 @@
     margin: 0;
   }
 
+  /* Sem caixa: o glifo é só o alinhamento do traço na cor da categoria. */
   .category-glyph {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
     flex-shrink: 0;
-    border-radius: var(--radius-sm);
   }
 
   .category-glyph--sm {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   /* Ponto da cor do grupo: 8px, contorno do próprio tom, preenchimento fraco. */

@@ -7,8 +7,9 @@ export const DEFAULT_CATEGORY_COLOR = 'var(--folder-accent-default)';
 /**
  * Glifo da categoria — o mesmo em toda a governança.
  *
- * Estava duplicado no card e na matriz, com a constante de cor redeclarada nos dois:
- * mudar o tamanho num lugar deixava o outro para trás.
+ * A placa colorida saiu: caixa cheia é linguagem do Drive, e repetida em cada faixa virava um
+ * mostruário de cores. A cor continua identificando a categoria, agora no traço do ícone — o
+ * mesmo tratamento que a Biblioteca já dá às pastas em `ExplorerFolderCard`.
  */
 export function CategoryGlyph({
   category,
@@ -23,13 +24,9 @@ export function CategoryGlyph({
   return (
     <span
       className={cn('category-glyph', size === 'sm' && 'category-glyph--sm', className)}
-      style={{
-        background: `color-mix(in srgb, ${color} 16%, var(--bg-surface-2))`,
-        color,
-      }}
       aria-hidden
     >
-      <CategoryIcon icon={category.icon} size={size === 'sm' ? 14 : 18} />
+      <CategoryIcon icon={category.icon} size={size === 'sm' ? 16 : 20} color={color} />
     </span>
   );
 }
