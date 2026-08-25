@@ -51,7 +51,7 @@ const SECURITY_FEATURES: SecurityFeature[] = [
   },
 ];
 
-export function SecuritySettingsSection() {
+export function SecurityFactsBlock() {
   const total = SECURITY_FEATURES.length;
   const activeCount = SECURITY_FEATURES.filter((feature) => feature.status === 'ok').length;
 

@@ -28,11 +28,7 @@ export function SettingsSaveBar({
 }: SettingsSaveBarProps) {
   return (
     <div
-      className={cn(
-        'settings-save-bar',
-        inset && 'settings-save-bar--inset',
-        className,
-      )}
+      className={cn('settings-save-bar', inset && 'settings-save-bar--inset', className)}
       role="group"
       aria-label="Ações de salvamento"
     >

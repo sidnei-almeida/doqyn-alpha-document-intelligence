@@ -2039,6 +2039,46 @@
     color: var(--text-primary);
   }
 
+  /* ===== Bloco de configuração ==========================================
+     Seção composta: um assunto por bloco, separados por fio. A caixa saiu —
+     o que divide um assunto do outro é a linha, como na Visão Geral.        */
+
+  .settings-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    min-width: 0;
+  }
+
+  .settings-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .settings-blocks > .settings-block + .settings-block {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.75rem;
+  }
+
+  .settings-block__header {
+    margin: 0;
+  }
+
+  .settings-block__header .settings-section-title {
+    font-size: 0.9375rem;
+  }
+
+  .settings-block__header .settings-section-subtitle {
+    margin-top: 0.125rem;
+    max-width: none;
+  }
+
+  .settings-block .settings-section-body {
+    gap: 1rem;
+  }
+
   .settings-composite-section {
     display: flex;
     flex-direction: column;

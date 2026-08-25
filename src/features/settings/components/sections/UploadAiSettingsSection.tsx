@@ -48,11 +48,12 @@ export function UploadAiSettingsSection() {
 
   return (
     <SettingsSectionBody id="upload">
-      <p className="settings-section-note">
-        {canManage
-          ? 'Esta política vale para toda a organização — ela decide quando a IA renomeia o arquivo e quando o envio para para revisão.'
-          : 'Esta política é definida pelo administrador da organização e vale para todos. Ela decide quando a IA renomeia o seu arquivo e quando o envio para para revisão.'}
-      </p>
+      {canManage ? null : (
+        <p className="settings-section-note">
+          Quem define esta política é o administrador da organização. Ela decide quando a IA
+          renomeia o seu arquivo e quando o envio para para revisão.
+        </p>
+      )}
 
       <div className="settings-summary-bar" role="status" aria-live="polite">
         <div className="settings-summary-bar__label">

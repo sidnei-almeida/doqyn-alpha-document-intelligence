@@ -47,10 +47,7 @@ export function AuthenticationSettingsSection() {
             <Icon
               name="expand_more"
               size={16}
-              className={cn(
-                'transition-transform',
-                detailsOpen && 'rotate-180',
-              )}
+              className={cn('transition-transform', detailsOpen && 'rotate-180')}
               aria-hidden
             />
           </button>

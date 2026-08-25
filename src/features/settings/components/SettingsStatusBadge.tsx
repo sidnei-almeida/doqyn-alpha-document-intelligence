@@ -18,11 +18,7 @@ export function SettingsStatusBadge({ status, className }: SettingsStatusBadgePr
   }
 
   return (
-    <Badge
-      variant="neutral"
-      size="xs"
-      className={cn('border-dashed opacity-90', className)}
-    >
+    <Badge variant="neutral" size="xs" className={cn('border-dashed opacity-90', className)}>
       <Icon name="lock" size={12} aria-hidden />
       Em breve
     </Badge>

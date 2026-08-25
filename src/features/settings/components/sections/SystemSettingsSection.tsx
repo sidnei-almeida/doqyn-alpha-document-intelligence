@@ -35,13 +35,7 @@ function SystemFactRow({ icon, label, value }: SystemFact) {
   );
 }
 
-function SystemFactGroup({
-  title,
-  items,
-}: {
-  title: string;
-  items: SystemFact[];
-}) {
+function SystemFactGroup({ title, items }: { title: string; items: SystemFact[] }) {
   return (
     <div className="settings-system-group">
       <p className="settings-system-group__title">{title}</p>

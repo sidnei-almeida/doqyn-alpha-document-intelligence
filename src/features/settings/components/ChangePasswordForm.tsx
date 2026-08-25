@@ -155,11 +155,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
           disabled={submitting}
         />
 
-        <div
-          className="settings-password-strength"
-          data-level={strength.level}
-          aria-live="polite"
-        >
+        <div className="settings-password-strength" data-level={strength.level} aria-live="polite">
           <div className="settings-password-strength__track" aria-hidden>
             <span className="settings-password-strength__segment" />
             <span className="settings-password-strength__segment" />

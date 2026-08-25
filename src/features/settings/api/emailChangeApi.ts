@@ -35,8 +35,7 @@ async function publicAuthJson<T>(path: string, options?: RequestInit): Promise<T
 }
 
 export const emailChangeApi = {
-  getStatus: () =>
-    authServiceJson<{ ok: boolean } & EmailChangeStatus>('/account/email-change'),
+  getStatus: () => authServiceJson<{ ok: boolean } & EmailChangeStatus>('/account/email-change'),
 
   request: (input: { newEmail: string; password: string }) =>
     authServiceJson<RequestEmailChangeResponse>('/account/email-change/request', {

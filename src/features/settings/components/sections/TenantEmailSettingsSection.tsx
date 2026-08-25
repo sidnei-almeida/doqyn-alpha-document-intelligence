@@ -13,8 +13,20 @@ import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { tenantEmailApi } from '../../api/tenantEmailApi';
 
 const SMTP_PRESETS = [
-  { id: 'gmail', label: 'Google Workspace / Gmail', host: 'smtp.gmail.com', port: 587, secure: false },
-  { id: 'outlook', label: 'Microsoft 365 / Outlook', host: 'smtp.office365.com', port: 587, secure: false },
+  {
+    id: 'gmail',
+    label: 'Google Workspace / Gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+  },
+  {
+    id: 'outlook',
+    label: 'Microsoft 365 / Outlook',
+    host: 'smtp.office365.com',
+    port: 587,
+    secure: false,
+  },
   { id: 'custom', label: 'Outro servidor', host: '', port: 587, secure: false },
 ] as const;
 
@@ -66,9 +78,7 @@ export function TenantEmailSettingsSection() {
   const testMutation = useMutation({
     mutationFn: () =>
       tenantEmailApi.test(
-        smtpPassword
-          ? { smtpHost, smtpPort, smtpSecure, smtpUser, smtpPassword }
-          : undefined,
+        smtpPassword ? { smtpHost, smtpPort, smtpSecure, smtpUser, smtpPassword } : undefined,
       ),
     onSuccess: (result) => toast.success(result.message),
     onError: (error: Error) => toast.error(error.message || 'Falha ao enviar e-mail de teste.'),
@@ -90,8 +100,8 @@ export function TenantEmailSettingsSection() {
           <div>
             <h3 className="text-base font-semibold text-doqyn-text">E-mail de convites</h3>
             <p className="mt-1 max-w-2xl text-sm text-doqyn-muted">
-              Convites saem do e-mail profissional do administrador logado, usando o servidor SMTP da
-              empresa. Sem custo de API — use Gmail Workspace, Microsoft 365 ou o SMTP do seu
+              Convites saem do e-mail profissional do administrador logado, usando o servidor SMTP
+              da empresa. Sem custo de API — use Gmail Workspace, Microsoft 365 ou o SMTP do seu
               provedor.
             </p>
           </div>
@@ -206,7 +216,12 @@ export function TenantEmailSettingsSection() {
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending || !smtpHost || !smtpUser || (!smtpPassword && !data?.hasPassword)}
+                disabled={
+                  saveMutation.isPending ||
+                  !smtpHost ||
+                  !smtpUser ||
+                  (!smtpPassword && !data?.hasPassword)
+                }
               >
                 {saveMutation.isPending ? 'Salvando…' : 'Salvar SMTP'}
               </Button>

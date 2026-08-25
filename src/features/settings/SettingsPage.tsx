@@ -1,45 +1,49 @@
+import { useEffect } from 'react';
+import { useAuth } from '@/auth/useAuth';
 import { PageShell } from '@/components/layout/PageShell';
 import { SettingsLayout } from './components/SettingsLayout';
 import { AccountSettingsSection } from './components/sections/AccountSettingsSection';
-import { CompanySettingsSection } from './components/sections/CompanySettingsSection';
-import { SecuritySettingsSection } from './components/sections/SecuritySettingsSection';
-import { UploadAiSettingsSection } from './components/sections/UploadAiSettingsSection';
+import { OrganizationSection } from './components/sections/OrganizationSection';
+import { SystemSection } from './components/sections/SystemSection';
 import { useSettingsSection } from './hooks/useSettingsSection';
-import type { CompanySettingsTab, SettingsSectionId } from './settingsSections';
-import { settingsSectionMeta } from './settingsSections';
+import {
+  canViewSettingsSection,
+  DEFAULT_SETTINGS_SECTION,
+  settingsSectionMeta,
+  visibleSettingsNavItems,
+  type SettingsSectionId,
+} from './settingsSections';
 import { SETTINGS_UI_PATTERN } from './settingsUiPattern';
 
-function SettingsSectionPanel({
-  section,
-  tab,
-  setCompanyTab,
-}: {
-  section: SettingsSectionId;
-  tab: ReturnType<typeof useSettingsSection>['tab'];
-  setCompanyTab: (tab: CompanySettingsTab) => void;
-}) {
+function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
   switch (section) {
-    case 'perfil':
-      return <AccountSettingsSection />;
-    case 'upload-ia':
-      return <UploadAiSettingsSection />;
-    case 'seguranca':
-      return <SecuritySettingsSection />;
-    case 'empresa':
-      return (
-        <CompanySettingsSection
-          tab={(tab ?? 'governanca') as CompanySettingsTab}
-          onTabChange={setCompanyTab}
-        />
-      );
+    case 'organizacao':
+      return <OrganizationSection />;
+    case 'sistema':
+      return <SystemSection />;
     default:
       return <AccountSettingsSection />;
   }
 }
 
 export function SettingsPage() {
-  const { section, tab, setSection, setCompanyTab } = useSettingsSection();
-  const meta = settingsSectionMeta(section);
+  const { section, setSection } = useSettingsSection();
+  const { hasAnyRole, tenant } = useAuth();
+
+  const access = {
+    tenantType: tenant?.tenantType,
+    isCompanyAdmin: hasAnyRole(['company_admin']),
+  };
+  const navItems = visibleSettingsNavItems(access);
+  const allowed = canViewSettingsSection(section, access);
+  const activeSection = allowed ? section : DEFAULT_SETTINGS_SECTION;
+  const meta = settingsSectionMeta(activeSection);
+
+  useEffect(() => {
+    if (!allowed) {
+      setSection(DEFAULT_SETTINGS_SECTION);
+    }
+  }, [allowed, setSection]);
 
   return (
     <PageShell
@@ -48,12 +52,8 @@ export function SettingsPage() {
       description={meta.description}
       bodyClassName="min-h-0 settings-page"
     >
-      <SettingsLayout section={section} onSectionChange={setSection}>
-        <SettingsSectionPanel
-          section={section}
-          tab={tab}
-          setCompanyTab={setCompanyTab}
-        />
+      <SettingsLayout section={activeSection} items={navItems} onSectionChange={setSection}>
+        <SettingsSectionPanel section={activeSection} />
       </SettingsLayout>
     </PageShell>
   );

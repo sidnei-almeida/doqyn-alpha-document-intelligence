@@ -99,9 +99,8 @@ export function ConfirmEmailChangePage() {
               <div>
                 <h1 className="text-xl font-semibold text-doqyn-text">Confirmar novo e-mail</h1>
                 <p className="mt-2 text-sm text-doqyn-muted">
-                  Você está alterando o e-mail da conta de{' '}
-                  <strong>{pageState.currentEmail}</strong> para{' '}
-                  <strong>{pageState.newEmail}</strong>.
+                  Você está alterando o e-mail da conta de <strong>{pageState.currentEmail}</strong>{' '}
+                  para <strong>{pageState.newEmail}</strong>.
                 </p>
               </div>
               <Button className="w-full" onClick={() => void handleConfirm()} disabled={submitting}>
@@ -124,10 +123,7 @@ export function ConfirmEmailChangePage() {
             <div className="space-y-3">
               <h1 className="text-xl font-semibold text-doqyn-text">{pageState.title}</h1>
               <p className="text-sm text-doqyn-muted">{pageState.message}</p>
-              <Link
-                to="/login"
-                className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}
-              >
+              <Link to="/login" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}>
                 Voltar ao login
               </Link>
             </div>
