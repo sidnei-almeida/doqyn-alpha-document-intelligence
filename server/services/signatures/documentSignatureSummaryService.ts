@@ -1,9 +1,6 @@
 import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
-import type {
-  MongoDocumentSignature,
-  MongoDocumentSignatureRequest,
-} from '../../db/types.js';
+import type { MongoDocumentSignature, MongoDocumentSignatureRequest } from '../../db/types.js';
 import type { Collection } from 'mongodb';
 
 export type DocumentSignatureSummaryStatus =
@@ -75,7 +72,10 @@ function resolveRequestSummaryStatus(
   if (request.status === 'declined') return 'declined';
   if (request.status === 'signed') return 'signed';
   if (request.status === 'partially_signed') return 'pending';
-  if (request.status === 'expired' || (request.status === 'pending' && isRequestExpired(request, now))) {
+  if (
+    request.status === 'expired' ||
+    (request.status === 'pending' && isRequestExpired(request, now))
+  ) {
     return 'expired';
   }
   if (request.status === 'pending') return 'pending';
@@ -135,9 +135,7 @@ export function buildSignatureSummaryFromRequests(
     latestSignatureId: latestSignature?.signatureId,
     latestSignedAt: latestSignature?.signedAt.toISOString(),
     latestSignerName: signer?.name,
-    hasSignedPdf: Boolean(
-      latestSignature?.signedPdfR2Key && latestSignature.status === 'signed',
-    ),
+    hasSignedPdf: Boolean(latestSignature?.signedPdfR2Key && latestSignature.status === 'signed'),
     verificationCode: latestSignature?.verificationCode,
   };
 }

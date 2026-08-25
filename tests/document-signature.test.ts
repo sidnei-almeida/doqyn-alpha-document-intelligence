@@ -5,7 +5,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { PDFDocument } from 'pdf-lib';
 import { PDFParse } from 'pdf-parse';
-import { generateSignedPdf, SIGNATURE_CONSENT_TEXT } from '../server/services/signatures/signaturePdfService.js';
+import {
+  generateSignedPdf,
+  SIGNATURE_CONSENT_TEXT,
+} from '../server/services/signatures/signaturePdfService.js';
 import { resolveSignatureStampPageIndex } from '../server/services/signatures/signaturePdfPageUtils.js';
 import {
   computeSignatureStampLayoutAtIndex,
@@ -135,7 +138,9 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(service.includes('buildCompactStampLines'));
     const pdfService = read('server/services/signatures/signaturePdfService.ts');
     assert.ok(pdfService.includes('previousStamps'));
-    assert.ok(pdfService.includes('opacity: 0.72'));
+    // O papel do carimbo é quase opaco para ler sobre qualquer conteúdo da página.
+    assert.ok(pdfService.includes('opacity: 0.92'));
+    assert.ok(pdfService.includes('BRASS'));
     assert.ok(pdfService.includes('resolveSignatureStampTargetPage'));
     assert.ok(pdfService.includes('completedSignatureCount'));
   });
@@ -317,7 +322,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(portal.includes('signDocumentViaPortal'));
     assert.ok(portal.includes('signature-portal-success'));
     assert.ok(portal.includes('verificationCode'));
-    assert.ok(portal.includes('DoqynLogo'));
+    assert.ok(portal.includes('GuestPortalShell'));
     assert.equal(portal.includes('Sidebar'), false);
     assert.equal(portal.includes('LibraryPage'), false);
     assert.ok(api.includes('/preview/manifest'));
@@ -430,7 +435,9 @@ describe('document electronic signature — fase 1', () => {
     const audit = read('server/audit/documentAuditTypes.ts');
     assert.ok(cancelApi.includes('cancelDocumentSignatureRequest'));
     assert.ok(nestedCancelApi.includes('expectedDocumentId'));
-    assert.ok(signatureApi.includes('/signature-requests/${encodeURIComponent(signatureRequestId)}/cancel'));
+    assert.ok(
+      signatureApi.includes('/signature-requests/${encodeURIComponent(signatureRequestId)}/cancel'),
+    );
     assert.ok(statusUtils.includes('resolveEffectiveSignatureRequestStatus'));
     assert.ok(cancelApi.includes('document.signature_request_cancelled'));
     assert.ok(service.includes('export async function cancelDocumentSignatureRequest'));
@@ -513,31 +520,34 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     assert.ok(sign.includes("source: 'signature_portal'"));
   });
 
-  it('modal Solicitar assinatura tem abas como compartilhamento', () => {
+  it('modal Solicitar assinatura segue o mesmo fluxo de compartilhamento', () => {
     const modal = read('src/features/signature/RequestSignatureModal.tsx');
-    assert.ok(modal.includes('request-signature-tabs'));
-    assert.ok(modal.includes('request-signature-tab-internal'));
-    assert.ok(modal.includes('request-signature-tab-external'));
-    assert.ok(modal.includes('Pessoas da empresa'));
-    assert.ok(modal.includes('Convidados externos'));
-    assert.ok(modal.includes('useShareableUsersSearch'));
+    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
+    // Os dois diálogos usam as mesmas peças e os mesmos passos.
+    for (const source of [modal, share]) {
+      assert.ok(source.includes('AudiencePicker'));
+      assert.ok(source.includes('Pessoa da empresa'));
+      assert.ok(source.includes('Convidado externo'));
+      assert.ok(source.includes('useStepFlow'));
+      assert.ok(source.includes('useShareableUsersSearch'));
+    }
   });
 
   it('criação interna envia signerType internal_user e signerUserId', () => {
     const modal = read('src/features/signature/RequestSignatureModal.tsx');
     const api = read('src/features/signature/api/signatureApi.ts');
-    assert.ok(modal.includes("signerType: 'internal_user'"));
-    assert.ok(modal.includes('signerUserId: selectedUser.userId'));
+    assert.ok(modal.includes("'internal_user'"));
+    assert.ok(modal.includes('signerUserId'));
     assert.ok(api.includes('signerUserId'));
   });
 
   it('criação externa envia signerType external_guest', () => {
     const modal = read('src/features/signature/RequestSignatureModal.tsx');
-    assert.ok(modal.includes("signerType: 'external_guest'"));
+    assert.ok(modal.includes("'external_guest'"));
     assert.ok(modal.includes('canDownloadAfterSign'));
-    assert.ok(modal.includes('ExternalInviteLinkField'));
-    assert.ok(modal.includes('request-signature-portal-url'));
-    assert.ok(modal.includes('Compartilhe o link abaixo com o signatário'));
+    // O link do portal é emitido na tela e continua copiável na lista de solicitações.
+    assert.ok(modal.includes('IssuedLink'));
+    assert.ok(modal.includes('portalUrl'));
   });
 
   it('página Para assinar lista solicitações assigned-to-me', () => {

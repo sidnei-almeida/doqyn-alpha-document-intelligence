@@ -95,7 +95,9 @@ function resolveSignerPhoneFields(value?: string | null) {
   }
 }
 
-async function getSignatureRequestsCollection(): Promise<Collection<MongoDocumentSignatureRequest>> {
+async function getSignatureRequestsCollection(): Promise<
+  Collection<MongoDocumentSignatureRequest>
+> {
   const db = await getDb();
   return db.collection<MongoDocumentSignatureRequest>(
     SHARED_APP_COLLECTIONS.documentSignatureRequests,
@@ -170,7 +172,11 @@ export async function requireAssignedInternalSignatureRequest(
     throw new ServiceError('Usuário não autorizado.', 'SIGNATURE_FORBIDDEN', 403);
   }
   if (options.requireOpen !== false && !isSignatureRequestOpen(request)) {
-    throw new ServiceError('Solicitação de assinatura indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
+    throw new ServiceError(
+      'Solicitação de assinatura indisponível.',
+      'SIGNATURE_REQUEST_CLOSED',
+      403,
+    );
   }
   if (options.requireCanView && !request.permissions.canView) {
     throw new ServiceError('Visualização não permitida.', 'SIGNATURE_PREVIEW_DENIED', 403);
@@ -232,7 +238,11 @@ export async function requireSignaturePortalRequest(
     throw new ServiceError('Convite de assinatura inválido.', 'SIGNATURE_TOKEN_INVALID', 404);
   }
   if (options.requireOpen !== false && !isSignatureRequestOpen(request)) {
-    throw new ServiceError('Solicitação de assinatura indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
+    throw new ServiceError(
+      'Solicitação de assinatura indisponível.',
+      'SIGNATURE_REQUEST_CLOSED',
+      403,
+    );
   }
   if (options.requireCanView && !request.permissions.canView) {
     throw new ServiceError('Visualização não permitida.', 'SIGNATURE_PREVIEW_DENIED', 403);
@@ -283,7 +293,11 @@ export async function loadSignatureRequestDocumentContext(
   } as Record<string, unknown>);
 
   if (!version) {
-    throw new ServiceError('Versão da solicitação indisponível.', 'SIGNATURE_VERSION_NOT_FOUND', 404);
+    throw new ServiceError(
+      'Versão da solicitação indisponível.',
+      'SIGNATURE_VERSION_NOT_FOUND',
+      404,
+    );
   }
 
   return {
@@ -364,7 +378,11 @@ async function loadSignableDocument(
   }
   const mime = version.file?.mimeType?.toLowerCase() ?? '';
   if (!mime.includes('pdf')) {
-    throw new ServiceError('Apenas documentos PDF podem ser assinados nesta fase.', 'SIGNATURE_PDF_ONLY', 400);
+    throw new ServiceError(
+      'Apenas documentos PDF podem ser assinados nesta fase.',
+      'SIGNATURE_PDF_ONLY',
+      400,
+    );
   }
 
   return {
@@ -449,7 +467,9 @@ export async function createDocumentSignatureRequest(
   const now = new Date();
   const signatureRequestId = randomUUID();
   const signerId = randomUUID();
-  const expiresAt = input.expiresAt ? new Date(input.expiresAt) : addDays(now, config.defaultExpiryDays);
+  const expiresAt = input.expiresAt
+    ? new Date(input.expiresAt)
+    : addDays(now, config.defaultExpiryDays);
   const permissions = defaultSignaturePermissions(input.permissions);
 
   let signerName = input.signerName?.trim() ?? '';
@@ -460,7 +480,11 @@ export async function createDocumentSignatureRequest(
   let phoneFields = resolveSignerPhoneFields(input.signerPhone);
 
   if (signerType === 'internal_user') {
-    const internalSigner = await resolveInternalSignerForTenant(ctx, user, input.signerUserId ?? '');
+    const internalSigner = await resolveInternalSignerForTenant(
+      ctx,
+      user,
+      input.signerUserId ?? '',
+    );
     signerName = internalSigner.name;
     signerEmail = internalSigner.email;
     signerUserId = internalSigner.userId;
@@ -482,7 +506,8 @@ export async function createDocumentSignatureRequest(
     documentId,
     versionId: version._id,
     tenantId: ctx.tenantId,
-    documentTenantType: (ctx.tenantType ?? 'business') as MongoDocumentSignatureRequest['documentTenantType'],
+    documentTenantType: (ctx.tenantType ??
+      'business') as MongoDocumentSignatureRequest['documentTenantType'],
     requestedByUserId: user.id,
     requestedByNameSnapshot: user.name ?? user.email ?? user.id,
     status: 'pending',
@@ -656,7 +681,10 @@ export async function listSignatureRequestsAssignedToMe(
       return {
         signatureRequestId: item.signatureRequestId,
         documentId: item.documentId,
-        documentName: (doc as MongoDocument | null)?.currentFileName ?? (doc as MongoDocument | null)?.title ?? 'Documento',
+        documentName:
+          (doc as MongoDocument | null)?.currentFileName ??
+          (doc as MongoDocument | null)?.title ??
+          'Documento',
         versionId: item.versionId,
         versionLabel: normalizeVersionLabel((version as MongoDocumentVersion | null)?.versionLabel),
         requestedBy: item.requestedByNameSnapshot ?? 'DOQYN',
@@ -767,7 +795,11 @@ export async function completeDocumentSignature(input: {
     }
   } else if (!input.authUser) {
     throw new ServiceError('Autenticação obrigatória.', 'UNAUTHORIZED', 401);
-  } else if (signer.signerType === 'internal_user' && signer.userId && signer.userId !== input.authUser.id) {
+  } else if (
+    signer.signerType === 'internal_user' &&
+    signer.userId &&
+    signer.userId !== input.authUser.id
+  ) {
     throw new ServiceError('Usuário não autorizado a assinar.', 'SIGNATURE_FORBIDDEN', 403);
   }
 
@@ -778,7 +810,10 @@ export async function completeDocumentSignature(input: {
   }
 
   const collections = await getTenantCollections(request.tenantId);
-  const doc = await collections.documents.findOne({ _id: request.documentId, ...ACTIVE_DOCUMENT_FILTER });
+  const doc = await collections.documents.findOne({
+    _id: request.documentId,
+    ...ACTIVE_DOCUMENT_FILTER,
+  });
   const version = await collections.documentVersions.findOne({
     _id: request.versionId,
     documentId: request.documentId,
@@ -787,7 +822,10 @@ export async function completeDocumentSignature(input: {
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
   }
 
-  const originalPdfBuffer = await readVersionPdfBuffer({ request, version: version as MongoDocumentVersion });
+  const originalPdfBuffer = await readVersionPdfBuffer({
+    request,
+    version: version as MongoDocumentVersion,
+  });
 
   const completedSignatureCount = await signatures.countDocuments({
     documentId: request.documentId,
@@ -877,11 +915,14 @@ export async function completeDocumentSignature(input: {
     storageScope,
   });
   if (!signedStored || !evidenceStored) {
-    throw new ServiceError('Falha ao persistir artefatos de assinatura.', 'SIGNATURE_STORAGE_FAILED', 500);
+    throw new ServiceError(
+      'Falha ao persistir artefatos de assinatura.',
+      'SIGNATURE_STORAGE_FAILED',
+      500,
+    );
   }
 
-  const promotedByUserId =
-    input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
+  const promotedByUserId = input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
 
   const promotedVersion = await promoteSignedPdfToDocumentVersion({
     tenantId: request.tenantId,
@@ -1165,7 +1206,11 @@ export async function readSignedPdfForAuthenticatedRequest(
 
   const hasAccess = await userHasSignatureDocumentAccess(ctx, user, request);
   if (!hasAccess) {
-    throw new ServiceError('Sem permissão para baixar este documento.', 'SIGNATURE_DOWNLOAD_DENIED', 403);
+    throw new ServiceError(
+      'Sem permissão para baixar este documento.',
+      'SIGNATURE_DOWNLOAD_DENIED',
+      403,
+    );
   }
 
   const signer = getPrimarySigner(request);
@@ -1268,9 +1313,7 @@ export function buildExternalSignatureAuditContext(
   requestId?: string,
 ): DocumentAuditContext {
   const signer = request.signers[0];
-  const emailHash = signer
-    ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1')
-    : 'unknown';
+  const emailHash = signer ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1') : 'unknown';
 
   return {
     tenantId: request.tenantId,
@@ -1298,9 +1341,7 @@ export function buildSignatureTrackingMetadata(
     signerUserId: signer?.userId ?? undefined,
     signerName: signer?.name,
     signerEmailMasked: signer ? maskEmail(signer.email) : undefined,
-    signerEmailHash: signer
-      ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1')
-      : undefined,
+    signerEmailHash: signer ? hashTrackingValue(signer.email, 'doqyn-signer-email-v1') : undefined,
     signerPhoneMasked: signer?.phoneMasked ?? undefined,
     requestedByUserId: request.requestedByUserId,
     requestedByNameSnapshot: request.requestedByNameSnapshot ?? undefined,

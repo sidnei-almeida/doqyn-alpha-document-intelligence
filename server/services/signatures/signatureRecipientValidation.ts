@@ -23,13 +23,15 @@ export async function resolveInternalSignerForTenant(
     throw new ServiceError('Usuário signatário é obrigatório.', 'SIGNER_USER_REQUIRED', 400);
   }
   if (signerUserId === requester.id) {
-    throw new ServiceError('Não é possível solicitar assinatura para você mesmo.', 'SIGNER_SELF_FORBIDDEN', 400);
+    throw new ServiceError(
+      'Não é possível solicitar assinatura para você mesmo.',
+      'SIGNER_SELF_FORBIDDEN',
+      400,
+    );
   }
 
   const members = await listOperationalTenantMembers(ctx.tenantId);
-  const member = members
-    .map(serializeTenantMember)
-    .find((item) => item.userId === signerUserId);
+  const member = members.map(serializeTenantMember).find((item) => item.userId === signerUserId);
   if (!member) {
     throw new ServiceError('Usuário não pertence a esta empresa.', 'SIGNER_TENANT_MISMATCH', 403);
   }

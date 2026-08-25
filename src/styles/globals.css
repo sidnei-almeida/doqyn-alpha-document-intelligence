@@ -1091,6 +1091,65 @@
     margin: 0;
   }
 
+  /* ── Atestado público de assinatura ───────────────────────────────── */
+
+  .verify-verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--seal);
+  }
+
+  .verify-verdict[data-valid='false'] {
+    border-left-color: var(--status-warn-text);
+  }
+
+  .verify-verdict > span,
+  .verify-verdict svg {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+    color: var(--seal);
+  }
+
+  .verify-verdict[data-valid='false'] svg {
+    color: var(--status-warn-text);
+  }
+
+  .verify-code {
+    margin: 1.5rem 0 0;
+    font-family: var(--font-family-mono);
+    font-size: 1.0625rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    color: var(--seal);
+  }
+
+  .verify-hashes {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .verify-hash {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .verify-hash__value {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    line-height: 1.5;
+    word-break: break-all;
+    color: var(--text-secondary);
+  }
+
   /* ===== Revisão antes de um ato irreversível ==========================
      Ficha de registro: rótulo em mono, valor em corpo, linhas separadas por
      fio. O aviso é faixa de latão à esquerda — latão atesta, não preenche.  */
