@@ -3,12 +3,11 @@
  *
  * - Minha conta: o que a própria pessoa muda, sem depender de papel.
  * - Organização: o que vale para todo mundo — quem não administra lê e não altera.
- * - Sistema: o que a plataforma informa; ninguém altera pela tela.
  */
-export type SettingsSectionId = 'conta' | 'organizacao' | 'sistema';
+export type SettingsSectionId = 'conta' | 'organizacao';
 
 /** Quem é dono da decisão daquela seção. */
-export type SettingsSectionScope = 'personal' | 'organization' | 'platform';
+export type SettingsSectionScope = 'personal' | 'organization';
 
 export type SettingsNavItem = {
   id: SettingsSectionId;
@@ -33,13 +32,6 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     icon: 'business',
     scope: 'organization',
   },
-  {
-    id: 'sistema',
-    label: 'Sistema',
-    description: 'Infraestrutura, storage e segurança',
-    icon: 'dns',
-    scope: 'platform',
-  },
 ];
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'conta';
@@ -56,8 +48,8 @@ const LEGACY_SECTION_ALIASES: Record<string, SettingsSectionId> = {
   empresa: 'organizacao',
   organizacao: 'organizacao',
   lixeira: 'organizacao',
-  seguranca: 'sistema',
-  sistema: 'sistema',
+  seguranca: 'conta',
+  sistema: 'conta',
 };
 
 const VALID_SECTIONS = new Set<string>(SETTINGS_NAV_ITEMS.map((item) => item.id));
@@ -88,19 +80,15 @@ export function governsOrganization({ tenantType, isCompanyAdmin }: SettingsAcce
 }
 
 /**
- * Organização aparece para todo mundo em PJ — é onde a pessoa descobre por que a IA renomeou
- * o arquivo dela —, mas só quem administra vê os blocos que configuram a empresa.
+ * As duas seções aparecem para todo mundo. Organização é onde a pessoa descobre por que a IA
+ * renomeou o arquivo dela; só quem administra vê os blocos que configuram a empresa.
  */
-export function canViewSettingsSection(
-  section: SettingsSectionId,
-  access: SettingsAccess,
-): boolean {
-  if (section === 'sistema') return governsOrganization(access);
+export function canViewSettingsSection(): boolean {
   return true;
 }
 
-export function visibleSettingsNavItems(access: SettingsAccess): SettingsNavItem[] {
-  return SETTINGS_NAV_ITEMS.filter((item) => canViewSettingsSection(item.id, access));
+export function visibleSettingsNavItems(): SettingsNavItem[] {
+  return SETTINGS_NAV_ITEMS;
 }
 
 export function buildSettingsSearchParams(section: SettingsSectionId) {

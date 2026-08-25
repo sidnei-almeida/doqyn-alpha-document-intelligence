@@ -1,9 +1,11 @@
 /**
  * Padrão visual do módulo Configurações.
  *
- * Navegação — três seções, por quem decide, sem sub-abas:
- * - Minha conta (pessoal) · Organização (tenant, `company_admin` em PJ) · Sistema (leitura)
+ * Navegação — duas seções, por quem decide, sem sub-abas:
+ * - Minha conta (pessoal) · Organização (tenant, `company_admin` em PJ)
  * - O índice fica na coluna da esquerda; a URL carrega só `?section=`.
+ * - A seção "Sistema" (infraestrutura, storage, auth) saiu: era promessa de conteúdo, não
+ *   configuração. `?section=sistema` e `?section=seguranca` caem em Minha conta.
  *
  * Layout — coluna única de leitura:
  * - `settings-shell`: índice (14–17,5rem) + conteúdo; abaixo de 1024px o índice empilha.
@@ -24,7 +26,6 @@
  *   `useOrganizationSettings`, e uma única `SettingsSaveBar` (`--screen`, fixa no fim da
  *   coluna) salva só o que mudou. Blocos não têm botão de salvar próprio.
  *   "Enviar teste" do SMTP é ação, não configuração, e só vale sobre o que já foi salvo.
- * - Sistema: leitura, sem salvamento.
  *
  * Permissão:
  * - `governsOrganization({ tenantType, isCompanyAdmin })` decide quem edita; em PF o dono
