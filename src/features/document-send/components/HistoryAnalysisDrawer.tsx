@@ -39,7 +39,7 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
     <>
       <button
         type="button"
-        className="fixed inset-0 z-40 modal-overlay-scrim backdrop-blur-[1px]"
+        className="modal-overlay-scrim fixed inset-0 z-40 backdrop-blur-[1px]"
         aria-label="Fechar painel de análise"
         onClick={onClose}
       />
@@ -73,24 +73,28 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <div className="flex flex-wrap items-center gap-2 text-xs text-doqyn-muted">
             <span className="inline-flex items-center gap-1">
               <Icon name="description" size={14} />
               {formatFileSizeLabel(item.fileSize)}
             </span>
-            {pageCount !== undefined && <span>{pageCount} página{pageCount === 1 ? '' : 's'}</span>}
+            {pageCount !== undefined && (
+              <span>
+                {pageCount} página{pageCount === 1 ? '' : 's'}
+              </span>
+            )}
             {metadata && <ConfidenceBadge score={metadata.confidenceScore} />}
           </div>
 
           {item.errorMessage && (
-            <div className="mt-4 rounded-lg border border-doqyn-danger-border bg-doqyn-danger-bg px-3 py-2.5 text-xs text-doqyn-danger">
+            <div className="mt-4 rounded-[4px] border border-doqyn-danger-border bg-doqyn-danger-bg px-3 py-2.5 text-xs text-doqyn-danger">
               {item.errorMessage}
             </div>
           )}
 
           {metadata && summaryFields.length > 0 && (
-            <div className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40">
+            <div className="mt-4 rounded-[4px] border border-doqyn-border-subtle">
               <p className="border-b border-doqyn-border-subtle px-3 py-2 text-xs font-medium text-doqyn-text">
                 Resumo da análise
               </p>
@@ -117,7 +121,7 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
           )}
 
           {metadata?.classificationEvidence && metadata.classificationEvidence.length > 0 && (
-            <div className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-3">
+            <div className="mt-4 rounded-[4px] border border-doqyn-border-subtle px-3 py-3">
               <p className="text-xs font-medium text-doqyn-text">Evidências da classificação</p>
               <ul className="mt-2 space-y-2">
                 {metadata.classificationEvidence.map((evidence, index) => (
@@ -131,7 +135,7 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
           )}
 
           {metadata?.extractedFields && metadata.extractedFields.length > 0 && (
-            <div className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30">
+            <div className="mt-4 rounded-[4px] border border-doqyn-border-subtle">
               <p className="border-b border-doqyn-border-subtle px-3 py-2 text-xs font-medium text-doqyn-text">
                 Metadados por campo
               </p>
@@ -149,13 +153,9 @@ export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDr
           {item.logs && item.logs.length > 0 && (
             <div className="mt-4">
               <p className="mb-2 text-xs font-medium text-doqyn-text">Logs de processamento</p>
-              <ol className="space-y-0 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/20 px-3 py-2">
+              <ol className="space-y-0 rounded-[4px] border border-doqyn-border-subtle px-3 py-2">
                 {item.logs.map((log, index) => (
-                  <TimelineItem
-                    key={log.id}
-                    log={log}
-                    isLast={index === item.logs!.length - 1}
-                  />
+                  <TimelineItem key={log.id} log={log} isLast={index === item.logs!.length - 1} />
                 ))}
               </ol>
             </div>

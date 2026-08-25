@@ -219,7 +219,7 @@ export function MarqueeSelectionProvider({
   return (
     <div
       ref={containerRef}
-      className="marquee-selection-surface relative flex min-h-full min-h-0 w-full flex-1 flex-col"
+      className="marquee-selection-surface relative flex min-h-0 min-h-full w-full flex-1 flex-col"
       data-testid="marquee-selection-surface"
       onPointerDownCapture={handlePointerDown}
       onClickCapture={handleClickCapture}

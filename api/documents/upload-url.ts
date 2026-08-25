@@ -42,7 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sizeBytes = Number(body.sizeBytes);
 
     if (!fileName) {
-      return res.status(400).json({ message: 'fileName é obrigatório.', code: 'FILE_NAME_REQUIRED' });
+      return res
+        .status(400)
+        .json({ message: 'fileName é obrigatório.', code: 'FILE_NAME_REQUIRED' });
     }
 
     if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {

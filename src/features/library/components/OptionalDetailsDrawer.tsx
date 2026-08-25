@@ -79,7 +79,7 @@ function FileDetailsBody({
       <div className="shrink-0">
         <div className="flex gap-3 border-b border-doqyn-border-subtle pb-3">
           <div className="relative w-[108px] shrink-0">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome [&_img]:object-contain [&_img]:object-top">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[4px] border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome [&_img]:object-contain [&_img]:object-top">
               <DocumentFileThumbnail
                 document={doc}
                 size="card"
@@ -177,12 +177,7 @@ function FileDetailsBody({
                 documento troca o PDF, isto aqui troca o dado. */}
             {onEditMetadata && doc.permissions?.canEditMetadata && (
               <div className="mb-1.5 flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEditMetadata(doc)}
-                >
+                <Button type="button" size="sm" variant="ghost" onClick={() => onEditMetadata(doc)}>
                   <Icon name="edit_note" size={ICON_SIZE.sm} />
                   Editar metadados
                 </Button>
@@ -252,7 +247,7 @@ function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-doqyn-card">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] bg-doqyn-card">
           <Icon name="folder" filled color={accent} size={ICON_SIZE.md} />
         </span>
         <div>

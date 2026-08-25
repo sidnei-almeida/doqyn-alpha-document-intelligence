@@ -39,8 +39,7 @@ export function ExplorerToolbarActions({
     view: true,
   };
 
-  const showAnyDocumentFilter =
-    caps.status || caps.type || caps.period || caps.owner || caps.sort;
+  const showAnyDocumentFilter = caps.status || caps.type || caps.period || caps.owner || caps.sort;
 
   return (
     <>
@@ -53,10 +52,7 @@ export function ExplorerToolbarActions({
             />
           )}
           {caps.type && (
-            <TypeFilterMenu
-              value={state.type}
-              onChange={(type) => onStateChange({ type })}
-            />
+            <TypeFilterMenu value={state.type} onChange={(type) => onStateChange({ type })} />
           )}
           {caps.period && (
             <PeriodFilterMenu
@@ -65,10 +61,7 @@ export function ExplorerToolbarActions({
             />
           )}
           {caps.owner && (
-            <OwnerFilterMenu
-              value={state.owner}
-              onChange={(owner) => onStateChange({ owner })}
-            />
+            <OwnerFilterMenu value={state.owner} onChange={(owner) => onStateChange({ owner })} />
           )}
           {caps.sort && (
             <SortMenu
@@ -80,10 +73,7 @@ export function ExplorerToolbarActions({
         </>
       )}
       {caps.view && (
-        <ViewModeToggle
-          value={state.view}
-          onChange={(view) => onStateChange({ view })}
-        />
+        <ViewModeToggle value={state.view} onChange={(view) => onStateChange({ view })} />
       )}
       <WorkspaceRefreshButton onClick={onRefresh} label={refreshLabel} />
     </>

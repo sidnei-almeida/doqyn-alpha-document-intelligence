@@ -7,7 +7,10 @@ import {
 import { isMongoNativeConfigured } from '../../server/db/mongoClient.js';
 import { buildDocumentRequestContext } from '../../server/tenancy/documentRequestContext.js';
 import { requireAuth } from '../../server/auth/requireAuth.js';
-import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
+import {
+  extractRequestContext,
+  getBearerAuthLogFields,
+} from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sendWorkflowError } from '../../server/utils/workflowErrors.js';

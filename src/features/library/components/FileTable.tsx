@@ -13,10 +13,7 @@ const HEADER_CELL =
 
 /** Lista administrativa — usada em busca/coleções virtuais fora da pasta. */
 export function FileTable({ documents, title = 'Arquivos' }: FileTableProps) {
-  const orderedIds = useMemo(
-    () => documents.map((doc) => doc.documentId),
-    [documents],
-  );
+  const orderedIds = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
 
   return (
     <ExplorerFileListScope orderedIds={orderedIds}>
@@ -28,15 +25,25 @@ export function FileTable({ documents, title = 'Arquivos' }: FileTableProps) {
           <p className="text-[13px] font-medium text-doqyn-text">{title}</p>
           <p className="text-[11px] text-doqyn-subtle">{documents.length} itens</p>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
           <table className="w-full border-collapse" aria-label="Arquivos da Biblioteca">
             <thead className="sticky top-0 z-10 bg-doqyn-surface">
               <tr className="border-b border-doqyn-border-subtle">
-                <th scope="col" className={HEADER_CELL}>Nome</th>
-                <th scope="col" className={`${HEADER_CELL} hidden lg:table-cell`}>Proprietário</th>
-                <th scope="col" className={`${HEADER_CELL} hidden lg:table-cell`}>Tags</th>
-                <th scope="col" className={`${HEADER_CELL} hidden md:table-cell`}>Atualizado</th>
-                <th scope="col" className={`${HEADER_CELL} hidden sm:table-cell`}>Status</th>
+                <th scope="col" className={HEADER_CELL}>
+                  Nome
+                </th>
+                <th scope="col" className={`${HEADER_CELL} hidden lg:table-cell`}>
+                  Proprietário
+                </th>
+                <th scope="col" className={`${HEADER_CELL} hidden lg:table-cell`}>
+                  Tags
+                </th>
+                <th scope="col" className={`${HEADER_CELL} hidden md:table-cell`}>
+                  Atualizado
+                </th>
+                <th scope="col" className={`${HEADER_CELL} hidden sm:table-cell`}>
+                  Status
+                </th>
                 <th scope="col" className={`${HEADER_CELL} text-right`}>
                   <span className="sr-only">Ações</span>
                 </th>

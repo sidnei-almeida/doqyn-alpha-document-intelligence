@@ -28,7 +28,10 @@ export function DocumentFavoriteBadge({
   if (variant === 'overlay') {
     return (
       <span
-        className={cn('document-favorite-badge pointer-events-none absolute bottom-1.5 left-1.5 z-10', className)}
+        className={cn(
+          'document-favorite-badge pointer-events-none absolute bottom-1.5 left-1.5 z-10',
+          className,
+        )}
         title="Favorito"
         aria-hidden
       >

@@ -12,7 +12,12 @@ type ExplorerShellProps = {
 /**
  * Shell do File Explorer — área principal em largura total, sem painel lateral fixo.
  */
-export function ExplorerShell({ header, toolbar, content, variant = 'default' }: ExplorerShellProps) {
+export function ExplorerShell({
+  header,
+  toolbar,
+  content,
+  variant = 'default',
+}: ExplorerShellProps) {
   return (
     <div
       className={cn(
@@ -22,7 +27,7 @@ export function ExplorerShell({ header, toolbar, content, variant = 'default' }:
       )}
       data-testid="library-shell"
     >
-      <div className="library-main workspace-enter flex min-h-0 min-w-0 w-full flex-1 flex-col">
+      <div className="library-main workspace-enter flex min-h-0 w-full min-w-0 flex-1 flex-col">
         <header className="library-header explorer-header shrink-0 pb-3">{header}</header>
 
         {toolbar && <div className="library-toolbar explorer-toolbar shrink-0 pb-3">{toolbar}</div>}

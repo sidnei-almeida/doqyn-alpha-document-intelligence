@@ -19,11 +19,7 @@ type DocumentFileRowProps = {
 };
 
 /** Linha de arquivo — miniatura pequena + nome; usada em listas da Biblioteca. */
-export function DocumentFileRow({
-  document: doc,
-  meta,
-  layout = 'compact',
-}: DocumentFileRowProps) {
+export function DocumentFileRow({ document: doc, meta, layout = 'compact' }: DocumentFileRowProps) {
   const { isFileSelected, interactFile, openFile, openFileContextMenu, openSignatures } =
     useExplorerFileActions();
   const isSelected = isFileSelected(doc.documentId);
@@ -68,7 +64,7 @@ export function DocumentFileRow({
         data-testid="document-file-row"
         {...handlers}
         className={cn(
-          'group explorer-interactive relative flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-3 py-2 outline-none',
+          'explorer-interactive group relative flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-3 py-2 outline-none',
           'focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/40 focus-visible:ring-offset-1 focus-visible:ring-offset-doqyn-bg',
           isSelected ? 'explorer-item-selected explorer-selected' : 'hover:bg-doqyn-surface-hover',
         )}

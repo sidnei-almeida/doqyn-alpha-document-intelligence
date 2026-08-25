@@ -21,10 +21,7 @@ export function DocumentFilesGrid({
   showStatus = false,
   testId = 'document-files-grid',
 }: DocumentFilesGridProps) {
-  const orderedIds = useMemo(
-    () => documents.map((doc) => doc.documentId),
-    [documents],
-  );
+  const orderedIds = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
 
   return (
     <ExplorerFileListScope orderedIds={orderedIds}>

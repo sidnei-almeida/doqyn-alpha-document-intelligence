@@ -12,8 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireDocumentAuthContext(req, res);
   if (!auth) return;
 
-  const documentId =
-    typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
+  const documentId = typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
   const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
   const pageRaw = typeof req.query.page === 'string' ? req.query.page : undefined;
   const pageNumber = pageRaw ? Number.parseInt(pageRaw, 10) : NaN;
@@ -41,11 +40,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
     res.setHeader('Content-Disposition', `inline; filename="thumb-${pageNumber}.png"`);
-    setPreviewAssetCacheHeaders(
-      res,
-      `"${documentId}:${versionId}:thumb:${pageNumber}"`,
-      { immutable: true },
-    );
+    setPreviewAssetCacheHeaders(res, `"${documentId}:${versionId}:thumb:${pageNumber}"`, {
+      immutable: true,
+    });
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     return res.status(200).send(file.buffer);

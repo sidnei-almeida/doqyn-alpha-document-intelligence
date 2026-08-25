@@ -16,14 +16,14 @@ const HEADER_CELL = 'px-3 py-1.5 text-left font-normal';
  * Área de arquivos dentro de uma pasta — lista/grade sem cara de tabela administrativa.
  */
 export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFilesProps) {
-  const orderedIds = useMemo(
-    () => documents.map((doc) => doc.documentId),
-    [documents],
-  );
+  const orderedIds = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
 
   if (viewMode === 'grid') {
     return (
-      <div className="explorer-folder-files flex min-h-0 min-h-full flex-1 flex-col" data-testid="explorer-folder-files-grid">
+      <div
+        className="explorer-folder-files flex min-h-0 min-h-full flex-1 flex-col"
+        data-testid="explorer-folder-files-grid"
+      >
         <FileGridView documents={documents} variant="explorer" />
       </div>
     );
@@ -35,17 +35,17 @@ export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFiles
         className="explorer-folder-files flex min-h-0 flex-1 flex-col"
         data-testid="library-file-table"
       >
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
           <table className="explorer-row-gap w-full" aria-label="Arquivos da pasta">
             <thead>
               <tr className="text-[11px] font-normal text-doqyn-subtle">
                 <th scope="col" className={HEADER_CELL}>
                   Nome
                 </th>
-                <th scope="col" className={`${HEADER_CELL} hidden md:table-cell w-[140px]`}>
+                <th scope="col" className={`${HEADER_CELL} hidden w-[140px] md:table-cell`}>
                   Modificado
                 </th>
-                <th scope="col" className={`${HEADER_CELL} hidden sm:table-cell w-[100px]`}>
+                <th scope="col" className={`${HEADER_CELL} hidden w-[100px] sm:table-cell`}>
                   Status
                 </th>
                 <th scope="col" className={`${HEADER_CELL} w-10`}>
