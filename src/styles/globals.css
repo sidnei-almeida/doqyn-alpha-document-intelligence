@@ -2251,37 +2251,6 @@
     padding: 0;
   }
 
-  .settings-auth-overview {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .settings-auth-overview__toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    @apply type-caption font-medium text-doqyn-primary;
-    transition: opacity var(--settings-transition) var(--ease-standard);
-  }
-
-  .settings-auth-overview__toggle:hover {
-    opacity: 0.85;
-  }
-
-  .settings-auth-overview .settings-summary-bar {
-    gap: 0.75rem 1.25rem;
-  }
-
-  .settings-auth-overview .settings-summary-bar__label {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .settings-auth-overview .settings-summary-bar__chip {
-    white-space: normal;
-  }
-
   .settings-password-strength {
     display: flex;
     flex-direction: column;
@@ -2425,10 +2394,6 @@
 
   .settings-dt {
     @apply type-eyebrow text-doqyn-subtle;
-  }
-
-  .settings-dd {
-    @apply type-body mt-1 break-words;
   }
 
   .settings-info-card {
