@@ -38,7 +38,7 @@ export function DocumentViewerShell({
           toolbar={toolbar}
           detailsPanel={detailsPanel}
           showDetails={showDetails}
-          className="h-full w-full shadow-2xl max-sm:rounded-none max-sm:border-0"
+          className="h-full w-full shadow-modal max-sm:rounded-none max-sm:border-0"
         >
           {children}
         </DocumentViewerFrame>

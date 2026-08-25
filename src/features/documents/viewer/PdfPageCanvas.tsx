@@ -46,7 +46,7 @@ function PdfPageCanvas({ pdf, pageNumber, scale }: PdfPageCanvasProps) {
     <canvas
       ref={canvasRef}
       data-page-number={pageNumber}
-      className="block max-w-full viewer-page-surface"
+      className="viewer-page-surface block max-w-full"
       aria-label={`Página ${pageNumber}`}
     />
   );

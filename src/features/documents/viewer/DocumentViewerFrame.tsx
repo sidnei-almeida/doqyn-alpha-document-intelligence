@@ -21,7 +21,7 @@ export function DocumentViewerFrame({
   return (
     <div
       className={cn(
-        'viewer-shell flex flex-col overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-bg',
+        'viewer-shell flex flex-col overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-bg',
         className,
       )}
     >

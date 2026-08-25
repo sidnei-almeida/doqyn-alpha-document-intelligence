@@ -7,12 +7,15 @@ import {
   resolveTenantStorageScopeFromAuthUser,
 } from '../../server/tenancy/documentRequestContext.js';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
-import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
+import { emitTrackingEvent } from '../../server/services/tracking/trackingService.js';
 import { analyzePdfUpdateBuffer } from '../../server/ai/services/analyzePdfUpdateService.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
 import { parseAnalyzePdfRequest } from '../../server/utils/parseAnalyzePdfRequest.js';
-import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
+import {
+  extractRequestContext,
+  getBearerAuthLogFields,
+} from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
 import { isStorageConfigured, storeAnalysisStaging } from '../../server/storage/index.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
@@ -192,29 +195,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       uploadFileName: ingress.originalFileName,
     });
 
-    await createDocumentAuditLog(auditCtx, {
-      action: 'document.version_analysis_completed',
-      description: 'Análise de nova versão concluída.',
-      documentId,
-      analysisJobId: result.jobId,
-      result: result.status === 'completed' ? 'success' : 'warning',
-      target: {
-        type: 'analysis_job',
-        id: result.jobId,
-        nameSnapshot: analysisNameSnapshot,
-      },
-      metadata: sanitizeAuditMetadata({
-        documentName: analysisNameSnapshot,
+    await emitTrackingEvent(
+      auditCtx,
+      {
+        action: 'document.version_analysis_completed',
+        description: 'Análise de nova versão concluída.',
         documentId,
-        currentVersionLabel: result.currentVersionLabel,
-        expectedNextVersionLabel: result.expectedNextVersionLabel,
-        seemsSameDocument: result.extraction?.seemsSameDocument,
-        sameDocumentConfidence: result.extraction?.sameDocumentConfidence,
-        status: result.status,
-        source: ingress.fromStaging ? 'presigned_staging' : 'api',
-        updateMode: true,
-      }),
-    }).catch(() => undefined);
+        analysisJobId: result.jobId,
+        result: result.status === 'completed' ? 'success' : 'warning',
+        target: {
+          type: 'analysis_job',
+          id: result.jobId,
+          nameSnapshot: analysisNameSnapshot,
+        },
+        metadata: sanitizeAuditMetadata({
+          documentName: analysisNameSnapshot,
+          documentId,
+          currentVersionLabel: result.currentVersionLabel,
+          expectedNextVersionLabel: result.expectedNextVersionLabel,
+          seemsSameDocument: result.extraction?.seemsSameDocument,
+          sameDocumentConfidence: result.extraction?.sameDocumentConfidence,
+          status: result.status,
+          source: ingress.fromStaging ? 'presigned_staging' : 'api',
+          updateMode: true,
+        }),
+      },
+      req,
+    );
 
     logger.info('analyze-pdf-update request completed', {
       requestId: ctx.requestId,

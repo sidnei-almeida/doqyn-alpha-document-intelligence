@@ -4,6 +4,7 @@ import { buildDocumentNameSnapshot } from '../../server/audit/documentNameSnapsh
 import { readDocumentPreviewFile } from '../../server/services/documentPreviewService.js';
 import {
   emitAccessDeniedEvent,
+  emitDocumentFailureEvent,
   emitTrackingEvent,
   extractServiceErrorInfo,
   shouldEmitAccessDeniedFromError,
@@ -25,7 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const trackView = req.query.trackView !== 'false';
 
   if (!documentId) {
-    return res.status(400).json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
+    return res
+      .status(400)
+      .json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
   }
 
   try {
@@ -75,44 +78,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).send(file.buffer);
   } catch (error) {
+    const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
+
+    // Negado por permissão tem evento próprio; todo o resto — documento
+    // apagado, storage fora do ar, buffer corrompido — é a mesma coisa para
+    // quem investiga: houve tentativa, o documento não abriu.
+    if (shouldEmitAccessDeniedFromError(error)) {
+      const info = extractServiceErrorInfo(error);
+      await emitAccessDeniedEvent(auditCtx, req, {
+        action: 'document.preview_denied',
+        documentId,
+        versionId,
+        reason: info.message,
+        code: info.code,
+        requiredPermission: 'canPreview',
+      });
+    } else {
+      await emitDocumentFailureEvent(auditCtx, req, {
+        action: 'document.preview_failed',
+        description: 'Falha ao servir preview do documento.',
+        documentId,
+        versionId,
+        error,
+        source: 'api',
+        documentName: buildDocumentNameSnapshot({}),
+      });
+    }
+
     if (isServiceError(error)) {
-      const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
-      if (shouldEmitAccessDeniedFromError(error)) {
-        const info = extractServiceErrorInfo(error);
-        await emitAccessDeniedEvent(auditCtx, req, {
-          action: 'document.preview_denied',
-          documentId,
-          versionId,
-          reason: info.message,
-          code: info.code,
-          requiredPermission: 'canPreview',
-        });
-      } else if (error.code !== 'DOCUMENT_NOT_FOUND') {
-        const previewFailedName = buildDocumentNameSnapshot({});
-        await emitTrackingEvent(
-          auditCtx,
-          {
-            action: 'document.preview_failed',
-            description: 'Falha ao servir preview do documento.',
-            documentId,
-            versionId,
-            result: 'error',
-            status: 'failed',
-            target: {
-              type: 'document',
-              id: documentId,
-              nameSnapshot: previewFailedName,
-            },
-            metadata: sanitizeAuditMetadata({
-              documentName: previewFailedName,
-              reason: error.message,
-              code: error.code,
-              source: 'api',
-            }),
-          },
-          req,
-        );
-      }
       return res.status(error.statusCode).json({ message: error.message, code: error.code });
     }
     throw error;

@@ -7,30 +7,29 @@ import {
   resolveTenantStorageScopeFromAuthUser,
 } from '../../server/tenancy/documentRequestContext.js';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
-import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
+import { emitTrackingEvent } from '../../server/services/tracking/trackingService.js';
 import { analyzePdfBuffer } from '../../server/ai/services/analyzePdfService.js';
 import { resolveAnalysisProviderName } from '../../server/ai/providers/resolveAnalysisProvider.js';
 import { AI_ERROR_MESSAGES } from '../../server/ai/constants.js';
 import { isAiAnalysisError } from '../../server/ai/utils/errors.js';
 import { parseAnalyzePdfRequest } from '../../server/utils/parseAnalyzePdfRequest.js';
-import { extractRequestContext, getBearerAuthLogFields } from '../../server/utils/requestContext.js';
+import {
+  extractRequestContext,
+  getBearerAuthLogFields,
+} from '../../server/utils/requestContext.js';
 import { logger } from '../../server/utils/logger.js';
 import { isStorageConfigured, storeAnalysisStaging } from '../../server/storage/index.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { workflowErrorFromUnknown } from '../../server/utils/workflowErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
-import {
-  buildAnalysisJobNameSnapshot,
-} from '../../server/audit/documentNameSnapshot.js';
+import { buildAnalysisJobNameSnapshot } from '../../server/audit/documentNameSnapshot.js';
 import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
 import {
   enqueuePdfAnalysisJob,
   enqueuePdfAnalysisJobFromStaging,
   isAsyncPdfAnalysisAvailable,
 } from '../../server/services/analysis/enqueuePdfAnalysisJob.js';
-import {
-  resolveAnalyzePdfIngress,
-} from '../../server/services/analysis/analyzePdfIngress.js';
+import { resolveAnalyzePdfIngress } from '../../server/services/analysis/analyzePdfIngress.js';
 
 export const config = {
   api: { bodyParser: false },
@@ -90,21 +89,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       uploadFileName: ingress.originalFileName,
     });
 
-    await createDocumentAuditLog(auditCtx, {
-      action: 'document.analysis_started',
-      description: 'Análise de PDF iniciada.',
-      target: {
-        type: 'analysis_job',
-        id: ingress.jobId ?? ctx.requestId,
-        nameSnapshot: analysisStartedName,
+    await emitTrackingEvent(
+      auditCtx,
+      {
+        action: 'document.analysis_started',
+        description: 'Análise de PDF iniciada.',
+        target: {
+          type: 'analysis_job',
+          id: ingress.jobId ?? ctx.requestId,
+          nameSnapshot: analysisStartedName,
+        },
+        metadata: sanitizeAuditMetadata({
+          documentName: analysisStartedName,
+          mimeType: ingress.mimeType,
+          sizeBytes: ingress.fileSize,
+          source: ingress.fromStaging ? 'presigned_staging' : 'api',
+        }),
       },
-      metadata: sanitizeAuditMetadata({
-        documentName: analysisStartedName,
-        mimeType: ingress.mimeType,
-        sizeBytes: ingress.fileSize,
-        source: ingress.fromStaging ? 'presigned_staging' : 'api',
-      }),
-    }).catch(() => undefined);
+      req,
+    );
 
     logger.info('analyze-pdf tenant resolvido', {
       requestId: ctx.requestId,
@@ -240,34 +243,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       uploadFileName: ingress.originalFileName,
     });
 
-    await createDocumentAuditLog(auditCtx, {
-      action: analysisAction,
-      description:
-        analysisAction === 'document.analysis_completed'
-          ? 'Análise de PDF concluída.'
-          : 'Falha na análise de PDF.',
-      analysisJobId: result.jobId,
-      result: analysisAction === 'document.analysis_completed' ? 'success' : 'error',
-      target: {
-        type: 'analysis_job',
-        id: result.jobId,
-        nameSnapshot: analysisNameSnapshot,
+    await emitTrackingEvent(
+      auditCtx,
+      {
+        action: analysisAction,
+        description:
+          analysisAction === 'document.analysis_completed'
+            ? 'Análise de PDF concluída.'
+            : 'Falha na análise de PDF.',
+        analysisJobId: result.jobId,
+        result: analysisAction === 'document.analysis_completed' ? 'success' : 'error',
+        target: {
+          type: 'analysis_job',
+          id: result.jobId,
+          nameSnapshot: analysisNameSnapshot,
+        },
+        metadata: sanitizeAuditMetadata({
+          documentName: analysisNameSnapshot,
+          aiSuggestedFileName: result.recommendedFileName ?? undefined,
+          status: result.status,
+          categoryId: result.classification.classId,
+          categoryName: result.classification.className,
+          confidence: result.classification.confidence,
+          checksumSha256: result.fileHash,
+          sizeBytes: result.fileSizeBytes,
+          durationMs: Date.now() - startedAt,
+          aiProvider,
+          errorCode: result.errorCode,
+          source: ingress.fromStaging ? 'presigned_staging' : 'api',
+        }),
       },
-      metadata: sanitizeAuditMetadata({
-        documentName: analysisNameSnapshot,
-        aiSuggestedFileName: result.recommendedFileName ?? undefined,
-        status: result.status,
-        categoryId: result.classification.classId,
-        categoryName: result.classification.className,
-        confidence: result.classification.confidence,
-        checksumSha256: result.fileHash,
-        sizeBytes: result.fileSizeBytes,
-        durationMs: Date.now() - startedAt,
-        aiProvider,
-        errorCode: result.errorCode,
-        source: ingress.fromStaging ? 'presigned_staging' : 'api',
-      }),
-    }).catch(() => undefined);
+      req,
+    );
 
     logger.info('analyze-pdf request completed', {
       requestId: ctx.requestId,
@@ -298,22 +305,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         uploadFileName: uploadFileName ?? ctx.fileName,
       });
 
-      await createDocumentAuditLog(auditCtx, {
-        action: 'document.analysis_failed',
-        description: 'Falha na análise de PDF.',
-        result: 'error',
-        target: {
-          type: 'analysis_job',
-          id: ctx.requestId,
-          nameSnapshot: failedNameSnapshot,
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action: 'document.analysis_failed',
+          description: 'Falha na análise de PDF.',
+          result: 'error',
+          target: {
+            type: 'analysis_job',
+            id: ctx.requestId,
+            nameSnapshot: failedNameSnapshot,
+          },
+          metadata: sanitizeAuditMetadata({
+            documentName: failedNameSnapshot,
+            reason: error instanceof Error ? error.message : 'unknown',
+            durationMs: Date.now() - startedAt,
+            source: 'api',
+          }),
         },
-        metadata: sanitizeAuditMetadata({
-          documentName: failedNameSnapshot,
-          reason: error instanceof Error ? error.message : 'unknown',
-          durationMs: Date.now() - startedAt,
-          source: 'api',
-        }),
-      }).catch(() => undefined);
+        req,
+      );
     }
 
     if (isServiceError(error)) {

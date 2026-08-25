@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
-import { createDocumentAuditLog } from '../../server/audit/documentAuditLogService.js';
+import {
+  emitDocumentFailureEvent,
+  emitTrackingEvent,
+} from '../../server/services/tracking/trackingService.js';
 import { buildDocumentNameSnapshot } from '../../server/audit/documentNameSnapshot.js';
 import { getDocumentPreviewManifest } from '../../server/services/documentPreviewManifestService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
@@ -16,8 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireDocumentAuthContext(req, res);
   if (!auth) return;
 
-  const documentId =
-    typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
+  const documentId = typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
   const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
   const trackView = req.query.trackView !== 'false';
 
@@ -45,22 +47,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         finalFileName: manifest.fileName,
       });
 
-      await createDocumentAuditLog(auditCtx, {
-        action: 'document.preview_viewed',
-        description: 'Preview do documento visualizado.',
-        documentId,
-        versionId,
-        target: {
-          type: 'document',
-          id: documentId,
-          nameSnapshot: documentNameSnapshot,
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action: 'document.preview_viewed',
+          description: 'Preview do documento visualizado.',
+          documentId,
+          versionId,
+          target: {
+            type: 'document',
+            id: documentId,
+            nameSnapshot: documentNameSnapshot,
+          },
+          metadata: sanitizeAuditMetadata({
+            documentName: documentNameSnapshot,
+            viewerType: manifest.viewerType,
+            source: 'manifest',
+          }),
         },
-        metadata: sanitizeAuditMetadata({
-          documentName: documentNameSnapshot,
-          viewerType: manifest.viewerType,
-          source: 'manifest',
-        }),
-      }).catch(() => undefined);
+        req,
+      );
     }
 
     setPreviewManifestCacheHeaders(res, {
@@ -71,6 +77,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.status(200).json(manifest);
   } catch (error) {
+    await emitDocumentFailureEvent(buildDocumentAuditContext(auth.ctx, auth.user), req, {
+      action: 'document.preview_failed',
+      description: 'Falha ao montar o preview do documento.',
+      documentId,
+      versionId,
+      error,
+      source: 'manifest',
+    });
+
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });
     }

@@ -74,10 +74,7 @@ export function PdfDocumentViewer({
     const page = await pdf.getPage(currentPage);
     const viewport = page.getViewport({ scale: 1 });
     const containerWidth = scrollRef.current.clientWidth - 48;
-    const nextScale = Math.min(
-      MAX_SCALE,
-      Math.max(MIN_SCALE, containerWidth / viewport.width),
-    );
+    const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, containerWidth / viewport.width));
     setScale(nextScale);
     setFitMode('width');
   }, [pdf, currentPage]);
@@ -128,15 +125,7 @@ export function PdfDocumentViewer({
       previousPage,
       nextPage,
     });
-  }, [
-    onRegisterActions,
-    zoomIn,
-    zoomOut,
-    applyFitWidth,
-    applyFitPage,
-    previousPage,
-    nextPage,
-  ]);
+  }, [onRegisterActions, zoomIn, zoomOut, applyFitWidth, applyFitPage, previousPage, nextPage]);
 
   useEffect(() => {
     if (!pdf || fitMode !== 'width') return;
@@ -190,7 +179,12 @@ export function PdfDocumentViewer({
 
   if (renderError && !pdf) {
     return (
-      <div className={cn('flex h-full flex-col items-center justify-center gap-3 px-6 text-center', className)}>
+      <div
+        className={cn(
+          'flex h-full flex-col items-center justify-center gap-3 px-6 text-center',
+          className,
+        )}
+      >
         <p className="text-sm text-doqyn-danger">{getPreviewErrorMessage(renderError)}</p>
         {onRetry && (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
@@ -204,7 +198,12 @@ export function PdfDocumentViewer({
 
   if (usePdfJsFallback && fallbackObjectUrl) {
     return (
-      <div className={cn('flex h-full flex-col items-center justify-center gap-4 px-6 text-center', className)}>
+      <div
+        className={cn(
+          'flex h-full flex-col items-center justify-center gap-4 px-6 text-center',
+          className,
+        )}
+      >
         <p className="text-sm text-doqyn-muted">
           Não foi possível carregar o visualizador avançado. Abrindo preview básico.
         </p>
@@ -239,7 +238,8 @@ export function PdfDocumentViewer({
       <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center gap-6 px-4 py-6">
         {useLazyRender && (
           <p className="rounded-md border border-doqyn-border bg-doqyn-bg/80 px-3 py-2 text-xs text-doqyn-muted">
-            Documento com {numPages} páginas — renderização sob demanda ativa para melhor desempenho.
+            Documento com {numPages} páginas — renderização sob demanda ativa para melhor
+            desempenho.
           </p>
         )}
 

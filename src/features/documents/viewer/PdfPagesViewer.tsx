@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { cn } from '@/lib/utils';
+import { emitClientTrackingEvent } from '@/features/tracking/api/trackingClientEvents';
 import type { PreviewManifestPage } from '@/types/preview-manifest';
 import { usePreviewAsset } from './usePreviewAsset';
 import type { ViewerComponentProps } from './viewerRegistry';
@@ -16,13 +17,19 @@ function ManifestPageImage({
   page,
   scale,
   previewUrl,
+  onLoadError,
 }: {
   page: PreviewManifestPage;
   scale: number;
   previewUrl: string;
+  onLoadError?: (pageNumber: number) => void;
 }) {
   const { objectUrl, state } = usePreviewAsset(previewUrl, true);
   const displayWidth = Math.max(1, Math.round(page.width * scale));
+
+  useEffect(() => {
+    if (state === 'error') onLoadError?.(page.page);
+  }, [state, page.page, onLoadError]);
 
   return (
     <div
@@ -87,13 +94,16 @@ function ThumbnailButton({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex w-full flex-col items-center gap-1 rounded-md border p-1 transition-colors',
+        // A escolhida marca com régua de acento à esquerda, como toda lista do
+        // sistema — a moldura inteira tingida era a única do app a fazer isso.
+        'relative flex w-full flex-col items-center gap-1 rounded-[4px] p-1 transition-colors',
+        'before:absolute before:inset-y-1 before:left-0 before:w-[2px] before:bg-transparent',
         isActive
-          ? 'border-doqyn-accent-active bg-doqyn-accent-active/10'
-          : 'border-doqyn-border-subtle hover:border-doqyn-border',
+          ? 'bg-doqyn-surface-hover/60 before:bg-doqyn-accent-active'
+          : 'hover:bg-doqyn-surface-hover/40',
       )}
     >
-      <div className="viewer-page-surface flex h-20 w-full items-center justify-center overflow-hidden rounded">
+      <div className="viewer-page-surface flex h-20 w-full items-center justify-center overflow-hidden">
         {state === 'loading' && (
           <Icon
             name="progress_activity"
@@ -110,7 +120,14 @@ function ThumbnailButton({
           />
         )}
       </div>
-      <span className="text-[10px] text-doqyn-muted">{page.page}</span>
+      <span
+        className={cn(
+          'font-mono text-micro tabular-nums',
+          isActive ? 'text-doqyn-text' : 'text-doqyn-subtle',
+        )}
+      >
+        {page.page}
+      </span>
     </button>
   );
 }
@@ -127,6 +144,29 @@ export function PdfPagesViewer({
   const [fitMode, setFitMode] = useState<'width' | 'page' | 'custom'>('width');
   const [currentPage, setCurrentPage] = useState(1);
   const [showThumbnails, setShowThumbnails] = useState(false);
+  // Uma página que não carrega costuma vir acompanhada de outras vinte: a
+  // trilha registra a falha do documento, não uma linha por imagem.
+  const reportedFailureRef = useRef<string | null>(null);
+
+  const handlePageLoadError = useCallback(
+    (pageNumber: number) => {
+      const key = `${manifest.documentId}:${manifest.versionId}`;
+      if (reportedFailureRef.current === key) return;
+      reportedFailureRef.current = key;
+
+      emitClientTrackingEvent({
+        action: 'document.preview_failed',
+        documentId: manifest.documentId,
+        versionId: manifest.versionId,
+        metadata: {
+          source: 'viewer_page_render',
+          reason: 'preview_page_asset_load_failed',
+          page: pageNumber,
+        },
+      });
+    },
+    [manifest.documentId, manifest.versionId],
+  );
 
   const pages = manifest.pages;
   const numPages = manifest.pageCount || pages.length;
@@ -236,7 +276,7 @@ export function PdfPagesViewer({
   if (manifest.status === 'processing') {
     return (
       <div className={cn('viewer-canvas flex h-full items-center justify-center', className)}>
-        <p className="text-sm text-doqyn-muted">Preview em processamento...</p>
+        <p className="text-caption text-doqyn-muted">Preview em processamento…</p>
       </div>
     );
   }
@@ -249,7 +289,9 @@ export function PdfPagesViewer({
           className,
         )}
       >
-        <p className="text-sm text-doqyn-muted">Nenhuma página disponível para visualização.</p>
+        <p className="text-caption text-doqyn-muted">
+          Nenhuma página disponível para visualização.
+        </p>
       </div>
     );
   }
@@ -257,7 +299,7 @@ export function PdfPagesViewer({
   return (
     <div className={cn('viewer-canvas flex h-full min-h-0', className)}>
       {canShowThumbnails && showThumbnails && (
-        <aside className="hidden w-28 shrink-0 overflow-y-auto border-r border-doqyn-border bg-doqyn-bg/90 p-2 sm:block">
+        <aside className="scrollbar-thin hidden w-28 shrink-0 overflow-y-auto border-r border-doqyn-border-subtle bg-doqyn-bg/90 p-2 sm:block">
           <div className="space-y-2">
             {pages.map((page) => (
               <ThumbnailButton
@@ -274,26 +316,23 @@ export function PdfPagesViewer({
       <div className="relative min-h-0 min-w-0 flex-1">
         {canShowThumbnails && (
           <div className="absolute left-3 top-3 z-10 hidden sm:block">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <IconButton
+              label={showThumbnails ? 'Ocultar miniaturas' : 'Mostrar miniaturas'}
               onClick={() => setShowThumbnails((current) => !current)}
-              title={showThumbnails ? 'Ocultar miniaturas' : 'Mostrar miniaturas'}
+              className="bg-doqyn-bg/80"
             >
-              {showThumbnails ? (
-                <Icon name="left_panel_close" size={ICON_SIZE.xs} />
-              ) : (
-                <Icon name="left_panel_open" size={ICON_SIZE.xs} />
-              )}
-            </Button>
+              <Icon
+                name={showThumbnails ? 'left_panel_close' : 'left_panel_open'}
+                size={ICON_SIZE.sm}
+              />
+            </IconButton>
           </div>
         )}
 
         <div ref={scrollRef} className="viewer-canvas-stage scrollbar-thin h-full overflow-y-auto">
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6">
             {useLazyRender && (
-              <p className="rounded-md border border-doqyn-border bg-doqyn-bg/80 px-3 py-2 text-xs text-doqyn-muted">
+              <p className="notice-rule py-0.5 text-caption text-doqyn-muted">
                 Este documento é grande. Algumas páginas serão carregadas sob demanda.
               </p>
             )}
@@ -307,7 +346,12 @@ export function PdfPagesViewer({
                 }}
                 data-page-number={page.page}
               >
-                <ManifestPageImage page={page} scale={scale} previewUrl={page.previewUrl} />
+                <ManifestPageImage
+                  page={page}
+                  scale={scale}
+                  previewUrl={page.previewUrl}
+                  onLoadError={handlePageLoadError}
+                />
               </div>
             ))}
           </div>

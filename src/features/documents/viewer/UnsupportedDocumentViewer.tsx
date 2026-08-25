@@ -25,9 +25,7 @@ export function UnsupportedDocumentViewer({
         <p className="text-sm font-medium text-doqyn-text">
           Este tipo de arquivo ainda não possui preview integrado.
         </p>
-        {mimeType && (
-          <p className="mt-1 text-xs text-doqyn-muted">Tipo detectado: {mimeType}</p>
-        )}
+        {mimeType && <p className="mt-1 text-xs text-doqyn-muted">Tipo detectado: {mimeType}</p>}
       </div>
       {canDownload && onDownload && (
         <Button

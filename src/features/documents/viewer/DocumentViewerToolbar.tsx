@@ -1,7 +1,6 @@
-import type { RefObject } from 'react';
-import { Button } from '@/components/ui/Button';
+import type { ReactNode, RefObject } from 'react';
 import { Icon } from '@/components/ui/Icon';
-import { Tooltip } from '@/components/ui/Tooltip';
+import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
@@ -33,6 +32,45 @@ export type DocumentViewerToolbarProps = {
   className?: string;
 };
 
+/** Fio vertical curto entre grupos de controle. */
+function ToolDivider() {
+  return <span className="mx-1 h-4 w-px shrink-0 bg-doqyn-border-subtle" aria-hidden />;
+}
+
+/**
+ * Ajuste de enquadramento é ação, não modo: texto curto sem caixa, do mesmo
+ * tamanho dos rótulos de registro ao lado.
+ */
+function ToolTextButton({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[4px] px-2 text-caption text-doqyn-muted transition-colors hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
+    >
+      {icon && <Icon name={icon} size={ICON_SIZE.xs} className="shrink-0" />}
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Barra do visualizador.
+ *
+ * Eram quatro botões com caixa e canto de outra família alinhados ao lado do
+ * nome do arquivo, e mais seis abaixo para zoom e página — dez superfícies
+ * competindo com a folha, que é o conteúdo. Agora a ação é glifo com dica, o
+ * enquadramento é texto curto e a contagem de páginas é registro monoespaçado;
+ * o que separa os grupos é fio, como no resto do sistema.
+ */
 export function DocumentViewerToolbar({
   title,
   subtitle,
@@ -60,177 +98,119 @@ export function DocumentViewerToolbar({
 }: DocumentViewerToolbarProps) {
   const showPdfControls = Boolean(onZoomIn && onZoomOut);
 
+  const actions: ReactNode[] = [];
+  if (permissions?.canDownload && onDownload) {
+    actions.push(
+      <IconButton
+        key="download"
+        label="Baixar original"
+        disabled={isDownloading}
+        onClick={onDownload}
+      >
+        <Icon
+          name={isDownloading ? 'progress_activity' : 'download'}
+          size={ICON_SIZE.sm}
+          className={cn(isDownloading && 'animate-spin')}
+        />
+      </IconButton>,
+    );
+  }
+  if (permissions?.canViewTracking && onViewTracking) {
+    actions.push(
+      <IconButton key="tracking" label="Ver tracking" onClick={onViewTracking}>
+        <Icon name="history" size={ICON_SIZE.sm} />
+      </IconButton>,
+    );
+  }
+  if (permissions?.canUpdate && onUpdateDocument) {
+    actions.push(
+      <IconButton key="update" label="Atualizar documento" onClick={onUpdateDocument}>
+        <Icon name="upload" size={ICON_SIZE.sm} />
+      </IconButton>,
+    );
+  }
+
   return (
-    <header className={cn('viewer-toolbar shrink-0 border-b border-doqyn-border bg-doqyn-bg', className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
-        <div className="min-w-0 flex-1 pr-2">
+    <header
+      className={cn('viewer-toolbar shrink-0 border-b border-doqyn-border bg-doqyn-bg', className)}
+    >
+      <div className="flex items-start justify-between gap-4 px-4 py-3 sm:px-5">
+        <div className="min-w-0 flex-1">
           {isLoading ? (
-            <p className="text-sm text-doqyn-muted">Carregando documento...</p>
+            <p className="text-caption text-doqyn-muted">Carregando documento…</p>
           ) : (
             <>
               <TruncatedText
                 as="h2"
                 id="document-viewer-modal-title"
-                className="text-base font-semibold text-doqyn-text sm:text-lg"
+                className="type-h2 text-doqyn-text"
               >
                 {title}
               </TruncatedText>
               {subtitle && (
-                <p className="mt-1 text-xs text-doqyn-muted sm:text-sm">{subtitle}</p>
+                <p className="register-label mt-1 truncate text-doqyn-subtle">{subtitle}</p>
               )}
             </>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          {permissions?.canDownload && onDownload && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={isDownloading}
-              onClick={onDownload}
-              title="Baixar original"
-            >
-              {isDownloading ? (
-                <Icon name="progress_activity" size={14} className="animate-spin" />
-              ) : (
-                <Icon name="download" size={14} />
-              )}
-              <span className="hidden sm:inline">Baixar</span>
-            </Button>
-          )}
-          {permissions?.canViewTracking && onViewTracking && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onViewTracking}
-              title="Ver tracking"
-            >
-              <Icon name="history" size={14} />
-              <span className="hidden sm:inline">Tracking</span>
-            </Button>
-          )}
-          {permissions?.canUpdate && onUpdateDocument && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onUpdateDocument}
-              title="Atualizar documento"
-            >
-              <Icon name="upload" size={14} />
-              <span className="hidden sm:inline">Atualizar</span>
-            </Button>
-          )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {actions}
+          {actions.length > 0 && onToggleDetails && <ToolDivider />}
           {onToggleDetails && (
-            <Button
-              type="button"
-              variant={showDetails ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={onToggleDetails}
+            <IconButton
+              label={showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
               aria-pressed={showDetails}
-              title="Detalhes"
+              onClick={onToggleDetails}
+              className={cn(showDetails && 'bg-doqyn-surface-hover text-doqyn-primary')}
             >
-              <Icon name="info" size={14} />
-              <span className="hidden sm:inline">Detalhes</span>
-            </Button>
+              <Icon name="info" size={ICON_SIZE.sm} />
+            </IconButton>
           )}
-          <Tooltip label="Fechar">
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="rounded-md p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
-              aria-label="Fechar visualização do documento"
-            >
-              <Icon name="close" size={ICON_SIZE.md} />
-            </button>
-          </Tooltip>
+          <ToolDivider />
+          <IconButton
+            ref={closeButtonRef}
+            label="Fechar visualização do documento"
+            onClick={onClose}
+          >
+            <Icon name="close" size={ICON_SIZE.sm} />
+          </IconButton>
         </div>
       </div>
 
       {showPdfControls && (
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-doqyn-border-subtle px-4 py-2 sm:px-5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onZoomOut}
-            disabled={!canZoomOut}
-            title="Diminuir zoom"
-            aria-label="Diminuir zoom"
-          >
-            <Icon name="remove" size={14} />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onZoomIn}
-            disabled={!canZoomIn}
-            title="Aumentar zoom"
-            aria-label="Aumentar zoom"
-          >
-            <Icon name="add" size={14} />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onFitWidth}
-            title="Ajustar à largura"
-          >
-            Largura
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onFitPage}
-            title="Ajustar à página"
-          >
-            <Icon name="fullscreen" size={14} />
-            Página
-          </Button>
-          <div className="mx-1 hidden h-5 w-px bg-doqyn-border-subtle sm:block" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onPreviousPage}
-            title="Página anterior"
-            aria-label="Página anterior"
-          >
-            <Icon name="chevron_left" size={14} />
-          </Button>
+        <div className="flex flex-wrap items-center gap-0.5 border-t border-doqyn-border-subtle px-3 py-1.5 sm:px-4">
+          <IconButton label="Diminuir zoom" disabled={!canZoomOut} onClick={onZoomOut}>
+            <Icon name="remove" size={ICON_SIZE.xs} />
+          </IconButton>
+          <IconButton label="Aumentar zoom" disabled={!canZoomIn} onClick={onZoomIn}>
+            <Icon name="add" size={ICON_SIZE.xs} />
+          </IconButton>
+
+          <ToolDivider />
+
+          <ToolTextButton label="Largura" onClick={onFitWidth} />
+          <ToolTextButton label="Página" icon="fullscreen" onClick={onFitPage} />
+
           {pageLabel && (
-            <span className="min-w-[7rem] text-center text-xs text-doqyn-muted sm:text-sm">
-              {pageLabel}
-            </span>
+            <>
+              <ToolDivider />
+              <IconButton label="Página anterior" onClick={onPreviousPage}>
+                <Icon name="chevron_left" size={ICON_SIZE.xs} />
+              </IconButton>
+              <span className="min-w-[6.5rem] text-center font-mono text-micro tabular-nums text-doqyn-subtle">
+                {pageLabel}
+              </span>
+              <IconButton label="Próxima página" onClick={onNextPage}>
+                <Icon name="chevron_right" size={ICON_SIZE.xs} />
+              </IconButton>
+            </>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onNextPage}
-            title="Próxima página"
-            aria-label="Próxima página"
-          >
-            <Icon name="chevron_right" size={14} />
-          </Button>
+
           {onRefresh && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onRefresh}
-              title="Atualizar preview"
-              className="ml-auto"
-            >
-              <Icon name="refresh" size={14} />
-            </Button>
+            <IconButton label="Atualizar preview" onClick={onRefresh} className="ml-auto">
+              <Icon name="refresh" size={ICON_SIZE.xs} />
+            </IconButton>
           )}
         </div>
       )}
