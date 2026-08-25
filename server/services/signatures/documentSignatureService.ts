@@ -27,6 +27,8 @@ import { resolveTenantStorageScopeById } from '../../tenancy/resolveTenantStorag
 import { getStorageProvider, persistPreviewAsset } from '../../storage/index.js';
 import { buildSignatureArtifactObjectKey } from '../../storage/storageKeys.js';
 import { isR2StorageEnabled } from '../../storage/storageConfig.js';
+import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
   isSignatureRequestOpen,
@@ -110,8 +112,7 @@ export function buildSignaturePortalPath(token: string): string {
 }
 
 export function buildSignaturePortalUrl(token: string, origin?: string): string {
-  const base = origin?.trim() || 'http://localhost:5173';
-  return `${base.replace(/\/$/, '')}${buildSignaturePortalPath(token)}`;
+  return `${resolvePublicAppBaseUrl(origin)}${buildSignaturePortalPath(token)}`;
 }
 
 export function buildSignatureVerificationPath(code: string): string {
@@ -404,6 +405,7 @@ export function serializeSignatureRequest(
   request: MongoDocumentSignatureRequest,
   options?: { includePortalUrl?: boolean; portalToken?: string; origin?: string },
 ) {
+  const recoveredToken = options?.portalToken ?? decryptLinkToken(request.signatureTokenEncrypted);
   return {
     signatureRequestId: request.signatureRequestId,
     documentId: request.documentId,
@@ -416,10 +418,11 @@ export function serializeSignatureRequest(
     createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
     completedAt: request.completedAt?.toISOString() ?? null,
-    portalUrl:
-      options?.includePortalUrl && options.portalToken
-        ? buildSignaturePortalUrl(options.portalToken, options.origin)
-        : undefined,
+    /**
+     * Só sai preenchido para convidado externo e com EXTERNAL_LINK_ENCRYPTION_KEY configurada —
+     * sem a chave, o link do portal continua aparecendo uma vez só, na criação.
+     */
+    portalUrl: recoveredToken ? buildSignaturePortalUrl(recoveredToken, options?.origin) : null,
   };
 }
 
@@ -485,6 +488,7 @@ export async function createDocumentSignatureRequest(
     status: 'pending',
     permissions,
     signatureTokenHash,
+    signatureTokenEncrypted: portalToken ? encryptLinkToken(portalToken) : null,
     message: input.message?.trim() || null,
     expiresAt,
     signers: [
@@ -540,6 +544,7 @@ export async function listDocumentSignatureRequests(
   ctx: DocumentRequestContext,
   user: AuthUser,
   documentId: string,
+  options?: { origin?: string },
 ) {
   await loadSignableDocument(ctx, user, documentId);
   const collection = await getSignatureRequestsCollection();
@@ -559,7 +564,7 @@ export async function listDocumentSignatureRequests(
     items: items.map((item) => {
       const signature = signatureByRequest.get(item.signatureRequestId);
       return {
-        ...serializeSignatureRequest(item),
+        ...serializeSignatureRequest(item, { origin: options?.origin }),
         requestedByName: item.requestedByNameSnapshot ?? 'DOQYN',
         signature: signature
           ? {

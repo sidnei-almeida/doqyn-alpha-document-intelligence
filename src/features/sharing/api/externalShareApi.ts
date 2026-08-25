@@ -20,6 +20,8 @@ export type ExternalDocumentShareEntry = {
   sharedByUserId: string;
   sharedByNameSnapshot?: string | null;
   message?: string | null;
+  /** Link do convite quando recuperável (EXTERNAL_LINK_ENCRYPTION_KEY configurada). */
+  inviteUrl?: string | null;
 };
 
 async function parseJson<T>(response: Response): Promise<T> {

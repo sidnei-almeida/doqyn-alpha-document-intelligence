@@ -21,6 +21,8 @@ import { loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { getTenantById } from '../tenantsService.js';
+import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { normalizeEmail, isValidEmail, parseOptionalRecipientPhone, INVALID_RECIPIENT_PHONE_MESSAGE } from '../../utils/contactNormalize.js';
 import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
@@ -125,8 +127,7 @@ export function buildExternalShareInvitePath(token: string): string {
 }
 
 export function buildExternalShareInviteUrl(token: string, origin?: string): string {
-  const base = origin?.trim() || 'http://localhost:5173';
-  return `${base.replace(/\/$/, '')}${buildExternalShareInvitePath(token)}`;
+  return `${resolvePublicAppBaseUrl(origin)}${buildExternalShareInvitePath(token)}`;
 }
 
 export async function findExternalShareGrantByToken(
@@ -196,6 +197,7 @@ export async function listDocumentExternalShareGrants(
   ctx: DocumentRequestContext,
   user: AuthUser,
   documentId: string,
+  options?: { inviteOrigin?: string },
 ) {
   await loadShareableDocumentForExternal(ctx, user, documentId);
   const collection = await getExternalShareGrantsCollection();
@@ -206,11 +208,15 @@ export async function listDocumentExternalShareGrants(
 
   return {
     documentId,
-    shares: grants.map((grant) => serializeExternalShareGrant(grant)),
+    shares: grants.map((grant) => serializeExternalShareGrant(grant, options)),
   };
 }
 
-function serializeExternalShareGrant(grant: MongoExternalDocumentShareGrant) {
+function serializeExternalShareGrant(
+  grant: MongoExternalDocumentShareGrant,
+  options?: { inviteOrigin?: string },
+) {
+  const recoveredToken = decryptLinkToken(grant.inviteTokenEncrypted);
   return {
     shareId: grant._id,
     recipientEmail: grant.recipientEmail,
@@ -227,6 +233,10 @@ function serializeExternalShareGrant(grant: MongoExternalDocumentShareGrant) {
     sharedByUserId: grant.sharedByUserId,
     sharedByNameSnapshot: grant.sharedByNameSnapshot ?? null,
     message: grant.message ?? null,
+    /** Só existe com EXTERNAL_LINK_ENCRYPTION_KEY configurada; sem ela, o link some após a criação. */
+    inviteUrl: recoveredToken
+      ? buildExternalShareInviteUrl(recoveredToken, options?.inviteOrigin)
+      : null,
   };
 }
 
@@ -301,6 +311,7 @@ export async function createDocumentExternalShareGrant(
           message: input.message?.trim() || null,
           status: 'pending',
           inviteTokenHash,
+          inviteTokenEncrypted: encryptLinkToken(inviteToken),
           inviteExpiresAt,
           expiresAt,
           acceptedAt: null,
@@ -343,6 +354,7 @@ export async function createDocumentExternalShareGrant(
     status: 'pending',
     message: input.message?.trim() || null,
     inviteTokenHash,
+    inviteTokenEncrypted: encryptLinkToken(inviteToken),
     inviteExpiresAt,
     acceptedAt: null,
     lastAccessAt: null,
@@ -478,6 +490,7 @@ export async function regenerateDocumentExternalShareGrant(
       $set: {
         status: 'pending',
         inviteTokenHash,
+        inviteTokenEncrypted: encryptLinkToken(inviteToken),
         inviteExpiresAt,
         expiresAt,
         acceptedAt: null,

@@ -71,7 +71,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const result = await listDocumentExternalShareGrants(auth.ctx, auth.user, documentId);
+      const result = await listDocumentExternalShareGrants(auth.ctx, auth.user, documentId, {
+        inviteOrigin: resolveOrigin(req),
+      });
       return res.status(200).json(result);
     }
 

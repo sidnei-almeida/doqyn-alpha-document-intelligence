@@ -728,6 +728,285 @@
     background: var(--overlay-scrim);
   }
 
+  /* ===== Diálogo (primitivo Modal, em portal) =========================
+     Um só desenho para todo diálogo do app: canto de 4px, fio no lugar de
+     sombra pesada, cabeçalho e rodapé fixos e corpo que rola sozinho quando
+     o conteúdo passa da altura da janela.                                */
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(85vh, 52rem);
+    min-height: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .modal-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.125rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-panel__title {
+    @apply type-h2 text-doqyn-text;
+    margin: 0;
+  }
+
+  .modal-panel__subtitle {
+    @apply type-caption text-doqyn-muted;
+    margin-top: 0.25rem;
+    min-width: 0;
+  }
+
+  .modal-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem;
+    width: 1.75rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .modal-panel__close:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+  }
+
+  .modal-panel__toolbar {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-panel__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  .modal-panel__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ===== Fluxo de destinatário (compartilhar · assinar) ===============
+     Os dois diálogos que mandam um documento para fora usam a mesma forma:
+     trilha de passos em régua, campos em linha, lista de quem tem acesso
+     separada por fio, e o link emitido em mono.                            */
+
+  .recipient-steps {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recipient-steps__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid transparent;
+    @apply type-label text-doqyn-subtle;
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .recipient-steps__index {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+  }
+
+  .recipient-steps__item[data-state='current'] .recipient-steps__button {
+    border-bottom-color: var(--accent-active);
+    color: var(--text-primary);
+  }
+
+  .recipient-steps__item[data-state='done'] .recipient-steps__button {
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .recipient-steps__item[data-state='done'] .recipient-steps__button:hover {
+    color: var(--text-primary);
+  }
+
+  .recipient-fields {
+    display: grid;
+    gap: 1rem 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .recipient-fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .recipient-candidates {
+    display: flex;
+    flex-direction: column;
+    max-height: 13rem;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .recipient-candidate {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    border-left: 2px solid transparent;
+    text-align: left;
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .recipient-candidate:hover {
+    background: var(--bg-surface-hover);
+    border-left-color: var(--accent-active);
+  }
+
+  .recipient-chosen {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface-hover);
+  }
+
+  .recipient-chosen > div {
+    flex: 1;
+  }
+
+  .recipient-summary {
+    display: grid;
+    gap: 0.875rem;
+    margin: 0;
+  }
+
+  .recipient-summary__row {
+    display: grid;
+    gap: 0.125rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-summary__row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .recipient-access {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .recipient-access__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recipient-access__row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-access__row:last-child {
+    border-bottom: 0;
+  }
+
+  .recipient-access__row > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recipient-access__status {
+    @apply register-label;
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  .recipient-access__status[data-tone='active'] {
+    color: var(--accent-active);
+  }
+
+  .recipient-access__status[data-tone='pending'] {
+    color: var(--text-secondary);
+  }
+
+  .recipient-access__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .recipient-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .recipient-link__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-link__value {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    color: var(--text-secondary);
+  }
+
   /* ===== Mapa de governança (/rules) ===== */
 
   /* O fundo pontilhado é desenhado pelo <Background> do React Flow (acompanha pan/zoom). */

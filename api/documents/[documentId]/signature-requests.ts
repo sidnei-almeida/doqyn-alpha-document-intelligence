@@ -42,7 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const result = await listDocumentSignatureRequests(auth.ctx, auth.user, documentId);
+      const result = await listDocumentSignatureRequests(auth.ctx, auth.user, documentId, {
+        origin: resolveOrigin(req),
+      });
       return res.status(200).json(result);
     }
 
