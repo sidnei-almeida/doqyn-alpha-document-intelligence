@@ -816,6 +816,86 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  /* Ponto da cor do grupo: 8px, contorno do próprio tom, preenchimento fraco. */
+  .group-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--swatch);
+    background: color-mix(in srgb, var(--swatch) 45%, transparent);
+  }
+
+  /* Roda de cores do grupo: doze amostras de mesmo peso, marcadas por contorno. */
+  .group-palette {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.5rem;
+    max-width: 18rem;
+  }
+
+  .group-palette__swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: color-mix(in srgb, var(--swatch) 55%, transparent);
+    color: var(--text-on-accent);
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .group-palette__swatch:hover {
+    border-color: color-mix(in srgb, var(--swatch) 60%, transparent);
+  }
+
+  .group-palette__swatch[data-active='true'] {
+    border-color: var(--swatch);
+    background: var(--swatch);
+    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--swatch);
+  }
+
+  .group-palette__swatch[data-color='ardosia'] {
+    --swatch: var(--group-ardosia);
+  }
+  .group-palette__swatch[data-color='azul'] {
+    --swatch: var(--group-azul);
+  }
+  .group-palette__swatch[data-color='indigo'] {
+    --swatch: var(--group-indigo);
+  }
+  .group-palette__swatch[data-color='violeta'] {
+    --swatch: var(--group-violeta);
+  }
+  .group-palette__swatch[data-color='magenta'] {
+    --swatch: var(--group-magenta);
+  }
+  .group-palette__swatch[data-color='carmim'] {
+    --swatch: var(--group-carmim);
+  }
+  .group-palette__swatch[data-color='telha'] {
+    --swatch: var(--group-telha);
+  }
+  .group-palette__swatch[data-color='ambar'] {
+    --swatch: var(--group-ambar);
+  }
+  .group-palette__swatch[data-color='oliva'] {
+    --swatch: var(--group-oliva);
+  }
+  .group-palette__swatch[data-color='musgo'] {
+    --swatch: var(--group-musgo);
+  }
+  .group-palette__swatch[data-color='esmeralda'] {
+    --swatch: var(--group-esmeralda);
+  }
+  .group-palette__swatch[data-color='turquesa'] {
+    --swatch: var(--group-turquesa);
+  }
+
   /* Ações da ficha de governança: empilhadas, largura total, dentro do rodapé
      do diálogo — a ação principal por último, como no resto do sistema. */
   .governance-detail-dialog__actions {

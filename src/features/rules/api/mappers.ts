@@ -2,6 +2,7 @@ import type { ApiDocumentClass, ApiGroup, ApiMember } from '../api/rulesApi';
 import type { CompanyMember, DocumentCategory, DocumentIcon, Group, GroupColor, UserRole } from '@/types/rules';
 import type { CompanyMemberDto, PlatformRole } from '@/features/users/api/usersApi';
 import { collectLinkedDocumentGroupIds } from '@/lib/entityIds';
+import { normalizeGroupColor } from '@shared/groupPalette';
 
 const ICON_KEYS = new Set<DocumentIcon>([
   'file-text',
@@ -21,11 +22,7 @@ function toDocumentIcon(iconKey?: string): DocumentIcon {
 }
 
 function toGroupColor(color?: string): GroupColor {
-  const allowed: GroupColor[] = ['blue', 'green', 'amber', 'red', 'purple'];
-  if (color && allowed.includes(color as GroupColor)) {
-    return color as GroupColor;
-  }
-  return 'blue';
+  return normalizeGroupColor(color);
 }
 
 export function mapApiGroup(group: ApiGroup): Group {

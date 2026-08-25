@@ -1,3 +1,4 @@
+import { GROUP_PALETTE } from '@shared/groupPalette';
 import type {
   DocumentExtractionRule,
   ExpiryAlertConfig,
@@ -133,16 +134,21 @@ export async function getDocumentGroups(): Promise<ApiGroup[]> {
 export async function createDocumentGroup(
   payload: { name: string; description?: string; color?: string },
 ): Promise<ApiGroup> {
+  // A cor ia junto no tipo e ficava para trás no corpo: grupo nascia sempre azul.
   const data = await request<{ group: ApiGroup }>('/document-groups', {
     method: 'POST',
-    body: JSON.stringify({ name: payload.name, description: payload.description }),
+    body: JSON.stringify({
+      name: payload.name,
+      description: payload.description,
+      color: payload.color,
+    }),
   });
-  return { ...unwrap<ApiGroup>(data as Record<string, unknown>, ['group']), color: payload.color ?? 'blue' };
+  return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
 export async function updateDocumentGroup(
   id: string,
-  payload: { name?: string; description?: string | null; active?: boolean },
+  payload: { name?: string; description?: string | null; active?: boolean; color?: string },
 ): Promise<ApiGroup> {
   const data = await request<{ group: ApiGroup }>(`/document-groups/${id}`, {
     method: 'PATCH',
@@ -488,7 +494,7 @@ export const ALLOWED_FIELD_TYPES: FieldType[] = [
   'boolean',
 ];
 
-export const ALLOWED_GROUP_COLORS: GroupColor[] = ['blue', 'green', 'amber', 'red', 'purple'];
+export const ALLOWED_GROUP_COLORS: GroupColor[] = GROUP_PALETTE.map((entry) => entry.key);
 
 export function toExtractionRule(rule: ApiDocumentRule): DocumentExtractionRule {
   return {

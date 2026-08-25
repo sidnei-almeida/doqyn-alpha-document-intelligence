@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { DEFAULT_GROUP_COLOR, type GroupColor } from '@shared/groupPalette';
+import { GroupPalettePicker } from '../GroupPalettePicker';
+import { groupColorVar } from '@/utils/rulesHelpers';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -34,7 +37,10 @@ type GovernanceDetailDialogProps = {
     categoryId: string,
     input: { name: string; description?: string },
   ) => Promise<void>;
-  onSaveGroup: (groupId: string, input: { name: string; description?: string }) => Promise<void>;
+  onSaveGroup: (
+    groupId: string,
+    input: { name: string; description?: string; color?: string },
+  ) => Promise<void>;
   onDeleteCategory?: (categoryId: string) => Promise<void>;
   onDeactivateGroup?: (groupId: string) => Promise<void>;
   onPermissionChange: (
@@ -76,6 +82,7 @@ export function GovernanceDetailDialog({
 }: GovernanceDetailDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [color, setColor] = useState<GroupColor>(DEFAULT_GROUP_COLOR);
   const [permissions, setPermissions] = useState<DocumentAccessPermissions>(
     EMPTY_CONNECTION_PERMISSIONS,
   );
@@ -116,6 +123,7 @@ export function GovernanceDetailDialog({
     } else if (selection.type === 'group' && group) {
       setName(group.name);
       setDescription(group.description ?? '');
+      setColor(group.color);
     } else if (selection.type === 'connection' && category) {
       if (draftConnectionPermissions) {
         setPermissions(draftConnectionPermissions);
@@ -141,6 +149,7 @@ export function GovernanceDetailDialog({
         await onSaveGroup(selection.id, {
           name: name.trim(),
           description: description.trim() || undefined,
+          color,
         });
       }
     } finally {
@@ -330,7 +339,16 @@ export function GovernanceDetailDialog({
                           onClick={() => onSelectConnection?.(category.id, item.id)}
                           className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
                         >
-                          <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="group-dot"
+                              style={{ '--swatch': groupColorVar(item.color) } as CSSProperties}
+                              aria-hidden
+                            />
+                            <span className="type-body font-medium text-doqyn-text">
+                              {item.name}
+                            </span>
+                          </span>
                           <GovernancePermissionBadges permissions={edgePermissions} />
                         </button>
                       </li>
@@ -346,18 +364,20 @@ export function GovernanceDetailDialog({
           <>
             {isAdmin ? (
               <>
-                <label className="block space-y-1.5">
-                  <span className="text-xs font-medium text-doqyn-muted">Nome</span>
-                  <Input value={name} onChange={(event) => setName(event.target.value)} />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
-                  <Textarea
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                    rows={3}
-                  />
-                </label>
+                <Input
+                  variant="rule"
+                  label="Nome"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+                <Textarea
+                  variant="rule"
+                  label="Descrição"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={3}
+                />
+                <GroupPalettePicker value={color} onChange={setColor} />
               </>
             ) : (
               <>

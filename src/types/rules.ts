@@ -4,7 +4,9 @@ export type UserRole = 'admin' | 'manager' | 'member' | 'auditor';
 
 export type MemberStatus = 'active' | 'pending' | 'blocked' | 'rejected';
 
-export type GroupColor = 'blue' | 'green' | 'amber' | 'red' | 'purple';
+import type { GroupColor } from '@shared/groupPalette';
+
+export type { GroupColor };
 
 export interface Group {
   id: string;

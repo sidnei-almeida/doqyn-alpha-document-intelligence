@@ -85,6 +85,22 @@
   --seal: #c2a05a;
   --seal-soft: #241c0e;
 
+  /* Paleta dos grupos — identifica, não classifica. Doze tons de peso parecido,
+     dessaturados o bastante para conviver com o grafite. O par `-ink` é o traço
+     e o `-wash` é o fundo fraco de chip; no claro os dois trocam de papel. */
+  --group-ardosia: #8fa3ad;
+  --group-azul: #6aa7d8;
+  --group-indigo: #8a95e0;
+  --group-violeta: #a98ada;
+  --group-magenta: #cf7fb8;
+  --group-carmim: #d8808c;
+  --group-telha: #d59274;
+  --group-ambar: #d2a95f;
+  --group-oliva: #a9b070;
+  --group-musgo: #7fb187;
+  --group-esmeralda: #5fb59b;
+  --group-turquesa: #63aec2;
+
   --status-ok-bg: #132b23;
   --status-ok-text: #57c08a;
   --status-ok-border: color-mix(in srgb, var(--status-ok-text) 32%, transparent);
@@ -348,6 +364,20 @@
   --governance-flow-card-border: var(--border-default);
   --governance-flow-card-shadow: var(--shadow-elevation-1);
   --governance-flow-card-shadow-hover: var(--shadow-elevation-2);
+
+  /* No claro os mesmos doze tons escurecem: o contraste é contra papel, não contra grafite. */
+  --group-ardosia: #5c707b;
+  --group-azul: #2f6f9f;
+  --group-indigo: #4c56a8;
+  --group-violeta: #7350a8;
+  --group-magenta: #a2447f;
+  --group-carmim: #a8404e;
+  --group-telha: #a45836;
+  --group-ambar: #8d6a1c;
+  --group-oliva: #6c7530;
+  --group-musgo: #3f7d4c;
+  --group-esmeralda: #1f7f68;
+  --group-turquesa: #256f85;
 }
 
 :root,

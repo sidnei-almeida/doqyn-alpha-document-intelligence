@@ -27,11 +27,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return withAdminMongoApi(req, res, {
       endpoint: '/api/document-groups',
       handler: async ({ companyId, requestId, user }) => {
-        const body = (req.body ?? {}) as { name?: string; description?: string; slug?: string };
+        const body = (req.body ?? {}) as {
+          name?: string;
+          description?: string;
+          slug?: string;
+          color?: string;
+        };
         const group = await createDocumentGroup(companyId, user.id, {
           name: body.name ?? '',
           description: body.description,
           slug: body.slug,
+          color: body.color,
         });
         logger.info('document group created', {
           requestId,

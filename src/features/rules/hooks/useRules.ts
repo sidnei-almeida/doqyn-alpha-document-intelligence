@@ -202,11 +202,12 @@ export function useRules(actorName: string) {
   );
 
   const updateGroup = useCallback(
-    async (groupId: string, input: { name: string; description?: string }) => {
+    async (groupId: string, input: { name: string; description?: string; color?: string }) => {
       try {
         const updated = await updateDocumentGroup(groupId, {
           name: input.name,
           description: input.description ?? null,
+          color: input.color,
         });
         const mapped = mapApiGroup(updated);
         setGroups((prev) => prev.map((group) => (group.id === groupId ? mapped : group)));

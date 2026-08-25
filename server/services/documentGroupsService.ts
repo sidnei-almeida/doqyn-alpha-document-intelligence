@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { MongoDocumentGroup, MongoDocumentGroupMember } from '../db/types.js';
+import { normalizeGroupColor } from '../../shared/groupPalette.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { slugifyName } from '../utils/slugify.js';
@@ -18,7 +19,11 @@ async function resolveContext(tenantId: string, opts?: ServiceOpts) {
   return { collections, scope, storage: collections.storage };
 }
 
-export function serializeDocumentGroup(group: MongoDocumentGroup, memberCount = 0, linkedCategoryCount = 0) {
+export function serializeDocumentGroup(
+  group: MongoDocumentGroup,
+  memberCount = 0,
+  linkedCategoryCount = 0,
+) {
   return {
     id: group._id,
     tenantId: group.tenantId ?? group.companyId,
@@ -26,6 +31,7 @@ export function serializeDocumentGroup(group: MongoDocumentGroup, memberCount = 
     name: group.name,
     slug: group.slug,
     description: group.description,
+    color: normalizeGroupColor(group.color),
     active: group.active,
     memberCount,
     linkedCategoryCount,
@@ -52,18 +58,11 @@ export function serializeGroupMember(member: MongoDocumentGroupMember) {
 
 export async function listDocumentGroups(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const groups = await collections.documentGroups
-    .find(scope)
-    .sort({ name: 1 })
-    .toArray();
+  const groups = await collections.documentGroups.find(scope).sort({ name: 1 }).toArray();
 
-  const members = await collections.documentGroupMembers
-    .find({ ...scope, active: true })
-    .toArray();
+  const members = await collections.documentGroupMembers.find({ ...scope, active: true }).toArray();
 
-  const rules = await collections.documentRules
-    .find({ ...scope, active: true })
-    .toArray();
+  const rules = await collections.documentRules.find({ ...scope, active: true }).toArray();
 
   const memberCounts = new Map<string, number>();
   for (const member of members as MongoDocumentGroupMember[]) {
@@ -90,7 +89,7 @@ export async function listDocumentGroups(tenantId: string, opts?: ServiceOpts) {
 export async function createDocumentGroup(
   tenantId: string,
   userId: string,
-  input: { name: string; description?: string; slug?: string },
+  input: { name: string; description?: string; slug?: string; color?: string },
 ) {
   const name = input.name?.trim();
   if (!name) {
@@ -118,7 +117,10 @@ export async function createDocumentGroup(
   // que o id estava livre e o insert estourava E11000 — ou seja, a segunda empresa a criar um grupo
   // "Diretoria" recebia 500. Nomes de grupo se repetem entre empresas por natureza.
   let id = `group_${slug.replace(/-/g, '_')}`;
-  const existingId = await collections.documentGroups.findOne({ _id: id } as Record<string, unknown>);
+  const existingId = await collections.documentGroups.findOne({ _id: id } as Record<
+    string,
+    unknown
+  >);
 
   if (existingId) {
     id = `group_${randomUUID().slice(0, 8)}`;
@@ -132,6 +134,7 @@ export async function createDocumentGroup(
       name,
       slug,
       description: input.description?.trim() || '',
+      color: normalizeGroupColor(input.color),
       active: true,
       createdBy: userId,
       createdAt: now,
@@ -148,7 +151,7 @@ export async function createDocumentGroup(
 export async function updateDocumentGroup(
   tenantId: string,
   groupId: string,
-  input: { name?: string; description?: string; active?: boolean },
+  input: { name?: string; description?: string; active?: boolean; color?: string },
   opts?: ServiceOpts,
 ) {
   const { collections, scope } = await resolveContext(tenantId, opts);
@@ -171,6 +174,7 @@ export async function updateDocumentGroup(
   }
   if (input.description !== undefined) patch.description = input.description.trim();
   if (input.active !== undefined) patch.active = input.active;
+  if (input.color !== undefined) patch.color = normalizeGroupColor(input.color);
 
   await collections.documentGroups.updateOne(
     { ...scope, _id: groupId } as Record<string, unknown>,
@@ -212,11 +216,7 @@ export async function assertDocumentGroupExists(
   return group as MongoDocumentGroup;
 }
 
-export async function listGroupMembers(
-  tenantId: string,
-  groupId: string,
-  opts?: ServiceOpts,
-) {
+export async function listGroupMembers(tenantId: string, groupId: string, opts?: ServiceOpts) {
   await assertDocumentGroupExists(tenantId, groupId, opts);
   const { collections, scope } = await resolveContext(tenantId, opts);
 
@@ -310,9 +310,7 @@ export async function listMembershipGroupIds(
 
 export async function listAllGroupMemberships(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const members = await collections.documentGroupMembers
-    .find({ ...scope, active: true })
-    .toArray();
+  const members = await collections.documentGroupMembers.find({ ...scope, active: true }).toArray();
 
   return (members as MongoDocumentGroupMember[]).map(serializeGroupMember);
 }

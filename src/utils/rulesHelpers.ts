@@ -1,17 +1,12 @@
-import type {
-  CompanyMember,
-  DocumentCategory,
-  Group,
-  MemberStatus,
-  UserRole,
-} from '@/types/rules';
+import type { CompanyMember, DocumentCategory, Group, MemberStatus, UserRole } from '@/types/rules';
 
 export function getIconForCategoryName(name: string): import('@/types/rules').DocumentIcon {
   const lower = name.toLowerCase().trim();
   if (lower.includes('contrato') || lower.includes('acordo')) return 'file-text';
   if (lower.includes('nota') || lower.includes('fiscal') || lower.includes('nf')) return 'receipt';
   if (lower.includes('proposta') || lower.includes('orçamento')) return 'file-invoice';
-  if (lower.includes('rh') || lower.includes('pessoal') || lower.includes('funcionário')) return 'users';
+  if (lower.includes('rh') || lower.includes('pessoal') || lower.includes('funcionário'))
+    return 'users';
   if (lower.includes('financeiro') || lower.includes('relatório') || lower.includes('balanço')) {
     return 'chart-bar';
   }
@@ -84,38 +79,10 @@ export const STATUS_LABELS: Record<MemberStatus, string> = {
   rejected: 'Rejeitado',
 };
 
-export const GROUP_COLOR_STYLES: Record<
-  import('@/types/rules').GroupColor,
-  { border: string; badge: string; avatar: string; dot: string }
-> = {
-  blue: {
-    border: 'border-doqyn-border-strong',
-    badge: 'border-doqyn-border bg-doqyn-accent-active-bg text-doqyn-text',
-    avatar: 'bg-doqyn-accent-active-bg text-doqyn-text',
-    dot: 'bg-doqyn-text',
-  },
-  green: {
-    border: 'border-doqyn-success-border',
-    badge: 'border-doqyn-success-border bg-doqyn-success-bg text-doqyn-success',
-    avatar: 'bg-doqyn-success-bg text-doqyn-success',
-    dot: 'bg-doqyn-success',
-  },
-  amber: {
-    border: 'border-doqyn-warning-border',
-    badge: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
-    avatar: 'bg-doqyn-warning-bg text-doqyn-warning',
-    dot: 'bg-doqyn-warning',
-  },
-  red: {
-    border: 'border-doqyn-danger-border',
-    badge: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
-    avatar: 'bg-doqyn-danger-bg text-doqyn-danger',
-    dot: 'bg-doqyn-danger',
-  },
-  purple: {
-    border: 'border-doqyn-border-strong',
-    badge: 'border-doqyn-border bg-doqyn-card text-doqyn-muted',
-    avatar: 'bg-doqyn-card text-doqyn-muted',
-    dot: 'bg-doqyn-subtle',
-  },
-};
+/**
+ * Estilo de uma cor da paleta de grupos. O tom vive em variável de tema
+ * (`--group-*`), então claro e escuro desenham o mesmo grupo do seu jeito.
+ */
+export function groupColorVar(color: import('@shared/groupPalette').GroupColor): string {
+  return `var(--group-${color})`;
+}

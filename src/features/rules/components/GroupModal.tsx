@@ -2,8 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Select } from '@/components/ui/Select';
-import type { GroupColor } from '@/types/rules';
+import { DEFAULT_GROUP_COLOR, type GroupColor } from '@shared/groupPalette';
+import { GroupPalettePicker } from './GroupPalettePicker';
 
 interface GroupModalProps {
   open: boolean;
@@ -15,12 +15,12 @@ const FORM_ID = 'novo-grupo';
 
 export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState<GroupColor>('blue');
+  const [color, setColor] = useState<GroupColor>(DEFAULT_GROUP_COLOR);
 
   useEffect(() => {
     if (!open) {
       setName('');
-      setColor('blue');
+      setColor(DEFAULT_GROUP_COLOR);
     }
   }, [open]);
 
@@ -60,20 +60,7 @@ export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
           required
         />
 
-        <Select
-          id="group-color"
-          variant="rule"
-          label="Cor"
-          value={color}
-          onChange={(event) => setColor(event.target.value as GroupColor)}
-          options={[
-            { value: 'blue', label: 'Azul' },
-            { value: 'green', label: 'Verde' },
-            { value: 'amber', label: 'Amarelo' },
-            { value: 'red', label: 'Vermelho' },
-            { value: 'purple', label: 'Roxo' },
-          ]}
-        />
+        <GroupPalettePicker value={color} onChange={setColor} />
 
         <p className="type-caption text-doqyn-subtle">
           As pessoas entram no grupo pela tela de Usuários.

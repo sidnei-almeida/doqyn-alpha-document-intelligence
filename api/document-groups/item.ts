@@ -19,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           name?: string;
           description?: string;
           active?: boolean;
+          color?: string;
         };
         const group = await updateDocumentGroup(companyId, groupId, body, { ownerUserId: user.id });
         logger.info('document group updated', {

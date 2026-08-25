@@ -312,6 +312,8 @@ export type MongoDocumentGroup = {
   name: string;
   slug: string;
   description: string;
+  /** Chave da paleta (`shared/groupPalette.ts`), não hexadecimal. */
+  color?: string;
   active: boolean;
   createdBy: string;
   createdAt: Date;
