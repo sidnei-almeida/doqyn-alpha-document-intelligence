@@ -8,7 +8,7 @@ import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsCard } from '../SettingsCard';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
 import { Badge } from '@/components/ui/Badge';
-import { SettingsStatusBadge } from '../SettingsStatusBadge';
+import { cn } from '@/lib/utils';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { tenantEmailApi } from '../../api/tenantEmailApi';
 
@@ -96,35 +96,28 @@ export function TenantEmailSettingsSection() {
   return (
     <SettingsSectionBody>
       <SettingsCard density="compact">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-doqyn-border px-4 py-4 sm:px-5">
-          <div>
-            <h3 className="text-base font-semibold text-doqyn-text">E-mail de convites</h3>
-            <p className="mt-1 max-w-2xl text-sm text-doqyn-muted">
-              Convites saem do e-mail profissional do administrador logado, usando o servidor SMTP
-              da empresa. Sem custo de API — use Gmail Workspace, Microsoft 365 ou o SMTP do seu
-              provedor.
-            </p>
-          </div>
-          {configured && enabled ? (
-            <Badge variant="success" size="xs">
-              Configurado
-            </Badge>
-          ) : (
-            <SettingsStatusBadge status="pending" />
-          )}
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-doqyn-border-subtle pb-3">
+          <p className="max-w-2xl text-sm text-doqyn-muted">
+            Convites saem do e-mail profissional do administrador logado, usando o servidor SMTP da
+            empresa. Sem custo de API — use Gmail Workspace, Microsoft 365 ou o SMTP do seu
+            provedor.
+          </p>
+          <Badge variant={configured && enabled ? 'success' : 'neutral'} size="xs">
+            {configured && enabled ? 'Configurado' : 'SMTP pendente'}
+          </Badge>
         </div>
 
         {isError ? (
-          <div className="px-4 py-5 sm:px-5">
+          <div className="py-5">
             <InlineErrorHint
               message="Não foi possível carregar as configurações de e-mail."
               onRetry={() => void refetch()}
             />
           </div>
         ) : isLoading ? (
-          <p className="px-4 py-5 text-sm text-doqyn-muted sm:px-5">Carregando configurações…</p>
+          <p className="py-5 text-sm text-doqyn-muted">Carregando configurações…</p>
         ) : (
-          <div className="px-4 py-4 sm:px-5">
+          <div className="pt-2">
             <SettingsRowList>
               <SettingsRow
                 label="Servidor SMTP"
@@ -132,13 +125,17 @@ export function TenantEmailSettingsSection() {
                 className="settings-row--stack"
                 control={
                   <div className="grid gap-3">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="settings-segmented-control">
                       {SMTP_PRESETS.map((preset) => (
-                        <Button
+                        <button
                           key={preset.id}
                           type="button"
-                          variant="secondary"
-                          size="sm"
+                          className={cn(
+                            'settings-segmented-control__item',
+                            smtpHost === preset.host &&
+                              preset.host !== '' &&
+                              'settings-segmented-control__item--active',
+                          )}
                           onClick={() => {
                             if (preset.host) setSmtpHost(preset.host);
                             setSmtpPort(preset.port);
@@ -146,7 +143,7 @@ export function TenantEmailSettingsSection() {
                           }}
                         >
                           {preset.label}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                     <div className="grid gap-3 sm:grid-cols-[1fr_120px]">

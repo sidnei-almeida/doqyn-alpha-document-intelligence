@@ -5,8 +5,6 @@ import { AUTH_MODE_LABELS, AUTH_PROVIDER_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsCard } from '../SettingsCard';
-import { SettingsFieldGroup } from '../SettingsFieldGroup';
-import { SettingsStatusBadge } from '../SettingsStatusBadge';
 import { PasswordChangeCard } from '../PasswordChangeCard';
 
 function authSummaryLine(provider: ReturnType<typeof getAuthProviderType>, label: string): string {
@@ -89,21 +87,6 @@ export function AuthenticationSettingsSection() {
       </div>
 
       {usesDoqynAuth() ? <PasswordChangeCard /> : null}
-
-      <SettingsFieldGroup
-        title="Sessões ativas"
-        description="Visualização e revogação de sessões em outros dispositivos."
-      >
-        <div className="settings-locked-option">
-          <div className="settings-locked-option__control min-w-0">
-            <p className="text-sm text-doqyn-text">Gerenciamento de dispositivos</p>
-            <p className="mt-0.5 text-xs text-doqyn-muted">
-              Em breve você poderá ver e encerrar sessões abertas em outros aparelhos.
-            </p>
-          </div>
-          <SettingsStatusBadge status="pending" className="settings-locked-option__badge" />
-        </div>
-      </SettingsFieldGroup>
     </SettingsSectionBody>
   );
 }

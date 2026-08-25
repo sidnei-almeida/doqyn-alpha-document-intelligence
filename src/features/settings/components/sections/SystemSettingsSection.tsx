@@ -5,7 +5,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsFieldGroup } from '../SettingsFieldGroup';
-import { SettingsInfoCard } from '../SettingsInfoCard';
+import { SettingsRegisterList } from '../SettingsRegisterList';
 
 const APP_VERSION = '0.1.0';
 
@@ -108,26 +108,16 @@ export function SystemSettingsSection() {
         </p>
       </SettingsFieldGroup>
 
-      <div className="settings-cards-grid settings-cards-grid--3col">
-        <SettingsInfoCard
-          icon="database"
-          title="Storage de documentos"
-          description="Arquivos originais e previews são armazenados com isolamento por tenant."
-          status="ok"
-        />
-        <SettingsInfoCard
-          icon="power"
-          title="Status de integrações"
-          description="Painel unificado de saúde de serviços externos e filas de processamento."
-          status="pending"
-        />
-        <SettingsInfoCard
-          icon="desktop_windows"
-          title="Telemetria operacional"
-          description="Métricas de uso, filas e latência para administradores."
-          status="pending"
-        />
-      </div>
+      <SettingsRegisterList
+        entries={[
+          {
+            icon: 'database',
+            title: 'Storage de documentos',
+            description:
+              'Arquivos originais e previews ficam isolados por tenant no provedor configurado acima.',
+          },
+        ]}
+      />
     </SettingsSectionBody>
   );
 }

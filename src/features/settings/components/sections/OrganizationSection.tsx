@@ -2,7 +2,7 @@ import { useAuth } from '@/auth/useAuth';
 import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
 import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionHeader } from '../SettingsSectionHeader';
-import { SettingsInfoCard } from '../SettingsInfoCard';
+import { SettingsRegisterList } from '../SettingsRegisterList';
 import { TenantEmailSettingsSection } from './TenantEmailSettingsSection';
 import { TrashRetentionSettingsSection } from './TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './UploadAiSettingsSection';
@@ -60,25 +60,25 @@ export function OrganizationSection() {
             description="Onde a classificação, os fluxos e a visibilidade são definidos."
             className="settings-block__header"
           />
-          <div className="settings-cards-grid settings-cards-grid--2col">
-            <SettingsInfoCard
-              icon="balance"
-              title="Regras e governança"
-              description="Políticas de classificação, fluxos de aprovação e mapeamento entre categorias e grupos."
-              status="ok"
-              featured
-              href="/rules"
-              linkLabel="Abrir Regras"
-            />
-            <SettingsInfoCard
-              icon="group"
-              title="Grupos de acesso"
-              description="Grupos vinculados às regras de visibilidade e permissões por área."
-              status="ok"
-              href="/users"
-              linkLabel="Gerenciar usuários"
-            />
-          </div>
+          <SettingsRegisterList
+            entries={[
+              {
+                icon: 'balance',
+                title: 'Regras e governança',
+                description:
+                  'Políticas de classificação, fluxos de aprovação e mapeamento entre categorias e grupos.',
+                href: '/rules',
+                linkLabel: 'Abrir Regras',
+              },
+              {
+                icon: 'group',
+                title: 'Grupos de acesso',
+                description: 'Grupos vinculados às regras de visibilidade e permissões por área.',
+                href: '/users',
+                linkLabel: 'Gerenciar usuários',
+              },
+            ]}
+          />
 
           <aside className="settings-callout" role="note">
             <span className="settings-callout__icon" aria-hidden>

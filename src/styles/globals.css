@@ -1386,25 +1386,11 @@
     max-width: none;
   }
 
+  /* Sem moldura: o conteúdo senta no canvas, como no resto do app. */
   .settings-content-panel {
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
-    border-radius: calc(var(--settings-panel-radius) + 0.125rem);
-    padding: 1.25rem;
+    padding: 0.25rem 0 0;
     width: 100%;
     min-height: 0;
-  }
-
-  @media (min-width: 640px) {
-    .settings-content-panel {
-      padding: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .settings-content-panel {
-      padding: 1.75rem 2rem;
-    }
   }
 
   .settings-content-panel__body {
@@ -1500,11 +1486,10 @@
     }
   }
 
+  /* Grupo de campos: rótulo em mono sobre fio, sem caixa. */
   .settings-field-group {
-    border: 1px solid var(--settings-panel-border);
-    background: var(--settings-panel-bg);
-    border-radius: var(--settings-panel-radius);
-    padding: 1.125rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.875rem;
   }
 
   .settings-field-group--fill {
@@ -1518,11 +1503,11 @@
   }
 
   .settings-field-group__header {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .settings-field-group__title {
-    @apply type-h2;
+    @apply register-label text-doqyn-subtle;
   }
 
   .settings-field-group__description {
@@ -1669,16 +1654,16 @@
     line-height: 1.45;
   }
 
+  /* Resumo do que está em vigor: linha entre fios, sem caixa. */
   .settings-summary-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--settings-panel-radius);
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
+    padding: 0.625rem 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .settings-summary-bar__label {
@@ -1719,14 +1704,12 @@
   }
 
   .settings-retention-section {
-    align-items: center;
+    align-items: flex-start;
   }
 
   .settings-retention-card {
     width: 100%;
-    max-width: 32rem;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 34rem;
   }
 
   .settings-retention-form {
@@ -1935,37 +1918,47 @@
     appearance: none;
   }
 
+  /* Escolha entre poucas vistas: régua embaixo do escolhido, não cápsula. */
   .settings-segmented-control {
     display: inline-flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .settings-segmented-control__item {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+    gap: 0.375rem;
+    min-height: 2.25rem;
+    padding: 0 0.625rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
     @apply type-label text-doqyn-muted;
-    transition:
-      background-color var(--settings-transition) var(--ease-standard),
-      border-color var(--settings-transition) var(--ease-standard),
-      color var(--settings-transition) var(--ease-standard);
+    transition: color var(--settings-transition) var(--ease-standard);
+  }
+
+  .settings-segmented-control__item::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.625rem;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    transition: background-color var(--settings-transition) var(--ease-standard);
   }
 
   .settings-segmented-control__item:hover {
     color: var(--text-primary);
-    background: var(--bg-hover);
   }
 
   .settings-segmented-control__item--active {
-    border-color: color-mix(in srgb, var(--accent-active) 35%, var(--border-subtle));
-    background: color-mix(in srgb, var(--accent-active-bg) 60%, transparent);
     color: var(--text-primary);
+  }
+
+  .settings-segmented-control__item--active::after {
+    background: var(--accent-active);
   }
 
   .settings-view-preview {
@@ -1973,7 +1966,7 @@
     width: 3.25rem;
     height: 2.5rem;
     padding: 0.3rem;
-    border-radius: 0.5rem;
+    border-radius: 4px;
     border: 1px solid var(--settings-panel-border);
     background: color-mix(in srgb, var(--bg-surface) 65%, transparent);
     gap: 0.2rem;
@@ -2012,31 +2005,78 @@
     list-style: none;
   }
 
+  /* Índice das seções: régua de acento marca onde se está, sem caixa em volta. */
   .settings-nav-item {
     display: flex;
     width: 100%;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.6875rem 0.8125rem;
-    border-radius: var(--settings-panel-radius);
-    border: 1px solid transparent;
+    padding: 0.625rem 0.75rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
     color: var(--text-secondary);
     text-align: left;
     transition:
-      background-color var(--settings-transition) var(--ease-standard),
       border-color var(--settings-transition) var(--ease-standard),
       color var(--settings-transition) var(--ease-standard);
   }
 
   .settings-nav-item:hover {
-    background: color-mix(in srgb, var(--bg-hover) 70%, transparent);
     color: var(--text-primary);
   }
 
   .settings-nav-item--active {
-    background: color-mix(in srgb, var(--bg-selected) 85%, transparent);
-    border-color: var(--settings-panel-border);
+    border-left-color: var(--accent-active);
     color: var(--text-primary);
+  }
+
+  /* ===== Lista de registro das Configurações ============================
+     Um assunto por linha, régua entre elas. A grade de cards saiu: a caixa
+     não informava nada que o texto já não dissesse.                        */
+
+  .settings-register {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .settings-register__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .settings-register__row:last-child {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .settings-register__glyph {
+    display: flex;
+    padding-top: 0.125rem;
+    color: var(--text-subtle);
+  }
+
+  .settings-register__copy {
+    flex: 1 1 auto;
+  }
+
+  .settings-register__title {
+    @apply type-body font-medium text-doqyn-text;
+  }
+
+  .settings-register__description {
+    @apply type-caption mt-0.5 text-doqyn-muted;
+  }
+
+  .settings-register__action {
+    @apply type-caption inline-flex shrink-0 items-center gap-0.5 rounded-[4px] px-1 py-0.5 font-medium text-doqyn-muted;
+    transition: color 150ms;
+  }
+
+  .settings-register__action:hover {
+    @apply text-doqyn-text;
   }
 
   /* ===== Bloco de configuração ==========================================
@@ -2095,6 +2135,8 @@
     gap: 1.5rem;
     align-items: start;
     width: 100%;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.75rem;
   }
 
   @media (min-width: 1024px) {
@@ -2185,15 +2227,13 @@
     @apply type-body mt-1 max-w-[42rem] text-doqyn-subtle;
   }
 
+  /* O card era a moldura de tudo; agora é só um agrupador com respiro. */
   .settings-card {
-    border: 1px solid var(--settings-panel-border);
-    background: var(--settings-panel-bg);
-    border-radius: var(--settings-panel-radius);
     height: fit-content;
   }
 
   .settings-card--padded {
-    padding: 1.25rem;
+    padding: 0;
   }
 
   .settings-card--compact {

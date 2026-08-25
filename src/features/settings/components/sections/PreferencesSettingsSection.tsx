@@ -135,18 +135,6 @@ export function PreferencesSettingsSection() {
               </div>
             }
           />
-
-          <SettingsRow
-            muted
-            label="Densidade visual"
-            description="Espaçamento compacto ou confortável em tabelas e listas."
-            control={
-              <span className="settings-preference-locked inline-flex items-center gap-1.5 rounded-full border border-dashed border-doqyn-border-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-doqyn-subtle">
-                <Icon name="lock" size={12} aria-hidden />
-                Em breve
-              </span>
-            }
-          />
         </SettingsRowList>
       </SettingsCard>
     </SettingsSectionBody>

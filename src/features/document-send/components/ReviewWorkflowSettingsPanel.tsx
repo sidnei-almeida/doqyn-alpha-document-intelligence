@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Radio } from '@/components/ui/Radio';
 import { SettingsFieldGroup } from '@/features/settings/components/SettingsFieldGroup';
-import { SettingsStatusBadge } from '@/features/settings/components/SettingsStatusBadge';
 import { cn } from '@/lib/utils';
 import type { DefaultNamingPolicy, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
 import {
@@ -89,30 +88,6 @@ function ToggleRow({
       onChange={(event) => onChange(event.target.checked)}
       wrapperClassName={wrapperClassName}
     />
-  );
-}
-
-function ComingSoonToggleRow({
-  label,
-  description,
-  checked,
-}: {
-  label: string;
-  description?: string;
-  checked: boolean;
-}) {
-  return (
-    <div className="settings-locked-option">
-      <Checkbox
-        checked={checked}
-        disabled
-        label={label}
-        description={description}
-        onChange={() => undefined}
-        wrapperClassName="settings-locked-option__control"
-      />
-      <SettingsStatusBadge status="pending" className="settings-locked-option__badge" />
-    </div>
   );
 }
 
@@ -265,11 +240,6 @@ function AutoReviewControls({
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
           />
-          <ComingSoonToggleRow
-            label="Exigir revisão para documentos sensíveis"
-            description="Detecção automática de contratos e dados pessoais."
-            checked={settings.pauseOnSensitiveDocs}
-          />
         </div>
       ) : (
         <>
@@ -288,14 +258,6 @@ function AutoReviewControls({
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
           />
-          <ToggleRow
-            label="Exigir revisão para documentos sensíveis"
-            description="Em breve — detecção automática de contratos e dados pessoais."
-            checked={settings.pauseOnSensitiveDocs}
-            onChange={(checked) => patch({ pauseOnSensitiveDocs: checked })}
-            disabled
-            size={size}
-          />
         </>
       )}
     </>
@@ -305,12 +267,10 @@ function AutoReviewControls({
 function AiSuggestionControls({
   settings,
   patch,
-  lockedFuture = false,
   size = 'compact',
 }: {
   settings: WorkflowReviewSettings;
   patch: (partial: Partial<WorkflowReviewSettings>) => void;
-  lockedFuture?: boolean;
   size?: 'compact' | 'comfortable';
 }) {
   return (
@@ -321,37 +281,6 @@ function AiSuggestionControls({
         onChange={(checked) => patch({ aiRenameEnabled: checked })}
         size={size}
       />
-      {lockedFuture ? (
-        <>
-          <ComingSoonToggleRow
-            label="Permitir IA preencher metadados"
-            description="A análise já executa; o controle fica para uma fase futura."
-            checked={settings.aiMetadataEnabled}
-          />
-          <ComingSoonToggleRow
-            label="Permitir IA sugerir categoria/classe"
-            description="A análise já executa; o controle fica para uma fase futura."
-            checked={settings.aiClassificationEnabled}
-          />
-        </>
-      ) : (
-        <>
-          <ToggleRow
-            label="Permitir IA preencher metadados"
-            description="Análise sempre executa; toggle prepara fase futura."
-            checked={settings.aiMetadataEnabled}
-            onChange={(checked) => patch({ aiMetadataEnabled: checked })}
-            size={size}
-          />
-          <ToggleRow
-            label="Permitir IA sugerir categoria/classe"
-            description="Análise sempre executa; toggle prepara fase futura."
-            checked={settings.aiClassificationEnabled}
-            onChange={(checked) => patch({ aiClassificationEnabled: checked })}
-            size={size}
-          />
-        </>
-      )}
       <ToggleRow
         label="Nunca incluir CPF/CNPJ no nome sugerido"
         checked={settings.preventSensitiveDataInFileName}
@@ -486,7 +415,7 @@ export function ReviewWorkflowSettingsPanel({
           description="Controle o que a IA pode sugerir automaticamente."
           className="settings-field-group--fill"
         >
-          <AiSuggestionControls settings={settings} patch={patch} lockedFuture size="comfortable" />
+          <AiSuggestionControls settings={settings} patch={patch} size="comfortable" />
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
