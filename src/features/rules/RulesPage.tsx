@@ -173,6 +173,7 @@ export function RulesPage() {
             categories={categories}
             groups={groups}
             groupMemberCounts={groupMemberCounts}
+            members={members}
             isAdmin={isAdmin}
             simulatedMember={simulatedMember}
             onPermissionChange={updateGroupClassPermissions}
@@ -181,6 +182,7 @@ export function RulesPage() {
             }
             onOpenGroupDetails={(groupId) => setDetailSelection({ type: 'group', id: groupId })}
             onConfigureExtraction={isAdmin ? (target) => setExtractionCategory(target) : undefined}
+            onCreateGroup={isAdmin ? () => setGroupModalOpen(true) : undefined}
           />
         ))}
 

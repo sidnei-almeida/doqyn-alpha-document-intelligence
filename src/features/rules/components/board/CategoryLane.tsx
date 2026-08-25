@@ -9,6 +9,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import type { DocumentCategory } from '@/types/rules';
 import { CategoryGlyph } from '../access/CategoryGlyph';
 import type { SimulationResult } from '../access/accessModel';
+import { reachLabel, type CategoryReach } from './governanceProgress';
 
 export type CategoryLaneProps = {
   category: DocumentCategory;
@@ -16,6 +17,8 @@ export type CategoryLaneProps = {
   peopleCount: number;
   /** Quantas passariam a alcançar se a ficha na mão fosse solta aqui. */
   previewCount?: number | null;
+  /** Estado e proporção de alcance da categoria — o selo e a régua do cabeçalho. */
+  reach: CategoryReach;
   simulation?: SimulationResult | null;
   isAdmin: boolean;
   onOpenDetails: () => void;
@@ -90,6 +93,7 @@ export function CategoryLane({
   category,
   peopleCount,
   previewCount,
+  reach,
   simulation,
   isAdmin,
   onOpenDetails,
@@ -127,13 +131,35 @@ export function CategoryLane({
               </>
             ) : (
               <>
-                <span className="access-lane__score-to">{peopleCount}</span> pessoas veem esta
-                categoria
+                <span className="access-lane__score-to">{peopleCount}</span>
+                {peopleCount === 1 ? ' pessoa alcança' : ' pessoas alcançam'}
+                <span className="access-lane__score-sep" aria-hidden>
+                  ·
+                </span>
+                <span className="access-lane__score-to">{reach.groupCount}</span>
+                {reach.groupCount === 1 ? ' grupo conectado' : ' grupos conectados'}
               </>
             )}
           </p>
+          <div
+            className="access-lane__meter"
+            data-state={reach.state}
+            role="img"
+            aria-label={`${Math.round(reach.coverage * 100)}% das pessoas da empresa alcançam esta categoria`}
+          >
+            <span
+              className="access-lane__meter-fill"
+              style={{ width: `${Math.round(reach.coverage * 100)}%` }}
+            />
+          </div>
         </div>
-        {outOfReach ? <span className="access-lane__flag">fora do alcance</span> : null}
+        {outOfReach ? (
+          <span className="access-lane__flag">fora do alcance</span>
+        ) : (
+          <span className="access-lane__seal" data-state={reach.state}>
+            {reachLabel(reach.state)}
+          </span>
+        )}
         {isAdmin ? (
           <LaneMenu
             categoryName={category.name}

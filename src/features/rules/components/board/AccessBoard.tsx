@@ -23,6 +23,8 @@ import {
 } from '../access/accessModel';
 import type { PermissionVerb } from '../access/PermissionVerbs';
 import { CategoryLane } from './CategoryLane';
+import { GovernanceScoreboard } from './GovernanceScoreboard';
+import { computeCategoryReach, computeGovernanceProgress } from './governanceProgress';
 import { GroupToken } from './GroupToken';
 
 const VIEW_ONLY: DocumentAccessPermissions = { ...EMPTY_CONNECTION_PERMISSIONS, view: true };
@@ -38,6 +40,8 @@ export type AccessBoardProps = {
   categories: DocumentCategory[];
   groups: Group[];
   groupMemberCounts: Record<string, number>;
+  /** Todas as pessoas da empresa — é o denominador da cobertura. */
+  members: CompanyMember[];
   isAdmin: boolean;
   simulatedMember: CompanyMember | null;
   onPermissionChange: (
@@ -48,6 +52,7 @@ export type AccessBoardProps = {
   onOpenCategoryDetails: (categoryId: string) => void;
   onOpenGroupDetails: (groupId: string) => void;
   onConfigureExtraction?: (category: DocumentCategory) => void;
+  onCreateGroup?: () => void;
 };
 
 /**
@@ -61,12 +66,14 @@ export function AccessBoard({
   categories,
   groups,
   groupMemberCounts,
+  members,
   isAdmin,
   simulatedMember,
   onPermissionChange,
   onOpenCategoryDetails,
   onOpenGroupDetails,
   onConfigureExtraction,
+  onCreateGroup,
 }: AccessBoardProps) {
   const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
   const [hoverCategoryId, setHoverCategoryId] = useState<string | null>(null);
@@ -88,6 +95,11 @@ export function AccessBoard({
     }
     return map;
   }, [categories, groups, groupMemberCounts]);
+
+  const progress = useMemo(
+    () => computeGovernanceProgress(categories, groups, members),
+    [categories, groups, members],
+  );
 
   /** Placar do que aconteceria se a ficha na mão pousasse nesta faixa. */
   function previewFor(category: DocumentCategory): number | null {
@@ -148,7 +160,17 @@ export function AccessBoard({
     if (!category) return;
     if (hasAnyPermission(getCategoryGroupPermissions(category, group.id))) return;
 
-    await applyPermissions(category, group, VIEW_ONLY, `${group.name} alcança ${category.name}.`);
+    // A consequência é o que dá sentido ao gesto: quem soltou o grupo quer saber quantas
+    // pessoas passaram a ver, não só que a regra foi gravada.
+    const gained = memberCountOf(group);
+    await applyPermissions(
+      category,
+      group,
+      VIEW_ONLY,
+      gained > 0
+        ? `${group.name} alcança ${category.name} — mais ${gained} ${gained === 1 ? 'pessoa vê' : 'pessoas veem'}.`
+        : `${group.name} alcança ${category.name} — o grupo ainda não tem pessoas.`,
+    );
   }
 
   const focusedCategory = categories.find((item) => item.id === focusedCategoryId) ?? null;
@@ -164,6 +186,8 @@ export function AccessBoard({
         setHoverCategoryId(null);
       }}
     >
+      <GovernanceScoreboard progress={progress} isAdmin={isAdmin} onCreateGroup={onCreateGroup} />
+
       <div className="access-board">
         <aside className="access-board__rail" aria-label="Grupos da empresa">
           <p className="register-label text-doqyn-subtle">Grupos</p>
@@ -208,6 +232,12 @@ export function AccessBoard({
                   category={category}
                   peopleCount={peopleByCategory.get(category.id) ?? 0}
                   previewCount={previewFor(category)}
+                  reach={computeCategoryReach(
+                    category,
+                    groups,
+                    peopleByCategory.get(category.id) ?? 0,
+                    progress.totalPeople,
+                  )}
                   simulation={
                     simulatedMember ? simulateMemberAccess(simulatedMember, category, groups) : null
                   }

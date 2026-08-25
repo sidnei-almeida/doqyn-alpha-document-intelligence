@@ -820,6 +820,132 @@
      Coluna de grupos à esquerda, uma faixa por categoria à direita. Conceder é
      levar a ficha até a faixa; o placar da faixa responde antes de soltar.     */
 
+  /* ===== Placar da governança =========================================
+     Trilha enquanto falta um passo, cobertura depois. A régua é a mesma
+     anatomia do resto do sistema: fio de fundo, acento preenchendo, sem
+     pílula e sem caixa.                                                    */
+
+  .gov-board {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .gov-board__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .gov-board__percent {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-h1);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--accent-active);
+    margin: 0;
+  }
+
+  /* "2 de 3" não é medida contínua: recua para não competir com a trilha. */
+  .gov-board__percent--steps {
+    font-size: var(--text-label);
+    color: var(--text-tertiary);
+  }
+
+  .gov-board__count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .gov-meter {
+    position: relative;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .gov-meter__fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-active);
+    transition: width var(--transition-duration-slow, 320ms) var(--ease-standard);
+  }
+
+  .gov-trail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: gov-step;
+  }
+
+  .gov-trail__step {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    color: var(--text-tertiary);
+  }
+
+  .gov-trail__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    color: var(--accent-active);
+    flex-shrink: 0;
+  }
+
+  .gov-trail__step--done .gov-trail__mark {
+    border-color: color-mix(in srgb, var(--accent-active) 55%, transparent);
+  }
+
+  /* O passo aberto é o único que fala em voz alta; os fechados já foram lidos. */
+  .gov-trail__step--live {
+    color: var(--text-primary);
+  }
+
+  .gov-trail__step--live .gov-trail__mark {
+    border-color: var(--accent-active);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-active) 12%, transparent);
+  }
+
+  .gov-trail__label {
+    @apply type-caption;
+    color: inherit;
+  }
+
+  .gov-trail__hint {
+    @apply type-caption;
+    color: var(--text-tertiary);
+  }
+
+  .gov-trail__action {
+    @apply register-label;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+    color: var(--accent-active);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .gov-trail__action:hover {
+    border-bottom-color: var(--accent-active);
+  }
+
   .access-board {
     display: grid;
     gap: 1.5rem;
@@ -923,6 +1049,50 @@
     font-family: var(--font-family-mono);
     font-size: var(--text-micro);
     color: var(--accent-active);
+  }
+
+  /* Selo de estado da faixa: diz o efeito, não a configuração. "sem ninguém"
+     é a categoria sem grupo; "grupo sem pessoas" é a regra que existe e não
+     alcança — a diferença entre as duas é o que o admin precisa ver. */
+
+  .access-lane__seal {
+    @apply register-label;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .access-lane__seal[data-state='reached'] {
+    color: var(--accent-active);
+  }
+
+  .access-lane__seal[data-state='empty-groups'] {
+    color: var(--status-warn-text);
+  }
+
+  .access-lane__meter {
+    position: relative;
+    height: 2px;
+    max-width: 14rem;
+    margin-top: 0.625rem;
+    background: color-mix(in srgb, var(--border-strong) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .access-lane__meter-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-active);
+    transition: width var(--transition-duration-slow, 320ms) var(--ease-standard);
+  }
+
+  .access-lane__meter[data-state='unreached'] .access-lane__meter-fill,
+  .access-lane__meter[data-state='empty-groups'] .access-lane__meter-fill {
+    background: var(--border-strong);
+  }
+
+  .access-lane__score-sep {
+    margin: 0 0.375rem;
+    color: var(--text-tertiary);
   }
 
   .access-lane__flag {
