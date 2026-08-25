@@ -327,27 +327,6 @@
   .meta-text {
     @apply type-caption text-doqyn-subtle;
   }
-
-  .date-input {
-    color-scheme: light dark;
-  }
-
-  .date-input::-webkit-calendar-picker-indicator {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    opacity: 0;
-  }
-
-  .date-input::-webkit-datetime-edit {
-    padding: 0;
-  }
-
-  .date-input::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
-  }
 }
 
 @layer utilities {
@@ -731,9 +710,13 @@
     background: var(--bg-thumbnail-chrome);
   }
 
+  /* A folha se separa do palco por fio, não por sombra difusa: sombra grande
+     era o único material do sistema que não tinha aresta, e num palco escuro
+     ela só borrava a borda da página. */
   .viewer-page-surface {
     background: var(--viewer-page-bg);
-    box-shadow: var(--shadow-viewer-page);
+    border: 1px solid var(--border-subtle);
+    box-shadow: none;
   }
 
   .viewer-page-image {
@@ -1043,6 +1026,46 @@
     box-shadow: none;
   }
 
+  /* O mesmo fio serve escolha e data: um filtro de severidade não é um campo
+     de outra família só porque abre uma lista. A seta nativa sai porque cada
+     navegador desenha a sua, e três setas diferentes na mesma régua leem como
+     três controles diferentes. */
+
+  .field-rule select {
+    height: 100%;
+    width: 100%;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .field-rule select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .field-rule select option {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
+  /* Aviso de contexto — fio à esquerda, sem caixa. Dizer de qual documento é a
+     vista, ou o que a aba de segurança reúne, é nota de escopo, não alerta:
+     não precisa de fundo próprio para ser lido, só de uma marca de onde
+     começa. A caixa fica reservada ao que pede decisão. */
+
+  .notice-rule {
+    border-left: 2px solid var(--border-strong);
+    padding-left: 0.75rem;
+  }
+
+  .notice-rule--accent {
+    border-left-color: var(--accent-active);
+  }
+
   /* ===== Visão Geral — o painel é um boletim, não um mosaico ==============
      Eram nove cards com borda, sombra e canto de 14px flutuando sobre o fundo:
      a mesma moldura repetida nove vezes, sem que nenhuma delas separasse nada
@@ -1267,6 +1290,13 @@
 
   .data-table-row--selected {
     background: color-mix(in srgb, var(--overlay-hover) 40%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
+  /* Detalhe aberto no lugar da linha — mesma régua de acento à esquerda, para
+     que o bloco leia como continuação do registro e não como outra superfície. */
+  .data-table-row--expanded {
+    background: color-mix(in srgb, var(--bg-surface) 45%, transparent);
     box-shadow: inset 2px 0 0 var(--accent-active);
   }
 

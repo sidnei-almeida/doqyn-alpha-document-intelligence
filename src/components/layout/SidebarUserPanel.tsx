@@ -152,7 +152,7 @@ export function SidebarUserPanel({
             setPopoverOpen(false);
             onLogout();
           }}
-          className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-doqyn-border-subtle text-label text-doqyn-muted transition-colors hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-[4px] border border-doqyn-border-subtle text-label text-doqyn-muted transition-colors hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
           <Icon name="logout" size={ICON_SIZE.sm} />
           Sair
@@ -163,7 +163,7 @@ export function SidebarUserPanel({
         <button
           type="button"
           onClick={onLogout}
-          className="mt-1 flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-label text-doqyn-muted transition-colors hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="mt-1 flex h-9 w-full items-center gap-2.5 rounded-[4px] px-2.5 text-label text-doqyn-muted transition-colors hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
           <Icon name="logout" size={ICON_SIZE.sm} />
           Sair
