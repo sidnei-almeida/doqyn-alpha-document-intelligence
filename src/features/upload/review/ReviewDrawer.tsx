@@ -24,14 +24,8 @@ import { QuickFieldsEditor } from './QuickFieldsEditor';
  * Revisão pós-análise RAG na fila da Biblioteca — respeita preferências de nomeação e confirmação.
  */
 export function ReviewDrawer() {
-  const {
-    items,
-    reviewItemId,
-    reviewSettings,
-    closeReview,
-    confirmReview,
-    setItemNamingChoice,
-  } = useUploadQueueContext();
+  const { items, reviewItemId, reviewSettings, closeReview, confirmReview, setItemNamingChoice } =
+    useUploadQueueContext();
   const { hasAnyRole } = useAuth();
   const isDocumentAdmin = canConfirmDocumentMetadata(hasAnyRole);
 
@@ -51,7 +45,9 @@ export function ReviewDrawer() {
 
   const queuePosition = useMemo(() => {
     if (!item) return null;
-    const pending = items.filter((entry) => entry.status === 'review' || entry.status === 'analyzing');
+    const pending = items.filter(
+      (entry) => entry.status === 'review' || entry.status === 'analyzing',
+    );
     const index = pending.findIndex((entry) => entry.id === item.id);
     return index >= 0 ? { current: index + 1, total: pending.length } : null;
   }, [items, item]);
@@ -134,7 +130,13 @@ export function ReviewDrawer() {
 
   return (
     <WorkspaceSideDrawer
-      title={requiresReview ? 'Revisão necessária' : isDocumentAdmin ? 'Confirmar análise' : 'Enviar para aprovação'}
+      title={
+        requiresReview
+          ? 'Revisão necessária'
+          : isDocumentAdmin
+            ? 'Confirmar análise'
+            : 'Enviar para aprovação'
+      }
       onClose={closeReview}
       testId="upload-review-drawer"
       zIndexClass="z-[95]"
@@ -144,7 +146,11 @@ export function ReviewDrawer() {
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-doqyn-border-subtle px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-eyebrow uppercase text-doqyn-primary">
-              {requiresReview ? 'Revisão necessária' : isDocumentAdmin ? 'Confirmar análise' : 'Enviar para aprovação'}
+              {requiresReview
+                ? 'Revisão necessária'
+                : isDocumentAdmin
+                  ? 'Confirmar análise'
+                  : 'Enviar para aprovação'}
             </p>
             <TruncatedText as="h2" className="mt-0.5 text-body font-semibold text-doqyn-text">
               {item.fileName}
@@ -179,187 +185,187 @@ export function ReviewDrawer() {
         </header>
       }
     >
-        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          {/* Primeiro bloco da tela de propósito: sem categoria não há o que confirmar, e quem
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        {/* Primeiro bloco da tela de propósito: sem categoria não há o que confirmar, e quem
               revisa um lote precisa resolver isso num clique, não caçando o campo. */}
-          <div
-            className={cn(
-              'mb-3 rounded-lg border px-3 py-2.5',
-              needsManualCategory
-                ? 'border-doqyn-warning-border bg-doqyn-warning-bg'
-                : 'border-doqyn-border-subtle bg-doqyn-card/40',
-            )}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-eyebrow uppercase text-doqyn-muted">
-                  Categoria
-                </p>
-                <p className="mt-0.5 text-body font-medium text-doqyn-text">
-                  {manualCategory?.name ??
-                    (aiClassId ? aiClassName : 'A IA não conseguiu classificar')}
-                </p>
-                <p className="mt-0.5 text-micro text-doqyn-muted">
-                  {manualCategory
-                    ? 'Escolhida por você. A IA fica registrada na auditoria.'
-                    : aiClassId
-                      ? 'Sugerida pela análise automática.'
-                      : 'Escolha a categoria para salvar este documento.'}
-                </p>
-              </div>
-
-              {!needsManualCategory && (
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryPicker((current) => !current)}
-                  className="shrink-0 rounded-md px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
-                >
-                  {showCategoryPicker ? 'Fechar' : 'Trocar'}
-                </button>
-              )}
-            </div>
-
-            {(needsManualCategory || showCategoryPicker) && (
-              <div className="mt-2.5">
-                <CategoryQuickPicker
-                  selectedClassId={manualCategory?.id}
-                  suggestedClassId={aiClassId}
-                  onSelect={handlePickCategory}
-                />
-              </div>
-            )}
-          </div>
-
-          {uploadDestination && (
-            <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2">
-              <div className="flex items-start gap-2.5">
-                <Icon
-                  name="folder_open"
-                  size={ICON_SIZE.sm}
-                  className="mt-0.5 shrink-0 text-doqyn-accent"
-                />
-                <div className="min-w-0">
-                  <p className="text-caption font-medium text-doqyn-text">
-                    Pasta atual: {uploadDestination}
-                  </p>
-                  <p className="mt-0.5 text-micro text-doqyn-muted">
-                    A IA classificou como: {aiClassName}
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div
+          className={cn(
+            'mb-3 rounded-[4px] border px-3 py-2.5',
+            needsManualCategory
+              ? 'border-doqyn-warning-border bg-doqyn-warning-bg'
+              : 'border-doqyn-border-subtle',
           )}
-
-          {/* Conferir e corrigir antes de salvar: consertar uma data errada não pode exigir salvar
-              o documento primeiro e abrir a ficha depois. */}
-          <div className="mb-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-card/40 px-3 py-2.5">
-            <QuickFieldsEditor
-              categoryId={manualCategory?.id ?? aiClassId ?? null}
-              metadata={metadata}
-              overrides={fieldOverrides}
-              onChange={handleFieldChange}
-            />
-          </div>
-
-          {hasCategoryMismatch && (
-            <div className="mb-3 flex gap-2 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
-              <Icon
-                name="warning"
-                size={ICON_SIZE.sm}
-                className="mt-0.5 shrink-0 text-doqyn-warning"
-              />
-              <p className="text-caption text-doqyn-warning">
-                A IA sugeriu <strong>{aiClassName}</strong>, mas você está enviando para{' '}
-                <strong>{uploadDestination}</strong>. A categoria final seguirá a análise da IA.
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-eyebrow uppercase text-doqyn-muted">Categoria</p>
+              <p className="mt-0.5 text-body font-medium text-doqyn-text">
+                {manualCategory?.name ??
+                  (aiClassId ? aiClassName : 'A IA não conseguiu classificar')}
+              </p>
+              <p className="mt-0.5 text-micro text-doqyn-muted">
+                {manualCategory
+                  ? 'Escolhida por você. A IA fica registrada na auditoria.'
+                  : aiClassId
+                    ? 'Sugerida pela análise automática.'
+                    : 'Escolha a categoria para salvar este documento.'}
               </p>
             </div>
-          )}
 
-          {reasons.length > 0 && (
-            <div className="mb-3 flex gap-2 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
-              <Icon
-                name="warning"
-                size={ICON_SIZE.sm}
-                className="mt-0.5 shrink-0 text-doqyn-warning"
+            {!needsManualCategory && (
+              <button
+                type="button"
+                onClick={() => setShowCategoryPicker((current) => !current)}
+                className="shrink-0 rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
+              >
+                {showCategoryPicker ? 'Fechar' : 'Trocar'}
+              </button>
+            )}
+          </div>
+
+          {(needsManualCategory || showCategoryPicker) && (
+            <div className="mt-2.5">
+              <CategoryQuickPicker
+                selectedClassId={manualCategory?.id}
+                suggestedClassId={aiClassId}
+                onSelect={handlePickCategory}
               />
-              <ul className="space-y-1 text-caption text-doqyn-warning">
-                {reasons.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
             </div>
           )}
-
-          {showNaming && (
-            <DocumentNamingSection
-              settings={reviewSettings}
-              originalFileName={raw.originalFileName}
-              aiSuggestedFileName={raw.recommendedFileName ?? raw.originalFileName}
-              perItemChoice={perItemNaming}
-              onPerItemChoiceChange={setPerItemNaming}
-              className="mb-3"
-            />
-          )}
-
-          <dl className="space-y-2">
-            {!showNaming && (
-              <ReviewField
-                label="Nome final"
-                value={finalPreview !== '—' ? finalPreview : metadata.suggestedName}
-              />
-            )}
-            <ReviewField label="Tipo de documento" value={metadata.documentType} />
-            {reviewSettings.aiClassificationEnabled && (
-              <div>
-                <dt className="text-eyebrow uppercase text-doqyn-subtle">
-                  Confiança da classificação
-                </dt>
-                <dd className="mt-1">
-                  <ConfidenceBadge score={metadata.confidenceScore} />
-                </dd>
-              </div>
-            )}
-            {reviewSettings.aiMetadataEnabled &&
-              (metadata.extractedFields ?? []).slice(0, 8).map((field) => (
-                <ReviewField key={field.key} label={field.label} value={field.value} />
-              ))}
-          </dl>
         </div>
 
-        <footer className="shrink-0 border-t border-doqyn-border-subtle px-4 py-3">
-          <label className="flex cursor-pointer items-start gap-2 text-micro text-doqyn-muted">
-            <input
-              type="checkbox"
-              checked={reviewChecked}
-              onChange={(event) => setReviewChecked(event.target.checked)}
-              className="mt-0.5"
-            />
-            Revisei os dados extraídos e confirmo o{' '}
-            {isDocumentAdmin ? 'salvamento' : 'envio para aprovação'} deste documento.
-          </label>
-          {!isDocumentAdmin && (
-            <p className="mt-2 text-micro text-doqyn-muted">
-              Um administrador da empresa revisará os metadados na Auditoria antes de publicar na
-              Biblioteca.
-            </p>
-          )}
-          <div className="mt-3 flex justify-end gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={closeReview}>
-              Deixar para depois
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canConfirm || isConfirming}
-              onClick={() => void handleConfirm()}
-            >
-              {isConfirming && (
-                <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
-              )}
-              {isDocumentAdmin ? 'Confirmar e salvar' : 'Enviar para aprovação'}
-            </Button>
+        {uploadDestination && (
+          <div className="mb-3 rounded-[4px] border border-doqyn-border-subtle px-3 py-2">
+            <div className="flex items-start gap-2.5">
+              <Icon
+                name="folder_open"
+                size={ICON_SIZE.sm}
+                className="text-doqyn-accent mt-0.5 shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-caption font-medium text-doqyn-text">
+                  Pasta atual: {uploadDestination}
+                </p>
+                <p className="mt-0.5 text-micro text-doqyn-muted">
+                  A IA classificou como: {aiClassName}
+                </p>
+              </div>
+            </div>
           </div>
-        </footer>
+        )}
+
+        {/* Conferir e corrigir antes de salvar: consertar uma data errada não pode exigir salvar
+              o documento primeiro e abrir a ficha depois. */}
+        <div className="mb-3 rounded-[4px] border border-doqyn-border-subtle px-3 py-2.5">
+          <QuickFieldsEditor
+            categoryId={manualCategory?.id ?? aiClassId ?? null}
+            metadata={metadata}
+            overrides={fieldOverrides}
+            onChange={handleFieldChange}
+          />
+        </div>
+
+        {hasCategoryMismatch && (
+          <div className="mb-3 flex gap-2 rounded-[4px] border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
+            <Icon
+              name="warning"
+              size={ICON_SIZE.sm}
+              className="mt-0.5 shrink-0 text-doqyn-warning"
+            />
+            <p className="text-caption text-doqyn-warning">
+              A IA sugeriu <strong>{aiClassName}</strong>, mas você está enviando para{' '}
+              <strong>{uploadDestination}</strong>. A categoria final seguirá a análise da IA.
+            </p>
+          </div>
+        )}
+
+        {reasons.length > 0 && (
+          <div className="mb-3 flex gap-2 rounded-[4px] border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
+            <Icon
+              name="warning"
+              size={ICON_SIZE.sm}
+              className="mt-0.5 shrink-0 text-doqyn-warning"
+            />
+            <ul className="space-y-1 text-caption text-doqyn-warning">
+              {reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {showNaming && (
+          <DocumentNamingSection
+            settings={reviewSettings}
+            originalFileName={raw.originalFileName}
+            aiSuggestedFileName={raw.recommendedFileName ?? raw.originalFileName}
+            perItemChoice={perItemNaming}
+            onPerItemChoiceChange={setPerItemNaming}
+            className="mb-3"
+          />
+        )}
+
+        <dl className="space-y-2">
+          {!showNaming && (
+            <ReviewField
+              label="Nome final"
+              value={finalPreview !== '—' ? finalPreview : metadata.suggestedName}
+            />
+          )}
+          <ReviewField label="Tipo de documento" value={metadata.documentType} />
+          {reviewSettings.aiClassificationEnabled && (
+            <div>
+              <dt className="text-eyebrow uppercase text-doqyn-subtle">
+                Confiança da classificação
+              </dt>
+              <dd className="mt-1">
+                <ConfidenceBadge score={metadata.confidenceScore} />
+              </dd>
+            </div>
+          )}
+          {reviewSettings.aiMetadataEnabled &&
+            (metadata.extractedFields ?? [])
+              .slice(0, 8)
+              .map((field) => (
+                <ReviewField key={field.key} label={field.label} value={field.value} />
+              ))}
+        </dl>
+      </div>
+
+      <footer className="shrink-0 border-t border-doqyn-border-subtle px-4 py-3">
+        <label className="flex cursor-pointer items-start gap-2 text-micro text-doqyn-muted">
+          <input
+            type="checkbox"
+            checked={reviewChecked}
+            onChange={(event) => setReviewChecked(event.target.checked)}
+            className="mt-0.5"
+          />
+          Revisei os dados extraídos e confirmo o{' '}
+          {isDocumentAdmin ? 'salvamento' : 'envio para aprovação'} deste documento.
+        </label>
+        {!isDocumentAdmin && (
+          <p className="mt-2 text-micro text-doqyn-muted">
+            Um administrador da empresa revisará os metadados na Auditoria antes de publicar na
+            Biblioteca.
+          </p>
+        )}
+        <div className="mt-3 flex justify-end gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={closeReview}>
+            Deixar para depois
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!canConfirm || isConfirming}
+            onClick={() => void handleConfirm()}
+          >
+            {isConfirming && (
+              <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
+            )}
+            {isDocumentAdmin ? 'Confirmar e salvar' : 'Enviar para aprovação'}
+          </Button>
+        </div>
+      </footer>
     </WorkspaceSideDrawer>
   );
 }

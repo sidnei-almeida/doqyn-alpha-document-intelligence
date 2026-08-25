@@ -54,7 +54,9 @@ export function NewVersionAnalyzingPanel({
           />
         </div>
 
-        <p className="mt-4 max-w-full truncate text-[13px] font-medium text-doqyn-text">{fileName}</p>
+        <p className="mt-4 max-w-full truncate text-[13px] font-medium text-doqyn-text">
+          {fileName}
+        </p>
         <p className="mt-1 text-[12px] text-doqyn-muted">{formatFileSize(fileSize)}</p>
       </div>
 

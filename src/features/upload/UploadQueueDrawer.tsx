@@ -65,9 +65,7 @@ function QueueRow({
 
   const subtitle = useMemo(() => {
     if (
-      (item.status === 'error' ||
-        item.status === 'ai_paused' ||
-        item.status === 'still_running') &&
+      (item.status === 'error' || item.status === 'ai_paused' || item.status === 'still_running') &&
       item.errorMessage
     ) {
       return item.errorMessage;
@@ -135,7 +133,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => cancelAutoConfirm(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
           Pausar
         </button>
@@ -144,7 +142,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => openReview(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
+          className="shrink-0 rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
         >
           Revisar
         </button>
@@ -156,7 +154,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => retryItem(item.id)}
-          className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
           aria-label="Tentar novamente"
         >
           <Icon name="replay" size={ICON_SIZE.sm} />
@@ -170,7 +168,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => removeItem(item.id)}
-          className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
           aria-label="Remover da fila"
         >
           <Icon name="close" size={ICON_SIZE.sm} />
@@ -260,7 +258,7 @@ export function UploadQueueDrawer() {
   return (
     <section
       className={cn(
-        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal',
+        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-surface shadow-modal',
         leaving && 'queue-drawer-leave',
       )}
       aria-label="Fila de upload"
@@ -282,7 +280,7 @@ export function UploadQueueDrawer() {
             <Tooltip label="Preferências de upload">
               <Link
                 to="/settings?section=upload-ia"
-                className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
                 aria-label="Preferências de upload"
               >
                 <Icon name="settings" size={ICON_SIZE.sm} />
@@ -292,7 +290,7 @@ export function UploadQueueDrawer() {
               <button
                 type="button"
                 onClick={() => setLeaving(true)}
-                className="rounded-md px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="rounded-[4px] px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
                 Limpar
               </button>
@@ -300,7 +298,7 @@ export function UploadQueueDrawer() {
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
-              className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+              className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               aria-label={collapsed ? 'Expandir fila' : 'Recolher fila'}
             >
               <Icon

@@ -56,7 +56,9 @@ export function buildOverviewMetrics(
       key: 'errors',
       label: 'Erros',
       value: summary.documentsWithErrors,
-      subtext: 'preview ou análise',
+      // "preview ou análise" descrevia a origem do erro, não o que o número
+      // conta — e o número conta documentos, não incidentes.
+      subtext: summary.documentsWithErrors === 1 ? 'documento afetado' : 'documentos afetados',
       path: '/audit',
       tone: summary.documentsWithErrors > 0 ? 'danger' : 'default',
     },

@@ -45,7 +45,7 @@ export function ExpiryAlertsPage() {
         )}
       </div>
 
-      <div className="border-border rounded-lg border">
+      <div className="rounded-lg border border-doqyn-border-subtle">
         <ExpiryAlertList
           alerts={alerts}
           isLoading={isLoading}

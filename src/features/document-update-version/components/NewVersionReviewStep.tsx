@@ -71,9 +71,7 @@ export function NewVersionReviewStep({
             checked={reviewChecked}
             onChange={(event) => onReviewCheckedChange(event.target.checked)}
           />
-          <span>
-            Revisei os metadados extraídos e confirmo que a nova versão pode ser criada.
-          </span>
+          <span>Revisei os metadados extraídos e confirmo que a nova versão pode ser criada.</span>
         </label>
       )}
     </div>

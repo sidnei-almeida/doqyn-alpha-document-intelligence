@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
-import { Button } from '@/components/ui/Button';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useExpiryAlerts } from '../hooks/useExpiryAlerts';
@@ -38,7 +37,9 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
           <Icon name="notifications" size={ICON_SIZE.nav} />
           {unreadCount > 0 && (
             <span
-              className="bg-destructive text-destructive-foreground absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none"
+              // Disco vermelho é a forma de outro sistema: aqui contagem é
+              // registro — etiqueta de canto reto, monoespaçada e tabular.
+              className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-[2px] bg-doqyn-danger-bg px-1 font-mono text-micro font-medium tabular-nums leading-none text-doqyn-danger"
               aria-hidden="true"
             >
               {unreadCount > BADGE_CAP ? `${BADGE_CAP}+` : unreadCount}
@@ -51,16 +52,20 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
         anchorRef={anchorRef}
         open={open}
         onClose={() => setOpen(false)}
-        className="border-border bg-popover w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-lg border shadow-lg"
+        className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden"
         role="dialog"
         aria-label="Alertas de vencimento"
       >
-        <div className="border-border flex items-center justify-between border-b px-3 py-2">
-          <p className="text-sm font-medium">Vencimentos</p>
+        <div className="flex items-center justify-between gap-2 border-b border-doqyn-border-subtle px-3 py-2">
+          <p className="register-label text-doqyn-subtle">Vencimentos</p>
           {unreadCount > 0 && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => markAllRead()}>
+            <button
+              type="button"
+              onClick={() => markAllRead()}
+              className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
+            >
               Marcar tudo como lido
-            </Button>
+            </button>
           )}
         </div>
 
@@ -74,19 +79,19 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
           />
         </div>
 
-        <div className="border-border border-t p-2">
-          <Button
+        {/* Ir para a lista completa é navegação, não decisão: link de texto,
+            não um botão de largura total dentro de um popover de 24rem. */}
+        <div className="flex justify-end border-t border-doqyn-border-subtle px-3 py-2">
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full"
             onClick={() => {
               setOpen(false);
               void navigate('/vencimentos');
             }}
+            className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
           >
             Ver todos
-          </Button>
+          </button>
         </div>
       </AnchoredPopover>
     </>

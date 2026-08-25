@@ -1,3 +1,4 @@
+import { DrawerSection } from '@/components/ui/DrawerSection';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { formatDateTime } from '@/lib/utils';
 import type { DocumentVersionSummary } from '@/types/document-library';
@@ -17,20 +18,10 @@ export function VersionHistorySummary({
 }: VersionHistorySummaryProps) {
   if (versions.length === 0) return null;
 
-  return (
-    <section
-      className={
-        compact
-          ? 'flex flex-wrap items-center gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2'
-          : 'rounded-xl border border-doqyn-border-subtle bg-doqyn-surface/50 p-4'
-      }
-      data-testid="update-version-history-summary"
-    >
-      {compact ? (
-        <>
-          <span className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-            Versões
-          </span>
+  if (compact) {
+    return (
+      <DrawerSection label="Versões" data-testid="update-version-history-summary">
+        <div className="flex flex-wrap items-center gap-1.5">
           {versions.map((version) => (
             <VersionBadge
               key={version.versionId}
@@ -38,41 +29,48 @@ export function VersionHistorySummary({
               isCurrent={version.isCurrent ?? version.versionLabel === currentVersionLabel}
             />
           ))}
-          <span className="text-[10px] text-doqyn-muted">→</span>
-          <span className="text-[11px] font-medium text-doqyn-primary">{nextVersionLabel}</span>
-        </>
-      ) : (
-        <>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] font-medium text-doqyn-text">Histórico de versões</p>
-            <p className="text-[11px] text-doqyn-muted">
-              Próxima versão será{' '}
-              <span className="font-medium text-doqyn-primary">{nextVersionLabel}</span>
-            </p>
-          </div>
-          <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
-            {versions.map((version) => (
-              <li
-                key={version.versionId}
-                className="flex items-center justify-between gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <VersionBadge
-                    version={version.versionLabel ?? version.versionId}
-                    isCurrent={version.isCurrent ?? version.versionLabel === currentVersionLabel}
-                  />
-                  <p className="mt-1 truncate text-[12px] text-doqyn-text">
-                    {version.finalFileName ?? version.originalFileName ?? '—'}
-                  </p>
-                </div>
-                <span className="shrink-0 text-[11px] text-doqyn-muted">
-                  {version.createdAt ? formatDateTime(version.createdAt) : '—'}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
+          <span className="font-mono text-micro text-doqyn-subtle">→</span>
+          <span className="font-mono text-micro tabular-nums text-doqyn-primary">
+            {nextVersionLabel}
+          </span>
+        </div>
+      </DrawerSection>
+    );
+  }
+
+  return (
+    <DrawerSection
+      label="Histórico de versões"
+      aside={
+        <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
+          próxima {nextVersionLabel}
+        </span>
+      }
+      data-testid="update-version-history-summary"
+    >
+      {/* Linha de registro, separada por fio: a lista de versões estava dentro
+          de uma pilha de cartõezinhos, um por versão. */}
+      <ul className="scrollbar-thin max-h-48 overflow-y-auto">
+        {versions.map((version) => (
+          <li
+            key={version.versionId}
+            className="flex items-center justify-between gap-3 border-b border-doqyn-border-subtle/50 py-2 last:border-0"
+          >
+            <div className="min-w-0">
+              <VersionBadge
+                version={version.versionLabel ?? version.versionId}
+                isCurrent={version.isCurrent ?? version.versionLabel === currentVersionLabel}
+              />
+              <p className="mt-1 truncate text-caption text-doqyn-text">
+                {version.finalFileName ?? version.originalFileName ?? '—'}
+              </p>
+            </div>
+            <span className="shrink-0 font-mono text-micro tabular-nums text-doqyn-subtle">
+              {version.createdAt ? formatDateTime(version.createdAt) : '—'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </DrawerSection>
   );
 }

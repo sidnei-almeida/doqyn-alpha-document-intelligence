@@ -126,3 +126,29 @@ export async function updateDocumentMetadata(
   if (!response.ok) throw await parseError(response);
   return (await response.json()) as MetadataUpdateResponse;
 }
+
+export type RenameDocumentResponse = {
+  documentId: string;
+  previousFileName: string;
+  fileName: string;
+  versionId: string;
+};
+
+/** Renomeia o rótulo do documento — versões e objeto no storage ficam intactos. */
+export async function renameDocument(
+  documentId: string,
+  fileName: string,
+): Promise<RenameDocumentResponse> {
+  const response = await authFetch(`/api/documents/${encodeURIComponent(documentId)}/rename`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName }),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(body.message ?? 'Não foi possível renomear o documento.');
+  }
+
+  return (await response.json()) as RenameDocumentResponse;
+}

@@ -56,11 +56,11 @@ export function ExpiryAlertConfigSection({
   const notifiesEveryoneWithAccess = value.enabled && value.notifyGroupIds.length === 0;
 
   return (
-    <section className="border-border space-y-3 rounded-md border p-3">
+    <section className="space-y-3 rounded-md border border-doqyn-border-subtle p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium">Alertas de vencimento</p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-doqyn-muted">
             Avisa quem tem acesso a esta categoria pelo mapa de regras quando um documento estiver
             perto de vencer. O dono do documento é sempre avisado.
           </p>
@@ -85,7 +85,7 @@ export function ExpiryAlertConfigSection({
               onBlur={(event) => commitOffsets(event.target.value)}
               placeholder="30, 7, 1"
             />
-            <p className="text-muted-foreground mt-1 text-xs">
+            <p className="mt-1 text-xs text-doqyn-muted">
               Um aviso por marco. Use 0 para avisar no próprio dia do vencimento.
             </p>
           </div>
@@ -100,12 +100,12 @@ export function ExpiryAlertConfigSection({
 
           <div>
             <p className={fieldLabelClass}>Restringir a grupos (opcional)</p>
-            <p className="text-muted-foreground mb-1 text-xs">
+            <p className="mb-1 text-xs text-doqyn-muted">
               Marcar grupos limita o aviso a eles. Grupo sem permissão de ver a categoria no mapa de
               regras não recebe, mesmo marcado aqui.
             </p>
             {groups.length === 0 ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-doqyn-muted">
                 Nenhum grupo documental cadastrado. Sem grupos, só o dono do documento é avisado.
               </p>
             ) : (
@@ -130,7 +130,7 @@ export function ExpiryAlertConfigSection({
           </div>
 
           {notifiesEveryoneWithAccess && (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-doqyn-muted">
               Nenhum grupo marcado: todos os grupos com acesso de leitura a esta categoria serão
               avisados.
             </p>

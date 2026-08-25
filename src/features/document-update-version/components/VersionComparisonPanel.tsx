@@ -40,7 +40,9 @@ export function VersionComparisonPanel({
             <div className="flex items-center gap-2">
               <p className="text-[11px] font-medium text-doqyn-text">{row.label}</p>
               {row.changed && (
-                <span className="text-[9px] uppercase tracking-wide text-doqyn-warning">alterado</span>
+                <span className="text-[9px] uppercase tracking-wide text-doqyn-warning">
+                  alterado
+                </span>
               )}
             </div>
             <div className="mt-1.5 grid gap-1.5 text-[11px]">

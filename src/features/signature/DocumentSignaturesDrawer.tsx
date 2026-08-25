@@ -84,7 +84,7 @@ function SignatureRequestCard({
   const verificationCode = entry.signature?.verificationCode;
 
   return (
-    <section className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-4">
+    <section className="rounded-[4px] border border-doqyn-border-subtle p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
@@ -129,7 +129,7 @@ function SignatureRequestCard({
       </dl>
 
       {entry.message ? (
-        <blockquote className="mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2 text-caption leading-relaxed text-doqyn-subtle">
+        <blockquote className="mt-3 rounded-[4px] border border-doqyn-border-subtle px-3 py-2 text-caption leading-relaxed text-doqyn-subtle">
           {entry.message}
         </blockquote>
       ) : null}

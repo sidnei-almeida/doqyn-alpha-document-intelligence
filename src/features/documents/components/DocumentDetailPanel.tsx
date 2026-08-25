@@ -8,10 +8,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentVersionSummary } from '@/types/document-library';
-import {
-  fetchDocumentDownloadBlob,
-  triggerBlobDownload,
-} from '../api/documentsApi.blobs';
+import { fetchDocumentDownloadBlob, triggerBlobDownload } from '../api/documentsApi.blobs';
 import { getPreviewErrorMessage, getPreviewStatusLabel } from '../utils/previewErrors';
 import { DocumentPreviewViewer } from './DocumentPreviewViewer';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
@@ -37,12 +34,15 @@ export function DocumentDetailPanel({
 
   const activeVersionId = useMemo(() => {
     if (!data) return null;
-    return selectedVersionId ?? data.latestVersion?.versionId ?? data.document.latestVersionId ?? null;
+    return (
+      selectedVersionId ?? data.latestVersion?.versionId ?? data.document.latestVersionId ?? null
+    );
   }, [data, selectedVersionId]);
 
-  const activeVersion = data?.versions.find(
-    (version: DocumentVersionSummary) => version.versionId === activeVersionId,
-  ) ?? null;
+  const activeVersion =
+    data?.versions.find(
+      (version: DocumentVersionSummary) => version.versionId === activeVersionId,
+    ) ?? null;
   const displayName =
     activeVersion?.finalFileName ??
     data?.document.currentFileName ??
@@ -150,7 +150,9 @@ export function DocumentDetailPanel({
             <div>
               <p className="text-xs text-doqyn-muted">Preview</p>
               <p className="text-sm text-doqyn-text">
-                {getPreviewStatusLabel(activeVersion?.preview?.status ?? data.document.preview?.status)}
+                {getPreviewStatusLabel(
+                  activeVersion?.preview?.status ?? data.document.preview?.status,
+                )}
               </p>
             </div>
           </div>
@@ -188,9 +190,7 @@ export function DocumentDetailPanel({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() =>
-                  navigate(`/tracking?documentId=${encodeURIComponent(documentId)}`)
-                }
+                onClick={() => navigate(`/tracking?documentId=${encodeURIComponent(documentId)}`)}
               >
                 <Icon name="history" size={14} />
                 Ver tracking
@@ -206,7 +206,7 @@ export function DocumentDetailPanel({
         )}
 
         {documentId && (
-          <CardContent className="border-t border-border pt-4">
+          <CardContent className="border-t border-doqyn-border-subtle pt-4">
             <p className="mb-3 text-sm font-medium">Vencimento e metadados</p>
             <DocumentExpiryEditor
               documentId={documentId}

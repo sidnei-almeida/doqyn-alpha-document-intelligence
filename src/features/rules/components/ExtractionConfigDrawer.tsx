@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import {
-  ExpiryAlertConfigSection,
-  type ExpiryAlertConfigValue,
-} from './ExpiryAlertConfigSection';
+import { ExpiryAlertConfigSection, type ExpiryAlertConfigValue } from './ExpiryAlertConfigSection';
 import { DEFAULT_EXPIRY_ALERT_CONFIG } from './expiryAlertDefaults';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
@@ -126,7 +123,7 @@ export function ExtractionConfigDrawer({
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-[var(--z-drawer)] flex justify-end modal-overlay-scrim"
+      className="modal-overlay-scrim fixed inset-0 z-[var(--z-drawer)] flex justify-end"
       role="dialog"
       aria-modal="true"
       aria-labelledby="extraction-drawer-title"
@@ -149,7 +146,10 @@ export function ExtractionConfigDrawer({
           </button>
         </div>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col overflow-hidden">
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          className="flex flex-1 flex-col overflow-hidden"
+        >
           <div className="flex-1 space-y-5 overflow-y-auto p-6">
             <Textarea
               id="class-description"
@@ -225,7 +225,7 @@ export function ExtractionConfigDrawer({
                 {fields.map((field, index) => (
                   <div
                     key={index}
-                    className="space-y-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 p-3"
+                    className="space-y-2 rounded-[4px] border border-doqyn-border p-3"
                   >
                     <div className="flex gap-2">
                       <Input
@@ -254,9 +254,7 @@ export function ExtractionConfigDrawer({
                     <div className="flex flex-wrap items-center gap-3">
                       <Select
                         value={field.type}
-                        onChange={(e) =>
-                          updateField(index, { type: e.target.value as FieldType })
-                        }
+                        onChange={(e) => updateField(index, { type: e.target.value as FieldType })}
                         options={ALLOWED_FIELD_TYPES.map((t) => ({
                           value: t,
                           label: FIELD_TYPE_LABELS[t],

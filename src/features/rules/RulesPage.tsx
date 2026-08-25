@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -21,8 +22,16 @@ import type { DocumentCategory } from '@/types/rules';
 
 type RulesTab = 'acessos' | 'matriz';
 
+/**
+ * A Biblioteca chama de pasta o que a governança chama de categoria: são a
+ * mesma coisa. Quem clica em "Nova categoria" lá chega aqui já com o formulário
+ * aberto, em vez de aterrissar na página e ter de procurar o botão.
+ */
+const NEW_CATEGORY_PARAM = 'nova';
+
 export function RulesPage() {
   const { user, hasAnyRole } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<RulesTab>('acessos');
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -31,6 +40,21 @@ export function RulesPage() {
   const [simulatedMemberId, setSimulatedMemberId] = useState('');
 
   const isAdmin = canAccessRulesPage(hasAnyRole) || user?.role === 'admin';
+
+  useEffect(() => {
+    if (!isAdmin || searchParams.get(NEW_CATEGORY_PARAM) !== 'categoria') return;
+    setCategoryModalOpen(true);
+    // O parâmetro é gatilho, não estado: sai da URL para que um refresh não
+    // reabra o formulário sozinho.
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params);
+        next.delete(NEW_CATEGORY_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [isAdmin, searchParams, setSearchParams]);
 
   const {
     groups,

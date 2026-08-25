@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { BadgeGroup } from '@/components/ui/BadgeGroup';
+import { DrawerField, DrawerSection } from '@/components/ui/DrawerSection';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -21,15 +21,6 @@ type CurrentDocumentSummaryCardProps = {
   compact?: boolean;
 };
 
-function DetailRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-1">
-      <dt className="shrink-0 text-[11px] text-doqyn-muted">{label}</dt>
-      <dd className="min-w-0 truncate text-right text-[11px] text-doqyn-text">{value}</dd>
-    </div>
-  );
-}
-
 export function CurrentDocumentSummaryCard({
   document,
   currentVersionLabel,
@@ -41,20 +32,15 @@ export function CurrentDocumentSummaryCard({
 
   if (compact) {
     return (
-      <section
-        className="rounded-xl border border-doqyn-border-subtle bg-doqyn-bg/40 p-3"
+      <DrawerSection
+        label="Documento atual"
+        aside={<VersionBadge version={currentVersionLabel} isCurrent size="xs" />}
+        className="border-t-0 pt-0"
         data-testid="update-version-current-summary"
       >
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-            Documento atual
-          </p>
-          <VersionBadge version={currentVersionLabel} isCurrent size="xs" />
-        </div>
-
-        <div className="flex gap-3">
-          <div className="relative w-[150px] shrink-0">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome shadow-sm [&_img]:object-contain [&_img]:object-top">
+        <div className="flex gap-4">
+          <div className="relative w-[132px] shrink-0">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[4px] border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome [&_img]:object-contain [&_img]:object-top">
               <DocumentThumbnail
                 fileName={name}
                 documentId={document.documentId}
@@ -70,35 +56,31 @@ export function CurrentDocumentSummaryCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <TruncatedText className="text-[13px] font-medium leading-snug text-doqyn-text">
+            <TruncatedText className="text-label font-medium leading-snug text-doqyn-text">
               {name}
             </TruncatedText>
-            <BadgeGroup className="mt-1.5">
-              <StatusPill
-                status={(document.status as DocumentStatus) ?? 'active'}
-                size="xs"
-                dot
-              />
+            <BadgeGroup className="mt-2">
+              <StatusPill status={(document.status as DocumentStatus) ?? 'active'} size="xs" dot />
               <DocumentFavoriteBadge document={document} variant="inline" />
             </BadgeGroup>
-            <dl className="mt-2 border-t border-doqyn-border-subtle/70 pt-2">
-              <DetailRow
+            <dl className="mt-3">
+              <DrawerField
                 label="Categoria"
                 value={document.categoryName ?? document.documentType ?? '—'}
               />
-              <DetailRow
+              <DrawerField
                 label="Proprietário"
                 value={document.createdBy?.displayName ?? document.ownerName ?? '—'}
               />
-              <DetailRow label="Atualizado" value={formatDate(document.updatedAt)} />
+              <DrawerField label="Atualizado" value={formatDate(document.updatedAt)} mono />
               {document.processingStatus && (
-                <DetailRow label="Processamento" value={document.processingStatus} />
+                <DrawerField label="Processamento" value={document.processingStatus} />
               )}
-              {fileSizeLabel && <DetailRow label="Tamanho" value={fileSizeLabel} />}
+              {fileSizeLabel && <DrawerField label="Tamanho" value={fileSizeLabel} mono />}
             </dl>
           </div>
         </div>
-      </section>
+      </DrawerSection>
     );
   }
 

@@ -45,7 +45,7 @@ export function ExpiryAlertList({
   compact = false,
 }: ExpiryAlertListProps) {
   if (isLoading) {
-    return <p className="text-muted-foreground p-4 text-sm">Carregando alertas…</p>;
+    return <p className="p-4 text-caption text-doqyn-muted">Carregando alertas…</p>;
   }
 
   if (alerts.length === 0) {
@@ -58,12 +58,12 @@ export function ExpiryAlertList({
   }
 
   return (
-    <ul className="divide-border divide-y">
+    <ul className="divide-y divide-doqyn-border-subtle/75">
       {alerts.map((alert) => (
         <li
           key={alert.id}
           className={`flex items-start justify-between gap-3 p-3 ${
-            alert.status === 'unread' ? 'bg-accent/30' : ''
+            alert.status === 'unread' ? 'bg-doqyn-surface/60' : ''
           }`}
         >
           <div className="min-w-0 flex-1">
@@ -72,19 +72,19 @@ export function ExpiryAlertList({
                 {urgencyLabel(alert.daysRemaining)}
               </Badge>
               {alert.categoryName && !compact && (
-                <span className="text-muted-foreground text-xs">{alert.categoryName}</span>
+                <span className="text-caption text-doqyn-muted">{alert.categoryName}</span>
               )}
             </div>
 
             <Link
               to={`/biblioteca?documentId=${encodeURIComponent(alert.documentId)}`}
-              className="mt-1 block truncate text-sm font-medium hover:underline"
+              className="mt-1 block truncate text-label font-medium text-doqyn-text underline-offset-4 hover:underline"
               title={alert.documentName}
             >
               {alert.documentName}
             </Link>
 
-            <p className="text-muted-foreground text-xs">
+            <p className="font-mono text-micro tabular-nums text-doqyn-subtle">
               Vencimento em {formatDate(alert.validityDate)}
             </p>
           </div>
