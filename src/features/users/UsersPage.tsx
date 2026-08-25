@@ -14,18 +14,14 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { PlatformRoleChips } from '@/components/ui/PlatformRoleChips';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
-import { Input } from '@/components/ui/Input';
-import { ExternalInviteLinkField } from '@/components/ui/ExternalInviteLinkField';
 import { useAuth } from '@/auth/useAuth';
 import {
   type CompanyMemberDto,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MemberStatus,
-  type PlatformRole,
   suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
-import type { CreateInviteResponse } from '@/features/invite/api/inviteApi';
 import { cloneAccessFormState, type AccessFormState } from './accessFormState';
 import {
   DocumentGroupsSection,
@@ -75,22 +71,12 @@ export function UsersPage() {
 
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ link: string; intro: string } | null>(null);
   const [editingMember, setEditingMember] = useState<CompanyMemberDto | null>(null);
   const [editAccessBaseline, setEditAccessBaseline] = useState<AccessFormState | null>(null);
   const [approvingMember, setApprovingMember] = useState<CompanyMemberDto | null>(null);
   const [blockingMember, setBlockingMember] = useState<CompanyMemberDto | null>(null);
   const [unblockingMember, setUnblockingMember] = useState<CompanyMemberDto | null>(null);
   const [rejectingMember, setRejectingMember] = useState<CompanyMemberDto | null>(null);
-
-  const [inviteForm, setInviteForm] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    platformRoles: ['user'] as PlatformRole[],
-    accessGroupIds: [] as string[],
-  });
 
   const [accessForm, setAccessForm] = useState<AccessFormState>({
     platformRoles: ['user'],
@@ -111,83 +97,6 @@ export function UsersPage() {
   const invalidate = async () => {
     await invalidateUserManagementQueries(queryClient, sessionTenantId || undefined);
   };
-
-  const closeInviteModal = () => {
-    setInviteOpen(false);
-    setInviteResult(null);
-    setInviteForm({
-      email: '',
-      firstName: '',
-      lastName: '',
-      platformRoles: ['user'],
-      accessGroupIds: [],
-    });
-  };
-
-  const openInviteModal = () => {
-    setInviteResult(null);
-    setInviteOpen(true);
-  };
-
-  const inviteMutation = useMutation({
-    mutationFn: (): Promise<
-      CreateInviteResponse | { member: CompanyMemberDto; temporaryPassword?: string }
-    > =>
-      usersApi.invite({
-        ...inviteForm,
-      }),
-    onSuccess: (data) => {
-      if ('emailSent' in data && data.emailSent) {
-        showAppToast({
-          type: 'success',
-          title: 'Convite enviado por e-mail.',
-          message: 'O convidado receberá o link no e-mail informado.',
-        });
-        closeInviteModal();
-        void invalidate();
-        return;
-      }
-
-      if ('inviteLink' in data && typeof data.inviteLink === 'string') {
-        const reasonMessages: Record<string, string> = {
-          smtp_not_configured:
-            'Convite criado. Configure o SMTP em Configurações → Empresa → Governança para envio automático por e-mail.',
-          email_disabled:
-            'Convite criado. O envio automático está desativado neste ambiente — compartilhe o link abaixo com o convidado.',
-          domain_mismatch:
-            'Convite criado. Seu e-mail precisa ser do mesmo domínio do SMTP da empresa para envio automático.',
-          send_failed:
-            'Convite criado, mas o e-mail não foi enviado. Compartilhe o link abaixo com o convidado.',
-        };
-        const reason =
-          'emailSkipReason' in data && typeof data.emailSkipReason === 'string'
-            ? data.emailSkipReason
-            : undefined;
-        setInviteResult({
-          link: data.inviteLink,
-          intro:
-            reason && reasonMessages[reason]
-              ? reasonMessages[reason]
-              : 'Convite criado. Compartilhe o link abaixo com o convidado.',
-        });
-        void invalidate();
-        return;
-      }
-
-      showAppToast({ type: 'success', title: 'Usuário convidado com sucesso.' });
-      if ('temporaryPassword' in data && typeof data.temporaryPassword === 'string') {
-        showAppToast({
-          type: 'info',
-          title: 'Senha temporária (dev)',
-          message: data.temporaryPassword,
-          duration: 15000,
-        });
-      }
-      closeInviteModal();
-      void invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
 
   const approveMutation = useMutation({
     mutationFn: () => {
@@ -297,7 +206,9 @@ export function UsersPage() {
       platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
       accessGroupIds: [],
       documentGroupIds: suggested,
-      notificationPreferences: member.notificationPreferences ?? { ...DEFAULT_NOTIFICATION_PREFERENCES },
+      notificationPreferences: member.notificationPreferences ?? {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+      },
     });
   };
 
@@ -311,8 +222,7 @@ export function UsersPage() {
     <PageShell
       eyebrow="Administração"
       title="Usuários"
-      description={`Convide, aprove e gerencie acessos de ${tenantDisplayName}.`}
-      actions={<Button onClick={openInviteModal}>Convidar usuário</Button>}
+      description={`Aprove e gerencie acessos de ${tenantDisplayName}.`}
       bodyClassName="min-h-0"
     >
       {/* A barra de filtros era um card com borda em volta de um campo e cinco
@@ -335,9 +245,10 @@ export function UsersPage() {
 
         <SegmentedTextToggle
           value={statusFilter}
-          options={(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map(
-            (status) => ({ value: status, label: STATUS_FILTER_LABELS[status] }),
-          )}
+          options={(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => ({
+            value: status,
+            label: STATUS_FILTER_LABELS[status],
+          }))}
           onChange={setStatusFilter}
           aria-label="Filtrar por status"
         />
@@ -362,30 +273,25 @@ export function UsersPage() {
         keyExtractor={(member) => member.id}
         emptyMessage={
           membersQuery.isError
-            ? 'Falha ao carregar usuários'
+            ? 'Não foi possível carregar os usuários'
             : membersQuery.isLoading
-              ? 'Carregando usuários...'
-              : 'Nenhum usuário encontrado'
+              ? 'Carregando usuários'
+              : statusFilter === 'all'
+                ? 'Nenhum usuário ainda'
+                : `Nenhum usuário ${STATUS_FILTER_LABELS[statusFilter].toLowerCase()}`
         }
         emptyDescription={
           statusFilter === 'all'
-            ? 'Convide colaboradores para começar a gerenciar acessos da empresa.'
-            : 'Nenhum usuário corresponde ao status selecionado.'
+            ? 'Ninguém com acesso à empresa por enquanto.'
+            : 'Troque o filtro para ver os outros registros.'
         }
-        emptyAction={
-          !membersQuery.isLoading && statusFilter === 'all' ? (
-            <Button onClick={openInviteModal}>Convidar usuário</Button>
-          ) : undefined
-        }
-        sparseMessage="Nenhum outro usuário nesta listagem"
-        sparseDescription="Altere o filtro de status para ver outros registros."
+        sparseMessage="Só isto nesta seleção"
+        sparseDescription="Troque o filtro de status para ver os outros registros."
         columns={[
           {
             key: 'name',
             header: 'Nome',
-            render: (member) => (
-              <span className="font-medium">{memberDisplayName(member)}</span>
-            ),
+            render: (member) => <span className="font-medium">{memberDisplayName(member)}</span>,
           },
           {
             key: 'email',
@@ -408,8 +314,12 @@ export function UsersPage() {
             render: (member) => (
               <span className="meta-text">
                 {member.status === 'pending' && member.requestedAccess?.departmentText ? (
-                  <Tooltip label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}>
-                    <span className="text-doqyn-muted">{member.requestedAccess.departmentText}</span>
+                  <Tooltip
+                    label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}
+                  >
+                    <span className="text-doqyn-muted">
+                      {member.requestedAccess.departmentText}
+                    </span>
                   </Tooltip>
                 ) : (member.documentGroupIds ?? member.groupIds).length ? (
                   (member.documentGroupIds ?? member.groupIds)
@@ -462,70 +372,13 @@ export function UsersPage() {
         ]}
       />
 
-      {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-lg">
-            <CardContent className="space-y-4 p-6">
-              <h2 className="text-lg font-medium">
-                {inviteResult ? 'Convite criado' : 'Convidar usuário'}
-              </h2>
-
-              {inviteResult ? (
-                <div className="space-y-4" data-testid="user-invite-link-success">
-                  <ExternalInviteLinkField
-                    value={inviteResult.link}
-                    intro={inviteResult.intro}
-                    testId="user-invite-link"
-                  />
-                  <div className="flex justify-end">
-                    <Button type="button" onClick={closeInviteModal}>
-                      Fechar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <Input
-                    placeholder="E-mail"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Nome"
-                      value={inviteForm.firstName}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Sobrenome"
-                      value={inviteForm.lastName}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
-                    />
-                  </div>
-                  <PlatformRolesSection
-                    value={inviteForm.platformRoles}
-                    onChange={(platformRoles) => setInviteForm((f) => ({ ...f, platformRoles }))}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button variant="secondary" onClick={closeInviteModal}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending}>
-                      {inviteMutation.isPending ? 'Convidando…' : 'Convidar'}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {approvingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
+        <div className="modal-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto">
             <CardContent className="space-y-1 p-6">
-              <h2 className="mb-4 text-lg font-medium">Aprovar {memberDisplayName(approvingMember)}</h2>
+              <h2 className="mb-4 text-lg font-medium">
+                Aprovar {memberDisplayName(approvingMember)}
+              </h2>
               <AccessRequestDetailsPanel
                 member={approvingMember}
                 className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
@@ -554,9 +407,7 @@ export function UsersPage() {
               <DocumentGroupsSection
                 groups={documentGroups}
                 value={accessForm.documentGroupIds}
-                onChange={(documentGroupIds) =>
-                  setAccessForm((f) => ({ ...f, documentGroupIds }))
-                }
+                onChange={(documentGroupIds) => setAccessForm((f) => ({ ...f, documentGroupIds }))}
               />
               <NotificationsSection
                 value={accessForm.notificationPreferences}
@@ -568,7 +419,10 @@ export function UsersPage() {
                 <Button variant="secondary" onClick={() => setApprovingMember(null)}>
                   Cancelar
                 </Button>
-                <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
+                <Button
+                  onClick={() => approveMutation.mutate()}
+                  disabled={approveMutation.isPending}
+                >
                   {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
                 </Button>
               </div>
@@ -599,9 +453,7 @@ export function UsersPage() {
           tenantDisplayName={tenantDisplayName}
           blocking={blockMutation.isPending}
           onClose={() => setBlockingMember(null)}
-          onConfirm={(reason) =>
-            blockMutation.mutate({ memberId: blockingMember.id, reason })
-          }
+          onConfirm={(reason) => blockMutation.mutate({ memberId: blockingMember.id, reason })}
         />
       )}
 

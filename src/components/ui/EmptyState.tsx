@@ -10,6 +10,13 @@ export interface EmptyStateProps {
   stretch?: boolean;
 }
 
+/**
+ * Aviso de lista vazia — sem moldura.
+ *
+ * Era um bloco preenchido de canto arredondado no meio da tela: uma caixa em
+ * volta de uma frase, quando o que sobra na tela já separa o aviso de tudo o
+ * mais. Quando não há ícone, o fio curto acima faz o papel de marca.
+ */
 export function EmptyState({
   icon,
   title,
@@ -21,7 +28,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-xl bg-doqyn-card/60 px-8 py-14 text-center',
+        'flex flex-col items-center justify-center px-8 py-14 text-center',
         stretch && 'min-h-[360px] flex-1',
         className,
       )}
