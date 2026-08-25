@@ -883,12 +883,17 @@
     background: var(--bg-app);
   }
 
+  /* O canvas é o scroll da janela: tela que não administra o próprio scroll (como
+     Configurações) rolava para fora da vista, porque `overflow: hidden` aqui vencia
+     o `overflow-y-auto` da marcação. Telas com scroll próprio seguem com min-h-0 e
+     não passam a rolar duas vezes. */
   .workspace-canvas-inner {
     display: flex;
     min-height: 0;
     flex: 1;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: var(--bg-app);
   }
 
@@ -1391,9 +1396,11 @@
     max-width: 46rem;
   }
 
-  /* Sem moldura: o conteúdo senta no canvas, como no resto do app. */
+  /* Sem moldura: o conteúdo senta no canvas, como no resto do app. O respiro de baixo
+     fica aqui, e não no corpo da página: o corpo tem altura travada pelo canvas, e a
+     barra de salvar encostava na borda da janela sem nada depois dela. */
   .settings-content-panel {
-    padding: 0.25rem 0 0;
+    padding: 0.25rem 0 3rem;
     width: 100%;
     min-height: 0;
   }
