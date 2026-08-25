@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -75,11 +74,11 @@ export function GovernanceDetailDialog({
   onConfigureExtraction,
   onStartConnectMode,
 }: GovernanceDetailDialogProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [permissions, setPermissions] = useState<DocumentAccessPermissions>(EMPTY_CONNECTION_PERMISSIONS);
+  const [permissions, setPermissions] = useState<DocumentAccessPermissions>(
+    EMPTY_CONNECTION_PERMISSIONS,
+  );
   const [saving, setSaving] = useState(false);
 
   const category =
@@ -125,19 +124,6 @@ export function GovernanceDetailDialog({
       }
     }
   }, [open, selection, category, group, draftConnectionPermissions]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    dialogRef.current?.focus();
-
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
 
   if (!open || !selection) return null;
 
@@ -185,307 +171,285 @@ export function GovernanceDetailDialog({
         ? 'Grupo documental'
         : 'Regra de acesso';
 
-  const titleId = 'governance-detail-dialog-title';
+  // O que a ficha descreve — a mesma linha de contexto dos outros diálogos.
+  const detailSubtitle =
+    selection.type === 'category'
+      ? (category?.name ?? 'Categoria')
+      : selection.type === 'group'
+        ? (group?.name ?? 'Grupo')
+        : category && group
+          ? `${category.name} · ${group.name}`
+          : 'Conexão';
+
+  const renderActions = () => (
+    <div className="governance-detail-dialog__actions">
+      {selection.type === 'group' && group && onStartConnectMode && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          onClick={() => {
+            onStartConnectMode(group.id);
+            onClose();
+          }}
+        >
+          Conectar categoria
+        </Button>
+      )}
+      {selection.type === 'category' && onConfigureExtraction && category && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          onClick={() => {
+            onConfigureExtraction(category);
+            onClose();
+          }}
+        >
+          Campos da análise
+        </Button>
+      )}
+      {(selection.type === 'category' || selection.type === 'group') && (
+        <Button
+          type="button"
+          className="w-full"
+          disabled={saving || !name.trim()}
+          onClick={() => void saveEntity()}
+        >
+          Salvar alterações
+        </Button>
+      )}
+      {selection.type === 'connection' && (
+        <>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={saving}
+            onClick={() => void savePermissions()}
+          >
+            Salvar permissões
+          </Button>
+          {onDisconnect && category && group && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full text-doqyn-danger"
+              disabled={saving}
+              aria-label={`Desconectar categoria ${category.name} do grupo ${group.name}`}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  await onDisconnect(selection.groupId, selection.categoryId);
+                  onClose();
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              Desconectar
+            </Button>
+          )}
+        </>
+      )}
+      {selection.type === 'category' && onDeleteCategory && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full text-doqyn-danger"
+          onClick={() => void onDeleteCategory(selection.id)}
+        >
+          Desativar categoria
+        </Button>
+      )}
+      {selection.type === 'group' && onDeactivateGroup && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full text-doqyn-danger"
+          onClick={() => void onDeactivateGroup(selection.id)}
+        >
+          Desativar grupo
+        </Button>
+      )}
+    </div>
+  );
 
   return (
-    <div
-      ref={overlayRef}
-      className="viewer-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-end justify-center p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-      onClick={(event) => event.target === overlayRef.current && onClose()}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      subtitle={detailSubtitle}
+      dismissOnOverlay={!saving}
+      footer={isAdmin ? renderActions() : undefined}
     >
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className={cn(
-          'governance-detail-dialog flex max-h-[min(88vh,720px)] w-full flex-col',
-          'border border-doqyn-border bg-doqyn-surface shadow-2xl',
-          'rounded-t-2xl sm:max-w-lg sm:rounded-2xl',
-        )}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-doqyn-border px-5 py-4">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-              Detalhes
-            </p>
-            <h2 id={titleId} className="text-base font-semibold text-doqyn-text">
-              {title}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-doqyn-muted transition-colors hover:bg-doqyn-hover hover:text-doqyn-text"
-            aria-label="Fechar"
-          >
-            <Icon name="close" size={ICON_SIZE.xs} />
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
-          {selection.type === 'category' && category && (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-doqyn-primary-bg">
-                  <CategoryIcon icon={category.icon} className="h-5 w-5 text-doqyn-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-doqyn-text">{category.name}</p>
-                  <p className="text-xs text-doqyn-muted">{category.slug}</p>
-                </div>
-              </div>
-              {isAdmin ? (
-                <>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-doqyn-muted">Nome</span>
-                    <Input value={name} onChange={(event) => setName(event.target.value)} />
-                  </label>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
-                    <Textarea
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      rows={3}
-                    />
-                  </label>
-                </>
-              ) : (
-                <p className="text-sm text-doqyn-muted">{category.description || 'Sem descrição.'}</p>
-              )}
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                  Grupos com acesso
-                </p>
-                {connectedGroups.length === 0 ? (
-                  <p className="text-sm text-doqyn-muted">Nenhum grupo conectado.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {connectedGroups.map((item) => {
-                      const edgePermissions = readGroupClassPermissions(category, item.id);
-                      return (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            onClick={() => onSelectConnection?.(category.id, item.id)}
-                            className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
-                          >
-                            <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
-                            <GovernancePermissionBadges permissions={edgePermissions} />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </>
-          )}
-
-          {selection.type === 'group' && group && (
-            <>
-              {isAdmin ? (
-                <>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-doqyn-muted">Nome</span>
-                    <Input value={name} onChange={(event) => setName(event.target.value)} />
-                  </label>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
-                    <Textarea
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      rows={3}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <p className="font-medium text-doqyn-text">{group.name}</p>
-                  <p className="text-sm text-doqyn-muted">{group.description || 'Sem descrição.'}</p>
-                </>
-              )}
-              <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-3">
-                <p className="text-sm text-doqyn-text">
-                  <span className="font-medium">{memberCount}</span>{' '}
-                  {memberCount === 1 ? 'membro' : 'membros'}
-                </p>
-                <p className="mt-1 text-xs text-doqyn-muted">
-                  Gerencie membros deste grupo na tela{' '}
-                  <Link to="/users" className="font-medium text-doqyn-primary hover:underline">
-                    Usuários
-                  </Link>
-                  .
-                </p>
+      <div className="flex flex-col gap-5">
+        {selection.type === 'category' && category && (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-doqyn-primary-bg">
+                <CategoryIcon icon={category.icon} className="h-5 w-5 text-doqyn-primary" />
               </div>
               <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                  Categorias conectadas
-                </p>
-                {connectedCategories.length === 0 ? (
-                  <p className="text-sm text-doqyn-muted">Nenhuma categoria conectada.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {connectedCategories.map((item) => {
-                      const edgePermissions = readGroupClassPermissions(item, group.id);
-                      return (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            onClick={() => onSelectConnection?.(item.id, group.id)}
-                            className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
-                          >
-                            <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
-                            <GovernancePermissionBadges permissions={edgePermissions} />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                <p className="font-medium text-doqyn-text">{category.name}</p>
+                <p className="text-xs text-doqyn-muted">{category.slug}</p>
               </div>
-            </>
-          )}
-
-          {selection.type === 'connection' && category && group && (
-            <>
-              <div className="rounded-xl border border-doqyn-border bg-doqyn-bg/50 p-4">
-                <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-                  <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
-                    {group.name}
-                  </span>
-                  <span className="text-doqyn-muted">acessa</span>
-                  <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
-                    {category.name}
-                  </span>
-                </div>
-                <div className="mt-3 flex justify-center">
-                  <GovernancePermissionBadges permissions={permissions} />
-                </div>
-                {isDraftOnlyConnection && (
-                  <p className="mt-2 text-center text-[11px] text-doqyn-warning">
-                    Conexão pendente — salve o mapa para aplicar no servidor.
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                {PERMISSION_KEYS.map((key) => (
-                  <div key={key} className="space-y-1">
-                    <Checkbox
-                      checked={permissions[key]}
-                      disabled={!isAdmin}
-                      onChange={(event) =>
-                        setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
-                      }
-                      label={PERMISSION_LABELS[key]}
-                      wrapperClassName={cn(
-                        'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
-                        !isAdmin && 'opacity-70',
-                      )}
-                    />
-                    <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {isAdmin && (
-          <div className="space-y-2 border-t border-doqyn-border px-5 py-4">
-            {selection.type === 'group' && group && onStartConnectMode && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  onStartConnectMode(group.id);
-                  onClose();
-                }}
-              >
-                Conectar categoria
-              </Button>
-            )}
-            {selection.type === 'category' && onConfigureExtraction && category && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  onConfigureExtraction(category);
-                  onClose();
-                }}
-              >
-                Campos da análise
-              </Button>
-            )}
-            {(selection.type === 'category' || selection.type === 'group') && (
-              <Button
-                type="button"
-                className="w-full"
-                disabled={saving || !name.trim()}
-                onClick={() => void saveEntity()}
-              >
-                Salvar alterações
-              </Button>
-            )}
-            {selection.type === 'connection' && (
+            </div>
+            {isAdmin ? (
               <>
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={saving}
-                  onClick={() => void savePermissions()}
-                >
-                  Salvar permissões
-                </Button>
-                {onDisconnect && category && group && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full text-doqyn-danger"
-                    disabled={saving}
-                    aria-label={`Desconectar categoria ${category.name} do grupo ${group.name}`}
-                    onClick={async () => {
-                      setSaving(true);
-                      try {
-                        await onDisconnect(selection.groupId, selection.categoryId);
-                        onClose();
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  >
-                    Desconectar
-                  </Button>
-                )}
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-doqyn-muted">Nome</span>
+                  <Input value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
+                  <Textarea
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    rows={3}
+                  />
+                </label>
+              </>
+            ) : (
+              <p className="text-sm text-doqyn-muted">{category.description || 'Sem descrição.'}</p>
+            )}
+            <div>
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
+                Grupos com acesso
+              </p>
+              {connectedGroups.length === 0 ? (
+                <p className="text-sm text-doqyn-muted">Nenhum grupo conectado.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {connectedGroups.map((item) => {
+                    const edgePermissions = readGroupClassPermissions(category, item.id);
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => onSelectConnection?.(category.id, item.id)}
+                          className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                        >
+                          <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                          <GovernancePermissionBadges permissions={edgePermissions} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+
+        {selection.type === 'group' && group && (
+          <>
+            {isAdmin ? (
+              <>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-doqyn-muted">Nome</span>
+                  <Input value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
+                  <Textarea
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    rows={3}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-doqyn-text">{group.name}</p>
+                <p className="text-sm text-doqyn-muted">{group.description || 'Sem descrição.'}</p>
               </>
             )}
-            {selection.type === 'category' && onDeleteCategory && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full text-doqyn-danger"
-                onClick={() => void onDeleteCategory(selection.id)}
-              >
-                Desativar categoria
-              </Button>
-            )}
-            {selection.type === 'group' && onDeactivateGroup && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full text-doqyn-danger"
-                onClick={() => void onDeactivateGroup(selection.id)}
-              >
-                Desativar grupo
-              </Button>
-            )}
-          </div>
+            <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-3">
+              <p className="text-sm text-doqyn-text">
+                <span className="font-medium">{memberCount}</span>{' '}
+                {memberCount === 1 ? 'membro' : 'membros'}
+              </p>
+              <p className="mt-1 text-xs text-doqyn-muted">
+                Gerencie membros deste grupo na tela{' '}
+                <Link to="/users" className="font-medium text-doqyn-primary hover:underline">
+                  Usuários
+                </Link>
+                .
+              </p>
+            </div>
+            <div>
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
+                Categorias conectadas
+              </p>
+              {connectedCategories.length === 0 ? (
+                <p className="text-sm text-doqyn-muted">Nenhuma categoria conectada.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {connectedCategories.map((item) => {
+                    const edgePermissions = readGroupClassPermissions(item, group.id);
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => onSelectConnection?.(item.id, group.id)}
+                          className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                        >
+                          <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                          <GovernancePermissionBadges permissions={edgePermissions} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+
+        {selection.type === 'connection' && category && group && (
+          <>
+            <div className="rounded-xl border border-doqyn-border bg-doqyn-bg/50 p-4">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+                <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
+                  {group.name}
+                </span>
+                <span className="text-doqyn-muted">acessa</span>
+                <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
+                  {category.name}
+                </span>
+              </div>
+              <div className="mt-3 flex justify-center">
+                <GovernancePermissionBadges permissions={permissions} />
+              </div>
+              {isDraftOnlyConnection && (
+                <p className="mt-2 text-center text-[11px] text-doqyn-warning">
+                  Conexão pendente — salve o mapa para aplicar no servidor.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              {PERMISSION_KEYS.map((key) => (
+                <div key={key} className="space-y-1">
+                  <Checkbox
+                    checked={permissions[key]}
+                    disabled={!isAdmin}
+                    onChange={(event) =>
+                      setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
+                    }
+                    label={PERMISSION_LABELS[key]}
+                    wrapperClassName={cn(
+                      'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
+                      !isAdmin && 'opacity-70',
+                    )}
+                  />
+                  <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

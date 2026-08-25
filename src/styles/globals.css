@@ -816,6 +816,26 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  /* Ações da ficha de governança: empilhadas, largura total, dentro do rodapé
+     do diálogo — a ação principal por último, como no resto do sistema. */
+  .governance-detail-dialog__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  /* Simulação de acesso: régua de acento à esquerda, sem caixa — é estado da
+     tela, não um cartão de conteúdo. */
+  .rules-simulation {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface-hover);
+  }
+
   /* ===== Portais de convidado (convite · assinatura) ===================
      Quem chega aqui não tem conta e nunca viu o produto. A porta é a mesma da
      antessala: fio no topo, marca à esquerda, estado à direita, e o documento

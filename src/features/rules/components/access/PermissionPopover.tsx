@@ -123,7 +123,7 @@ export function PermissionPopover({
         type="button"
         disabled={saving}
         onClick={() => void remove()}
-        className="hover:bg-doqyn-danger-bg/40 mt-1.5 flex w-full items-center gap-2 rounded-lg border-t border-doqyn-border-subtle px-2.5 py-2 text-left font-display text-label font-medium text-doqyn-danger disabled:opacity-60"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-lg border-t border-doqyn-border-subtle px-2.5 py-2 text-left font-display text-label font-medium text-doqyn-danger hover:bg-doqyn-danger-bg/40 disabled:opacity-60"
       >
         Remover acesso do grupo
       </button>
