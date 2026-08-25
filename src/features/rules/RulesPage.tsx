@@ -112,7 +112,7 @@ export function RulesPage() {
     <PageShell
       eyebrow="Governança"
       title="Regras de acesso"
-      description="Conecte grupos de pessoas às categorias de documentos. Quem não está em um grupo conectado não vê os documentos da categoria."
+      description="Quem não está num grupo conectado não vê os documentos da categoria."
       actions={
         isAdmin ? (
           <div className="flex flex-wrap items-center gap-2">

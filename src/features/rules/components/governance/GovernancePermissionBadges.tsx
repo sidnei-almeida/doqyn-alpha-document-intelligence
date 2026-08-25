@@ -20,14 +20,12 @@ export function GovernancePermissionBadges({
     return <span className={cn('text-[10px] text-doqyn-subtle', className)}>{emptyLabel}</span>;
   }
 
+  // Mesma gramática dos verbos do quadro: rótulo em minúscula, fio de acento no que vale.
   return (
-    <div className={cn('flex flex-wrap gap-1', className)}>
+    <div className={cn('permission-verbs', className)}>
       {labels.map((label) => (
-        <span
-          key={label}
-          className="rounded-full border border-doqyn-border-subtle bg-doqyn-primary-bg px-1.5 py-0.5 text-[10px] font-medium text-doqyn-primary"
-        >
-          {label}
+        <span key={label} className="permission-verbs__mark" data-active>
+          {label.toLocaleLowerCase('pt-BR')}
         </span>
       ))}
     </div>

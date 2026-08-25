@@ -196,7 +196,7 @@ export function GovernanceDetailDialog({
         <Button
           type="button"
           variant="secondary"
-          className="w-full"
+          size="sm"
           onClick={() => {
             onStartConnectMode(group.id);
             onClose();
@@ -209,7 +209,7 @@ export function GovernanceDetailDialog({
         <Button
           type="button"
           variant="secondary"
-          className="w-full"
+          size="sm"
           onClick={() => {
             onConfigureExtraction(category);
             onClose();
@@ -221,7 +221,7 @@ export function GovernanceDetailDialog({
       {(selection.type === 'category' || selection.type === 'group') && (
         <Button
           type="button"
-          className="w-full"
+          size="sm"
           disabled={saving || !name.trim()}
           onClick={() => void saveEntity()}
         >
@@ -230,19 +230,15 @@ export function GovernanceDetailDialog({
       )}
       {selection.type === 'connection' && (
         <>
-          <Button
-            type="button"
-            className="w-full"
-            disabled={saving}
-            onClick={() => void savePermissions()}
-          >
+          <Button type="button" size="sm" disabled={saving} onClick={() => void savePermissions()}>
             Salvar permissões
           </Button>
           {onDisconnect && category && group && (
             <Button
               type="button"
-              variant="secondary"
-              className="w-full text-doqyn-danger"
+              variant="ghost"
+              size="sm"
+              className="text-doqyn-danger"
               disabled={saving}
               aria-label={`Desconectar categoria ${category.name} do grupo ${group.name}`}
               onClick={async () => {
@@ -263,8 +259,9 @@ export function GovernanceDetailDialog({
       {selection.type === 'category' && onDeleteCategory && (
         <Button
           type="button"
-          variant="secondary"
-          className="w-full text-doqyn-danger"
+          variant="ghost"
+          size="sm"
+          className="text-doqyn-danger"
           onClick={() => void onDeleteCategory(selection.id)}
         >
           Desativar categoria
@@ -273,8 +270,9 @@ export function GovernanceDetailDialog({
       {selection.type === 'group' && onDeactivateGroup && (
         <Button
           type="button"
-          variant="secondary"
-          className="w-full text-doqyn-danger"
+          variant="ghost"
+          size="sm"
+          className="text-doqyn-danger"
           onClick={() => void onDeactivateGroup(selection.id)}
         >
           Desativar grupo
@@ -337,7 +335,7 @@ export function GovernanceDetailDialog({
                         <button
                           type="button"
                           onClick={() => onSelectConnection?.(category.id, item.id)}
-                          className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                          className="governance-link-row"
                         >
                           <span className="flex items-center gap-2">
                             <span
@@ -385,17 +383,13 @@ export function GovernanceDetailDialog({
                 <p className="text-sm text-doqyn-muted">{group.description || 'Sem descrição.'}</p>
               </>
             )}
-            <div className="rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-3">
-              <p className="text-sm text-doqyn-text">
-                <span className="font-medium">{memberCount}</span>{' '}
-                {memberCount === 1 ? 'membro' : 'membros'}
-              </p>
-              <p className="mt-1 text-xs text-doqyn-muted">
-                Gerencie membros deste grupo na tela{' '}
-                <Link to="/users" className="font-medium text-doqyn-primary hover:underline">
-                  Usuários
+            <div className="governance-fact">
+              <p className="register-label text-doqyn-subtle">Pessoas no grupo</p>
+              <p className="type-body text-doqyn-text">
+                {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'} ·{' '}
+                <Link to="/users" className="text-doqyn-primary hover:underline">
+                  gerenciar em Usuários
                 </Link>
-                .
               </p>
             </div>
             <div>
@@ -413,9 +407,9 @@ export function GovernanceDetailDialog({
                         <button
                           type="button"
                           onClick={() => onSelectConnection?.(item.id, group.id)}
-                          className="flex w-full flex-col gap-2 rounded-lg border border-doqyn-border bg-doqyn-bg/40 px-3 py-2.5 text-left hover:bg-doqyn-surface-hover"
+                          className="governance-link-row"
                         >
-                          <span className="text-sm font-medium text-doqyn-text">{item.name}</span>
+                          <span className="type-body font-medium text-doqyn-text">{item.name}</span>
                           <GovernancePermissionBadges permissions={edgePermissions} />
                         </button>
                       </li>
