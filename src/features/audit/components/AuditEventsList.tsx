@@ -1,7 +1,7 @@
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { DataTable } from '@/components/ui/DataTable';
 import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
@@ -25,12 +25,14 @@ type AuditEventsListProps = {
 export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsListProps) {
   if (loading) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, index) => (
+      <div className="border-t border-doqyn-border" aria-hidden>
+        {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
-            className="h-12 animate-pulse rounded-lg border border-doqyn-border bg-doqyn-card"
-          />
+            className="flex h-[52px] items-center border-b border-doqyn-border-subtle/75 px-4"
+          >
+            <div className="h-2 w-1/3 animate-pulse bg-doqyn-border-subtle" />
+          </div>
         ))}
       </div>
     );
@@ -39,8 +41,8 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
   if (events.length === 0) {
     return (
       <AuditEmptyState
-        icon={<Icon name="article" size={ICON_SIZE.nav} />}
-        title="Nenhum evento encontrado."
+        className="border-t border-doqyn-border"
+        title="Nenhum evento encontrado"
         description="Ajuste a busca ou aguarde novas ações no sistema."
       />
     );
@@ -50,12 +52,14 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
     <DataTable
       data={events}
       keyExtractor={(event) => event.id}
+      onRowClick={onOpenDetails}
       columns={[
         {
           key: 'createdAt',
           header: 'Data/hora',
+          className: 'w-[168px]',
           render: (event) => (
-            <span className="whitespace-nowrap text-sm text-doqyn-muted">
+            <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
               {formatDateTime(event.createdAt)}
             </span>
           ),
@@ -64,26 +68,31 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           key: 'actor',
           header: 'Ator',
           render: (event) => (
-            <span className="text-sm text-doqyn-text">{event.actorName ?? 'Sistema'}</span>
+            <span className="text-doqyn-text">{event.actorName ?? 'Sistema'}</span>
           ),
         },
         {
           key: 'action',
           header: 'Ação',
           render: (event) => (
-            <div>
-              <p className="text-sm font-medium text-doqyn-text">
+            <div className="min-w-0">
+              <p className="truncate font-medium text-doqyn-text">
                 {AUDIT_ACTION_LABELS[event.action] ?? event.action}
               </p>
-              <p className="truncate text-xs text-doqyn-muted">{event.description}</p>
+              <p className="meta-text truncate">{event.description}</p>
             </div>
           ),
         },
         {
           key: 'entity',
           header: 'Entidade',
+          // O id inteiro comia um quarto da linha e ninguém o lê por extenso:
+          // o prefixo basta para reconhecer, e o resto abre nos detalhes.
           render: (event) => (
-            <span className="font-mono text-xs text-doqyn-muted">
+            <span
+              className="block max-w-[168px] truncate font-mono text-micro text-doqyn-subtle"
+              title={event.documentId ?? event.area ?? undefined}
+            >
               {event.documentId ?? event.area ?? '—'}
             </span>
           ),
@@ -91,8 +100,9 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
         {
           key: 'severity',
           header: 'Severidade',
+          className: 'w-[132px]',
           render: (event) => (
-            <Badge variant={SEVERITY_VARIANTS[event.severity]}>
+            <Badge variant={SEVERITY_VARIANTS[event.severity]} dot>
               {AUDIT_SEVERITY_LABELS[event.severity]}
             </Badge>
           ),
@@ -101,25 +111,30 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           key: 'source',
           header: 'Origem',
           render: (event) => (
-            <span className="text-xs text-doqyn-muted">
+            <span className="register-label text-doqyn-subtle">
               {AUDIT_SOURCE_LABELS[event.source] ?? event.source}
             </span>
           ),
         },
         {
+          // A linha inteira já abre os detalhes; o glifo fica como pista de que
+          // há para onde clicar, não como um botão a mais por linha.
           key: 'details',
           header: '',
-          className: 'w-[100px]',
+          headerClassName: 'w-12 text-right',
+          className: 'w-12 text-right',
           render: (event) => (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => onOpenDetails(event)}
-            >
-              <Icon name="visibility" size={14} />
-              Detalhes
-            </Button>
+            <div className="flex justify-end">
+              <IconButton
+                label="Ver detalhes do evento"
+                onClick={(clickEvent) => {
+                  clickEvent.stopPropagation();
+                  onOpenDetails(event);
+                }}
+              >
+                <Icon name="visibility" size={ICON_SIZE.sm} />
+              </IconButton>
+            </div>
           ),
         },
       ]}

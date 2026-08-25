@@ -54,7 +54,7 @@ export function RejectApprovalDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[60] flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}

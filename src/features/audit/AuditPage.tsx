@@ -1,11 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { PageShell } from '@/components/layout/PageShell';
 import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { useAuth } from '@/features/auth/useAuth';
 import { ApproveApprovalDialog } from './components/ApproveApprovalDialog';
@@ -13,7 +10,7 @@ import { AuditEmptyState } from './components/AuditEmptyState';
 import { AuditEventDetailsDialog } from './components/AuditEventDetailsDialog';
 import { AuditEventsList } from './components/AuditEventsList';
 import { AuditFilters } from './components/AuditFilters';
-import { AuditSummaryCards } from './components/AuditSummaryCards';
+import { AuditSummaryStrip } from './components/AuditSummaryStrip';
 import { PendingApprovalReviewDialog } from './components/PendingApprovalReviewDialog';
 import { PendingApprovalsList } from './components/PendingApprovalsList';
 import { RejectApprovalDialog } from './components/RejectApprovalDialog';
@@ -70,7 +67,8 @@ export function AuditPage() {
     [isAdmin, overview.pendingCount],
   );
 
-  const showEventFilters = activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
+  const showEventFilters =
+    activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
   const auditFiltersMode =
     activeTab === 'security' ? 'security' : activeTab === 'all' ? 'overview' : 'full';
   const showEventsPanel = activeTab === 'events' || activeTab === 'security' || activeTab === 'all';
@@ -101,7 +99,7 @@ export function AuditPage() {
             className="mb-4"
           />
         ) : null}
-        <AuditSummaryCards
+        <AuditSummaryStrip
           overview={overview}
           loading={overviewLoading || pendingLoading}
           showPending={isAdmin}
@@ -109,9 +107,9 @@ export function AuditPage() {
       </div>
 
       {filterDocId && (
-        <p className="shrink-0 rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-sm text-doqyn-muted">
+        <p className="notice-rule notice-rule--accent shrink-0 py-0.5 text-label text-doqyn-muted">
           Exibindo eventos do documento{' '}
-          <span className="font-mono text-doqyn-text">{filterDocId}</span>
+          <span className="font-mono text-caption text-doqyn-text">{filterDocId}</span>
         </p>
       )}
 
@@ -121,92 +119,93 @@ export function AuditPage() {
 
       <div className="flex min-h-0 flex-1 flex-col">
         {activeTab === 'pending' && (
-          <Card className="flex min-h-[360px] flex-1 flex-col border-doqyn-border bg-doqyn-surface/60">
-            <CardContent className="flex flex-1 flex-col p-4">
-              {!isAdmin ? (
-                <AuditEmptyState
-                  className="min-h-[320px] flex-1"
-                  icon={<Icon name="gpp_bad" size={ICON_SIZE.nav} />}
-                  title="Acesso restrito"
-                  description="Apenas administradores podem consultar pendências e aprovar solicitações."
-                />
-              ) : pendingError ? (
-                <AuditEmptyState
-                  className="min-h-[320px] flex-1"
-                  icon={<Icon name="gpp_bad" size={ICON_SIZE.nav} />}
-                  title="Não foi possível carregar pendências"
-                  description="Tente atualizar a página ou verifique sua conexão."
-                />
-              ) : (
-                <PendingApprovalsList
-                  items={pendingItems}
-                  isAdmin={isAdmin}
-                  loading={pendingLoading}
-                  onReview={setReviewItem}
-                  onApprove={(item) => {
-                    if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-                      approveDocumentUploadMutation.mutate(item.documentUpload.approvalId);
-                      return;
-                    }
-                    setApproveItem(item);
-                  }}
-                  onReject={setRejectItem}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <div className="flex min-h-[360px] flex-1 flex-col">
+            {!isAdmin ? (
+              <AuditEmptyState
+                className="min-h-[320px] flex-1 border-t border-doqyn-border"
+                title="Acesso restrito"
+                description="Apenas administradores podem consultar pendências e aprovar solicitações."
+              />
+            ) : pendingError ? (
+              <AuditEmptyState
+                className="min-h-[320px] flex-1 border-t border-doqyn-border"
+                title="Não foi possível carregar pendências"
+                description="Tente atualizar a página ou verifique sua conexão."
+              />
+            ) : (
+              <PendingApprovalsList
+                items={pendingItems}
+                isAdmin={isAdmin}
+                loading={pendingLoading}
+                onReview={setReviewItem}
+                onApprove={(item) => {
+                  if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
+                    approveDocumentUploadMutation.mutate(item.documentUpload.approvalId);
+                    return;
+                  }
+                  setApproveItem(item);
+                }}
+                onReject={setRejectItem}
+              />
+            )}
+          </div>
         )}
 
         {showEventsPanel && (
-          <div className="flex min-h-[360px] flex-1 flex-col space-y-4">
-          {activeTab === 'security' && (
-            <p className="rounded-lg border border-doqyn-border bg-doqyn-surface px-4 py-2.5 text-xs text-doqyn-muted">
-              Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no tenant.
-            </p>
-          )}
-
-          {showEventFilters && (
-            <AuditFilters
-              mode={auditFiltersMode}
-              filters={eventFilters}
-              onChange={(filters) => setEventFilters({ ...filters, documentId: filterDocId })}
-            />
-          )}
-
-          <div className="flex items-center justify-between text-xs text-doqyn-muted">
-            <span>
-              {eventsTotal} {eventsTotal === 1 ? 'evento' : 'eventos'}
-              {events.length < eventsTotal ? ` · exibindo ${events.length}` : ''}
-            </span>
-            {eventsError && (
-              <span className="text-doqyn-danger">Não foi possível carregar eventos.</span>
+          <div className="flex min-h-[360px] flex-col space-y-4">
+            {activeTab === 'security' && (
+              <p className="notice-rule shrink-0 py-0.5 text-caption text-doqyn-muted">
+                Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no
+                tenant.
+              </p>
             )}
-          </div>
 
-            <div className="flex min-h-0 flex-1 flex-col">
-              <AuditEventsList
-                events={events}
-                loading={eventsLoading}
-                onOpenDetails={setSelectedEvent}
+            {showEventFilters && (
+              <AuditFilters
+                mode={auditFiltersMode}
+                filters={eventFilters}
+                onChange={(filters) => setEventFilters({ ...filters, documentId: filterDocId })}
               />
+            )}
+
+            <div className="flex items-center justify-between gap-4">
+              {eventsError ? (
+                <span className="text-caption text-doqyn-danger">
+                  Não foi possível carregar eventos.
+                </span>
+              ) : (
+                <span />
+              )}
+              <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
+                {eventsTotal} {eventsTotal === 1 ? 'evento' : 'eventos'}
+                {events.length < eventsTotal ? ` · exibindo ${events.length}` : ''}
+              </span>
             </div>
 
-          {hasMoreEvents && (
-            <div className="flex justify-center">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={loadMoreEvents}
-                disabled={eventsFetchingMore}
-              >
-                {eventsFetchingMore ? 'Carregando...' : 'Carregar mais'}
-              </Button>
-            </div>
-          )}
+            <AuditEventsList
+              events={events}
+              loading={eventsLoading}
+              onOpenDetails={setSelectedEvent}
+            />
 
-          {!eventsLoading && events.length > 0 && !hasMoreEvents && (
-            <p className="shrink-0 text-center text-xs text-doqyn-muted">Fim do histórico disponível.</p>
-          )}
+            {hasMoreEvents && (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={loadMoreEvents}
+                  disabled={eventsFetchingMore}
+                >
+                  {eventsFetchingMore ? 'Carregando...' : 'Carregar mais'}
+                </Button>
+              </div>
+            )}
+
+            {!eventsLoading && events.length > 0 && !hasMoreEvents && (
+              <p className="shrink-0 text-center font-mono text-micro uppercase tracking-[0.1em] text-doqyn-subtle">
+                Fim do histórico
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -263,10 +262,7 @@ export function AuditPage() {
         saving={rejectMutation.isPending}
         onClose={() => setRejectItem(null)}
         onConfirm={(item, reason) => {
-          rejectMutation.mutate(
-            { item, reason },
-            { onSuccess: () => setRejectItem(null) },
-          );
+          rejectMutation.mutate({ item, reason }, { onSuccess: () => setRejectItem(null) });
         }}
       />
 

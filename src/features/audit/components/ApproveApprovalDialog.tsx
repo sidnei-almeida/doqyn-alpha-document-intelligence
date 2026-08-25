@@ -62,7 +62,7 @@ export function ApproveApprovalDialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[60] flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
+      className="modal-overlay-scrim fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === overlayRef.current) onClose();
       }}
@@ -85,7 +85,7 @@ export function ApproveApprovalDialog({
           </button>
         </div>
 
-        <div className="space-y-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+        <div className="scrollbar-thin space-y-1 overflow-y-auto px-5 py-4">
           <AccessRequestDetailsPanel
             member={item.member}
             requestedAccess={item.requestedAccess}
@@ -95,10 +95,7 @@ export function ApproveApprovalDialog({
             notificationPreferences={item.member?.notificationPreferences}
             className="mb-4 rounded-lg border border-doqyn-border bg-doqyn-card/40 p-3"
           />
-          <PlatformRolesSection
-            value={platformRoles}
-            onChange={setPlatformRoles}
-          />
+          <PlatformRolesSection value={platformRoles} onChange={setPlatformRoles} />
           <DocumentGroupsSection
             groups={documentGroups}
             value={documentGroupIds}
