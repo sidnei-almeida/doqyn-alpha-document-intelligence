@@ -50,6 +50,8 @@ export const DOCUMENT_SECURITY_CONTEXT_ACTIONS = new Set([
 export const CLIENT_TRACKING_ACTIONS = new Set([
   'document.viewer_opened',
   'document.viewer_closed',
+  // O render acontece no navegador: se o PDF não abre lá, só o cliente sabe.
+  'document.preview_failed',
   'document.print_attempt_blocked',
   'file_explorer.folder_opened',
   'file_explorer.search_performed',

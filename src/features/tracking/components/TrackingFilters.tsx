@@ -29,6 +29,7 @@ export function TrackingFilters({
     <FilterBar onClear={onClear} showClear={showClear} summary={summary}>
       <FilterBarField span={2}>
         <Input
+          variant="rule"
           id="tracking-search"
           label="Buscar"
           placeholder="Documento, usuário, ação..."
@@ -38,6 +39,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Input
+          variant="rule"
           id="tracking-document"
           label="Documento"
           placeholder="ID do documento"
@@ -47,6 +49,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Select
+          variant="rule"
           id="tracking-category"
           label="Categoria"
           value={filters.category ?? 'all'}
@@ -59,6 +62,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Select
+          variant="rule"
           id="tracking-action-group"
           label="Grupo"
           value={filters.actionGroup ?? ''}
@@ -71,6 +75,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Select
+          variant="rule"
           id="tracking-status"
           label="Resultado"
           value={filters.status ?? ''}
@@ -83,6 +88,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Select
+          variant="rule"
           id="tracking-severity"
           label="Severidade"
           value={filters.severity ?? ''}
@@ -95,6 +101,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <DateInput
+          variant="rule"
           id="tracking-from"
           label="De"
           value={filters.from ?? ''}
@@ -103,6 +110,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <DateInput
+          variant="rule"
           id="tracking-to"
           label="Até"
           value={filters.to ?? ''}
@@ -111,6 +119,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Input
+          variant="rule"
           id="tracking-action"
           label="Ação"
           placeholder="document.downloaded"
@@ -120,6 +129,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Input
+          variant="rule"
           id="tracking-request-id"
           label="Request ID"
           placeholder="req_..."
@@ -129,6 +139,7 @@ export function TrackingFilters({
       </FilterBarField>
       <FilterBarField>
         <Input
+          variant="rule"
           id="tracking-actor"
           label="Usuário (ID)"
           placeholder="userId"

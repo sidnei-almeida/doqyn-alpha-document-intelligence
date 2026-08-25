@@ -37,11 +37,15 @@ export async function listDocumentTrackingEvents(
   );
 }
 
-export async function getDocumentTrackingEvent(eventId: string): Promise<{ event: DocumentTrackingDetail }> {
+export async function getDocumentTrackingEvent(
+  eventId: string,
+): Promise<{ event: DocumentTrackingDetail }> {
   return request<{ event: DocumentTrackingDetail }>(`/tracking/document-events/${eventId}`);
 }
 
-export async function fetchTrackingSummary(filters: Pick<DocumentTrackingFilters, 'from' | 'to'> = {}): Promise<TrackingSummary> {
+export async function fetchTrackingSummary(
+  filters: Pick<DocumentTrackingFilters, 'from' | 'to'> = {},
+): Promise<TrackingSummary> {
   const params = new URLSearchParams();
   if (filters.from?.trim()) params.set('from', filters.from.trim());
   if (filters.to?.trim()) params.set('to', filters.to.trim());
@@ -49,7 +53,9 @@ export async function fetchTrackingSummary(filters: Pick<DocumentTrackingFilters
   return request<TrackingSummary>(`/tracking/summary${query ? `?${query}` : ''}`);
 }
 
-export async function postClientTrackingEvent(input: ClientTrackingEventInput): Promise<{ id: string | null }> {
+export async function postClientTrackingEvent(
+  input: ClientTrackingEventInput,
+): Promise<{ id: string | null }> {
   return request<{ id: string | null }>('/tracking/client-event', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

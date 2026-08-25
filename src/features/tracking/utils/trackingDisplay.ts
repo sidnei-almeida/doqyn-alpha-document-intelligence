@@ -53,6 +53,7 @@ const ACTION_LABELS: Record<string, string> = {
   'document.download_attempted': 'Download tentado',
   'document.downloaded': 'Download realizado',
   'document.download_denied': 'Download negado',
+  'document.download_failed': 'Falha no download',
   'document.metadata_updated': 'Metadados atualizados',
   'document.moved': 'Documento movido de categoria',
   'document.share_created': 'Compartilhamento criado',
@@ -133,6 +134,18 @@ export function formatTrackingAction(action: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+const SEVERITY_LABELS: Record<string, string> = {
+  debug: 'Debug',
+  info: 'Info',
+  warning: 'Aviso',
+  error: 'Erro',
+  critical: 'Crítico',
+};
+
+export function formatTrackingSeverity(severity: string): string {
+  return SEVERITY_LABELS[severity] ?? severity;
+}
+
 export function formatTrackingStatus(status?: TrackingListStatus): string {
   if (!status) return '—';
   return STATUS_LABELS[status] ?? status;
@@ -184,13 +197,9 @@ export function formatSecurityContextDisplay(
   const country = typeof securityContext.country === 'string' ? securityContext.country : undefined;
   const locationParts = [city, region, country].filter(Boolean);
   const ipLabel =
-    typeof securityContext.ipAddressMasked === 'string'
-      ? securityContext.ipAddressMasked
-      : '—';
+    typeof securityContext.ipAddressMasked === 'string' ? securityContext.ipAddressMasked : '—';
   const isLocalNetwork =
-    securityContext.isLocalNetwork === true ||
-    ipLabel === 'rede local' ||
-    ipLabel === '1:…';
+    securityContext.isLocalNetwork === true || ipLabel === 'rede local' || ipLabel === '1:…';
 
   return {
     deviceLabel: summary || '—',
@@ -202,9 +211,7 @@ export function formatSecurityContextDisplay(
         : '—',
     ipLabel,
     sessionLabel: formatSessionOrigin(
-      typeof securityContext.sessionIdHash === 'string'
-        ? securityContext.sessionIdHash
-        : undefined,
+      typeof securityContext.sessionIdHash === 'string' ? securityContext.sessionIdHash : undefined,
     ),
     occurredAtLabel: occurredAt,
     isExternalGuest: securityContext.isExternalGuest === true,

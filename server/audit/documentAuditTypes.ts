@@ -41,6 +41,7 @@ export type DocumentAuditAction =
   | 'document.download_attempted'
   | 'document.downloaded'
   | 'document.download_denied'
+  | 'document.download_failed'
   | 'access.document_denied'
   | 'access.document_allowed'
   | 'access.permission_missing'
@@ -119,6 +120,8 @@ export type DocumentAuditContext = {
   actorEmail?: string;
   actorRole?: string;
   requestId?: string;
+  /** Início da requisição em epoch ms — origem do `durationMs` da trilha. */
+  startedAt?: number;
 };
 
 export type DocumentAuditEventInput = {
@@ -225,6 +228,12 @@ export type DocumentTrackingListItem = {
   actionGroup?: string;
   result?: string;
   sessionHash?: string;
+  /* A lista é o log: o que se lê na linha viaja com ela. Metadado cru, diff e
+     contexto completo continuam só no detalhe. */
+  requestId?: string;
+  durationMs?: number;
+  changesCount?: number;
+  security?: Record<string, unknown>;
 };
 
 export type TrackingListStatus = 'success' | 'failed' | 'denied' | 'pending';
@@ -269,6 +278,7 @@ export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.download_attempted': 'Download tentado',
   'document.downloaded': 'Download realizado',
   'document.download_denied': 'Download negado',
+  'document.download_failed': 'Falha no download',
   'access.document_denied': 'Acesso negado',
   'access.document_allowed': 'Acesso permitido',
   'file_explorer.folder_opened': 'Pasta aberta',

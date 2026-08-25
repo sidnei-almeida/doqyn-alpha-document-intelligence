@@ -21,6 +21,10 @@ export function buildDocumentAuditContext(
     actorDisplayName: user.name,
     actorEmail: user.email,
     actorRole: user.role,
-    requestId,
+    // O id do request vive no contexto desde a borda: o parâmetro continua
+    // valendo para quem quiser carimbar outro, mas nenhum evento fica sem elo
+    // só porque o handler não se lembrou de passá-lo.
+    requestId: requestId ?? ctx.requestId,
+    startedAt: ctx.startedAt,
   };
 }

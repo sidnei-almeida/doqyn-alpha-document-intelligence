@@ -32,7 +32,9 @@ export function useDocumentTracking(initialDocumentId?: string) {
     enabled: Boolean(selectedEventId),
   });
 
-  const openEvent = (event: DocumentTrackingListItem) => setSelectedEventId(event.id);
+  /** A linha alterna o próprio detalhe: clicar na aberta fecha. */
+  const toggleEvent = (event: DocumentTrackingListItem) =>
+    setSelectedEventId((current) => (current === event.id ? null : event.id));
   const closeEvent = () => setSelectedEventId(null);
 
   return {
@@ -47,7 +49,7 @@ export function useDocumentTracking(initialDocumentId?: string) {
     selectedEventId,
     selectedEvent: detailQuery.data?.event ?? null,
     detailLoading: detailQuery.isLoading,
-    openEvent,
+    toggleEvent,
     closeEvent,
   };
 }

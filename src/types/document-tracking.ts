@@ -37,6 +37,13 @@ export type DocumentTrackingListItem = {
   actionGroup?: string;
   result?: string;
   sessionHash?: string;
+  /* A lista é o log: o que se lê na linha vem junto dela, sem uma chamada por
+     evento. Metadados e alterações continuam no detalhe, que só carrega quando
+     a linha abre. */
+  requestId?: string;
+  durationMs?: number;
+  changesCount?: number;
+  security?: Record<string, unknown>;
 };
 
 export type DocumentTrackingDetail = DocumentTrackingListItem & {

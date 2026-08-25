@@ -1,6 +1,3 @@
-import { Icon } from '@/components/ui/Icon';
-import { Card, CardContent } from '@/components/ui/Card';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { TrackingSummary } from '@/types/document-tracking';
 
@@ -9,113 +6,60 @@ type TrackingSummaryStripProps = {
   loading?: boolean;
 };
 
-type SummaryCardProps = {
-  label: string;
-  value: number | string;
-  icon: string;
-  tone?: 'default' | 'warning' | 'danger';
-  loading?: boolean;
-};
-
-const ICON_TONE_CLASS = {
-  default: {
-    box: 'bg-doqyn-primary-bg',
-    icon: 'text-doqyn-primary',
-  },
-  warning: {
-    box: 'bg-doqyn-warning-bg/70',
-    icon: 'text-doqyn-warning',
-  },
-  danger: {
-    box: 'bg-doqyn-danger-bg/70',
-    icon: 'text-doqyn-danger',
-  },
-} as const;
-
-const VALUE_TONE_CLASS = {
+const TONE_CLASS = {
   default: 'text-doqyn-text',
   warning: 'text-doqyn-warning',
   danger: 'text-doqyn-danger',
 } as const;
 
-function SummaryCard({
-  label,
-  value,
-  icon,
-  tone = 'default',
-  loading = false,
-}: SummaryCardProps) {
-  const iconTone = ICON_TONE_CLASS[tone];
+type StripEntry = {
+  key: string;
+  label: string;
+  value: number;
+  tone?: keyof typeof TONE_CLASS;
+};
 
-  return (
-    <Card className="border-doqyn-border-subtle bg-doqyn-surface/90 shadow-none">
-      <CardContent className="flex min-w-0 items-center gap-3 p-3 sm:p-4">
-        <div
-          className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-            iconTone.box,
-          )}
-        >
-          <Icon name={icon} size={ICON_SIZE.xs} className={iconTone.icon} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-doqyn-muted">{label}</p>
-          <p className={cn('text-lg font-semibold tabular-nums', VALUE_TONE_CLASS[tone])}>
-            {loading ? '…' : value}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
+/**
+ * Faixa de registro — mesma do resumo da Auditoria: colunas separadas por fio,
+ * rótulo monoespaçado, algarismo grande. Eram sete cartões com borda e ladrilho
+ * de ícone colorido: sete molduras e sete pictogramas competindo com os sete
+ * números, que são o conteúdo. O tom colore o algarismo, e só quando ele conta
+ * alguma coisa.
+ */
 export function TrackingSummaryStrip({ summary, loading = false }: TrackingSummaryStripProps) {
+  const entries: StripEntry[] = [
+    { key: 'totalEvents', label: 'Eventos', value: summary?.totalEvents ?? 0 },
+    { key: 'previews', label: 'Previews', value: summary?.previews ?? 0 },
+    { key: 'downloads', label: 'Downloads', value: summary?.downloads ?? 0 },
+    {
+      key: 'accessDenied',
+      label: 'Acesso negado',
+      value: summary?.accessDenied ?? 0,
+      tone: 'warning',
+    },
+    { key: 'errors', label: 'Erros', value: summary?.errors ?? 0, tone: 'danger' },
+    { key: 'uniqueDocuments', label: 'Documentos', value: summary?.uniqueDocuments ?? 0 },
+    { key: 'uniqueActors', label: 'Usuários ativos', value: summary?.uniqueActors ?? 0 },
+  ];
+
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
-      <SummaryCard
-        label="Eventos"
-        value={summary?.totalEvents ?? 0}
-        icon="description"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Previews"
-        value={summary?.previews ?? 0}
-        icon="visibility"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Downloads"
-        value={summary?.downloads ?? 0}
-        icon="download"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Acesso negado"
-        value={summary?.accessDenied ?? 0}
-        icon="gpp_bad"
-        tone="warning"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Erros"
-        value={summary?.errors ?? 0}
-        icon="warning"
-        tone="danger"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Documentos"
-        value={summary?.uniqueDocuments ?? 0}
-        icon="description"
-        loading={loading}
-      />
-      <SummaryCard
-        label="Usuários ativos"
-        value={summary?.uniqueActors ?? 0}
-        icon="group"
-        loading={loading}
-      />
-    </div>
+    <section
+      aria-label="Resumo do tracking"
+      className="grid shrink-0 gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
+    >
+      {entries.map(({ key, label, value, tone = 'default' }) => (
+        <div key={key} className="flex flex-col gap-1.5 bg-doqyn-bg px-4 py-3.5">
+          <span className="register-label text-doqyn-subtle">{label}</span>
+          <span
+            className={cn(
+              'type-display tabular-nums',
+              loading ? 'text-doqyn-subtle' : value === 0 ? 'text-doqyn-text' : TONE_CLASS[tone],
+            )}
+          >
+            {loading ? '—' : value}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }

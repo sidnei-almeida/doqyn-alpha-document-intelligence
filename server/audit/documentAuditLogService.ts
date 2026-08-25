@@ -90,6 +90,36 @@ function buildActor(ctx: DocumentAuditContext) {
   };
 }
 
+/**
+ * Versão vigente do documento no instante do evento.
+ *
+ * Metade da trilha chegava sem versão: quem emite um `viewer_opened` ou um
+ * `favorite_added` não tem o id da versão em mãos, e o evento ficava dizendo
+ * "alguém abriu este documento" sem dizer qual documento, exatamente. Numa
+ * trilha auditável isso é o registro pela metade — a versão está persistida,
+ * só não estava sendo carimbada.
+ */
+async function resolveCurrentDocumentVersion(
+  collections: Awaited<ReturnType<typeof getTenantCollections>>,
+  documentId: string,
+): Promise<{ versionId?: string; versionLabel?: string }> {
+  try {
+    const doc = await collections.documents.findOne(
+      { _id: documentId },
+      { projection: { currentVersionId: 1, currentVersionLabel: 1 } },
+    );
+    if (!doc) return {};
+    return {
+      versionId: optionalString(doc.currentVersionId),
+      versionLabel: optionalString(doc.currentVersionLabel),
+    };
+  } catch {
+    // Trilha sem versão é pior do que trilha sem elo, mas nenhuma das duas
+    // pode derrubar a operação que gerou o evento.
+    return {};
+  }
+}
+
 export async function createDocumentAuditLog(
   ctx: DocumentAuditContext,
   event: DocumentAuditEventInput,
@@ -104,10 +134,18 @@ export async function createDocumentAuditLog(
   const action = event.action.trim().toLowerCase();
 
   const ownerUserId = ctx.ownerUserId ?? ctx.actorUserId;
-  const { auditLogs, storage } = await getTenantCollections(ctx.tenantId, {
+  const collections = await getTenantCollections(ctx.tenantId, {
     userId: ownerUserId,
     membershipId: ctx.actorMembershipId,
   });
+  const { auditLogs, storage } = collections;
+
+  const resolvedVersion =
+    event.documentId && !event.versionId
+      ? await resolveCurrentDocumentVersion(collections, event.documentId)
+      : {};
+  const versionId = event.versionId ?? resolvedVersion.versionId ?? null;
+  const versionLabel = optionalString(event.metadata?.versionLabel) ?? resolvedVersion.versionLabel;
 
   const now = event.occurredAt ?? new Date();
   const result = event.result ?? (action.includes('failed') ? 'error' : 'success');
@@ -124,6 +162,7 @@ export async function createDocumentAuditLog(
     severity,
     source: event.metadata?.source ?? 'api',
     ...(event.metadata ?? {}),
+    ...(versionLabel ? { versionLabel } : {}),
   });
 
   const id = `audit_${randomUUID()}`;
@@ -137,7 +176,7 @@ export async function createDocumentAuditLog(
     description: event.description,
     actorUserId: ctx.actorUserId,
     documentId: event.documentId ?? null,
-    versionId: event.versionId ?? null,
+    versionId,
     result,
     severity,
     occurredAt: now,
@@ -149,7 +188,7 @@ export async function createDocumentAuditLog(
     {
       _id: id,
       documentId: event.documentId ?? null,
-      versionId: event.versionId ?? null,
+      versionId,
       actor: buildActor(ctx),
       action,
       description: event.description,
@@ -540,7 +579,42 @@ function mapTrackingRow(
     actionGroup: typeof metadata.actionGroup === 'string' ? metadata.actionGroup : undefined,
     result: typeof row.result === 'string' ? row.result : undefined,
     sessionHash: typeof security?.sessionIdHash === 'string' ? security.sessionIdHash : undefined,
+    requestId:
+      optionalString(metadata.requestId) ??
+      optionalString((row as Record<string, unknown>).requestId),
+    durationMs: typeof metadata.durationMs === 'number' ? metadata.durationMs : undefined,
+    changesCount: changes.length,
+    security: pickTrackingSecurityForList(security),
   };
+}
+
+/**
+ * Contexto de acesso que a linha do log mostra. Só as chaves que a tela lê — o
+ * IP já vem mascarado da origem, e o resto do contexto continua fora da lista.
+ */
+const LIST_SECURITY_KEYS = [
+  'userAgent',
+  'browser',
+  'os',
+  'deviceType',
+  'city',
+  'region',
+  'country',
+  'ipAddressMasked',
+  'isLocalNetwork',
+  'sessionIdHash',
+  'isExternalGuest',
+] as const;
+
+function pickTrackingSecurityForList(
+  security: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!security) return undefined;
+  const picked: Record<string, unknown> = {};
+  for (const key of LIST_SECURITY_KEYS) {
+    if (security[key] !== undefined && security[key] !== null) picked[key] = security[key];
+  }
+  return Object.keys(picked).length > 0 ? picked : undefined;
 }
 
 function buildTrackingCategoryFilter(category?: string): Record<string, unknown> | null {
