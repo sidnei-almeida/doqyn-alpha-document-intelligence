@@ -1,38 +1,43 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
-import {
-  loadReviewWorkflowSettings,
-  saveReviewWorkflowSettings,
-} from '@/features/document-send/utils/reviewWorkflowSettings';
+import { useUploadPolicy } from '@/features/settings/hooks/useUploadPolicy';
 
-/** Preferências de upload/revisão — persistidas em localStorage, compartilhadas com o fluxo legado. */
+/**
+ * Política de upload/revisão em uso pela fila — vem do tenant, não do navegador.
+ * Só quem governa a organização consegue gravar; para os demais, `canManage` é falso e a
+ * escrita é rejeitada pelo servidor (403).
+ */
 export function useReviewWorkflowSettingsState() {
-  const [settings, setSettingsState] = useState<WorkflowReviewSettings>(() =>
-    loadReviewWorkflowSettings(),
-  );
+  const { policy, canManage, isLoading, isSaving, savePolicy, refetchPolicy } = useUploadPolicy();
 
-  const setSettings = useCallback((next: WorkflowReviewSettings) => {
-    const saved = { ...next };
-    saveReviewWorkflowSettings(saved);
-    setSettingsState(saved);
-  }, []);
+  const setSettings = useCallback(
+    (next: WorkflowReviewSettings) => {
+      void savePolicy(next).catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível salvar a política.';
+        toast.error(message);
+      });
+    },
+    [savePolicy],
+  );
 
   const patchSettings = useCallback(
     (partial: Partial<WorkflowReviewSettings>) => {
-      setSettings({ ...settings, ...partial });
+      setSettings({ ...policy, ...partial });
     },
-    [settings, setSettings],
+    [policy, setSettings],
   );
 
-  useEffect(() => {
-    const syncFromStorage = (event: StorageEvent) => {
-      if (event.key === null || event.key.includes('doqyn.upload')) {
-        setSettingsState(loadReviewWorkflowSettings());
-      }
-    };
-    window.addEventListener('storage', syncFromStorage);
-    return () => window.removeEventListener('storage', syncFromStorage);
-  }, []);
-
-  return { settings, setSettings, patchSettings, reloadSettings: () => setSettingsState(loadReviewWorkflowSettings()) };
+  return {
+    settings: policy,
+    canManage,
+    isLoading,
+    isSaving,
+    setSettings,
+    patchSettings,
+    reloadSettings: () => {
+      void refetchPolicy();
+    },
+  };
 }

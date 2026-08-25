@@ -1,3 +1,5 @@
+import type { TenantUploadPolicy } from '../../shared/uploadPolicy.js';
+
 export type StoragePlaceholderStatus = 'pending' | 'stored' | 'failed' | 'skipped';
 
 export type TenantType = 'individual' | 'business';
@@ -29,6 +31,8 @@ export type MongoTenantTrashSettings = {
 
 export type MongoTenantSettings = {
   trash?: MongoTenantTrashSettings;
+  /** Política de upload/IA da organização (formato em `shared/uploadPolicy.ts`). */
+  uploadPolicy?: TenantUploadPolicy;
 };
 
 export type MongoTenantQuotas = {
@@ -435,12 +439,7 @@ export type MongoStorageSlot = {
   storedAt: Date | null;
 };
 
-export type MongoPreviewStorageStatus =
-  | 'pending'
-  | 'processing'
-  | 'ready'
-  | 'failed'
-  | 'skipped';
+export type MongoPreviewStorageStatus = 'pending' | 'processing' | 'ready' | 'failed' | 'skipped';
 
 export type MongoPreviewStorageSlot = {
   provider: 'aws_s3' | 'cloudflare_r2' | 'local';

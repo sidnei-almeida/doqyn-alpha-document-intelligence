@@ -28,10 +28,9 @@ import {
   type BulkTerminalPayload,
 } from './hooks/useBulkUploadQueue';
 import { useWorkflowLogger } from './hooks/useWorkflowLogger';
+import { useReviewWorkflowSettingsState } from '@/features/upload/hooks/useReviewWorkflowSettingsState';
 import { useSemiDeterminateProgress, useSimulatedStepIndex } from './hooks/useProcessingProgress';
 import {
-  loadReviewWorkflowSettings,
-  saveReviewWorkflowSettings,
   canAutoAcceptWithSettings,
   resolveEffectiveNamingForItem,
   resolveFinalFileNameForConfirm,
@@ -166,7 +165,8 @@ export function DocumentSendPage() {
   const completingTimerRef = useRef<number | null>(null);
 
   const [flowPhase, setFlowPhase] = useState<SendFlowPhase>('idle');
-  const [reviewSettings, setReviewSettings] = useState(loadReviewWorkflowSettings);
+  const { settings: reviewSettings, setSettings: setReviewSettings } =
+    useReviewWorkflowSettingsState();
   const [perItemNaming, setPerItemNaming] = useState<PerItemNamingChoice>({
     namingMode: 'ai_suggested',
   });
@@ -311,7 +311,6 @@ export function DocumentSendPage() {
   const handleReviewSettingsChange = useCallback(
     (next: WorkflowReviewSettings) => {
       setReviewSettings(next);
-      saveReviewWorkflowSettings(next);
       workflow.log({
         level: 'info',
         stage: 'auto',
@@ -324,7 +323,7 @@ export function DocumentSendPage() {
         },
       });
     },
-    [workflow],
+    [setReviewSettings, workflow],
   );
 
   const resetToIdle = useCallback(() => {

@@ -75,6 +75,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/trash/documents': () => import('../api/trash/documents.js'),
   '/api/deactivated/documents': () => import('../api/deactivated/documents.js'),
   '/api/settings/trash-retention': () => import('../api/settings/trash-retention.js'),
+  '/api/settings/upload-policy': () => import('../api/settings/upload-policy.js'),
   '/api/documents/batch/trash': () => import('../api/documents/batch/trash.js'),
   '/api/documents/batch/restore': () => import('../api/documents/batch/restore.js'),
   '/api/documents/batch/reactivate': () => import('../api/documents/batch/reactivate.js'),

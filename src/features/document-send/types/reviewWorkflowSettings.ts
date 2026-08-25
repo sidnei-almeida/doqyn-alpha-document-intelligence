@@ -1,11 +1,8 @@
+import type { TenantUploadPolicy, UploadNamingPolicy } from '@shared/uploadPolicy';
 import type { DocumentNamingMode } from '../utils/resolveDocumentNaming';
 
-/** Política padrão de nomeação da sessão/lote. */
-export type DefaultNamingPolicy =
-  | 'original'
-  | 'ai_suggested'
-  | 'ask_each_file'
-  | 'manual_required';
+/** Política padrão de nomeação — definida pela organização (`shared/uploadPolicy.ts`). */
+export type DefaultNamingPolicy = UploadNamingPolicy;
 
 /** Escolha por arquivo (quando policy = ask_each_file ou revisão manual). */
 export type PerItemNamingChoice = {
@@ -22,24 +19,7 @@ export type PerItemNamingChoice = {
  * - Single: countdown via useEffect; bulk via startCountdownSeconds()
  * - Single pausa em requires_review; bulk continuava — alinhado via pauseOnLowConfidence
  */
-export type WorkflowReviewSettings = {
-  autoReviewEnabled: boolean;
-  autoAcceptDelaySeconds: number;
-  pauseOnLowConfidence: boolean;
-  pauseOnMissingFields: boolean;
-  pauseOnSensitiveDocs: boolean;
+export type WorkflowReviewSettings = TenantUploadPolicy;
 
-  defaultNamingPolicy: DefaultNamingPolicy;
-  aiRenameEnabled: boolean;
-
-  aiMetadataEnabled: boolean;
-  aiClassificationEnabled: boolean;
-  preventSensitiveDataInFileName: boolean;
-
-  applyToBatch: boolean;
-  pauseOnConflict: boolean;
-  continueWhenSafe: boolean;
-};
-
+/** @deprecated a política agora vive no tenant; a chave só é lida para descartar o resíduo local. */
 export const REVIEW_SETTINGS_STORAGE_KEY = 'doqyn.upload.reviewSettings';
-export const REVIEW_SETTINGS_VERSION = 1;
