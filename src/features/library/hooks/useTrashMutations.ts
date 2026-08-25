@@ -88,5 +88,10 @@ export function useTrashRetentionSettings() {
     onError: () => toast.error('Não foi possível salvar as configurações.'),
   });
 
-  return { ...query, updateSettings: mutation.mutate, isSaving: mutation.isPending };
+  return {
+    ...query,
+    updateSettings: mutation.mutate,
+    updateSettingsAsync: mutation.mutateAsync,
+    isSaving: mutation.isPending,
+  };
 }

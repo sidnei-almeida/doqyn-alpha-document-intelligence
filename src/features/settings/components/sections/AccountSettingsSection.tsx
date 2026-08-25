@@ -3,10 +3,14 @@ import { AuthenticationSettingsSection } from './AuthenticationSettingsSection';
 import { PreferencesSettingsSection } from './PreferencesSettingsSection';
 import { ProfileSettingsSection } from './ProfileSettingsSection';
 
-/** Perfil em tela única: identidade em largura total; preferências e acesso em grade. */
+/** Coluna única: identidade, preferências e acesso empilhados, separados por fio. */
 export function AccountSettingsSection() {
   return (
     <div className="settings-blocks settings-profile-page">
+      <p className="settings-save-rule">
+        Nesta tela, cada mudança vale na hora — só senha e e-mail pedem confirmação.
+      </p>
+
       <section className="settings-block settings-profile-block--identity">
         <SettingsSectionHeader
           title="Identidade"
@@ -16,25 +20,23 @@ export function AccountSettingsSection() {
         <ProfileSettingsSection />
       </section>
 
-      <div className="settings-profile-secondary-grid">
-        <section className="settings-block">
-          <SettingsSectionHeader
-            title="Preferências"
-            description="Tema e visualização da Biblioteca."
-            className="settings-block__header"
-          />
-          <PreferencesSettingsSection />
-        </section>
+      <section className="settings-block">
+        <SettingsSectionHeader
+          title="Preferências"
+          description="Tema e visualização da Biblioteca."
+          className="settings-block__header"
+        />
+        <PreferencesSettingsSection />
+      </section>
 
-        <section className="settings-block">
-          <SettingsSectionHeader
-            title="Acesso"
-            description="Autenticação e senha."
-            className="settings-block__header"
-          />
-          <AuthenticationSettingsSection />
-        </section>
-      </div>
+      <section className="settings-block">
+        <SettingsSectionHeader
+          title="Acesso"
+          description="Autenticação e senha."
+          className="settings-block__header"
+        />
+        <AuthenticationSettingsSection />
+      </section>
     </div>
   );
 }

@@ -1,85 +1,41 @@
 /**
- * Padrão visual do módulo Configurações (camada estrutural compartilhada).
+ * Padrão visual do módulo Configurações.
  *
- * Navegação (menu lateral — 4 itens):
- * - Perfil → tela única (identidade + preferências + acesso), sem subtabs
- * - Upload e IA
- * - Segurança
- * - Empresa → sub-abas: Governança · Retenção (admin) · Sistema
- * URLs legadas (?section=preferencias, autenticacao, organizacao, lixeira, sistema)
- * redirecionam para a seção composta + ?tab= correspondente (Empresa).
- * ?tab=identidade|preferencias|acesso no Perfil é removido da URL.
+ * Navegação — três seções, por quem decide, sem sub-abas:
+ * - Minha conta (pessoal) · Organização (tenant, `company_admin` em PJ) · Sistema (leitura)
+ * - O índice fica na coluna da esquerda; a URL carrega só `?section=`.
  *
- * Hierarquia de cabeçalho (uma só):
- * - PageShell: eyebrow "Configurações" + título/descrição da seção ativa
- * - Painel de conteúdo: sem segundo cabeçalho (evita "Administração / Configurações"
- *   + "Configurações da conta / [seção]")
- * - SettingsSectionHeader: só para subtítulos internos raros; não repetir o título da seção
+ * Layout — coluna única de leitura:
+ * - `settings-shell`: índice (14–17,5rem) + conteúdo; abaixo de 1024px o índice empilha.
+ * - `settings-layout__content` tem medida de texto (46rem). Nada de segunda coluna de
+ *   conteúdo ao lado do índice: a tela lê de cima para baixo.
+ * - Sem moldura: o conteúdo senta no canvas (`settings-content-panel` não tem borda).
  *
- * Cards e densidade:
- * - settings-cards-grid: grade auto-fit; cards crescem com o conteúdo (align-items: start)
- * - settings-cards-grid--balanced: flex wrap com flex-grow (última linha preenche; sem órfão estreito)
- * - settings-card--compact: seções com poucos campos (não esticar altura artificial)
- * - settings-card--flush: listas de SettingsRow sem padding extra
- * - Evitar min-height alto no painel quando a seção é esparsa
+ * Bloco — um assunto por bloco, separados por fio:
+ * - `settings-blocks` > `settings-block`, com `border-top` entre irmãos.
+ * - `settings-block__header` traz título e descrição do assunto; o título da seção
+ *   fica só no `PageShell` (uma hierarquia de cabeçalho, não duas).
+ * - Dentro do bloco: `SettingsRowList`/`SettingsRow` (rótulo à esquerda, controle à
+ *   direita), `SettingsRegisterList` para atalhos, `settings-callout` para nota.
  *
- * Status:
- * - Ativo → SettingsStatusBadge (Badge variant success)
- * - Em breve → SettingsStatusBadge (Badge variant neutral, borda tracejada + cadeado)
- * - SettingsInfoCard já aceita ok | pending | neutral (ícone e borda reagem ao status)
- * - Opções futuras em listas: settings-locked-option (checkbox desabilitado + badge)
+ * Uma regra de salvamento por tela, declarada na própria tela (`settings-save-rule`):
+ * - Minha conta: cada mudança vale na hora; senha e e-mail são ações com confirmação própria.
+ * - Organização: nada vale até salvar. O rascunho dos três blocos vive em
+ *   `useOrganizationSettings`, e uma única `SettingsSaveBar` (`--screen`, fixa no fim da
+ *   coluna) salva só o que mudou. Blocos não têm botão de salvar próprio.
+ *   "Enviar teste" do SMTP é ação, não configuração, e só vale sobre o que já foi salvo.
+ * - Sistema: leitura, sem salvamento.
  *
- * Segurança:
- * - settings-summary-bar com contagem "N de M recursos ativos"
- * - Links de ação padronizados ("Abrir" + seta) no rodapé do card
- *
- * Organização:
- * - settings-cards-grid--2col (grade 2×2 consistente)
- * - settings-info-card--featured usa acento da marca (não verde de sucesso)
- * - settings-callout com superfície accent (alinhado ao tema)
- *
- * Lixeira e retenção:
- * - Formulário estreito centralizado (settings-retention-card)
- * - Preview dinâmico + dias desabilitados no modo manual
- * - SettingsSaveBar: Salvar/Descartar só com alteração pendente
- *
- * Upload e IA:
- * - Rascunho local + SettingsSaveBar (não persiste a cada toggle)
- * - settings-summary-bar reflete o rascunho até salvar
- * - Grid 2 colunas equilibradas (settings-workflow-panel__grid--balanced)
- * - Nome do documento: lista compacta (settings-choice-item--compact)
- *
- * Perfil (identidade):
- * - Uma tela só: Identidade (largura total) + Preferências | Acesso em 2 colunas (≥1024px)
- * - Cards sem max-width 40rem do compact (preenchem o painel)
- * - settings-profile-layout em 2 colunas no desktop (identidade | detalhes)
- *
- * Preferências:
- * - Tema/visualização aplicados na hora (feedback imediato)
- * - Card full-width do painel (settings-preferences-card)
- *
- * Sistema:
- * - Lista "Sobre o sistema" com grupos (identidade / infraestrutura)
- * - Ambiente e Build em "detalhes avançados" recolhíveis
- * - Cards de status em settings-cards-grid--3col
- *
- * Dependências:
- * - settings-dependent-group: borda lateral + indentação para opções filhas
- * - settings-dependent-group--inactive: quando o pai está desligado
- *
- * Autenticação:
- * - Resumo em uma linha + expansor "Ver detalhes técnicos"
- * - Sessões ativas: SettingsFieldGroup + settings-locked-option (Em breve)
- * - Senha: revealable no Input, checklist e indicador de força (só UI)
- *
- * Linha de configuração:
- * - SettingsRow: label + descrição à esquerda, controle à direita (estilo Vercel/Linear)
- * - Usar em telas simples (preferências, retenção, toggles)
+ * Permissão:
+ * - `governsOrganization({ tenantType, isCompanyAdmin })` decide quem edita; em PF o dono
+ *   governa. Quem não governa em PJ ainda vê Envio e IA em leitura (`fieldset disabled`),
+ *   porque é o bloco que explica o que a IA fez com o arquivo dele.
+ * - O front só esconde: todo endpoint de configuração de tenant nasce com 403 no servidor.
  */
 export const SETTINGS_UI_PATTERN = {
   pageEyebrow: 'Configurações',
-  contentPanelMinHeight: 'auto',
-  cardGap: '1rem',
-  sectionBodyGap: '1.25rem',
+  contentMaxWidth: '46rem',
+  blockGap: '1.75rem',
+  sectionBodyGap: '1rem',
   rowMinHeight: '3.25rem',
 } as const;

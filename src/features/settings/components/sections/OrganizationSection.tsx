@@ -3,13 +3,16 @@ import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
 import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionHeader } from '../SettingsSectionHeader';
 import { SettingsRegisterList } from '../SettingsRegisterList';
+import { SettingsSaveBar } from '../SettingsSaveBar';
 import { TenantEmailSettingsSection } from './TenantEmailSettingsSection';
 import { TrashRetentionSettingsSection } from './TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './UploadAiSettingsSection';
 import { governsOrganization } from '../../settingsSections';
+import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
 
 /**
- * Uma tela só, em blocos separados por fio. Quem não administra em PJ continua vendo o
+ * Uma tela só, em coluna única de blocos separados por fio, com uma regra de salvamento:
+ * nada vale até confirmar na barra do fim. Quem não administra em PJ continua vendo o
  * bloco de envio e IA — em leitura —, porque é ele que explica o que a IA fez com o arquivo.
  */
 export function OrganizationSection() {
@@ -19,16 +22,31 @@ export function OrganizationSection() {
     isCompanyAdmin: hasAnyRole(['company_admin']),
   });
   const canAccessRules = canAccessRulesPage(hasAnyRole);
+  const { upload, trashRetention, outboundEmail, dirty, saving, save, discard } =
+    useOrganizationSettings({ governs });
+
+  const canEdit = upload.canManage || governs;
 
   return (
     <div className="settings-blocks">
+      {canEdit ? (
+        <p className="settings-save-rule">
+          Nesta tela, nada vale até você salvar no fim da página.
+        </p>
+      ) : null}
+
       <section className="settings-block">
         <SettingsSectionHeader
           title="Envio e IA"
           description="Vale para toda a organização: quando a IA renomeia o arquivo e quando o envio para para revisão."
           className="settings-block__header"
         />
-        <UploadAiSettingsSection />
+        <UploadAiSettingsSection
+          draft={upload.draft}
+          onChange={upload.setDraft}
+          canManage={upload.canManage}
+          dirty={upload.dirty}
+        />
       </section>
 
       {governs ? (
@@ -38,7 +56,11 @@ export function OrganizationSection() {
             description="Por quanto tempo um documento excluído continua recuperável."
             className="settings-block__header"
           />
-          <TrashRetentionSettingsSection />
+          <TrashRetentionSettingsSection
+            draft={trashRetention.draft}
+            onChange={trashRetention.setDraft}
+            isLoading={trashRetention.isLoading}
+          />
         </section>
       ) : null}
 
@@ -49,7 +71,17 @@ export function OrganizationSection() {
             description="Servidor SMTP usado para convites e avisos da organização."
             className="settings-block__header"
           />
-          <TenantEmailSettingsSection />
+          <TenantEmailSettingsSection
+            draft={outboundEmail.draft}
+            onChange={outboundEmail.setDraft}
+            config={outboundEmail.config}
+            isLoading={outboundEmail.isLoading}
+            isError={outboundEmail.isError}
+            onRetry={() => void outboundEmail.refetch()}
+            onTest={outboundEmail.test}
+            testing={outboundEmail.testing}
+            canTest={outboundEmail.canTest}
+          />
         </section>
       ) : null}
 
@@ -90,6 +122,16 @@ export function OrganizationSection() {
             </p>
           </aside>
         </section>
+      ) : null}
+
+      {canEdit ? (
+        <SettingsSaveBar
+          className="settings-save-bar--screen"
+          dirty={dirty}
+          saving={saving}
+          onSave={() => void save()}
+          onDiscard={discard}
+        />
       ) : null}
     </div>
   );

@@ -1381,9 +1381,10 @@
     min-width: 0;
   }
 
+  /* Coluna única de leitura: o conteúdo tem medida de texto, o índice fica fora dela. */
   .settings-layout__content {
     min-width: 0;
-    max-width: none;
+    max-width: 46rem;
   }
 
   /* Sem moldura: o conteúdo senta no canvas, como no resto do app. */
@@ -1532,13 +1533,7 @@
     grid-template-columns: 1fr;
   }
 
-  @media (min-width: 1024px) {
-    .settings-workflow-panel__grid,
-    .settings-workflow-panel__grid--balanced {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: stretch;
-    }
-  }
+  /* Sem segunda coluna: a tela de Configurações lê de cima para baixo, em coluna única. */
 
   .settings-choice-list {
     display: flex;
@@ -1760,6 +1755,34 @@
     margin-top: 0.25rem;
     padding-top: 1rem;
     border-top: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  }
+
+  /* Barra da tela: uma só, no fim da coluna, com fio mais firme que o de bloco. */
+  .settings-save-bar--screen {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 0.5rem;
+    padding: 0.875rem 0 1rem;
+    border-top: 1px solid var(--border-subtle);
+    background: linear-gradient(
+      to top,
+      var(--bg-canvas) 70%,
+      color-mix(in srgb, var(--bg-canvas) 0%, transparent)
+    );
+  }
+
+  /* A tela declara a própria regra de salvamento, em rótulo de registro. */
+  .settings-save-rule {
+    @apply type-caption text-doqyn-subtle;
+    margin: 0 0 0.25rem;
+  }
+
+  .settings-block__action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
   }
 
   .settings-save-bar--inset {
@@ -2128,22 +2151,6 @@
   .settings-profile-page {
     gap: 1.5rem;
     width: 100%;
-  }
-
-  .settings-profile-secondary-grid {
-    display: grid;
-    gap: 1.5rem;
-    align-items: start;
-    width: 100%;
-    border-top: 1px solid var(--border-subtle);
-    padding-top: 1.75rem;
-  }
-
-  @media (min-width: 1024px) {
-    .settings-profile-secondary-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1.25rem 1.5rem;
-    }
   }
 
   .settings-profile-block {
