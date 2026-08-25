@@ -27,11 +27,27 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
   const isLibrary = location.pathname.startsWith('/biblioteca');
   const [value, setValue] = useState(() => (isLibrary ? (searchParams.get('q') ?? '') : ''));
   const debouncedValue = useDebouncedValue(value, 400);
+  /**
+   * Termo que a URL acabou de impor ao campo, enquanto o campo ainda não o
+   * refletiu. Sem esta marca, remover o chip "Busca: X" não limpava nada: os
+   * dois efeitos rodam no mesmo commit, e o que empurra o campo para a URL
+   * ainda enxergava o `value` antigo — devolvendo o termo que o chip tinha
+   * acabado de apagar.
+   */
+  const urlImposedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isLibrary) {
-      setValue(searchParams.get('q') ?? '');
+    if (!isLibrary) return;
+    const urlQ = searchParams.get('q') ?? '';
+    if (urlQ === value.trim()) {
+      urlImposedRef.current = null;
+      return;
     }
+    urlImposedRef.current = urlQ;
+    setValue(urlQ);
+    // `value` fora das dependências de propósito: este efeito reage à URL, e
+    // incluí-lo faria o campo se sobrescrever a cada tecla digitada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLibrary, searchParams]);
 
   useEffect(() => {
@@ -70,6 +86,12 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
 
   useEffect(() => {
     if (!isLibrary) return;
+    if (urlImposedRef.current !== null) {
+      // O campo está obedecendo à URL (chip removido, filtros limpos, deep
+      // link). Só volta a empurrar depois que ele alcançar o termo imposto.
+      if (urlImposedRef.current === value.trim()) urlImposedRef.current = null;
+      return;
+    }
     if (value.trim() !== debouncedValue.trim()) return;
     const urlQ = searchParams.get('q') ?? '';
     if (debouncedValue.trim() === urlQ.trim()) return;
@@ -77,6 +99,7 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
   }, [debouncedValue, value, isLibrary, searchParams, applyQueryToUrl]);
 
   const clearSearch = () => {
+    urlImposedRef.current = null;
     setValue('');
     applyQueryToUrl('');
     inputRef.current?.focus();

@@ -41,11 +41,12 @@ type ExplorerContextMenuProps = {
   onReactivateFile?: (doc: DocumentListItem) => void;
   onShowContextInfo?: () => void;
   onShowFolderInfo?: (folder: LibraryFolder) => void;
-  onComingSoon: (label: string) => void;
 };
 
+// Item de menu é linha de registro, não pílula: canto reto e régua de acento
+// à esquerda no hover — a mesma reação do menu do usuário e do `DropdownMenuItem`.
 const itemClass =
-  'explorer-interactive flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-doqyn-text hover:bg-doqyn-surface-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40';
+  'explorer-interactive relative flex w-full items-center gap-2 rounded-none px-3 py-1.5 text-left text-[12px] text-doqyn-text before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:before:bg-doqyn-accent-active disabled:cursor-not-allowed disabled:opacity-40';
 
 const fileItemClass = `${itemClass} whitespace-nowrap`;
 
@@ -114,7 +115,6 @@ export function ExplorerContextMenu({
   onReactivateFile,
   onShowContextInfo,
   onShowFolderInfo,
-  onComingSoon,
 }: ExplorerContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -156,8 +156,8 @@ export function ExplorerContextMenu({
       aria-label="Menu de contexto"
       className={
         state.kind === 'file'
-          ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1 shadow-dropdown'
-          : 'menu-enter fixed z-[90] w-56 overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1.5 shadow-dropdown'
+          ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel py-1 shadow-dropdown'
+          : 'menu-enter fixed z-[90] w-56 overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel py-1.5 shadow-dropdown'
       }
       style={position}
       data-testid="explorer-context-menu"
@@ -166,9 +166,14 @@ export function ExplorerContextMenu({
         <>
           <MenuItem label="Enviar documento" icon="upload" onClick={() => run(onUpload)} />
           {state.scope === 'root' && (
-            <Link to="/rules" role="menuitem" className={itemClass} onClick={onClose}>
-              <Icon name="add" size={ICON_SIZE.sm} className="text-doqyn-muted" />
-              Nova categoria (Regras)
+            <Link
+              to="/rules?nova=categoria"
+              role="menuitem"
+              className={itemClass}
+              onClick={onClose}
+            >
+              <Icon name="create_new_folder" size={ICON_SIZE.sm} className="text-doqyn-muted" />
+              Nova categoria
             </Link>
           )}
           {state.scope === 'folder' && (
@@ -179,11 +184,7 @@ export function ExplorerContextMenu({
           )}
           <MenuItem label="Atualizar" icon="refresh" onClick={() => run(onRefresh)} />
           <MenuItem
-            label={
-              state.scope === 'folder'
-                ? 'Ver informações da pasta atual'
-                : 'Ver informações'
-            }
+            label={state.scope === 'folder' ? 'Ver informações da pasta atual' : 'Ver informações'}
             icon="info"
             onClick={() => run(() => onShowContextInfo?.())}
           />
@@ -234,21 +235,26 @@ export function ExplorerContextMenu({
         <>
           {(() => {
             const doc = state.document;
-            const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
+            const canPreview =
+              doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
             const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
             const canTracking = Boolean(doc.permissions?.canViewTracking);
             const canUpdate = Boolean(doc.permissions?.canUpdate);
             const archiveView = isTrashView || isDeactivatedView;
             const canMove = Boolean(canUpdate && onMoveFile && !archiveView);
             const canShare = Boolean(
-              doc.permissions?.canShare && onShareFile && !archiveView && !doc.permissions?.sharedViaGrant,
+              doc.permissions?.canShare &&
+              onShareFile &&
+              !archiveView &&
+              !doc.permissions?.sharedViaGrant,
             );
-            const hasSignatureActivity = doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
+            const hasSignatureActivity =
+              doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
             const canDownloadSignedPdf = Boolean(
               doc.signatureSummary?.hasSignedPdf &&
-                doc.signatureSummary.latestRequestId &&
-                onDownloadSignedPdfFile &&
-                !archiveView,
+              doc.signatureSummary.latestRequestId &&
+              onDownloadSignedPdfFile &&
+              !archiveView,
             );
             const isFavorite = doc.isFavorite === true;
             return (
@@ -358,13 +364,6 @@ export function ExplorerContextMenu({
                       : 'Conferir e corrigir os campos deste documento'
                   }
                   onClick={() => run(() => onEditMetadataFile?.(doc))}
-                />
-                <MenuItem
-                  compact
-                  label="Renomear"
-                  icon="edit"
-                  disabled
-                  onClick={() => run(() => onComingSoon('Renomear'))}
                 />
                 {isTrashView ? (
                   <>

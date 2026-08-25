@@ -13,7 +13,12 @@ type EmptyFolderStateProps = {
 };
 
 /**
- * Empty state dentro de pasta — minimalista, flat, com ação de upload.
+ * Vazio dentro de pasta.
+ *
+ * O convite deixou de ser um bloco preenchido: numa tela feita só de fio e
+ * texto, ele era a única superfície pintada — e o teal saturado no meio do vão
+ * gritava mais alto do que a frase que explica o que fazer. Agora é botão de
+ * contorno, e o arrastar-e-soltar continua logo abaixo, como segunda via.
  */
 export function EmptyFolderState({
   hasActiveFilters,
@@ -69,14 +74,14 @@ export function EmptyFolderState({
         <>
           <Button
             type="button"
-            variant="primary"
+            variant="secondary"
             size="md"
             className="mt-6"
             onClick={onUploadClick}
           >
             {uploadButtonLabel}
           </Button>
-          <p className="mt-4 text-[12px] text-doqyn-subtle">
+          <p className="mt-4 text-caption text-doqyn-subtle">
             Você também pode arrastar arquivos para esta janela.
           </p>
         </>

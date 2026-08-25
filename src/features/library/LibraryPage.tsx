@@ -63,10 +63,6 @@ import { signedPdfDownloadName } from '@/features/signature/utils/signatureSumma
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
 
-function notifyComingSoon(label: string) {
-  toast.info(`${label} estará disponível em uma próxima versão.`);
-}
-
 /**
  * Biblioteca — File Explorer com pastas inteligentes (categorias de governança).
  * Raiz: pastas em destaque. Dentro da pasta: arquivos como protagonistas.
@@ -682,7 +678,6 @@ export function LibraryPage() {
       onDownload={(doc) => void handleDownload(doc)}
       onDetails={openFileDetails}
       onTracking={handleTracking}
-      onRename={() => notifyComingSoon('Renomear')}
       onMove={isLifecycleArchiveView ? undefined : handleMoveSingle}
       onShare={isLifecycleArchiveView ? undefined : handleShareSingle}
       onRequestSignature={isLifecycleArchiveView ? undefined : handleRequestSignature}
@@ -825,7 +820,6 @@ export function LibraryPage() {
           onTrashFile={handleTrashSingle}
           onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
           onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
-          onComingSoon={notifyComingSoon}
         />
 
         <UpdateDocumentVersionDrawer

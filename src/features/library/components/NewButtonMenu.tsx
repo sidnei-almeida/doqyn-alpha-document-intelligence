@@ -3,7 +3,6 @@ import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { ALLOWED_FILE_EXTENSIONS } from '@/features/document-send/uploadConstants';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import type { UploadContext } from '@/features/upload/types';
@@ -101,19 +100,23 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
         aria-label="Criar novo"
         className="sidebar-new-menu w-[15.5rem]"
       >
-        <Tooltip label="Pastas manuais chegam em uma próxima fase" wrapperClassName="block w-full">
-          <span className="block w-full">
-            <button type="button" role="menuitem" className="sidebar-new-menu__item" disabled>
-              <Icon
-                name="create_new_folder"
-                size={ICON_SIZE.md}
-                className="sidebar-new-menu__item-icon--muted"
-              />
-              Nova pasta
-              <span className="sidebar-new-menu__badge">Em breve</span>
-            </button>
-          </span>
-        </Tooltip>
+        {/* Pasta da Biblioteca é categoria de governança — não há duas coisas.
+            O item prometia uma pasta manual que nunca vai existir; agora leva
+            para o formulário de categoria, que é onde a "pasta" nasce. */}
+        <Link
+          to="/rules?nova=categoria"
+          role="menuitem"
+          className="sidebar-new-menu__item"
+          onClick={() => setOpen(false)}
+          data-testid="new-category"
+        >
+          <Icon
+            name="create_new_folder"
+            size={ICON_SIZE.md}
+            className="sidebar-new-menu__item-icon"
+          />
+          Nova categoria
+        </Link>
         <button
           type="button"
           role="menuitem"
