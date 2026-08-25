@@ -816,6 +816,333 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  /* ===== Portais de convidado (convite · assinatura) ===================
+     Quem chega aqui não tem conta e nunca viu o produto. A porta é a mesma da
+     antessala: fio no topo, marca à esquerda, estado à direita, e o documento
+     como peça principal — folha branca nos dois temas.                       */
+
+  .guest-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background: var(--bg-app);
+    color: var(--text-primary);
+  }
+
+  .guest-shell__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .guest-shell__header-aside {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .guest-shell__main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .guest-shell[data-layout='stage'] .guest-shell__main {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .guest-shell[data-layout='work'] .guest-shell__main {
+    padding: 1.25rem 1.5rem 1.75rem;
+  }
+
+  .guest-shell__footer {
+    padding: 0.875rem 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+  }
+
+  .guest-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin: auto;
+  }
+
+  /* Sem moldura: a coluna é o próprio papel, e o que separa é o fio. */
+  .guest-card {
+    width: 100%;
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  .guest-card--narrow {
+    max-width: 28rem;
+  }
+
+  /* Serifada acima do piso de 20px, a mesma voz da porta de entrada. */
+  .guest-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-h1);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .guest-title--sm {
+    font-size: 1.25rem;
+  }
+
+  .guest-register {
+    display: grid;
+    gap: 0.875rem;
+    margin: 1.75rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .guest-register__row {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .guest-quote {
+    margin: 1.5rem 0 0;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 2px solid var(--accent-active);
+    @apply type-body text-doqyn-text;
+    line-height: 1.55;
+  }
+
+  .guest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Selo: latão em contorno, nunca preenchido. */
+  .guest-seal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.1875rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--seal) 55%, transparent);
+    border-radius: var(--radius-pill);
+    @apply register-label;
+    color: var(--seal);
+  }
+
+  /* ── Portal de assinatura ─────────────────────────────────────────── */
+
+  .sign-layout {
+    display: grid;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 88rem;
+    margin: 0 auto;
+    min-height: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .sign-layout {
+      grid-template-columns: minmax(0, 1fr) 22rem;
+      align-items: start;
+    }
+  }
+
+  .sign-layout__sheet {
+    min-width: 0;
+  }
+
+  .sign-sheet--placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: min(60vh, 34rem);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+  }
+
+  .sign-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+  }
+
+  .sign-rail__block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sign-rail__block--flush {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .sign-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sign-steps__item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    @apply type-caption;
+    color: var(--text-tertiary);
+  }
+
+  .sign-steps__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    flex-shrink: 0;
+  }
+
+  .sign-steps__item[data-state='current'] {
+    color: var(--text-primary);
+  }
+
+  .sign-steps__item[data-state='current'] .sign-steps__mark {
+    border-color: var(--accent-active);
+    color: var(--accent-active);
+  }
+
+  .sign-steps__item[data-state='done'] {
+    color: var(--text-secondary);
+  }
+
+  .sign-steps__item[data-state='done'] .sign-steps__mark {
+    border-color: color-mix(in srgb, var(--seal) 55%, transparent);
+    color: var(--seal);
+  }
+
+  .sign-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sign-facts li {
+    position: relative;
+    padding-left: 0.875rem;
+    @apply type-caption text-doqyn-muted;
+    line-height: 1.5;
+  }
+
+  .sign-facts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 0.375rem;
+    height: 1px;
+    background: var(--border-strong);
+  }
+
+  /* O código de verificação é atestação: mono tabular, dentro de fio de latão. */
+  .sign-seal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 1.75rem;
+    padding: 1rem 1.125rem;
+    border: 1px solid color-mix(in srgb, var(--seal) 40%, transparent);
+    border-radius: var(--radius-sm);
+  }
+
+  .sign-seal__code {
+    font-family: var(--font-family-mono);
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--seal);
+    margin: 0;
+  }
+
+  /* ===== Revisão antes de um ato irreversível ==========================
+     Ficha de registro: rótulo em mono, valor em corpo, linhas separadas por
+     fio. O aviso é faixa de latão à esquerda — latão atesta, não preenche.  */
+
+  .review-attention {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.75rem 0 0.75rem 0.875rem;
+    border-left: 2px solid var(--seal);
+    color: var(--text-secondary);
+  }
+
+  .review-attention p {
+    @apply type-body;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .review-attention > span,
+  .review-attention svg {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+    color: var(--seal);
+  }
+
+  .review-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .review-section + .review-section {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .review-section__list {
+    display: grid;
+    gap: 0.875rem 1.5rem;
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .review-section__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .review-section__row {
+    min-width: 0;
+  }
+
   /* ===== Fluxo de destinatário (compartilhar · assinar) ===============
      Os dois diálogos que mandam um documento para fora usam a mesma forma:
      trilha de passos em régua, campos em linha, lista de quem tem acesso

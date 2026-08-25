@@ -2,9 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
-import { DoqynLogo } from '@/components/brand';
-import { Badge } from '@/components/ui/Badge';
-import { VersionBadge } from '@/components/ui/VersionBadge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Icon } from '@/components/ui/Icon';
@@ -23,6 +20,11 @@ import { GuestSignatureViewer } from '@/features/signature/GuestSignatureViewer'
 import { invalidateSignatureQueries } from '@/features/signature/utils/invalidateSignatureQueries';
 import { publishSignatureCompleted } from '@/features/signature/utils/signatureCompletionSync';
 import { useGuestPortalPageMeta } from '@/features/guest-portal/useGuestPortalPageMeta';
+import {
+  GuestPortalShell,
+  GuestRegisterRow,
+  GuestSeal,
+} from '@/features/guest-portal/GuestPortalShell';
 
 type PreviewState =
   | { kind: 'loading' }
@@ -42,32 +44,58 @@ function formatDateTime(iso: string): string {
 
 function PreviewLoadingPanel() {
   return (
-    <div
-      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-border bg-doqyn-surface"
-      data-testid="signature-preview-loading"
-    >
+    <div className="sign-sheet sign-sheet--placeholder" data-testid="signature-preview-loading">
       <Icon
         name="progress_activity"
         size={ICON_SIZE.md}
         className="animate-spin text-doqyn-muted"
       />
-      <p className="text-sm text-doqyn-subtle">Carregando documento…</p>
+      <p className="type-caption text-doqyn-subtle">Abrindo o documento…</p>
     </div>
   );
 }
 
 function PreviewUnavailablePanel({ message }: { message: string }) {
   return (
-    <div
-      className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg/40 p-8 text-center"
-      data-testid="signature-preview-unavailable"
-    >
-      <Icon name="visibility_off" size={ICON_SIZE.md} className="text-doqyn-warning" />
-      <p className="text-sm font-medium text-doqyn-text">
-        Preview indisponível para este documento.
-      </p>
-      <p className="max-w-md text-sm leading-relaxed text-doqyn-subtle">{message}</p>
+    <div className="sign-sheet sign-sheet--placeholder" data-testid="signature-preview-unavailable">
+      <Icon name="draft" size={ICON_SIZE.md} className="text-doqyn-muted" />
+      <p className="type-body max-w-sm text-center text-doqyn-muted">{message}</p>
     </div>
+  );
+}
+
+/** Os três atos da assinatura, sempre visíveis: ler, declarar, assinar. */
+function SignSteps({
+  read,
+  declared,
+  signed,
+}: {
+  read: boolean;
+  declared: boolean;
+  signed: boolean;
+}) {
+  const steps = [
+    { label: 'Ler o documento', done: read },
+    { label: 'Declarar o aceite', done: declared },
+    { label: 'Assinar', done: signed },
+  ];
+  const current = steps.findIndex((step) => !step.done);
+
+  return (
+    <ol className="sign-steps">
+      {steps.map((step, index) => (
+        <li
+          key={step.label}
+          className="sign-steps__item"
+          data-state={step.done ? 'done' : index === current ? 'current' : 'todo'}
+        >
+          <span className="sign-steps__mark" aria-hidden>
+            {step.done ? <Icon name="check" size={12} /> : index + 1}
+          </span>
+          <span className="sign-steps__label">{step.label}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -225,183 +253,180 @@ export function SignaturePortalPage() {
 
   if (loading) {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center bg-doqyn-bg text-doqyn-text"
-        data-testid="signature-portal"
-      >
-        <div className="flex flex-col items-center gap-3">
+      <GuestPortalShell subtitle="Assinatura eletrônica">
+        <div className="guest-state" data-testid="signature-portal">
           <Icon
             name="progress_activity"
             size={ICON_SIZE.md}
             className="animate-spin text-doqyn-muted"
           />
-          <p className="text-sm text-doqyn-subtle">Carregando assinatura…</p>
+          <p className="type-caption text-doqyn-subtle">Abrindo a solicitação…</p>
         </div>
-      </div>
+      </GuestPortalShell>
     );
   }
 
   if (error && !payload) {
     return (
-      <div
-        className="flex min-h-screen flex-col items-center justify-center gap-4 bg-doqyn-bg p-6 text-doqyn-text"
-        data-testid="signature-portal"
-      >
-        <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
-        <div className="max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-8 text-center">
-          <Icon name="link_off" size={ICON_SIZE.md} className="mx-auto text-doqyn-muted" />
-          <h1 className="mt-4 text-base font-semibold">Assinatura indisponível</h1>
-          <p className="mt-2 text-sm text-doqyn-subtle">{error}</p>
-        </div>
-      </div>
+      <GuestPortalShell subtitle="Assinatura eletrônica">
+        <section className="guest-card guest-card--narrow" data-testid="signature-portal">
+          <p className="register-label text-doqyn-subtle">Solicitação indisponível</p>
+          <h1 className="guest-title">Este link não abre mais</h1>
+          <p className="type-body mt-3 text-doqyn-muted">{error}</p>
+          <p className="type-caption mt-6 text-doqyn-subtle">
+            Peça uma nova solicitação a quem pediu a sua assinatura.
+          </p>
+        </section>
+      </GuestPortalShell>
     );
   }
 
   if (completed) {
     return (
-      <div
-        className="flex min-h-screen flex-col items-center justify-center gap-6 bg-doqyn-bg p-6 text-doqyn-text"
-        data-testid="signature-portal-success"
+      <GuestPortalShell
+        subtitle="Assinatura eletrônica"
+        headerAside={<GuestSeal>Assinado</GuestSeal>}
+        footNote="A assinatura fica registrada com data, hora e evidências técnicas de auditoria."
       >
-        <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
-        <div className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-8 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-doqyn-success-bg text-doqyn-success">
-            <Icon name="check_circle" size={ICON_SIZE.md} />
-          </div>
-          <h1 className="text-lg font-semibold">Documento assinado com sucesso</h1>
+        <section className="guest-card guest-card--narrow" data-testid="signature-portal-success">
+          <p className="register-label text-doqyn-subtle">Assinatura concluída</p>
+          <h1 className="guest-title">Documento assinado</h1>
+          <p className="type-body mt-3 text-doqyn-muted">
+            {payload?.documentName} foi assinado por {payload?.signer.name}.
+          </p>
+
           {verificationCode ? (
-            <p className="mt-3 text-sm text-doqyn-subtle">
-              Código de verificação:{' '}
-              <span className="font-mono font-medium text-doqyn-text">{verificationCode}</span>
-            </p>
+            <div className="sign-seal">
+              <p className="register-label text-doqyn-subtle">Código de verificação</p>
+              <p className="sign-seal__code">{verificationCode}</p>
+              <Link
+                to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
+                className="type-caption text-doqyn-primary hover:underline"
+                data-testid="signature-verification-link"
+              >
+                Validar esta assinatura
+              </Link>
+            </div>
           ) : null}
-          {verificationCode ? (
-            <Link
-              to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
-              className="mt-4 inline-block text-sm text-doqyn-accent-active hover:underline"
-              data-testid="signature-verification-link"
-            >
-              Validar assinatura
-            </Link>
-          ) : null}
+
           {payload?.permissions.canDownloadAfterSign ? (
-            <Button
-              type="button"
-              className="mt-6 w-full"
-              disabled={downloading}
-              onClick={() => void handleDownloadSigned()}
-              data-testid="signature-download-signed"
-            >
-              {downloading ? 'Baixando…' : 'Baixar PDF assinado'}
-            </Button>
+            <div className="guest-actions">
+              <Button
+                type="button"
+                disabled={downloading}
+                onClick={() => void handleDownloadSigned()}
+                data-testid="signature-download-signed"
+              >
+                {downloading ? 'Baixando…' : 'Baixar PDF assinado'}
+              </Button>
+            </div>
           ) : null}
-        </div>
-      </div>
+        </section>
+      </GuestPortalShell>
     );
   }
 
   return (
-    <div
-      className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text"
-      data-testid="signature-portal"
-    >
-      <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4">
-          <DoqynLogo size="sm" variant="horizontal" subtitle="Assinatura eletrônica" />
-          <div className="flex items-center gap-3">
-            <p className="text-caption text-doqyn-muted">
+    <>
+      <GuestPortalShell
+        subtitle="Assinatura eletrônica"
+        layout="work"
+        headerAside={
+          <>
+            <p className="type-caption text-doqyn-muted">
               Solicitado por <span className="text-doqyn-text">{payload?.issuerName}</span>
             </p>
-            <Badge variant="pending">Assinatura pendente</Badge>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 p-4 sm:p-6 lg:flex-row">
-        <section className="min-w-0 flex-1 lg:min-h-0">
-          {preview.kind === 'loading' ? <PreviewLoadingPanel /> : null}
-          {preview.kind === 'ready' && payload ? (
-            <div className="lg:h-full" data-testid="signature-preview-ready">
-              <GuestSignatureViewer manifest={preview.manifest} payload={payload} />
-              <p className="sr-only" data-testid="signature-document-loaded">
-                Documento carregado
-              </p>
-            </div>
-          ) : null}
-          {preview.kind === 'unavailable' ? (
-            <PreviewUnavailablePanel message={preview.message} />
-          ) : null}
-          {preview.kind === 'error' ? (
-            <PreviewUnavailablePanel
-              message={`${preview.message} Você ainda pode prosseguir com a assinatura após confirmar o aceite.`}
-            />
-          ) : null}
-        </section>
-
-        <aside className="w-full shrink-0 space-y-4 lg:w-80">
-          <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-            <TruncatedText as="h2" className="text-base font-semibold">
-              {payload?.documentName ?? 'Documento'}
-            </TruncatedText>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {payload?.versionLabel ? (
-                <VersionBadge version={payload.versionLabel} isCurrent size="sm" />
-              ) : null}
-              {payload?.isVersionStale ? (
-                <Badge variant="warning">Versão da solicitação</Badge>
-              ) : null}
-            </div>
-            {payload?.isVersionStale && payload.versionLabel ? (
-              <p className="mt-3 text-xs leading-relaxed text-doqyn-warning">
-                Esta solicitação se refere à versão v{payload.versionLabel} deste documento.
-              </p>
-            ) : null}
-
-            <dl className="mt-4 space-y-2 text-sm">
-              <div>
-                <dt className="text-doqyn-muted">Signatário</dt>
-                <dd>{payload?.signer.name}</dd>
-                <dd className="text-doqyn-subtle">{payload?.signer.emailMasked}</dd>
+            <GuestSeal>Assinatura pendente</GuestSeal>
+          </>
+        }
+        footNote="Ao assinar, seu aceite é registrado com data, hora e evidências técnicas de auditoria."
+      >
+        <div className="sign-layout" data-testid="signature-portal">
+          <section className="sign-layout__sheet">
+            {preview.kind === 'loading' ? <PreviewLoadingPanel /> : null}
+            {preview.kind === 'ready' && payload ? (
+              <div className="h-full" data-testid="signature-preview-ready">
+                <GuestSignatureViewer manifest={preview.manifest} payload={payload} />
+                <p className="sr-only" data-testid="signature-document-loaded">
+                  Documento carregado
+                </p>
               </div>
-              {expiresLabel ? (
-                <div>
-                  <dt className="text-doqyn-muted">Expira em</dt>
-                  <dd className="text-doqyn-warning">{expiresLabel}</dd>
-                </div>
-              ) : null}
-            </dl>
-
-            {payload?.message ? (
-              <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 text-sm leading-relaxed">
-                {payload.message}
-              </blockquote>
+            ) : null}
+            {preview.kind === 'unavailable' ? (
+              <PreviewUnavailablePanel message={preview.message} />
+            ) : null}
+            {preview.kind === 'error' ? (
+              <PreviewUnavailablePanel
+                message={`${preview.message} Você ainda pode assinar depois de declarar o aceite.`}
+              />
             ) : null}
           </section>
 
-          <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-            <p className="text-label text-doqyn-text">Leia o documento antes de assinar.</p>
-            <Checkbox
-              wrapperClassName="mt-4"
-              checked={consentAccepted}
-              onChange={(event) => setConsentAccepted(event.target.checked)}
-              data-testid="signature-consent-checkbox"
-              label={<span className="text-caption leading-relaxed">{payload?.consentText}</span>}
-            />
-          </section>
+          <aside className="sign-rail">
+            <div className="sign-rail__block">
+              <p className="register-label text-doqyn-subtle">O que você vai assinar</p>
+              <TruncatedText as="h2" className="guest-title guest-title--sm mt-1.5">
+                {payload?.documentName ?? 'Documento'}
+              </TruncatedText>
+              <dl className="guest-register">
+                {payload?.versionLabel ? (
+                  <GuestRegisterRow label="Versão" value={payload.versionLabel} />
+                ) : null}
+                <GuestRegisterRow label="Signatário" value={payload?.signer.name ?? '—'} />
+                <GuestRegisterRow label="E-mail" value={payload?.signer.emailMasked ?? '—'} />
+                {expiresLabel ? (
+                  <GuestRegisterRow label="Assine até" value={expiresLabel} tone="warning" />
+                ) : null}
+              </dl>
+              {payload?.isVersionStale && payload.versionLabel ? (
+                <p className="type-caption mt-3 text-doqyn-warning">
+                  A solicitação é da versão {payload.versionLabel}; o documento já tem versão mais
+                  nova.
+                </p>
+              ) : null}
+              {payload?.message ? (
+                <blockquote className="guest-quote">{payload.message}</blockquote>
+              ) : null}
+            </div>
 
-          {error ? <p className="text-sm text-doqyn-danger">{error}</p> : null}
+            <div className="sign-rail__block">
+              <SignSteps read={previewAttempted} declared={consentAccepted} signed={false} />
+              <Checkbox
+                wrapperClassName="mt-4"
+                checked={consentAccepted}
+                onChange={(event) => setConsentAccepted(event.target.checked)}
+                data-testid="signature-consent-checkbox"
+                label={<span className="type-caption leading-relaxed">{payload?.consentText}</span>}
+              />
+            </div>
 
-          <Button
-            type="button"
-            disabled={!canSubmit}
-            onClick={() => setConfirmOpen(true)}
-            className="w-full"
-            data-testid="signature-submit-button"
-          >
-            Assinar documento
-          </Button>
-        </aside>
-      </main>
+            <div className="sign-rail__block sign-rail__block--flush">
+              <p className="register-label text-doqyn-subtle">Ao assinar</p>
+              <ul className="sign-facts">
+                <li>O PDF recebe o carimbo da assinatura e um código de verificação público.</li>
+                <li>Data, hora e evidências técnicas ficam na trilha de auditoria.</li>
+                <li>
+                  {payload?.permissions.canDownloadAfterSign
+                    ? 'Você poderá baixar o PDF assinado nesta mesma tela.'
+                    : 'O documento assinado fica com quem solicitou a assinatura.'}
+                </li>
+              </ul>
+            </div>
+
+            {error ? <p className="type-caption text-doqyn-danger">{error}</p> : null}
+
+            <Button
+              type="button"
+              disabled={!canSubmit}
+              onClick={() => setConfirmOpen(true)}
+              className="w-full"
+              data-testid="signature-submit-button"
+            >
+              Assinar documento
+            </Button>
+          </aside>
+        </div>
+      </GuestPortalShell>
 
       <ReviewBeforeSubmitDialog
         open={confirmOpen}
@@ -412,7 +437,7 @@ export function SignaturePortalPage() {
             title: 'Documento',
             fields: [
               { label: 'Nome', value: payload?.documentName ?? '' },
-              { label: 'Versão', value: payload?.versionLabel ? `v${payload.versionLabel}` : '—' },
+              { label: 'Versão', value: payload?.versionLabel ?? '—' },
               { label: 'Solicitante', value: payload?.issuerName ?? '' },
             ],
           },
@@ -427,12 +452,11 @@ export function SignaturePortalPage() {
         attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
         submitting={signing}
         confirmLabel="Confirmar assinatura"
-        cancelLabel="Cancelar"
-        editLabel="Voltar"
+        cancelLabel="Voltar"
         onCancel={() => setConfirmOpen(false)}
         onEdit={() => setConfirmOpen(false)}
         onConfirm={() => void handleSign()}
       />
-    </div>
+    </>
   );
 }

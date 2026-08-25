@@ -358,7 +358,7 @@ export function InternalSignaturePage() {
             title: 'Documento',
             fields: [
               { label: 'Nome', value: payload?.documentName ?? '' },
-              { label: 'Versão', value: payload?.versionLabel ? `v${payload.versionLabel}` : '—' },
+              { label: 'Versão', value: payload?.versionLabel ?? '—' },
               { label: 'Solicitante', value: payload?.issuerName ?? '' },
             ],
           },
@@ -366,8 +366,7 @@ export function InternalSignaturePage() {
         attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
         submitting={signing}
         confirmLabel="Confirmar assinatura"
-        cancelLabel="Cancelar"
-        editLabel="Voltar"
+        cancelLabel="Voltar"
         onCancel={() => setConfirmOpen(false)}
         onEdit={() => setConfirmOpen(false)}
         onConfirm={() => void handleSign()}
