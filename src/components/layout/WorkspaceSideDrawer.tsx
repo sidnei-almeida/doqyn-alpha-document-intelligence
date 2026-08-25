@@ -21,6 +21,8 @@ export type WorkspaceSideDrawerProps = {
   onOverlayClick?: () => void;
   header?: ReactNode;
   headerActions?: ReactNode;
+  /** Faixa fixa no rodapé — não rola com o corpo. Some quando não há ação. */
+  footer?: ReactNode;
   bodyClassName?: string;
   children: ReactNode;
 };
@@ -48,6 +50,7 @@ export function WorkspaceSideDrawer({
   onOverlayClick,
   header,
   headerActions,
+  footer,
   bodyClassName,
   children,
 }: WorkspaceSideDrawerProps) {
@@ -92,9 +95,13 @@ export function WorkspaceSideDrawer({
                 {title}
               </TruncatedText>
               {subtitle ? (
-                <TruncatedText className="register-label mt-1 text-doqyn-subtle">
-                  {subtitle}
-                </TruncatedText>
+                // O invólucro do tooltip é `inline-flex`: sem um bloco em volta,
+                // o subtítulo encosta no fim do título em vez de descer uma linha.
+                <div className="mt-1">
+                  <TruncatedText className="register-label text-doqyn-subtle">
+                    {subtitle}
+                  </TruncatedText>
+                </div>
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
@@ -115,6 +122,12 @@ export function WorkspaceSideDrawer({
         >
           {children}
         </div>
+
+        {footer ? (
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-doqyn-border-subtle px-5 py-3">
+            {footer}
+          </div>
+        ) : null}
       </aside>
     </div>
   );
