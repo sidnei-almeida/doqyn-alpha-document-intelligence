@@ -1,5 +1,12 @@
 import type { ApiDocumentClass, ApiGroup, ApiMember } from '../api/rulesApi';
-import type { CompanyMember, DocumentCategory, DocumentIcon, Group, GroupColor, UserRole } from '@/types/rules';
+import type {
+  CompanyMember,
+  DocumentCategory,
+  DocumentIcon,
+  Group,
+  GroupColor,
+  UserRole,
+} from '@/types/rules';
 import type { CompanyMemberDto, PlatformRole } from '@/features/users/api/usersApi';
 import { collectLinkedDocumentGroupIds } from '@/lib/entityIds';
 import { normalizeGroupColor } from '@shared/groupPalette';
@@ -85,9 +92,7 @@ export function mapApiMember(member: ApiMember) {
 }
 
 function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
-  if (
-    platformRoles.some((role) => role === 'company_admin' || role === 'individual_admin')
-  ) {
+  if (platformRoles.some((role) => role === 'company_admin' || role === 'individual_admin')) {
     return 'admin';
   }
   return 'member';
@@ -96,8 +101,7 @@ function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
 export function mapCompanyMemberDtoToRulesMember(member: CompanyMemberDto): CompanyMember {
   const documentGroupIds = member.documentGroupIds ?? member.groupIds ?? [];
   const displayName =
-    member.name ??
-    ([member.firstName, member.lastName].filter(Boolean).join(' ') || member.email);
+    member.name ?? ([member.firstName, member.lastName].filter(Boolean).join(' ') || member.email);
 
   return {
     id: member.id,

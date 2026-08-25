@@ -816,6 +816,255 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  /* ===== Quadro de acesso (/rules) =====================================
+     Coluna de grupos à esquerda, uma faixa por categoria à direita. Conceder é
+     levar a ficha até a faixa; o placar da faixa responde antes de soltar.     */
+
+  .access-board {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .access-board {
+      grid-template-columns: 15rem minmax(0, 1fr);
+    }
+  }
+
+  .access-board__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    padding-right: 1.25rem;
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .access-board__rail-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .access-board__rail-list {
+      flex-direction: column;
+      flex-wrap: nowrap;
+    }
+  }
+
+  /* Com uma faixa em foco, quem ainda não alcança ela acende; o resto recua. */
+  .access-board__rail-item[data-missing='true'] .group-token {
+    border-color: color-mix(in srgb, var(--swatch) 70%, transparent);
+  }
+
+  .access-board__lanes {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .access-lane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border-subtle);
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      opacity var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .access-lane:first-child {
+    border-top: 0;
+  }
+
+  .access-lane--over {
+    background: var(--bg-surface-hover);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
+  .access-lane--dim {
+    opacity: 0.45;
+  }
+
+  .access-lane__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .access-lane__name {
+    @apply type-body font-medium text-doqyn-text;
+    margin: 0;
+  }
+
+  .access-lane__score {
+    @apply type-caption text-doqyn-muted;
+    margin: 0.125rem 0 0;
+  }
+
+  .access-lane__score-from {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+
+  .access-lane__score-to {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .access-lane__score-delta {
+    margin-left: 0.375rem;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    color: var(--accent-active);
+  }
+
+  .access-lane__flag {
+    @apply register-label;
+    color: var(--text-tertiary);
+  }
+
+  .access-lane__tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    align-items: center;
+  }
+
+  .access-lane__empty {
+    @apply type-caption text-doqyn-subtle;
+  }
+
+  .access-lane__empty:not(:first-child) {
+    display: none;
+  }
+
+  /* Ficha de grupo: canto de 4px, fio do próprio tom, nunca preenchida. */
+  .group-token {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.375rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      opacity var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .group-token:hover {
+    border-color: color-mix(in srgb, var(--swatch) 70%, transparent);
+  }
+
+  .group-token--dragging {
+    opacity: 0.35;
+  }
+
+  .group-token--overlay {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+    cursor: grabbing;
+  }
+
+  .group-token__grip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    cursor: grab;
+    @apply type-caption text-doqyn-text;
+  }
+
+  .group-token__name {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .group-token__count {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+  }
+
+  /* Verbos: rótulo apagado quando desligado, aceso quando vale. */
+  .permission-verbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .permission-verbs__mark {
+    @apply register-label;
+    padding: 0.0625rem 0.25rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-tertiary);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .permission-verbs__mark[data-active='true'] {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-active);
+  }
+
+  .permission-verbs--grid .permission-verbs__mark {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+
+  .permission-verbs--grid .permission-verbs__mark[data-active='true'] {
+    background: var(--accent-active);
+    border-color: var(--accent-active);
+  }
+
+  .access-board__undo {
+    position: sticky;
+    bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.625rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .access-board__undo p {
+    flex: 1;
+    margin: 0;
+  }
+
+  .category-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .category-glyph--sm {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
   /* Ponto da cor do grupo: 8px, contorno do próprio tom, preenchimento fraco. */
   .group-dot {
     display: inline-block;
@@ -856,7 +1105,9 @@
   .group-palette__swatch[data-active='true'] {
     border-color: var(--swatch);
     background: var(--swatch);
-    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 3px var(--swatch);
+    box-shadow:
+      0 0 0 2px var(--bg-surface),
+      0 0 0 3px var(--swatch);
   }
 
   .group-palette__swatch[data-color='ardosia'] {

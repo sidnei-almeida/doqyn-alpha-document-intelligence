@@ -131,9 +131,11 @@ export async function getDocumentGroups(): Promise<ApiGroup[]> {
   return data.groups ?? [];
 }
 
-export async function createDocumentGroup(
-  payload: { name: string; description?: string; color?: string },
-): Promise<ApiGroup> {
+export async function createDocumentGroup(payload: {
+  name: string;
+  description?: string;
+  color?: string;
+}): Promise<ApiGroup> {
   // A cor ia junto no tipo e ficava para trás no corpo: grupo nascia sempre azul.
   const data = await request<{ group: ApiGroup }>('/document-groups', {
     method: 'POST',
@@ -157,7 +159,9 @@ export async function updateDocumentGroup(
   return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
-export async function deactivateDocumentGroup(id: string): Promise<{ id: string; active: boolean }> {
+export async function deactivateDocumentGroup(
+  id: string,
+): Promise<{ id: string; active: boolean }> {
   const group = await updateDocumentGroup(id, { active: false });
   return { id: group.id, active: group.active };
 }
@@ -200,9 +204,12 @@ export async function removeMemberFromDocumentGroup(
   groupId: string,
   membershipId: string,
 ): Promise<void> {
-  await request(`/document-groups/${groupId}/members?membershipId=${encodeURIComponent(membershipId)}`, {
-    method: 'DELETE',
-  });
+  await request(
+    `/document-groups/${groupId}/members?membershipId=${encodeURIComponent(membershipId)}`,
+    {
+      method: 'DELETE',
+    },
+  );
 }
 
 // --- Members ---
@@ -315,7 +322,13 @@ export async function updateDocumentClass(
   const category = unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['category']);
   return {
     ...category,
-    permissions: category.permissions ?? { view: [], download: [], update: [], audit: [], share: [] },
+    permissions: category.permissions ?? {
+      view: [],
+      download: [],
+      update: [],
+      audit: [],
+      share: [],
+    },
   };
 }
 
@@ -345,13 +358,10 @@ export async function updateDocumentClassNotifications(
   id: string,
   payload: { notifyOnUpdate: boolean; notifyGroups: string[] },
 ): Promise<ApiDocumentClass> {
-  const data = await request<{ class: ApiDocumentClass }>(
-    `/document-classes/${id}/notifications`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    },
-  );
+  const data = await request<{ class: ApiDocumentClass }>(`/document-classes/${id}/notifications`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
   return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
 }
 
@@ -486,13 +496,7 @@ export async function updateDocumentAccessMatrixCell(input: {
 
 export type { ApiGroup, ApiMember, ApiDocumentClass, ApiDocumentRule };
 
-export const ALLOWED_FIELD_TYPES: FieldType[] = [
-  'string',
-  'date',
-  'number',
-  'currency',
-  'boolean',
-];
+export const ALLOWED_FIELD_TYPES: FieldType[] = ['string', 'date', 'number', 'currency', 'boolean'];
 
 export const ALLOWED_GROUP_COLORS: GroupColor[] = GROUP_PALETTE.map((entry) => entry.key);
 

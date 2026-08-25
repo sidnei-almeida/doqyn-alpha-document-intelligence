@@ -7,8 +7,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/features/auth/useAuth';
 import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
 import { AccessMatrixView } from './components/access/AccessMatrixView';
-import { CategoryAccessCard } from './components/access/CategoryAccessCard';
-import { simulateMemberAccess } from './components/access/accessModel';
+import { AccessBoard } from './components/board/AccessBoard';
 import { SimulateAccessBanner, SimulateAccessSelect } from './components/access/SimulateAccessBar';
 import { CategoryModal } from './components/CategoryModal';
 import { ExtractionConfigDrawer } from './components/ExtractionConfigDrawer';
@@ -170,28 +169,19 @@ export function RulesPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3.5">
-            {categories.map((category) => (
-              <CategoryAccessCard
-                key={category.id}
-                category={category}
-                groups={groups}
-                groupMemberCounts={groupMemberCounts}
-                isAdmin={isAdmin}
-                simulation={
-                  simulatedMember ? simulateMemberAccess(simulatedMember, category, groups) : null
-                }
-                onPermissionChange={updateGroupClassPermissions}
-                onOpenCategoryDetails={(categoryId) =>
-                  setDetailSelection({ type: 'category', id: categoryId })
-                }
-                onOpenGroupDetails={(groupId) => setDetailSelection({ type: 'group', id: groupId })}
-                onConfigureExtraction={
-                  isAdmin ? (target) => setExtractionCategory(target) : undefined
-                }
-              />
-            ))}
-          </div>
+          <AccessBoard
+            categories={categories}
+            groups={groups}
+            groupMemberCounts={groupMemberCounts}
+            isAdmin={isAdmin}
+            simulatedMember={simulatedMember}
+            onPermissionChange={updateGroupClassPermissions}
+            onOpenCategoryDetails={(categoryId) =>
+              setDetailSelection({ type: 'category', id: categoryId })
+            }
+            onOpenGroupDetails={(groupId) => setDetailSelection({ type: 'group', id: groupId })}
+            onConfigureExtraction={isAdmin ? (target) => setExtractionCategory(target) : undefined}
+          />
         ))}
 
       {activeTab === 'matriz' && (
