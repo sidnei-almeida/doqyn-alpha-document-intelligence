@@ -7,10 +7,6 @@ import { ProfileSettingsSection } from './ProfileSettingsSection';
 export function AccountSettingsSection() {
   return (
     <div className="settings-blocks settings-profile-page">
-      <p className="settings-save-rule">
-        Nesta tela, cada mudança vale na hora — só senha e e-mail pedem confirmação.
-      </p>
-
       <section className="settings-block settings-profile-block--identity">
         <SettingsSectionHeader
           title="Identidade"
@@ -32,7 +28,7 @@ export function AccountSettingsSection() {
       <section className="settings-block">
         <SettingsSectionHeader
           title="Acesso"
-          description="Autenticação e senha."
+          description="Senha e e-mail da conta."
           className="settings-block__header"
         />
         <AuthenticationSettingsSection />

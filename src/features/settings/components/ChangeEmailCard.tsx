@@ -4,16 +4,18 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { SettingsCard } from './SettingsCard';
-import { SettingsRow, SettingsRowList } from './SettingsRow';
 import {
   emailChangeApi,
   getEmailChangeErrorMessage,
   type RequestEmailChangeResponse,
 } from '../api/emailChangeApi';
 
+/**
+ * Troca de e-mail é pedido, não campo: o endereço só muda depois que a pessoa confirma
+ * pelo link enviado ao novo endereço.
+ */
 export function ChangeEmailCard() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,78 +54,60 @@ export function ChangeEmailCard() {
   const pending = pendingStatus !== null;
 
   return (
-    <SettingsCard density="compact" className="max-w-2xl">
-      <div className="border-b border-doqyn-border px-4 py-4 sm:px-5">
-        <h3 className="text-base font-semibold text-doqyn-text">E-mail da conta</h3>
-        <p className="mt-1 text-sm text-doqyn-muted">
-          Use o e-mail profissional da empresa. Enviaremos um link de confirmação para o novo
-          endereço antes de aplicar a troca.
+    <div className="settings-subblock">
+      <div className="settings-subblock__header">
+        <p className="register-label text-doqyn-subtle">Trocar e-mail</p>
+        <p className="settings-section-note">
+          O endereço atual é {user?.email ?? '—'}. Enviamos um link de confirmação para o novo
+          e-mail antes de aplicar a troca.
         </p>
       </div>
 
-      <div className="px-4 py-4 sm:px-5">
-        <SettingsRowList>
-          <SettingsRow
-            label="E-mail atual"
-            control={<p className="text-sm text-doqyn-text">{user?.email ?? '—'}</p>}
-          />
-          <SettingsRow
-            label="Novo e-mail"
-            description="Deve ser um endereço profissional válido da sua empresa."
-            control={
-              <Input
-                type="email"
-                value={newEmail}
-                onChange={(event) => setNewEmail(event.target.value)}
-                placeholder="voce@suaempresa.com.br"
-                disabled={pending}
-              />
-            }
-          />
-          <SettingsRow
-            label="Senha atual"
-            description="Confirme sua identidade para solicitar a troca."
-            control={
-              <Input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Sua senha"
-                disabled={pending}
-              />
-            }
-          />
-        </SettingsRowList>
-
-        {pendingStatus ? (
-          <p className="mt-4 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-sm text-doqyn-muted">
-            Confirmação pendente para <strong>{pendingStatus.newEmail}</strong>. Verifique a caixa
-            de entrada do novo e-mail e clique no link recebido.
-          </p>
-        ) : null}
-
-        {devLink ? (
-          <p className="mt-3 break-all rounded-md border border-dashed border-doqyn-border px-3 py-2 text-xs text-doqyn-muted">
-            Link de desenvolvimento: {devLink}
-          </p>
-        ) : null}
-
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button
-            onClick={() => requestMutation.mutate()}
-            disabled={requestMutation.isPending || pending || !newEmail || !password}
-          >
-            {requestMutation.isPending ? 'Enviando…' : 'Solicitar troca de e-mail'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => void refreshUser()}
-            disabled={requestMutation.isPending}
-          >
-            Atualizar status
-          </Button>
-        </div>
+      <div className="settings-identity__fields">
+        <Input
+          variant="rule"
+          type="email"
+          label="Novo e-mail"
+          value={newEmail}
+          onChange={(event) => setNewEmail(event.target.value)}
+          placeholder="voce@suaempresa.com.br"
+          disabled={pending}
+        />
+        <Input
+          variant="rule"
+          type="password"
+          revealable
+          label="Senha atual"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Confirme sua identidade"
+          disabled={pending}
+        />
       </div>
-    </SettingsCard>
+
+      {pendingStatus ? (
+        <p className="settings-section-note">
+          Confirmação pendente para{' '}
+          <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>.
+          Verifique a caixa de entrada do novo endereço.
+        </p>
+      ) : null}
+
+      {devLink ? (
+        <p className="settings-section-note break-all">Link de desenvolvimento: {devLink}</p>
+      ) : null}
+
+      <div className="settings-block__action settings-block__action--end">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => requestMutation.mutate()}
+          disabled={requestMutation.isPending || pending || !newEmail || !password}
+        >
+          {requestMutation.isPending ? 'Enviando…' : 'Solicitar troca de e-mail'}
+        </Button>
+      </div>
+    </div>
   );
 }

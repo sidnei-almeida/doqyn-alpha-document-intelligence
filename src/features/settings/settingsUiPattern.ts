@@ -20,8 +20,8 @@
  * - Dentro do bloco: `SettingsRowList`/`SettingsRow` (rótulo à esquerda, controle à
  *   direita), `SettingsRegisterList` para atalhos, `settings-callout` para nota.
  *
- * Uma regra de salvamento por tela, declarada na própria tela (`settings-save-rule`):
- * - Minha conta: cada mudança vale na hora; senha e e-mail são ações com confirmação própria.
+ * Uma regra de salvamento por tela — mostrada pelos próprios controles, sem texto explicando:
+ * - Minha conta: preferências valem na hora; identidade, senha e e-mail confirmam no bloco.
  * - Organização: nada vale até salvar. O rascunho dos três blocos vive em
  *   `useOrganizationSettings`, e uma única `SettingsSaveBar` (`--screen`, fixa no fim da
  *   coluna) salva só o que mudou. Blocos não têm botão de salvar próprio.

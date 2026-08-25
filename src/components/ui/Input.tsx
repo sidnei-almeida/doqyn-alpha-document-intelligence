@@ -45,7 +45,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         ) : null}
-        <div className={cn(isRule && 'field-rule', showToggle && 'relative')}>
+        <div
+          className={cn(
+            isRule && 'field-rule',
+            isRule && error && 'field-rule--error',
+            showToggle && 'relative',
+          )}
+        >
           <input
             ref={ref}
             id={inputId}

@@ -29,12 +29,6 @@ export function OrganizationSection() {
 
   return (
     <div className="settings-blocks">
-      {canEdit ? (
-        <p className="settings-save-rule">
-          Nesta tela, nada vale até você salvar no fim da página.
-        </p>
-      ) : null}
-
       <section className="settings-block">
         <SettingsSectionHeader
           title="Envio e IA"

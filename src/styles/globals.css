@@ -1007,6 +1007,10 @@
     border-bottom-color: var(--border-strong);
   }
 
+  .field-rule--error {
+    border-bottom-color: var(--text-danger, var(--accent-active));
+  }
+
   .field-rule:focus-within {
     border-bottom-width: 2px;
     border-bottom-color: var(--accent-active);
@@ -1757,25 +1761,12 @@
     border-top: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
   }
 
-  /* Barra da tela: uma só, no fim da coluna, com fio mais firme que o de bloco. */
+  /* Barra da tela: uma só, no fim da coluna. Não flutua sobre o conteúdo — a régua
+     de cima já separa, e barra flutuante escondia o bloco de retenção. */
   .settings-save-bar--screen {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    margin-top: 0.5rem;
-    padding: 0.875rem 0 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
     border-top: 1px solid var(--border-subtle);
-    background: linear-gradient(
-      to top,
-      var(--bg-canvas) 70%,
-      color-mix(in srgb, var(--bg-canvas) 0%, transparent)
-    );
-  }
-
-  /* A tela declara a própria regra de salvamento, em rótulo de registro. */
-  .settings-save-rule {
-    @apply type-caption text-doqyn-subtle;
-    margin: 0 0 0.25rem;
   }
 
   .settings-block__action {
@@ -1783,6 +1774,81 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 0.75rem;
+  }
+
+  /* Ação do bloco alinhada à direita: o olho termina a leitura e encontra o salvar. */
+  .settings-block__action--end {
+    justify-content: flex-end;
+  }
+
+  /* Sub-bloco: dois assuntos dentro do mesmo bloco, separados por respiro e rótulo mono. */
+  .settings-subblock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .settings-subblock + .settings-subblock {
+    margin-top: 0.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 60%, transparent);
+  }
+
+  .settings-subblock__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .settings-subblock__header .settings-section-note {
+    margin-top: 0;
+  }
+
+  /* Identidade: retrato à esquerda, campos em régua à direita. */
+  .settings-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .settings-identity__avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .settings-identity__fields {
+    display: grid;
+    flex: 1 1 18rem;
+    gap: 1rem 1.25rem;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .settings-identity__fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Fatos da conta: rótulo em mono, valor em corpo — registro, não card. */
+  .settings-register-facts {
+    display: grid;
+    gap: 1rem 1.5rem;
+    padding-top: 0.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .settings-register-facts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .settings-inline-error {
+    @apply type-caption text-doqyn-danger;
+    margin: 0;
   }
 
   .settings-save-bar--inset {

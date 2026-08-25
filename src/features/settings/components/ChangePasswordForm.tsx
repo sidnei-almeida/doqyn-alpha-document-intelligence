@@ -133,6 +133,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
     <form className={cn('space-y-4', className)} onSubmit={handleSubmit} autoComplete="off">
       <Input
         id="currentPassword"
+        variant="rule"
         label="Senha atual"
         type="password"
         revealable
@@ -145,6 +146,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       <div className="space-y-2">
         <Input
           id="newPassword"
+          variant="rule"
           label="Nova senha"
           type="password"
           revealable
@@ -186,6 +188,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       </div>
       <Input
         id="confirmPassword"
+        variant="rule"
         label="Confirmar nova senha"
         type="password"
         revealable
@@ -195,9 +198,11 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
         error={fieldErrors.confirmPassword}
         disabled={submitting}
       />
-      <Button type="submit" disabled={submitting}>
-        {submitting ? 'Salvando…' : 'Alterar senha'}
-      </Button>
+      <div className="settings-block__action settings-block__action--end">
+        <Button type="submit" variant="secondary" size="sm" disabled={submitting}>
+          {submitting ? 'Salvando…' : 'Alterar senha'}
+        </Button>
+      </div>
     </form>
   );
 }
