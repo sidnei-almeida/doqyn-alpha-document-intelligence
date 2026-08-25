@@ -4,10 +4,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
-import {
-  scheduleDailyExpirySweep,
-  startExpiryAlertWorker,
-} from './queues/expiryAlertQueue.js';
+import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
 import { logger } from './utils/logger.js';
 import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
 import { initPrometheusMetrics, recordHttpRequest } from './metrics/prometheus.js';
@@ -39,7 +36,8 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents/download': () => import('../api/documents/download.js'),
   '/api/documents/preview': () => import('../api/documents/preview.js'),
   '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
-  '/api/documents/submit-upload-approval': () => import('../api/documents/submit-upload-approval.js'),
+  '/api/documents/submit-upload-approval': () =>
+    import('../api/documents/submit-upload-approval.js'),
   '/api/documents/upload-approvals': () => import('../api/documents/upload-approvals/index.js'),
   '/api/documents/confirm-update': () => import('../api/documents/confirm-update.js'),
   '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
@@ -80,7 +78,8 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents/batch/trash': () => import('../api/documents/batch/trash.js'),
   '/api/documents/batch/restore': () => import('../api/documents/batch/restore.js'),
   '/api/documents/batch/reactivate': () => import('../api/documents/batch/reactivate.js'),
-  '/api/documents/batch/permanent-delete': () => import('../api/documents/batch/permanent-delete.js'),
+  '/api/documents/batch/permanent-delete': () =>
+    import('../api/documents/batch/permanent-delete.js'),
   '/api/documents/batch/move': () => import('../api/documents/batch/move.js'),
 };
 
@@ -95,7 +94,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/access-groups\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/access-groups/toggle-active.js'),
     },
-    { regex: /^\/api\/access-groups\/([^/]+)$/, loader: () => import('../api/access-groups/item.js') },
+    {
+      regex: /^\/api\/access-groups\/([^/]+)$/,
+      loader: () => import('../api/access-groups/item.js'),
+    },
     {
       regex: /^\/api\/company-members\/([^/]+)\/approve$/,
       loader: () => import('../api/company-members/approve.js'),
@@ -124,7 +126,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/company-members\/([^/]+)\/groups$/,
       loader: () => import('../api/company-members/groups.js'),
     },
-    { regex: /^\/api\/company-members\/([^/]+)$/, loader: () => import('../api/company-members/item.js') },
+    {
+      regex: /^\/api\/company-members\/([^/]+)$/,
+      loader: () => import('../api/company-members/item.js'),
+    },
     {
       regex: /^\/api\/document-classes\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-classes/toggle-active.js'),
@@ -137,7 +142,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/document-classes\/([^/]+)\/notifications$/,
       loader: () => import('../api/document-classes/notifications.js'),
     },
-    { regex: /^\/api\/document-classes\/([^/]+)$/, loader: () => import('../api/document-classes/item.js') },
+    {
+      regex: /^\/api\/document-classes\/([^/]+)$/,
+      loader: () => import('../api/document-classes/item.js'),
+    },
     {
       regex: /^\/api\/document-categories\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-categories/toggle-active.js'),
@@ -147,12 +155,18 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['categoryId'],
       loader: () => import('../api/document-categories/fields.js'),
     },
-    { regex: /^\/api\/document-categories\/([^/]+)$/, loader: () => import('../api/document-categories/item.js') },
+    {
+      regex: /^\/api\/document-categories\/([^/]+)$/,
+      loader: () => import('../api/document-categories/item.js'),
+    },
     {
       regex: /^\/api\/document-groups\/([^/]+)\/members$/,
       loader: () => import('../api/document-groups/members.js'),
     },
-    { regex: /^\/api\/document-groups\/([^/]+)$/, loader: () => import('../api/document-groups/item.js') },
+    {
+      regex: /^\/api\/document-groups\/([^/]+)$/,
+      loader: () => import('../api/document-groups/item.js'),
+    },
     {
       regex: /^\/api\/document-extraction-rules\/([^/]+)$/,
       loader: () => import('../api/document-extraction-rules/item.js'),
@@ -161,7 +175,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/document-rules\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-rules/toggle-active.js'),
     },
-    { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
+    {
+      regex: /^\/api\/document-rules\/([^/]+)$/,
+      loader: () => import('../api/document-rules/item.js'),
+    },
     {
       regex: /^\/api\/documents\/upload-approvals\/([^/]+)\/approve$/,
       loader: () => import('../api/documents/upload-approvals/[approvalId]/approve.js'),
@@ -210,6 +227,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/documents\/([^/]+)\/metadata$/,
       loader: () => import('../api/documents/[documentId]/metadata.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/documents\/([^/]+)\/rename$/,
+      loader: () => import('../api/documents/[documentId]/rename.js'),
       paramKeys: ['documentId'],
     },
     {
@@ -580,7 +602,10 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
       const mod = await route.loader();
       const vercelReq = toVercelReq(req, query, body);
       const vercelRes = toVercelRes(res);
-      await mod.default(vercelReq as unknown as VercelRequest, vercelRes as unknown as VercelResponse);
+      await mod.default(
+        vercelReq as unknown as VercelRequest,
+        vercelRes as unknown as VercelResponse,
+      );
     } catch (error) {
       console.error(error);
       res.statusCode = 500;
