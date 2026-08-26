@@ -26,6 +26,7 @@ import { CategoryLane } from './CategoryLane';
 import { GovernanceScoreboard } from './GovernanceScoreboard';
 import { computeCategoryReach, computeGovernanceProgress } from './governanceProgress';
 import { GroupToken } from './GroupToken';
+import { toPermissionState, type GovernancePermissionState } from '@shared/governancePermissions';
 
 const VIEW_ONLY: DocumentAccessPermissions = { ...EMPTY_CONNECTION_PERMISSIONS, view: true };
 
@@ -62,6 +63,19 @@ export type AccessBoardProps = {
  * (dropdown "adicionar grupo", depois popover). Aqui conceder é levar a ficha até a faixa, e o
  * cabeçalho da faixa responde antes de soltar: mostra para quanto o número de pessoas vai.
  */
+/** O quadro diz o efeito, não o campo: o aviso precisa nomear o meio-termo. */
+const VERB_LABEL: Record<PermissionVerb, string> = {
+  view: 'ver',
+  download: 'baixar',
+  upload: 'enviar',
+};
+
+const STATE_LABEL: Record<GovernancePermissionState, string> = {
+  deny: 'desligado',
+  allow: 'liberado',
+  require: 'passa a pedir aprovação',
+};
+
 export function AccessBoard({
   categories,
   groups,
@@ -269,7 +283,7 @@ export function AccessBoard({
                             category,
                             group,
                             { ...permissions, [verb]: next },
-                            `${group.name}: ${verb === 'view' ? 'ver' : verb === 'download' ? 'baixar' : 'enviar'} ${next ? 'ligado' : 'desligado'}.`,
+                            `${group.name}: ${VERB_LABEL[verb]} ${STATE_LABEL[toPermissionState(next)]}.`,
                           )
                         }
                         onChangePermissions={async (next) => {

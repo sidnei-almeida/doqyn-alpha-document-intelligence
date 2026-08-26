@@ -1,10 +1,14 @@
 import type { CompanyMember, DocumentCategory, Group } from '@/types/rules';
+import { toPermissionState } from '@shared/governancePermissions';
 import { getCategoryGroupPermissions } from '../access/accessModel';
 
 /** Um grupo alcança a categoria quando lista documentos dela (espelha `countPeopleWhoSee`). */
 function groupReachesCategory(category: DocumentCategory, groupId: string): boolean {
   const permissions = getCategoryGroupPermissions(category, groupId);
-  return permissions.view || permissions.download;
+  return (
+    toPermissionState(permissions.view) !== 'deny' ||
+    toPermissionState(permissions.download) !== 'deny'
+  );
 }
 
 export type GovernanceStepId = 'groups' | 'people' | 'categories';

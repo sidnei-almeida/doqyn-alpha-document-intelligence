@@ -1192,9 +1192,43 @@
       border-color var(--transition-duration-fast) var(--ease-standard);
   }
 
-  .permission-verbs__mark[data-active='true'] {
+  /* Liberado: fio cheio no acento. É o estado que não pede nada de ninguém. */
+  .permission-verbs__mark[data-state='allow'] {
     color: var(--text-primary);
     border-bottom-color: var(--accent-active);
+  }
+
+  /* Pedindo aprovação: mesmo fio, tracejado. A interrupção é a metáfora — o verbo existe, mas
+     passa por alguém antes de acontecer. Cor de atenção separa de "liberado" sem gritar. */
+  .permission-verbs__mark[data-state='require'] {
+    color: var(--text-primary);
+    border-bottom-style: dashed;
+    border-bottom-color: var(--status-warn-border);
+  }
+
+  /* O meio-termo do cartão da célula: régua curta, não pílula. */
+  .permission-popover__state {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.125rem 0;
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border-strong);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .permission-popover__state[data-state='require'] {
+    color: var(--text-primary);
+    border-bottom-style: dashed;
+    border-bottom-color: var(--status-warn-border);
+  }
+
+  .permission-popover__state:hover {
+    color: var(--text-primary);
   }
 
   .permission-verbs--grid .permission-verbs__mark {
@@ -1205,9 +1239,17 @@
     border-radius: var(--radius-pill);
   }
 
-  .permission-verbs--grid .permission-verbs__mark[data-active='true'] {
+  .permission-verbs--grid .permission-verbs__mark[data-state='allow'] {
     background: var(--accent-active);
     border-color: var(--accent-active);
+  }
+
+  /* Na grade não há espaço para tracejado: o ponto fica vazado com a borda de atenção — cheio é
+     liberado, contornado é pedindo, apagado é não. */
+  .permission-verbs--grid .permission-verbs__mark[data-state='require'] {
+    background: transparent;
+    border-color: var(--status-warn-border);
+    border-width: 2px;
   }
 
   .access-board__undo {

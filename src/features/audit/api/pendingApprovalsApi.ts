@@ -15,7 +15,7 @@ export type PendingApprovalItem = {
   email: string;
   tenantId: string;
   tenantName?: string;
-  type: 'access_request' | 'invite' | 'registration' | 'document_upload';
+  type: 'access_request' | 'invite' | 'registration' | 'document_upload' | 'document_download';
   status: 'pending';
   requestedAt: string;
   requestedAccess?: CompanyMemberDto['requestedAccess'];
@@ -104,4 +104,5 @@ export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = 
   invite: 'Convite pendente',
   registration: 'Cadastro aguardando aprovação',
   document_upload: 'Envio de documento',
+  document_download: 'Download de documento',
 };

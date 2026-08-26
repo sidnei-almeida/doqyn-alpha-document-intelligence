@@ -31,6 +31,7 @@ import {
   updateDocumentRule,
   type DocumentAccessPermissions,
 } from '../api/rulesApi';
+import { toPermissionState, type GovernancePermissionValue } from '@shared/governancePermissions';
 import {
   filterActiveCategories,
   filterActiveGroups,
@@ -67,19 +68,35 @@ function enrichCategoriesFromMatrix(
       share: [] as string[],
     };
 
+    const permissionStates: NonNullable<DocumentCategory['permissionStates']> = {};
+
+    const record = (
+      verb: 'view' | 'download' | 'update' | 'audit' | 'share',
+      groupId: string,
+      value: GovernancePermissionValue,
+    ) => {
+      const state = toPermissionState(value);
+      if (state === 'deny') return;
+      // Quem precisa pedir também alcança a categoria: entra na lista e é marcado ao lado.
+      permissions[verb].push(groupId);
+      if (state === 'require') {
+        permissionStates[verb] = { ...(permissionStates[verb] ?? {}), [groupId]: 'require' };
+      }
+    };
+
     for (const rule of matrix.rules ?? []) {
       if (rule.categoryId !== docClass.id || !rule.active) continue;
-      if (rule.permissions.view) permissions.view.push(rule.groupId);
-      if (rule.permissions.download) permissions.download.push(rule.groupId);
-      if (rule.permissions.upload) permissions.update.push(rule.groupId);
-      if (rule.permissions.manage) permissions.audit.push(rule.groupId);
-      if (rule.permissions.share) permissions.share.push(rule.groupId);
+      record('view', rule.groupId, rule.permissions.view);
+      record('download', rule.groupId, rule.permissions.download);
+      record('update', rule.groupId, rule.permissions.upload);
+      record('audit', rule.groupId, rule.permissions.manage);
+      record('share', rule.groupId, rule.permissions.share);
     }
 
-    return mapApiDocumentClass({
-      ...docClass,
-      permissions,
-    });
+    return {
+      ...mapApiDocumentClass({ ...docClass, permissions }),
+      permissionStates,
+    };
   });
 }
 

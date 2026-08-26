@@ -16,6 +16,7 @@ import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections'
 import { PERMISSION_HINTS } from '../../utils/governanceMapUi';
 import { GovernancePermissionBadges } from './GovernancePermissionBadges';
 import { CategoryIcon } from '../categoryIcons';
+import { toPermissionState } from '@shared/governancePermissions';
 
 export type GovernanceEntitySelection =
   | { type: 'category'; id: string }
@@ -446,7 +447,7 @@ export function GovernanceDetailDialog({
               {PERMISSION_KEYS.map((key) => (
                 <div key={key} className="space-y-1">
                   <Checkbox
-                    checked={permissions[key]}
+                    checked={toPermissionState(permissions[key]) !== 'deny'}
                     disabled={!isAdmin}
                     onChange={(event) =>
                       setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))

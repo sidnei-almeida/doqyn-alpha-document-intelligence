@@ -1,4 +1,5 @@
 import { GROUP_PALETTE } from '@shared/groupPalette';
+import type { GovernancePermissionValue } from '@shared/governancePermissions';
 import type {
   DocumentExtractionRule,
   ExpiryAlertConfig,
@@ -414,12 +415,21 @@ export async function toggleDocumentRule(id: string): Promise<ApiDocumentRule> {
   return updateDocumentRule(id, { active: false });
 }
 
+/**
+ * Permissões de uma célula da Matriz.
+ *
+ * `boolean | 'require'`: `true`/`false` são o formato antigo e continuam válidos, `'require'` é o
+ * terceiro estado — pode, mediante aprovação do administrador. Ler por `toPermissionState`, nunca
+ * pelo valor cru: um `if (permissions.share)` trataria `'require'` como liberado.
+ *
+ * `upload` e `manage` são os nomes persistidos dos verbos `update` e `audit`.
+ */
 export type DocumentAccessPermissions = {
-  view: boolean;
-  download: boolean;
-  upload: boolean;
-  share: boolean;
-  manage: boolean;
+  view: GovernancePermissionValue;
+  download: GovernancePermissionValue;
+  upload: GovernancePermissionValue;
+  share: GovernancePermissionValue;
+  manage: GovernancePermissionValue;
 };
 
 export type DocumentAccessMatrix = {

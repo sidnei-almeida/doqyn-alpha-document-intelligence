@@ -50,6 +50,16 @@ export interface DocumentCategory {
     audit: string[];
     share: string[];
   };
+  /**
+   * Estado de cada grupo por verbo, quando não é `allow`.
+   *
+   * As listas acima dizem **quem alcança** a categoria — e quem precisa pedir alcança. Perder a
+   * distinção ali seria mentir para o quadro de Acessos, que mostraria "liberado" onde há pedido
+   * de aprovação. Só o que foge do comum entra aqui, então o mapa costuma estar vazio.
+   */
+  permissionStates?: Partial<
+    Record<'view' | 'download' | 'update' | 'audit' | 'share', Record<string, 'require'>>
+  >;
   keywords: string[];
   negativeKeywords: string[];
   createdAt: string;

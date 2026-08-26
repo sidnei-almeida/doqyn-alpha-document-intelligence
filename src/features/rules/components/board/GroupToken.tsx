@@ -6,6 +6,7 @@ import type { DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 import { PermissionPopover } from '../access/PermissionPopover';
 import { PermissionVerbs, type PermissionVerb } from '../access/PermissionVerbs';
+import type { GovernancePermissionValue } from '@shared/governancePermissions';
 
 export type GroupTokenProps = {
   group: Group;
@@ -14,7 +15,7 @@ export type GroupTokenProps = {
   category?: DocumentCategory;
   permissions?: DocumentAccessPermissions;
   disabled?: boolean;
-  onToggleVerb?: (verb: PermissionVerb, next: boolean) => void;
+  onToggleVerb?: (verb: PermissionVerb, next: GovernancePermissionValue) => void;
   onChangePermissions?: (permissions: DocumentAccessPermissions) => Promise<void>;
   onRemove?: () => Promise<void>;
   onOpenGroupDetails?: () => void;
