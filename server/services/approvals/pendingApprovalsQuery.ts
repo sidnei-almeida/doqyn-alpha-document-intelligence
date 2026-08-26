@@ -16,7 +16,12 @@ import { listApprovalRequests } from './approvalRequestService.js';
  * auth-service em `tenant_members`) e um é envio de documento (`approval_requests`, no Mongo do
  * app). Quem lê a fila não precisa saber disso.
  */
-export type PendingApprovalKind = 'access_request' | 'invite' | 'registration' | 'document_upload';
+export type PendingApprovalKind =
+  | 'access_request'
+  | 'invite'
+  | 'registration'
+  | 'document_upload'
+  | 'document_download';
 
 export type PendingApprovalDto = {
   id: string;

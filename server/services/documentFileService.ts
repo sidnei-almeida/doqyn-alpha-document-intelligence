@@ -15,10 +15,8 @@ import {
   tenantScopeFilterFromContext,
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
-import {
-  assertCanDownloadDocument,
-  loadDocumentAccessContext,
-} from '../tenancy/documentAccess.js';
+import { resolveDocumentApproval } from './approvals/documentApprovalGate.js';
+import { assertCanDownloadDocument, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
 
@@ -121,7 +119,29 @@ export async function readDocumentVersionFile(input: {
     shareGrant,
     governanceIndex,
   );
-  assertCanDownloadDocument(permissions);
+  if (permissions.requiresApproval.download) {
+    // O verbo existe para esta pessoa, só não acontece sozinho. Em vez de 403, abre o pedido e
+    // devolve o estado — quem chamou decide como contar isso na tela.
+    const gate = await resolveDocumentApproval({
+      tenantId: input.tenantId,
+      membershipId: input.membershipId,
+      user: input.user,
+      doc: doc as MongoDocument,
+      kind: 'document_download',
+    });
+
+    if (gate.state !== 'allowed') {
+      throw new ServiceError(
+        gate.state === 'pending'
+          ? 'Seu pedido para baixar este documento está aguardando aprovação.'
+          : 'Baixar este documento depende de aprovação. Seu pedido foi enviado ao administrador.',
+        'DOCUMENT_APPROVAL_REQUIRED',
+        409,
+      );
+    }
+  } else {
+    assertCanDownloadDocument(permissions);
+  }
 
   const resolvedVersionId = input.versionId ?? (doc as MongoDocument).currentVersionId;
   const version = await documentVersions.findOne({

@@ -151,3 +151,42 @@ describe('pedidos de aprovação — avisos', () => {
     assert.ok(notif.includes('async function safely'));
   });
 });
+
+describe('governança — terceiro estado', () => {
+  it('o valor gravado aceita require, e a leitura passa pelo normalizador', () => {
+    const shared = read('shared/governancePermissions.ts');
+    const types = read('server/db/types.ts');
+
+    assert.ok(shared.includes("export type GovernancePermissionValue = boolean | 'require'"));
+    assert.ok(shared.includes("REQUIRABLE_PERMISSIONS = ['download', 'update', 'share']"));
+    assert.ok(types.includes('view: GovernancePermissionValue'));
+  });
+
+  it('ler não aceita o meio-termo', () => {
+    const shared = read('shared/governancePermissions.ts');
+    // Exigir aprovação para ver criaria um pedido por documento consultado.
+    assert.ok(!shared.includes("'view',\n  'download'"));
+    assert.ok(shared.includes('normalizePermissionState'));
+    const service = read('server/services/documentAccessRulesService.ts');
+    assert.ok(service.includes('normalizePermissions'));
+  });
+
+  it('canX falha fechado: require não conta como pode agora', () => {
+    const access = read('server/tenancy/documentAccess.ts');
+
+    assert.ok(access.includes("const canDownload = isAdmin || isOwner || downloadState === 'allow'"));
+    assert.ok(access.includes('requiresApproval'));
+    assert.ok(access.includes('DOCUMENT_APPROVAL_REQUIRED'));
+  });
+
+  it('o portão consulta licença aprovada antes de abrir novo pedido', () => {
+    const gate = read('server/services/approvals/documentApprovalGate.ts');
+    const file = read('server/services/documentFileService.ts');
+
+    assert.ok(gate.includes('APPROVAL_TTL_MS'));
+    assert.ok(gate.includes("findSettledRequest(tenantId, user.id, documentId, kind, 'approved')"));
+    // Pedido pendente não vira um segundo pedido.
+    assert.ok(gate.includes("kind, 'pending'"));
+    assert.ok(file.includes('resolveDocumentApproval'));
+  });
+});

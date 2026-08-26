@@ -188,6 +188,7 @@ async function resolvePreviewVersion(input: {
     canTrash: perms.canTrash,
     canContribute: perms.canContribute,
     canTransferOwnership: perms.canTransferOwnership,
+    requiresApproval: perms.requiresApproval,
   });
 
   const version = await documentVersions.findOne({

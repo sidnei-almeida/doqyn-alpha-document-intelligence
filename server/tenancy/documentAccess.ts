@@ -6,6 +6,7 @@ import type { MongoDocument } from '../db/types.js';
 import type { TenantStorageContext } from './tenantStorage.js';
 import {
   type GovernanceAccessIndex,
+  resolveGovernanceCategoryPermission,
   userHasGovernanceCategoryPermission,
   loadGovernanceAccessIndex,
 } from './governanceAccessIndex.js';
@@ -18,6 +19,19 @@ export type DocumentAccessPermissions = {
   canTrash: boolean;
   canContribute: boolean;
   canTransferOwnership: boolean;
+  /**
+   * Verbos em que a governança respondeu "pode, pedindo".
+   *
+   * O `canX` correspondente vem **falso** nesses casos, de propósito: `can` quer dizer "pode
+   * agora". Quem só olha o booleano — e é quase todo mundo — nega, que é o lado certo para
+   * falhar. Só quem sabe abrir pedido consulta este campo.
+   *
+   * Admin e dono nunca caem aqui: eles não pedem licença para o próprio acervo.
+   */
+  requiresApproval: {
+    download: boolean;
+    update: boolean;
+  };
 };
 
 /**
@@ -91,10 +105,14 @@ export function resolveDocumentPermissions(
     isOwner ||
     userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'view');
 
-  const canDownload =
-    isAdmin ||
-    isOwner ||
-    userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'download');
+  const downloadState = resolveGovernanceCategoryPermission(
+    governanceIndex,
+    doc.classId,
+    memberGroupIds,
+    'download',
+  );
+  const downloadRequiresApproval = !isAdmin && !isOwner && downloadState === 'require';
+  const canDownload = isAdmin || isOwner || downloadState === 'allow';
 
   /**
    * Permissão `update` configurada pelo tenant no mapa de regras (categoria × grupo).
@@ -103,12 +121,14 @@ export function resolveDocumentPermissions(
    * a empresa tinha configurado — o motor de governança expunha o verbo e ninguém o consultava
    * (D-24). Configuração de acesso a documento é do tenant, não nossa.
    */
-  const hasGovernanceUpdate = userHasGovernanceCategoryPermission(
+  const updateState = resolveGovernanceCategoryPermission(
     governanceIndex,
     doc.classId,
     memberGroupIds,
     'update',
   );
+  const updateRequiresApproval = !isAdmin && !isOwner && updateState === 'require';
+  const hasGovernanceUpdate = updateState === 'allow';
 
   const canContribute = isAdmin || isOwner || hasGovernanceUpdate;
 
@@ -132,6 +152,10 @@ export function resolveDocumentPermissions(
     canTrash,
     canContribute,
     canTransferOwnership,
+    requiresApproval: {
+      download: downloadRequiresApproval,
+      update: updateRequiresApproval,
+    },
   };
 }
 
@@ -146,13 +170,23 @@ export function assertCanPreviewDocument(permissions: DocumentAccessPermissions)
 }
 
 export function assertCanDownloadDocument(permissions: DocumentAccessPermissions): void {
-  if (!permissions.canDownload) {
+  if (permissions.canDownload) return;
+
+  // Separar "não pode" de "ainda não pode" é o que permite à tela oferecer o pedido em vez de um
+  // 403 seco. Mesma mensagem daria a impressão de porta fechada onde há caminho.
+  if (permissions.requiresApproval.download) {
     throw new ServiceError(
-      'Você não tem permissão para baixar este documento.',
-      'DOCUMENT_ACCESS_DENIED',
-      403,
+      'Baixar este documento depende de aprovação do administrador.',
+      'DOCUMENT_APPROVAL_REQUIRED',
+      409,
     );
   }
+
+  throw new ServiceError(
+    'Você não tem permissão para baixar este documento.',
+    'DOCUMENT_ACCESS_DENIED',
+    403,
+  );
 }
 
 export function assertCanUpdateDocument(permissions: DocumentAccessPermissions): void {

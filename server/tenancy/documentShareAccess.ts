@@ -76,6 +76,12 @@ export function resolveDocumentPermissionsWithShare(
     canTrash: base.canTrash,
     canContribute: base.canContribute,
     canTransferOwnership: base.canTransferOwnership,
+    // O compartilhamento explícito resolve o pedido: quem recebeu o grant já foi autorizado por
+    // alguém, e continuar exigindo aprovação seria pedir duas vezes a mesma licença.
+    requiresApproval: {
+      download: base.requiresApproval.download && sharePerms.canDownload !== true,
+      update: base.requiresApproval.update,
+    },
     canShare: canShare && sharePerms.canShare === true,
     sharedViaGrant,
   };
