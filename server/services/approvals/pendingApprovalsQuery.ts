@@ -1,5 +1,12 @@
-import type { MongoApprovalRequest, MongoTenantMember, PlatformRole } from '../../db/types.js';
-import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
+import type { MongoApprovalRequest, PlatformRole } from '../../db/types.js';
+import {
+  fetchTenantAccessRequests,
+  type AuthAccessRequestSnapshot,
+} from '../../integrations/doqynAuthInternalClient.js';
+import { usesDoqynAuth } from '../../auth/authConfig.js';
+import { logger } from '../../utils/logger.js';
+import type { GovernanceMemberRecord } from '../governanceMembersService.js';
+import type { MongoDocumentUploadApproval } from '../../db/types.js';
 import { listApprovalRequests } from './approvalRequestService.js';
 
 /**
@@ -24,8 +31,18 @@ export type PendingApprovalDto = {
   };
   tenantId: string;
   tenantName?: string;
-  /** Presente nos três tipos de pessoa. */
-  member?: MongoTenantMember;
+  /**
+   * Presente nos três tipos de pessoa, na mesma forma que `/api/company-members` serve — é o que
+   * o cartão de revisão já sabe ler.
+   */
+  member?: GovernanceMemberRecord;
+  /**
+   * O que a pessoa declarou ao pedir acesso — cargo, setor, motivo, consentimento, termos.
+   *
+   * Vem do auth-service, que é o dono desse dado. O espelho em `tenant_members` guarda o
+   * suficiente para operar, não o suficiente para decidir.
+   */
+  accessRequest?: AuthAccessRequestSnapshot;
   /** Presente em `document_upload`. */
   documentUpload?: {
     approvalId: string;
@@ -36,10 +53,10 @@ export type PendingApprovalDto = {
   };
 };
 
-function memberDisplayName(member: MongoTenantMember): string {
+function memberDisplayName(member: GovernanceMemberRecord): string {
   const parts = [member.firstName, member.lastName].filter(Boolean);
   if (parts.length > 0) return parts.join(' ');
-  return member.username ?? member.email;
+  return member.name || member.email;
 }
 
 /**
@@ -49,29 +66,59 @@ function memberDisplayName(member: MongoTenantMember): string {
  * auth veio de convite; o resto é cadastro novo. É dedução, não um campo — o dia em que o pedido
  * de acesso virar `MongoApprovalRequest` também, isto deixa de existir.
  */
-function inferMemberKind(member: MongoTenantMember): PendingApprovalKind {
+function inferMemberKind(member: GovernanceMemberRecord): PendingApprovalKind {
   if (member.requestedAccess?.source === 'public_form' || member.requestedAccess?.reason) {
     return 'access_request';
   }
-  if (member.requestedAccess?.source === 'admin_invite' || member.invitedBy) return 'invite';
+  if (member.requestedAccess?.source === 'admin_invite') return 'invite';
   return 'registration';
 }
 
-function mapMember(member: MongoTenantMember): PendingApprovalDto {
+function mapMember(member: GovernanceMemberRecord): PendingApprovalDto {
   return {
-    id: member.memberId,
+    id: member.id,
     kind: inferMemberKind(member),
     status: 'pending',
-    requestedAt: (member.requestedAccess?.requestedAt ?? member.createdAt ?? new Date()).toString(),
+    requestedAt: member.requestedAccess?.requestedAt ?? member.createdAt,
     requestedBy: {
-      userId: member.authUserId,
-      membershipId: member.memberId,
+      userId: member.userId,
+      membershipId: member.id,
       name: memberDisplayName(member),
       email: member.email,
     },
     tenantId: member.tenantId,
     tenantName: member.requestedAccess?.tenantDisplayName,
     member,
+  };
+}
+
+/**
+ * Envio pendente no formato antigo.
+ *
+ * O fluxo de upload ainda grava em `document_upload_approvals`, com serviço próprio para aprovar
+ * e publicar o documento. Enquanto ele não migrar para `MongoApprovalRequest`, a fila lê as duas
+ * coleções — parar de ler a antiga faria pendências reais sumirem da tela.
+ */
+function mapLegacyUploadApproval(approval: MongoDocumentUploadApproval): PendingApprovalDto {
+  return {
+    id: approval._id,
+    kind: 'document_upload',
+    status: 'pending',
+    requestedAt: approval.createdAt.toISOString(),
+    requestedBy: {
+      userId: approval.submittedBy.userId,
+      membershipId: approval.submittedBy.membershipId,
+      name: approval.submittedBy.name,
+      email: approval.submittedBy.email,
+    },
+    tenantId: approval.tenantId,
+    documentUpload: {
+      approvalId: approval._id,
+      originalFileName: approval.originalFileName,
+      classId: approval.classId,
+      className: approval.className,
+      payload: approval.payload,
+    },
   };
 }
 
@@ -102,6 +149,16 @@ export type ListPendingApprovalsInput = {
   tenantId: string;
   userId: string;
   platformRoles: PlatformRole[];
+  /**
+   * Membros do tenant, já serializados pelo caminho de sempre.
+   *
+   * Entram por parâmetro em vez de serem buscados aqui porque `listGovernanceMembers` precisa do
+   * `req` e do ator, e arrastar a requisição HTTP para dentro do serviço só para reaproveitar uma
+   * serialização não vale o acoplamento.
+   */
+  members: GovernanceMemberRecord[];
+  /** Envios pendentes no formato antigo, enquanto o fluxo de upload não migra. */
+  legacyUploadApprovals: MongoDocumentUploadApproval[];
   limit?: number;
   cursor?: string;
 };
@@ -113,6 +170,26 @@ export type ListPendingApprovalsInput = {
  * outra pessoa para aprovar nada, e `user` não decide. Devolver lista vazia é a resposta certa —
  * não é erro de permissão, é ausência de trabalho.
  */
+/**
+ * O detalhe declarado no pedido de acesso, quando houver.
+ *
+ * Falha de rede aqui não pode derrubar a fila: sem o detalhe a pendência ainda aparece, com nome,
+ * e-mail e data — só o cartão de revisão fica mais pobre. Perder a fila inteira por causa do
+ * enriquecimento seria trocar um problema pequeno por um grande.
+ */
+async function loadAccessRequestDetails(tenantId: string): Promise<AuthAccessRequestSnapshot[]> {
+  if (!usesDoqynAuth()) return [];
+  try {
+    return await fetchTenantAccessRequests(tenantId, 'pending');
+  } catch (error) {
+    logger.warn('falha ao carregar detalhes de solicitações de acesso', {
+      tenantId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
 export async function listPendingApprovalsForTenant(
   input: ListPendingApprovalsInput,
 ): Promise<{ items: PendingApprovalDto[]; nextCursor: string | null }> {
@@ -120,8 +197,7 @@ export async function listPendingApprovalsForTenant(
     return { items: [], nextCursor: null };
   }
 
-  const [members, requests] = await Promise.all([
-    listOperationalTenantMembers(input.tenantId),
+  const [requests, accessRequests] = await Promise.all([
     listApprovalRequests({
       tenantId: input.tenantId,
       decidableByUserId: input.userId,
@@ -129,11 +205,28 @@ export async function listPendingApprovalsForTenant(
       limit: input.limit,
       cursor: input.cursor,
     }),
+    loadAccessRequestDetails(input.tenantId),
   ]);
+  const members = input.members;
+
+  const detailByMembership = new Map(
+    accessRequests
+      .filter((request) => request.membershipId)
+      .map((request) => [request.membershipId as string, request]),
+  );
 
   const items = [
-    ...members.filter((member) => member.status === 'pending').map(mapMember),
+    ...members
+      .filter((member) => member.status === 'pending')
+      .map((member) => {
+        const item = mapMember(member);
+        const detail = detailByMembership.get(member.id);
+        return detail
+          ? { ...item, accessRequest: detail, tenantName: detail.tenantName ?? item.tenantName }
+          : item;
+      }),
     ...requests.items.map(mapApprovalRequest),
+    ...input.legacyUploadApprovals.map(mapLegacyUploadApproval),
   ].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
 
   return { items, nextCursor: requests.nextCursor };

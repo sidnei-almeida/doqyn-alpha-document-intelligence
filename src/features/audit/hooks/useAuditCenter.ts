@@ -12,10 +12,10 @@ import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
 import {
-  approveDocumentUploadApproval,
-  rejectDocumentUploadApproval,
-} from '../api/documentUploadApprovalsApi';
-import { listPendingApprovals, type PendingApprovalItem } from '../api/pendingApprovalsApi';
+  decideApprovalRequest,
+  listPendingApprovals,
+  type PendingApprovalItem,
+} from '../api/pendingApprovalsApi';
 import {
   buildAuditEventsQuery,
   dedupeAuditEvents,
@@ -126,9 +126,9 @@ export function useAuditCenter(documentId?: string) {
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
       if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-        return rejectDocumentUploadApproval(item.documentUpload.approvalId, reason).then(() => undefined);
+        return decideApprovalRequest(item.documentUpload.approvalId, 'rejected', reason);
       }
-      return usersApi.reject(item.membershipId, reason);
+      return usersApi.reject(item.membershipId, reason).then(() => undefined);
     },
     onSuccess: async () => {
       toast.success('Solicitação rejeitada.');
@@ -139,7 +139,7 @@ export function useAuditCenter(documentId?: string) {
   });
 
   const approveDocumentUploadMutation = useMutation({
-    mutationFn: (approvalId: string) => approveDocumentUploadApproval(approvalId),
+    mutationFn: (approvalId: string) => decideApprovalRequest(approvalId, 'approved'),
     onSuccess: async () => {
       toast.success('Documento aprovado e disponível na Biblioteca.');
       await invalidateAll();

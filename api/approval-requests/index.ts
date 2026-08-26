@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { listPendingApprovalsForTenant } from '../../server/services/approvals/pendingApprovalsQuery.js';
+import { listGovernanceMembers } from '../../server/services/governanceMembersService.js';
+import { userCanManageUsers } from '../../server/auth/memberAuth.js';
+import { listPendingDocumentUploadApprovals } from '../../server/services/documentUploadApprovalService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
@@ -20,11 +23,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!auth) return;
 
   try {
+    // Quem não administra o tenant não tem fila. Devolver vazio aqui evita chamar a listagem de
+    // membros, que exige exatamente a mesma permissão e responderia com erro.
+    if (!userCanManageUsers(auth.user)) {
+      return res.status(200).json({ items: [], nextCursor: null });
+    }
+
     const limitRaw = Number(req.query.limit);
+    const [members, legacyUploadApprovals] = await Promise.all([
+      listGovernanceMembers(req, auth.user, auth.ctx.tenantId),
+      listPendingDocumentUploadApprovals({ tenantId: auth.ctx.tenantId, user: auth.user }),
+    ]);
     const result = await listPendingApprovalsForTenant({
       tenantId: auth.ctx.tenantId,
       userId: auth.ctx.userId,
       platformRoles: auth.user.platformRoles ?? [],
+      members,
+      legacyUploadApprovals,
       limit: Number.isFinite(limitRaw) ? limitRaw : undefined,
       cursor: typeof req.query.cursor === 'string' ? req.query.cursor : undefined,
     });

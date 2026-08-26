@@ -49,6 +49,43 @@ async function callInternal<T>(path: string, options?: { method?: string; body?:
   return data as T;
 }
 
+/**
+ * Detalhe de uma solicitação de acesso, como o auth-service a serializa.
+ *
+ * Só os campos que a fila de pendências mostra. O DTO de lá tem mais — decisão, ids internos —
+ * e não replicar o que não se usa evita ter de acompanhar mudanças que não interessam.
+ */
+export type AuthAccessRequestSnapshot = {
+  id: string;
+  status: string;
+  membershipId: string | null;
+  tenantId: string;
+  tenantName: string | null;
+  requestedAt: string;
+  requester: {
+    name: string;
+    email: string;
+    whatsapp: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  requestedAccess: Record<string, unknown> | null;
+  consent: Record<string, unknown> | null;
+  terms: Record<string, unknown> | null;
+  notificationPreferences: Record<string, unknown> | null;
+};
+
+export async function fetchTenantAccessRequests(
+  tenantId: string,
+  status = 'pending',
+): Promise<AuthAccessRequestSnapshot[]> {
+  const query = `?status=${encodeURIComponent(status)}`;
+  const data = await callInternal<{ requests?: AuthAccessRequestSnapshot[] }>(
+    `/internal/tenants/${encodeURIComponent(tenantId)}/access-requests${query}`,
+  );
+  return data.requests ?? [];
+}
+
 export async function fetchUserAvatarMetadata(userId: string): Promise<InternalAvatarMetadata> {
   const result = await callInternal<{ ok: true; metadata: InternalAvatarMetadata }>(
     `/internal/users/${encodeURIComponent(userId)}/avatar-metadata`,
