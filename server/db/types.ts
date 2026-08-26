@@ -1,4 +1,10 @@
 import type { TenantUploadPolicy } from '../../shared/uploadPolicy.js';
+import type {
+  NotificationChannel,
+  NotificationDeliveryStatus,
+  NotificationStatus,
+  NotificationType,
+} from './notificationTypes.js';
 
 export type StoragePlaceholderStatus = 'pending' | 'stored' | 'failed' | 'skipped';
 
@@ -431,6 +437,67 @@ export type MongoDocumentExpiryAlert = {
   status: DocumentExpiryAlertStatus;
   createdAt: Date;
   readAt?: Date | null;
+};
+
+/**
+ * Uma notificação entregue a um usuário.
+ *
+ * Generaliza o alerta de vencimento: o vencimento virou um `type` entre outros, com o que era
+ * específico dele (marco, data, dias restantes) recolhido em `expiry`. Um registro por
+ * (tenant, usuário, tipo, `eventKey`) — a chave única é o que impede o mesmo fato de chegar duas
+ * vezes quando a emissão é reprocessada.
+ */
+export type MongoNotification = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  type: NotificationType;
+  /** Destinatário. */
+  userId: string;
+  /**
+   * Identidade do fato que originou a notificação, dentro do tipo. Vencimento usa
+   * `${documentId}:${offsetDays}`; documento criado usa o id da versão; decisão de acesso usa o id
+   * do membro mais a decisão.
+   */
+  eventKey: string;
+  title: string;
+  body?: string;
+  documentId?: string;
+  documentName?: string;
+  categoryId?: string;
+  categoryName?: string;
+  /** Quem causou o fato. Nunca é o próprio destinatário. */
+  actorUserId?: string;
+  actorName?: string;
+  /** Só em `document_expiring`. */
+  expiry?: {
+    offsetDays: number;
+    validityDate: Date;
+    daysRemaining: number;
+  };
+  status: NotificationStatus;
+  createdAt: Date;
+  readAt?: Date | null;
+};
+
+/**
+ * Uma tentativa de entrega, por canal.
+ *
+ * O canal `in_app` nasce entregue — a notificação já está na caixa do usuário. `email` e
+ * `whatsapp` gravam a intenção e param em `skipped_no_provider` enquanto não há provedor. É o
+ * registro que permite ligar SMTP ou Meta API depois sem reescrever quem emite.
+ */
+export type MongoNotificationDelivery = {
+  _id: string;
+  tenantId: string;
+  notificationId: string;
+  userId: string;
+  channel: NotificationChannel;
+  status: NotificationDeliveryStatus;
+  /** Por que foi pulada ou falhou. Vazio quando entregue. */
+  reason?: string;
+  createdAt: Date;
+  deliveredAt?: Date | null;
 };
 
 export type MongoStorageSlot = {
