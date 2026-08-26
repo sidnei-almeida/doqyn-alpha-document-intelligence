@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationPreferencesDto,
@@ -37,73 +36,30 @@ export function ApproveApprovalDialog({
   onClose,
   onConfirm,
 }: ApproveApprovalDialogProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
   const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>(['user']);
   const [documentGroupIds, setDocumentGroupIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (open) {
-      setPlatformRoles(['user']);
-      setDocumentGroupIds([]);
-    }
-  }, [open, item?.id]);
-
+  // O diálogo fica montado entre uma solicitação e outra: sem isto, os grupos
+  // escolhidos para a pessoa anterior reapareceriam na próxima.
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+    setPlatformRoles(['user']);
+    setDocumentGroupIds([]);
+  }, [open, item?.id]);
 
   if (!open || !item) return null;
 
   return (
-    <div
-      ref={overlayRef}
-      className="modal-overlay-scrim fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-sm"
-      onClick={(event) => {
-        if (event.target === overlayRef.current) onClose();
-      }}
-    >
-      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl">
-        <div className="flex items-start justify-between border-b border-doqyn-border px-5 py-4">
-          <div>
-            <h2 className="text-base font-semibold text-doqyn-text">Aprovar solicitação</h2>
-            <p className="mt-0.5 text-xs text-doqyn-muted">
-              {item.name} · {item.email}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
-            aria-label="Fechar"
-          >
-            <Icon name="close" size={ICON_SIZE.xs} />
-          </button>
-        </div>
-
-        <div className="scrollbar-thin space-y-1 overflow-y-auto px-5 py-4">
-          <AccessRequestDetailsPanel
-            member={item.member}
-            requestedAccess={item.requestedAccess}
-            whatsapp={item.member?.whatsapp}
-            consent={item.member?.consent}
-            terms={item.member?.terms}
-            notificationPreferences={item.member?.notificationPreferences}
-            className="mb-4 rounded-lg border border-doqyn-border bg-doqyn-card/40 p-3"
-          />
-          <PlatformRolesSection value={platformRoles} onChange={setPlatformRoles} />
-          <DocumentGroupsSection
-            groups={documentGroups}
-            value={documentGroupIds}
-            onChange={setDocumentGroupIds}
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-doqyn-border px-5 py-4">
+    <Modal
+      open
+      onClose={onClose}
+      title="Aprovar solicitação"
+      subtitle={`${item.name} · ${item.email}`}
+      size="lg"
+      // Papel e grupos já escolhidos: clicar fora não pode descartar em silêncio.
+      dismissOnOverlay={false}
+      footer={
+        <>
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
@@ -121,8 +77,24 @@ export function ApproveApprovalDialog({
           >
             {saving ? 'Aprovando…' : 'Confirmar aprovação'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <AccessRequestDetailsPanel
+        member={item.member}
+        requestedAccess={item.requestedAccess}
+        whatsapp={item.member?.whatsapp}
+        consent={item.member?.consent}
+        terms={item.member?.terms}
+        notificationPreferences={item.member?.notificationPreferences}
+        className="mb-4 rounded-lg border border-doqyn-border bg-doqyn-card/40 p-3"
+      />
+      <PlatformRolesSection value={platformRoles} onChange={setPlatformRoles} />
+      <DocumentGroupsSection
+        groups={documentGroups}
+        value={documentGroupIds}
+        onChange={setDocumentGroupIds}
+      />
+    </Modal>
   );
 }
