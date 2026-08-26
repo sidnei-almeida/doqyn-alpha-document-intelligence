@@ -28,6 +28,8 @@ const TYPE_ICON: Record<NotificationType, string> = {
   document_shared: 'group',
   access_approved: 'check_circle',
   access_rejected: 'block',
+  approval_requested: 'gavel',
+  approval_decided: 'gavel',
 };
 
 const TYPE_LABEL: Record<NotificationType, string> = {
@@ -38,6 +40,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   document_shared: 'compartilhado',
   access_approved: 'acesso',
   access_rejected: 'acesso',
+  approval_requested: 'aprovação',
+  approval_decided: 'aprovação',
 };
 
 /**

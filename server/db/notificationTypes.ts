@@ -12,7 +12,9 @@ export type NotificationType =
   | 'signature_required'
   | 'document_shared'
   | 'access_approved'
-  | 'access_rejected';
+  | 'access_rejected'
+  | 'approval_requested'
+  | 'approval_decided';
 
 export type NotificationStatus = 'unread' | 'read' | 'dismissed';
 

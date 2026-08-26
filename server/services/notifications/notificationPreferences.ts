@@ -21,6 +21,11 @@ export const PREFERENCE_KEY_BY_TYPE: Record<
   document_shared: 'documentShared',
   access_approved: 'accessApproved',
   access_rejected: 'accessRejected',
+  // Sem preferência, de propósito. Um pedido esperando decisão é trabalho atribuído a quem
+  // administra o tenant, e a resposta ao próprio pedido é o fim de uma conversa que a pessoa
+  // começou — nenhum dos dois é aviso que se escolhe receber.
+  approval_requested: null,
+  approval_decided: null,
 };
 
 /**

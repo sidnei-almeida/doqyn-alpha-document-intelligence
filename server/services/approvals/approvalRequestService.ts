@@ -8,6 +8,7 @@ import type {
   MongoApprovalRequest,
   MongoTenantMember,
 } from '../../db/types.js';
+import { notifyApprovalRequested } from '../notifications/approvalNotifications.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 
@@ -78,6 +79,7 @@ export async function createApprovalRequest(
 
   const collection = await getApprovalRequestsCollection();
   await collection.insertOne(request);
+  await notifyApprovalRequested(request);
   return request;
 }
 

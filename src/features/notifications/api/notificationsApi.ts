@@ -8,6 +8,8 @@ export type NotificationType =
   | 'document_updated'
   | 'signature_required'
   | 'document_shared'
+  | 'approval_requested'
+  | 'approval_decided'
   | 'access_approved'
   | 'access_rejected';
 
