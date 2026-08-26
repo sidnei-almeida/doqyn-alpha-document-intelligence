@@ -25,6 +25,8 @@ export const SHARED_APP_COLLECTIONS = {
   notifications: 'notifications',
   /** Registro de entrega por canal. Ver `notificationTypes.ts`. */
   notificationDeliveries: 'notification_deliveries',
+  /** Pedidos esperando decisão do administrador do tenant. Ver `MongoApprovalRequest`. */
+  approvalRequests: 'approval_requests',
   /** Ponteiro da cadeia de integridade da trilha de auditoria, um por tenant. */
   auditChainHeads: 'audit_chain_heads',
 } as const;

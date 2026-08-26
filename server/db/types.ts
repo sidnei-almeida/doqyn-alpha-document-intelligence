@@ -851,6 +851,64 @@ export type MongoDocumentUploadApproval = {
   updatedAt: Date;
 };
 
+/**
+ * O que se pede. Hoje só o envio de documento, que já era aprovável por outro caminho.
+ *
+ * Cresce com os verbos da governança: quando a Matriz ganhar o terceiro estado, cada verbo que
+ * cair em "pode, pedindo" cria um pedido deste mesmo formato.
+ */
+export type ApprovalRequestKind = 'document_upload';
+
+export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+/**
+ * Um pedido esperando decisão do administrador do tenant.
+ *
+ * Antes cada coisa aprovável tinha o seu próprio registro, e a fila era remendada no navegador
+ * fundindo duas chamadas. Aqui o pedido tem forma única: quem pediu, o que pediu sobre o quê, e
+ * quem pode decidir.
+ *
+ * `decidableBy` guarda **userId** (o `authUserId` do membro), que é o que a sessão carrega e o
+ * que a autorização compara. Hoje é sempre a lista de `company_admin` ativos, resolvida na
+ * criação por `resolveApprovers`. Se um dia o aprovador variar por escopo, muda aquela função e
+ * o resto — fila, tela, notificação, trilha — continua igual.
+ */
+export type MongoApprovalRequest = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  kind: ApprovalRequestKind;
+  status: ApprovalRequestStatus;
+  requestedBy: {
+    userId: string;
+    membershipId?: string;
+    name: string;
+    email: string;
+  };
+  /** Sobre o que se pede. Cada tipo preenche o que tem. */
+  subject: {
+    documentId?: string;
+    documentName?: string;
+    categoryId?: string;
+    categoryName?: string;
+    memberId?: string;
+  };
+  /**
+   * O necessário para executar a ação quando aprovada.
+   *
+   * É o que torna o pedido reentrante: aprovar um envio tem de publicar o documento, e quem
+   * aprova não tem o contexto de quem pediu.
+   */
+  payload: Record<string, unknown>;
+  decidableBy: string[];
+  decidedBy?: string;
+  decidedAt?: Date;
+  /** Motivo, obrigatório ao recusar. */
+  reason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type MongoUserDocumentFavorite = {
   _id: string;
   userId: string;

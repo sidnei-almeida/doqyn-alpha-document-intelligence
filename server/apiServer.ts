@@ -64,6 +64,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
   '/api/notifications': () => import('../api/notifications/index.js'),
+  '/api/approval-requests': () => import('../api/approval-requests/index.js'),
   '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
   '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
@@ -239,6 +240,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/notifications\/([^/]+)$/,
       loader: () => import('../api/notifications/[notificationId].js'),
       paramKeys: ['notificationId'],
+    },
+    {
+      regex: /^\/api\/approval-requests\/([^/]+)\/decide$/,
+      loader: () => import('../api/approval-requests/[requestId]/decide.js'),
+      paramKeys: ['requestId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,
