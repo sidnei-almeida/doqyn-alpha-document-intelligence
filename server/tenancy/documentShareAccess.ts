@@ -7,14 +7,16 @@ import {
   isDocumentAdmin,
   resolveDocumentPermissions,
 } from './documentAccess.js';
-import { userHasGovernanceCategoryPermission } from './governanceAccessIndex.js';
+import { resolveGovernanceCategoryPermission } from './governanceAccessIndex.js';
 
 export type DocumentAccessPermissionsWithShare = DocumentAccessPermissions & {
   canShare: boolean;
   sharedViaGrant: boolean;
 };
 
-function isShareGrantActive(grant: MongoDocumentShareGrant | null | undefined): grant is MongoDocumentShareGrant {
+function isShareGrantActive(
+  grant: MongoDocumentShareGrant | null | undefined,
+): grant is MongoDocumentShareGrant {
   if (!grant || grant.status !== 'active') return false;
   if (grant.expiresAt && grant.expiresAt.getTime() <= Date.now()) return false;
   return true;
@@ -29,7 +31,14 @@ export function canUserShareDocument(
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
 
-  if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share')) {
+  // `allow`, não "tem caminho". `userHasGovernanceCategoryPermission` conta `require` como
+  // verdadeiro — serve para "quem alcança a categoria", e usá-lo aqui liberaria o
+  // compartilhamento sem passar por ninguém no dia em que `share` voltar a aceitar o meio-termo.
+  // Falhar fechado agora é o que torna seguro ligar o portão depois.
+  if (
+    resolveGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share') ===
+    'allow'
+  ) {
     return true;
   }
 

@@ -221,6 +221,16 @@ describe('aprovações — armadilhas do modelo', () => {
     assert.ok(hook.includes('if (isDocumentApproval(item))'));
   });
 
+  it('compartilhar falha fechado no meio-termo', () => {
+    const share = read('server/tenancy/documentShareAccess.ts');
+    // `userHasGovernanceCategoryPermission` conta `require` como verdadeiro: usá-lo aqui liberaria
+    // o compartilhamento sem passar por ninguém quando `share` voltar a aceitar o meio-termo.
+    assert.ok(share.includes("resolveGovernanceCategoryPermission("));
+    assert.ok(share.includes("=== \n    'allow'") || share.includes("'allow'"));
+    // A menção que sobra é do comentário; a chamada não pode existir.
+    assert.ok(!share.includes('if (userHasGovernanceCategoryPermission('));
+  });
+
   it('pedir aprovação não aparece como erro', () => {
     const feedback = read('src/shared/feedback/appFeedback.ts');
     assert.ok(feedback.includes("error.code === 'DOCUMENT_APPROVAL_REQUIRED'"));
