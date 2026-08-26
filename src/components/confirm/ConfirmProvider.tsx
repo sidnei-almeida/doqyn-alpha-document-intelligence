@@ -1,13 +1,8 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { ConfirmContext } from './confirmContext';
@@ -25,7 +20,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState>(defaultState);
   const [typedText, setTypedText] = useState('');
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
 
   const confirm = useCallback((options: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
@@ -43,97 +37,70 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requiresText = Boolean(state.confirmationText);
-  const textMatches =
-    !requiresText || typedText.trim() === state.confirmationText?.trim();
+  const textMatches = !requiresText || typedText.trim() === state.confirmationText?.trim();
 
   const variant = state.variant ?? 'danger';
-
-  useEffect(() => {
-    if (!state.open) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close(false);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    window.setTimeout(() => dialogRef.current?.focus(), 0);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [close, state.open]);
 
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      {state.open && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center modal-overlay-scrim p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-dialog-title"
-          onClick={() => close(false)}
-        >
-          <div
-            ref={dialogRef}
-            tabIndex={-1}
-            className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-6 shadow-modal outline-none"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start gap-3">
-              <div
-                className={cn(
-                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                  variant === 'danger' ? 'bg-doqyn-danger-bg' : 'bg-doqyn-warning-bg',
-                )}
-              >
-                <Icon
-                  name="warning"
-                  size={ICON_SIZE.md}
-                  className={variant === 'danger' ? 'text-doqyn-danger' : 'text-doqyn-warning'}
-                />
-              </div>
-              <div>
-                <h2 id="confirm-dialog-title" className="text-base font-semibold text-doqyn-text">
-                  {state.title}
-                </h2>
-                <p className="mt-1 text-sm text-doqyn-muted">{state.description}</p>
-              </div>
-            </div>
-
-            {requiresText && (
-              <div className="mb-4 space-y-2">
-                <p className="text-xs text-doqyn-muted">
-                  Digite{' '}
-                  <span className="font-mono font-medium text-doqyn-text">
-                    {state.confirmationText}
-                  </span>{' '}
-                  para confirmar:
-                </p>
-                <Input
-                  id="confirm-text-input"
-                  value={typedText}
-                  onChange={(e) => setTypedText(e.target.value)}
-                  placeholder={state.confirmationText}
-                  autoComplete="off"
-                  autoFocus
-                />
-              </div>
+      <Modal
+        open={state.open}
+        onClose={() => close(false)}
+        title={state.title}
+        size="sm"
+        // Nasce de dentro de outro modal e precisa passar por cima dele.
+        layer="confirm"
+        // Com palavra a digitar há dado em jogo: clicar fora não descarta em silêncio.
+        dismissOnOverlay={!requiresText}
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => close(false)}>
+              {state.cancelLabel ?? 'Cancelar'}
+            </Button>
+            <Button
+              type="button"
+              variant={variant === 'danger' ? 'danger' : 'primary'}
+              disabled={!textMatches}
+              onClick={() => close(true)}
+            >
+              {state.confirmLabel ?? 'Confirmar'}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex items-start gap-2.5">
+          <Icon
+            name="warning"
+            size={ICON_SIZE.sm}
+            className={cn(
+              'mt-0.5 shrink-0',
+              variant === 'danger' ? 'text-doqyn-danger' : 'text-doqyn-warning',
             )}
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => close(false)}>
-                {state.cancelLabel ?? 'Cancelar'}
-              </Button>
-              <Button
-                type="button"
-                variant={variant === 'danger' ? 'danger' : 'primary'}
-                disabled={!textMatches}
-                onClick={() => close(true)}
-              >
-                {state.confirmLabel ?? 'Confirmar'}
-              </Button>
-            </div>
-          </div>
+            aria-hidden
+          />
+          <p className="text-sm text-doqyn-muted">{state.description}</p>
         </div>
-      )}
+
+        {requiresText && (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-doqyn-muted">
+              Digite{' '}
+              <span className="font-mono font-medium text-doqyn-text">
+                {state.confirmationText}
+              </span>{' '}
+              para confirmar:
+            </p>
+            <Input
+              id="confirm-text-input"
+              value={typedText}
+              onChange={(e) => setTypedText(e.target.value)}
+              placeholder={state.confirmationText}
+              autoComplete="off"
+            />
+          </div>
+        )}
+      </Modal>
     </ConfirmContext.Provider>
   );
 }
