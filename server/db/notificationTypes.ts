@@ -10,6 +10,7 @@ export type NotificationType =
   | 'document_created'
   | 'document_updated'
   | 'signature_required'
+  | 'document_shared'
   | 'access_approved'
   | 'access_rejected';
 

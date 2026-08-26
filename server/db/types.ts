@@ -159,6 +159,7 @@ export type NotificationPreferences = {
   documentCreated: boolean;
   documentUpdated: boolean;
   documentRequiresSignature: boolean;
+  documentShared: boolean;
   accessApproved: boolean;
   accessRejected: boolean;
 };
@@ -177,6 +178,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   documentCreated: true,
   documentUpdated: true,
   documentRequiresSignature: true,
+  documentShared: true,
   accessApproved: true,
   accessRejected: true,
 };

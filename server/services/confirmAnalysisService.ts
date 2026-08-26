@@ -13,6 +13,7 @@ import type { AuthUser } from '../auth/types.js';
 import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
 import { buildFilenameUpdatedAuditEvent } from '../audit/buildFilenameUpdatedAuditEvent.js';
 import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
+import { notifyDocumentCreated } from './notifications/documentNotifications.js';
 import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
@@ -772,6 +773,20 @@ export async function confirmAnalysisPersistence(input: {
   }
 
   await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
+
+  // Quem alcança a categoria fica sabendo que entrou documento nela. A chave é a versão, não o
+  // documento: reconfirmar o mesmo envio não avisa de novo, mas uma versão nova sim.
+  await notifyDocumentCreated({
+    tenantId,
+    documentId,
+    documentName: documentNameSnapshot,
+    categoryId: classId,
+    categoryName: docClass.name,
+    ownerUserId,
+    actorUserId: input.user.id,
+    actorName: input.user.name,
+    eventKey: versionId,
+  });
 
   return {
     documentId,

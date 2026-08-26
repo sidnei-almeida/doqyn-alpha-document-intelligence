@@ -18,6 +18,7 @@ export const PREFERENCE_KEY_BY_TYPE: Record<
   document_created: 'documentCreated',
   document_updated: 'documentUpdated',
   signature_required: 'documentRequiresSignature',
+  document_shared: 'documentShared',
   access_approved: 'accessApproved',
   access_rejected: 'accessRejected',
 };

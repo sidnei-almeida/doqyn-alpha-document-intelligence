@@ -31,6 +31,7 @@ import { attachFavoriteFlags, lookupFavoriteFlags } from '../favorites/documentF
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { notifyDocumentShared } from '../notifications/documentNotifications.js';
 import { getTenantIdFromUser } from '../../auth/tenantContext.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
@@ -39,7 +40,9 @@ const ACTIVE_DOCUMENT_FILTER = {
   deactivatedAt: { $in: [null, undefined] },
 };
 
-function defaultSharePermissions(input?: Partial<DocumentSharePermissions>): DocumentSharePermissions {
+function defaultSharePermissions(
+  input?: Partial<DocumentSharePermissions>,
+): DocumentSharePermissions {
   return {
     canView: input?.canView !== false,
     canDownload: input?.canDownload === true,
@@ -56,7 +59,11 @@ function activeGrantFilter(extra: Record<string, unknown> = {}): Record<string, 
   return {
     status: 'active',
     ...extra,
-    $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    $or: [
+      { expiresAt: { $exists: false } },
+      { expiresAt: null },
+      { expiresAt: { $gt: new Date() } },
+    ],
   };
 }
 
@@ -66,7 +73,9 @@ export async function findActiveShareGrantForUser(
 ): Promise<MongoDocumentShareGrant | null> {
   if (!isMongoNativeConfigured() || !sharedWithUserId) return null;
   const collection = await getShareGrantsCollection();
-  return collection.findOne(activeGrantFilter({ documentId, sharedWithUserId }) as Record<string, unknown>);
+  return collection.findOne(
+    activeGrantFilter({ documentId, sharedWithUserId }) as Record<string, unknown>,
+  );
 }
 
 export async function findActiveShareGrantsForUser(
@@ -86,7 +95,10 @@ export async function findActiveShareGrantsForDocument(
 ): Promise<MongoDocumentShareGrant[]> {
   if (!isMongoNativeConfigured()) return [];
   const collection = await getShareGrantsCollection();
-  return collection.find(activeGrantFilter({ documentId }) as Record<string, unknown>).sort({ createdAt: -1 }).toArray();
+  return collection
+    .find(activeGrantFilter({ documentId }) as Record<string, unknown>)
+    .sort({ createdAt: -1 })
+    .toArray();
 }
 
 async function resolveActiveTenantMemberByUserId(
@@ -187,7 +199,13 @@ export async function searchShareableTenantUsers(
       const memberUserId = member.userId;
       if (!memberUserId || memberUserId === user.id) return false;
       if (!q) return true;
-      const haystack = [member.name, member.email, member.firstName, member.lastName, member.username]
+      const haystack = [
+        member.name,
+        member.email,
+        member.firstName,
+        member.lastName,
+        member.username,
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -283,7 +301,11 @@ export async function createDocumentShareGrant(
 
   const permissions = defaultSharePermissions(input.permissions);
   if (!permissions.canView) {
-    throw new ServiceError('canView é obrigatório para compartilhamento.', 'INVALID_SHARE_PERMISSIONS', 400);
+    throw new ServiceError(
+      'canView é obrigatório para compartilhamento.',
+      'INVALID_SHARE_PERMISSIONS',
+      400,
+    );
   }
 
   const collection = await getShareGrantsCollection();
@@ -331,6 +353,20 @@ export async function createDocumentShareGrant(
   };
 
   await collection.insertOne(grant);
+
+  // Só o compartilhamento novo avisa. Reenviar para a mesma pessoa cai no `updated` acima e não
+  // gera aviso — a chave do fato é o id da concessão, e repetir o gesto não é fato novo.
+  await notifyDocumentShared({
+    tenantId: ctx.tenantId,
+    recipientUserId: sharedWithUserId,
+    shareId: grant._id,
+    documentId,
+    documentName: doc.title || doc.currentFileName || documentId,
+    actorUserId: user.id,
+    actorName: user.name,
+    canDownload: permissions.canDownload,
+    message: grant.message,
+  });
 
   return {
     shareId: grant._id,
@@ -479,12 +515,7 @@ export async function listSharedWithMeDocuments(
   if (search?.trim()) {
     const q = search.trim().toLowerCase();
     items = items.filter((item) => {
-      const haystack = [
-        item.currentFileName,
-        item.displayName,
-        item.categoryName,
-        item.ownerName,
-      ]
+      const haystack = [item.currentFileName, item.displayName, item.categoryName, item.ownerName]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();

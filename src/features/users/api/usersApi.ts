@@ -13,6 +13,7 @@ export type NotificationPreferencesDto = {
   documentCreated: boolean;
   documentUpdated: boolean;
   documentRequiresSignature: boolean;
+  documentShared: boolean;
   accessApproved: boolean;
   accessRejected: boolean;
 };
@@ -74,6 +75,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferencesDto = {
   documentCreated: true,
   documentUpdated: true,
   documentRequiresSignature: true,
+  documentShared: true,
   accessApproved: true,
   accessRejected: true,
 };
@@ -88,9 +90,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const message =
-      typeof data?.message === 'string'
-        ? data.message
-        : 'Não foi possível concluir a operação.';
+      typeof data?.message === 'string' ? data.message : 'Não foi possível concluir a operação.';
     throw new Error(message);
   }
 
@@ -163,10 +163,13 @@ export const usersApi = {
     if (usesDoqynAuth()) {
       return doqynUsersApi.invite(input);
     }
-    return request<{ member: CompanyMemberDto; temporaryPassword?: string }>('/company-members/invite', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
+    return request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
+      '/company-members/invite',
+      {
+        method: 'POST',
+        body: JSON.stringify(input),
+      },
+    );
   },
 
   approve: (
@@ -293,6 +296,10 @@ export function suggestGroupsFromDepartment(
   if (!departmentText?.trim()) return [];
   const normalized = departmentText.trim().toLowerCase();
   return groups
-    .filter((group) => group.name.toLowerCase().includes(normalized) || normalized.includes(group.name.toLowerCase()))
+    .filter(
+      (group) =>
+        group.name.toLowerCase().includes(normalized) ||
+        normalized.includes(group.name.toLowerCase()),
+    )
     .map((group) => group.id);
 }

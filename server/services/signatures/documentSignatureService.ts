@@ -30,6 +30,7 @@ import { isR2StorageEnabled } from '../../storage/storageConfig.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
 import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { notifySignatureRequested } from '../notifications/documentNotifications.js';
 import {
   isSignatureRequestOpen,
   resolveEffectiveSignatureRequestStatus,
@@ -552,6 +553,19 @@ export async function createDocumentSignatureRequest(
     { _id: documentId },
     { $set: { signatureStatus: 'pending', updatedAt: now } },
   );
+
+  // Convidado externo não tem caixa: o canal dele é o link do portal. Signatário interno recebe a
+  // pendência com o prazo, que é o que ordena a fila de quem tem várias.
+  await notifySignatureRequested({
+    tenantId: ctx.tenantId,
+    signerUserId,
+    signatureRequestId,
+    documentId,
+    documentName: doc.currentFileName || doc.title,
+    actorUserId: user.id,
+    actorName: user.name,
+    expiresAt,
+  });
 
   return {
     request: serializeSignatureRequest(request, {

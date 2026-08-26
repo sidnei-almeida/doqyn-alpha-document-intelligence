@@ -3,13 +3,8 @@ import { usesDoqynAuth } from '../auth/authConfig.js';
 import type { AuthUser } from '../auth/types.js';
 import { callDoqynAuthAdmin } from '../integrations/doqynAuthAdminClient.js';
 import { createUserAuditLog } from './userAuditService.js';
-import {
-  approveCompanyMember,
-  rejectCompanyMember,
-} from './userManagementService.js';
-import {
-  resolveGovernanceMemberIdentity,
-} from './governanceMembersService.js';
+import { approveCompanyMember, rejectCompanyMember } from './userManagementService.js';
+import { resolveGovernanceMemberIdentity } from './governanceMembersService.js';
 import { syncMemberDocumentGroups } from './documentGroupsService.js';
 import {
   invalidateTenantMemberSyncCache,
@@ -20,6 +15,8 @@ import { maskEmail, sanitizeRejectionReason } from '../utils/maskSensitiveData.j
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { logger } from '../utils/logger.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { notifyAccessDecision } from './notifications/documentNotifications.js';
+import { getTenantMemberById } from './tenantMemberRepository.js';
 
 type ApproveInput = {
   platformRoles?: string[];
@@ -87,6 +84,33 @@ async function logRejectedMembershipAudit(
       targetEmailMasked: maskEmail(targetEmail),
       reason,
     }),
+  });
+}
+
+/**
+ * Avisa a pessoa da decisão sobre o acesso dela.
+ *
+ * O `userId` sai do membro já espelhado no Mongo, e não de uma consulta nova ao auth: a sincronia
+ * acabou de rodar acima, e o caminho de aprovação só resolvia identidade quando havia grupo
+ * documental a sincronizar.
+ */
+async function notifyMembershipDecision(
+  actor: AuthUser,
+  tenantId: string,
+  memberId: string,
+  approved: boolean,
+  reason?: string,
+): Promise<void> {
+  const member = await getTenantMemberById(memberId).catch(() => null);
+  await notifyAccessDecision({
+    tenantId,
+    memberUserId: member?.authUserId,
+    memberId,
+    approved,
+    reason,
+    actorUserId: actor.id,
+    actorName: actor.name,
+    tenantName: actor.companyName,
   });
 }
 
@@ -171,6 +195,8 @@ export async function approveMembershipDecision(
     });
   }
 
+  await notifyMembershipDecision(actor, tenantId, memberId, true);
+
   logger.info('membership approve completed (auth)', {
     tenantId,
     membershipId: memberId,
@@ -238,6 +264,8 @@ export async function rejectMembershipDecision(
       message: error instanceof Error ? error.message : 'unknown',
     });
   }
+
+  await notifyMembershipDecision(actor, tenantId, memberId, false, sanitizedReason);
 
   return {
     member: {
