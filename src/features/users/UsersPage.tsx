@@ -56,8 +56,12 @@ function memberToAccessForm(member: CompanyMemberDto): AccessFormState {
     platformRoles: member.platformRoles.length ? [...member.platformRoles] : ['user'],
     accessGroupIds: [...member.accessGroupIds],
     documentGroupIds: [...(member.documentGroupIds ?? member.groupIds ?? [])],
+    // Espalhado sobre o default, não em lugar dele: quem foi gravado antes de um evento existir
+    // não tem a chave nova, e sem a mescla a caixa apareceria desmarcada enquanto o servidor
+    // tratava como ligada.
     notificationPreferences: {
-      ...(member.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFERENCES),
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...(member.notificationPreferences ?? {}),
     },
   };
 }
@@ -206,8 +210,9 @@ export function UsersPage() {
       platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
       accessGroupIds: [],
       documentGroupIds: suggested,
-      notificationPreferences: member.notificationPreferences ?? {
+      notificationPreferences: {
         ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...(member.notificationPreferences ?? {}),
       },
     });
   };

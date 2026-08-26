@@ -29,11 +29,7 @@ export const PLATFORM_ROLE_LABELS: Record<PlatformRole, PlatformRoleMeta> = {
 };
 
 /** Ordem de prioridade para exibir o papel principal do usuário. */
-export const PLATFORM_ROLE_PRIORITY: PlatformRole[] = [
-  'company_admin',
-  'individual_admin',
-  'user',
-];
+export const PLATFORM_ROLE_PRIORITY: PlatformRole[] = ['company_admin', 'individual_admin', 'user'];
 
 export function getPlatformRoleMeta(role: string): PlatformRoleMeta {
   return (

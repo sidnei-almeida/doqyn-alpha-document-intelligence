@@ -58,7 +58,10 @@ function mapDetailToDto(detail: MemberDetail): CompanyMemberDto {
   };
 }
 
-async function fetchMemberDetail(membershipId: string, tenantId?: string): Promise<CompanyMemberDto> {
+async function fetchMemberDetail(
+  membershipId: string,
+  tenantId?: string,
+): Promise<CompanyMemberDto> {
   const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
   const data = await authServiceJson<{ member: MemberDetail }>(
     `/admin/members/${membershipId}${query}`,
@@ -68,7 +71,9 @@ async function fetchMemberDetail(membershipId: string, tenantId?: string): Promi
 
 export const doqynUsersApi = {
   async listAccessGroups(tenantId?: string): Promise<Array<{ id: string; name: string }>> {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}&status=active` : '?status=active';
+    const query = tenantId
+      ? `?tenantId=${encodeURIComponent(tenantId)}&status=active`
+      : '?status=active';
     const data = await authServiceJson<{
       groups: Array<{ groupId: string; name: string; status: string }>;
     }>(`/admin/access-groups${query}`);
@@ -167,11 +172,13 @@ export const doqynUsersApi = {
     return authServiceJson(`/admin/members/${membershipId}/roles${query}`, {
       method: 'PATCH',
       body: JSON.stringify({ roles: input.platformRoles }),
-    }).then(() =>
-      authServiceJson(`/admin/members/${membershipId}/access-groups${query}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ accessGroupIds: input.accessGroupIds }),
-      }),
-    ).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
+    })
+      .then(() =>
+        authServiceJson(`/admin/members/${membershipId}/access-groups${query}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ accessGroupIds: input.accessGroupIds }),
+        }),
+      )
+      .then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 };

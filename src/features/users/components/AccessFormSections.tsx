@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Icon } from '@/components/ui/Icon';
+import { Radio } from '@/components/ui/Radio';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
-import {
-  ASSIGNABLE_PLATFORM_ROLES,
-  getPlatformRoleMeta,
-} from '../platformRoleLabels';
+import { ASSIGNABLE_PLATFORM_ROLES, getPlatformRoleMeta } from '../platformRoleLabels';
 
 export type DocumentGroupOption = {
   id: string;
@@ -29,10 +27,15 @@ export function AccessFormSection({
   className?: string;
 }) {
   return (
-    <section className={cn('space-y-3 border-t border-doqyn-border-subtle pt-4 first:border-t-0 first:pt-0', className)}>
-      <header>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-doqyn-muted">{title}</h3>
-        {description ? <p className="mt-1 text-xs text-doqyn-subtle">{description}</p> : null}
+    <section
+      className={cn(
+        'border-t border-doqyn-border-subtle pt-4 first:border-t-0 first:pt-0',
+        className,
+      )}
+    >
+      <header className="mb-3">
+        <h3 className="register-label text-doqyn-subtle">{title}</h3>
+        {description ? <p className="mt-1 text-caption text-doqyn-muted">{description}</p> : null}
       </header>
       {children}
     </section>
@@ -51,18 +54,16 @@ export function GroupsEmptyState({
   ctaHref?: string;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-doqyn-border bg-doqyn-bg/50 px-4 py-5 text-center">
-      <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-doqyn-surface text-doqyn-muted">
-        <Icon name="group" size={ICON_SIZE.xs} aria-hidden />
-      </div>
-      <p className="text-sm text-doqyn-text">{title}</p>
-      <p className="mt-1 text-xs text-doqyn-muted">{description}</p>
+    <div className="border-l-2 border-doqyn-border py-1 pl-3">
+      <p className="text-label text-doqyn-text">{title}</p>
+      <p className="mt-1 text-caption text-doqyn-muted">{description}</p>
       {ctaLabel && ctaHref ? (
         <Link
           to={ctaHref}
-          className="mt-3 inline-block text-xs font-medium text-doqyn-primary hover:underline"
+          className="register-label mt-2 inline-flex items-center gap-1 text-doqyn-accent-active underline-offset-4 hover:underline"
         >
           {ctaLabel}
+          <Icon name="arrow_forward" size={ICON_SIZE.xs} />
         </Link>
       ) : null}
     </div>
@@ -70,9 +71,11 @@ export function GroupsEmptyState({
 }
 
 /**
- * Não recebe mais um gate de papel global: o papel administrativo de plataforma foi eliminado do
- * produto, então não há checkbox a desabilitar nem aviso de "permissões globais" a exibir. Todo
- * papel listado aqui é atribuível por quem já passou pelo guard de gestão de usuários.
+ * Papel é escolha única, e agora a tela diz isso.
+ *
+ * Eram caixas de marcar: dava para marcar Administrador e Usuário ao mesmo tempo, ou nenhum dos
+ * dois — e nenhum caía em `['user']` dentro de `sanitizeAssignablePlatformRoles`, sem a tela
+ * avisar que a escolha tinha sido trocada. Não são somas, são níveis.
  */
 export function PlatformRolesSection({
   value,
@@ -81,30 +84,25 @@ export function PlatformRolesSection({
   value: PlatformRole[];
   onChange: (roles: PlatformRole[]) => void;
 }) {
+  // A ordem de `ASSIGNABLE_PLATFORM_ROLES` é a de privilégio: quem é admin é admin, mesmo com
+  // `user` também gravado por um caminho antigo.
+  const selected = ASSIGNABLE_PLATFORM_ROLES.find((role) => value.includes(role)) ?? 'user';
+
   return (
     <AccessFormSection
-      title="Roles do sistema"
-      description="Defina o nível administrativo deste usuário na plataforma."
+      title="Papel na plataforma"
+      description="Define o que a pessoa administra. É um só — não se acumulam."
     >
-      <div className="space-y-2">
+      <div className="divide-y divide-doqyn-border-subtle">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
           const meta = getPlatformRoleMeta(role);
-          const checked = value.includes(role);
-
           return (
-            <div
-              key={role}
-              className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2.5"
-            >
-              <Checkbox
-                checked={checked}
-                onChange={() => {
-                  if (checked) {
-                    onChange(value.filter((item) => item !== role));
-                  } else {
-                    onChange([...value, role]);
-                  }
-                }}
+            <div key={role} className="py-2.5 first:pt-0 last:pb-0">
+              <Radio
+                name="platform-role"
+                value={role}
+                checked={selected === role}
+                onChange={() => onChange([role])}
                 label={meta.label}
                 description={meta.description}
               />
@@ -128,44 +126,41 @@ export function DocumentGroupsSection({
   return (
     <AccessFormSection
       title="Grupos"
-      description="Mesmos grupos criados em Regras. Definem o acesso do usuário às categorias de documento."
+      description="Os mesmos grupos de Regras. São eles que decidem quais categorias a pessoa alcança."
     >
       {groups.length === 0 ? (
         <GroupsEmptyState
           title="Nenhum grupo criado ainda."
-          description="Crie grupos na tela Regras e volte aqui para atribuir membros."
+          description="Sem grupo, a pessoa não alcança categoria alguma. Crie um em Regras e volte aqui."
           ctaLabel="Abrir Regras"
           ctaHref="/rules"
         />
       ) : (
-        <div className="max-h-48 space-y-2 overflow-y-auto pr-1 scrollbar-thin">
+        <div className="divide-y divide-doqyn-border-subtle">
           {groups.map((group) => {
-            const checked = value.includes(group.id);
             const memberCount = group.memberCount ?? 0;
 
             return (
-              <div
-                key={group.id}
-                className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2.5"
-              >
+              <div key={group.id} className="py-2.5 first:pt-0 last:pb-0">
                 <Checkbox
-                  checked={checked}
+                  checked={value.includes(group.id)}
                   onChange={() => {
-                    if (checked) {
-                      onChange(value.filter((id) => id !== group.id));
-                    } else {
-                      onChange([...value, group.id]);
-                    }
+                    onChange(
+                      value.includes(group.id)
+                        ? value.filter((id) => id !== group.id)
+                        : [...value, group.id],
+                    );
                   }}
-                  label={group.name}
-                  description={
-                    <>
-                      {group.description?.trim() || 'Grupo documental de governança'}
-                      <span className="mt-1 block text-[10px] text-doqyn-subtle">
-                        {memberCount} {memberCount === 1 ? 'membro' : 'membros'}
+                  label={
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 truncate">{group.name}</span>
+                      <span className="shrink-0 font-mono text-micro tabular-nums text-doqyn-subtle">
+                        {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'}
                       </span>
-                    </>
+                    </span>
                   }
+                  description={group.description?.trim() || 'Grupo documental de governança'}
+                  wrapperClassName="w-full"
                 />
               </div>
             );
@@ -176,14 +171,32 @@ export function DocumentGroupsSection({
   );
 }
 
-const NOTIFICATION_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
-  ['email', 'E-mail'],
-  ['whatsapp', 'WhatsApp'],
-  ['documentCreated', 'Documento criado'],
-  ['documentUpdated', 'Documento atualizado'],
-  ['documentRequiresSignature', 'Assinatura necessária'],
+/** O que avisar. Um evento por linha, com o nome do fato, não do campo. */
+const EVENT_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
+  ['documentCreated', 'Documento novo na categoria'],
+  ['documentUpdated', 'Versão nova de um documento'],
+  ['documentRequiresSignature', 'Assinatura pedida a esta pessoa'],
+  ['documentShared', 'Documento compartilhado com ela'],
   ['accessApproved', 'Acesso aprovado'],
-  ['accessRejected', 'Acesso rejeitado'],
+  ['accessRejected', 'Acesso recusado'],
+];
+
+/**
+ * Por onde avisar.
+ *
+ * `reason` preenchido significa canal declarado e ainda sem entrega: a escolha fica gravada e o
+ * outbox registra a intenção, mas nada sai enquanto não houver provedor. Dizer isso na tela é o
+ * que separa esta caixa de uma promessa — a versão anterior prometia "eventos que este usuário
+ * poderá receber futuramente" e não entregava por canal nenhum.
+ */
+const CHANNEL_OPTIONS: Array<{
+  key: keyof NotificationPreferencesDto | 'inApp';
+  label: string;
+  reason?: string;
+}> = [
+  { key: 'inApp', label: 'No app' },
+  { key: 'email', label: 'E-mail', reason: 'Sem servidor de e-mail configurado ainda.' },
+  { key: 'whatsapp', label: 'WhatsApp', reason: 'Sem integração de WhatsApp configurada ainda.' },
 ];
 
 export function NotificationsSection({
@@ -196,21 +209,52 @@ export function NotificationsSection({
   return (
     <AccessFormSection
       title="Notificações"
-      description="Escolha quais eventos este usuário poderá receber futuramente."
+      description="Os avisos saem do acesso: só chega o que a pessoa já alcança pelos grupos, ou o que é dela."
     >
-      <div className="grid gap-2 sm:grid-cols-2">
-        {NOTIFICATION_OPTIONS.map(([key, label]) => (
-          <div
-            key={key}
-            className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2"
-          >
-            <Checkbox
-              checked={value[key]}
-              onChange={(event) => onChange({ ...value, [key]: event.target.checked })}
-              label={label}
-            />
+      <div className="space-y-4">
+        <div>
+          <p className="text-caption text-doqyn-subtle">O que avisar</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {EVENT_OPTIONS.map(([key, label]) => (
+              <Checkbox
+                key={key}
+                checked={value[key]}
+                onChange={(event) => onChange({ ...value, [key]: event.target.checked })}
+                label={label}
+              />
+            ))}
           </div>
-        ))}
+        </div>
+
+        <div>
+          <p className="text-caption text-doqyn-subtle">Por onde</p>
+          <div className="mt-2 space-y-2">
+            {CHANNEL_OPTIONS.map((channel) => {
+              if (channel.key === 'inApp') {
+                return (
+                  <Checkbox
+                    key="inApp"
+                    checked
+                    disabled
+                    readOnly
+                    label="No app"
+                    description="É a caixa do sino. Não se desliga."
+                  />
+                );
+              }
+
+              return (
+                <Checkbox
+                  key={channel.key}
+                  checked={value[channel.key]}
+                  onChange={(event) => onChange({ ...value, [channel.key]: event.target.checked })}
+                  label={channel.label}
+                  description={channel.reason}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
     </AccessFormSection>
   );
