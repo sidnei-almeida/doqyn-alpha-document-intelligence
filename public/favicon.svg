@@ -1,5 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="6" fill="#18181b"/>
-  <path d="M8 22V10h3.2l4.8 7.5V10H19v12h-3.2L11 14.5V22H8z" fill="#fafafa"/>
-  <circle cx="23" cy="16" r="3" fill="#2563eb"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="DOQYN">
+  <!--
+    Marca DOQYN — o selo. Anel externo é a borda cunhada, a cauda é a batida.
+    Mesma forma de src/components/brand/DoqynMark.tsx, na simplificação que
+    aquele componente aplica sozinho abaixo de 20px: sem o anel interno, que
+    vira borrão na aba do navegador.
+
+    A cauda começa a 0.34 do raio, dentro do anel, e termina a 1.5 dele. É esse
+    cruzamento que faz a forma ler como Q — encostada na circunferência por
+    fora, viraria lupa.
+
+    Fundo transparente de propósito: a aba do navegador tem cor própria, e um
+    quadrado opaco brigaria com ela. O acento acompanha o tema do sistema, como
+    no app — #0e6e6a sobre claro, #35a69f sobre escuro.
+  -->
+  <style>
+    .mark { stroke: #0e6e6a; }
+    @media (prefers-color-scheme: dark) {
+      .mark { stroke: #35a69f; }
+    }
+  </style>
+  <g class="mark" fill="none" stroke-linecap="round">
+    <circle cx="15.3" cy="15.3" r="11.6" stroke-width="3.4" />
+    <path d="M18.1 18.1 L27.8 27.8" stroke-width="4.4" />
+  </g>
 </svg>
