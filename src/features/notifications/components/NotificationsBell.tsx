@@ -49,11 +49,15 @@ export function NotificationsBell({ className }: { className?: string }) {
         anchorRef={anchorRef}
         open={open}
         onClose={() => setOpen(false)}
-        className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden"
+        className="flex w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden"
+        // O popover rola sozinho por padrão. Aqui ele tem cabeçalho e rodapé próprios: se o
+        // painel inteiro rolasse, "Marcar tudo como lido" e "Ver todas" subiriam junto com a
+        // lista — e a lista rolando dentro de um painel que também rola dava dois scrolls.
+        panelStyle={{ overflowY: 'hidden' }}
         role="dialog"
         aria-label="Notificações"
       >
-        <div className="flex items-center justify-between gap-2 border-b border-doqyn-border-subtle px-3 py-2">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-doqyn-border-subtle px-3 py-2">
           <p className="register-label text-doqyn-subtle">Notificações</p>
           {unreadCount > 0 && (
             <button
@@ -66,7 +70,10 @@ export function NotificationsBell({ className }: { className?: string }) {
           )}
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto">
+        {/* `overflow-x-hidden` explícito: com um eixo em `auto` e o outro em `visible`, o
+            navegador promove o `visible` para `auto` — e aparecia uma barra horizontal por
+            causa dos títulos longos. */}
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <NotificationList
             notifications={notifications}
             isLoading={isLoading}
@@ -78,7 +85,7 @@ export function NotificationsBell({ className }: { className?: string }) {
 
         {/* Ir para a lista completa é navegação, não decisão: link de texto,
             não um botão de largura total dentro de um popover de 24rem. */}
-        <div className="flex justify-end border-t border-doqyn-border-subtle px-3 py-2">
+        <div className="flex shrink-0 justify-end border-t border-doqyn-border-subtle px-3 py-2">
           <button
             type="button"
             onClick={() => {

@@ -50,6 +50,22 @@ function expiryTone(daysRemaining: number): string {
   return 'text-doqyn-subtle';
 }
 
+/**
+ * Para onde o aviso leva.
+ *
+ * Todos iam para a Biblioteca, que é a lista dos documentos **da organização** — quem recebeu um
+ * compartilhamento ou um pedido de assinatura não encontra o documento lá, e o clique terminava
+ * numa lista sem o item. Cada tipo aponta para a lista onde aquele documento de fato aparece.
+ */
+function targetFor(notification: AppNotification): string | null {
+  if (!notification.documentId) return null;
+  const query = `?documentId=${encodeURIComponent(notification.documentId)}`;
+
+  if (notification.type === 'document_shared') return `/biblioteca/compartilhados${query}`;
+  if (notification.type === 'signature_required') return `/biblioteca/assinaturas${query}`;
+  return `/biblioteca${query}`;
+}
+
 function formatMoment(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
@@ -85,6 +101,7 @@ export function NotificationList({
     <ul className="divide-y divide-doqyn-border-subtle/75">
       {notifications.map((notification) => {
         const daysRemaining = notification.expiry?.daysRemaining;
+        const target = targetFor(notification);
 
         return (
           <li
@@ -117,10 +134,15 @@ export function NotificationList({
                 ) : null}
               </div>
 
-              {notification.documentId ? (
+              {target ? (
                 <Link
-                  to={`/biblioteca?documentId=${encodeURIComponent(notification.documentId)}`}
-                  className="mt-1 block text-label text-doqyn-text underline-offset-4 hover:underline"
+                  to={target}
+                  className={cn(
+                    'mt-1 block break-words text-label text-doqyn-text underline-offset-4 hover:underline',
+                    // No sino o espaço é de 24rem: título de quatro linhas empurra o resto da
+                    // lista para fora da vista. Na página inteira o título aparece completo.
+                    compact && 'line-clamp-2',
+                  )}
                   onClick={() => {
                     if (notification.status === 'unread') onMarkRead(notification.id);
                   }}
@@ -128,11 +150,25 @@ export function NotificationList({
                   {notification.title}
                 </Link>
               ) : (
-                <p className="mt-1 text-label text-doqyn-text">{notification.title}</p>
+                <p
+                  className={cn(
+                    'mt-1 break-words text-label text-doqyn-text',
+                    compact && 'line-clamp-2',
+                  )}
+                >
+                  {notification.title}
+                </p>
               )}
 
               {notification.body ? (
-                <p className="mt-0.5 text-caption text-doqyn-muted">{notification.body}</p>
+                <p
+                  className={cn(
+                    'mt-0.5 break-words text-caption text-doqyn-muted',
+                    compact && 'line-clamp-2',
+                  )}
+                >
+                  {notification.body}
+                </p>
               ) : null}
             </div>
 
