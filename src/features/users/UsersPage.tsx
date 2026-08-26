@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
+import { Modal } from '@/components/ui/Modal';
 import { PromptDialog } from '@/components/ui/PromptDialog';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { MemberStatusBadge } from '@/components/ui/MemberStatusBadge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
 import { DataTable } from '@/components/ui/DataTable';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { Icon } from '@/components/ui/Icon';
@@ -378,62 +378,62 @@ export function UsersPage() {
       />
 
       {approvingMember && (
-        <div className="modal-overlay-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto">
-            <CardContent className="space-y-1 p-6">
-              <h2 className="mb-4 text-lg font-medium">
-                Aprovar {memberDisplayName(approvingMember)}
-              </h2>
-              <AccessRequestDetailsPanel
-                member={approvingMember}
-                className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
-              />
-              {suggestGroupsFromDepartment(
-                approvingMember.requestedAccess?.departmentText,
-                documentGroups,
-              ).length > 0 && (
-                <p className="mb-4 text-xs text-doqyn-muted">
-                  Sugestão: talvez corresponda ao grupo{' '}
-                  {documentGroups
-                    .filter((g) =>
-                      suggestGroupsFromDepartment(
-                        approvingMember.requestedAccess?.departmentText,
-                        documentGroups,
-                      ).includes(g.id),
-                    )
-                    .map((g) => g.name)
-                    .join(', ')}
-                </p>
-              )}
-              <PlatformRolesSection
-                value={accessForm.platformRoles}
-                onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
-              />
-              <DocumentGroupsSection
-                groups={documentGroups}
-                value={accessForm.documentGroupIds}
-                onChange={(documentGroupIds) => setAccessForm((f) => ({ ...f, documentGroupIds }))}
-              />
-              <NotificationsSection
-                value={accessForm.notificationPreferences}
-                onChange={(notificationPreferences) =>
-                  setAccessForm((f) => ({ ...f, notificationPreferences }))
-                }
-              />
-              <div className="flex justify-end gap-2 border-t border-doqyn-border-subtle pt-4">
-                <Button variant="secondary" onClick={() => setApprovingMember(null)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => approveMutation.mutate()}
-                  disabled={approveMutation.isPending}
-                >
-                  {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Modal
+          open
+          onClose={() => setApprovingMember(null)}
+          title={`Aprovar ${memberDisplayName(approvingMember)}`}
+          subtitle={approvingMember.email}
+          size="lg"
+          // Papel, grupos e avisos já escolhidos: clicar fora não descarta em silêncio.
+          dismissOnOverlay={false}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setApprovingMember(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
+                {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
+              </Button>
+            </>
+          }
+        >
+          <AccessRequestDetailsPanel
+            member={approvingMember}
+            className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
+          />
+          {suggestGroupsFromDepartment(
+            approvingMember.requestedAccess?.departmentText,
+            documentGroups,
+          ).length > 0 && (
+            <p className="mb-4 text-xs text-doqyn-muted">
+              Sugestão: talvez corresponda ao grupo{' '}
+              {documentGroups
+                .filter((g) =>
+                  suggestGroupsFromDepartment(
+                    approvingMember.requestedAccess?.departmentText,
+                    documentGroups,
+                  ).includes(g.id),
+                )
+                .map((g) => g.name)
+                .join(', ')}
+            </p>
+          )}
+          <PlatformRolesSection
+            value={accessForm.platformRoles}
+            onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
+          />
+          <DocumentGroupsSection
+            groups={documentGroups}
+            value={accessForm.documentGroupIds}
+            onChange={(documentGroupIds) => setAccessForm((f) => ({ ...f, documentGroupIds }))}
+          />
+          <NotificationsSection
+            value={accessForm.notificationPreferences}
+            onChange={(notificationPreferences) =>
+              setAccessForm((f) => ({ ...f, notificationPreferences }))
+            }
+          />
+        </Modal>
       )}
 
       {editingMember && editAccessBaseline && (
