@@ -19,14 +19,11 @@ function withRouteSuspense(LazyComponent: ReturnType<typeof lazyNamed>) {
 }
 
 const LazyAuditPage = lazyNamed(() => import('@/features/audit/AuditPage'), 'AuditPage');
-const LazyRulesRoute = lazyNamed(
-  () => import('@/features/rules/RulesRoute'),
-  'RulesRoute',
-);
+const LazyRulesRoute = lazyNamed(() => import('@/features/rules/RulesRoute'), 'RulesRoute');
 const LazyMatrixPage = lazyNamed(() => import('@/features/matrix/MatrixPage'), 'MatrixPage');
-const LazyExpiryAlertsPage = lazyNamed(
-  () => import('@/features/expiry/ExpiryAlertsPage'),
-  'ExpiryAlertsPage',
+const LazyNotificationsPage = lazyNamed(
+  () => import('@/features/notifications/NotificationsPage'),
+  'NotificationsPage',
 );
 const LazyLibraryPage = lazyNamed(() => import('@/features/library/LibraryPage'), 'LibraryPage');
 const LazyDocumentSendPage = lazyNamed(
@@ -37,8 +34,14 @@ const LazyUserManagementRoute = lazyNamed(
   () => import('@/features/users/UserManagementRoute'),
   'UserManagementRoute',
 );
-const LazySettingsPage = lazyNamed(() => import('@/features/documents/SettingsPage'), 'SettingsPage');
-const LazyDashboardPage = lazyNamed(() => import('@/features/documents/DashboardPage'), 'DashboardPage');
+const LazySettingsPage = lazyNamed(
+  () => import('@/features/documents/SettingsPage'),
+  'SettingsPage',
+);
+const LazyDashboardPage = lazyNamed(
+  () => import('@/features/documents/DashboardPage'),
+  'DashboardPage',
+);
 const LazyVersioningPage = lazyNamed(
   () => import('@/features/versioning/VersioningPage'),
   'VersioningPage',
@@ -106,7 +109,7 @@ export const SignatureVerificationRoute = withRouteSuspense(LazySignatureVerific
 export const InternalSignatureRoute = withRouteSuspense(LazyInternalSignaturePage);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesRoute);
-export const ExpiryAlertsRoute = withRouteSuspense(LazyExpiryAlertsPage);
+export const NotificationsRoute = withRouteSuspense(LazyNotificationsPage);
 export const MatrixRoute = withRouteSuspense(LazyMatrixPage);
 export const LibraryRoute = withRouteSuspense(LazyLibraryPage);
 export const DocumentSendRoute = withRouteSuspense(LazyDocumentSendPage);

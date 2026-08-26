@@ -1,24 +1,5 @@
 import { authFetch } from '@/auth/apiAuth';
 
-export type ExpiryAlertStatus = 'unread' | 'read' | 'dismissed';
-
-export type ExpiryAlert = {
-  id: string;
-  documentId: string;
-  documentName: string;
-  categoryName?: string;
-  validityDate: string;
-  daysRemaining: number;
-  offsetDays: number;
-  status: ExpiryAlertStatus;
-  createdAt: string;
-};
-
-export type ExpiryAlertsResponse = {
-  items: ExpiryAlert[];
-  unreadCount: number;
-};
-
 export type MetadataFieldPatch = {
   key: string;
   label?: string;
@@ -73,39 +54,6 @@ export type MetadataUpdateResponse = {
 async function parseError(response: Response): Promise<Error> {
   const body = (await response.json().catch(() => null)) as { message?: string } | null;
   return new Error(body?.message ?? `HTTP ${response.status}`);
-}
-
-export async function listExpiryAlerts(params?: {
-  status?: ExpiryAlertStatus;
-  limit?: number;
-}): Promise<ExpiryAlertsResponse> {
-  const query = new URLSearchParams();
-  if (params?.status) query.set('status', params.status);
-  if (params?.limit) query.set('limit', String(params.limit));
-
-  const suffix = query.toString() ? `?${query.toString()}` : '';
-  const response = await authFetch(`/api/expiry-alerts${suffix}`);
-  if (!response.ok) throw await parseError(response);
-  return (await response.json()) as ExpiryAlertsResponse;
-}
-
-export async function updateExpiryAlert(
-  alertId: string,
-  status: 'read' | 'dismissed',
-): Promise<{ alert: ExpiryAlert }> {
-  const response = await authFetch(`/api/expiry-alerts/${encodeURIComponent(alertId)}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  if (!response.ok) throw await parseError(response);
-  return (await response.json()) as { alert: ExpiryAlert };
-}
-
-export async function markAllExpiryAlertsRead(): Promise<{ updated: number }> {
-  const response = await authFetch('/api/expiry-alerts', { method: 'POST' });
-  if (!response.ok) throw await parseError(response);
-  return (await response.json()) as { updated: number };
 }
 
 export async function getDocumentMetadataSheet(documentId: string): Promise<DocumentMetadataSheet> {

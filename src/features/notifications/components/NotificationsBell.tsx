@@ -3,22 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { useExpiryAlerts } from '../hooks/useExpiryAlerts';
-import { ExpiryAlertList } from './ExpiryAlertList';
+import { useNotifications } from '../hooks/useNotifications';
+import { NotificationList } from './NotificationList';
 
 /** Acima disto o contador vira "9+" — o objetivo é sinalizar acúmulo, não a contagem exata. */
 const BADGE_CAP = 9;
 
-export function ExpiryAlertsBell({ className }: { className?: string }) {
+export function NotificationsBell({ className }: { className?: string }) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  // Só não lidos: sem o filtro, "Dispensar" não removia o alerta da lista e a ação parecia
-  // não fazer nada.
-  const { alerts, unreadCount, isLoading, markRead, dismiss, markAllRead } = useExpiryAlerts({
-    status: 'unread',
-    limit: 10,
-  });
+  // Só não lidas: sem o filtro, "Dispensar" não removia o item da lista e a ação parecia não
+  // fazer nada.
+  const { notifications, unreadCount, isLoading, markRead, dismiss, markAllRead } =
+    useNotifications({
+      status: 'unread',
+      limit: 10,
+    });
 
   return (
     <>
@@ -26,11 +27,7 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
         ref={anchorRef}
         type="button"
         className={className}
-        aria-label={
-          unreadCount > 0
-            ? `Alertas de vencimento (${unreadCount} não lidos)`
-            : 'Alertas de vencimento'
-        }
+        aria-label={unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : 'Notificações'}
         onClick={() => setOpen((value) => !value)}
       >
         <span className="relative inline-flex">
@@ -54,10 +51,10 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
         onClose={() => setOpen(false)}
         className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden"
         role="dialog"
-        aria-label="Alertas de vencimento"
+        aria-label="Notificações"
       >
         <div className="flex items-center justify-between gap-2 border-b border-doqyn-border-subtle px-3 py-2">
-          <p className="register-label text-doqyn-subtle">Vencimentos</p>
+          <p className="register-label text-doqyn-subtle">Notificações</p>
           {unreadCount > 0 && (
             <button
               type="button"
@@ -70,8 +67,8 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto">
-          <ExpiryAlertList
-            alerts={alerts}
+          <NotificationList
+            notifications={notifications}
             isLoading={isLoading}
             onMarkRead={markRead}
             onDismiss={dismiss}
@@ -86,11 +83,11 @@ export function ExpiryAlertsBell({ className }: { className?: string }) {
             type="button"
             onClick={() => {
               setOpen(false);
-              void navigate('/vencimentos');
+              void navigate('/notificacoes');
             }}
             className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
           >
-            Ver todos
+            Ver todas
           </button>
         </div>
       </AnchoredPopover>

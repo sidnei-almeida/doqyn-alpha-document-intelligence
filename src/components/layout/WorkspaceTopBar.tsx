@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { ExpiryAlertsBell } from '@/features/expiry/components/ExpiryAlertsBell';
+import { NotificationsBell } from '@/features/notifications/components/NotificationsBell';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 
 /** Barra superior — fio de separação, busca contida e glifos soltos. */
@@ -24,7 +24,7 @@ export function WorkspaceTopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <ExpiryAlertsBell className={iconButtonClass} />
+        <NotificationsBell className={iconButtonClass} />
         <a
           href="https://doqyn.com"
           target="_blank"
