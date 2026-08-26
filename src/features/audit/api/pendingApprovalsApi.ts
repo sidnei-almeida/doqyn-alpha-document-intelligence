@@ -79,6 +79,21 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
   return (data.items ?? []).map(toPendingApprovalItem);
 }
 
+/**
+ * Pedidos sobre documento decidem-se pelo endpoint de aprovações; os de pessoa, pelo de membros.
+ *
+ * A distinção é o que separa "recusar este download" de "recusar o acesso desta pessoa" — sem
+ * ela, recusar um pedido de download expulsaria o solicitante da empresa.
+ */
+const DOCUMENT_KINDS: ReadonlySet<PendingApprovalItem['type']> = new Set([
+  'document_upload',
+  'document_download',
+]);
+
+export function isDocumentApproval(item: PendingApprovalItem): boolean {
+  return DOCUMENT_KINDS.has(item.type);
+}
+
 export type ApprovalDecision = 'approved' | 'rejected';
 
 export async function decideApprovalRequest(
@@ -86,12 +101,15 @@ export async function decideApprovalRequest(
   decision: ApprovalDecision,
   reason?: string,
 ): Promise<void> {
-  const response = await authFetch(`/api/approval-requests/${encodeURIComponent(requestId)}/decide`, {
-    method: 'POST',
-    credentials: getFetchCredentials(),
-    headers: { ...withAuthHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ decision, reason }),
-  });
+  const response = await authFetch(
+    `/api/approval-requests/${encodeURIComponent(requestId)}/decide`,
+    {
+      method: 'POST',
+      credentials: getFetchCredentials(),
+      headers: { ...withAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision, reason }),
+    },
+  );
 
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { message?: string };

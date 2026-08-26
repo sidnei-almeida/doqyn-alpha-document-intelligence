@@ -25,9 +25,10 @@ export async function listDocumentUploadApprovals(): Promise<DocumentUploadAppro
     headers: withAuthHeaders(),
   });
 
-  const data = (await response.json().catch(() => null)) as
-    | { approvals?: DocumentUploadApprovalRecord[]; message?: string }
-    | null;
+  const data = (await response.json().catch(() => null)) as {
+    approvals?: DocumentUploadApprovalRecord[];
+    message?: string;
+  } | null;
 
   if (!response.ok) {
     throw new Error(data?.message ?? 'Não foi possível carregar envios pendentes.');
@@ -48,9 +49,12 @@ export async function approveDocumentUploadApproval(approvalId: string): Promise
     body: '{}',
   });
 
-  const data = (await response.json().catch(() => null)) as
-    | { documentId?: string; versionId?: string; approvalId?: string; message?: string }
-    | null;
+  const data = (await response.json().catch(() => null)) as {
+    documentId?: string;
+    versionId?: string;
+    approvalId?: string;
+    message?: string;
+  } | null;
 
   if (!response.ok || !data?.documentId || !data.versionId) {
     throw new Error(data?.message ?? 'Não foi possível aprovar o envio.');

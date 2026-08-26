@@ -36,7 +36,18 @@ export function fromPermissionState(state: GovernancePermissionState): Governanc
  * pedido por documento consultado, o que não é uma configuração inconveniente — é um jeito de
  * derrubar a Biblioteca. O terceiro estado só faz sentido para verbo que produz efeito.
  */
-export const REQUIRABLE_PERMISSIONS = ['download', 'update', 'share'] as const;
+export const REQUIRABLE_PERMISSIONS = ['download'] as const;
+
+/**
+ * Verbos que aceitarão o meio-termo quando tiverem portão.
+ *
+ * `update` e `share` são candidatos naturais — produzem efeito, e compartilhar foi o caso que
+ * originou o pedido. Ficam de fora **até existir caminho para pedir**: hoje a autorização já falha
+ * fechado em `require`, então oferecer o estado na tela criaria uma porta que tranca sem ter
+ * campainha. `update` ainda precisa decidir o que "retomar" significa em renomear, mover e nova
+ * versão, que são três imposições com efeitos diferentes.
+ */
+export const REQUIRABLE_WHEN_GATED = ['update', 'share'] as const;
 
 export type RequirablePermission = (typeof REQUIRABLE_PERMISSIONS)[number];
 

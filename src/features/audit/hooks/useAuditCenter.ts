@@ -3,16 +3,14 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useAuth } from '@/features/auth/useAuth';
-import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  usersApi,
-} from '@/features/users/api/usersApi';
+import { DEFAULT_NOTIFICATION_PREFERENCES, usersApi } from '@/features/users/api/usersApi';
 import { invalidateUserManagementQueries } from '@/features/users/userManagementQueries';
 import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
 import {
   decideApprovalRequest,
+  isDocumentApproval,
   listPendingApprovals,
   type PendingApprovalItem,
 } from '../api/pendingApprovalsApi';
@@ -107,15 +105,12 @@ export function useAuditCenter(documentId?: string) {
       accessGroupIds: string[];
       documentGroupIds: string[];
     }) =>
-      usersApi.approve(
-        item.membershipId,
-        {
-          platformRoles,
-          accessGroupIds,
-          documentGroupIds,
-          notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-        },
-      ),
+      usersApi.approve(item.membershipId, {
+        platformRoles,
+        accessGroupIds,
+        documentGroupIds,
+        notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
+      }),
     onSuccess: async () => {
       toast.success('Solicitação aprovada com sucesso.');
       await invalidateAll();
@@ -125,8 +120,8 @@ export function useAuditCenter(documentId?: string) {
 
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
-      if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-        return decideApprovalRequest(item.documentUpload.approvalId, 'rejected', reason);
+      if (isDocumentApproval(item)) {
+        return decideApprovalRequest(item.id, 'rejected', reason);
       }
       return usersApi.reject(item.membershipId, reason).then(() => undefined);
     },

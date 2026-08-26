@@ -1,9 +1,5 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
-import type {
-  AuditEventFilters,
-  AuditEventsResponse,
-  AuditOverview,
-} from '@/types/audit';
+import type { AuditEventFilters, AuditEventsResponse, AuditOverview } from '@/types/audit';
 
 const API_BASE = '/api';
 

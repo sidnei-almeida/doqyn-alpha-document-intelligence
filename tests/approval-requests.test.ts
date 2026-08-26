@@ -158,7 +158,10 @@ describe('governança — terceiro estado', () => {
     const types = read('server/db/types.ts');
 
     assert.ok(shared.includes("export type GovernancePermissionValue = boolean | 'require'"));
-    assert.ok(shared.includes("REQUIRABLE_PERMISSIONS = ['download', 'update', 'share']"));
+    // Só o verbo que tem portão oferece o meio-termo: sem caminho para pedir, o estado trancaria
+    // a porta sem campainha.
+    assert.ok(shared.includes("REQUIRABLE_PERMISSIONS = ['download']"));
+    assert.ok(shared.includes("REQUIRABLE_WHEN_GATED = ['update', 'share']"));
     assert.ok(types.includes('view: GovernancePermissionValue'));
   });
 
@@ -174,7 +177,9 @@ describe('governança — terceiro estado', () => {
   it('canX falha fechado: require não conta como pode agora', () => {
     const access = read('server/tenancy/documentAccess.ts');
 
-    assert.ok(access.includes("const canDownload = isAdmin || isOwner || downloadState === 'allow'"));
+    assert.ok(
+      access.includes("const canDownload = isAdmin || isOwner || downloadState === 'allow'"),
+    );
     assert.ok(access.includes('requiresApproval'));
     assert.ok(access.includes('DOCUMENT_APPROVAL_REQUIRED'));
   });
@@ -188,5 +193,37 @@ describe('governança — terceiro estado', () => {
     // Pedido pendente não vira um segundo pedido.
     assert.ok(gate.includes("kind, 'pending'"));
     assert.ok(file.includes('resolveDocumentApproval'));
+  });
+});
+
+describe('aprovações — armadilhas do modelo', () => {
+  it('o único inclui quem pediu, e só vale com documento no assunto', () => {
+    const indexes = read('server/db/approvalRequestIndexes.ts');
+
+    // Sem o requerente na chave, o segundo a pedir o mesmo documento não conseguiria pedir.
+    assert.ok(indexes.includes("'requestedBy.userId': 1"));
+    // Pedido de envio não tem documento, e o Mongo indexa campo ausente como null.
+    assert.ok(indexes.includes("'subject.documentId': { $exists: true }"));
+    // O índice da primeira versão precisa cair pelo nome: a forma da chave mudou.
+    assert.ok(indexes.includes('SUPERSEDED_INDEXES'));
+  });
+
+  it('pedido sem aprovador é recusado, não gravado', () => {
+    const service = read('server/services/approvals/approvalRequestService.ts');
+    assert.ok(service.includes('APPROVAL_NO_APPROVER'));
+  });
+
+  it('recusar pedido de documento não recusa a pessoa', () => {
+    const api = read('src/features/audit/api/pendingApprovalsApi.ts');
+    const hook = read('src/features/audit/hooks/useAuditCenter.ts');
+
+    assert.ok(api.includes('export function isDocumentApproval'));
+    assert.ok(hook.includes('if (isDocumentApproval(item))'));
+  });
+
+  it('pedir aprovação não aparece como erro', () => {
+    const feedback = read('src/shared/feedback/appFeedback.ts');
+    assert.ok(feedback.includes("error.code === 'DOCUMENT_APPROVAL_REQUIRED'"));
+    assert.ok(feedback.includes("showAppToast({ type: 'info'"));
   });
 });

@@ -15,7 +15,7 @@ import { PendingApprovalReviewDialog } from './components/PendingApprovalReviewD
 import { PendingApprovalsList } from './components/PendingApprovalsList';
 import { RejectApprovalDialog } from './components/RejectApprovalDialog';
 import { useAuditCenter } from './hooks/useAuditCenter';
-import type { PendingApprovalItem } from './api/pendingApprovalsApi';
+import { isDocumentApproval, type PendingApprovalItem } from './api/pendingApprovalsApi';
 import type { AuditEvent } from '@/types/audit';
 import type { AuditTabId } from './utils/auditDisplay';
 
@@ -139,8 +139,8 @@ export function AuditPage() {
                 loading={pendingLoading}
                 onReview={setReviewItem}
                 onApprove={(item) => {
-                  if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-                    approveDocumentUploadMutation.mutate(item.documentUpload.approvalId);
+                  if (isDocumentApproval(item)) {
+                    approveDocumentUploadMutation.mutate(item.id);
                     return;
                   }
                   setApproveItem(item);
@@ -222,8 +222,8 @@ export function AuditPage() {
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
           setReviewItem(null);
-          if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-            approveDocumentUploadMutation.mutate(item.documentUpload.approvalId, {
+          if (isDocumentApproval(item)) {
+            approveDocumentUploadMutation.mutate(item.id, {
               onSuccess: () => setApproveItem(null),
             });
             return;
@@ -237,8 +237,8 @@ export function AuditPage() {
       />
 
       <ApproveApprovalDialog
-        open={Boolean(approveItem) && approveItem?.type !== 'document_upload'}
-        item={approveItem?.type === 'document_upload' ? null : approveItem}
+        open={Boolean(approveItem) && !!approveItem && !isDocumentApproval(approveItem)}
+        item={approveItem && isDocumentApproval(approveItem) ? null : approveItem}
         documentGroups={documentGroups}
         saving={approveMutation.isPending}
         onClose={() => setApproveItem(null)}

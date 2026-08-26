@@ -48,7 +48,13 @@ export type PendingApprovalDto = {
    * suficiente para operar, não o suficiente para decidir.
    */
   accessRequest?: AuthAccessRequestSnapshot;
-  /** Presente em `document_upload`. */
+  /** O que se pede, sobre o quê. Presente em todo pedido de documento. */
+  subject?: {
+    documentId?: string;
+    documentName?: string;
+    categoryName?: string;
+  };
+  /** Presente só em `document_upload` — é o cartão de revisão do arquivo enviado. */
   documentUpload?: {
     approvalId: string;
     originalFileName: string;
@@ -140,12 +146,22 @@ function mapApprovalRequest(request: MongoApprovalRequest): PendingApprovalDto {
       email: request.requestedBy.email,
     },
     tenantId: request.tenantId,
-    documentUpload: {
-      approvalId: request._id,
-      originalFileName: request.subject.documentName ?? '—',
-      classId: request.subject.categoryId ?? null,
-      className: request.subject.categoryName ?? null,
-      payload: request.payload,
+    // `documentUpload` é o formato que o cartão de revisão já lê, e só o envio o preenche. Um
+    // pedido de download não tem arquivo a revisar — tem documento a liberar, que vai em `subject`.
+    documentUpload:
+      request.kind === 'document_upload'
+        ? {
+            approvalId: request._id,
+            originalFileName: request.subject.documentName ?? '—',
+            classId: request.subject.categoryId ?? null,
+            className: request.subject.categoryName ?? null,
+            payload: request.payload,
+          }
+        : undefined,
+    subject: {
+      documentId: request.subject.documentId,
+      documentName: request.subject.documentName,
+      categoryName: request.subject.categoryName,
     },
   };
 }
@@ -220,6 +236,14 @@ export async function listPendingApprovalsForTenant(
       .map((request) => [request.membershipId as string, request]),
   );
 
+  /**
+   * Os membros não paginam.
+   *
+   * Só os pedidos têm cursor, e a lista sai ordenada do mais recente. Enquanto a fila couber numa
+   * página — que é o caso de qualquer tenant real hoje — a mistura não aparece. Quando um tenant
+   * passar disso, membros e pedidos precisam paginar pela mesma chave, e o caminho é o inverso:
+   * pedido de acesso vira `MongoApprovalRequest` também, e some a fusão.
+   */
   const items = [
     ...members
       .filter((member) => member.status === 'pending')

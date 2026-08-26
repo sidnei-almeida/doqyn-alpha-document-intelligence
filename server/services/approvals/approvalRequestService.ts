@@ -62,6 +62,18 @@ export async function createApprovalRequest(
   assertMongo();
 
   const decidableBy = await resolveApprovers(input.tenantId);
+
+  // Sem aprovador o pedido nasceria invisível: ninguém o veria na fila, e ele ficaria pendente
+  // para sempre. É estado inconsistente do tenant, não erro de quem pediu — recusar aqui, com
+  // mensagem que diz o que houve, é melhor do que gravar um pedido que nunca será decidido.
+  if (decidableBy.length === 0) {
+    throw new ServiceError(
+      'Esta empresa não tem administrador ativo para aprovar o pedido.',
+      'APPROVAL_NO_APPROVER',
+      409,
+    );
+  }
+
   const now = new Date();
   const request: MongoApprovalRequest = {
     _id: `${APPROVAL_REQUEST_ID_PREFIX}${randomUUID()}`,
@@ -78,7 +90,25 @@ export async function createApprovalRequest(
   };
 
   const collection = await getApprovalRequestsCollection();
-  await collection.insertOne(request);
+
+  try {
+    await collection.insertOne(request);
+  } catch (error) {
+    // Dois cliques no mesmo botão, ou duas abas. O índice único é quem resolve a corrida; aqui só
+    // devolvemos o pedido que ganhou, em vez de estourar um erro que o usuário não causou.
+    if ((error as { code?: number }).code === 11000) {
+      const existing = await collection.findOne({
+        tenantId: input.tenantId,
+        kind: input.kind,
+        status: 'pending',
+        'requestedBy.userId': input.requestedBy.userId,
+        'subject.documentId': input.subject.documentId,
+      } as Record<string, unknown>);
+      if (existing) return existing;
+    }
+    throw error;
+  }
+
   await notifyApprovalRequested(request);
   return request;
 }
