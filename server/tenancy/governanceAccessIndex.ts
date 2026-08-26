@@ -1,3 +1,7 @@
+import {
+  toPermissionState,
+  type GovernancePermissionState,
+} from '../../shared/governancePermissions.js';
 import type { MongoDocumentAccessPermissions, MongoDocumentAccessRule } from '../db/types.js';
 import { listDocumentAccessRules } from '../services/documentAccessRulesService.js';
 
@@ -15,12 +19,21 @@ import { listDocumentAccessRules } from '../services/documentAccessRulesService.
  */
 export type GovernancePermissionKey = 'view' | 'download' | 'update' | 'audit' | 'share';
 
+/**
+ * Por categoria, o estado de cada grupo naquele verbo.
+ *
+ * Era `Set<groupId>` — quem estava no conjunto podia. Virou mapa porque o conjunto não sabe
+ * responder "pode pedindo": manter dois conjuntos por verbo dobraria a estrutura e deixaria dois
+ * lugares onde um grupo pode aparecer, com a pergunta óbvia do que fazer quando aparece nos dois.
+ */
+export type GovernanceCategoryStates = Map<string, Map<string, GovernancePermissionState>>;
+
 export type GovernanceAccessIndex = {
-  viewByCategory: Map<string, Set<string>>;
-  downloadByCategory: Map<string, Set<string>>;
-  updateByCategory: Map<string, Set<string>>;
-  auditByCategory: Map<string, Set<string>>;
-  shareByCategory: Map<string, Set<string>>;
+  viewByCategory: GovernanceCategoryStates;
+  downloadByCategory: GovernanceCategoryStates;
+  updateByCategory: GovernanceCategoryStates;
+  auditByCategory: GovernanceCategoryStates;
+  shareByCategory: GovernanceCategoryStates;
 };
 
 /** Tradução campo persistido → bucket. É a única fronteira que conhece os nomes legados. */
@@ -53,13 +66,26 @@ function createEmptyGovernanceAccessIndex(): GovernanceAccessIndex {
   };
 }
 
+/**
+ * Estado mais permissivo vence quando o mesmo grupo cai duas vezes na mesma célula.
+ *
+ * Duas regras ativas para (grupo, categoria) não deveriam existir — o upsert é por par — mas dado
+ * herdado pode ter. Escolher o mais permissivo mantém o comportamento anterior, em que bastava uma
+ * regra dizer `true` para o grupo entrar no conjunto.
+ */
+const STATE_RANK: Record<GovernancePermissionState, number> = { deny: 0, require: 1, allow: 2 };
+
 function addGroupToCategoryBucket(
-  bucket: Map<string, Set<string>>,
+  bucket: GovernanceCategoryStates,
   categoryId: string,
   groupId: string,
+  state: GovernancePermissionState,
 ): void {
-  const current = bucket.get(categoryId) ?? new Set<string>();
-  current.add(groupId);
+  const current = bucket.get(categoryId) ?? new Map<string, GovernancePermissionState>();
+  const previous = current.get(groupId);
+  if (!previous || STATE_RANK[state] > STATE_RANK[previous]) {
+    current.set(groupId, state);
+  }
   bucket.set(categoryId, current);
 }
 
@@ -73,8 +99,9 @@ export function buildGovernanceAccessIndex(
     if (!rule.categoryId || !rule.groupId) continue;
 
     for (const { storedKey, target } of PERMISSION_BUCKETS) {
-      if (!rule.permissions[storedKey]) continue;
-      addGroupToCategoryBucket(index[target], rule.categoryId, rule.groupId);
+      const state = toPermissionState(rule.permissions[storedKey]);
+      if (state === 'deny') continue;
+      addGroupToCategoryBucket(index[target], rule.categoryId, rule.groupId, state);
     }
   }
 
@@ -96,18 +123,61 @@ export async function loadGovernanceAccessIndex(
   );
 }
 
+/**
+ * O estado do usuário naquele verbo, sobre aquela categoria.
+ *
+ * O grupo mais permissivo vence: quem está em Gestão e em Comercial compartilha direto, porque
+ * pertencer a mais grupos nunca pode tirar direito.
+ */
+export function resolveGovernanceCategoryPermission(
+  index: GovernanceAccessIndex | undefined,
+  categoryId: string | undefined,
+  memberGroupIds: string[],
+  permission: GovernancePermissionKey,
+): GovernancePermissionState {
+  if (!index || !categoryId?.trim() || memberGroupIds.length === 0) return 'deny';
+
+  const states = index[BUCKET_BY_PERMISSION[permission]].get(categoryId);
+  if (!states?.size) return 'deny';
+
+  let best: GovernancePermissionState = 'deny';
+  for (const groupId of memberGroupIds) {
+    const state = states.get(groupId);
+    if (state && STATE_RANK[state] > STATE_RANK[best]) best = state;
+  }
+  return best;
+}
+
+/**
+ * Mantido porque a maioria dos chamadores só quer saber se há caminho.
+ *
+ * `require` conta como "tem", e não como "pode agora": quem decide o que fazer com o caminho do
+ * meio é `documentAccess.ts`, que chama `resolveGovernanceCategoryPermission`. Tratar `require`
+ * como negado aqui esconderia a categoria de quem pode pedir acesso a ela.
+ */
 export function userHasGovernanceCategoryPermission(
   index: GovernanceAccessIndex | undefined,
   categoryId: string | undefined,
   memberGroupIds: string[],
   permission: GovernancePermissionKey,
 ): boolean {
-  if (!index || !categoryId?.trim() || memberGroupIds.length === 0) return false;
+  return (
+    resolveGovernanceCategoryPermission(index, categoryId, memberGroupIds, permission) !== 'deny'
+  );
+}
 
-  const allowedGroups = index[BUCKET_BY_PERMISSION[permission]].get(categoryId);
-  if (!allowedGroups?.size) return false;
-
-  return memberGroupIds.some((groupId) => allowedGroups.has(groupId));
+/**
+ * Grupos com algum caminho para o verbo naquela categoria — liberado ou mediante pedido.
+ *
+ * Quem só precisa saber "quem alcança isto" — audiência de notificação, alerta de vencimento, a
+ * Matriz — quer os dois. Distinguir é trabalho de quem vai executar a ação.
+ */
+export function groupIdsReaching(
+  bucket: GovernanceCategoryStates,
+  categoryId: string | undefined,
+): Set<string> {
+  if (!categoryId) return new Set();
+  return new Set(bucket.get(categoryId)?.keys() ?? []);
 }
 
 export function listGovernanceViewableCategoryIds(
@@ -119,8 +189,8 @@ export function listGovernanceViewableCategoryIds(
   const memberGroupSet = new Set(memberGroupIds);
   const categoryIds: string[] = [];
 
-  for (const [categoryId, allowedGroups] of index.viewByCategory.entries()) {
-    for (const groupId of allowedGroups) {
+  for (const [categoryId, states] of index.viewByCategory.entries()) {
+    for (const groupId of states.keys()) {
       if (memberGroupSet.has(groupId)) {
         categoryIds.push(categoryId);
         break;

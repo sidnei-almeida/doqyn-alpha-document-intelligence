@@ -1,3 +1,4 @@
+import type { GovernancePermissionValue } from '../../shared/governancePermissions.js';
 import type { TenantUploadPolicy } from '../../shared/uploadPolicy.js';
 import type {
   NotificationChannel,
@@ -344,12 +345,23 @@ export type MongoDocumentGroupMember = {
   scope?: 'global' | 'tenant';
 };
 
+/**
+ * Permissões de uma regra grupo × categoria.
+ *
+ * Os campos guardam `boolean | 'require'`. `true`/`false` são o formato antigo e continuam
+ * válidos — não há migração. Nunca ler pelo valor cru: `if (permissions.share)` trataria
+ * `'require'` como liberado. Usar `toPermissionState` de `shared/governancePermissions.ts`.
+ *
+ * Os nomes `upload` e `manage` são herança do primeiro desenho e alimentam os verbos `update` e
+ * `audit`. Renomear exigiria migração de dados por ganho cosmético; a tradução vive em
+ * `server/tenancy/governanceAccessIndex.ts`.
+ */
 export type MongoDocumentAccessPermissions = {
-  view: boolean;
-  download: boolean;
-  upload: boolean;
-  share: boolean;
-  manage: boolean;
+  view: GovernancePermissionValue;
+  download: GovernancePermissionValue;
+  upload: GovernancePermissionValue;
+  share: GovernancePermissionValue;
+  manage: GovernancePermissionValue;
 };
 
 /** Regra de acesso: grupo × categoria. */
@@ -857,7 +869,7 @@ export type MongoDocumentUploadApproval = {
  * Cresce com os verbos da governança: quando a Matriz ganhar o terceiro estado, cada verbo que
  * cair em "pode, pedindo" cria um pedido deste mesmo formato.
  */
-export type ApprovalRequestKind = 'document_upload';
+export type ApprovalRequestKind = 'document_upload' | 'document_download';
 
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 

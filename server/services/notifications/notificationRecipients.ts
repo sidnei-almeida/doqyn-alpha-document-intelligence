@@ -1,6 +1,9 @@
 import type { MongoDocumentGroupMember } from '../../db/types.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
-import { loadGovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
+import {
+  groupIdsReaching,
+  loadGovernanceAccessIndex,
+} from '../../tenancy/governanceAccessIndex.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 
 /**
@@ -61,8 +64,8 @@ export async function resolveCategoryAudience(input: {
   if (input.categoryId) {
     const index = await loadGovernanceAccessIndex(input.tenantId);
     const reaching = new Set<string>([
-      ...(index.viewByCategory.get(input.categoryId) ?? []),
-      ...(index.downloadByCategory.get(input.categoryId) ?? []),
+      ...groupIdsReaching(index.viewByCategory, input.categoryId),
+      ...groupIdsReaching(index.downloadByCategory, input.categoryId),
     ]);
 
     const restriction = input.restrictToGroupIds?.length ? new Set(input.restrictToGroupIds) : null;

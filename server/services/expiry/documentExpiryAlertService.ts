@@ -10,7 +10,10 @@ import type {
 } from '../../db/types.js';
 import { listActiveTenantMemberUserIds } from '../tenantMembersService.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
-import { loadGovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
+import {
+  groupIdsReaching,
+  loadGovernanceAccessIndex,
+} from '../../tenancy/governanceAccessIndex.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -337,7 +340,10 @@ async function evaluateBusinessTenantExpiryAlerts(
   for (const [categoryId, config] of configByCategory) {
     groupsByCategory.set(
       categoryId,
-      resolveAlertGroupIds(governanceIndex.viewByCategory.get(categoryId), config.notifyGroupIds),
+      resolveAlertGroupIds(
+        groupIdsReaching(governanceIndex.viewByCategory, categoryId),
+        config.notifyGroupIds,
+      ),
     );
   }
 

@@ -19,15 +19,24 @@ import { logger } from '../../server/utils/logger.js';
  * Aqui os dois vocabulários são aceitos e normalizados para o formato persistido, e qualquer chave
  * desconhecida derruba a requisição com 400 em vez de virar regra inerte.
  */
+/**
+ * Cada verbo aceita `true`, `false` ou `'require'` — o terceiro estado, "pode pedindo".
+ *
+ * Quem decide se o verbo suporta o meio-termo é `upsertAccessRule`, que nivela para `allow` o que
+ * não suporta. Aqui a borda só valida a forma: recusar `'require'` em `view` com 400 obrigaria a
+ * tela a conhecer a regra, e ela já não conhece as outras.
+ */
+const permissionValue = z.union([z.boolean(), z.literal('require')]);
+
 const permissionsSchema = z
   .object({
-    view: z.boolean(),
-    download: z.boolean(),
-    share: z.boolean(),
-    upload: z.boolean().optional(),
-    manage: z.boolean().optional(),
-    update: z.boolean().optional(),
-    audit: z.boolean().optional(),
+    view: permissionValue,
+    download: permissionValue,
+    share: permissionValue,
+    upload: permissionValue.optional(),
+    manage: permissionValue.optional(),
+    update: permissionValue.optional(),
+    audit: permissionValue.optional(),
   })
   .strict()
   .transform((value) => ({

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import type {
-  MongoDocumentAccessPermissions,
-  MongoDocumentAccessRule,
-} from '../db/types.js';
+import {
+  fromPermissionState,
+  normalizePermissionState,
+  toPermissionState,
+} from '../../shared/governancePermissions.js';
+import type { MongoDocumentAccessPermissions, MongoDocumentAccessRule } from '../db/types.js';
 import { assertDocumentCategoryExists } from './documentCategoriesService.js';
 import { assertDocumentGroupExists } from './documentGroupsService.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
@@ -24,7 +26,43 @@ async function resolveContext(tenantId: string, opts?: ServiceOpts) {
 }
 
 function hasAnyPermission(permissions: MongoDocumentAccessPermissions): boolean {
-  return Object.values(permissions).some(Boolean);
+  return Object.values(permissions).some((value) => toPermissionState(value) !== 'deny');
+}
+
+/**
+ * Guarda de escrita do terceiro estado.
+ *
+ * `'require'` só vale para verbo que produz efeito. Gravado em `view` ou `manage` — os verbos de
+ * leitura — viraria um estado que a autorização não sabe honrar, e a listagem teria de criar um
+ * pedido por documento consultado. Aqui ele cai para `allow`, que é o que o administrador quis
+ * dizer ao marcar a célula.
+ *
+ * A tradução para o nome persistido acontece aqui porque é a fronteira de escrita: `upload` e
+ * `manage` são os campos gravados, `update` e `audit` são os verbos do domínio.
+ */
+const DOMAIN_VERB_BY_STORED_KEY: Record<DocumentAccessPermissionKey, string> = {
+  view: 'view',
+  download: 'download',
+  upload: 'update',
+  share: 'share',
+  manage: 'audit',
+};
+
+function normalizePermissions(
+  permissions: MongoDocumentAccessPermissions,
+): MongoDocumentAccessPermissions {
+  const entries = Object.entries(permissions) as Array<
+    [DocumentAccessPermissionKey, MongoDocumentAccessPermissions[DocumentAccessPermissionKey]]
+  >;
+
+  return Object.fromEntries(
+    entries.map(([key, value]) => [
+      key,
+      fromPermissionState(
+        normalizePermissionState(DOMAIN_VERB_BY_STORED_KEY[key], toPermissionState(value)),
+      ),
+    ]),
+  ) as MongoDocumentAccessPermissions;
 }
 
 export function serializeAccessRule(rule: MongoDocumentAccessRule) {
@@ -67,8 +105,9 @@ export async function upsertAccessRule(
 
   const { collections, scope, storage } = await resolveContext(tenantId, { ownerUserId: userId });
   const now = new Date();
+  const permissions = normalizePermissions(input.permissions);
 
-  if (!hasAnyPermission(input.permissions)) {
+  if (!hasAnyPermission(permissions)) {
     await collections.documentRules.updateMany(
       {
         ...scope,
@@ -91,7 +130,7 @@ export async function upsertAccessRule(
       { ...scope, _id: (existing as MongoDocumentAccessRule)._id } as Record<string, unknown>,
       {
         $set: {
-          permissions: input.permissions,
+          permissions,
           active: true,
           updatedAt: now,
         },
@@ -125,7 +164,10 @@ export async function upsertAccessRule(
   return serializeAccessRule(rule);
 }
 
-export async function countActiveAccessRules(tenantId: string, opts?: ServiceOpts): Promise<number> {
+export async function countActiveAccessRules(
+  tenantId: string,
+  opts?: ServiceOpts,
+): Promise<number> {
   const { collections, scope } = await resolveContext(tenantId, opts);
   return collections.documentRules.countDocuments({ ...scope, active: true });
 }
@@ -155,17 +197,26 @@ export async function resolveCategoryAccessGroupIds(
   };
 
   for (const rule of rules as MongoDocumentAccessRule[]) {
-    if (rule.permissions.view) result.viewGroupIds.push(rule.groupId);
-    if (rule.permissions.download) result.downloadGroupIds.push(rule.groupId);
-    if (rule.permissions.upload) result.updateGroupIds.push(rule.groupId);
-    if (rule.permissions.manage) result.auditGroupIds.push(rule.groupId);
-    if (rule.permissions.share) result.shareGroupIds.push(rule.groupId);
+    // "Tem caminho" inclui quem precisa pedir: quem consome esta lista quer saber quem alcança a
+    // categoria, não quem age sem passar por ninguém.
+    const reaches = (key: DocumentAccessPermissionKey) =>
+      toPermissionState(rule.permissions[key]) !== 'deny';
+
+    if (reaches('view')) result.viewGroupIds.push(rule.groupId);
+    if (reaches('download')) result.downloadGroupIds.push(rule.groupId);
+    if (reaches('upload')) result.updateGroupIds.push(rule.groupId);
+    if (reaches('manage')) result.auditGroupIds.push(rule.groupId);
+    if (reaches('share')) result.shareGroupIds.push(rule.groupId);
   }
 
   return result;
 }
 
-export async function countAccessRulesForGroup(tenantId: string, groupId: string, opts?: ServiceOpts) {
+export async function countAccessRulesForGroup(
+  tenantId: string,
+  groupId: string,
+  opts?: ServiceOpts,
+) {
   const { collections, scope } = await resolveContext(tenantId, opts);
   return collections.documentRules.countDocuments({ ...scope, groupId, active: true });
 }
@@ -198,8 +249,7 @@ export async function deactivateAccessRulesForGroup(
   opts?: ServiceOpts,
 ) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  await collections.documentRules.updateMany(
-    { ...scope, groupId } as Record<string, unknown>,
-    { $set: { active: false, updatedAt: new Date() } },
-  );
+  await collections.documentRules.updateMany({ ...scope, groupId } as Record<string, unknown>, {
+    $set: { active: false, updatedAt: new Date() },
+  });
 }

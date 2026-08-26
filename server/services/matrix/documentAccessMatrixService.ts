@@ -10,6 +10,7 @@ import type {
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import {
+  groupIdsReaching,
   loadGovernanceAccessIndex,
   type GovernanceAccessIndex,
 } from '../../tenancy/governanceAccessIndex.js';
@@ -127,8 +128,7 @@ function governanceGroupsFor(
   categoryId: string | undefined,
   bucket: keyof GovernanceAccessIndex,
 ): Set<string> {
-  if (!categoryId) return new Set();
-  return index[bucket].get(categoryId) ?? new Set();
+  return groupIdsReaching(index[bucket], categoryId);
 }
 
 export async function buildDocumentAccessMatrix(input: {
@@ -184,7 +184,9 @@ export async function buildDocumentAccessMatrix(input: {
   const [members, groupRows, governance, grants, externalGrants] = await Promise.all([
     listOperationalTenantMembers(input.tenantId),
     collections.documentGroups
-      ? collections.documentGroups.find({ ...scope, active: true } as Record<string, unknown>).toArray()
+      ? collections.documentGroups
+          .find({ ...scope, active: true } as Record<string, unknown>)
+          .toArray()
       : Promise.resolve([] as MongoDocumentGroup[]),
     loadGovernanceAccessIndex(input.tenantId, { ownerUserId: input.userId }),
     db
@@ -326,8 +328,7 @@ export async function buildDocumentAccessMatrix(input: {
 
       if (viaGroupIds.length > 0) {
         origins.push('governance');
-        canDownload =
-          canDownload || member.groupIds.some((groupId) => downloadGroups.has(groupId));
+        canDownload = canDownload || member.groupIds.some((groupId) => downloadGroups.has(groupId));
       }
 
       const grant = docGrants.find((entry) => entry.sharedWithUserId === member.userId);
