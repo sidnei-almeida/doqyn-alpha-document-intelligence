@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  listUserExpiryAlerts,
-  markAllExpiryAlertsRead,
-} from '../../server/services/expiry/documentExpiryAlertService.js';
+  listUserNotifications,
+  markAllNotificationsRead,
+} from '../../server/services/notifications/notificationService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : undefined;
 
       const limitRaw = Number(req.query.limit);
-      const result = await listUserExpiryAlerts({
+      const result = await listUserNotifications({
         tenantId: auth.ctx.tenantId,
         userId: auth.ctx.userId,
         status,
@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Marcar tudo como lido é a ação de "limpar o sino", não a criação de um recurso.
     if (req.method === 'POST') {
-      const result = await markAllExpiryAlertsRead({
+      const result = await markAllNotificationsRead({
         tenantId: auth.ctx.tenantId,
         userId: auth.ctx.userId,
       });

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import {
   DEFAULT_EXPIRY_OFFSETS_DAYS,
-  buildPendingAlerts,
+  buildPendingExpiryNotifications,
   computeScanWindow,
   daysUntil,
   normalizeExpiryAlertConfig,
@@ -21,26 +21,26 @@ function read(path: string): string {
   return readFileSync(join(repoRoot, path), 'utf8');
 }
 
+/**
+ * Meio-dia **UTC**, porque `daysUntil` conta dias de calendário em UTC.
+ *
+ * Montando em hora local, o teste passava de manhã e falhava à noite: depois das 21h em BRT a
+ * data local e a data UTC são dias diferentes, e o deslocamento de N dias virava N+1.
+ */
 function daysFromNow(days: number): Date {
   const date = new Date();
-  date.setHours(12, 0, 0, 0);
-  date.setDate(date.getDate() + days);
+  date.setUTCHours(12, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
   return date;
 }
 
 describe('alerta de vencimento — cálculo de marcos', () => {
   it('conta dias de calendário, não períodos de 24 horas', () => {
     // Duas horas de diferença, mas atravessa a meia-noite UTC: falta 1 dia, não 0.
-    assert.equal(
-      daysUntil(new Date('2026-03-11T01:00:00Z'), new Date('2026-03-10T23:00:00Z')),
-      1,
-    );
+    assert.equal(daysUntil(new Date('2026-03-11T01:00:00Z'), new Date('2026-03-10T23:00:00Z')), 1);
 
     // E 23 horas dentro do mesmo dia UTC continuam sendo 0.
-    assert.equal(
-      daysUntil(new Date('2026-03-10T23:59:00Z'), new Date('2026-03-10T00:30:00Z')),
-      0,
-    );
+    assert.equal(daysUntil(new Date('2026-03-10T23:59:00Z'), new Date('2026-03-10T00:30:00Z')), 0);
   });
 
   it('dispara o menor marco já alcançado, um por vez', () => {
@@ -154,10 +154,7 @@ describe('alerta de vencimento — normalização da configuração', () => {
   });
 
   it('descarta marcos negativos a menos que avisar-após-vencer esteja ligado', () => {
-    assert.deepEqual(
-      normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7] }).offsetsDays,
-      [30, 7],
-    );
+    assert.deepEqual(normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7] }).offsetsDays, [30, 7]);
     assert.deepEqual(
       normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7], notifyAfterExpiry: true }).offsetsDays,
       [30, 7, -7],
@@ -230,7 +227,7 @@ describe('alerta de vencimento — quem é avisado', () => {
         searchMeta: { validityDate: new Date(validityDate) },
       }) as never;
 
-    const { pending, documentsWithoutRecipients } = buildPendingAlerts({
+    const { pending, documentsWithoutRecipients } = buildPendingExpiryNotifications({
       tenantId: 'tenant_1',
       documents: [
         documento('doc_perto', '2026-08-15T00:00:00Z', 'user_dono'),
@@ -245,7 +242,11 @@ describe('alerta de vencimento — quem é avisado', () => {
     });
 
     assert.deepEqual(
-      pending.map((alert) => [alert.documentId, alert.userId, alert.offsetDays]),
+      pending.map((notification) => [
+        notification.documentId,
+        notification.userId,
+        notification.expiry?.offsetDays,
+      ]),
       [
         ['doc_perto', 'user_dono', 7],
         ['doc_perto', 'user_gestor', 7],
@@ -254,8 +255,12 @@ describe('alerta de vencimento — quem é avisado', () => {
 
     // Documento sem ninguém para avisar é contado, não silenciado.
     assert.equal(documentsWithoutRecipients, 1);
-    assert.equal(pending[0].daysRemaining, 5);
+    assert.equal(pending[0].expiry?.daysRemaining, 5);
     assert.equal(pending[0].status, 'unread');
+    assert.equal(pending[0].type, 'document_expiring');
+    // O marco faz parte da identidade do fato: sem ele na chave, só o primeiro aviso do
+    // documento passaria pelo índice único e as antecedências seguintes sumiriam.
+    assert.equal(pending[0].eventKey, 'doc_perto:7');
   });
 
   it('a varredura usa a governança e sempre inclui o dono', () => {
@@ -274,13 +279,13 @@ describe('alerta de vencimento — quem é avisado', () => {
 
 describe('alerta de vencimento — integração no servidor', () => {
   it('a avaliação é idempotente por índice único, não por checagem em memória', () => {
-    const indexes = read('server/db/documentExpiryAlertIndexes.ts');
+    const indexes = read('server/db/notificationIndexes.ts');
 
     // Sem o índice único, uma segunda execução no mesmo dia avisaria o usuário de novo.
-    assert.ok(indexes.includes('documentId: 1, userId: 1, offsetDays: 1'));
+    assert.ok(indexes.includes('tenantId: 1, userId: 1, type: 1, eventKey: 1'));
     assert.ok(indexes.includes('unique: true'));
 
-    const service = read('server/services/expiry/documentExpiryAlertService.ts');
+    const service = read('server/services/notifications/notificationService.ts');
     assert.ok(service.includes('ordered: false'));
     assert.ok(service.includes('11000'), 'duplicate-key precisa ser tolerado, não propagado');
   });
@@ -290,7 +295,7 @@ describe('alerta de vencimento — integração no servidor', () => {
 
     // Sem isso o usuário fica com alerta de uma data que não existe mais, e o índice único
     // bloquearia o alerta da data nova.
-    assert.ok(edit.includes('clearDocumentExpiryAlerts'));
+    assert.ok(edit.includes('clearDocumentExpiryNotifications'));
     assert.ok(edit.includes('validityChanged'));
     assert.ok(edit.includes('enqueueTenantExpiryEvaluation'));
   });
@@ -303,12 +308,14 @@ describe('alerta de vencimento — integração no servidor', () => {
     assert.ok(edit.includes('projectDocumentSearchMeta'), 'searchMeta precisa ser reprojetado');
   });
 
-  it('a leitura de alertas é escopada por tenant e usuário', () => {
-    const service = read('server/services/expiry/documentExpiryAlertService.ts');
+  it('a leitura de notificações é escopada por tenant e usuário', () => {
+    const service = read('server/services/notifications/notificationService.ts');
 
-    // Marcar como lido não pode alcançar alerta de outra pessoa.
+    // Marcar como lido não pode alcançar notificação de outra pessoa.
     assert.ok(
-      service.includes('{ _id: input.alertId, tenantId: input.tenantId, userId: input.userId }'),
+      service.includes(
+        '{ _id: input.notificationId, tenantId: input.tenantId, userId: input.userId }',
+      ),
     );
   });
 
@@ -316,7 +323,7 @@ describe('alerta de vencimento — integração no servidor', () => {
     const queue = read('server/queues/expiryAlertQueue.ts');
 
     // Sem jobId fixo, cada réplica da API registraria a própria varredura.
-    assert.ok(queue.includes("jobId: REPEATABLE_JOB_NAME"));
+    assert.ok(queue.includes('jobId: REPEATABLE_JOB_NAME'));
     assert.ok(queue.includes('repeat: { pattern: cron }'));
     assert.ok(queue.includes('removeRepeatableByKey'), 'trocar o cron não pode deixar dois ativos');
   });
@@ -333,8 +340,8 @@ describe('alerta de vencimento — integração no servidor', () => {
     const server = read('server/apiServer.ts');
 
     // Adicionar arquivo em api/ não basta fora da Vercel.
-    assert.ok(server.includes("'/api/expiry-alerts'"));
-    assert.ok(server.includes('api/expiry-alerts/[alertId].js'));
+    assert.ok(server.includes("'/api/notifications'"));
+    assert.ok(server.includes('api/notifications/[notificationId].js'));
     assert.ok(server.includes('api/documents/[documentId]/metadata.js'));
   });
 
@@ -380,12 +387,24 @@ describe('alerta de vencimento — integração no servidor', () => {
     assert.equal(rows[0].filled, false);
   });
 
-  it('a coleção de alertas é compartilhada, não prefixada por tenant', () => {
+  it('a coleção de notificações é compartilhada, não prefixada por tenant', () => {
     const constants = read('server/db/constants.ts');
 
     // O Passo 7 acabou de remover coleções por tenant; a feature nova não pode reintroduzi-las.
-    assert.ok(constants.includes("documentExpiryAlerts: 'document_expiry_alerts'"));
-    const indexes = read('server/db/documentExpiryAlertIndexes.ts');
-    assert.ok(indexes.includes('SHARED_APP_COLLECTIONS.documentExpiryAlerts'));
+    assert.ok(constants.includes("notifications: 'notifications'"));
+    const indexes = read('server/db/notificationIndexes.ts');
+    assert.ok(indexes.includes('SHARED_APP_COLLECTIONS.notifications'));
+  });
+
+  it('vencimento não passa pelo filtro de preferência — só o canal sai dela', () => {
+    const preferences = read('server/services/notifications/notificationPreferences.ts');
+
+    // Vencimento é o documento dizendo que deixa de valer, não aviso de cortesia: quem tem acesso
+    // precisa saber, tenha marcado o que tiver marcado.
+    assert.ok(preferences.includes('document_expiring: null'));
+
+    const expiry = read('server/services/expiry/documentExpiryAlertService.ts');
+    assert.ok(expiry.includes('channelsForMember'));
+    assert.equal(expiry.includes('wantsNotification'), false);
   });
 });

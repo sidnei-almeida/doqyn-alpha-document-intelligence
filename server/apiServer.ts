@@ -63,7 +63,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/tracking/verify-chain': () => import('../api/tracking/verify-chain.js'),
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
-  '/api/expiry-alerts': () => import('../api/expiry-alerts/index.js'),
+  '/api/notifications': () => import('../api/notifications/index.js'),
   '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
   '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
@@ -236,9 +236,9 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['documentId'],
     },
     {
-      regex: /^\/api\/expiry-alerts\/([^/]+)$/,
-      loader: () => import('../api/expiry-alerts/[alertId].js'),
-      paramKeys: ['alertId'],
+      regex: /^\/api\/notifications\/([^/]+)$/,
+      loader: () => import('../api/notifications/[notificationId].js'),
+      paramKeys: ['notificationId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,

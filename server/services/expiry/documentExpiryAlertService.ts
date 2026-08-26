@@ -1,20 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
-import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
+import { isMongoNativeConfigured } from '../../db/mongoClient.js';
+import type { NotificationChannel } from '../../db/notificationTypes.js';
 import type {
-  DocumentExpiryAlertStatus,
   MongoDocument,
-  MongoDocumentExpiryAlert,
   MongoDocumentExpiryAlertConfig,
   MongoDocumentExtractionRule,
   MongoDocumentGroupMember,
+  MongoNotification,
 } from '../../db/types.js';
 import { listActiveTenantMemberUserIds } from '../tenantMembersService.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { loadGovernanceAccessIndex } from '../../tenancy/governanceAccessIndex.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
-import { ServiceError } from '../../utils/serviceErrors.js';
 import { logger } from '../../utils/logger.js';
+import {
+  channelsForMember,
+  loadNotificationPreferences,
+} from '../notifications/notificationPreferences.js';
+import { persistNotifications } from '../notifications/notificationService.js';
 
 export const DEFAULT_EXPIRY_OFFSETS_DAYS = [30, 7, 1];
 
@@ -35,11 +38,6 @@ const DOCUMENT_SCAN_LIMIT = 5_000;
  * causa do índice único.
  */
 const EXPIRY_LOOKBACK_DAYS = 7;
-
-async function getAlertsCollection() {
-  const db = await getDb();
-  return db.collection<MongoDocumentExpiryAlert>(SHARED_APP_COLLECTIONS.documentExpiryAlerts);
-}
 
 /**
  * Meia-noite **UTC**, para contar dias de calendário em vez de períodos de 24h.
@@ -223,14 +221,14 @@ async function scanDueDocuments(
     .toArray()) as MongoDocument[];
 }
 
-export function buildPendingAlerts(input: {
+export function buildPendingExpiryNotifications(input: {
   tenantId: string;
   documents: MongoDocument[];
   configByCategory: Map<string, MongoDocumentExpiryAlertConfig>;
   now: Date;
   resolveRecipients: (document: MongoDocument) => Set<string>;
-}): { pending: MongoDocumentExpiryAlert[]; documentsWithoutRecipients: number } {
-  const pending: MongoDocumentExpiryAlert[] = [];
+}): { pending: MongoNotification[]; documentsWithoutRecipients: number } {
+  const pending: MongoNotification[] = [];
   let documentsWithoutRecipients = 0;
 
   for (const document of input.documents) {
@@ -251,19 +249,27 @@ export function buildPendingAlerts(input: {
       continue;
     }
 
+    const documentName = document.title || document.currentFileName || document.documentCode;
+
     for (const userId of userIds) {
       pending.push({
-        _id: `expalert_${randomUUID()}`,
+        _id: `notif_${randomUUID()}`,
         tenantId: input.tenantId,
         companyId: input.tenantId,
+        type: 'document_expiring',
+        userId,
+        // O marco faz parte da identidade do fato: cada antecedência avisa uma vez.
+        eventKey: `${document._id}:${offsetDays}`,
+        title: expiryNotificationTitle(documentName, daysRemaining),
         documentId: document._id,
-        documentName: document.title || document.currentFileName || document.documentCode,
+        documentName,
         categoryId: document.classId,
         categoryName: document.className,
-        userId,
-        offsetDays,
-        validityDate: new Date(validityDate),
-        daysRemaining,
+        expiry: {
+          offsetDays,
+          validityDate: new Date(validityDate),
+          daysRemaining,
+        },
         status: 'unread',
         createdAt: input.now,
         readAt: null,
@@ -272,6 +278,16 @@ export function buildPendingAlerts(input: {
   }
 
   return { pending, documentsWithoutRecipients };
+}
+
+/** O título carrega o prazo porque é o que o sino mostra sem abrir. */
+export function expiryNotificationTitle(documentName: string, daysRemaining: number): string {
+  if (daysRemaining < 0) {
+    const days = Math.abs(daysRemaining);
+    return `${documentName} venceu há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+  }
+  if (daysRemaining === 0) return `${documentName} vence hoje`;
+  return `${documentName} vence em ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'}`;
 }
 
 /**
@@ -333,7 +349,7 @@ async function evaluateBusinessTenantExpiryAlerts(
     ...new Set([...groupsByCategory.values()].flat()),
   ]);
 
-  const { pending, documentsWithoutRecipients } = buildPendingAlerts({
+  const { pending, documentsWithoutRecipients } = buildPendingExpiryNotifications({
     tenantId: collections.storage.tenantId,
     documents,
     configByCategory,
@@ -354,7 +370,7 @@ async function evaluateBusinessTenantExpiryAlerts(
   result.documentsWithoutRecipients = documentsWithoutRecipients;
   if (pending.length === 0) return result;
 
-  result.alertsCreated = await insertAlertsInBatches(await getAlertsCollection(), pending);
+  result.alertsCreated = await persistExpiryNotifications(tenantId, pending);
   return result;
 }
 
@@ -381,8 +397,6 @@ async function evaluateIndividualTenantExpiryAlerts(
     return result;
   }
 
-  const alerts = await getAlertsCollection();
-
   for (const ownerUserId of ownerUserIds) {
     const collections = await getTenantCollections(tenantId, { userId: ownerUserId });
     const scope = tenantScopeFilterFromContext(collections.storage);
@@ -394,7 +408,7 @@ async function evaluateIndividualTenantExpiryAlerts(
     result.documentsScanned += documents.length;
     if (documents.length === 0) continue;
 
-    const { pending, documentsWithoutRecipients } = buildPendingAlerts({
+    const { pending, documentsWithoutRecipients } = buildPendingExpiryNotifications({
       tenantId: collections.storage.tenantId,
       documents,
       configByCategory,
@@ -407,180 +421,35 @@ async function evaluateIndividualTenantExpiryAlerts(
     result.documentsWithoutRecipients += documentsWithoutRecipients;
     if (pending.length === 0) continue;
 
-    result.alertsCreated += await insertAlertsInBatches(alerts, pending);
+    result.alertsCreated += await persistExpiryNotifications(tenantId, pending);
   }
 
   return result;
 }
 
 /**
- * Só erro de escrita em lote pode ser tratado como duplicata.
+ * Grava os avisos de vencimento pelo motor de notificações.
  *
- * Sem esta checagem, `MongoNetworkError` ou timeout — que não trazem `writeErrors` — passariam
- * pelo mesmo caminho e a varredura registraria N alertas criados tendo gravado zero, sem retry.
+ * O canal sai da preferência do destinatário, lida uma vez por varredura: por documento seria uma
+ * consulta de membros por documento. Note que a preferência decide **por onde**, nunca **se** —
+ * vencimento não tem chave de preferência (ver `PREFERENCE_KEY_BY_TYPE`), porque é o documento
+ * dizendo que deixa de valer, não um aviso de cortesia.
  */
-function isBulkWriteError(error: unknown): error is { writeErrors: Array<{ code?: number }> } {
-  return Array.isArray((error as { writeErrors?: unknown }).writeErrors);
-}
-
-/**
- * Insere em lotes limitados.
- *
- * `documentos × destinatários` cresce rápido: 500 documentos na janela e um grupo de 40 pessoas
- * dão 20.000 registros. Materializar e gravar tudo de uma vez dentro do processo da API, num VPS
- * de 2 vCPU, é exatamente o tipo de pico que este milestone existe para evitar.
- */
-async function insertAlertsInBatches(
-  alerts: Awaited<ReturnType<typeof getAlertsCollection>>,
-  pending: MongoDocumentExpiryAlert[],
+async function persistExpiryNotifications(
+  tenantId: string,
+  pending: MongoNotification[],
 ): Promise<number> {
-  let created = 0;
+  if (pending.length === 0) return 0;
 
-  for (let start = 0; start < pending.length; start += ALERT_INSERT_BATCH_SIZE) {
-    const batch = pending.slice(start, start + ALERT_INSERT_BATCH_SIZE);
-
-    // `ordered: false` + tolerância a duplicate-key: a corrida entre duas execuções não é erro,
-    // é exatamente o que o índice único existe para resolver.
-    try {
-      const inserted = await alerts.insertMany(batch, { ordered: false });
-      created += inserted.insertedCount;
-    } catch (error) {
-      if (!isBulkWriteError(error)) throw error;
-
-      const duplicates = error.writeErrors.filter((writeError) => writeError.code === 11000);
-      if (duplicates.length !== error.writeErrors.length) throw error;
-
-      created += batch.length - duplicates.length;
-    }
-  }
-
-  return created;
-}
-
-export type ExpiryAlertListItem = {
-  id: string;
-  documentId: string;
-  documentName: string;
-  categoryName?: string;
-  validityDate: string;
-  daysRemaining: number;
-  offsetDays: number;
-  status: DocumentExpiryAlertStatus;
-  createdAt: string;
-};
-
-function serializeAlert(alert: MongoDocumentExpiryAlert): ExpiryAlertListItem {
-  return {
-    id: alert._id,
-    documentId: alert.documentId,
-    documentName: alert.documentName,
-    categoryName: alert.categoryName,
-    validityDate: new Date(alert.validityDate).toISOString(),
-    daysRemaining: alert.daysRemaining,
-    offsetDays: alert.offsetDays,
-    status: alert.status,
-    createdAt: new Date(alert.createdAt).toISOString(),
-  };
-}
-
-export async function listUserExpiryAlerts(input: {
-  tenantId: string;
-  userId: string;
-  status?: DocumentExpiryAlertStatus;
-  limit?: number;
-}): Promise<{ items: ExpiryAlertListItem[]; unreadCount: number }> {
-  if (!isMongoNativeConfigured()) return { items: [], unreadCount: 0 };
-
-  const alerts = await getAlertsCollection();
-  const query: Record<string, unknown> = {
-    tenantId: input.tenantId,
-    userId: input.userId,
-  };
-  if (input.status) query.status = input.status;
-
-  const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
-
-  const [rows, unreadCount] = await Promise.all([
-    alerts.find(query).sort({ createdAt: -1 }).limit(limit).toArray(),
-    alerts.countDocuments({
-      tenantId: input.tenantId,
-      userId: input.userId,
-      status: 'unread',
-    }),
-  ]);
-
-  return { items: rows.map(serializeAlert), unreadCount };
-}
-
-export async function updateExpiryAlertStatus(input: {
-  tenantId: string;
-  userId: string;
-  alertId: string;
-  status: Extract<DocumentExpiryAlertStatus, 'read' | 'dismissed'>;
-}): Promise<ExpiryAlertListItem> {
-  if (!isMongoNativeConfigured()) {
-    throw new ServiceError('MongoDB não configurado.', 'MONGO_NOT_CONFIGURED', 503);
-  }
-
-  const alerts = await getAlertsCollection();
-
-  // `readAt` só é gravado quando o alerta foi de fato lido: dispensar sem abrir não pode ficar
-  // registrado como leitura, senão qualquer relatório de "quando viu" mente.
-  const patch: Record<string, unknown> =
-    input.status === 'read' ? { status: 'read', readAt: new Date() } : { status: 'dismissed' };
-
-  // O filtro carrega tenantId e userId: ninguém marca alerta de outra pessoa como lido.
-  const updated = await alerts.findOneAndUpdate(
-    { _id: input.alertId, tenantId: input.tenantId, userId: input.userId },
-    { $set: patch },
-    { returnDocument: 'after' },
+  const preferences = await loadNotificationPreferences(
+    tenantId,
+    pending.map((notification) => notification.userId),
   );
 
-  if (!updated) {
-    throw new ServiceError('Alerta não encontrado.', 'EXPIRY_ALERT_NOT_FOUND', 404);
+  const channelsByUserId = new Map<string, NotificationChannel[]>();
+  for (const [userId, memberPreferences] of preferences) {
+    channelsByUserId.set(userId, channelsForMember(memberPreferences));
   }
 
-  return serializeAlert(updated);
-}
-
-export async function markAllExpiryAlertsRead(input: {
-  tenantId: string;
-  userId: string;
-}): Promise<{ updated: number }> {
-  if (!isMongoNativeConfigured()) return { updated: 0 };
-
-  const alerts = await getAlertsCollection();
-  const result = await alerts.updateMany(
-    { tenantId: input.tenantId, userId: input.userId, status: 'unread' },
-    { $set: { status: 'read', readAt: new Date() } },
-  );
-
-  return { updated: result.modifiedCount };
-}
-
-/**
- * Descarta alertas de um documento cujo vencimento mudou.
- *
- * Sem isto, corrigir a data à mão deixaria na caixa do usuário um alerta que já não vale — e o
- * índice único impediria o novo marco de ser gerado se coincidisse com o antigo.
- */
-export async function clearDocumentExpiryAlerts(input: {
-  tenantId: string;
-  documentId: string;
-}): Promise<{ removed: number }> {
-  if (!isMongoNativeConfigured()) return { removed: 0 };
-
-  const alerts = await getAlertsCollection();
-  const result = await alerts.deleteMany({
-    tenantId: input.tenantId,
-    documentId: input.documentId,
-  });
-
-  logger.info('expiry alerts cleared for document', {
-    tenantId: input.tenantId,
-    documentId: input.documentId,
-    removed: result.deletedCount,
-  });
-
-  return { removed: result.deletedCount };
+  return persistNotifications(pending, channelsByUserId);
 }

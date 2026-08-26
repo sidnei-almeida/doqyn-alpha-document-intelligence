@@ -21,7 +21,6 @@ export const SHARED_APP_COLLECTIONS = {
   documentSignatures: 'document_signatures',
   documentUploadApprovals: 'document_upload_approvals',
   analysisJobs: 'analysis_jobs',
-  documentExpiryAlerts: 'document_expiry_alerts',
   /** Caixa de notificações do usuário — vencimento é um tipo entre outros. */
   notifications: 'notifications',
   /** Registro de entrega por canal. Ver `notificationTypes.ts`. */

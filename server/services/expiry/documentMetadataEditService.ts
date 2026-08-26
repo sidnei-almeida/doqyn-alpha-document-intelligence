@@ -18,11 +18,11 @@ import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
-  clearDocumentExpiryAlerts,
   daysUntil,
   normalizeExpiryAlertConfig,
   resolveDueOffset,
 } from './documentExpiryAlertService.js';
+import { clearDocumentExpiryNotifications } from '../notifications/notificationService.js';
 import { enqueueTenantExpiryEvaluation } from '../../queues/expiryAlertQueue.js';
 import { logger } from '../../utils/logger.js';
 
@@ -189,7 +189,7 @@ export async function updateDocumentMetadata(input: {
   if (validityChanged) {
     // Alertas do vencimento antigo não valem mais. Descartá-los também libera a chave única
     // (documento, usuário, marco) para o novo vencimento poder alertar.
-    await clearDocumentExpiryAlerts({
+    await clearDocumentExpiryNotifications({
       tenantId: collections.storage.tenantId,
       documentId: document._id,
     });

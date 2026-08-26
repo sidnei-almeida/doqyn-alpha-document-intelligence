@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { updateExpiryAlertStatus } from '../../server/services/expiry/documentExpiryAlertService.js';
+import { updateNotificationStatus } from '../../server/services/notifications/notificationService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 
@@ -11,9 +11,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireDocumentAuthContext(req, res);
   if (!auth) return;
 
-  const alertId = String(req.query.alertId ?? '').trim();
-  if (!alertId) {
-    return res.status(400).json({ message: 'alertId é obrigatório.', code: 'VALIDATION_ERROR' });
+  const notificationId = String(req.query.notificationId ?? '').trim();
+  if (!notificationId) {
+    return res
+      .status(400)
+      .json({ message: 'notificationId é obrigatório.', code: 'VALIDATION_ERROR' });
   }
 
   const status = String((req.body as { status?: unknown })?.status ?? '').trim();
@@ -24,13 +26,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const alert = await updateExpiryAlertStatus({
+    const notification = await updateNotificationStatus({
       tenantId: auth.ctx.tenantId,
       userId: auth.ctx.userId,
-      alertId,
+      notificationId,
       status,
     });
-    return res.status(200).json({ alert });
+    return res.status(200).json({ notification });
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });

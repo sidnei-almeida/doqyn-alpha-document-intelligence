@@ -7,13 +7,21 @@ import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/
 import type { MongoTenant } from '../server/db/types.js';
 import type { ResolvedTenantCollectionNames } from '../server/tenancy/tenantResolver.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
-import { DOCUMENT_EXPIRY_ALERT_INDEXES } from '../server/db/documentExpiryAlertIndexes.js';
+import {
+  NOTIFICATION_DELIVERY_INDEXES,
+  NOTIFICATION_INDEXES,
+} from '../server/db/notificationIndexes.js';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
 
-type IndexResult = { collection: string; name: string; status: 'created' | 'existing' | 'error'; error?: string };
+type IndexResult = {
+  collection: string;
+  name: string;
+  status: 'created' | 'existing' | 'error';
+  error?: string;
+};
 
 const results: IndexResult[] = [];
 
@@ -42,9 +50,14 @@ async function ensureIndexes(collectionName: string, indexes: IndexDescription[]
     }
 
     try {
-      const options: { unique?: boolean; partialFilterExpression?: Record<string, unknown>; name?: string } = {};
+      const options: {
+        unique?: boolean;
+        partialFilterExpression?: Record<string, unknown>;
+        name?: string;
+      } = {};
       if (spec.unique) options.unique = true;
-      if (spec.partialFilterExpression) options.partialFilterExpression = spec.partialFilterExpression;
+      if (spec.partialFilterExpression)
+        options.partialFilterExpression = spec.partialFilterExpression;
       if (spec.name) options.name = spec.name;
 
       const created = await collection.createIndex(spec.key, options);
@@ -69,7 +82,11 @@ function registryIndexes(): Array<{ collection: string; indexes: IndexDescriptio
         // Parcial: sem isso, o segundo tenant sem taxIdHash quebra com duplicate-key
         // (Mongo trata campo ausente como null e único só aceita um null).
         // Espelha server/db/tenantIndexes.ts:ensureRegistryTenantIndexes.
-        { key: { taxIdHash: 1 }, unique: true, partialFilterExpression: { taxIdHash: { $exists: true } } },
+        {
+          key: { taxIdHash: 1 },
+          unique: true,
+          partialFilterExpression: { taxIdHash: { $exists: true } },
+        },
         { key: { slug: 1 }, unique: true },
         { key: { status: 1 } },
         // resolveTenant() faz { $or: [{ tenantId }, { companyId }] } em quase toda
@@ -111,8 +128,12 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
     {
       // Importado da definição canônica em vez de recopiado: este script mantém uma segunda lista
       // de índices, e foi justamente a divergência entre as duas que já causou problema antes.
-      collection: SHARED_APP_COLLECTIONS.documentExpiryAlerts,
-      indexes: DOCUMENT_EXPIRY_ALERT_INDEXES,
+      collection: SHARED_APP_COLLECTIONS.notifications,
+      indexes: NOTIFICATION_INDEXES,
+    },
+    {
+      collection: SHARED_APP_COLLECTIONS.notificationDeliveries,
+      indexes: NOTIFICATION_DELIVERY_INDEXES,
     },
   ];
 }
@@ -274,7 +295,9 @@ async function main() {
   report.write(REPORT_PATH);
 
   console.log(`Relatório: ${REPORT_PATH}`);
-  console.log(`Database: ${database} | Criados: ${created} | Existentes: ${existing} | Erros: ${errors}`);
+  console.log(
+    `Database: ${database} | Criados: ${created} | Existentes: ${existing} | Erros: ${errors}`,
+  );
 
   await closeMongoConnection();
   process.exit(errors > 0 ? 1 : 0);

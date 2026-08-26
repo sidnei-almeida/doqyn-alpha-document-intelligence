@@ -121,6 +121,35 @@ export async function emitNotifications(
 
   if (pending.length === 0) return result;
 
+  result.created = await persistNotifications(pending, channelsByUserId);
+
+  logger.info('notifications emitted', {
+    tenantId: input.tenantId,
+    type: input.type,
+    created: result.created,
+    skippedByPreference: result.skippedByPreference,
+  });
+
+  return result;
+}
+
+/**
+ * Grava as notificações e o registro de entrega delas.
+ *
+ * Separado de `emitNotifications` porque a varredura de vencimento resolve destinatário e
+ * preferência à sua maneira — por documento, num lote só — e precisa da mesma gravação sem
+ * repetir a leitura de membros a cada documento.
+ *
+ * `ordered: false` mais tolerância a duplicate-key: a corrida entre duas execuções não é erro, é
+ * exatamente o que o índice único existe para resolver. Só as linhas de fato inseridas geram
+ * registro de entrega — `writeErrors[].index` diz quais ficaram de fora.
+ */
+export async function persistNotifications(
+  pending: MongoNotification[],
+  channelsByUserId: Map<string, NotificationChannel[]>,
+): Promise<number> {
+  if (pending.length === 0) return 0;
+
   const notifications = await getNotificationsCollection();
   const inserted: MongoNotification[] = [];
 
@@ -143,17 +172,8 @@ export async function emitNotifications(
     }
   }
 
-  result.created = inserted.length;
   await recordNotificationDeliveries(inserted, channelsByUserId);
-
-  logger.info('notifications emitted', {
-    tenantId: input.tenantId,
-    type: input.type,
-    created: result.created,
-    skippedByPreference: result.skippedByPreference,
-  });
-
-  return result;
+  return inserted.length;
 }
 
 export type NotificationListItem = {

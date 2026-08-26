@@ -410,35 +410,6 @@ export type MongoDocumentExtractionRule = {
   updatedAt: Date;
 };
 
-export type DocumentExpiryAlertStatus = 'unread' | 'read' | 'dismissed';
-
-/**
- * Um alerta entregue a um usuário sobre o vencimento de um documento.
- *
- * Um registro por (documento, usuário, marco): a chave única impede que a avaliação diária
- * reenvie o mesmo marco se rodar duas vezes no mesmo dia ou for reprocessada.
- */
-export type MongoDocumentExpiryAlert = {
-  _id: string;
-  tenantId: string;
-  companyId: string;
-  documentId: string;
-  documentName: string;
-  categoryId?: string;
-  categoryName?: string;
-  /** Destinatário. */
-  userId: string;
-  /** Marco que originou este alerta, em dias de antecedência. */
-  offsetDays: number;
-  /** Vencimento do documento no momento em que o alerta foi gerado. */
-  validityDate: Date;
-  /** Dias restantes quando gerado — negativo se já vencido. */
-  daysRemaining: number;
-  status: DocumentExpiryAlertStatus;
-  createdAt: Date;
-  readAt?: Date | null;
-};
-
 /**
  * Uma notificação entregue a um usuário.
  *
