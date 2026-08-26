@@ -12,6 +12,7 @@ import {
   NOTIFICATION_INDEXES,
 } from '../server/db/notificationIndexes.js';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
+import { APPROVAL_REQUEST_INDEXES } from '../server/db/approvalRequestIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -134,6 +135,13 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
     {
       collection: SHARED_APP_COLLECTIONS.notificationDeliveries,
       indexes: NOTIFICATION_DELIVERY_INDEXES,
+    },
+    {
+      // Este script é o que o job do Compose executa — `setupMongo` não é chamado por ninguém em
+      // produção. Ficar só lá deixaria `approval_requests` sem índice nenhum no VPS, inclusive sem
+      // o único que impede pedido duplicado.
+      collection: SHARED_APP_COLLECTIONS.approvalRequests,
+      indexes: APPROVAL_REQUEST_INDEXES,
     },
   ];
 }

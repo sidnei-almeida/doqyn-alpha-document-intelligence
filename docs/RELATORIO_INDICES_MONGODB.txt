@@ -1,15 +1,15 @@
 DOQYN — Relatório de índices MongoDB
-Data: 2026-08-16T17:33:19.794Z
+Data: 2026-08-26T22:12:18.539Z
 Database: doqyn_dev
 Relatório sanitizado.
 
 ================================================================================
 RESUMO
 ================================================================================
-Índices criados: 19
-Índices já existentes: 37
+Índices criados: 21
+Índices já existentes: 42
 Erros: 0
-Tenants ativos processados: 6
+Tenants ativos processados: 5
 
 ================================================================================
 DETALHES
@@ -30,14 +30,21 @@ tenant_members | tenantId_1_accessGroupIds_1 | created
 tenant_members | tenantId_1_createdAt_1 | created
 tenant_members | tenantId_1_updatedAt_1 | created
 tenant_members | memberId_1 | created
-analysis_jobs | tenantId_1_ownerUserId_1_createdAt_-1 | created
-analysis_jobs | tenantId_1_status_1_createdAt_-1 | created
-analysis_jobs | status_1_createdAt_-1 | created
-analysis_jobs | status_1_completedAt_-1 | created
-document_expiry_alerts | document_user_offset_unique | existing
-document_expiry_alerts | tenantId_1_userId_1_status_1_createdAt_-1 | existing
-document_expiry_alerts | tenantId_1_userId_1_createdAt_-1 | existing
-document_expiry_alerts | tenantId_1_documentId_1 | existing
+analysis_jobs | tenantId_1_ownerUserId_1_createdAt_-1 | existing
+analysis_jobs | tenantId_1_status_1_createdAt_-1 | existing
+analysis_jobs | status_1_createdAt_-1 | existing
+analysis_jobs | status_1_completedAt_-1 | existing
+notifications | tenant_user_type_event_unique | created
+notifications | tenantId_1_userId_1_status_1_createdAt_-1 | created
+notifications | tenantId_1_userId_1_createdAt_-1 | created
+notifications | tenantId_1_documentId_1 | created
+notification_deliveries | notification_channel_unique | created
+notification_deliveries | tenantId_1_status_1_channel_1_createdAt_1 | created
+approval_requests | tenantId_1_status_1_createdAt_1 | existing
+approval_requests | tenantId_1_decidableBy_1_status_1_createdAt_1 | existing
+approval_requests | tenantId_1_subject.documentId_1 | existing
+approval_requests | tenantId_1_kind_1_requestedBy.userId_1_subject.documentId_1_status_1 | existing
+approval_requests | tenant_kind_document_requester_pending_unique | existing
 document_categories | tenantId_1_active_1 | existing
 document_categories | tenantId_1_slug_1 | existing
 document_groups | tenantId_1_active_1 | existing
