@@ -744,6 +744,11 @@
     backdrop-filter: blur(2px);
   }
 
+  /* Confirmar nasce de dentro de outro modal — precisa passar por cima dele. */
+  .modal-overlay--confirm {
+    z-index: var(--z-confirm);
+  }
+
   .modal-panel {
     display: flex;
     flex-direction: column;

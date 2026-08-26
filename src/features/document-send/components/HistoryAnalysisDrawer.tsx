@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Icon } from '@/components/ui/Icon';
+import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Button } from '@/components/ui/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -18,16 +19,18 @@ interface HistoryAnalysisDrawerProps {
 }
 
 export function HistoryAnalysisDrawer({ item, open, onClose }: HistoryAnalysisDrawerProps) {
+  const isTopLayer = useOverlayLayer(open);
+  const handleKeyDown = useStableCallback((event: KeyboardEvent) => {
+    // Só a camada do topo responde: um modal aberto por cima fecha primeiro.
+    if (event.key !== 'Escape' || !isTopLayer()) return;
+    onClose();
+  });
+
   useEffect(() => {
     if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, handleKeyDown]);
 
   if (!open || !item) return null;
 

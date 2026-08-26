@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
+import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 
 export type ModalSize = 'sm' | 'md' | 'lg';
+
+/**
+ * Altura na pilha. `modal` é o normal; `confirm` é para o diálogo que nasce de
+ * dentro de outro — confirmar uma exclusão pedida por um modal já aberto.
+ */
+export type ModalLayer = 'modal' | 'confirm';
 
 const SIZE_CLASS: Record<ModalSize, string> = {
   sm: 'max-w-md',
@@ -30,6 +37,8 @@ export type ModalProps = {
   className?: string;
   /** Fechar clicando fora. Desligue em fluxo com dado digitado. */
   dismissOnOverlay?: boolean;
+  /** `confirm` sobe o diálogo acima de outro modal já aberto. */
+  layer?: ModalLayer;
 };
 
 /**
@@ -51,39 +60,42 @@ export function Modal({
   children,
   className,
   dismissOnOverlay = true,
+  layer = 'modal',
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const isTopLayer = useOverlayLayer(open);
+  const onCloseStable = useStableCallback(onClose);
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab' || !panelRef.current) return;
+  const handleKeyDown = useStableCallback((event: KeyboardEvent) => {
+    // Só a camada do topo responde: a de baixo continua montada e escutando.
+    if (!isTopLayer()) return;
 
-      const focusable = Array.from(
-        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null);
-      if (focusable.length === 0) return;
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      onCloseStable();
+      return;
+    }
+    if (event.key !== 'Tab' || !panelRef.current) return;
 
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      const active = document.activeElement;
+    const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (el) => el.offsetParent !== null,
+    );
+    if (focusable.length === 0) return;
 
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    },
-    [onClose],
-  );
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    const active = document.activeElement;
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -99,10 +111,17 @@ export function Modal({
     const timer = window.setTimeout(() => {
       // Campo antes de botão: abrir com o foco no "fechar" faz o diálogo nascer
       // parecendo prestes a ser fechado, e o anel de foco rouba a leitura do título.
+      // O "fechar" do cabeçalho fica fora da disputa: sem campo, o foco cai no
+      // primeiro controle do corpo ou do rodapé, e só então no próprio painel.
       const panel = panelRef.current;
       const target =
-        panel?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled]), select:not([disabled])') ??
-        panel?.querySelector<HTMLElement>(FOCUSABLE);
+        panel?.querySelector<HTMLElement>(
+          'input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
+        ) ??
+        Array.from(panel?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find(
+          (el) => !el.hasAttribute('data-modal-close'),
+        ) ??
+        panel;
       target?.focus();
     }, 0);
 
@@ -118,7 +137,10 @@ export function Modal({
   return createPortal(
     <div
       ref={overlayRef}
-      className="modal-overlay modal-overlay-scrim"
+      className={cn(
+        'modal-overlay modal-overlay-scrim',
+        layer === 'confirm' && 'modal-overlay--confirm',
+      )}
       onMouseDown={(event) => {
         if (dismissOnOverlay && event.target === overlayRef.current) onClose();
       }}
@@ -128,6 +150,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className={cn('modal-panel', SIZE_CLASS[size], className)}
       >
         <header className="modal-panel__header">
@@ -141,6 +164,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             className="modal-panel__close"
+            data-modal-close
             aria-label="Fechar"
           >
             <Icon name="close" size={ICON_SIZE.sm} aria-hidden />

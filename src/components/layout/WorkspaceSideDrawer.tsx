@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
@@ -54,14 +55,18 @@ export function WorkspaceSideDrawer({
   bodyClassName,
   children,
 }: WorkspaceSideDrawerProps) {
+  const isTopLayer = useOverlayLayer(open);
+  const handleKeyDown = useStableCallback((event: KeyboardEvent) => {
+    // Só a camada do topo responde: um modal aberto por cima fecha primeiro.
+    if (event.key !== 'Escape' || !isTopLayer()) return;
+    onClose();
+  });
+
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, handleKeyDown]);
 
   if (!open) return null;
 
