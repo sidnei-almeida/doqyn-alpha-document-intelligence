@@ -133,3 +133,53 @@ describe('compartilhar entre empresas — a segunda dimensão do verbo', () => {
     assert.ok(hint.includes('ela precisa aceitar'));
   });
 });
+
+describe('compartilhar entre empresas — a leitura do outro lado', () => {
+  it('o aceito de fora entra na mesma lista, não numa aba nova', () => {
+    const service = read(SERVICE);
+
+    // Para quem recebeu, "compartilhado comigo" é compartilhado comigo. O que muda é onde o
+    // documento mora, e isso é problema do serviço, não de quem lê a tela.
+    assert.ok(service.includes('await findAcceptedInboundGrantsForUser(user.id, tenantId)'));
+    assert.ok(service.includes('if (!grants.length && !inboundGrants.length)'));
+  });
+
+  it('a busca do que veio de fora é consulta à parte', () => {
+    const service = read(SERVICE);
+    const fn = service.slice(
+      service.indexOf('export async function findAcceptedInboundGrantsForUser'),
+      service.indexOf('export async function findActiveShareGrantsForDocument'),
+    );
+
+    // Numa concessão que atravessa a fronteira, `tenantId` é o de origem e quem recebe está no
+    // `inbound`. Somar isso ao filtro de casa faria a busca comum varrer a coleção inteira.
+    assert.ok(fn.includes("'inbound.recipientTenantId': recipientTenantId"));
+  });
+
+  it('o documento de fora é lido no acervo de lá, uma consulta por empresa', () => {
+    const service = read(SERVICE);
+    const loader = service.slice(
+      service.indexOf('async function loadForeignSharedDocuments'),
+      service.indexOf('export async function listSharedWithMeDocuments'),
+    );
+
+    assert.ok(service.includes('const byOrigin = new Map<string, MongoDocumentShareGrant[]>()'));
+    // O escopo é o de quem enviou: pedir as coleções em nome de quem lê resolveria o acervo
+    // errado num tenant individual.
+    assert.ok(loader.includes('userId: grants[0]?.sharedByUserId'));
+    // Quem autoriza é a concessão, não a governança de quem lê — ela não governa este documento.
+    assert.ok(!loader.includes('canUserListDocumentWithShare'));
+    assert.ok(loader.includes('canUpdate: false'));
+    assert.ok(loader.includes('canShare: false'));
+  });
+
+  it('o nome de quem enviou sobrevive à lista de membros de casa', () => {
+    const service = read(SERVICE);
+
+    // A busca de membros só conhece gente daqui; cair no `userId` mostraria um UUID.
+    assert.ok(service.includes('grant.inbound?.offer.sharedByName ??'));
+    // E `user.name` chega vazio na sessão do doqyn_auth.
+    assert.ok(service.includes('function resolveActorDisplayName'));
+    assert.ok(service.includes('sharedByName: resolveActorDisplayName(user)'));
+  });
+});

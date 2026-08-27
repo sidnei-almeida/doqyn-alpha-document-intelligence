@@ -115,6 +115,31 @@ export async function findActiveShareGrantsForUser(
     .toArray();
 }
 
+/**
+ * As concessões aceitas que vieram de outra empresa.
+ *
+ * Consulta à parte porque a chave é outra: numa concessão que atravessa a fronteira, `tenantId` é
+ * o tenant de **origem** — onde o documento mora —, e quem recebe está no `inbound`. Somá-la ao
+ * filtro de `findActiveShareGrantsForUser` faria a busca de casa varrer a coleção inteira por um
+ * caso que quase nunca existe.
+ */
+export async function findAcceptedInboundGrantsForUser(
+  sharedWithUserId: string,
+  recipientTenantId: string,
+): Promise<MongoDocumentShareGrant[]> {
+  if (!isMongoNativeConfigured()) return [];
+  const collection = await getShareGrantsCollection();
+  return collection
+    .find(
+      activeGrantFilter({
+        sharedWithUserId,
+        'inbound.recipientTenantId': recipientTenantId,
+      }) as Record<string, unknown>,
+    )
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
 export async function findActiveShareGrantsForDocument(
   documentId: string,
 ): Promise<MongoDocumentShareGrant[]> {
@@ -751,13 +776,13 @@ export async function createDocumentShareGrant(
     ctx,
     doc,
     sharedByUserId: user.id,
-    sharedByName: user.name,
+    sharedByName: resolveActorDisplayName(user),
     sharedWithUserId,
     permissions,
     message: input.message,
     expiresAt,
     inbound: crossesTenantBorder
-      ? await buildInboundState(ctx, doc, user.name, recipient.name)
+      ? await buildInboundState(ctx, doc, resolveActorDisplayName(user), recipient.name)
       : undefined,
   });
 }
@@ -929,6 +954,81 @@ export async function revokeDocumentShareGrant(
   };
 }
 
+/**
+ * Carrega, do acervo de outra empresa, os documentos que este usuário teve concedidos.
+ *
+ * A leitura acontece com o escopo do tenant de **origem**, porque é lá que o documento existe — e
+ * é por isso que esta função é um caminho à parte e não um parâmetro do fluxo normal: misturar os
+ * dois escopos numa consulta só seria a porta para vazar acervo alheio por engano.
+ *
+ * O que autoriza cada item é a concessão aceita, e nada mais. A governança do tenant de origem já
+ * foi consultada uma vez — quando alguém de lá compartilhou —, e reconsultá-la aqui daria a quem
+ * está de fora um voto sobre regras que não são dele. A revogação continua sendo o botão de
+ * desligar, do lado de quem enviou.
+ */
+/**
+ * O nome de quem envia, do jeito que o resto do sistema o monta.
+ *
+ * `user.name` chega vazio em sessão do `doqyn_auth` — o nome de exibição é composto de
+ * `firstName` e `lastName`. Guardar o campo cru na oferta fazia a caixa de entrada e a lista de
+ * "Compartilhados comigo" mostrarem o UUID de quem compartilhou.
+ */
+function resolveActorDisplayName(user: AuthUser): string {
+  return (
+    [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name?.trim() || user.email
+  );
+}
+
+async function loadForeignSharedDocuments(
+  originTenantId: string,
+  grants: MongoDocumentShareGrant[],
+  user: AuthUser,
+): Promise<Awaited<ReturnType<typeof buildDocumentListItems>>> {
+  const grantByDocumentId = new Map(grants.map((grant) => [grant.documentId, grant]));
+
+  const { documents, storage } = await getTenantCollections(originTenantId, {
+    // O dono do escopo é quem enviou, não quem lê: pedir as coleções em nome de quem recebe
+    // resolveria o acervo errado num tenant individual.
+    userId: grants[0]?.sharedByUserId,
+  });
+
+  const docs = (await documents
+    .find({
+      _id: { $in: [...grantByDocumentId.keys()] },
+      ...tenantScopeFilterFromContext(storage),
+      ...ACTIVE_DOCUMENT_FILTER,
+    } as Record<string, unknown>)
+    .toArray()) as MongoDocument[];
+
+  const items = await buildDocumentListItems({
+    tenantId: originTenantId,
+    docs,
+    shareGrantsByDocumentId: grantByDocumentId,
+  });
+
+  return items.map((item) => {
+    const grant = grantByDocumentId.get(item.documentId);
+    if (!grant) return item;
+
+    return {
+      ...item,
+      sharedWithMe: true,
+      sharedByUserId: grant.sharedByUserId,
+      sharedByNameSnapshot: grant.inbound?.offer.sharedByName ?? grant.sharedByUserId,
+      sharedAt: grant.createdAt.toISOString(),
+      // O documento é governado por outra empresa: quem recebeu lê, e no máximo baixa.
+      permissions: {
+        ...item.permissions,
+        canView: grant.permissions.canView,
+        canDownload: grant.permissions.canDownload,
+        canShare: false,
+        canUpdate: false,
+        canDelete: false,
+      },
+    };
+  });
+}
+
 export async function listSharedWithMeDocuments(
   user: AuthUser,
   membershipId?: string,
@@ -941,12 +1041,23 @@ export async function listSharedWithMeDocuments(
   }
 
   const grants = await findActiveShareGrantsForUser(user.id, tenantId);
-  if (!grants.length) {
+  /**
+   * O que veio de fora e já foi aceito entra na mesma lista.
+   *
+   * Não é uma segunda coleção nem uma aba nova: para quem recebeu, "compartilhado comigo" é
+   * compartilhado comigo, venha da mesa ao lado ou de outra empresa. O que muda é **onde o
+   * documento mora** — e isso é problema desta função, não de quem lê a tela.
+   */
+  const inboundGrants = await findAcceptedInboundGrantsForUser(user.id, tenantId);
+
+  if (!grants.length && !inboundGrants.length) {
     return { items: [], total: 0 };
   }
 
-  const grantByDocumentId = new Map(grants.map((grant) => [grant.documentId, grant]));
-  const documentIds = [...grantByDocumentId.keys()];
+  const grantByDocumentId = new Map(
+    [...grants, ...inboundGrants].map((grant) => [grant.documentId, grant]),
+  );
+  const documentIds = grants.map((grant) => grant.documentId);
 
   const { documents, storage } = await getTenantCollections(tenantId, {
     userId: user.id,
@@ -994,6 +1105,30 @@ export async function listSharedWithMeDocuments(
     shareGrantsByDocumentId: grantByDocumentId,
   });
 
+  /**
+   * O documento de outra empresa é lido no acervo de lá, agrupado por tenant de origem.
+   *
+   * Uma leitura por empresa, não uma por documento: quem recebe cinco documentos da mesma
+   * empresa faz uma consulta, não cinco.
+   *
+   * E **sem** `canUserListDocumentWithShare`: a governança que aquele filtro consulta é a do
+   * tenant de quem lê, e o documento não é governado por ela. Quem autoriza aqui é a concessão
+   * aceita — foi ela que atravessou a fronteira, e é só ela que pode ser revogada.
+   */
+  if (inboundGrants.length) {
+    const byOrigin = new Map<string, MongoDocumentShareGrant[]>();
+    for (const grant of inboundGrants) {
+      const list = byOrigin.get(grant.tenantId) ?? [];
+      list.push(grant);
+      byOrigin.set(grant.tenantId, list);
+    }
+
+    for (const [originTenantId, originGrants] of byOrigin) {
+      const foreign = await loadForeignSharedDocuments(originTenantId, originGrants, user);
+      items = items.concat(foreign);
+    }
+  }
+
   if (search?.trim()) {
     const q = search.trim().toLowerCase();
     items = items.filter((item) => {
@@ -1018,7 +1153,12 @@ export async function listSharedWithMeDocuments(
       ...item,
       sharedWithMe: true,
       sharedByUserId: grant.sharedByUserId,
-      sharedByNameSnapshot: memberLookup.get(grant.sharedByUserId) ?? grant.sharedByUserId,
+      // A busca de membros só conhece gente daqui. Quem compartilhou de outra empresa não está
+      // nela, e cair no `userId` mostraria um UUID onde deveria estar um nome.
+      sharedByNameSnapshot:
+        memberLookup.get(grant.sharedByUserId) ??
+        grant.inbound?.offer.sharedByName ??
+        grant.sharedByUserId,
       sharedAt: grant.createdAt.toISOString(),
       sharePermissions: grant.permissions,
     };
