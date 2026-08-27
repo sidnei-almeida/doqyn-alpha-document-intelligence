@@ -1,4 +1,8 @@
-import { getDoqynAuthBaseUrl, getDoqynAuthInternalApiKey, usesDoqynAuth } from '../auth/authConfig.js';
+import {
+  getDoqynAuthBaseUrl,
+  getDoqynAuthInternalApiKey,
+  usesDoqynAuth,
+} from '../auth/authConfig.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
 export type AuthServiceAccessGroup = {

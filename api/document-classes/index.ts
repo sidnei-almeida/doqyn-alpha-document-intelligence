@@ -43,9 +43,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           color: body.color as string | undefined,
           slug: body.slug as string | undefined,
         });
-        await createDefaultExtractionRuleForCategory(companyId, user.id, category.id, category.slug);
+        await createDefaultExtractionRuleForCategory(
+          companyId,
+          user.id,
+          category.id,
+          category.slug,
+        );
         logger.info('document class created (compat)', { requestId, companyId, id: category.id });
-        return apiCreated({ class: { ...category, permissions: { view: [], download: [], update: [], audit: [], share: [] } } });
+        return apiCreated({
+          class: {
+            ...category,
+            permissions: { view: [], download: [], update: [], audit: [], share: [] },
+          },
+        });
       },
     });
   }

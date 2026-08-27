@@ -54,6 +54,8 @@ export async function createDocumentShare(
     sharedWithUserId?: string;
     /** Do campo que atravessa a fronteira: o servidor resolve se é de casa ou de fora. */
     sharedWithEmail?: string;
+    /** Da busca por apelido. O diretório não devolve e-mail a quem só buscou. */
+    sharedWithUsername?: string;
     permissions?: { canView?: boolean; canDownload?: boolean };
     message?: string;
     expiresAt?: string;

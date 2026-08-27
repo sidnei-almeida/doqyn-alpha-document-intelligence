@@ -51,6 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // O caminho que atravessa a fronteira: o servidor resolve se é de casa ou de fora.
         requestedFromEmail:
           typeof body.requestedFromEmail === 'string' ? body.requestedFromEmail : undefined,
+        requestedFromUsername:
+          typeof body.requestedFromUsername === 'string' ? body.requestedFromUsername : undefined,
         title: typeof body.title === 'string' ? body.title : '',
         description: typeof body.description === 'string' ? body.description : undefined,
         categoryId: typeof body.categoryId === 'string' ? body.categoryId : undefined,

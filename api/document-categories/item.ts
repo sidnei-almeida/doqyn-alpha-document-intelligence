@@ -7,7 +7,8 @@ import { withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { logger } from '../../server/utils/logger.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const categoryId = typeof req.query.id === 'string' ? req.query.id : req.query.categoryId as string;
+  const categoryId =
+    typeof req.query.id === 'string' ? req.query.id : (req.query.categoryId as string);
 
   if (!categoryId) {
     return res.status(400).json({ message: 'ID da categoria é obrigatório.', code: 'MISSING_ID' });
@@ -54,7 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ownerUserId: user.id,
         });
         if (result.active) {
-          await updateDocumentCategory(companyId, categoryId, { active: false }, { ownerUserId: user.id });
+          await updateDocumentCategory(
+            companyId,
+            categoryId,
+            { active: false },
+            { ownerUserId: user.id },
+          );
         }
         logger.info('document category deactivated', {
           requestId,

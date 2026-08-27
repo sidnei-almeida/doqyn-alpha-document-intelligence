@@ -60,6 +60,8 @@ export async function createDocumentRequest(input: {
   requestedFromUserId?: string;
   /** O caminho que atravessa a fronteira: o servidor resolve se é de casa ou de fora. */
   requestedFromEmail?: string;
+  /** Da busca por apelido: o diretório não devolve e-mail a quem só buscou. */
+  requestedFromUsername?: string;
   title: string;
   description?: string;
   /** Ausente no pedido para fora: lá o documento não entra no seu acervo. */

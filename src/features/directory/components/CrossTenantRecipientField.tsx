@@ -3,15 +3,20 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { looksLikeEmail, useDirectoryLookup } from '../hooks/useDirectoryLookup';
+import { useDirectorySearch } from '../hooks/useDirectorySearch';
 import { PartnerContactList } from './PartnerContactList';
 
 /**
  * Campo próprio para achar alguém de **outra** empresa.
  *
- * Não é o mesmo campo da busca de colegas, e não deve ser: aquele procura por nome numa lista
- * conhecida; este resolve um e-mail exato contra o diretório, porque o nome está cifrado no
- * auth-service sem chave de busca. Misturar os dois num campo só escondia o caminho de fora atrás
- * do "ninguém encontrado" — e quem tem três colegas na lista nunca via que ele existia.
+ * Aceita as duas formas de achar alguém, e são duas porque o schema manda: **apelido** responde
+ * prefixo e é digitável; **e-mail** só responde igualdade exata, porque o que existe dele é um
+ * hash determinístico. O nome nunca entra na busca — ele é guardado cifrado, e tirá-lo de lá para
+ * permitir busca seria desfazer a decisão que protege todo mundo.
+ *
+ * Não é o mesmo campo da busca de colegas: aquele varre uma lista conhecida. Misturar os dois num
+ * campo só escondia o caminho de fora atrás do "ninguém encontrado" — e quem tem três colegas na
+ * lista nunca via que ele existia.
  *
  * A mesma peça serve compartilhar, pedir assinatura e requisitar: são três verbos, uma fronteira.
  */
@@ -31,7 +36,11 @@ export function CrossTenantRecipientField({
   label?: string;
   idleHint?: string;
   /** Chamado quando o e-mail resolve para um usuário DOQYN de outra empresa. */
-  onPick: (recipient: { email: string; name: string }) => void;
+  /**
+   * O escolhido. `email` vem preenchido quando se digitou um e-mail; `username`, quando se escolheu
+   * um resultado da busca. Nunca os dois: o diretório não entrega e-mail a quem só buscou.
+   */
+  onPick: (recipient: { email?: string; username?: string; name: string }) => void;
   /**
    * O caminho para quem não tem conta. Ausente quando o fluxo não oferece link com token — e aí o
    * campo só diz que não deu, em vez de prometer uma saída que não existe.
@@ -42,12 +51,15 @@ export function CrossTenantRecipientField({
 }) {
   const [email, setEmail] = useState('');
   const normalized = email.trim().toLowerCase();
-  const lookup = useDirectoryLookup(normalized, looksLikeEmail(normalized));
+  const isEmail = looksLikeEmail(normalized);
+  const lookup = useDirectoryLookup(normalized, isEmail);
+  // Enquanto não é e-mail, o que se digita é apelido — e aí a busca por prefixo responde.
+  const search = useDirectorySearch(normalized, !isEmail);
 
   let resolution: Resolution | null = null;
   let action: { label: string; run: () => void } | null = null;
 
-  if (!looksLikeEmail(normalized)) {
+  if (!isEmail) {
     resolution = { tone: 'muted', text: idleHint };
   } else if (lookup.isLoading) {
     resolution = { tone: 'muted', text: 'Procurando…' };
@@ -106,6 +118,27 @@ export function CrossTenantRecipientField({
         <Button type="button" size="sm" variant="ghost" onClick={action.run} disabled={disabled}>
           {action.label}
         </Button>
+      ) : null}
+
+      {/* O que a busca por apelido achou. Colega de casa não aparece aqui: para ele existe a
+          busca por nome, que é melhor, e oferecê-lo por este caminho criaria pendência de aceite
+          onde bastava compartilhar. */}
+      {!isEmail && (search.data ?? []).length > 0 ? (
+        <ul className="border-t border-doqyn-border-subtle">
+          {(search.data ?? []).map((hit) => (
+            <li key={hit.userId} className="border-b border-doqyn-border-subtle">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onPick({ username: hit.username, name: hit.name })}
+                className="flex w-full flex-col items-start py-2 text-left hover:bg-doqyn-surface-hover"
+              >
+                <span className="text-body text-doqyn-text">{hit.name}</span>
+                <span className="text-micro text-doqyn-muted">@{hit.username}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       <PartnerContactList onPick={setEmail} />

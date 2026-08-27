@@ -84,7 +84,8 @@ export function RequestSignatureModal({
    * com o e-mail, que é o que o servidor resolve contra o diretório.
    */
   const [crossTenantSigner, setCrossTenantSigner] = useState<{
-    email: string;
+    email?: string;
+    username?: string;
     name: string;
   } | null>(null);
   const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);

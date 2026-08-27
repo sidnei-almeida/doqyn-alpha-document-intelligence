@@ -34,6 +34,7 @@ import { resolveExternalSharingConfig } from '../../config/externalSharingConfig
 import { resolveTenant } from '../../tenancy/tenantResolver.js';
 import { notifyInboundShareReceived } from '../notifications/inboundShareNotifications.js';
 import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
+import { resolveDirectoryUserByUsername } from '../directory/directoryLookupService.js';
 import { notifyDocumentShared } from '../notifications/documentNotifications.js';
 import { getTenantIdFromUser } from '../../auth/tenantContext.js';
 import { resolveDocumentApproval } from '../approvals/documentApprovalGate.js';
@@ -608,10 +609,20 @@ type ResolvedShareRecipient =
 
 async function resolveShareRecipient(
   tenantId: string,
-  input: { sharedWithUserId?: string; sharedWithEmail?: string },
+  input: { sharedWithUserId?: string; sharedWithEmail?: string; sharedWithUsername?: string },
 ): Promise<ResolvedShareRecipient> {
   const userId = input.sharedWithUserId?.trim();
   const email = input.sharedWithEmail?.trim().toLowerCase();
+
+  // Apelido é o caminho da busca digitável, e só existe para fora: colega de casa se acha pelo
+  // nome, que é melhor.
+  if (input.sharedWithUsername?.trim()) {
+    const found = await resolveDirectoryUserByUsername(input.sharedWithUsername);
+    if (!found) {
+      throw new ServiceError('Apelido não encontrado no DOQYN.', 'SHARE_RECIPIENT_NOT_DOQYN', 400);
+    }
+    return { scope: 'external_tenant', userId: found.userId, name: found.name };
+  }
 
   if (userId) {
     const member = await resolveActiveTenantMemberByUserId(tenantId, userId);
@@ -748,12 +759,18 @@ export async function createDocumentShareGrant(
     sharedWithUserId?: string;
     /** O caminho que atravessa a fronteira: o e-mail resolve para membro daqui ou usuário de fora. */
     sharedWithEmail?: string;
+    /** O caminho da busca por apelido. O e-mail nunca sai do diretório para quem só buscou. */
+    sharedWithUsername?: string;
     permissions?: Partial<DocumentSharePermissions>;
     message?: string;
     expiresAt?: string;
   },
 ): Promise<ShareGrantResult> {
-  if (!input.sharedWithUserId?.trim() && !input.sharedWithEmail?.trim()) {
+  if (
+    !input.sharedWithUserId?.trim() &&
+    !input.sharedWithEmail?.trim() &&
+    !input.sharedWithUsername?.trim()
+  ) {
     throw new ServiceError(
       'Informe o destinatário do compartilhamento.',
       'MISSING_SHARED_WITH_USER',

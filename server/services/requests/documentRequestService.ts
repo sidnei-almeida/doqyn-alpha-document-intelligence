@@ -12,6 +12,7 @@ import { assertUserCanSubmitToCategoryId } from '../categoryUploadPermission.js'
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
 import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
+import { resolveDirectoryUserByUsername } from '../directory/directoryLookupService.js';
 import { resolveTenant } from '../../tenancy/tenantResolver.js';
 import { notifyDocumentRequested } from '../notifications/documentRequestNotifications.js';
 
@@ -235,6 +236,8 @@ export type CreateDocumentRequestInput = {
   requestedFromUserId?: string;
   /** O caminho que atravessa a fronteira: o e-mail resolve para membro daqui ou usuário de fora. */
   requestedFromEmail?: string;
+  /** O caminho da busca por apelido, que nunca devolve e-mail a quem só digitou um prefixo. */
+  requestedFromUsername?: string;
   title: string;
   description?: string;
   /** Obrigatória no pedido de dentro de casa; ignorada no pedido para fora. */
@@ -278,20 +281,38 @@ export async function createDocumentRequest(
 
   const dueAt = normalizeDueAt(input.dueAt);
 
-  const resolved = input.requestedFromEmail?.trim()
-    ? await resolveRequestedFromEmail(
-        ctx.tenantId,
-        { userId: user.id, email: user.email },
-        input.requestedFromEmail,
-      )
-    : {
-        party: await resolveRequestedFrom(
+  const byUsername = input.requestedFromUsername?.trim()
+    ? await resolveDirectoryUserByUsername(input.requestedFromUsername)
+    : null;
+
+  if (input.requestedFromUsername?.trim() && !byUsername) {
+    throw new ServiceError('Apelido não encontrado no DOQYN.', 'REQUEST_TARGET_NOT_DOQYN', 400);
+  }
+
+  const resolved = byUsername
+    ? {
+        party: {
+          userId: byUsername.userId,
+          name: byUsername.name,
+          // O apelido serve de identificação quando o e-mail não veio; a autorização é pelo id.
+          email: byUsername.email ?? `@${byUsername.username}`,
+        },
+        external: true,
+      }
+    : input.requestedFromEmail?.trim()
+      ? await resolveRequestedFromEmail(
           ctx.tenantId,
-          user.id,
-          input.requestedFromUserId?.trim() ?? '',
-        ),
-        external: false,
-      };
+          { userId: user.id, email: user.email },
+          input.requestedFromEmail,
+        )
+      : {
+          party: await resolveRequestedFrom(
+            ctx.tenantId,
+            user.id,
+            input.requestedFromUserId?.trim() ?? '',
+          ),
+          external: false,
+        };
 
   const requestedFrom = resolved.party;
 

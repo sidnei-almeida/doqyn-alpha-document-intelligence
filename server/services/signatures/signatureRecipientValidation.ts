@@ -71,6 +71,38 @@ export async function resolveSignerByEmail(
 ): Promise<{ signer: ResolvedInternalSigner; external: boolean }> {
   const email = rawEmail?.trim().toLowerCase() ?? '';
 
+  /**
+   * Apelido também serve, e é o que vem da busca digitável.
+   *
+   * O e-mail do signatário fica vazio aqui de propósito: o diretório não o entrega a quem só
+   * buscou, e o convite chega pela página com token, que não precisa dele.
+   */
+  if (email && !email.includes('@')) {
+    const { resolveDirectoryUserByUsername } =
+      await import('../directory/directoryLookupService.js');
+    const found = await resolveDirectoryUserByUsername(email);
+    if (!found) {
+      throw new ServiceError('Apelido não encontrado no DOQYN.', 'SIGNER_NOT_DOQYN', 400);
+    }
+    if (!found.email) {
+      // Sem endereço não há como entregar o convite, e a assinatura ficaria pendente para sempre.
+      throw new ServiceError(
+        'Não foi possível obter o contato dessa pessoa.',
+        'SIGNER_EMAIL_INVALID',
+        400,
+      );
+    }
+    return {
+      signer: {
+        userId: found.userId,
+        name: found.name,
+        email: found.email ?? '',
+        emailNormalized: found.email ? normalizeEmail(found.email) : '',
+      },
+      external: true,
+    };
+  }
+
   if (!email || !isValidEmail(email)) {
     throw new ServiceError('E-mail do signatário inválido.', 'SIGNER_EMAIL_INVALID', 400);
   }

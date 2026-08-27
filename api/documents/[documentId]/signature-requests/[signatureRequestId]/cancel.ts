@@ -28,21 +28,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { documentId, signatureRequestId } = resolveIds(req);
   if (!documentId) {
-    return res.status(400).json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
+    return res
+      .status(400)
+      .json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
   }
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
 
   try {
-    const result = await cancelDocumentSignatureRequest(
-      auth.ctx,
-      auth.user,
-      signatureRequestId,
-      { expectedDocumentId: documentId },
-    );
+    const result = await cancelDocumentSignatureRequest(auth.ctx, auth.user, signatureRequestId, {
+      expectedDocumentId: documentId,
+    });
 
     await emitTrackingEvent(
       auditCtx,

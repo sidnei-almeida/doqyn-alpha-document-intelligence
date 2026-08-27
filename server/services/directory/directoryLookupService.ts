@@ -1,6 +1,10 @@
 import type { AuthUser } from '../../auth/types.js';
 import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
-import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
+import {
+  fetchDirectoryUserEmail,
+  lookupDirectoryUserByEmail,
+  searchDirectoryUsersByUsername,
+} from '../../integrations/doqynAuthInternalClient.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
@@ -151,5 +155,87 @@ export async function lookupDirectoryTarget(
   return {
     kind: 'doqyn_user',
     user: { userId: found.id, name: found.displayName },
+  };
+}
+
+/**
+ * Busca digitável entre empresas, por prefixo de handle.
+ *
+ * Consome a **mesma** cota do lookup por e-mail, e tem de consumir: buscar por prefixo é a forma
+ * mais barata de varrer o cadastro que existe, e deixá-la de fora do teto tornaria o handle a
+ * porta que o e-mail exato não é.
+ *
+ * Prefixo curto não sai daqui. Uma letra devolveria um pedaço grande do diretório a cada tecla, e
+ * o cadastro inteiro em poucas dezenas de chamadas.
+ */
+export type DirectorySearchResult = {
+  userId: string;
+  username: string;
+  name: string;
+};
+
+export async function searchDirectoryUsers(
+  ctx: DocumentRequestContext,
+  user: AuthUser,
+  rawQuery: string | undefined,
+): Promise<DirectorySearchResult[]> {
+  const prefix = rawQuery?.trim().toLowerCase() ?? '';
+  if (prefix.length < 2) return [];
+
+  if (!isInterTenantSharingEnabled()) return [];
+
+  await assertLookupQuota(user.id);
+
+  const hits = await searchDirectoryUsersByUsername(prefix);
+  const members = await listOperationalTenantMembers(ctx.tenantId);
+  const inHouse = new Set(
+    members
+      .map(serializeTenantMember)
+      .map((member) => member.userId)
+      .filter(Boolean),
+  );
+
+  return (
+    hits
+      // Colega de casa some da busca de fora: para ele existe a busca por nome, que é melhor, e
+      // oferecê-lo aqui criaria uma pendência de aceite onde bastava compartilhar.
+      .filter((hit) => hit.id !== user.id && !inHouse.has(hit.id))
+      .map((hit) => ({
+        userId: hit.id,
+        username: hit.username,
+        name: hit.displayName || hit.username,
+      }))
+  );
+}
+
+/**
+ * O usuário por trás de um apelido.
+ *
+ * A busca devolve apelido e nome, nunca e-mail: entregá-lo a quem digitou duas letras faria do
+ * diretório uma lista de endereços. Quando alguém escolhe um resultado, é o apelido que viaja, e é
+ * aqui que ele vira identidade.
+ *
+ * Reusa a própria busca em vez de uma rota nova: um prefixo que é o apelido inteiro devolve, entre
+ * os primeiros, o dono exato dele.
+ */
+export async function resolveDirectoryUserByUsername(
+  rawUsername: string,
+): Promise<{ userId: string; name: string; username: string; email: string | null } | null> {
+  const username = rawUsername.trim().toLowerCase().replace(/^@/, '');
+  if (username.length < 2 || !isInterTenantSharingEnabled()) return null;
+
+  const hits = await searchDirectoryUsersByUsername(username, 5);
+  const exact = hits.find((hit) => hit.username === username);
+  if (!exact) return null;
+
+  // O e-mail é buscado **aqui**, no servidor, e não vai para quem buscou: quem foi escolhido
+  // precisa receber aviso, e o convite de assinatura precisa de destinatário real.
+  const email = await fetchDirectoryUserEmail(exact.id);
+
+  return {
+    userId: exact.id,
+    name: exact.displayName || exact.username,
+    username: exact.username,
+    email,
   };
 }

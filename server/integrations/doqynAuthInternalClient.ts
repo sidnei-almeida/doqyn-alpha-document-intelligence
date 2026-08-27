@@ -139,3 +139,47 @@ export async function lookupDirectoryUserByEmail(
 
   return result.found ? (result.user ?? null) : null;
 }
+
+/**
+ * A busca navegável do diretório, por prefixo de handle.
+ *
+ * É o único caminho digitável que o schema do auth-service permite: o nome está cifrado e o
+ * e-mail só tem hash determinístico, e nenhum dos dois responde prefixo. O handle é a peça que
+ * torna o diretório navegável sem tirar nome nenhum da criptografia.
+ */
+export type DirectorySearchHit = {
+  id: string;
+  username: string;
+  displayName: string;
+};
+
+export async function searchDirectoryUsersByUsername(
+  prefix: string,
+  limit = 8,
+): Promise<DirectorySearchHit[]> {
+  const query = `?q=${encodeURIComponent(prefix)}&limit=${encodeURIComponent(String(limit))}`;
+  const result = await callInternal<{ ok: true; users?: DirectorySearchHit[] }>(
+    `/internal/users/search${query}`,
+  );
+  return result.users ?? [];
+}
+
+/**
+ * O e-mail de um usuário, para o sistema entregar — não para a tela mostrar.
+ *
+ * A busca por apelido não devolve e-mail de propósito: entregá-lo a quem digitou duas letras faria
+ * do diretório uma lista de endereços. Mas quem foi escolhido precisa receber aviso, e o convite
+ * de assinatura precisa de um destinatário real. Esta chamada é servidor-para-servidor, com a
+ * chave interna, e o resultado nunca volta ao cliente.
+ */
+export async function fetchDirectoryUserEmail(userId: string): Promise<string | null> {
+  try {
+    const result = await callInternal<{ ok: true; user?: { email?: string } }>(
+      `/internal/users/${encodeURIComponent(userId)}`,
+    );
+    return result.user?.email?.trim().toLowerCase() ?? null;
+  } catch {
+    // Sem e-mail, o fluxo segue: o que depende dele é entrega, não autorização.
+    return null;
+  }
+}

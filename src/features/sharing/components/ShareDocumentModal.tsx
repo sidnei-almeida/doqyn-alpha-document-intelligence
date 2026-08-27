@@ -74,9 +74,11 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
    * busca por nome, e o envio para ele nasce pendente do outro lado. Tratá-lo como membro faria a
    * tela prometer um acesso imediato que não acontece.
    */
-  const [crossTenantPick, setCrossTenantPick] = useState<{ email: string; name: string } | null>(
-    null,
-  );
+  const [crossTenantPick, setCrossTenantPick] = useState<{
+    email?: string;
+    username?: string;
+    name: string;
+  } | null>(null);
   const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
   const [canDownload, setCanDownload] = useState(false);
   const [message, setMessage] = useState('');
@@ -124,6 +126,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
     if (audience === 'internal' && crossTenantPick) {
       await shareWithUser.mutateAsync({
         sharedWithEmail: crossTenantPick.email,
+        sharedWithUsername: crossTenantPick.username,
         canDownload,
         message: message.trim() || undefined,
         expiresAt: expirationDateToIso(expiresAt),
@@ -274,7 +277,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                   <div className="min-w-0">
                     <p className="type-body truncate text-doqyn-text">{crossTenantPick.name}</p>
                     <p className="type-caption truncate text-doqyn-muted">
-                      {crossTenantPick.email} · de outra empresa
+                      {crossTenantPick.email ?? `@${crossTenantPick.username}`} · de outra empresa
                     </p>
                   </div>
                   <Button

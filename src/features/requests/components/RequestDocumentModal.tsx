@@ -26,6 +26,7 @@ type RequestDocumentModalProps = {
   onSubmit: (input: {
     requestedFromUserId?: string;
     requestedFromEmail?: string;
+    requestedFromUsername?: string;
     title: string;
     description?: string;
     categoryId?: string;
@@ -55,6 +56,7 @@ export function RequestDocumentModal({
   const [scope, setScope] = useState<'internal' | 'external'>('internal');
   const [requestedFromUserId, setRequestedFromUserId] = useState('');
   const [requestedFromEmail, setRequestedFromEmail] = useState('');
+  const [requestedFromUsername, setRequestedFromUsername] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -62,7 +64,7 @@ export function RequestDocumentModal({
 
   const external = scope === 'external';
   const hasTarget = external
-    ? requestedFromEmail.trim().includes('@')
+    ? requestedFromEmail.trim().includes('@') || Boolean(requestedFromUsername)
     : Boolean(requestedFromUserId);
 
   const canSubmit = Boolean(hasTarget && title.trim() && (external || categoryId)) && !saving;
@@ -71,6 +73,7 @@ export function RequestDocumentModal({
     setScope('internal');
     setRequestedFromUserId('');
     setRequestedFromEmail('');
+    setRequestedFromUsername('');
     setTitle('');
     setDescription('');
     setCategoryId('');
@@ -86,7 +89,8 @@ export function RequestDocumentModal({
     if (!canSubmit) return;
     await onSubmit({
       requestedFromUserId: external ? undefined : requestedFromUserId,
-      requestedFromEmail: external ? requestedFromEmail.trim() : undefined,
+      requestedFromEmail: external ? requestedFromEmail.trim() || undefined : undefined,
+      requestedFromUsername: external ? requestedFromUsername.trim() || undefined : undefined,
       title: title.trim(),
       description: description.trim() || undefined,
       categoryId: external ? undefined : categoryId,
@@ -158,11 +162,16 @@ export function RequestDocumentModal({
               idleHint="Precisa ter conta DOQYN. Fora da sua empresa não há busca por nome: o nome é guardado cifrado."
               /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e
                  o link com token serve para receber, não para mandar. */
-              onPick={(recipient) => setRequestedFromEmail(recipient.email)}
+              onPick={(recipient) => {
+                // Apelido e e-mail viajam em campos diferentes: o servidor resolve cada um pelo seu
+                // caminho, e o do apelido nunca expõe endereço a quem só buscou.
+                setRequestedFromEmail(recipient.email ?? '');
+                setRequestedFromUsername(recipient.username ?? '');
+              }}
             />
-            {requestedFromEmail ? (
+            {requestedFromEmail || requestedFromUsername ? (
               <p className="text-caption text-doqyn-accent-active">
-                Pedido para {requestedFromEmail}
+                Pedido para {requestedFromEmail || `@${requestedFromUsername}`}
               </p>
             ) : null}
           </div>
