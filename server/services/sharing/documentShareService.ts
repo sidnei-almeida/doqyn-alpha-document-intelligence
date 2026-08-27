@@ -982,7 +982,6 @@ function resolveActorDisplayName(user: AuthUser): string {
 async function loadForeignSharedDocuments(
   originTenantId: string,
   grants: MongoDocumentShareGrant[],
-  user: AuthUser,
 ): Promise<Awaited<ReturnType<typeof buildDocumentListItems>>> {
   const grantByDocumentId = new Map(grants.map((grant) => [grant.documentId, grant]));
 
@@ -1124,7 +1123,7 @@ export async function listSharedWithMeDocuments(
     }
 
     for (const [originTenantId, originGrants] of byOrigin) {
-      const foreign = await loadForeignSharedDocuments(originTenantId, originGrants, user);
+      const foreign = await loadForeignSharedDocuments(originTenantId, originGrants);
       items = items.concat(foreign);
     }
   }
