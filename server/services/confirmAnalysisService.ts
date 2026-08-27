@@ -851,6 +851,8 @@ export async function confirmAnalysisPersistence(input: {
           },
           requesterUserId: fulfilledRequest.requestedBy.userId,
           requesterName: fulfilledRequest.requestedBy.name,
+          requesterEmail: fulfilledRequest.requestedBy.email,
+          fulfilledByEmail: input.user.email,
           // A concessão sai no nome de quem enviou, não de quem aprovou o envio.
           fulfilledByUserId: ownerUserId,
           fulfilledByName: ownerName,

@@ -407,9 +407,20 @@ async function persistShareGrant(input: {
   const collection = await getShareGrantsCollection();
   const now = new Date();
 
-  const existing = await collection.findOne(
-    activeGrantFilter({ documentId, sharedWithUserId }) as Record<string, unknown>,
-  );
+  /**
+   * A concessão que já existe, **pendente inclusive**.
+   *
+   * `activeGrantFilter` é o portão da autorização e esconde o pendente de propósito. Usá-lo aqui
+   * faria o reenvio para a mesma pessoa não encontrar a oferta que ainda espera resposta, tentar
+   * inserir uma segunda, e bater no índice único de concessão ativa — um 500 no lugar de "já foi
+   * enviado". Repetir o gesto atualiza a oferta; não cria outra, nem reabre o que foi decidido.
+   */
+  const existing = await collection.findOne({
+    documentId,
+    sharedWithUserId,
+    status: 'active',
+    $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: now } }],
+  } as Record<string, unknown>);
 
   if (existing) {
     await collection.updateOne(
@@ -419,6 +430,7 @@ async function persistShareGrant(input: {
           permissions,
           message: input.message?.trim() || null,
           updatedAt: now,
+          ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt } : {}),
         },
       },
     );
@@ -504,6 +516,8 @@ export async function grantRequesterAccessToFulfilledDocument(input: {
   doc: Pick<MongoDocument, '_id' | 'currentVersionId' | 'title' | 'currentFileName'>;
   requesterUserId: string;
   requesterName?: string;
+  requesterEmail?: string;
+  fulfilledByEmail?: string;
   fulfilledByUserId: string;
   fulfilledByName: string;
   /**
@@ -533,6 +547,7 @@ export async function grantRequesterAccessToFulfilledDocument(input: {
           input.doc,
           input.fulfilledByName,
           input.requesterName ?? input.requesterUserId,
+          { sharedByEmail: input.fulfilledByEmail, recipientEmail: input.requesterEmail },
         )
       : undefined,
   });
@@ -671,6 +686,7 @@ async function buildInboundState(
   doc: Pick<MongoDocument, '_id' | 'title' | 'currentFileName'>,
   sharedByName: string,
   recipientName: string,
+  contacts?: { sharedByEmail?: string; recipientEmail?: string },
 ): Promise<InboundShareState> {
   const tenant = await resolveTenant(ctx.tenantId);
 
@@ -682,8 +698,10 @@ async function buildInboundState(
     offer: {
       documentName: doc.title || doc.currentFileName || String(doc._id),
       sharedByName,
+      ...(contacts?.sharedByEmail ? { sharedByEmail: contacts.sharedByEmail } : {}),
       originTenantName: tenant.displayName || ctx.tenantId,
       recipientName,
+      ...(contacts?.recipientEmail ? { recipientEmail: contacts.recipientEmail } : {}),
     },
   };
 }
@@ -774,6 +792,7 @@ export async function createDocumentShareGrant(
         sharedWithUserId,
         recipientScope: recipient.scope,
         recipientName: recipient.name,
+        recipientEmail: input.sharedWithEmail?.trim().toLowerCase(),
         permissions,
         message: input.message?.trim() || null,
         expiresAt: expiresAt ? expiresAt.toISOString() : null,
@@ -802,7 +821,10 @@ export async function createDocumentShareGrant(
     message: input.message,
     expiresAt,
     inbound: crossesTenantBorder
-      ? await buildInboundState(ctx, doc, resolveActorDisplayName(user), recipient.name)
+      ? await buildInboundState(ctx, doc, resolveActorDisplayName(user), recipient.name, {
+          sharedByEmail: user.email,
+          recipientEmail: input.sharedWithEmail?.trim().toLowerCase(),
+        })
       : undefined,
   });
 }
@@ -832,6 +854,7 @@ export async function createShareGrantFromApprovedRequest(
     sharedWithUserId?: unknown;
     recipientScope?: unknown;
     recipientName?: unknown;
+    recipientEmail?: unknown;
     permissions?: Partial<DocumentSharePermissions>;
     message?: unknown;
     expiresAt?: unknown;
@@ -900,6 +923,11 @@ export async function createShareGrantFromApprovedRequest(
           doc as MongoDocument,
           request.requestedBy.name,
           typeof payload.recipientName === 'string' ? payload.recipientName : sharedWithUserId,
+          {
+            sharedByEmail: request.requestedBy.email,
+            recipientEmail:
+              typeof payload.recipientEmail === 'string' ? payload.recipientEmail : undefined,
+          },
         )
       : undefined,
   });

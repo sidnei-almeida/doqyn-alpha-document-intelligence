@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { DoqynUserField } from '@/features/directory/components/DoqynUserField';
 import { cn } from '@/lib/utils';
 
 export type RequestDocumentTarget = {
@@ -151,19 +152,12 @@ export function RequestDocumentModal({
         </div>
 
         {external ? (
-          <div>
-            <Input
-              label="E-mail de quem vai enviar"
-              value={requestedFromEmail}
-              onChange={(event) => setRequestedFromEmail(event.target.value)}
-              placeholder="pessoa@outraempresa.com"
-              autoComplete="off"
-            />
-            <span className="mt-1 block text-[11px] text-doqyn-subtle">
-              Precisa ter conta DOQYN. Sem busca por nome: fora da sua empresa, só o e-mail exato
-              encontra alguém.
-            </span>
-          </div>
+          <DoqynUserField
+            label="E-mail de quem vai enviar"
+            value={requestedFromEmail}
+            onChange={setRequestedFromEmail}
+            hint="Precisa ter conta DOQYN. Sem busca por nome: fora da sua empresa, só o e-mail exato encontra alguém."
+          />
         ) : (
           /* O `select` nativo desenha a lista com o tema do navegador, e num app escuro isso
              aparece como um retângulo branco no meio do formulário. O primitivo do app monta a

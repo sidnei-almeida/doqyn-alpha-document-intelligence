@@ -1034,6 +1034,8 @@ export type InboundShareState = {
   offer: {
     documentName: string;
     sharedByName: string;
+    /** Para que a segunda conversa não exija redigitar o e-mail da primeira. */
+    sharedByEmail?: string;
     originTenantName: string;
     /**
      * O nome de quem recebe, visto do lado de quem envia.
@@ -1042,6 +1044,7 @@ export type InboundShareState = {
      * mostraria o id cru da pessoa para quem acabou de escolhê-la pelo nome.
      */
     recipientName: string;
+    recipientEmail?: string;
   };
 };
 

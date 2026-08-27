@@ -25,6 +25,7 @@ import {
   type RecipientAudience,
 } from '@/features/documents/recipients/RecipientFlow';
 import { OutsideCompanyHint } from '@/features/directory/components/OutsideCompanyHint';
+import { PartnerContactList } from '@/features/directory/components/PartnerContactList';
 import {
   useDocumentShares,
   useShareableUsersSearch,
@@ -302,14 +303,20 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
                   emptyAction={
-                    <OutsideCompanyHint
-                      query={query}
-                      onUseExternal={(email) => {
-                        setAudience('external');
-                        setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
-                      }}
-                      onUseDoqynUser={(email, name) => setCrossTenantPick({ email, name })}
-                    />
+                    <div className="flex flex-col gap-3">
+                      <OutsideCompanyHint
+                        query={query}
+                        onUseExternal={(email) => {
+                          setAudience('external');
+                          setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                        }}
+                        onUseDoqynUser={(email, name) => setCrossTenantPick({ email, name })}
+                      />
+                      {/* Quem já trocou documento com uma empresa não devia redigitar o e-mail da
+                          mesma pessoa toda vez. É o que compensa não haver busca por nome entre
+                          empresas. */}
+                      <PartnerContactList onPick={(email) => setQuery(email)} />
+                    </div>
                   }
                 />
               ) : (
