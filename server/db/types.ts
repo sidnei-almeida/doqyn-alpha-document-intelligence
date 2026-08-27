@@ -952,17 +952,32 @@ export type MongoDocumentRequest = {
     name: string;
     email: string;
   };
-  /** De quem se pede. Hoje sempre membro do mesmo tenant; a Fase F abre para fora. */
+  /** De quem se pede: membro do mesmo tenant, ou usuário DOQYN de outra empresa. */
   requestedFrom: {
     userId: string;
     membershipId?: string;
     name: string;
     email: string;
   };
+  /**
+   * Presente quando o pedido atravessa a fronteira da empresa.
+   *
+   * Quem recebe está fora e não alcança o cadastro de quem pediu: sem o nome da empresa copiado
+   * aqui, a lista dele mostraria um pedido vindo de lugar nenhum.
+   */
+  crossTenant?: {
+    requesterTenantName: string;
+  };
   title: string;
   description?: string;
-  /** Categoria de destino, escolhida por quem pede. */
-  categoryId: string;
+  /**
+   * Categoria de destino, escolhida por quem pede.
+   *
+   * **Ausente no pedido para fora**, e isso não é omissão: o documento vai nascer e morar no
+   * acervo de quem envia, governado por lá. Impor uma categoria do lado de cá seria prometer um
+   * destino que o documento nunca terá — quem pede recebe leitura pela concessão, não posse.
+   */
+  categoryId?: string;
   categoryName?: string;
   dueAt?: Date;
   status: DocumentRequestStatus;

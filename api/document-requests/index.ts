@@ -47,10 +47,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = (req.body ?? {}) as Record<string, unknown>;
       const request = await createDocumentRequest(auth.ctx, auth.user, {
         requestedFromUserId:
-          typeof body.requestedFromUserId === 'string' ? body.requestedFromUserId : '',
+          typeof body.requestedFromUserId === 'string' ? body.requestedFromUserId : undefined,
+        // O caminho que atravessa a fronteira: o servidor resolve se é de casa ou de fora.
+        requestedFromEmail:
+          typeof body.requestedFromEmail === 'string' ? body.requestedFromEmail : undefined,
         title: typeof body.title === 'string' ? body.title : '',
         description: typeof body.description === 'string' ? body.description : undefined,
-        categoryId: typeof body.categoryId === 'string' ? body.categoryId : '',
+        categoryId: typeof body.categoryId === 'string' ? body.categoryId : undefined,
         dueAt: typeof body.dueAt === 'string' ? body.dueAt : undefined,
       });
 

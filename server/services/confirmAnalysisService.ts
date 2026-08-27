@@ -838,6 +838,9 @@ export async function confirmAnalysisPersistence(input: {
       // envio fica na Biblioteca como qualquer outro, e não se concede acesso por um pedido que já
       // foi fechado por outro arquivo.
       if (settled) {
+        // Pedido que veio de fora: a entrega atravessa a fronteira e espera aceite de quem pediu.
+        const crossTenant = Boolean(fulfilledRequest.crossTenant);
+
         await grantRequesterAccessToFulfilledDocument({
           ctx: input.ctx,
           doc: {
@@ -847,9 +850,11 @@ export async function confirmAnalysisPersistence(input: {
             currentFileName: documentNameSnapshot,
           },
           requesterUserId: fulfilledRequest.requestedBy.userId,
+          requesterName: fulfilledRequest.requestedBy.name,
           // A concessão sai no nome de quem enviou, não de quem aprovou o envio.
           fulfilledByUserId: ownerUserId,
           fulfilledByName: ownerName,
+          crossTenant,
         });
 
         await notifyDocumentRequestFulfilled(settled, documentNameSnapshot);

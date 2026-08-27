@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { cn } from '@/lib/utils';
 
 export type RequestDocumentTarget = {
   userId: string;
@@ -22,10 +23,11 @@ type RequestDocumentModalProps = {
   categories: RequestDocumentCategory[];
   saving?: boolean;
   onSubmit: (input: {
-    requestedFromUserId: string;
+    requestedFromUserId?: string;
+    requestedFromEmail?: string;
     title: string;
     description?: string;
-    categoryId: string;
+    categoryId?: string;
     dueAt?: string;
   }) => Promise<void>;
 };
@@ -33,9 +35,13 @@ type RequestDocumentModalProps = {
 /**
  * Pedir um documento a alguém.
  *
- * A categoria é campo obrigatório e fica ao lado da pessoa, não escondida em "avançado": ela é a
- * decisão de governança do pedido — quem envia não escolhe onde o documento cai, e por isso quem
- * pede precisa ver essa escolha enquanto a faz.
+ * Dentro de casa, a categoria é campo obrigatório e fica ao lado da pessoa, não escondida em
+ * "avançado": ela é a decisão de governança do pedido, e quem envia não escolhe onde o documento
+ * cai.
+ *
+ * Para fora, ela **desaparece** — e isso não é simplificação de tela. O documento vai nascer e
+ * morar no acervo de quem envia, governado por lá; oferecer uma categoria daqui prometeria um
+ * destino que ele nunca terá. O que se recebe é leitura pela concessão, não posse.
  */
 export function RequestDocumentModal({
   open,
@@ -45,16 +51,25 @@ export function RequestDocumentModal({
   saving,
   onSubmit,
 }: RequestDocumentModalProps) {
+  const [scope, setScope] = useState<'internal' | 'external'>('internal');
   const [requestedFromUserId, setRequestedFromUserId] = useState('');
+  const [requestedFromEmail, setRequestedFromEmail] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [dueAt, setDueAt] = useState('');
 
-  const canSubmit = Boolean(requestedFromUserId && title.trim() && categoryId) && !saving;
+  const external = scope === 'external';
+  const hasTarget = external
+    ? requestedFromEmail.trim().includes('@')
+    : Boolean(requestedFromUserId);
+
+  const canSubmit = Boolean(hasTarget && title.trim() && (external || categoryId)) && !saving;
 
   const reset = () => {
+    setScope('internal');
     setRequestedFromUserId('');
+    setRequestedFromEmail('');
     setTitle('');
     setDescription('');
     setCategoryId('');
@@ -69,10 +84,11 @@ export function RequestDocumentModal({
   const submit = async () => {
     if (!canSubmit) return;
     await onSubmit({
-      requestedFromUserId,
+      requestedFromUserId: external ? undefined : requestedFromUserId,
+      requestedFromEmail: external ? requestedFromEmail.trim() : undefined,
       title: title.trim(),
       description: description.trim() || undefined,
-      categoryId,
+      categoryId: external ? undefined : categoryId,
       /**
        * Fim do dia **em UTC**, não no fuso de quem digita.
        *
@@ -91,7 +107,11 @@ export function RequestDocumentModal({
       open={open}
       onClose={close}
       title="Pedir um documento"
-      subtitle="Quem receber envia pelo fluxo de sempre, e o documento cai na categoria que você escolher."
+      subtitle={
+        external
+          ? 'O documento fica no acervo de quem enviar, e você recebe acesso de leitura depois de aceitar.'
+          : 'Quem receber envia pelo fluxo de sempre, e o documento cai na categoria que você escolher.'
+      }
       size="md"
       dismissOnOverlay={false}
       footer={
@@ -106,22 +126,62 @@ export function RequestDocumentModal({
       }
     >
       <div className="space-y-4">
-        {/* O `select` nativo desenha a lista com o tema do navegador, e num app escuro isso
-            aparece como um retângulo branco no meio do formulário. O primitivo do app monta a
-            própria lista. */}
-        <Select
-          label="De quem"
-          value={requestedFromUserId}
-          onChange={(event) => setRequestedFromUserId(event.target.value)}
-          options={[
-            { value: '', label: 'Selecione uma pessoa' },
-            ...people.map((person) => ({
-              value: person.userId,
-              // Sem travessão: o nome já separa do e-mail, e o traço só rouba largura da linha.
-              label: person.email ? `${person.name} (${person.email})` : person.name,
-            })),
-          ]}
-        />
+        {/* Duas origens, não duas telas: pedir é o mesmo gesto, muda só quem atende. */}
+        <div className="flex gap-1 border-b border-doqyn-border-subtle">
+          {(
+            [
+              ['internal', 'Alguém da empresa'],
+              ['external', 'Outra empresa'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setScope(value)}
+              className={cn(
+                'px-3 pb-2 text-caption transition-colors',
+                scope === value
+                  ? 'border-b-2 border-doqyn-accent-active text-doqyn-text'
+                  : 'text-doqyn-muted hover:text-doqyn-text',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {external ? (
+          <div>
+            <Input
+              label="E-mail de quem vai enviar"
+              value={requestedFromEmail}
+              onChange={(event) => setRequestedFromEmail(event.target.value)}
+              placeholder="pessoa@outraempresa.com"
+              autoComplete="off"
+            />
+            <span className="mt-1 block text-[11px] text-doqyn-subtle">
+              Precisa ter conta DOQYN. Sem busca por nome: fora da sua empresa, só o e-mail exato
+              encontra alguém.
+            </span>
+          </div>
+        ) : (
+          /* O `select` nativo desenha a lista com o tema do navegador, e num app escuro isso
+             aparece como um retângulo branco no meio do formulário. O primitivo do app monta a
+             própria lista. */
+          <Select
+            label="De quem"
+            value={requestedFromUserId}
+            onChange={(event) => setRequestedFromUserId(event.target.value)}
+            options={[
+              { value: '', label: 'Selecione uma pessoa' },
+              ...people.map((person) => ({
+                value: person.userId,
+                // Sem travessão: o nome já separa do e-mail, e o traço só rouba largura da linha.
+                label: person.email ? `${person.name} (${person.email})` : person.name,
+              })),
+            ]}
+          />
+        )}
 
         <Input
           label="O que você está pedindo"
@@ -131,20 +191,22 @@ export function RequestDocumentModal({
           placeholder="Comprovante de residência atualizado"
         />
 
-        <div>
-          <Select
-            label="Categoria de destino"
-            value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-            options={[
-              { value: '', label: 'Selecione uma categoria' },
-              ...categories.map((category) => ({ value: category.id, label: category.name })),
-            ]}
-          />
-          <span className="mt-1 block text-[11px] text-doqyn-subtle">
-            É aqui que o documento vai cair. Quem enviar não muda essa escolha.
-          </span>
-        </div>
+        {external ? null : (
+          <div>
+            <Select
+              label="Categoria de destino"
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+              options={[
+                { value: '', label: 'Selecione uma categoria' },
+                ...categories.map((category) => ({ value: category.id, label: category.name })),
+              ]}
+            />
+            <span className="mt-1 block text-[11px] text-doqyn-subtle">
+              É aqui que o documento vai cair. Quem enviar não muda essa escolha.
+            </span>
+          </div>
+        )}
 
         <label className="block">
           <span className="type-label mb-1 block text-doqyn-muted">Detalhes (opcional)</span>

@@ -1,6 +1,7 @@
 import type { MongoDocumentRequest } from '../../db/types.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
+import { findActiveTenantIdsForUser } from '../tenantMemberRepository.js';
 
 /**
  * Notificar nunca derruba a ação que a originou.
@@ -27,23 +28,41 @@ function formatDueDate(value: Date | undefined): string | null {
 
 /** Avisa quem vai enviar que há um documento sendo pedido a ele. */
 export async function notifyDocumentRequested(request: MongoDocumentRequest): Promise<void> {
-  await safely('document_requested', () => {
-    const due = formatDueDate(request.dueAt);
-    return emitNotifications({
-      tenantId: request.tenantId,
-      companyId: request.companyId,
-      type: 'document_requested',
-      recipients: [request.requestedFrom.userId],
-      // Um pedido, um aviso. Reprocessar não enche a caixa de quem vai enviar.
-      eventKey: request._id,
-      title: `${request.requestedBy.name} pediu um documento`,
-      body: due ? `${request.title} — até ${due}` : request.title,
-      categoryId: request.categoryId,
-      categoryName: request.categoryName,
-      actorUserId: request.requestedBy.userId,
-      actorName: request.requestedBy.name,
-    });
-  });
+  const due = formatDueDate(request.dueAt);
+  const title = request.crossTenant
+    ? `${request.crossTenant.requesterTenantName} pediu um documento`
+    : `${request.requestedBy.name} pediu um documento`;
+  const body = due ? `${request.title} · até ${due}` : request.title;
+
+  /**
+   * O aviso é gravado na caixa de quem vai enviar, e ela vive no tenant dele.
+   *
+   * No pedido de dentro de casa é o mesmo tenant do pedido. No pedido que atravessa a fronteira,
+   * não: quem recebe está em outra empresa — e pode estar em mais de uma —, e usar o tenant de
+   * quem pediu gravaria o aviso numa caixa que o destinatário não abre.
+   */
+  const tenantIds = request.crossTenant
+    ? await findActiveTenantIdsForUser(request.requestedFrom.userId)
+    : [request.tenantId];
+
+  for (const tenantId of tenantIds) {
+    await safely('document_requested', () =>
+      emitNotifications({
+        tenantId,
+        companyId: tenantId,
+        type: 'document_requested',
+        recipients: [request.requestedFrom.userId],
+        // Um pedido, um aviso por caixa. Reprocessar não enche a de quem vai enviar.
+        eventKey: `${request._id}:${tenantId}`,
+        title,
+        body,
+        categoryId: request.categoryId,
+        categoryName: request.categoryName,
+        actorUserId: request.requestedBy.userId,
+        actorName: request.requestedBy.name,
+      }),
+    );
+  }
 }
 
 /**
@@ -57,6 +76,15 @@ export async function notifyDocumentRequestFulfilled(
   request: MongoDocumentRequest,
   documentName: string,
 ): Promise<void> {
+  /**
+   * O que veio de fora ainda não é alcançável: ele espera o aceite de quem pediu.
+   *
+   * Por isso o aviso não carrega `documentId` nesse caso — o link levaria a uma ficha que a
+   * autorização recusa, e prometer acesso antes do aceite é o oposto do que o aceite existe para
+   * fazer. Sem o id, a tela manda para a fila de decisão.
+   */
+  const crossTenant = Boolean(request.crossTenant);
+
   await safely('document_request_fulfilled', () =>
     emitNotifications({
       tenantId: request.tenantId,
@@ -66,8 +94,10 @@ export async function notifyDocumentRequestFulfilled(
       // A chave é o documento, não o pedido: um pedido reaberto e atendido de novo é fato novo.
       eventKey: `${request._id}:${request.fulfilledDocumentId ?? documentName}`,
       title: 'Seu pedido foi atendido',
-      body: `${request.requestedFrom.name} enviou ${documentName}.`,
-      documentId: request.fulfilledDocumentId,
+      body: crossTenant
+        ? `${request.requestedFrom.name} enviou ${documentName}. Aceite para ver.`
+        : `${request.requestedFrom.name} enviou ${documentName}.`,
+      ...(crossTenant ? {} : { documentId: request.fulfilledDocumentId }),
       documentName,
       categoryId: request.categoryId,
       categoryName: request.categoryName,

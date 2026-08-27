@@ -224,6 +224,13 @@ export function DocumentRequestsPage() {
                   <TruncatedText as="p" className="meta-text">
                     {party.email}
                   </TruncatedText>
+                  {/* Num pedido de fora, a empresa é o contexto que decide se ele é legítimo: um
+                      nome sozinho não diz a quem se está entregando documento. */}
+                  {item.crossTenant ? (
+                    <TruncatedText as="p" className="meta-text text-doqyn-accent-active">
+                      {item.crossTenant.requesterTenantName}
+                    </TruncatedText>
+                  ) : null}
                 </div>
               );
             },
@@ -231,9 +238,14 @@ export function DocumentRequestsPage() {
           {
             key: 'category',
             header: 'Categoria',
-            render: (item) => (
-              <span className="text-doqyn-muted">{item.categoryName ?? item.categoryId}</span>
-            ),
+            render: (item) =>
+              item.categoryName || item.categoryId ? (
+                <span className="text-doqyn-muted">{item.categoryName ?? item.categoryId}</span>
+              ) : (
+                // Pedido para fora não tem categoria: o documento nasce e mora no acervo de quem
+                // envia, e nenhuma categoria daqui o alcança.
+                <span className="text-doqyn-subtle">fora do seu acervo</span>
+              ),
           },
           {
             key: 'dueAt',

@@ -10,6 +10,9 @@ import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { assertUserCanSubmitToCategoryId } from '../categoryUploadPermission.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
+import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
+import { resolveTenant } from '../../tenancy/tenantResolver.js';
 import { notifyDocumentRequested } from '../notifications/documentRequestNotifications.js';
 
 export const DOCUMENT_REQUEST_ID_PREFIX = 'dreq_';
@@ -90,6 +93,84 @@ async function resolveRequestedFrom(
 }
 
 /**
+ * De quem se pede, quando o e-mail aponta para fora.
+ *
+ * Membro de casa primeiro, sempre: o caminho de dentro já existe, não gasta chamada de rede e não
+ * consome a cota que protege a fronteira. Só depois o diretório.
+ *
+ * O que volta de lá é o mínimo — id e nome de exibição. O e-mail que fica gravado no pedido é o
+ * que quem pediu digitou, porque é o único que ele já conhecia.
+ */
+async function resolveRequestedFromEmail(
+  tenantId: string,
+  requester: { userId: string; email: string },
+  rawEmail: string,
+): Promise<{ party: ResolvedParty; external: boolean }> {
+  const email = rawEmail.trim().toLowerCase();
+
+  if (!email) {
+    throw new ServiceError('Informe de quem você está pedindo.', 'REQUEST_TARGET_REQUIRED', 400);
+  }
+  if (email === requester.email?.trim().toLowerCase()) {
+    throw new ServiceError(
+      'Não é possível pedir um documento para você mesmo.',
+      'REQUEST_TARGET_SELF',
+      400,
+    );
+  }
+
+  const members = await listOperationalTenantMembers(tenantId);
+  const member = members
+    .map(serializeTenantMember)
+    .find((item) => item.email?.trim().toLowerCase() === email && Boolean(item.userId));
+
+  if (member) {
+    if (BLOCKED_MEMBER_STATUSES.has(member.status)) {
+      throw new ServiceError('Usuário indisponível.', 'REQUEST_TARGET_NOT_ACTIVE', 403);
+    }
+    return {
+      party: {
+        userId: member.userId,
+        membershipId: member.id,
+        name: member.name,
+        email: member.email,
+      },
+      external: false,
+    };
+  }
+
+  if (!isInterTenantSharingEnabled()) {
+    throw new ServiceError(
+      'Esse e-mail não é de ninguém da sua empresa.',
+      'REQUEST_TARGET_OUTSIDE_TENANT',
+      400,
+    );
+  }
+
+  const found = await lookupDirectoryUserByEmail(email);
+  if (!found) {
+    throw new ServiceError(
+      'Esse e-mail não tem conta DOQYN. Só é possível pedir a quem já usa o sistema.',
+      'REQUEST_TARGET_NOT_DOQYN',
+      400,
+    );
+  }
+
+  if (found.id === requester.userId) {
+    throw new ServiceError(
+      'Não é possível pedir um documento para você mesmo.',
+      'REQUEST_TARGET_SELF',
+      400,
+    );
+  }
+
+  return {
+    party: { userId: found.id, name: found.displayName, email },
+    external: true,
+  };
+}
+
+/**
  * A categoria de destino existe e está ativa.
  *
  * Validar aqui, e não na hora do envio, é o que impede um pedido que ninguém consegue cumprir:
@@ -150,12 +231,22 @@ function normalizeDueAt(raw: string | undefined): Date | undefined {
 }
 
 export type CreateDocumentRequestInput = {
-  requestedFromUserId: string;
+  /** Do seletor de pessoas da empresa. Um dos dois basta. */
+  requestedFromUserId?: string;
+  /** O caminho que atravessa a fronteira: o e-mail resolve para membro daqui ou usuário de fora. */
+  requestedFromEmail?: string;
   title: string;
   description?: string;
-  categoryId: string;
+  /** Obrigatória no pedido de dentro de casa; ignorada no pedido para fora. */
+  categoryId?: string;
   dueAt?: string;
 };
+
+/** O nome da empresa de quem pede, copiado para que quem está fora saiba de onde veio. */
+async function resolveRequesterTenantName(tenantId: string): Promise<string> {
+  const tenant = await resolveTenant(tenantId);
+  return tenant.displayName || tenantId;
+}
 
 export async function createDocumentRequest(
   ctx: DocumentRequestContext,
@@ -186,12 +277,34 @@ export async function createDocumentRequest(
   }
 
   const dueAt = normalizeDueAt(input.dueAt);
-  const requestedFrom = await resolveRequestedFrom(
-    ctx.tenantId,
-    user.id,
-    input.requestedFromUserId?.trim(),
-  );
-  const category = await resolveCategory(ctx, input.categoryId?.trim());
+
+  const resolved = input.requestedFromEmail?.trim()
+    ? await resolveRequestedFromEmail(
+        ctx.tenantId,
+        { userId: user.id, email: user.email },
+        input.requestedFromEmail,
+      )
+    : {
+        party: await resolveRequestedFrom(
+          ctx.tenantId,
+          user.id,
+          input.requestedFromUserId?.trim() ?? '',
+        ),
+        external: false,
+      };
+
+  const requestedFrom = resolved.party;
+
+  /**
+   * Pedido para fora não tem categoria de destino, e a verificação de quem pede cai junto.
+   *
+   * O documento vai nascer e morar no acervo de quem envia — nenhuma categoria daqui o alcança.
+   * A checagem de permissão existe para sustentar a dispensa de quem cumpre, e ali não há dispensa
+   * a sustentar: quem envia usa a governança da própria empresa, como em qualquer envio dele.
+   */
+  const category = resolved.external
+    ? { categoryId: undefined, categoryName: undefined }
+    : await resolveCategory(ctx, input.categoryId?.trim() ?? '');
 
   /**
    * Quem pede tem de alcançar a categoria de destino.
@@ -202,14 +315,16 @@ export async function createDocumentRequest(
    * Sem esta verificação, duas pessoas sem alcance na categoria pediriam uma à outra e depositariam
    * nela, com a permissão de envio dispensada dos dois lados.
    */
-  await assertUserCanSubmitToCategoryId({
-    user,
-    tenantId: ctx.tenantId,
-    userId: ctx.userId,
-    membershipId: ctx.membershipId,
-    categoryId: category.categoryId,
-    message: 'Você não tem permissão para pedir documentos nesta categoria.',
-  });
+  if (category.categoryId) {
+    await assertUserCanSubmitToCategoryId({
+      user,
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      membershipId: ctx.membershipId,
+      categoryId: category.categoryId,
+      message: 'Você não tem permissão para pedir documentos nesta categoria.',
+    });
+  }
 
   const now = new Date();
   const request: MongoDocumentRequest = {
@@ -219,13 +334,18 @@ export async function createDocumentRequest(
     requestedBy: {
       userId: user.id,
       membershipId: ctx.membershipId,
-      name: user.name,
+      // `user.name` chega vazio na sessão do `doqyn_auth`: o nome se compõe de `firstName` e
+      // `lastName`, e o campo cru deixaria um UUID na lista de quem recebe.
+      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || user.email,
       email: user.email,
     },
     requestedFrom,
+    ...(resolved.external
+      ? { crossTenant: { requesterTenantName: await resolveRequesterTenantName(ctx.tenantId) } }
+      : {}),
     title,
     ...(description ? { description } : {}),
-    categoryId: category.categoryId,
+    ...(category.categoryId ? { categoryId: category.categoryId } : {}),
     ...(category.categoryName ? { categoryName: category.categoryName } : {}),
     ...(dueAt ? { dueAt } : {}),
     status: 'pending',
@@ -264,10 +384,18 @@ export async function listDocumentRequests(
   const limit = Math.min(Math.max(input.limit ?? LIST_LIMIT_DEFAULT, 1), LIST_LIMIT_MAX);
   const ownerField = input.direction === 'sent' ? 'requestedBy.userId' : 'requestedFrom.userId';
 
-  const filter: Record<string, unknown> = {
-    tenantId: input.tenantId,
-    [ownerField]: input.userId,
-  };
+  /**
+   * O que eu **recebi** não filtra por empresa; o que eu **enviei**, sim.
+   *
+   * Um pedido feito por outra empresa nasce no tenant de quem pediu — filtrar pelo tenant da
+   * sessão o esconderia justamente de quem tem de atendê-lo. O pedido é para a pessoa, e a lista
+   * de recebidos é dela. Já a lista de enviados é do acervo de quem pede, e ali o tenant é o
+   * recorte certo.
+   */
+  const filter: Record<string, unknown> =
+    input.direction === 'sent'
+      ? { tenantId: input.tenantId, [ownerField]: input.userId }
+      : { [ownerField]: input.userId };
   if (input.status) filter.status = input.status;
   if (input.cursor) {
     // Cursor inválido é entrada do cliente, não erro do servidor: sem esta guarda a data inválida
@@ -363,7 +491,15 @@ export async function resolveRequestForFulfillment(
   assertMongo();
 
   const collection = await getCollection();
-  const request = await collection.findOne({ _id: requestId, tenantId });
+  /**
+   * O pedido é buscado pelo id, sem recorte de empresa.
+   *
+   * Um pedido feito de fora vive no tenant de quem pediu, e quem vai cumpri-lo está no dele.
+   * Exigir `tenantId` aqui recusaria com "não encontrado" exatamente o pedido que a pessoa está
+   * tentando atender. Quem autoriza é a linha abaixo: o pedido tem de ser dela.
+   */
+  void tenantId;
+  const request = await collection.findOne({ _id: requestId });
 
   if (!request) {
     throw new ServiceError('Pedido não encontrado.', 'REQUEST_NOT_FOUND', 404);
@@ -394,8 +530,10 @@ export async function markDocumentRequestFulfilled(
   const collection = await getCollection();
   const now = new Date();
 
+  // Mesma razão de `resolveRequestForFulfillment`: o pedido de fora vive no tenant de quem pediu.
+  void tenantId;
   return collection.findOneAndUpdate(
-    { _id: requestId, tenantId, status: 'pending' },
+    { _id: requestId, status: 'pending' },
     {
       $set: {
         status: 'fulfilled',

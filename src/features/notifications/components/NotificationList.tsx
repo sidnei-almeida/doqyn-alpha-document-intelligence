@@ -83,6 +83,12 @@ function targetFor(notification: AppNotification): string | null {
    */
   if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados';
 
+  // Pedido atendido de outra empresa vem sem `documentId` de propósito: o documento espera aceite,
+  // e o link tem de levar à decisão, não a uma ficha que a autorização recusa.
+  if (notification.type === 'document_request_fulfilled' && !notification.documentId) {
+    return '/biblioteca/compartilhados';
+  }
+
   if (!notification.documentId) return null;
   const query = `?documentId=${encodeURIComponent(notification.documentId)}`;
 

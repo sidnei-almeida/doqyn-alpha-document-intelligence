@@ -145,8 +145,10 @@ describe('requisitar documento — cumprir o pedido', () => {
     assert.ok(share.includes('export async function grantRequesterAccessToFulfilledDocument'));
     // Só leitura: o pedido justifica ver o que chegou, não mexer nele.
     assert.ok(share.includes('permissions: { canView: true, canDownload: true, canShare: false }'));
-    // O aviso deste fato é "seu pedido foi atendido", não "documento compartilhado com você".
-    assert.ok(share.includes('notify: false'));
+    // Dentro de casa o aviso deste fato é "seu pedido foi atendido", não "documento compartilhado
+    // com você". Para fora é a própria concessão pendente que avisa: são dois fatos, atendido e a
+    // decidir.
+    assert.ok(share.includes('notify: input.crossTenant === true'));
   });
 
   it('fechar o pedido nunca derruba o envio', () => {
@@ -157,7 +159,9 @@ describe('requisitar documento — cumprir o pedido', () => {
     // causa da escrituração.
     assert.ok(confirm.includes('falha ao fechar requisição de documento'));
     // A corrida entre dois envios é resolvida no banco, e `null` significa perdida.
-    assert.ok(service.includes("{ _id: requestId, tenantId, status: 'pending' }"));
+    // Sem recorte de empresa: o pedido feito de fora vive no tenant de quem pediu, e quem cumpre
+    // está no dele. A condição que resolve a corrida é o `status`.
+    assert.ok(service.includes("{ _id: requestId, status: 'pending' }"));
     assert.ok(service.includes('REQUEST_FULFILL_DENIED'));
   });
 });
@@ -193,9 +197,9 @@ describe('requisitar documento — aviso e tela', () => {
     const share = read('server/services/sharing/documentShareService.ts');
 
     assert.ok(notifications.includes('document_request_fulfilled'));
-    // A concessão criada junto não avisa: seriam dois avisos do mesmo acontecimento, um deles
-    // chamando de "compartilhamento" o que foi uma entrega.
-    assert.ok(share.includes('notify: false'));
+    // Dentro de casa a concessão criada junto não avisa: seriam dois avisos do mesmo
+    // acontecimento, um deles chamando de "compartilhamento" o que foi uma entrega.
+    assert.ok(share.includes('notify: input.crossTenant === true'));
   });
 
   it('a lista mora ao lado da Biblioteca, e não dentro dela', () => {

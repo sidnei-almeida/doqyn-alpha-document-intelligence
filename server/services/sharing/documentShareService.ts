@@ -503,8 +503,18 @@ export async function grantRequesterAccessToFulfilledDocument(input: {
   ctx: DocumentRequestContext;
   doc: Pick<MongoDocument, '_id' | 'currentVersionId' | 'title' | 'currentFileName'>;
   requesterUserId: string;
+  requesterName?: string;
   fulfilledByUserId: string;
   fulfilledByName: string;
+  /**
+   * Verdadeiro quando quem pediu está em outra empresa.
+   *
+   * Aí a concessão nasce **pendente**, como qualquer coisa que atravessa a fronteira: o documento
+   * nasceu no acervo de quem enviou e vai continuar lá. O aceite é de quem pediu — e sim, ele
+   * aceita o que ele mesmo pediu, porque o que chega pode não ser o que se pediu, e ingresso é a
+   * direção perigosa.
+   */
+  crossTenant?: boolean;
 }): Promise<ShareGrantResult> {
   return persistShareGrant({
     ctx: input.ctx,
@@ -513,8 +523,18 @@ export async function grantRequesterAccessToFulfilledDocument(input: {
     sharedByName: input.fulfilledByName,
     sharedWithUserId: input.requesterUserId,
     permissions: { canView: true, canDownload: true, canShare: false },
-    // O aviso deste fato é "seu pedido foi atendido", e ele sai do serviço de requisição.
-    notify: false,
+    // O aviso deste fato é "seu pedido foi atendido", e ele sai do serviço de requisição. Para
+    // fora, quem avisa é a própria concessão pendente: o pedido foi atendido **e** há uma decisão
+    // a tomar, e são dois fatos.
+    notify: input.crossTenant === true,
+    inbound: input.crossTenant
+      ? await buildInboundState(
+          input.ctx,
+          input.doc,
+          input.fulfilledByName,
+          input.requesterName ?? input.requesterUserId,
+        )
+      : undefined,
   });
 }
 

@@ -12,10 +12,13 @@ export type DocumentRequestItem = {
   _id: string;
   tenantId: string;
   requestedBy: DocumentRequestParty;
+  /** Presente quando o pedido atravessa a fronteira da empresa. */
+  crossTenant?: { requesterTenantName: string };
   requestedFrom: DocumentRequestParty;
   title: string;
   description?: string;
-  categoryId: string;
+  /** Ausente no pedido para fora: lá o documento não entra no seu acervo. */
+  categoryId?: string;
   categoryName?: string;
   dueAt?: string;
   status: DocumentRequestStatus;
@@ -53,10 +56,14 @@ export async function listDocumentRequests(input: {
 }
 
 export async function createDocumentRequest(input: {
-  requestedFromUserId: string;
+  /** Do seletor de pessoas da empresa. Um dos dois basta. */
+  requestedFromUserId?: string;
+  /** O caminho que atravessa a fronteira: o servidor resolve se é de casa ou de fora. */
+  requestedFromEmail?: string;
   title: string;
   description?: string;
-  categoryId: string;
+  /** Ausente no pedido para fora: lá o documento não entra no seu acervo. */
+  categoryId?: string;
   dueAt?: string;
 }): Promise<DocumentRequestItem> {
   const response = await authFetch('/api/document-requests', {

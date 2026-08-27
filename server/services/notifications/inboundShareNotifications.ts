@@ -1,6 +1,7 @@
 import type { MongoDocumentShareGrant } from '../../db/types.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
+import { findActiveTenantIdsForUser } from '../tenantMemberRepository.js';
 
 /**
  * Notificar nunca derruba a ação que a originou.
@@ -27,22 +28,37 @@ async function safely(what: string, run: () => Promise<unknown>): Promise<void> 
  */
 export async function notifyInboundShareReceived(grant: MongoDocumentShareGrant): Promise<void> {
   if (!grant.inbound) return;
-  const { offer, recipientTenantId } = grant.inbound;
+  const { offer } = grant.inbound;
 
-  await safely('inbound_share_received', () =>
-    emitNotifications({
-      tenantId: recipientTenantId,
-      companyId: recipientTenantId,
-      type: 'inbound_share_received',
-      recipients: [grant.sharedWithUserId],
-      // Uma oferta, um aviso.
-      eventKey: grant._id,
-      title: `${offer.originTenantName} quer compartilhar um documento`,
-      body: `${offer.documentName} · ${offer.sharedByName}`,
-      actorUserId: grant.sharedByUserId,
-      actorName: offer.sharedByName,
-    }),
-  );
+  /**
+   * O aviso vai para **todas** as empresas ativas de quem recebe.
+   *
+   * A notificação é gravada com `tenantId` e o sino consulta por `tenantId` mais `userId`. No
+   * envio ainda não se sabe em qual empresa a pessoa vai aceitar — a oferta é para ela, não para
+   * uma delas —, então `inbound.recipientTenantId` está vazio nesse instante. Usá-lo aqui gravava
+   * o aviso num tenant que não existe, e ninguém o via: a caixa de entrada funcionava e a
+   * campainha era muda.
+   *
+   * O `eventKey` carrega o tenant justamente para que o mesmo fato apareça uma vez em cada caixa,
+   * e não seja descartado como repetido.
+   */
+  const tenantIds = await findActiveTenantIdsForUser(grant.sharedWithUserId);
+
+  for (const tenantId of tenantIds) {
+    await safely('inbound_share_received', () =>
+      emitNotifications({
+        tenantId,
+        companyId: tenantId,
+        type: 'inbound_share_received',
+        recipients: [grant.sharedWithUserId],
+        eventKey: `${grant._id}:${tenantId}`,
+        title: `${offer.originTenantName} quer compartilhar um documento`,
+        body: `${offer.documentName} · ${offer.sharedByName}`,
+        actorUserId: grant.sharedByUserId,
+        actorName: offer.sharedByName,
+      }),
+    );
+  }
 }
 
 /**
