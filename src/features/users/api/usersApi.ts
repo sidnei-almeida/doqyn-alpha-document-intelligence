@@ -46,6 +46,13 @@ export type CompanyMemberDto = {
   id: string;
   companyId: string;
   tenantId?: string;
+  /**
+   * O id do usuário no auth — é ele que a sessão carrega e que a autorização compara.
+   *
+   * `id` é o da associação (membership) e não serve para comparar com `user.id`: confundir os dois
+   * faz um filtro de "não eu" nunca casar, e manda o id errado para o servidor.
+   */
+  userId?: string;
   authUserId?: string;
   username?: string;
   email: string;
@@ -101,6 +108,9 @@ type GovernanceMemberApi = {
   id: string;
   companyId: string;
   tenantId?: string;
+  /** O id do usuário no auth, que o servidor já manda em toda listagem de membros. */
+  userId?: string;
+  authUserId?: string;
   email: string;
   name: string;
   firstName?: string;
@@ -125,6 +135,10 @@ function mapGovernanceMember(member: GovernanceMemberApi): CompanyMemberDto {
     id: member.id,
     companyId: member.companyId,
     tenantId: member.tenantId ?? member.companyId,
+    // O servidor manda os dois; o mapa os descartava, e todo consumidor acabava comparando o id da
+    // associação com o id do usuário. Nenhuma comparação de "sou eu" ou "é o dono" casava.
+    userId: member.userId ?? member.authUserId,
+    authUserId: member.authUserId,
     email: member.email,
     name: member.name,
     firstName: member.firstName,
