@@ -8,6 +8,7 @@ import type { DocumentRequestContext } from '../../tenancy/documentRequestContex
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
+import { assertUserCanSubmitToCategoryId } from '../categoryUploadPermission.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { notifyDocumentRequested } from '../notifications/documentRequestNotifications.js';
 
@@ -191,6 +192,24 @@ export async function createDocumentRequest(
     input.requestedFromUserId?.trim(),
   );
   const category = await resolveCategory(ctx, input.categoryId?.trim());
+
+  /**
+   * Quem pede tem de alcançar a categoria de destino.
+   *
+   * Cumprir um pedido **dispensa** a permissão de envio de quem envia — é o que faz o funcionário
+   * conseguir mandar o comprovante para a categoria do RH. Essa dispensa se apoia no pedido ser o
+   * ato de autorização, e um ato de autorização só vale se quem o pratica tinha a autorização.
+   * Sem esta verificação, duas pessoas sem alcance na categoria pediriam uma à outra e depositariam
+   * nela, com a permissão de envio dispensada dos dois lados.
+   */
+  await assertUserCanSubmitToCategoryId({
+    user,
+    tenantId: ctx.tenantId,
+    userId: ctx.userId,
+    membershipId: ctx.membershipId,
+    categoryId: category.categoryId,
+    message: 'Você não tem permissão para pedir documentos nesta categoria.',
+  });
 
   const now = new Date();
   const request: MongoDocumentRequest = {

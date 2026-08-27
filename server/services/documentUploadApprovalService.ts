@@ -3,12 +3,7 @@ import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { getDb } from '../db/mongoClient.js';
 import type { MongoDocumentUploadApproval } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
-import {
-  isDocumentAdmin,
-  loadDocumentAccessContext,
-  userHasDocumentGroupAccess,
-} from '../tenancy/documentAccess.js';
-import { userHasGovernanceCategoryPermission } from '../tenancy/governanceAccessIndex.js';
+import { isDocumentAdmin, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import { getMongoClassAndRule } from './documentRulesService.js';
@@ -19,6 +14,7 @@ import {
   type ConfirmAnalysisInput,
 } from './confirmAnalysisService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { assertCanSubmitToCategory } from './categoryUploadPermission.js';
 import { resolveRequestForFulfillment } from './requests/documentRequestService.js';
 
 function uploadApprovalsCollection() {
@@ -31,37 +27,6 @@ function resolveSubmitterDisplayName(user: AuthUser): string {
   const parts = [user.firstName, user.lastName].filter(Boolean);
   if (parts.length) return parts.join(' ');
   return user.name?.trim() || user.email;
-}
-
-function assertCanSubmitUpload(input: {
-  user: AuthUser;
-  classId: string;
-  updateGroupIds: string[];
-  memberGroupIds: string[];
-  governanceIndex: Awaited<ReturnType<typeof loadDocumentAccessContext>>['governanceIndex'];
-}): void {
-  if (isDocumentAdmin(input.user)) return;
-
-  if (!input.updateGroupIds.length) return;
-
-  if (userHasDocumentGroupAccess(input.updateGroupIds, input.memberGroupIds)) return;
-
-  if (
-    userHasGovernanceCategoryPermission(
-      input.governanceIndex,
-      input.classId,
-      input.memberGroupIds,
-      'update',
-    )
-  ) {
-    return;
-  }
-
-  throw new ServiceError(
-    'Você não tem permissão para enviar documentos nesta categoria.',
-    'DOCUMENT_UPLOAD_DENIED',
-    403,
-  );
 }
 
 export async function submitDocumentUploadForApproval(input: {
@@ -145,7 +110,7 @@ export async function submitDocumentUploadForApproval(input: {
    * para a mesma fila de aprovação.
    */
   if (!fulfilledRequest) {
-    assertCanSubmitUpload({
+    assertCanSubmitToCategory({
       user: input.user,
       classId: effectiveClassId,
       updateGroupIds,

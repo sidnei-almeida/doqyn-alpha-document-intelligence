@@ -293,7 +293,23 @@ describe('requisitar documento — o que a revisão apontou', () => {
     // O RH pede o comprovante ao funcionário, e o funcionário não tem — nem deve ter — permissão
     // de enviar na categoria do RH.
     assert.ok(submit.includes('if (!fulfilledRequest) {'));
-    assert.ok(submit.includes('assertCanSubmitUpload({'));
+    assert.ok(submit.includes('assertCanSubmitToCategory({'));
+  });
+
+  it('e o ato de autorizar exige a autorização: quem pede tem de alcançar a categoria', () => {
+    const service = read('server/services/requests/documentRequestService.ts');
+
+    // Sem isto, duas pessoas sem alcance na categoria pedem uma à outra e depositam nela com a
+    // permissão de envio dispensada dos dois lados.
+    assert.ok(service.includes('await assertUserCanSubmitToCategoryId({'));
+    assert.ok(service.includes('Você não tem permissão para pedir documentos nesta categoria.'));
+
+    // A regra é a mesma dos dois lados, e mora num lugar só.
+    const shared = read('server/services/categoryUploadPermission.ts');
+    assert.ok(shared.includes('export function userCanSubmitToCategory'));
+    assert.ok(shared.includes('export async function assertUserCanSubmitToCategoryId'));
+    // Categoria sem grupo de atualização é aberta: regra ausente não é regra que nega.
+    assert.ok(shared.includes('if (!categoryAccess.updateGroupIds.length) return;'));
   });
 
   it('o documento entregue é alcançado pela concessão, e o link aponta para lá', () => {
