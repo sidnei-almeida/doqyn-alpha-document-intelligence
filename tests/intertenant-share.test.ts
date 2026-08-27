@@ -183,3 +183,59 @@ describe('compartilhar entre empresas — a leitura do outro lado', () => {
     assert.ok(service.includes('sharedByName: resolveActorDisplayName(user)'));
   });
 });
+
+describe('compartilhar entre empresas — os quatro caminhos de leitura', () => {
+  it('quem decide o acervo do documento mora num lugar só', () => {
+    const scope = read('server/tenancy/documentReadScope.ts');
+
+    // Quatro caminhos com formatos diferentes: cada um resolvendo por conta própria seria a
+    // garantia de que um ficaria para trás, recusando calado enquanto os outros liberam.
+    assert.ok(scope.includes('export async function resolveDocumentReadScope'));
+    assert.ok(scope.includes("'inbound.status': 'accepted'"));
+    // O escopo é o de quem enviou, senão o acervo resolvido é o errado num tenant individual.
+    assert.ok(scope.includes('ownerUserId: grant.sharedByUserId'));
+  });
+
+  it('a concessão é a única autorização do documento de fora', () => {
+    const scope = read('server/tenancy/documentReadScope.ts');
+    const fn = scope.slice(scope.indexOf('export function foreignDocumentPermissions'));
+
+    // A resolução normal dá tudo a quem administra o tenant de quem lê — aplicá-la aqui
+    // entregaria o acervo de outra empresa ao admin de quem recebeu.
+    assert.ok(fn.includes('canUpdate: false'));
+    assert.ok(fn.includes('canTrash: false'));
+    assert.ok(fn.includes('canTransferOwnership: false'));
+    assert.ok(fn.includes('canShare: false'));
+    // Não há meio-termo a pedir: o portão é do tenant que governa o documento.
+    assert.ok(fn.includes('requiresApproval: { download: false, update: false }'));
+  });
+
+  it('os quatro caminhos passam pelo mesmo resolvedor', () => {
+    for (const file of [
+      'server/services/documentFileService.ts',
+      'server/services/documentPreviewService.ts',
+      'server/services/documentPreviewManifestService.ts',
+      'server/services/favorites/documentFavoritesService.ts',
+    ]) {
+      const source = read(file);
+      assert.ok(source.includes('resolveDocumentReadScope('), file);
+      assert.ok(source.includes('isForeignScope('), file);
+    }
+  });
+
+  it('a trilha do documento não atravessa junto', () => {
+    const manifest = read('server/services/documentPreviewManifestService.ts');
+
+    // Quem recebe o documento emprestado lê o documento, não a auditoria de quem o guarda.
+    assert.ok(manifest.includes('canViewTracking: foreign'));
+  });
+
+  it('o favorito procura o documento na prateleira certa', () => {
+    const favorites = read('server/services/favorites/documentFavoritesService.ts');
+
+    // Filtrar pelo `storage` da sessão procuraria o documento de fora no acervo de quem lê.
+    assert.ok(
+      favorites.includes('tenantScopeFilterFromContext(foreign ? collections.storage : storage)'),
+    );
+  });
+});

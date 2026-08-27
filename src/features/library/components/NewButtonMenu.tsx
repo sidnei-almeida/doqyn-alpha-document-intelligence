@@ -141,8 +141,11 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
           />
           Upload de pasta
         </button>
+        {/* `/solicitar-acesso` é o cadastro de empresa de quem ainda não tem conta — nada a ver
+            com pedir um documento a alguém. Os nomes se parecem e o destino errado não dava erro
+            nenhum: abria o onboarding para quem já está dentro. */}
         <Link
-          to="/solicitar-acesso"
+          to="/pedidos?novo=1"
           role="menuitem"
           className="sidebar-new-menu__item"
           onClick={() => setOpen(false)}

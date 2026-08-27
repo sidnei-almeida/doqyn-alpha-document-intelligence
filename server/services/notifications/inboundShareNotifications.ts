@@ -38,7 +38,7 @@ export async function notifyInboundShareReceived(grant: MongoDocumentShareGrant)
       // Uma oferta, um aviso.
       eventKey: grant._id,
       title: `${offer.originTenantName} quer compartilhar um documento`,
-      body: `${offer.documentName} — enviado por ${offer.sharedByName}`,
+      body: `${offer.documentName} · ${offer.sharedByName}`,
       actorUserId: grant.sharedByUserId,
       actorName: offer.sharedByName,
     }),

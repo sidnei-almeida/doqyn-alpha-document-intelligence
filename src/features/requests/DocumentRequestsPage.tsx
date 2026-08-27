@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +55,21 @@ export function DocumentRequestsPage() {
 
   const [direction, setDirection] = useState<DocumentRequestDirection>('received');
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /**
+   * Quem clicou em "Solicitar documento" pediu o gesto, não a lista.
+   *
+   * O parâmetro é consumido ao abrir: sem isso, fechar o formulário e recarregar o abriria de
+   * novo, e a lista viraria refém do endereço.
+   */
+  useEffect(() => {
+    if (searchParams.get('novo') !== '1') return;
+    setModalOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('novo');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   /**
    * Cumprir é o envio de sempre, com o pedido no contexto do item.

@@ -5,7 +5,10 @@ import type {
 } from '../db/types.js';
 import type { TenantStorageScope } from '../tenancy/resolveTenantStorageScope.js';
 import type { AuthUser } from '../auth/types.js';
-import { generatePdfPreview, type PdfPreviewGeneratorDeps } from '../preview/pdfPreviewGenerator.js';
+import {
+  generatePdfPreview,
+  type PdfPreviewGeneratorDeps,
+} from '../preview/pdfPreviewGenerator.js';
 import { generateWatermarkedImagePreviews } from '../preview/imagePreviewGenerator.js';
 import {
   buildPdfPreviewManifestFromBuffer,
@@ -34,9 +37,11 @@ import {
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import {
-  assertCanPreviewDocument,
-  loadDocumentAccessContext,
-} from '../tenancy/documentAccess.js';
+  foreignDocumentPermissions,
+  isForeignScope,
+  resolveDocumentReadScope,
+} from '../tenancy/documentReadScope.js';
+import { assertCanPreviewDocument, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
 
@@ -44,9 +49,7 @@ export { buildDocumentPreviewObjectKey } from '../storage/storageKeys.js';
 
 const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-function resolvePreviewProvider(
-  primary: MongoStorageSlot,
-): MongoPreviewStorageSlot['provider'] {
+function resolvePreviewProvider(primary: MongoStorageSlot): MongoPreviewStorageSlot['provider'] {
   if (primary.provider === 'cloudflare_r2') return 'cloudflare_r2';
   if (primary.provider === 'local') return 'local';
   return 'aws_s3';
@@ -394,8 +397,17 @@ export async function readDocumentPreviewFile(input: {
     throw new ServiceError('Preview não disponível.', 'PREVIEW_NOT_AVAILABLE', 404);
   }
 
-  const { documents, documentVersions, storage } = await getTenantCollections(input.tenantId, {
-    userId: input.ownerUserId,
+  // Onde este documento mora, para esta pessoa: o tenant da sessão, ou o de origem quando ele
+  // veio de outra empresa e foi aceito.
+  const scope = await resolveDocumentReadScope({
+    tenantId: input.tenantId,
+    ownerUserId: input.ownerUserId,
+    documentId: input.documentId,
+    userId: input.user.id,
+  });
+
+  const { documents, documentVersions, storage } = await getTenantCollections(scope.tenantId, {
+    userId: scope.ownerUserId,
   });
 
   const doc = await documents.findOne({
@@ -409,19 +421,30 @@ export async function readDocumentPreviewFile(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
-    tenantId: input.tenantId,
-    userId: input.user.id,
-    membershipId: input.membershipId,
-  });
-  const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
-  const permissions = resolveDocumentPermissionsWithShare(
-    input.user,
-    doc as MongoDocument,
-    memberGroupIds,
-    shareGrant,
-    governanceIndex,
-  );
+  /**
+   * Documento de outra empresa: quem autoriza é a concessão, e nada mais.
+   *
+   * A resolução normal consulta a governança do tenant de quem lê e dá tudo a quem administra
+   * **lá**. Aplicá-la a um documento emprestado por outra empresa entregaria o acervo dela ao
+   * administrador de quem recebeu.
+   */
+  const permissions = isForeignScope(scope)
+    ? foreignDocumentPermissions(scope.foreignGrant)
+    : await (async () => {
+        const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
+          tenantId: input.tenantId,
+          userId: input.user.id,
+          membershipId: input.membershipId,
+        });
+        const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
+        return resolveDocumentPermissionsWithShare(
+          input.user,
+          doc as MongoDocument,
+          memberGroupIds,
+          shareGrant,
+          governanceIndex,
+        );
+      })();
   assertCanPreviewDocument(permissions);
 
   if (!input.allowBlobWithoutDownload && !permissions.canDownload) {

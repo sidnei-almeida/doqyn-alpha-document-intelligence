@@ -16,18 +16,18 @@ import {
   buildDocumentOwnershipFilter,
   tenantScopeFilterFromContext,
 } from '../tenancy/tenantQuery.js';
-import {
-  assertCanPreviewDocument,
-  loadDocumentAccessContext,
-} from '../tenancy/documentAccess.js';
+import { assertCanPreviewDocument, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
 import { findActiveShareGrantForUser } from './sharing/documentShareService.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import {
-  buildDocumentPreviewPageAssetObjectKey,
-} from '../storage/storageKeys.js';
+import { buildDocumentPreviewPageAssetObjectKey } from '../storage/storageKeys.js';
 import { getStorageProvider, persistPreviewAsset } from '../storage/index.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import {
+  foreignDocumentPermissions,
+  isForeignScope,
+  resolveDocumentReadScope,
+} from '../tenancy/documentReadScope.js';
 import { readDocumentPreviewFile } from './documentPreviewService.js';
 
 export type PreviewViewerType = 'pdf_pages' | 'image' | 'unsupported' | 'deep_zoom_image';
@@ -102,11 +102,7 @@ function resolveViewerTypeFromMime(mimeType: string): PreviewViewerType {
   const normalized = mimeType.trim().toLowerCase();
   if (normalized === 'application/pdf' || normalized.endsWith('/pdf')) return 'pdf_pages';
   if (normalized.startsWith('image/')) {
-    if (
-      normalized === 'image/jpeg' ||
-      normalized === 'image/png' ||
-      normalized === 'image/webp'
-    ) {
+    if (normalized === 'image/jpeg' || normalized === 'image/png' || normalized === 'image/webp') {
       return 'image';
     }
     if (normalized === 'image/tiff' || normalized === 'image/heic' || normalized === 'image/heif') {
@@ -117,7 +113,9 @@ function resolveViewerTypeFromMime(mimeType: string): PreviewViewerType {
   return 'unsupported';
 }
 
-function mapPreviewStatus(preview: MongoPreviewStorageSlot | null | undefined): DocumentPreviewManifest['status'] {
+function mapPreviewStatus(
+  preview: MongoPreviewStorageSlot | null | undefined,
+): DocumentPreviewManifest['status'] {
   if (!preview) return 'failed';
   if (preview.status === 'ready') return 'ready';
   if (preview.status === 'pending' || preview.status === 'processing') return 'processing';
@@ -141,8 +139,17 @@ async function resolvePreviewVersion(input: {
     throw new ServiceError('Preview não disponível.', 'PREVIEW_NOT_AVAILABLE', 404);
   }
 
-  const { documents, documentVersions, storage } = await getTenantCollections(input.tenantId, {
-    userId: input.ownerUserId,
+  // Onde este documento mora, para esta pessoa: o tenant da sessão, ou o de origem quando ele
+  // veio de outra empresa e foi aceito.
+  const scope = await resolveDocumentReadScope({
+    tenantId: input.tenantId,
+    ownerUserId: input.ownerUserId,
+    documentId: input.documentId,
+    userId: input.user.id,
+  });
+
+  const { documents, documentVersions, storage } = await getTenantCollections(scope.tenantId, {
+    userId: scope.ownerUserId,
   });
 
   const doc = await documents.findOne({
@@ -156,29 +163,55 @@ async function resolvePreviewVersion(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
-    tenantId: input.tenantId,
-    userId: input.user.id,
-    membershipId: input.membershipId,
-  });
-  const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
-  const perms = resolveDocumentPermissionsWithShare(
-    input.user,
-    doc as MongoDocument,
-    memberGroupIds,
-    shareGrant,
-    governanceIndex,
-  );
+  /**
+   * Documento de outra empresa: quem autoriza é a concessão, e nada mais.
+   *
+   * A resolução normal consulta a governança do tenant de quem lê e dá tudo a quem administra
+   * **lá**. Aplicá-la a um documento emprestado por outra empresa entregaria o acervo dela ao
+   * administrador de quem recebeu.
+   */
+  const foreign = isForeignScope(scope);
+
+  /**
+   * Documento de outra empresa: quem autoriza é a concessão, e nada mais.
+   *
+   * A resolução normal consulta a governança do tenant de quem lê e dá tudo a quem administra
+   * **lá**. Aplicá-la a um documento emprestado por outra empresa entregaria o acervo dela ao
+   * administrador de quem recebeu. E o contexto de acesso nem é carregado: os grupos de quem lê
+   * não dizem nada sobre um documento que a governança dele não alcança.
+   */
+  const access = foreign
+    ? { memberGroupIds: [] as string[], governanceIndex: undefined }
+    : await loadDocumentAccessContext({
+        tenantId: input.tenantId,
+        userId: input.user.id,
+        membershipId: input.membershipId,
+      });
+
+  const perms = foreign
+    ? foreignDocumentPermissions(scope.foreignGrant!)
+    : resolveDocumentPermissionsWithShare(
+        input.user,
+        doc as MongoDocument,
+        access.memberGroupIds,
+        await findActiveShareGrantForUser(input.documentId, input.user.id),
+        access.governanceIndex,
+      );
+
   const permissions = {
     canPreview: perms.canPreview,
     canDownload: perms.canDownload,
     canUpdate: perms.canUpdate,
-    canViewTracking: canViewDocumentTracking(input.user, {
-      ownerUserId: (doc as MongoDocument).ownerUserId,
-      classId: (doc as MongoDocument).classId,
-      memberGroupIds,
-      governanceIndex,
-    }),
+    // A trilha do documento é do tenant que o governa. Quem o recebe emprestado lê o documento,
+    // não a auditoria de quem o guarda.
+    canViewTracking: foreign
+      ? false
+      : canViewDocumentTracking(input.user, {
+          ownerUserId: (doc as MongoDocument).ownerUserId,
+          classId: (doc as MongoDocument).classId,
+          memberGroupIds: access.memberGroupIds,
+          governanceIndex: access.governanceIndex,
+        }),
   };
   assertCanPreviewDocument({
     canPreview: permissions.canPreview,
@@ -361,8 +394,7 @@ export async function getDocumentPreviewManifest(input: {
       height: page.height,
       rotation: page.rotation ?? 0,
       aspectRatio:
-        page.aspectRatio ??
-        (page.height > 0 ? Number((page.width / page.height).toFixed(4)) : 1),
+        page.aspectRatio ?? (page.height > 0 ? Number((page.width / page.height).toFixed(4)) : 1),
     })) ?? [];
 
   const pages: PreviewManifestPage[] = pageDimensions.map((page) => ({
@@ -456,7 +488,11 @@ async function cacheRenderedPage(input: {
     pageNumber: input.pageNumber,
     ...(input.thumbnail
       ? { thumbnailObjectKey: stored.storageKey, thumbnailSizeBytes: stored.sizeBytes }
-      : { previewObjectKey: stored.storageKey, mimeType: 'image/png', sizeBytes: stored.sizeBytes }),
+      : {
+          previewObjectKey: stored.storageKey,
+          mimeType: 'image/png',
+          sizeBytes: stored.sizeBytes,
+        }),
   });
 }
 
@@ -545,11 +581,7 @@ export async function readDocumentPreviewImageAsset(input: {
   const normalizedSize = input.size?.trim().toLowerCase() || 'medium';
 
   if (!preview?.objectKey || preview.status !== 'ready') {
-    throw new ServiceError(
-      'Preview de imagem ainda não disponível.',
-      'PREVIEW_NOT_READY',
-      404,
-    );
+    throw new ServiceError('Preview de imagem ainda não disponível.', 'PREVIEW_NOT_READY', 404);
   }
 
   const resolution = version.previewManifest?.image?.resolutions?.find(
@@ -571,8 +603,7 @@ export async function readDocumentPreviewImageAsset(input: {
     input.storageScope,
   );
 
-  const extension =
-    mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+  const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
 
   return {
     buffer: file.buffer,

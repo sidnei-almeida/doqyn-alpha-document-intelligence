@@ -15,6 +15,11 @@ import {
   tenantScopeFilterFromContext,
 } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import {
+  foreignDocumentPermissions,
+  isForeignScope,
+  resolveDocumentReadScope,
+} from '../tenancy/documentReadScope.js';
 import { resolveDocumentApproval } from './approvals/documentApprovalGate.js';
 import { assertCanDownloadDocument, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { resolveDocumentPermissionsWithShare } from '../tenancy/documentShareAccess.js';
@@ -91,8 +96,17 @@ export async function readDocumentVersionFile(input: {
     throw new ServiceError('Arquivo não disponível.', 'FILE_NOT_FOUND', 404);
   }
 
-  const { documents, documentVersions, storage } = await getTenantCollections(input.tenantId, {
-    userId: input.ownerUserId,
+  // Onde este documento mora, para esta pessoa: quase sempre o tenant da sessão; o de origem
+  // quando ele veio de outra empresa e foi aceito.
+  const scope = await resolveDocumentReadScope({
+    tenantId: input.tenantId,
+    ownerUserId: input.ownerUserId,
+    documentId: input.documentId,
+    userId: input.user.id,
+  });
+
+  const { documents, documentVersions, storage } = await getTenantCollections(scope.tenantId, {
+    userId: scope.ownerUserId,
   });
 
   const doc = await documents.findOne({
@@ -106,19 +120,30 @@ export async function readDocumentVersionFile(input: {
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
-    tenantId: input.tenantId,
-    userId: input.user.id,
-    membershipId: input.membershipId,
-  });
-  const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
-  const permissions = resolveDocumentPermissionsWithShare(
-    input.user,
-    doc as MongoDocument,
-    memberGroupIds,
-    shareGrant,
-    governanceIndex,
-  );
+  /**
+   * Documento de outra empresa: quem autoriza é a concessão, e nada mais.
+   *
+   * A resolução normal consulta a governança do tenant de quem lê e dá tudo a quem administra
+   * **lá** — aplicá-la aqui faria o admin de qualquer tenant ganhar poder total sobre o que outra
+   * empresa apenas emprestou a um funcionário dele.
+   */
+  const permissions = isForeignScope(scope)
+    ? foreignDocumentPermissions(scope.foreignGrant)
+    : await (async () => {
+        const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
+          tenantId: input.tenantId,
+          userId: input.user.id,
+          membershipId: input.membershipId,
+        });
+        const shareGrant = await findActiveShareGrantForUser(input.documentId, input.user.id);
+        return resolveDocumentPermissionsWithShare(
+          input.user,
+          doc as MongoDocument,
+          memberGroupIds,
+          shareGrant,
+          governanceIndex,
+        );
+      })();
   if (permissions.requiresApproval.download) {
     // O verbo existe para esta pessoa, só não acontece sozinho. Em vez de 403, abre o pedido e
     // devolve o estado — quem chamou decide como contar isso na tela.

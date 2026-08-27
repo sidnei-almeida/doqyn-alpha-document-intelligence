@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 
 export type RequestDocumentTarget = {
   userId: string;
@@ -105,21 +106,22 @@ export function RequestDocumentModal({
       }
     >
       <div className="space-y-4">
-        <label className="block">
-          <span className="type-label mb-1 block text-doqyn-muted">De quem</span>
-          <select
-            className="w-full rounded-[4px] border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm text-doqyn-text"
-            value={requestedFromUserId}
-            onChange={(event) => setRequestedFromUserId(event.target.value)}
-          >
-            <option value="">Selecione uma pessoa</option>
-            {people.map((person) => (
-              <option key={person.userId} value={person.userId}>
-                {person.name} — {person.email}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* O `select` nativo desenha a lista com o tema do navegador, e num app escuro isso
+            aparece como um retângulo branco no meio do formulário. O primitivo do app monta a
+            própria lista. */}
+        <Select
+          label="De quem"
+          value={requestedFromUserId}
+          onChange={(event) => setRequestedFromUserId(event.target.value)}
+          options={[
+            { value: '', label: 'Selecione uma pessoa' },
+            ...people.map((person) => ({
+              value: person.userId,
+              // Sem travessão: o nome já separa do e-mail, e o traço só rouba largura da linha.
+              label: person.email ? `${person.name} (${person.email})` : person.name,
+            })),
+          ]}
+        />
 
         <Input
           label="O que você está pedindo"
@@ -129,24 +131,20 @@ export function RequestDocumentModal({
           placeholder="Comprovante de residência atualizado"
         />
 
-        <label className="block">
-          <span className="type-label mb-1 block text-doqyn-muted">Categoria de destino</span>
-          <select
-            className="w-full rounded-[4px] border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm text-doqyn-text"
+        <div>
+          <Select
+            label="Categoria de destino"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-          >
-            <option value="">Selecione uma categoria</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: 'Selecione uma categoria' },
+              ...categories.map((category) => ({ value: category.id, label: category.name })),
+            ]}
+          />
           <span className="mt-1 block text-[11px] text-doqyn-subtle">
             É aqui que o documento vai cair. Quem enviar não muda essa escolha.
           </span>
-        </label>
+        </div>
 
         <label className="block">
           <span className="type-label mb-1 block text-doqyn-muted">Detalhes (opcional)</span>

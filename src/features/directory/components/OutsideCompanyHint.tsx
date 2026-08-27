@@ -64,7 +64,7 @@ export function OutsideCompanyHint({
     return (
       <div className="flex flex-col items-start gap-2">
         <p className="type-caption text-doqyn-muted">
-          {name} usa o DOQYN em outra empresa. O documento continua sendo seu — ela precisa aceitar
+          {name} usa o DOQYN em outra empresa. O documento continua sendo seu, e ela precisa aceitar
           antes de ver.
         </p>
         <Button type="button" size="sm" onClick={() => onUseDoqynUser(email, name)}>

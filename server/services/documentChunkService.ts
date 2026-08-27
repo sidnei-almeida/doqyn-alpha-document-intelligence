@@ -56,7 +56,7 @@ export function mapDocumentChunksToMongo(input: {
   const createdAt = input.createdAt ?? new Date();
 
   return input.chunks.map((chunk) => ({
-  ...(input.tenantFields as MongoDocumentChunk),
+    ...(input.tenantFields as MongoDocumentChunk),
     _id: buildChunkId(input.documentId, input.versionId, chunk.chunkIndex),
     documentId: input.documentId,
     versionId: input.versionId,

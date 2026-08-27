@@ -6,10 +6,7 @@ import {
   resolveDocumentPermissions,
   assertCanUpdateDocument,
 } from '../tenancy/documentAccess.js';
-import {
-  assertCanAccessDocument,
-  tenantScopeFilterFromContext,
-} from '../tenancy/tenantQuery.js';
+import { assertCanAccessDocument, tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';

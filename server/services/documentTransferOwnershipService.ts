@@ -7,10 +7,7 @@ import {
   loadDocumentAccessContext,
   resolveDocumentPermissions,
 } from '../tenancy/documentAccess.js';
-import {
-  assertCanAccessDocument,
-  tenantScopeFilterFromContext,
-} from '../tenancy/tenantQuery.js';
+import { assertCanAccessDocument, tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import { ServiceError } from '../utils/serviceErrors.js';
@@ -33,19 +30,23 @@ async function findActiveTenantMemberUserId(
   const db = await getDb();
   const statusFilter = { status: 'active' as const };
 
-  const member = await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
-    tenantId,
-    $or: [{ authUserId: userId }, { memberId: userId }, { _id: userId }],
-    ...statusFilter,
-  } as Record<string, unknown>);
+  const member = await db
+    .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
+    .findOne({
+      tenantId,
+      $or: [{ authUserId: userId }, { memberId: userId }, { _id: userId }],
+      ...statusFilter,
+    } as Record<string, unknown>);
 
   if (member) return member;
 
-  const legacy = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    companyId: tenantId,
-    $or: [{ authUserId: userId }, { userId }, { _id: userId }],
-    ...statusFilter,
-  } as Record<string, unknown>);
+  const legacy = await db
+    .collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers)
+    .findOne({
+      companyId: tenantId,
+      $or: [{ authUserId: userId }, { userId }, { _id: userId }],
+      ...statusFilter,
+    } as Record<string, unknown>);
 
   if (!legacy) return null;
 
@@ -103,12 +104,7 @@ export async function transferDocumentOwnership(
     userId: ctx.userId,
     membershipId: ctx.membershipId,
   });
-  const permissions = resolveDocumentPermissions(
-    user,
-    mongoDoc,
-    memberGroupIds,
-    governanceIndex,
-  );
+  const permissions = resolveDocumentPermissions(user, mongoDoc, memberGroupIds, governanceIndex);
 
   if (!permissions.canTransferOwnership) {
     throw new ServiceError(
@@ -120,11 +116,7 @@ export async function transferDocumentOwnership(
 
   const currentOwnerUserId = mongoDoc.ownerUserId;
   if (!currentOwnerUserId) {
-    throw new ServiceError(
-      'Documento sem proprietário registrado.',
-      'DOCUMENT_OWNER_MISSING',
-      409,
-    );
+    throw new ServiceError('Documento sem proprietário registrado.', 'DOCUMENT_OWNER_MISSING', 409);
   }
 
   if (currentOwnerUserId === normalizedNewOwnerId) {

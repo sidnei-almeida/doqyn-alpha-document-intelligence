@@ -46,10 +46,7 @@ function serializeDocumentClass(docClass: MongoDocumentClass) {
 
 export async function listDocumentClasses(tenantId: string, opts?: ClassServiceOpts) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const classes = await collections.documentCategories
-    .find(scope)
-    .sort({ name: 1 })
-    .toArray();
+  const classes = await collections.documentCategories.find(scope).sort({ name: 1 }).toArray();
 
   return (classes as MongoDocumentClass[]).map(serializeDocumentClass);
 }
@@ -78,7 +75,9 @@ export async function createDocumentClass(
     throw new ServiceError('Slug inválido.', 'VALIDATION_ERROR', 400);
   }
 
-  const { collections, scope, storage } = await resolveClassContext(tenantId, { ownerUserId: userId });
+  const { collections, scope, storage } = await resolveClassContext(tenantId, {
+    ownerUserId: userId,
+  });
 
   const duplicateSlug = await collections.documentCategories.findOne({
     ...scope,
@@ -169,9 +168,12 @@ export async function updateDocumentClass(
   if (input.color !== undefined) patch.color = input.color.trim() || 'neutral';
   if (input.active !== undefined) patch.active = input.active;
 
-  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
-    $set: patch,
-  });
+  await collections.documentCategories.updateOne(
+    { ...scope, _id: classId } as Record<string, unknown>,
+    {
+      $set: patch,
+    },
+  );
 
   const updated = await collections.documentCategories.findOne({
     ...scope,
@@ -197,9 +199,12 @@ export async function toggleDocumentClassActive(
   }
 
   const active = !(existing as MongoDocumentClass).active;
-  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
-    $set: { active, updatedAt: new Date() },
-  });
+  await collections.documentCategories.updateOne(
+    { ...scope, _id: classId } as Record<string, unknown>,
+    {
+      $set: { active, updatedAt: new Date() },
+    },
+  );
 
   return { id: classId, active };
 }
@@ -230,9 +235,12 @@ export async function updateDocumentClassPermissions(
     share: (existing as MongoDocumentClass).permissions?.share ?? [],
   };
 
-  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
-    $set: { permissions, updatedAt: new Date() },
-  });
+  await collections.documentCategories.updateOne(
+    { ...scope, _id: classId } as Record<string, unknown>,
+    {
+      $set: { permissions, updatedAt: new Date() },
+    },
+  );
 
   const updated = await collections.documentCategories.findOne({
     ...scope,
@@ -261,13 +269,16 @@ export async function updateDocumentClassNotifications(
     throw new ServiceError('Classe documental não encontrada.', 'NOT_FOUND', 404);
   }
 
-  await collections.documentCategories.updateOne({ ...scope, _id: classId } as Record<string, unknown>, {
-    $set: {
-      notifyOnUpdate: input.notifyOnUpdate,
-      notifyGroups,
-      updatedAt: new Date(),
+  await collections.documentCategories.updateOne(
+    { ...scope, _id: classId } as Record<string, unknown>,
+    {
+      $set: {
+        notifyOnUpdate: input.notifyOnUpdate,
+        notifyGroups,
+        updatedAt: new Date(),
+      },
     },
-  });
+  );
 
   const updated = await collections.documentCategories.findOne({
     ...scope,

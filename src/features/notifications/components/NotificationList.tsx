@@ -145,7 +145,10 @@ export function NotificationList({
           <li
             key={notification.id}
             className={cn(
-              'flex items-start gap-3 p-3',
+              'flex items-start gap-3',
+              // No sino o espaço é de 24rem e a lista precisa caber inteira na vista; na página
+              // o aviso pode respirar.
+              compact ? 'px-3 py-2' : 'p-3',
               notification.status === 'unread' && 'bg-doqyn-surface/60',
             )}
           >
@@ -176,10 +179,11 @@ export function NotificationList({
                 <Link
                   to={target}
                   className={cn(
-                    'mt-1 block break-words text-label text-doqyn-text underline-offset-4 hover:underline',
-                    // No sino o espaço é de 24rem: título de quatro linhas empurra o resto da
-                    // lista para fora da vista. Na página inteira o título aparece completo.
-                    compact && 'line-clamp-2',
+                    'block text-label text-doqyn-text underline-offset-4 hover:underline',
+                    // Uma linha por campo no sino. Com `line-clamp-2` nos dois, um aviso ocupava
+                    // cinco linhas e três deles já enchiam o painel — a lista deixava de ser lista
+                    // e virava parede de texto. Na página inteira o título aparece completo.
+                    compact ? 'truncate' : 'mt-1 break-words',
                   )}
                   onClick={() => {
                     if (notification.status === 'unread') onMarkRead(notification.id);
@@ -190,8 +194,8 @@ export function NotificationList({
               ) : (
                 <p
                   className={cn(
-                    'mt-1 break-words text-label text-doqyn-text',
-                    compact && 'line-clamp-2',
+                    'text-label text-doqyn-text',
+                    compact ? 'truncate' : 'mt-1 break-words',
                   )}
                 >
                   {notification.title}
@@ -201,8 +205,8 @@ export function NotificationList({
               {notification.body ? (
                 <p
                   className={cn(
-                    'mt-0.5 break-words text-caption text-doqyn-muted',
-                    compact && 'line-clamp-2',
+                    'text-caption text-doqyn-muted',
+                    compact ? 'truncate' : 'mt-0.5 break-words',
                   )}
                 >
                   {notification.body}
