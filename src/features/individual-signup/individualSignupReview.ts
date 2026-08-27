@@ -30,9 +30,11 @@ export type IndividualSignupFormValues = {
   fromAuthenticatedSession: boolean;
 };
 
-export function validateIndividualSignupForm(
-  values: IndividualSignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' } {
+export function validateIndividualSignupForm(values: IndividualSignupFormValues): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -123,8 +125,7 @@ export function buildIndividualSignupReviewSections(
 
 export const INDIVIDUAL_SIGNUP_REVIEW_COPY = {
   title: 'Revisar cadastro',
-  description:
-    'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
+  description: 'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
   attentionMessage:
     'Verifique principalmente CPF, e-mail e WhatsApp. Informações incorretas podem atrasar seu acesso.',
   confirmLabel: 'Confirmar e cadastrar',

@@ -9,6 +9,8 @@ export type CompanySignupInput = {
   taxId: string;
   firstName: string;
   lastName: string;
+  /** Apelido escolhido no cadastro. Vazio, o servidor deriva um do e-mail. */
+  username?: string;
   whatsapp: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
@@ -24,7 +26,9 @@ export type CompanySignupResponse = {
   code?: string;
 };
 
-export async function submitCompanySignup(input: CompanySignupInput): Promise<CompanySignupResponse> {
+export async function submitCompanySignup(
+  input: CompanySignupInput,
+): Promise<CompanySignupResponse> {
   const response = await fetch(`${getAuthBasePath()}/company-signups`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

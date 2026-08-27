@@ -38,6 +38,7 @@ export function IndividualSignupPage() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [whatsapp, setWhatsapp] = useState('');
@@ -72,6 +73,7 @@ export function IndividualSignupPage() {
     () => ({
       firstName,
       lastName,
+      username,
       email,
       country,
       whatsapp,
@@ -84,6 +86,7 @@ export function IndividualSignupPage() {
     [
       firstName,
       lastName,
+      username,
       email,
       country,
       whatsapp,
@@ -182,6 +185,14 @@ export function IndividualSignupPage() {
               required
             />
           </div>
+
+          <Input
+            label="Apelido (opcional)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="como você quer ser encontrado"
+            autoComplete="off"
+          />
 
           <div className="flex flex-col gap-1.5">
             <Input

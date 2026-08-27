@@ -30,9 +30,11 @@ export type CompanySignupFormValues = {
   fromAuthenticatedSession: boolean;
 };
 
-export function validateCompanySignupForm(
-  values: CompanySignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' | 'companyAuthorization' } {
+export function validateCompanySignupForm(values: CompanySignupFormValues): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms' | 'companyAuthorization';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -83,9 +85,7 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
   };
 }
 
-export function buildCompanySignupReviewSections(
-  values: CompanySignupFormValues,
-): ReviewSection[] {
+export function buildCompanySignupReviewSections(values: CompanySignupFormValues): ReviewSection[] {
   return [
     {
       title: 'Empresa',

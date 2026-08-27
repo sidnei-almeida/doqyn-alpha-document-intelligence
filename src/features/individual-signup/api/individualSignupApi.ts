@@ -3,6 +3,8 @@ import { getAuthBasePath } from '@/auth/authConfig';
 export type IndividualSignupInput = {
   firstName: string;
   lastName: string;
+  /** Apelido escolhido no cadastro. Vazio, o servidor deriva um do e-mail. */
+  username?: string;
   /** ISO 3166-1 alpha-2. Obrigatório: o backend valida documento e telefone por país. */
   country: string;
   /** `cpf` no Brasil, `tax_id` nos demais países. */

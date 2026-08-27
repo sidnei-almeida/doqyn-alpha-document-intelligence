@@ -103,6 +103,7 @@ export function RequestAccessPage() {
   const [tenantDisplayName, setTenantDisplayName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -128,6 +129,7 @@ export function RequestAccessPage() {
       tenantDisplayName,
       firstName,
       lastName,
+      username,
       email,
       password,
       confirmPassword,
@@ -145,6 +147,7 @@ export function RequestAccessPage() {
       tenantDisplayName,
       firstName,
       lastName,
+      username,
       email,
       password,
       confirmPassword,
@@ -341,6 +344,14 @@ export function RequestAccessPage() {
                 required
               />
             </div>
+
+            <Input
+              label="Apelido (opcional)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="como você quer ser encontrado"
+              autoComplete="off"
+            />
 
             <Input
               id="email"

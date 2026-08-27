@@ -41,6 +41,7 @@ export function CompanySignupPage() {
   const [taxId, setTaxId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
@@ -73,6 +74,7 @@ export function CompanySignupPage() {
       taxId,
       firstName,
       lastName,
+      username,
       email,
       whatsapp,
       password,
@@ -87,6 +89,7 @@ export function CompanySignupPage() {
       taxId,
       firstName,
       lastName,
+      username,
       email,
       whatsapp,
       password,
@@ -204,6 +207,14 @@ export function CompanySignupPage() {
               required
             />
           </div>
+
+          <Input
+            label="Apelido (opcional)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="como você quer ser encontrado"
+            autoComplete="off"
+          />
 
           <Input
             id="email"
