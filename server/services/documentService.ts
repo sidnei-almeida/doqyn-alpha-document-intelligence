@@ -6,25 +6,15 @@ import {
   resolveDocumentListSort,
 } from '../utils/documentListQuery.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import {
-  assertCanAccessDocument,
-  tenantScopeFilterFromContext,
-} from '../tenancy/tenantQuery.js';
+import { assertCanAccessDocument, tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import type { AuthUser } from '../auth/types.js';
 import type { MongoPreviewStorageSlot } from '../db/types.js';
-import {
-  loadMemberDocumentGroupIds,
-} from '../tenancy/documentAccess.js';
+import { loadMemberDocumentGroupIds } from '../tenancy/documentAccess.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
 import { buildDocumentListItems } from './documentListItems.js';
-import {
-  loadDocumentSignatureSummary,
-} from './signatures/documentSignatureSummaryService.js';
-import {
-  attachFavoriteFlags,
-  lookupFavoriteFlags,
-} from './favorites/documentFavoritesService.js';
+import { loadDocumentSignatureSummary } from './signatures/documentSignatureSummaryService.js';
+import { attachFavoriteFlags, lookupFavoriteFlags } from './favorites/documentFavoritesService.js';
 import { normalizeVersionLabel } from '../utils/versionLabelUtils.js';
 import { resolveDocumentAccessWithShare } from './sharing/documentShareService.js';
 import { dedupeMetadataRecord } from '../../shared/metadataKeyNormalize.js';
@@ -98,14 +88,15 @@ function mapDocumentListItem(
     versionLabel: versionMeta?.versionLabel,
     currentVersionLabel: versionMeta?.versionLabel,
     originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
-    displayName:
-      (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
+    displayName: (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
     documentType: (record.documentType as string | undefined) ?? doc.className,
-    version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
-    versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
+    version:
+      (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
+    versionCount:
+      (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
-    ownerName: (record.ownerName as string | undefined),
-    area: (record.area as string | undefined),
+    ownerName: record.ownerName as string | undefined,
+    area: record.area as string | undefined,
     accessGroups: (record.accessGroups as string[] | undefined) ?? doc.access?.viewGroupIds,
     metadata: record.metadata,
     processingStatus: doc.processingStatus ?? (record.processingStatusLegacy as string | undefined),
@@ -310,6 +301,11 @@ export async function getDocumentDetail(
     }),
     canShare: perms.canShare,
     sharedViaGrant: perms.sharedViaGrant,
+    // Mesmo contrato da listagem: `canX` diz "pode agora", e isto diz "pode, pedindo".
+    requiresApproval: {
+      download: perms.requiresApproval.download,
+      share: perms.shareRequiresApproval,
+    },
   };
 
   if (!permissions.canPreview && !permissions.canDownload) {
@@ -361,7 +357,7 @@ export async function getDocumentDetail(
           status: mapPreviewStatus(latestVersionRaw.storage?.preview ?? null),
         },
       }
-    : mappedVersions[0] ?? null;
+    : (mappedVersions[0] ?? null);
 
   const latestPreview = latestVersionRaw?.storage?.preview ?? null;
   const latestPrimary = latestVersionRaw?.storage?.primary;
@@ -383,9 +379,7 @@ export async function getDocumentDetail(
   };
 
   const record = doc as Record<string, unknown>;
-  const versionMetadata = latestVersionRaw
-    ? flattenVersionMetadata(latestVersionRaw.metadata)
-    : {};
+  const versionMetadata = latestVersionRaw ? flattenVersionMetadata(latestVersionRaw.metadata) : {};
 
   const rawSearchMeta = (doc as MongoDocument).searchMeta;
   const searchMeta = rawSearchMeta
@@ -439,18 +433,24 @@ export async function getDocument(id: string, tenantId?: string, ownerUserId?: s
   return {
     id: String(doc._id),
     tenantId: doc.tenantId ?? doc.companyId,
-    originalFileName: (doc as Record<string, unknown>).originalFileName as string | undefined ?? doc.currentFileName,
-    displayName: (doc as Record<string, unknown>).displayName as string | undefined ?? doc.title,
-    documentType: (doc as Record<string, unknown>).documentType as string | undefined ?? doc.className,
+    originalFileName:
+      ((doc as Record<string, unknown>).originalFileName as string | undefined) ??
+      doc.currentFileName,
+    displayName: ((doc as Record<string, unknown>).displayName as string | undefined) ?? doc.title,
+    documentType:
+      ((doc as Record<string, unknown>).documentType as string | undefined) ?? doc.className,
     status: doc.status,
-    version: (doc as Record<string, unknown>).version as number | undefined ?? 1,
+    version: ((doc as Record<string, unknown>).version as number | undefined) ?? 1,
     currentVersionId: doc.currentVersionId,
     ownerUserId: doc.ownerUserId,
     ownerName: (doc as Record<string, unknown>).ownerName as string | undefined,
     area: (doc as Record<string, unknown>).area as string | undefined,
-    accessGroups: (doc as Record<string, unknown>).accessGroups as string[] | undefined ?? doc.access?.viewGroupIds,
+    accessGroups:
+      ((doc as Record<string, unknown>).accessGroups as string[] | undefined) ??
+      doc.access?.viewGroupIds,
     metadata: (doc as Record<string, unknown>).metadata,
-    processingStatus: doc.processingStatus ?? (doc as Record<string, unknown>).processingStatusLegacy,
+    processingStatus:
+      doc.processingStatus ?? (doc as Record<string, unknown>).processingStatusLegacy,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };

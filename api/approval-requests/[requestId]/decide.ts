@@ -2,7 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   decideApprovalRequest,
   getApprovalRequestById,
+  reopenApprovalRequest,
 } from '../../../server/services/approvals/approvalRequestService.js';
+import { createShareGrantFromApprovedRequest } from '../../../server/services/sharing/documentShareService.js';
 import {
   approveDocumentUploadApproval,
   rejectDocumentUploadApproval,
@@ -12,6 +14,8 @@ import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAu
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { notifyApprovalDecided } from '../../../server/services/notifications/approvalNotifications.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
+import { logger } from '../../../server/utils/logger.js';
+import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -64,10 +68,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reason: body.reason,
     });
 
+    /**
+     * O efeito antes do aviso.
+     *
+     * A decisão é gravada primeiro para que dois administradores não disparem o efeito duas vezes
+     * — mas então uma falha aqui deixaria um pedido aprovado que não aconteceu. Devolver à fila é
+     * a compensação: melhor o administrador tentar de novo do que quem pediu ser avisado de um
+     * compartilhamento que não existe.
+     */
+    const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
+
+    if (decided.status === 'approved' && decided.kind === 'document_share') {
+      let share;
+      try {
+        share = await createShareGrantFromApprovedRequest(auth.ctx, decided);
+      } catch (error) {
+        /**
+         * A compensação não pode falar mais alto que a falha que a causou.
+         *
+         * Reabrir devolve o pedido a `pending`, e ele volta a cair sob o índice único parcial: se
+         * o solicitante abriu um pedido novo para o mesmo destinatário nesse intervalo, o E11000
+         * estouraria aqui dentro e substituiria o erro real (um `SHARE_RECIPIENT_INVALID`, por
+         * exemplo) por um 500 sem explicação.
+         */
+        await reopenApprovalRequest(auth.ctx.tenantId, requestId).catch((reopenError) => {
+          logger.warn('falha ao devolver pedido à fila', {
+            requestId,
+            error: reopenError instanceof Error ? reopenError.message : String(reopenError),
+          });
+        });
+        throw error;
+      }
+
+      // A trilha do compartilhamento é a mesma de `POST /api/documents/:id/shares`: o fato é a
+      // concessão, e ela não pode existir só como "pedido aprovado" na auditoria. Fora do `try`
+      // de propósito — falha de trilha não desfaz um compartilhamento que já aconteceu.
+      await emitTrackingEvent(
+        auditCtx,
+        {
+          action: 'document.share_created',
+          description: 'Documento compartilhado após aprovação.',
+          documentId: share.documentId,
+          versionId: share.currentVersionId,
+          metadata: sanitizeAuditMetadata({
+            source: 'approval',
+            requestId: decided._id,
+            sharedWithUserId: share.sharedWithUserId,
+            permissions: share.permissions,
+          }),
+        },
+        req,
+      );
+    }
+
     await notifyApprovalDecided(decided, auth.user.name);
 
     await emitTrackingEvent(
-      buildDocumentAuditContext(auth.ctx, auth.user),
+      auditCtx,
       {
         action:
           body.decision === 'approved' ? 'approval.request_approved' : 'approval.request_rejected',

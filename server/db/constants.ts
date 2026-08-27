@@ -29,6 +29,8 @@ export const SHARED_APP_COLLECTIONS = {
   approvalRequests: 'approval_requests',
   /** Ponteiro da cadeia de integridade da trilha de auditoria, um por tenant. */
   auditChainHeads: 'audit_chain_heads',
+  /** Pedidos para alguém **enviar** um documento. Ver `MongoDocumentRequest`. */
+  documentRequests: 'document_requests',
 } as const;
 
 export const COLLECTIONS = {

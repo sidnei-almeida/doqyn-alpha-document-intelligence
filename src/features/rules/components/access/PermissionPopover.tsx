@@ -12,7 +12,7 @@ import type { Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 
 type PermissionRow = {
-  key: 'view' | 'download' | 'upload';
+  key: 'view' | 'download' | 'upload' | 'share';
   /** Verbo do domínio — `upload` é o nome persistido de `update`. */
   verb: string;
   label: string;
@@ -28,6 +28,14 @@ const PERMISSION_ROWS: PermissionRow[] = [
   },
   { key: 'download', verb: 'download', label: 'Baixar', hint: 'download do arquivo original' },
   { key: 'upload', verb: 'update', label: 'Enviar', hint: 'contribuir com novos documentos' },
+  /**
+   * Compartilhar fica no cartão, não na régua.
+   *
+   * A régua da célula tem três marcas e é lida de relance, na grade inteira; uma quarta a
+   * transformaria em legenda. Aqui há espaço para o rótulo e para o meio-termo, que é justamente o
+   * caso que originou o pedido — Gestão compartilha direto, Comercial compartilha pedindo.
+   */
+  { key: 'share', verb: 'share', label: 'Compartilhar', hint: 'enviar o documento a outra pessoa' },
 ];
 
 type PermissionPopoverProps = {

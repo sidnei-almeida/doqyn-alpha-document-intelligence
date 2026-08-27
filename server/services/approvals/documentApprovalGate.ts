@@ -22,22 +22,26 @@ export type ApprovalGateOutcome =
   | { state: 'pending'; requestId: string }
   | { state: 'requested'; requestId: string };
 
-async function findSettledRequest(
-  tenantId: string,
-  userId: string,
-  documentId: string,
-  kind: ApprovalRequestKind,
-  status: 'pending' | 'approved',
-): Promise<MongoApprovalRequest | null> {
+async function findSettledRequest(input: {
+  tenantId: string;
+  userId: string;
+  documentId: string;
+  kind: ApprovalRequestKind;
+  status: 'pending' | 'approved';
+  targetMemberId?: string;
+}): Promise<MongoApprovalRequest | null> {
   const db = await getDb();
   return db.collection<MongoApprovalRequest>(SHARED_APP_COLLECTIONS.approvalRequests).findOne(
     {
-      tenantId,
-      kind,
-      status,
-      'requestedBy.userId': userId,
-      'subject.documentId': documentId,
-      ...(status === 'approved'
+      tenantId: input.tenantId,
+      kind: input.kind,
+      status: input.status,
+      'requestedBy.userId': input.userId,
+      'subject.documentId': input.documentId,
+      // Pedido com destinatário só casa com o mesmo destinatário. Sem este termo, pedir para
+      // compartilhar com Ana devolveria o pedido pendente feito para Bruno.
+      ...(input.targetMemberId ? { 'subject.memberId': input.targetMemberId } : {}),
+      ...(input.status === 'approved'
         ? { decidedAt: { $gte: new Date(Date.now() - APPROVAL_TTL_MS) } }
         : {}),
     } as Record<string, unknown>,
@@ -62,6 +66,18 @@ export async function resolveDocumentApproval(input: {
   user: AuthUser;
   doc: Pick<MongoDocument, '_id' | 'classId' | 'className' | 'currentFileName'>;
   kind: ApprovalRequestKind;
+  /** A quem a ação se dirige, quando há um segundo lado — o destinatário de um compartilhamento. */
+  target?: { memberId: string; memberName?: string };
+  /** O necessário para executar a ação ao aprovar. Vazio quando aprovar só concede licença. */
+  payload?: Record<string, unknown>;
+  /**
+   * Se a aprovação vale como passe para a próxima tentativa.
+   *
+   * Verdadeiro no download, onde o efeito é de quem pediu e acontece depois. Falso no
+   * compartilhamento: lá aprovar **executa** a ação, e tratar o pedido aprovado como licença
+   * faria a mesma aprovação valer para um segundo compartilhamento que ninguém viu.
+   */
+  grantsLicense?: boolean;
 }): Promise<ApprovalGateOutcome> {
   if (!isMongoNativeConfigured()) {
     throw new ServiceError('MongoDB não configurado.', 'MONGO_NOT_CONFIGURED', 503);
@@ -70,10 +86,28 @@ export async function resolveDocumentApproval(input: {
   const { tenantId, user, doc, kind } = input;
   const documentId = doc._id;
 
-  const approved = await findSettledRequest(tenantId, user.id, documentId, kind, 'approved');
-  if (approved) return { state: 'allowed' };
+  const targetMemberId = input.target?.memberId;
 
-  const pending = await findSettledRequest(tenantId, user.id, documentId, kind, 'pending');
+  if (input.grantsLicense !== false) {
+    const approved = await findSettledRequest({
+      tenantId,
+      userId: user.id,
+      documentId,
+      kind,
+      status: 'approved',
+      targetMemberId,
+    });
+    if (approved) return { state: 'allowed' };
+  }
+
+  const pending = await findSettledRequest({
+    tenantId,
+    userId: user.id,
+    documentId,
+    kind,
+    status: 'pending',
+    targetMemberId,
+  });
   if (pending) return { state: 'pending', requestId: pending._id };
 
   const created = await createApprovalRequest({
@@ -91,8 +125,10 @@ export async function resolveDocumentApproval(input: {
       documentName: doc.currentFileName ?? undefined,
       categoryId: doc.classId ?? undefined,
       categoryName: doc.className ?? undefined,
+      memberId: input.target?.memberId,
+      memberName: input.target?.memberName,
     },
-    payload: {},
+    payload: input.payload ?? {},
   });
 
   return { state: 'requested', requestId: created._id };

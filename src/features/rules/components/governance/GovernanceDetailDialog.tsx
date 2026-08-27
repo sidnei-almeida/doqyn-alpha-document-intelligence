@@ -16,7 +16,11 @@ import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections'
 import { PERMISSION_HINTS } from '../../utils/governanceMapUi';
 import { GovernancePermissionBadges } from './GovernancePermissionBadges';
 import { CategoryIcon } from '../categoryIcons';
-import { toPermissionState } from '@shared/governancePermissions';
+import {
+  fromPermissionState,
+  isRequirablePermission,
+  toPermissionState,
+} from '@shared/governancePermissions';
 
 export type GovernanceEntitySelection =
   | { type: 'category'; id: string }
@@ -59,6 +63,15 @@ type GovernanceDetailDialogProps = {
 };
 
 const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS) as Array<keyof DocumentAccessPermissions>;
+
+/** `upload` e `manage` são os nomes persistidos de `update` e `audit` — o verbo é quem decide. */
+const DOMAIN_VERB: Record<keyof DocumentAccessPermissions, string> = {
+  view: 'view',
+  download: 'download',
+  upload: 'update',
+  share: 'share',
+  manage: 'audit',
+};
 
 export function GovernanceDetailDialog({
   open,
@@ -444,23 +457,49 @@ export function GovernanceDetailDialog({
               )}
             </div>
             <div className="space-y-2">
-              {PERMISSION_KEYS.map((key) => (
-                <div key={key} className="space-y-1">
-                  <Checkbox
-                    checked={toPermissionState(permissions[key]) !== 'deny'}
-                    disabled={!isAdmin}
-                    onChange={(event) =>
-                      setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
-                    }
-                    label={PERMISSION_LABELS[key]}
-                    wrapperClassName={cn(
-                      'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
-                      !isAdmin && 'opacity-70',
+              {PERMISSION_KEYS.map((key) => {
+                const state = toPermissionState(permissions[key]);
+                /**
+                 * O meio-termo só aparece onde há acesso e o verbo o aceita.
+                 *
+                 * Mesma regra do popover da Matriz: sem acesso não há o que pedir, e verbo sem
+                 * portão mostraria uma porta que tranca sem ter campainha.
+                 */
+                const offersRequire = state !== 'deny' && isRequirablePermission(DOMAIN_VERB[key]);
+                return (
+                  <div key={key} className="space-y-1">
+                    <Checkbox
+                      checked={state !== 'deny'}
+                      disabled={!isAdmin}
+                      onChange={(event) =>
+                        setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
+                      }
+                      label={PERMISSION_LABELS[key]}
+                      wrapperClassName={cn(
+                        'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
+                        !isAdmin && 'opacity-70',
+                      )}
+                    />
+                    {offersRequire && (
+                      <button
+                        type="button"
+                        className="permission-popover__state ml-1"
+                        data-state={state}
+                        disabled={!isAdmin}
+                        onClick={() =>
+                          setPermissions((prev) => ({
+                            ...prev,
+                            [key]: fromPermissionState(state === 'require' ? 'allow' : 'require'),
+                          }))
+                        }
+                      >
+                        {state === 'require' ? 'pedindo aprovação' : 'liberado'}
+                      </button>
                     )}
-                  />
-                  <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
-                </div>
-              ))}
+                    <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}

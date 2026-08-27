@@ -12,16 +12,17 @@ import { listApprovalRequests } from './approvalRequestService.js';
 /**
  * A forma canônica de um pedido na fila, independente de onde ele nasceu.
  *
- * Os quatro tipos vêm de origens diferentes — três são pessoas esperando acesso (espelhadas do
- * auth-service em `tenant_members`) e um é envio de documento (`approval_requests`, no Mongo do
- * app). Quem lê a fila não precisa saber disso.
+ * Os tipos vêm de origens diferentes — três são pessoas esperando acesso (espelhadas do
+ * auth-service em `tenant_members`) e os demais são ações sobre documento (`approval_requests`, no
+ * Mongo do app). Quem lê a fila não precisa saber disso.
  */
 export type PendingApprovalKind =
   | 'access_request'
   | 'invite'
   | 'registration'
   | 'document_upload'
-  | 'document_download';
+  | 'document_download'
+  | 'document_share';
 
 export type PendingApprovalDto = {
   id: string;
@@ -53,6 +54,20 @@ export type PendingApprovalDto = {
     documentId?: string;
     documentName?: string;
     categoryName?: string;
+    /** Em `document_share`, o destinatário — o segundo lado da decisão. */
+    memberId?: string;
+    memberName?: string;
+  };
+  /**
+   * O que a aprovação vai conceder, quando o pedido carrega um efeito a executar.
+   *
+   * Aprovar um `document_share` aplica as permissões pedidas tal como vieram. Sem isto na ficha, o
+   * administrador libera o download de um documento com portão sem ver que era isso que estava
+   * decidindo — e controlar exatamente esse direito é para o que o estado `require` existe.
+   */
+  grants?: {
+    canView: boolean;
+    canDownload: boolean;
   };
   /** Presente só em `document_upload` — é o cartão de revisão do arquivo enviado. */
   documentUpload?: {
@@ -133,6 +148,24 @@ function mapLegacyUploadApproval(approval: MongoDocumentUploadApproval): Pending
   };
 }
 
+/**
+ * As permissões que a aprovação vai conceder, lidas do `payload`.
+ *
+ * Só `document_share` tem efeito com permissão embutida. `canShare` não entra porque o serviço o
+ * força a `false` — o que a ficha precisa mostrar é o que varia.
+ */
+function readSharePermissions(request: MongoApprovalRequest): PendingApprovalDto['grants'] {
+  if (request.kind !== 'document_share') return undefined;
+
+  const permissions = (
+    request.payload as { permissions?: { canView?: unknown; canDownload?: unknown } }
+  ).permissions;
+  return {
+    canView: permissions?.canView !== false,
+    canDownload: permissions?.canDownload === true,
+  };
+}
+
 function mapApprovalRequest(request: MongoApprovalRequest): PendingApprovalDto {
   return {
     id: request._id,
@@ -162,7 +195,10 @@ function mapApprovalRequest(request: MongoApprovalRequest): PendingApprovalDto {
       documentId: request.subject.documentId,
       documentName: request.subject.documentName,
       categoryName: request.subject.categoryName,
+      memberId: request.subject.memberId,
+      memberName: request.subject.memberName,
     },
+    grants: readSharePermissions(request),
   };
 }
 

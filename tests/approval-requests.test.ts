@@ -160,8 +160,8 @@ describe('governança — terceiro estado', () => {
     assert.ok(shared.includes("export type GovernancePermissionValue = boolean | 'require'"));
     // Só o verbo que tem portão oferece o meio-termo: sem caminho para pedir, o estado trancaria
     // a porta sem campainha.
-    assert.ok(shared.includes("REQUIRABLE_PERMISSIONS = ['download']"));
-    assert.ok(shared.includes("REQUIRABLE_WHEN_GATED = ['update', 'share']"));
+    assert.ok(shared.includes("REQUIRABLE_PERMISSIONS = ['download', 'share']"));
+    assert.ok(shared.includes("REQUIRABLE_WHEN_GATED = ['update']"));
     assert.ok(types.includes('view: GovernancePermissionValue'));
   });
 
@@ -189,9 +189,11 @@ describe('governança — terceiro estado', () => {
     const file = read('server/services/documentFileService.ts');
 
     assert.ok(gate.includes('APPROVAL_TTL_MS'));
-    assert.ok(gate.includes("findSettledRequest(tenantId, user.id, documentId, kind, 'approved')"));
+    assert.ok(gate.includes("status: 'approved'"));
     // Pedido pendente não vira um segundo pedido.
-    assert.ok(gate.includes("kind, 'pending'"));
+    assert.ok(gate.includes("status: 'pending'"));
+    // A licença só vale onde aprovar não executa nada; ver o portão de `share`.
+    assert.ok(gate.includes('grantsLicense'));
     assert.ok(file.includes('resolveDocumentApproval'));
   });
 });
@@ -205,7 +207,11 @@ describe('aprovações — armadilhas do modelo', () => {
     // Pedido de envio não tem documento, e o Mongo indexa campo ausente como null.
     assert.ok(indexes.includes("'subject.documentId': { $exists: true }"));
     // O índice da primeira versão precisa cair pelo nome: a forma da chave mudou.
-    assert.ok(indexes.includes('SUPERSEDED_INDEXES'));
+    assert.ok(indexes.includes('SUPERSEDED_APPROVAL_REQUEST_INDEXES'));
+    // O job do Compose é este script, não `setupMongo`: sem derrubar lá, o índice antigo
+    // sobrevive em produção e barra o segundo compartilhamento pendente do mesmo documento.
+    const script = read('scripts/ensure-mongodb-indexes.ts');
+    assert.ok(script.includes('SUPERSEDED_APPROVAL_REQUEST_INDEXES'));
   });
 
   it('pedido sem aprovador é recusado, não gravado', () => {
@@ -231,9 +237,85 @@ describe('aprovações — armadilhas do modelo', () => {
     assert.ok(!share.includes('if (userHasGovernanceCategoryPermission('));
   });
 
+  it('o destinatário faz parte da identidade do pedido de compartilhamento', () => {
+    const indexes = read('server/db/approvalRequestIndexes.ts');
+    const service = read('server/services/approvals/approvalRequestService.ts');
+    const gate = read('server/services/approvals/documentApprovalGate.ts');
+
+    // Compartilhar o mesmo documento com duas pessoas são dois pedidos.
+    assert.ok(indexes.includes("'subject.memberId': 1"));
+    assert.ok(service.includes("'subject.memberId': input.subject.memberId ?? null"));
+    assert.ok(gate.includes("{ 'subject.memberId': input.targetMemberId }"));
+  });
+
   it('pedir aprovação não aparece como erro', () => {
     const feedback = read('src/shared/feedback/appFeedback.ts');
     assert.ok(feedback.includes("error.code === 'DOCUMENT_APPROVAL_REQUIRED'"));
     assert.ok(feedback.includes("showAppToast({ type: 'info'"));
+  });
+});
+
+describe('compartilhar — o portão', () => {
+  it('o meio-termo abre pedido em vez de 403', () => {
+    const access = read('server/tenancy/documentShareAccess.ts');
+    const service = read('server/services/sharing/documentShareService.ts');
+
+    assert.ok(access.includes('export function shareRequiresApproval'));
+    // Quem já pode por qualquer caminho não pede licença.
+    assert.ok(access.includes('if (canUserShareDocument(user, doc, memberGroupIds, governanceIndex)) return false'));
+    assert.ok(service.includes("kind: 'document_share'"));
+    assert.ok(service.includes('DOCUMENT_APPROVAL_REQUIRED'));
+  });
+
+  it('o pedido carrega o que precisa para acontecer, validado antes', () => {
+    const service = read('server/services/sharing/documentShareService.ts');
+
+    // Destinatário e permissões são conferidos antes do pedido nascer: aprovar não pode falhar
+    // por dado que já era inválido quando alguém clicou.
+    const gateAt = service.indexOf('resolveDocumentApproval(');
+    assert.ok(gateAt > 0);
+    assert.ok(service.indexOf('requireShareRecipient(ctx.tenantId, sharedWithUserId)') < gateAt);
+    assert.ok(service.indexOf('assertSharePermissions(permissions)') < gateAt);
+    assert.ok(service.includes('sharedWithUserId,\n        permissions,\n        message:'));
+  });
+
+  it('aprovar executa o compartilhamento, e falhar devolve o pedido à fila', () => {
+    const service = read('server/services/sharing/documentShareService.ts');
+    const decide = read('api/approval-requests/[requestId]/decide.ts');
+
+    assert.ok(service.includes('export async function createShareGrantFromApprovedRequest'));
+    // A concessão sai no nome de quem pediu, não de quem aprovou.
+    assert.ok(service.includes('sharedByUserId: request.requestedBy.userId'));
+    assert.ok(decide.includes("decided.kind === 'document_share'"));
+    assert.ok(decide.includes('reopenApprovalRequest(auth.ctx.tenantId, requestId)'));
+    // A trilha do fato é a concessão, e ela fica fora da compensação.
+    assert.ok(decide.includes("action: 'document.share_created'"));
+  });
+
+  it('a aprovação de compartilhamento não vira licença', () => {
+    const service = read('server/services/sharing/documentShareService.ts');
+    // Aprovar já compartilhou: tratar o pedido aprovado como passe faria a mesma decisão valer
+    // para um segundo compartilhamento que ninguém viu.
+    assert.ok(service.includes('grantsLicense: false'));
+  });
+
+  it('a tela oferece o pedido em vez de desabilitar a ação', () => {
+    const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
+    const items = read('server/services/documentListItems.ts');
+
+    assert.ok(items.includes('share: perms.shareRequiresApproval'));
+    assert.ok(menu.includes("doc.permissions?.requiresApproval?.share"));
+    assert.ok(menu.includes("doc.permissions?.requiresApproval?.download"));
+    // Solicitar assinatura não tem portão: continua preso ao `canShare` estrito.
+    assert.ok(menu.includes('const canOpenShare'));
+  });
+
+  it('o diálogo de governança grava o estado que leu', () => {
+    const reader = read('src/features/rules/utils/groupClassPermissions.ts');
+    const dialog = read('src/features/rules/components/governance/GovernanceDetailDialog.tsx');
+
+    // Ler só as listas devolveria `true` para uma célula em `require`, e salvar a degradaria.
+    assert.ok(reader.includes('category.permissionStates'));
+    assert.ok(dialog.includes('isRequirablePermission(DOMAIN_VERB[key])'));
   });
 });

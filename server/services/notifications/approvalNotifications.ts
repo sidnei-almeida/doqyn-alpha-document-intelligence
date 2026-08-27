@@ -23,10 +23,14 @@ async function safely(what: string, run: () => Promise<unknown>): Promise<void> 
 const KIND_LABEL: Record<MongoApprovalRequest['kind'], string> = {
   document_upload: 'Envio de documento',
   document_download: 'Download de documento',
+  document_share: 'Compartilhamento de documento',
 };
 
 function subjectLine(request: MongoApprovalRequest): string {
-  return request.subject.documentName ?? KIND_LABEL[request.kind];
+  const subject = request.subject.documentName ?? KIND_LABEL[request.kind];
+  // Compartilhar tem um segundo lado, e ele é o que o administrador precisa ver para decidir:
+  // liberar o documento para Ana é uma decisão, para um fornecedor é outra.
+  return request.subject.memberName ? `${subject} → ${request.subject.memberName}` : subject;
 }
 
 /** Avisa quem pode decidir que há trabalho na fila. */

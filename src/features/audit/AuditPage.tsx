@@ -50,7 +50,7 @@ export function AuditPage() {
     documentGroups,
     approveMutation,
     rejectMutation,
-    approveDocumentUploadMutation,
+    approveDocumentMutation,
   } = useAuditCenter(filterDocId);
 
   const tabs = useMemo(
@@ -140,7 +140,7 @@ export function AuditPage() {
                 onReview={setReviewItem}
                 onApprove={(item) => {
                   if (isDocumentApproval(item)) {
-                    approveDocumentUploadMutation.mutate(item.id);
+                    approveDocumentMutation.mutate(item);
                     return;
                   }
                   setApproveItem(item);
@@ -215,15 +215,13 @@ export function AuditPage() {
         item={reviewItem}
         isAdmin={isAdmin}
         saving={
-          approveMutation.isPending ||
-          rejectMutation.isPending ||
-          approveDocumentUploadMutation.isPending
+          approveMutation.isPending || rejectMutation.isPending || approveDocumentMutation.isPending
         }
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
           setReviewItem(null);
           if (isDocumentApproval(item)) {
-            approveDocumentUploadMutation.mutate(item.id, {
+            approveDocumentMutation.mutate(item, {
               onSuccess: () => setApproveItem(null),
             });
             return;

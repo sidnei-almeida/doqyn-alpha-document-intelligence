@@ -237,13 +237,33 @@ export function ExplorerContextMenu({
             const doc = state.document;
             const canPreview =
               doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
-            const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
+            /**
+             * Meio-termo é ação oferecida, não ação bloqueada.
+             *
+             * `canDownload`/`canShare` significam "pode agora" e vêm falsos quando a governança
+             * exige aprovação. Desabilitar aí deixaria o portão do servidor sem campainha: a
+             * pessoa tem caminho e não teria como pedir. O clique segue igual — quem responde 409
+             * e abre o pedido é o servidor.
+             */
+            const downloadNeedsApproval = Boolean(doc.permissions?.requiresApproval?.download);
+            const canDownload = Boolean(
+              (doc.permissions?.canDownload || downloadNeedsApproval) && doc.latestVersionId,
+            );
             const canTracking = Boolean(doc.permissions?.canViewTracking);
             const canUpdate = Boolean(doc.permissions?.canUpdate);
             const archiveView = isTrashView || isDeactivatedView;
             const canMove = Boolean(canUpdate && onMoveFile && !archiveView);
+            const shareNeedsApproval = Boolean(doc.permissions?.requiresApproval?.share);
             const canShare = Boolean(
               doc.permissions?.canShare &&
+              onShareFile &&
+              !archiveView &&
+              !doc.permissions?.sharedViaGrant,
+            );
+            // Compartilhar aceita o meio-termo; solicitar assinatura não tem portão e continua
+            // preso ao `canShare` estrito — oferecer lá seria prometer um pedido que não existe.
+            const canOpenShare = Boolean(
+              (doc.permissions?.canShare || shareNeedsApproval) &&
               onShareFile &&
               !archiveView &&
               !doc.permissions?.sharedViaGrant,
@@ -271,6 +291,11 @@ export function ExplorerContextMenu({
                   label="Baixar"
                   icon="download"
                   disabled={!canDownload}
+                  title={
+                    downloadNeedsApproval
+                      ? 'Baixar este documento depende de aprovação do administrador.'
+                      : undefined
+                  }
                   onClick={() => run(() => onDownloadFile?.(doc))}
                 />
                 <MenuItem
@@ -304,13 +329,15 @@ export function ExplorerContextMenu({
                   compact
                   label="Compartilhar"
                   icon="share"
-                  disabled={!canShare}
+                  disabled={!canOpenShare}
                   title={
                     doc.permissions?.sharedViaGrant
                       ? 'Você não pode compartilhar um documento recebido por compartilhamento.'
-                      : !doc.permissions?.canShare
-                        ? 'Você não tem permissão para compartilhar este documento.'
-                        : undefined
+                      : shareNeedsApproval
+                        ? 'Compartilhar este documento depende de aprovação do administrador.'
+                        : !doc.permissions?.canShare
+                          ? 'Você não tem permissão para compartilhar este documento.'
+                          : undefined
                   }
                   onClick={() => run(() => onShareFile?.(doc))}
                 />

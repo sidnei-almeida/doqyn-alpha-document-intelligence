@@ -869,7 +869,7 @@ export type MongoDocumentUploadApproval = {
  * Cresce com os verbos da governança: quando a Matriz ganhar o terceiro estado, cada verbo que
  * cair em "pode, pedindo" cria um pedido deste mesmo formato.
  */
-export type ApprovalRequestKind = 'document_upload' | 'document_download';
+export type ApprovalRequestKind = 'document_upload' | 'document_download' | 'document_share';
 
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
@@ -903,7 +903,14 @@ export type MongoApprovalRequest = {
     documentName?: string;
     categoryId?: string;
     categoryName?: string;
+    /**
+     * A quem a ação se dirige, quando o assunto tem um segundo lado.
+     *
+     * Em `document_share` é o destinatário: sem ele, dois pedidos do mesmo documento para pessoas
+     * diferentes seriam o mesmo pedido, e o índice único barraria o segundo.
+     */
     memberId?: string;
+    memberName?: string;
   };
   /**
    * O necessário para executar a ação quando aprovada.
@@ -917,6 +924,52 @@ export type MongoApprovalRequest = {
   decidedAt?: Date;
   /** Motivo, obrigatório ao recusar. */
   reason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/**
+ * Um pedido para **outra pessoa enviar** um documento.
+ *
+ * Não é `MongoApprovalRequest`, e a distinção é o motivo de a coleção existir: aquilo é um pedido
+ * para um administrador **decidir** algo que já aconteceu; isto é um pedido para alguém **fazer**
+ * algo que ainda não existe. Compartilham a forma e nada mais — fundir os dois faria a fila de
+ * aprovações do administrador mostrar trabalho que não é dele.
+ *
+ * `categoryId` é de quem pede, não de quem envia. É o que separa a requisição de um upload comum:
+ * quem pede já sabe onde o documento mora, e com isso a governança do que entra fica decidida
+ * antes de o arquivo existir.
+ */
+export type DocumentRequestStatus = 'pending' | 'fulfilled' | 'cancelled' | 'expired';
+
+export type MongoDocumentRequest = {
+  _id: string;
+  tenantId: string;
+  companyId: string;
+  requestedBy: {
+    userId: string;
+    membershipId?: string;
+    name: string;
+    email: string;
+  };
+  /** De quem se pede. Hoje sempre membro do mesmo tenant; a Fase F abre para fora. */
+  requestedFrom: {
+    userId: string;
+    membershipId?: string;
+    name: string;
+    email: string;
+  };
+  title: string;
+  description?: string;
+  /** Categoria de destino, escolhida por quem pede. */
+  categoryId: string;
+  categoryName?: string;
+  dueAt?: Date;
+  status: DocumentRequestStatus;
+  /** O documento que cumpriu o pedido. Presente só em `fulfilled`. */
+  fulfilledDocumentId?: string;
+  fulfilledAt?: Date;
+  cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };

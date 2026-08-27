@@ -15,7 +15,13 @@ export type PendingApprovalItem = {
   email: string;
   tenantId: string;
   tenantName?: string;
-  type: 'access_request' | 'invite' | 'registration' | 'document_upload' | 'document_download';
+  type:
+    | 'access_request'
+    | 'invite'
+    | 'registration'
+    | 'document_upload'
+    | 'document_download'
+    | 'document_share';
   status: 'pending';
   requestedAt: string;
   requestedAccess?: CompanyMemberDto['requestedAccess'];
@@ -26,6 +32,20 @@ export type PendingApprovalItem = {
     classId: string | null;
     className: string | null;
     payload: Record<string, unknown>;
+  };
+  /** O que se pede, sobre o quê — presente em todo pedido de documento. */
+  subject?: {
+    documentId?: string;
+    documentName?: string;
+    categoryName?: string;
+    /** Em `document_share`, o destinatário: o segundo lado da decisão. */
+    memberId?: string;
+    memberName?: string;
+  };
+  /** O que a aprovação concede — presente só em `document_share`. */
+  grants?: {
+    canView: boolean;
+    canDownload: boolean;
   };
 };
 
@@ -45,6 +65,8 @@ type PendingApprovalDto = {
     requestedAccess?: unknown;
   };
   documentUpload?: PendingApprovalItem['documentUpload'];
+  subject?: PendingApprovalItem['subject'];
+  grants?: PendingApprovalItem['grants'];
 };
 
 function toPendingApprovalItem(dto: PendingApprovalDto): PendingApprovalItem {
@@ -61,6 +83,8 @@ function toPendingApprovalItem(dto: PendingApprovalDto): PendingApprovalItem {
     requestedAccess: dto.member?.requestedAccess,
     member: dto.member,
     documentUpload: dto.documentUpload,
+    subject: dto.subject,
+    grants: dto.grants,
   };
 }
 
@@ -88,6 +112,7 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
 const DOCUMENT_KINDS: ReadonlySet<PendingApprovalItem['type']> = new Set([
   'document_upload',
   'document_download',
+  'document_share',
 ]);
 
 export function isDocumentApproval(item: PendingApprovalItem): boolean {
@@ -123,4 +148,5 @@ export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = 
   registration: 'Cadastro aguardando aprovação',
   document_upload: 'Envio de documento',
   document_download: 'Download de documento',
+  document_share: 'Compartilhamento de documento',
 };

@@ -32,6 +32,19 @@ const EMPTY_OVERVIEW: AuditOverview = {
 
 const EVENTS_PAGE_SIZE = 50;
 
+/**
+ * O aviso de sucesso diz o que aconteceu, e cada tipo faz coisa diferente.
+ *
+ * Aprovar um envio publica o documento; aprovar um compartilhamento o entrega a alguém; aprovar um
+ * download só libera quem pediu. Uma frase só para os três diria a verdade em um caso e mentiria
+ * nos outros dois.
+ */
+const APPROVED_MESSAGE: Record<string, string> = {
+  document_upload: 'Documento aprovado e disponível na Biblioteca.',
+  document_download: 'Download liberado para o solicitante.',
+  document_share: 'Compartilhamento aprovado e concedido.',
+};
+
 export function useAuditCenter(documentId?: string) {
   const { user, roles } = useAuth();
   const queryClient = useQueryClient();
@@ -133,15 +146,15 @@ export function useAuditCenter(documentId?: string) {
     onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
   });
 
-  const approveDocumentUploadMutation = useMutation({
-    mutationFn: (approvalId: string) => decideApprovalRequest(approvalId, 'approved'),
-    onSuccess: async () => {
-      toast.success('Documento aprovado e disponível na Biblioteca.');
+  const approveDocumentMutation = useMutation({
+    mutationFn: (item: PendingApprovalItem) => decideApprovalRequest(item.id, 'approved'),
+    onSuccess: async (_result, item) => {
+      toast.success(APPROVED_MESSAGE[item.type] ?? 'Pedido aprovado.');
       await invalidateAll();
       await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['library-documents'] });
     },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o envio.'),
+    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o pedido.'),
   });
 
   const pendingItems = pendingQuery.data ?? [];
@@ -195,7 +208,7 @@ export function useAuditCenter(documentId?: string) {
     documentGroups: documentGroupsQuery.data ?? [],
     approveMutation,
     rejectMutation,
-    approveDocumentUploadMutation,
+    approveDocumentMutation,
     refresh: invalidateAll,
   };
 }

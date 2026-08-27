@@ -7,7 +7,7 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn, formatDateTime } from '@/lib/utils';
 import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
+import { PENDING_TYPE_LABELS, isDocumentApproval } from '../api/pendingApprovalsApi';
 
 type PendingApprovalReviewDialogProps = {
   open: boolean;
@@ -45,6 +45,15 @@ export function PendingApprovalReviewDialog({
   onReject,
 }: PendingApprovalReviewDialogProps) {
   if (!open || !item) return null;
+
+  /**
+   * A ficha segue o que se pede, não o tipo exato.
+   *
+   * Roteava por `type !== 'document_upload'`, e por isso um pedido de download abria o painel de
+   * dados cadastrais de quem pediu — junto com o atalho para Usuários, como se a decisão fosse
+   * sobre a pessoa. É a mesma armadilha de decidir por tipo em vez de por natureza.
+   */
+  const aboutDocument = isDocumentApproval(item);
 
   return (
     <Modal
@@ -107,7 +116,7 @@ export function PendingApprovalReviewDialog({
           </Badge>
         </div>
 
-        {item.type !== 'document_upload' && (
+        {!aboutDocument && (
           <AccessRequestDetailsPanel
             member={item.member}
             requestedAccess={item.requestedAccess}
@@ -117,6 +126,44 @@ export function PendingApprovalReviewDialog({
             notificationPreferences={item.member?.notificationPreferences}
             className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
           />
+        )}
+
+        {aboutDocument && item.type !== 'document_upload' && (
+          <div
+            className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+          >
+            <div>
+              <p className="text-xs text-doqyn-muted">Documento</p>
+              <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
+                {item.subject?.documentName ?? item.subject?.documentId ?? '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-doqyn-muted">Categoria</p>
+              <p className="mt-0.5 text-sm text-doqyn-text">{item.subject?.categoryName ?? '—'}</p>
+            </div>
+            {item.type === 'document_share' && (
+              <>
+                <div>
+                  <p className="text-xs text-doqyn-muted">Compartilhar com</p>
+                  <p className="mt-0.5 text-sm text-doqyn-text">
+                    {item.subject?.memberName ?? item.subject?.memberId ?? '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-doqyn-muted">O que será concedido</p>
+                  <p className="mt-0.5 text-sm text-doqyn-text">
+                    {item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'}
+                  </p>
+                </div>
+              </>
+            )}
+            <p className="text-xs text-doqyn-muted">
+              {item.type === 'document_share'
+                ? 'Ao aprovar, o documento é compartilhado com essa pessoa em nome do solicitante.'
+                : 'Ao aprovar, o solicitante fica liberado para baixar este documento por sete dias.'}
+            </p>
+          </div>
         )}
 
         {item.type === 'document_upload' && item.documentUpload && (
@@ -142,7 +189,7 @@ export function PendingApprovalReviewDialog({
           </div>
         )}
 
-        {item.type !== 'document_upload' && (
+        {!aboutDocument && (
           <Link
             to="/users"
             className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"

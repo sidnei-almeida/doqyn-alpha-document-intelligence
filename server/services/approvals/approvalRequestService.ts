@@ -103,6 +103,9 @@ export async function createApprovalRequest(
         status: 'pending',
         'requestedBy.userId': input.requestedBy.userId,
         'subject.documentId': input.subject.documentId,
+        // O destinatário faz parte da identidade do pedido em `document_share`: sem ele, o
+        // pedido devolvido poderia ser o de outra pessoa no mesmo documento.
+        'subject.memberId': input.subject.memberId ?? null,
       } as Record<string, unknown>);
       if (existing) return existing;
     }
@@ -231,4 +234,22 @@ export async function decideApprovalRequest(
   }
 
   return result;
+}
+
+/**
+ * Devolve um pedido decidido à fila.
+ *
+ * Serve à compensação: a decisão é gravada antes do efeito para que dois administradores não o
+ * disparem duas vezes, e quando o efeito falha o pedido não pode ficar aprovado sem ter
+ * acontecido. Reabrir é mais honesto do que registrar uma aprovação que não produziu nada.
+ */
+export async function reopenApprovalRequest(tenantId: string, requestId: string): Promise<void> {
+  const collection = await getApprovalRequestsCollection();
+  await collection.updateOne(
+    { _id: requestId, tenantId },
+    {
+      $set: { status: 'pending', updatedAt: new Date() },
+      $unset: { decidedBy: '', decidedAt: '', reason: '' },
+    },
+  );
 }
