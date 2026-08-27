@@ -67,6 +67,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/notifications': () => import('../api/notifications/index.js'),
   '/api/approval-requests': () => import('../api/approval-requests/index.js'),
   '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
+  '/api/directory/lookup': () => import('../api/directory/lookup.js'),
   '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
   '/api/profile/avatar': () => import('../api/profile/avatar.js'),

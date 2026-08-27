@@ -19,7 +19,10 @@ type InternalAvatarUpdateInput = {
   status: 'active' | 'removed';
 };
 
-async function callInternal<T>(path: string, options?: { method?: string; body?: unknown }): Promise<T> {
+async function callInternal<T>(
+  path: string,
+  options?: { method?: string; body?: unknown },
+): Promise<T> {
   const baseUrl = getDoqynAuthBaseUrl();
   const apiKey = getDoqynAuthInternalApiKey();
 
@@ -110,4 +113,29 @@ export async function fetchAuthTenantMembersForSync(
     `/internal/tenants/${encodeURIComponent(tenantId)}/members`,
   );
   return result.members ?? [];
+}
+
+/**
+ * O diretório DOQYN: existe alguém com este e-mail?
+ *
+ * O auth-service devolve **resposta uniforme** — inexistente, desativado e (quando existir a
+ * preferência de visibilidade) quem não quer ser achado têm a mesma forma. Repassar essa
+ * uniformidade é responsabilidade de quem chama: transformar o `found: false` em erro, ou em
+ * mensagem diferente conforme o caso, desfaz do lado de cá o que foi construído do lado de lá.
+ */
+export type DirectoryUserSnapshot = {
+  id: string;
+  displayName: string;
+};
+
+export async function lookupDirectoryUserByEmail(
+  email: string,
+): Promise<DirectoryUserSnapshot | null> {
+  const result = await callInternal<{
+    ok: true;
+    found: boolean;
+    user: DirectoryUserSnapshot | null;
+  }>(`/internal/users/lookup?email=${encodeURIComponent(email)}`);
+
+  return result.found ? (result.user ?? null) : null;
 }
