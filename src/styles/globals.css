@@ -4452,6 +4452,35 @@
     animation-delay: 0.44s;
   }
 
+  /* ── O laço de documentos ────────────────────────────────────────────
+     Três tipos passam pelo mesmo quadro: contrato, desenho e tabela. O que
+     protege a regra "nada pisca" não é a ausência de laço — é o ritmo. Cada
+     documento fica quase oito segundos parado depois de lido, e a troca é por
+     esmaecimento, não por corte. O que se vê de canto de olho é uma página
+     sendo lida devagar, não um letreiro alternando.
+
+     A duração aqui e a do temporizador em `AntechamberDocument` são o mesmo
+     número: se divergirem, a página some antes da troca ou salta depois dela. */
+
+  .auth-doc {
+    animation: auth-doc-life 8.4s ease-in-out both;
+  }
+
+  @keyframes auth-doc-life {
+    from {
+      opacity: 0;
+    }
+    5% {
+      opacity: 1;
+    }
+    92% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
   /* O fio da extração cresce da página para fora, e o rótulo vem junto. */
   .auth-anno {
     animation: auth-anno 0.44s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4540,6 +4569,7 @@
     .auth-page,
     .auth-line,
     .auth-write,
+    .auth-doc,
     .auth-scan {
       animation: none;
     }
