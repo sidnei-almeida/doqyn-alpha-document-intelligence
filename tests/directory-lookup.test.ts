@@ -60,6 +60,20 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
     assert.ok(service.includes('DIRECTORY_LOOKUP_RATE_LIMITED'));
   });
 
+  it('enquanto o envio entre empresas não existe, ter conta responde como não ter', () => {
+    const service = read('server/services/directory/directoryLookupService.ts');
+    const config = read('server/config/interTenantConfig.ts');
+
+    // O colapso é no serviço, não na tela: a rota é chamável direto por qualquer autenticado.
+    assert.ok(service.includes('if (!found || !isInterTenantSharingEnabled())'));
+    assert.ok(config.includes("process.env.INTERTENANT_SHARING_ENABLED === 'true'"));
+
+    // A cota é gasta antes do colapso: a pergunta chegou a sair para o auth-service.
+    const quota = service.indexOf('await assertLookupQuota(user.id)');
+    const collapse = service.indexOf('!isInterTenantSharingEnabled()');
+    assert.ok(quota > 0 && collapse > quota);
+  });
+
   it('a rota está registrada no despachante, que é mantido à mão', () => {
     const apiServer = read('server/apiServer.ts');
     const handler = read('api/directory/lookup.ts');
@@ -67,5 +81,42 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
     assert.ok(apiServer.includes("'/api/directory/lookup'"));
     // Aberta a qualquer autenticado, como a busca de membros: quem envia precisa dela.
     assert.ok(handler.includes('requireDocumentAuthContext'));
+  });
+});
+
+describe('diretório DOQYN — a saída na tela', () => {
+  it('só pergunta quando a busca de dentro de casa já falhou', () => {
+    const hook = read('src/features/directory/hooks/useDirectoryLookup.ts');
+    const picker = read('src/features/documents/recipients/RecipientFlow.tsx');
+
+    // Disparar a cada tecla queimaria a cota de quem está apenas digitando.
+    assert.ok(hook.includes('enabled: enabled && valid'));
+    assert.ok(hook.includes('looksLikeEmail'));
+    // O slot só é renderizado quando a lista de membros voltou vazia.
+    assert.ok(picker.includes('emptyAction?: ReactNode'));
+    assert.ok(picker.includes('{emptyAction}'));
+  });
+
+  it('a saída existe nos dois fluxos que param na fronteira da empresa', () => {
+    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
+    const signature = read('src/features/signature/RequestSignatureModal.tsx');
+
+    for (const modal of [share, signature]) {
+      assert.ok(modal.includes('<OutsideCompanyHint'));
+      // Trocar de aba sem carregar o e-mail digitado devolveria o trabalho a quem usa.
+      assert.ok(modal.includes("setAudience('external')"));
+      assert.ok(modal.includes('{ ...EMPTY_EXTERNAL_RECIPIENT, email }'));
+    }
+
+    assert.ok(signature.includes('intent="signature"'));
+  });
+
+  it('a tela não conta que a pessoa tem conta DOQYN', () => {
+    const hint = read('src/features/directory/components/OutsideCompanyHint.tsx');
+
+    // Enquanto a Fase D não existe, isso seria a saída do oráculo sem nada em troca. O servidor já
+    // colapsa; a tela também não trata o caso.
+    assert.ok(!hint.includes("=== 'doqyn_user'"));
+    assert.ok(hint.includes("lookup.data.kind !== 'external'"));
   });
 });

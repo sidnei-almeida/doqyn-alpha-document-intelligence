@@ -3,6 +3,7 @@ import type { DocumentRequestContext } from '../../tenancy/documentRequestContex
 import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
+import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
 import { redisIncrWithTtl } from '../../redis/redisClient.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 
@@ -136,7 +137,14 @@ export async function lookupDirectoryTarget(
 
   const found = await lookupDirectoryUserByEmail(email);
 
-  if (!found) {
+  /**
+   * Enquanto a Fase D não existe, ter conta e não ter conta respondem a mesma coisa.
+   *
+   * O colapso é aqui, e não na tela, porque `/api/directory/lookup` é chamável direto por qualquer
+   * autenticado: esconder a diferença só no formulário esconderia de quem não estava procurando.
+   * A cota já foi gasta — a pergunta chegou a sair para o auth-service, e é isso que se limita.
+   */
+  if (!found || !isInterTenantSharingEnabled()) {
     return { kind: 'external' };
   }
 

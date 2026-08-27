@@ -23,6 +23,7 @@ import {
   type InternalCandidate,
   type RecipientAudience,
 } from '@/features/documents/recipients/RecipientFlow';
+import { OutsideCompanyHint } from '@/features/directory/components/OutsideCompanyHint';
 import {
   useDocumentShares,
   useShareableUsersSearch,
@@ -249,6 +250,15 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                   selected={internalPick}
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
+                  emptyAction={
+                    <OutsideCompanyHint
+                      query={query}
+                      onUseExternal={(email) => {
+                        setAudience('external');
+                        setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                      }}
+                    />
+                  }
                 />
               ) : (
                 <ExternalRecipientFields

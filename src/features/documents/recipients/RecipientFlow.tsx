@@ -124,6 +124,7 @@ export function InternalRecipientPicker({
   selected,
   onSelect,
   emptyLabel,
+  emptyAction,
 }: {
   query: string;
   onQueryChange: (value: string) => void;
@@ -132,6 +133,13 @@ export function InternalRecipientPicker({
   selected: InternalCandidate | null;
   onSelect: (candidate: InternalCandidate | null) => void;
   emptyLabel: string;
+  /**
+   * A saída para quem não está na empresa.
+   *
+   * Sem isto, digitar o e-mail de alguém de fora termina em "Ninguém encontrado" e mais nada — o
+   * beco sem saída que existe hoje. O seletor não sabe o que oferecer; quem o usa sabe, e passa.
+   */
+  emptyAction?: ReactNode;
 }) {
   if (selected) {
     return (
@@ -162,7 +170,10 @@ export function InternalRecipientPicker({
         {loading ? (
           <p className="type-caption px-1 py-2 text-doqyn-muted">Buscando…</p>
         ) : candidates.length === 0 ? (
-          <p className="type-caption px-1 py-2 text-doqyn-muted">{emptyLabel}</p>
+          <div className="flex flex-col gap-2 px-1 py-2">
+            <p className="type-caption text-doqyn-muted">{emptyLabel}</p>
+            {emptyAction}
+          </div>
         ) : (
           candidates.map((candidate) => (
             <button

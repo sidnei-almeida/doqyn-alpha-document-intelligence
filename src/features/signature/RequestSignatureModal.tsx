@@ -25,6 +25,7 @@ import {
   type InternalCandidate,
   type RecipientAudience,
 } from '@/features/documents/recipients/RecipientFlow';
+import { OutsideCompanyHint } from '@/features/directory/components/OutsideCompanyHint';
 import { useShareableUsersSearch } from '@/features/sharing/hooks/useShareDocumentMutations';
 import {
   cancelDocumentSignatureRequest,
@@ -291,6 +292,16 @@ export function RequestSignatureModal({
                   selected={internalPick}
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
+                  emptyAction={
+                    <OutsideCompanyHint
+                      intent="signature"
+                      query={query}
+                      onUseExternal={(email) => {
+                        setAudience('external');
+                        setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                      }}
+                    />
+                  }
                 />
               ) : (
                 <ExternalRecipientFields
