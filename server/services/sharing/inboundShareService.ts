@@ -48,14 +48,15 @@ function serialize(grant: MongoDocumentShareGrant): InboundShareItem {
 /**
  * O que está esperando decisão de quem recebe.
  *
- * Filtra por `recipientTenantId` **e** por `sharedWithUserId`: o aceite é da pessoa, não do
- * administrador dela. Um admin que visse a caixa de outro membro poderia liberar no lugar dele o
- * documento que só ele foi convidado a ver.
+ * Filtra pela **pessoa**, e só por ela. O aceite não é do administrador dela: um admin que visse a
+ * caixa de outro membro poderia liberar para si o documento que só o destinatário foi convidado a
+ * ver.
+ *
+ * E não filtra por tenant de propósito. A oferta foi feita à pessoa, que pode ter mais de uma
+ * empresa — em qual delas o documento entra é escolha de quem aceita, e por isso o item pendente
+ * aparece em todas as caixas dela até ser decidido.
  */
-export async function listInboundShares(
-  tenantId: string,
-  user: AuthUser,
-): Promise<InboundShareItem[]> {
+export async function listInboundShares(user: AuthUser): Promise<InboundShareItem[]> {
   assertMongo();
 
   const collection = await getCollection();
@@ -64,7 +65,6 @@ export async function listInboundShares(
       sharedWithUserId: user.id,
       status: 'active',
       'inbound.status': 'pending',
-      'inbound.recipientTenantId': tenantId,
     } as Record<string, unknown>)
     .sort({ createdAt: -1 })
     .toArray();
@@ -94,9 +94,17 @@ async function decide(
       _id: grantId,
       sharedWithUserId: user.id,
       'inbound.status': 'pending',
-      'inbound.recipientTenantId': tenantId,
     } as Record<string, unknown>,
-    { $set: { 'inbound.status': status, 'inbound.decidedAt': now, updatedAt: now } },
+    {
+      $set: {
+        'inbound.status': status,
+        'inbound.decidedAt': now,
+        // Onde o documento entra é decidido **aqui**: é a empresa em que a pessoa estava quando
+        // aceitou. Gravar no envio seria escolher por ela entre as empresas dela.
+        'inbound.recipientTenantId': tenantId,
+        updatedAt: now,
+      },
+    },
     { returnDocument: 'after' },
   );
 

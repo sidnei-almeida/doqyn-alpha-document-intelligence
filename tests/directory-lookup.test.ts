@@ -111,12 +111,14 @@ describe('diretório DOQYN — a saída na tela', () => {
     assert.ok(signature.includes('intent="signature"'));
   });
 
-  it('a tela não conta que a pessoa tem conta DOQYN', () => {
+  it('a tela só conta que a pessoa tem conta DOQYN quando há o que oferecer', () => {
     const hint = read('src/features/directory/components/OutsideCompanyHint.tsx');
 
-    // Enquanto a Fase D não existe, isso seria a saída do oráculo sem nada em troca. O servidor já
-    // colapsa; a tela também não trata o caso.
-    assert.ok(!hint.includes("=== 'doqyn_user'"));
+    // O servidor colapsa `doqyn_user` em `external` com a chave desligada, então o caso nem chega.
+    // E no fluxo que ainda não sabe enviar para fora, o callback é ausente e a tela cala do mesmo
+    // jeito — contar sem ter o que oferecer é a saída do oráculo de graça.
+    assert.ok(hint.includes("lookup.data.kind === 'doqyn_user'"));
+    assert.ok(hint.includes('if (!onUseDoqynUser) return null'));
     assert.ok(hint.includes("lookup.data.kind !== 'external'"));
   });
 });

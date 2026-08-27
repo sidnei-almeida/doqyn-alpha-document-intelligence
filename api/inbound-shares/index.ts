@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!auth) return;
 
   try {
-    const items = await listInboundShares(auth.ctx.tenantId, auth.user);
+    const items = await listInboundShares(auth.user);
     return res.status(200).json({ items, total: items.length });
   } catch (error) {
     if (isServiceError(error)) {

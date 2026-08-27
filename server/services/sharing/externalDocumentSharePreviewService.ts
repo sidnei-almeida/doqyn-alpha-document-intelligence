@@ -1,4 +1,8 @@
-import type { MongoDocument, MongoDocumentVersion, MongoExternalDocumentShareGrant } from '../../db/types.js';
+import type {
+  MongoDocument,
+  MongoDocumentVersion,
+  MongoExternalDocumentShareGrant,
+} from '../../db/types.js';
 import { isMongoNativeConfigured } from '../../db/mongoClient.js';
 import { renderPdfPageToPng } from '../../preview/pdfPageRenderer.js';
 import { getPdfPreviewConfig } from '../../preview/previewConfig.js';
@@ -57,9 +61,7 @@ function resolveViewerTypeFromMime(mimeType: string): DocumentPreviewManifest['v
   return 'unsupported';
 }
 
-async function loadGrantDocumentContext(
-  grant: MongoExternalDocumentShareGrant,
-): Promise<{
+async function loadGrantDocumentContext(grant: MongoExternalDocumentShareGrant): Promise<{
   doc: MongoDocument;
   version: MongoDocumentVersion;
   storageScope: TenantStorageScope;
@@ -68,10 +70,7 @@ async function loadGrantDocumentContext(
     throw new ServiceError('Documento indisponível.', 'EXTERNAL_SHARE_DOCUMENT_UNAVAILABLE', 403);
   }
 
-  const storageScope = await resolveTenantStorageScopeById(
-    grant.tenantId,
-    grant.sharedByUserId,
-  );
+  const storageScope = await resolveTenantStorageScopeById(grant.tenantId, grant.sharedByUserId);
   const { documents, documentVersions, storage } = await getTenantCollections(grant.tenantId, {
     userId: grant.sharedByUserId,
   });
@@ -134,7 +133,10 @@ async function readVersionFileBuffer(input: {
 }
 
 async function requireActiveExternalGrant(token: string): Promise<MongoExternalDocumentShareGrant> {
-  const access = await resolveExternalShareAccess(token, { requireActive: true, touchAccess: true });
+  const access = await resolveExternalShareAccess(token, {
+    requireActive: true,
+    touchAccess: true,
+  });
   if (!access.grant) {
     throw new ServiceError('Acesso negado.', 'EXTERNAL_SHARE_DENIED', 403);
   }
@@ -160,7 +162,9 @@ export async function getExternalShareDocumentDetail(token: string) {
   };
 }
 
-export async function getExternalSharePreviewManifest(token: string): Promise<DocumentPreviewManifest> {
+export async function getExternalSharePreviewManifest(
+  token: string,
+): Promise<DocumentPreviewManifest> {
   const grant = await requireActiveExternalGrant(token);
   const { doc, version, storageScope } = await loadGrantDocumentContext(grant);
   const mimeType = version.file?.mimeType?.trim() || 'application/pdf';
@@ -191,7 +195,12 @@ export async function getExternalSharePreviewManifest(token: string): Promise<Do
   if (viewerType === 'image') {
     const preview = version.storage?.preview;
     const imageMeta = version.previewManifest?.image;
-    if (preview?.status !== 'ready' || !preview.objectKey || !imageMeta?.width || !imageMeta?.height) {
+    if (
+      preview?.status !== 'ready' ||
+      !preview.objectKey ||
+      !imageMeta?.width ||
+      !imageMeta?.height
+    ) {
       return {
         documentId: doc._id,
         versionId: version._id,

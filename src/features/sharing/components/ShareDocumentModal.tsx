@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { isCompleteWhatsapp } from '@/lib/identifiers';
 import type { DocumentListItem } from '@/types/document-library';
@@ -66,6 +67,16 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
   const [query, setQuery] = useState('');
   const [internalPick, setInternalPick] = useState<InternalCandidate | null>(null);
   const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);
+  /**
+   * Destinatário de outra empresa DOQYN.
+   *
+   * Vive fora de `internalPick` porque não é membro daqui: não tem id de associação, não aparece na
+   * busca por nome, e o envio para ele nasce pendente do outro lado. Tratá-lo como membro faria a
+   * tela prometer um acesso imediato que não acontece.
+   */
+  const [crossTenantPick, setCrossTenantPick] = useState<{ email: string; name: string } | null>(
+    null,
+  );
   const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
   const [canDownload, setCanDownload] = useState(false);
   const [message, setMessage] = useState('');
@@ -83,6 +94,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
     setAudience('internal');
     setQuery('');
     setInternalPick(null);
+    setCrossTenantPick(null);
     setExternal(EMPTY_EXTERNAL_RECIPIENT);
     setExpiresAt(defaultExpirationDate(7));
     setCanDownload(false);
@@ -95,17 +107,30 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick);
+      if (audience === 'internal') return Boolean(internalPick ?? crossTenantPick);
       return external.email.trim().includes('@') && !phoneError;
     }
-    if (flow.step === 1) return audience === 'internal' || Boolean(expiresAt);
+    // O prazo é obrigatório para tudo que sai da empresa — com conta DOQYN ou sem. O acesso
+    // concedido não é reavaliado depois, e a validade é o único mecanismo que o fecha sozinho.
+    if (flow.step === 1) return (audience === 'internal' && !crossTenantPick) || Boolean(expiresAt);
     return true;
-  }, [audience, expiresAt, external.email, flow.step, internalPick, phoneError]);
+  }, [audience, crossTenantPick, expiresAt, external.email, flow.step, internalPick, phoneError]);
 
   const submitting = shareWithUser.isPending || createExternalShare.isPending;
 
   const handleSubmit = async () => {
     if (!documentId) return;
+
+    if (audience === 'internal' && crossTenantPick) {
+      await shareWithUser.mutateAsync({
+        sharedWithEmail: crossTenantPick.email,
+        canDownload,
+        message: message.trim() || undefined,
+        expiresAt: expirationDateToIso(expiresAt),
+      });
+      onClose();
+      return;
+    }
 
     if (audience === 'internal' && internalPick) {
       await shareWithUser.mutateAsync({
@@ -133,8 +158,17 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
     ...(internalShares.data?.shares ?? []).map((share) => ({
       id: share.shareId,
       primary: share.sharedWithName,
-      secondary: `${share.sharedWithEmail ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
-      status: { label: 'da empresa', tone: 'active' as const },
+      secondary: `${share.sharedWithEmail ?? share.originTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
+      // Oferecido não é concedido: dizer "da empresa" para o que ainda espera aceite prometeria um
+      // acesso que não existe.
+      status:
+        share.inboundStatus === 'pending'
+          ? { label: 'aguardando aceite', tone: 'pending' as const }
+          : share.inboundStatus === 'declined'
+            ? { label: 'recusado', tone: 'closed' as const }
+            : share.inboundStatus === 'accepted'
+              ? { label: 'outra empresa', tone: 'active' as const }
+              : { label: 'da empresa', tone: 'active' as const },
       actions: [
         {
           label: 'Revogar',
@@ -235,7 +269,24 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                 internalLabel="Pessoa da empresa"
                 externalLabel="Convidado externo"
               />
-              {audience === 'internal' ? (
+              {audience === 'internal' && crossTenantPick ? (
+                <div className="recipient-chosen">
+                  <div className="min-w-0">
+                    <p className="type-body truncate text-doqyn-text">{crossTenantPick.name}</p>
+                    <p className="type-caption truncate text-doqyn-muted">
+                      {crossTenantPick.email} · de outra empresa
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCrossTenantPick(null)}
+                  >
+                    Trocar
+                  </Button>
+                </div>
+              ) : audience === 'internal' ? (
                 <InternalRecipientPicker
                   query={query}
                   onQueryChange={setQuery}
@@ -257,6 +308,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                         setAudience('external');
                         setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
                       }}
+                      onUseDoqynUser={(email, name) => setCrossTenantPick({ email, name })}
                     />
                   }
                 />
@@ -277,9 +329,11 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               expiresAt={expiresAt}
               onExpiresAtChange={setExpiresAt}
               expiresHint={
-                audience === 'internal'
-                  ? 'Acesso de quem é da empresa não expira: vale enquanto não for revogado.'
-                  : 'Passado o prazo, o link para de abrir sozinho.'
+                crossTenantPick
+                  ? 'Fora da empresa o acesso tem prazo: passado ele, a concessão fecha sozinha.'
+                  : audience === 'internal'
+                    ? 'Acesso de quem é da empresa não expira: vale enquanto não for revogado.'
+                    : 'Passado o prazo, o link para de abrir sozinho.'
               }
               toggles={[
                 {
@@ -302,8 +356,9 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                 { label: 'Documento', value: document.currentFileName || document.displayName },
                 {
                   label: 'Quem recebe',
-                  value:
-                    audience === 'internal'
+                  value: crossTenantPick
+                    ? `${crossTenantPick.name} (outra empresa DOQYN)`
+                    : audience === 'internal'
                       ? `${recipientLabel} (da empresa)`
                       : `${recipientLabel} (convidado externo)`,
                 },

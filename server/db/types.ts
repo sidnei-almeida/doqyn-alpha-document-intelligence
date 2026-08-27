@@ -1020,6 +1020,13 @@ export type InboundShareState = {
     documentName: string;
     sharedByName: string;
     originTenantName: string;
+    /**
+     * O nome de quem recebe, visto do lado de quem envia.
+     *
+     * Quem enviou também não alcança o cadastro do outro lado: sem esta cópia, "Quem tem acesso"
+     * mostraria o id cru da pessoa para quem acabou de escolhê-la pelo nome.
+     */
+    recipientName: string;
   };
 };
 

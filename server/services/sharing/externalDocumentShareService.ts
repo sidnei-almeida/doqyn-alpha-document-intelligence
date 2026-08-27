@@ -24,13 +24,15 @@ import { getTenantById } from '../tenantsService.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
 import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
-import { normalizeEmail, isValidEmail, parseOptionalRecipientPhone, INVALID_RECIPIENT_PHONE_MESSAGE } from '../../utils/contactNormalize.js';
+import {
+  normalizeEmail,
+  isValidEmail,
+  parseOptionalRecipientPhone,
+  INVALID_RECIPIENT_PHONE_MESSAGE,
+} from '../../utils/contactNormalize.js';
 import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
 import { hashTrackingValue } from '../tracking/trackingSecurity.js';
-import {
-  generateExternalShareInviteToken,
-  hashExternalShareToken,
-} from './externalShareTokens.js';
+import { generateExternalShareInviteToken, hashExternalShareToken } from './externalShareTokens.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
@@ -175,7 +177,11 @@ async function loadShareableDocumentForExternal(
         (trashed as MongoDocument).permanentlyDeletedAt ||
         (trashed as MongoDocument).deactivatedAt)
     ) {
-      throw new ServiceError('Documento na lixeira não pode ser compartilhado.', 'DOCUMENT_TRASHED', 400);
+      throw new ServiceError(
+        'Documento na lixeira não pode ser compartilhado.',
+        'DOCUMENT_TRASHED',
+        400,
+      );
     }
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
   }
@@ -275,7 +281,11 @@ export async function createDocumentExternalShareGrant(
   const { doc } = await loadShareableDocumentForExternal(ctx, user, documentId);
   const permissions = defaultExternalPermissions(input.permissions);
   if (!permissions.canView) {
-    throw new ServiceError('canView é obrigatório para compartilhamento.', 'INVALID_SHARE_PERMISSIONS', 400);
+    throw new ServiceError(
+      'canView é obrigatório para compartilhamento.',
+      'INVALID_SHARE_PERMISSIONS',
+      400,
+    );
   }
   if (!config.defaultCanDownload && permissions.canDownload) {
     // download externo permitido quando explicitamente solicitado
@@ -399,7 +409,11 @@ export async function revokeDocumentExternalShareGrant(
   });
 
   if (!grant) {
-    throw new ServiceError('Compartilhamento externo não encontrado.', 'EXTERNAL_SHARE_NOT_FOUND', 404);
+    throw new ServiceError(
+      'Compartilhamento externo não encontrado.',
+      'EXTERNAL_SHARE_NOT_FOUND',
+      404,
+    );
   }
 
   if (grant.status === 'revoked') {
@@ -447,7 +461,11 @@ export async function regenerateDocumentExternalShareGrant(
   });
 
   if (!grant) {
-    throw new ServiceError('Compartilhamento externo não encontrado.', 'EXTERNAL_SHARE_NOT_FOUND', 404);
+    throw new ServiceError(
+      'Compartilhamento externo não encontrado.',
+      'EXTERNAL_SHARE_NOT_FOUND',
+      404,
+    );
   }
 
   const now = new Date();
@@ -516,7 +534,16 @@ export async function regenerateDocumentExternalShareGrant(
 
 export type ExternalShareAccessResult =
   | { grant: MongoExternalDocumentShareGrant; reason?: undefined }
-  | { grant: null; reason: 'not_found' | 'revoked' | 'expired' | 'invite_expired' | 'document_unavailable' | 'denied' };
+  | {
+      grant: null;
+      reason:
+        | 'not_found'
+        | 'revoked'
+        | 'expired'
+        | 'invite_expired'
+        | 'document_unavailable'
+        | 'denied';
+    };
 
 export async function resolveExternalShareAccess(
   token: string,
@@ -558,10 +585,7 @@ export async function resolveExternalShareAccess(
 
   if (options.touchAccess) {
     const collection = await getExternalShareGrantsCollection();
-    await collection.updateOne(
-      { _id: grant._id },
-      { $set: { lastAccessAt: now, updatedAt: now } },
-    );
+    await collection.updateOne({ _id: grant._id }, { $set: { lastAccessAt: now, updatedAt: now } });
     grant.lastAccessAt = now;
   }
 
@@ -640,7 +664,11 @@ function mapExternalShareDenial(reason: string): ServiceError {
     case 'invite_expired':
       return new ServiceError('Este convite expirou.', 'EXTERNAL_SHARE_INVITE_EXPIRED', 403);
     case 'document_unavailable':
-      return new ServiceError('Documento indisponível.', 'EXTERNAL_SHARE_DOCUMENT_UNAVAILABLE', 403);
+      return new ServiceError(
+        'Documento indisponível.',
+        'EXTERNAL_SHARE_DOCUMENT_UNAVAILABLE',
+        403,
+      );
     default:
       return new ServiceError('Acesso negado.', 'EXTERNAL_SHARE_DENIED', 403);
   }

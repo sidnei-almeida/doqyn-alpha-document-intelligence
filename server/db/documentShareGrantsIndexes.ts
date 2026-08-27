@@ -21,7 +21,7 @@ export const DOCUMENT_SHARE_GRANTS_INDEXES: IndexDescription[] = [
    * escrita de todo compartilhamento de dentro de casa, que é a esmagadora maioria.
    */
   {
-    key: { 'inbound.recipientTenantId': 1, sharedWithUserId: 1, createdAt: -1 },
+    key: { sharedWithUserId: 1, createdAt: -1 },
     name: 'inbound_pending_by_recipient',
     partialFilterExpression: { 'inbound.status': 'pending' },
   },

@@ -4,6 +4,7 @@ import { SHARED_APP_COLLECTIONS, REGISTRY_COLLECTIONS } from '../../db/constants
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type {
   DocumentSharePermissions,
+  InboundShareState,
   MongoDocument,
   MongoDocumentShareGrant,
   MongoTenantMember,
@@ -15,10 +16,7 @@ import {
   assertCanAccessDocument,
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
-import {
-  isDocumentAdmin,
-  loadDocumentAccessContext,
-} from '../../tenancy/documentAccess.js';
+import { isDocumentAdmin, loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import {
   canUserShareDocument,
   canUserListDocumentWithShare,
@@ -31,6 +29,11 @@ import { attachFavoriteFlags, lookupFavoriteFlags } from '../favorites/documentF
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
+import { resolveExternalSharingConfig } from '../../config/externalSharingConfig.js';
+import { resolveTenant } from '../../tenancy/tenantResolver.js';
+import { notifyInboundShareReceived } from '../notifications/inboundShareNotifications.js';
+import { lookupDirectoryUserByEmail } from '../../integrations/doqynAuthInternalClient.js';
 import { notifyDocumentShared } from '../notifications/documentNotifications.js';
 import { getTenantIdFromUser } from '../../auth/tenantContext.js';
 import { resolveDocumentApproval } from '../approvals/documentApprovalGate.js';
@@ -119,6 +122,33 @@ export async function findActiveShareGrantsForDocument(
   const collection = await getShareGrantsCollection();
   return collection
     .find(activeGrantFilter({ documentId }) as Record<string, unknown>)
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
+/**
+ * O que vale **e** o que foi oferecido e ainda espera resposta.
+ *
+ * Consulta separada de propósito: `activeGrantFilter` é o portão da autorização e não pode
+ * afrouxar para servir uma tela. O que quem enviou precisa ver não é acesso concedido — é o
+ * estado do gesto dele. Sem isto, compartilhar para fora somia da lista logo depois do aviso de
+ * sucesso, e a tela dizia "ninguém tem acesso" para quem acabou de compartilhar.
+ */
+async function findShareGrantsForDocumentIncludingPending(
+  documentId: string,
+): Promise<MongoDocumentShareGrant[]> {
+  if (!isMongoNativeConfigured()) return [];
+  const collection = await getShareGrantsCollection();
+  return collection
+    .find({
+      documentId,
+      status: 'active',
+      $or: [
+        { expiresAt: { $exists: false } },
+        { expiresAt: null },
+        { expiresAt: { $gt: new Date() } },
+      ],
+    } as Record<string, unknown>)
     .sort({ createdAt: -1 })
     .toArray();
 }
@@ -270,7 +300,7 @@ export async function listDocumentShareGrants(
   // `loadShareableDocument` já recusou quem não tem caminho nenhum.
   await loadShareableDocument(ctx, user, documentId);
 
-  const grants = await findActiveShareGrantsForDocument(documentId);
+  const grants = await findShareGrantsForDocumentIncludingPending(documentId);
   const members = await listOperationalTenantMembers(ctx.tenantId);
   const memberByUserId = new Map<string, ReturnType<typeof serializeTenantMember>>();
 
@@ -286,12 +316,18 @@ export async function listDocumentShareGrants(
       return {
         shareId: grant._id,
         sharedWithUserId: grant.sharedWithUserId,
-        sharedWithName: recipient?.name ?? grant.sharedWithUserId,
+        // Quem é de outra empresa não está na lista de membros daqui; o nome veio junto da oferta.
+        sharedWithName:
+          recipient?.name ?? grant.inbound?.offer.recipientName ?? grant.sharedWithUserId,
         sharedWithEmail: recipient?.email,
         permissions: grant.permissions,
         message: grant.message ?? null,
         createdAt: grant.createdAt.toISOString(),
         sharedByUserId: grant.sharedByUserId,
+        expiresAt: grant.expiresAt ? grant.expiresAt.toISOString() : null,
+        // Ausente quando o compartilhamento é de casa: lá não há o que esperar.
+        inboundStatus: grant.inbound?.status ?? null,
+        originTenantName: grant.inbound?.offer.originTenantName ?? null,
       };
     }),
   };
@@ -331,6 +367,15 @@ async function persistShareGrant(input: {
    * vezes, com a palavra errada.
    */
   notify?: boolean;
+  /**
+   * Presente só quando a concessão atravessa a fronteira do tenant.
+   *
+   * Com ela, a concessão nasce **pendente**: existe, mas não concede nada até o aceite. Sem ela, a
+   * concessão é de casa e vale na hora.
+   */
+  inbound?: InboundShareState;
+  /** Prazo da concessão, como no link externo. Ausente é sem prazo. */
+  expiresAt?: Date | null;
 }): Promise<ShareGrantResult> {
   const { ctx, doc, sharedWithUserId, permissions } = input;
   const documentId = doc._id;
@@ -376,14 +421,25 @@ async function persistShareGrant(input: {
     updatedAt: now,
     revokedAt: null,
     revokedBy: null,
-    expiresAt: null,
+    expiresAt: input.expiresAt ?? null,
+    ...(input.inbound ? { inbound: input.inbound } : {}),
   };
 
   await collection.insertOne(grant);
 
+  /**
+   * O que chegou de fora ainda não foi compartilhado: foi **oferecido**.
+   *
+   * Chamar isso de "documento compartilhado com você" antes do aceite prometeria um acesso que
+   * ainda não existe, e o link do aviso levaria a uma ficha que a autorização recusa.
+   */
+  if (input.notify !== false && grant.inbound) {
+    await notifyInboundShareReceived(grant);
+  }
+
   // Só o compartilhamento novo avisa. Reenviar para a mesma pessoa cai no `updated` acima e não
   // gera aviso — a chave do fato é o id da concessão, e repetir o gesto não é fato novo.
-  if (input.notify !== false) {
+  if (input.notify !== false && !grant.inbound) {
     await notifyDocumentShared({
       tenantId: ctx.tenantId,
       recipientUserId: sharedWithUserId,
@@ -452,6 +508,141 @@ async function requireShareRecipient(
   return recipient;
 }
 
+/**
+ * Para quem se está compartilhando: alguém de casa, ou alguém de outra empresa.
+ *
+ * `requireShareRecipient` deixou de ser a única porta. Quando o e-mail resolve para um usuário
+ * DOQYN que não é membro deste tenant, o destino é válido — só que atravessa a fronteira, e o que
+ * atravessa a fronteira não entra no acervo do outro lado sem aceite (Fase C).
+ *
+ * A ordem é deliberada: membro de casa primeiro, sempre. O caminho de dentro já existe, não gasta
+ * chamada de rede e não consome a cota que protege a fronteira de fora.
+ */
+type ResolvedShareRecipient =
+  | { scope: 'internal'; userId: string; name: string }
+  | { scope: 'external_tenant'; userId: string; name: string };
+
+async function resolveShareRecipient(
+  tenantId: string,
+  input: { sharedWithUserId?: string; sharedWithEmail?: string },
+): Promise<ResolvedShareRecipient> {
+  const userId = input.sharedWithUserId?.trim();
+  const email = input.sharedWithEmail?.trim().toLowerCase();
+
+  if (userId) {
+    const member = await resolveActiveTenantMemberByUserId(tenantId, userId);
+    if (member) {
+      return {
+        scope: 'internal',
+        userId: member.authUserId ?? userId,
+        name: serializeTenantMember(member).name,
+      };
+    }
+  }
+
+  if (email) {
+    const members = await listOperationalTenantMembers(tenantId);
+    const member = members
+      .filter((item) => item.status === 'active')
+      .map(serializeTenantMember)
+      .find((item) => item.email?.trim().toLowerCase() === email && Boolean(item.userId));
+
+    if (member) {
+      return { scope: 'internal', userId: member.userId, name: member.name };
+    }
+
+    if (!isInterTenantSharingEnabled()) {
+      throw new ServiceError(
+        'Esse e-mail não é de ninguém da sua empresa. Use o link externo para enviar.',
+        'SHARE_RECIPIENT_OUTSIDE_TENANT',
+        400,
+      );
+    }
+
+    const found = await lookupDirectoryUserByEmail(email);
+    if (found) {
+      return { scope: 'external_tenant', userId: found.id, name: found.displayName };
+    }
+
+    throw new ServiceError(
+      'Esse e-mail não tem conta DOQYN. Use o link externo para enviar.',
+      'SHARE_RECIPIENT_NOT_DOQYN',
+      400,
+    );
+  }
+
+  throw new ServiceError(
+    'Usuário de destino não encontrado ou inativo neste ambiente.',
+    'SHARE_RECIPIENT_INVALID',
+    400,
+  );
+}
+
+/**
+ * Prazo da concessão, com teto para o que sai da empresa.
+ *
+ * Mesmo raciocínio do link externo: o acesso concedido não é reavaliado depois — nem quando quem
+ * concedeu deixa a empresa —, então a validade é o único mecanismo que o fecha sozinho. Dentro de
+ * casa a governança continua valendo todo dia e o prazo é opcional; para fora, sem teto ele seria
+ * indefinido na prática.
+ */
+function resolveShareExpiration(
+  raw: string | undefined,
+  crossesTenantBorder: boolean,
+): Date | null {
+  if (!raw?.trim()) return null;
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new ServiceError('Prazo inválido.', 'SHARE_EXPIRATION_INVALID', 400);
+  }
+  if (parsed.getTime() <= Date.now()) {
+    throw new ServiceError('O prazo precisa estar no futuro.', 'SHARE_EXPIRATION_PAST', 400);
+  }
+
+  if (crossesTenantBorder) {
+    const maxDays = resolveExternalSharingConfig().maxExternalShareExpirationDays;
+    if (parsed.getTime() > Date.now() + maxDays * 24 * 60 * 60 * 1000) {
+      throw new ServiceError(
+        `O prazo não pode passar de ${maxDays} dias para fora da empresa.`,
+        'SHARE_EXPIRATION_TOO_FAR',
+        400,
+      );
+    }
+  }
+
+  return parsed;
+}
+
+/**
+ * O essencial da oferta, copiado no envio.
+ *
+ * Quem vai decidir está fora deste tenant e não alcança nem o documento nem o cadastro da empresa
+ * que enviou. Descobrir o nome de qualquer um dos dois na hora de listar exigiria a leitura
+ * cross-tenant que o aceite ainda não concedeu.
+ */
+async function buildInboundState(
+  ctx: DocumentRequestContext,
+  doc: Pick<MongoDocument, '_id' | 'title' | 'currentFileName'>,
+  sharedByName: string,
+  recipientName: string,
+): Promise<InboundShareState> {
+  const tenant = await resolveTenant(ctx.tenantId);
+
+  return {
+    status: 'pending',
+    // Preenchido no aceite: a oferta é para a **pessoa**, e ela pode ter mais de uma empresa. Qual
+    // delas recebe o documento é escolha de quem aceita, não de quem envia.
+    recipientTenantId: '',
+    offer: {
+      documentName: doc.title || doc.currentFileName || String(doc._id),
+      sharedByName,
+      originTenantName: tenant.displayName || ctx.tenantId,
+      recipientName,
+    },
+  };
+}
+
 function assertSharePermissions(permissions: DocumentSharePermissions): void {
   if (!permissions.canView) {
     throw new ServiceError(
@@ -467,25 +658,54 @@ export async function createDocumentShareGrant(
   user: AuthUser,
   documentId: string,
   input: {
-    sharedWithUserId: string;
+    sharedWithUserId?: string;
+    /** O caminho que atravessa a fronteira: o e-mail resolve para membro daqui ou usuário de fora. */
+    sharedWithEmail?: string;
     permissions?: Partial<DocumentSharePermissions>;
     message?: string;
+    expiresAt?: string;
   },
 ): Promise<ShareGrantResult> {
-  const sharedWithUserId = input.sharedWithUserId?.trim();
-  if (!sharedWithUserId) {
-    throw new ServiceError('sharedWithUserId é obrigatório.', 'MISSING_SHARED_WITH_USER', 400);
+  if (!input.sharedWithUserId?.trim() && !input.sharedWithEmail?.trim()) {
+    throw new ServiceError(
+      'Informe o destinatário do compartilhamento.',
+      'MISSING_SHARED_WITH_USER',
+      400,
+    );
   }
 
-  if (sharedWithUserId === user.id) {
+  if (input.sharedWithUserId?.trim() === user.id) {
     throw new ServiceError('Você não pode compartilhar consigo mesmo.', 'SELF_SHARE_DENIED', 400);
   }
 
   const { doc, requiresApproval } = await loadShareableDocument(ctx, user, documentId);
 
-  const recipient = await requireShareRecipient(ctx.tenantId, sharedWithUserId);
+  const recipient = await resolveShareRecipient(ctx.tenantId, input);
+  const sharedWithUserId = recipient.userId;
+
+  if (sharedWithUserId === user.id) {
+    throw new ServiceError('Você não pode compartilhar consigo mesmo.', 'SELF_SHARE_DENIED', 400);
+  }
+
   const permissions = defaultSharePermissions(input.permissions);
   assertSharePermissions(permissions);
+
+  const crossesTenantBorder = recipient.scope === 'external_tenant';
+  const expiresAt = resolveShareExpiration(input.expiresAt, crossesTenantBorder);
+
+  /**
+   * `share` ganha a segunda dimensão: para dentro e para fora do tenant são riscos diferentes.
+   *
+   * Dentro de casa a governança decide, como sempre. Para fora, a aprovação é **piso** e não
+   * default: o documento sai do alcance de quem o governa, e nenhuma célula do mapa de regras foi
+   * escrita com essa saída em mente — tratá-la como um compartilhamento comum deixaria o acervo
+   * atravessar a fronteira com a permissão que existia para uso interno.
+   *
+   * Administrador é a exceção porque ele é quem aprovaria: pedir aprovação a si mesmo trocaria uma
+   * decisão por uma formalidade, e o gesto ficaria a dois cliques de distância do mesmo resultado.
+   */
+  const requiresApprovalToShare =
+    requiresApproval || (crossesTenantBorder && !isDocumentAdmin(user));
 
   /**
    * O pedido nasce depois da validação, e carrega o que precisa para acontecer.
@@ -494,7 +714,7 @@ export async function createDocumentShareGrant(
    * **executa** — o administrador não tem o destinatário, as permissões nem a mensagem em mãos,
    * então eles vão no `payload`. Validar antes é o que impede um pedido que, aprovado, falharia.
    */
-  if (requiresApproval) {
+  if (requiresApprovalToShare) {
     const gate = await resolveDocumentApproval({
       tenantId: ctx.tenantId,
       membershipId: ctx.membershipId,
@@ -503,12 +723,15 @@ export async function createDocumentShareGrant(
       kind: 'document_share',
       target: {
         memberId: sharedWithUserId,
-        memberName: serializeTenantMember(recipient).name,
+        memberName: recipient.name,
       },
       payload: {
         sharedWithUserId,
+        recipientScope: recipient.scope,
+        recipientName: recipient.name,
         permissions,
         message: input.message?.trim() || null,
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
       },
       // Aprovar já compartilhou. Tratar o pedido aprovado como passe deixaria a mesma aprovação
       // valer para um segundo compartilhamento que ninguém viu.
@@ -532,6 +755,10 @@ export async function createDocumentShareGrant(
     sharedWithUserId,
     permissions,
     message: input.message,
+    expiresAt,
+    inbound: crossesTenantBorder
+      ? await buildInboundState(ctx, doc, user.name, recipient.name)
+      : undefined,
   });
 }
 
@@ -558,8 +785,11 @@ export async function createShareGrantFromApprovedRequest(
 
   const payload = request.payload as {
     sharedWithUserId?: unknown;
+    recipientScope?: unknown;
+    recipientName?: unknown;
     permissions?: Partial<DocumentSharePermissions>;
     message?: unknown;
+    expiresAt?: unknown;
   };
   const sharedWithUserId =
     typeof payload.sharedWithUserId === 'string' ? payload.sharedWithUserId.trim() : '';
@@ -589,7 +819,20 @@ export async function createShareGrantFromApprovedRequest(
 
   assertCanAccessDocument(doc as Record<string, unknown>, storage);
 
-  await requireShareRecipient(ctx.tenantId, sharedWithUserId);
+  /**
+   * O destino de fora não é reconferido no diretório.
+   *
+   * A aprovação **é** a autorização, e ela foi dada sobre um destinatário nomeado no pedido. Voltar
+   * ao auth-service aqui gastaria a cota de quem aprova por um dado que já está decidido, e faria
+   * uma indisponibilidade do diretório derrubar um compartilhamento já autorizado. O que continua
+   * sendo conferido é o mundo de agora do lado de cá: o documento existe, e o membro daqui está
+   * ativo.
+   */
+  const crossesTenantBorder = payload.recipientScope === 'external_tenant';
+
+  if (!crossesTenantBorder) {
+    await requireShareRecipient(ctx.tenantId, sharedWithUserId);
+  }
 
   const permissions = defaultSharePermissions(payload.permissions);
   assertSharePermissions(permissions);
@@ -602,6 +845,18 @@ export async function createShareGrantFromApprovedRequest(
     sharedWithUserId,
     permissions,
     message: typeof payload.message === 'string' ? payload.message : null,
+    expiresAt:
+      typeof payload.expiresAt === 'string' && payload.expiresAt
+        ? new Date(payload.expiresAt)
+        : null,
+    inbound: crossesTenantBorder
+      ? await buildInboundState(
+          ctx,
+          doc as MongoDocument,
+          request.requestedBy.name,
+          typeof payload.recipientName === 'string' ? payload.recipientName : sharedWithUserId,
+        )
+      : undefined,
   });
 }
 

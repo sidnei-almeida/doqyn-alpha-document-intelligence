@@ -9,9 +9,9 @@ import { useDirectoryLookup, looksLikeEmail } from '../hooks/useDirectoryLookup'
  * sabia de antemão que o destinatário está fora. Este é o ponto onde as duas metades da mesma
  * intenção se encontram.
  *
- * `doqyn_user` não aparece aqui de propósito: enquanto o envio entre empresas não existe, o
- * servidor devolve `external` para quem tem conta e para quem não tem. Contar a diferença sem ter
- * o que oferecer só entregaria de graça quem tem conta no DOQYN.
+ * `doqyn_user` só chega aqui quando o envio entre empresas está ligado. Desligado, o servidor
+ * devolve `external` para quem tem conta e para quem não tem — contar a diferença sem ter o que
+ * oferecer entregaria de graça quem tem conta no DOQYN.
  */
 const COPY = {
   share: {
@@ -29,10 +29,16 @@ const COPY = {
 export function OutsideCompanyHint({
   query,
   onUseExternal,
+  onUseDoqynUser,
   intent = 'share',
 }: {
   query: string;
   onUseExternal: (email: string) => void;
+  /**
+   * O caminho entre empresas. Ausente quando o fluxo ainda não o suporta — e aí o usuário DOQYN de
+   * fora cai no link externo como qualquer outro, que é a verdade útil naquele fluxo.
+   */
+  onUseDoqynUser?: (email: string, name: string) => void;
   intent?: keyof typeof COPY;
 }) {
   const copy = COPY[intent];
@@ -49,6 +55,23 @@ export function OutsideCompanyHint({
   // Membro da empresa que não apareceu na lista já tem acesso — a lista esconde quem já recebeu.
   if (lookup.data.kind === 'tenant_member') {
     return <p className="type-caption text-doqyn-muted">{copy.alreadyThere}</p>;
+  }
+
+  if (lookup.data.kind === 'doqyn_user') {
+    if (!onUseDoqynUser) return null;
+    const { name } = lookup.data.user;
+
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <p className="type-caption text-doqyn-muted">
+          {name} usa o DOQYN em outra empresa. O documento continua sendo seu — ela precisa aceitar
+          antes de ver.
+        </p>
+        <Button type="button" size="sm" onClick={() => onUseDoqynUser(email, name)}>
+          Enviar para {name}
+        </Button>
+      </div>
+    );
   }
 
   if (lookup.data.kind !== 'external') return null;

@@ -24,6 +24,10 @@ export type DocumentShareEntry = {
   message?: string | null;
   createdAt: string;
   sharedByUserId: string;
+  expiresAt?: string | null;
+  /** Nulo quando o compartilhamento é de casa: lá não há aceite a esperar. */
+  inboundStatus?: 'pending' | 'accepted' | 'declined' | null;
+  originTenantName?: string | null;
 };
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -45,9 +49,13 @@ export async function fetchDocumentShares(documentId: string): Promise<{
 export async function createDocumentShare(
   documentId: string,
   input: {
-    sharedWithUserId: string;
+    /** Do seletor de membros. Um dos dois basta. */
+    sharedWithUserId?: string;
+    /** Do campo que atravessa a fronteira: o servidor resolve se é de casa ou de fora. */
+    sharedWithEmail?: string;
     permissions?: { canView?: boolean; canDownload?: boolean };
     message?: string;
+    expiresAt?: string;
   },
 ): Promise<{ shareId: string; updated: boolean }> {
   const encoded = encodeURIComponent(documentId);
