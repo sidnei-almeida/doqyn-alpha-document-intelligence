@@ -45,6 +45,8 @@ async function ensureRegistryIndexes() {
   await ensureNotificationIndexes();
   const { ensureApprovalRequestIndexes } = await import('./approvalRequestIndexes.js');
   await ensureApprovalRequestIndexes();
+  const { ensureDocumentRequestIndexes } = await import('./documentRequestIndexes.js');
+  await ensureDocumentRequestIndexes();
   const { ensureDocumentShareGrantsIndexes } = await import('./documentShareGrantsIndexes.js');
   await ensureDocumentShareGrantsIndexes();
   const { ensureExternalDocumentShareGrantsIndexes } =

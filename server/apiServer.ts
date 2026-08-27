@@ -51,6 +51,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
     import('../api/internal/memberships/revoke-shares.js'),
   '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
+  '/api/document-requests': () => import('../api/document-requests/index.js'),
   '/api/company-members/invite': () => import('../api/company-members/invite.js'),
   '/api/document-classes': () => import('../api/document-classes/index.js'),
   '/api/document-categories': () => import('../api/document-categories/index.js'),
@@ -99,6 +100,11 @@ function resolveRoute(pathname: string): RouteMatch | null {
     {
       regex: /^\/api\/access-groups\/([^/]+)$/,
       loader: () => import('../api/access-groups/item.js'),
+    },
+    {
+      regex: /^\/api\/document-requests\/([^/]+)\/cancel$/,
+      loader: () => import('../api/document-requests/[requestId]/cancel.js'),
+      paramKeys: ['requestId'],
     },
     {
       regex: /^\/api\/company-members\/([^/]+)\/approve$/,

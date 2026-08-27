@@ -12,6 +12,7 @@ import {
   DocumentSendRoute,
   IndividualSignupRoute,
   LibraryRoute,
+  DocumentRequestsRoute,
   OAuthCallbackRoute,
   OnboardingRoute,
   RequestAccessRoute,
@@ -61,6 +62,9 @@ export const router = createBrowserRouter([
           { path: '/biblioteca', element: <LibraryRoute /> },
           // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira, desativados)
           { path: '/biblioteca/:collection', element: <LibraryRoute /> },
+          // Fora de `/biblioteca/:collection` de propósito: aquela rota lista documentos, e um
+          // pedido só vira documento quando alguém envia.
+          { path: '/pedidos', element: <DocumentRequestsRoute /> },
           { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
           // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.

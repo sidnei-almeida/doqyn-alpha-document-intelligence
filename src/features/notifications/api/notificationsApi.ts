@@ -11,7 +11,9 @@ export type NotificationType =
   | 'approval_requested'
   | 'approval_decided'
   | 'access_approved'
-  | 'access_rejected';
+  | 'access_rejected'
+  | 'document_requested'
+  | 'document_request_fulfilled';
 
 export type AppNotification = {
   id: string;

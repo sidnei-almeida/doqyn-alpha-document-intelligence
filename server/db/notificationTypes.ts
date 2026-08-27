@@ -14,7 +14,9 @@ export type NotificationType =
   | 'access_approved'
   | 'access_rejected'
   | 'approval_requested'
-  | 'approval_decided';
+  | 'approval_decided'
+  | 'document_requested'
+  | 'document_request_fulfilled';
 
 export type NotificationStatus = 'unread' | 'read' | 'dismissed';
 

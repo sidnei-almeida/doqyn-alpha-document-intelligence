@@ -21,6 +21,14 @@ export type UploadQueueItemStatus =
 export type UploadContext = {
   categoryId?: string;
   categoryName?: string;
+  /**
+   * O pedido que este envio cumpre.
+   *
+   * Viaja no contexto do item porque é o único lugar que sobrevive ao caminho inteiro — fila,
+   * análise, revisão e confirmação. O servidor usa isso para decidir a categoria, e por isso a
+   * escolha de quem envia não a sobrescreve.
+   */
+  documentRequestId?: string;
 };
 
 export type UploadQueueItemAnalysis = {

@@ -26,6 +26,11 @@ export const PREFERENCE_KEY_BY_TYPE: Record<
   // começou — nenhum dos dois é aviso que se escolhe receber.
   approval_requested: null,
   approval_decided: null,
+  // Mesma razão dos dois acima. Um documento pedido a você é trabalho que alguém lhe atribuiu, e
+  // saber que o pedido foi atendido é o fim de uma conversa que você começou — nenhum dos dois é
+  // aviso de cortesia que se escolhe receber.
+  document_requested: null,
+  document_request_fulfilled: null,
 };
 
 /**

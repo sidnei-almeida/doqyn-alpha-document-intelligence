@@ -201,7 +201,10 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       if (!item.analysis) return;
 
       const { raw, metadata } = item.analysis;
-      const validationError = validateConfirmableAnalysis(raw);
+      const validationError = validateConfirmableAnalysis(raw, {
+        manualClassId,
+        documentRequestId: item.context?.documentRequestId,
+      });
       if (validationError) {
         dispatch({ type: 'error', id: item.id, message: validationError });
         toast.error(validationError);
@@ -245,6 +248,9 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           finalFileName: resolvedFinalName,
           selectedFileName: effectiveNamingMode === 'manual' ? namingChoice?.manualName : undefined,
           useAiNaming: reviewSettings.aiRenameEnabled && effectiveNamingMode !== 'original',
+          // Vale para os dois caminhos abaixo: quando o tenant exige revisão, o envio guarda o
+          // pedido no payload e o cumprimento acontece na aprovação, sem o solicitante repetir nada.
+          documentRequestId: item.context?.documentRequestId,
           context: {
             itemId: item.id,
             fileName: item.fileName,

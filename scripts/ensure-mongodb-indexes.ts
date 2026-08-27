@@ -12,7 +12,11 @@ import {
   NOTIFICATION_INDEXES,
 } from '../server/db/notificationIndexes.js';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
-import { APPROVAL_REQUEST_INDEXES } from '../server/db/approvalRequestIndexes.js';
+import {
+  APPROVAL_REQUEST_INDEXES,
+  SUPERSEDED_APPROVAL_REQUEST_INDEXES,
+} from '../server/db/approvalRequestIndexes.js';
+import { DOCUMENT_REQUEST_INDEXES } from '../server/db/documentRequestIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -20,7 +24,7 @@ const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
 type IndexResult = {
   collection: string;
   name: string;
-  status: 'created' | 'existing' | 'error';
+  status: 'created' | 'existing' | 'dropped' | 'error';
   error?: string;
 };
 
@@ -143,6 +147,12 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
       collection: SHARED_APP_COLLECTIONS.approvalRequests,
       indexes: APPROVAL_REQUEST_INDEXES,
     },
+    {
+      // Mesma razão de `approval_requests`: este script é o que o Compose executa, e ficar só em
+      // `setupMongo` deixaria a coleção sem índice nenhum em produção.
+      collection: SHARED_APP_COLLECTIONS.documentRequests,
+      indexes: DOCUMENT_REQUEST_INDEXES,
+    },
   ];
 }
 
@@ -250,6 +260,24 @@ function tenantScopedIndexes(names: ResolvedTenantCollectionNames): Array<{
   return out;
 }
 
+/**
+ * Índice único cuja chave mudou não é substituído por `ensureIndexes` — o casamento é por forma de
+ * chave, então o antigo sobrevive ao lado do novo e continua barrando escrita legítima. Derrubar
+ * pelo nome é a única saída, e tem de acontecer aqui: este script é o que o Compose executa.
+ */
+async function dropSupersededIndexes() {
+  const db = await getDb();
+  const collection = db.collection(SHARED_APP_COLLECTIONS.approvalRequests);
+  for (const name of SUPERSEDED_APPROVAL_REQUEST_INDEXES) {
+    try {
+      await collection.dropIndex(name);
+      results.push({ collection: collection.collectionName, name, status: 'dropped' });
+    } catch {
+      // Não existe: nada a fazer.
+    }
+  }
+}
+
 async function main() {
   if (!isMongoNativeConfigured()) {
     console.error('MONGODB_URI não configurada.');
@@ -262,6 +290,8 @@ async function main() {
   for (const group of registryIndexes()) {
     await ensureIndexes(group.collection, group.indexes);
   }
+
+  await dropSupersededIndexes();
 
   for (const group of sharedAppIndexes()) {
     await ensureIndexes(group.collection, group.indexes);
@@ -288,9 +318,11 @@ async function main() {
   report.section('RESUMO');
   const created = results.filter((r) => r.status === 'created').length;
   const existing = results.filter((r) => r.status === 'existing').length;
+  const dropped = results.filter((r) => r.status === 'dropped').length;
   const errors = results.filter((r) => r.status === 'error').length;
   report.line(`Índices criados: ${created}`);
   report.line(`Índices já existentes: ${existing}`);
+  report.line(`Índices substituídos removidos: ${dropped}`);
   report.line(`Erros: ${errors}`);
   report.line(`Tenants ativos processados: ${tenants.length}`);
 

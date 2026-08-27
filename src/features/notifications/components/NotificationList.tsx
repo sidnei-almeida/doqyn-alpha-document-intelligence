@@ -30,6 +30,8 @@ const TYPE_ICON: Record<NotificationType, string> = {
   access_rejected: 'block',
   approval_requested: 'gavel',
   approval_decided: 'gavel',
+  document_requested: 'assignment',
+  document_request_fulfilled: 'assignment_turned_in',
 };
 
 const TYPE_LABEL: Record<NotificationType, string> = {
@@ -42,6 +44,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   access_rejected: 'acesso',
   approval_requested: 'aprovação',
   approval_decided: 'aprovação',
+  document_requested: 'pedido',
+  document_request_fulfilled: 'pedido',
 };
 
 /**
@@ -62,10 +66,20 @@ function expiryTone(daysRemaining: number): string {
  * numa lista sem o item. Cada tipo aponta para a lista onde aquele documento de fato aparece.
  */
 function targetFor(notification: AppNotification): string | null {
+  // Um pedido ainda sem documento é o caso normal: enquanto ninguém envia, não há arquivo. O aviso
+  // leva à lista de pedidos, que é onde a pessoa faz alguma coisa a respeito.
+  if (notification.type === 'document_requested') return '/pedidos';
+
   if (!notification.documentId) return null;
   const query = `?documentId=${encodeURIComponent(notification.documentId)}`;
 
   if (notification.type === 'document_shared') return `/biblioteca/compartilhados${query}`;
+  // Quem pediu alcança o documento pela concessão criada no cumprimento, não pela governança da
+  // categoria — e a listagem principal não carrega grants. Mandar para `/biblioteca` cairia na
+  // mesma lista sem o item que este aviso acabou de anunciar.
+  if (notification.type === 'document_request_fulfilled') {
+    return `/biblioteca/compartilhados${query}`;
+  }
   if (notification.type === 'signature_required') return `/biblioteca/assinaturas${query}`;
   return `/biblioteca${query}`;
 }

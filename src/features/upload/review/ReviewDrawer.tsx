@@ -94,9 +94,18 @@ export function ReviewDrawer() {
     perItem: perItemNaming,
   });
 
+  /**
+   * Envio que cumpre um pedido já tem categoria: a de quem pediu.
+   *
+   * Pedir escolha aqui seria pedir uma decisão que o servidor descarta — o pedido vence a IA e
+   * vence quem envia. Sem este termo, um documento pedido cuja análise não classificou fica preso
+   * na revisão, atrás de um campo cuja resposta não muda nada.
+   */
+  const fulfillsRequest = Boolean(item.context?.documentRequestId);
+
   // Sem classe da IA, o documento só sai daqui com alguém escolhendo a categoria. Antes ele ficava
   // preso: a confirmação exige classe e a análise não tinha nenhuma para dar.
-  const needsManualCategory = !aiClassId && !manualCategory;
+  const needsManualCategory = !aiClassId && !manualCategory && !fulfillsRequest;
 
   const canConfirm =
     reviewChecked &&
@@ -200,19 +209,23 @@ export function ReviewDrawer() {
             <div className="min-w-0">
               <p className="text-eyebrow uppercase text-doqyn-muted">Categoria</p>
               <p className="mt-0.5 text-body font-medium text-doqyn-text">
-                {manualCategory?.name ??
-                  (aiClassId ? aiClassName : 'A IA não conseguiu classificar')}
+                {fulfillsRequest
+                  ? (item.context?.categoryName ?? 'Definida pelo pedido')
+                  : (manualCategory?.name ??
+                    (aiClassId ? aiClassName : 'A IA não conseguiu classificar'))}
               </p>
               <p className="mt-0.5 text-micro text-doqyn-muted">
-                {manualCategory
-                  ? 'Escolhida por você. A IA fica registrada na auditoria.'
-                  : aiClassId
-                    ? 'Sugerida pela análise automática.'
-                    : 'Escolha a categoria para salvar este documento.'}
+                {fulfillsRequest
+                  ? 'Escolhida por quem pediu o documento. Não é possível alterar aqui.'
+                  : manualCategory
+                    ? 'Escolhida por você. A IA fica registrada na auditoria.'
+                    : aiClassId
+                      ? 'Sugerida pela análise automática.'
+                      : 'Escolha a categoria para salvar este documento.'}
               </p>
             </div>
 
-            {!needsManualCategory && (
+            {!needsManualCategory && !fulfillsRequest && (
               <button
                 type="button"
                 onClick={() => setShowCategoryPicker((current) => !current)}

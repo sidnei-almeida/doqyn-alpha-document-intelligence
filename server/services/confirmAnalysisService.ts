@@ -14,6 +14,12 @@ import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js
 import { buildFilenameUpdatedAuditEvent } from '../audit/buildFilenameUpdatedAuditEvent.js';
 import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
 import { notifyDocumentCreated } from './notifications/documentNotifications.js';
+import {
+  markDocumentRequestFulfilled,
+  resolveRequestForFulfillment,
+} from './requests/documentRequestService.js';
+import { notifyDocumentRequestFulfilled } from './notifications/documentRequestNotifications.js';
+import { grantRequesterAccessToFulfilledDocument } from './sharing/documentShareService.js';
 import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
@@ -161,6 +167,13 @@ export const confirmAnalysisSchema = z.object({
    * perderia a diferença entre "a IA acertou" e "alguém consertou".
    */
   metadataOverrides: z.record(z.union([z.string(), z.number(), z.null()])).optional(),
+  /**
+   * O pedido que este envio cumpre.
+   *
+   * Presente, ele manda: a categoria vem de quem pediu, e não da IA nem de quem envia. É o que
+   * separa a requisição de um upload comum.
+   */
+  documentRequestId: optionalName,
 });
 
 export type ConfirmAnalysisInput = z.infer<typeof confirmAnalysisSchema>;
@@ -236,8 +249,25 @@ export async function confirmAnalysisPersistence(input: {
       mimeType: data.mimeType,
     }) ?? 'application/pdf';
 
+  /**
+   * Cumprir um pedido decide a categoria antes de todo mundo.
+   *
+   * A ordem é pedido > escolha humana > IA. Quem envia atendendo a uma requisição não escolhe onde
+   * o documento cai: quem pediu já escolheu, e é dessa escolha que depende a governança do que
+   * entra. Deixar a escolha com quem envia deixaria o destino aberto a quem está do lado de fora
+   * da decisão.
+   *
+   * Quem cumpre é o **dono** do documento, não quem opera a confirmação. Quando o tenant exige
+   * revisão de envio, esta função roda de novo com o administrador como ator e o remetente em
+   * `documentOwnerUserId` — usar `input.user.id` aqui recusaria com 403 todo envio aprovado que
+   * atendesse a um pedido.
+   */
+  const fulfilledRequest = data.documentRequestId?.trim()
+    ? await resolveRequestForFulfillment(tenantId, ownerUserId, data.documentRequestId.trim())
+    : null;
+
   // A escolha humana vence a da IA: quem revisou viu o documento.
-  const manualClassId = data.manualClassId?.trim() || undefined;
+  const manualClassId = fulfilledRequest?.categoryId ?? (data.manualClassId?.trim() || undefined);
 
   // Sem classe da IA e sem escolha humana, o documento ia para "Sem categoria" em vez de ser
   // recusado. Recusar custava o documento inteiro: o binário já está no R2 e o registro em Mongo só
@@ -787,6 +817,67 @@ export async function confirmAnalysisPersistence(input: {
     actorName: input.user.name,
     eventKey: versionId,
   });
+
+  /**
+   * Fecha o pedido, e só depois que o documento existe.
+   *
+   * Nada aqui pode derrubar o envio. O binário já está no R2 e o registro já está no Mongo — se a
+   * marcação ou a concessão falharem, o documento continua salvo e o pedido continua pendente,
+   * que é um estado recuperável (a pessoa reenvia). Estourar aqui perderia o ativo caro por causa
+   * da escrituração.
+   */
+  if (fulfilledRequest) {
+    try {
+      const settled = await markDocumentRequestFulfilled(
+        tenantId,
+        fulfilledRequest._id,
+        documentId,
+      );
+
+      // `null` é a corrida perdida: outro envio cumpriu o mesmo pedido primeiro. O documento deste
+      // envio fica na Biblioteca como qualquer outro, e não se concede acesso por um pedido que já
+      // foi fechado por outro arquivo.
+      if (settled) {
+        await grantRequesterAccessToFulfilledDocument({
+          ctx: input.ctx,
+          doc: {
+            _id: documentId,
+            currentVersionId: versionId,
+            title: documentNameSnapshot,
+            currentFileName: documentNameSnapshot,
+          },
+          requesterUserId: fulfilledRequest.requestedBy.userId,
+          // A concessão sai no nome de quem enviou, não de quem aprovou o envio.
+          fulfilledByUserId: ownerUserId,
+          fulfilledByName: ownerName,
+        });
+
+        await notifyDocumentRequestFulfilled(settled, documentNameSnapshot);
+
+        await createDocumentAuditLogs(auditCtx, [
+          {
+            action: 'document_request.fulfilled',
+            description: 'Requisição de documento atendida.',
+            documentId,
+            versionId,
+            target: documentTarget,
+            metadata: sanitizeAuditMetadata({
+              requestId: fulfilledRequest._id,
+              requestedByUserId: fulfilledRequest.requestedBy.userId,
+              categoryId: fulfilledRequest.categoryId,
+              source: 'api',
+            }),
+          },
+        ]);
+      }
+    } catch (error) {
+      logger.warn('falha ao fechar requisição de documento', {
+        requestId: fulfilledRequest._id,
+        documentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
   return {
     documentId,

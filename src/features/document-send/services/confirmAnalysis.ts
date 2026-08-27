@@ -30,13 +30,17 @@ export type ConfirmAnalysisOptions = {
   finalFileName?: string;
   selectedFileName?: string;
   useAiNaming?: boolean;
+  /** Pedido que este envio cumpre — o servidor tira dele a categoria de destino. */
+  documentRequestId?: string;
   context?: WorkflowRequestContext;
 };
 
 export async function confirmAnalysis(
   payload: AnalyzePdfResponse,
   options?: ConfirmAnalysisOptions,
-): Promise<ConfirmAnalysisResponse & { durationMs: number; httpStatus: number; requestId: string }> {
+): Promise<
+  ConfirmAnalysisResponse & { durationMs: number; httpStatus: number; requestId: string }
+> {
   const requestId = options?.context?.requestId ?? createRequestId();
   const context: WorkflowRequestContext = {
     ...options?.context,
@@ -62,6 +66,7 @@ export async function confirmAnalysis(
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,
       selectedFileName: options?.selectedFileName,
+      documentRequestId: options?.documentRequestId,
     }),
   });
   const durationMs = Math.round(performance.now() - startedAt);
@@ -94,7 +99,9 @@ export async function confirmAnalysis(
 export async function submitUploadForApproval(
   payload: AnalyzePdfResponse,
   options?: ConfirmAnalysisOptions,
-): Promise<SubmitUploadApprovalResponse & { durationMs: number; httpStatus: number; requestId: string }> {
+): Promise<
+  SubmitUploadApprovalResponse & { durationMs: number; httpStatus: number; requestId: string }
+> {
   const requestId = options?.context?.requestId ?? createRequestId();
   const context: WorkflowRequestContext = {
     ...options?.context,
@@ -120,6 +127,7 @@ export async function submitUploadForApproval(
       aiSuggestedFileName: normalizedPayload.recommendedFileName,
       finalFileName: options?.finalFileName,
       selectedFileName: options?.selectedFileName,
+      documentRequestId: options?.documentRequestId,
     }),
   });
   const durationMs = Math.round(performance.now() - startedAt);
