@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Marca d'água DOQYN — o selo da marca nova, em lockup horizontal.
+
+  Redesenhada a partir de `src/components/brand/DoqynMark.tsx`: anel externo (a borda cunhada),
+  anel interno a 50% (a impressão) e a cauda que **nasce dentro** do anel e atravessa a borda — é
+  esse cruzamento que faz ler como Q e não como lupa.
+
+  Diferente do componente, aqui a cor é fixa: `currentColor` não existe fora do DOM, e o servidor
+  rasteriza este arquivo direto. A proporção 3:1 é a mesma do lockup anterior, para não mexer no
+  ladrilho de `watermarkTiling.ts`.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80" fill="none">
+  <g stroke="#808080" fill="none">
+    <circle cx="34" cy="34" r="22" stroke-width="4.4" />
+    <circle cx="34" cy="34" r="14.7" stroke-width="2.4" opacity="0.5" />
+    <path d="M39.1 39.1 L57.4 57.4" stroke-width="6.8" stroke-linecap="round" />
+  </g>
+  <text x="80" y="49" font-family="Helvetica, Arial, sans-serif" font-size="30"
+        letter-spacing="8.4" fill="#808080">DOQYN</text>
+</svg>
