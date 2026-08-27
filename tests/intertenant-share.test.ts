@@ -104,11 +104,15 @@ describe('compartilhar entre empresas — a segunda dimensão do verbo', () => {
     assert.ok(service.includes('expiresAt: expiresAt ? expiresAt.toISOString() : null'));
   });
 
-  it('o endpoint aceita e-mail ou id, e um dos dois basta', () => {
+  it('o endpoint aceita id, e-mail ou apelido, e um dos três basta', () => {
     const api = read('api/documents/[documentId]/shares.ts');
 
+    // Id vem do seletor de colegas; e-mail, de quem já o sabia; apelido, da busca digitável — e é
+    // o único que o diretório devolve, porque e-mail ele não entrega a quem só buscou.
     assert.ok(api.includes('sharedWithEmail'));
-    assert.ok(api.includes('!body.sharedWithUserId?.trim() && !body.sharedWithEmail?.trim()'));
+    assert.ok(api.includes('sharedWithUsername'));
+    assert.ok(api.includes('!body.sharedWithUserId?.trim() &&'));
+    assert.ok(api.includes('!body.sharedWithUsername?.trim()'));
   });
 
   it('na tela, quem é de fora não é tratado como membro', () => {
