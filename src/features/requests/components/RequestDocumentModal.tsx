@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
-import { DoqynUserField } from '@/features/directory/components/DoqynUserField';
+import { CrossTenantRecipientField } from '@/features/directory/components/CrossTenantRecipientField';
 import { cn } from '@/lib/utils';
 
 export type RequestDocumentTarget = {
@@ -152,12 +152,20 @@ export function RequestDocumentModal({
         </div>
 
         {external ? (
-          <DoqynUserField
-            label="E-mail de quem vai enviar"
-            value={requestedFromEmail}
-            onChange={setRequestedFromEmail}
-            hint="Precisa ter conta DOQYN. Sem busca por nome: fora da sua empresa, só o e-mail exato encontra alguém."
-          />
+          <div className="flex flex-col gap-2">
+            <CrossTenantRecipientField
+              label="E-mail de quem vai enviar"
+              idleHint="Precisa ter conta DOQYN. Fora da sua empresa não há busca por nome: o nome é guardado cifrado."
+              /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e
+                 o link com token serve para receber, não para mandar. */
+              onPick={(recipient) => setRequestedFromEmail(recipient.email)}
+            />
+            {requestedFromEmail ? (
+              <p className="text-caption text-doqyn-accent-active">
+                Pedido para {requestedFromEmail}
+              </p>
+            ) : null}
+          </div>
         ) : (
           /* O `select` nativo desenha a lista com o tema do navegador, e num app escuro isso
              aparece como um retângulo branco no meio do formulário. O primitivo do app monta a

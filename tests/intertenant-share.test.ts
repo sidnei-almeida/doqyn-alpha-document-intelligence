@@ -123,14 +123,13 @@ describe('compartilhar entre empresas — a segunda dimensão do verbo', () => {
     );
   });
 
-  it('a dica só oferece o caminho entre empresas quando ele existe', () => {
-    const hint = read('src/features/directory/components/OutsideCompanyHint.tsx');
+  it('o campo de fora avisa que o acesso não é imediato', () => {
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
-    assert.ok(hint.includes('onUseDoqynUser?: (email: string, name: string) => void'));
-    // Sem o callback, o usuário DOQYN de fora cai no link externo como qualquer outro.
-    assert.ok(hint.includes('if (!onUseDoqynUser) return null'));
-    // A tela avisa que o acesso não é imediato.
-    assert.ok(hint.includes('ela precisa aceitar'));
+    // Prometer envio imediato para quem ainda vai decidir seria mentir sobre o que acontece.
+    assert.ok(field.includes('ela precisa aceitar antes de ver'));
+    // E quem é de casa é mandado de volta para a busca certa, em vez de virar pendência à toa.
+    assert.ok(field.includes('é da sua empresa. Use a busca acima.'));
   });
 });
 

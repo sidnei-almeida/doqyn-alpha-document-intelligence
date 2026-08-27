@@ -25,7 +25,7 @@ import {
   type InternalCandidate,
   type RecipientAudience,
 } from '@/features/documents/recipients/RecipientFlow';
-import { OutsideCompanyHint } from '@/features/directory/components/OutsideCompanyHint';
+import { CrossTenantRecipientField } from '@/features/directory/components/CrossTenantRecipientField';
 import { useShareableUsersSearch } from '@/features/sharing/hooks/useShareDocumentMutations';
 import {
   cancelDocumentSignatureRequest,
@@ -77,6 +77,16 @@ export function RequestSignatureModal({
   const [audience, setAudience] = useState<RecipientAudience>('internal');
   const [query, setQuery] = useState('');
   const [internalPick, setInternalPick] = useState<InternalCandidate | null>(null);
+  /**
+   * Signatário de outra empresa DOQYN.
+   *
+   * Fora de `internalPick` porque não é membro daqui: não tem id de associação, e o pedido sai
+   * com o e-mail, que é o que o servidor resolve contra o diretório.
+   */
+  const [crossTenantSigner, setCrossTenantSigner] = useState<{
+    email: string;
+    name: string;
+  } | null>(null);
   const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);
   const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
   const [canDownloadAfterSign, setCanDownloadAfterSign] = useState(false);
@@ -104,9 +114,14 @@ export function RequestSignatureModal({
     mutationFn: () =>
       createDocumentSignatureRequest(documentId!, {
         signerType: audience === 'internal' ? 'internal_user' : 'external_guest',
-        signerUserId: audience === 'internal' ? (internalPick?.id ?? undefined) : undefined,
+        signerUserId:
+          audience === 'internal' && !crossTenantSigner
+            ? (internalPick?.id ?? undefined)
+            : undefined,
         signerName: audience === 'external' ? external.name.trim() : undefined,
-        signerEmail: audience === 'external' ? external.email.trim() : undefined,
+        // Assinante de outra empresa viaja pelo e-mail: é ele que o servidor resolve no diretório.
+        signerEmail:
+          audience === 'external' ? external.email.trim() : (crossTenantSigner?.email ?? undefined),
         signerPhone: audience === 'external' ? external.phone.trim() || undefined : undefined,
         signerOrganizationName:
           audience === 'external' ? external.organizationName.trim() || undefined : undefined,
@@ -136,6 +151,7 @@ export function RequestSignatureModal({
     setAudience('internal');
     setQuery('');
     setInternalPick(null);
+    setCrossTenantSigner(null);
     setExternal(EMPTY_EXTERNAL_RECIPIENT);
     setExpiresAt(defaultExpirationDate(7));
     setCanDownloadAfterSign(false);
@@ -149,12 +165,21 @@ export function RequestSignatureModal({
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick);
+      if (audience === 'internal') return Boolean(internalPick ?? crossTenantSigner);
       return external.name.trim().length > 0 && external.email.trim().includes('@') && !phoneError;
     }
     if (flow.step === 1) return Boolean(expiresAt);
     return true;
-  }, [audience, expiresAt, external.email, external.name, flow.step, internalPick, phoneError]);
+  }, [
+    audience,
+    crossTenantSigner,
+    expiresAt,
+    external.email,
+    external.name,
+    flow.step,
+    internalPick,
+    phoneError,
+  ]);
 
   const handleSubmit = async () => {
     if (!documentId) return;
@@ -208,7 +233,7 @@ export function RequestSignatureModal({
 
   const recipientLabel =
     audience === 'internal'
-      ? (internalPick?.name ?? '—')
+      ? (crossTenantSigner?.name ?? internalPick?.name ?? '—')
       : external.name.trim() || external.email.trim() || '—';
 
   const finished = issuedUrl !== null || internalDone;
@@ -276,7 +301,7 @@ export function RequestSignatureModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Pessoa da empresa"
+                internalLabel="Usuário DOQYN"
                 externalLabel="Convidado externo"
               />
               {audience === 'internal' ? (
@@ -293,14 +318,22 @@ export function RequestSignatureModal({
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
                   emptyAction={
-                    <OutsideCompanyHint
-                      intent="signature"
-                      query={query}
-                      onUseExternal={(email) => {
-                        setAudience('external');
-                        setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
-                      }}
-                    />
+                    <div className="flex flex-col gap-3">
+                      <p className="text-eyebrow uppercase text-doqyn-subtle">De outra empresa</p>
+                      {/* Assinar é o verbo menos disruptivo dos que saem da empresa: quem assina de
+                          fora abre a página própria com token e não entra no acervo. Por isso aqui
+                          não há aceite a esperar. */}
+                      <CrossTenantRecipientField
+                        label="E-mail de quem vai assinar"
+                        idleHint="Digite o e-mail completo de alguém de outra empresa. Ela assina pela página própria, sem entrar no seu acervo."
+                        onPick={setCrossTenantSigner}
+                        onFallbackToLink={(email) => {
+                          setAudience('external');
+                          setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                        }}
+                        fallbackLabel="Convidar por link"
+                      />
+                    </div>
                   }
                 />
               ) : (

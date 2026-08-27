@@ -27,7 +27,8 @@ export type DocumentShareEntry = {
   expiresAt?: string | null;
   /** Nulo quando o compartilhamento é de casa: lá não há aceite a esperar. */
   inboundStatus?: 'pending' | 'accepted' | 'declined' | null;
-  originTenantName?: string | null;
+  /** A empresa da outra parte, conhecida só depois do aceite. */
+  counterpartTenantName?: string | null;
 };
 
 async function parseJson<T>(response: Response): Promise<T> {

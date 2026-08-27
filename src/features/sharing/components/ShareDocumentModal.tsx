@@ -24,8 +24,7 @@ import {
   type InternalCandidate,
   type RecipientAudience,
 } from '@/features/documents/recipients/RecipientFlow';
-import { OutsideCompanyHint } from '@/features/directory/components/OutsideCompanyHint';
-import { PartnerContactList } from '@/features/directory/components/PartnerContactList';
+import { CrossTenantRecipientField } from '@/features/directory/components/CrossTenantRecipientField';
 import {
   useDocumentShares,
   useShareableUsersSearch,
@@ -159,7 +158,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
     ...(internalShares.data?.shares ?? []).map((share) => ({
       id: share.shareId,
       primary: share.sharedWithName,
-      secondary: `${share.sharedWithEmail ?? share.originTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
+      secondary: `${share.sharedWithEmail ?? share.counterpartTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
       // Oferecido não é concedido: dizer "da empresa" para o que ainda espera aceite prometeria um
       // acesso que não existe.
       status:
@@ -267,7 +266,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Pessoa da empresa"
+                internalLabel="Usuário DOQYN"
                 externalLabel="Convidado externo"
               />
               {audience === 'internal' && crossTenantPick ? (
@@ -304,18 +303,20 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
                   emptyAction={
                     <div className="flex flex-col gap-3">
-                      <OutsideCompanyHint
-                        query={query}
-                        onUseExternal={(email) => {
+                      <p className="text-eyebrow uppercase text-doqyn-subtle">De outra empresa</p>
+                      {/* Campo próprio, e sempre visível. A busca de cima procura por nome numa
+                          lista conhecida; esta resolve um e-mail exato contra o diretório, porque
+                          o nome de quem está fora é guardado cifrado. Escondê-la atrás do "ninguém
+                          encontrado" exigia saber de antemão que o destinatário está fora, que é
+                          justamente o que se quer descobrir. */}
+                      <CrossTenantRecipientField
+                        onPick={setCrossTenantPick}
+                        onFallbackToLink={(email) => {
                           setAudience('external');
                           setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
                         }}
-                        onUseDoqynUser={(email, name) => setCrossTenantPick({ email, name })}
+                        fallbackLabel="Enviar por link com prazo"
                       />
-                      {/* Quem já trocou documento com uma empresa não devia redigitar o e-mail da
-                          mesma pessoa toda vez. É o que compensa não haver busca por nome entre
-                          empresas. */}
-                      <PartnerContactList onPick={(email) => setQuery(email)} />
                     </div>
                   }
                 />

@@ -53,7 +53,10 @@ import {
 } from './signatureTokens.js';
 import { SIGNATURE_CONSENT_TEXT, generateSignedPdf } from './signaturePdfService.js';
 import { promoteSignedPdfToDocumentVersion } from './promoteSignedPdfToDocumentVersion.js';
-import { resolveInternalSignerForTenant } from './signatureRecipientValidation.js';
+import {
+  resolveInternalSignerForTenant,
+  resolveSignerByEmail,
+} from './signatureRecipientValidation.js';
 import { normalizeVersionLabel } from '../../utils/versionLabelUtils.js';
 import { loadDocumentSignatureSummary } from './documentSignatureSummaryService.js';
 
@@ -481,15 +484,31 @@ export async function createDocumentSignatureRequest(
   let phoneFields = resolveSignerPhoneFields(input.signerPhone);
 
   if (signerType === 'internal_user') {
-    const internalSigner = await resolveInternalSignerForTenant(
-      ctx,
-      user,
-      input.signerUserId ?? '',
-    );
-    signerName = internalSigner.name;
-    signerEmail = internalSigner.email;
-    signerUserId = internalSigner.userId;
+    /**
+     * O e-mail é o caminho que atravessa a fronteira; o id, o de sempre.
+     *
+     * A assinatura é o verbo menos disruptivo dos três que saem da empresa: o fluxo já trabalha
+     * com token e página própria, e quem assina de fora **não** ganha acesso ao acervo. Não há
+     * ingresso a governar, e por isso aqui não nasce concessão pendente como no compartilhamento.
+     */
+    const resolved = input.signerEmail?.trim()
+      ? await resolveSignerByEmail(ctx, user, input.signerEmail)
+      : {
+          signer: await resolveInternalSignerForTenant(ctx, user, input.signerUserId ?? ''),
+          external: false,
+        };
+
+    signerName = resolved.signer.name;
+    signerEmail = resolved.signer.email;
+    signerUserId = resolved.signer.userId;
     phoneFields = { phone: null, phoneNormalized: null, phoneMasked: null };
+
+    // Signatário de fora precisa do portal com token: ele não abre a Biblioteca desta empresa, e
+    // sem o token não teria por onde chegar ao documento que precisa assinar.
+    if (resolved.external) {
+      portalToken = generateSignaturePortalToken();
+      signatureTokenHash = hashSignaturePortalToken(portalToken);
+    }
   } else {
     if (!signerName) {
       throw new ServiceError('Nome do signatário é obrigatório.', 'SIGNER_NAME_REQUIRED', 400);

@@ -327,6 +327,20 @@ export async function listDocumentShareGrants(
 
   const grants = await findShareGrantsForDocumentIncludingPending(documentId);
   const members = await listOperationalTenantMembers(ctx.tenantId);
+
+  // Uma resolução por empresa, e só das que já foram aceitas: antes do aceite não há tenant a
+  // resolver, porque a pessoa ainda não escolheu em qual das dela o documento entra.
+  const counterpartTenantNames = new Map<string, string>();
+  for (const grant of grants) {
+    const partnerId = grant.inbound?.recipientTenantId;
+    if (!partnerId || counterpartTenantNames.has(partnerId)) continue;
+    try {
+      const tenant = await resolveTenant(partnerId);
+      counterpartTenantNames.set(partnerId, tenant.displayName || partnerId);
+    } catch {
+      counterpartTenantNames.set(partnerId, partnerId);
+    }
+  }
   const memberByUserId = new Map<string, ReturnType<typeof serializeTenantMember>>();
 
   for (const member of members) {
@@ -352,7 +366,17 @@ export async function listDocumentShareGrants(
         expiresAt: grant.expiresAt ? grant.expiresAt.toISOString() : null,
         // Ausente quando o compartilhamento é de casa: lá não há o que esperar.
         inboundStatus: grant.inbound?.status ?? null,
-        originTenantName: grant.inbound?.offer.originTenantName ?? null,
+        /**
+         * A empresa **da outra parte**, vista de quem lê.
+         *
+         * `originTenantName` é a empresa de quem enviou, e quem lê esta lista é justamente ele:
+         * mostrar aquele campo aqui escrevia o nome da própria empresa ao lado do destinatário,
+         * como se o colega de fora trabalhasse aqui. A empresa de quem recebeu só se sabe depois
+         * do aceite, e antes disso o estado "aguardando" já diz o que há para dizer.
+         */
+        counterpartTenantName: grant.inbound
+          ? (counterpartTenantNames.get(grant.inbound.recipientTenantId) ?? null)
+          : null,
       };
     }),
   };

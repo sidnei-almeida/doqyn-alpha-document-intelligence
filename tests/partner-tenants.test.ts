@@ -54,22 +54,19 @@ describe('empresas com quem já se trocou documentos', () => {
     assert.ok(persist.includes("sharedWithUserId,\n    status: 'active',"));
   });
 
-  it('a peça é uma só, e serve os dois formulários', () => {
-    const field = read('src/features/directory/components/DoqynUserField.tsx');
-    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    const request = read('src/features/requests/components/RequestDocumentModal.tsx');
+  it('a peça é uma só, e serve os três verbos', () => {
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
-    assert.ok(field.includes('<PartnerContactList onPick={onChange} />'));
-    assert.ok(share.includes('<PartnerContactList'));
-    assert.ok(request.includes('<DoqynUserField'));
-  });
+    // A lista de parceiras vive dentro do campo: quem procura alguém de fora é exatamente quem
+    // precisa lembrar com quem já falou.
+    assert.ok(field.includes('<PartnerContactList onPick={setEmail} />'));
 
-  it('a busca por e-mail diz o que achou, sem contar o que não deve', () => {
-    const field = read('src/features/directory/components/DoqynUserField.tsx');
-
-    assert.ok(field.includes("case 'doqyn_user'"));
-    // Sem conta e "com conta mas o envio entre empresas está desligado" respondem igual, de
-    // propósito: ter conta aqui não se descobre de graça.
-    assert.ok(field.includes('Esse e-mail não tem conta DOQYN.'));
+    for (const modal of [
+      'src/features/sharing/components/ShareDocumentModal.tsx',
+      'src/features/signature/RequestSignatureModal.tsx',
+      'src/features/requests/components/RequestDocumentModal.tsx',
+    ]) {
+      assert.ok(read(modal).includes('<CrossTenantRecipientField'), modal);
+    }
   });
 });

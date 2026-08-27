@@ -84,41 +84,30 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
   });
 });
 
-describe('diretório DOQYN — a saída na tela', () => {
-  it('só pergunta quando a busca de dentro de casa já falhou', () => {
+describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
+  it('só pergunta quando o texto já é um e-mail inteiro', () => {
     const hook = read('src/features/directory/hooks/useDirectoryLookup.ts');
-    const picker = read('src/features/documents/recipients/RecipientFlow.tsx');
 
     // Disparar a cada tecla queimaria a cota de quem está apenas digitando.
     assert.ok(hook.includes('enabled: enabled && valid'));
     assert.ok(hook.includes('looksLikeEmail'));
-    // O slot só é renderizado quando a lista de membros voltou vazia.
-    assert.ok(picker.includes('emptyAction?: ReactNode'));
-    assert.ok(picker.includes('{emptyAction}'));
   });
 
-  it('a saída existe nos dois fluxos que param na fronteira da empresa', () => {
-    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    const signature = read('src/features/signature/RequestSignatureModal.tsx');
+  it('o campo é próprio, e não o mesmo da busca de colegas', () => {
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
-    for (const modal of [share, signature]) {
-      assert.ok(modal.includes('<OutsideCompanyHint'));
-      // Trocar de aba sem carregar o e-mail digitado devolveria o trabalho a quem usa.
-      assert.ok(modal.includes("setAudience('external')"));
-      assert.ok(modal.includes('{ ...EMPTY_EXTERNAL_RECIPIENT, email }'));
-    }
-
-    assert.ok(signature.includes('intent="signature"'));
+    // Aquele procura por nome numa lista conhecida; este resolve e-mail exato contra o diretório,
+    // porque o nome de quem está fora é guardado cifrado.
+    assert.ok(field.includes("const [email, setEmail] = useState('')"));
+    // E a saída para quem não tem conta é opcional: nem todo fluxo oferece link com token.
+    assert.ok(field.includes('onFallbackToLink?:'));
   });
 
-  it('a tela só conta que a pessoa tem conta DOQYN quando há o que oferecer', () => {
-    const hint = read('src/features/directory/components/OutsideCompanyHint.tsx');
+  it('a tela não conta que a pessoa tem conta DOQYN quando não há o que oferecer', () => {
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
     // O servidor colapsa `doqyn_user` em `external` com a chave desligada, então o caso nem chega.
-    // E no fluxo que ainda não sabe enviar para fora, o callback é ausente e a tela cala do mesmo
-    // jeito — contar sem ter o que oferecer é a saída do oráculo de graça.
-    assert.ok(hint.includes("lookup.data.kind === 'doqyn_user'"));
-    assert.ok(hint.includes('if (!onUseDoqynUser) return null'));
-    assert.ok(hint.includes("lookup.data.kind !== 'external'"));
+    assert.ok(field.includes("lookup.data.kind === 'doqyn_user'"));
+    assert.ok(field.includes('Esse e-mail não tem conta DOQYN.'));
   });
 });
