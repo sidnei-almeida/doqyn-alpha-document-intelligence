@@ -71,8 +71,9 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
     const notify = read('server/services/notifications/inboundShareNotifications.ts');
 
     assert.ok(service.includes("notifyInboundShareDecided(grant, 'declined', recipientName)"));
-    // O aviso de quem recebe vai para o tenant dele; o da decisão vai para o de origem.
-    assert.ok(notify.includes('tenantId: recipientTenantId'));
+    // O aviso de quem recebe vai para as empresas dele; o da decisão, para o tenant de origem.
+    // `inbound.recipientTenantId` só existe depois do aceite, então no envio não há um tenant só.
+    assert.ok(notify.includes('await findActiveTenantIdsForUser(grant.sharedWithUserId)'));
     assert.ok(notify.includes('tenantId: grant.tenantId'));
     // Sem campo de motivo em lugar nenhum da recusa.
     assert.ok(!service.includes('declineReason'));
