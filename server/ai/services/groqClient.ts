@@ -161,6 +161,18 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
   });
 }
 
+/**
+ * Modelo que raciocina antes de responder.
+ *
+ * Nesses, `max_tokens` cobre o pensamento **e** a resposta, e o pensamento vem primeiro. Sem
+ * baixar o esforço, a extração de um documento inteiro gasta o orçamento raciocinando e devolve
+ * JSON cortado. O pipeline quer campos preenchidos, não deliberação: `low` é o que serve.
+ */
+function usesReasoningEffort(model: string): boolean {
+  const normalized = model.toLowerCase();
+  return normalized.includes('gpt-oss') || normalized.includes('qwen3');
+}
+
 async function callGroqCompletion(
   prompt: string,
   useResponseFormat: boolean,
@@ -211,6 +223,7 @@ async function callGroqCompletion(
           model,
           temperature: 0.1,
           max_tokens: getGroqMaxOutputTokens(),
+          ...(usesReasoningEffort(model) ? { reasoning_effort: 'low' as const } : {}),
           ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
           messages: [
             {
@@ -315,6 +328,22 @@ async function repairInvalidJsonAnswer(input: {
   context?: GroqPromptContext;
 }): Promise<{ content: string; retried: boolean; extraDurationMs?: number }> {
   if (safeParseJsonFromModel<unknown>(input.answer.content)) {
+    /**
+     * JSON válido e cortado ao mesmo tempo é o pior caso: o objeto fecha, a extração segue, e os
+     * campos que ficaram do outro lado do corte somem sem ninguém reclamar. Foi assim que o teto de
+     * saída baixo passou por "o modelo não achou a data de assinatura".
+     */
+    if (input.answer.finishReason === 'length') {
+      logger.warn('groq respondeu JSON válido mas truncado; campos podem estar faltando', {
+        requestId: input.context?.requestId,
+        jobId: input.context?.jobId,
+        operation: input.operation,
+        model: input.model,
+        responseChars: input.answer.content.length,
+        maxOutputTokens: getGroqMaxOutputTokens(),
+      });
+    }
+
     return { content: input.answer.content, retried: false };
   }
 

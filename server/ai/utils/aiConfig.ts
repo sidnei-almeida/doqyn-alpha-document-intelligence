@@ -5,7 +5,15 @@
  * mil documentos no nosso volume de entrada — barato demais para justificar errar metadado.
  */
 export const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
-export const DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 1200;
+/**
+ * Orçamento de saída, e ele **inclui o raciocínio**.
+ *
+ * Os `gpt-oss` são modelos de raciocínio: gastam tokens de saída pensando antes de responder, e o
+ * teto cobre os dois. O valor antigo (1200) foi dimensionado para os Llama, que não raciocinam —
+ * com o gpt-oss, o pensamento comia o orçamento e a extração voltava com `finish_reason: length`,
+ * o JSON cortado no meio e metade dos campos faltando. Parecia modelo ruim; era resposta truncada.
+ */
+export const DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 4000;
 export const DEFAULT_GROQ_REQUEST_TIMEOUT_MS = 25_000;
 /**
  * Dimensionados para a janela de 131k tokens do llama-4-scout (~460k chars).
