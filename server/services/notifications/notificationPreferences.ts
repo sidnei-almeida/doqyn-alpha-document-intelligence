@@ -31,6 +31,12 @@ export const PREFERENCE_KEY_BY_TYPE: Record<
   // aviso de cortesia que se escolhe receber.
   document_requested: null,
   document_request_fulfilled: null,
+  // Também sem preferência. Um documento de outra empresa esperando o seu aceite é decisão sua e
+  // de mais ninguém — silenciá-lo esconderia o item que só você pode liberar. E a resposta ao
+  // aceite fecha a conversa que quem enviou começou.
+  inbound_share_received: null,
+  inbound_share_accepted: null,
+  inbound_share_declined: null,
 };
 
 /**

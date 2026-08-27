@@ -42,11 +42,7 @@ export function useShareDocumentMutations(documentId: string | null) {
   };
 
   const shareWithUser = useMutation({
-    mutationFn: (input: {
-      sharedWithUserId: string;
-      canDownload?: boolean;
-      message?: string;
-    }) =>
+    mutationFn: (input: { sharedWithUserId: string; canDownload?: boolean; message?: string }) =>
       createDocumentShare(documentId!, {
         sharedWithUserId: input.sharedWithUserId,
         permissions: { canView: true, canDownload: input.canDownload === true },

@@ -16,7 +16,6 @@ import {
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
 import {
-  loadMemberDocumentGroupIds,
   isDocumentAdmin,
   loadDocumentAccessContext,
 } from '../../tenancy/documentAccess.js';
@@ -58,14 +57,34 @@ async function getShareGrantsCollection(): Promise<Collection<MongoDocumentShare
   return db.collection<MongoDocumentShareGrant>(SHARED_APP_COLLECTIONS.documentShareGrants);
 }
 
+/**
+ * Concessão que vale agora.
+ *
+ * Este filtro é o gargalo por onde **todo** acesso por compartilhamento passa: a Biblioteca de quem
+ * recebe, "Compartilhados comigo" e a autorização de ver e baixar. Por isso a caixa de entrada
+ * mora aqui e não em cada consumidor — barrar num lugar só é o que garante que um item pendente
+ * não escape por um caminho que ninguém lembrou de ajustar.
+ *
+ * Concessão sem `inbound` é de casa e vale na hora. Com `inbound`, só depois do aceite.
+ *
+ * `$and` em vez de dois `$or` soltos: o segundo sobrescreveria o primeiro no mesmo objeto, e a
+ * validade deixaria de ser conferida sem que nada quebrasse.
+ */
 function activeGrantFilter(extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     status: 'active',
     ...extra,
-    $or: [
-      { expiresAt: { $exists: false } },
-      { expiresAt: null },
-      { expiresAt: { $gt: new Date() } },
+    $and: [
+      {
+        $or: [
+          { expiresAt: { $exists: false } },
+          { expiresAt: null },
+          { expiresAt: { $gt: new Date() } },
+        ],
+      },
+      {
+        $or: [{ inbound: { $exists: false } }, { 'inbound.status': 'accepted' }],
+      },
     ],
   };
 }

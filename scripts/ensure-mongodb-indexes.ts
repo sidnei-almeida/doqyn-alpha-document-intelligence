@@ -17,6 +17,7 @@ import {
   SUPERSEDED_APPROVAL_REQUEST_INDEXES,
 } from '../server/db/approvalRequestIndexes.js';
 import { DOCUMENT_REQUEST_INDEXES } from '../server/db/documentRequestIndexes.js';
+import { DOCUMENT_SHARE_GRANTS_INDEXES } from '../server/db/documentShareGrantsIndexes.js';
 import { createReportWriter } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
@@ -152,6 +153,13 @@ function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescripti
       // `setupMongo` deixaria a coleção sem índice nenhum em produção.
       collection: SHARED_APP_COLLECTIONS.documentRequests,
       indexes: DOCUMENT_REQUEST_INDEXES,
+    },
+    {
+      // A terceira coleção com o mesmo problema, e a mais séria delas: sem estes índices em
+      // produção, `document_share_grants` perde o único que impede duas concessões ativas para o
+      // mesmo par documento/pessoa — e toda leitura de "Compartilhados comigo" vira varredura.
+      collection: SHARED_APP_COLLECTIONS.documentShareGrants,
+      indexes: DOCUMENT_SHARE_GRANTS_INDEXES,
     },
   ];
 }

@@ -59,10 +59,7 @@ export async function createDocumentShare(
   return parseJson(response);
 }
 
-export async function revokeDocumentShare(
-  documentId: string,
-  shareId: string,
-): Promise<void> {
+export async function revokeDocumentShare(documentId: string, shareId: string): Promise<void> {
   const doc = encodeURIComponent(documentId);
   const share = encodeURIComponent(shareId);
   const response = await authFetch(`/api/documents/${doc}/shares/${share}`, {

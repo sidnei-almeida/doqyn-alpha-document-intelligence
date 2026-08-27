@@ -989,6 +989,40 @@ export type MongoUserDocumentFavorite = {
 
 export type DocumentShareGrantStatus = 'active' | 'revoked';
 
+/**
+ * O que chega de outro tenant não entra no acervo sozinho.
+ *
+ * `pending` é o estado da caixa de entrada: a concessão existe, mas não concede nada — não aparece
+ * na Biblioteca de quem recebe, nem em "Compartilhados comigo", nem passa na autorização. Só o
+ * aceite a torna real.
+ *
+ * A aprovação de saída protege quem **envia**; ela não protege quem **recebe**. Sem este estado,
+ * qualquer tenant empurra documento para dentro de qualquer outro e o destinatário não decide nada.
+ */
+export type InboundShareStatus = 'pending' | 'accepted' | 'declined';
+
+export type InboundShareState = {
+  status: InboundShareStatus;
+  /** Onde mora quem recebe. É o que distingue a concessão que atravessa a fronteira da empresa. */
+  recipientTenantId: string;
+  decidedAt?: Date | null;
+  /**
+   * O essencial do que chegou, copiado na hora do envio.
+   *
+   * A caixa de entrada é lida por quem está **fora** do tenant de origem: ele não alcança o acervo
+   * de lá para descobrir o nome do documento nem o de quem enviou. Sem esta cópia, mostrar a lista
+   * exigiria uma leitura cross-tenant a cada abertura — justamente o acesso que o aceite ainda não
+   * concedeu.
+   *
+   * É o nome de quando foi enviado, e isso é o certo: aceita-se o que foi oferecido.
+   */
+  offer: {
+    documentName: string;
+    sharedByName: string;
+    originTenantName: string;
+  };
+};
+
 export type DocumentSharePermissions = {
   canView: boolean;
   canDownload: boolean;
@@ -1011,6 +1045,12 @@ export type MongoDocumentShareGrant = {
   revokedAt?: Date | null;
   revokedBy?: string | null;
   expiresAt?: Date | null;
+  /**
+   * Presente só quando a concessão cruza a fronteira do tenant. Ausente significa "de casa", e
+   * concessão de casa continua valendo na hora — exigir aceite dentro da própria empresa trocaria
+   * um compartilhamento por uma pendência sem motivo.
+   */
+  inbound?: InboundShareState;
 };
 
 export type ExternalDocumentShareGrantStatus = 'pending' | 'active' | 'revoked' | 'expired';

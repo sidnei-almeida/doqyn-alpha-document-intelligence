@@ -32,6 +32,9 @@ const TYPE_ICON: Record<NotificationType, string> = {
   approval_decided: 'gavel',
   document_requested: 'assignment',
   document_request_fulfilled: 'assignment_turned_in',
+  inbound_share_received: 'inbox',
+  inbound_share_accepted: 'check_circle',
+  inbound_share_declined: 'block',
 };
 
 const TYPE_LABEL: Record<NotificationType, string> = {
@@ -46,6 +49,9 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   approval_decided: 'aprovação',
   document_requested: 'pedido',
   document_request_fulfilled: 'pedido',
+  inbound_share_received: 'de fora',
+  inbound_share_accepted: 'de fora',
+  inbound_share_declined: 'de fora',
 };
 
 /**
@@ -70,6 +76,13 @@ function targetFor(notification: AppNotification): string | null {
   // leva à lista de pedidos, que é onde a pessoa faz alguma coisa a respeito.
   if (notification.type === 'document_requested') return '/pedidos';
 
+  /**
+   * O que chegou de fora ainda não é documento do acervo: o aviso leva à fila de aceite, não ao
+   * documento. Mandar para a ficha daria um link que a autorização recusa — o aceite é justamente
+   * o que ainda não aconteceu.
+   */
+  if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados';
+
   if (!notification.documentId) return null;
   const query = `?documentId=${encodeURIComponent(notification.documentId)}`;
 
@@ -81,6 +94,13 @@ function targetFor(notification: AppNotification): string | null {
     return `/biblioteca/compartilhados${query}`;
   }
   if (notification.type === 'signature_required') return `/biblioteca/assinaturas${query}`;
+  // Aceito ou recusado, quem lê é quem enviou — e o documento é dele, na própria Biblioteca.
+  if (
+    notification.type === 'inbound_share_accepted' ||
+    notification.type === 'inbound_share_declined'
+  ) {
+    return `/biblioteca${query}`;
+  }
   return `/biblioteca${query}`;
 }
 

@@ -36,6 +36,7 @@ import { useLibraryExplorerMode } from './hooks/useLibraryExplorerMode';
 import { useExplorerSelection } from './hooks/useExplorerSelection';
 import { useExplorerSelectionShortcuts } from './hooks/useExplorerSelectionShortcuts';
 import { useLibraryView } from './hooks/useLibraryView';
+import { InboundSharesStrip } from '@/features/sharing/components/InboundSharesStrip';
 import type { LibraryFolder, LibrarySelection } from './types/library';
 import { SearchScopeHint } from './components/SearchScopeHint';
 import { hasActiveLibraryFilters } from './utils/libraryFilterUtils';
@@ -114,6 +115,7 @@ export function LibraryPage() {
   const isDeactivatedView = collection.id === 'desativados';
   const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
+  const isSharedWithMeView = collection.id === 'compartilhados';
   const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
 
   useEffect(() => {
@@ -661,6 +663,9 @@ export function LibraryPage() {
         captureSelectionSnapshot={captureSelectionSnapshot}
         onDragStateChange={setMarqueeDragging}
       >
+        {/* Antes da lista, e não dentro dela: o que espera aceite ainda não é documento do acervo,
+            e misturá-lo às linhas faria parecer que já está lá. */}
+        {isSharedWithMeView && <InboundSharesStrip />}
         {mainContent}
       </MarqueeSelectionProvider>
     </LibraryContentDropZone>
