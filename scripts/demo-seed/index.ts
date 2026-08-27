@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import 'dotenv/config';
 import { closeMongoConnection } from '../../server/db/mongoClient.js';
+import { closeRedis } from '../../server/redis/redisClient.js';
 import { assertDemoMongoSeedSafe, resolveDemoManifestPath } from './guard.js';
 import { readDemoSeedManifest } from './manifest.js';
 import { provisionDemoTenants } from './provisionTenants.js';
@@ -31,4 +32,7 @@ main()
   })
   .finally(async () => {
     await closeMongoConnection();
+    // Sem isto o processo termina o trabalho e nunca sai: algum import na cadeia conecta o Redis, e
+    // o cliente aberto segura o event loop. O seed parecia travado com a saída presa no buffer.
+    await closeRedis();
   });

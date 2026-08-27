@@ -1,87 +1,87 @@
 DOQYN — Relatório de índices MongoDB
-Data: 2026-08-26T23:11:06.428Z
+Data: 2026-08-27T05:00:35.232Z
 Database: doqyn_dev
 Relatório sanitizado.
 
 ================================================================================
 RESUMO
 ================================================================================
-Índices criados: 4
-Índices já existentes: 63
+Índices criados: 67
+Índices já existentes: 0
 Índices substituídos removidos: 0
 Erros: 0
-Tenants ativos processados: 5
+Tenants ativos processados: 0
 
 ================================================================================
 DETALHES
 ================================================================================
-tenants | tenantId_1 | existing
-tenants | taxIdHash_1 | existing
-tenants | slug_1 | existing
-tenants | status_1 | existing
-tenants | companyId_1 | existing
-tenants | tenantType_1_status_1 | existing
-tenants | createdAt_1 | existing
-tenants | updatedAt_1 | existing
-tenant_members | tenantId_1_status_1 | existing
-tenant_members | tenantId_1_emailNormalized_1 | existing
-tenant_members | tenantId_1_authUserId_1 | existing
-tenant_members | authUserId_1_status_1 | existing
-tenant_members | tenantId_1_accessGroupIds_1 | existing
-tenant_members | tenantId_1_createdAt_1 | existing
-tenant_members | tenantId_1_updatedAt_1 | existing
-tenant_members | memberId_1 | existing
-analysis_jobs | tenantId_1_ownerUserId_1_createdAt_-1 | existing
-analysis_jobs | tenantId_1_status_1_createdAt_-1 | existing
-analysis_jobs | status_1_createdAt_-1 | existing
-analysis_jobs | status_1_completedAt_-1 | existing
-notifications | tenant_user_type_event_unique | existing
-notifications | tenantId_1_userId_1_status_1_createdAt_-1 | existing
-notifications | tenantId_1_userId_1_createdAt_-1 | existing
-notifications | tenantId_1_documentId_1 | existing
-notification_deliveries | notification_channel_unique | existing
-notification_deliveries | tenantId_1_status_1_channel_1_createdAt_1 | existing
-approval_requests | tenantId_1_status_1_createdAt_1 | existing
-approval_requests | tenantId_1_decidableBy_1_status_1_createdAt_1 | existing
-approval_requests | tenantId_1_subject.documentId_1 | existing
-approval_requests | tenantId_1_kind_1_requestedBy.userId_1_subject.documentId_1_status_1 | existing
-approval_requests | tenant_kind_document_requester_target_pending_unique | existing
+tenants | tenantId_1 | created
+tenants | taxIdHash_1 | created
+tenants | slug_1 | created
+tenants | status_1 | created
+tenants | companyId_1 | created
+tenants | tenantType_1_status_1 | created
+tenants | createdAt_1 | created
+tenants | updatedAt_1 | created
+tenant_members | tenantId_1_status_1 | created
+tenant_members | tenantId_1_emailNormalized_1 | created
+tenant_members | tenantId_1_authUserId_1 | created
+tenant_members | authUserId_1_status_1 | created
+tenant_members | tenantId_1_accessGroupIds_1 | created
+tenant_members | tenantId_1_createdAt_1 | created
+tenant_members | tenantId_1_updatedAt_1 | created
+tenant_members | memberId_1 | created
+analysis_jobs | tenantId_1_ownerUserId_1_createdAt_-1 | created
+analysis_jobs | tenantId_1_status_1_createdAt_-1 | created
+analysis_jobs | status_1_createdAt_-1 | created
+analysis_jobs | status_1_completedAt_-1 | created
+notifications | tenant_user_type_event_unique | created
+notifications | tenantId_1_userId_1_status_1_createdAt_-1 | created
+notifications | tenantId_1_userId_1_createdAt_-1 | created
+notifications | tenantId_1_documentId_1 | created
+notification_deliveries | notification_channel_unique | created
+notification_deliveries | tenantId_1_status_1_channel_1_createdAt_1 | created
+approval_requests | tenantId_1_status_1_createdAt_1 | created
+approval_requests | tenantId_1_decidableBy_1_status_1_createdAt_1 | created
+approval_requests | tenantId_1_subject.documentId_1 | created
+approval_requests | tenantId_1_kind_1_requestedBy.userId_1_subject.documentId_1_status_1 | created
+approval_requests | tenant_kind_document_requester_target_pending_unique | created
 document_requests | tenantId_1_requestedFrom.userId_1_status_1_createdAt_-1 | created
 document_requests | tenantId_1_requestedBy.userId_1_status_1_createdAt_-1 | created
 document_requests | status_1_dueAt_1 | created
 document_requests | tenantId_1_fulfilledDocumentId_1 | created
-document_categories | tenantId_1_active_1 | existing
-document_categories | tenantId_1_slug_1 | existing
-document_groups | tenantId_1_active_1 | existing
-document_groups | tenantId_1_slug_1 | existing
-document_group_members | tenantId_1_groupId_1_active_1 | existing
-document_group_members | tenantId_1_membershipId_1_active_1 | existing
-document_group_members | tenantId_1_groupId_1_membershipId_1 | existing
-document_rules | tenantId_1_groupId_1_categoryId_1 | existing
-document_rules | tenantId_1_active_1 | existing
-document_extraction_rules | tenantId_1_categoryId_1_active_1 | existing
-document_extraction_rules | tenantId_1_categoryId_1_version_-1 | existing
-documents | tenantId_1_status_1_updatedAt_-1 | existing
-documents | tenantId_1_classId_1_updatedAt_-1 | existing
-documents | tenantId_1_currentVersionId_1 | existing
-documents | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | existing
-documents | tenantId_1_createdAt_-1 | existing
-documents | tenantId_1_ownerUserId_1_updatedAt_-1 | existing
-documents | tenantId_1_searchMeta.people.nameNormalized_1 | existing
-documents | tenantId_1_searchMeta.validityDate_1 | existing
-documents | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | existing
-document_versions | tenantId_1_documentId_1_versionNumber_-1 | existing
-document_versions | tenantId_1_file.sha256_1 | existing
-document_versions | classification.classId_1_tenantId_1 | existing
-document_versions | tenantId_1_createdAt_-1 | existing
-processing_jobs | tenantId_1_documentId_1_createdAt_-1 | existing
-processing_jobs | tenantId_1_status_1 | existing
-processing_jobs | tenantId_1_updatedAt_1 | existing
-processing_jobs | tenantId_1_versionId_1 | existing
-audit_logs | tenantId_1_documentId_1_createdAt_-1 | existing
-audit_logs | tenantId_1_action_1_createdAt_-1 | existing
-audit_logs | actor.userId_1_tenantId_1_createdAt_-1 | existing
-audit_logs | tenantId_1_createdAt_-1 | existing
+document_categories | tenantId_1_active_1 | created
+document_categories | tenantId_1_slug_1 | created
+document_groups | tenantId_1_active_1 | created
+document_groups | tenantId_1_slug_1 | created
+document_group_members | tenantId_1_groupId_1_active_1 | created
+document_group_members | tenantId_1_membershipId_1_active_1 | created
+document_group_members | tenantId_1_groupId_1_membershipId_1 | created
+document_rules | tenantId_1_groupId_1_categoryId_1 | created
+document_rules | tenantId_1_active_1 | created
+document_extraction_rules | tenantId_1_categoryId_1_active_1 | created
+document_extraction_rules | tenantId_1_categoryId_1_version_-1 | created
+documents | tenantId_1_status_1_updatedAt_-1 | created
+documents | tenantId_1_classId_1_updatedAt_-1 | created
+documents | tenantId_1_currentVersionId_1 | created
+documents | access.viewGroupIds_1_tenantId_1_updatedAt_-1 | created
+documents | tenantId_1_createdAt_-1 | created
+documents | tenantId_1_ownerUserId_1_updatedAt_-1 | created
+documents | tenantId_1_searchMeta.people.nameNormalized_1 | created
+documents | tenantId_1_searchMeta.validityDate_1 | created
+documents | tenantId_1_searchMeta.dates.kind_1_searchMeta.dates.date_1 | created
+document_versions | tenantId_1_documentId_1_versionNumber_-1 | created
+document_versions | tenantId_1_file.sha256_1 | created
+document_versions | classification.classId_1_tenantId_1 | created
+document_versions | tenantId_1_createdAt_-1 | created
+processing_jobs | tenantId_1_documentId_1_createdAt_-1 | created
+processing_jobs | tenantId_1_status_1 | created
+processing_jobs | tenantId_1_updatedAt_1 | created
+processing_jobs | tenantId_1_versionId_1 | created
+audit_logs | tenantId_1_documentId_1_createdAt_-1 | created
+audit_logs | tenantId_1_action_1_createdAt_-1 | created
+audit_logs | actor.userId_1_tenantId_1_createdAt_-1 | created
+audit_logs | tenantId_1_createdAt_-1 | created
 
 ================================================================================
 FIM
