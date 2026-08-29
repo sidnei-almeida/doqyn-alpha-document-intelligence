@@ -14,6 +14,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
+import { suggestUsername, UsernameField } from '@/features/auth/components/UsernameField';
 import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
@@ -39,6 +40,7 @@ export function IndividualSignupPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [whatsapp, setWhatsapp] = useState('');
@@ -68,6 +70,13 @@ export function IndividualSignupPage() {
     setTaxId('');
     setWhatsapp('');
   }
+
+  // Vem do nome digitado acima, para que exigir o handle não vire atrito: quem não se importa
+  // aceita o que está lá; quem se importa troca.
+  const usernameSuggestion = useMemo(
+    () => suggestUsername(firstName, lastName),
+    [firstName, lastName],
+  );
 
   const formValues = useMemo<IndividualSignupFormValues>(
     () => ({
@@ -110,6 +119,13 @@ export function IndividualSignupPage() {
     const form = event.currentTarget;
     if (!form.checkValidity()) {
       form.reportValidity();
+      return;
+    }
+
+    // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
+    // silêncio que este campo existe para acabar.
+    if (!usernameAvailable) {
+      setError('Escolha um nome de usuário disponível para continuar.');
       return;
     }
 
@@ -186,12 +202,11 @@ export function IndividualSignupPage() {
             />
           </div>
 
-          <Input
-            label="Apelido (opcional)"
+          <UsernameField
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="como você quer ser encontrado"
-            autoComplete="off"
+            onChange={setUsername}
+            suggestion={usernameSuggestion}
+            onValidityChange={setUsernameAvailable}
           />
 
           <div className="flex flex-col gap-1.5">

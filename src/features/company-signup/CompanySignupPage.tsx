@@ -15,6 +15,7 @@ import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell'
 import { useAuth } from '@/features/auth/useAuth';
 import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
+import { suggestUsername, UsernameField } from '@/features/auth/components/UsernameField';
 import { submitCompanySignup } from './api/companySignupApi';
 import {
   buildCompanySignupPayload,
@@ -42,6 +43,7 @@ export function CompanySignupPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
@@ -66,6 +68,13 @@ export function CompanySignupPage() {
     setTaxId('');
     setWhatsapp('');
   }
+
+  // Vem do nome digitado acima, para que exigir o handle não vire atrito: quem não se importa
+  // aceita o que está lá; quem se importa troca.
+  const usernameSuggestion = useMemo(
+    () => suggestUsername(firstName, lastName),
+    [firstName, lastName],
+  );
 
   const formValues = useMemo<CompanySignupFormValues>(
     () => ({
@@ -109,6 +118,13 @@ export function CompanySignupPage() {
     const form = event.currentTarget;
     if (!form.checkValidity()) {
       form.reportValidity();
+      return;
+    }
+
+    // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
+    // silêncio que este campo existe para acabar.
+    if (!usernameAvailable) {
+      setError('Escolha um nome de usuário disponível para continuar.');
       return;
     }
 
@@ -208,12 +224,11 @@ export function CompanySignupPage() {
             />
           </div>
 
-          <Input
-            label="Apelido (opcional)"
+          <UsernameField
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="como você quer ser encontrado"
-            autoComplete="off"
+            onChange={setUsername}
+            suggestion={usernameSuggestion}
+            onValidityChange={setUsernameAvailable}
           />
 
           <Input

@@ -18,6 +18,7 @@ import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell'
 import { usesDoqynAuth } from '@/auth/authConfig';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { cn } from '@/lib/utils';
+import { suggestUsername, UsernameField } from '@/features/auth/components/UsernameField';
 import { submitAccessRequest } from './api/accessRequestApi';
 import {
   buildRequestAccessPayload,
@@ -104,6 +105,7 @@ export function RequestAccessPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -121,6 +123,13 @@ export function RequestAccessPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const taxIdPersonType = employeeFlow || personType === 'business' ? 'company' : 'individual';
+
+  // Vem do nome digitado acima, para que exigir o handle não vire atrito: quem não se importa
+  // aceita o que está lá; quem se importa troca.
+  const usernameSuggestion = useMemo(
+    () => suggestUsername(firstName, lastName),
+    [firstName, lastName],
+  );
 
   const formValues = useMemo<RequestAccessFormValues>(
     () => ({
@@ -180,6 +189,13 @@ export function RequestAccessPage() {
     const form = event.currentTarget;
     if (!form.checkValidity()) {
       form.reportValidity();
+      return;
+    }
+
+    // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
+    // silêncio que este campo existe para acabar.
+    if (!usernameAvailable) {
+      toast.error('Escolha um nome de usuário disponível para continuar.');
       return;
     }
 
@@ -345,12 +361,11 @@ export function RequestAccessPage() {
               />
             </div>
 
-            <Input
-              label="Apelido (opcional)"
+            <UsernameField
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="como você quer ser encontrado"
-              autoComplete="off"
+              onChange={setUsername}
+              suggestion={usernameSuggestion}
+              onValidityChange={setUsernameAvailable}
             />
 
             <Input
