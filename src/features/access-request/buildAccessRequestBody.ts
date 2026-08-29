@@ -4,6 +4,8 @@ export type PublicAccessRequestInput = {
   tenantDisplayName?: string;
   firstName: string;
   lastName: string;
+  /** O handle público. Ver `UsernameField`: é por ele que outra empresa acha esta pessoa. */
+  username: string;
   email: string;
   whatsapp: string;
   password?: string;
@@ -26,6 +28,7 @@ export function buildPublicAccessRequestBody(
       tenantDisplayName: input.tenantDisplayName,
       firstName: input.firstName,
       lastName: input.lastName,
+      username: input.username,
       email: input.email,
       whatsapp: input.whatsapp,
       password: input.password ?? '',

@@ -20,6 +20,8 @@ export type CompanySignupFormValues = {
   taxId: string;
   firstName: string;
   lastName: string;
+  /** O handle público. Ver `UsernameField`: é por ele que outra empresa acha esta pessoa. */
+  username: string;
   email: string;
   whatsapp: string;
   password: string;
@@ -68,6 +70,7 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
     taxId: taxIdSpec.toApiValue(values.taxId),
     firstName: values.firstName,
     lastName: values.lastName,
+    username: values.username,
     whatsapp: toPhoneApiValue(values.country, values.whatsapp),
     acceptedTerms: true as const,
     acceptedTermsVersion: DOQYN_TERMS_VERSION,
@@ -108,6 +111,7 @@ export function buildCompanySignupReviewSections(values: CompanySignupFormValues
           label: 'Nome completo',
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
+        { label: 'Nome de usuário', value: safeDisplayValue(values.username) },
         { label: 'E-mail corporativo', value: safeDisplayValue(values.email) },
         { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
       ],

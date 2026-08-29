@@ -17,6 +17,8 @@ export type RequestAccessFormValues = {
   tenantDisplayName: string;
   firstName: string;
   lastName: string;
+  /** O handle público. Ver `UsernameField`: é por ele que outra empresa acha esta pessoa. */
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -78,6 +80,7 @@ export function buildRequestAccessPayload(
     tenantDisplayName: options.employeeFlow ? undefined : values.tenantDisplayName || undefined,
     firstName: values.firstName,
     lastName: values.lastName,
+    username: values.username,
     email: values.email,
     password: values.password,
     whatsapp: toWhatsappApiValue(values.whatsapp),
@@ -131,6 +134,7 @@ export function buildRequestAccessReviewSections(
           label: 'Nome completo',
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
+        { label: 'Nome de usuário', value: safeDisplayValue(values.username) },
         { label: 'E-mail', value: safeDisplayValue(values.email) },
         { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
         { label: 'Cargo ou função', value: safeDisplayValue(values.jobTitle) },
