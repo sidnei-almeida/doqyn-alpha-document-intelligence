@@ -56,10 +56,12 @@ export function UsernameField({
 
   const username = normalizeUsernameInput(value);
 
-  // A sugestão só entra enquanto o campo não foi tocado: sobrescrever o que a pessoa digitou
-  // porque ela voltou a corrigir o sobrenome seria apagar a escolha dela.
+  // A sugestão acompanha o nome enquanto o campo não foi tocado, e para no instante em que a
+  // pessoa digita: sobrescrever a escolha dela porque ela voltou a corrigir o sobrenome seria
+  // apagá-la. Parar no primeiro valor preenchido não serviria — o nome é digitado letra a letra,
+  // e a sugestão ficaria congelada na primeira delas.
   useEffect(() => {
-    if (touched || !suggestion || value) return;
+    if (touched || !suggestion || value === suggestion) return;
     onChange(suggestion);
   }, [onChange, suggestion, touched, value]);
 
