@@ -34,6 +34,8 @@ export type NotificationChannel = 'in_app' | 'email' | 'whatsapp';
 export type NotificationDeliveryStatus =
   | 'delivered'
   | 'queued'
+  /** Travada por um drenador: existe para duas instâncias não mandarem o mesmo aviso duas vezes. */
+  | 'sending'
   | 'skipped_no_provider'
   | 'skipped_by_preference'
   | 'failed';

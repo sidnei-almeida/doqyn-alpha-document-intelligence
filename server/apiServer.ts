@@ -4,6 +4,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
+import { startEmailOutboxDrain } from './services/notifications/emailOutboxDrain.js';
 import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
 import { logger } from './utils/logger.js';
 import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
@@ -559,6 +560,17 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
 
   if (options?.inProcessWorkers !== false) {
     startInProcessAnalysisWorker();
+  }
+
+  // Canal de e-mail: só sobe se houver provedor configurado. Sem `NOTIFICATION_EMAIL_PROVIDER`
+  // nenhuma entrega nasce `queued`, e drenar uma fila que ninguém enche seria consulta por nada.
+  try {
+    startEmailOutboxDrain();
+  } catch (error) {
+    // Configuração pela metade não pode derrubar o boot: o aviso in-app continua funcionando.
+    logger.error('canal de e-mail não iniciado', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
   }
 
   // Alertas de vencimento: registra a varredura diária e sobe o consumidor. Sem Redis ambos são

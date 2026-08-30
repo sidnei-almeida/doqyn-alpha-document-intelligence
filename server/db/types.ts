@@ -489,6 +489,14 @@ export type MongoNotificationDelivery = {
   reason?: string;
   createdAt: Date;
   deliveredAt?: Date | null;
+  /** Quantas vezes o envio já foi tentado. Só canais externos usam. */
+  attempts?: number;
+  /** Quando a próxima tentativa pode acontecer — o espaçamento cresce a cada falha. */
+  nextAttemptAt?: Date | null;
+  /** Quando um drenador travou esta linha. A trava vence sozinha se o processo morrer. */
+  lockedAt?: Date | null;
+  /** O id que o provedor devolveu, para rastrear a entrega do lado dele. */
+  providerMessageId?: string | null;
 };
 
 export type MongoStorageSlot = {
