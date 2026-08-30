@@ -1,6 +1,5 @@
-import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
-import { ICON_SIZE } from '@/lib/iconDefaults';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type EmptyFolderStateProps = {
   hasActiveFilters: boolean;
@@ -31,61 +30,47 @@ export function EmptyFolderState({
 }: EmptyFolderStateProps) {
   if (hasActiveFilters) {
     return (
-      <div
-        className="flex min-h-[min(360px,50vh)] flex-col items-center justify-center px-6 py-16 text-center"
-        data-testid="library-empty-state"
-      >
-        <p className="text-label font-medium text-doqyn-text">
-          Nenhum documento para os filtros atuais
-        </p>
-        <p className="mt-1.5 max-w-[42ch] text-caption leading-relaxed text-doqyn-muted">
-          Ajuste a busca ou os filtros para ampliar os resultados.
-        </p>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="mt-5"
-          onClick={onClearFilters}
-        >
-          Limpar filtros
-        </Button>
+      <div data-testid="library-empty-state">
+        <EmptyState
+          title="Nenhum documento para os filtros atuais"
+          description="Ajuste a busca ou os filtros para ampliar os resultados."
+          action={
+            <Button type="button" variant="secondary" size="sm" onClick={onClearFilters}>
+              Limpar filtros
+            </Button>
+          }
+        />
       </div>
     );
   }
 
+  /**
+   * Sem pictograma.
+   *
+   * A nuvem de upload no meio da tela era a terceira marca visual para a mesma ideia: o resto do
+   * app abre o vazio com o fio curto do `EmptyState`, e a Biblioteca inteira vazia com a folha
+   * desenhada. Três desenhos para "não há nada aqui" fazem parecer três situações diferentes — e a
+   * nuvem ainda repetia em imagem o que o botão logo abaixo já diz em palavra.
+   */
   return (
-    <div
-      className="flex min-h-[min(400px,55vh)] flex-col items-center justify-center px-6 py-16 text-center"
-      data-testid="library-empty-state"
-    >
-      <span className="mb-4 flex items-center justify-center text-doqyn-border-strong">
-        {showUploadActions ? (
-          <Icon name="cloud_upload" size={ICON_SIZE.md} />
-        ) : (
-          <Icon name="folder_open" size={ICON_SIZE.md} />
-        )}
-      </span>
-      <p className="text-label font-medium text-doqyn-text">{title}</p>
-      <p className="mt-1.5 max-w-[42ch] text-caption leading-relaxed text-doqyn-muted">
-        {description}
-      </p>
-      {showUploadActions && (
-        <>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            className="mt-6"
-            onClick={onUploadClick}
-          >
-            {uploadButtonLabel}
-          </Button>
-          <p className="mt-4 text-caption text-doqyn-subtle">
-            Você também pode arrastar arquivos para esta janela.
-          </p>
-        </>
-      )}
+    <div data-testid="library-empty-state">
+      <EmptyState
+        title={title}
+        description={description}
+        stretch
+        action={
+          showUploadActions ? (
+            <div className="flex flex-col items-center gap-4">
+              <Button type="button" variant="secondary" size="md" onClick={onUploadClick}>
+                {uploadButtonLabel}
+              </Button>
+              <p className="text-caption text-doqyn-subtle">
+                Você também pode arrastar arquivos para esta janela.
+              </p>
+            </div>
+          ) : undefined
+        }
+      />
     </div>
   );
 }
