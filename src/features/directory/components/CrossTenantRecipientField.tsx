@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { UserAvatar } from '@/components/ui/UserAvatar';
 import { cn } from '@/lib/utils';
 import { looksLikeEmail, useDirectoryLookup } from '../hooks/useDirectoryLookup';
 import { useDirectorySearch } from '../hooks/useDirectorySearch';
+import { useFrequentContacts } from '../hooks/useFrequentContacts';
+import { ContactRow, formatContactMeta } from './ContactRow';
 import { PartnerContactList } from './PartnerContactList';
 
 /**
@@ -57,6 +58,10 @@ export function CrossTenantRecipientField({
   // Enquanto não é e-mail, o que se digita é apelido — e aí a busca por prefixo responde.
   const search = useDirectorySearch(normalized, !isEmail);
   const hits = search.data?.results ?? [];
+
+  const frequentContacts = useFrequentContacts('external', { enabled: !normalized, limit: 8 });
+  const frequentes = frequentContacts.data ?? [];
+  const mostrarFrequentes = !normalized && frequentes.length > 0;
 
   let resolution: Resolution | null = null;
   let action: { label: string; run: () => void } | null = null;
@@ -133,28 +138,14 @@ export function CrossTenantRecipientField({
         <ul className="max-h-56 overflow-y-auto border-t border-doqyn-border-subtle">
           {hits.map((hit) => (
             <li key={hit.userId} className="border-b border-doqyn-border-subtle">
-              <button
-                type="button"
+              <ContactRow
+                name={hit.name}
+                email={hit.email}
+                username={hit.username}
+                avatarUrl={hit.avatarUrl}
                 disabled={disabled}
-                onClick={() => onPick({ username: hit.username, name: hit.name })}
-                className="flex w-full items-center gap-3 py-2 text-left hover:bg-doqyn-surface-hover"
-              >
-                <UserAvatar
-                  userId={hit.userId}
-                  name={hit.name}
-                  email={hit.email}
-                  avatarUrl={hit.avatarUrl}
-                  size="md"
-                />
-                {/* `min-w-0` porque o e-mail longo é o que estoura a linha, e truncar é melhor
-                    que empurrar o retrato para fora do campo. */}
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-body text-doqyn-text">{hit.name}</span>
-                  <span className="truncate text-micro text-doqyn-muted">
-                    @{hit.username} · {hit.email}
-                  </span>
-                </span>
-              </button>
+                onPick={() => onPick({ username: hit.username, name: hit.name })}
+              />
             </li>
           ))}
         </ul>
@@ -168,6 +159,38 @@ export function CrossTenantRecipientField({
         </span>
       ) : null}
 
+      {/* O histórico, enquanto ainda não se digitou nada.
+
+          É o que responde "para quem eu mando isto de novo?" sem exigir que a pessoa lembre do
+          e-mail ou do apelido. Some assim que se digita: aí a busca é a resposta melhor, e manter
+          as duas listas na tela ao mesmo tempo faria a pessoa escolher entre elas sem saber a
+          diferença. */}
+      {mostrarFrequentes ? (
+        <div>
+          <p className="text-eyebrow uppercase text-doqyn-subtle">Com quem você já trocou</p>
+          <ul className="mt-1 max-h-56 overflow-y-auto border-t border-doqyn-border-subtle">
+            {frequentes.map((contact) => (
+              <li key={contact.userId} className="border-b border-doqyn-border-subtle">
+                <ContactRow
+                  name={contact.name}
+                  email={contact.email}
+                  meta={formatContactMeta(contact.interactions, contact.lastInteractionAt)}
+                  disabled={disabled || !contact.email}
+                  onPick={() => {
+                    // Preenche o campo em vez de escolher direto: o `lookup` por e-mail é que
+                    // decide se a pessoa ainda tem conta e se o envio entre empresas está ligado.
+                    // Pular essa checagem ofereceria um destino que o servidor pode recusar.
+                    if (contact.email) setEmail(contact.email);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {/* O agrupamento por empresa responde outra pergunta — "com quem eu falo naquela empresa" —
+          e por isso continua existindo, um degrau abaixo. */}
       <PartnerContactList onPick={setEmail} />
     </div>
   );

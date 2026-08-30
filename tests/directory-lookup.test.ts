@@ -100,13 +100,18 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
   it('o resultado da busca é reconhecível: retrato, nome, apelido e e-mail', () => {
     const service = read('server/services/directory/directoryLookupService.ts');
     const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
+    const row = read('src/features/directory/components/ContactRow.tsx');
 
     // Sem retrato ativo não há URL: uma que responde 404 faria a linha piscar imagem quebrada.
     assert.ok(service.includes("hit.avatarStatus === 'active'"));
     assert.ok(service.includes('buildProfileAvatarUrl'));
 
-    assert.ok(field.includes('<UserAvatar'));
-    assert.ok(field.includes('@{hit.username} · {hit.email}'));
+    // A linha é a mesma peça nas duas listas: busca e histórico respondem à mesma pergunta, e
+    // desenhá-las diferente faria parecerem coisas distintas.
+    assert.ok(row.includes('<UserAvatar'));
+    assert.ok(row.includes("username ? `@${username}` : null"));
+    assert.ok(field.includes('<ContactRow'));
+    assert.ok(field.includes('username={hit.username}'));
   });
 
   it('a rota está registrada no despachante, que é mantido à mão', () => {
