@@ -4481,6 +4481,25 @@
     }
   }
 
+  /* A folha digitalizada endireita uma vez, quando a varredura acaba de passar.
+
+     É o que o OCR faz antes de ler, e é a única parte da história que um
+     documento nascido digital não conta. Menos de um grau, sem volta: a regra
+     que veta piscar veta o vaivém, não o gesto único que assenta. */
+  .auth-deskew {
+    animation: auth-deskew 0.9s cubic-bezier(0.2, 0, 0, 1) 1.94s both;
+    transform-origin: center center;
+  }
+
+  @keyframes auth-deskew {
+    from {
+      transform: rotate(-0.75deg) translateX(2px);
+    }
+    to {
+      transform: rotate(0deg) translateX(0);
+    }
+  }
+
   /* O fio da extração cresce da página para fora, e o rótulo vem junto. */
   .auth-anno {
     animation: auth-anno 0.44s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4566,6 +4585,7 @@
     .auth-stage,
     .auth-route,
     .auth-anno,
+    .auth-deskew,
     .auth-page,
     .auth-line,
     .auth-write,
