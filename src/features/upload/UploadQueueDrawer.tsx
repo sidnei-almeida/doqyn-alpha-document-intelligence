@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AiReadingGlyph } from '@/components/ui/AiReadingGlyph';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -18,7 +19,6 @@ import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusPr
 import { useUploadQueueContext } from './uploadQueueContext';
 import { UploadScanThumb } from './components/UploadScanThumb';
 import { UploadScanStack } from './components/UploadScanStack';
-import { AiReadingGlyph } from './components/AiReadingGlyph';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   queued: 'Na fila',
