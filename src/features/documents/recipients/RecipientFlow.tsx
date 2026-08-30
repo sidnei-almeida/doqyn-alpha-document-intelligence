@@ -54,6 +54,72 @@ export const EMPTY_EXTERNAL_RECIPIENT: ExternalRecipientDraft = {
   organizationName: '',
 };
 
+/**
+ * Conta DOQYN de outra empresa. `email` vem quando se digitou o endereço; `username`, quando se
+ * escolheu um resultado da busca — nunca os dois, porque o diretório não entrega e-mail a quem só
+ * buscou.
+ */
+export type CrossTenantCandidate = {
+  email?: string;
+  username?: string;
+  name: string;
+};
+
+/**
+ * Quem recebe, resolvido pela aba — e só a escolha da aba ativa sobrevive.
+ *
+ * Trocar de aba não desfaz a escolha da anterior, e não deve: quem volta espera reencontrar o que
+ * marcou. O preço é ter duas ou três escolhas vivas ao mesmo tempo, e cada leitura solta de
+ * `internalPick` / `crossTenantPick` / `external` vira uma chance de anunciar (ou enviar para) a
+ * pessoa da aba errada — já aconteceu quatro vezes: `canAdvance`, `expiresHint`, o resumo do
+ * compartilhar e o `signerEmail` do assinar.
+ *
+ * Aqui é o único lugar que olha as três. Quem precisa saber quem recebe lê os campos abaixo, e os
+ * das abas inativas já vêm nulos — não há como ler o de fora estando dentro.
+ */
+export type ResolvedRecipient = {
+  audience: RecipientAudience;
+  /** Nome para a tela. `—` enquanto não houver escolha. */
+  label: string;
+  /** Colega do mesmo tenant. Nulo em qualquer outra aba. */
+  internal: InternalCandidate | null;
+  /** Conta DOQYN de outra empresa. Nulo em qualquer outra aba. */
+  doqyn: CrossTenantCandidate | null;
+  /** Rascunho de quem não tem conta. Nulo em qualquer outra aba. */
+  external: ExternalRecipientDraft | null;
+};
+
+export function resolveRecipient(
+  audience: RecipientAudience,
+  picks: {
+    internal: InternalCandidate | null;
+    doqyn: CrossTenantCandidate | null;
+    external: ExternalRecipientDraft;
+  },
+): ResolvedRecipient {
+  const internal = audience === 'internal' ? picks.internal : null;
+  const doqyn = audience === 'doqyn' ? picks.doqyn : null;
+  const external = audience === 'external' ? picks.external : null;
+  return {
+    audience,
+    internal,
+    doqyn,
+    external,
+    label: internal?.name || doqyn?.name || external?.name.trim() || external?.email.trim() || '—',
+  };
+}
+
+/** `Fulano (da empresa)` — o nome com a origem, que é o que a confirmação precisa dizer. */
+export function describeRecipient(recipient: ResolvedRecipient): string {
+  const origin =
+    recipient.audience === 'internal'
+      ? 'da empresa'
+      : recipient.audience === 'doqyn'
+        ? 'outra empresa DOQYN'
+        : 'convidado externo';
+  return `${recipient.label} (${origin})`;
+}
+
 /** Data em `yyyy-mm-dd`: o prazo é dia, não hora — o link fecha no fim do dia escolhido. */
 export function defaultExpirationDate(days: number): string {
   const date = new Date();

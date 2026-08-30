@@ -17,11 +17,14 @@ import {
   StepTrack,
   SummaryStep,
   defaultExpirationDate,
+  describeRecipient,
   expirationDateToIso,
   formatExpirationDate,
   formatDateTime,
+  resolveRecipient,
   statusTone,
   useStepFlow,
+  type CrossTenantCandidate,
   type ExternalRecipientDraft,
   type InternalCandidate,
   type RecipientAudience,
@@ -94,17 +97,20 @@ export function RequestSignatureModal({
    * Fora de `internalPick` porque não é membro daqui: não tem id de associação, e o pedido sai
    * com o e-mail, que é o que o servidor resolve contra o diretório.
    */
-  const [crossTenantSigner, setCrossTenantSigner] = useState<{
-    email?: string;
-    username?: string;
-    name: string;
-  } | null>(null);
+  const [crossTenantSigner, setCrossTenantSigner] = useState<CrossTenantCandidate | null>(null);
   const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);
   const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
   const [canDownloadAfterSign, setCanDownloadAfterSign] = useState(false);
   const [message, setMessage] = useState('');
   const [issuedUrl, setIssuedUrl] = useState<string | null>(null);
   const [internalDone, setInternalDone] = useState(false);
+
+  /** Quem assina, pela aba e por mais nada — ver `resolveRecipient`. */
+  const recipient = useMemo(
+    () =>
+      resolveRecipient(audience, { internal: internalPick, doqyn: crossTenantSigner, external }),
+    [audience, crossTenantSigner, external, internalPick],
+  );
 
   const candidates = useShareableUsersSearch(documentId, query);
 
@@ -134,9 +140,9 @@ export function RequestSignatureModal({
          * nada — ele exige nome e e-mail digitados, e a aba "Outra empresa" não digita nome
          * nenhum, então todo pedido para outra empresa morria em `SIGNER_NAME_REQUIRED`.
          */
-        signerType: audience === 'external' ? 'external_guest' : 'internal_user',
-        signerUserId: audience === 'internal' ? (internalPick?.id ?? undefined) : undefined,
-        signerName: audience === 'external' ? external.name.trim() : undefined,
+        signerType: recipient.external ? 'external_guest' : 'internal_user',
+        signerUserId: recipient.internal?.id,
+        signerName: recipient.external?.name.trim(),
         /**
          * Assinante de outra empresa viaja pelo contato: é ele que o servidor resolve no diretório.
          * O apelido serve tanto quanto o e-mail — a busca digitável nem sempre devolve endereço, e
@@ -149,14 +155,9 @@ export function RequestSignatureModal({
          * solicitação nascia para a pessoa errada, com a tela anunciando a certa.
          */
         signerEmail:
-          audience === 'external'
-            ? external.email.trim()
-            : audience === 'doqyn'
-              ? (crossTenantSigner?.email ?? crossTenantSigner?.username ?? undefined)
-              : undefined,
-        signerPhone: audience === 'external' ? external.phone.trim() || undefined : undefined,
-        signerOrganizationName:
-          audience === 'external' ? external.organizationName.trim() || undefined : undefined,
+          recipient.external?.email.trim() ?? recipient.doqyn?.email ?? recipient.doqyn?.username,
+        signerPhone: recipient.external?.phone.trim() || undefined,
+        signerOrganizationName: recipient.external?.organizationName.trim() || undefined,
         message: message.trim() || undefined,
         expiresAt: expirationDateToIso(expiresAt),
         permissions: { canDownloadAfterSign },
@@ -207,22 +208,15 @@ export function RequestSignatureModal({
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick);
-      if (audience === 'doqyn') return Boolean(crossTenantSigner);
-      return external.name.trim().length > 0 && external.email.trim().includes('@') && !phoneError;
+      if (recipient.external) {
+        const { name, email } = recipient.external;
+        return name.trim().length > 0 && email.trim().includes('@') && !phoneError;
+      }
+      return Boolean(recipient.internal ?? recipient.doqyn);
     }
     if (flow.step === 1) return Boolean(expiresAt);
     return true;
-  }, [
-    audience,
-    crossTenantSigner,
-    expiresAt,
-    external.email,
-    external.name,
-    flow.step,
-    internalPick,
-    phoneError,
-  ]);
+  }, [expiresAt, flow.step, phoneError, recipient]);
 
   const handleSubmit = async () => {
     if (!documentId) return;
@@ -283,13 +277,6 @@ export function RequestSignatureModal({
 
   if (!document) return null;
 
-  const recipientLabel =
-    audience === 'internal'
-      ? (internalPick?.name ?? '—')
-      : audience === 'doqyn'
-        ? (crossTenantSigner?.name ?? '—')
-        : external.name.trim() || external.email.trim() || '—';
-
   const finished = issuedUrl !== null || internalDone;
 
   return (
@@ -339,7 +326,7 @@ export function RequestSignatureModal({
             </>
           ) : (
             <p className="type-body text-doqyn-text">
-              {recipientLabel} recebeu a solicitação e vê o documento em “Para assinar”.
+              {recipient.label} recebeu a solicitação e vê o documento em “Para assinar”.
             </p>
           )}
           <AccessList
@@ -439,21 +426,19 @@ export function RequestSignatureModal({
             <SummaryStep
               rows={[
                 { label: 'Documento', value: document.currentFileName || document.displayName },
-                {
-                  label: 'Quem assina',
-                  value:
-                    audience === 'internal'
-                      ? `${recipientLabel} (da empresa)`
-                      : `${recipientLabel} (convidado externo)`,
-                },
+                // Três origens, três rótulos: dizer "convidado externo" para uma conta DOQYN de
+                // outra empresa nomeia certo a pessoa e errado o caminho dela.
+                { label: 'Quem assina', value: describeRecipient(recipient) },
                 { label: 'Baixar após assinar', value: canDownloadAfterSign ? 'Sim' : 'Não' },
                 { label: 'Válido até', value: formatExpirationDate(expiresAt) },
                 { label: 'Mensagem', value: message.trim() || '—' },
               ]}
               note={
-                audience === 'external'
-                  ? 'O link do portal é gerado agora e fica disponível para copiar enquanto a solicitação estiver aberta.'
-                  : 'A pessoa passa a ver o documento em “Para assinar”.'
+                // "Para assinar" só lista o que está no tenant de quem abre a lista, então quem é
+                // de outra empresa nunca acha o pedido por lá: o link é o caminho dela também.
+                recipient.audience === 'internal'
+                  ? 'A pessoa passa a ver o documento em “Para assinar”.'
+                  : 'O link do portal é gerado agora e fica disponível para copiar enquanto a solicitação estiver aberta.'
               }
             />
           ) : null}

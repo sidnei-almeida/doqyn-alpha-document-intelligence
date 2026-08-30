@@ -15,11 +15,14 @@ import {
   StepTrack,
   SummaryStep,
   defaultExpirationDate,
+  describeRecipient,
   expirationDateToIso,
   formatExpirationDate,
   formatDateTime,
+  resolveRecipient,
   statusTone,
   useStepFlow,
+  type CrossTenantCandidate,
   type ExternalRecipientDraft,
   type InternalCandidate,
   type RecipientAudience,
@@ -88,11 +91,7 @@ export function ShareDocumentModal({
    * busca por nome, e o envio para ele nasce pendente do outro lado. Tratá-lo como membro faria a
    * tela prometer um acesso imediato que não acontece.
    */
-  const [crossTenantPick, setCrossTenantPick] = useState<{
-    email?: string;
-    username?: string;
-    name: string;
-  } | null>(null);
+  const [crossTenantPick, setCrossTenantPick] = useState<CrossTenantCandidate | null>(null);
   const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
   const [canDownload, setCanDownload] = useState(false);
   const [message, setMessage] = useState('');
@@ -130,27 +129,32 @@ export function ShareDocumentModal({
   const phoneError =
     external.phone && !isCompleteWhatsapp(external.phone) ? INVALID_PHONE_MESSAGE : undefined;
 
+  /** Quem recebe, pela aba e por mais nada — ver `resolveRecipient`. */
+  const recipient = useMemo(
+    () => resolveRecipient(audience, { internal: internalPick, doqyn: crossTenantPick, external }),
+    [audience, crossTenantPick, external, internalPick],
+  );
+
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick);
-      if (audience === 'doqyn') return Boolean(crossTenantPick);
-      return external.email.trim().includes('@') && !phoneError;
+      if (recipient.external) return recipient.external.email.trim().includes('@') && !phoneError;
+      return Boolean(recipient.internal ?? recipient.doqyn);
     }
     // O prazo é obrigatório para tudo que sai da empresa — com conta DOQYN ou sem. O acesso
     // concedido não é reavaliado depois, e a validade é o único mecanismo que o fecha sozinho.
-    if (flow.step === 1) return audience === 'internal' || Boolean(expiresAt);
+    if (flow.step === 1) return recipient.audience === 'internal' || Boolean(expiresAt);
     return true;
-  }, [audience, crossTenantPick, expiresAt, external.email, flow.step, internalPick, phoneError]);
+  }, [expiresAt, flow.step, phoneError, recipient]);
 
   const submitting = shareWithUser.isPending || createExternalShare.isPending;
 
   const handleSubmit = async () => {
     if (!documentId) return;
 
-    if (audience === 'doqyn' && crossTenantPick) {
+    if (recipient.doqyn) {
       await shareWithUser.mutateAsync({
-        sharedWithEmail: crossTenantPick.email,
-        sharedWithUsername: crossTenantPick.username,
+        sharedWithEmail: recipient.doqyn.email,
+        sharedWithUsername: recipient.doqyn.username,
         canDownload,
         message: message.trim() || undefined,
         expiresAt: expirationDateToIso(expiresAt),
@@ -159,9 +163,9 @@ export function ShareDocumentModal({
       return;
     }
 
-    if (audience === 'internal' && internalPick) {
+    if (recipient.internal) {
       await shareWithUser.mutateAsync({
-        sharedWithUserId: internalPick.id,
+        sharedWithUserId: recipient.internal.id,
         canDownload,
         message: message.trim() || undefined,
       });
@@ -169,11 +173,15 @@ export function ShareDocumentModal({
       return;
     }
 
+    // Aba escolhida sem pessoa escolhida não vira convite externo: sem esta guarda, quem está em
+    // "Outra empresa" e ainda não escolheu ninguém cairia aqui com o e-mail digitado na outra aba.
+    if (!recipient.external) return;
+
     const result = await createExternalShare.mutateAsync({
-      recipientEmail: external.email.trim(),
-      recipientPhone: external.phone.trim() || undefined,
-      recipientName: external.name.trim() || undefined,
-      recipientOrganizationName: external.organizationName.trim() || undefined,
+      recipientEmail: recipient.external.email.trim(),
+      recipientPhone: recipient.external.phone.trim() || undefined,
+      recipientName: recipient.external.name.trim() || undefined,
+      recipientOrganizationName: recipient.external.organizationName.trim() || undefined,
       canDownload,
       expiresAt: expirationDateToIso(expiresAt),
       message: message.trim() || undefined,
@@ -241,20 +249,6 @@ export function ShareDocumentModal({
 
   if (!document) return null;
 
-  /**
-   * Quem recebe, decidido pela aba e por mais nada.
-   *
-   * Trocar de aba não desfaz a escolha da anterior — e não deve: quem volta espera reencontrar o
-   * que já tinha marcado. Mas isso deixa duas escolhas vivas ao mesmo tempo, e quem for ler
-   * qualquer uma delas precisa perguntar antes em qual aba está.
-   */
-  const recipientLabel =
-    audience === 'internal'
-      ? (internalPick?.name ?? '—')
-      : audience === 'doqyn'
-        ? (crossTenantPick?.name ?? '—')
-        : external.name.trim() || external.email.trim() || '—';
-
   return (
     <Modal
       open={open}
@@ -306,12 +300,12 @@ export function ShareDocumentModal({
                 doqynLabel="Outra empresa"
                 externalLabel="Convidado externo"
               />
-              {audience === 'doqyn' && crossTenantPick ? (
+              {recipient.doqyn ? (
                 <div className="recipient-chosen">
                   <div className="min-w-0">
-                    <p className="type-body truncate text-doqyn-text">{crossTenantPick.name}</p>
+                    <p className="type-body truncate text-doqyn-text">{recipient.doqyn.name}</p>
                     <p className="type-caption truncate text-doqyn-muted">
-                      {crossTenantPick.email ?? `@${crossTenantPick.username}`} · de outra empresa
+                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`} · de outra empresa
                     </p>
                   </div>
                   <Button
@@ -411,18 +405,10 @@ export function ShareDocumentModal({
             <SummaryStep
               rows={[
                 { label: 'Documento', value: document.currentFileName || document.displayName },
-                {
-                  label: 'Quem recebe',
-                  // Pela aba, e não pela presença do `crossTenantPick`: escolher alguém do DOQYN,
-                  // trocar para "Convidado externo" e digitar outro e-mail deixava a confirmação
-                  // anunciando o primeiro. É a última linha que se lê antes de enviar.
-                  value:
-                    audience === 'doqyn'
-                      ? `${recipientLabel} (outra empresa DOQYN)`
-                      : audience === 'internal'
-                        ? `${recipientLabel} (da empresa)`
-                        : `${recipientLabel} (convidado externo)`,
-                },
+                // Pela aba, e não pela presença do `crossTenantPick`: escolher alguém do DOQYN,
+                // trocar para "Convidado externo" e digitar outro e-mail deixava a confirmação
+                // anunciando o primeiro. É a última linha que se lê antes de enviar.
+                { label: 'Quem recebe', value: describeRecipient(recipient) },
                 { label: 'Pode baixar', value: canDownload ? 'Sim' : 'Não' },
                 {
                   label: 'Válido até',
