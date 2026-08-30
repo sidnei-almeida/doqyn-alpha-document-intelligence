@@ -30,10 +30,6 @@ const LazyDocumentRequestsPage = lazyNamed(
   () => import('@/features/requests/DocumentRequestsPage'),
   'DocumentRequestsPage',
 );
-const LazyDocumentSendPage = lazyNamed(
-  () => import('@/features/document-send/DocumentSendPage'),
-  'DocumentSendPage',
-);
 const LazyUserManagementRoute = lazyNamed(
   () => import('@/features/users/UserManagementRoute'),
   'UserManagementRoute',
@@ -121,7 +117,6 @@ export const NotificationsRoute = withRouteSuspense(LazyNotificationsPage);
 export const MatrixRoute = withRouteSuspense(LazyMatrixPage);
 export const LibraryRoute = withRouteSuspense(LazyLibraryPage);
 export const DocumentRequestsRoute = withRouteSuspense(LazyDocumentRequestsPage);
-export const DocumentSendRoute = withRouteSuspense(LazyDocumentSendPage);
 export const UserManagementRouteLazy = withRouteSuspense(LazyUserManagementRoute);
 export const SettingsRoute = withRouteSuspense(LazySettingsPage);
 export const DashboardRoute = withRouteSuspense(LazyDashboardPage);

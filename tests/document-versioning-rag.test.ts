@@ -298,10 +298,10 @@ describe('integração version-aware RAG — wiring', () => {
 
   it('frontend usa analyze-pdf-update em modo atualização', () => {
     const analyze = read('src/features/document-send/services/analyzePdf.ts');
-    const page = read('src/features/document-send/DocumentSendPage.tsx');
+    const drawer = read('src/features/document-update-version/UpdateDocumentVersionDrawer.tsx');
     assert.ok(analyze.includes('/api/ai/analyze-pdf-update'));
     assert.ok(analyze.includes('documentId'));
-    assert.ok(page.includes('documentId: updateTargetDocumentId'));
+    assert.ok(drawer.includes('documentId'));
   });
 
   it('RAG query API suporta versão atual, histórica e comparação', () => {

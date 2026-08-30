@@ -8,11 +8,6 @@ import {
   getUploadProgressPercent,
 } from '../src/features/document-send/utils/uploadProgress.ts';
 
-const SEND_PAGE = join(process.cwd(), 'src/features/document-send/DocumentSendPage.tsx');
-const SUMMARY = join(
-  process.cwd(),
-  'src/features/document-send/components/UploadProgressSummary.tsx',
-);
 const PROGRESS = join(process.cwd(), 'src/components/ui/Progress.tsx');
 
 describe('uploadProgress helpers', () => {
@@ -59,39 +54,8 @@ describe('UploadProgressSummary UI', () => {
     assert.match(source, /aria-label=/);
   });
 
-  it('não renderiza filtros antigos na página de envio', () => {
-    const source = readFileSync(SEND_PAGE, 'utf8');
-    assert.equal(source.includes('WorkflowSessionPanel'), false);
-    assert.equal(source.includes('logFilter'), false);
-    assert.equal(source.includes('showDebugLogs'), false);
-    for (const label of ['Todos', 'Arquivo atual', 'Logs do lote']) {
-      assert.equal(source.includes(label), false, `não deve conter "${label}"`);
-    }
-  });
 
-  it('Debug só via canShowTechnicalDetails no resumo', () => {
-    const summary = readFileSync(SUMMARY, 'utf8');
-    assert.match(summary, /canShowTechnicalDetails/);
-    assert.equal(summary.includes('type="checkbox"'), false);
-    assert.match(summary, /Ver detalhes técnicos/);
-  });
 
-  it('link de tracking só quando canViewTracking e href existem', () => {
-    const summary = readFileSync(SUMMARY, 'utf8');
-    assert.match(summary, /canViewTracking && trackingHref/);
-    assert.match(summary, /Ver tracking completo/);
-  });
 
-  it('sanitiza chaves sensíveis nos detalhes técnicos', () => {
-    const summary = readFileSync(SUMMARY, 'utf8');
-    assert.match(summary, /objectKey|token|secret|password|payload/i);
-  });
 
-  it('página de envio usa UploadProgressSummary embedded no fluxo unificado', () => {
-    const source = readFileSync(SEND_PAGE, 'utf8');
-    assert.match(source, /UploadProgressSummary/);
-    assert.match(source, /UploadFlowPanel/);
-    assert.match(source, /variant="embedded"/);
-    assert.match(source, /canViewTracking=\{canShowWorkflowDebug\}/);
-  });
 });

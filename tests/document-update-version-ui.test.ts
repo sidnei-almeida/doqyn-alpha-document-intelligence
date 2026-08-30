@@ -26,12 +26,6 @@ describe('fluxo dedicado de atualização de versão', () => {
     assert.equal(modal.includes('/upload?documentId='), false);
   });
 
-  it('DocumentSendPage redireciona update legado para biblioteca', () => {
-    const send = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(send.includes('/biblioteca?updateVersion='));
-    assert.ok(send.includes('replace: true'));
-  });
-
   it('drawer dedicado exibe resumo, metadados e histórico', () => {
     const drawer = readSrc('features/document-update-version/UpdateDocumentVersionDrawer.tsx');
     const shell = readSrc('components/layout/WorkspaceSideDrawer.tsx');

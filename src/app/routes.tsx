@@ -10,7 +10,6 @@ import {
   CompanySignupRoute,
   ContactsRoute,
   DashboardRoute,
-  DocumentSendRoute,
   IndividualSignupRoute,
   LibraryRoute,
   DocumentRequestsRoute,
@@ -71,8 +70,6 @@ export const router = createBrowserRouter([
           { path: '/contatos', element: <ContactsRoute /> },
           { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
-          // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.
-          { path: '/upload', element: <DocumentSendRoute /> },
           { path: '/rules', element: <RulesRoute /> },
           { path: '/matriz', element: <MatrixRoute /> },
           { path: '/notificacoes', element: <NotificationsRoute /> },

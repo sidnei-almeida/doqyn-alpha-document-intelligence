@@ -306,18 +306,5 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(drawer.includes('role="progressbar"'));
   });
 
-  it('DocumentSendPage legado invalida queries da Biblioteca após salvar', () => {
-    const sendPage = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(sendPage.includes('invalidateDocumentQueries'));
-    assert.ok(sendPage.includes('invalidateLibraryQueries'));
-  });
 
-  it('DocumentSendPage legado mantém auto-confirm próprio, independente da fila da Biblioteca', () => {
-    const sendPage = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(sendPage.includes('autoConfirmTriggeredRef'));
-    assert.ok(sendPage.includes('ReviewWorkflowSettingsPanel'));
-    assert.ok(sendPage.includes('canAutoAcceptWithSettings'));
-    assert.equal(sendPage.includes('VITE_UPLOAD_AUTO_CONFIRM_ENABLED'), false);
-    assert.equal(sendPage.includes('resolvePostAnalysisAction'), false);
-  });
 });
