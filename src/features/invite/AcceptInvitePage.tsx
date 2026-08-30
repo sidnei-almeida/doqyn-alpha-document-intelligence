@@ -92,7 +92,8 @@ export function AcceptInvitePage() {
         setPageState({
           kind: 'error',
           title: mapInviteErrorTitle(code),
-          message: error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
+          message:
+            error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
           code,
         });
       }
@@ -203,9 +204,15 @@ export function AcceptInvitePage() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-2xl flow-enter">
+      <div className="flow-enter w-full max-w-2xl">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Convite" />
+          <DoqynLogo
+            size="login"
+            variant="horizontal"
+            align="center"
+            showSubtitle
+            subtitle="Convite"
+          />
         </div>
 
         {pageState.kind === 'loading' && (
@@ -216,7 +223,10 @@ export function AcceptInvitePage() {
           <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
             <h1 className="text-lg font-semibold text-doqyn-text">{pageState.title}</h1>
             <p className="mt-2 text-sm text-doqyn-muted">{pageState.message}</p>
-            <Link to="/login" className="mt-4 inline-block text-sm text-doqyn-primary hover:underline">
+            <Link
+              to="/login"
+              className="mt-4 inline-block text-sm text-doqyn-primary hover:underline"
+            >
               Ir para o login
             </Link>
           </div>
@@ -236,7 +246,8 @@ export function AcceptInvitePage() {
           <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6">
             <h1 className="text-lg font-semibold text-doqyn-text">Aceitar convite</h1>
             <p className="mt-2 text-sm text-doqyn-muted">
-              Complete seu cadastro para acessar <strong>{pageState.invite.tenantDisplayName}</strong>.
+              Complete seu cadastro para acessar{' '}
+              <strong>{pageState.invite.tenantDisplayName}</strong>.
             </p>
 
             <form className="mt-6 space-y-8" onSubmit={handleSubmit}>
@@ -385,7 +396,9 @@ export function AcceptInvitePage() {
                   onChange={(event) => setConsent(event.target.checked)}
                   required
                   wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-                  label={<span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>}
+                  label={
+                    <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
+                  }
                 />
               </div>
 

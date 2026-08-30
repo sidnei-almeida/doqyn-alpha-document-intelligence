@@ -12,26 +12,16 @@ export function useLibraryMultiSelection(defaultOrderedIds: string[] = []) {
 
   return {
     ...selection,
-    handleFileClick: (
-      document: DocumentListItem,
-      orderedIds: string[],
-      event?: PointerModifiers,
-    ) => selection.interactFile(document, { type: 'activate', modifiers: event }, orderedIds),
-    handleFolderClick: (
-      folder: LibraryFolder,
-      orderedIds: string[],
-      event?: PointerModifiers,
-    ) => selection.interactFolder(folder, event, orderedIds),
+    handleFileClick: (document: DocumentListItem, orderedIds: string[], event?: PointerModifiers) =>
+      selection.interactFile(document, { type: 'activate', modifiers: event }, orderedIds),
+    handleFolderClick: (folder: LibraryFolder, orderedIds: string[], event?: PointerModifiers) =>
+      selection.interactFolder(folder, event, orderedIds),
     toggleFileChecked: (document: DocumentListItem, checked: boolean, orderedIds: string[]) => {
       const isSelected = selection.isFileSelected(document.documentId);
       if (checked === isSelected) return;
       selection.interactFile(document, { type: 'toggle' }, orderedIds);
     },
-    toggleFolderChecked: (
-      folder: LibraryFolder,
-      checked: boolean,
-      orderedIds: string[],
-    ) => {
+    toggleFolderChecked: (folder: LibraryFolder, checked: boolean, orderedIds: string[]) => {
       const isSelected = selection.isFolderSelected(folder.id);
       if (checked === isSelected) return;
       selection.interactFolder(folder, { metaKey: true }, orderedIds);

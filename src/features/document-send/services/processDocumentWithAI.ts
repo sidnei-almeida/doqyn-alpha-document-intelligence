@@ -1,8 +1,5 @@
 import type { ExtractedMetadata } from '../types';
-import {
-  generateDocumentNameFromExtracted,
-  getConfidenceLevel,
-} from '../utils/documentNaming';
+import { generateDocumentNameFromExtracted, getConfidenceLevel } from '../utils/documentNaming';
 
 // TODO: substituir por integração real com análise documental
 export async function processDocumentWithAI(file: File): Promise<ExtractedMetadata> {
@@ -85,10 +82,7 @@ export async function processDocumentWithAI(file: File): Promise<ExtractedMetada
   if (level === 'review' && !supplier) {
     return {
       ...base,
-      suggestedName: suggestedName.replace(
-        /_Documento_/,
-        '_sem_fornecedor_',
-      ),
+      suggestedName: suggestedName.replace(/_Documento_/, '_sem_fornecedor_'),
     };
   }
 

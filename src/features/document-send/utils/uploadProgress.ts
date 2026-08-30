@@ -174,10 +174,7 @@ export function deriveBulkUploadProgressState(input: {
     status,
     percent,
     label: getUploadProgressLabel(status),
-    message:
-      currentItem.errorMessage ??
-      statusMessage ??
-      getUploadProgressMessage(status),
+    message: currentItem.errorMessage ?? statusMessage ?? getUploadProgressMessage(status),
     fileName: currentItem.originalFileName,
     fileSize: currentItem.sizeBytes,
     errorMessage: currentItem.errorMessage,

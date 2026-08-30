@@ -160,7 +160,7 @@ export function UploadProgressSummary({
       </div>
 
       {showTechnical && canShowTechnicalDetails && (
-        <div className="bg-doqyn-bg/40 mt-3 rounded-md border border-doqyn-border-subtle p-3 text-left text-xs text-doqyn-muted">
+        <div className="mt-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg/40 p-3 text-left text-xs text-doqyn-muted">
           {technicalHint && <p className="mb-2">{technicalHint}</p>}
           {safeTechnicalDetails && Object.keys(safeTechnicalDetails).length > 0 && (
             <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-micro">

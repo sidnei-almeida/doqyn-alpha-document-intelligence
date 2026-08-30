@@ -16,14 +16,14 @@ export function MetadataCard({ fields, isVisible = true, className }: MetadataCa
     >
       <CardHeader className="shrink-0 flex-row items-center justify-between space-y-0 pb-0">
         <CardTitle>Metadados extraídos</CardTitle>
-        <span className="bg-doqyn-bg/60 rounded-md border border-doqyn-border px-2 py-0.5 text-eyebrow uppercase text-doqyn-muted">
+        <span className="rounded-md border border-doqyn-border bg-doqyn-bg/60 px-2 py-0.5 text-eyebrow uppercase text-doqyn-muted">
           Em teste
         </span>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
         <div
           className={cn(
-            'bg-doqyn-bg/40 flex-1 rounded-lg border border-doqyn-border-subtle transition-opacity duration-300',
+            'flex-1 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 transition-opacity duration-300',
             !isVisible && 'opacity-40',
           )}
         >

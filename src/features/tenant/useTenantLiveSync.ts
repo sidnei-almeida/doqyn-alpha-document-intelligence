@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
-import {
-  refetchTenantScopedQueries,
-  TENANT_LIVE_SYNC_INTERVAL_MS,
-} from './tenantLiveSync';
+import { refetchTenantScopedQueries, TENANT_LIVE_SYNC_INTERVAL_MS } from './tenantLiveSync';
 
 /**
  * Mantém dados do tenant sincronizados enquanto o workspace está aberto:

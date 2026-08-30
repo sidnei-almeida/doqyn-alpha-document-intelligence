@@ -25,8 +25,7 @@ export function useLibraryExplorerMode(
 ): LibraryExplorerMode {
   const isRootCollection = collection.id === 'root';
   const isInsideFolder = isRootCollection && Boolean(state.space);
-  const isSearchOrFilterAtRoot =
-    isRootCollection && !state.space && hasActiveLibraryFilters(state);
+  const isSearchOrFilterAtRoot = isRootCollection && !state.space && hasActiveLibraryFilters(state);
   const isBrowseRoot = isRootCollection && !state.space && !isSearchOrFilterAtRoot;
   const isVirtualCollection = !isRootCollection;
 

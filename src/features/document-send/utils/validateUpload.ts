@@ -6,9 +6,7 @@ import {
   UPLOAD_ERROR_MESSAGES,
 } from '../uploadConstants';
 
-export type FileValidationResult =
-  | { valid: true; files: File[] }
-  | { valid: false; error: string };
+export type FileValidationResult = { valid: true; files: File[] } | { valid: false; error: string };
 
 export function isAllowedAnalysisFile(file: File): boolean {
   const lower = file.name.toLowerCase();
@@ -27,10 +25,7 @@ function isAllowedType(file: File): boolean {
   return isAllowedAnalysisFile(file);
 }
 
-export function validateUploadFiles(
-  incoming: File[],
-  existingCount = 0,
-): FileValidationResult {
+export function validateUploadFiles(incoming: File[], existingCount = 0): FileValidationResult {
   const total = existingCount + incoming.length;
 
   if (total > MAX_FILES_PER_BATCH) {

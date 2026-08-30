@@ -30,7 +30,10 @@ export function TimelineItem({ log, isLast = false }: TimelineItemProps) {
           isDone && 'border-doqyn-primary bg-doqyn-text text-doqyn-bg',
           isActive && 'border-doqyn-primary bg-doqyn-primary-bg text-doqyn-primary',
           isError && 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
-          !isDone && !isActive && !isError && 'border-doqyn-border-strong bg-doqyn-surface text-doqyn-muted',
+          !isDone &&
+            !isActive &&
+            !isError &&
+            'border-doqyn-border-strong bg-doqyn-surface text-doqyn-muted',
         )}
         aria-hidden
       >

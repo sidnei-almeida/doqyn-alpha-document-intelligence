@@ -215,8 +215,7 @@ export function LoginNeuralAccent() {
             let next = toN.neighbors[Math.floor(Math.random() * toN.neighbors.length)];
 
             if (next === pulse.from && toN.neighbors.length > 1) {
-              next =
-                toN.neighbors[(toN.neighbors.indexOf(next) + 1) % toN.neighbors.length];
+              next = toN.neighbors[(toN.neighbors.indexOf(next) + 1) % toN.neighbors.length];
             }
 
             if (next !== pulse.from) {
@@ -274,7 +273,14 @@ export function LoginNeuralAccent() {
         const a = Math.min(1, (p.alpha * tw + p.activation * 0.42) * spatial);
         const r = p.r + p.activation * 1.2;
 
-        const nodeHalo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4.5 + p.activation * 6);
+        const nodeHalo = ctx.createRadialGradient(
+          p.x,
+          p.y,
+          0,
+          p.x,
+          p.y,
+          r * 4.5 + p.activation * 6,
+        );
 
         nodeHalo.addColorStop(0, `rgba(88,116,164,${a * 0.38})`);
         nodeHalo.addColorStop(1, 'rgba(88,116,164,0)');
@@ -285,9 +291,7 @@ export function LoginNeuralAccent() {
         ctx.fill();
 
         ctx.fillStyle =
-          p.activation > 0.15
-            ? `rgba(190,210,238,${a * 0.85})`
-            : `rgba(128,157,205,${a * 0.72})`;
+          p.activation > 0.15 ? `rgba(190,210,238,${a * 0.85})` : `rgba(128,157,205,${a * 0.72})`;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);

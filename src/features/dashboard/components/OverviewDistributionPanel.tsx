@@ -20,15 +20,11 @@ export function OverviewDistributionPanel({
   const total = items.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <OverviewPanelShell
-      title={title}
-      subtitle={subtitle}
-      bodyClassName="flex-1 pt-4"
-    >
+    <OverviewPanelShell title={title} subtitle={subtitle} bodyClassName="flex-1 pt-4">
       {items.length === 0 ? (
         <OverviewEmptyHint title={emptyLabel} className="min-h-[8rem] px-0 py-6" />
       ) : (
-        <div className="max-h-[14rem] flex-1 space-y-4 overflow-y-auto pr-1 scrollbar-thin">
+        <div className="scrollbar-thin max-h-[14rem] flex-1 space-y-4 overflow-y-auto pr-1">
           {items.map((item) => (
             <div key={item.label}>
               <div className="mb-1.5 flex items-baseline justify-between gap-3">

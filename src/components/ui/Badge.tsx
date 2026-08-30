@@ -62,8 +62,7 @@ const markVariants: Record<NonNullable<VariantProps<typeof badgeVariants>['varia
 const FILLED_VARIANTS = new Set(['warning', 'danger']);
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
+  extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {
   /** Mostra o tique do estado à esquerda do rótulo. */
   dot?: boolean;
 }
@@ -86,10 +85,7 @@ export function Badge({
       {...props}
     >
       {showMark && (
-        <span
-          className={cn('h-1 w-1 shrink-0', markVariants[resolvedVariant])}
-          aria-hidden
-        />
+        <span className={cn('h-1 w-1 shrink-0', markVariants[resolvedVariant])} aria-hidden />
       )}
       <span className="truncate">{children}</span>
     </span>

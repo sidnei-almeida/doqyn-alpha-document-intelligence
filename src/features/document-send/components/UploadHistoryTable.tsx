@@ -22,7 +22,7 @@ export function UploadHistoryTable({ items, className }: UploadHistoryTableProps
         <CardTitle>Histórico de envios</CardTitle>
       </CardHeader>
       <CardContent className="p-5 pt-0">
-        <div className="overflow-x-auto scrollbar-thin">
+        <div className="scrollbar-thin overflow-x-auto">
           <div className="w-full min-w-[1100px]" role="table" aria-label="Histórico de envios">
             <div
               role="row"

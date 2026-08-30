@@ -27,7 +27,9 @@ export function useSidebarCollapsed() {
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--workspace-sidebar-width',
-      collapsed ? 'var(--workspace-sidebar-width-collapsed)' : 'var(--workspace-sidebar-width-expanded)',
+      collapsed
+        ? 'var(--workspace-sidebar-width-collapsed)'
+        : 'var(--workspace-sidebar-width-expanded)',
     );
   }, [collapsed]);
 

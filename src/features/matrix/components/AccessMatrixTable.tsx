@@ -52,7 +52,10 @@ function initialsOf(name: string): string {
   return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '?';
 }
 
-const VERB_ROWS: Array<{ key: 'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare'; label: string }> = [
+const VERB_ROWS: Array<{
+  key: 'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare';
+  label: string;
+}> = [
   { key: 'canView', label: 'Ver' },
   { key: 'canDownload', label: 'Baixar' },
   { key: 'canUpdate', label: 'Alterar' },
@@ -134,7 +137,7 @@ function AccessCell({
         className={cn(
           'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
           origin ? ORIGIN_INK[origin] : 'text-doqyn-subtle/60',
-          'hover:bg-doqyn-hover/60 focus-visible:outline-none focus-visible:bg-doqyn-hover/60',
+          'hover:bg-doqyn-hover/60 focus-visible:bg-doqyn-hover/60 focus-visible:outline-none',
           isBusy && 'opacity-50',
           open && 'bg-doqyn-hover/60',
         )}

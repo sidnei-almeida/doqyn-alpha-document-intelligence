@@ -34,9 +34,7 @@ export function parseUploadAnalyzeMaxWaitMs(
 }
 
 const uploadAnalyzeMaxWaitEnv =
-  typeof import.meta !== 'undefined'
-    ? import.meta.env?.VITE_UPLOAD_ANALYZE_MAX_WAIT_MS
-    : undefined;
+  typeof import.meta !== 'undefined' ? import.meta.env?.VITE_UPLOAD_ANALYZE_MAX_WAIT_MS : undefined;
 
 /**
  * Teto de acompanhamento do navegador.

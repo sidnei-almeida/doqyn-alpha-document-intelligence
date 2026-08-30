@@ -36,7 +36,7 @@ export function ProcessingHistoryPanel({
         </h2>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
         {items.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-doqyn-muted">
             Nenhum documento processado ainda. Envie seu primeiro PDF acima.

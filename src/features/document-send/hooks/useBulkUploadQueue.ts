@@ -51,10 +51,7 @@ import {
   validateBulkQueueFile,
 } from '../utils/bulkFileValidation';
 import { getUploadAnalysisConcurrency } from '../../upload/config/uploadConcurrency';
-import {
-  buildWorkflowErrorLogDetails,
-  parseWorkflowErrorPayload,
-} from '../utils/workflowErrors';
+import { buildWorkflowErrorLogDetails, parseWorkflowErrorPayload } from '../utils/workflowErrors';
 
 export type BulkHistoryPayload = {
   item: BulkUploadItem;
@@ -99,7 +96,9 @@ export function useBulkUploadQueue({
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
   const [manualGate, setManualGate] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [batchReviewSettings, setBatchReviewSettings] = useState<WorkflowReviewSettings | null>(null);
+  const [batchReviewSettings, setBatchReviewSettings] = useState<WorkflowReviewSettings | null>(
+    null,
+  );
 
   const itemsRef = useRef(items);
   const batchPhaseRef = useRef(batchPhase);
@@ -330,9 +329,12 @@ export function useBulkUploadQueue({
               : item.status === 'skipped'
                 ? 'warning'
                 : 'info',
-        stage: item.status === 'saved' ? 'persistence' : item.status === 'error' ? 'error' : 'queue',
+        stage:
+          item.status === 'saved' ? 'persistence' : item.status === 'error' ? 'error' : 'queue',
         message: `Item finalizado com status ${item.status}.`,
-        details: durationMs ? { durationMs, finalStatus: item.status } : { finalStatus: item.status },
+        details: durationMs
+          ? { durationMs, finalStatus: item.status }
+          : { finalStatus: item.status },
       });
 
       itemStartedAtRef.current.delete(itemId);
@@ -389,7 +391,11 @@ export function useBulkUploadQueue({
   );
 
   const createQueueItem = useCallback(
-    (file: File, status: BulkUploadItemStatus = 'queued', errorMessage?: string): BulkUploadItem => ({
+    (
+      file: File,
+      status: BulkUploadItemStatus = 'queued',
+      errorMessage?: string,
+    ): BulkUploadItem => ({
       id: generateDocumentId(),
       file,
       originalFileName: file.name,
@@ -440,7 +446,14 @@ export function useBulkUploadQueue({
       const item = getItemById(itemId);
       if (!item?.result) return false;
 
-      if (!canApplyToItem(itemId, workerRunId, ['analyzed', 'auto_countdown', 'saving', 'requires_review'])) {
+      if (
+        !canApplyToItem(itemId, workerRunId, [
+          'analyzed',
+          'auto_countdown',
+          'saving',
+          'requires_review',
+        ])
+      ) {
         return false;
       }
 
@@ -478,7 +491,8 @@ export function useBulkUploadQueue({
             resultPayload.status === 'requires_review',
           namingMode: effectiveNamingMode,
           finalFileName: resolvedFinalName,
-          selectedFileName: effectiveNamingMode === 'manual' ? item.perItemNaming?.manualName : undefined,
+          selectedFileName:
+            effectiveNamingMode === 'manual' ? item.perItemNaming?.manualName : undefined,
           useAiNaming: settings.aiRenameEnabled && effectiveNamingMode !== 'original',
           context: {
             batchId: batchIdRef.current ?? undefined,
@@ -531,7 +545,8 @@ export function useBulkUploadQueue({
           return false;
         }
 
-        const message = error instanceof Error ? error.message : 'Não foi possível salvar o documento.';
+        const message =
+          error instanceof Error ? error.message : 'Não foi possível salvar o documento.';
         patchItem(itemId, {
           status: 'error',
           errorMessage: message,
@@ -550,7 +565,16 @@ export function useBulkUploadQueue({
         return false;
       }
     },
-    [appendItemMessage, canApplyToItem, finishQueueItem, getActiveSettings, getItemById, onItemSaved, patchItem, workflow],
+    [
+      appendItemMessage,
+      canApplyToItem,
+      finishQueueItem,
+      getActiveSettings,
+      getItemById,
+      onItemSaved,
+      patchItem,
+      workflow,
+    ],
   );
 
   /**
@@ -685,17 +709,22 @@ export function useBulkUploadQueue({
       const queueIndex = itemsRef.current.findIndex((item) => item.id === next.id);
       const previousStatus = next.status;
 
-      logIsolationSnapshot('Iniciando item isolado. Verificando estado anterior antes da análise.', next.id, next.originalFileName, {
-        batchId: batchIdRef.current,
-        itemId: next.id,
-        fileName: next.originalFileName,
-        queueIndex,
-        previousStatus,
-        newStatus: 'analyzing',
-        outroItemEmAndamento: inFlight,
-        countdownAtivo: countdownHandleRef.current !== null,
-        abortControllerAnterior: abortRef.current !== null,
-      });
+      logIsolationSnapshot(
+        'Iniciando item isolado. Verificando estado anterior antes da análise.',
+        next.id,
+        next.originalFileName,
+        {
+          batchId: batchIdRef.current,
+          itemId: next.id,
+          fileName: next.originalFileName,
+          queueIndex,
+          previousStatus,
+          newStatus: 'analyzing',
+          outroItemEmAndamento: inFlight,
+          countdownAtivo: countdownHandleRef.current !== null,
+          abortControllerAnterior: abortRef.current !== null,
+        },
+      );
 
       resetCurrentProcessingState('iniciar item isolado');
 
@@ -960,7 +989,8 @@ export function useBulkUploadQueue({
           finalFileName: recommendedFileName,
           className,
           confidence: raw.classification.confidence,
-          errorMessage: postStatus === 'error' ? classificationError ?? 'Erro na análise.' : undefined,
+          errorMessage:
+            postStatus === 'error' ? (classificationError ?? 'Erro na análise.') : undefined,
           finishedAt: postStatus !== 'analyzed' ? formatNow() : undefined,
         });
 
@@ -998,15 +1028,18 @@ export function useBulkUploadQueue({
         }
 
         if (postStatus === 'requires_review') {
-          const reason = getBulkReviewReason({
-            ...next,
-            status: postStatus,
-            result: raw,
-            metadata,
-            recommendedFileName,
-            className,
-            confidence: raw.classification.confidence,
-          }, settings);
+          const reason = getBulkReviewReason(
+            {
+              ...next,
+              status: postStatus,
+              result: raw,
+              metadata,
+              recommendedFileName,
+              className,
+              confidence: raw.classification.confidence,
+            },
+            settings,
+          );
           markItemReview(next.id, reason);
 
           // Revisão espera uma pessoa, não o servidor: o documento sai da esteira e o lote segue.
@@ -1186,12 +1219,18 @@ export function useBulkUploadQueue({
           endpoint: workflowError.endpoint,
         });
 
-        if (isNonExtractablePdfError({ message: workflowError.message, code: workflowError.code })) {
+        if (
+          isNonExtractablePdfError({ message: workflowError.message, code: workflowError.code })
+        ) {
           workflow.logItem(next.id, next.originalFileName, {
             level: 'warning',
             stage: 'analysis',
             message: NON_EXTRACTABLE_TEXT_MESSAGE,
-            details: { code: workflowError.code, durationMs: itemDurationMs, tipo: 'texto_nao_extraivel' },
+            details: {
+              code: workflowError.code,
+              durationMs: itemDurationMs,
+              tipo: 'texto_nao_extraivel',
+            },
           });
           markItemReview(next.id, NON_EXTRACTABLE_TEXT_MESSAGE);
           return 'continue';
@@ -1201,14 +1240,19 @@ export function useBulkUploadQueue({
           workflowError.code === 'DOCUMENT_RULES_NOT_CONFIGURED' ||
           workflowError.code === 'RULES_NOT_SEEDED'
         ) {
-          markItemAnalysisError(next.id, workflowError.message, {
-            ...logDetails,
-            code: workflowError.code,
-            durationMs: itemDurationMs,
-            tipo: 'configuracao_documental',
-            actionLabel: workflowError.action?.label,
-            actionHref: workflowError.action?.href,
-          }, { toastMessage: workflowError.toastMessage });
+          markItemAnalysisError(
+            next.id,
+            workflowError.message,
+            {
+              ...logDetails,
+              code: workflowError.code,
+              durationMs: itemDurationMs,
+              tipo: 'configuracao_documental',
+              actionLabel: workflowError.action?.label,
+              actionHref: workflowError.action?.href,
+            },
+            { toastMessage: workflowError.toastMessage },
+          );
           return 'continue';
         }
 
@@ -1392,7 +1436,14 @@ export function useBulkUploadQueue({
         finishQueueItem(item.id);
       }
     },
-    [appendItemMessage, createQueueItem, finishQueueItem, onReviewSettingsChange, resetCurrentProcessingState, workflow],
+    [
+      appendItemMessage,
+      createQueueItem,
+      finishQueueItem,
+      onReviewSettingsChange,
+      resetCurrentProcessingState,
+      workflow,
+    ],
   );
 
   /**
@@ -1402,42 +1453,45 @@ export function useBulkUploadQueue({
    * esperar a pessoa. Recebendo o `itemId`, a revisão acontece em paralelo: o lote segue analisando
    * enquanto alguém resolve os que ficaram para trás.
    */
-  const confirmItemAndContinue = useCallback(async (targetItemId?: string) => {
-    const itemId = targetItemId ?? currentItemIdRef.current;
-    if (!itemId) return;
+  const confirmItemAndContinue = useCallback(
+    async (targetItemId?: string) => {
+      const itemId = targetItemId ?? currentItemIdRef.current;
+      if (!itemId) return;
 
-    const current = getItemById(itemId);
-    if (
-      !current ||
-      (current.status !== 'analyzed' && current.status !== 'requires_review') ||
-      !current.result ||
-      !current.metadata
-    ) {
-      return;
-    }
+      const current = getItemById(itemId);
+      if (
+        !current ||
+        (current.status !== 'analyzed' && current.status !== 'requires_review') ||
+        !current.result ||
+        !current.metadata
+      ) {
+        return;
+      }
 
-    if (
-      !canBulkManualConfirm({
-        isAuthenticated: isAuthenticatedRef.current,
-        metadata: current.metadata,
-        rawAnalysis: current.result,
-        settings: getActiveSettings(),
-        perItem: current.perItemNaming,
-      })
-    ) {
-      return;
-    }
+      if (
+        !canBulkManualConfirm({
+          isAuthenticated: isAuthenticatedRef.current,
+          metadata: current.metadata,
+          rawAnalysis: current.result,
+          settings: getActiveSettings(),
+          perItem: current.perItemNaming,
+        })
+      ) {
+        return;
+      }
 
-    const workerRunId = runIdRef.current;
-    await saveItem(itemId, false, workerRunId);
+      const workerRunId = runIdRef.current;
+      await saveItem(itemId, false, workerRunId);
 
-    setManualGate(false);
-    manualGateRef.current = false;
-    setStatusMessage('Documento salvo. Preparando próximo envio...');
-    await sleep(BULK_NEXT_ITEM_DELAY_MS);
-    setStatusMessage(null);
-    scheduleQueueWorker();
-  }, [getActiveSettings, getItemById, saveItem, scheduleQueueWorker]);
+      setManualGate(false);
+      manualGateRef.current = false;
+      setStatusMessage('Documento salvo. Preparando próximo envio...');
+      await sleep(BULK_NEXT_ITEM_DELAY_MS);
+      setStatusMessage(null);
+      scheduleQueueWorker();
+    },
+    [getActiveSettings, getItemById, saveItem, scheduleQueueWorker],
+  );
 
   const updateItemNaming = useCallback(
     (choice: PerItemNamingChoice, targetItemId?: string) => {
@@ -1464,64 +1518,70 @@ export function useBulkUploadQueue({
     scheduleQueueWorker();
   }, [cancelCurrentCountdown, getItemById, patchItem, scheduleQueueWorker]);
 
-  const skipItem = useCallback((targetItemId?: string) => {
-    const itemId = targetItemId ?? currentItemIdRef.current;
-    if (!itemId) return;
+  const skipItem = useCallback(
+    (targetItemId?: string) => {
+      const itemId = targetItemId ?? currentItemIdRef.current;
+      if (!itemId) return;
 
-    const item = getItemById(itemId);
-    patchItem(itemId, { status: 'skipped', finishedAt: formatNow() });
-    workflow.logItem(itemId, item?.originalFileName, {
-      level: 'warning',
-      stage: 'queue',
-      message: 'Documento pulado.',
-    });
-    appendItemMessage(itemId, 'Documento pulado');
-    finishQueueItem(itemId);
+      const item = getItemById(itemId);
+      patchItem(itemId, { status: 'skipped', finishedAt: formatNow() });
+      workflow.logItem(itemId, item?.originalFileName, {
+        level: 'warning',
+        stage: 'queue',
+        message: 'Documento pulado.',
+      });
+      appendItemMessage(itemId, 'Documento pulado');
+      finishQueueItem(itemId);
 
-    setManualGate(false);
-    manualGateRef.current = false;
-    scheduleQueueWorker();
-  }, [appendItemMessage, finishQueueItem, getItemById, patchItem, scheduleQueueWorker, workflow]);
+      setManualGate(false);
+      manualGateRef.current = false;
+      scheduleQueueWorker();
+    },
+    [appendItemMessage, finishQueueItem, getItemById, patchItem, scheduleQueueWorker, workflow],
+  );
 
-  const reprocessItem = useCallback((targetItemId?: string) => {
-    const itemId = targetItemId ?? currentItemIdRef.current;
-    if (!itemId) return;
+  const reprocessItem = useCallback(
+    (targetItemId?: string) => {
+      const itemId = targetItemId ?? currentItemIdRef.current;
+      if (!itemId) return;
 
-    const item = getItemById(itemId);
-    // Só limpa o estado corrente quando é o próprio item da vez: reprocessar um documento parado
-    // não pode derrubar a análise que está acontecendo agora.
-    if (itemId === currentItemIdRef.current) {
-      resetCurrentProcessingState('reprocessar item');
-    }
-    patchItem(itemId, {
-      status: 'queued',
-      errorMessage: undefined,
-      result: undefined,
-      metadata: undefined,
-      recommendedFileName: undefined,
-      finalFileName: undefined,
-      className: undefined,
-      confidence: undefined,
-      documentId: undefined,
-      versionId: undefined,
-      logs: [],
-      startedAt: undefined,
-      finishedAt: undefined,
-    });
-    workflow.logItem(itemId, item?.originalFileName, {
-      level: 'info',
-      stage: 'queue',
-      message: 'Documento reenfileirado para reprocessamento.',
-    });
+      const item = getItemById(itemId);
+      // Só limpa o estado corrente quando é o próprio item da vez: reprocessar um documento parado
+      // não pode derrubar a análise que está acontecendo agora.
+      if (itemId === currentItemIdRef.current) {
+        resetCurrentProcessingState('reprocessar item');
+      }
+      patchItem(itemId, {
+        status: 'queued',
+        errorMessage: undefined,
+        result: undefined,
+        metadata: undefined,
+        recommendedFileName: undefined,
+        finalFileName: undefined,
+        className: undefined,
+        confidence: undefined,
+        documentId: undefined,
+        versionId: undefined,
+        logs: [],
+        startedAt: undefined,
+        finishedAt: undefined,
+      });
+      workflow.logItem(itemId, item?.originalFileName, {
+        level: 'info',
+        stage: 'queue',
+        message: 'Documento reenfileirado para reprocessamento.',
+      });
 
-    setManualGate(false);
-    manualGateRef.current = false;
-    if (itemId === currentItemIdRef.current) {
-      setCurrentItemId(null);
-      currentItemIdRef.current = null;
-    }
-    scheduleQueueWorker();
-  }, [getItemById, patchItem, resetCurrentProcessingState, scheduleQueueWorker, workflow]);
+      setManualGate(false);
+      manualGateRef.current = false;
+      if (itemId === currentItemIdRef.current) {
+        setCurrentItemId(null);
+        currentItemIdRef.current = null;
+      }
+      scheduleQueueWorker();
+    },
+    [getItemById, patchItem, resetCurrentProcessingState, scheduleQueueWorker, workflow],
+  );
 
   const pauseBatch = useCallback(() => {
     runIdRef.current += 1;

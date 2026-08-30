@@ -38,7 +38,11 @@ export type RequestAccessReviewOptions = {
 export function validateRequestAccessForm(
   values: RequestAccessFormValues,
   options: RequestAccessReviewOptions,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' | 'informationDeclaration' | 'consent' } {
+): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms' | 'informationDeclaration' | 'consent';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -109,8 +113,7 @@ export function buildRequestAccessReviewSections(
           : [
               {
                 label: 'Tipo de cliente',
-                value:
-                  values.personType === 'business' ? 'Pessoa jurídica' : 'Pessoa física',
+                value: values.personType === 'business' ? 'Pessoa jurídica' : 'Pessoa física',
               },
             ]),
         {

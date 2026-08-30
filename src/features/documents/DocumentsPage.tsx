@@ -20,11 +20,7 @@ import type { DocumentStatus } from '@/types/document';
 import { DocumentViewerModal } from './viewer';
 import { getPreviewStatusLabel } from './utils/previewErrors';
 import { useDocuments } from './hooks/useDocuments';
-import {
-  downloadDocument,
-  fetchDocumentCategories,
-  triggerBlobDownload,
-} from './api/documentsApi';
+import { downloadDocument, fetchDocumentCategories, triggerBlobDownload } from './api/documentsApi';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 
 export function DocumentsPage() {
@@ -236,9 +232,7 @@ export function DocumentsPage() {
           {
             key: 'updated',
             header: 'Data',
-            render: (doc) => (
-              <span className="text-doqyn-muted">{formatDate(doc.updatedAt)}</span>
-            ),
+            render: (doc) => <span className="text-doqyn-muted">{formatDate(doc.updatedAt)}</span>,
           },
           {
             key: 'version',

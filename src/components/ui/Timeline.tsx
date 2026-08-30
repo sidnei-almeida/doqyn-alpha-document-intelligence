@@ -37,7 +37,9 @@ export function Timeline({ steps, currentStep, className }: TimelineProps) {
                 'relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium',
                 isCompleted && 'border-doqyn-primary bg-doqyn-text text-doqyn-bg',
                 isCurrent && 'border-doqyn-primary bg-doqyn-primary/10 text-doqyn-primary',
-                !isCompleted && !isCurrent && 'border-doqyn-border bg-doqyn-surface text-doqyn-muted',
+                !isCompleted &&
+                  !isCurrent &&
+                  'border-doqyn-border bg-doqyn-surface text-doqyn-muted',
               )}
             >
               {isCompleted ? <Icon name="check" size={ICON_SIZE.xs} /> : step.id}

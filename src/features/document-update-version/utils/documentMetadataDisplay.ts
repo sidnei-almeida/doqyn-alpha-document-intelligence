@@ -120,9 +120,7 @@ function resolveValidityField(
   const inferredDate = searchMeta?.dates?.find(
     (entry) => entry.kind === 'validade' && /inferido/i.test(entry.label ?? ''),
   );
-  const projected = searchMeta?.validityDate
-    ? formatDateOnly(searchMeta.validityDate)
-    : null;
+  const projected = searchMeta?.validityDate ? formatDateOnly(searchMeta.validityDate) : null;
   const hasPrazo =
     byKey.has('prazo_vigencia') &&
     byKey.get('prazo_vigencia') != null &&

@@ -25,8 +25,8 @@ export function ProcessingStepTimeline({ steps, className }: ProcessingStepTimel
               step.status === 'done' &&
                 'border-doqyn-primary/40 bg-doqyn-primary/15 text-doqyn-primary',
               step.status === 'active' &&
-                'border-doqyn-primary/60 bg-doqyn-primary/10 doc-step-active text-doqyn-primary',
-              step.status === 'pending' && 'bg-doqyn-bg/40 border-doqyn-border text-doqyn-muted',
+                'doc-step-active border-doqyn-primary/60 bg-doqyn-primary/10 text-doqyn-primary',
+              step.status === 'pending' && 'border-doqyn-border bg-doqyn-bg/40 text-doqyn-muted',
             )}
           >
             {step.status === 'done' ? (

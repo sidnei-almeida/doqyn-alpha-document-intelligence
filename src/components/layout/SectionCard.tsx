@@ -25,11 +25,7 @@ export function SectionCard({
 }: SectionCardProps) {
   return (
     <Card
-      className={cn(
-        stretch && 'flex min-h-0 flex-1 flex-col',
-        list && 'min-h-[320px]',
-        className,
-      )}
+      className={cn(stretch && 'flex min-h-0 flex-1 flex-col', list && 'min-h-[320px]', className)}
     >
       {(title || header) && (
         <CardHeader className="shrink-0">

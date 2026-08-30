@@ -23,10 +23,7 @@ export function SavedFeedbackCard({
 
   const content = (
     <CardContent
-      className={cn(
-        'flex flex-col items-center px-6 py-10 text-center',
-        embedded && 'px-4 py-8',
-      )}
+      className={cn('flex flex-col items-center px-6 py-10 text-center', embedded && 'px-4 py-8')}
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
         <Icon name="check_circle" size={24} className="text-emerald-500" />

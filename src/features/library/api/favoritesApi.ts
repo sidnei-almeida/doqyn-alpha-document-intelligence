@@ -18,10 +18,9 @@ export async function listFavoriteDocuments(): Promise<DocumentListItem[]> {
 }
 
 export async function favoriteDocument(documentId: string): Promise<FavoriteMutationResponse> {
-  const response = await authFetch(
-    `/api/documents/${encodeURIComponent(documentId)}/favorite`,
-    { method: 'POST' },
-  );
+  const response = await authFetch(`/api/documents/${encodeURIComponent(documentId)}/favorite`, {
+    method: 'POST',
+  });
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }
@@ -29,10 +28,9 @@ export async function favoriteDocument(documentId: string): Promise<FavoriteMuta
 }
 
 export async function unfavoriteDocument(documentId: string): Promise<FavoriteMutationResponse> {
-  const response = await authFetch(
-    `/api/documents/${encodeURIComponent(documentId)}/favorite`,
-    { method: 'DELETE' },
-  );
+  const response = await authFetch(`/api/documents/${encodeURIComponent(documentId)}/favorite`, {
+    method: 'DELETE',
+  });
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }

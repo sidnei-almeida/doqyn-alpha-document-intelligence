@@ -11,10 +11,17 @@ import { PartnerContactList } from './PartnerContactList';
 /**
  * Campo próprio para achar alguém de **outra** empresa.
  *
- * Aceita as duas formas de achar alguém, e são duas porque o schema manda: **apelido** responde
- * prefixo e é digitável; **e-mail** só responde igualdade exata, porque o que existe dele é um
- * hash determinístico. O nome nunca entra na busca — ele é guardado cifrado, e tirá-lo de lá para
- * permitir busca seria desfazer a decisão que protege todo mundo.
+ * **O nome de usuário vem primeiro, e o e-mail é o outro caminho.** Eram duas formas com peso
+ * igual no rótulo, e o rótulo dizia "e-mail" — então quem procurava alguém do DOQYN em outra
+ * empresa não tinha como saber que era pelo apelido que se procura.
+ *
+ * São duas porque o schema manda: **apelido** responde prefixo e é digitável; **e-mail** só
+ * responde igualdade exata, porque o que existe dele é um hash determinístico. O nome nunca entra
+ * na busca — é guardado cifrado, e tirá-lo de lá para permitir busca desfaria a decisão que
+ * protege todo mundo.
+ *
+ * O e-mail continua aceito porque é ele que leva ao terceiro caso: quem **não** tem conta DOQYN,
+ * e recebe por link. Tirar o e-mail daqui fecharia essa saída.
  *
  * Não é o mesmo campo da busca de colegas: aquele varre uma lista conhecida. Misturar os dois num
  * campo só escondia o caminho de fora atrás do "ninguém encontrado" — e quem tem três colegas na
@@ -28,8 +35,8 @@ type Resolution =
   | { tone: 'ok'; text: string };
 
 export function CrossTenantRecipientField({
-  label = 'E-mail de quem é de outra empresa',
-  idleHint = 'Digite o e-mail completo. Fora da sua empresa não há busca por nome: o nome é guardado cifrado.',
+  label = 'Nome de usuário de quem é de outra empresa',
+  idleHint = 'Quem tem conta DOQYN é achado pelo nome de usuário. O e-mail inteiro também resolve, e é o caminho de quem não tem conta.',
   initialEmail,
   onPick,
   onFallbackToLink,
@@ -111,7 +118,7 @@ export function CrossTenantRecipientField({
         label={label}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        placeholder="pessoa@outraempresa.com"
+        placeholder="joao.silva"
         autoComplete="off"
         disabled={disabled}
       />

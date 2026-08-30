@@ -1,12 +1,6 @@
 import type { ProcessingLogItem } from '../types';
 
-export type ProcessingStepId =
-  | 'received'
-  | 'text'
-  | 'snippets'
-  | 'class'
-  | 'metadata'
-  | 'ready';
+export type ProcessingStepId = 'received' | 'text' | 'snippets' | 'class' | 'metadata' | 'ready';
 
 export type ProcessingStepStatus = 'pending' | 'active' | 'done';
 

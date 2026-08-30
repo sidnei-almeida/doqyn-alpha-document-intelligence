@@ -1,5 +1,26 @@
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/**
+ * Os degraus da escala tipográfica do DOQYN, declarados para o `tailwind-merge`.
+ *
+ * Sem isto ele não tem como saber que `text-label` é **tamanho** e `text-doqyn-muted` é **cor**:
+ * ambos começam com `text-`, caem no mesmo grupo, e o último vence. Como o tamanho vem do
+ * `size` da `cva` — depois do `variant` —, a cor declarada na variante era descartada em
+ * silêncio, e todo botão do app ficava herdando a cor do pai.
+ *
+ * No tema escuro isso passou despercebido porque o herdado é claro sobre fundo escuro. No claro,
+ * o botão principal ficava com texto quase preto sobre o verdigris preenchido.
+ */
+const FONT_SIZES = ['eyebrow', 'display', 'h1', 'h2', 'body', 'label', 'caption', 'micro'] as const;
+
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ text: [...FONT_SIZES] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

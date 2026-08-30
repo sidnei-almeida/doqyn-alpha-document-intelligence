@@ -19,6 +19,5 @@ export const previewQueryKeys = {
     documentId: string,
     versionId: string,
     assetUrl: string,
-  ) =>
-    ['document-thumbnail-blob', tenantId ?? 'unknown', documentId, versionId, assetUrl] as const,
+  ) => ['document-thumbnail-blob', tenantId ?? 'unknown', documentId, versionId, assetUrl] as const,
 };

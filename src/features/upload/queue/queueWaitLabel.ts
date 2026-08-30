@@ -28,6 +28,7 @@ export function formatQueueWaitLabel(queueStatus: AnalysisQueueStatus | undefine
     return estimate ? `Na vez · ${formatWaitSeconds(estimate)}` : null;
   }
 
-  const positionLabel = position === 1 ? '1 documento na frente' : `${position} documentos na frente`;
+  const positionLabel =
+    position === 1 ? '1 documento na frente' : `${position} documentos na frente`;
   return estimate ? `${positionLabel} · ${formatWaitSeconds(estimate)}` : positionLabel;
 }

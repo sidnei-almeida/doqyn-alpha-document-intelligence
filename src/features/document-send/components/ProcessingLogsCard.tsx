@@ -10,18 +10,16 @@ interface ProcessingLogsCardProps {
 
 export function ProcessingLogsCard({ logs, className }: ProcessingLogsCardProps) {
   return (
-    <Card className={cn('flex h-full min-h-0 flex-col border-doqyn-border bg-doqyn-surface', className)}>
+    <Card
+      className={cn('flex h-full min-h-0 flex-col border-doqyn-border bg-doqyn-surface', className)}
+    >
       <CardHeader className="shrink-0">
         <CardTitle>Logs de processamento</CardTitle>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <CardContent className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
         <ol className="space-y-0" aria-label="Logs de processamento">
           {logs.map((log, index) => (
-            <TimelineItem
-              key={log.id}
-              log={log}
-              isLast={index === logs.length - 1}
-            />
+            <TimelineItem key={log.id} log={log} isLast={index === logs.length - 1} />
           ))}
         </ol>
       </CardContent>

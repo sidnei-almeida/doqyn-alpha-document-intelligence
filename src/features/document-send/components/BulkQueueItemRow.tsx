@@ -57,7 +57,7 @@ export function BulkQueueItemRow({
         'flow-enter rounded-lg border transition-colors',
         isCurrent || isSelected
           ? 'border-doqyn-primary/40 bg-doqyn-primary/5'
-          : 'bg-doqyn-bg/20 border-doqyn-border-subtle',
+          : 'border-doqyn-border-subtle bg-doqyn-bg/20',
       )}
     >
       <div className="flex items-center gap-2 px-3 py-2.5">

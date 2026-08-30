@@ -115,8 +115,8 @@ export function QuickFieldsEditor({
       </div>
 
       <p className="mt-2 flex items-center gap-1 text-[10px] text-doqyn-subtle">
-        <Icon name="info" size={ICON_SIZE.xs} />O que você digitar entra como preenchimento manual na
-        auditoria.
+        <Icon name="info" size={ICON_SIZE.xs} />O que você digitar entra como preenchimento manual
+        na auditoria.
       </p>
     </div>
   );

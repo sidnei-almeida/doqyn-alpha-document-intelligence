@@ -27,7 +27,9 @@ export function UploadFlowPanel({
       {children ? (
         <div
           className={cn(
-            centered ? 'flex shrink-0 justify-center px-4 pb-1 pt-4' : 'min-h-0 flex-1 overflow-hidden',
+            centered
+              ? 'flex shrink-0 justify-center px-4 pb-1 pt-4'
+              : 'min-h-0 flex-1 overflow-hidden',
             contentClassName,
           )}
         >

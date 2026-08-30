@@ -47,7 +47,12 @@ export function uploadQueueReducer(
     case 'done':
       return items.map((item) =>
         item.id === action.id
-          ? { ...item, status: 'done' as const, documentId: action.documentId, errorMessage: undefined }
+          ? {
+              ...item,
+              status: 'done' as const,
+              documentId: action.documentId,
+              errorMessage: undefined,
+            }
           : item,
       );
     case 'awaiting_approval':
@@ -89,18 +94,14 @@ export function uploadQueueReducer(
         // `still_running` também aceita reenvio manual: é decisão de quem está olhando a tela, e
         // aqui ele sabe que pode gerar duplicata. O caminho automático nunca reenvia sozinho.
         item.id === action.id &&
-        (item.status === 'error' ||
-          item.status === 'ai_paused' ||
-          item.status === 'still_running')
+        (item.status === 'error' || item.status === 'ai_paused' || item.status === 'still_running')
           ? { ...item, status: 'queued' as const, errorMessage: undefined, analysis: undefined }
           : item,
       );
     case 'remove':
       return items.filter((item) => item.id !== action.id);
     case 'clear-finished':
-      return items.filter(
-        (item) => item.status !== 'done' && item.status !== 'awaiting_approval',
-      );
+      return items.filter((item) => item.status !== 'done' && item.status !== 'awaiting_approval');
     case 'naming':
       return items.map((item) =>
         item.id === action.id ? { ...item, namingChoice: action.choice } : item,
@@ -137,10 +138,8 @@ export function countAwaitingApproval(items: UploadQueueItem[]): number {
 
 /** Itens concluídos no fluxo: salvos na Biblioteca ou enviados para aprovação. */
 export function countSubmittedItems(items: UploadQueueItem[]): number {
-  return items.filter(
-    (item) =>
-      isItemSavedInLibrary(item) || item.status === 'awaiting_approval',
-  ).length;
+  return items.filter((item) => isItemSavedInLibrary(item) || item.status === 'awaiting_approval')
+    .length;
 }
 
 export function countPendingItems(items: UploadQueueItem[]): number {

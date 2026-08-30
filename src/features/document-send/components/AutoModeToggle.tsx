@@ -32,7 +32,7 @@ export function AutoModeToggle({
     <Tooltip label="Confirma análises confiáveis automaticamente e prepara o próximo envio.">
       <div
         className={cn(
-          'bg-doqyn-bg/40 inline-flex max-w-full items-stretch overflow-hidden rounded-lg border border-doqyn-border-subtle',
+          'inline-flex max-w-full items-stretch overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40',
           disabled && 'opacity-50',
           className,
         )}

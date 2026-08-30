@@ -85,10 +85,12 @@ export function CategoryQuickPicker({
               )}
               data-testid={`category-quick-pick-${category.id}`}
             >
-              {isSelected && <Icon name="check" size={ICON_SIZE.xs} className="text-doqyn-primary" />}
+              {isSelected && (
+                <Icon name="check" size={ICON_SIZE.xs} className="text-doqyn-primary" />
+              )}
               {category.name}
               {isSuggested && !isSelected && (
-                <span className="text-[10px] uppercase tracking-wide text-doqyn-accent">IA</span>
+                <span className="text-doqyn-accent text-[10px] uppercase tracking-wide">IA</span>
               )}
             </button>
           );

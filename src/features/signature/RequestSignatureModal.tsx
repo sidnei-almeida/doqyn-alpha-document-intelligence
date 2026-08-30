@@ -346,8 +346,8 @@ export function RequestSignatureModal({
                           fora abre a página própria com token e não entra no acervo. Por isso aqui
                           não há aceite a esperar. */}
                       <CrossTenantRecipientField
-                        label="E-mail de quem vai assinar"
-                        idleHint="Digite o e-mail completo de alguém de outra empresa. Ela assina pela página própria, sem entrar no seu acervo."
+                        label="Nome de usuário de quem vai assinar"
+                        idleHint="Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo."
                         onPick={setCrossTenantSigner}
                         onFallbackToLink={(email) => {
                           setAudience('external');

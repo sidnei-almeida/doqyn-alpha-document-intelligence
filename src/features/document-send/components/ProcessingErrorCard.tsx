@@ -83,12 +83,12 @@ export function ProcessingErrorCard({
         </Button>
       </div>
       {showDevHint && (
-        <p className="bg-doqyn-bg/40 mt-4 max-w-md rounded-md border border-doqyn-border-subtle px-3 py-2 text-left text-xs text-doqyn-muted">
+        <p className="mt-4 max-w-md rounded-md border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-left text-xs text-doqyn-muted">
           {devHint}
         </p>
       )}
       {showDebug && debugDetails && Object.keys(debugDetails).length > 0 && (
-        <dl className="bg-doqyn-bg/30 mt-4 w-full max-w-md rounded-md border border-doqyn-border-subtle px-3 py-2 text-left text-micro text-doqyn-muted">
+        <dl className="mt-4 w-full max-w-md rounded-md border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2 text-left text-micro text-doqyn-muted">
           {Object.entries(debugDetails).map(([key, value]) => (
             <div key={key} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 py-0.5">
               <dt className="font-medium text-doqyn-text">{key}:</dt>

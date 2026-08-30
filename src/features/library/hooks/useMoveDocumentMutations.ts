@@ -2,10 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
-import {
-  batchMoveDocumentsToCategory,
-  moveDocumentToCategory,
-} from '../api/moveApi';
+import { batchMoveDocumentsToCategory, moveDocumentToCategory } from '../api/moveApi';
 import { invalidateLibraryQueries } from '../utils/libraryQueryInvalidation';
 
 export function useMoveDocumentMutations() {
@@ -39,9 +36,7 @@ export function useMoveDocumentMutations() {
         : batchMoveDocumentsToCategory(documentIds, targetClassId, reason),
     onSuccess: (result) => {
       if (result.failed.length > 0) {
-        toast.warning(
-          `${result.moved} movido(s), ${result.failed.length} falha(s).`,
-        );
+        toast.warning(`${result.moved} movido(s), ${result.failed.length} falha(s).`);
       } else if (result.moved === 0 && result.skipped.length > 0) {
         toast.info('Os documentos já estão nesta categoria.');
       } else {

@@ -80,7 +80,9 @@ export function OverviewEnvironmentHealthCard({
         <HealthIndicator
           label="Storage"
           ok={health.hasStorageConfigured}
-          detail={health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'}
+          detail={
+            health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'
+          }
           actionLabel="Sistema"
           onAction={
             !health.hasStorageConfigured
@@ -101,7 +103,9 @@ export function OverviewEnvironmentHealthCard({
           }
           actionLabel="Regras"
           onAction={
-            !health.hasActiveCategories && canManageGovernance ? () => navigate('/rules') : undefined
+            !health.hasActiveCategories && canManageGovernance
+              ? () => navigate('/rules')
+              : undefined
           }
           canManage={canManageGovernance}
         />
@@ -126,7 +130,7 @@ export function OverviewEnvironmentHealthCard({
       </div>
 
       {health.warnings.length > 0 && (
-        <ul className="max-h-28 space-y-2 overflow-y-auto pt-3 scrollbar-thin">
+        <ul className="scrollbar-thin max-h-28 space-y-2 overflow-y-auto pt-3">
           {health.warnings.map((warning) => (
             <li
               key={warning}
@@ -141,8 +145,7 @@ export function OverviewEnvironmentHealthCard({
 
       {bucketNameMasked && (
         <p className={cn('overview-row-meta mt-auto pl-4 pt-3')}>
-          Bucket{' '}
-          <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
+          Bucket <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
         </p>
       )}
     </OverviewPanelShell>

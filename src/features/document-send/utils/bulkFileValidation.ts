@@ -1,8 +1,7 @@
 import { UPLOAD_ERROR_MESSAGES } from '../uploadConstants';
 import { isAllowedAnalysisFile } from './validateUpload';
 
-export const NON_EXTRACTABLE_TEXT_MESSAGE =
-  'Texto não extraível. Revisão/OCR necessário.';
+export const NON_EXTRACTABLE_TEXT_MESSAGE = 'Texto não extraível. Revisão/OCR necessário.';
 
 const NON_EXTRACTABLE_CODES = new Set([
   'INSUFFICIENT_TEXT',
@@ -19,10 +18,7 @@ const NON_EXTRACTABLE_PHRASES = [
   'ocr automático falhou',
 ];
 
-export function isNonExtractablePdfError(input: {
-  message?: string;
-  code?: string;
-}): boolean {
+export function isNonExtractablePdfError(input: { message?: string; code?: string }): boolean {
   if (input.code && NON_EXTRACTABLE_CODES.has(input.code)) {
     return true;
   }

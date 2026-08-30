@@ -1,7 +1,11 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { ProfileMe } from '../types';
 
-export { validateProfileAvatarFile, PROFILE_AVATAR_MAX_BYTES, PROFILE_AVATAR_ALLOWED_TYPES } from '../utils/profileAvatarValidation';
+export {
+  validateProfileAvatarFile,
+  PROFILE_AVATAR_MAX_BYTES,
+  PROFILE_AVATAR_ALLOWED_TYPES,
+} from '../utils/profileAvatarValidation';
 
 const API_BASE = '/api';
 

@@ -25,7 +25,7 @@ export function OverviewStoragePanel({
 
   const errorStatus =
     recentErrors.length > 0 ? (
-      <ul className="max-h-24 space-y-1.5 overflow-y-auto pr-1 scrollbar-thin">
+      <ul className="scrollbar-thin max-h-24 space-y-1.5 overflow-y-auto pr-1">
         {recentErrors.map((error) => (
           <li key={error.id}>
             <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
@@ -76,7 +76,12 @@ export function OverviewStoragePanel({
             label="Downloads"
             value={
               <span className="inline-flex items-center gap-1.5">
-                <Icon name="download" size={ICON_SIZE.xs} className="text-doqyn-muted" aria-hidden />
+                <Icon
+                  name="download"
+                  size={ICON_SIZE.xs}
+                  className="text-doqyn-muted"
+                  aria-hidden
+                />
                 {downloadsInPeriod}
               </span>
             }

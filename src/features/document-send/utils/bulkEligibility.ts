@@ -66,9 +66,7 @@ export function getBulkReviewReason(
   return getReviewReasonFromBlockers(item, settings);
 }
 
-export function computeBulkStats(
-  items: BulkUploadItem[],
-): import('../types/bulk').BulkBatchStats {
+export function computeBulkStats(items: BulkUploadItem[]): import('../types/bulk').BulkBatchStats {
   const terminal = new Set(['saved', 'requires_review', 'ai_paused', 'error', 'skipped']);
 
   return {

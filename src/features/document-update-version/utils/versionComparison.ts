@@ -35,8 +35,7 @@ export function buildVersionComparisonRows(input: {
   const currentCategory = doc.categoryName ?? doc.documentType ?? '—';
   const newCategory =
     input.analysis.classification.className ?? input.analysis.extraction?.documentType ?? '—';
-  const currentVersion =
-    doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version ?? 1}`;
+  const currentVersion = doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version ?? 1}`;
   const currentSummary =
     metadataRecordToDisplayFields(input.detail.metadata).find((field) =>
       /resumo|summary/i.test(field.key),

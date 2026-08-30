@@ -1,11 +1,9 @@
 export const PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
-export const PROFILE_AVATAR_ALLOWED_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+export const PROFILE_AVATAR_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-export function validateProfileAvatarFile(file: Pick<File, 'type' | 'size' | 'name'>): string | null {
+export function validateProfileAvatarFile(
+  file: Pick<File, 'type' | 'size' | 'name'>,
+): string | null {
   if (!PROFILE_AVATAR_ALLOWED_TYPES.has(file.type)) {
     return 'Use JPG, PNG ou WebP.';
   }

@@ -19,7 +19,9 @@ export type PublicAccessRequestResponse = {
 export async function submitAccessRequest(
   input: PublicAccessRequestInput,
 ): Promise<PublicAccessRequestResponse> {
-  const url = usesDoqynAuth() ? `${getAuthBasePath()}/access-requests` : '/api/auth/access-requests';
+  const url = usesDoqynAuth()
+    ? `${getAuthBasePath()}/access-requests`
+    : '/api/auth/access-requests';
 
   const body = buildPublicAccessRequestBody(input, usesDoqynAuth() ? 'doqyn_auth' : 'legacy');
 

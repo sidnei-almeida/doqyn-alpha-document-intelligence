@@ -5,10 +5,7 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { ProcessingLogItem } from '../types';
-import {
-  buildSimulatedSteps,
-  buildStepsFromLogs,
-} from '../utils/processingSteps';
+import { buildSimulatedSteps, buildStepsFromLogs } from '../utils/processingSteps';
 import { formatFileSize } from '../utils/validateUpload';
 import { DocumentProcessingVisual } from './DocumentProcessingVisual';
 import { ProcessingStepTimeline } from './ProcessingStepTimeline';

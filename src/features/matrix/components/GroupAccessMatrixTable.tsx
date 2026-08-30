@@ -193,13 +193,19 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-3">
         <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
           {PERMISSION_COLUMNS.map((column) => (
-            <span key={column.key} className="flex items-center gap-1.5 text-caption text-doqyn-muted">
+            <span
+              key={column.key}
+              className="flex items-center gap-1.5 text-caption text-doqyn-muted"
+            >
               <Icon name={column.icon} size={ICON_SIZE.xs} className="text-doqyn-subtle" />
               {column.label}
             </span>
           ))}
         </span>
-        <Link to="/rules" className="text-caption font-medium text-doqyn-muted hover:text-doqyn-text">
+        <Link
+          to="/rules"
+          className="text-caption font-medium text-doqyn-muted hover:text-doqyn-text"
+        >
           Conceder ou remover em Regras
         </Link>
       </div>

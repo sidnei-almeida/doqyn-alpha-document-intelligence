@@ -1,11 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useFormattedInput } from '@/hooks/useFormattedInput';
-import {
-  getTaxIdSpec,
-  type CountryCode,
-  type PersonType,
-  type TaxIdSpec,
-} from '@/lib/identifiers';
+import { getTaxIdSpec, type CountryCode, type PersonType, type TaxIdSpec } from '@/lib/identifiers';
 import { Input, type InputProps } from './Input';
 
 export interface TaxIdInputProps extends Omit<InputProps, 'value' | 'onChange' | 'type'> {
@@ -24,10 +19,7 @@ export function TaxIdInput({
   error,
   ...props
 }: TaxIdInputProps) {
-  const spec: TaxIdSpec = useMemo(
-    () => getTaxIdSpec(country, personType),
-    [country, personType],
-  );
+  const spec: TaxIdSpec = useMemo(() => getTaxIdSpec(country, personType), [country, personType]);
 
   const format = useCallback((raw: string) => spec.format(raw), [spec]);
 

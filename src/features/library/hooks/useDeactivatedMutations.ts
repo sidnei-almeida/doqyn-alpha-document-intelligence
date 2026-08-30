@@ -1,10 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
-import {
-  batchReactivateDocuments,
-  reactivateDocument,
-} from '../api/deactivatedApi';
+import { batchReactivateDocuments, reactivateDocument } from '../api/deactivatedApi';
 import { invalidateLibraryQueries } from '../utils/libraryQueryInvalidation';
 
 export function useDeactivatedMutations() {

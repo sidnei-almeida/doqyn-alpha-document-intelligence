@@ -5,15 +5,11 @@ import type {
   LibrarySortDirection,
   LibrarySortKey,
 } from '../types/library';
-import {
-  resolveLibraryCategoryId,
-  type LibraryCategoryRef,
-} from './resolveLibraryCategory';
+import { resolveLibraryCategoryId, type LibraryCategoryRef } from './resolveLibraryCategory';
 
-export function mapStatusToApiFilters(status: string): Pick<
-  DocumentListFilters,
-  'status' | 'processingStatus'
-> {
+export function mapStatusToApiFilters(
+  status: string,
+): Pick<DocumentListFilters, 'status' | 'processingStatus'> {
   switch (status) {
     case 'active':
       return { status: 'active' };
@@ -99,8 +95,7 @@ export function buildLibraryDocumentFilters({
     ? resolveLibraryCategoryId(state.space, categories)
     : undefined;
   const insideFolder = collectionId === 'root' && Boolean(state.space);
-  const searchEntireLibrary =
-    insideFolder && state.scope === 'all' && Boolean(state.q.trim());
+  const searchEntireLibrary = insideFolder && state.scope === 'all' && Boolean(state.q.trim());
 
   const categoryId =
     collectionId === 'root' && resolvedSpaceId && !searchEntireLibrary
@@ -146,11 +141,11 @@ export function serializeDocumentFilters(filters: DocumentListFilters): string {
 export function hasActiveLibraryFilters(state: LibraryRouteState): boolean {
   return Boolean(
     state.q.trim() ||
-      state.status ||
-      state.type ||
-      state.period ||
-      state.owner ||
-      state.scope === 'all',
+    state.status ||
+    state.type ||
+    state.period ||
+    state.owner ||
+    state.scope === 'all',
   );
 }
 

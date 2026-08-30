@@ -61,7 +61,10 @@ export function createSingleProcessingLogs(): ProcessingLogItem[] {
   ];
 }
 
-export function createBulkProcessingLogs(fileCount: number, reviewCount: number): ProcessingLogItem[] {
+export function createBulkProcessingLogs(
+  fileCount: number,
+  reviewCount: number,
+): ProcessingLogItem[] {
   const successCount = fileCount - reviewCount;
   return [
     {

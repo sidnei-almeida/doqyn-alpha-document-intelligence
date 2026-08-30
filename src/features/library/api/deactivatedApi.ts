@@ -34,9 +34,7 @@ export async function reactivateDocument(documentId: string): Promise<void> {
   await parseJson(response);
 }
 
-export async function batchReactivateDocuments(
-  documentIds: string[],
-): Promise<BatchTrashResult> {
+export async function batchReactivateDocuments(documentIds: string[]): Promise<BatchTrashResult> {
   const response = await authFetch('/api/documents/batch/reactivate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

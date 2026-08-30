@@ -17,12 +17,7 @@ import {
   ensureThumbnailObjectUrl,
 } from './thumbnailObjectUrlCache';
 
-export type DocumentThumbnailState =
-  | 'idle'
-  | 'loading'
-  | 'processing'
-  | 'ready'
-  | 'error';
+export type DocumentThumbnailState = 'idle' | 'loading' | 'processing' | 'ready' | 'error';
 
 type UseDocumentThumbnailInput = {
   fileName: string;
@@ -82,8 +77,7 @@ export function useDocumentThumbnail({
     staleTime: THUMBNAIL_MANIFEST_STALE_MS,
     gcTime: THUMBNAIL_MANIFEST_GC_MS,
     ...thumbnailQueryOptions,
-    refetchInterval: (query) =>
-      query.state.data?.status === 'processing' ? 4_000 : false,
+    refetchInterval: (query) => (query.state.data?.status === 'processing' ? 4_000 : false),
   });
 
   const manifest = manifestQuery.data;

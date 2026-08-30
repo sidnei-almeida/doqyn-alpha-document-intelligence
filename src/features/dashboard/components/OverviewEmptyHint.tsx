@@ -28,7 +28,12 @@ export function OverviewEmptyHint({
       role="status"
     >
       {icon && (
-        <Icon name={icon} size={ICON_SIZE.md} className="mb-4 text-doqyn-border-strong" aria-hidden />
+        <Icon
+          name={icon}
+          size={ICON_SIZE.md}
+          className="mb-4 text-doqyn-border-strong"
+          aria-hidden
+        />
       )}
       <p className="text-label font-medium text-doqyn-text">{title}</p>
       {description && (

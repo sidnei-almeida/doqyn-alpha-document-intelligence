@@ -5,10 +5,7 @@ import type {
   WorkflowLogInput,
   WorkflowLogLevel,
 } from '../types/workflowLog';
-import {
-  WORKFLOW_LOG_MAX_EVENTS,
-  normalizeWorkflowEvent,
-} from '../utils/workflowLogHelpers';
+import { WORKFLOW_LOG_MAX_EVENTS, normalizeWorkflowEvent } from '../utils/workflowLogHelpers';
 
 export type WorkflowLoggerApi = {
   events: WorkflowLogEvent[];
@@ -22,12 +19,8 @@ export type WorkflowLoggerApi = {
     fileName: string | undefined,
     event: Omit<WorkflowLogInput, 'itemId' | 'fileName' | 'batchId'>,
   ) => WorkflowLogEvent;
-  logBatch: (
-    event: Omit<WorkflowLogInput, 'batchId'>,
-  ) => WorkflowLogEvent;
-  logDebug: (
-    event: Omit<WorkflowLogInput, 'level'>,
-  ) => WorkflowLogEvent;
+  logBatch: (event: Omit<WorkflowLogInput, 'batchId'>) => WorkflowLogEvent;
+  logDebug: (event: Omit<WorkflowLogInput, 'level'>) => WorkflowLogEvent;
   clearLogs: () => void;
   getLogsByItem: (itemId: string) => WorkflowLogEvent[];
   getBatchLogs: (batchId: string) => WorkflowLogEvent[];
@@ -50,8 +43,7 @@ function isReviewEvent(event: WorkflowLogEvent): boolean {
 function isSavedEvent(event: WorkflowLogEvent): boolean {
   return (
     event.level === 'success' &&
-    (event.stage === 'persistence' ||
-      event.message.toLowerCase().includes('salvo'))
+    (event.stage === 'persistence' || event.message.toLowerCase().includes('salvo'))
   );
 }
 
@@ -85,10 +77,7 @@ export function useWorkflowLogger(): WorkflowLoggerApi {
     setCurrentBatchId(batchId);
   }, []);
 
-  const log = useCallback(
-    (event: WorkflowLogInput) => appendEvent(event),
-    [appendEvent],
-  );
+  const log = useCallback((event: WorkflowLogInput) => appendEvent(event), [appendEvent]);
 
   const logItem = useCallback(
     (
@@ -110,8 +99,7 @@ export function useWorkflowLogger(): WorkflowLoggerApi {
   );
 
   const logDebug = useCallback(
-    (event: Omit<WorkflowLogInput, 'level'>) =>
-      appendEvent({ ...event, level: 'debug' }),
+    (event: Omit<WorkflowLogInput, 'level'>) => appendEvent({ ...event, level: 'debug' }),
     [appendEvent],
   );
 

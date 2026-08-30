@@ -87,7 +87,7 @@ export function UploadDropzoneArea({
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-surface',
         disabled && 'cursor-not-allowed opacity-60',
         isDragging
-          ? 'bg-doqyn-accent-active-bg/40 border-doqyn-accent-active'
+          ? 'border-doqyn-accent-active bg-doqyn-accent-active-bg/40'
           : 'border-doqyn-border-strong/55 bg-doqyn-bg/35 hover:border-doqyn-accent-active/45 hover:bg-doqyn-surface-hover',
         className,
       )}

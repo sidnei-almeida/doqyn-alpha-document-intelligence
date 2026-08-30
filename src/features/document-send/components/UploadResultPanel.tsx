@@ -122,7 +122,7 @@ export function UploadResultPanel({
           <ConfidenceBadge score={metadata.confidenceScore} />
         </div>
 
-        <div className="bg-doqyn-bg/30 flex items-center gap-3 rounded-lg border border-doqyn-border-subtle px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5">
           <Icon name="description" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-primary" />
           <div className="min-w-0 flex-1">
             <TruncatedText as="p" className="text-sm font-medium text-doqyn-text">
@@ -139,7 +139,7 @@ export function UploadResultPanel({
         )}
 
         {showAutoBanner && (
-          <div className="bg-doqyn-bg/40 rounded-lg border border-doqyn-border-subtle px-4 py-3">
+          <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-4 py-3">
             <p className="text-xs font-medium text-doqyn-text">Análise concluída</p>
             <p className="mt-0.5 text-xs text-doqyn-muted">
               Salvando automaticamente em {autoCountdown}s
@@ -288,7 +288,7 @@ export function UploadResultPanel({
                       <div
                         key={field.label}
                         className={cn(
-                          'bg-doqyn-bg/40 flex items-start justify-between gap-4 rounded-lg border border-doqyn-border-subtle px-4 py-2.5',
+                          'flex items-start justify-between gap-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-4 py-2.5',
                           FULL_WIDTH_FIELDS.has(field.label) && 'lg:col-span-2',
                         )}
                       >
@@ -326,7 +326,7 @@ export function UploadResultPanel({
                           {metadata.classificationEvidence.map((item, index) => (
                             <div
                               key={`${item.snippet}-${index}`}
-                              className="bg-doqyn-bg/50 rounded-lg border border-doqyn-border-subtle px-4 py-3"
+                              className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/50 px-4 py-3"
                             >
                               <p className="text-xs leading-relaxed text-doqyn-muted">
                                 {item.pageNumber ? (
@@ -358,7 +358,7 @@ export function UploadResultPanel({
                           return (
                             <div
                               key={field.key}
-                              className="bg-doqyn-bg/30 flex flex-col rounded-lg border border-doqyn-border-subtle p-4"
+                              className="flex flex-col rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 p-4"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <p className="text-xs font-medium text-doqyn-text">{field.label}</p>
@@ -372,7 +372,7 @@ export function UploadResultPanel({
                                 {field.value}
                               </p>
                               {field.evidence && (
-                                <div className="bg-doqyn-bg/40 mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2">
+                                <div className="mt-3 rounded-md border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2">
                                   <p className="text-eyebrow uppercase text-doqyn-muted">
                                     Evidência
                                     {field.evidence.pageNumber
@@ -421,7 +421,7 @@ export function UploadResultPanel({
 
             <div className="sticky bottom-0 z-10 shrink-0 border-t border-doqyn-border-subtle bg-doqyn-surface px-6 py-4 shadow-sticky-footer">
               {showConfirmActions && requiresReview && (
-                <label className="bg-doqyn-bg/30 mb-3 flex items-start gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2.5 text-xs text-doqyn-muted">
+                <label className="mb-3 flex items-start gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/30 px-3 py-2.5 text-xs text-doqyn-muted">
                   <input
                     type="checkbox"
                     className="mt-0.5"

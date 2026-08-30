@@ -177,8 +177,8 @@ export function RequestDocumentModal({
           <div className="flex flex-col gap-2">
             <CrossTenantRecipientField
               initialEmail={initialTarget?.scope === 'external' ? initialTarget.email : undefined}
-              label="E-mail de quem vai enviar"
-              idleHint="Precisa ter conta DOQYN. Fora da sua empresa não há busca por nome: o nome é guardado cifrado."
+              label="Nome de usuário de quem vai enviar"
+              idleHint="Precisa ter conta DOQYN, e é pelo nome de usuário que se acha. O e-mail inteiro também resolve."
               /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e
                  o link com token serve para receber, não para mandar. */
               onPick={(recipient) => {

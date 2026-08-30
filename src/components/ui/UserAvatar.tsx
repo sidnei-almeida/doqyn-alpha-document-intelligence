@@ -20,13 +20,7 @@ type UserAvatarProps = {
   className?: string;
 };
 
-export function UserAvatar({
-  name,
-  email,
-  avatarUrl,
-  size = 'md',
-  className,
-}: UserAvatarProps) {
+export function UserAvatar({ name, email, avatarUrl, size = 'md', className }: UserAvatarProps) {
   const [failed, setFailed] = useState(false);
   const displayName = name?.trim() || email?.trim() || 'Usuário';
   const initials = useMemo(() => getInitials(displayName), [displayName]);

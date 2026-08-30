@@ -18,7 +18,19 @@ import { cn } from '@/lib/utils';
  * quem recebe → em que condições → o que vai acontecer.
  */
 
-export type RecipientAudience = 'internal' | 'external';
+/**
+ * Por onde o documento sai — e são três, não dois.
+ *
+ * O envio já distinguia os três casos, só que o terceiro estava escondido dentro do primeiro:
+ * "usuário DOQYN de outra empresa" viajava como `internal` com um `crossTenantPick` do lado. Quem
+ * abria a tela via duas abas e não tinha como saber que a terceira existia, nem que ela é a que
+ * se acha por apelido.
+ *
+ * · `internal` — colega do mesmo tenant. Vale na hora, sem aceite.
+ * · `doqyn` — conta DOQYN em outra empresa. Precisa de aceite, e o documento não sai do acervo.
+ * · `external` — não tem conta. Recebe por link com token.
+ */
+export type RecipientAudience = 'internal' | 'doqyn' | 'external';
 
 export type InternalCandidate = {
   id: string;
@@ -98,11 +110,14 @@ export function AudiencePicker({
   value,
   onChange,
   internalLabel,
+  doqynLabel,
   externalLabel,
 }: {
   value: RecipientAudience;
   onChange: (value: RecipientAudience) => void;
   internalLabel: string;
+  /** Ausente onde o fluxo não atravessa a fronteira da empresa. */
+  doqynLabel?: string;
   externalLabel: string;
 }) {
   return (
@@ -111,6 +126,7 @@ export function AudiencePicker({
       onChange={onChange}
       options={[
         { value: 'internal' as RecipientAudience, label: internalLabel },
+        ...(doqynLabel ? [{ value: 'doqyn' as RecipientAudience, label: doqynLabel }] : []),
         { value: 'external' as RecipientAudience, label: externalLabel },
       ]}
       aria-label="Tipo de destinatário"

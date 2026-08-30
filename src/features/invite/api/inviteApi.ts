@@ -92,13 +92,10 @@ export const inviteApi = {
       message: string;
       requiresLogin?: boolean;
       sessionEstablished?: boolean;
-    }>(
-      `/invites/${encodeURIComponent(token)}/accept`,
-      {
-        method: 'POST',
-        body: JSON.stringify(input),
-      },
-    ),
+    }>(`/invites/${encodeURIComponent(token)}/accept`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
 
   revoke: (inviteId: string) =>
     authServiceJson<{ ok: boolean; inviteId: string; status: string }>(

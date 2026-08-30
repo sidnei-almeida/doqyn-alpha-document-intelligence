@@ -65,14 +65,14 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
         <span className="font-mono text-micro opacity-70 sm:pt-0.5">{event.timestamp}</span>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="bg-doqyn-bg/50 rounded px-1.5 py-0.5 text-micro text-doqyn-text">
+          <span className="rounded bg-doqyn-bg/50 px-1.5 py-0.5 text-micro text-doqyn-text">
             {WORKFLOW_STAGE_LABELS[event.stage]}
           </span>
           {event.level !== 'info' && (
             <span className="text-eyebrow uppercase opacity-80">{levelLabel(event.level)}</span>
           )}
           {errorType && (
-            <span className="bg-doqyn-bg/50 rounded px-1.5 py-0.5 text-micro text-doqyn-text">
+            <span className="rounded bg-doqyn-bg/50 px-1.5 py-0.5 text-micro text-doqyn-text">
               {errorType}
             </span>
           )}
@@ -133,7 +133,7 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
       </div>
 
       {showDebug && (code || requestId || endpoint) && (
-        <div className="border-doqyn-border-subtle/60 border-t px-3 py-1.5 font-mono text-micro text-doqyn-muted">
+        <div className="border-t border-doqyn-border-subtle/60 px-3 py-1.5 font-mono text-micro text-doqyn-muted">
           {code && <p>código: {code}</p>}
           {endpoint && <p>endpoint: {endpoint}</p>}
           {requestId && <p>requestId: {requestId}</p>}
@@ -141,7 +141,7 @@ export function WorkflowLogRow({ event, compact = false, showDebug = false }: Wo
       )}
 
       {expanded && hasDebugDetails && (
-        <div className="border-doqyn-border-subtle/60 border-t px-3 py-2 font-mono text-micro text-doqyn-muted">
+        <div className="border-t border-doqyn-border-subtle/60 px-3 py-2 font-mono text-micro text-doqyn-muted">
           {Object.entries(debugDetails).map(([key, value]) => (
             <p key={key}>
               {key}: {value}

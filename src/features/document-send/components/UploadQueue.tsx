@@ -20,7 +20,7 @@ export function UploadQueue({ items, className }: UploadQueueProps) {
         <CardTitle>Arquivos selecionados</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto scrollbar-thin">
+        <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-doqyn-border">

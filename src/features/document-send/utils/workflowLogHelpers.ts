@@ -8,10 +8,7 @@ import type {
 } from '../types/workflowLog';
 import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
 import { generateDocumentId } from '../mockData';
-import {
-  getAutoSaveBlockers,
-  resolveAnalysisOutcome,
-} from '../../upload/queue/uploadQueueCore';
+import { getAutoSaveBlockers, resolveAnalysisOutcome } from '../../upload/queue/uploadQueueCore';
 
 export const WORKFLOW_LOG_MAX_EVENTS = 500;
 
@@ -85,9 +82,7 @@ export function normalizeWorkflowEvent(input: WorkflowLogInput): WorkflowLogEven
   };
 }
 
-export function buildRequestHeaders(
-  context?: WorkflowRequestContext,
-): Record<string, string> {
+export function buildRequestHeaders(context?: WorkflowRequestContext): Record<string, string> {
   const headers: Record<string, string> = {};
   if (context?.requestId) headers['X-DOQYN-Request-Id'] = context.requestId;
   if (context?.batchId) headers['X-DOQYN-Batch-Id'] = context.batchId;
@@ -104,12 +99,7 @@ export function mapProcessingLogsToWorkflowEvents(
     batchId: context.batchId,
     itemId: context.itemId,
     fileName: context.fileName,
-    level:
-      log.status === 'error'
-        ? 'error'
-        : log.status === 'done'
-          ? 'success'
-          : 'info',
+    level: log.status === 'error' ? 'error' : log.status === 'done' ? 'success' : 'info',
     stage: inferStageFromLogTitle(log.title),
     message: log.title,
     details: log.description ? { description: log.description } : undefined,
