@@ -23,7 +23,16 @@ const LEAVE_MS = 460;
 type Slot = { item: UploadQueueItem; leaving: boolean };
 
 export function UploadScanStack({ items }: { items: UploadQueueItem[] }) {
-  const active = items.filter((item) => isUploadInProgress(item.status)).slice(0, VISIBLE);
+  /**
+   * Acabado o lote, fica a última folha — e não um ícone.
+   *
+   * O cabeçalho mostrava uma estrelinha de "IA" quando não havia mais nada em curso, e ela era a
+   * única coisa decorativa de uma peça feita inteira para mostrar o documento de verdade sendo
+   * lido. Trocar papel por brilho no fim faz a fila mudar de identidade no meio do próprio
+   * trabalho. Enquanto a fila existir, o que se vê é papel.
+   */
+  const emCurso = items.filter((item) => isUploadInProgress(item.status));
+  const active = (emCurso.length > 0 ? emCurso : items.slice(-1)).slice(0, VISIBLE);
   const [slots, setSlots] = useState<Slot[]>(() =>
     active.map((item) => ({ item, leaving: false })),
   );

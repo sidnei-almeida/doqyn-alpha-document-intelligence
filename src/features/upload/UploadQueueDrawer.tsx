@@ -253,18 +253,10 @@ export function UploadQueueDrawer() {
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            {/* A pilha substitui a estrelinha enquanto há trabalho: ela diz a mesma coisa ("a IA
-                está lendo") mostrando o que está sendo lido, e quanto ainda vem atrás. Sem lote em
-                curso — ou sem miniatura desenhável — o ícone de sempre volta. */}
-            {pendingCount > 0 ? (
-              <UploadScanStack items={items} />
-            ) : (
-              <Icon
-                name="auto_awesome"
-                size={ICON_SIZE.sm}
-                className="shrink-0 text-doqyn-accent-active"
-              />
-            )}
+            {/* Papel, e não um selo de "IA": a pilha mostra o que está sendo lido e quanto vem
+                atrás, e no fim continua mostrando a última folha. Sem miniatura desenhável ela se
+                recolhe sozinha, e o cabeçalho fica só com o texto — que já diz tudo. */}
+            <UploadScanStack items={items} />
             <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
