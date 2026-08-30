@@ -125,13 +125,22 @@ export function RequestSignatureModal({
   const createRequest = useMutation({
     mutationFn: () =>
       createDocumentSignatureRequest(documentId!, {
-        // Quem é da própria empresa assina como usuário; de fora — com conta DOQYN ou sem — assina
-        // pela página com token, e é o `signerEmail` que o servidor resolve.
-        signerType: audience === 'internal' ? 'internal_user' : 'external_guest',
+        /**
+         * `external_guest` é só para quem **não tem conta** — e não para todo mundo que está fora.
+         *
+         * Quem tem conta DOQYN em outra empresa entra por `internal_user`: é esse ramo que resolve
+         * o contato contra o diretório (`signatureRecipientValidation.ts`, `resolveSignerByEmail`)
+         * e emite o token de portal quando a pessoa é de fora. O ramo `external_guest` não resolve
+         * nada — ele exige nome e e-mail digitados, e a aba "Outra empresa" não digita nome
+         * nenhum, então todo pedido para outra empresa morria em `SIGNER_NAME_REQUIRED`.
+         */
+        signerType: audience === 'external' ? 'external_guest' : 'internal_user',
         signerUserId: audience === 'internal' ? (internalPick?.id ?? undefined) : undefined,
         signerName: audience === 'external' ? external.name.trim() : undefined,
         /**
-         * Assinante de outra empresa viaja pelo e-mail: é ele que o servidor resolve no diretório.
+         * Assinante de outra empresa viaja pelo contato: é ele que o servidor resolve no diretório.
+         * O apelido serve tanto quanto o e-mail — a busca digitável nem sempre devolve endereço, e
+         * `resolveSignerByEmail` aceita os dois (sem `@` vira busca por apelido).
          *
          * **Cada aba manda só o que é dela.** Escolher alguém de outra empresa pelo e-mail e
          * depois voltar para a aba de colegas deixava as duas escolhas vivas, e este campo caía
@@ -143,7 +152,7 @@ export function RequestSignatureModal({
           audience === 'external'
             ? external.email.trim()
             : audience === 'doqyn'
-              ? (crossTenantSigner?.email ?? undefined)
+              ? (crossTenantSigner?.email ?? crossTenantSigner?.username ?? undefined)
               : undefined,
         signerPhone: audience === 'external' ? external.phone.trim() || undefined : undefined,
         signerOrganizationName:
@@ -222,7 +231,16 @@ export function RequestSignatureModal({
     };
     onCreated?.();
     const portalUrl = result.request?.portalUrl ?? null;
-    if (audience === 'external' && portalUrl) {
+    /**
+     * Quem recebe token precisa ver o link, seja qual for a aba.
+     *
+     * "Para assinar" só lista o que está no tenant de quem abre a lista
+     * (`listSignatureRequestsAssignedToMe` filtra por `tenantId`), então o signatário de outra
+     * empresa nunca acha o pedido por lá — o link é o único caminho até o documento. O servidor
+     * só emite token para quem está de fora: colega da casa não vem com `portalUrl`, e é por isso
+     * que o link pode mandar aqui, em vez da aba.
+     */
+    if (portalUrl) {
       setIssuedUrl(portalUrl);
       return;
     }
