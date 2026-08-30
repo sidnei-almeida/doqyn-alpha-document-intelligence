@@ -7,6 +7,7 @@ import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
 import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
 import { AuditEmptyState } from './AuditEmptyState';
+import { SkeletonList } from '@/components/ui/SkeletonList';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -25,16 +26,11 @@ type AuditEventsListProps = {
 export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsListProps) {
   if (loading) {
     return (
-      <div className="border-t border-doqyn-border" aria-hidden>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="flex h-[52px] items-center border-b border-doqyn-border-subtle/75 px-4"
-          >
-            <div className="h-2 w-1/3 animate-pulse bg-doqyn-border-subtle" />
-          </div>
-        ))}
-      </div>
+      <SkeletonList
+        className="border-t border-doqyn-border"
+        rowClassName="h-[52px] py-0"
+        label="Carregando eventos"
+      />
     );
   }
 

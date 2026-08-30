@@ -18,6 +18,7 @@ import { createDocumentRequest } from '@/features/requests/api/documentRequestsA
 import { RequestDocumentModal } from '@/features/requests/components/RequestDocumentModal';
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
+import { SkeletonList } from '@/components/ui/SkeletonList';
 
 /** Um recorte da grade — "da sua empresa" e "de outras" são regras diferentes, não filtros. */
 function ContactSection({
@@ -152,7 +153,7 @@ export function ContactsPage() {
       <AddContactField />
 
       {contacts.isLoading ? (
-        <p className="type-caption text-doqyn-muted">Carregando…</p>
+        <SkeletonList rows={5} media twoLines label="Carregando contatos" />
       ) : todos.length === 0 ? (
         // O aviso de vazio do app é sem moldura: `EmptyState` nasceu para tirar exatamente a
         // caixa preenchida de canto arredondado que eu tinha escrito aqui.
