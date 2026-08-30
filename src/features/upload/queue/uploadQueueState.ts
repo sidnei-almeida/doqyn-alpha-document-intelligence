@@ -13,7 +13,7 @@ export type UploadQueueAction =
   | { type: 'status'; id: string; status: UploadQueueItemStatus }
   | { type: 'queue_status'; id: string; queueStatus: AnalysisQueueStatus }
   | { type: 'analysis'; id: string; analysis: UploadQueueItemAnalysis }
-  | { type: 'done'; id: string; documentId: string }
+  | { type: 'done'; id: string; documentId: string; categoryName?: string }
   | { type: 'awaiting_approval'; id: string; approvalId: string }
   | { type: 'error'; id: string; message: string }
   | { type: 'ai_pause'; id: string; message: string }
@@ -57,6 +57,8 @@ export function uploadQueueReducer(
               ...item,
               status: 'done' as const,
               documentId: action.documentId,
+              // A pasta vem do servidor: é a classe final, e não o palpite da análise.
+              savedCategoryName: action.categoryName,
               errorMessage: undefined,
             }
           : item,

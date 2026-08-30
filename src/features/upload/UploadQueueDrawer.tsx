@@ -51,7 +51,10 @@ function QueueRow({
     if (item.status === 'done' && item.documentId) {
       // Onde foi parar é a pergunta de quem acabou de enviar — "salvo" sozinho não responde. A
       // classe é o que a análise decidiu, e é ela que diz em qual pasta o documento está.
-      const classe = item.analysis?.raw.classification.className?.trim();
+      // A pasta do servidor manda; a classificação da análise é só o palpite anterior a ela.
+      const classe = (
+        item.savedCategoryName ?? item.analysis?.raw.classification.className
+      )?.trim();
       return classe
         ? `Salvo em ${classe} · ${formatFileSize(item.fileSize)}`
         : `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;

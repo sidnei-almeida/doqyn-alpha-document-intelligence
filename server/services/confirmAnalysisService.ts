@@ -231,6 +231,8 @@ export async function confirmAnalysisPersistence(input: {
   versionId: string;
   status: 'saved';
   documentCode: string;
+  categoryId: string;
+  categoryName: string;
   storageStatus: 'stored' | 'pending';
 }> {
   const tenantId = input.ctx.tenantId;
@@ -892,5 +894,15 @@ export async function confirmAnalysisPersistence(input: {
     status: 'saved',
     documentCode,
     storageStatus: versionStorage.primary.status === 'stored' ? 'stored' : 'pending',
+    /**
+     * Onde o documento foi parar — a classe final, não o palpite da IA.
+     *
+     * A fila só tinha `classification.className` da análise, que vem vazio quando o documento cai
+     * em revisão e fica desatualizado quando alguém corrige a classe na hora de confirmar. Quem
+     * acabou de enviar quer saber a pasta de verdade, e quem sabe dela é este ponto: aqui a classe
+     * já foi resolvida, manual ou automática.
+     */
+    categoryId: docClass._id,
+    categoryName: docClass.name,
   };
 }

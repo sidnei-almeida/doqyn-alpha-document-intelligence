@@ -47,6 +47,13 @@ export type UploadQueueItem = {
   documentId?: string;
   approvalId?: string;
   errorMessage?: string;
+  /**
+   * A pasta em que o documento entrou, dita pelo servidor ao confirmar.
+   *
+   * Não sai da análise: `classification.className` é o palpite da IA, que vem vazio quando o
+   * documento cai em revisão e fica velho quando alguém corrige a classe antes de salvar.
+   */
+  savedCategoryName?: string;
   /** Escolha de nomeação por arquivo (quando policy = ask_each_file ou revisão manual). */
   namingChoice?: PerItemNamingChoice;
   /** Onde o documento está na fila da plataforma, atualizado a cada consulta de status. */

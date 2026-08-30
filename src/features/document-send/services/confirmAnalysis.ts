@@ -10,6 +10,9 @@ export type ConfirmAnalysisResponse = {
   status: 'saved';
   documentCode: string;
   storageStatus: 'stored' | 'pending';
+  /** A pasta em que o documento entrou — resolvida no servidor, manual ou automática. */
+  categoryId?: string;
+  categoryName?: string;
 };
 
 export type SubmitUploadApprovalResponse = {

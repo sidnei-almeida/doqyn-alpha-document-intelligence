@@ -265,7 +265,12 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
 
         if (isDocumentAdmin) {
           const result = await confirmAnalysis(raw, confirmOptions);
-          dispatch({ type: 'done', id: item.id, documentId: result.documentId });
+          dispatch({
+            type: 'done',
+            id: item.id,
+            documentId: result.documentId,
+            categoryName: result.categoryName,
+          });
           filesRef.current.delete(item.id);
           setReviewItemId((current) => (current === item.id ? null : current));
           logUploadDev('confirm:success', {
