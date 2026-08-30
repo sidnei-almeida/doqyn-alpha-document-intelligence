@@ -241,10 +241,19 @@ export function ShareDocumentModal({
 
   if (!document) return null;
 
+  /**
+   * Quem recebe, decidido pela aba e por mais nada.
+   *
+   * Trocar de aba não desfaz a escolha da anterior — e não deve: quem volta espera reencontrar o
+   * que já tinha marcado. Mas isso deixa duas escolhas vivas ao mesmo tempo, e quem for ler
+   * qualquer uma delas precisa perguntar antes em qual aba está.
+   */
   const recipientLabel =
     audience === 'internal'
       ? (internalPick?.name ?? '—')
-      : external.name.trim() || external.email.trim() || '—';
+      : audience === 'doqyn'
+        ? (crossTenantPick?.name ?? '—')
+        : external.name.trim() || external.email.trim() || '—';
 
   return (
     <Modal
@@ -404,11 +413,15 @@ export function ShareDocumentModal({
                 { label: 'Documento', value: document.currentFileName || document.displayName },
                 {
                   label: 'Quem recebe',
-                  value: crossTenantPick
-                    ? `${crossTenantPick.name} (outra empresa DOQYN)`
-                    : audience === 'internal'
-                      ? `${recipientLabel} (da empresa)`
-                      : `${recipientLabel} (convidado externo)`,
+                  // Pela aba, e não pela presença do `crossTenantPick`: escolher alguém do DOQYN,
+                  // trocar para "Convidado externo" e digitar outro e-mail deixava a confirmação
+                  // anunciando o primeiro. É a última linha que se lê antes de enviar.
+                  value:
+                    audience === 'doqyn'
+                      ? `${recipientLabel} (outra empresa DOQYN)`
+                      : audience === 'internal'
+                        ? `${recipientLabel} (da empresa)`
+                        : `${recipientLabel} (convidado externo)`,
                 },
                 { label: 'Pode baixar', value: canDownload ? 'Sim' : 'Não' },
                 {

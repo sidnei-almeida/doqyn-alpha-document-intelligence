@@ -130,9 +130,21 @@ export function RequestSignatureModal({
         signerType: audience === 'internal' ? 'internal_user' : 'external_guest',
         signerUserId: audience === 'internal' ? (internalPick?.id ?? undefined) : undefined,
         signerName: audience === 'external' ? external.name.trim() : undefined,
-        // Assinante de outra empresa viaja pelo e-mail: é ele que o servidor resolve no diretório.
+        /**
+         * Assinante de outra empresa viaja pelo e-mail: é ele que o servidor resolve no diretório.
+         *
+         * **Cada aba manda só o que é dela.** Escolher alguém de outra empresa pelo e-mail e
+         * depois voltar para a aba de colegas deixava as duas escolhas vivas, e este campo caía
+         * no `else` — o pedido saía com o id do colega **e** o e-mail do de fora. O servidor
+         * prefere o e-mail (`documentSignatureService.ts`, resolução de `internal_user`), então a
+         * solicitação nascia para a pessoa errada, com a tela anunciando a certa.
+         */
         signerEmail:
-          audience === 'external' ? external.email.trim() : (crossTenantSigner?.email ?? undefined),
+          audience === 'external'
+            ? external.email.trim()
+            : audience === 'doqyn'
+              ? (crossTenantSigner?.email ?? undefined)
+              : undefined,
         signerPhone: audience === 'external' ? external.phone.trim() || undefined : undefined,
         signerOrganizationName:
           audience === 'external' ? external.organizationName.trim() || undefined : undefined,
