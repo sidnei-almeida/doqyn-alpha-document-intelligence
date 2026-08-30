@@ -411,7 +411,16 @@ export async function listFrequentContacts(
 
   return visible.map((entry) => ({
     userId: entry.userId,
-    name: entry.name,
+    /**
+     * O nome de verdade vence a cópia, e a cópia vence o id cru.
+     *
+     * O rótulo do acumulador vem de snapshot: do cadastro do tenant para quem é de casa, da cópia
+     * do envio para quem é de fora. Quem saiu do tenant não está mais no cadastro, e nenhum
+     * snapshot o alcança — a linha caía no id cru, e o cartão mostrava um UUID onde deveria haver
+     * uma pessoa. O auth-service sabe o nome, e já estava sendo consultado aqui: o `displayName`
+     * vinha na mesma resposta e era descartado.
+     */
+    name: handles.get(entry.userId)?.displayName || entry.name,
     email: entry.email,
     username: handles.get(entry.userId)?.username ?? entry.username,
     saved: entry.saved,
