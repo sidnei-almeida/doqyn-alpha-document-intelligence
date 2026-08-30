@@ -27,9 +27,8 @@ function notificacao(overrides: Partial<MongoNotification> = {}): MongoNotificat
 describe('canal de e-mail — desligado por padrão', () => {
   it('sem NOTIFICATION_EMAIL_PROVIDER, o canal não existe', async () => {
     delete process.env.NOTIFICATION_EMAIL_PROVIDER;
-    const { resolveEmailProviderConfig, isEmailChannelEnabled } = await import(
-      '../server/config/emailConfig.ts'
-    );
+    const { resolveEmailProviderConfig, isEmailChannelEnabled } =
+      await import('../server/config/emailConfig.ts');
     assert.equal(resolveEmailProviderConfig(), null);
     assert.equal(isEmailChannelEnabled(), false);
   });
@@ -44,9 +43,8 @@ describe('canal de e-mail — desligado por padrão', () => {
   });
 
   it('a espera entre tentativas cresce e não passa do último degrau', async () => {
-    const { emailRetryDelayMinutes, EMAIL_MAX_ATTEMPTS } = await import(
-      '../server/config/emailConfig.ts'
-    );
+    const { emailRetryDelayMinutes, EMAIL_MAX_ATTEMPTS } =
+      await import('../server/config/emailConfig.ts');
     assert.ok(emailRetryDelayMinutes(1) > emailRetryDelayMinutes(0));
     assert.ok(emailRetryDelayMinutes(2) > emailRetryDelayMinutes(1));
     assert.equal(emailRetryDelayMinutes(9), emailRetryDelayMinutes(3));
@@ -77,7 +75,10 @@ describe('o e-mail do aviso', () => {
   });
 
   it('vai com versão em texto, para quem não renderiza HTML', () => {
-    const email = buildNotificationEmail(notificacao({ body: 'Vence em 30 dias.' }), 'https://x.dev');
+    const email = buildNotificationEmail(
+      notificacao({ body: 'Vence em 30 dias.' }),
+      'https://x.dev',
+    );
     assert.match(email.text, /Vence em 30 dias\./);
     assert.equal(email.text.includes('<table'), false);
   });
@@ -108,5 +109,52 @@ describe('o outbox de e-mail', () => {
     // 4xx é recusa (não adianta repetir); 429 e 5xx são "tente de novo".
     assert.match(provider, /response\.status === 429 \|\| response\.status >= 500/);
     assert.match(drain, /tentativas >= EMAIL_MAX_ATTEMPTS/);
+  });
+});
+
+describe('quais avisos viram e-mail', () => {
+  it('o que só existe fora do app entra: resposta a pedido de acesso', async () => {
+    const { isEmailEligible } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    assert.equal(isEmailEligible('access_approved'), true);
+    assert.equal(isEmailEligible('access_rejected'), true);
+  });
+
+  it('trabalho atribuído e prazo entram', async () => {
+    const { isEmailEligible } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    for (const tipo of [
+      'signature_required',
+      'document_requested',
+      'approval_requested',
+      'inbound_share_received',
+      'document_expiring',
+      'document_shared',
+    ] as const) {
+      assert.equal(isEmailEligible(tipo), true, tipo);
+    }
+  });
+
+  it('aviso de atividade fica fora: é o volume que desqualifica os outros', async () => {
+    const { isEmailEligible } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    assert.equal(isEmailEligible('document_created'), false);
+    assert.equal(isEmailEligible('document_updated'), false);
+  });
+
+  it('preferência ligada não basta: o tipo também precisa merecer', async () => {
+    const { channelsForMember } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    const aceitaTudo = { email: true, whatsapp: false } as never;
+    assert.deepEqual(channelsForMember(aceitaTudo, 'document_created'), ['in_app']);
+    assert.deepEqual(channelsForMember(aceitaTudo, 'signature_required'), ['in_app', 'email']);
+  });
+
+  it('o teto por pessoa adia, e não descarta', () => {
+    const drain = read('server/services/notifications/emailOutboxDrain.ts');
+    assert.match(drain, /EMAIL_MAX_PER_USER_PER_HOUR/);
+    assert.match(drain, /nextAttemptAt: new Date\(agora\.getTime\(\) \+ 15 \* 60_000\)/);
+    // Adiar mantém a linha viva; descartar seria perder o aviso.
+    assert.equal(drain.includes("status: 'discarded'"), false);
   });
 });

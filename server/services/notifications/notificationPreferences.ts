@@ -84,9 +84,49 @@ export function wantsNotification(
  * entrega paralela. `email` e `whatsapp` são escolha, e hoje param no outbox por falta de
  * provedor.
  */
-export function channelsForMember(preferences: NotificationPreferences): NotificationChannel[] {
+/**
+ * O que vale interromper alguém fora do app.
+ *
+ * **A preferência do usuário diz "aceito receber"; esta lista diz "isto merece um e-mail".** Sem
+ * ela, ligar o canal mandaria e-mail de tudo que a pessoa aceita no sino — inclusive documento
+ * criado, que num tenant ativo são dezenas por dia. O fim conhecido dessa história é a pessoa criar
+ * um filtro e nunca mais ler nenhum, inclusive os que importavam.
+ *
+ * O corte é por consequência, não por importância sentida:
+ *
+ * · **Só existe fora do app.** `access_approved` e `access_rejected` vão para quem ainda não entra
+ *   no sistema — o e-mail é o único canal que essa pessoa tem.
+ * · **Trabalho atribuído a você**, e que trava alguém enquanto não é feito: assinatura, pedido de
+ *   documento, aprovação esperando decisão, documento de outra empresa esperando aceite.
+ * · **Tem prazo próprio**: vencimento é o documento avisando que deixa de valer.
+ * · **Deu acesso a algo que a pessoa não sabia que existia**: compartilhamento. Quem recebeu não
+ *   tem como adivinhar que ganhou o documento.
+ *
+ * Fora ficaram os avisos de atividade — documento criado e nova versão. Eles contam o que
+ * aconteceu, não pedem nada, e são exatamente o volume que desqualifica a caixa de entrada.
+ */
+export const EMAIL_ELIGIBLE_TYPES: ReadonlySet<NotificationType> = new Set([
+  'access_approved',
+  'access_rejected',
+  'signature_required',
+  'document_expiring',
+  'document_requested',
+  'approval_requested',
+  'inbound_share_received',
+  'document_shared',
+]);
+
+export function isEmailEligible(type: NotificationType): boolean {
+  return EMAIL_ELIGIBLE_TYPES.has(type);
+}
+
+export function channelsForMember(
+  preferences: NotificationPreferences,
+  type: NotificationType,
+): NotificationChannel[] {
   const channels: NotificationChannel[] = ['in_app'];
-  if (preferences.email) channels.push('email');
+  // Duas perguntas, e as duas precisam de sim: a pessoa aceita e-mail, e este aviso merece um.
+  if (preferences.email && isEmailEligible(type)) channels.push('email');
   if (preferences.whatsapp) channels.push('whatsapp');
   return channels;
 }

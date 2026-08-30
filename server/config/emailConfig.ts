@@ -64,3 +64,13 @@ export const EMAIL_MAX_ATTEMPTS = 4;
 export function emailRetryDelayMinutes(attempts: number): number {
   return [1, 5, 30, 120][Math.min(attempts, 3)];
 }
+
+/**
+ * Teto de e-mails por pessoa, por hora.
+ *
+ * Uma importação em lote produz centenas de notificações em um minuto. Sem teto, o primeiro dia de
+ * uso real vira denúncia de spam — e reputação de domínio queimada não volta com pedido de
+ * desculpas. O que passa do teto **não é descartado**: espera a próxima janela, porque o aviso
+ * continua verdadeiro dez minutos depois.
+ */
+export const EMAIL_MAX_PER_USER_PER_HOUR = 12;

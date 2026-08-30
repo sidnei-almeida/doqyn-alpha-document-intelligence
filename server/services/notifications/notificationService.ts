@@ -96,7 +96,7 @@ export async function emitNotifications(
       continue;
     }
 
-    channelsByUserId.set(userId, channelsForMember(preferences));
+    channelsByUserId.set(userId, channelsForMember(preferences, input.type));
     pending.push({
       _id: `notif_${randomUUID()}`,
       tenantId: input.tenantId,

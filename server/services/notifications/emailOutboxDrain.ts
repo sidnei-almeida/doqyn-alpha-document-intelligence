@@ -3,6 +3,7 @@ import { getDb } from '../../db/mongoClient.js';
 import type { MongoNotification, MongoNotificationDelivery } from '../../db/types.js';
 import {
   EMAIL_MAX_ATTEMPTS,
+  EMAIL_MAX_PER_USER_PER_HOUR,
   emailRetryDelayMinutes,
   isEmailChannelEnabled,
 } from '../../config/emailConfig.js';
@@ -74,8 +75,9 @@ export async function drainEmailOutbox(): Promise<{
   sent: number;
   failed: number;
   retried: number;
+  throttled: number;
 }> {
-  if (!isEmailChannelEnabled()) return { sent: 0, failed: 0, retried: 0 };
+  if (!isEmailChannelEnabled()) return { sent: 0, failed: 0, retried: 0, throttled: 0 };
 
   const { deliveries, notifications } = await collections();
   const agora = new Date();
@@ -93,15 +95,47 @@ export async function drainEmailOutbox(): Promise<{
     .limit(BATCH_SIZE)
     .toArray();
 
-  if (pendentes.length === 0) return { sent: 0, failed: 0, retried: 0 };
+  if (pendentes.length === 0) return { sent: 0, failed: 0, retried: 0, throttled: 0 };
 
   const emails = await buildEmailLookup(pendentes.map((linha) => linha.tenantId));
   const baseUrl = resolvePublicAppBaseUrl();
   let sent = 0;
   let failed = 0;
   let retried = 0;
+  let throttled = 0;
+
+  /**
+   * Quantos e-mails cada pessoa já recebeu na última hora.
+   *
+   * Contado uma vez por rodada, do próprio outbox — quem entregou é a fonte, não um contador em
+   * memória que zera a cada reinício.
+   */
+  const desdeUmaHora = new Date(agora.getTime() - 60 * 60_000);
+  const enviadosPorUsuario = new Map<string, number>();
+  for (const userId of new Set(pendentes.map((linha) => linha.userId))) {
+    const total = await deliveries.countDocuments({
+      channel: 'email',
+      userId,
+      status: 'delivered',
+      deliveredAt: { $gte: desdeUmaHora },
+    } as Record<string, unknown>);
+    enviadosPorUsuario.set(userId, total);
+  }
 
   for (const linha of pendentes) {
+    const jaEnviados = enviadosPorUsuario.get(linha.userId) ?? 0;
+    if (jaEnviados >= EMAIL_MAX_PER_USER_PER_HOUR) {
+      // Adiado, não descartado: o aviso continua verdadeiro na próxima janela.
+      await deliveries.updateOne({ _id: linha._id } as Record<string, unknown>, {
+        $set: {
+          nextAttemptAt: new Date(agora.getTime() + 15 * 60_000),
+          reason: 'Teto de e-mails por hora atingido para este destinatário.',
+        },
+      });
+      throttled += 1;
+      continue;
+    }
+
     const travada = await deliveries.findOneAndUpdate(
       { _id: linha._id, status: linha.status } as Record<string, unknown>,
       { $set: { status: 'sending', lockedAt: agora } },
@@ -161,6 +195,7 @@ export async function drainEmailOutbox(): Promise<{
         },
       });
       sent += 1;
+      enviadosPorUsuario.set(linha.userId, (enviadosPorUsuario.get(linha.userId) ?? 0) + 1);
       continue;
     }
 
@@ -183,11 +218,11 @@ export async function drainEmailOutbox(): Promise<{
     else retried += 1;
   }
 
-  if (sent || failed || retried) {
-    logger.info('outbox de e-mail drenado', { sent, failed, retried });
+  if (sent || failed || retried || throttled) {
+    logger.info('outbox de e-mail drenado', { sent, failed, retried, throttled });
   }
 
-  return { sent, failed, retried };
+  return { sent, failed, retried, throttled };
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;

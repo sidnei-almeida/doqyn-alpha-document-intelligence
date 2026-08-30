@@ -454,7 +454,7 @@ async function persistExpiryNotifications(
 
   const channelsByUserId = new Map<string, NotificationChannel[]>();
   for (const [userId, memberPreferences] of preferences) {
-    channelsByUserId.set(userId, channelsForMember(memberPreferences));
+    channelsByUserId.set(userId, channelsForMember(memberPreferences, 'document_expiring'));
   }
 
   return persistNotifications(pending, channelsByUserId);
