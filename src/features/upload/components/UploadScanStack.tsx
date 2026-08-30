@@ -74,10 +74,16 @@ export function UploadScanStack({ items }: { items: UploadQueueItem[] }) {
   const desenhaveis = slots.filter((slot) => slot.item.thumbnail);
   if (desenhaveis.length === 0) return null;
 
-  // A da frente é a que está sendo lida; as de trás recuam e escurecem, como papel empilhado.
+  /**
+   * As de trás recuam, giram e escurecem.
+   *
+   * O giro não é enfeite: em miniatura de 32px, só deslocar não lê como pilha — as bordas ficam
+   * paralelas e o olho vê uma folha com sombra. Um grau e meio por folha basta para virar papel
+   * empilhado, e é pouco o bastante para não parecer torto.
+   */
   let depth = -1;
   return (
-    <span className="relative block h-11 w-9 shrink-0" aria-hidden>
+    <span className="relative block h-11 w-11 shrink-0" aria-hidden>
       {desenhaveis.map((slot) => {
         if (!slot.leaving) depth += 1;
         const atras = slot.leaving ? 0 : depth;
@@ -89,8 +95,8 @@ export function UploadScanStack({ items }: { items: UploadQueueItem[] }) {
               slot.leaving && 'upload-stack__sheet--leaving',
             )}
             style={{
-              transform: `translateX(${atras * 3}px) translateY(${atras * -2}px) scale(${1 - atras * 0.07})`,
-              opacity: 1 - atras * 0.34,
+              transform: `translateX(${atras * 5}px) translateY(${atras * -3}px) rotate(${atras * 1.5}deg) scale(${1 - atras * 0.06})`,
+              opacity: 1 - atras * 0.3,
               zIndex: VISIBLE - atras,
             }}
           >

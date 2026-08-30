@@ -4541,7 +4541,11 @@
     transition:
       transform 0.44s cubic-bezier(0.2, 0, 0, 1),
       opacity 0.44s ease-out;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+    /* A borda separa uma folha da outra onde a sombra não alcança: no escuro, papel sobre papel
+       sem contorno vira uma mancha clara só. */
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.55),
+      0 0 0 1px rgb(0 0 0 / 0.35);
   }
 
   /* A folha que terminou sai pela direita, e é a única saída da pilha. */
