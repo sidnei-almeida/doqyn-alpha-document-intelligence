@@ -166,9 +166,7 @@ describe('design system DOQYN', () => {
     assert.ok(source.includes('MetricCard'));
     assert.ok(source.includes('fieldControlClass'));
     assert.ok(source.includes('FileTypeIcon'));
-    assert.ok(source.includes('FileThumbnail'));
     assert.ok(source.includes('ToolbarSelect'));
-    assert.ok(source.includes('HoverCheckbox'));
     assert.ok(source.includes('Checkbox'));
     assert.ok(source.includes('Radio'));
   });

@@ -1,12 +1,6 @@
 /**
  * Export central dos componentes de UI reutilizáveis do design system DOQYN.
  */
-export { CopyableTextField, type CopyableTextFieldProps } from './CopyableTextField';
-export {
-  EXTERNAL_INVITE_LINK_LABEL,
-  ExternalInviteLinkField,
-  type ExternalInviteLinkFieldProps,
-} from './ExternalInviteLinkField';
 export { Checkbox, AppCheckbox, type CheckboxProps } from './Checkbox';
 export { Radio, AppRadio, type RadioProps } from './Radio';
 export { Badge, type BadgeProps, badgeVariants } from './Badge';
@@ -45,9 +39,7 @@ export {
   fieldWrapperClass,
   FIELD_CONTROL_HEIGHT,
 } from './fieldStyles';
-export { FileThumbnail } from './FileThumbnail';
 export { FileTypeIcon } from './FileTypeIcon';
-export { HoverCheckbox } from './HoverCheckbox';
 export { Icon, type IconProps } from './Icon';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Input, type InputProps } from './Input';
