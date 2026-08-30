@@ -262,14 +262,17 @@ describe('document trash — frontend lixeira e desativados', () => {
     assert.equal(page.includes('buildPermanentDeleteConfirm'), false);
   });
 
-  it('menu de contexto de pasta não tem Excluir ativo', () => {
+  it('pasta se exclui, e a exclusão não é a lixeira', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
     const folderBlock = menu.slice(
       menu.indexOf("{state.kind === 'folder' && ("),
       menu.indexOf("{state.kind === 'file' && ("),
     );
-    assert.ok(folderBlock.includes('Arquivar categoria'));
+    assert.ok(folderBlock.includes('Excluir categoria'));
+    // Categoria não vai para a lixeira: ela some, e os documentos dela vão para Sem categoria.
     assert.equal(folderBlock.includes('Mover para lixeira'), false);
+    // Sem categoria é o destino de todo mundo, e por isso não se apaga.
+    assert.ok(folderBlock.includes('isUncategorized'));
   });
 
   it('menu de arquivo tem Mover para lixeira fora da lixeira', () => {

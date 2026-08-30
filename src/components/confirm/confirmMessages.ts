@@ -19,16 +19,16 @@ export function buildRemoveGroupFromCategoryConfirm(groupName: string, categoryN
   };
 }
 
-export function buildDeleteCategoryConfirm(categoryName: string, documentCount = 0) {
+export function buildDeleteCategoryConfirm(categoryName: string) {
   // O efeito da exclusão não está na pasta que some: está nos documentos que se mexem. Dizer
   // "precisarão ser reclassificados" mandava a pessoa fazer à mão o que o servidor já faz.
-  const destino =
-    documentCount > 0
-      ? ` ${documentCount} ${documentCount === 1 ? 'documento vai' : 'documentos vão'} para Sem categoria.`
-      : '';
+  //
+  // Sem número aqui de propósito: a tela só conhece o que carregou, e com filtro ativo o número
+  // seria menor que o real — pequeno demais para uma decisão irreversível. Quantos se moveram é o
+  // servidor que responde, depois.
   return {
     title: 'Excluir categoria?',
-    description: `A categoria "${categoryName}" e as regras dela serão removidas.${destino} Nenhum documento é apagado.`,
+    description: `A categoria "${categoryName}" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria — nenhum documento é apagado.`,
     confirmLabel: 'Excluir categoria',
     confirmationText: CONFIRM_DELETE_WORD,
     variant: 'danger' as const,

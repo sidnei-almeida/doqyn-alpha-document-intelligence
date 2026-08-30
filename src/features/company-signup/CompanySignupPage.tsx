@@ -163,7 +163,7 @@ export function CompanySignupPage() {
       setReviewOpen(false);
       toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
       await refreshUser();
-      navigate('/upload', { replace: true });
+      navigate('/biblioteca', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Falha ao cadastrar empresa.';
       setError(message);

@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { MongoDocumentCategory } from '../db/types.js';
 import { ensureDefaultExtractionRule } from './documentDefaultExtractionRule.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { getDb } from '../db/mongoClient.js';
+import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { slugifyName } from '../utils/slugify.js';
 import { isDocumentGroupId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
@@ -207,8 +209,16 @@ export async function updateDocumentCategory(
       classId: categoryId,
     } as Record<string, unknown>;
 
+    /**
+     * O documento **não** é tocado em `updatedAt`.
+     *
+     * Renomear a categoria muda o rótulo, não o documento — e "Recentes" ordena por `updatedAt`.
+     * Bater nesse campo faria uma categoria com trezentos documentos inundar a home da Biblioteca
+     * como se todos tivessem acabado de ser mexidos, e ainda mentiria no "modificado por", que
+     * continuaria mostrando quem editou de verdade meses atrás.
+     */
     await collections.documents.updateMany(documentFilter, {
-      $set: { className: patch.name, updatedAt: new Date() },
+      $set: { className: patch.name },
     });
     await collections.documentVersions.updateMany(
       {
@@ -269,6 +279,8 @@ export async function deleteDocumentCategory(
   const targetId = await ensureUncategorizedCategory(tenantId, userId);
   const documentScope = tenantScopeFilterFromContext(collections.storage);
 
+  // Sem `updatedAt`: mudar de pasta por decisão administrativa não é edição do documento, e
+  // "Recentes" ordena por esse campo — a categoria inteira subiria para o topo da Biblioteca.
   const moved = await collections.documents.updateMany(
     { ...documentScope, classId: categoryId } as Record<string, unknown>,
     {
@@ -276,7 +288,6 @@ export async function deleteDocumentCategory(
         classId: targetId,
         className: UNCATEGORIZED_CATEGORY_NAME,
         previousClassId: categoryId,
-        updatedAt: new Date(),
       },
     },
   );
@@ -290,6 +301,34 @@ export async function deleteDocumentCategory(
       },
     },
   );
+
+  /**
+   * Os trechos de RAG seguem o documento, como já seguem quando ele é movido à mão
+   * (`documentMoveService`, `updateDocumentChunksCategory`).
+   *
+   * Deixá-los apontando para a categoria morta não é só sujeira: os ids são determinísticos
+   * (`cat_<slug>`), então criar amanhã outra categoria com o mesmo nome faria os trechos órfãos
+   * renascerem ligados a ela — a ressurreição que esta função existe para evitar.
+   */
+  await collections.documentChunks.updateMany(
+    { ...documentScope, categoryId } as Record<string, unknown>,
+    { $set: { categoryId: targetId } },
+  );
+
+  /**
+   * Pedido em aberto que apontava para esta categoria perde o destino.
+   *
+   * O pedido guarda `categoryId`, e é ele que decide onde o documento enviado vai cair. Com a
+   * categoria apagada, quem cumprisse o pedido receberia erro de classificação sem saída. Sem
+   * categoria é o destino honesto: o envio funciona, e o documento fica onde se reclassifica.
+   */
+  const db = await getDb();
+  await db
+    .collection(SHARED_APP_COLLECTIONS.documentRequests)
+    .updateMany(
+      { tenantId, categoryId, status: 'pending' },
+      { $set: { categoryId: targetId, categoryName: UNCATEGORIZED_CATEGORY_NAME } },
+    );
 
   await collections.documentExtractionRules.deleteMany({
     ...scope,

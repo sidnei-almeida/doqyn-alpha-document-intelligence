@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 
 export function PromptDialog({
@@ -12,6 +13,15 @@ export function PromptDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   required = true,
+  /**
+   * O texto com que o campo abre — o nome atual, quando o diálogo serve para renomear.
+   *
+   * Sem isto, renomear obrigava a redigitar do zero o que já existia: o nome vinha só como
+   * `placeholder`, que some assim que se digita a primeira letra.
+   */
+  initialValue = '',
+  /** Uma linha quando o que se pede é um nome. Nome com quebra de linha não é nome. */
+  multiline = true,
   saving,
   onClose,
   onConfirm,
@@ -24,6 +34,8 @@ export function PromptDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   required?: boolean;
+  initialValue?: string;
+  multiline?: boolean;
   saving?: boolean;
   onClose: () => void;
   onConfirm: (value: string) => void;
@@ -35,9 +47,9 @@ export function PromptDialog({
   // vez anterior reaparece.
   useEffect(() => {
     if (!open) return;
-    setValue('');
+    setValue(initialValue);
     setError('');
-  }, [open]);
+  }, [open, initialValue]);
 
   const handleConfirm = () => {
     const trimmed = value.trim();
@@ -68,18 +80,39 @@ export function PromptDialog({
         </>
       }
     >
-      <Textarea
-        id="prompt-dialog-input"
-        label={label}
-        placeholder={placeholder}
-        value={value}
-        onChange={(event) => {
-          setValue(event.target.value);
-          if (error) setError('');
-        }}
-        rows={4}
-        error={error}
-      />
+      {multiline ? (
+        <Textarea
+          id="prompt-dialog-input"
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (error) setError('');
+          }}
+          rows={4}
+          error={error}
+        />
+      ) : (
+        <Input
+          id="prompt-dialog-input"
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (error) setError('');
+          }}
+          onKeyDown={(event) => {
+            // Enter confirma, como em qualquer campo de uma linha.
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              handleConfirm();
+            }
+          }}
+          error={error}
+        />
+      )}
     </Modal>
   );
 }

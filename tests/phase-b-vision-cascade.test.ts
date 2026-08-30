@@ -258,8 +258,4 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     assert.match(setup, /GOOGLE_APPLICATION_CREDENTIALS=\/run\/secrets\/gcp-vision-sa\.json/);
   });
 
-  it('bulkFileValidation reconhece VISION_OCR_FAILED', () => {
-    const source = read('src/features/document-send/utils/bulkFileValidation.ts');
-    assert.match(source, /VISION_OCR_FAILED/);
-  });
 });

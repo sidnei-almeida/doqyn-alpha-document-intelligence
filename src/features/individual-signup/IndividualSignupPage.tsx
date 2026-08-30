@@ -160,7 +160,7 @@ export function IndividualSignupPage() {
       setReviewOpen(false);
       toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
       await refreshUser();
-      navigate('/upload', { replace: true });
+      navigate('/biblioteca', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
       setError(message);

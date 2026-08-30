@@ -120,6 +120,13 @@ export function LibraryPage() {
   const isSignaturesView = collection.id === 'para-assinar';
   const isSharedWithMeView = collection.id === 'compartilhados';
   const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
+  /**
+   * Categoria é governança: quem não administra o tenant não renomeia nem apaga.
+   *
+   * O servidor recusa de qualquer jeito, mas oferecer o item para depois responder 403 é pior que
+   * não oferecer — a pessoa descobre o limite depois de decidir apagar.
+   */
+  const canManageCategories = hasAnyRole(['company_admin', 'individual_admin']);
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
@@ -282,7 +289,10 @@ export function LibraryPage() {
 
   const handleDeleteFolder = useCallback(
     async (folder: LibraryFolder) => {
-      const accepted = await confirm(buildDeleteCategoryConfirm(folder.name, folder.documentCount));
+      // Sem número: `folder.documentCount` conta só o que a view carregou, e com filtro ativo ele
+      // diria "1 documento" enquanto o servidor move a categoria inteira. O total real vai no
+      // aviso de sucesso, que vem do servidor.
+      const accepted = await confirm(buildDeleteCategoryConfirm(folder.name));
       if (!accepted) return;
       deleteCategory.mutate(folder);
     },
@@ -869,8 +879,10 @@ export function LibraryPage() {
           }
           onShowContextInfo={() => setInfoOpen(true)}
           onShowFolderInfo={openFolderDetails}
-          onRenameFolder={setRenameFolder}
-          onDeleteFolder={(folder) => void handleDeleteFolder(folder)}
+          onRenameFolder={canManageCategories ? setRenameFolder : undefined}
+          onDeleteFolder={
+            canManageCategories ? (folder) => void handleDeleteFolder(folder) : undefined
+          }
           isTrashView={isTrashView}
           isDeactivatedView={isDeactivatedView}
           onTrashFile={handleTrashSingle}
@@ -914,7 +926,8 @@ export function LibraryPage() {
           title="Renomear categoria"
           description="O nome novo vale para a pasta e para todos os documentos que já estão dentro dela."
           label="Nome da categoria"
-          placeholder={renameFolder?.name ?? ''}
+          initialValue={renameFolder?.name ?? ''}
+          multiline={false}
           confirmLabel="Renomear"
           saving={renameCategory.isPending}
           onClose={() => setRenameFolder(null)}

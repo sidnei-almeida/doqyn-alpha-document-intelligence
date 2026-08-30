@@ -119,7 +119,7 @@ describe('File Explorer da Biblioteca', () => {
   });
 
   it('raiz sem pastas não parece quebrada (empty state intencional)', () => {
-    const home = readSrc('features/library/components/ExplorerRootHome.tsx');
+    const home = readSrc('features/library/components/ExplorerRootEmpty.tsx');
     const grid = readSrc('features/library/components/ExplorerFolderGrid.tsx');
     assert.ok(home.includes('library-root-empty'));
     assert.ok(grid.includes('explorer-folder-grid-empty'));
