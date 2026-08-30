@@ -5,6 +5,13 @@ type AuditSummaryStripProps = {
   overview: AuditOverview;
   loading?: boolean;
   showPending?: boolean;
+  /**
+   * Para onde cada número leva.
+   *
+   * Sem isto, "5 ações críticas" em vermelho é um beco: o dado mais alarmante da tela não levava a
+   * lugar nenhum, e quem quisesse ver as cinco tinha de adivinhar em qual aba procurar.
+   */
+  onSelect?: (tab: 'pending' | 'security' | 'events') => void;
 };
 
 /**
@@ -19,10 +26,31 @@ type AuditSummaryStripProps = {
  * zero pendências não é alerta, então não pinta de laranja.
  */
 const cards = [
-  { key: 'pendingCount' as const, label: 'Pendências', tone: 'attention' as const },
-  { key: 'todayEventsCount' as const, label: 'Eventos hoje', tone: 'default' as const },
-  { key: 'criticalEventsCount' as const, label: 'Ações críticas', tone: 'danger' as const },
-  { key: 'pendingUsersCount' as const, label: 'Usuários aguardando', tone: 'attention' as const },
+  {
+    key: 'pendingCount' as const,
+    label: 'Pendências',
+    tone: 'attention' as const,
+    tab: 'pending' as const,
+  },
+  {
+    key: 'todayEventsCount' as const,
+    label: 'Eventos hoje',
+    tone: 'default' as const,
+    tab: 'events' as const,
+  },
+  {
+    key: 'criticalEventsCount' as const,
+    label: 'Ações críticas',
+    tone: 'danger' as const,
+    tab: 'security' as const,
+  },
+  // Usuários aguardando entram na mesma fila de pendências: é lá que a decisão acontece.
+  {
+    key: 'pendingUsersCount' as const,
+    label: 'Usuários aguardando',
+    tone: 'attention' as const,
+    tab: 'pending' as const,
+  },
 ];
 
 const TONE_CLASS = {
@@ -35,6 +63,7 @@ export function AuditSummaryStrip({
   overview,
   loading,
   showPending = true,
+  onSelect,
 }: AuditSummaryStripProps) {
   const visibleCards = showPending
     ? cards
@@ -45,10 +74,13 @@ export function AuditSummaryStrip({
       aria-label="Resumo da auditoria"
       className="grid gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-2 xl:grid-cols-4"
     >
-      {visibleCards.map(({ key, label, tone }) => {
+      {visibleCards.map(({ key, label, tone, tab }) => {
         const value = overview[key];
-        return (
-          <div key={key} className="flex flex-col gap-2 bg-doqyn-bg px-4 py-4">
+        // Zero não leva a lugar nenhum: abrir uma lista vazia responde menos que o próprio zero.
+        const clicavel = Boolean(onSelect) && !loading && value > 0;
+
+        const conteudo = (
+          <>
             <span className="register-label text-doqyn-subtle">{label}</span>
             <span
               className={cn(
@@ -59,7 +91,27 @@ export function AuditSummaryStrip({
             >
               {loading ? '—' : value}
             </span>
-          </div>
+          </>
+        );
+
+        if (!clicavel) {
+          return (
+            <div key={key} className="flex flex-col gap-2 bg-doqyn-bg px-4 py-4">
+              {conteudo}
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onSelect?.(tab)}
+            className="flex flex-col gap-2 bg-doqyn-bg px-4 py-4 text-left transition-colors hover:bg-doqyn-card focus-visible:outline focus-visible:outline-1 focus-visible:outline-doqyn-accent-active"
+            aria-label={`${label}: ${value}. Abrir lista.`}
+          >
+            {conteudo}
+          </button>
         );
       })}
     </section>

@@ -135,6 +135,15 @@ export function ProfileSettingsSection() {
                 <Icon name="photo_camera" size={ICON_SIZE.md} className="text-white" />
               )}
             </span>
+
+            {/* A pista fica visível sem hover.
+
+                O overlay só aparecia com o ponteiro em cima, então em repouso o avatar era um
+                círculo com iniciais e nada dizia que ele abria o seletor de arquivo — quem não
+                passasse o mouse por ali nunca descobriria. Em tela de toque não há hover nenhum. */}
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-doqyn-border bg-doqyn-surface text-doqyn-muted transition-colors group-hover:text-doqyn-text">
+              <Icon name="photo_camera" size={13} aria-hidden />
+            </span>
           </button>
           {hasAvatar ? (
             <Button

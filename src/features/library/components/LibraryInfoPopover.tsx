@@ -37,26 +37,26 @@ export function LibraryInfoPopover({ overview, folder }: LibraryInfoPopoverProps
       <dl className="mt-4 space-y-2 border-t border-doqyn-border-subtle pt-3 text-[12px]">
         <div className="flex justify-between gap-4">
           <dt className="text-doqyn-subtle">Tipo</dt>
-          <dd className="text-right text-doqyn-text">
+          <dd className="text-right tabular-nums text-doqyn-text">
             {folder ? 'Categoria inteligente' : 'Biblioteca'}
           </dd>
         </div>
         {!folder && folderCount > 0 && (
           <div className="flex justify-between gap-4">
             <dt className="text-doqyn-subtle">Pastas</dt>
-            <dd className="text-right text-doqyn-text">{folderCount}</dd>
+            <dd className="text-right tabular-nums text-doqyn-text">{folderCount}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4">
           <dt className="text-doqyn-subtle">Arquivos</dt>
-          <dd className="text-right text-doqyn-text">
+          <dd className="text-right tabular-nums text-doqyn-text">
             {fileCount} {fileCount === 1 ? 'arquivo' : 'arquivos'}
           </dd>
         </div>
         {folder && (
           <div className="flex justify-between gap-4">
             <dt className="text-doqyn-subtle">Governança</dt>
-            <dd className="text-right text-doqyn-text">Pasta de governança</dd>
+            <dd className="text-right tabular-nums text-doqyn-text">Pasta de governança</dd>
           </div>
         )}
       </dl>

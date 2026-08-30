@@ -103,6 +103,7 @@ export function AuditPage() {
           overview={overview}
           loading={overviewLoading || pendingLoading}
           showPending={isAdmin}
+          onSelect={handleTabChange}
         />
       </div>
 
