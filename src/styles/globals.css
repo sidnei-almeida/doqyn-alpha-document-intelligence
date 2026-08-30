@@ -4535,6 +4535,31 @@
     }
   }
 
+  /* A pilha do lote: o avanço é transição, não animação — cada folha vai para a posição nova
+     quando a da frente sai, e quem manda no tempo é o evento, não um temporizador. */
+  .upload-stack__sheet {
+    transition:
+      transform 0.44s cubic-bezier(0.2, 0, 0, 1),
+      opacity 0.44s ease-out;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  }
+
+  /* A folha que terminou sai pela direita, e é a única saída da pilha. */
+  .upload-stack__sheet--leaving {
+    animation: upload-stack-leave 0.46s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  @keyframes upload-stack-leave {
+    from {
+      opacity: 1;
+      transform: translateX(0) rotate(0deg);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(26px) rotate(7deg);
+    }
+  }
+
   /* O carimbo do fim sobe da borda de baixo, uma vez. */
   .upload-thumb__stamp {
     animation: upload-thumb-stamp 0.36s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4639,6 +4664,8 @@
     .auth-deskew,
     .upload-thumb__scan,
     .upload-thumb__stamp,
+    .upload-stack__sheet,
+    .upload-stack__sheet--leaving,
     .auth-page,
     .auth-line,
     .auth-write,

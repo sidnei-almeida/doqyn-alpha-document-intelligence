@@ -17,6 +17,7 @@ import { formatQueueWaitLabel } from './queue/queueWaitLabel';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
 import { UploadScanThumb } from './components/UploadScanThumb';
+import { UploadScanStack } from './components/UploadScanStack';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   queued: 'Na fila',
@@ -246,12 +247,19 @@ export function UploadQueueDrawer() {
     >
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Icon
-              name="auto_awesome"
-              size={ICON_SIZE.sm}
-              className="shrink-0 text-doqyn-accent-active"
-            />
+          <div className="flex min-w-0 items-center gap-2.5">
+            {/* A pilha substitui a estrelinha enquanto há trabalho: ela diz a mesma coisa ("a IA
+                está lendo") mostrando o que está sendo lido, e quanto ainda vem atrás. Sem lote em
+                curso — ou sem miniatura desenhável — o ícone de sempre volta. */}
+            {pendingCount > 0 ? (
+              <UploadScanStack items={items} />
+            ) : (
+              <Icon
+                name="auto_awesome"
+                size={ICON_SIZE.sm}
+                className="shrink-0 text-doqyn-accent-active"
+              />
+            )}
             <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
