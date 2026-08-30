@@ -9,6 +9,8 @@ export type ShareableUser = {
   firstName?: string;
   lastName?: string;
   alreadyShared: boolean;
+  /** Veio do histórico de quem está escolhendo. Só marcado quando não há busca digitada. */
+  frequent?: boolean;
 };
 
 export type DocumentShareEntry = {

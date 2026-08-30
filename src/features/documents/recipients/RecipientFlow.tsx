@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
@@ -24,6 +24,8 @@ export type InternalCandidate = {
   id: string;
   name: string;
   email: string;
+  /** Veio do histórico de quem escolhe. Marcado só quando não há busca digitada. */
+  frequent?: boolean;
 };
 
 export type ExternalRecipientDraft = {
@@ -173,21 +175,33 @@ export function InternalRecipientPicker({
         ) : candidates.length === 0 ? (
           <p className="type-caption px-1 py-2 text-doqyn-muted">{emptyLabel}</p>
         ) : (
-          candidates.map((candidate) => (
-            <button
-              key={candidate.id}
-              type="button"
-              className="recipient-candidate"
-              onClick={() => onSelect(candidate)}
-            >
-              <UserAvatar name={candidate.name} email={candidate.email} size="sm" />
-              <span className="min-w-0 text-left">
-                <span className="type-body block truncate text-doqyn-text">{candidate.name}</span>
-                <span className="type-caption block truncate text-doqyn-muted">
-                  {candidate.email}
+          candidates.map((candidate, index) => (
+            <Fragment key={candidate.id}>
+              {/* O rótulo aparece uma vez, sobre a primeira linha do bloco, e um segundo sobre a
+                  primeira que não veio do histórico — sem ele, a lista pareceria uma ordem
+                  arbitrária, que é justamente o que ela deixou de ser. */}
+              {index === 0 && candidate.frequent ? (
+                <p className="type-eyebrow px-1 pt-1 uppercase text-doqyn-subtle">Frequentes</p>
+              ) : null}
+              {!candidate.frequent && candidates[index - 1]?.frequent ? (
+                <p className="type-eyebrow px-1 pt-3 uppercase text-doqyn-subtle">
+                  Todo mundo da empresa
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className="recipient-candidate"
+                onClick={() => onSelect(candidate)}
+              >
+                <UserAvatar name={candidate.name} email={candidate.email} size="sm" />
+                <span className="min-w-0 text-left">
+                  <span className="type-body block truncate text-doqyn-text">{candidate.name}</span>
+                  <span className="type-caption block truncate text-doqyn-muted">
+                    {candidate.email}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
+            </Fragment>
           ))
         )}
       </div>

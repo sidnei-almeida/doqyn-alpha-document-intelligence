@@ -300,6 +300,7 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
                       id: user.userId,
                       name: user.name,
                       email: user.email ?? '',
+                      frequent: user.frequent,
                     }))}
                   selected={internalPick}
                   onSelect={setInternalPick}

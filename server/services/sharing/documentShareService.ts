@@ -17,6 +17,7 @@ import {
   tenantScopeFilterFromContext,
 } from '../../tenancy/tenantQuery.js';
 import { isDocumentAdmin, loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
+import { listFrequentContacts } from '../directory/contactAffinityService.js';
 import {
   canUserShareDocument,
   canUserListDocumentWithShare,
@@ -285,6 +286,24 @@ export async function searchShareableTenantUsers(
   }
 
   const q = query?.trim().toLowerCase() ?? '';
+
+  /**
+   * A afinidade só ordena quando não há busca.
+   *
+   * Com termo digitado, quem manda é o termo: a pessoa já disse quem quer, e reordenar por
+   * histórico esconderia o colega raro que ela acabou de nomear atrás de quem ela aciona sempre.
+   *
+   * Sem termo, a ordem de cadastro não diz nada — numa empresa de 200 pessoas as quatro do dia a
+   * dia caem no meio da rolagem, e o corte em 25 as descarta por acaso.
+   */
+  const affinity = q
+    ? new Map<string, number>()
+    : new Map(
+        (await listFrequentContacts(ctx, user, { scope: 'internal', limit: 100 })).map(
+          (contact) => [contact.userId, contact.score],
+        ),
+      );
+
   const results = active
     .map(serializeTenantMember)
     .filter((member) => {
@@ -303,6 +322,9 @@ export async function searchShareableTenantUsers(
         .toLowerCase();
       return haystack.includes(q);
     })
+    // Ordenar **antes** do corte: sem isso, os 25 primeiros continuariam sendo os 25 de sempre, e
+    // a ordem só embaralharia quem já tinha passado por acaso.
+    .sort((a, b) => (affinity.get(b.userId) ?? 0) - (affinity.get(a.userId) ?? 0))
     .slice(0, 25)
     .map((member) => ({
       userId: member.userId,
@@ -311,9 +333,16 @@ export async function searchShareableTenantUsers(
       firstName: member.firstName,
       lastName: member.lastName,
       alreadyShared: existingSharedIds.has(member.userId),
+      /**
+       * Quantos da lista vieram do histórico, para a tela saber onde termina "Frequentes".
+       *
+       * O score em si não sobe: é número sem unidade, que só serve para ordenar. Mostrá-lo
+       * convidaria a lê-lo como medida de proximidade, que ele não é.
+       */
+      frequent: affinity.has(member.userId),
     }));
 
-  return { users: results };
+  return { users: results, frequentCount: results.filter((member) => member.frequent).length };
 }
 
 export async function listDocumentShareGrants(

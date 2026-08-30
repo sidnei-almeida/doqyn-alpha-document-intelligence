@@ -1,4 +1,7 @@
-import type { DocumentSignatureSummary, DocumentSignatureSummaryStatus } from '@/types/document-library';
+import type {
+  DocumentSignatureSummary,
+  DocumentSignatureSummaryStatus,
+} from '@/types/document-library';
 
 const EMPTY_SIGNATURE_SUMMARY: DocumentSignatureSummary = {
   status: 'none',
@@ -23,16 +26,14 @@ export function normalizeSignatureSummary(
   };
 }
 
-export function documentHasPendingSignature(
-  doc: { signatureSummary?: DocumentSignatureSummary | null },
-): boolean {
+export function documentHasPendingSignature(doc: {
+  signatureSummary?: DocumentSignatureSummary | null;
+}): boolean {
   const normalized = normalizeSignatureSummary(doc.signatureSummary);
   return normalized?.status === 'pending';
 }
 
-export function signatureSummaryHasActivity(
-  summary?: DocumentSignatureSummary | null,
-): boolean {
+export function signatureSummaryHasActivity(summary?: DocumentSignatureSummary | null): boolean {
   const normalized = normalizeSignatureSummary(summary);
   return Boolean(normalized && normalized.status !== 'none');
 }
@@ -73,7 +74,9 @@ export function signatureSummaryBadgeVariant(
   }
 }
 
-export function signatureSummaryBadgeLabel(summary?: DocumentSignatureSummary | null): string | null {
+export function signatureSummaryBadgeLabel(
+  summary?: DocumentSignatureSummary | null,
+): string | null {
   const normalized = normalizeSignatureSummary(summary);
   if (!normalized || normalized.status === 'none') return null;
 
@@ -133,10 +136,7 @@ export function signatureDetailSummaryText(summary?: DocumentSignatureSummary | 
   return label ?? 'Assinatura em andamento.';
 }
 
-export function signedPdfDownloadName(
-  documentName: string,
-  verificationCode?: string,
-): string {
+export function signedPdfDownloadName(documentName: string, verificationCode?: string): string {
   const base = documentName.replace(/\.pdf$/i, '') || 'documento';
   return verificationCode ? `${base}-assinado-${verificationCode}.pdf` : `${base}-assinado.pdf`;
 }

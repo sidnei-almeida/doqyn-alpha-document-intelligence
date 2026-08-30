@@ -314,6 +314,7 @@ export function RequestSignatureModal({
                     id: user.userId,
                     name: user.name,
                     email: user.email ?? '',
+                    frequent: user.frequent,
                   }))}
                   selected={internalPick}
                   onSelect={setInternalPick}
