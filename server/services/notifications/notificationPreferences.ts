@@ -130,3 +130,31 @@ export function channelsForMember(
   if (preferences.whatsapp) channels.push('whatsapp');
   return channels;
 }
+
+/**
+ * O degrau de vencimento a partir do qual o aviso vira e-mail.
+ *
+ * Os degraus configurados costumam ser 30/15/7/1 — quatro avisos do mesmo contrato. No sino isso
+ * funciona: são quatro linhas numa caixa que a pessoa abre quando quer. Na caixa de entrada, quatro
+ * e-mails sobre o mesmo documento é o que ensina alguém a ignorar o quarto, que é justamente o
+ * urgente. Longe do prazo o sino basta; perto dele, o e-mail vale a interrupção.
+ */
+export const EXPIRY_EMAIL_MAX_OFFSET_DAYS = 7;
+
+/**
+ * Ajusta os canais ao aviso concreto — hoje, só o vencimento precisa disso.
+ *
+ * A escolha de canal é feita por usuário, antes de a notificação existir; o degrau, porém, é de
+ * cada aviso. Este é o ponto em que os dois se encontram.
+ */
+export function channelsForNotification(
+  channels: NotificationChannel[],
+  notification: { type: NotificationType; expiry?: { offsetDays: number } },
+): NotificationChannel[] {
+  if (notification.type !== 'document_expiring') return channels;
+
+  const offset = notification.expiry?.offsetDays;
+  if (offset === undefined || offset <= EXPIRY_EMAIL_MAX_OFFSET_DAYS) return channels;
+
+  return channels.filter((channel) => channel !== 'email');
+}

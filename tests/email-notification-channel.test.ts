@@ -158,3 +158,42 @@ describe('quais avisos viram e-mail', () => {
     assert.equal(drain.includes("status: 'discarded'"), false);
   });
 });
+
+describe('vencimento: perto do prazo vira e-mail, longe não', () => {
+  it('o degrau distante fica só no sino', async () => {
+    const { channelsForNotification } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    const canais = ['in_app', 'email'] as const;
+    assert.deepEqual(
+      channelsForNotification([...canais], {
+        type: 'document_expiring',
+        expiry: { offsetDays: 30 },
+      }),
+      ['in_app'],
+    );
+  });
+
+  it('o degrau perto mantém o e-mail', async () => {
+    const { channelsForNotification, EXPIRY_EMAIL_MAX_OFFSET_DAYS } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    for (const offsetDays of [EXPIRY_EMAIL_MAX_OFFSET_DAYS, 1, 0, -3]) {
+      assert.deepEqual(
+        channelsForNotification(['in_app', 'email'], {
+          type: 'document_expiring',
+          expiry: { offsetDays },
+        }),
+        ['in_app', 'email'],
+        `offset ${offsetDays}`,
+      );
+    }
+  });
+
+  it('outros tipos não são filtrados por degrau', async () => {
+    const { channelsForNotification } =
+      await import('../server/services/notifications/notificationPreferences.ts');
+    assert.deepEqual(channelsForNotification(['in_app', 'email'], { type: 'signature_required' }), [
+      'in_app',
+      'email',
+    ]);
+  });
+});

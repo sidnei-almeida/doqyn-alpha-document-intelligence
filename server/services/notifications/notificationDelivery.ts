@@ -4,6 +4,7 @@ import { getDb } from '../../db/mongoClient.js';
 import type { NotificationChannel } from '../../db/notificationTypes.js';
 import type { MongoNotification, MongoNotificationDelivery } from '../../db/types.js';
 import { logger } from '../../utils/logger.js';
+import { channelsForNotification } from './notificationPreferences.js';
 
 async function getDeliveriesCollection() {
   const db = await getDb();
@@ -39,7 +40,13 @@ export async function recordNotificationDeliveries(
   const rows: MongoNotificationDelivery[] = [];
 
   for (const notification of notifications) {
-    for (const channel of channelsByUserId.get(notification.userId) ?? ['in_app']) {
+    // Os canais vêm por usuário, decididos antes de a notificação existir; o degrau de vencimento
+    // é de cada aviso, e só aqui os dois se encontram.
+    const channels = channelsForNotification(
+      channelsByUserId.get(notification.userId) ?? ['in_app'],
+      notification,
+    );
+    for (const channel of channels) {
       const configured = isChannelProviderConfigured(channel);
       rows.push({
         _id: `notdlv_${randomUUID()}`,
