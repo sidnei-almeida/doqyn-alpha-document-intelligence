@@ -18,6 +18,7 @@ import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusPr
 import { useUploadQueueContext } from './uploadQueueContext';
 import { UploadScanThumb } from './components/UploadScanThumb';
 import { UploadScanStack } from './components/UploadScanStack';
+import { AiReadingGlyph } from './components/AiReadingGlyph';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   queued: 'Na fila',
@@ -253,10 +254,11 @@ export function UploadQueueDrawer() {
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            {/* Papel, e não um selo de "IA": a pilha mostra o que está sendo lido e quanto vem
-                atrás, e no fim continua mostrando a última folha. Sem miniatura desenhável ela se
-                recolhe sozinha, e o cabeçalho fica só com o texto — que já diz tudo. */}
+            {/* Papel à esquerda, e o sinal de que é a IA lendo logo antes do texto: a pilha diz
+                o que está sendo lido, o glifo diz quem está lendo. O fio dele corre enquanto houver
+                trabalho e para junto com a fila. */}
             <UploadScanStack items={items} />
+            <AiReadingGlyph reading={pendingCount > 0} className="text-doqyn-accent-active" />
             <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">

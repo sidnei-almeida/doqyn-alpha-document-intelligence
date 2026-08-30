@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils';
 import type { UploadQueueItem } from '../types';
 import { isUploadInProgress } from '../utils/uploadStatusProgress';
 
@@ -20,68 +19,65 @@ const VISIBLE = 3;
 /** Quanto a folha que terminou continua no DOM para poder sair deslizando. */
 const LEAVE_MS = 460;
 
-type Slot = { item: UploadQueueItem; leaving: boolean };
-
 export function UploadScanStack({ items }: { items: UploadQueueItem[] }) {
   /**
    * Acabado o lote, fica a última folha — e não um ícone.
    *
    * O cabeçalho mostrava uma estrelinha de "IA" quando não havia mais nada em curso, e ela era a
-   * única coisa decorativa de uma peça feita inteira para mostrar o documento de verdade sendo
-   * lido. Trocar papel por brilho no fim faz a fila mudar de identidade no meio do próprio
-   * trabalho. Enquanto a fila existir, o que se vê é papel.
+   * única coisa decorativa de uma peça feita inteira para mostrar o documento sendo lido. Trocar
+   * papel por brilho no fim faz a fila mudar de identidade no meio do próprio trabalho.
    */
   const emCurso = items.filter((item) => isUploadInProgress(item.status));
-  const active = (emCurso.length > 0 ? emCurso : items.slice(-1)).slice(0, VISIBLE);
-  const [slots, setSlots] = useState<Slot[]>(() =>
-    active.map((item) => ({ item, leaving: false })),
-  );
+  const visiveis = (emCurso.length > 0 ? emCurso : items.slice(-1))
+    .filter((item) => item.thumbnail)
+    .slice(0, VISIBLE);
+
+  /**
+   * Quem saiu da frente, ainda em cena.
+   *
+   * Estado à parte, e **não** uma cópia da lista visível: a folha da vez é sempre derivada de
+   * `items` no render, então ela volta sozinha se voltar a valer — foi o que quebrou quando a
+   * pilha guardava as duas coisas no mesmo lugar e o fim do lote não trazia ninguém de volta.
+   */
+  const [saindo, setSaindo] = useState<UploadQueueItem[]>([]);
+  const anterior = useRef<UploadQueueItem[]>([]);
   const timers = useRef(new Map<string, number>());
 
   useEffect(() => {
-    setSlots((current) => {
-      const ativos = new Map(active.map((item) => [item.id, item]));
+    const agora = new Set(visiveis.map((item) => item.id));
+    const partiram = anterior.current.filter((item) => !agora.has(item.id));
+    anterior.current = visiveis;
 
-      // Quem saiu da frente fica mais um instante, marcado, para a saída ter o que animar.
-      const mantidos = current.map((slot) =>
-        ativos.has(slot.item.id)
-          ? { item: ativos.get(slot.item.id)!, leaving: false }
-          : { ...slot, leaving: true },
-      );
+    if (partiram.length === 0) return;
 
-      const conhecidos = new Set(mantidos.map((slot) => slot.item.id));
-      const novos = active
-        .filter((item) => !conhecidos.has(item.id))
-        .map((item) => ({ item, leaving: false }));
+    setSaindo((current) => [
+      ...current.filter((item) => !partiram.some((outro) => outro.id === item.id)),
+      ...partiram,
+    ]);
 
-      return [...mantidos, ...novos];
-    });
-    // `active` é derivado de `items` a cada render; observar `items` evita o laço infinito que
-    // observar o array recriado provocaria.
-  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // A folha marcada some depois da animação, e não junto com ela.
-  useEffect(() => {
-    for (const slot of slots) {
-      if (!slot.leaving || timers.current.has(slot.item.id)) continue;
-      const id = window.setTimeout(() => {
-        timers.current.delete(slot.item.id);
-        setSlots((current) => current.filter((other) => other.item.id !== slot.item.id));
+    for (const item of partiram) {
+      window.clearTimeout(timers.current.get(item.id));
+      const timer = window.setTimeout(() => {
+        timers.current.delete(item.id);
+        setSaindo((current) => current.filter((outro) => outro.id !== item.id));
       }, LEAVE_MS);
-      timers.current.set(slot.item.id, id);
+      timers.current.set(item.id, timer);
     }
-  }, [slots]);
+    // Comparar a lista derivada a cada render é o ponto: é assim que a saída acompanha o evento
+    // real, e não um intervalo.
+  }, [visiveis]);
 
   useEffect(() => {
     const running = timers.current;
     return () => {
-      for (const id of running.values()) window.clearTimeout(id);
+      for (const timer of running.values()) window.clearTimeout(timer);
       running.clear();
     };
   }, []);
 
-  const desenhaveis = slots.filter((slot) => slot.item.thumbnail);
-  if (desenhaveis.length === 0) return null;
+  // Quem voltou a valer não está saindo: a lista derivada manda.
+  const emCena = saindo.filter((item) => !visiveis.some((outro) => outro.id === item.id));
+  if (visiveis.length === 0 && emCena.length === 0) return null;
 
   /**
    * As de trás recuam, giram e escurecem.
@@ -90,38 +86,45 @@ export function UploadScanStack({ items }: { items: UploadQueueItem[] }) {
    * paralelas e o olho vê uma folha com sombra. Um grau e meio por folha basta para virar papel
    * empilhado, e é pouco o bastante para não parecer torto.
    */
-  let depth = -1;
   return (
     <span className="relative block h-11 w-11 shrink-0" aria-hidden>
-      {desenhaveis.map((slot) => {
-        if (!slot.leaving) depth += 1;
-        const atras = slot.leaving ? 0 : depth;
-        return (
-          <span
-            key={slot.item.id}
-            className={cn(
-              'upload-stack__sheet absolute inset-y-0 left-0 w-8 overflow-hidden rounded-[2px] bg-white',
-              slot.leaving && 'upload-stack__sheet--leaving',
-            )}
-            style={{
-              transform: `translateX(${atras * 5}px) translateY(${atras * -3}px) rotate(${atras * 1.5}deg) scale(${1 - atras * 0.06})`,
-              opacity: 1 - atras * 0.3,
-              zIndex: VISIBLE - atras,
-            }}
-          >
-            <img
-              src={slot.item.thumbnail!.url}
-              alt=""
-              className="h-full w-full object-cover object-top"
-              draggable={false}
-            />
-            {/* Só a da frente é varrida: é a única que a IA está lendo agora. */}
-            {atras === 0 && !slot.leaving && slot.item.status === 'analyzing' ? (
-              <span className="upload-thumb__scan pointer-events-none absolute inset-x-0" />
-            ) : null}
-          </span>
-        );
-      })}
+      {emCena.map((item) => (
+        <span
+          key={item.id}
+          className="upload-stack__sheet upload-stack__sheet--leaving absolute inset-y-0 left-0 w-8 overflow-hidden rounded-[2px] bg-white"
+          style={{ zIndex: VISIBLE + 1 }}
+        >
+          <img
+            src={item.thumbnail!.url}
+            alt=""
+            className="h-full w-full object-cover object-top"
+            draggable={false}
+          />
+        </span>
+      ))}
+
+      {visiveis.map((item, atras) => (
+        <span
+          key={item.id}
+          className="upload-stack__sheet absolute inset-y-0 left-0 w-8 overflow-hidden rounded-[2px] bg-white"
+          style={{
+            transform: `translateX(${atras * 5}px) translateY(${atras * -3}px) rotate(${atras * 1.5}deg) scale(${1 - atras * 0.06})`,
+            opacity: 1 - atras * 0.3,
+            zIndex: VISIBLE - atras,
+          }}
+        >
+          <img
+            src={item.thumbnail!.url}
+            alt=""
+            className="h-full w-full object-cover object-top"
+            draggable={false}
+          />
+          {/* Só a da frente é varrida: é a única que a IA está lendo agora. */}
+          {atras === 0 && item.status === 'analyzing' ? (
+            <span className="upload-thumb__scan pointer-events-none absolute inset-x-0" />
+          ) : null}
+        </span>
+      ))}
     </span>
   );
 }

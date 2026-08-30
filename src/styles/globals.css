@@ -4535,6 +4535,33 @@
     }
   }
 
+  /* O fio do glifo de IA: parado, mora na última linha, que é onde a leitura acaba. Correndo,
+     percorre as linhas de cima para baixo — o mesmo gesto da varredura, no tamanho de um ícone. */
+  .ai-reading__thread {
+    transform: translateY(0);
+  }
+
+  .ai-reading__thread--running {
+    animation: ai-reading-thread 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @keyframes ai-reading-thread {
+    from {
+      transform: translateY(-9px);
+      opacity: 0.25;
+    }
+    18% {
+      opacity: 1;
+    }
+    82% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 0.25;
+    }
+  }
+
   /* A pilha do lote: o avanço é transição, não animação — cada folha vai para a posição nova
      quando a da frente sai, e quem manda no tempo é o evento, não um temporizador. */
   .upload-stack__sheet {
@@ -4670,6 +4697,7 @@
     .upload-thumb__stamp,
     .upload-stack__sheet,
     .upload-stack__sheet--leaving,
+    .ai-reading__thread--running,
     .auth-page,
     .auth-line,
     .auth-write,
