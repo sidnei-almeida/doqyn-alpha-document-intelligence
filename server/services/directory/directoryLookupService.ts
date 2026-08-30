@@ -10,6 +10,7 @@ import { serializeTenantMember } from '../memberSerialize.js';
 import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
 import { redisIncrWithTtl } from '../../redis/redisClient.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { buildProfileAvatarUrl } from '../profile/profileAvatarConfig.js';
 
 /**
  * Os três destinos possíveis de um e-mail digitado no formulário de envio.
@@ -172,21 +173,45 @@ export type DirectorySearchResult = {
   userId: string;
   username: string;
   name: string;
+  /**
+   * Vão junto porque o resultado precisa ser reconhecível: dois `camila.o` não se distinguem por
+   * handle nenhum, e escolher o destinatário errado de um documento não é erro recuperável.
+   *
+   * É uma troca, e está registrada: quem varre prefixos passa a colher endereços. O teto de
+   * consulta acima é o que resta segurando isso.
+   */
+  email: string;
+  avatarUrl: string | null;
+};
+
+/**
+ * O teto de resultados, e por que ele é a resposta a "e se houver mil Lucianas".
+ *
+ * Não há paginação aqui de propósito: um diretório navegável página a página é exatamente a
+ * varredura que o teto de consulta existe para impedir. Quem não achou nas primeiras linhas
+ * estreita o prefixo — é o prefixo, e não a rolagem, que resolve homônimo.
+ */
+export const DIRECTORY_SEARCH_LIMIT = 8;
+
+export type DirectorySearchPage = {
+  results: DirectorySearchResult[];
+  /** Bateu no teto: há mais gente sob esse prefixo do que cabe na resposta. */
+  hasMore: boolean;
 };
 
 export async function searchDirectoryUsers(
   ctx: DocumentRequestContext,
   user: AuthUser,
   rawQuery: string | undefined,
-): Promise<DirectorySearchResult[]> {
+): Promise<DirectorySearchPage> {
   const prefix = rawQuery?.trim().toLowerCase() ?? '';
-  if (prefix.length < 2) return [];
+  if (prefix.length < 2) return { results: [], hasMore: false };
 
-  if (!isInterTenantSharingEnabled()) return [];
+  if (!isInterTenantSharingEnabled()) return { results: [], hasMore: false };
 
   await assertLookupQuota(user.id);
 
-  const hits = await searchDirectoryUsersByUsername(prefix);
+  const hits = await searchDirectoryUsersByUsername(prefix, DIRECTORY_SEARCH_LIMIT);
   const members = await listOperationalTenantMembers(ctx.tenantId);
   const inHouse = new Set(
     members
@@ -195,17 +220,28 @@ export async function searchDirectoryUsers(
       .filter(Boolean),
   );
 
-  return (
-    hits
-      // Colega de casa some da busca de fora: para ele existe a busca por nome, que é melhor, e
-      // oferecê-lo aqui criaria uma pendência de aceite onde bastava compartilhar.
-      .filter((hit) => hit.id !== user.id && !inHouse.has(hit.id))
-      .map((hit) => ({
-        userId: hit.id,
-        username: hit.username,
-        name: hit.displayName || hit.username,
-      }))
-  );
+  // Contado **antes** do filtro: depois dele, oito colegas de casa removidos pareceriam "nada
+  // encontrado" num prefixo que na verdade transbordou.
+  const hasMore = hits.length >= DIRECTORY_SEARCH_LIMIT;
+
+  const results = hits
+    // Colega de casa some da busca de fora: para ele existe a busca por nome, que é melhor, e
+    // oferecê-lo aqui criaria uma pendência de aceite onde bastava compartilhar.
+    .filter((hit) => hit.id !== user.id && !inHouse.has(hit.id))
+    .map((hit) => ({
+      userId: hit.id,
+      username: hit.username,
+      name: hit.displayName || hit.username,
+      email: hit.email,
+      // Sem retrato ativo não há URL: mandar uma que responde 404 faria toda linha piscar a
+      // imagem quebrada antes de cair na inicial.
+      avatarUrl:
+        hit.avatarStatus === 'active'
+          ? buildProfileAvatarUrl({ userId: hit.id, version: hit.avatarVersion, size: 64 })
+          : null,
+    }));
+
+  return { results, hasMore };
 }
 
 /**

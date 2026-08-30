@@ -151,6 +151,9 @@ export type DirectorySearchHit = {
   id: string;
   username: string;
   displayName: string;
+  email: string;
+  avatarVersion: number;
+  avatarStatus: 'active' | 'removed' | null;
 };
 
 export async function searchDirectoryUsersByUsername(

@@ -14,8 +14,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const q = typeof req.query.q === 'string' ? req.query.q : undefined;
 
   try {
-    const results = await searchDirectoryUsers(auth.ctx, auth.user, q);
-    return res.status(200).json({ results, total: results.length });
+    const page = await searchDirectoryUsers(auth.ctx, auth.user, q);
+    return res
+      .status(200)
+      .json({ results: page.results, total: page.results.length, hasMore: page.hasMore });
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });

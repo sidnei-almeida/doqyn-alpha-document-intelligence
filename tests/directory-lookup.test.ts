@@ -74,6 +74,41 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
     assert.ok(quota > 0 && collapse > quota);
   });
 
+  it('a busca tem teto e avisa que transbordou, sem contar quantos são', () => {
+    const service = read('server/services/directory/directoryLookupService.ts');
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
+
+    // O teto é passado adiante: sem isso o padrão do cliente interno decidiria sozinho.
+    assert.ok(service.includes('export const DIRECTORY_SEARCH_LIMIT = 8'));
+    assert.ok(service.includes('searchDirectoryUsersByUsername(prefix, DIRECTORY_SEARCH_LIMIT)'));
+
+    // `hasMore` sai da contagem antes do filtro de colega de casa: depois dele, oito removidos
+    // pareceriam "nada encontrado" num prefixo que transbordou.
+    const hasMore = service.indexOf('const hasMore = hits.length >= DIRECTORY_SEARCH_LIMIT');
+    const filter = service.indexOf('.filter((hit) => hit.id !== user.id');
+    assert.ok(hasMore > 0 && filter > hasMore);
+
+    // A lista não empurra o formulário: altura travada e rolagem própria.
+    assert.ok(field.includes('max-h-56 overflow-y-auto'));
+
+    // O aviso diz o que fazer, e não quantos são: a contagem total é o que um diretório
+    // varrível entregaria de graça.
+    assert.ok(field.includes('Digite mais letras para estreitar'));
+    assert.ok(!field.includes('search.data?.total'));
+  });
+
+  it('o resultado da busca é reconhecível: retrato, nome, apelido e e-mail', () => {
+    const service = read('server/services/directory/directoryLookupService.ts');
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
+
+    // Sem retrato ativo não há URL: uma que responde 404 faria a linha piscar imagem quebrada.
+    assert.ok(service.includes("hit.avatarStatus === 'active'"));
+    assert.ok(service.includes('buildProfileAvatarUrl'));
+
+    assert.ok(field.includes('<UserAvatar'));
+    assert.ok(field.includes('@{hit.username} · {hit.email}'));
+  });
+
   it('a rota está registrada no despachante, que é mantido à mão', () => {
     const apiServer = read('server/apiServer.ts');
     const handler = read('api/directory/lookup.ts');

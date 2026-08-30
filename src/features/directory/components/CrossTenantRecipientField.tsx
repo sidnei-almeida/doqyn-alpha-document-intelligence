@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { cn } from '@/lib/utils';
 import { looksLikeEmail, useDirectoryLookup } from '../hooks/useDirectoryLookup';
 import { useDirectorySearch } from '../hooks/useDirectorySearch';
@@ -55,6 +56,7 @@ export function CrossTenantRecipientField({
   const lookup = useDirectoryLookup(normalized, isEmail);
   // Enquanto não é e-mail, o que se digita é apelido — e aí a busca por prefixo responde.
   const search = useDirectorySearch(normalized, !isEmail);
+  const hits = search.data?.results ?? [];
 
   let resolution: Resolution | null = null;
   let action: { label: string; run: () => void } | null = null;
@@ -122,23 +124,48 @@ export function CrossTenantRecipientField({
 
       {/* O que a busca por apelido achou. Colega de casa não aparece aqui: para ele existe a
           busca por nome, que é melhor, e oferecê-lo por este caminho criaria pendência de aceite
-          onde bastava compartilhar. */}
-      {!isEmail && (search.data ?? []).length > 0 ? (
-        <ul className="border-t border-doqyn-border-subtle">
-          {(search.data ?? []).map((hit) => (
+          onde bastava compartilhar.
+
+          Altura travada com rolagem própria: a lista mora dentro de um formulário em modal, e
+          deixá-la crescer empurraria categoria, prazo e o botão de enviar para fora da vista
+          justamente enquanto se escolhe o destinatário. */}
+      {!isEmail && hits.length > 0 ? (
+        <ul className="max-h-56 overflow-y-auto border-t border-doqyn-border-subtle">
+          {hits.map((hit) => (
             <li key={hit.userId} className="border-b border-doqyn-border-subtle">
               <button
                 type="button"
                 disabled={disabled}
                 onClick={() => onPick({ username: hit.username, name: hit.name })}
-                className="flex w-full flex-col items-start py-2 text-left hover:bg-doqyn-surface-hover"
+                className="flex w-full items-center gap-3 py-2 text-left hover:bg-doqyn-surface-hover"
               >
-                <span className="text-body text-doqyn-text">{hit.name}</span>
-                <span className="text-micro text-doqyn-muted">@{hit.username}</span>
+                <UserAvatar
+                  userId={hit.userId}
+                  name={hit.name}
+                  email={hit.email}
+                  avatarUrl={hit.avatarUrl}
+                  size="md"
+                />
+                {/* `min-w-0` porque o e-mail longo é o que estoura a linha, e truncar é melhor
+                    que empurrar o retrato para fora do campo. */}
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-body text-doqyn-text">{hit.name}</span>
+                  <span className="truncate text-micro text-doqyn-muted">
+                    @{hit.username} · {hit.email}
+                  </span>
+                </span>
               </button>
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {/* Nunca "mostrando 8 de 1000": a contagem total é a informação que um diretório varrível
+          entregaria de graça. O que a pessoa precisa saber é o que fazer — digitar mais. */}
+      {!isEmail && search.data?.hasMore ? (
+        <span className="text-micro text-doqyn-subtle">
+          Há mais gente com esse começo de nome de usuário. Digite mais letras para estreitar.
+        </span>
       ) : null}
 
       <PartnerContactList onPick={setEmail} />
