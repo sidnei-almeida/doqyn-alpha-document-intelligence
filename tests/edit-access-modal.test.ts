@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import {
-  cloneAccessFormState,
-  isAccessFormDirty,
-} from '../src/features/users/accessFormState.js';
+import { cloneAccessFormState, isAccessFormDirty } from '../src/features/users/accessFormState.js';
 import {
   ASSIGNABLE_PLATFORM_ROLES,
   PLATFORM_ROLE_LABELS,
@@ -62,7 +59,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(dialog.includes('PlatformRolesSection'));
     assert.ok(dialog.includes('isAccessFormDirty'));
     assert.ok(dialog.includes('Descartar alterações'));
-    assert.ok(sections.includes('from \'@/components/ui/Checkbox\''));
+    assert.ok(sections.includes("from '@/components/ui/Checkbox'"));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
 

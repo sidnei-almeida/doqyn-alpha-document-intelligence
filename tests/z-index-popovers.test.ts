@@ -60,7 +60,11 @@ describe('z-index e popovers ancorados', () => {
       const source = readSrc(path);
       assert.ok(source.includes('AnchoredPopover'), `${path} deve usar AnchoredPopover`);
       assert.equal(source.includes('absolute z-50'), false, `${path} não deve usar z-50 absolute`);
-      assert.equal(source.includes('absolute z-[70]'), false, `${path} não deve usar z-[70] absolute`);
+      assert.equal(
+        source.includes('absolute z-[70]'),
+        false,
+        `${path} não deve usar z-[70] absolute`,
+      );
       assert.equal(source.includes('absolute z-30'), false, `${path} não deve usar z-30 absolute`);
     }
   });

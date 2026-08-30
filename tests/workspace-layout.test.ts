@@ -36,7 +36,7 @@ describe('layout do workspace', () => {
     assert.ok(search.includes('Ctrl'));
     assert.ok(search.includes('isMacPlatform'));
     assert.ok(search.includes('metaKey') && search.includes('ctrlKey'));
-    assert.ok(search.includes("navigate(`/biblioteca"));
+    assert.ok(search.includes('navigate(`/biblioteca'));
   });
 
   it('TopBar reaproveita sessão atual (usuário e tenant)', () => {
@@ -81,7 +81,13 @@ describe('layout do workspace', () => {
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     assert.ok(sidebar.includes('SidebarNavItem'));
     assert.equal(sidebar.includes('ComingSoonNavItem'), false);
-    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
+    for (const label of [
+      'Compartilhados comigo',
+      'Para assinar',
+      'Recentes',
+      'Favoritos',
+      'Lixeira',
+    ]) {
       assert.ok(constants.includes(label), `${label} presente`);
     }
   });

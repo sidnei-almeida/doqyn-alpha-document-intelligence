@@ -64,7 +64,10 @@ describe('projectDocumentSearchMeta', () => {
     const mae = meta.people.find((p) => p.role === 'mae');
     assert.ok(mae);
     assert.equal(mae!.relatedTo, 'Cristiano Rafael Baldissera');
-    assert.equal(meta.people.find((p) => p.role === 'pai')?.relatedTo, 'Cristiano Rafael Baldissera');
+    assert.equal(
+      meta.people.find((p) => p.role === 'pai')?.relatedTo,
+      'Cristiano Rafael Baldissera',
+    );
   });
 
   it('extrai validade tipada de data_vencimento', () => {
@@ -75,7 +78,10 @@ describe('projectDocumentSearchMeta', () => {
 
     assert.ok(meta.validityDate);
     assert.equal(meta.validityDate!.getUTCDate(), 30);
-    assert.equal(meta.dates.some((d) => d.kind === 'vencimento'), true);
+    assert.equal(
+      meta.dates.some((d) => d.kind === 'vencimento'),
+      true,
+    );
   });
 
   it('infere validityDate de data_assinatura + prazo_vigencia (ex.: 5 anos)', () => {

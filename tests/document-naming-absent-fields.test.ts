@@ -48,7 +48,10 @@ describe('nome do arquivo quando faltam metadados', () => {
       version: 'v1.0',
     });
 
-    const segments = name.replace(/\.pdf$/i, '').toLowerCase().split('_');
+    const segments = name
+      .replace(/\.pdf$/i, '')
+      .toLowerCase()
+      .split('_');
     const firstRun = segments.slice(0, 3).join('_');
     assert.ok(
       !segments.slice(3).join('_').startsWith(firstRun),

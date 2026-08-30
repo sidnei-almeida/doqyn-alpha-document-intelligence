@@ -22,7 +22,9 @@ describe('Auditoria B.7 — Vision OCR + pipeline debug + modelo Groq', () => {
     assert.ok(source.includes('summarizeError'));
     assert.ok(source.includes('previewText'));
     assert.ok(source.includes('bufferMeta'));
-    assert.ok(source.includes('TEMPORÁRIO') || source.includes('temporário') || source.includes('Desligar'));
+    assert.ok(
+      source.includes('TEMPORÁRIO') || source.includes('temporário') || source.includes('Desligar'),
+    );
   });
 
   it('OCR / extractor / groq / worker emitem logs AI_PIPELINE_DEBUG', () => {
@@ -39,7 +41,9 @@ describe('Auditoria B.7 — Vision OCR + pipeline debug + modelo Groq', () => {
     assert.ok(extractor.includes('extractTextFromPdf'));
     assert.ok(extractor.includes('getVisionOcrMinTextChars'));
     assert.ok(extractor.includes('ocrPdfPages'));
-    assert.ok(extractor.includes('Vision NÃO chamado') || extractor.includes('ocrFallbackUsed: false'));
+    assert.ok(
+      extractor.includes('Vision NÃO chamado') || extractor.includes('ocrFallbackUsed: false'),
+    );
   });
 
   it('.env.example documenta os modelos Groq em produção hoje', () => {

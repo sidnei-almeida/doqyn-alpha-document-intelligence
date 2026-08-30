@@ -63,7 +63,10 @@ describe('buildTimelineActionGroupFilter', () => {
   it('casa o carimbo de metadata quando o evento passou por emitTrackingEvent', () => {
     const filter = buildTimelineActionGroupFilter('governance')!;
     assert.ok(
-      matches(row({ action: 'document.rule_matched', metadata: { actionGroup: 'governance' } }), filter),
+      matches(
+        row({ action: 'document.rule_matched', metadata: { actionGroup: 'governance' } }),
+        filter,
+      ),
     );
   });
 
@@ -139,7 +142,9 @@ describe('buildTimelineStatusFilter', () => {
 
 describe('mapDocumentTimelineRow', () => {
   it('preenche actionGroup e status derivados quando o evento não tem carimbo', () => {
-    const item = mapDocumentTimelineRow(row({ action: 'document.preview_denied' }) as MongoAuditLog);
+    const item = mapDocumentTimelineRow(
+      row({ action: 'document.preview_denied' }) as MongoAuditLog,
+    );
     assert.equal(item.actionGroup, 'preview');
     assert.equal(item.status, 'denied');
   });

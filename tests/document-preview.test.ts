@@ -315,15 +315,16 @@ describe('addDoqynWatermarkToPdf', () => {
 
 describe('doqyn logo watermark asset', () => {
   it('rasteriza logo horizontal com canal alpha', async () => {
-    const { rasterizeDoqynWatermarkLogo, DOQYN_HORIZONTAL_LOGO_ASPECT } = await import(
-      '../server/preview/watermarkAsset.js'
-    );
+    const { rasterizeDoqynWatermarkLogo, DOQYN_HORIZONTAL_LOGO_ASPECT } =
+      await import('../server/preview/watermarkAsset.js');
     const logo = await rasterizeDoqynWatermarkLogo(480);
     assert.ok(logo.length > 0);
     const meta = await sharp(logo).metadata();
     assert.equal(meta.format, 'png');
     assert.ok((meta.width ?? 0) > (meta.height ?? 0));
-    assert.ok(Math.abs((meta.width ?? 1) / (meta.height ?? 1) - DOQYN_HORIZONTAL_LOGO_ASPECT) < 0.05);
+    assert.ok(
+      Math.abs((meta.width ?? 1) / (meta.height ?? 1) - DOQYN_HORIZONTAL_LOGO_ASPECT) < 0.05,
+    );
     assert.equal(meta.hasAlpha, true);
 
     const { data } = await sharp(logo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

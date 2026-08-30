@@ -214,7 +214,9 @@ describe('design system DOQYN', () => {
 
   it('bordas dark mode têm contraste maior que superfície', () => {
     const source = readSrc('styles/tokens.css');
-    const borderMatch = source.match(/\[data-theme='dark'\][\s\S]*?--border-default:\s*(#[0-9a-f]+)/);
+    const borderMatch = source.match(
+      /\[data-theme='dark'\][\s\S]*?--border-default:\s*(#[0-9a-f]+)/,
+    );
     const surfaceMatch = source.match(/\[data-theme='dark'\][\s\S]*?--bg-surface:\s*(#[0-9a-f]+)/);
     assert.ok(borderMatch && surfaceMatch);
 
@@ -273,7 +275,7 @@ describe('design system DOQYN', () => {
 
     assert.ok(icon.includes('material-symbols-rounded'));
     assert.ok(globals.includes('material-symbols/rounded.css'));
-    assert.ok(sidebar.includes("name={item.icon}"));
+    assert.ok(sidebar.includes('name={item.icon}'));
     assert.ok(sidebar.includes('filled={isActive}'));
     assert.ok(folderCard.includes('name="folder"'));
     assert.ok(folderCard.includes('filled'));
@@ -287,7 +289,7 @@ describe('design system DOQYN', () => {
     const globals = readSrc('styles/globals.css');
     const tokens = readSrc('styles/tokens.css');
 
-    assert.ok(toaster.includes("position=\"bottom-center\""));
+    assert.ok(toaster.includes('position="bottom-center"'));
     assert.ok(toaster.includes('closeButton={false}'));
     assert.ok(toaster.includes('unstyled: true'));
     assert.ok(toaster.includes('app-toast'));

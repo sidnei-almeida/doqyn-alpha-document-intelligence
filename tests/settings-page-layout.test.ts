@@ -37,8 +37,8 @@ describe('SettingsPage layout', () => {
     const info = readSrc('features/settings/components/SettingsInfoCard.tsx');
     const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
     assert.ok(pattern.includes('Hierarquia de cabeçalho'));
-    assert.ok(badge.includes("variant=\"success\""));
-    assert.ok(badge.includes("variant=\"neutral\""));
+    assert.ok(badge.includes('variant="success"'));
+    assert.ok(badge.includes('variant="neutral"'));
     assert.ok(badge.includes('border-dashed'));
     assert.ok(badge.includes("from '@/components/ui/Badge'"));
     assert.ok(row.includes('settings-row'));
@@ -122,7 +122,9 @@ describe('SettingsPage layout', () => {
     assert.ok(upload.includes('useUploadQueueContext'));
     assert.ok(upload.includes('SettingsSaveBar'));
     assert.ok(upload.includes('setDraft'));
-    assert.ok(upload.includes('Alterações não salvas') || saveBar.includes('Alterações não salvas'));
+    assert.ok(
+      upload.includes('Alterações não salvas') || saveBar.includes('Alterações não salvas'),
+    );
     assert.ok(panel.includes('SettingsFieldGroup'));
     assert.ok(panel.includes('settings-workflow-panel'));
   });
@@ -166,8 +168,8 @@ describe('SettingsPage layout', () => {
     assert.ok(system.includes('settings-system-overview'));
     assert.ok(system.includes('Ver detalhes avançados'));
     assert.ok(system.includes('settings-cards-grid--3col'));
-    assert.ok(system.includes("status=\"ok\""));
-    assert.ok(system.includes("status=\"pending\""));
+    assert.ok(system.includes('status="ok"'));
+    assert.ok(system.includes('status="pending"'));
     assert.ok(system.includes('APP_NAME'));
     assert.ok(system.includes('import.meta.env.MODE'));
   });

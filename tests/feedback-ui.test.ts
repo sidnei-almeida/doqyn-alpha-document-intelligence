@@ -42,18 +42,12 @@ describe('login feedback', () => {
 
   it('mapeia NO_ACTIVE_MEMBERSHIP para alerta informativo', () => {
     assert.equal(getLoginAlertVariant('NO_ACTIVE_MEMBERSHIP'), 'info');
-    assert.match(
-      getFriendlyAuthErrorMessage('NO_ACTIVE_MEMBERSHIP'),
-      /nenhuma empresa/i,
-    );
+    assert.match(getFriendlyAuthErrorMessage('NO_ACTIVE_MEMBERSHIP'), /nenhuma empresa/i);
   });
 
   it('mapeia MEMBERSHIP_PENDING para alerta de aviso', () => {
     assert.equal(getLoginAlertVariant('MEMBERSHIP_PENDING'), 'warning');
-    assert.match(
-      getFriendlyAuthErrorMessage('MEMBERSHIP_PENDING'),
-      /aguardando aprovação/i,
-    );
+    assert.match(getFriendlyAuthErrorMessage('MEMBERSHIP_PENDING'), /aguardando aprovação/i);
   });
 });
 

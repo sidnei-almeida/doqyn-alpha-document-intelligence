@@ -54,7 +54,9 @@ describe('fluxo dedicado de atualização de versão', () => {
   });
 
   it('dropzone usa ícone upload padronizado do app', () => {
-    const dropzone = readSrc('features/document-update-version/components/NewVersionUploadDropzone.tsx');
+    const dropzone = readSrc(
+      'features/document-update-version/components/NewVersionUploadDropzone.tsx',
+    );
     assert.ok(dropzone.includes('name="upload"'));
     assert.equal(dropzone.includes('upload_file'), false);
   });
@@ -64,7 +66,9 @@ describe('fluxo dedicado de atualização de versão', () => {
     assert.ok(drawer.includes('void runAnalysis(file)'));
     assert.equal(drawer.includes('file_selected'), false);
 
-    const actions = readSrc('features/document-update-version/components/ConfirmNewVersionActions.tsx');
+    const actions = readSrc(
+      'features/document-update-version/components/ConfirmNewVersionActions.tsx',
+    );
     assert.equal(actions.includes('Analisar nova versão'), false);
     assert.equal(actions.includes('update-version-analyze-button'), false);
   });
@@ -79,7 +83,9 @@ describe('fluxo dedicado de atualização de versão', () => {
 
   it('revisão compara versão atual com próxima major', () => {
     const review = readSrc('features/document-update-version/components/NewVersionReviewStep.tsx');
-    const comparison = readSrc('features/document-update-version/components/VersionComparisonPanel.tsx');
+    const comparison = readSrc(
+      'features/document-update-version/components/VersionComparisonPanel.tsx',
+    );
     assert.ok(review.includes('currentVersionLabel'));
     assert.ok(review.includes('nextVersionLabel'));
     assert.ok(review.includes('break-all'));
@@ -87,7 +93,9 @@ describe('fluxo dedicado de atualização de versão', () => {
   });
 
   it('botão de confirmação usa texto Confirmar vX.X', () => {
-    const actions = readSrc('features/document-update-version/components/ConfirmNewVersionActions.tsx');
+    const actions = readSrc(
+      'features/document-update-version/components/ConfirmNewVersionActions.tsx',
+    );
     assert.ok(actions.includes('Confirmar {nextVersionLabel}'));
     assert.equal(actions.includes('Enviar documento'), false);
   });
@@ -110,7 +118,9 @@ describe('fluxo dedicado de atualização de versão', () => {
   });
 
   it('header não usa título Envio de Documentos', () => {
-    const header = readSrc('features/document-update-version/components/UpdateDocumentVersionHeader.tsx');
+    const header = readSrc(
+      'features/document-update-version/components/UpdateDocumentVersionHeader.tsx',
+    );
     assert.ok(header.includes('Atualizar documento'));
     assert.ok(header.includes('Nova versão de'));
     assert.equal(header.includes('Envio de Documentos'), false);

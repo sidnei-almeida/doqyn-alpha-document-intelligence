@@ -49,7 +49,11 @@ describe('shell drive-inspired do workspace', () => {
     // Painel interno sem borda: superfície contínua "rebaixada" sob o chrome (estilo Drive).
     const canvasInnerBlock = globals.match(/\.workspace-canvas-inner\s*\{[^}]+\}/s);
     assert.ok(canvasInnerBlock, '.workspace-canvas-inner block');
-    assert.equal(/\bborder:/.test(canvasInnerBlock![0]), false, '.workspace-canvas-inner sem borda');
+    assert.equal(
+      /\bborder:/.test(canvasInnerBlock![0]),
+      false,
+      '.workspace-canvas-inner sem borda',
+    );
     assert.ok(canvasInnerBlock![0].includes('border-radius: var(--radius-workspace)'));
     assert.ok(canvasInnerBlock![0].includes('background: var(--bg-canvas)'));
     assert.ok(canvasInnerBlock![0].includes('box-shadow: var(--shadow-workspace-panel)'));

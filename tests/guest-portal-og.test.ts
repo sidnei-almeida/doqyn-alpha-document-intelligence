@@ -30,14 +30,26 @@ describe('guest portal Open Graph', () => {
   it('renderiza HTML com meta tags Open Graph e Twitter Cards', () => {
     const html = renderOgPortalHtml(sampleSignMetadata);
 
-    assert.ok(html.includes('<meta property="og:title" content="Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN" />'));
-    assert.ok(html.includes('<meta property="og:description" content="Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00." />'));
+    assert.ok(
+      html.includes(
+        '<meta property="og:title" content="Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN" />',
+      ),
+    );
+    assert.ok(
+      html.includes(
+        '<meta property="og:description" content="Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00." />',
+      ),
+    );
     assert.ok(
       html.includes(
         '<meta property="og:image" content="https://app.doqyn.com/api/og/guest/sign/sample-token/image" />',
       ),
     );
-    assert.ok(html.includes('<meta property="og:url" content="https://app.doqyn.com/guest/sign/sample-token" />'));
+    assert.ok(
+      html.includes(
+        '<meta property="og:url" content="https://app.doqyn.com/guest/sign/sample-token" />',
+      ),
+    );
     assert.ok(html.includes('<meta property="og:type" content="website" />'));
     assert.ok(html.includes('<meta name="twitter:card" content="summary_large_image" />'));
     assert.ok(html.includes('Abrir e assinar'));

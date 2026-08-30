@@ -5,7 +5,10 @@ import {
   buildStorageFileNameFallback,
   resolveStorageFileNames,
 } from '../server/utils/resolveStorageFileNames.js';
-import { buildDocumentPreviewObjectKey, buildDocumentVersionObjectKey } from '../server/storage/storageKeys.js';
+import {
+  buildDocumentPreviewObjectKey,
+  buildDocumentVersionObjectKey,
+} from '../server/storage/storageKeys.js';
 
 describe('resolveStorageFileNames', () => {
   it('modo ai_suggested usa nome da IA sanitizado', () => {
@@ -31,7 +34,10 @@ describe('resolveStorageFileNames', () => {
 
     assert.equal(resolved.finalFileName, 'NDA_Confidencialidade_2026-07-02_v1.pdf');
     assert.equal(resolved.storageFileName, 'NDA_Confidencialidade_2026-07-02_v1.pdf');
-    assert.equal(resolved.previewStorageFileName, 'NDA_Confidencialidade_2026-07-02_v1_preview.pdf');
+    assert.equal(
+      resolved.previewStorageFileName,
+      'NDA_Confidencialidade_2026-07-02_v1_preview.pdf',
+    );
     assert.equal(resolved.finalFileName.includes('original'), false);
   });
 

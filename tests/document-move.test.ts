@@ -149,7 +149,10 @@ describe('document move — frontend', () => {
 
   it('menu de pasta não inclui Mover documento', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
-    const folderBlock = menu.slice(menu.indexOf("state.kind === 'folder'"), menu.indexOf("state.kind === 'file'"));
+    const folderBlock = menu.slice(
+      menu.indexOf("state.kind === 'folder'"),
+      menu.indexOf("state.kind === 'file'"),
+    );
     assert.equal(folderBlock.includes('Mover'), false);
   });
 });

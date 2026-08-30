@@ -20,7 +20,9 @@ const longPage = (marker: string) => `${marker} `.repeat(Math.ceil((CHUNK_SIZE *
 
 describe('numeração de chunk em documento de várias páginas', () => {
   it('não repete chunkIndex entre páginas', () => {
-    const chunks = createDocumentChunks(pdfWithPages(['Página um.', 'Página dois.', 'Página três.']));
+    const chunks = createDocumentChunks(
+      pdfWithPages(['Página um.', 'Página dois.', 'Página três.']),
+    );
     const indexes = chunks.map((chunk) => chunk.chunkIndex);
 
     assert.equal(chunks.length, 3);
@@ -34,7 +36,10 @@ describe('numeração de chunk em documento de várias páginas', () => {
 
     assert.ok(chunks.length > 2, 'páginas longas deveriam gerar mais de um trecho cada');
     assert.equal(new Set(indexes).size, indexes.length);
-    assert.deepEqual(indexes, [...indexes].sort((a, b) => a - b));
+    assert.deepEqual(
+      indexes,
+      [...indexes].sort((a, b) => a - b),
+    );
     assert.equal(indexes[0], 1);
     assert.equal(indexes[indexes.length - 1], chunks.length);
   });

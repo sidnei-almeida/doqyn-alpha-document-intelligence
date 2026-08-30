@@ -6,10 +6,7 @@ import {
 } from '../src/features/upload/queue/queueWaitLabel';
 import { analysisPollDelayMs } from '../src/features/document-send/services/analysisPollBackoff';
 import { uploadAnalyzeStillRunningMessage } from '../src/features/upload/queue/uploadQueueAnalysis';
-import {
-  hasActiveItem,
-  uploadQueueReducer,
-} from '../src/features/upload/queue/uploadQueueState';
+import { hasActiveItem, uploadQueueReducer } from '../src/features/upload/queue/uploadQueueState';
 import { countParkedUploadItems } from '../src/features/upload/queue/uploadQueueCore';
 import type { UploadQueueItem } from '../src/features/upload/types';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
@@ -63,15 +60,30 @@ describe('texto de espera na tela', () => {
 
 describe('recuo progressivo na consulta de status', () => {
   it('começa rápido e cresce até o teto', () => {
-    assert.equal(analysisPollDelayMs(1, () => 0), 2_000);
-    assert.equal(analysisPollDelayMs(2, () => 0), 3_000);
-    assert.equal(analysisPollDelayMs(3, () => 0), 4_500);
+    assert.equal(
+      analysisPollDelayMs(1, () => 0),
+      2_000,
+    );
+    assert.equal(
+      analysisPollDelayMs(2, () => 0),
+      3_000,
+    );
+    assert.equal(
+      analysisPollDelayMs(3, () => 0),
+      4_500,
+    );
     // Teto: consultar de 10 em 10 segundos numa espera longa já é bastante.
-    assert.equal(analysisPollDelayMs(20, () => 0), 10_000);
+    assert.equal(
+      analysisPollDelayMs(20, () => 0),
+      10_000,
+    );
   });
 
   it('dispersa para os arquivos em voo não perguntarem em uníssono', () => {
-    assert.equal(analysisPollDelayMs(1, () => 0.5), 2_250);
+    assert.equal(
+      analysisPollDelayMs(1, () => 0.5),
+      2_250,
+    );
   });
 });
 

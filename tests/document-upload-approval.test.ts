@@ -81,10 +81,14 @@ describe('document upload approval', () => {
     assert.ok(listApi.includes("from '../../../server/services/documentUploadApprovalService.js'"));
 
     const approveApi = read('api/documents/upload-approvals/[approvalId]/approve.ts');
-    assert.ok(approveApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"));
+    assert.ok(
+      approveApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"),
+    );
 
     const rejectApi = read('api/documents/upload-approvals/[approvalId]/reject.ts');
-    assert.ok(rejectApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"));
+    assert.ok(
+      rejectApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"),
+    );
   });
 
   it('fila de upload envia para aprovação quando usuário não é admin', () => {

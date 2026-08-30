@@ -66,9 +66,8 @@ describe('Fase B.7 — Vision OCR foundation', () => {
     const original = process.env.VISION_OCR_ENABLED;
     delete process.env.VISION_OCR_ENABLED;
     try {
-      const { isVisionOcrEnabled, getVisionOcrHealth } = await import(
-        '../server/ai/vision/visionConfig.js'
-      );
+      const { isVisionOcrEnabled, getVisionOcrHealth } =
+        await import('../server/ai/vision/visionConfig.js');
       assert.equal(isVisionOcrEnabled(), false);
       const health = getVisionOcrHealth();
       assert.equal(health.enabled, false);

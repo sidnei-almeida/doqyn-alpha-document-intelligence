@@ -51,10 +51,7 @@ describe('phase-b wave3 slim-down (Mounjaro)', () => {
 
   it('stubs metadata/classification não existem mais como módulos', () => {
     assert.equal(existsSync(join(root, 'server/services/metadataService.ts')), false);
-    assert.equal(
-      existsSync(join(root, 'server/services/documentClassificationService.ts')),
-      false,
-    );
+    assert.equal(existsSync(join(root, 'server/services/documentClassificationService.ts')), false);
     // Os stubs viveram inline no documentService enquanto o upload legado existia. Com a rota
     // /api/documents/upload removida, saíram junto: metadado e classe vêm do pipeline de IA.
     const docService = read('server/services/documentService.ts');

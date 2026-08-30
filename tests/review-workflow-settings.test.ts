@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import {
-  DEFAULT_TENANT_UPLOAD_POLICY,
-  normalizeTenantUploadPolicy,
-} from '../shared/uploadPolicy';
+import { DEFAULT_TENANT_UPLOAD_POLICY, normalizeTenantUploadPolicy } from '../shared/uploadPolicy';
 import {
   canAutoAcceptWithSettings,
   DEFAULT_WORKFLOW_REVIEW_SETTINGS,
@@ -35,7 +32,10 @@ describe('reviewWorkflowSettings', () => {
   });
 
   it('aceita delay auto de 0 segundos', () => {
-    assert.equal(normalizeTenantUploadPolicy({ autoAcceptDelaySeconds: 0 }).autoAcceptDelaySeconds, 0);
+    assert.equal(
+      normalizeTenantUploadPolicy({ autoAcceptDelaySeconds: 0 }).autoAcceptDelaySeconds,
+      0,
+    );
   });
 
   it('resolve naming efetivo por política', () => {
@@ -53,10 +53,7 @@ describe('reviewWorkflowSettings', () => {
       ),
       'manual',
     );
-    assert.equal(
-      resolveEffectiveNamingForItem({ ...base, aiRenameEnabled: false }),
-      'original',
-    );
+    assert.equal(resolveEffectiveNamingForItem({ ...base, aiRenameEnabled: false }), 'original');
   });
 
   it('policyRequiresPerItemChoice identifica políticas interativas', () => {

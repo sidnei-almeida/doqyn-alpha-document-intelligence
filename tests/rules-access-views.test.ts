@@ -121,11 +121,7 @@ describe('accessModel — simulador "Ver como" (espelha o backend)', () => {
       audit: [],
       share: [],
     });
-    const result = simulateMemberAccess(
-      makeMember('member', ['g_juridico']),
-      disconnected,
-      groups,
-    );
+    const result = simulateMemberAccess(makeMember('member', ['g_juridico']), disconnected, groups);
     assert.equal(result.sees, false);
   });
 });

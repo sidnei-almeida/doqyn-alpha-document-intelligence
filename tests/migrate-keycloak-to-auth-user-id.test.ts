@@ -29,7 +29,7 @@ describe('migrate keycloakUserId → authUserId', () => {
     const script = read('scripts/migrate-keycloak-to-auth-user-id.ts');
     const pkg = read('package.json');
     assert.ok(pkg.includes('db:migrate-keycloak-to-auth-user-id'));
-    assert.ok(script.includes("$rename: { [LEGACY_FIELD]: NEW_FIELD }"));
+    assert.ok(script.includes('$rename: { [LEGACY_FIELD]: NEW_FIELD }'));
     assert.ok(script.includes('verifyDocumentOwnerReferences'));
     assert.ok(script.includes('ownerUserId'));
     assert.ok(script.includes('--apply'));

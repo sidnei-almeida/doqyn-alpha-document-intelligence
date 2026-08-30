@@ -8,10 +8,7 @@ import {
   resolveEventFiltersForTab,
   sanitizeAuditMetadataForDisplay,
 } from '../src/features/audit/utils/auditDisplay.ts';
-import {
-  maskEmail,
-  sanitizeRejectionReason,
-} from '../server/utils/maskSensitiveData.ts';
+import { maskEmail, sanitizeRejectionReason } from '../server/utils/maskSensitiveData.ts';
 
 describe('audit center', () => {
   it('isAuditAdmin reconhece administradores', () => {
@@ -59,9 +56,33 @@ describe('audit center', () => {
 
   it('dedupeAuditEvents remove duplicatas por id', () => {
     const events = dedupeAuditEvents([
-      { id: 'a', action: 'USER_APPROVED', description: '1', severity: 'success', source: 'user', tenantId: 't1', createdAt: '2025-01-01' },
-      { id: 'a', action: 'USER_APPROVED', description: '2', severity: 'success', source: 'user', tenantId: 't1', createdAt: '2025-01-01' },
-      { id: 'b', action: 'USER_REJECTED', description: '3', severity: 'critical', source: 'user', tenantId: 't1', createdAt: '2025-01-02' },
+      {
+        id: 'a',
+        action: 'USER_APPROVED',
+        description: '1',
+        severity: 'success',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-01',
+      },
+      {
+        id: 'a',
+        action: 'USER_APPROVED',
+        description: '2',
+        severity: 'success',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-01',
+      },
+      {
+        id: 'b',
+        action: 'USER_REJECTED',
+        description: '3',
+        severity: 'critical',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-02',
+      },
     ]);
     assert.equal(events.length, 2);
   });

@@ -61,7 +61,8 @@ describe('profile avatar backend', () => {
 
 describe('profile avatar frontend helpers', () => {
   it('validateProfileAvatarFile rejeita arquivo grande', async () => {
-    const { validateProfileAvatarFile } = await import('../src/features/profile/utils/profileAvatarValidation.ts');
+    const { validateProfileAvatarFile } =
+      await import('../src/features/profile/utils/profileAvatarValidation.ts');
     const file = {
       type: 'image/jpeg',
       size: 6 * 1024 * 1024,

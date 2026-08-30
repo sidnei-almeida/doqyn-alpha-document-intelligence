@@ -133,6 +133,39 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     assert.ok(hook.includes('looksLikeEmail'));
   });
 
+  it('o destinatário tem três abas, porque o envio sempre teve três destinos', () => {
+    const flow = read('src/features/documents/recipients/RecipientFlow.tsx');
+    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
+    const sig = read('src/features/signature/RequestSignatureModal.tsx');
+
+    // O terceiro destino viajava como `internal` com um `crossTenantPick` do lado, e a tela
+    // mostrava duas abas — quem procurava alguém do DOQYN em outra empresa não tinha como saber
+    // que aquele caminho existia, nem que a busca era por apelido.
+    assert.ok(flow.includes("'internal' | 'doqyn' | 'external'"));
+    for (const modal of [share, sig]) {
+      assert.ok(modal.includes('doqynLabel="Outra empresa"'));
+      assert.ok(modal.includes("audience === 'doqyn'"));
+      // E o campo não é mais repetido embaixo da busca de colegas: duas cópias fariam a pessoa
+      // escolher entre elas sem saber a diferença.
+      assert.ok(modal.includes('Não é da empresa? Buscar por nome de usuário'));
+    }
+  });
+
+  it('o rótulo pede apelido, e não e-mail, nos três fluxos', () => {
+    const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
+    const sig = read('src/features/signature/RequestSignatureModal.tsx');
+    const req = read('src/features/requests/components/RequestDocumentModal.tsx');
+
+    // Era o rótulo que mentia: o campo sempre aceitou apelido, e dizia "e-mail".
+    assert.ok(field.includes("label = 'Nome de usuário de quem é de outra empresa'"));
+    assert.ok(field.includes('placeholder="joao.silva"'));
+    assert.ok(sig.includes('label="Nome de usuário de quem vai assinar"'));
+    assert.ok(req.includes('label="Nome de usuário de quem vai enviar"'));
+
+    // O e-mail continua aceito: é ele que leva a quem **não** tem conta, e recebe por link.
+    assert.ok(field.includes('onFallbackToLink'));
+  });
+
   it('o campo é próprio, e não o mesmo da busca de colegas', () => {
     const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { resolveAnalysisProvider, resolveAnalysisProviderName } from '../server/ai/providers/resolveAnalysisProvider.js';
+import {
+  resolveAnalysisProvider,
+  resolveAnalysisProviderName,
+} from '../server/ai/providers/resolveAnalysisProvider.js';
 import { groqDocumentAnalysisProvider } from '../server/ai/providers/groqDocumentAnalysisProvider.js';
 import { googleVisionDocumentAnalysisProvider } from '../server/ai/providers/googleVisionDocumentAnalysisProvider.js';
 import { isAnalysisSyncFallbackEnabled } from '../server/queues/analysisQueue.js';

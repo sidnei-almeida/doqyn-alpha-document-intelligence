@@ -231,10 +231,7 @@ describe('document viewing UI', () => {
 
 describe('document list mapping', () => {
   it('listDocuments retorna permissions e storage por item', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'server/services/documentService.ts'),
-      'utf8',
-    );
+    const source = readFileSync(join(process.cwd(), 'server/services/documentService.ts'), 'utf8');
     assert.match(source, /canViewTracking/);
     assert.match(source, /hasOriginal/);
     assert.match(source, /hasPreview/);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { isCompleteWhatsapp } from '@/lib/identifiers';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
@@ -124,11 +125,10 @@ export function RequestSignatureModal({
   const createRequest = useMutation({
     mutationFn: () =>
       createDocumentSignatureRequest(documentId!, {
+        // Quem é da própria empresa assina como usuário; de fora — com conta DOQYN ou sem — assina
+        // pela página com token, e é o `signerEmail` que o servidor resolve.
         signerType: audience === 'internal' ? 'internal_user' : 'external_guest',
-        signerUserId:
-          audience === 'internal' && !crossTenantSigner
-            ? (internalPick?.id ?? undefined)
-            : undefined,
+        signerUserId: audience === 'internal' ? (internalPick?.id ?? undefined) : undefined,
         signerName: audience === 'external' ? external.name.trim() : undefined,
         // Assinante de outra empresa viaja pelo e-mail: é ele que o servidor resolve no diretório.
         signerEmail:
@@ -186,7 +186,8 @@ export function RequestSignatureModal({
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick ?? crossTenantSigner);
+      if (audience === 'internal') return Boolean(internalPick);
+      if (audience === 'doqyn') return Boolean(crossTenantSigner);
       return external.name.trim().length > 0 && external.email.trim().includes('@') && !phoneError;
     }
     if (flow.step === 1) return Boolean(expiresAt);
@@ -254,8 +255,10 @@ export function RequestSignatureModal({
 
   const recipientLabel =
     audience === 'internal'
-      ? (crossTenantSigner?.name ?? internalPick?.name ?? '—')
-      : external.name.trim() || external.email.trim() || '—';
+      ? (internalPick?.name ?? '—')
+      : audience === 'doqyn'
+        ? (crossTenantSigner?.name ?? '—')
+        : external.name.trim() || external.email.trim() || '—';
 
   const finished = issuedUrl !== null || internalDone;
 
@@ -322,10 +325,26 @@ export function RequestSignatureModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Usuário DOQYN"
+                internalLabel="Da sua empresa"
+                doqynLabel="Outra empresa"
                 externalLabel="Convidado externo"
               />
-              {audience === 'internal' ? (
+              {audience === 'doqyn' ? (
+                /* Aba própria, e não um rodapé da busca de colegas — ver o mesmo comentário em
+                   `ShareDocumentModal`. Assinar é o verbo menos disruptivo dos que saem da
+                   empresa: quem assina de fora abre a página própria com token e não entra no
+                   acervo, então aqui não há aceite a esperar. */
+                <CrossTenantRecipientField
+                  label="Nome de usuário de quem vai assinar"
+                  idleHint="Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo."
+                  onPick={setCrossTenantSigner}
+                  onFallbackToLink={(email) => {
+                    setAudience('external');
+                    setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                  }}
+                  fallbackLabel="Convidar por link"
+                />
+              ) : audience === 'internal' ? (
                 <InternalRecipientPicker
                   query={query}
                   onQueryChange={setQuery}
@@ -340,22 +359,14 @@ export function RequestSignatureModal({
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
                   emptyAction={
-                    <div className="flex flex-col gap-3">
-                      <p className="text-eyebrow uppercase text-doqyn-subtle">De outra empresa</p>
-                      {/* Assinar é o verbo menos disruptivo dos que saem da empresa: quem assina de
-                          fora abre a página própria com token e não entra no acervo. Por isso aqui
-                          não há aceite a esperar. */}
-                      <CrossTenantRecipientField
-                        label="Nome de usuário de quem vai assinar"
-                        idleHint="Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo."
-                        onPick={setCrossTenantSigner}
-                        onFallbackToLink={(email) => {
-                          setAudience('external');
-                          setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
-                        }}
-                        fallbackLabel="Convidar por link"
-                      />
-                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudience('doqyn')}
+                    >
+                      Não é da empresa? Buscar por nome de usuário
+                    </Button>
                   }
                 />
               ) : (

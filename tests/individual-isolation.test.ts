@@ -137,9 +137,12 @@ describe('OWNER_USER_REQUIRED', () => {
       tenantType: 'individual',
       collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
     });
-    assert.throws(() => buildDocumentOwnershipFilter(ctx), (error: ServiceError) => {
-      return error.code === 'OWNER_USER_REQUIRED';
-    });
+    assert.throws(
+      () => buildDocumentOwnershipFilter(ctx),
+      (error: ServiceError) => {
+        return error.code === 'OWNER_USER_REQUIRED';
+      },
+    );
   });
 
   it('individual sem ownerUserId falha em classes/regras', () => {
@@ -148,9 +151,12 @@ describe('OWNER_USER_REQUIRED', () => {
       tenantType: 'individual',
       collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
     });
-    assert.throws(() => buildClassRuleOwnershipFilter(ctx), (error: ServiceError) => {
-      return error.code === 'OWNER_USER_REQUIRED';
-    });
+    assert.throws(
+      () => buildClassRuleOwnershipFilter(ctx),
+      (error: ServiceError) => {
+        return error.code === 'OWNER_USER_REQUIRED';
+      },
+    );
   });
 });
 
@@ -173,8 +179,11 @@ describe('cross-tenant type isolation', () => {
 
 describe('access groups Mongo deprecated', () => {
   it('listAccessGroups retorna 410', async () => {
-    await assert.rejects(() => listAccessGroups(), (error: ServiceError) => {
-      return error.code === 'ACCESS_GROUPS_MONGO_DEPRECATED';
-    });
+    await assert.rejects(
+      () => listAccessGroups(),
+      (error: ServiceError) => {
+        return error.code === 'ACCESS_GROUPS_MONGO_DEPRECATED';
+      },
+    );
   });
 });

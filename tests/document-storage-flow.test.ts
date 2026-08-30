@@ -61,7 +61,10 @@ describe('fluxo documento — staging e confirm', () => {
       originalFileName: 'original-upload.pdf',
     });
 
-    assert.match(stagingKey, /^staging\/company_dev\/user_test_flow\/job_test_staging_001\/original\.pdf$/);
+    assert.match(
+      stagingKey,
+      /^staging\/company_dev\/user_test_flow\/job_test_staging_001\/original\.pdf$/,
+    );
     assert.ok(!path.isAbsolute(stagingKey));
 
     const loaded = await loadAnalysisStaging({

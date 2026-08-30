@@ -14,7 +14,9 @@ function parseApiErrorBody(
     details?: Record<string, unknown>;
     requestId?: string;
   };
-  const code = body.code ?? (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
+  const code =
+    body.code ??
+    (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
   const message = body.message ?? fallbackMessage;
 
   return {
@@ -45,7 +47,13 @@ function accessCodeToGate(code: string) {
 }
 
 function shouldLogoutForError(code: string): boolean {
-  return ['INVALID_SESSION', 'SESSION_EXPIRED', 'AUTH_REQUIRED', 'NO_SESSION', 'UNAUTHORIZED'].includes(code);
+  return [
+    'INVALID_SESSION',
+    'SESSION_EXPIRED',
+    'AUTH_REQUIRED',
+    'NO_SESSION',
+    'UNAUTHORIZED',
+  ].includes(code);
 }
 
 describe('parseApiErrorBody', () => {

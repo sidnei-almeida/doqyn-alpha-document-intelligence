@@ -28,9 +28,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
   });
 
   it('shouldAttemptVisionOcr só dispara abaixo do threshold com Vision pronto', async () => {
-    const { shouldAttemptVisionOcr } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { shouldAttemptVisionOcr } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     assert.equal(
       shouldAttemptVisionOcr({
@@ -73,9 +72,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
   it('resolveVisionOcrPageLimit respeita VISION_OCR_MAX_PAGES', async () => {
     process.env.VISION_OCR_MAX_PAGES = '3';
     process.env.PDF_ANALYSIS_MAX_PAGES = '10';
-    const { resolveVisionOcrPageLimit } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { resolveVisionOcrPageLimit } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     assert.equal(resolveVisionOcrPageLimit({ pageCountHint: 50 }), 3);
     assert.equal(resolveVisionOcrPageLimit({ pageCountHint: 2 }), 2);
@@ -87,9 +85,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-does-not-matter.json';
 
     let ocrCalls = 0;
-    const { extractTextFromDocumentPdf } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { extractTextFromDocumentPdf } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     const result = await extractTextFromDocumentPdf(Buffer.from('%PDF-fake'), {
       extractNative: async () => ({
@@ -133,9 +130,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
 
     try {
       let receivedMaxPages: number | undefined;
-      const { extractTextFromDocumentPdf } = await import(
-        '../server/ai/services/documentTextExtractor.js'
-      );
+      const { extractTextFromDocumentPdf } =
+        await import('../server/ai/services/documentTextExtractor.js');
 
       const result = await extractTextFromDocumentPdf(Buffer.from('%PDF-scan'), {
         extractNative: async () => ({
@@ -196,12 +192,10 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
 
     try {
-      const { extractTextFromDocumentPdf } = await import(
-        '../server/ai/services/documentTextExtractor.js'
-      );
-      const { buildVisionOcrFailedReviewResponse, isVisionOcrFailure } = await import(
-        '../server/ai/services/visionOcrFailureReview.js'
-      );
+      const { extractTextFromDocumentPdf } =
+        await import('../server/ai/services/documentTextExtractor.js');
+      const { buildVisionOcrFailedReviewResponse, isVisionOcrFailure } =
+        await import('../server/ai/services/visionOcrFailureReview.js');
 
       const extracted = await extractTextFromDocumentPdf(Buffer.from('%PDF-fail'), {
         extractNative: async () => ({

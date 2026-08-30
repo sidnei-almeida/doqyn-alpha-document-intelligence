@@ -117,8 +117,7 @@ describe('resolveTenantStorageScope', () => {
           tenantId: INDIVIDUAL_TENANT,
           tenantType: 'individual',
         }),
-      (error: unknown) =>
-        error instanceof ServiceError && error.code === 'OWNER_USER_REQUIRED',
+      (error: unknown) => error instanceof ServiceError && error.code === 'OWNER_USER_REQUIRED',
     );
   });
 });
@@ -237,7 +236,9 @@ describe('r2 provider com storageScope', () => {
     assert.equal(stored.bucket, scope.bucketName);
     assert.match(
       stored.storageKey,
-      new RegExp(`^documents/doc_biz/versions/ver_biz/original/${STORAGE_FILE_NAME.replace('.', '\\.')}$`),
+      new RegExp(
+        `^documents/doc_biz/versions/ver_biz/original/${STORAGE_FILE_NAME.replace('.', '\\.')}$`,
+      ),
     );
     assert.equal(ensureBucketForScope.mock.calls.length, 1);
     assert.deepEqual(ensureBucketForScope.mock.calls[0]?.arguments[0], {
@@ -264,10 +265,7 @@ describe('r2 provider com storageScope', () => {
       if (command instanceof PutObjectCommand) {
         const input = command.input;
         assert.equal(input.Bucket, 'doqyn-alpha');
-        assert.match(
-          String(input.Key),
-          new RegExp(`^${scope.basePrefix}/documents/doc_ind/`),
-        );
+        assert.match(String(input.Key), new RegExp(`^${scope.basePrefix}/documents/doc_ind/`));
         return { ETag: '"etag-ind"' };
       }
       return {};
@@ -351,8 +349,14 @@ describe('ensureBucketForStorageScope', () => {
 
     assert.equal(result.bucket, 'doqyn-alpha');
     assert.equal(result.created, false);
-    assert.equal(commands.some((c) => c instanceof HeadBucketCommand), true);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), false);
+    assert.equal(
+      commands.some((c) => c instanceof HeadBucketCommand),
+      true,
+    );
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      false,
+    );
   });
 
   it('per_tenant garante bucket derivado do tenantId', async () => {
@@ -393,7 +397,10 @@ describe('ensureBucketForStorageScope', () => {
 
     assert.equal(result.created, true);
     assert.equal(result.bucket, 'doqyn-alpha');
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      true,
+    );
   });
 });
 
@@ -403,7 +410,10 @@ describe('basePrefix determinístico', () => {
     const b = buildIndividualBasePrefix(INDIVIDUAL_TENANT);
     assert.equal(a, b);
 
-    const hash = createHash('sha256').update(INDIVIDUAL_TENANT.toLowerCase()).digest('hex').slice(0, 16);
+    const hash = createHash('sha256')
+      .update(INDIVIDUAL_TENANT.toLowerCase())
+      .digest('hex')
+      .slice(0, 16);
     assert.equal(a, `individuals/${hash}`);
   });
 });

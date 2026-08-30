@@ -58,6 +58,9 @@ describe('lote do envio não trava esperando pessoa', () => {
     const start = hook.indexOf('const reprocessItem');
     const block = hook.slice(start, start + 900);
 
-    assert.match(block, /if \(itemId === currentItemIdRef\.current\) \{\s*\n\s*resetCurrentProcessingState/);
+    assert.match(
+      block,
+      /if \(itemId === currentItemIdRef\.current\) \{\s*\n\s*resetCurrentProcessingState/,
+    );
   });
 });

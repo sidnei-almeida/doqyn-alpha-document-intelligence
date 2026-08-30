@@ -4,7 +4,10 @@ import {
   scheduleChunkPersistenceAfterVersionConfirm,
   type VersionChunkPersistenceInput,
 } from '../server/services/confirmVersionChunkPersistence.js';
-import { buildChunkingJobId, type ChunkingQueueJobPayload } from '../server/queues/chunkingQueue.js';
+import {
+  buildChunkingJobId,
+  type ChunkingQueueJobPayload,
+} from '../server/queues/chunkingQueue.js';
 import type { DocumentRequestContext } from '../server/tenancy/documentRequestContext.js';
 
 function buildInput(

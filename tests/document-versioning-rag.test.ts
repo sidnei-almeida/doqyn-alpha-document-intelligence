@@ -333,9 +333,8 @@ describe('integração version-aware RAG — wiring', () => {
 
 describe('fluxo de versões — labels', () => {
   it('upload inicial usa v1.0 e update incrementa major', async () => {
-    const { nextMajorVersionLabel, normalizeVersionLabel } = await import(
-      '../server/utils/versionLabelUtils.js'
-    );
+    const { nextMajorVersionLabel, normalizeVersionLabel } =
+      await import('../server/utils/versionLabelUtils.js');
     assert.equal(normalizeVersionLabel('v1'), 'v1.0');
     assert.equal(nextMajorVersionLabel('v1.0'), 'v2.0');
     assert.equal(nextMajorVersionLabel('v2.0'), 'v3.0');

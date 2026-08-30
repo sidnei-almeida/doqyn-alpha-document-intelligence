@@ -20,18 +20,9 @@ describe('r2 storage config', () => {
   });
 
   it('validateR2Endpoint aceita endpoint sem sufixo de bucket', () => {
+    assert.equal(validateR2Endpoint('https://abc123.r2.cloudflarestorage.com', 'abc123'), true);
     assert.equal(
-      validateR2Endpoint(
-        'https://abc123.r2.cloudflarestorage.com',
-        'abc123',
-      ),
-      true,
-    );
-    assert.equal(
-      validateR2Endpoint(
-        'https://abc123.r2.cloudflarestorage.com/doqyn-alpha',
-        'abc123',
-      ),
+      validateR2Endpoint('https://abc123.r2.cloudflarestorage.com/doqyn-alpha', 'abc123'),
       false,
     );
   });

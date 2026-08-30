@@ -118,10 +118,7 @@ describe('identifier formatters', () => {
     });
 
     it('backspace reduz dígitos mesmo com hífen no meio', () => {
-      assert.equal(
-        formatWhatsappInput('+55 54 9917-469', '+55 54 9917-46'),
-        '+55 54 9917-46',
-      );
+      assert.equal(formatWhatsappInput('+55 54 9917-469', '+55 54 9917-46'), '+55 54 9917-46');
       assert.equal(
         formatWhatsappInput('+55 54 99174-6969', '+55 54 99174-696'),
         '+55 54 9917-4696',

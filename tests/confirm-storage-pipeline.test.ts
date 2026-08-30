@@ -84,7 +84,10 @@ describe('confirm storage pipeline — integração local', () => {
     const objectKey = storage.primary.objectKey!;
     assert.equal(resolved.finalFileName, storageFileName);
     assert.equal(resolved.storageFileName, storageFileName);
-    assert.equal(resolved.previewStorageFileName, 'NDA_Confidencialidade_2026-07-02_v1_preview.pdf');
+    assert.equal(
+      resolved.previewStorageFileName,
+      'NDA_Confidencialidade_2026-07-02_v1_preview.pdf',
+    );
     assert.ok(resolved.previewStorageFileName.endsWith('_preview.pdf'));
     assert.match(objectKey, /\/original\/NDA_Confidencialidade_2026-07-02_v1\.pdf$/);
     assert.ok(!objectKey.endsWith('/original.pdf'));

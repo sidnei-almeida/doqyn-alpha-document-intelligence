@@ -12,7 +12,9 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
     const service = read('server/services/sharing/documentShareService.ts');
 
     // Barrar num lugar só é o que impede o item pendente de escapar por um caminho esquecido.
-    assert.ok(service.includes("{ inbound: { $exists: false } }, { 'inbound.status': 'accepted' }"));
+    assert.ok(
+      service.includes("{ inbound: { $exists: false } }, { 'inbound.status': 'accepted' }"),
+    );
 
     // `$and` porque duas chaves `$or` no mesmo objeto se sobrescrevem, e a que morre é a validade.
     const filter = service.slice(
@@ -28,7 +30,9 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
 
     // `inbound` ausente significa "de dentro do tenant", e vale na hora.
     assert.ok(types.includes('inbound?: InboundShareState'));
-    assert.ok(types.includes("export type InboundShareStatus = 'pending' | 'accepted' | 'declined'"));
+    assert.ok(
+      types.includes("export type InboundShareStatus = 'pending' | 'accepted' | 'declined'"),
+    );
     assert.ok(types.includes('recipientTenantId: string'));
   });
 
@@ -50,7 +54,10 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
     const listing = service.slice(service.indexOf('export async function listInboundShares'));
     assert.ok(listing.includes('sharedWithUserId: user.id'));
 
-    const decide = service.slice(service.indexOf('async function decide('), service.indexOf('export async function acceptInboundShare'));
+    const decide = service.slice(
+      service.indexOf('async function decide('),
+      service.indexOf('export async function acceptInboundShare'),
+    );
     assert.ok(decide.includes('sharedWithUserId: user.id'));
     // Quem não é o destinatário não descobre por aqui que a concessão existe.
     assert.ok(decide.includes('INBOUND_SHARE_NOT_FOUND'));
@@ -118,6 +125,10 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
     const list = read('src/features/notifications/components/NotificationList.tsx');
 
     // A ficha recusaria o acesso: o aceite é o que ainda não aconteceu.
-    assert.ok(list.includes("if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados'"));
+    assert.ok(
+      list.includes(
+        "if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados'",
+      ),
+    );
   });
 });

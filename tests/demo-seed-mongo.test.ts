@@ -75,7 +75,10 @@ describe('demo seed mongo', () => {
     }
 
     for (const extractionRule of seed.extractionRules) {
-      assert.ok(categoryIds.has(extractionRule.categoryId), `categoria órfã em ${extractionRule._id}`);
+      assert.ok(
+        categoryIds.has(extractionRule.categoryId),
+        `categoria órfã em ${extractionRule._id}`,
+      );
     }
   });
 

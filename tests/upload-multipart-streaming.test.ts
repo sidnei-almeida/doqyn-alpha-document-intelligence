@@ -97,10 +97,9 @@ describe('upload multipart em streaming — Passo 6 do plano de escala', () => {
   });
 
   it('devolve campos vazios quando o corpo não é multipart', async () => {
-    const result = await parseMultipart(
-      fakeRequest(Buffer.from('{"a":1}'), 'application/json'),
-      { maxFileBytes: 1024 },
-    );
+    const result = await parseMultipart(fakeRequest(Buffer.from('{"a":1}'), 'application/json'), {
+      maxFileBytes: 1024,
+    });
 
     assert.deepEqual(result, { fields: {} });
   });

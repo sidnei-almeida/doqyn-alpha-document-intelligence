@@ -48,7 +48,9 @@ describe('aprovação de acesso — persistência e cache', () => {
 
   it('usersApi.list usa fonte única /company-members (governança)', () => {
     const source = readSrc('src/features/users/api/usersApi.ts');
-    assert.ok(source.includes("request<{ members: GovernanceMemberApi[] }>(`/company-members${query}`)"));
+    assert.ok(
+      source.includes('request<{ members: GovernanceMemberApi[] }>(`/company-members${query}`)'),
+    );
     assert.equal(source.includes('mergeDocumentGroupIds'), false);
     assert.equal(/doqynUsersApi\.list\(/.test(source), false);
   });

@@ -40,7 +40,8 @@ describe('tabela e filtros unificados', () => {
       const source = readSrc(page);
       const usesFilterBar =
         source.includes('FilterBar') ||
-        (page.includes('tracking') && readSrc('features/tracking/components/TrackingFilters.tsx').includes('FilterBar'));
+        (page.includes('tracking') &&
+          readSrc('features/tracking/components/TrackingFilters.tsx').includes('FilterBar'));
       assert.ok(usesFilterBar, `${page} deve usar FilterBar`);
       assert.ok(
         source.includes('DataTable') || source.includes('TrackingEventsTable'),

@@ -28,10 +28,7 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
   });
 
   it('nenhum nome de coleção é montado com sufixo de tenant', () => {
-    for (const path of [
-      'server/tenancy/tenantStorage.ts',
-      'server/tenancy/tenantResolver.ts',
-    ]) {
+    for (const path of ['server/tenancy/tenantStorage.ts', 'server/tenancy/tenantResolver.ts']) {
       const source = read(path);
       assert.equal(
         /\$\{base\}_\$\{prefix\}/.test(source),

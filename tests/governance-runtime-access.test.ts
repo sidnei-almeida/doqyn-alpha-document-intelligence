@@ -5,7 +5,10 @@ import {
   listGovernanceViewableCategoryIds,
   userHasGovernanceCategoryPermission,
 } from '../server/tenancy/governanceAccessIndex.js';
-import { canUserListDocument, resolveDocumentPermissions } from '../server/tenancy/documentAccess.js';
+import {
+  canUserListDocument,
+  resolveDocumentPermissions,
+} from '../server/tenancy/documentAccess.js';
 import type { AuthUser } from '../server/auth/types.js';
 
 function commonUser(): AuthUser {

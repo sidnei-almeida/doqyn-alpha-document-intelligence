@@ -176,7 +176,7 @@ describe('script audit:governance-rules', () => {
     assert.ok(script.includes('parseGovernanceAuditTenantArg'));
     assert.ok(script.includes('sanitizeGovernanceDocumentSample'));
     assert.ok(script.includes('listCollections'));
-    assert.equal(script.includes("projection: { tenantId: 1, tenantType: 1, status: 1 }"), false);
+    assert.equal(script.includes('projection: { tenantId: 1, tenantType: 1, status: 1 }'), false);
     assert.ok(script.includes('isolation: 1'));
   });
 

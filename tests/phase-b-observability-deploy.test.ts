@@ -13,7 +13,9 @@ describe('Observabilidade em produção', () => {
     assert.ok(compose.includes('prom/prometheus'));
     assert.ok(compose.includes('grafana/grafana'));
     assert.ok(compose.includes('prometheus_data:'));
-    assert.ok(compose.includes('doqyn-worker-preview:9100') || compose.includes('doqyn-worker-preview'));
+    assert.ok(
+      compose.includes('doqyn-worker-preview:9100') || compose.includes('doqyn-worker-preview'),
+    );
   });
 
   it('prometheus scrape api, workers e redis', () => {

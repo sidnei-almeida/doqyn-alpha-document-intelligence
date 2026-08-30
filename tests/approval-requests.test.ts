@@ -231,7 +231,7 @@ describe('aprovações — armadilhas do modelo', () => {
     const share = read('server/tenancy/documentShareAccess.ts');
     // `userHasGovernanceCategoryPermission` conta `require` como verdadeiro: usá-lo aqui liberaria
     // o compartilhamento sem passar por ninguém quando `share` voltar a aceitar o meio-termo.
-    assert.ok(share.includes("resolveGovernanceCategoryPermission("));
+    assert.ok(share.includes('resolveGovernanceCategoryPermission('));
     assert.ok(share.includes("=== \n    'allow'") || share.includes("'allow'"));
     // A menção que sobra é do comentário; a chamada não pode existir.
     assert.ok(!share.includes('if (userHasGovernanceCategoryPermission('));
@@ -262,7 +262,11 @@ describe('compartilhar — o portão', () => {
 
     assert.ok(access.includes('export function shareRequiresApproval'));
     // Quem já pode por qualquer caminho não pede licença.
-    assert.ok(access.includes('if (canUserShareDocument(user, doc, memberGroupIds, governanceIndex)) return false'));
+    assert.ok(
+      access.includes(
+        'if (canUserShareDocument(user, doc, memberGroupIds, governanceIndex)) return false',
+      ),
+    );
     assert.ok(service.includes("kind: 'document_share'"));
     assert.ok(service.includes('DOCUMENT_APPROVAL_REQUIRED'));
   });
@@ -304,8 +308,8 @@ describe('compartilhar — o portão', () => {
     const items = read('server/services/documentListItems.ts');
 
     assert.ok(items.includes('share: perms.shareRequiresApproval'));
-    assert.ok(menu.includes("doc.permissions?.requiresApproval?.share"));
-    assert.ok(menu.includes("doc.permissions?.requiresApproval?.download"));
+    assert.ok(menu.includes('doc.permissions?.requiresApproval?.share'));
+    assert.ok(menu.includes('doc.permissions?.requiresApproval?.download'));
     // Solicitar assinatura não tem portão: continua preso ao `canShare` estrito.
     assert.ok(menu.includes('const canOpenShare'));
   });

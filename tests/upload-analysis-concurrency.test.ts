@@ -36,11 +36,7 @@ describe('concorrência do envio no navegador', () => {
 
 describe('despacho de vários arquivos na mesma rodada', () => {
   it('não reenvia o item já despachado, que ainda consta como queued', () => {
-    const items = [
-      makeItem('a', 'queued'),
-      makeItem('b', 'queued'),
-      makeItem('c', 'queued'),
-    ];
+    const items = [makeItem('a', 'queued'), makeItem('b', 'queued'), makeItem('c', 'queued')];
 
     const first = findNextQueuedItemExcluding(items, new Set());
     assert.equal(first?.id, 'a');
@@ -56,11 +52,7 @@ describe('despacho de vários arquivos na mesma rodada', () => {
   });
 
   it('ignora quem não está enfileirado', () => {
-    const items = [
-      makeItem('a', 'analyzing'),
-      makeItem('b', 'review'),
-      makeItem('c', 'queued'),
-    ];
+    const items = [makeItem('a', 'analyzing'), makeItem('b', 'review'), makeItem('c', 'queued')];
 
     assert.equal(findNextQueuedItemExcluding(items, new Set())?.id, 'c');
   });
@@ -73,7 +65,7 @@ describe('contrato do adiantamento no envio em lote', () => {
     // A validação de posse compara o requestId que o servidor recebeu; criar outro na hora de
     // consumir faria a resposta adiantada ser recusada como se fosse de outro item.
     assert.ok(hook.includes('const prefetched = takeAnalysisPrefetch(next.id)'));
-    assert.ok(hook.includes("const requestId = prefetched?.requestId ?? createRequestId()"));
+    assert.ok(hook.includes('const requestId = prefetched?.requestId ?? createRequestId()'));
     assert.ok(hook.includes('prefetched?.controller ?? new AbortController()'));
     assert.ok(hook.includes('prefetched?.promise ??'));
   });

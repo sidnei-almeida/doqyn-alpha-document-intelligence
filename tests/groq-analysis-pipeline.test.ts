@@ -3,7 +3,14 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { DEFAULT_GROQ_MODEL, getExtractionMaxChunks, getGroqMaxOutputTokens, getGroqModelFromEnv, getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../server/ai/utils/aiConfig.js';
+import {
+  DEFAULT_GROQ_MODEL,
+  getExtractionMaxChunks,
+  getGroqMaxOutputTokens,
+  getGroqModelFromEnv,
+  getPdfAnalysisMaxInputChars,
+  getPdfAnalysisMaxPages,
+} from '../server/ai/utils/aiConfig.js';
 import { AI_ERROR_MESSAGES } from '../server/ai/constants.js';
 import { isGroqApiKeyConfigured } from '../server/ai/services/groqClient.js';
 import { AiAnalysisError } from '../server/ai/utils/errors.js';
@@ -56,7 +63,11 @@ describe('pipeline Groq — remoção de no_ai', () => {
       );
 
       const mapped = workflowErrorFromUnknown(
-        new AiAnalysisError(AI_ERROR_MESSAGES.aiProviderNotConfigured, 'AI_PROVIDER_NOT_CONFIGURED', 503),
+        new AiAnalysisError(
+          AI_ERROR_MESSAGES.aiProviderNotConfigured,
+          'AI_PROVIDER_NOT_CONFIGURED',
+          503,
+        ),
       );
       assert.equal(mapped.body.code, 'AI_PROVIDER_NOT_CONFIGURED');
       assert.match(mapped.body.message, /GROQ_API_KEY/i);

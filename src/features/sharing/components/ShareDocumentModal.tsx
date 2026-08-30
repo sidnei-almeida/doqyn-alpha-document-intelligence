@@ -132,12 +132,13 @@ export function ShareDocumentModal({
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
-      if (audience === 'internal') return Boolean(internalPick ?? crossTenantPick);
+      if (audience === 'internal') return Boolean(internalPick);
+      if (audience === 'doqyn') return Boolean(crossTenantPick);
       return external.email.trim().includes('@') && !phoneError;
     }
     // O prazo é obrigatório para tudo que sai da empresa — com conta DOQYN ou sem. O acesso
     // concedido não é reavaliado depois, e a validade é o único mecanismo que o fecha sozinho.
-    if (flow.step === 1) return (audience === 'internal' && !crossTenantPick) || Boolean(expiresAt);
+    if (flow.step === 1) return audience === 'internal' || Boolean(expiresAt);
     return true;
   }, [audience, crossTenantPick, expiresAt, external.email, flow.step, internalPick, phoneError]);
 
@@ -146,7 +147,7 @@ export function ShareDocumentModal({
   const handleSubmit = async () => {
     if (!documentId) return;
 
-    if (audience === 'internal' && crossTenantPick) {
+    if (audience === 'doqyn' && crossTenantPick) {
       await shareWithUser.mutateAsync({
         sharedWithEmail: crossTenantPick.email,
         sharedWithUsername: crossTenantPick.username,
@@ -292,10 +293,11 @@ export function ShareDocumentModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Usuário DOQYN"
+                internalLabel="Da sua empresa"
+                doqynLabel="Outra empresa"
                 externalLabel="Convidado externo"
               />
-              {audience === 'internal' && crossTenantPick ? (
+              {audience === 'doqyn' && crossTenantPick ? (
                 <div className="recipient-chosen">
                   <div className="min-w-0">
                     <p className="type-body truncate text-doqyn-text">{crossTenantPick.name}</p>
@@ -312,6 +314,21 @@ export function ShareDocumentModal({
                     Trocar
                   </Button>
                 </div>
+              ) : audience === 'doqyn' ? (
+                /* Aba própria, e não um rodapé da busca de colegas.
+                 *
+                 * O envio já distinguia os três destinos; a tela mostrava dois, com o terceiro
+                 * pendurado embaixo do primeiro atrás de um "de outra empresa" em letra miúda.
+                 * Quem procurava alguém do DOQYN em outra empresa não tinha como saber que a
+                 * busca era por apelido, nem que aquele caminho existia. */
+                <CrossTenantRecipientField
+                  onPick={setCrossTenantPick}
+                  onFallbackToLink={(email) => {
+                    setAudience('external');
+                    setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                  }}
+                  fallbackLabel="Enviar por link com prazo"
+                />
               ) : audience === 'internal' ? (
                 <InternalRecipientPicker
                   query={query}
@@ -329,22 +346,18 @@ export function ShareDocumentModal({
                   onSelect={setInternalPick}
                   emptyLabel="Ninguém encontrado com esse nome ou e-mail."
                   emptyAction={
-                    <div className="flex flex-col gap-3">
-                      <p className="text-eyebrow uppercase text-doqyn-subtle">De outra empresa</p>
-                      {/* Campo próprio, e sempre visível. A busca de cima procura por nome numa
-                          lista conhecida; esta resolve um e-mail exato contra o diretório, porque
-                          o nome de quem está fora é guardado cifrado. Escondê-la atrás do "ninguém
-                          encontrado" exigia saber de antemão que o destinatário está fora, que é
-                          justamente o que se quer descobrir. */}
-                      <CrossTenantRecipientField
-                        onPick={setCrossTenantPick}
-                        onFallbackToLink={(email) => {
-                          setAudience('external');
-                          setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
-                        }}
-                        fallbackLabel="Enviar por link com prazo"
-                      />
-                    </div>
+                    /* A saída para quem não está na empresa, sempre visível — não só quando a
+                       busca volta vazia. Agora ela leva à aba, em vez de repetir o campo aqui:
+                       duas cópias do mesmo campo fariam a pessoa escolher entre elas sem saber a
+                       diferença. */
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudience('doqyn')}
+                    >
+                      Não é da empresa? Buscar por nome de usuário
+                    </Button>
                   }
                 />
               ) : (
@@ -364,7 +377,7 @@ export function ShareDocumentModal({
               expiresAt={expiresAt}
               onExpiresAtChange={setExpiresAt}
               expiresHint={
-                crossTenantPick
+                audience === 'doqyn'
                   ? 'Fora da empresa o acesso tem prazo: passado ele, a concessão fecha sozinha.'
                   : audience === 'internal'
                     ? 'Acesso de quem é da empresa não expira: vale enquanto não for revogado.'

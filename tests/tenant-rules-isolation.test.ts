@@ -78,8 +78,14 @@ describe('isolamento tenant — regras de classificação', () => {
     const tenantB = 'company_beta_nd';
     const catA = tenantNdaCategory(tenantA);
     const catB = tenantNdaCategory(tenantB);
-    const rulesA = mapCategoryExtractionRules([catA], [tenantNdaRule(tenantA, catA._id, 'campo_a')]);
-    const rulesB = mapCategoryExtractionRules([catB], [tenantNdaRule(tenantB, catB._id, 'campo_b')]);
+    const rulesA = mapCategoryExtractionRules(
+      [catA],
+      [tenantNdaRule(tenantA, catA._id, 'campo_a')],
+    );
+    const rulesB = mapCategoryExtractionRules(
+      [catB],
+      [tenantNdaRule(tenantB, catB._id, 'campo_b')],
+    );
 
     assert.equal(rulesA.length, 1);
     assert.equal(rulesB.length, 1);
@@ -155,7 +161,10 @@ describe('isolamento tenant — regras de classificação', () => {
   });
 
   it('heurísticas NDA usam keywords do tenant, não ID fixo de seed', () => {
-    const source = readFileSync(join(repoRoot, 'server/ai/utils/documentClassHeuristics.ts'), 'utf8');
+    const source = readFileSync(
+      join(repoRoot, 'server/ai/utils/documentClassHeuristics.ts'),
+      'utf8',
+    );
     assert.equal(source.includes('class_confidentiality_agreement'), false);
     assert.ok(
       isConfidentialityClassRule({

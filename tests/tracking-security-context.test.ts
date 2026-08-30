@@ -76,7 +76,10 @@ describe('tracking securityContext', () => {
 
   it('evento externo registra isExternalGuest=true', () => {
     const context = buildSecurityContext(
-      { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' }, socket: {} },
+      {
+        headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' },
+        socket: {},
+      },
       { isExternalGuest: true, authMethod: 'external_share_token' },
     );
     assert.equal(context.isExternalGuest, true);

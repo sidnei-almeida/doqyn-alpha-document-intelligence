@@ -8,10 +8,7 @@ import {
   getUploadProgressPercent,
 } from '../src/features/document-send/utils/uploadProgress.ts';
 
-const SEND_PAGE = join(
-  process.cwd(),
-  'src/features/document-send/DocumentSendPage.tsx',
-);
+const SEND_PAGE = join(process.cwd(), 'src/features/document-send/DocumentSendPage.tsx');
 const SUMMARY = join(
   process.cwd(),
   'src/features/document-send/components/UploadProgressSummary.tsx',
@@ -27,9 +24,7 @@ describe('uploadProgress helpers', () => {
   });
 
   it('analyzing tem progresso maior que uploading', () => {
-    assert.ok(
-      getUploadProgressPercent('analyzing') > getUploadProgressPercent('uploading'),
-    );
+    assert.ok(getUploadProgressPercent('analyzing') > getUploadProgressPercent('uploading'));
   });
 
   it('completed retorna 100%', () => {
@@ -48,10 +43,7 @@ describe('uploadProgress helpers', () => {
   });
 
   it('buildTrackingHref prioriza documentId', () => {
-    assert.equal(
-      buildTrackingHref('doc_1', 'req_1'),
-      '/tracking?documentId=doc_1',
-    );
+    assert.equal(buildTrackingHref('doc_1', 'req_1'), '/tracking?documentId=doc_1');
     assert.equal(buildTrackingHref(undefined, 'req_1'), '/tracking?requestId=req_1');
     assert.equal(buildTrackingHref(), null);
   });

@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import {
-  ORIGIN_PRIORITY,
-  primaryOrigin,
-} from '../src/features/matrix/components/accessOrigin';
+import { ORIGIN_PRIORITY, primaryOrigin } from '../src/features/matrix/components/accessOrigin';
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');

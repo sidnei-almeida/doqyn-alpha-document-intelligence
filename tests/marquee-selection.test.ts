@@ -165,7 +165,13 @@ describe('marquee selection — utilitários', () => {
 
     const items = new Map([
       ['file:doc-1', { kind: 'file' as const, element }],
-      ['folder:folder-1', { kind: 'folder' as const, element: { ...element, dataset: { explorerItemId: 'folder-1' } } as HTMLElement }],
+      [
+        'folder:folder-1',
+        {
+          kind: 'folder' as const,
+          element: { ...element, dataset: { explorerItemId: 'folder-1' } } as HTMLElement,
+        },
+      ],
     ]);
 
     const rect = { left: 0, top: 0, width: 30, height: 30 };

@@ -47,7 +47,7 @@ describe('DocumentThumbnail — preview em cards da Biblioteca', () => {
     const thumb = readSrc('features/documents/preview/DocumentThumbnail.tsx');
     assert.ok(hook.includes('canPreview'));
     assert.ok(thumb.includes('previewBlocked'));
-    assert.ok(thumb.includes("canPreview === false"));
+    assert.ok(thumb.includes('canPreview === false'));
   });
 
   it('erro no preview mostra fallback icon', () => {

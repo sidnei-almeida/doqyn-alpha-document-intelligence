@@ -84,10 +84,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.equal(accessGroupIdsConflictWithDocumentGroups(accessGroupIds, documentGroupIds), false);
 
     const polluted = [...accessGroupIds, 'group_administrativo'];
-    assert.equal(
-      accessGroupIdsConflictWithDocumentGroups(polluted, documentGroupIds),
-      true,
-    );
+    assert.equal(accessGroupIdsConflictWithDocumentGroups(polluted, documentGroupIds), true);
   });
 
   it('usersApi.updateDocumentGroups usa PUT /company-members/:id/groups com documentGroupIds', () => {
@@ -130,11 +127,16 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
     assert.deepEqual(form.accessGroupIds, ['group_juridico']);
     assert.deepEqual(form.documentGroupIds, ['group_administrativo']);
-    assert.equal(accessGroupIdsConflictWithDocumentGroups(form.accessGroupIds, form.documentGroupIds), false);
+    assert.equal(
+      accessGroupIdsConflictWithDocumentGroups(form.accessGroupIds, form.documentGroupIds),
+      false,
+    );
   });
 
   it('/rules reflete contador de membros read-only a partir de groupIds documentais', () => {
-    const groups = [{ id: 'group_administrativo', name: 'Administrativo', color: 'blue' as const, active: true }];
+    const groups = [
+      { id: 'group_administrativo', name: 'Administrativo', color: 'blue' as const, active: true },
+    ];
     const members = [
       {
         id: 'm1',

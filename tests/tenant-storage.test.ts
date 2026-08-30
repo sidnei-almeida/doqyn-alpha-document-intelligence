@@ -113,7 +113,10 @@ describe('document ownership filters', () => {
       tenantType: 'individual',
       collectionPrefix: SHARED_INDIVIDUAL_COLLECTION_PREFIX,
     });
-    assert.throws(() => buildDocumentOwnershipFilter(ctx), (e: ServiceError) => e.code === 'OWNER_USER_REQUIRED');
+    assert.throws(
+      () => buildDocumentOwnershipFilter(ctx),
+      (e: ServiceError) => e.code === 'OWNER_USER_REQUIRED',
+    );
   });
 
   it('classes PF usam ownership estrito sem scope global', () => {

@@ -21,7 +21,7 @@ describe('document sharing — modelo Mongo', () => {
     const types = read('server/db/types.ts');
     assert.ok(types.includes('MongoDocumentShareGrant'));
     assert.ok(types.includes('sharedWithUserId'));
-    assert.ok(types.includes("status: DocumentShareGrantStatus"));
+    assert.ok(types.includes('status: DocumentShareGrantStatus'));
   });
 
   it('índices únicos parciais para share ativo', () => {

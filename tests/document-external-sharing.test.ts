@@ -25,7 +25,7 @@ describe('document external sharing — modelo Mongo', () => {
     const types = read('server/db/types.ts');
     assert.ok(types.includes('MongoExternalDocumentShareGrant'));
     assert.ok(types.includes('inviteTokenHash'));
-    assert.ok(types.includes("status: ExternalDocumentShareGrantStatus"));
+    assert.ok(types.includes('status: ExternalDocumentShareGrantStatus'));
     assert.ok(types.includes('recipientPhoneNormalized'));
     assert.ok(types.includes('recipientPhoneMasked'));
   });
@@ -81,17 +81,31 @@ describe('document external sharing — segurança', () => {
 
 describe('document external sharing — API e ACL', () => {
   it('endpoints internos e públicos de external share', () => {
-    assert.ok(read('api/documents/[documentId]/external-shares.ts').includes('createDocumentExternalShareGrant'));
-    assert.ok(read('api/documents/[documentId]/external-shares/[shareId].ts').includes('revokeDocumentExternalShareGrant'));
+    assert.ok(
+      read('api/documents/[documentId]/external-shares.ts').includes(
+        'createDocumentExternalShareGrant',
+      ),
+    );
+    assert.ok(
+      read('api/documents/[documentId]/external-shares/[shareId].ts').includes(
+        'revokeDocumentExternalShareGrant',
+      ),
+    );
     assert.ok(
       read('api/documents/[documentId]/external-shares/[shareId]/regenerate-invite.ts').includes(
         'regenerateDocumentExternalShareGrant',
       ),
     );
     assert.ok(read('api/external-shares/[token]/accept.ts').includes('acceptExternalShareInvite'));
-    assert.ok(read('api/external-shares/[token]/document.ts').includes('getExternalShareDocumentDetail'));
-    assert.ok(read('api/external-shares/[token]/preview.ts').includes('getExternalSharePreviewManifest'));
-    assert.ok(read('api/external-shares/[token]/download.ts').includes('readExternalShareDocumentDownload'));
+    assert.ok(
+      read('api/external-shares/[token]/document.ts').includes('getExternalShareDocumentDetail'),
+    );
+    assert.ok(
+      read('api/external-shares/[token]/preview.ts').includes('getExternalSharePreviewManifest'),
+    );
+    assert.ok(
+      read('api/external-shares/[token]/download.ts').includes('readExternalShareDocumentDownload'),
+    );
   });
 
   it('dev-server registra rotas externas', () => {
@@ -162,7 +176,7 @@ describe('document external sharing — ativação do convite', () => {
       service.indexOf('export async function getExternalSharePortalPayload'),
       service.indexOf('export function buildExternalShareTrackingMetadata'),
     );
-    assert.equal(portalFn.includes('status: \'active\''), false);
+    assert.equal(portalFn.includes("status: 'active'"), false);
     assert.equal(portalFn.includes('touchAccess: true'), false);
     assert.ok(portalFn.includes('status: grant.status'));
   });
@@ -197,7 +211,12 @@ describe('document external sharing — ativação do convite', () => {
 
   it('portal não autoaceita no carregamento', () => {
     const portal = read('src/features/external-share/ExternalSharePortalPage.tsx');
-    assert.equal(portal.includes('if (payload.status === \'pending\') {\n          await acceptExternalShareInvite'), false);
+    assert.equal(
+      portal.includes(
+        "if (payload.status === 'pending') {\n          await acceptExternalShareInvite",
+      ),
+      false,
+    );
     assert.ok(portal.includes('external-share-accept'));
     assert.ok(portal.includes("payload.status === 'active'"));
   });
@@ -205,7 +224,7 @@ describe('document external sharing — ativação do convite', () => {
   it('cliente chama POST /accept e não POST na raiz do token', () => {
     const api = read('src/features/sharing/api/externalShareApi.ts');
     assert.ok(api.includes('/accept'));
-    assert.equal(api.includes('`/api/external-shares/${encoded}`, { method: \'POST\' }'), false);
+    assert.equal(api.includes("`/api/external-shares/${encoded}`, { method: 'POST' }"), false);
   });
 });
 

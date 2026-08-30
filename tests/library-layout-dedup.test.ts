@@ -58,7 +58,9 @@ describe('Biblioteca — header e toolbar sem duplicação', () => {
   });
 
   it('raiz usa chips de filtro sem menus duplicados', () => {
-    assert.ok(page.includes('showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}'));
+    assert.ok(
+      page.includes('showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}'),
+    );
     assert.ok(header.includes('ExplorerFilterChips'));
   });
 

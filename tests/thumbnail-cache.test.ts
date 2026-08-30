@@ -79,14 +79,17 @@ describe('thumbnailObjectUrlCache', () => {
       urls.push(ensureThumbnailObjectUrl(key, makeBlob(String(index))));
     }
     assert.equal(getThumbnailCacheSize(), max);
-    assert.equal(getCachedThumbnailUrl(
-      buildDocumentThumbnailCacheKey({
-        tenantId: 't1',
-        documentId: 'd0',
-        versionId: 'v1',
-        assetUrl: '/api/thumb/0',
-      }),
-    ), null);
+    assert.equal(
+      getCachedThumbnailUrl(
+        buildDocumentThumbnailCacheKey({
+          tenantId: 't1',
+          documentId: 'd0',
+          versionId: 'v1',
+          assetUrl: '/api/thumb/0',
+        }),
+      ),
+      null,
+    );
   });
 
   it('clearThumbnailCacheForTenant remove apenas entradas do tenant', () => {
@@ -169,14 +172,8 @@ describe('thumbnail cache — integração frontend', () => {
 
 describe('preview cache headers backend', () => {
   it('manifest usa max-age quando ready e no-store quando processing', () => {
-    const helper = readFileSync(
-      join(process.cwd(), 'server/utils/previewCacheHeaders.ts'),
-      'utf8',
-    );
-    const handler = readFileSync(
-      join(process.cwd(), 'api/documents/preview-manifest.ts'),
-      'utf8',
-    );
+    const helper = readFileSync(join(process.cwd(), 'server/utils/previewCacheHeaders.ts'), 'utf8');
+    const handler = readFileSync(join(process.cwd(), 'api/documents/preview-manifest.ts'), 'utf8');
     assert.ok(helper.includes('max-age=3600'));
     assert.ok(helper.includes('no-store'));
     assert.ok(handler.includes('setPreviewManifestCacheHeaders'));
@@ -184,14 +181,8 @@ describe('preview cache headers backend', () => {
   });
 
   it('thumbnails usam cache privado immutable', () => {
-    const helper = readFileSync(
-      join(process.cwd(), 'server/utils/previewCacheHeaders.ts'),
-      'utf8',
-    );
-    const handler = readFileSync(
-      join(process.cwd(), 'api/documents/preview-thumbnail.ts'),
-      'utf8',
-    );
+    const helper = readFileSync(join(process.cwd(), 'server/utils/previewCacheHeaders.ts'), 'utf8');
+    const handler = readFileSync(join(process.cwd(), 'api/documents/preview-thumbnail.ts'), 'utf8');
     assert.ok(helper.includes('max-age=86400, immutable'));
     assert.ok(handler.includes('setPreviewAssetCacheHeaders'));
   });

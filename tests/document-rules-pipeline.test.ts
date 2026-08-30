@@ -31,10 +31,7 @@ describe('pipeline de análise — fonte de verdade das regras', () => {
   });
 
   it('/rules persiste categorias e extração nas collections de governança', () => {
-    const categoriesApi = readFileSync(
-      join(repoRoot, 'api/document-categories/index.ts'),
-      'utf8',
-    );
+    const categoriesApi = readFileSync(join(repoRoot, 'api/document-categories/index.ts'), 'utf8');
     const extraction = readServer('services/documentExtractionRulesService.ts');
     const access = readServer('services/documentAccessRulesService.ts');
 

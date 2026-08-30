@@ -105,17 +105,32 @@ describe('devolução do job de análise para a fila', () => {
   it('recua mais a cada volta', () => {
     process.env.ANALYSIS_SATURATION_RETRY_DELAY_MS = '30000';
 
-    assert.equal(saturationRetryDelayMs(0, () => 0), 30_000);
-    assert.equal(saturationRetryDelayMs(1, () => 0), 60_000);
-    assert.equal(saturationRetryDelayMs(2, () => 0), 120_000);
+    assert.equal(
+      saturationRetryDelayMs(0, () => 0),
+      30_000,
+    );
+    assert.equal(
+      saturationRetryDelayMs(1, () => 0),
+      60_000,
+    );
+    assert.equal(
+      saturationRetryDelayMs(2, () => 0),
+      120_000,
+    );
     // Teto: mais que isso e o usuário desiste antes de a análise voltar.
-    assert.equal(saturationRetryDelayMs(20, () => 0), 300_000);
+    assert.equal(
+      saturationRetryDelayMs(20, () => 0),
+      300_000,
+    );
   });
 
   it('dispersa as voltas para o lote não bater na parede em bloco', () => {
     process.env.ANALYSIS_SATURATION_RETRY_DELAY_MS = '30000';
 
-    assert.equal(saturationRetryDelayMs(0, () => 0.5), 32_500);
+    assert.equal(
+      saturationRetryDelayMs(0, () => 0.5),
+      32_500,
+    );
   });
 
   it('para de devolver depois do teto e deixa o caminho antigo assumir', async () => {

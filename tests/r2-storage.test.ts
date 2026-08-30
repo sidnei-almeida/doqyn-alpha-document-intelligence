@@ -16,7 +16,10 @@ import {
   headTenantBucket,
 } from '../server/storage/r2/r2BucketProvisioner.js';
 import { createR2StorageProvider } from '../server/storage/r2/r2StorageProvider.js';
-import { getStorageProvider, resetStorageProviderCache } from '../server/storage/getStorageProvider.js';
+import {
+  getStorageProvider,
+  resetStorageProviderCache,
+} from '../server/storage/getStorageProvider.js';
 import type { R2Config } from '../server/storage/storageConfig.js';
 import { validateR2Endpoint } from '../server/storage/storageConfig.js';
 
@@ -121,8 +124,14 @@ describe('r2 bucket provisioner', () => {
 
     assert.equal(result.created, true);
     assert.match(result.bucket, /^doqyn-t-[a-f0-9]{12}$/);
-    assert.equal(commands.some((c) => c instanceof HeadBucketCommand), true);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof HeadBucketCommand),
+      true,
+    );
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      true,
+    );
   });
 
   it('ensureTenantBucket é idempotente se bucket já existe', async () => {
@@ -142,7 +151,10 @@ describe('r2 bucket provisioner', () => {
     });
 
     assert.equal(result.created, false);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), false);
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      false,
+    );
   });
 
   it('createTenantBucket trata BucketAlreadyOwnedByYou como OK', async () => {
@@ -212,9 +224,15 @@ describe('r2 storage provider', () => {
 
     assert.equal(stored.provider, 'r2');
     assert.equal(stored.bucket, 'doqyn-t-a94f3c82d1b4');
-    assert.match(stored.storageKey, /^documents\/doc_001\/versions\/ver_001\/original\/documento\.pdf$/);
+    assert.match(
+      stored.storageKey,
+      /^documents\/doc_001\/versions\/ver_001\/original\/documento\.pdf$/,
+    );
     assert.equal(stored.etag, '"etag-123"');
-    assert.equal(commands.some((c) => c instanceof PutObjectCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof PutObjectCommand),
+      true,
+    );
     assert.equal(ensureBucket.mock.calls.length, 1);
   });
 
@@ -261,7 +279,10 @@ describe('r2 storage provider', () => {
       'doqyn-t-a94f3c82d1b4',
     );
 
-    assert.equal(commands.some((c) => c instanceof DeleteObjectCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof DeleteObjectCommand),
+      true,
+    );
   });
 });
 
