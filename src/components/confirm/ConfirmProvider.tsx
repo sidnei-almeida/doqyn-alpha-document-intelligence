@@ -37,7 +37,19 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requiresText = Boolean(state.confirmationText);
-  const textMatches = !requiresText || typedText.trim() === state.confirmationText?.trim();
+  /**
+   * A palavra confere sem exigir a tecla Shift.
+   *
+   * A barreira existe para tornar o gesto deliberado — digitar EXCLUIR é diferente de clicar sem
+   * ler. Ela não existe para testar Caps Lock: quem escreveu "excluir" leu, entendeu e decidiu, e
+   * travar por causa da caixa da letra é atrito sem ganho nenhum de segurança.
+   */
+  const palavraEsperada = state.confirmationText?.trim() ?? '';
+  const digitado = typedText.trim();
+  const textMatches =
+    !requiresText || digitado.toLocaleUpperCase() === palavraEsperada.toLocaleUpperCase();
+  // Errar uma letra e ficar olhando um botão apagado sem explicação foi o que aconteceu na prática.
+  const textoDivergente = requiresText && digitado.length > 0 && !textMatches;
 
   const variant = state.variant ?? 'danger';
 
@@ -97,6 +109,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               onChange={(e) => setTypedText(e.target.value)}
               placeholder={state.confirmationText}
               autoComplete="off"
+              error={
+                textoDivergente ? `Digite exatamente ${palavraEsperada} para liberar.` : undefined
+              }
             />
           </div>
         )}
