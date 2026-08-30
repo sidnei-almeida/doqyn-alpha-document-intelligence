@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { formatStorageBytes } from '../utils/buildOverviewMetrics';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 import {
   OverviewPanelStat,
   OverviewPanelStatCell,
@@ -34,7 +35,7 @@ export function OverviewStoragePanel({
         ))}
       </ul>
     ) : (
-      <p className="text-doqyn-muted">Nenhum erro recente no período.</p>
+      <EmptyHint bare>Nenhum erro recente no período.</EmptyHint>
     );
 
   return (

@@ -16,6 +16,7 @@ import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections'
 import { PERMISSION_HINTS } from '../../utils/governanceMapUi';
 import { GovernancePermissionBadges } from './GovernancePermissionBadges';
 import { CategoryIcon } from '../categoryIcons';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 import {
   fromPermissionState,
   isRequirablePermission,
@@ -339,7 +340,7 @@ export function GovernanceDetailDialog({
                 Grupos com acesso
               </p>
               {connectedGroups.length === 0 ? (
-                <p className="text-sm text-doqyn-muted">Nenhum grupo conectado.</p>
+                <EmptyHint bare>Nenhum grupo conectado.</EmptyHint>
               ) : (
                 <ul className="space-y-2">
                   {connectedGroups.map((item) => {
@@ -411,7 +412,7 @@ export function GovernanceDetailDialog({
                 Categorias conectadas
               </p>
               {connectedCategories.length === 0 ? (
-                <p className="text-sm text-doqyn-muted">Nenhuma categoria conectada.</p>
+                <EmptyHint bare>Nenhuma categoria conectada.</EmptyHint>
               ) : (
                 <ul className="space-y-2">
                   {connectedCategories.map((item) => {

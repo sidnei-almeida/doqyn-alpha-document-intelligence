@@ -4,6 +4,7 @@ import { DrawerSection } from '@/components/ui/DrawerSection';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import type { ExpiryAlertConfig } from '@/types/rules';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 export type ExpiryAlertConfigValue = ExpiryAlertConfig;
 
@@ -105,9 +106,9 @@ export function ExpiryAlertConfigSection({
               regras não recebe, mesmo marcado aqui.
             </p>
             {groups.length === 0 ? (
-              <p className="mt-2 text-micro text-doqyn-muted">
+              <EmptyHint bare className="mt-2">
                 Nenhum grupo documental cadastrado. Sem grupos, só o dono do documento é avisado.
-              </p>
+              </EmptyHint>
             ) : (
               <div className="scrollbar-thin mt-2 max-h-40 divide-y divide-doqyn-border-subtle overflow-y-auto">
                 {groups.map((group) => (
@@ -133,10 +134,10 @@ export function ExpiryAlertConfigSection({
           </div>
 
           {notifiesEveryoneWithAccess && (
-            <p className="text-micro text-doqyn-muted">
+            <EmptyHint bare>
               Nenhum grupo marcado: todos os grupos com acesso de leitura a esta categoria serão
               avisados.
-            </p>
+            </EmptyHint>
           )}
         </>
       )}

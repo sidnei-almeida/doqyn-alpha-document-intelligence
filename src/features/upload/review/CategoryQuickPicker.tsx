@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 /**
  * Escolha de categoria em um clique.
@@ -46,9 +47,9 @@ export function CategoryQuickPicker({
 
   if (categories.length === 0) {
     return (
-      <p className="text-[11px] text-doqyn-muted">
+      <EmptyHint bare>
         Nenhuma categoria configurada para a empresa. Crie uma em Regras antes de classificar à mão.
-      </p>
+      </EmptyHint>
     );
   }
 
@@ -98,7 +99,9 @@ export function CategoryQuickPicker({
       </div>
 
       {filtered.length === 0 && (
-        <p className="mt-2 text-[11px] text-doqyn-muted">Nenhuma categoria com esse nome.</p>
+        <EmptyHint bare className="mt-2">
+          Nenhuma categoria com esse nome.
+        </EmptyHint>
       )}
     </div>
   );

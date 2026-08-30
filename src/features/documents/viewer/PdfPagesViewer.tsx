@@ -7,6 +7,7 @@ import { emitClientTrackingEvent } from '@/features/tracking/api/trackingClientE
 import type { PreviewManifestPage } from '@/types/preview-manifest';
 import { usePreviewAsset } from './usePreviewAsset';
 import type { ViewerComponentProps } from './viewerRegistry';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
@@ -289,9 +290,7 @@ export function PdfPagesViewer({
           className,
         )}
       >
-        <p className="text-caption text-doqyn-muted">
-          Nenhuma página disponível para visualização.
-        </p>
+        <EmptyHint bare>Nenhuma página disponível para visualização.</EmptyHint>
       </div>
     );
   }

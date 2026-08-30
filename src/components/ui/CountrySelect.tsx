@@ -6,6 +6,7 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { listCountries, type CountryCode } from '@/lib/identifiers';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 export interface CountrySelectProps {
   label?: string;
@@ -125,7 +126,9 @@ export function CountrySelect({
         </div>
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="type-body px-3.5 py-3 text-doqyn-muted">Nenhum país encontrado.</p>
+            <EmptyHint bare className="px-3.5 py-3">
+              Nenhum país encontrado.
+            </EmptyHint>
           ) : (
             filtered.map((country) => (
               <DropdownMenuItem

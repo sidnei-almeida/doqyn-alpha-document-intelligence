@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentListItem } from '@/types/document-library';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 export type MoveDocumentCategoryOption = {
   id: string;
@@ -118,7 +119,7 @@ export function MoveDocumentModal({
         )}
 
         {activeCategories.length === 0 ? (
-          <p className="text-label font-normal text-doqyn-subtle">Nenhuma categoria disponível.</p>
+          <EmptyHint bare>Nenhuma categoria disponível.</EmptyHint>
         ) : (
           <>
             {activeCategories.length > 6 && (
@@ -132,9 +133,7 @@ export function MoveDocumentModal({
 
             <div className="max-h-64 space-y-1 overflow-y-auto pr-0.5">
               {filteredCategories.length === 0 ? (
-                <p className="text-label font-normal text-doqyn-subtle">
-                  Nenhuma categoria encontrada.
-                </p>
+                <EmptyHint bare>Nenhuma categoria encontrada.</EmptyHint>
               ) : (
                 filteredCategories.map((category) => {
                   const isCurrent = category.id === currentCategoryId;

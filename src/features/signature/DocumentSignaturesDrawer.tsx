@@ -26,6 +26,7 @@ import {
 } from '@/features/signature/utils/signatureSummaryDisplay';
 import { DocumentApiError } from '@/features/documents/api/documentsApi.errors';
 import { invalidateSignatureQueries } from '@/features/signature/utils/invalidateSignatureQueries';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 import {
   canRevokeSignatureRequestEntry,
   isSignatureRequestEntryOpen,
@@ -343,7 +344,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       </div>
 
       {!isLoading && !isError && data?.items.length === 0 ? (
-        <p className="text-caption text-doqyn-muted">Nenhuma assinatura solicitada.</p>
+        <EmptyHint bare>Nenhuma assinatura solicitada.</EmptyHint>
       ) : null}
     </WorkspaceSideDrawer>
   );
