@@ -333,6 +333,18 @@ export async function updateDocumentClass(
   };
 }
 
+/**
+ * Apaga a categoria. Os documentos dela vão para Sem categoria, e as regras morrem junto.
+ *
+ * Devolve quantos documentos mudaram de lugar — é o número que a tela precisa dizer depois, porque
+ * o efeito da exclusão não está na pasta que sumiu, e sim nos documentos que se mexeram.
+ */
+export async function deleteDocumentClass(
+  id: string,
+): Promise<{ id: string; name: string; movedDocuments: number; targetCategoryId: string }> {
+  return request(`/document-categories/${id}`, { method: 'DELETE' });
+}
+
 export async function toggleDocumentClass(id: string): Promise<ApiDocumentClass> {
   const data = await request<{ id: string; active: boolean }>(
     `/document-categories/${id}/toggle-active`,

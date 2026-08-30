@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext } from '@dnd-kit/core';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { DocumentViewerModal } from '@/features/documents/viewer';
-import { showApiErrorToast } from '@/shared/feedback/appFeedback';
+import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { ALLOWED_FILE_EXTENSIONS } from '@/features/document-send/uploadConstants';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import type { UploadContext } from '@/features/upload/types';
@@ -45,6 +45,9 @@ import {
   resolveCollectionFilterCapabilities,
 } from './utils/libraryCollectionFilterCapabilities';
 import { invalidateLibraryQueries } from './utils/libraryQueryInvalidation';
+import { PromptDialog } from '@/components/ui/PromptDialog';
+import { buildDeleteCategoryConfirm } from '@/components/confirm/confirmMessages';
+import { deleteDocumentClass, updateDocumentClass } from '@/features/rules/api/rulesApi';
 import { findLibraryCategory } from './utils/resolveLibraryCategory';
 import { pickRecentDocuments, pickUncategorizedDocuments } from './utils/libraryHomeSections';
 import { useConfirm } from '@/components/confirm/useConfirm';
@@ -239,6 +242,52 @@ export function LibraryPage() {
   const closeDetailsDrawer = useCallback(() => {
     setDetailsDrawer(null);
   }, []);
+
+  const [renameFolder, setRenameFolder] = useState<LibraryFolder | null>(null);
+
+  /**
+   * Renomear a categoria alcança os documentos dentro dela.
+   *
+   * O nome viaja como cópia em cada documento (`className`), e é dela que o cartão da Biblioteca
+   * lê o rótulo — por isso o servidor propaga, e por isso aqui basta invalidar as listas.
+   */
+  const renameCategory = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateDocumentClass(id, { name }),
+    onSuccess: async (_data, variables) => {
+      setRenameFolder(null);
+      showAppToast({
+        type: 'success',
+        title: 'Categoria renomeada',
+        message: `Agora ela se chama ${variables.name}.`,
+      });
+      await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
+    },
+    onError: (error) => showApiErrorToast(error, 'Não foi possível renomear a categoria.'),
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: (folder: LibraryFolder) => deleteDocumentClass(folder.id),
+    onSuccess: async (result) => {
+      showAppToast({
+        type: 'success',
+        title: 'Categoria excluída',
+        message: result.movedDocuments
+          ? `${result.movedDocuments} ${result.movedDocuments === 1 ? 'documento foi' : 'documentos foram'} para Sem categoria.`
+          : 'A categoria estava vazia.',
+      });
+      await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
+    },
+    onError: (error) => showApiErrorToast(error, 'Não foi possível excluir a categoria.'),
+  });
+
+  const handleDeleteFolder = useCallback(
+    async (folder: LibraryFolder) => {
+      const accepted = await confirm(buildDeleteCategoryConfirm(folder.name, folder.documentCount));
+      if (!accepted) return;
+      deleteCategory.mutate(folder);
+    },
+    [confirm, deleteCategory],
+  );
 
   const breadcrumbSegments = useMemo(() => {
     const built = buildLibraryBreadcrumbSegments({
@@ -820,6 +869,8 @@ export function LibraryPage() {
           }
           onShowContextInfo={() => setInfoOpen(true)}
           onShowFolderInfo={openFolderDetails}
+          onRenameFolder={setRenameFolder}
+          onDeleteFolder={(folder) => void handleDeleteFolder(folder)}
           isTrashView={isTrashView}
           isDeactivatedView={isDeactivatedView}
           onTrashFile={handleTrashSingle}
@@ -856,6 +907,21 @@ export function LibraryPage() {
         <DocumentSignaturesDrawer
           document={signaturesDrawerDoc}
           onClose={() => setSignaturesDrawerDoc(null)}
+        />
+
+        <PromptDialog
+          open={Boolean(renameFolder)}
+          title="Renomear categoria"
+          description="O nome novo vale para a pasta e para todos os documentos que já estão dentro dela."
+          label="Nome da categoria"
+          placeholder={renameFolder?.name ?? ''}
+          confirmLabel="Renomear"
+          saving={renameCategory.isPending}
+          onClose={() => setRenameFolder(null)}
+          onConfirm={(name) => {
+            if (!renameFolder) return;
+            renameCategory.mutate({ id: renameFolder.id, name });
+          }}
         />
 
         <MoveDocumentModal

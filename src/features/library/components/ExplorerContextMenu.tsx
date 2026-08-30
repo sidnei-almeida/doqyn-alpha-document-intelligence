@@ -41,6 +41,8 @@ type ExplorerContextMenuProps = {
   onReactivateFile?: (doc: DocumentListItem) => void;
   onShowContextInfo?: () => void;
   onShowFolderInfo?: (folder: LibraryFolder) => void;
+  onRenameFolder?: (folder: LibraryFolder) => void;
+  onDeleteFolder?: (folder: LibraryFolder) => void;
 };
 
 // Item de menu é linha de registro, não pílula: canto reto e régua de acento
@@ -115,8 +117,21 @@ export function ExplorerContextMenu({
   onReactivateFile,
   onShowContextInfo,
   onShowFolderInfo,
+  onRenameFolder,
+  onDeleteFolder,
 }: ExplorerContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Sem categoria não se renomeia nem se apaga.
+   *
+   * Ela é o destino de quem perde a pasta: apagá-la deixaria a exclusão da próxima categoria sem
+   * para onde mandar os documentos. O servidor recusa de qualquer jeito — aqui é só para a pessoa
+   * não descobrir isso depois de clicar.
+   */
+  const folder = state?.kind === 'folder' ? state.folder : null;
+  const isUncategorized =
+    folder?.slug === 'sem-categoria' || folder?.name === 'Sem categoria' || false;
 
   useEffect(() => {
     if (!state) return;
@@ -225,9 +240,21 @@ export function ExplorerContextMenu({
             <Icon name="balance" size={ICON_SIZE.sm} className="text-doqyn-muted" />
             Ver regras
           </Link>
-          <MenuItem label="Renomear categoria" icon="edit" disabled onClick={() => undefined} />
-          <MenuItem label="Arquivar categoria" icon="delete" disabled onClick={() => undefined} />
-          <p className="px-3 py-1.5 text-[10px] text-doqyn-subtle">Renomear e arquivar: em breve</p>
+          {/* Sem categoria não se renomeia nem se apaga: é o destino de quem perde a pasta, e
+              sem ela a exclusão da próxima não teria para onde mandar os documentos. */}
+          <MenuItem
+            label="Renomear categoria"
+            icon="edit"
+            disabled={isUncategorized || !onRenameFolder}
+            onClick={() => run(() => onRenameFolder?.(state.folder))}
+          />
+          <MenuItem
+            label="Excluir categoria"
+            icon="delete"
+            danger
+            disabled={isUncategorized || !onDeleteFolder}
+            onClick={() => run(() => onDeleteFolder?.(state.folder))}
+          />
         </>
       )}
 

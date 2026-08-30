@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  toggleDocumentCategoryActive,
+  deleteDocumentCategory,
   updateDocumentCategory,
 } from '../../server/services/documentCategoriesService.js';
 import { withAdminMongoApi } from '../../server/utils/apiHttp.js';
@@ -51,24 +51,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return withAdminMongoApi(req, res, {
       endpoint: '/api/document-categories/:categoryId',
       handler: async ({ companyId, requestId, user }) => {
-        const result = await toggleDocumentCategoryActive(companyId, categoryId, {
+        // Apagar de verdade: os documentos vão para Sem categoria, e as regras da categoria morrem
+        // com ela. Antes isto só desativava, e a pasta desativada com documento dentro era um
+        // estado que a tela não mostrava.
+        const result = await deleteDocumentCategory(companyId, categoryId, user.id, {
           ownerUserId: user.id,
         });
-        if (result.active) {
-          await updateDocumentCategory(
-            companyId,
-            categoryId,
-            { active: false },
-            { ownerUserId: user.id },
-          );
-        }
-        logger.info('document category deactivated', {
+        logger.info('document category deleted', {
           requestId,
           companyId,
           resource: 'document_categories',
           id: categoryId,
+          movedDocuments: result.movedDocuments,
         });
-        return { id: categoryId, active: false };
+        return result;
       },
     });
   }
