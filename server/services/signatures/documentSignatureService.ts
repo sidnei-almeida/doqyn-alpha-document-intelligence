@@ -479,6 +479,15 @@ export async function createDocumentSignatureRequest(
   let signerName = input.signerName?.trim() ?? '';
   let signerEmail = input.signerEmail?.trim() ?? '';
   let signerUserId: string | null = null;
+  /**
+   * Se o signatário é de fora, e não se ele assina como usuário.
+   *
+   * `internal_user` diz **como** se assina — pela conta, e não pelo link de convidado. Não diz de
+   * quem é a empresa: conta DOQYN de outra empresa também entra por aí, porque é o ramo que
+   * resolve o contato contra o diretório. Gravar `tenantId` do documento para essa pessoa faria o
+   * registro dizer que ela é de casa, e é isso que a afinidade lê para separar as duas listas.
+   */
+  let signerIsExternal = false;
   let portalToken: string | undefined;
   let signatureTokenHash: string | null = null;
   let phoneFields = resolveSignerPhoneFields(input.signerPhone);
@@ -505,6 +514,7 @@ export async function createDocumentSignatureRequest(
 
     // Signatário de fora precisa do portal com token: ele não abre a Biblioteca desta empresa, e
     // sem o token não teria por onde chegar ao documento que precisa assinar.
+    signerIsExternal = resolved.external;
     if (resolved.external) {
       portalToken = generateSignaturePortalToken();
       signatureTokenHash = hashSignaturePortalToken(portalToken);
@@ -541,7 +551,7 @@ export async function createDocumentSignatureRequest(
         signerId,
         signerType,
         userId: signerUserId,
-        tenantId: signerType === 'internal_user' ? ctx.tenantId : null,
+        tenantId: signerType === 'internal_user' && !signerIsExternal ? ctx.tenantId : null,
         name: signerName,
         email: signerEmail,
         emailNormalized: normalizeEmail(signerEmail),

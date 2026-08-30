@@ -276,7 +276,10 @@ export async function listFrequentContacts(
         name: signer.name,
         email: signer.email,
         when: request.createdAt,
-        scope: signer.tenantId && signer.tenantId !== ctx.tenantId ? 'external' : 'internal',
+        // Pela lista de membros, como nos outros laços: o `tenantId` do signatário foi gravado
+        // como o do documento para todo mundo que assina pela conta — inclusive quem é de outra
+        // empresa —, então compará-lo com o do contexto dava sempre "da casa".
+        scope: byUserId.has(signer.userId) ? 'internal' : 'external',
       });
     }
   }
