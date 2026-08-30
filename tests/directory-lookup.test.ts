@@ -109,7 +109,7 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
     // A linha é a mesma peça nas duas listas: busca e histórico respondem à mesma pergunta, e
     // desenhá-las diferente faria parecerem coisas distintas.
     assert.ok(row.includes('<UserAvatar'));
-    assert.ok(row.includes("username ? `@${username}` : null"));
+    assert.ok(row.includes('username ? `@${username}` : null'));
     assert.ok(field.includes('<ContactRow'));
     assert.ok(field.includes('username={hit.username}'));
   });
@@ -138,7 +138,9 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
 
     // Aquele procura por nome numa lista conhecida; este resolve e-mail exato contra o diretório,
     // porque o nome de quem está fora é guardado cifrado.
-    assert.ok(field.includes("const [email, setEmail] = useState('')"));
+    // Estado próprio, e não herdado do campo de cima. Nasce com o contato escolhido quando o
+    // envio já começou por uma pessoa, e vazio no resto das vezes.
+    assert.ok(field.includes("const [email, setEmail] = useState(initialEmail ?? '')"));
     // E a saída para quem não tem conta é opcional: nem todo fluxo oferece link com token.
     assert.ok(field.includes('onFallbackToLink?:'));
   });

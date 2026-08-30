@@ -42,6 +42,10 @@ const LazySettingsPage = lazyNamed(
   () => import('@/features/documents/SettingsPage'),
   'SettingsPage',
 );
+const LazyContactsPage = lazyNamed(
+  () => import('@/features/contacts/ContactsPage'),
+  'ContactsPage',
+);
 const LazyDashboardPage = lazyNamed(
   () => import('@/features/documents/DashboardPage'),
   'DashboardPage',
@@ -122,6 +126,7 @@ export const UserManagementRouteLazy = withRouteSuspense(LazyUserManagementRoute
 export const SettingsRoute = withRouteSuspense(LazySettingsPage);
 export const DashboardRoute = withRouteSuspense(LazyDashboardPage);
 export const VersioningRoute = withRouteSuspense(LazyVersioningPage);
+export const ContactsRoute = withRouteSuspense(LazyContactsPage);
 export const RequestAccessRoute = withRouteSuspense(LazyRequestAccessPage);
 export const AccessChoiceRoute = withRouteSuspense(LazyAccessChoicePage);
 export const CompanySignupRoute = withRouteSuspense(LazyCompanySignupPage);

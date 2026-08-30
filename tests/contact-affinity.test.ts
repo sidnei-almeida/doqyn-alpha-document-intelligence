@@ -22,7 +22,10 @@ describe('afinidade de contato — a ordem sai do que já aconteceu', () => {
   it('três desta semana passam na frente de trinta do ano passado', () => {
     // É o caso que "só frequência" erra: a contagem bruta congelaria quem foi muito acionado e
     // sumiu, e ele ficaria no topo para sempre.
-    const recentes = [1, 3, 5].reduce((soma, dia) => soma + decayedWeight(diasAtras(dia), AGORA), 0);
+    const recentes = [1, 3, 5].reduce(
+      (soma, dia) => soma + decayedWeight(diasAtras(dia), AGORA),
+      0,
+    );
     const antigas = Array.from({ length: 30 }).reduce<number>(
       (soma, _, i) => soma + decayedWeight(diasAtras(300 + i), AGORA),
       0,
@@ -77,6 +80,33 @@ describe('afinidade de contato — a ordem sai do que já aconteceu', () => {
     assert.ok(service.includes('sharedWithUserId: user.id'));
     assert.ok(service.includes('requestedByUserId: user.id'));
     assert.ok(service.includes("'signers.userId': user.id"));
+  });
+
+  it('a tela de contatos não oferece cadastrar ninguém', () => {
+    const page = read('src/features/contacts/ContactsPage.tsx');
+
+    // Um botão de adicionar prometeria curadoria que não existe, e mandaria a pessoa procurar um
+    // controle que a lista não tem — ela cresce sozinha.
+    assert.ok(!/Adicionar contato|Novo contato|adicionar à lista/i.test(page));
+    assert.ok(page.includes('Não há nada para cadastrar'));
+  });
+
+  it('a tela só oferece a ação que começa por uma pessoa', () => {
+    const page = read('src/features/contacts/ContactsPage.tsx');
+
+    // Compartilhar e pedir assinatura começam por um documento. Oferecê-los daqui exigiria
+    // escolher o arquivo antes, e um seletor de documento nesta tela seria a Biblioteca de novo.
+    assert.ok(page.includes('Pedir documento'));
+    assert.ok(!page.includes('ShareDocumentModal'));
+    assert.ok(!page.includes('RequestSignatureModal'));
+  });
+
+  it('contato externo sem e-mail não promete envio', () => {
+    const page = read('src/features/contacts/ContactsPage.tsx');
+
+    // Nem toda origem registra o e-mail. Sem ele não há para onde mandar, e o botão ativo
+    // ofereceria um caminho que falha no envio.
+    assert.ok(page.includes("disabled={contact.scope === 'external' && !contact.email}"));
   });
 
   it('signatário sem conta não vira contato', () => {

@@ -30,6 +30,7 @@ type Resolution =
 export function CrossTenantRecipientField({
   label = 'E-mail de quem é de outra empresa',
   idleHint = 'Digite o e-mail completo. Fora da sua empresa não há busca por nome: o nome é guardado cifrado.',
+  initialEmail,
   onPick,
   onFallbackToLink,
   fallbackLabel = 'Enviar por link',
@@ -37,6 +38,13 @@ export function CrossTenantRecipientField({
 }: {
   label?: string;
   idleHint?: string;
+  /**
+   * O e-mail com que o campo nasce, quando o envio já começou com alguém escolhido.
+   *
+   * Só no primeiro render — o campo desmonta junto com o modal, então "primeiro render" é
+   * "cada abertura". Reaplicar a cada render desfaria a digitação de quem trocasse de pessoa.
+   */
+  initialEmail?: string;
   /** Chamado quando o e-mail resolve para um usuário DOQYN de outra empresa. */
   /**
    * O escolhido. `email` vem preenchido quando se digitou um e-mail; `username`, quando se escolheu
@@ -51,7 +59,7 @@ export function CrossTenantRecipientField({
   fallbackLabel?: string;
   disabled?: boolean;
 }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail ?? '');
   const normalized = email.trim().toLowerCase();
   const isEmail = looksLikeEmail(normalized);
   const lookup = useDirectoryLookup(normalized, isEmail);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
@@ -20,6 +20,13 @@ export type RequestDocumentCategory = {
 type RequestDocumentModalProps = {
   open: boolean;
   onClose: () => void;
+  /**
+   * Quem já vem escolhido, quando o pedido nasce de uma linha de contato.
+   *
+   * Aplicado só na abertura, e não a cada render: reaplicar sobrescreveria a troca de
+   * destinatário que a pessoa fizesse dentro do modal.
+   */
+  initialTarget?: { scope: 'internal' | 'external'; userId?: string; email?: string };
   people: RequestDocumentTarget[];
   categories: RequestDocumentCategory[];
   saving?: boolean;
@@ -48,6 +55,7 @@ type RequestDocumentModalProps = {
 export function RequestDocumentModal({
   open,
   onClose,
+  initialTarget,
   people,
   categories,
   saving,
@@ -61,6 +69,16 @@ export function RequestDocumentModal({
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [dueAt, setDueAt] = useState('');
+
+  useEffect(() => {
+    if (!open || !initialTarget) return;
+    setScope(initialTarget.scope);
+    setRequestedFromUserId(initialTarget.userId ?? '');
+    setRequestedFromEmail(initialTarget.email ?? '');
+    // Só na abertura: `initialTarget` fora das dependências é de propósito, senão trocar de
+    // destinatário dentro do modal seria desfeito no render seguinte.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const external = scope === 'external';
   const hasTarget = external
@@ -158,6 +176,7 @@ export function RequestDocumentModal({
         {external ? (
           <div className="flex flex-col gap-2">
             <CrossTenantRecipientField
+              initialEmail={initialTarget?.scope === 'external' ? initialTarget.email : undefined}
               label="E-mail de quem vai enviar"
               idleHint="Precisa ter conta DOQYN. Fora da sua empresa não há busca por nome: o nome é guardado cifrado."
               /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e

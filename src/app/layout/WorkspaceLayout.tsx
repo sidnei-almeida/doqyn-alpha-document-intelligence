@@ -24,9 +24,7 @@ function WorkspaceLayoutInner() {
   const { data: categories = [] } = useDocumentCategories();
 
   const activeSpaceId = searchParams.get('space') ?? '';
-  const resolvedSpaceId = activeSpaceId
-    ? resolveLibraryCategoryId(activeSpaceId, categories)
-    : '';
+  const resolvedSpaceId = activeSpaceId ? resolveLibraryCategoryId(activeSpaceId, categories) : '';
   const activeCategory = resolvedSpaceId
     ? categories.find((category) => category.id === resolvedSpaceId)
     : undefined;
@@ -47,7 +45,7 @@ function WorkspaceLayoutInner() {
         <div className="workspace-frame flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceTopBar />
           <main className="main-content workspace-canvas flex min-h-0 min-w-0 flex-1 flex-col">
-            <div className="workspace-canvas-inner flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin">
+            <div className="workspace-canvas-inner scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto">
               <div className="page-outlet flex min-h-full flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6">
                 <Outlet />
               </div>

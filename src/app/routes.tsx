@@ -8,6 +8,7 @@ import {
   AccessChoiceRoute,
   AuditRoute,
   CompanySignupRoute,
+  ContactsRoute,
   DashboardRoute,
   DocumentSendRoute,
   IndividualSignupRoute,
@@ -65,6 +66,9 @@ export const router = createBrowserRouter([
           // Fora de `/biblioteca/:collection` de propósito: aquela rota lista documentos, e um
           // pedido só vira documento quando alguém envia.
           { path: '/pedidos', element: <DocumentRequestsRoute /> },
+          // Fora de `/biblioteca/:collection` pelo mesmo motivo dos pedidos: aquela rota lista
+          // documentos, e um contato não é um.
+          { path: '/contatos', element: <ContactsRoute /> },
           { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
           // Rota legada de envio: fora da navegação, mantida até a fila unificada cobrir tudo.

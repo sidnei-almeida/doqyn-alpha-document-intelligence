@@ -53,6 +53,7 @@ export const NAV_ITEMS_LIBRARY_VIEWS = [
   { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
   { label: 'Para assinar', path: '/biblioteca/assinaturas', icon: 'draw' },
   { label: 'Pedidos', path: '/pedidos', icon: 'assignment' },
+  { label: 'Contatos', path: '/contatos', icon: 'group' },
   { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
   { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
   { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
