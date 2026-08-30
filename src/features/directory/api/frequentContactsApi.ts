@@ -5,6 +5,14 @@ export type FrequentContact = {
   userId: string;
   name: string;
   email?: string;
+  /**
+   * O apelido, quando houver de onde tirá-lo — hoje nunca vem preenchido.
+   *
+   * Ver `ContactAffinity` no servidor: a fonte que parecia servir guarda o e-mail. O cartão
+   * simplesmente omite a linha, em vez de mostrar um handle que manda procurar por quem não
+   * existe.
+   */
+  username?: string;
   interactions: number;
   lastInteractionAt: string;
   scope: 'internal' | 'external';

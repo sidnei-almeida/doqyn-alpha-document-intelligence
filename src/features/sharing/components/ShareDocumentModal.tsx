@@ -41,6 +41,15 @@ const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo 
 type ShareDocumentModalProps = {
   open: boolean;
   document: DocumentListItem | null;
+  /**
+   * Quem já vem escolhido, quando o envio começou por uma pessoa.
+   *
+   * A tela de Contatos parte de alguém e só depois pergunta qual documento; sem isto, ela
+   * entregaria o modal pedindo para achar de novo a pessoa em que se acabou de clicar.
+   *
+   * Aplicado só na abertura: reaplicar desfaria a troca de destinatário feita aqui dentro.
+   */
+  initialRecipient?: InternalCandidate | null;
   onClose: () => void;
 };
 
@@ -59,7 +68,12 @@ function statusLabel(status: string): string {
   }
 }
 
-export function ShareDocumentModal({ open, document, onClose }: ShareDocumentModalProps) {
+export function ShareDocumentModal({
+  open,
+  document,
+  initialRecipient,
+  onClose,
+}: ShareDocumentModalProps) {
   const documentId = document?.id ?? null;
   const flow = useStepFlow(STEPS.length, open);
 
@@ -90,6 +104,15 @@ export function ShareDocumentModal({ open, document, onClose }: ShareDocumentMod
   const { shareWithUser, revokeShare } = useShareDocumentMutations(documentId);
   const { createExternalShare, revokeExternalShare, regenerateExternalShare } =
     useExternalShareMutations(documentId);
+
+  // Na abertura, quem já veio escolhido. `initialRecipient` fora das dependências de propósito:
+  // com ele dentro, trocar de destinatário aqui seria desfeito no render seguinte.
+  useEffect(() => {
+    if (!open || !initialRecipient) return;
+    setAudience('internal');
+    setInternalPick(initialRecipient);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (open) return;

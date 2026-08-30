@@ -47,6 +47,19 @@ export type ContactAffinity = {
   userId: string;
   name: string;
   email?: string;
+  /**
+   * O handle público — hoje **sempre ausente**, e o campo existe para quando deixar de ser.
+   *
+   * Não há de onde tirá-lo sem custo. `MongoTenantMember.username` parece a fonte e não é: é
+   * campo legado que guarda o e-mail (`tenantMemberSyncService.ts` grava `username: email`), e
+   * exibi-lo mostraria `@fulano@empresa.com` embaixo do próprio endereço. A cópia feita no envio
+   * entre empresas guarda nome e e-mail, nunca o apelido. Buscá-lo no auth-service exigiria uma
+   * rota de handles por lote, que não existe.
+   *
+   * Mostrar apelido errado é pior que não mostrar nenhum: ele é a identidade pela qual as pessoas
+   * se procuram, e um handle inventado manda procurar por quem não existe.
+   */
+  username?: string;
   /** Soma das interações com decaimento. Só serve para ordenar; não é para exibir. */
   score: number;
   interactions: number;
@@ -59,6 +72,7 @@ type Accumulator = {
   userId: string;
   name: string;
   email?: string;
+  username?: string;
   score: number;
   interactions: number;
   lastInteractionAt: Date;
@@ -78,6 +92,7 @@ function touch(
     userId?: string | null;
     name?: string | null;
     email?: string | null;
+    username?: string | null;
     when?: Date | null;
     scope: 'internal' | 'external';
   },
@@ -90,6 +105,7 @@ function touch(
     userId,
     name: '',
     email: undefined,
+    username: undefined,
     score: 0,
     interactions: 0,
     lastInteractionAt: when,
@@ -104,6 +120,7 @@ function touch(
   // os dois, e é o e-mail que permite escrever de novo.
   if (input.name) current.name = input.name;
   if (input.email) current.email = input.email;
+  if (input.username) current.username = input.username;
 
   acc.set(userId, current);
 }
@@ -353,6 +370,7 @@ export async function listFrequentContacts(
         userId: entry.userId,
         name: entry.name,
         email: entry.email,
+        username: entry.username,
         score: entry.score,
         interactions: entry.interactions,
         lastInteractionAt: entry.lastInteractionAt.toISOString(),

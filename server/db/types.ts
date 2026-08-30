@@ -86,6 +86,12 @@ export type MongoTenantMember = {
   tenantId: string;
   /** UUID do usuário no doqyn-auth-service (`auth_users.id`). */
   authUserId?: string;
+  /**
+   * Legado, e **não é o apelido**: guarda o e-mail (ver `tenantMemberSyncService`).
+   *
+   * O nome do campo é anterior ao handle público, que vive em `auth_users.username`. Tratá-lo
+   * como apelido exibe `@fulano@empresa.com` para o usuário.
+   */
   username?: string;
   email: string;
   emailNormalized: string;

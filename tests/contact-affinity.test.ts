@@ -91,22 +91,54 @@ describe('afinidade de contato — a ordem sai do que já aconteceu', () => {
     assert.ok(page.includes('Não há nada para cadastrar'));
   });
 
-  it('a tela só oferece a ação que começa por uma pessoa', () => {
+  it('compartilhar e assinar passam por escolher o documento antes', () => {
     const page = read('src/features/contacts/ContactsPage.tsx');
+    const picker = read('src/features/contacts/PickDocumentDialog.tsx');
 
-    // Compartilhar e pedir assinatura começam por um documento. Oferecê-los daqui exigiria
-    // escolher o arquivo antes, e um seletor de documento nesta tela seria a Biblioteca de novo.
-    assert.ok(page.includes('Pedir documento'));
-    assert.ok(!page.includes('ShareDocumentModal'));
-    assert.ok(!page.includes('RequestSignatureModal'));
+    // A tela começa por uma pessoa; os dois modais começam por um documento. O seletor é o passo
+    // que costura os dois sentidos — sem ele a ação chegaria a um modal sem objeto.
+    assert.ok(page.includes('<PickDocumentDialog'));
+    assert.ok(page.includes("pending?.action !== 'request' && !document"));
+
+    // E o pedido de documento não passa por ele: nasce de uma pessoa e não precisa de arquivo.
+    assert.ok(
+      page.includes("const target = pending?.action === 'request' ? pending.contact : null"),
+    );
+
+    // O seletor não é a Biblioteca: sem pasta, sem filtro, sem ação por linha.
+    assert.ok(!/categoryId|TableRowActionsMenu|folder/i.test(picker));
   });
 
-  it('contato externo sem e-mail não promete envio', () => {
+  it('quem foi escolhido no cartão já chega escolhido no modal', () => {
     const page = read('src/features/contacts/ContactsPage.tsx');
+    const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
 
-    // Nem toda origem registra o e-mail. Sem ele não há para onde mandar, e o botão ativo
+    // Começar numa pessoa e ter que achá-la de novo é a metade que faria a ação não valer a pena.
+    assert.ok(page.includes('initialRecipient={recipient}'));
+    assert.ok(share.includes('setInternalPick(initialRecipient)'));
+
+    // Só quem é de casa: contato de outra empresa passa pelo campo de fronteira, outro caminho.
+    assert.ok(page.includes("pending.contact.scope === 'internal'"));
+  });
+
+  it('contato externo sem e-mail não promete ação nenhuma', () => {
+    const card = read('src/features/contacts/ContactCard.tsx');
+
+    // Nem toda origem registra o e-mail. Sem ele não há para onde mandar, e uma ação ativa
     // ofereceria um caminho que falha no envio.
-    assert.ok(page.includes("disabled={contact.scope === 'external' && !contact.email}"));
+    assert.ok(card.includes("const semEndereco = contact.scope === 'external' && !contact.email"));
+    assert.ok(card.includes('hidden: semEndereco'));
+  });
+
+  it('o cartão segue o kit: fio, canto de 4px e régua de acento', () => {
+    const card = read('src/features/contacts/ContactCard.tsx');
+
+    // Ver a memória de linguagem visual: caixa preenchida e canto grande são a linguagem antiga.
+    assert.ok(card.includes('rounded-[4px]'));
+    assert.ok(card.includes('hover:before:bg-doqyn-accent-active'));
+    assert.ok(!card.includes('rounded-lg'));
+    // Contagem de trocas é rótulo de registro, e rótulo de registro é monoespaçado.
+    assert.ok(card.includes('register-label'));
   });
 
   it('signatário sem conta não vira contato', () => {

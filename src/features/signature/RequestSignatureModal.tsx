@@ -40,6 +40,15 @@ const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo 
 type RequestSignatureModalProps = {
   open: boolean;
   document: DocumentListItem | null;
+  /**
+   * Quem já vem escolhido, quando o envio começou por uma pessoa.
+   *
+   * A tela de Contatos parte de alguém e só depois pergunta qual documento; sem isto, ela
+   * entregaria o modal pedindo para achar de novo a pessoa em que se acabou de clicar.
+   *
+   * Aplicado só na abertura: reaplicar desfaria a troca de destinatário feita aqui dentro.
+   */
+  initialRecipient?: InternalCandidate | null;
   onClose: () => void;
   /** Avisa a tela de origem para recarregar a lista depois de criar a solicitação. */
   onCreated?: () => void;
@@ -67,6 +76,7 @@ function requestStatusLabel(status: string): string {
 export function RequestSignatureModal({
   open,
   document,
+  initialRecipient,
   onClose,
   onCreated,
 }: RequestSignatureModalProps) {
@@ -153,12 +163,22 @@ export function RequestSignatureModal({
     setQuery('');
     setInternalPick(null);
     setCrossTenantSigner(null);
+    // ver o efeito de prefill abaixo
     setExternal(EMPTY_EXTERNAL_RECIPIENT);
     setExpiresAt(defaultExpirationDate(7));
     setCanDownloadAfterSign(false);
     setMessage('');
     setIssuedUrl(null);
     setInternalDone(false);
+  }, [open]);
+
+  // Na abertura, quem já veio escolhido — ver `initialRecipient`. Depende só de `open` de
+  // propósito: trocar de signatário aqui dentro não pode ser desfeito no render seguinte.
+  useEffect(() => {
+    if (!open || !initialRecipient) return;
+    setAudience('internal');
+    setInternalPick(initialRecipient);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const phoneError =
