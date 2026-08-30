@@ -16,6 +16,7 @@ import {
 import { formatQueueWaitLabel } from './queue/queueWaitLabel';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
+import { UploadScanThumb } from './components/UploadScanThumb';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   queued: 'Na fila',
@@ -28,31 +29,6 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
-
-function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
-  if (status === 'analyzing' || status === 'confirming') {
-    return (
-      <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin text-doqyn-info" />
-    );
-  }
-  if (status === 'done') {
-    return <Icon name="check_circle" size={ICON_SIZE.sm} className="text-doqyn-success" />;
-  }
-  if (status === 'error' || status === 'ai_paused') {
-    return <Icon name="error" size={ICON_SIZE.sm} className="text-doqyn-danger" />;
-  }
-  // Nem erro nem espera vazia: o servidor está trabalhando, a aba é que parou de perguntar.
-  if (status === 'still_running') {
-    return <Icon name="cloud_sync" size={ICON_SIZE.sm} className="text-doqyn-info" />;
-  }
-  if (status === 'review') {
-    return <Icon name="visibility" size={ICON_SIZE.sm} className="text-doqyn-warning" />;
-  }
-  if (status === 'awaiting_approval') {
-    return <Icon name="hourglass_top" size={ICON_SIZE.sm} className="text-doqyn-info" />;
-  }
-  return <Icon name="description" size={ICON_SIZE.sm} className="text-doqyn-muted" />;
-}
 
 function QueueRow({
   item,
@@ -93,7 +69,9 @@ function QueueRow({
 
   return (
     <li className="flex items-center gap-3 border-t border-doqyn-border-subtle px-4 py-3 first:border-t-0">
-      <StatusIcon status={item.status} />
+      {/* A página que está sendo lida, e não um ícone de estado: o ícone dizia "algo acontece",
+          a miniatura diz **o quê** — e é o arquivo dele. O ícone volta quando não há miniatura. */}
+      <UploadScanThumb item={item} />
       <div className="min-w-0 flex-1">
         <TruncatedText as="p" className="text-label text-doqyn-text">
           {item.fileName}

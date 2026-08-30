@@ -1,6 +1,7 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
 import type { ExtractedMetadata } from '@/features/document-send/types';
 import type { AnalysisQueueStatus, AnalyzePdfResponse } from './services/analyzePdf';
+import type { UploadThumbnail } from './services/uploadThumbnail';
 
 export type UploadQueueItemStatus =
   | 'queued'
@@ -50,4 +51,12 @@ export type UploadQueueItem = {
   namingChoice?: PerItemNamingChoice;
   /** Onde o documento está na fila da plataforma, atualizado a cada consulta de status. */
   queueStatus?: AnalysisQueueStatus;
+  /**
+   * A primeira página do arquivo, para a fila mostrar o documento sendo lido em vez de um ícone.
+   *
+   * Chega depois do item — renderizar a página leva alguns quadros, e segurar o enfileiramento por
+   * causa disso atrasaria o envio para ganhar um enfeite. Ausente quando não dá para desenhar:
+   * formato que o navegador não abre, PDF cifrado, arquivo corrompido.
+   */
+  thumbnail?: UploadThumbnail;
 };

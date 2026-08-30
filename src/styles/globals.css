@@ -4500,6 +4500,57 @@
     }
   }
 
+  /* A miniatura da fila de upload: a mesma varredura da antessala, do tamanho de um ícone.
+
+     Aqui ela **repete**, e é a única animação do app que repete de propósito: enquanto a IA lê,
+     há trabalho acontecendo, e parar o movimento diria que acabou. Ela some no instante em que o
+     estado sai de "analisando" — não é o relógio que a interrompe, é o fato. */
+  .upload-thumb__scan {
+    top: 0;
+    height: 46%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--accent-active) 16%, transparent) 60%,
+      color-mix(in srgb, var(--accent-active) 46%, transparent)
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-active) 70%, transparent);
+    animation: upload-thumb-scan 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @keyframes upload-thumb-scan {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    14% {
+      opacity: 1;
+    }
+    86% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(220%);
+      opacity: 0;
+    }
+  }
+
+  /* O carimbo do fim sobe da borda de baixo, uma vez. */
+  .upload-thumb__stamp {
+    animation: upload-thumb-stamp 0.36s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes upload-thumb-stamp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* O fio da extração cresce da página para fora, e o rótulo vem junto. */
   .auth-anno {
     animation: auth-anno 0.44s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4586,6 +4637,8 @@
     .auth-route,
     .auth-anno,
     .auth-deskew,
+    .upload-thumb__scan,
+    .upload-thumb__stamp,
     .auth-page,
     .auth-line,
     .auth-write,

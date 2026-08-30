@@ -25,6 +25,7 @@ import type { UploadContext, UploadQueueItem } from './types';
 import { analyzePdf, isAnalysisStillRunningError } from './services/analyzePdf';
 import { confirmAnalysis, submitUploadForApproval } from './services/confirmAnalysis';
 import { prepareUploadItems } from './services/startUploadFromFiles';
+import { createUploadThumbnail, releaseUploadThumbnail } from './services/uploadThumbnail';
 import {
   UploadQueueContext,
   type AutoConfirmCountdown,
@@ -177,6 +178,10 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     }
     for (const item of prepared.items) {
       filesRef.current.set(item.id, item.file);
+      // Sem `await`: a miniatura alcança a fila quando ficar pronta, e o envio não espera por ela.
+      void createUploadThumbnail(item.file).then((thumbnail) => {
+        if (thumbnail) dispatch({ type: 'thumbnail', id: item.id, thumbnail });
+      });
     }
     dispatch({
       type: 'enqueue',
@@ -629,6 +634,9 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
   const removeItem = useCallback(
     (itemId: string) => {
       filesRef.current.delete(itemId);
+      // A miniatura de imagem é um object URL: sem revogar, o arquivo inteiro fica na memória da
+      // aba depois que a linha já saiu da tela.
+      releaseUploadThumbnail(itemsRef.current.find((item) => item.id === itemId)?.thumbnail);
       autoPausedRef.current.delete(itemId);
       pendingAutoConfirmRef.current = pendingAutoConfirmRef.current.filter((id) => id !== itemId);
       abortAnalysis(itemId);

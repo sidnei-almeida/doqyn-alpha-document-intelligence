@@ -1,4 +1,5 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
+import type { UploadThumbnail } from '../services/uploadThumbnail';
 import type { AnalysisQueueStatus } from '../services/analyzePdf';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
 import {
@@ -20,7 +21,8 @@ export type UploadQueueAction =
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'clear-finished' }
-  | { type: 'naming'; id: string; choice: PerItemNamingChoice };
+  | { type: 'naming'; id: string; choice: PerItemNamingChoice }
+  | { type: 'thumbnail'; id: string; thumbnail: UploadThumbnail };
 
 export function uploadQueueReducer(
   items: UploadQueueItem[],
@@ -29,6 +31,10 @@ export function uploadQueueReducer(
   switch (action.type) {
     case 'enqueue':
       return [...items, ...action.items];
+    case 'thumbnail':
+      return items.map((item) =>
+        item.id === action.id ? { ...item, thumbnail: action.thumbnail } : item,
+      );
     case 'status':
       return items.map((item) =>
         item.id === action.id ? { ...item, status: action.status } : item,
