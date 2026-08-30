@@ -5,7 +5,7 @@ import { formatContactMeta } from '@/features/directory/components/ContactRow';
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { cn } from '@/lib/utils';
 
-export type ContactAction = 'share' | 'signature' | 'request';
+export type ContactAction = 'share' | 'signature' | 'request' | 'hide';
 
 /**
  * Uma pessoa, num cartão — e o cartão segue o kit, não o hábito.
@@ -66,6 +66,13 @@ export function ContactCard({
               onClick: () => onAction('request', contact),
               hidden: semEndereco,
             },
+            {
+              // "Remover da lista", e não "excluir": o histórico de trocas continua registrado, e
+              // é ele que responde auditoria. O rótulo promete exatamente o que acontece.
+              label: 'Remover da lista',
+              onClick: () => onAction('hide', contact),
+              tone: 'danger',
+            },
           ]}
         />
       </div>
@@ -82,14 +89,21 @@ export function ContactCard({
         </p>
       </div>
 
-      {contact.scope === 'external' ? (
-        // O aceite é a diferença que muda o que acontece depois de enviar, e por isso está no
-        // cartão e não só no título da seção — o cartão é o que a pessoa lê antes de clicar.
-        <Badge variant="neutral">Outra empresa</Badge>
-      ) : null}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {contact.scope === 'external' ? (
+          // O aceite é a diferença que muda o que acontece depois de enviar, e por isso está no
+          // cartão e não só no título da seção — o cartão é o que a pessoa lê antes de clicar.
+          <Badge variant="neutral">Outra empresa</Badge>
+        ) : null}
+        {contact.saved ? <Badge variant="brand">Salvo</Badge> : null}
+      </div>
 
       <p className="register-label text-doqyn-subtle">
-        {formatContactMeta(contact.interactions, contact.lastInteractionAt)}
+        {/* Salvo e nunca acionado não tem data de troca. "0 trocas · última hoje" seria mentira
+            sobre a única coisa que a linha afirma. */}
+        {contact.interactions === 0
+          ? 'salvo à mão · nenhuma troca ainda'
+          : formatContactMeta(contact.interactions, contact.lastInteractionAt)}
       </p>
     </article>
   );

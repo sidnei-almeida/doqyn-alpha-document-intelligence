@@ -3,8 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useFrequentContacts } from '@/features/directory/hooks/useFrequentContacts';
 import { ContactCard, type ContactAction } from './ContactCard';
+import { AddContactField } from './AddContactField';
+import { useContactMutations } from '@/features/directory/hooks/useContactMutations';
 import { PickDocumentDialog } from './PickDocumentDialog';
 import { ShareDocumentModal } from '@/features/sharing/components/ShareDocumentModal';
 import { RequestSignatureModal } from '@/features/signature/RequestSignatureModal';
@@ -65,6 +68,7 @@ export function ContactsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const contacts = useFrequentContacts('all', { limit: 100 });
+  const contactMutations = useContactMutations();
   const categories = useDocumentCategories();
 
   /**
@@ -99,6 +103,10 @@ export function ContactsPage() {
       : null;
 
   const handleAction = (action: ContactAction, contact: FrequentContact) => {
+    if (action === 'hide') {
+      contactMutations.hide.mutate(contact.userId);
+      return;
+    }
     setDocument(null);
     setPending({ action, contact });
   };
@@ -141,21 +149,22 @@ export function ContactsPage() {
         </p>
       </header>
 
+      <AddContactField />
+
       {contacts.isLoading ? (
         <p className="type-caption text-doqyn-muted">Carregando…</p>
       ) : todos.length === 0 ? (
-        <div className="max-w-xl rounded-lg border border-doqyn-border-subtle p-6">
-          <p className="type-body text-doqyn-text">Nada aqui ainda.</p>
-          {/* O vazio explica o mecanismo em vez de oferecer um botão: não há o que adicionar, e
-              sugerir que houvesse faria a pessoa procurar um controle que não existe. */}
-          <p className="type-caption mt-1 text-doqyn-muted">
-            A lista cresce sozinha conforme você compartilha, pede assinatura e requisita
-            documentos. Não há nada para cadastrar.
-          </p>
-          <Button type="button" size="sm" className="mt-3" onClick={() => navigate('/biblioteca')}>
-            Ir para a Biblioteca
-          </Button>
-        </div>
+        // O aviso de vazio do app é sem moldura: `EmptyState` nasceu para tirar exatamente a
+        // caixa preenchida de canto arredondado que eu tinha escrito aqui.
+        <EmptyState
+          title="Nenhum contato ainda"
+          description="A lista cresce sozinha conforme você compartilha, pede assinatura e requisita documentos. Para adiantar, salve alguém pelo nome de usuário no campo acima."
+          action={
+            <Button type="button" size="sm" onClick={() => navigate('/biblioteca')}>
+              Ir para a Biblioteca
+            </Button>
+          }
+        />
       ) : (
         <>
           <ContactSection

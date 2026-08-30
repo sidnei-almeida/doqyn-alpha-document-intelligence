@@ -168,6 +168,33 @@ export async function searchDirectoryUsersByUsername(
 }
 
 /**
+ * Apelido e nome de contas que já se conhece pelo id.
+ *
+ * Não é descoberta: quem chama já tem os ids. Serve para rotular quem está na tela — a lista de
+ * contatos, o seletor de destinatário — sem guardar uma cópia do handle que envelheceria a cada
+ * troca de apelido. O campo `username` do cadastro por tenant **não serve**: ele guarda o e-mail,
+ * de um esquema anterior ao handle.
+ */
+export async function fetchUsernamesByIds(
+  userIds: string[],
+): Promise<Map<string, { username: string; displayName: string }>> {
+  if (!userIds.length) return new Map();
+
+  const result = await callInternal<{
+    ok: true;
+    users?: Array<{ id: string; username: string; displayName: string }>;
+    // `callInternal` já serializa: passar string aqui mandaria JSON dentro de JSON.
+  }>('/internal/users/usernames', { method: 'POST', body: { userIds } });
+
+  return new Map(
+    (result.users ?? []).map((user) => [
+      user.id,
+      { username: user.username, displayName: user.displayName },
+    ]),
+  );
+}
+
+/**
  * O e-mail de um usuário, para o sistema entregar — não para a tela mostrar.
  *
  * A busca por apelido não devolve e-mail de propósito: entregá-lo a quem digitou duas letras faria

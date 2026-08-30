@@ -31,6 +31,8 @@ export const SHARED_APP_COLLECTIONS = {
   auditChainHeads: 'audit_chain_heads',
   /** Pedidos para alguém **enviar** um documento. Ver `MongoDocumentRequest`. */
   documentRequests: 'document_requests',
+  /** Contato salvo à mão, ou dispensado da lista derivada. Ver `MongoSavedContact`. */
+  savedContacts: 'saved_contacts',
 } as const;
 
 export const COLLECTIONS = {

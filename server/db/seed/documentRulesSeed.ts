@@ -13,11 +13,7 @@ function viewOnlyPermissions(view: string[]) {
   };
 }
 
-function classPresentation(input: {
-  iconKey: string;
-  color: string;
-  notifyGroups: string[];
-}) {
+function classPresentation(input: { iconKey: string; color: string; notifyGroups: string[] }) {
   return {
     iconKey: input.iconKey,
     color: input.color,

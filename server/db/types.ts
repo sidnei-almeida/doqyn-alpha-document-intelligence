@@ -1008,6 +1008,39 @@ export type MongoUserDocumentFavorite = {
   deletedAt?: Date | null;
 };
 
+/**
+ * A decisão explícita de quem é contato — e de quem não é.
+ *
+ * A lista de contatos é derivada do que já aconteceu, e é o que basta para quase tudo. Faltavam
+ * as duas pontas que nenhum histórico produz: alguém com quem ainda não se trocou nada (`saved`)
+ * e alguém que o histórico oferece e a pessoa não quer ver (`hidden`).
+ *
+ * Um estado só, e não duas coleções: os dois são a mesma frase — "eu decido sobre este contato" —
+ * e separá-los criaria o caso sem sentido de alguém salvo e oculto ao mesmo tempo.
+ */
+export type SavedContactStatus = 'saved' | 'hidden';
+
+export type MongoSavedContact = {
+  _id: string;
+  /** De quem é a lista. Nunca do tenant: contato é do indivíduo, e não da empresa. */
+  ownerUserId: string;
+  tenantId: string;
+  contactUserId: string;
+  status: SavedContactStatus;
+  /**
+   * Cópia do rótulo no momento da decisão.
+   *
+   * Só para o caso de o auth-service não responder: o nome e o apelido vivos vêm de lá a cada
+   * abertura. Sem a cópia, a lista de alguém salvo e nunca acionado ficaria com o id cru na tela
+   * quando a rede falhasse.
+   */
+  nameSnapshot?: string;
+  usernameSnapshot?: string;
+  emailSnapshot?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type DocumentShareGrantStatus = 'active' | 'revoked';
 
 /**

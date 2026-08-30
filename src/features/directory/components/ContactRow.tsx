@@ -32,13 +32,15 @@ export function ContactRow({
       type="button"
       disabled={disabled}
       onClick={onPick}
-      className="flex w-full items-center gap-3 py-2 text-left hover:bg-doqyn-surface-hover"
+      // Régua de acento no hover, como o item de menu e o da sidebar. `surface-hover` sozinho
+      // era a única linha do app marcando escolha só com preenchimento.
+      className="explorer-interactive relative flex w-full items-center gap-3 rounded-none py-2 text-left before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:before:bg-doqyn-accent-active"
     >
       <UserAvatar name={name} email={email} avatarUrl={avatarUrl} size="md" />
       {/* `min-w-0` porque o e-mail longo é o que estoura a linha, e truncar é melhor que empurrar
           o retrato para fora do campo. */}
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-body text-doqyn-text">{name}</span>
+        <span className="type-body truncate text-doqyn-text">{name}</span>
         {identity ? <span className="truncate text-micro text-doqyn-muted">{identity}</span> : null}
         {meta ? <span className="truncate text-micro text-doqyn-subtle">{meta}</span> : null}
       </span>

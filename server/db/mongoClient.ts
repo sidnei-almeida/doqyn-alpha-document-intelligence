@@ -1,9 +1,6 @@
 import { MongoClient, type Db } from 'mongodb';
 import { getMongoDatabaseName } from './database.js';
-import {
-  getMongoClientOptions,
-  getMongoConnectionLabel,
-} from './mongoConfig.js';
+import { getMongoClientOptions, getMongoConnectionLabel } from './mongoConfig.js';
 import { logger } from '../utils/logger.js';
 
 interface MongoCache {

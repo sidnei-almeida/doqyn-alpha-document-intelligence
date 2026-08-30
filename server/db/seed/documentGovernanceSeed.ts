@@ -213,7 +213,12 @@ export const SEED_GOVERNANCE_ACCESS_RULES: MongoDocumentAccessRule[] = [
   accessRule('rule_rh_rh', 'group_rh', 'cat_rh', { ...readUpload, manage: true }),
   accessRule('rule_compras_compras', 'group_compras', 'cat_compras', readUpload),
   ...SEED_GOVERNANCE_CATEGORIES.map((category) =>
-    accessRule(`rule_diretoria_${category._id}`, 'group_diretoria', category._id, readDownloadShareManage),
+    accessRule(
+      `rule_diretoria_${category._id}`,
+      'group_diretoria',
+      category._id,
+      readDownloadShareManage,
+    ),
   ),
 ];
 
@@ -230,7 +235,14 @@ const PARTY_FIELD_RECEPTORA = {
   label: 'Parte receptora',
   type: 'string' as const,
   required: true,
-  aliases: ['parte receptora', 'receptor', 'recebedor', 'contratado', 'destinatário', 'destinatario'],
+  aliases: [
+    'parte receptora',
+    'receptor',
+    'recebedor',
+    'contratado',
+    'destinatário',
+    'destinatario',
+  ],
 };
 
 const FIELD_DATA_ASSINATURA = {

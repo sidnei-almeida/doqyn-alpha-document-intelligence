@@ -9,6 +9,8 @@ import type { DocumentRequestContext } from '../../tenancy/documentRequestContex
 import type { AuthUser } from '../../auth/types.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
+import { fetchUsernamesByIds } from '../../integrations/doqynAuthInternalClient.js';
+import { listSavedContactDecisions } from './savedContactsService.js';
 
 /**
  * Com quem esta pessoa realmente troca documento, e em que ordem oferecê-los.
@@ -48,18 +50,19 @@ export type ContactAffinity = {
   name: string;
   email?: string;
   /**
-   * O handle público — hoje **sempre ausente**, e o campo existe para quando deixar de ser.
+   * O handle público, vindo do auth-service por lote.
    *
-   * Não há de onde tirá-lo sem custo. `MongoTenantMember.username` parece a fonte e não é: é
-   * campo legado que guarda o e-mail (`tenantMemberSyncService.ts` grava `username: email`), e
-   * exibi-lo mostraria `@fulano@empresa.com` embaixo do próprio endereço. A cópia feita no envio
-   * entre empresas guarda nome e e-mail, nunca o apelido. Buscá-lo no auth-service exigiria uma
-   * rota de handles por lote, que não existe.
+   * Nunca de `MongoTenantMember.username`: aquele campo guarda o e-mail, de um esquema anterior
+   * ao handle, e exibi-lo mostrava `@fulano@empresa.com` embaixo do próprio endereço. Buscar aqui
+   * custa uma chamada por abertura de lista, e a alternativa — copiar o handle numa coleção
+   * nossa — envelheceria a cada troca de apelido.
    *
-   * Mostrar apelido errado é pior que não mostrar nenhum: ele é a identidade pela qual as pessoas
-   * se procuram, e um handle inventado manda procurar por quem não existe.
+   * Ausente quando a conta ainda não tem handle, e aí a tela simplesmente não mostra a linha.
    */
   username?: string;
+
+  /** Decidido à mão: entra na lista mesmo sem histórico, e some quando o dono desfaz. */
+  saved?: boolean;
   /** Soma das interações com decaimento. Só serve para ordenar; não é para exibir. */
   score: number;
   interactions: number;
@@ -77,6 +80,7 @@ type Accumulator = {
   interactions: number;
   lastInteractionAt: Date;
   scope: 'internal' | 'external';
+  saved?: boolean;
 };
 
 /** Exportada para o teste: é a regra inteira de ordenação, e ela precisa de prova própria. */
@@ -345,36 +349,75 @@ export async function listFrequentContacts(
     });
   }
 
+  /**
+   * O que a pessoa decidiu à mão, aplicado depois de tudo que o histórico produziu.
+   *
+   * Salvo entra mesmo sem troca nenhuma — é o caso que nenhum histórico produz. Oculto sai mesmo
+   * tendo troca — o decaimento manteria por trinta dias alguém com quem se falou uma vez.
+   */
+  const decisions = await listSavedContactDecisions(user.id);
+
+  for (const decision of decisions.values()) {
+    if (decision.status !== 'saved' || acc.has(decision.contactUserId)) continue;
+
+    // Sem histórico não há data de interação. `createdAt` da decisão seria mentira ("última troca
+    // hoje" para quem nunca trocou), então a linha entra com zero e a tela mostra "salvo".
+    acc.set(decision.contactUserId, {
+      userId: decision.contactUserId,
+      name: decision.nameSnapshot ?? '',
+      email: decision.emailSnapshot,
+      username: decision.usernameSnapshot,
+      score: 0,
+      interactions: 0,
+      lastInteractionAt: new Date(0),
+      scope: byUserId.has(decision.contactUserId) ? 'internal' : 'external',
+      saved: true,
+    });
+  }
+
   const scope = options?.scope ?? 'all';
   const limit = Math.min(Math.max(options?.limit ?? 25, 1), 100);
 
-  return (
-    [...acc.values()]
-      .filter((entry) => entry.userId !== user.id)
-      .filter((entry) => scope === 'all' || entry.scope === scope)
-      .map((entry) => ({
-        ...entry,
-        // Quem só apareceu por um caminho sem nome ainda precisa de rótulo: o id cru é feio, mas é
-        // honesto, e some assim que qualquer origem trouxer o nome.
-        name: entry.name || entry.email || entry.userId,
-      }))
-      // Empate desempata pela interação mais recente: com dois scores iguais, ganha quem foi
-      // acionado por último.
-      .sort((a, b) =>
-        b.score === a.score
-          ? b.lastInteractionAt.getTime() - a.lastInteractionAt.getTime()
-          : b.score - a.score,
-      )
-      .slice(0, limit)
-      .map((entry) => ({
-        userId: entry.userId,
-        name: entry.name,
-        email: entry.email,
-        username: entry.username,
-        score: entry.score,
-        interactions: entry.interactions,
-        lastInteractionAt: entry.lastInteractionAt.toISOString(),
-        scope: entry.scope,
-      }))
+  const visible = [...acc.values()]
+    .filter((entry) => entry.userId !== user.id)
+    .filter((entry) => decisions.get(entry.userId)?.status !== 'hidden')
+    .filter((entry) => scope === 'all' || entry.scope === scope)
+    .map((entry) => ({
+      ...entry,
+      saved: entry.saved || decisions.get(entry.userId)?.status === 'saved',
+      // Quem só apareceu por um caminho sem nome ainda precisa de rótulo: o id cru é feio, mas é
+      // honesto, e some assim que qualquer origem trouxer o nome.
+      name: entry.name || entry.email || entry.userId,
+    }))
+    // Salvo vem antes: foi escolhido à mão, e o histórico é palpite. Dentro de cada grupo, o
+    // score manda; empate desempata pela interação mais recente.
+    .sort((a, b) => {
+      if (a.saved !== b.saved) return a.saved ? -1 : 1;
+      if (b.score !== a.score) return b.score - a.score;
+      return b.lastInteractionAt.getTime() - a.lastInteractionAt.getTime();
+    })
+    .slice(0, limit);
+
+  /**
+   * O apelido vivo, numa chamada só para a página inteira.
+   *
+   * Depois do corte de propósito: buscar antes pediria handle de gente que não vai aparecer.
+   * Se o auth-service não responder, a lista sai sem apelido em vez de não sair — o handle é
+   * rótulo, e nenhuma linha depende dele para funcionar.
+   */
+  const handles = await fetchUsernamesByIds(visible.map((entry) => entry.userId)).catch(
+    () => new Map<string, { username: string; displayName: string }>(),
   );
+
+  return visible.map((entry) => ({
+    userId: entry.userId,
+    name: entry.name,
+    email: entry.email,
+    username: handles.get(entry.userId)?.username ?? entry.username,
+    saved: entry.saved,
+    score: entry.score,
+    interactions: entry.interactions,
+    lastInteractionAt: entry.lastInteractionAt.toISOString(),
+    scope: entry.scope,
+  }));
 }
