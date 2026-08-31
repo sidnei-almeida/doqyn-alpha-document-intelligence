@@ -61,30 +61,6 @@ function formatSignedAt(date: Date): string {
   }).format(date);
 }
 
-function drawWrappedLines(input: {
-  page: PDFPage;
-  lines: string[];
-  x: number;
-  startY: number;
-  lineHeight: number;
-  font: Awaited<ReturnType<PDFDocument['embedFont']>>;
-  size: number;
-  color?: ReturnType<typeof rgb>;
-}) {
-  let y = input.startY;
-  for (const line of input.lines) {
-    input.page.drawText(line, {
-      x: input.x,
-      y,
-      size: input.size,
-      font: input.font,
-      color: input.color ?? rgb(0.12, 0.12, 0.12),
-    });
-    y -= input.lineHeight;
-  }
-  return y;
-}
-
 /**
  * Rótulo em maiúsculas espaçadas. O pdf-lib desta versão não tem `characterSpacing`,
  * então o espaçamento é feito caractere a caractere — é o mesmo efeito do rótulo mono

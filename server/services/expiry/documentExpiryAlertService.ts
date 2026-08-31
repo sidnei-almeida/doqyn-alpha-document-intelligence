@@ -26,9 +26,6 @@ export const DEFAULT_EXPIRY_OFFSETS_DAYS = [30, 7, 1];
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** Teto de registros por `insertMany`, para não gravar dezenas de milhares numa tacada. */
-const ALERT_INSERT_BATCH_SIZE = 500;
-
 /** Teto de documentos lidos por varredura de tenant, para não carregar a coleção inteira. */
 const DOCUMENT_SCAN_LIMIT = 5_000;
 

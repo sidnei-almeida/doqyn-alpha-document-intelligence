@@ -93,7 +93,7 @@ export async function createDocumentExtractionRule(
   const active = input.active ?? true;
   validateFields(input.fields, active);
 
-  const { collections, scope, storage } = await resolveContext(tenantId, { ownerUserId: userId });
+  const { collections, storage } = await resolveContext(tenantId, { ownerUserId: userId });
   const now = new Date();
   const version = input.version ?? 1;
 
