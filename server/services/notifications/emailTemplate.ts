@@ -1,28 +1,78 @@
 import type { MongoNotification } from '../../db/types.js';
+import type { NotificationType } from '../../db/notificationTypes.js';
+import {
+  EMAIL_COLORS,
+  EMAIL_FONTS,
+  emailButton,
+  emailFine,
+  emailRow,
+  emailRows,
+  emailText,
+  escapeHtml,
+  plural,
+  renderEmailLayout,
+} from './emailLayout.js';
 
 /**
  * O aviso por e-mail, na mesma voz da tela.
  *
- * **Tabela e estilo embutido, não classe.** Cliente de e-mail não é navegador: Gmail remove `<style>`
- * do topo, Outlook renderiza com motor do Word, e flexbox não existe em metade deles. O que
- * sobrevive há vinte anos é tabela com largura fixa e `style=` em cada elemento — feio de escrever,
- * e a única coisa que chega igual dos dois lados.
- *
  * O corpo é curto de propósito: o e-mail avisa e leva de volta ao app, não repete o app. Quem
  * precisa do detalhe clica; quem só queria saber que aconteceu já soube pelo assunto.
+ *
+ * O que este template acrescenta ao texto que o serviço já compõe é o **contexto em linha de
+ * registro** — documento, quem causou, prazo. Sem isso o e-mail dizia "documento vencendo" e
+ * obrigava a abrir o app só para descobrir qual.
  */
-const GRAFITE = '#14181B';
-const TEXTO = '#2C3338';
-const MUDO = '#6B767D';
-const LINHA = '#E4E9EC';
-const LATAO = '#7C6220';
 
-function escaparHtml(valor: string): string {
-  return valor
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+/**
+ * O rótulo de registro do topo, por tipo de fato.
+ *
+ * É ele que faz a caixa de entrada distinguir um aviso de vencimento de um pedido de assinatura
+ * antes de a pessoa ler o título.
+ */
+const EYEBROW: Record<NotificationType, string> = {
+  document_expiring: 'Vencimento',
+  document_created: 'Documento novo',
+  document_updated: 'Documento atualizado',
+  signature_required: 'Assinatura',
+  document_shared: 'Compartilhamento',
+  access_approved: 'Acesso liberado',
+  access_rejected: 'Acesso recusado',
+  approval_requested: 'Aprovação pendente',
+  approval_decided: 'Aprovação decidida',
+  document_requested: 'Documento solicitado',
+  document_request_fulfilled: 'Solicitação atendida',
+  inbound_share_received: 'Recebido de outra empresa',
+  inbound_share_accepted: 'Recebimento aceito',
+  inbound_share_declined: 'Recebimento recusado',
+};
+
+/** O verbo do botão acompanha o fato: "revisar" e "abrir" pedem coisas diferentes. */
+const ACTION_LABEL: Partial<Record<NotificationType, string>> = {
+  signature_required: 'Abrir para assinar',
+  approval_requested: 'Revisar pedido',
+  document_requested: 'Ver o que foi pedido',
+  document_expiring: 'Abrir documento',
+};
+
+/**
+ * O prazo em palavras, e a cor que ele merece.
+ *
+ * Vermelho só quando já venceu — âmbar na semana final. O resto fica em cinza: pintar tudo de
+ * urgente é o mesmo que não pintar nada.
+ */
+function expiryLine(daysRemaining: number): { text: string; color: string } {
+  if (daysRemaining < 0) {
+    return {
+      text: `Venceu há ${plural(Math.abs(daysRemaining), 'dia', 'dias')}`,
+      color: '#b3261e',
+    };
+  }
+  if (daysRemaining === 0) return { text: 'Vence hoje', color: '#b3261e' };
+  if (daysRemaining <= 7) {
+    return { text: `Vence em ${plural(daysRemaining, 'dia', 'dias')}`, color: '#8a5a00' };
+  }
+  return { text: `Vence em ${plural(daysRemaining, 'dia', 'dias')}`, color: EMAIL_COLORS.muted };
 }
 
 export type NotificationEmail = { subject: string; html: string; text: string };
@@ -31,70 +81,59 @@ export function buildNotificationEmail(
   notification: MongoNotification,
   appBaseUrl: string,
 ): NotificationEmail {
-  const titulo = notification.title.trim();
-  const corpo = notification.body?.trim();
-  const documento = notification.documentName?.trim();
+  const title = notification.title.trim();
+  const body = notification.body?.trim();
+  const documentName = notification.documentName?.trim();
+  const categoryName = notification.categoryName?.trim();
+  const actorName = notification.actorName?.trim();
 
   // O destino é o documento quando existe; a caixa de avisos quando o fato não tem documento.
-  const destino = notification.documentId
+  const target = notification.documentId
     ? `${appBaseUrl}/biblioteca?documento=${encodeURIComponent(notification.documentId)}`
     : `${appBaseUrl}/notificacoes`;
 
-  const linhasTexto = [titulo, corpo, documento ? `Documento: ${documento}` : null, '', destino]
-    .filter((linha): linha is string => linha !== null && linha !== undefined)
-    .join('\n');
+  const expiry = notification.expiry ? expiryLine(notification.expiry.daysRemaining) : null;
 
-  const html = `<!doctype html>
-<html lang="pt-BR">
-  <body style="margin:0;padding:24px 0;background:#F4F6F7;font-family:Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:560px;max-width:100%;border-collapse:collapse;background:#FFFFFF;border:1px solid ${LINHA};border-radius:4px;">
-            <tr>
-              <td style="padding:28px 32px 0 32px;">
-                <span style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${MUDO};">DOQYN</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:18px 32px 0 32px;">
-                <p style="margin:0;font-size:17px;line-height:1.4;color:${GRAFITE};">${escaparHtml(titulo)}</p>
-                ${
-                  corpo
-                    ? `<p style="margin:10px 0 0 0;font-size:14px;line-height:1.6;color:${TEXTO};">${escaparHtml(corpo)}</p>`
-                    : ''
-                }
-                ${
-                  documento
-                    ? `<p style="margin:14px 0 0 0;font-size:12px;line-height:1.5;color:${MUDO};">Documento: ${escaparHtml(documento)}</p>`
-                    : ''
-                }
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:24px 32px 28px 32px;">
-                <a href="${escaparHtml(destino)}" style="display:inline-block;padding:9px 18px;border:1px solid ${LATAO};border-radius:4px;color:${LATAO};font-size:13px;text-decoration:none;">Abrir no DOQYN</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 32px 26px 32px;border-top:1px solid ${LINHA};">
-                <p style="margin:16px 0 0 0;font-size:11px;line-height:1.6;color:${MUDO};">
-                  Você recebe este aviso porque acompanha este documento no DOQYN.
-                  Para deixar de recebê-lo por e-mail, ajuste as preferências de notificação no app.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+  const rows = [
+    documentName ? emailRow('Documento', documentName) : '',
+    categoryName ? emailRow('Categoria', categoryName) : '',
+    actorName ? emailRow('Por', actorName) : '',
+  ].filter((row) => row.length > 0);
+
+  const textLines = [
+    title,
+    body,
+    documentName ? `Documento: ${documentName}` : null,
+    categoryName ? `Categoria: ${categoryName}` : null,
+    actorName ? `Por: ${actorName}` : null,
+    expiry ? expiry.text : null,
+    '',
+    target,
+  ].filter((line): line is string => Boolean(line) || line === '');
+
+  const html = renderEmailLayout({
+    eyebrow: EYEBROW[notification.type] ?? 'Aviso',
+    title,
+    blocks: [
+      body ? emailText(escapeHtml(body)) : '',
+      expiry
+        ? `
+                <p style="margin:0;font-family:${EMAIL_FONTS.mono};font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${expiry.color};">${escapeHtml(expiry.text)}</p>`
+        : '',
+      emailRows(rows),
+      emailButton(ACTION_LABEL[notification.type] ?? 'Abrir no DOQYN', target),
+      emailFine(
+        'Prefere não receber avisos por e-mail? Ajuste as preferências de notificação no app.',
+      ),
+    ],
+    footNote:
+      'Você recebeu este e-mail porque acompanha este documento no DOQYN, ou porque o aviso é dirigido à sua conta.',
+  });
 
   return {
     // O assunto carrega o fato inteiro: muita gente decide se abre sem passar da caixa de entrada.
-    subject: documento ? `${titulo} — ${documento}` : titulo,
+    subject: documentName ? `${title} — ${documentName}` : title,
     html,
-    text: linhasTexto,
+    text: textLines.join('\n'),
   };
 }
