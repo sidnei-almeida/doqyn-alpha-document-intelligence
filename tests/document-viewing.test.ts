@@ -131,7 +131,7 @@ describe('preview error messages', () => {
 
 describe('dev-server binary responses', () => {
   it('toVercelRes implementa send para preview/download', () => {
-    const source = readFileSync(join(process.cwd(), 'server/dev-server.ts'), 'utf8');
+    const source = readFileSync(join(process.cwd(), 'server/apiServer.ts'), 'utf8');
     assert.match(source, /send\(data: string \| Buffer \| Uint8Array\)/);
   });
 });

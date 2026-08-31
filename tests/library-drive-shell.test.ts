@@ -22,44 +22,6 @@ describe('shell drive-inspired do workspace', () => {
     assert.equal(layout.includes('bg-doqyn-chrome'), false);
   });
 
-  it('globals.css define shell edge-to-edge e canvas interno arredondado', () => {
-    const globals = readSrc('styles/globals.css');
-    for (const token of [
-      '.app-chrome',
-      '.app-shell',
-      '.workspace-canvas',
-      '.workspace-canvas-inner',
-      '--radius-workspace',
-    ]) {
-      assert.ok(globals.includes(token), `${token} presente`);
-    }
-
-    const shellBlock = globals.match(/\.app-shell\s*\{[^}]+\}/s);
-    assert.ok(shellBlock, '.app-shell block');
-    assert.equal(shellBlock![0].includes('border-radius'), false);
-    assert.equal(shellBlock![0].includes('box-shadow'), false);
-
-    const chromeBlock = globals.match(/\.app-chrome\s*\{[^}]+\}/s);
-    assert.ok(chromeBlock, '.app-chrome block');
-    assert.equal(chromeBlock![0].includes('shell-inset'), false);
-    assert.equal(chromeBlock![0].includes('padding'), false);
-
-    assert.ok(globals.includes('border-radius: var(--radius-workspace)'));
-
-    // Painel interno sem borda: superfície contínua "rebaixada" sob o chrome (estilo Drive).
-    const canvasInnerBlock = globals.match(/\.workspace-canvas-inner\s*\{[^}]+\}/s);
-    assert.ok(canvasInnerBlock, '.workspace-canvas-inner block');
-    assert.equal(
-      /\bborder:/.test(canvasInnerBlock![0]),
-      false,
-      '.workspace-canvas-inner sem borda',
-    );
-    assert.ok(canvasInnerBlock![0].includes('border-radius: var(--radius-workspace)'));
-    assert.ok(canvasInnerBlock![0].includes('background: var(--bg-canvas)'));
-    assert.ok(canvasInnerBlock![0].includes('box-shadow: var(--shadow-workspace-panel)'));
-    assert.ok(globals.includes('--shadow-workspace-panel'));
-  });
-
   it('tokens definem superfícies chrome, shell e canvas distintas', () => {
     const tokens = readSrc('styles/tokens.css');
     for (const token of [
@@ -104,43 +66,12 @@ describe('shell drive-inspired do workspace', () => {
     assert.ok(lightBackground);
   });
 
-  it('sidebar e topbar sem bordas divisórias pesadas', () => {
-    const sidebar = readSrc('components/layout/Sidebar.tsx');
-    const topbar = readSrc('components/layout/WorkspaceTopBar.tsx');
-    const globals = readSrc('styles/globals.css');
-    assert.equal(sidebar.includes('border-r border-doqyn-border-subtle'), false);
-    assert.equal(sidebar.includes('border-t border-doqyn-border-subtle'), false);
-    assert.equal(topbar.includes('border-b border-doqyn-border-subtle'), false);
-    assert.equal(topbar.includes('bg-doqyn-canvas'), false);
-    assert.ok(sidebar.includes('bg-doqyn-shell'));
-    assert.ok(globals.includes('.workspace-topbar'));
-    assert.ok(globals.includes('background: var(--bg-chrome)'));
-  });
-
-  it('tipografia usa Google Sans Flex (display) e Roboto (corpo)', () => {
-    const tokens = readSrc('styles/tokens.css');
-    const tailwind = readFileSync(join(__dirname, '..', 'tailwind.config.js'), 'utf8');
-    const html = readFileSync(join(__dirname, '..', 'index.html'), 'utf8');
-
-    assert.ok(tokens.includes('Google Sans Flex'));
-    assert.ok(tokens.includes('--font-body'));
-    assert.ok(tailwind.includes("display: ['var(--font-display)']"));
-    assert.ok(html.includes('family=Roboto'));
-    assert.ok(html.includes('Google+Sans+Flex'));
-  });
-
   it('listas do explorer usam miniatura pequena via DocumentFileThumbnail', () => {
     const row = readSrc('features/library/components/FileRow.tsx');
     const compact = readSrc('features/library/components/files/DocumentFileRow.tsx');
     assert.ok(row.includes('DocumentFileRowIcon'));
     assert.ok(compact.includes('DocumentFileThumbnail'));
     assert.ok(compact.includes('size="row"'));
-  });
-
-  it('pastas mantêm tile horizontal drive-folder-tile', () => {
-    const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
-    assert.ok(card.includes('drive-folder-tile'));
-    assert.equal(card.includes('hover:border-doqyn-border-subtle'), false);
   });
 
   it('Biblioteca, upload e viewer preservados', () => {

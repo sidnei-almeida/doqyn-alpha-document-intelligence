@@ -42,7 +42,10 @@ describe('assinatura entre empresas, e o campo que atravessa a fronteira', () =>
 
     // Campo próprio, não o mesmo da busca de colegas: aquele procura por nome numa lista
     // conhecida; este resolve e-mail exato contra o diretório.
-    assert.ok(field.includes("const [email, setEmail] = useState('')"));
+    // O estado do e-mail é do próprio campo. Passou a ser semeado por `initialEmail` para
+    // reabrir no que já havia sido digitado; o que importa aqui é que ele continua sendo dono
+    // do valor, e não recebendo-o pronto a cada render.
+    assert.ok(field.includes('const [email, setEmail] = useState(initialEmail ?? \'\')'));
     assert.ok(field.includes('<PartnerContactList onPick={setEmail} />'));
   });
 

@@ -12,19 +12,31 @@ function read(relativePath: string): string {
 }
 
 describe('auth shell e feedback', () => {
-  it('telas públicas usam AuthShell e logo PNG da sidebar', () => {
+  // O rebrand trocou a casca: `AuthSplitShell` virou rota de layout, então as telas não a
+  // mencionam — recebem `AuthHeading` dela e nada mais. E a marca deixou de ser PNG por tema:
+  // é `DoqynMark` em SVG com `currentColor`, desenhada uma vez pela casca.
+  it('telas públicas herdam a casca e não desenham a própria marca', () => {
     const login = read('src/pages/Login.tsx');
-    assert.ok(login.includes('AuthShell'));
-    assert.ok(login.includes('AuthCard'));
-    assert.ok(!login.includes('DoqynLogo'));
-
     const access = read('src/features/access-request/AccessChoicePage.tsx');
-    assert.ok(access.includes('AuthShell'));
-    assert.ok(!access.includes('DoqynLogo'));
 
-    const authLogo = read('src/components/brand/AuthBrandLogo.tsx');
-    assert.ok(authLogo.includes('sidebarForDarkTheme'));
-    assert.ok(authLogo.includes('sidebarForLightTheme'));
+    for (const [name, source] of [
+      ['Login', login],
+      ['AccessChoicePage', access],
+    ] as const) {
+      assert.ok(
+        source.includes("from '@/components/layout/AuthSplitShell'"),
+        `${name} deve usar os títulos da casca`,
+      );
+      assert.equal(source.includes('DoqynLogo'), false, `${name} não desenha logo próprio`);
+      assert.equal(source.includes('AuthBrandLogo'), false, `${name} não desenha logo próprio`);
+    }
+
+    // A casca é aplicada como rota de layout, e é ela quem desenha a marca.
+    const routes = read('src/app/routes.tsx');
+    assert.ok(routes.includes('element: <AuthSplitShell />'));
+
+    const shell = read('src/components/layout/AuthSplitShell.tsx');
+    assert.ok(shell.includes('DoqynMark'));
   });
 
   it('expõe componentes de erro minimalistas no design system', () => {

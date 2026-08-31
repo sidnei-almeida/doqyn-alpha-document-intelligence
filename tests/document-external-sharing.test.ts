@@ -108,8 +108,8 @@ describe('document external sharing — API e ACL', () => {
     );
   });
 
-  it('dev-server registra rotas externas', () => {
-    const devServer = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas externas', () => {
+    const devServer = read('server/apiServer.ts');
     assert.ok(devServer.includes('external-shares'));
     assert.ok(devServer.includes('external-shares/[token]/preview.js'));
     assert.ok(devServer.includes('regenerate-invite.js'));
@@ -186,7 +186,7 @@ describe('document external sharing — ativação do convite', () => {
     assert.ok(acceptHandler.includes('acceptExternalShareInvite'));
     assert.ok(acceptHandler.includes('document.external_share_accepted'));
     assert.ok(acceptHandler.includes("req.method !== 'POST'"));
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
     assert.ok(devServer.includes('external-shares/[token]/accept.js'));
   });
 

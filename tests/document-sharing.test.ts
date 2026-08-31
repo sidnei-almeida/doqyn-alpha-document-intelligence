@@ -85,8 +85,8 @@ describe('document sharing — API', () => {
     assert.ok(revoke.includes("action: 'document.share_revoked'"));
   });
 
-  it('dev-server registra rotas', () => {
-    const dev = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas', () => {
+    const dev = read('server/apiServer.ts');
     assert.ok(dev.includes('/api/shared-with-me/documents'));
     assert.ok(dev.includes('/api/share/users'));
     assert.ok(dev.includes('/shares'));

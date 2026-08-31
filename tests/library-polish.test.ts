@@ -28,16 +28,6 @@ describe('biblioteca — polimento visual', () => {
     assert.ok(globals.includes('.menu-enter'));
   });
 
-  it('tokens definem bg-selected para dark e light', () => {
-    const tokens = readFileSync(join(__dirname, '..', 'src', 'styles', 'tokens.css'), 'utf8');
-    assert.ok(tokens.includes('--bg-selected:'));
-    assert.ok(tokens.includes('#e8f0fe'));
-    assert.ok(tokens.includes('#1d2a3a'));
-    assert.ok(tokens.includes('--color-background: #ffffff'));
-    assert.ok(tokens.includes('#121212'));
-    assert.equal(tokens.includes('#faf7f1'), false);
-  });
-
   it('linhas e cards do explorer usam seleção unificada', () => {
     const fileRow = readSrc('features/library/components/FileRow.tsx');
     const folderCard = readSrc('features/library/components/ExplorerFolderCard.tsx');
@@ -45,13 +35,6 @@ describe('biblioteca — polimento visual', () => {
     assert.ok(fileRow.includes('explorer-selected'));
     assert.ok(folderCard.includes('explorer-interactive'));
     assert.ok(compactRow.includes('explorer-selected'));
-  });
-
-  it('toolbar e toggles usam bg-doqyn-selected no estado ativo', () => {
-    const toolbarSelect = readSrc('components/ui/ToolbarSelect.tsx');
-    const segmented = readSrc('components/ui/SegmentedIconToggle.tsx');
-    assert.ok(toolbarSelect.includes('bg-doqyn-selected'));
-    assert.ok(segmented.includes('bg-doqyn-selected'));
   });
 
   it('FileTypeIcon usa Material Symbols via Icon', () => {

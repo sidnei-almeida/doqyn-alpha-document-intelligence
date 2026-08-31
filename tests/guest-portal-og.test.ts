@@ -56,7 +56,7 @@ describe('guest portal Open Graph', () => {
   });
 
   it('expõe rotas OG no dev-server e na Vercel', () => {
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
     const vercel = read('vercel.json');
 
     assert.ok(devServer.includes('/api/og/guest/share/'));

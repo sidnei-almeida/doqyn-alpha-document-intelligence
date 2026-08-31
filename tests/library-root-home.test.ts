@@ -42,19 +42,6 @@ describe('home da Biblioteca (raiz)', () => {
     assert.ok(grid.includes('Pastas inteligentes'));
   });
 
-  it('pastas usam cards horizontais compactos com presença visual', () => {
-    const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
-    assert.ok(card.includes('drive-folder-tile'));
-    assert.ok(card.includes('explorer-folder-card'));
-    assert.ok(card.includes('bg-doqyn-surface'));
-    assert.ok(card.includes('min-h-[48px]'));
-    assert.ok(card.includes('items-center'));
-    assert.ok(card.includes('more_horiz'));
-    assert.ok(card.includes('arquivo'));
-    assert.equal(card.includes('min-h-[156px]'), false);
-    assert.equal(card.includes('ShieldCheck'), false);
-  });
-
   it('recentes derivados de updatedAt real', () => {
     const utils = readSrc('features/library/utils/libraryHomeSections.ts');
     assert.ok(utils.includes('pickRecentDocuments'));

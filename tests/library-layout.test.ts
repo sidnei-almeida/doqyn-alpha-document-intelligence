@@ -82,11 +82,14 @@ describe('layout da Biblioteca', () => {
     assert.ok(folderFiles.includes('Modificado'));
   });
 
-  it('empty state da pasta é direto, com ícone flat e ação de upload', () => {
+  it('empty state da pasta é direto, sem pictograma, com ação de upload', () => {
     const empty = readSrc('features/library/components/EmptyFolderState.tsx');
     assert.ok(empty.includes('Enviar documento'));
     assert.ok(empty.includes('library-empty-state'));
-    assert.ok(empty.includes('cloud_upload'));
+    // A nuvem no meio da tela saiu: era a terceira marca visual para "não há nada aqui", e
+    // repetia em imagem o que o botão logo abaixo diz em palavra.
+    assert.equal(empty.includes('cloud_upload'), false);
+    assert.ok(empty.includes('EmptyState'));
     assert.equal(empty.includes('panel-glow'), false);
   });
 });

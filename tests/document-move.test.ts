@@ -84,8 +84,8 @@ describe('document move — API', () => {
     assert.ok(api.includes('documentIds'));
   });
 
-  it('dev-server registra rotas de move', () => {
-    const dev = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas de move', () => {
+    const dev = read('server/apiServer.ts');
     assert.ok(dev.includes('/api/documents/batch/move'));
     assert.ok(dev.includes('/move'));
   });

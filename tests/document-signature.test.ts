@@ -523,11 +523,14 @@ describe('document electronic signature — alinhamento com compartilhamento', (
   it('modal Solicitar assinatura segue o mesmo fluxo de compartilhamento', () => {
     const modal = read('src/features/signature/RequestSignatureModal.tsx');
     const share = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    // Os dois diálogos usam as mesmas peças e os mesmos passos.
+    // Os dois diálogos usam as mesmas peças e os mesmos passos. A verificação é pelas props do
+    // `AudiencePicker`, e não pelo texto dos rótulos: a cópia já mudou uma vez ("Pessoa da
+    // empresa" virou "Da sua empresa", e "Outra empresa" entrou depois) sem que a estrutura —
+    // que é o que este teste guarda — mudasse junto.
     for (const source of [modal, share]) {
       assert.ok(source.includes('AudiencePicker'));
-      assert.ok(source.includes('Pessoa da empresa'));
-      assert.ok(source.includes('Convidado externo'));
+      assert.ok(source.includes('internalLabel='));
+      assert.ok(source.includes('externalLabel='));
       assert.ok(source.includes('useStepFlow'));
       assert.ok(source.includes('useShareableUsersSearch'));
     }

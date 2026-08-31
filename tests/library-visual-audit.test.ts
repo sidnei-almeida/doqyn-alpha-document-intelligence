@@ -78,6 +78,9 @@ describe('auditoria visual — resíduos do design antigo', () => {
     const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
     assert.equal(card.includes('stagger'), false);
     assert.equal(card.includes('bg-doqyn-card/40'), false);
-    assert.ok(card.includes('hover:bg-doqyn-surface-hover'));
+    // O hover do card virou realce leve mais régua de acento na borda, que é a gramática do
+    // sistema — antes era troca de fundo, herdada do explorador do Drive.
+    assert.ok(card.includes('hover:bg-doqyn-hover/40'));
+    assert.ok(card.includes('hover:before:bg-doqyn-accent-active'));
   });
 });

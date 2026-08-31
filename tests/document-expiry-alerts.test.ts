@@ -267,7 +267,10 @@ describe('alerta de vencimento — quem é avisado', () => {
     const service = read('server/services/expiry/documentExpiryAlertService.ts');
 
     assert.ok(service.includes('loadGovernanceAccessIndex'));
-    assert.ok(service.includes('governanceIndex.viewByCategory.get(categoryId)'));
+    // A leitura direta do mapa virou `groupIdsReaching`, que centraliza o caso da categoria
+    // ausente. O que este teste guarda é que a varredura pergunta à governança quem vê a
+    // categoria, e não qual a forma da consulta.
+    assert.ok(service.includes('groupIdsReaching(governanceIndex.viewByCategory, categoryId)'));
 
     // O dono renova/reassina o documento; ele já tem acesso por ownership.
     assert.ok(service.includes('if (document.ownerUserId) userIds.add(document.ownerUserId)'));

@@ -55,7 +55,7 @@ describe('layout de altura total nas páginas internas', () => {
   it('RulesPage usa PageShell com vistas de acesso', () => {
     const source = readSrc('features/rules/RulesPage.tsx');
     assert.ok(source.includes('PageShell'));
-    assert.ok(source.includes('CategoryAccessCard'));
+    assert.ok(source.includes('AccessBoard'));
     assert.ok(source.includes('AccessMatrixView'));
     assert.ok(source.includes('flex-1'));
   });
@@ -73,7 +73,7 @@ describe('layout de altura total nas páginas internas', () => {
   it('EmptyState suporta área expansível', () => {
     const source = readSrc('components/ui/EmptyState.tsx');
     assert.ok(source.includes('stretch'));
-    assert.ok(source.includes('min-h-[360px]'));
+    assert.ok(source.includes('min-h-[320px]'));
     assert.ok(source.includes('flex-1'));
   });
 

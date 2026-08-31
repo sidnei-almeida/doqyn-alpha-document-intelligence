@@ -127,12 +127,18 @@ describe('accessModel — simulador "Ver como" (espelha o backend)', () => {
 });
 
 describe('RulesPage — vistas de acesso', () => {
-  it('usa cards + matriz com mutação por célula, sem o mapa de nós', () => {
+  it('usa quadro + matriz com mutação por célula, sem o mapa de nós', () => {
     const page = readSrc('features/rules/RulesPage.tsx');
-    assert.ok(page.includes('CategoryAccessCard'));
+    // Os cards de categoria foram agrupados em `AccessBoard`, e a simulação passou a viajar como
+    // `simulatedMember` até lá — `simulateMemberAccess` continua sendo quem calcula, só que
+    // dentro do quadro em vez de na página.
+    assert.ok(page.includes('AccessBoard'));
     assert.ok(page.includes('AccessMatrixView'));
     assert.ok(page.includes('updateGroupClassPermissions'));
-    assert.ok(page.includes('simulateMemberAccess'));
+    assert.ok(page.includes('simulatedMember'));
     assert.equal(page.includes('GovernanceMapCanvas'), false);
+
+    const board = readSrc('features/rules/components/board/AccessBoard.tsx');
+    assert.ok(board.includes('simulateMemberAccess'));
   });
 });

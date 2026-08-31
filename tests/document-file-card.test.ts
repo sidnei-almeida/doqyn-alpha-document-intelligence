@@ -38,12 +38,14 @@ describe('DocumentFileCard unificado na Biblioteca', () => {
     assert.ok(recentCard.includes('DocumentFileCard'));
   });
 
-  it('grade compacta com colunas 200–240px', () => {
+  it('grade compacta com colunas 150–188px', () => {
     const globals = readSrc('styles/globals.css');
     const card = readSrc('features/library/components/files/DocumentFileCard.tsx');
     assert.ok(globals.includes('.document-files-grid'));
-    assert.ok(globals.includes('minmax(200px, 240px)'));
-    assert.ok(card.includes('max-w-[240px]'));
+    // A grade encolheu para 150–188px quando a miniatura passou a ser a folha desenhada, e
+    // não mais o card com moldura.
+    assert.ok(globals.includes('minmax(150px, 188px)'));
+    assert.ok(card.includes('max-w-[188px]'));
   });
 
   it('canPreview=false não busca thumbnail', () => {

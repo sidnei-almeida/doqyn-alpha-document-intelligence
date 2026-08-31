@@ -46,7 +46,7 @@ describe('document favorites — persistência user-scoped no Mongo', () => {
   it('expõe endpoints no app principal (não auth-service)', () => {
     const favoriteApi = read('api/documents/[documentId]/favorite.ts');
     const listApi = read('api/favorites/documents.ts');
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
 
     assert.ok(favoriteApi.includes('addDocumentFavorite'));
     assert.ok(favoriteApi.includes('removeDocumentFavorite'));

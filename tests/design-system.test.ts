@@ -23,10 +23,21 @@ describe('design system DOQYN', () => {
     assert.ok(source.includes('--icon-button-size'));
   });
 
-  it('Badge unificado usa pill discreto e tipografia label', () => {
+  it('Badge é rótulo de registro em canto reto, não pílula', () => {
     const source = readSrc('components/ui/Badge.tsx');
-    assert.ok(source.includes('rounded-full'));
-    assert.ok(source.includes('badge-text'));
+    // A base é canto reto: etiqueta é rótulo de registro, não pílula de produto de consumo.
+    assert.ok(source.includes('rounded-[2px]'));
+    assert.ok(source.includes('font-mono'));
+    assert.ok(source.includes('uppercase'));
+
+    // Pílula existe numa variante só, e é a exceção que a marca prevê: o selo de atestação.
+    // Ele também é o único em latão — e latão nunca preenche, só contorna, que é o que o separa
+    // do amarelo de alerta.
+    const pillLines = source.split('\n').filter((line) => line.includes('rounded-full'));
+    assert.equal(pillLines.length, 1);
+    assert.ok(pillLines[0].includes('seal:'));
+    assert.ok(pillLines[0].includes('border border-[var(--seal)]'));
+    assert.equal(pillLines[0].includes('bg-'), false);
     assert.ok(source.includes('pending:'));
     assert.ok(source.includes('xs:'));
     assert.ok(source.includes('brand:'));
@@ -93,9 +104,11 @@ describe('design system DOQYN', () => {
     assert.ok(fieldStyles.includes('fieldControlClass'));
     assert.ok(input.includes('fieldControlClass'));
     assert.ok(select.includes('fieldControlClass'));
-    assert.ok(date.includes('fieldControlClass'));
-    assert.ok(date.includes('calendar_today'));
-    assert.ok(date.includes('date-input'));
+    // `DateInput` virou invólucro fino de `DateField`, que abre o calendário do produto em
+    // vez do calendário do navegador — a anatomia do campo mora lá agora.
+    assert.ok(date.includes('DateField'));
+    assert.ok(readSrc('components/ui/DateField.tsx').includes('calendar_today'));
+
   });
 
   it('Card expõe MetricCard e ContentCard', () => {
@@ -120,9 +133,12 @@ describe('design system DOQYN', () => {
     const audit = readSrc('features/audit/components/AuditFilters.tsx');
     const tracking = readSrc('features/tracking/components/TrackingFilters.tsx');
 
-    assert.ok(documents.includes('DateInput'));
-    assert.ok(audit.includes('DateInput'));
-    assert.ok(tracking.includes('DateInput'));
+    // O que importa é não ser `<input type="date">` cru; `DateInput` e `DateField` são a
+    // mesma peça, o primeiro sendo o invólucro com API de input.
+    for (const source of [documents, audit, tracking]) {
+      assert.ok(source.includes('DateInput') || source.includes('DateField'));
+      assert.equal(source.includes("type=\"date\""), false);
+    }
     assert.equal(documents.includes('type="date"'), false);
     assert.equal(audit.includes('type="date"'), false);
   });
@@ -191,21 +207,25 @@ describe('design system DOQYN', () => {
     assert.ok(select.includes('AnchoredPopover'));
     assert.ok(select.includes('DropdownMenuItem'));
     assert.equal(select.includes('<select'), false);
-    assert.ok(styles.includes('bg-doqyn-selected'));
-    assert.ok(styles.includes('hover:bg-doqyn-surface-hover'));
+    // O item escolhido marca com régua de acento à esquerda, não com bloco preenchido.
+    assert.ok(styles.includes('before:bg-doqyn-accent-active'));
+    assert.ok(styles.includes('hover:bg-doqyn-hover/50'));
     assert.ok(item.includes('dropdownMenuItemSelectedClass'));
   });
 
-  it('tokens.css define paleta Google Workspace no light e hierarquia no dark', () => {
+  it('tokens.css define a paleta grafite/verdigris no claro e a hierarquia no escuro', () => {
     const source = readSrc('styles/tokens.css');
     assert.ok(source.includes('--accent-hover:'));
     assert.ok(source.includes('--shadow-elevation-1:'));
     assert.ok(source.includes('--shadow-elevation-2:'));
     assert.ok(source.includes('--color-background: #ffffff'));
-    assert.ok(source.includes('--color-surface: #f8f9fa'));
-    assert.ok(source.includes('--color-primary: #1a73e8'));
-    assert.ok(source.includes('#121212'));
-    assert.ok(source.includes('#242424'));
+    assert.ok(source.includes('--color-surface: #f5f7f8'));
+    // Verdigris substituiu o azul do Google como acento: ele significa "interativo", e
+    // nenhum estado de status pode usá-lo.
+    assert.ok(source.includes('--color-primary: #0e6e6a'));
+    // O fundo escuro é grafite, não o cinza do Material.
+    assert.ok(source.includes('--bg-chrome: #0b0e10'));
+    assert.ok(source.includes('--bg-surface: #161b20'));
     assert.ok(source.includes('--viewer-page-bg:'));
     assert.equal(source.includes('#faf7f1'), false);
   });
@@ -223,7 +243,7 @@ describe('design system DOQYN', () => {
     assert.ok(border > surface, 'borda deve ser mais clara que o fundo do card em dark mode');
   });
 
-  it('tipografia centralizada em tokens.css com Google Sans Flex + Roboto', () => {
+  it('tipografia centralizada em tokens.css, auto-hospedada', () => {
     const tokens = readSrc('styles/tokens.css');
     const globals = readSrc('styles/globals.css');
     const tailwind = readFileSync(join(__dirname, '..', 'tailwind.config.js'), 'utf8');
@@ -243,9 +263,17 @@ describe('design system DOQYN', () => {
     assert.ok(globals.includes('.type-caption'));
     assert.ok(tailwind.includes("sans: ['var(--font-body)']"));
     assert.ok(tailwind.includes("display: ['var(--font-display)']"));
-    assert.ok(html.includes('family=Roboto'));
-    assert.ok(html.includes('Google+Sans+Flex'));
-    assert.equal(globals.includes('@fontsource-variable/inter'), false);
+    // As fontes deixaram de vir do Google Fonts por `<link>` e passaram a ser auto-hospedadas
+    // via `@fontsource`, declaradas em `tokens.css`.
+    assert.equal(html.includes('fonts.googleapis.com'), false);
+    assert.ok(tokens.includes("--font-body: 'Inter Variable'"));
+    assert.ok(tokens.includes("--font-serif: 'Newsreader Variable'"));
+
+    // A afirmação era o inverso disto: guardava que as fontes NÃO fossem auto-hospedadas,
+    // porque vinham do Google por `<link>`. Auto-hospedar tira uma dependência de rede de
+    // terceiro do caminho crítico e faz o app carregar igual sem sair da própria origem.
+    assert.ok(globals.includes('@fontsource-variable/inter'));
+    assert.ok(globals.includes('@fontsource-variable/newsreader'));
   });
 
   it('primitivos de UI usam classes semânticas de tipografia', () => {
@@ -255,15 +283,14 @@ describe('design system DOQYN', () => {
     const header = readSrc('components/layout/WorkspacePageHeader.tsx');
 
     assert.ok(table.includes('type-label'));
-    assert.ok(table.includes('type-body'));
-    assert.ok(badge.includes('badge-text'));
+    assert.ok(badge.includes('font-mono'));
     assert.ok(buttons.includes('font-display'));
     assert.ok(buttons.includes('text-label'));
     assert.ok(header.includes('workspace-page-title'));
     assert.ok(header.includes('workspace-page-eyebrow'));
   });
 
-  it('ícones unificados em Material Symbols Rounded via Icon', () => {
+  it('ícones unificados em Material Symbols Sharp via Icon', () => {
     const icon = readSrc('components/ui/Icon.tsx');
     const globals = readSrc('styles/globals.css');
     const sidebar = readSrc('components/layout/SidebarNavItem.tsx');
@@ -271,8 +298,10 @@ describe('design system DOQYN', () => {
     const tokens = readSrc('styles/tokens.css');
     const packageJson = readFileSync(join(__dirname, '..', 'package.json'), 'utf8');
 
-    assert.ok(icon.includes('material-symbols-rounded'));
-    assert.ok(globals.includes('material-symbols/rounded.css'));
+    // Sharp, não Rounded: a variante arredondada contradiz o canto de 4px do sistema.
+    assert.ok(icon.includes('material-symbols-sharp'));
+    assert.equal(icon.includes('material-symbols-rounded'), false);
+    assert.ok(globals.includes("material-symbols/sharp.css"));
     assert.ok(sidebar.includes('name={item.icon}'));
     assert.ok(sidebar.includes('filled={isActive}'));
     assert.ok(folderCard.includes('name="folder"'));

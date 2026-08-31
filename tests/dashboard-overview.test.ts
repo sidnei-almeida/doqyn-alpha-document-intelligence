@@ -205,8 +205,8 @@ describe('dashboard overview UI', () => {
     assert.doesNotMatch(pageSource, /objectKey|r2\.cloudflarestorage|presigned/i);
   });
 
-  it('dev-server registra rota /api/dashboard/overview', () => {
-    const devServerSource = readFileSync(join(repoRoot, 'server/dev-server.ts'), 'utf8');
+  it('a tabela de rotas registra rota /api/dashboard/overview', () => {
+    const devServerSource = readFileSync(join(repoRoot, 'server/apiServer.ts'), 'utf8');
     assert.match(devServerSource, /\/api\/dashboard\/overview/);
   });
 });

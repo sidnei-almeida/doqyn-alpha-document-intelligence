@@ -102,30 +102,33 @@ describe('vencimentos — configuração na regra da categoria', () => {
   });
 });
 
-describe('vencimentos — caixa de alertas', () => {
+// A caixa de vencimentos foi absorvida pelas notificações em `e95fa66` ("o sino deixa de ser só
+// de vencimento"): a rota `/vencimentos` virou `/notificacoes`, e `ExpiryAlertsBell` virou
+// `NotificationsBell`. As garantias abaixo são as mesmas de antes, apuradas no lugar novo.
+describe('vencimentos — caixa de alertas, dentro das notificações', () => {
   it('a rota da página está registrada', () => {
     const routes = read('src/app/routes.tsx');
     const lazy = read('src/app/lazyRoutes.tsx');
 
-    assert.ok(routes.includes("path: '/vencimentos'"));
-    assert.ok(lazy.includes('ExpiryAlertsRoute'));
-    assert.ok(lazy.includes('@/features/expiry/ExpiryAlertsPage'));
+    assert.ok(routes.includes("path: '/notificacoes'"));
+    assert.ok(lazy.includes('NotificationsRoute'));
+    assert.ok(lazy.includes('@/features/notifications/NotificationsPage'));
   });
 
   it('o sino está na barra superior', () => {
     const topbar = read('src/components/layout/WorkspaceTopBar.tsx');
-    assert.ok(topbar.includes('ExpiryAlertsBell'));
+    assert.ok(topbar.includes('NotificationsBell'));
   });
 
-  it('o cache de alertas é chaveado por tenant', () => {
-    const hook = read('src/features/expiry/hooks/useExpiryAlerts.ts');
+  it('o cache é chaveado por tenant', () => {
+    const hook = read('src/features/notifications/hooks/useNotifications.ts');
     // Trocar de empresa não pode mostrar alerta da anterior.
     assert.ok(hook.includes('tenant?.tenantId'));
-    assert.ok(hook.includes('[ALERTS_KEY, tenantId'));
+    assert.ok(hook.includes('[NOTIFICATIONS_KEY, tenantId'));
   });
 
   it('o sino lista só não lidos, para "Dispensar" surtir efeito visível', () => {
-    const bell = read('src/features/expiry/components/ExpiryAlertsBell.tsx');
+    const bell = read('src/features/notifications/components/NotificationsBell.tsx');
     assert.ok(bell.includes("status: 'unread'"));
   });
 
@@ -140,8 +143,8 @@ describe('vencimentos — caixa de alertas', () => {
   });
 
   it('a urgência exibida vem dos dias restantes, não do marco', () => {
-    const list = read('src/features/expiry/components/ExpiryAlertList.tsx');
-    assert.ok(list.includes('function urgencyVariant(daysRemaining: number)'));
-    assert.ok(list.includes("if (daysRemaining < 0) return 'danger'"));
+    const list = read('src/features/notifications/components/NotificationList.tsx');
+    assert.ok(list.includes('function expiryTone(daysRemaining: number)'));
+    assert.ok(list.includes("if (daysRemaining < 0) return 'text-doqyn-danger'"));
   });
 });

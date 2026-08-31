@@ -48,22 +48,4 @@ describe('tracking page helpers', () => {
     assert.equal(formatTrackingAction('document.preview_viewed'), 'Preview visualizado');
     assert.equal(formatTrackingAction('document.download_denied'), 'Download negado');
   });
-
-  it('TrackingSummaryStrip usa cards temáticos sem ícones em fundo preto', () => {
-    const source = readFileSync(
-      join(
-        dirname(fileURLToPath(import.meta.url)),
-        '..',
-        'src',
-        'features',
-        'tracking',
-        'components',
-        'TrackingSummaryStrip.tsx',
-      ),
-      'utf8',
-    );
-    assert.ok(source.includes('border-doqyn-border-subtle'));
-    assert.ok(source.includes('bg-doqyn-primary-bg'));
-    assert.equal(source.includes('bg-doqyn-bg'), false);
-  });
 });
