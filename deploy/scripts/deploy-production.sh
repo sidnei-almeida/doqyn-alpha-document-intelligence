@@ -250,6 +250,40 @@ if [[ "$DEPLOY_FAILED" -ne 0 ]]; then
   exit 1
 fi
 
+prune_build_cache() {
+  # O cache de build cresce a cada deploy e nunca encolhe sozinho. Em 31/08/2026 ele estava em
+  # 32,9 GB numa VPS de 96 GB — metade do disco, sem um byte de dado de usuário. Disco cheio não
+  # degrada aos poucos: o Docker para de subir container, o Redis para de gravar o AOF e o nginx
+  # para de registrar log, tudo de uma vez.
+  #
+  # O teto preserva o cache recente, que é o que faz o build seguinte ser rápido. Sem ele, cada
+  # deploy recompilaria tudo do zero.
+  local keep="${DOCKER_BUILD_CACHE_KEEP:-8GB}"
+  info "Podando cache de build acima de ${keep}..."
+  docker builder prune --force --keep-storage "$keep" >/dev/null 2>&1 ||
+    warn "Poda do cache de build falhou — siga, mas confira o disco."
+}
+
+check_disk_headroom() {
+  local used
+  used="$(df --output=pcent / | tail -1 | tr -dc '0-9')"
+  if [[ -z "$used" ]]; then
+    return 0
+  fi
+  if [[ "$used" -ge 85 ]]; then
+    error "Disco em ${used}%. Abaixo de 15% livres o próximo deploy não completa."
+    echo "  Veja o que ocupa:  docker system df"
+    echo "  Poda mais fundo:   docker builder prune -af && docker image prune -af"
+  elif [[ "$used" -ge 70 ]]; then
+    warn "Disco em ${used}% — acompanhe. Poda mais fundo: docker builder prune -af"
+  else
+    info "Disco em ${used}%."
+  fi
+}
+
+prune_build_cache
+check_disk_headroom
+
 echo ""
 info "Deploy concluído e verificado."
 echo ""
