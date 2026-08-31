@@ -22,6 +22,7 @@ import {
 } from '../server/storage/getStorageProvider.js';
 import type { R2Config } from '../server/storage/storageConfig.js';
 import { validateR2Endpoint } from '../server/storage/storageConfig.js';
+import { setCorsEnv, withBucketCorsStub } from './helpers/r2CorsMock.js';
 
 const BASE_R2_CONFIG: R2Config = {
   accountId: 'abc123',
@@ -39,7 +40,7 @@ const BASE_R2_CONFIG: R2Config = {
 };
 
 function createMockClient(handler: (command: unknown) => Promise<unknown>): S3Client {
-  return { send: handler } as unknown as S3Client;
+  return { send: withBucketCorsStub(handler) } as unknown as S3Client;
 }
 
 describe('r2 bucket naming', () => {
@@ -100,6 +101,9 @@ describe('r2 clients', () => {
 });
 
 describe('r2 bucket provisioner', () => {
+  // Provisionar bucket agora reconcilia o CORS junto — sem origem configurada nada é provisionado.
+  beforeEach(setCorsEnv);
+
   it('ensureTenantBucket chama HeadBucket e CreateBucket quando necessário', async () => {
     const commands: unknown[] = [];
     const adminClient = createMockClient(async (command) => {

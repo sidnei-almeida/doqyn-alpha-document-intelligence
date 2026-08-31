@@ -25,6 +25,7 @@ import {
 import { createR2StorageProvider } from '../server/storage/r2/r2StorageProvider.js';
 import type { R2Config } from '../server/storage/storageConfig.js';
 import { ServiceError } from '../server/utils/serviceErrors.js';
+import { setCorsEnv, withBucketCorsStub } from './helpers/r2CorsMock.js';
 
 const BASE_R2_CONFIG: R2Config = {
   accountId: 'abc123',
@@ -46,10 +47,11 @@ const INDIVIDUAL_TENANT = 'individual_maria_d4e5f6';
 const OWNER_USER_ID = '11111111-1111-1111-1111-111111111111';
 
 function createMockClient(handler: (command: unknown) => Promise<unknown>): S3Client {
-  return { send: handler } as unknown as S3Client;
+  return { send: withBucketCorsStub(handler) } as unknown as S3Client;
 }
 
 function setR2Env(): void {
+  setCorsEnv();
   process.env.STORAGE_PROVIDER = 'r2';
   process.env.R2_ACCOUNT_ID = 'abc123';
   process.env.R2_ENDPOINT = 'https://abc123.r2.cloudflarestorage.com';
