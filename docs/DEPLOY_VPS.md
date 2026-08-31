@@ -311,6 +311,7 @@ O TLS termina no nginx do próprio compose. Não há terminador externo.
 | Variável | Exemplo | Papel |
 |----------|---------|-------|
 | `LETSENCRYPT_DOMAIN` | `app.doqyn.com` | Domínio do certificado. Precisa ser igual ao host de `DOQYN_PUBLIC_APP_URL` |
+| `DOQYN_PUBLIC_APP_URL` | `https://app.doqyn.com` | Endereço público do app. Além do cookie de sessão, é o que monta todo link que sai para fora — portal de assinatura e convite externo. Ausente em produção, a API se recusa a subir |
 | `LETSENCRYPT_EMAIL` | `voce@exemplo.com` | Contato de registro; recebe aviso de expiração |
 | `HTTPS_PORT` | `443` | Porta TLS publicada (raramente muda) |
 

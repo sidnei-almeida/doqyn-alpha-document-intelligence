@@ -6,6 +6,7 @@ import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
 import { startEmailOutboxDrain } from './services/notifications/emailOutboxDrain.js';
 import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
+import { assertPublicAppBaseUrlInProduction } from './config/publicUrlConfig.js';
 import { logger } from './utils/logger.js';
 import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
 import { initPrometheusMetrics, recordHttpRequest } from './metrics/prometheus.js';
@@ -555,6 +556,11 @@ export type StartApiServerOptions = {
 };
 
 export async function startApiServer(options?: StartApiServerOptions): Promise<Server> {
+  // Falha aqui, e não no meio da requisição: sem endereço público o servidor recusa montar
+  // qualquer link que saia para fora, e a recusa chegava ao usuário como 500 genérico na
+  // criação da solicitação de assinatura externa.
+  assertPublicAppBaseUrlInProduction();
+
   initPrometheusMetrics();
   await connectRedisOnBoot();
 

@@ -1077,7 +1077,10 @@ export async function declineDocumentSignature(input: {
   );
 }
 
-async function syncDocumentSignatureStatus(tenantId: string, documentId: string): Promise<void> {
+export async function syncDocumentSignatureStatus(
+  tenantId: string,
+  documentId: string,
+): Promise<void> {
   const summary = await loadDocumentSignatureSummary(tenantId, documentId);
   let signatureStatus: DocumentSignatureStatusLabel;
 
