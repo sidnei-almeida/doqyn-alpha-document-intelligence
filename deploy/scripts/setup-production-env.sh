@@ -207,6 +207,18 @@ echo -n "OAUTH_GOOGLE_CLIENT_SECRET: "
 read -r -s OAUTH_GOOGLE_CLIENT_SECRET
 echo ""
 
+echo ""
+# O login Microsoft era escrito como `OAUTH_MICROSOFT_ENABLED=false` cravado, e as credenciais
+# não eram escritas de forma alguma — só o redirect. Quem tinha Entra funcionando o mantinha por
+# edição à mão no `.env`, que este script sobrescreve. Rodá-lo de novo derrubava o login.
+info "OAuth Microsoft / Entra (deixe vazio para configurar depois)"
+read -r -p "OAUTH_MICROSOFT_CLIENT_ID: " OAUTH_MICROSOFT_CLIENT_ID
+echo -n "OAUTH_MICROSOFT_CLIENT_SECRET: "
+read -r -s OAUTH_MICROSOFT_CLIENT_SECRET
+echo ""
+# `common` aceita conta corporativa e pessoal. Um GUID de tenant restringe a uma organização.
+OAUTH_MICROSOFT_TENANT="$(prompt_default "OAUTH_MICROSOFT_TENANT" "common")"
+
 info "Gerando chaves internas sincronizadas entre auth e alpha..."
 DOQYN_INTERNAL_API_KEY="$(generate_base64_32)"
 DOQYN_APP_INTERNAL_API_KEY="$(generate_base64_32)"
@@ -276,7 +288,10 @@ OAUTH_GOOGLE_ENABLED=$([[ -n "$OAUTH_GOOGLE_CLIENT_ID" ]] && echo true || echo f
 OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
 OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
 OAUTH_GOOGLE_REDIRECT_URI=${OAUTH_GOOGLE_REDIRECT_URI}
-OAUTH_MICROSOFT_ENABLED=false
+OAUTH_MICROSOFT_ENABLED=$([[ -n "$OAUTH_MICROSOFT_CLIENT_ID" ]] && echo true || echo false)
+OAUTH_MICROSOFT_CLIENT_ID=${OAUTH_MICROSOFT_CLIENT_ID}
+OAUTH_MICROSOFT_CLIENT_SECRET=${OAUTH_MICROSOFT_CLIENT_SECRET}
+OAUTH_MICROSOFT_TENANT=${OAUTH_MICROSOFT_TENANT}
 OAUTH_MICROSOFT_REDIRECT_URI=${OAUTH_MICROSOFT_REDIRECT_URI}
 OAUTH_POST_LOGIN_REDIRECT_URL=${OAUTH_POST_LOGIN_REDIRECT_URL}
 OAUTH_ERROR_REDIRECT_URL=${OAUTH_ERROR_REDIRECT_URL}
@@ -414,4 +429,10 @@ echo ""
 if [[ -n "$OAUTH_GOOGLE_CLIENT_ID" ]]; then
   warn "No Google Cloud Console, cadastre redirect URI:"
   echo "  ${OAUTH_GOOGLE_REDIRECT_URI}"
+fi
+if [[ -n "$OAUTH_MICROSOFT_CLIENT_ID" ]]; then
+  warn "No Azure (App registration), cadastre redirect URI:"
+  echo "  ${OAUTH_MICROSOFT_REDIRECT_URI}"
+  # Sem esta claim opcional, conta corporativa chega sem o e-mail confirmado pelo provedor.
+  warn "E habilite as optional claims 'email' e 'xms_edov' em Token configuration."
 fi
