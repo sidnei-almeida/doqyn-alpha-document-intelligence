@@ -4,14 +4,24 @@ import { ApiError, parseApiError } from '@/lib/apiErrors';
 
 export type EmailChangeStatus =
   | { pending: false }
-  | { pending: true; newEmail: string; expiresAt: string };
+  | {
+      pending: true;
+      newEmail: string;
+      expiresAt: string;
+      linkExpiresAt: string;
+      attemptsLeft: number;
+      canResendAt?: string;
+    };
 
 export type RequestEmailChangeResponse = {
   ok: boolean;
   message: string;
   pendingEmail: string;
   expiresAt: string;
+  linkExpiresAt: string;
   emailSent: boolean;
+  /** Só em desenvolvimento, quando não há SMTP configurado. */
+  confirmCode?: string;
   confirmToken?: string;
   confirmUrl?: string;
 };
@@ -41,6 +51,19 @@ export const emailChangeApi = {
     authServiceJson<RequestEmailChangeResponse>('/account/email-change/request', {
       method: 'POST',
       body: JSON.stringify(input),
+    }),
+
+  /** Confirma digitando os 6 dígitos. Exige sessão: trocar o e-mail é coisa de quem já entrou. */
+  confirmCode: (code: string) =>
+    authServiceJson<{ ok: boolean; message: string }>('/account/email-change/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
+  resend: () =>
+    authServiceJson<RequestEmailChangeResponse>('/account/email-change/resend', {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
 
   preview: (token: string) =>

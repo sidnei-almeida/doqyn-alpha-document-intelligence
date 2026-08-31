@@ -8,8 +8,10 @@ import {
   AccessChoiceRoute,
   AuditRoute,
   CompanySignupRoute,
+  ConfirmEmailChangeRoute,
   ContactsRoute,
   DashboardRoute,
+  EmailVerificationRoute,
   IndividualSignupRoute,
   LibraryRoute,
   DocumentRequestsRoute,
@@ -23,6 +25,7 @@ import {
   TermsRoute,
   TrackingRoute,
   UserManagementRouteLazy,
+  VerifyEmailLinkRoute,
   VersioningRoute,
   ExternalSharePortalRoute,
   SignaturePortalRoute,
@@ -37,6 +40,10 @@ export const router = createBrowserRouter([
   { path: '/sign/:token', element: <SignaturePortalRoute /> },
   { path: '/verify/signature/:verificationCode', element: <SignatureVerificationRoute /> },
   { path: '/convite/:token', element: <AcceptInviteRoute /> },
+  // A página desenha a própria casca (logo, tema), então fica fora da antessala. A rota faltava:
+  // o auth-service já mandava este endereço no e-mail de troca, e quem clicava caía no curinga e
+  // era jogado na biblioteca sem que a troca acontecesse.
+  { path: '/confirmar-email/:token', element: <ConfirmEmailChangeRoute /> },
   // A antessala é rota de layout: o painel do documento fica montado enquanto a
   // pessoa circula entre entrar, escolher como começar e se cadastrar. Só a
   // coluna do formulário transiciona.
@@ -48,6 +55,11 @@ export const router = createBrowserRouter([
       { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
       { path: '/criar-empresa', element: <CompanySignupRoute /> },
       { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
+      // Confirmação de e-mail. Fica na antessala, e fora do `PublicRoute`, de propósito: quem
+      // chega aqui não tem sessão (o login recusou) e não pode ser mandado para a biblioteca por
+      // um guarda que só sabe perguntar se já está logado.
+      { path: '/confirmar-cadastro', element: <EmailVerificationRoute /> },
+      { path: '/verificar-email/:token', element: <VerifyEmailLinkRoute /> },
       { path: '/onboarding', element: <OnboardingRoute /> },
     ],
   },

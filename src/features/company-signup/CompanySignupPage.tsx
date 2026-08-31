@@ -13,6 +13,7 @@ import { CountrySelect } from '@/components/ui/CountrySelect';
 import { DEFAULT_COUNTRY, getTaxIdSpec, type CountryCode } from '@/lib/identifiers';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { useAuth } from '@/features/auth/useAuth';
+import { storeVerificationTicket } from '@/features/email-verification/verificationTicket';
 import { useSignupSessionIdentity } from '@/features/auth/useSignupSessionIdentity';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { suggestUsername, UsernameField } from '@/features/auth/components/UsernameField';
@@ -161,6 +162,20 @@ export function CompanySignupPage() {
       const result = await submitCompanySignup(buildCompanySignupPayload(formValues));
 
       setReviewOpen(false);
+
+      // Sem sessão até o e-mail ser confirmado: a conta existe, mas o acesso não abriu. Chamar
+      // `refreshUser` aqui buscaria uma sessão que não veio, e mandar para a biblioteca só
+      // devolveria a pessoa ao login sem explicar por quê.
+      if (result.emailVerificationRequired && result.verificationTicket) {
+        storeVerificationTicket(result.verificationTicket);
+        toast.success(result.message ?? 'Empresa criada. Confirme seu e-mail para entrar.');
+        navigate('/confirmar-cadastro', {
+          replace: true,
+          state: { ticket: result.verificationTicket },
+        });
+        return;
+      }
+
       toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
       await refreshUser();
       navigate('/biblioteca', { replace: true });

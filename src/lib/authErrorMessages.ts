@@ -3,6 +3,25 @@ export type ApiErrorDetails = Record<string, unknown>;
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
   USER_DISABLED: 'Esta conta foi desativada. Entre em contato com o administrador.',
+  EMAIL_NOT_VERIFIED:
+    'Confirme seu e-mail para entrar. Enviamos um código de 6 dígitos para o endereço do cadastro.',
+  EMAIL_VERIFICATION_INVALID_CODE: 'Código incorreto. Confira os seis dígitos do e-mail.',
+  EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS:
+    'Este código foi bloqueado por excesso de tentativas. Peça um novo.',
+  EMAIL_VERIFICATION_EXPIRED: 'Este código expirou. Peça um novo.',
+  EMAIL_VERIFICATION_ALREADY_USED: 'Esta confirmação já foi utilizada.',
+  EMAIL_VERIFICATION_NOT_FOUND: 'Nenhum código pendente. Peça um novo.',
+  EMAIL_VERIFICATION_RESEND_TOO_SOON: 'Aguarde um instante antes de pedir outro código.',
+  EMAIL_VERIFICATION_TICKET_INVALID:
+    'Esta confirmação expirou. Entre com e-mail e senha para receber um código novo.',
+  EMAIL_ALREADY_VERIFIED: 'Este e-mail já está confirmado.',
+  EMAIL_CHANGE_INVALID_CODE: 'Código incorreto. Confira os seis dígitos do e-mail.',
+  EMAIL_CHANGE_TOO_MANY_ATTEMPTS:
+    'Este código foi bloqueado por excesso de tentativas. Peça um novo.',
+  EMAIL_CHANGE_RESEND_TOO_SOON: 'Aguarde um instante antes de pedir outro código.',
+  EMAIL_CHANGE_NOT_FOUND: 'Nenhuma troca de e-mail pendente.',
+  EMAIL_CHANGE_EXPIRED: 'Este link de troca expirou. Peça a alteração novamente.',
+  EMAIL_CHANGE_ALREADY_USED: 'Esta troca de e-mail já foi confirmada.',
   PASSWORD_CHANGE_REQUIRED: 'Você precisa alterar sua senha antes de continuar.',
   NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não possui acesso ativo a nenhuma empresa.',
   NO_ACTIVE_TENANT: 'Selecione uma empresa para continuar.',
@@ -47,7 +66,11 @@ export function getFriendlyAuthErrorMessage(
     }
   }
 
-  return AUTH_ERROR_MESSAGES[code] ?? fallbackMessage ?? 'Não foi possível concluir a ação agora. Tente novamente.';
+  return (
+    AUTH_ERROR_MESSAGES[code] ??
+    fallbackMessage ??
+    'Não foi possível concluir a ação agora. Tente novamente.'
+  );
 }
 
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {
@@ -57,6 +80,8 @@ export function getAuthErrorActions(code: string): Array<{ label: string; href: 
         { label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso' },
         { label: 'Cadastrar uma empresa', href: '/criar-empresa' },
       ];
+    case 'EMAIL_NOT_VERIFIED':
+      return [{ label: 'Confirmar e-mail', href: '/confirmar-cadastro' }];
     case 'MEMBERSHIP_REJECTED':
     case 'MEMBERSHIP_REMOVED':
       return [{ label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso' }];

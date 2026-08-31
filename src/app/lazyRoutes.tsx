@@ -80,6 +80,14 @@ const LazyConfirmEmailChangePage = lazyNamed(
   () => import('@/features/settings/ConfirmEmailChangePage'),
   'ConfirmEmailChangePage',
 );
+const LazyEmailVerificationPage = lazyNamed(
+  () => import('@/features/email-verification/EmailVerificationPage'),
+  'EmailVerificationPage',
+);
+const LazyVerifyEmailLinkPage = lazyNamed(
+  () => import('@/features/email-verification/VerifyEmailLinkPage'),
+  'VerifyEmailLinkPage',
+);
 
 const LazyTrackingRoute = lazyNamed(
   () => import('@/features/tracking/TrackingRoute'),
@@ -131,3 +139,5 @@ export const OAuthCallbackRoute = withRouteSuspense(LazyOAuthCallbackPage);
 export const OnboardingRoute = withRouteSuspense(LazyOnboardingPage);
 export const AcceptInviteRoute = withRouteSuspense(LazyAcceptInvitePage);
 export const ConfirmEmailChangeRoute = withRouteSuspense(LazyConfirmEmailChangePage);
+export const EmailVerificationRoute = withRouteSuspense(LazyEmailVerificationPage);
+export const VerifyEmailLinkRoute = withRouteSuspense(LazyVerifyEmailLinkPage);

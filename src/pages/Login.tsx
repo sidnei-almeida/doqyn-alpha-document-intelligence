@@ -18,6 +18,15 @@ import { SessionApiError } from '@/auth/sessionApi';
 import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
 import { getAuthErrorActions, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
+import { storeVerificationTicket } from '@/features/email-verification/verificationTicket';
+
+/** O passe de confirmação viaja em `details` porque é o campo que a rota de login já repassa. */
+function extractVerificationTicket(error: unknown): string | null {
+  if (!(error instanceof ApiError) || error.code !== 'EMAIL_NOT_VERIFIED') return null;
+  const ticket = (error.details as { verificationTicket?: unknown } | undefined)
+    ?.verificationTicket;
+  return typeof ticket === 'string' && ticket ? ticket : null;
+}
 
 export function Login() {
   const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
@@ -71,6 +80,15 @@ export function Login() {
       await login(email, password, rememberMe);
       navigate(from, { replace: true });
     } catch (err) {
+      // Senha certa, e-mail ainda não confirmado: o auth-service já mandou o código junto com a
+      // recusa, então a tela seguinte pede os dígitos em vez de um botão de "enviar".
+      const ticket = extractVerificationTicket(err);
+      if (ticket) {
+        storeVerificationTicket(ticket);
+        navigate('/confirmar-cadastro', { replace: true, state: { ticket } });
+        return;
+      }
+
       if (err instanceof ApiError || err instanceof SessionApiError) {
         setErrorCode(err.code);
         setError(err.friendlyMessage);

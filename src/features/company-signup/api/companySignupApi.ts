@@ -24,6 +24,12 @@ export type CompanySignupResponse = {
   ok: boolean;
   message?: string;
   code?: string;
+  /**
+   * A conta foi criada, mas o acesso só abre depois do código do e-mail — e por isso não veio
+   * cookie de sessão nesta resposta. Ver `signupOrchestrator.ts` no auth-service.
+   */
+  emailVerificationRequired?: boolean;
+  verificationTicket?: string;
 };
 
 export async function submitCompanySignup(
