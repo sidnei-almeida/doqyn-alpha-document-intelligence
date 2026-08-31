@@ -25,7 +25,7 @@ function secondsUntil(iso: string | undefined): number {
  * computador com nada na mão. Os dois chegam na mesma mensagem.
  */
 export function ChangeEmailCard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,6 +80,9 @@ export function ChangeEmailCard() {
       setCode('');
       setNewEmail('');
       setDevCode(null);
+      // O endereço mudou na conta, e a sessão em memória ainda tem o antigo — sem isto o card
+      // continua anunciando "o endereço atual é" o que acabou de deixar de ser.
+      await refreshUser();
       await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
     },
     onError: async (error) => {

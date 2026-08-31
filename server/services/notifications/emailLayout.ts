@@ -108,7 +108,11 @@ export function emailButton(label: string, href: string): string {
  * caracteres para quem copia à mão.
  */
 export function emailCode(code: string): string {
-  const formatted = `${code.slice(0, 3)} ${code.slice(3)}`;
+  // O corte vem do tamanho, não de um 3 escrito à mão: se o código deixar de ter seis dígitos, um
+  // `slice(0, 3)` fixo agruparia errado (`123 4567`) e a pessoa copiaria o agrupamento, não o
+  // número.
+  const half = Math.ceil(code.length / 2);
+  const formatted = `${code.slice(0, half)} ${code.slice(half)}`;
   return `
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>

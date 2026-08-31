@@ -94,7 +94,16 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   });
 
   const classId = requireConfirmClassification({
-    classId: data.classification.classId,
+    /**
+     * Versão nova herda a classe do documento que já existe.
+     *
+     * A categoria é do documento, não da análise: subir uma versão nova não reclassifica nada. E
+     * é isto que impede o beco sem saída quando o OCR não lê o arquivo — a análise devolve
+     * `requires_review` sem classe, o caminho de upload resolve com a categoria que quem envia
+     * escolhe na gaveta, e aqui não há gaveta para escolher. Havia a classe do documento o tempo
+     * todo, a um `??` de distância.
+     */
+    classId: data.classification.classId ?? existingDoc.classId ?? null,
     requiresReview: data.classification.requiresReview,
     extractionRequiresReview: data.extraction.requiresReview,
     manualReviewConfirmed: data.manualReviewConfirmed,

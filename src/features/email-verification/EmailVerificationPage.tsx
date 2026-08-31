@@ -66,8 +66,10 @@ export function EmailVerificationPage() {
         toast.success('E-mail confirmado. Faça login para entrar.');
         navigate('/login', { replace: true });
       }
-    } catch (err) {
-      setError(getEmailVerificationErrorMessage(err));
+    } catch {
+      // Silencioso de propósito: esta consulta roda sozinha a cada 15 segundos, e uma queda de
+      // rede não pode pintar "não foi possível confirmar" e avermelhar o campo de quem ainda nem
+      // digitou. O erro que a pessoa precisa ver é o da tentativa dela, e esse tem dono próprio.
     }
   }, [navigate, ticket]);
 
