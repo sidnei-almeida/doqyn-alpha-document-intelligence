@@ -23,13 +23,58 @@ export async function headTenantBucket(
     await client.send(new HeadBucketCommand({ Bucket: bucket }));
     return true;
   } catch (error) {
-    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
+      ?.httpStatusCode;
     const name = (error as { name?: string })?.name;
     if (status === 404 || name === 'NotFound' || name === 'NoSuchBucket') {
       return false;
     }
     throw error;
   }
+}
+
+/**
+ * Libera o navegador a falar direto com o bucket.
+ *
+ * O arquivo não passa pela API: o cliente recebe uma URL assinada e faz `PUT` no R2. Sem política
+ * de CORS o navegador nem chega a tentar — barra no preflight, e o upload falha com
+ * `ERR_FAILED` sem nada nos logs do servidor, porque requisição nenhuma chegou.
+ *
+ * Isto ficou anos invisível porque os buckets em uso foram criados à mão, e configurados à mão
+ * junto. O primeiro bucket nascido do código apareceu quando a base foi zerada, e nasceu mudo.
+ *
+ * A origem sai de `PUBLIC_APP_URL`/`DOQYN_PUBLIC_APP_URL`: liberar `*` deixaria qualquer site
+ * emitir upload com uma URL assinada que vazasse.
+ */
+async function applyBucketCors(
+  client: import('@aws-sdk/client-s3').S3Client,
+  bucket: string,
+): Promise<void> {
+  const origin = (process.env.DOQYN_PUBLIC_APP_URL || process.env.PUBLIC_APP_URL || '')
+    .trim()
+    .replace(/\/$/, '');
+
+  const allowed = [origin, 'http://localhost:5173'].filter(Boolean);
+  if (allowed.length === 0) return;
+
+  const { PutBucketCorsCommand } = await import('@aws-sdk/client-s3');
+  await client.send(
+    new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedOrigins: allowed,
+            AllowedMethods: ['GET', 'PUT', 'HEAD'],
+            AllowedHeaders: ['*'],
+            // O `ETag` é o que o cliente lê para confirmar que o corpo chegou inteiro.
+            ExposeHeaders: ['ETag'],
+            MaxAgeSeconds: 3600,
+          },
+        ],
+      },
+    }),
+  );
 }
 
 export async function createTenantBucket(
@@ -40,13 +85,17 @@ export async function createTenantBucket(
   try {
     await client.send(new CreateBucketCommand({ Bucket: bucket }));
   } catch (error) {
-    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
+      ?.httpStatusCode;
     const name = (error as { name?: string })?.name;
-    if (status === 409 || name === 'BucketAlreadyOwnedByYou') {
-      return;
+    if (status !== 409 && name !== 'BucketAlreadyOwnedByYou') {
+      throw error;
     }
-    throw error;
   }
+
+  // Fora do try de criação de propósito: bucket que já existia também precisa da política, senão
+  // os criados antes desta correção seguiriam mudos para sempre.
+  await applyBucketCors(client, bucket);
 }
 
 export type EnsureSharedBucketInput = {
@@ -95,8 +144,7 @@ export async function ensureTenantBucketByName(input: {
 export async function ensureTenantBucket(
   input: EnsureTenantBucketInput,
 ): Promise<{ bucket: string; created: boolean }> {
-  const bucket =
-    input.bucketName?.trim() || resolveTenantBucketName(input.tenantId, input.config);
+  const bucket = input.bucketName?.trim() || resolveTenantBucketName(input.tenantId, input.config);
   return ensureTenantBucketByName({
     bucketName: bucket,
     config: input.config,

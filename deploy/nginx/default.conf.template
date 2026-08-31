@@ -70,6 +70,11 @@ server {
 
   client_max_body_size 30m;
   root /usr/share/nginx/html;
+
+  # O nginx não conhece `.mjs` e o serve como `application/octet-stream`. O navegador recusa
+  # módulo ES com esse tipo, e o pdf.js cai no "fake worker": renderiza na thread principal,
+  # travando a interface em documento grande. Uma linha resolve.
+  types { application/javascript mjs; }
   index index.html;
 
   # Métricas Prometheus — apenas rede interna (scrape direto no container API).
