@@ -157,6 +157,8 @@ Definidas em `deploy/.env` (ver `deploy/env/.env.production.example` ou `setup-p
 | `TENANT_QUOTA_ENABLED` | Controle de quotas por tenant |
 | `TENANT_QUOTA_ANALYSIS_PER_DAY` | Limite diário de análises |
 | `TENANT_QUOTA_UPLOADS_PER_HOUR` | Limite horário de uploads |
+| `EXTERNAL_SHARING_ENABLED` | `true` para liberar convite externo e assinatura de convidado. Ausente, produção fica fechada (`403 EXTERNAL_SHARING_DISABLED`) — o padrão de desenvolvimento |
+| `EXTERNAL_LINK_ENCRYPTION_KEY` | Cifra o token do link para poder recopiá-lo depois (mín. 32 caracteres, `openssl rand -base64 32`). Sem ela o link aparece uma vez, na criação. Trocar depois torna ilegível o que já foi cifrado |
 
 Template completo: `deploy/env/.env.production.example` (ou gere com `./deploy/scripts/setup-production-env.sh`).
 
