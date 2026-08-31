@@ -80,6 +80,9 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${imageUrl}" />
 
+    <!-- Buscador fica de fora; robô de rede social não lê isto e continua montando a prévia. -->
+    <meta name="robots" content="noindex, nofollow" />
+
     <meta name="theme-color" content="#0b0e10" />
     <style>
       /* Espelho escuro de src/styles/tokens.css, copiado à mão de propósito: este HTML é

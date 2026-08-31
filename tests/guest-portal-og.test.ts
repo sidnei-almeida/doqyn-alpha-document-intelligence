@@ -103,9 +103,29 @@ describe('guest portal Open Graph', () => {
       assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));
     });
 
+    it('a página do robô responde HEAD, que é a sondagem que vem antes do GET', () => {
+      // 405 no HEAD faz o robô da Meta desistir da prévia sem nunca tentar o GET.
+      for (const kind of ['sign', 'share']) {
+        const handler = read(`api/og/guest/${kind}/[token].ts`);
+        assert.ok(handler.includes("req.method === 'HEAD'"), `${kind} não aceita HEAD`);
+        assert.ok(handler.includes('if (isHead) return res.status(200).end();'));
+      }
+    });
+
+    it('robots.txt deixa o robô social passar e barra só o buscador', () => {
+      const robots = read('public/robots.txt');
+
+      // Bloquear /guest/ para todos custaria a prévia: facebookexternalhit respeita robots.txt.
+      assert.ok(robots.includes('User-agent: Googlebot'));
+      assert.ok(robots.includes('Disallow: /guest/'));
+      assert.ok(robots.includes('User-agent: *\nAllow: /'));
+      assert.ok(!robots.includes('User-agent: *\nDisallow: /guest/'));
+    });
+
     it('o corpo servido ao robô não carrega nome de documento nem remetente', () => {
       const html = renderOgPortalHtml(sampleSignMetadata);
 
+      assert.ok(html.includes('<meta name="robots" content="noindex, nofollow" />'));
       assert.ok(!html.includes('Contrato'));
       assert.ok(!html.includes('Maria Silva'));
       // O fallback do renderizador é o que aparece quando o metadata não traz o documento.

@@ -1,0 +1,19 @@
+# Robô de rede social precisa passar: é ele que monta a prévia do link no WhatsApp, no Slack e
+# no Telegram. Bloquear /guest/ aqui não protegeria nada — o link já é secreto pelo token — e
+# custaria a prévia, porque facebookexternalhit respeita este arquivo.
+#
+# Contra buscador o instrumento é outro: a página servida em /guest/ traz `noindex`, que o
+# Google respeita e o robô social ignora. Ver server/og/renderOgPortalHtml.ts.
+
+User-agent: Googlebot
+Disallow: /guest/
+Disallow: /sign/
+Disallow: /share/
+
+User-agent: Bingbot
+Disallow: /guest/
+Disallow: /sign/
+Disallow: /share/
+
+User-agent: *
+Allow: /
