@@ -144,6 +144,9 @@ async function getBucketCorsRules(
     const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
       ?.httpStatusCode;
     // Bucket sem política responde com erro, e isso é uma resposta legítima: não tem CORS.
+    // Conferido contra o R2 real em 31/08/2026 com um bucket descartável: a Cloudflare devolve
+    // `NoSuchCORSConfiguration` com status 404. As outras duas formas ficam como rede de
+    // proteção — errar aqui bloquearia todo upload, não só o do bucket sem política.
     if (
       name === 'NoSuchCORSConfiguration' ||
       name === 'NoSuchCorsConfiguration' ||
