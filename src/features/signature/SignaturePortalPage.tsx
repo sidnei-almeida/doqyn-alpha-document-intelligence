@@ -119,7 +119,7 @@ export function SignaturePortalPage() {
       return {
         title: 'Assinatura · DOQYN',
         description: 'Assine documentos com segurança e rastreabilidade no DOQYN.',
-        imagePath: '/og/portal-default.webp',
+        imagePath: '/og/portal-card-sign.png',
       };
     }
 
@@ -127,9 +127,10 @@ export function SignaturePortalPage() {
     return {
       title: `Assinar: ${payload.documentName}${versionSuffix} · DOQYN`,
       description: `${payload.issuerName} solicitou sua assinatura neste documento.`,
-      imagePath: `/api/og/guest/sign/${encodeURIComponent(token)}/image`,
+      // Ver a nota do portal de compartilhamento: o cartão é de marca, o documento não sai daqui.
+      imagePath: '/og/portal-card-sign.png',
     };
-  }, [payload, token]);
+  }, [payload]);
 
   useGuestPortalPageMeta(pageMeta);
 

@@ -337,18 +337,8 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['signatureRequestId'],
     },
     {
-      regex: /^\/api\/og\/guest\/share\/([^/]+)\/image$/,
-      loader: () => import('../api/og/guest/share/[token]/image.js'),
-      paramKeys: ['token'],
-    },
-    {
       regex: /^\/api\/og\/guest\/share\/([^/]+)$/,
       loader: () => import('../api/og/guest/share/[token].js'),
-      paramKeys: ['token'],
-    },
-    {
-      regex: /^\/api\/og\/guest\/sign\/([^/]+)\/image$/,
-      loader: () => import('../api/og/guest/sign/[token]/image.js'),
       paramKeys: ['token'],
     },
     {

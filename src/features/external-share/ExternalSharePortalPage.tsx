@@ -135,7 +135,7 @@ export function ExternalSharePortalPage() {
       return {
         title: 'Compartilhamento · DOQYN',
         description: 'Acesse um documento compartilhado com segurança no DOQYN.',
-        imagePath: '/og/portal-default.webp',
+        imagePath: '/og/portal-card-share.png',
       };
     }
 
@@ -149,12 +149,12 @@ export function ExternalSharePortalPage() {
         payload.status === 'pending'
           ? `${payload.sharedByName} convidou você a acessar um documento em ${payload.ownerTenantName}.`
           : `${payload.sharedByName} compartilhou um documento com você via ${payload.ownerTenantName}.`,
-      imagePath:
-        payload.status === 'active' && payload.permissions?.canView
-          ? `/api/og/guest/share/${encodeURIComponent(token)}/image`
-          : '/og/portal-default.webp',
+      // Cartão de marca, nunca o documento: a imagem de prévia é buscada sem autenticação por
+      // quem monta o card do link, e o resultado fica visível para todo o grupo onde ele for
+      // colado.
+      imagePath: '/og/portal-card-share.png',
     };
-  }, [portal, token]);
+  }, [portal]);
 
   useGuestPortalPageMeta(pageMeta);
 

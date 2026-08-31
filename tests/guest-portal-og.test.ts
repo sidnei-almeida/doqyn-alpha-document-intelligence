@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { renderOgPortalHtml } from '../server/og/renderOgPortalHtml.js';
 import type { OgPortalMetadata } from '../server/og/ogPortalMetadata.js';
@@ -13,14 +13,10 @@ function read(relativePath: string): string {
 const sampleSignMetadata: OgPortalMetadata = {
   kind: 'sign',
   available: true,
-  title: 'Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN',
-  description:
-    'Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00.',
-  documentName: 'Contrato de Prestação de Serviços',
-  issuerName: 'Maria Silva',
-  versionLabel: 'v2.0',
+  title: 'Documento para assinar · DOQYN',
+  description: 'Alguém solicitou sua assinatura em um documento. Abra o link para ver e assinar.',
   statusLabel: 'Assinatura pendente',
-  imageUrl: 'https://app.doqyn.com/api/og/guest/sign/sample-token/image',
+  imageUrl: 'https://app.doqyn.com/og/portal-card-sign.png',
   canonicalUrl: 'https://app.doqyn.com/guest/sign/sample-token',
   portalPath: '/guest/sign/sample-token',
   ctaLabel: 'Abrir e assinar',
@@ -31,18 +27,11 @@ describe('guest portal Open Graph', () => {
     const html = renderOgPortalHtml(sampleSignMetadata);
 
     assert.ok(
-      html.includes(
-        '<meta property="og:title" content="Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN" />',
-      ),
+      html.includes('<meta property="og:title" content="Documento para assinar · DOQYN" />'),
     );
     assert.ok(
       html.includes(
-        '<meta property="og:description" content="Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00." />',
-      ),
-    );
-    assert.ok(
-      html.includes(
-        '<meta property="og:image" content="https://app.doqyn.com/api/og/guest/sign/sample-token/image" />',
+        '<meta property="og:image" content="https://app.doqyn.com/og/portal-card-sign.png" />',
       ),
     );
     assert.ok(
@@ -78,16 +67,38 @@ describe('guest portal Open Graph', () => {
     assert.ok(signPortal.includes('useGuestPortalPageMeta'));
   });
 
-  it('usa imagem padrão em public/og para convites sem preview', () => {
-    const metadata: OgPortalMetadata = {
-      ...sampleSignMetadata,
-      kind: 'share',
-      imageUrl: 'https://app.doqyn.com/og/portal-default.webp',
-      canonicalUrl: 'https://app.doqyn.com/guest/share/sample-token',
-      portalPath: '/guest/share/sample-token',
-      ctaLabel: 'Aceitar e abrir',
-    };
-    const html = renderOgPortalHtml(metadata);
-    assert.ok(html.includes('https://app.doqyn.com/og/portal-default.webp'));
+  /**
+   * O robô que monta a prévia do link não se autentica, e o card que ele produz fica visível
+   * para todo o grupo onde o link for colado. Estes três casos existem porque o caminho antigo
+   * publicava ali o preview da primeira página, o nome do arquivo e a mensagem do remetente.
+   */
+  describe('o cartão do link não fala do documento', () => {
+    it('nenhuma rota serve imagem derivada do documento para o robô', () => {
+      const dispatcher = read('server/apiServer.ts');
+      const metadata = read('server/og/ogPortalMetadata.ts');
+
+      assert.ok(!dispatcher.includes('/api/og/guest/share/([^/]+)/image'));
+      assert.ok(!dispatcher.includes('/api/og/guest/sign/([^/]+)/image'));
+      assert.ok(!metadata.includes('/image`'));
+      assert.ok(!existsSync(new URL('api/og/guest/sign/[token]/image.ts', root)));
+      assert.ok(!existsSync(new URL('api/og/guest/share/[token]/image.ts', root)));
+    });
+
+    it('os cartões de marca existem em PNG, que é o que o WhatsApp renderiza', () => {
+      // WebP não aparece em prévia de link no WhatsApp — era por isso que o cartão nunca
+      // chegava ao chat mesmo com as meta tags corretas.
+      for (const name of ['portal-card-sign', 'portal-card-share', 'portal-card']) {
+        assert.ok(existsSync(new URL(`public/og/${name}.png`, root)), `falta ${name}.png`);
+      }
+    });
+
+    it('o corpo servido ao robô não carrega nome de documento nem remetente', () => {
+      const html = renderOgPortalHtml(sampleSignMetadata);
+
+      assert.ok(!html.includes('Contrato'));
+      assert.ok(!html.includes('Maria Silva'));
+      // O fallback do renderizador é o que aparece quando o metadata não traz o documento.
+      assert.ok(html.includes('Documento'));
+    });
   });
 });
