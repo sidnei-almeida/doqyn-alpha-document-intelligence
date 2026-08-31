@@ -175,6 +175,10 @@ export const usersApi = {
     accessGroupIds: string[];
   }) => {
     if (usesDoqynAuth()) {
+      // Sem chamador desde `5ac8ae2`, quando o convite saiu da tela de Usuários — e de propósito
+      // preservado: a rota `/api/company-members/invite` continua no ar, o auth-service emite o
+      // token, e o e-mail de convite é um dos que ganharam a marca. É a ligação que a tela nova
+      // vai usar quando voltar, não sobra de refatoração.
       return doqynUsersApi.invite(input);
     }
     return request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
