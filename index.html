@@ -9,7 +9,25 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Largura fixa de desktop, de propósito.
+
+      Este é um produto de mesa: governança documental, matriz de acesso, auditoria — trabalho de
+      jurídico e compliance, feito no computador. A casca do workspace nunca teve tratamento
+      responsivo (a sidebar não tem um único breakpoint), e com `width=device-width` o navegador
+      do celular tentava um layout mobile que não existe: a barra lateral ocupava a tela e o
+      conteúdo saía por fora.
+
+      Declarar 1280 faz o celular renderizar o mesmo layout do computador, com pinça para ampliar
+      — que é como o app já se comportava quando alguém ligava "modo desktop" à mão, e funcionava.
+      Feio de ler em tela pequena, mas inteiro e utilizável, em vez de quebrado.
+
+      É escolha interina e consciente. O caminho de verdade para o celular será uma API própria
+      via WhatsApp, não esta tela espremida — por isso não vale investir num layout mobile que
+      quase ninguém abriria. Quando o portal do convidado (link de assinatura, que chega a quem
+      não é usuário) merecer tratamento próprio, ele pede viewport por rota.
+    -->
+    <meta name="viewport" content="width=1280" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#0B0E10" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#F5F7F8" media="(prefers-color-scheme: light)" />
