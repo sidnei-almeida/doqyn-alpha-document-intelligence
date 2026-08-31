@@ -278,9 +278,22 @@ describe('compartilhar — o portão', () => {
     // por dado que já era inválido quando alguém clicou.
     const gateAt = service.indexOf('resolveDocumentApproval(');
     assert.ok(gateAt > 0);
-    assert.ok(service.indexOf('requireShareRecipient(ctx.tenantId, sharedWithUserId)') < gateAt);
+    // `requireShareRecipient` virou `resolveShareRecipient`, que também resolve o destinatário
+    // de outro tenant. Ele continua rodando antes do portão: o pedido não nasce sem que o
+    // destinatário exista.
+    assert.ok(service.indexOf('resolveShareRecipient(ctx.tenantId, input)') < gateAt);
     assert.ok(service.indexOf('assertSharePermissions(permissions)') < gateAt);
-    assert.ok(service.includes('sharedWithUserId,\n        permissions,\n        message:'));
+    // O `payload` ganhou o escopo e os dados do destinatário de outro tenant no meio, mas
+    // continua carregando tudo que aprovar precisa para executar sem voltar a perguntar.
+    for (const field of [
+      'sharedWithUserId,',
+      'recipientScope:',
+      'permissions,',
+      'message:',
+      'expiresAt:',
+    ]) {
+      assert.ok(service.includes(field), field);
+    }
   });
 
   it('aprovar executa o compartilhamento, e falhar devolve o pedido à fila', () => {

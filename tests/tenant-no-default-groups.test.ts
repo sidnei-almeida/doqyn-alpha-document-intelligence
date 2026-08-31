@@ -31,7 +31,7 @@ describe('empresa nova sem grupos documentais padrão', () => {
   it('/users mostra empty state quando não há grupos', () => {
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('Nenhum grupo criado ainda.'));
-    assert.ok(sections.includes('Crie grupos na tela Regras'));
+    assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
   });
 
   it('/rules mostra empty state real sem mocks', () => {
@@ -43,14 +43,25 @@ describe('empresa nova sem grupos documentais padrão', () => {
 
   it('query keys de /users consideram tenant ativo', () => {
     const source = readSrc('src/features/users/UsersPage.tsx');
-    assert.ok(source.includes("queryKey: ['company-members', sessionTenantId]"));
+    // A consulta saiu para `useCompanyMembers`, que recebe o tenant e o põe na chave — o que
+    // este teste guarda é que trocar de empresa não reaproveita a lista da anterior.
+    assert.ok(source.includes('useCompanyMembers(sessionTenantId)'));
+    assert.ok(
+      readSrc('src/features/users/hooks/useCompanyMembers.ts').includes(
+        "queryKey: ['company-members', tenantId]",
+      ),
+    );
     assert.ok(source.includes("queryKey: ['document-groups', sessionTenantId]"));
     assert.ok(source.includes('tenant?.tenantId ?? user?.companyId'));
   });
 
   it('logout limpa cache do React Query', () => {
     const source = readSrc('src/auth/AuthProvider.tsx');
-    assert.ok(source.includes('queryClient.clear'));
+    // A limpeza foi extraída para `clearSessionScopedCaches`, que além do React Query também
+    // derruba miniaturas e previews — trocar de usuário deixava a folha do documento anterior
+    // na tela do próximo.
+    assert.ok(source.includes('clearSessionScopedCaches()'));
+    assert.ok(readSrc('src/auth/clearSessionScopedCaches.ts').includes('queryClient.clear()'));
   });
 
   it('tenantContext exige tenant ativo — sem fallback company_dev', () => {

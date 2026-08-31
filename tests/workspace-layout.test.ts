@@ -58,13 +58,17 @@ describe('layout do workspace', () => {
     assert.ok(newButton.includes('sidebar-new-menu'));
   });
 
-  it('+ Novo tem upload de arquivo e pasta funcional; nova pasta permanece futura', () => {
+  it('+ Novo tem upload de arquivo e de pasta, e cria categoria', () => {
     const newButton = readSrc('features/library/components/NewButtonMenu.tsx');
     assert.ok(newButton.includes('Upload de arquivo'));
     assert.ok(newButton.includes('Upload de pasta'));
     assert.ok(newButton.includes('startUploadFromFiles'));
-    assert.ok(newButton.includes('Nova pasta'));
-    assert.ok(newButton.includes('Em breve'));
+    // "Nova pasta" prometia uma pasta manual que nunca ia existir — pasta da Biblioteca é
+    // categoria de governança. O item virou "Nova categoria" e leva ao formulário que a cria,
+    // em vez de ficar marcado como "Em breve" para sempre.
+    assert.ok(newButton.includes('Nova categoria'));
+    assert.ok(newButton.includes('/rules?nova=categoria'));
+    assert.equal(newButton.includes('Em breve'), false);
     assert.ok(newButton.includes('/solicitar-acesso'));
     assert.equal(newButton.includes('localStorage'), false);
   });

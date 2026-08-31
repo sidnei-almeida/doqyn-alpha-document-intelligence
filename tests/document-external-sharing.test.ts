@@ -229,26 +229,25 @@ describe('document external sharing — ativação do convite', () => {
 });
 
 describe('document external sharing — UI', () => {
-  it('modal de compartilhar tem abas interna e externa', () => {
+  // As abas viraram passos: `c05b414` fez compartilhar e assinar caírem no mesmo fluxo, com
+  // `AudiencePicker` escolhendo o público antes de qualquer campo. "Convidado externo" é uma das
+  // opções do seletor, não mais uma aba paralela.
+  it('modal de compartilhar escolhe o público antes dos campos', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    assert.ok(modal.includes('Pessoas da empresa'));
-    assert.ok(modal.includes('Convidados externos'));
-    assert.ok(modal.includes('share-tab-internal'));
-    assert.ok(modal.includes('share-tab-external'));
-    assert.ok(modal.includes('external-share-email'));
-    assert.ok(modal.includes('external-share-can-download'));
-    assert.ok(modal.includes('ExternalInviteLinkField'));
-    assert.ok(modal.includes('external-share-invite-url'));
-    assert.ok(modal.includes('Compartilhe o link abaixo com o convidado'));
+    assert.ok(modal.includes('AudiencePicker'));
+    assert.ok(modal.includes('externalLabel='));
+    assert.ok(modal.includes('useStepFlow'));
+    assert.ok(modal.includes('createExternalShare'));
+    assert.ok(modal.includes('recipient.external'));
   });
 
   it('modal externo expõe badges de revogar e renovar com tooltip', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
-    assert.ok(modal.includes('ExternalShareActionBadge'));
-    assert.ok(modal.includes('Renovar'));
+    // As ações viraram itens de menu da própria linha do convite, em vez de badges soltos.
     assert.ok(modal.includes('Revogar'));
+    assert.ok(modal.includes('revokeExternalShare'));
     assert.ok(modal.includes('regenerateExternalShare'));
     assert.ok(api.includes('regenerate-invite'));
     assert.ok(hooks.includes('regenerateExternalShare'));
@@ -258,7 +257,9 @@ describe('document external sharing — UI', () => {
     const portal = read('src/features/external-share/ExternalSharePortalPage.tsx');
     const routes = read('src/app/routes.tsx');
     assert.ok(portal.includes('external-share-portal'));
-    assert.ok(portal.includes('DoqynLogo'));
+    // A marca do portal saiu para `GuestPortalShell`, compartilhada com o portal de assinatura.
+    assert.ok(portal.includes('GuestPortalShell'));
+    assert.ok(read('src/features/guest-portal/GuestPortalShell.tsx').includes('DoqynLogo'));
     assert.equal(portal.includes('Sidebar'), false);
     assert.equal(portal.includes('AppLayout'), false);
     assert.ok(routes.includes('/guest/share/:token'));
@@ -332,12 +333,22 @@ describe('document external sharing — telefone do convidado', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
-    assert.ok(modal.includes('WhatsappInput'));
-    assert.ok(modal.includes('Telefone / WhatsApp'));
-    assert.ok(modal.includes('external-share-phone'));
+    // O campo de telefone foi para `RecipientFlow`, a peça do destinatário que os três verbos
+    // (compartilhar, assinar, requisitar) montam.
+    assert.ok(modal.includes('RecipientFlow') || modal.includes('recipient.external'));
+    assert.ok(
+      read('src/features/documents/recipients/RecipientFlow.tsx').includes('WhatsappInput'),
+    );
+    assert.ok(
+      read('src/features/documents/recipients/RecipientFlow.tsx').includes(
+        'label="Telefone (opcional)"',
+      ),
+    );
+    assert.ok(read('src/features/documents/recipients/RecipientFlow.tsx').includes('phoneError'));
     assert.ok(modal.includes('recipientPhone'));
     assert.ok(modal.includes('isCompleteWhatsapp'));
-    assert.ok(modal.includes('recipientPhoneMasked'));
+    // O telefone volta mascarado do servidor, e é a API quem carrega essa forma.
+    assert.ok(api.includes('recipientPhoneMasked'));
     assert.ok(api.includes('recipientPhone'));
     assert.ok(hooks.includes('recipientPhone'));
   });

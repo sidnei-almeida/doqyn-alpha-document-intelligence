@@ -48,7 +48,10 @@ describe('Fase B.9 — upload e análise de imagens', () => {
 
     const confirm = read('server/services/confirmAnalysisService.ts');
     assert.match(confirm, /contentMimeType/);
-    assert.match(confirm, /mimeType: z\.string/);
+    // O schema saiu do literal para `optionalName`, reusado por vários campos opcionais —
+    // continua sendo `z.string()`, só que declarado uma vez.
+    assert.match(confirm, /mimeType: optionalName/);
+    assert.match(confirm, /const optionalName = z\s*\n?\s*\.string\(\)/);
   });
 
   it('assinatura continua PDF-only (regressão)', () => {

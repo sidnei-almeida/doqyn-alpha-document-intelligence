@@ -131,7 +131,7 @@ describe('tracking securityContext', () => {
   });
 
   it('UI de tracking exibe contexto resumido', () => {
-    const drawer = read('src/features/tracking/components/TrackingEventDetailsDrawer.tsx');
+    const drawer = read('src/features/tracking/components/TrackingEventLogDetail.tsx');
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(drawer.includes('formatSecurityContextDisplay'));
     assert.ok(drawer.includes('Contexto de acesso'));

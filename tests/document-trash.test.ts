@@ -285,22 +285,26 @@ describe('document trash — frontend lixeira e desativados', () => {
     assert.equal(menu.includes('Excluir permanentemente'), false);
   });
 
-  it('settings tem retenção na aba Empresa com copy de desativação', () => {
+  it('settings tem retenção em Organização, com copy de desativação', () => {
     const sections = read('src/features/settings/settingsSections.ts');
     const page = read('src/features/settings/SettingsPage.tsx');
-    const company = read('src/features/settings/components/sections/CompanySettingsSection.tsx');
+    const company = read('src/features/settings/components/sections/OrganizationSection.tsx');
     const retention = read(
       'src/features/settings/components/sections/TrashRetentionSettingsSection.tsx',
     );
-    assert.ok(sections.includes("'empresa'"));
-    assert.ok(sections.includes("'retencao'"));
-    assert.ok(sections.includes("lixeira: { section: 'empresa', tab: 'retencao' }"));
-    assert.ok(page.includes('CompanySettingsSection'));
+    // A aba "Empresa" virou a seção "Organização", e `?tab=` deixou de existir — as URLs
+    // antigas continuam caindo lá por alias.
+    assert.ok(sections.includes("id: 'organizacao'"));
+    assert.ok(sections.includes("lixeira: 'organizacao'"));
+    assert.ok(page.includes('OrganizationSection'));
     assert.ok(company.includes('TrashRetentionSettingsSection'));
-    assert.ok(company.includes('canManageRetention'));
+    // Quem não administra lê e não altera.
+    assert.ok(company.includes('governsOrganization'));
     assert.ok(retention.includes('settings-retention-preview'));
     assert.ok(retention.includes('desativado'));
-    assert.ok(retention.includes('isDirty'));
+    // O estado sujo subiu para `OrganizationSection`, que é quem tem a barra de salvar: a
+    // seção de retenção divide o mesmo botão com as preferências de envio.
+    assert.ok(company.includes('dirty'));
     assert.ok(retention.includes('RETENTION_DAYS_MIN'));
   });
 

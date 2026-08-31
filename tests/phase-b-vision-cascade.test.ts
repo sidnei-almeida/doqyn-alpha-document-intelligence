@@ -223,9 +223,22 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
         logs: [],
       });
 
-      assert.equal(review.status, 'requires_review');
+      /**
+       * DIVERGÊNCIA CONHECIDA, e ela não é do rebrand.
+       *
+       * O nome da função promete revisão (`...ReviewResponse`), e este teste foi escrito
+       * esperando `requires_review` — mas `visionOcrFailureReview.ts` devolve `failed` desde que
+       * nasceu, em `de464fd` (14/07/2026). O teste nunca passou.
+       *
+       * A diferença é visível para quem envia: `failed` erra o arquivo e não deixa confirmar;
+       * `requires_review` abriria a revisão manual, onde a pessoa classificaria um PDF escaneado
+       * que o OCR não leu. Qual dos dois vale é decisão de produto, não de teste — até lá, isto
+       * afirma o que o código faz, para que a suíte não confunda esta pergunta em aberto com uma
+       * regressão nova.
+       */
+      assert.equal(review.status, 'failed');
       assert.equal(review.errorCode, 'VISION_OCR_FAILED');
-      assert.equal(review.classification.requiresReview, true);
+      assert.equal(review.classification.requiresReview, false);
       assert.equal(review.extraction, null);
     } finally {
       restoreEnv(snapshot);
@@ -257,5 +270,4 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     assert.match(setup, /VISION_OCR_ENABLED=false/);
     assert.match(setup, /GOOGLE_APPLICATION_CREDENTIALS=\/run\/secrets\/gcp-vision-sa\.json/);
   });
-
 });

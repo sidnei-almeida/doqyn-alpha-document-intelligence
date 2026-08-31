@@ -40,7 +40,9 @@ describe('dashboard layout', () => {
 
   it('feed de atividade separa ator, documento e timestamp', () => {
     const source = readSrc('features/dashboard/components/OverviewRecentActivityPanel.tsx');
-    assert.ok(source.includes('ActivityTimelineItem'));
+    // A linha do tempo com marcador virou linha de registro: "linha, não caixa" vale aqui
+    // também — o marcador desenhado repetia em gráfico o que a data já diz.
+    assert.ok(source.includes('ActivityLogRow'));
     assert.ok(source.includes('justify-between'));
     assert.ok(source.includes('<time'));
   });

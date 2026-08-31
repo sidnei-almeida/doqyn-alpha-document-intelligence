@@ -10,6 +10,9 @@ import { PASSWORD_REVIEW_LABEL } from '../src/lib/reviewDisplay';
 
 const validForm = {
   companyName: 'Alpha Consultoria',
+  // O país entrou no formulário depois que o cadastro passou a validar documento e telefone por
+  // país; a fixture ficou para trás e a revisão estourava no rótulo "País".
+  country: 'BR',
   taxId: '12.345.678/0001-99',
   firstName: 'Maria',
   lastName: 'Santos',

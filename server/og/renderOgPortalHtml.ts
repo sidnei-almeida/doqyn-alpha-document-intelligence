@@ -1,5 +1,19 @@
 import type { OgPortalMetadata } from './ogPortalMetadata.js';
 
+/**
+ * A marca, embutida — o mesmo desenho de `src/components/brand/DoqynMark.tsx`.
+ *
+ * Apontava para `/brand/doqyn-horizontal.webp`, que o rebrand apagou junto com o resto dos
+ * rasters: o card saía com imagem quebrada desde então. Embutir o SVG também tira uma requisição
+ * do caminho de um robô que raramente espera por ela.
+ */
+const DOQYN_MARK_SVG = `
+  <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+    <circle cx="22" cy="22" r="15" stroke="currentColor" stroke-width="3" />
+    <circle cx="22" cy="22" r="10" stroke="currentColor" stroke-width="1.6" opacity="0.5" />
+    <path d="M25.5 25.5 L38 38" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" />
+  </svg>`;
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -62,27 +76,32 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${imageUrl}" />
 
-    <meta name="theme-color" content="#121212" />
+    <meta name="theme-color" content="#0b0e10" />
     <style>
+      /* Espelho escuro de src/styles/tokens.css, copiado à mão de propósito: este HTML é
+         renderizado no servidor para o robô que monta o card de compartilhamento, não passa pelo
+         Vite e não alcança a folha do app. Copiar é a única forma; o que não se pode é deixar a
+         cópia velha, e ela estava — grafite falso, azul do Google e Roboto, enquanto o app já era
+         verdigris. O card é a primeira coisa que alguém vê de um link. */
       :root {
         color-scheme: dark;
-        --bg: #121212;
-        --surface: #1e1e1e;
-        --border: rgba(255, 255, 255, 0.08);
-        --text: #e8eaed;
-        --muted: #9aa0a6;
-        --accent: #8ab4f8;
-        --accent-strong: #aecbfa;
-        --success: #81c995;
-        --warning: #fdd663;
+        --bg: #0b0e10;
+        --surface: #161b20;
+        --border: #212930;
+        --text: #e8edf0;
+        --muted: #a3afb8;
+        --accent: #35a69f;
+        --accent-strong: #45b3ab;
+        --success: #57c08a;
+        --warning: #e2a052;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
         min-height: 100vh;
-        font-family: Roboto, system-ui, -apple-system, Segoe UI, sans-serif;
+        font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
         background:
-          radial-gradient(circle at top right, rgba(138, 180, 248, 0.12), transparent 34%),
+          radial-gradient(circle at top right, rgba(53, 166, 159, 0.12), transparent 34%),
           var(--bg);
         color: var(--text);
       }
@@ -101,7 +120,12 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
-      .brand img { height: 22px; width: auto; opacity: 0.92; }
+      .brand svg { height: 24px; width: 24px; color: var(--accent); }
+      .brand .wordmark {
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        color: var(--text);
+      }
       .card {
         border: 1px solid var(--border);
         border-radius: 16px;
@@ -156,7 +180,7 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
         color: var(--muted);
         background: rgba(255,255,255,0.03);
       }
-      .pill--accent { color: var(--accent-strong); border-color: rgba(138,180,248,0.28); }
+      .pill--accent { color: var(--accent-strong); border-color: rgba(53,166,159,0.28); }
       .pill--warn { color: var(--warning); border-color: rgba(253,214,99,0.28); }
       p {
         margin: 16px 0 0;
@@ -177,7 +201,7 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
         font-size: 14px;
         font-weight: 600;
         text-decoration: none;
-        box-shadow: 0 8px 24px rgba(138, 180, 248, 0.22);
+        box-shadow: 0 8px 24px rgba(53, 166, 159, 0.22);
       }
       .footer {
         margin-top: 18px;
@@ -189,7 +213,8 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
   <body>
     <main class="wrap">
       <div class="brand">
-        <img src="/brand/doqyn-horizontal.webp" alt="DOQYN" />
+        ${DOQYN_MARK_SVG}
+        <span class="wordmark">DOQYN</span>
         <span>Document Intelligence</span>
       </div>
       <article class="card">

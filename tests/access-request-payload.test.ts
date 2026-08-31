@@ -47,6 +47,9 @@ describe('access request payload', () => {
       'reason',
       'taxId',
       'tenantDisplayName',
+      // O apelido passou a sair dos três formulários de entrada — sem ele a conta nasce
+      // invisível ao diretório, e não há tela para escolher depois.
+      'username',
       'whatsapp',
     ]);
   });

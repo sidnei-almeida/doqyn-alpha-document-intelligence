@@ -196,8 +196,11 @@ describe('dashboard overview UI', () => {
       'utf8',
     );
     assert.match(healthCard, /canManageGovernance/);
-    assert.match(healthCard, /overview-health-badge--restricted/);
-    assert.match(healthCard, /Aguardando configuração pelo administrador/);
+    // A etiqueta "restrito" deixou de ser variante de badge preenchido e virou marca de status
+    // com a palavra — o mesmo tratamento que "OK" e "Atenção" já tinham.
+    assert.match(healthCard, /const restricted = !ok && !canManage/);
+    assert.match(healthCard, /Restrito/);
+    assert.match(healthCard, /Configuração gerenciada pelo administrador/);
     assert.match(healthCard, /Categorias ativas no ambiente/);
   });
 

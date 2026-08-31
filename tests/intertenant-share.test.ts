@@ -120,11 +120,13 @@ describe('compartilhar entre empresas — a segunda dimensão do verbo', () => {
 
     // Fora de `internalPick`: não tem id de associação e o envio nasce pendente do outro lado.
     assert.ok(modal.includes('const [crossTenantPick, setCrossTenantPick]'));
-    assert.ok(modal.includes('sharedWithEmail: crossTenantPick.email'));
-    // Prazo obrigatório para o que sai da empresa.
-    assert.ok(
-      modal.includes("(audience === 'internal' && !crossTenantPick) || Boolean(expiresAt)"),
-    );
+    // O destinatário passou por `resolveRecipient`, que separa os três públicos; o de outra
+    // empresa chega como `recipient.doqyn` e vai por e-mail e apelido, nunca por id de associação.
+    assert.ok(modal.includes('sharedWithEmail: recipient.doqyn.email'));
+    assert.equal(modal.includes('sharedWithMembershipId'), false);
+    // Prazo obrigatório para tudo que sai da empresa — o acesso não é reavaliado depois, e a
+    // validade é o único mecanismo que o fecha sozinho.
+    assert.ok(modal.includes("recipient.audience === 'internal' || Boolean(expiresAt)"));
   });
 
   it('o campo de fora avisa que o acesso não é imediato', () => {

@@ -59,23 +59,26 @@ describe('despacho de vários arquivos na mesma rodada', () => {
 });
 
 describe('contrato do adiantamento no envio em lote', () => {
-  it('o arquivo adiantado herda a requisição em voo, não abre outra', () => {
-    const hook = readSrc('features/document-send/hooks/useBulkUploadQueue.ts');
+  /**
+   * O adiantamento por handoff (`takeAnalysisPrefetch`) saiu em `834e1a3`, junto com a tela
+   * legada de envio. O que ele existia para resolver — o lote inteiro parar enquanto um arquivo
+   * esperava a Groq — passou a ser resolvido na raiz: as análises correm de fato em paralelo,
+   * uma entrada de `inFlightAnalysesRef` por arquivo, em vez de um id único que serializava.
+   */
+  it('o lote não serializa: uma análise em voo por arquivo', () => {
+    const provider = readSrc('features/upload/UploadQueueProvider.tsx');
 
-    // A validação de posse compara o requestId que o servidor recebeu; criar outro na hora de
-    // consumir faria a resposta adiantada ser recusada como se fosse de outro item.
-    assert.ok(hook.includes('const prefetched = takeAnalysisPrefetch(next.id)'));
-    assert.ok(hook.includes('const requestId = prefetched?.requestId ?? createRequestId()'));
-    assert.ok(hook.includes('prefetched?.controller ?? new AbortController()'));
-    assert.ok(hook.includes('prefetched?.promise ??'));
+    assert.ok(provider.includes('inFlightAnalysesRef'));
+    assert.ok(provider.includes('new Map<string, { controller: AbortController'));
+    // Um id só era o que prendia o lote — se voltar, volta a serializar.
+    assert.equal(provider.includes('inFlightAnalysisIdRef'), false);
   });
 
-  it('pausar, cancelar e resetar o lote derrubam as análises adiantadas', () => {
-    const hook = readSrc('features/document-send/hooks/useBulkUploadQueue.ts');
+  it('pausar, cancelar e resetar o lote derrubam as análises em voo', () => {
+    const provider = readSrc('features/upload/UploadQueueProvider.tsx');
 
-    assert.ok(hook.includes("cancelAnalysisPrefetches('pausar lote')"));
-    assert.ok(hook.includes("cancelAnalysisPrefetches('cancelar lote')"));
-    assert.ok(hook.includes("cancelAnalysisPrefetches('resetar lote')"));
+    assert.ok(provider.includes('abortAllAnalyses'));
+    assert.ok(provider.includes('inFlight.controller.abort()'));
   });
 });
 

@@ -49,8 +49,12 @@ describe('audit center', () => {
       type: 'USER_APPROVED',
       from: '2025-01-01',
     });
-    assert.equal(allFilters.q, undefined);
+    // A busca sobrevive à troca de aba: `q` é o campo de texto, não filtro avançado, e apagá-lo
+    // ao clicar em "Todos" fazia a pessoa perder o que tinha acabado de digitar. O que some são
+    // severidade e tipo, que só fazem sentido dentro das abas que os oferecem.
+    assert.equal(allFilters.q, 'teste');
     assert.equal(allFilters.severity, undefined);
+    assert.equal(allFilters.type, undefined);
     assert.equal(allFilters.from, '2025-01-01');
   });
 

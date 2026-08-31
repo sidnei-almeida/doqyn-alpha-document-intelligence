@@ -28,7 +28,8 @@ describe('aprovação de acesso — persistência e cache', () => {
     assert.equal(source.includes('accessGroups'), false);
     assert.ok(source.includes('documentGroups'));
     assert.ok(sections.includes('title="Grupos"'));
-    assert.ok(sections.includes('Mesmos grupos criados em Regras'));
+    // A cópia foi reescrita; o que este teste guarda é a ligação com Regras, e não a frase.
+    assert.ok(sections.includes('Os mesmos grupos de Regras'));
     assert.ok(source.includes('documentGroupIds'));
   });
 
@@ -72,7 +73,11 @@ describe('aprovação de acesso — persistência e cache', () => {
 
   it('login limpa cache antes de carregar nova sessão', () => {
     const source = readSrc('src/auth/AuthProvider.tsx');
-    assert.ok(source.includes('queryClient.clear()'));
+    // A limpeza foi extraída para `clearSessionScopedCaches`, que além do React Query também
+    // derruba miniaturas e previews — trocar de usuário deixava a folha do documento anterior
+    // na tela do próximo.
+    assert.ok(source.includes('clearSessionScopedCaches()'));
+    assert.ok(readSrc('src/auth/clearSessionScopedCaches.ts').includes('queryClient.clear()'));
   });
 
   it('splitUserAccessPayload mantém accessGroupIds e documentGroupIds separados', () => {

@@ -26,12 +26,21 @@ describe('preferências de upload na fila da Biblioteca', () => {
   });
 
   it('SettingsPage expõe seção de upload e análise da IA', () => {
-    const settings = readSrc('features/settings/SettingsPage.tsx');
     const section = readSrc('features/settings/components/sections/UploadAiSettingsSection.tsx');
-    assert.ok(settings.includes('UploadAiSettingsSection'));
+    // A seção deixou de ser montada pela página e passou a viver dentro de Organização.
+    assert.ok(
+      readSrc('features/settings/components/sections/OrganizationSection.tsx').includes(
+        'UploadAiSettingsSection',
+      ),
+    );
     assert.ok(section.includes('ReviewWorkflowSettingsPanel'));
     assert.ok(section.includes('variant="inline"'));
-    assert.ok(section.includes('useUploadQueueContext'));
+    // A seção virou controlada: o estado saiu do contexto da fila (e do localStorage) e passou
+    // a ser da organização, gravado no servidor por `useOrganizationSettings`.
+    assert.ok(section.includes('onChange:'));
+    assert.equal(section.includes('useUploadQueueContext'), false);
+    assert.equal(section.includes('localStorage'), false);
+    assert.ok(readSrc('features/settings/hooks/useOrganizationSettings.ts').includes('upload'));
   });
 
   it('ReviewWorkflowSettingsPanel suporta variant inline para configurações', () => {

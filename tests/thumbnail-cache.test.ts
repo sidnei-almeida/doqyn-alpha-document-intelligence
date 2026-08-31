@@ -158,7 +158,10 @@ describe('thumbnail cache — integração frontend', () => {
 
   it('AuthProvider limpa cache em logout e troca de tenant', () => {
     const auth = readSrc('auth/AuthProvider.tsx');
-    assert.ok(auth.includes('clearAllThumbnailCache'));
+    // A limpeza total foi para `clearSessionScopedCaches`; o `AuthProvider` a chama e ainda
+    // trata o caso mais fino da troca de tenant, que limpa só o preview do tenant que saiu.
+    assert.ok(auth.includes('clearSessionScopedCaches()'));
+    assert.ok(readSrc('auth/clearSessionScopedCaches.ts').includes('clearAllThumbnailCache()'));
     assert.ok(auth.includes('clearPreviewCachesForTenant'));
     assert.ok(auth.includes('previousTenantIdRef'));
   });

@@ -26,7 +26,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   });
 
   it('/rules (vistas de acesso) não renderiza gestão de membros', () => {
-    const card = readSrc('features/rules/components/access/CategoryAccessCard.tsx');
+    const card = readSrc('features/rules/components/board/AccessBoard.tsx');
     const popover = readSrc('features/rules/components/access/PermissionPopover.tsx');
     for (const source of [card, popover]) {
       assert.equal(source.includes('Adicionar membro'), false);
@@ -37,7 +37,9 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
   it('/rules (GovernanceDetailDialog) orienta gestão de membros em Usuários', () => {
     const source = readSrc('features/rules/components/governance/GovernanceDetailDialog.tsx');
-    assert.ok(source.includes('Gerencie membros'));
+    // A frase virou link no meio do texto — "gerenciar em Usuários" — em vez de instrução solta.
+    assert.ok(source.includes('gerenciar em Usuários'));
+    assert.ok(source.includes('to="/users"'));
     assert.equal(source.includes('Adicionar membro'), false);
     assert.equal(source.includes('onAddMember'), false);
     assert.equal(source.includes('onRemoveMember'), false);

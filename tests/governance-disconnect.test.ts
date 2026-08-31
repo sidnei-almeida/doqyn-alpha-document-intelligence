@@ -26,7 +26,7 @@ describe('desconexão de grupo (regras de acesso)', () => {
   });
 
   it('remover acesso na UI envia EMPTY_CONNECTION_PERMISSIONS', () => {
-    const card = readSrc('features/rules/components/access/CategoryAccessCard.tsx');
+    const card = readSrc('features/rules/components/board/AccessBoard.tsx');
     const matrix = readSrc('features/rules/components/access/AccessMatrixView.tsx');
     assert.ok(card.includes('EMPTY_CONNECTION_PERMISSIONS'));
     assert.ok(matrix.includes('EMPTY_CONNECTION_PERMISSIONS'));

@@ -97,7 +97,9 @@ describe('pipeline Groq — remoção de no_ai', () => {
     assert.ok(groq.includes('max_tokens: getGroqMaxOutputTokens()'));
     assert.ok(groq.includes('temperature: 0.1'));
     assert.ok(groq.includes("response_format: { type: 'json_object'"));
-    assert.equal(getGroqMaxOutputTokens(), 1200);
+    // 1200 truncava ficha de metadados com muitos campos: a resposta vinha cortada no meio do
+    // JSON e a análise inteira caía na validação.
+    assert.equal(getGroqMaxOutputTokens(), 4000);
   });
 
   it('guardrails de custo — limites PDF configuráveis', () => {
@@ -161,7 +163,9 @@ describe('pipeline Groq — remoção de no_ai', () => {
     const envExample = readFileSync(join(repoRoot, '.env.example'), 'utf8');
     assert.ok(envExample.includes('GROQ_API_KEY='));
     assert.ok(envExample.includes('GROQ_MODEL=openai/gpt-oss-120b'));
-    assert.ok(envExample.includes('GROQ_MAX_OUTPUT_TOKENS=1200'));
+    // O teto subiu de 1200 para 4000 quando a extração passou a devolver fichas inteiras. O
+    // número que vale mora em `aiConfig.ts`; aqui basta a variável estar documentada.
+    assert.ok(envExample.includes('GROQ_MAX_OUTPUT_TOKENS='));
     assert.ok(envExample.includes('PDF_ANALYSIS_MAX_INPUT_CHARS=30000'));
     assert.equal(envExample.includes('AI_MODE=no_ai'), false);
     assert.equal(envExample.includes('NO_AI_TEMPLATE'), false);
