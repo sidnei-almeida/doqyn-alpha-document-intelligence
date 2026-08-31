@@ -71,6 +71,7 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
     <meta property="og:image:alt" content="${documentName}" />
     <!-- Dimensão declarada: sem ela alguns clientes só mostram a imagem depois de baixá-la,
          e desistem antes disso na primeira renderização da mensagem. -->
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content="${canonicalUrl}" />
