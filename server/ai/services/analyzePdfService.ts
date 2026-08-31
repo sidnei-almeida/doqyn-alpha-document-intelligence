@@ -1,8 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  AI_ERROR_MESSAGES,
-  MIN_TEXT_CHARS,
-} from '../constants.js';
+import { AI_ERROR_MESSAGES, MIN_TEXT_CHARS } from '../constants.js';
 import {
   loadActiveDocumentClassRules,
   getDocumentClassRuleById,
@@ -24,19 +21,12 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
-  buildTextExtractionFailedResponse,
+  buildTextExtractionReviewResponse,
   isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
-import {
-  bufferMeta,
-  pipelineInfo,
-  pipelineWarn,
-  previewText,
-} from '../utils/pipelineDebug.js';
-import {
-  getGroqModelFromEnv,
-} from '../utils/aiConfig.js';
+import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
+import { getGroqModelFromEnv } from '../utils/aiConfig.js';
 import {
   type AnalyzeRequestContext,
   createLog,
@@ -199,7 +189,7 @@ export async function analyzePdfBuffer(input: {
     });
 
     if (isInsufficientTextAfterOcr(extracted)) {
-      return buildTextExtractionFailedResponse({
+      return buildTextExtractionReviewResponse({
         jobId,
         originalFileName: input.originalFileName,
         fileHash,
@@ -392,8 +382,7 @@ export async function analyzePdfBuffer(input: {
     logs.push(
       createLog(
         'Revisão necessária',
-        classification.reason ||
-          'Nenhuma classe foi identificada com confiança suficiente.',
+        classification.reason || 'Nenhuma classe foi identificada com confiança suficiente.',
         'done',
       ),
     );
@@ -484,11 +473,14 @@ export async function analyzePdfBuffer(input: {
     selectedClass: extractionClass,
   });
 
-  logger.debug('Retrieval híbrido concluído', buildRetrievalStats({
-    totalChunks: chunks.length,
-    classificationChunks,
-    extractionChunks,
-  }));
+  logger.debug(
+    'Retrieval híbrido concluído',
+    buildRetrievalStats({
+      totalChunks: chunks.length,
+      classificationChunks,
+      extractionChunks,
+    }),
+  );
 
   const extraction = await analysisProvider.extractMetadata({
     chunks: extractionChunks,

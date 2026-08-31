@@ -1,17 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  AI_ERROR_MESSAGES,
-  MIN_TEXT_CHARS,
-} from '../constants.js';
+import { AI_ERROR_MESSAGES, MIN_TEXT_CHARS } from '../constants.js';
 import {
   loadActiveDocumentClassRules,
   getDocumentClassRuleById,
   isDocumentRulesNotSeededError,
 } from '../../services/documentRulesService.js';
-import type {
-  AnalyzePdfUpdateResponse,
-  ProcessingLogItem,
-} from '../types/documentAi.types.js';
+import type { AnalyzePdfUpdateResponse, ProcessingLogItem } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
 import { resolveAnalysisProvider } from '../providers/resolveAnalysisProvider.js';
@@ -28,23 +22,16 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
-  buildTextExtractionFailedResponse,
+  buildTextExtractionReviewResponse,
   isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { isMongoNativeConfigured } from '../../db/mongoClient.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
-import {
-  tenantScopeFilterFromContext,
-} from '../../tenancy/tenantQuery.js';
+import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import type { MongoDocument, MongoDocumentVersion } from '../../db/types.js';
-import {
-  buildMetadataSummary,
-} from '../utils/versionComparison.js';
-import {
-  nextMajorVersionLabel,
-  normalizeVersionLabel,
-} from '../../utils/versionLabelUtils.js';
+import { buildMetadataSummary } from '../utils/versionComparison.js';
+import { nextMajorVersionLabel, normalizeVersionLabel } from '../../utils/versionLabelUtils.js';
 import type { PreviousVersionContext } from '../utils/updateExtractorPrompt.js';
 import {
   type AnalyzeRequestContext,
@@ -144,7 +131,11 @@ export async function analyzePdfUpdateBuffer(input: {
   const documentId = input.documentId.trim();
 
   if (!documentId) {
-    throw new AiAnalysisError('documentId é obrigatório para atualização.', 'DOCUMENT_ID_REQUIRED', 400);
+    throw new AiAnalysisError(
+      'documentId é obrigatório para atualização.',
+      'DOCUMENT_ID_REQUIRED',
+      400,
+    );
   }
 
   const previous = await loadPreviousVersionContext({
@@ -172,7 +163,7 @@ export async function analyzePdfUpdateBuffer(input: {
   if (extracted.charCount < MIN_TEXT_CHARS) {
     if (isInsufficientTextAfterOcr(extracted)) {
       return {
-        ...buildTextExtractionFailedResponse({
+        ...buildTextExtractionReviewResponse({
           jobId,
           originalFileName: input.originalFileName,
           fileHash,
@@ -241,7 +232,11 @@ export async function analyzePdfUpdateBuffer(input: {
     },
   });
 
-  if (classification.errorCode === 'GROQ_RATE_LIMIT' || classification.errorCode === 'GROQ_DAILY_TOKEN_LIMIT' || classification.errorCode === 'GROQ_CONTEXT_LIMIT') {
+  if (
+    classification.errorCode === 'GROQ_RATE_LIMIT' ||
+    classification.errorCode === 'GROQ_DAILY_TOKEN_LIMIT' ||
+    classification.errorCode === 'GROQ_CONTEXT_LIMIT'
+  ) {
     return {
       jobId,
       status: 'ai_unavailable',
@@ -337,11 +332,14 @@ export async function analyzePdfUpdateBuffer(input: {
     selectedClass: extractionClass,
   });
 
-  logger.debug('Retrieval híbrido (update) concluído', buildRetrievalStats({
-    totalChunks: chunks.length,
-    classificationChunks,
-    extractionChunks,
-  }));
+  logger.debug(
+    'Retrieval híbrido (update) concluído',
+    buildRetrievalStats({
+      totalChunks: chunks.length,
+      classificationChunks,
+      extractionChunks,
+    }),
+  );
 
   const extraction = await extractMetadataForVersionUpdate({
     chunks: extractionChunks,
@@ -392,11 +390,7 @@ export async function analyzePdfUpdateBuffer(input: {
 
   if (extraction.mainChanges.length > 0) {
     logs.push(
-      createLog(
-        'Mudanças identificadas',
-        extraction.mainChanges.slice(0, 3).join(' | '),
-        'done',
-      ),
+      createLog('Mudanças identificadas', extraction.mainChanges.slice(0, 3).join(' | '), 'done'),
     );
   }
 
@@ -404,7 +398,7 @@ export async function analyzePdfUpdateBuffer(input: {
     createLog(
       requiresReview ? 'Revisão necessária' : 'Pronto para confirmação',
       requiresReview
-        ? extraction.reviewReasons[0] ?? 'Nova versão requer revisão manual.'
+        ? (extraction.reviewReasons[0] ?? 'Nova versão requer revisão manual.')
         : `Nova versão ${extraction.version} pronta para confirmação.`,
       'done',
     ),
