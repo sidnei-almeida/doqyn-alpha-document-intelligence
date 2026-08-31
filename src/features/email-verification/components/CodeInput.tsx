@@ -65,7 +65,18 @@ export function CodeInput({
     if (!typed) return;
 
     const at = Math.min(index, value.length);
-    const next = (value.slice(0, at) + typed + value.slice(at)).slice(0, LENGTH);
+    /**
+     * Substitui a casa, não insere antes dela.
+     *
+     * Inserindo, corrigir um dígito no meio de um código quase completo empurrava o resto e fazia
+     * o valor crescer de cinco para seis — comprimento novo, então `onComplete` disparava e
+     * mandava ao servidor um código que ninguém escolheu, queimando uma das cinco tentativas.
+     * Duas correções de digitação bastavam para trancar a pessoa fora do próprio cadastro.
+     *
+     * Quando a casa é a primeira vazia, `at === value.length` e o `slice` à direita sai vazio: o
+     * comportamento de acrescentar continua igual.
+     */
+    const next = (value.slice(0, at) + typed + value.slice(at + typed.length)).slice(0, LENGTH);
     commit(next);
     focusSlot(Math.min(at + typed.length, LENGTH - 1));
   }

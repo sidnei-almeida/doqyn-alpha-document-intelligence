@@ -5,6 +5,7 @@ import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CodeInput } from '@/features/email-verification/components/CodeInput';
+import { plural } from '@/lib/plural';
 import {
   emailChangeApi,
   getEmailChangeErrorMessage,
@@ -163,7 +164,7 @@ export function ChangeEmailCard() {
             <p className="settings-section-note">
               {blocked
                 ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-                : `${attemptsLeft} tentativa(s) restante(s) neste código.`}
+                : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
             </p>
           ) : null}
 

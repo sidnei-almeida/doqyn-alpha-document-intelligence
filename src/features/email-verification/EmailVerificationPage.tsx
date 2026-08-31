@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { AUTH_PRIMARY_BUTTON } from '@/features/auth/components/authControls';
+import { plural } from '@/lib/plural';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/apiErrors';
 import { CodeInput } from './components/CodeInput';
@@ -183,7 +184,7 @@ export function EmailVerificationPage() {
           <p className="text-caption text-doqyn-muted">
             {blocked
               ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-              : `${attemptsLeft} tentativa(s) restante(s) neste código.`}
+              : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
           </p>
         ) : null}
 
