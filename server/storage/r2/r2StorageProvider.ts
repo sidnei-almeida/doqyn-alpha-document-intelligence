@@ -104,7 +104,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
   }
 
   private async resolveBucketFromScope(scope: TenantStorageScope): Promise<string> {
-    const { bucket } = await this.ensureBucketForScopeFn({
+    const { bucket, corsPolicyHash } = await this.ensureBucketForScopeFn({
       bucketMode: scope.bucketMode,
       bucketName: scope.bucketName,
       tenantId: scope.tenantId,
@@ -112,7 +112,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
     });
 
     if (scope.bucketMode === 'per_tenant') {
-      await markTenantBucketReady(scope.tenantId, bucket).catch(() => undefined);
+      await markTenantBucketReady(scope.tenantId, bucket, corsPolicyHash).catch(() => undefined);
     }
 
     return bucket;

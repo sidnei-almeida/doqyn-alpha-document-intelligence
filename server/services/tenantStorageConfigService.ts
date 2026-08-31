@@ -13,7 +13,9 @@ import { getR2ConfigFromEnv } from '../storage/storageConfig.js';
 import {
   ensureBucketForStorageScope,
   headTenantBucket,
+  type EnsureBucketResult,
 } from '../storage/r2/r2BucketProvisioner.js';
+import { isServiceError } from '../utils/serviceErrors.js';
 import { createR2AdminClient } from '../storage/r2/r2Clients.js';
 
 export type TenantStorageConfigRecord = {
@@ -188,22 +190,37 @@ export async function registerTenantStoragePlan(
   return storage;
 }
 
-export async function markTenantBucketReady(tenantId: string, bucketName: string): Promise<void> {
+export async function markTenantBucketReady(
+  tenantId: string,
+  bucketName: string,
+  corsPolicyHash?: string,
+): Promise<void> {
   const db = await getDb();
   const now = new Date();
+
+  const set: Record<string, unknown> = {
+    'storage.bucketName': bucketName,
+    'storage.bucketStatus': 'ready',
+    'storage.bucketCreatedAt': now,
+    'storage.bucketLastCheckedAt': now,
+    updatedAt: now,
+  };
+
+  // Só marca a CORS como pronta quando alguém de fato conferiu a política no bucket — `ready`
+  // herdado do bucket não diz nada sobre o navegador conseguir enviar.
+  if (corsPolicyHash) {
+    set['storage.corsStatus'] = 'ready';
+    set['storage.corsPolicyHash'] = corsPolicyHash;
+    set['storage.corsVerifiedAt'] = now;
+  }
+
   await db
     .collection(REGISTRY_COLLECTIONS.tenants)
     .updateOne({ $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>, {
-      $set: {
-        'storage.bucketName': bucketName,
-        'storage.bucketStatus': 'ready',
-        'storage.bucketCreatedAt': now,
-        'storage.bucketLastCheckedAt': now,
-        updatedAt: now,
-      },
-      $unset: {
-        'storage.bucketProvisionError': '',
-      },
+      $set: set,
+      $unset: corsPolicyHash
+        ? { 'storage.bucketProvisionError': '', 'storage.corsError': '' }
+        : { 'storage.bucketProvisionError': '' },
     });
 
   await invalidateTenantRegistryCache(tenantId);
@@ -212,26 +229,40 @@ export async function markTenantBucketReady(tenantId: string, bucketName: string
 export async function markTenantBucketFailed(
   tenantId: string,
   errorMessage: string,
+  options: { corsFailure?: boolean } = {},
 ): Promise<void> {
   const db = await getDb();
   const now = new Date();
+
+  const set: Record<string, unknown> = {
+    'storage.bucketStatus': 'failed',
+    'storage.bucketProvisionError': errorMessage.slice(0, 500),
+    'storage.bucketLastCheckedAt': now,
+    updatedAt: now,
+  };
+
+  if (options.corsFailure) {
+    set['storage.corsStatus'] = 'failed';
+    set['storage.corsError'] = errorMessage.slice(0, 500);
+  }
+
   await db
     .collection(REGISTRY_COLLECTIONS.tenants)
     .updateOne({ $or: [{ tenantId }, { companyId: tenantId }] } as Record<string, unknown>, {
-      $set: {
-        'storage.bucketStatus': 'failed',
-        'storage.bucketProvisionError': errorMessage.slice(0, 500),
-        'storage.bucketLastCheckedAt': now,
-        updatedAt: now,
-      },
+      $set: set,
     });
 
   await invalidateTenantRegistryCache(tenantId);
 }
 
-export async function ensureTenantStorageBucket(
-  tenant: MongoTenant,
-): Promise<{ bucket: string; created: boolean }> {
+/**
+ * Garante bucket + CORS do tenant.
+ *
+ * PJ (`business`) tem bucket próprio; PF (`individual`) divide `R2_DEFAULT_BUCKET`. Os dois
+ * passam por aqui — no PF a reconciliação é praticamente grátis, porque `ensureBucketCors`
+ * guarda o bucket já conferido em cache de processo.
+ */
+export async function ensureTenantStorageBucket(tenant: MongoTenant): Promise<EnsureBucketResult> {
   const r2Config = getR2ConfigFromEnv();
   if (!r2Config) {
     throw new Error('Configuração R2 ausente.');
@@ -253,11 +284,14 @@ export async function ensureTenantStorageBucket(
       config: r2Config,
     });
 
-    await markTenantBucketReady(tenant.tenantId, result.bucket);
+    await markTenantBucketReady(tenant.tenantId, result.bucket, result.corsPolicyHash);
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao provisionar bucket.';
-    await markTenantBucketFailed(tenant.tenantId, message);
+    const corsFailure =
+      isServiceError(error) &&
+      (error.code === 'R2_CORS_NOT_CONFIGURED' || error.code === 'R2_CORS_ORIGINS_MISSING');
+    await markTenantBucketFailed(tenant.tenantId, message, { corsFailure });
     throw error;
   }
 }

@@ -27,6 +27,15 @@ export type MongoTenantStorage = {
   bucketCreatedAt?: Date;
   bucketLastCheckedAt?: Date;
   bucketProvisionError?: string;
+  /**
+   * Estado da política de CORS do bucket, separado de `bucketStatus` de propósito: bucket que
+   * existe mas não aceita `PUT` do navegador é indistinguível de bucket pronto pelo lado do
+   * servidor, e o upload falha só no cliente.
+   */
+  corsStatus?: MongoTenantStorageStatus;
+  corsPolicyHash?: string;
+  corsVerifiedAt?: Date;
+  corsError?: string;
 };
 
 export type TrashRetentionMode = 'days' | 'manual';
