@@ -35,6 +35,36 @@
       name="description"
       content="DOQYN — Gestão segura, inteligente e rastreável de documentos empresariais"
     />
+    <!--
+      Cartão de link na própria casca do app.
+
+      A página do robô (server/og/) só é servida quando o user-agent se identifica como um —
+      e o WhatsApp Web busca a prévia pelo navegador do usuário, com user-agent de Chrome.
+      Nesse caminho ele recebia esta casca, que não dizia nada, e a mensagem saía mostrando só
+      o domínio. Como o cartão deixou de falar do documento, ele cabe aqui: vale para qualquer
+      rota, sem detecção de nada.
+
+      URL absoluta porque prévia de link exige — crawler nenhum resolve caminho relativo de
+      forma confiável. É o endereço público de produção, o único que serve este app.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DOQYN" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="DOQYN · Document Intelligence" />
+    <meta
+      property="og:description"
+      content="Gestão segura, inteligente e rastreável de documentos empresariais."
+    />
+    <meta property="og:image" content="https://app.doqyn.com/og/portal-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DOQYN · Document Intelligence" />
+    <meta
+      name="twitter:description"
+      content="Gestão segura, inteligente e rastreável de documentos empresariais."
+    />
+    <meta name="twitter:image" content="https://app.doqyn.com/og/portal-card.png" />
     <title>DOQYN · Document Intelligence</title>
   </head>
   <body>

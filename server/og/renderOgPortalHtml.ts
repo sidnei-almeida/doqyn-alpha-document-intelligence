@@ -69,6 +69,10 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
     <meta property="og:image:alt" content="${documentName}" />
+    <!-- Dimensão declarada: sem ela alguns clientes só mostram a imagem depois de baixá-la,
+         e desistem antes disso na primeira renderização da mensagem. -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="${canonicalUrl}" />
 
     <meta name="twitter:card" content="summary_large_image" />

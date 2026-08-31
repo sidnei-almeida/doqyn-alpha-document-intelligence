@@ -92,6 +92,17 @@ describe('guest portal Open Graph', () => {
       }
     });
 
+    it('a casca do app declara o cartão, para quem busca a prévia com user-agent de navegador', () => {
+      // O WhatsApp Web busca pelo navegador do usuário, então nunca chega na página do robô.
+      const html = read('index.html');
+
+      assert.ok(
+        html.includes('property="og:image" content="https://app.doqyn.com/og/portal-card.png"'),
+      );
+      assert.ok(html.includes('property="og:image:width" content="1200"'));
+      assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));
+    });
+
     it('o corpo servido ao robô não carrega nome de documento nem remetente', () => {
       const html = renderOgPortalHtml(sampleSignMetadata);
 
