@@ -5,12 +5,12 @@ import type {
   RetrievedChunk,
 } from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
+import { limitFileNameLength, sanitizeFileNameSegment } from '../utils/sanitizeFileName.js';
 import {
-  ensurePdfExtension,
-  limitFileNameLength,
-  sanitizeFileNameSegment,
-} from '../utils/sanitizeFileName.js';
-import { stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore } from '../../../shared/storageFileName.js';
+  ensureDocumentExtension,
+  extensionFromFileName,
+  stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore,
+} from '../../../shared/storageFileName.js';
 import { normalizeDate } from './documentValidators.js';
 import {
   enrichMetadataWithPartyHeuristics,
@@ -620,7 +620,11 @@ export function generateRecommendedFileName(input: {
     name = buildRichFallbackName({ ...input, metadata });
   }
 
-  const fileName = ensurePdfExtension(`${name}.pdf`.replace(/\.pdf\.pdf$/i, '.pdf'));
+  // A extensão vem do arquivo que chegou, não é `.pdf` fixa. Imagem é entrada de
+  // primeira classe desde que o OCR passou a ler foto de documento, e um `.png`
+  // renomeado para `.pdf` fica com o nome mentindo sobre o próprio conteúdo.
+  const extension = extensionFromFileName(input.originalFileName);
+  const fileName = ensureDocumentExtension(name, extension);
   const limited = limitFileNameLength(fileName);
   if (input.preventSensitiveDataInFileName === false) {
     return upperCaseStem(limited);

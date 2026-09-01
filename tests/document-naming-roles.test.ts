@@ -52,6 +52,26 @@ describe('nome a partir dos papéis entendidos pela IA', () => {
     assert.ok(name.endsWith('.pdf'), `a extensão deve ficar em minúscula: ${name}`);
   });
 
+  it('imagem continua imagem: a extensão do arquivo original é preservada', () => {
+    // O nome saía sempre com `.pdf`, herança de quando só PDF entrava. Desde que
+    // o OCR passou a ler foto de documento, um `.png` renomeado para `.pdf` fica
+    // com o nome mentindo sobre o próprio conteúdo.
+    const name = generateRecommendedFileName({
+      originalFileName: 'foto-do-atestado.png',
+      selectedClass: genericClass,
+      metadata: {},
+      version: 'v1.0',
+      namingRoles: {
+        tipo: 'ATESTADO MÉDICO',
+        sujeitos: ['Neusa Kliemann Vargas'],
+        dataReferencia: '2026-05-09',
+      },
+    });
+
+    assert.ok(name.endsWith('.png'), `deveria terminar em .png: ${name}`);
+    assert.match(name, /^ATESTADO_MEDICO/, name);
+  });
+
   it('usa o tipo do documento, não o nome da pasta', () => {
     const financeiro = { ...genericClass, name: 'Financeiros' } as DocumentClassRule;
 
