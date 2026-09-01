@@ -1,0 +1,1063 @@
+{
+  "generatedAt": "2026-09-01",
+  "description": "Gabarito do conjunto difícil. Cada caso declara a classe esperada, o valor de cada campo nas duas formas (literal e normalizada), os valores que caracterizam erro, e a armadilha que o documento exercita.",
+  "fieldContract": {
+    "value": "O que está literalmente escrito no documento.",
+    "normalizedValue": "A forma padronizada: data em yyyy-mm-dd, moeda como número com ponto decimal, CPF/CNPJ só com dígitos.",
+    "acceptableValues": "Alternativas igualmente corretas — não contam como erro.",
+    "nullAcceptable": "Abster-se também é resposta correta neste campo."
+  },
+  "classFields": {
+    "Jurídico": [
+      "parte_reveladora",
+      "parte_receptora",
+      "data_assinatura"
+    ],
+    "Contratos": [
+      "fornecedor",
+      "data_assinatura"
+    ],
+    "Financeiro": [
+      "fornecedor",
+      "numero_nota",
+      "data_emissao"
+    ],
+    "Recursos Humanos": [
+      "titulo",
+      "referencia",
+      "data_assinatura"
+    ],
+    "Compras": [
+      "titulo",
+      "referencia",
+      "data_assinatura"
+    ],
+    "Operacional": [
+      "titulo",
+      "referencia",
+      "data_assinatura"
+    ]
+  },
+  "cases": [
+    {
+      "id": "juridico_01_nda_reciproco_extenso",
+      "artifacts": [
+        {
+          "path": "hard/pdf/juridico_01_nda_reciproco.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Jurídico",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Data de assinatura escrita por extenso no fecho, e não em formato numérico.",
+        "O cabeçalho traz duas datas anteriores (minuta revisada, impresso em) mais recentes na leitura visual que a data real de assinatura.",
+        "NDA recíproco: as duas empresas são simultaneamente reveladora e receptora.",
+        "Bloco de assinaturas com quatro nomes — dois prepostos, duas testemunhas — e um advogado no rodapé.",
+        "Vigência dada como prazo relativo (\"7 (sete) anos contados da assinatura\"), exigindo aritmética de data."
+      ],
+      "expectedFields": {
+        "parte_reveladora": {
+          "value": "Meridiano Softworks Ltda.",
+          "normalizedValue": "Meridiano Softworks Ltda.",
+          "acceptableValues": [
+            "Nortis Engenharia S.A."
+          ],
+          "nullAcceptable": false,
+          "note": "Acordo recíproco: qualquer uma das duas razões sociais é aceitável, desde que reveladora e receptora não repitam o mesmo nome."
+        },
+        "parte_receptora": {
+          "value": "Nortis Engenharia S.A.",
+          "normalizedValue": "Nortis Engenharia S.A.",
+          "acceptableValues": [
+            "Meridiano Softworks Ltda."
+          ],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "nove dias do mês de junho do ano de dois mil e vinte e seis",
+          "normalizedValue": "2026-06-09",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "parte_reveladora": [
+          "Vasconcelos",
+          "Requião",
+          "Helena Bastos",
+          "Ruy Portilho"
+        ],
+        "parte_receptora": [
+          "Vasconcelos",
+          "Requião",
+          "Helena Bastos",
+          "Ruy Portilho"
+        ],
+        "data_assinatura": [
+          "2026-03-04",
+          "2026-03-11"
+        ]
+      }
+    },
+    {
+      "id": "juridico_02_nda_minuta_sem_assinatura",
+      "artifacts": [
+        {
+          "path": "hard/pdf/juridico_02_nda_minuta_nao_assinada.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        }
+      ],
+      "expectedClass": "Jurídico",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Documento é minuta: o campo de data no fecho está em branco (\"aos ____ dias\").",
+        "Existem quatro datas no documento — geração da minuta, prazo de resposta, vigência pretendida e validade da proposta — e nenhuma delas é data de assinatura.",
+        "A resposta correta para data_assinatura é null; preencher com qualquer data visível é erro."
+      ],
+      "expectedFields": {
+        "parte_reveladora": {
+          "value": "Instituto Paraná de Pesquisa Aplicada",
+          "normalizedValue": "Instituto Paraná de Pesquisa Aplicada",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "parte_receptora": {
+          "value": "Duarte Vasques Consultoria Ltda.",
+          "normalizedValue": "Duarte Vasques Consultoria Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "expected": null,
+          "reason": "abstenção — o dado não está no documento"
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2026-02-18",
+          "2026-03-05",
+          "2026-03-20",
+          "2027-02-18"
+        ]
+      }
+    },
+    {
+      "id": "juridico_03_nda_terceirizado_encadeado",
+      "artifacts": [
+        {
+          "path": "hard/pdf/juridico_03_nda_com_interveniente.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        },
+        {
+          "path": "hard/scanned_pdf/juridico_03_nda_com_interveniente__scanner_rapido.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 2,
+          "profile": "scanner_rapido",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/juridico_03_nda_com_interveniente__scanner_rapido.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "scanner_rapido",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Jurídico",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Três empresas no preâmbulo: reveladora, receptora e uma interveniente anuente que não é parte do sigilo.",
+        "A interveniente é citada primeiro no cabeçalho (é quem imprimiu o documento), invertendo a ordem de leitura natural.",
+        "Data de assinatura em formato dd.mm.aaaa, separada por pontos, ao lado de um protocolo que também parece data.",
+        "O nome da receptora aparece uma única vez por extenso; no resto do texto é sempre \"CONTRATADA\" ou \"a Receptora\"."
+      ],
+      "expectedFields": {
+        "parte_reveladora": {
+          "value": "Companhia Riograndense de Malharia S.A.",
+          "normalizedValue": "Companhia Riograndense de Malharia S.A.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "parte_receptora": {
+          "value": "Aldeia Tecnologia e Automação Ltda. - ME",
+          "normalizedValue": "Aldeia Tecnologia e Automação Ltda. - ME",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "22.07.2026",
+          "normalizedValue": "2026-07-22",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "parte_reveladora": [
+          "Grupo Vestal",
+          "Aldeia Tecnologia"
+        ],
+        "parte_receptora": [
+          "Grupo Vestal",
+          "Companhia Riograndense"
+        ],
+        "data_assinatura": [
+          "2026-11-30",
+          "2026-07-19"
+        ]
+      }
+    },
+    {
+      "id": "juridico_04_procuracao_dois_outorgados",
+      "artifacts": [
+        {
+          "path": "hard/pdf/juridico_04_procuracao_ad_negotia.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        },
+        {
+          "path": "hard/scanned_pdf/juridico_04_procuracao_ad_negotia__fotocopia_terceira_geracao.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 1,
+          "profile": "fotocopia_terceira_geracao",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/juridico_04_procuracao_ad_negotia__fotocopia_terceira_geracao.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "fotocopia_terceira_geracao",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Jurídico",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Não é NDA: é procuração. Os papéis são outorgante e outorgado, e o extrator precisa mapear para reveladora/receptora ou abster-se.",
+        "Dois outorgados com poderes distintos, mais um substabelecido citado em cláusula.",
+        "Data por extenso em cartório com formato notarial (\"aos treze dias do mês de abril\").",
+        "O selo do cartório traz uma segunda data (reconhecimento de firma) posterior à lavratura."
+      ],
+      "expectedFields": {
+        "parte_reveladora": {
+          "value": "Otávio Pilar Bandeira Neto",
+          "normalizedValue": "Otávio Pilar Bandeira Neto",
+          "acceptableValues": [],
+          "nullAcceptable": true,
+          "note": "O outorgante é quem confere os poderes; mapear para parte_reveladora é a leitura defensável. Abster-se também é aceito."
+        },
+        "parte_receptora": {
+          "value": "Solange Ferrari Duprat",
+          "normalizedValue": "Solange Ferrari Duprat",
+          "acceptableValues": [
+            "Ivan Belmonte Prates"
+          ],
+          "nullAcceptable": true
+        },
+        "data_assinatura": {
+          "value": "treze dias do mês de abril do ano de dois mil e vinte e seis",
+          "normalizedValue": "2026-04-13",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2026-04-16"
+        ]
+      }
+    },
+    {
+      "id": "contratos_01_ordem_invertida",
+      "artifacts": [
+        {
+          "path": "hard/pdf/contratos_01_prestacao_servicos.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Contratos",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "A primeira razão social do preâmbulo é a CONTRATANTE, não o fornecedor.",
+        "Uma terceira empresa aparece como interveniente garantidora, com CNPJ e endereço completos.",
+        "Três datas: emissão da proposta, assinatura e início da prestação — a de assinatura é a do meio.",
+        "O cabeçalho é da contratante, o que reforça o nome errado como candidato."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Talha Sul Serviços Industriais Ltda.",
+          "normalizedValue": "Talha Sul Serviços Industriais Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "05 de maio de 2026",
+          "normalizedValue": "2026-05-05",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Frigorífico Cerro Azul",
+          "Banco Regional",
+          "Cerro Azul Participações"
+        ],
+        "data_assinatura": [
+          "2026-04-14",
+          "2026-06-01"
+        ]
+      }
+    },
+    {
+      "id": "contratos_02_aditivo_duas_datas",
+      "artifacts": [
+        {
+          "path": "hard/pdf/contratos_02_termo_aditivo.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        }
+      ],
+      "expectedClass": "Contratos",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Duas datas de assinatura no mesmo documento: a do contrato original (citada) e a do aditivo (real).",
+        "A data do contrato original aparece primeiro, em texto corrido, e é a mais destacada.",
+        "Troca de fornecedor no meio do aditivo: a cessionária passa a ser a contratada, e é ela o fornecedor vigente.",
+        "A cedente continua sendo citada em todas as cláusulas de histórico."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Hidrotec Engenharia de Fluidos Ltda.",
+          "normalizedValue": "Hidrotec Engenharia de Fluidos Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false,
+          "note": "O aditivo cede a posição contratual: a contratada vigente é a cessionária, não a signatária original."
+        },
+        "data_assinatura": {
+          "value": "28/08/2026",
+          "normalizedValue": "2026-08-28",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Bomba Norte",
+          "Companhia de Saneamento"
+        ],
+        "data_assinatura": [
+          "2024-02-09",
+          "2026-09-01"
+        ]
+      }
+    },
+    {
+      "id": "contratos_03_data_formato_americano",
+      "artifacts": [
+        {
+          "path": "hard/pdf/contratos_03_master_services_agreement.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Contratos",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Documento bilíngue: a data aparece como \"March 4, 2026\" no corpo em inglês e como \"04/03/2026\" na versão em português.",
+        "Uma terceira data, \"03/04/2026\", aparece no rodapé de controle de versão em formato americano mm/dd — mesma data, grafia trocada.",
+        "O fornecedor é a subsidiária brasileira, não a matriz irlandesa que assina o cabeçalho.",
+        "Razão social com sufixo estrangeiro e nome fantasia diferente no letterhead."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Aurelian Cloud Serviços de Tecnologia do Brasil Ltda.",
+          "normalizedValue": "Aurelian Cloud Serviços de Tecnologia do Brasil Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "04 de março de 2026",
+          "normalizedValue": "2026-03-04",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Aurelian Cloud Limited",
+          "Banco Cooperativo Vale Verde"
+        ],
+        "data_assinatura": [
+          "2026-04-03"
+        ]
+      }
+    },
+    {
+      "id": "contratos_04_locacao_duas_paginas",
+      "artifacts": [
+        {
+          "path": "hard/pdf/contratos_04_locacao_nao_residencial.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        },
+        {
+          "path": "hard/scanned_pdf/contratos_04_locacao_nao_residencial__fax_monocromatico.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 2,
+          "profile": "fax_monocromatico",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/contratos_04_locacao_nao_residencial__fax_monocromatico.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "fax_monocromatico",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Contratos",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Duas páginas: a razão social da locadora aparece uma única vez, na qualificação da primeira página.",
+        "A partir da cláusula 2ª o documento usa apenas \"LOCADORA\" e \"LOCATÁRIA\".",
+        "O fiador é pessoa física com nome completo e aparece três vezes — mais vezes que a própria locadora.",
+        "Data de assinatura no fim da segunda página, precedida por uma data de vistoria do imóvel."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Imobiliária Pórtico Administração de Bens Ltda.",
+          "normalizedValue": "Imobiliária Pórtico Administração de Bens Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false,
+          "note": "Em locação, quem entrega a prestação é a locadora — é ela que ocupa o papel de fornecedora."
+        },
+        "data_assinatura": {
+          "value": "19 de janeiro de 2026",
+          "normalizedValue": "2026-01-19",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Eduardo Nachtigall",
+          "Panificadora Trigo de Ouro"
+        ],
+        "data_assinatura": [
+          "2026-01-15"
+        ]
+      }
+    },
+    {
+      "id": "financeiro_01_danfe_denso",
+      "artifacts": [
+        {
+          "path": "hard/pdf/financeiro_01_danfe_nfe.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Financeiro",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Dois CNPJs em caixas vizinhas: emitente e destinatário. O fornecedor é o emitente.",
+        "Quatro datas na mesma faixa: emissão, saída, vencimento da duplicata e competência.",
+        "Três números concorrentes: número da NF-e (com série), chave de acesso de 44 dígitos e número do pedido de compra.",
+        "O destinatário tem nome mais destacado que o emitente por estar em caixa maior."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Metalúrgica Três Coroas Ltda.",
+          "normalizedValue": "Metalúrgica Três Coroas Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "numero_nota": {
+          "value": "000.114.882",
+          "normalizedValue": "000114882",
+          "acceptableValues": [
+            "114882",
+            "000.114.882 · Série 3"
+          ],
+          "nullAcceptable": false,
+          "note": "O número da NF-e, não a chave de acesso nem o pedido de compra."
+        },
+        "data_emissao": {
+          "value": "11/06/2026",
+          "normalizedValue": "2026-06-11",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Cooperativa Agroindustrial Serra Azul",
+          "Transportes Bandeirante"
+        ],
+        "numero_nota": [
+          "43260611",
+          "PC-2026-8871"
+        ],
+        "data_emissao": [
+          "2026-06-12",
+          "2026-07-11",
+          "2026-05-01"
+        ]
+      }
+    },
+    {
+      "id": "financeiro_02_boleto_com_carimbo",
+      "artifacts": [
+        {
+          "path": "hard/pdf/financeiro_02_boleto_bancario.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        },
+        {
+          "path": "hard/scanned_pdf/financeiro_02_boleto_bancario__scanner_rapido.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 1,
+          "profile": "scanner_rapido",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/financeiro_02_boleto_bancario__scanner_rapido.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "scanner_rapido",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Financeiro",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "O beneficiário é o fornecedor; o pagador é quem recebeu o documento e aparece em caixa maior.",
+        "Três números: \"nosso número\", \"número do documento\" e a linha digitável de 47 dígitos.",
+        "Datas concorrentes: documento, processamento e vencimento — a de emissão é a do documento.",
+        "Carimbo \"PAGO\" rotacionado por cima da faixa de valores.",
+        "O banco emissor tem razão social própria e aparece no topo, disputando o papel de fornecedor."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Gráfica Selva Editora e Impressos Ltda.",
+          "normalizedValue": "Gráfica Selva Editora e Impressos Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false,
+          "note": "Beneficiário do boleto — quem prestou o serviço e recebe."
+        },
+        "numero_nota": {
+          "value": "2026/04471",
+          "normalizedValue": "2026/04471",
+          "acceptableValues": [
+            "202604471"
+          ],
+          "nullAcceptable": false,
+          "note": "Campo \"Número do documento\", não o \"Nosso número\" nem a linha digitável."
+        },
+        "data_emissao": {
+          "value": "03/09/2026",
+          "normalizedValue": "2026-09-03",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Banco Cooperativo Vale Verde",
+          "Instituto Farroupilha de Ensino"
+        ],
+        "numero_nota": [
+          "34191",
+          "10998447188"
+        ],
+        "data_emissao": [
+          "2026-09-04",
+          "2026-09-25"
+        ]
+      }
+    },
+    {
+      "id": "financeiro_03_recibo_manuscrito",
+      "artifacts": [
+        {
+          "path": "hard/pdf/financeiro_03_recibo_avulso.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        },
+        {
+          "path": "hard/scanned_pdf/financeiro_03_recibo_avulso__foto_celular.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 1,
+          "profile": "foto_celular",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/financeiro_03_recibo_avulso__foto_celular.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "foto_celular",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Financeiro",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Recibo avulso não tem número de nota fiscal: numero_nota deve ser null.",
+        "O bloco tem uma numeração impressa de talão (\"Nº 0447\") que não é número de nota fiscal.",
+        "Valor escrito por extenso e em algarismos, com centavos divergentes de propósito no extenso.",
+        "Texto simulando escrita manual, em fonte cursiva, sobre linhas pautadas.",
+        "Quem emite o recibo é pessoa física — o fornecedor é uma pessoa, não uma empresa."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Aparecida Simões da Rocha",
+          "normalizedValue": "Aparecida Simões da Rocha",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "numero_nota": {
+          "expected": null,
+          "reason": "abstenção — o dado não está no documento"
+        },
+        "data_emissao": {
+          "value": "02 de fevereiro de 2026",
+          "normalizedValue": "2026-02-02",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Condomínio Edifício Solar das Acácias"
+        ],
+        "numero_nota": [
+          "0447"
+        ]
+      }
+    },
+    {
+      "id": "financeiro_04_fatura_parcelada_competencia",
+      "artifacts": [
+        {
+          "path": "hard/pdf/financeiro_04_fatura_parcelada.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        }
+      ],
+      "expectedClass": "Financeiro",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Seis parcelas, cada uma com sua própria data — nenhuma delas é a data de emissão.",
+        "A competência é dada como \"08/2026\", sem dia: exige normalizar para 2026-08-01 com confiança menor, ou abster-se.",
+        "A data de emissão aparece só uma vez, no canto superior direito, em formato por extenso abreviado.",
+        "O número da fatura tem prefixo alfabético e um dígito verificador separado por hífen."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Vetor Log Armazéns Gerais S.A.",
+          "normalizedValue": "Vetor Log Armazéns Gerais S.A.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "numero_nota": {
+          "value": "FAT-2026-00318-7",
+          "normalizedValue": "FAT-2026-00318-7",
+          "acceptableValues": [
+            "FAT20260031 87",
+            "FAT-2026-00318"
+          ],
+          "nullAcceptable": false
+        },
+        "data_emissao": {
+          "value": "31 ago 2026",
+          "normalizedValue": "2026-08-31",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "fornecedor": [
+          "Distribuidora Campo Bom"
+        ],
+        "data_emissao": [
+          "2026-09-15",
+          "2026-10-15",
+          "2026-08-01"
+        ]
+      }
+    },
+    {
+      "id": "rh_01_rescisao_muitas_datas",
+      "artifacts": [
+        {
+          "path": "hard/pdf/rh_01_termo_rescisao_trabalho.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Recursos Humanos",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Sete datas no mesmo documento: admissão, aviso prévio, último dia trabalhado, afastamento, projeção do aviso, homologação e assinatura.",
+        "A data de admissão é a mais antiga e a mais destacada — candidata natural e errada.",
+        "A \"referência / parte principal\" é o empregado, mas o empregador aparece no cabeçalho e no rodapé.",
+        "Valores em tabela com verbas rescisórias e descontos, incluindo um valor negativo."
+      ],
+      "expectedFields": {
+        "titulo": {
+          "value": "Termo de Rescisão do Contrato de Trabalho",
+          "normalizedValue": "Termo de Rescisão do Contrato de Trabalho",
+          "acceptableValues": [
+            "Termo de Rescisão do Contrato de Trabalho — TRCT"
+          ],
+          "nullAcceptable": false
+        },
+        "referencia": {
+          "value": "Djalma Ferreira Quaresma",
+          "normalizedValue": "Djalma Ferreira Quaresma",
+          "acceptableValues": [
+            "Cerâmica Portal do Vale Ltda."
+          ],
+          "nullAcceptable": false,
+          "note": "O empregado é o sujeito do termo; aceitar o empregador como referência é defensável, mas o empregado é a leitura preferida."
+        },
+        "data_assinatura": {
+          "value": "14/07/2026",
+          "normalizedValue": "2026-07-14",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2019-03-11",
+          "2026-06-15",
+          "2026-06-30",
+          "2026-07-15"
+        ]
+      }
+    },
+    {
+      "id": "rh_02_atestado_curto",
+      "artifacts": [
+        {
+          "path": "hard/pdf/rh_02_atestado_medico.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        },
+        {
+          "path": "hard/scanned_pdf/rh_02_atestado_medico__foto_celular.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 1,
+          "profile": "foto_celular",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/rh_02_atestado_medico__foto_celular.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "foto_celular",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": "Recursos Humanos",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Documento curtíssimo: pouco texto para o classificador se apoiar.",
+        "Escrita cursiva sobre receituário, com carimbo do profissional sobrepondo a assinatura.",
+        "Duas datas: a da consulta e a do início do afastamento, com um dia de diferença.",
+        "O paciente é o sujeito; o médico e a clínica disputam o papel de referência."
+      ],
+      "expectedFields": {
+        "titulo": {
+          "value": "Atestado médico",
+          "normalizedValue": "Atestado médico",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "referencia": {
+          "value": "Neusa Kliemann Vargas",
+          "normalizedValue": "Neusa Kliemann Vargas",
+          "acceptableValues": [
+            "Clínica Integrada Bento Gonçalves"
+          ],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "09 de maio de 2026",
+          "normalizedValue": "2026-05-09",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2026-05-10",
+          "2026-05-13"
+        ]
+      }
+    },
+    {
+      "id": "compras_01_mapa_cotacao",
+      "artifacts": [
+        {
+          "path": "hard/pdf/compras_01_mapa_de_cotacao.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Compras",
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Três fornecedores cotados na mesma tabela; apenas um é o vencedor, indicado por uma nota de rodapé.",
+        "O fornecedor vencedor não é o de menor preço unitário em todos os itens — é o de menor total.",
+        "O documento é um mapa comparativo, não um pedido: classificar como Financeiro é erro.",
+        "A data de assinatura é a da homologação, no fim; o topo traz a data de abertura das propostas."
+      ],
+      "expectedFields": {
+        "titulo": {
+          "value": "Mapa comparativo de cotação",
+          "normalizedValue": "Mapa comparativo de cotação",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "referencia": {
+          "value": "Ferragens Rio Branco Ltda.",
+          "normalizedValue": "Ferragens Rio Branco Ltda.",
+          "acceptableValues": [
+            "Hospital Regional São Camilo"
+          ],
+          "nullAcceptable": false,
+          "note": "Fornecedor vencedor da cotação — a parte principal do documento."
+        },
+        "data_assinatura": {
+          "value": "26/10/2026",
+          "normalizedValue": "2026-10-26",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "referencia": [
+          "Ondas Metalúrgica",
+          "Suprimenta Distribuidora"
+        ],
+        "data_assinatura": [
+          "2026-10-19",
+          "2026-11-03"
+        ]
+      }
+    },
+    {
+      "id": "operacional_01_laudo_assinatura_divergente",
+      "artifacts": [
+        {
+          "path": "hard/pdf/operacional_01_laudo_tecnico.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Operacional",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "A assinatura digital ICP-Brasil no rodapé traz um carimbo de tempo dois dias posterior à data de emissão do laudo.",
+        "Três datas de ensaio nas tabelas, anteriores às duas anteriores.",
+        "O título do documento e o assunto do ensaio disputam o campo \"título\".",
+        "Quatro pessoas nomeadas: responsável técnico, auxiliar, acompanhante do cliente e signatário digital."
+      ],
+      "expectedFields": {
+        "titulo": {
+          "value": "Laudo de ensaio de estanqueidade em linha de amônia",
+          "normalizedValue": "Laudo de ensaio de estanqueidade em linha de amônia",
+          "acceptableValues": [
+            "Laudo técnico de ensaio de estanqueidade"
+          ],
+          "nullAcceptable": false
+        },
+        "referencia": {
+          "value": "Frigorífico Cerro Azul S.A.",
+          "normalizedValue": "Frigorífico Cerro Azul S.A.",
+          "acceptableValues": [
+            "Talha Sul Serviços Industriais Ltda."
+          ],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "18/09/2026",
+          "normalizedValue": "2026-09-18",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2026-09-20",
+          "2026-09-14",
+          "2026-09-15",
+          "2026-09-16"
+        ]
+      }
+    },
+    {
+      "id": "ambiguo_01_contrato_que_e_nda",
+      "artifacts": [
+        {
+          "path": "hard/pdf/ambiguo_01_contrato_com_sigilo_dominante.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Contratos",
+      "ambiguousClasses": [
+        "Contratos",
+        "Jurídico"
+      ],
+      "difficulty": "muito alta",
+      "expectsReview": false,
+      "expectsLowConfidence": true,
+      "traps": [
+        "O título diz \"Contrato de Prestação de Serviços\", mas 6 das 8 cláusulas tratam de confidencialidade.",
+        "O documento traz \"Parte Reveladora\" e \"Parte Receptora\" explicitamente, atraindo a classe Jurídico.",
+        "Existe objeto contratual real, com preço e prazo — o que sustenta a classe Contratos.",
+        "Qualquer das duas classes é defensável; o teste é se a confiança cai e o documento vai para revisão."
+      ],
+      "expectedFields": {
+        "fornecedor": {
+          "value": "Bracco Auditoria e Perícia Contábil Ltda.",
+          "normalizedValue": "Bracco Auditoria e Perícia Contábil Ltda.",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "07/04/2026",
+          "normalizedValue": "2026-04-07",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {}
+    },
+    {
+      "id": "ambiguo_02_folha_de_rosto_vazia",
+      "artifacts": [
+        {
+          "path": "hard/pdf/ambiguo_02_folha_de_rosto_anexo.pdf",
+          "kind": "pdf_digital",
+          "pages": 1
+        },
+        {
+          "path": "hard/scanned_pdf/ambiguo_02_folha_de_rosto_anexo__fotocopia_terceira_geracao.pdf",
+          "kind": "pdf_escaneado",
+          "pages": 1,
+          "profile": "fotocopia_terceira_geracao",
+          "note": "Sem camada de texto — força o caminho de OCR."
+        },
+        {
+          "path": "hard/images/ambiguo_02_folha_de_rosto_anexo__fotocopia_terceira_geracao.png",
+          "kind": "imagem",
+          "pages": 1,
+          "profile": "fotocopia_terceira_geracao",
+          "note": "Primeira página apenas — testa o upload de imagem solta."
+        }
+      ],
+      "expectedClass": null,
+      "difficulty": "muito alta",
+      "expectsReview": true,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Folha de rosto de anexo: não há conteúdo suficiente para determinar classe alguma.",
+        "A resposta certa é requiresReview, com confiança baixa e todos os campos em null.",
+        "O texto tem um número de processo e uma data, que atraem preenchimento indevido."
+      ],
+      "expectedFields": {},
+      "forbiddenValues": {}
+    },
+    {
+      "id": "operacional_02_ata_muitos_nomes",
+      "artifacts": [
+        {
+          "path": "hard/pdf/operacional_02_ata_de_reuniao.pdf",
+          "kind": "pdf_digital",
+          "pages": 2
+        }
+      ],
+      "expectedClass": "Operacional",
+      "difficulty": "alta",
+      "expectsReview": false,
+      "expectsLowConfidence": false,
+      "traps": [
+        "Onze pessoas nomeadas entre presentes, ausentes justificados e convidados.",
+        "Três datas: a da reunião, a da convocação e a do prazo de uma deliberação.",
+        "O documento é assinado apenas pelo secretário e pelo presidente da mesa — dois dos onze nomes.",
+        "Deliberações em tabela com responsáveis nominais e prazos, que competem com o campo de referência."
+      ],
+      "expectedFields": {
+        "titulo": {
+          "value": "Ata da 4ª Reunião Ordinária do Comitê de Operações",
+          "normalizedValue": "Ata da 4ª Reunião Ordinária do Comitê de Operações",
+          "acceptableValues": [
+            "Ata de reunião do Comitê de Operações"
+          ],
+          "nullAcceptable": false
+        },
+        "referencia": {
+          "value": "Cooperativa de Transportes Sul Fronteira",
+          "normalizedValue": "Cooperativa de Transportes Sul Fronteira",
+          "acceptableValues": [
+            "Comitê de Operações"
+          ],
+          "nullAcceptable": false
+        },
+        "data_assinatura": {
+          "value": "doze dias do mês de março de dois mil e vinte e seis",
+          "normalizedValue": "2026-03-12",
+          "acceptableValues": [],
+          "nullAcceptable": false
+        }
+      },
+      "forbiddenValues": {
+        "data_assinatura": [
+          "2026-03-05",
+          "2026-04-10"
+        ]
+      }
+    }
+  ]
+}

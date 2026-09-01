@@ -95,3 +95,14 @@ CLAUDE.md
 
 # Cache do gerador de cartões OG (scripts/og/build-og-cards.py)
 __pycache__/
+
+# Documentos do conjunto sintético — só o binário.
+# O repositório já ignora `*.pdf` (linha 90); as imagens acompanham pela mesma
+# razão, para o conjunto não entrar no git pela metade. O que fica versionado é
+# o gerador, o gabarito e o README: `build.mjs` refaz os arquivos em um comando,
+# e é no gabarito que a revisão acontece — diff de PDF não se lê.
+synthetic_document_dataset/images/
+synthetic_document_dataset/scanned_pdf/
+synthetic_document_dataset/hard/pdf/
+synthetic_document_dataset/hard/scanned_pdf/
+synthetic_document_dataset/hard/images/
