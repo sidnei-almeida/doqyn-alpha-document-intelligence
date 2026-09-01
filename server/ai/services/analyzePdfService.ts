@@ -5,7 +5,14 @@ import {
   getDocumentClassRuleById,
   isDocumentRulesNotSeededError,
 } from '../../services/documentRulesService.js';
-import type { AnalyzePdfResponse, ProcessingLogItem } from '../types/documentAi.types.js';
+import type {
+  AnalyzePdfResponse,
+  ClassificationResult,
+  DocumentClassRule,
+  DocumentNamingRoles,
+  ProcessingLogItem,
+  RetrievedChunk,
+} from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
 import { resolveAnalysisProvider } from '../providers/resolveAnalysisProvider.js';
@@ -45,6 +52,80 @@ type StageDurationsMs = {
   finalization?: number;
   total?: number;
 };
+
+/**
+ * Classe de mentira, usada só para pedir ao extrator o que ele entendeu do documento.
+ *
+ * Não tem campo nenhum de propósito: o que interessa dela é o bloco `naming`
+ * (tipo, sujeitos, data), que o prompt do extrator preenche a partir da leitura
+ * e não da classe. Campos autorados aqui só gastariam contexto pedindo dado que
+ * ninguém configurou.
+ */
+const UNCLASSIFIED_NAMING_CLASS: DocumentClassRule = {
+  id: '__sem_classe__',
+  name: 'Documento',
+  description: 'Documento sem classe determinada. Descreva o que ele é.',
+  keywords: [],
+  fields: [],
+  namingTemplate: '{titulo}_{data_assinatura}_v{version}',
+};
+
+/**
+ * Nome proposto para o documento que a classificação não soube encaixar.
+ *
+ * O nome vinha atrelado à classe: sem classe, `recommendedFileName` era `null` e
+ * o arquivo ficava com o nome que veio do disco — `dwadaw.png` para um atestado
+ * médico que a IA tinha lido inteiro e sabia descrever ("é um atestado médico,
+ * não corresponde a nenhuma das classes definidas"). Duas perguntas diferentes
+ * estavam amarradas: em que pasta isto mora, e como isto se chama. A segunda não
+ * depende da primeira.
+ *
+ * Devolve `null` quando o extrator também não soube dizer o que é. Nome ruim
+ * inventado sobre nada é pior que o nome original, que ao menos foi escolhido
+ * por alguém.
+ */
+async function proposeNameWithoutClass(input: {
+  analysisProvider: ReturnType<typeof resolveAnalysisProvider>;
+  chunks: RetrievedChunk[];
+  classification: ClassificationResult;
+  originalFileName: string;
+  context: { requestId?: string; jobId: string; companyId: string; database?: string };
+}): Promise<{ fileName: string | null; roles: DocumentNamingRoles | undefined }> {
+  try {
+    const extraction = await input.analysisProvider.extractMetadata({
+      chunks: input.chunks,
+      selectedClass: UNCLASSIFIED_NAMING_CLASS,
+      classification: input.classification,
+      context: input.context,
+    });
+
+    const roles = extraction.naming;
+    if (!roles?.tipo || (roles.sujeitos.length === 0 && !roles.dataReferencia)) {
+      return { fileName: null, roles };
+    }
+
+    return {
+      fileName: generateRecommendedFileName({
+        originalFileName: input.originalFileName,
+        selectedClass: UNCLASSIFIED_NAMING_CLASS,
+        metadata: {},
+        version: extraction.version,
+        namingRoles: roles,
+      }),
+      roles,
+    };
+  } catch (error) {
+    // Falhar aqui não pode derrubar a análise: o documento já vai para revisão
+    // de qualquer jeito, e sem nome proposto ele apenas volta ao que era antes.
+    logger.warn('nome sem classe não pôde ser proposto', {
+      jobId: input.context.jobId,
+      companyId: input.context.companyId,
+      errorName: (error as Error)?.name,
+      errorMessage: (error as Error)?.message,
+    });
+    return { fileName: null, roles: undefined };
+  }
+}
 
 function createStageTimer() {
   const startedAt = Date.now();
@@ -366,6 +447,19 @@ export async function analyzePdfBuffer(input: {
   }
 
   if (classification.requiresReview || !classification.classId) {
+    const proposed = await proposeNameWithoutClass({
+      analysisProvider,
+      chunks: classificationChunks,
+      classification,
+      originalFileName: input.originalFileName,
+      context: {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        database: rulesLoad.database,
+      },
+    });
+
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf revisão necessária após classificação', context, {
       textCharCount,
@@ -376,6 +470,8 @@ export async function analyzePdfBuffer(input: {
       confidence: classification.confidence,
       requiresReview: classification.requiresReview,
       reason: classification.reason,
+      namingRolesType: proposed.roles?.tipo ?? null,
+      recommendedFileName: proposed.fileName,
       stageDurationsMs: durations,
     });
 
@@ -387,13 +483,23 @@ export async function analyzePdfBuffer(input: {
       ),
     );
 
+    if (proposed.fileName) {
+      logs.push(
+        createLog(
+          'Nome sugerido mesmo sem classe',
+          `A IA não encontrou classe para este documento, mas leu o que ele é e sugeriu "${proposed.fileName}". Escolha a pasta na revisão.`,
+          'done',
+        ),
+      );
+    }
+
     return {
       jobId,
       status: 'requires_review',
       originalFileName: input.originalFileName,
       fileHash,
       fileSizeBytes,
-      recommendedFileName: null,
+      recommendedFileName: proposed.fileName,
       textExtraction: {
         status: 'completed',
         pageCount: extracted.pageCount,
