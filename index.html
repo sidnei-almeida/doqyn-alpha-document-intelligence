@@ -70,16 +70,21 @@
   </head>
   <body>
     <script>
+      // Dois atributos, não um: `data-appearance` nomeia o tema e `data-theme` diz
+      // qual paleta vale por padrão — a do painel. No `standard` a casca desmente
+      // esse padrão localmente. Espelha `src/lib/theme.ts`; se um mudar, muda os dois.
       (function () {
         var stored = localStorage.getItem('doqyn-theme');
         var theme =
-          stored === 'dark' || stored === 'light'
+          stored === 'standard' || stored === 'light' || stored === 'dark'
             ? stored
             : window.matchMedia('(prefers-color-scheme: dark)').matches
               ? 'dark'
-              : 'light';
-        document.documentElement.dataset.theme = theme;
-        document.documentElement.style.colorScheme = theme;
+              : 'standard';
+        var palette = theme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.appearance = theme;
+        document.documentElement.dataset.theme = palette;
+        document.documentElement.style.colorScheme = palette;
       })();
     </script>
     <div id="root"></div>

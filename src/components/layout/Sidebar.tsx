@@ -11,6 +11,7 @@ import { NewButtonMenu } from '@/features/library/components/NewButtonMenu';
 import { cn } from '@/lib/utils';
 import { SidebarNavItem } from './SidebarNavItem';
 import { SidebarSection } from './SidebarSection';
+import { SidebarUsage } from './SidebarUsage';
 import { useSidebarCollapsed } from './useSidebarCollapsed';
 
 interface SidebarProps {
@@ -107,6 +108,10 @@ export function Sidebar({ className }: SidebarProps) {
             <SidebarNavItem key={item.path} item={item} collapsed={collapsed} />
           ))}
         </SidebarSection>
+
+        {/* Dentro da coluna que rola, logo abaixo de Configurações: é a última
+            linha do índice, não um rodapé grudado na base da janela. */}
+        <SidebarUsage collapsed={collapsed} />
       </nav>
     </aside>
   );

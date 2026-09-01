@@ -12,13 +12,23 @@ export function WorkspaceTopBar() {
 
   return (
     <header
-      className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-5"
+      // O recuo lateral sai do token (`.workspace-topbar`), não de classe
+      // utilitária: empatados em especificidade, o `px-5` do Tailwind vencia por
+      // ordem e a busca saía do prumo do painel.
+      className="workspace-topbar sticky top-0 flex h-[var(--workspace-topbar-height)] shrink-0 items-center gap-3 sm:gap-4"
       data-testid="workspace-topbar"
     >
       {/* Largura total. Contida em 440px ela ficava perdida no meio da barra;
           a régua de ponta a ponta lê como pauta de documento, não como a
-          cápsula preenchida que existia antes. */}
-      <div className="flex min-w-0 flex-1 items-center">
+          cápsula preenchida que existia antes.
+
+          No tema padrão a busca é a única coisa clara dentro da casca grafite:
+          uma folha pousada na barra, do mesmo branco do painel de baixo. Ela
+          redeclara a paleta de papel para si porque tudo que mora dentro dela —
+          texto, ícone, marcador de atalho — precisa virar junto; se só o fundo
+          clareasse, o texto continuaria claro sobre branco. Nos outros dois
+          temas a casca já é da paleta do conteúdo e a regra não se aplica. */}
+      <div className="topbar-search flex min-w-0 flex-1 items-center">
         <GlobalSearchCommand isFetching={documentsFetching} />
       </div>
 

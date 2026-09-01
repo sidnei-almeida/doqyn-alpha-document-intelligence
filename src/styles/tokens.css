@@ -5,7 +5,11 @@
  * Identidade DOQYN discreta.
  */
 
-[data-theme='dark'] {
+/* ── Paleta grafite ───────────────────────────────────────────────────────
+   Vale para o documento inteiro no tema escuro, e só para a casca no `standard`
+   — ali o padrão do documento é papel, e a casca é a exceção local. */
+[data-theme='dark'],
+[data-appearance='standard'] .chrome-dark {
   /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
   --bg-chrome: #0b0e10;
   --bg-shell: var(--bg-chrome);
@@ -177,6 +181,14 @@
   --tooltip-bg: #272e36;
   --tooltip-text: #e8edf0;
 
+  /* Ação principal dentro de camada sobreposta — ver a nota em `globals.css`.
+     Sobre grafite o botão inverte: a folha clara é que salta. Repetir o
+     grafite aqui daria um botão que some no fundo do próprio diálogo. */
+  --overlay-action-bg: #e8edf0;
+  --overlay-action-bg-hover: #ffffff;
+  --overlay-action-bg-active: #c6d0d6;
+  --overlay-action-text: #0b0e10;
+
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(255, 255, 255, 0.16);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
@@ -194,13 +206,22 @@
     0 4px 14px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-[data-theme='light'] {
+/* ── Paleta de papel ──────────────────────────────────────────────────────
+   No `standard` o painel e a busca ficam *dentro* da casca grafite, então não
+   basta o padrão do documento: os dois precisam redeclarar a paleta para si,
+   ou herdam o grafite de quem os contém. */
+[data-theme='light'],
+[data-appearance='standard'] .workspace-canvas,
+[data-appearance='standard'] .topbar-search {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;
   --color-surface: #f5f7f8;
   --color-surface-container: #edf0f2;
-  --color-border: #d3d9de;
-  --color-border-subtle: #e4e8eb;
+  /* Um degrau mais escuros do que eram. Os fios foram calibrados contra a base
+     cinza-clara do tema; na casca o conteúdo pousa em branco puro, e ali eles
+     sumiam. Ainda são fios, não molduras — só passaram a existir. */
+  --color-border: #c3ccd2;
+  --color-border-subtle: #dbe1e5;
   --color-text-primary: #11171b;
   --color-text-secondary: #4a575f;
   --color-icon-neutral: #4a575f;
@@ -208,8 +229,10 @@
   --color-primary-hover: #12837b;
   --color-primary-surface: #dcedeb;
 
-  --bg-chrome: var(--color-surface);
-  --bg-shell: var(--color-surface);
+  /* A casca é um degrau mais funda que `--color-surface`: contra a folha branca
+     do painel, o cinza antigo não conseguia dizer onde uma camada terminava. */
+  --bg-chrome: #eef1f3;
+  --bg-shell: var(--bg-chrome);
   --bg-canvas: var(--color-background);
   --bg-thumbnail-chrome: var(--color-surface-container);
   --bg-app: var(--bg-chrome);
@@ -265,7 +288,7 @@
 
   --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border);
-  --border-strong: #b6bec5;
+  --border-strong: #a4aeb6;
 
   --text-primary: #11171b;
   --text-secondary: #4a575f;
@@ -362,6 +385,12 @@
   /* Tooltip — inverse surface (padrão Google), sem borda */
   --tooltip-bg: #272e36;
   --tooltip-text: #e8edf0;
+
+  /* Ação principal dentro de camada sobreposta — ver a nota em `globals.css`. */
+  --overlay-action-bg: #1c2228;
+  --overlay-action-bg-hover: #2a323a;
+  --overlay-action-bg-active: #0b0e10;
+  --overlay-action-text: #ffffff;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(60, 64, 67, 0.28);
@@ -486,12 +515,21 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: var(--radius-lg);
-  --radius-shell: var(--radius-lg);
-  --radius-workspace: var(--radius-lg);
+  /* TESTE VISUAL: casca — painel branco flutuando sobre chrome grafite. O canto
+     do painel é o mesmo do campo de busca: a casca não inventa um raio próprio. */
+  --radius-shell: var(--radius-sm);
+  --radius-workspace: var(--radius-shell);
   --radius-pill: 9999px;
   --radius-new-button: var(--radius-md);
 
-  --shell-inset: 10px;
+  --shell-inset: 16px;
+  /* O vão da esquerda é menor que o resto: ali não há moldura a respirar, há um
+     divisor. Barra e painel quase se encostam, e o fio que recolhe a barra mora
+     nesse vão. */
+  --shell-inset-left: 8px;
+  /* Respiro interno do painel. Vira token porque a barra de cima precisa dele:
+     o começo da busca tem de cair na mesma coluna do título da página. */
+  --shell-page-gutter: 28px;
   --shadow-shell: none;
 
   --space-1: 4px;
@@ -507,7 +545,10 @@
   --field-height: 40px;
   --icon-button-size: 36px;
 
-  --workspace-sidebar-width-expanded: 256px;
+  /* A largura sai do rótulo mais longo, não de um número redondo: "Compartilhados
+     comigo" termina em 202px, e o que sobra é o mesmo respiro que ele tem à
+     esquerda. Barra de índice é justa; folga vira peso. */
+  --workspace-sidebar-width-expanded: 224px;
   --workspace-sidebar-width-collapsed: 72px;
   --workspace-sidebar-width: var(--workspace-sidebar-width-expanded);
   --workspace-topbar-height: 64px;

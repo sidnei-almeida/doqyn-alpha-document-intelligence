@@ -127,6 +127,41 @@
     box-shadow: 0 0 0 1px var(--color-primary);
   }
 
+  /* `color` precisa ser reancorado em cada fronteira de paleta. Trocar a paleta
+     troca as variáveis, mas `color` já foi resolvido para uma cor concreta lá em
+     cima e continua descendo por herança — foi assim que o nome do usuário na
+     tabela apareceu em cinza-claro sobre a folha branca. Vale para os três
+     temas: nos que não misturam paletas a regra apenas reafirma o que já era. */
+  .chrome-dark,
+  .workspace-canvas,
+  .topbar-search {
+    color: var(--text-primary);
+  }
+
+  /* A busca como folha branca é exclusividade do `standard`: ali ela é a única
+     coisa clara dentro da casca grafite, e o branco a faz par com o painel de
+     baixo. Nos outros dois temas a casca já é da mesma paleta do conteúdo, e um
+     campo branco no meio dela viraria um retalho. */
+  [data-appearance='standard'] .topbar-search .search-command {
+    background: var(--color-background);
+    border-color: transparent;
+  }
+
+  [data-appearance='standard'] .topbar-search .search-command:hover {
+    background: var(--color-surface);
+  }
+
+  [data-appearance='standard'] .topbar-search .search-command:focus {
+    background: var(--color-background);
+    border-color: transparent;
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  /* O marcador do atalho é branco no tema claro e sumiria dentro da folha. */
+  [data-appearance='standard'] .topbar-search kbd {
+    background: var(--color-surface-container);
+  }
+
   :root:not([data-theme]) {
     color-scheme: dark;
   }
@@ -205,6 +240,16 @@
     outline: none;
     border-color: var(--accent-active);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-active) 35%, transparent);
+  }
+
+  /* O campo pautado não tem caixa, então também não pode ganhar uma no foco.
+     O anel de 1px colava no texto — que começa em zero de propósito, alinhado
+     ao rótulo — e o resultado lia como texto espremido contra a borda. Quem
+     avisa que o campo está ativo é a própria pauta, que engrossa e assume o
+     acento. */
+  textarea.field-rule:focus,
+  textarea.field-rule:focus-visible {
+    box-shadow: none;
   }
 }
 
@@ -352,10 +397,10 @@
   .workspace-sidebar {
     width: var(--workspace-sidebar-width);
     min-width: var(--workspace-sidebar-width);
-    /* O fio existe sempre: é ele que separa índice de conteúdo. O acento só
-       entra por cima quando o divisor está sendo apontado — ver
-       SidebarEdgeToggle. */
-    border-right: 1px solid var(--border-subtle);
+    /* Sem fio: o vão em volta do painel é que separa índice de conteúdo, e ele
+       existe nos três temas. Quem marca o divisor quando alguém aponta para ele
+       é a pista do recolhedor — ver SidebarEdgeToggle. */
+    border-right: none;
     overflow: visible;
   }
 
@@ -363,13 +408,87 @@
     min-height: 0;
   }
 
-  .workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav {
-    overflow: hidden;
-    scrollbar-width: none;
+  /* ── Armazenamento no pé da lista ─────────────────────────────────────
+     Fio em cima, etiqueta, régua e duas linhas de registro. O valor vai na mono
+     tabular para que os números fiquem em coluna: dois algarismos a mais não
+     podem deslocar a leitura de um bloco que a pessoa consulta de canto de
+     olho. */
+  .sidebar-usage {
+    flex-shrink: 0;
+    margin-top: 1.25rem;
+    padding: 0.875rem 0.5rem 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 40%, transparent);
   }
 
-  .workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav::-webkit-scrollbar {
-    display: none;
+  /* A régua é fio, não pílula: 3px e canto reto, a mesma forma que o campo em
+     foco e o item ativo usam. Arredondar as pontas aqui traria de volta a
+     linguagem de produto de consumo que a barra inteira abandonou. */
+  .sidebar-usage__rule {
+    position: relative;
+    height: 3px;
+    margin: 0.5rem 0 0.5rem;
+    background: color-mix(in srgb, var(--border-default) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .sidebar-usage__fill {
+    display: block;
+    height: 100%;
+    background: var(--text-secondary);
+    transition: width var(--transition-duration-slow) var(--ease-standard);
+  }
+
+  /* Cor só quando passa a significar alguma coisa. Até 80% a régua é neutra. */
+  .sidebar-usage__rule[data-level='warn'] .sidebar-usage__fill {
+    background: var(--status-warn-text);
+  }
+
+  .sidebar-usage__rule[data-level='danger'] .sidebar-usage__fill {
+    background: var(--status-danger-text);
+  }
+
+  .sidebar-usage__figure {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+  }
+
+  .sidebar-usage__used {
+    color: var(--text-primary);
+  }
+
+  .sidebar-usage__quota {
+    color: var(--text-tertiary);
+  }
+
+  .sidebar-usage__meta {
+    margin: 0.125rem 0 0;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: var(--text-tertiary);
+  }
+
+  /* Recolhida: o mesmo dado no menor tamanho em que ainda se lê. */
+  .sidebar-usage--collapsed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0 0.5rem;
+  }
+
+  .sidebar-usage__percent {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+
+  .sidebar-usage--collapsed .sidebar-usage__rule {
+    width: 20px;
+    margin: 0;
   }
 
   /* Sidebar — itens de navegação (ativo sem borda no dark; borda suave no light) */
@@ -747,6 +866,34 @@
   /* Confirmar nasce de dentro de outro modal — precisa passar por cima dele. */
   .modal-overlay--confirm {
     z-index: var(--z-confirm);
+  }
+
+  /* ── Camada sobreposta: o teal recua ──────────────────────────────────
+     Numa janela pequena, o acento aparecia três vezes ao mesmo tempo — passo
+     atual, campo em foco e botão de ação — e a soma lia como cor decorativa em
+     vez de sinal. Aqui o teal fica reservado ao que está *acontecendo agora*:
+     o campo que a pessoa está preenchendo. Passo e ação passam para o grafite,
+     que já é a cor da casca; a hierarquia continua a mesma, mas dita por peso
+     e não por matiz.
+
+     A troca é por token, não por classe em cada botão: o botão principal lê
+     `--new-button-*`, então redefinir esses tokens veste todos de uma vez,
+     inclusive os que ainda nem existem. O valor vem da paleta
+     (`--overlay-action-*`), não fixo no código: sobre papel a ação é grafite,
+     sobre grafite ela inverte e vira clara. Fixar o grafite dava um botão que
+     sumia no fundo do próprio diálogo no tema escuro.
+
+     O alcance usa a definição que o próprio app já dá de superfície sobreposta
+     (`OVERLAY_HOST_SELECTOR`, em `popover/popoverZIndex.ts`) mais a camada de
+     popover — diálogo, gaveta, menu e balão entram juntos, e nenhum deles
+     precisou ser tocado. */
+  [aria-modal='true'],
+  [data-overlay-host],
+  .popover-layer {
+    --new-button-bg: var(--overlay-action-bg);
+    --new-button-bg-hover: var(--overlay-action-bg-hover);
+    --new-button-bg-active: var(--overlay-action-bg-active);
+    --new-button-text: var(--overlay-action-text);
   }
 
   .modal-panel {
@@ -1931,8 +2078,10 @@
     font-size: var(--text-micro);
   }
 
+  /* O passo atual é marcado por peso, não por cor: o fio embaixo é do mesmo
+     grafite do texto. Ver a nota em `.modal-panel`. */
   .recipient-steps__item[data-state='current'] .recipient-steps__button {
-    border-bottom-color: var(--accent-active);
+    border-bottom-color: var(--text-primary);
     color: var(--text-primary);
   }
 
@@ -2237,19 +2386,60 @@
      separa a barra do conteúdo é o fio do divisor; o que separa o topo é o fio
      do header. Nada mais precisa de caixa.                                   */
 
+  /* TESTE VISUAL — casca: chrome grafite por fora, painel branco por dentro.
+     O conteúdo volta a ser um painel, agora com canto largo e sem fio de
+     separação: o que separa barra de conteúdo é o próprio vão escuro. */
   .workspace-canvas {
     display: flex;
     min-height: 0;
     min-width: 0;
     flex: 1;
     flex-direction: column;
-    background: var(--bg-app);
+    background: var(--bg-canvas);
+    margin: 0 var(--shell-inset) var(--shell-inset) var(--shell-inset-left);
+    border-radius: var(--radius-shell);
+    overflow: hidden;
+    /* ── Quem está por cima é a casca ─────────────────────────────────
+       O painel com contorno e canto arredondado lia como cartão pousado
+       *sobre* a casca — a hierarquia invertida. O conteúdo não flutua na
+       moldura; a moldura é que se abre para ele.
+
+       A correção é toda de sombra, e ela é interna: o fio de borda vira anel
+       por dentro (`inset 0 0 0 1px`), e a quina de cima projeta escuro para
+       dentro da abertura. O olho lê isso como recorte, não como peça solta —
+       a mesma pista que separa um botão em relevo de um encaixe. */
+    box-shadow:
+      inset 0 0 0 1px var(--canvas-well-edge),
+      var(--canvas-well-shadow);
+  }
+
+  /* A tinta do poço vem da casca, não do painel: quem projeta a sombra é a
+     borda de cima, e ela é da camada de fora. */
+  [data-appearance='standard'] .workspace-canvas {
+    --canvas-well-edge: rgba(11, 14, 16, 0.14);
+    --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
+  }
+
+  [data-appearance='light'] .workspace-canvas {
+    --canvas-well-edge: var(--border-default);
+    --canvas-well-shadow: inset 0 3px 5px -3px rgba(60, 64, 67, 0.28);
+  }
+
+  [data-appearance='dark'] .workspace-canvas {
+    --canvas-well-edge: rgba(255, 255, 255, 0.05);
+    --canvas-well-shadow: inset 0 3px 6px -3px rgba(0, 0, 0, 0.7);
   }
 
   /* O canvas é o scroll da janela: tela que não administra o próprio scroll (como
      Configurações) rolava para fora da vista, porque `overflow: hidden` aqui vencia
      o `overflow-y-auto` da marcação. Telas com scroll próprio seguem com min-h-0 e
      não passam a rolar duas vezes. */
+  /* O respiro lateral do conteúdo sai do token, não de classe utilitária: a
+     barra de cima lê o mesmo valor para alinhar a busca. */
+  .page-outlet {
+    padding-inline: var(--shell-page-gutter);
+  }
+
   .workspace-canvas-inner {
     display: flex;
     min-height: 0;
@@ -2257,7 +2447,7 @@
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
-    background: var(--bg-app);
+    background: transparent;
   }
 
   /* ===== Workspace / Biblioteca — animações e superfícies ===== */
@@ -2308,10 +2498,64 @@
      fio de cabelo, do mesmo jeito que as seções da página. O que existe ali é
      conteúdo, não moldura.                                                   */
 
+  /* Barra e sidebar não têm fio: o vão em volta do painel já faz a separação, e
+     isso vale nos três temas — a estrutura de duas camadas não muda de tema
+     para tema, só as cores dela mudam.
+
+     O recuo dos dois lados é o mesmo do painel: a busca começa na quina
+     esquerda da folha e os glifos terminam na direita. Quem alinha é a borda do
+     painel, não o texto que mora dentro dele. */
   .workspace-topbar {
     z-index: var(--z-sticky);
     background: var(--bg-app);
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: none;
+    padding-left: var(--shell-inset-left);
+    padding-right: var(--shell-inset);
+  }
+
+
+  /* ── O fio que recolhe a barra encosta no painel ──────────────────────
+     A faixa de clique nascia centrada na borda direita da barra, que é onde o
+     divisor ficava quando conteúdo e barra se tocavam. Com o painel recuado,
+     esse ponto passou a flutuar no vão escuro, longe de qualquer borda. Aqui a
+     faixa atravessa o vão inteiro e o fio vai parar na quina do painel: é ali
+     que a pessoa lê a divisão, então é ali que ela deve poder pegar. */
+  .sidebar-edge-toggle {
+    right: calc(-1 * var(--shell-inset-left));
+    width: calc(var(--shell-inset-left) + 4px);
+    transform: none;
+  }
+
+  /* A pista — um chevron sozinho, sem caixa nem fundo, apontando para onde a
+     barra vai. Ela nasce na altura em que o ponteiro tocou a borda
+     (`--sidebar-edge-grip-y`, escrita pelo próprio componente) e volta ao meio
+     quando o mouse sai, que é onde o teclado a encontra. Fica inteira à
+     esquerda da quina do painel: assim o glifo pousa sempre no grafite e nunca
+     metade sobre a folha branca. */
+  .sidebar-edge-toggle-grip {
+    position: absolute;
+    top: var(--sidebar-edge-grip-y, 50%);
+    right: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    color: var(--text-disabled);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-duration-fast) var(--ease-standard),
+      color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .sidebar-edge-toggle:hover .sidebar-edge-toggle-grip {
+    opacity: 1;
+    color: var(--text-secondary);
+  }
+
+  .sidebar-edge-toggle:focus-visible .sidebar-edge-toggle-grip {
+    opacity: 1;
+    color: var(--accent-active);
   }
 
   /* Glifo solto: um controle secundário e sempre presente não precisa de caixa
@@ -3982,22 +4226,24 @@
 
   /* ===== Explorer — pastas e arquivos ===== */
 
+  /* ── Pasta é linha de índice, não caixa ───────────────────────────────
+     A marcação e o contêiner já diziam isso ("registro, não mosaico"), mas
+     sobrou desta folha uma borda de quatro lados da época em que era cartão.
+     Empilhadas, essas caixas encostavam uma na outra e o fio entre duas linhas
+     saía com o dobro da espessura — o que lia como tabela quebrada, não como
+     índice. Fica só o fio de baixo, que é o que separa um registro do próximo. */
   .explorer-folder-card {
-    border: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
   }
 
   .explorer-folder-card:hover {
-    border-color: color-mix(in srgb, var(--border-subtle) 85%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--border-subtle) 85%, transparent);
   }
 
-  /* Light — cards de pasta estilo Drive: branco, borda 1px, sem sombra nem chip pastel */
-  [data-theme='light'] .explorer-folder-card {
-    border-color: var(--border-default);
-    box-shadow: none;
-  }
-
+  [data-theme='light'] .explorer-folder-card,
   [data-theme='light'] .explorer-folder-card:hover {
-    border-color: var(--border-default);
+    border-bottom-color: var(--border-default);
     box-shadow: none;
   }
 

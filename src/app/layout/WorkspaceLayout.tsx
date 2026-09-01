@@ -15,8 +15,13 @@ import { TourOverlay } from '@/features/tour/components/TourOverlay';
 import { useTenantLiveSync } from '@/features/tenant/useTenantLiveSync';
 
 /**
- * Shell autenticado do workspace — estilo Google Drive:
- * chrome edge-to-edge (sem radius externo) + painel interno arredondado.
+ * Shell autenticado do workspace — duas camadas: a casca edge-to-edge (sidebar
+ * + barra de cima) e o painel de conteúdo, arredondado e recuado dentro dela.
+ *
+ * A estrutura é a mesma nos três temas; o que muda é a paleta de cada camada.
+ * A classe `chrome-dark` fica sempre na marcação, mas só vale no tema padrão —
+ * é o CSS que decide, via `data-appearance`, não o React. Assim trocar de tema
+ * não remonta o shell.
  */
 function WorkspaceLayoutInner() {
   const { startUploadFromFiles } = useUploadQueueContext();
@@ -41,14 +46,14 @@ function WorkspaceLayoutInner() {
   });
 
   return (
-    <div className="app-chrome h-dvh w-full overflow-hidden">
+    <div className="app-chrome chrome-dark h-dvh w-full overflow-hidden">
       <div className="app-shell flex h-full w-full overflow-hidden">
         <Sidebar />
         <div className="workspace-frame flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceTopBar />
           <main className="main-content workspace-canvas flex min-h-0 min-w-0 flex-1 flex-col">
             <div className="workspace-canvas-inner scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto">
-              <div className="page-outlet flex min-h-full flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6">
+              <div className="page-outlet flex min-h-full flex-1 flex-col py-6 sm:py-7">
                 <Outlet />
               </div>
             </div>

@@ -14,7 +14,7 @@ const BOXED_CLASS =
 
 /** No `rule` o campo é papel pautado: sem caixa, fio embaixo e acento no foco. */
 const RULE_CLASS =
-  'flex min-h-[72px] w-full resize-y border-0 border-b border-doqyn-border-subtle bg-transparent px-0 py-1.5 type-body text-doqyn-text placeholder:text-doqyn-subtle transition-colors hover:border-doqyn-border focus:border-b-2 focus:border-doqyn-accent-active focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
+  'field-rule flex min-h-[72px] w-full resize-y border-0 border-b border-doqyn-border-subtle bg-transparent px-0 py-1.5 type-body text-doqyn-text placeholder:text-doqyn-subtle transition-colors hover:border-doqyn-border focus:border-b-2 focus:border-doqyn-accent-active focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, id, variant = 'boxed', ...props }, ref) => {

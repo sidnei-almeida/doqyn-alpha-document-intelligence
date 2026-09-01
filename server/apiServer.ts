@@ -43,6 +43,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/documents/upload-approvals': () => import('../api/documents/upload-approvals/index.js'),
   '/api/documents/confirm-update': () => import('../api/documents/confirm-update.js'),
   '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
+  '/api/tenant/usage': () => import('../api/tenant/usage.js'),
   '/api/document-rules/active': () => import('../api/document-rules/active.js'),
   '/api/document-rules': () => import('../api/document-rules/index.js'),
   '/api/document-rules/matrix': () => import('../api/document-rules/matrix.js'),
