@@ -92,3 +92,6 @@ CLAUDE.md
 
 # Estado efêmero do GSD (sentinela de isolamento por execução)
 .gsd/
+
+# Cache do gerador de cartões OG (scripts/og/build-og-cards.py)
+__pycache__/

@@ -41,10 +41,16 @@ export type OgPortalMetadata = {
  * O que o cartão diz é o que o destinatário já sabe por ter recebido o link: existe um documento
  * esperando por ele, e é do DOQYN. O resto está atrás do portal, que autentica.
  */
+// A prévia fica em cache no aparelho de quem já colou o link, e o robô não rebusca a imagem
+// enquanto a URL dela não mudar. Suba esta versão sempre que o desenho do cartão mudar.
+const CARD_VERSION = '2';
+
 function cardImageUrl(origin: string, kind: OgPortalKind): string {
   return toAbsolutePublicUrl(
     origin,
-    kind === 'sign' ? '/og/portal-card-sign.png' : '/og/portal-card-share.png',
+    kind === 'sign'
+      ? `/og/portal-card-sign.png?v=${CARD_VERSION}`
+      : `/og/portal-card-share.png?v=${CARD_VERSION}`,
   );
 }
 

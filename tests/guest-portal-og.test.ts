@@ -97,7 +97,11 @@ describe('guest portal Open Graph', () => {
       const html = read('index.html');
 
       assert.ok(
-        html.includes('property="og:image" content="https://app.doqyn.com/og/portal-card.png"'),
+        // A URL leva `?v=N`: sem trocar a URL da imagem, quem já viu a prévia antiga continua
+        // vendo o cartão em cache.
+        /property="og:image" content="https:\/\/app\.doqyn\.com\/og\/portal-card\.png\?v=\d+"/.test(
+          html,
+        ),
       );
       assert.ok(html.includes('property="og:image:width" content="1200"'));
       assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));

@@ -39,8 +39,15 @@ MUTED = '#8A949C'
 HAIRLINE = '#232a31'
 
 WIDTH, HEIGHT = 1200, 630
-MARGIN = 88
 MARK_SIZE = 52
+TITLE_SIZE = 46
+
+# Nenhum cliente mostra o cartão inteiro. O WhatsApp corta em 3:2 pelo centro (127px fora de
+# cada lado), e outros chegam a cortar no quadrado. Tudo que precisa ser lido vive dentro do
+# quadrado central de 630x630 — daí a composição centralizada e o título em 46px, que é o
+# corpo máximo em que "Documento compartilhado" ainda cabe ali com folga.
+SAFE_SIZE = HEIGHT
+SAFE_PADDING = 40
 
 
 def load(path, weight):
@@ -48,6 +55,20 @@ def load(path, weight):
     if 'fvar' in font:
         font = instantiateVariableFont(font, {'wght': weight}, inplace=False, updateFontNames=False)
     return font
+
+
+def text_width(font, text, size, tracking_em=0.0):
+    """Largura de avanço da linha, na mesma métrica usada por text_paths."""
+    upm = font['head'].unitsPerEm
+    cmap = font.getBestCmap()
+    hmtx = font['hmtx']
+    total = 0.0
+    for char in text:
+        name = cmap.get(ord(char))
+        if name is None:
+            raise SystemExit(f'glifo ausente na fonte: {char!r}')
+        total += hmtx[name][0] * size / upm + tracking_em * size
+    return total
 
 
 def text_paths(font, text, size, tracking_em=0.0):
@@ -89,17 +110,31 @@ def mark(x, y, size, color):
 
 def build_card(title, newsreader_medium, newsreader_regular, geist_mono):
     wordmark = text_paths(newsreader_medium, 'DOQYN', 34, tracking_em=0.30)
-    heading = text_paths(newsreader_regular, title, 66)
+    wordmark_width = text_width(newsreader_medium, 'DOQYN', 34, tracking_em=0.30)
+    heading = text_paths(newsreader_regular, title, TITLE_SIZE)
+    heading_width = text_width(newsreader_regular, title, TITLE_SIZE)
     footer = text_paths(geist_mono, 'APP.DOQYN.COM', 20, tracking_em=0.14)
+    footer_width = text_width(geist_mono, 'APP.DOQYN.COM', 20, tracking_em=0.14)
+
+    usable = SAFE_SIZE - SAFE_PADDING * 2
+    if heading_width > usable:
+        raise SystemExit(
+            f'título {title!r} tem {heading_width:.0f}px e não cabe na área segura '
+            f'de {usable}px — reduza TITLE_SIZE ou encurte o texto'
+        )
+
+    lockup_width = MARK_SIZE + 22 + wordmark_width
+    lockup_x = (WIDTH - lockup_width) / 2
+    lockup_y = 176
 
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
   <rect width="{WIDTH}" height="{HEIGHT}" fill="{BG}"/>
   <rect x="0" y="0" width="{WIDTH}" height="{HEIGHT}" fill="none" stroke="{HAIRLINE}" stroke-width="2"/>
-  {mark(MARGIN, MARGIN - 6, MARK_SIZE, ACCENT)}
-  <g transform="translate({MARGIN + MARK_SIZE + 22} {MARGIN + MARK_SIZE * 0.72:.0f})" fill="{INK}">{wordmark}</g>
-  <g transform="translate({MARGIN} {HEIGHT / 2 + 40:.0f})" fill="{INK}">{heading}</g>
-  <rect x="{MARGIN}" y="{HEIGHT / 2 + 78:.0f}" width="132" height="2" fill="{ACCENT}"/>
-  <g transform="translate({MARGIN} {HEIGHT - MARGIN + 8})" fill="{MUTED}">{footer}</g>
+  {mark(f'{lockup_x:.1f}', lockup_y, MARK_SIZE, ACCENT)}
+  <g transform="translate({lockup_x + MARK_SIZE + 22:.1f} {lockup_y + MARK_SIZE * 0.72:.0f})" fill="{INK}">{wordmark}</g>
+  <g transform="translate({(WIDTH - heading_width) / 2:.1f} 340)" fill="{INK}">{heading}</g>
+  <rect x="{(WIDTH - 132) / 2:.0f}" y="372" width="132" height="2" fill="{ACCENT}"/>
+  <g transform="translate({(WIDTH - footer_width) / 2:.1f} 448)" fill="{MUTED}">{footer}</g>
 </svg>'''
 
 
