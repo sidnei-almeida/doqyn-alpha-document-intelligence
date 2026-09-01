@@ -15,21 +15,32 @@ export function isInsideOverlayHost(element: HTMLElement | null): boolean {
 }
 
 /**
- * Uma camada acima do host que realmente contém a âncora.
+ * Uma camada acima do elemento que de fato empilha o overlay.
  *
  * O valor fixo `--z-popover` (96) só resolvia o caso do modal (95). O diálogo de
  * confirmação nasce em `--z-confirm` (100) e o tour em `--z-tour` (110): um popover
- * aberto dentro deles voltaria a nascer por baixo. Lendo o z-index computado do
- * host, cada overlay ganha seu próprio teto — e a conta continua certa quando
- * alguém acrescentar uma camada nova na escala.
+ * aberto dentro deles voltaria a nascer por baixo. Lendo o z-index computado, cada
+ * overlay ganha seu próprio teto — e a conta continua certa quando alguém
+ * acrescentar uma camada nova na escala.
+ *
+ * A subida por ancestrais não é zelo: o marcador nem sempre está no elemento que
+ * empilha. Em `Modal`, `aria-modal` fica no painel interno, que é filho flex sem
+ * z-index — quem carrega a camada é o scrim, um nível acima. Parar no host leria
+ * `auto` e cairia no fixo de novo, deixando o caso do confirm exatamente como
+ * estava. Na gaveta o marcador está no próprio scrim, e o laço acerta na primeira
+ * volta.
  *
  * Aninhamento resolve sozinho: `closest` para no host mais interno, então um
  * popover dentro de um confirm sobre uma gaveta ancora em 100, não em 85.
  */
 function resolveOverlayHostLayer(host: HTMLElement): string {
   if (typeof window === 'undefined') return 'var(--z-popover)';
-  const computed = Number.parseInt(window.getComputedStyle(host).zIndex, 10);
-  return Number.isFinite(computed) ? String(computed + 1) : 'var(--z-popover)';
+  for (let node: HTMLElement | null = host; node && node !== document.body; ) {
+    const computed = Number.parseInt(window.getComputedStyle(node).zIndex, 10);
+    if (Number.isFinite(computed)) return String(computed + 1);
+    node = node.parentElement;
+  }
+  return 'var(--z-popover)';
 }
 
 export function resolvePopoverZIndex(

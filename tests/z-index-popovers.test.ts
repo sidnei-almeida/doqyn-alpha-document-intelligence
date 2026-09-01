@@ -62,6 +62,9 @@ describe('z-index e popovers ancorados', () => {
     // Valor fixo só cobria o modal (95): confirm (100) e tour (110) voltariam a cobrir.
     assert.ok(util.includes('getComputedStyle'));
     assert.ok(util.includes('closest<HTMLElement>(OVERLAY_HOST_SELECTOR)'));
+    // Sobe por ancestrais: em Modal o aria-modal fica no painel interno (z-index auto),
+    // e quem empilha é o scrim um nível acima. Parar no host lê `auto` e volta ao fixo.
+    assert.ok(util.includes('parentElement'));
   });
 
   it('popovers problemáticos migram para AnchoredPopover', () => {
