@@ -580,6 +580,18 @@ export function generateRecommendedFileName(input: {
 
   const fromRoles = buildNameFromRoles(input.namingRoles);
 
+  /**
+   * O que o modelo entendeu vence a classe quando ele foi específico.
+   *
+   * A classe é a pasta, não o tipo: uma procuração arquivada em Jurídico
+   * continua sendo uma procuração. O resgate abaixo existe para NDA que saiu
+   * sem as partes, e passava por cima de nome bom — `PROCURACAO_OTAVIO_PILAR_
+   * BANDEIRA_NETO_SOLANGE_FERRARI_DUPRAT_2026-04-16` virava `NDA_2026-04-16`,
+   * porque a procuração não tem `parte_reveladora` para o teste encontrar.
+   * Tipo mais sujeito é evidência suficiente de que o modelo leu o documento.
+   */
+  const rolesNameIsSpecific = Boolean(fromRoles) && (input.namingRoles?.sujeitos?.length ?? 0) > 0;
+
   let name =
     fromRoles ??
     applyNamingTemplate({
@@ -596,13 +608,17 @@ export function generateRecommendedFileName(input: {
     !isBareGenericFileName(disambiguated) &&
     meaningfulNameSegments(disambiguated).length >= meaningfulNameSegments(name).length;
 
-  if (templateIsWeak || disambiguatedIsBetter) {
+  if (!rolesNameIsSpecific && (templateIsWeak || disambiguatedIsBetter)) {
     if (!isBareGenericFileName(disambiguated)) {
       name = disambiguated;
     }
   }
 
-  if (isConfidentialityClassRule(input.selectedClass) && !nameHasPartyContext(name, metadata)) {
+  if (
+    !rolesNameIsSpecific &&
+    isConfidentialityClassRule(input.selectedClass) &&
+    !nameHasPartyContext(name, metadata)
+  ) {
     if (!isBareGenericFileName(disambiguated)) {
       name = disambiguated;
     } else {

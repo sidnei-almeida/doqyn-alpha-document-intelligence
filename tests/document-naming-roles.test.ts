@@ -123,3 +123,49 @@ describe('nome a partir dos papéis entendidos pela IA', () => {
     assert.match(name, /Refund/i);
   });
 });
+
+describe('o tipo lido vence a pasta escolhida', () => {
+  /** Classe de confidencialidade: o gerador tem um resgate próprio para ela. */
+  const juridico = {
+    id: 'cat_juridico',
+    name: 'Jurídico',
+    description: 'Documentos jurídicos, NDAs e compliance.',
+    keywords: ['nda', 'confidencialidade'],
+    namingTemplate: '{parte_reveladora}_{parte_receptora}_{data_assinatura}_v{version}',
+    fields: [],
+  } as unknown as DocumentClassRule;
+
+  it('procuração arquivada em Jurídico não vira NDA', () => {
+    // O resgate existe para NDA que saiu sem as partes, e passava por cima de
+    // nome bom: uma procuração não tem `parte_reveladora` para o teste achar, e
+    // o nome virava `NDA_2026-04-13` — perdendo tipo, outorgante e outorgada.
+    const name = generateRecommendedFileName({
+      originalFileName: 'scan.pdf',
+      selectedClass: juridico,
+      metadata: {},
+      version: 'v1.0',
+      namingRoles: {
+        tipo: 'PROCURAÇÃO',
+        sujeitos: ['Otávio Pilar Bandeira Neto', 'Solange Ferrari Duprat'],
+        dataReferencia: '2026-04-13',
+      },
+    });
+
+    assert.match(name, /^PROCURACAO_/, name);
+    assert.match(name, /OTAVIO/, name);
+    assert.ok(!name.startsWith('NDA'), `não deveria virar NDA: ${name}`);
+  });
+
+  it('sem sujeito nenhum, o resgate da classe continua valendo', () => {
+    const name = generateRecommendedFileName({
+      originalFileName: 'scan.pdf',
+      selectedClass: juridico,
+      metadata: {},
+      version: 'v1.0',
+      namingRoles: { tipo: 'PROCURAÇÃO', sujeitos: [], dataReferencia: '2026-04-13' },
+    });
+
+    // Tipo sozinho não distingue dois documentos; aqui o caminho antigo assume.
+    assert.ok(!name.startsWith('PROCURACAO_2026'), name);
+  });
+});

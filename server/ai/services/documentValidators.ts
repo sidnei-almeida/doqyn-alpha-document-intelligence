@@ -56,6 +56,24 @@ export function normalizeCurrency(value: string | number): {
   return { amount, currency: 'BRL' };
 }
 
+/**
+ * Rótulos que o modelo às vezes copia junto com o dado.
+ *
+ * O prompt manda remover ("CONTRATANTE:", "Nome:") e ele obedece na maior parte
+ * das vezes — mas em campo de número o rótulo vem colado no valor com tanta
+ * frequência que virou padrão: `numero_nota` chegava como "Fatura nº
+ * FAT-2026-00318-7". Como `value` guarda o literal do documento e só
+ * `normalizedValue` é usado para buscar, ordenar e comparar, limpar aqui não
+ * perde nada e conserta a comparação.
+ */
+const FIELD_LABEL_PREFIX = /^(?:[\p{L}][\p{L}\s]{0,28}?\s*)?(?:n[ºo°]\.?|n\.[ºo°]|:)\s*/iu;
+
+function stripLeadingFieldLabel(value: string): string {
+  const stripped = value.replace(FIELD_LABEL_PREFIX, '').trim();
+  // Rótulo sem dado atrás não é rótulo: era o próprio valor.
+  return stripped.length >= 2 ? stripped : value;
+}
+
 export function normalizeExtractedValue(
   value: string | number | null,
   fieldType: FieldType,
@@ -72,12 +90,13 @@ export function normalizeExtractedValue(
   }
 
   if (fieldType === 'number') {
-    const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value).replace(',', '.'));
+    const parsed =
+      typeof value === 'number' ? value : Number.parseFloat(String(value).replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : null;
   }
 
   if (fieldType === 'string' && typeof value === 'string') {
-    return value.trim() || null;
+    return stripLeadingFieldLabel(value.trim()) || null;
   }
 
   return value;

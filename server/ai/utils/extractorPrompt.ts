@@ -38,8 +38,7 @@ function limitExtractorChunks(chunks: RetrievedChunk[]): RetrievedChunk[] {
 function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorField[] {
   const classForFields = augmentConfidentialityClassForExtraction(selectedClass);
   const sorted = [...classForFields.fields].sort((a, b) => {
-    const partyBoost =
-      Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
+    const partyBoost = Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
     if (partyBoost !== 0) return partyBoost;
     const validityBoost =
       Number(VALIDITY_FIELD_KEYS.has(b.key)) - Number(VALIDITY_FIELD_KEYS.has(a.key));
@@ -106,6 +105,35 @@ trecho encontrado desempenha exatamente o papel descrito em \`description\`. Pro
 é evidência.`;
 }
 
+/**
+ * Documento financeiro — quem paga, quem recebe e quem só intermedeia.
+ *
+ * Metade das falhas de extração medidas no conjunto de teste está aqui, e todas
+ * do mesmo feitio: o modelo pega a razão social mais destacada da página. Num
+ * boleto isso é o banco, que está no topo em caixa alta e não prestou serviço
+ * nenhum; num recibo é o pagador, que aparece primeiro na frase. Não é falta de
+ * leitura, é falta de dizer qual papel o campo pede.
+ */
+function financialExtractionHints(): string {
+  return `
+DOCUMENTO FINANCEIRO — quem é quem:
+1. \`fornecedor\` é quem ENTREGOU o produto ou o serviço e tem a receber. Nunca é o banco, a
+   operadora de cartão ou a plataforma de cobrança: essas só transportam o dinheiro.
+   - Em boleto: o BENEFICIÁRIO / CEDENTE. O nome no alto do boleto é o banco emissor — ignore-o.
+   - Em nota fiscal / DANFE: o EMITENTE. O DESTINATÁRIO é quem compra, e costuma estar em caixa
+     maior — tamanho não indica papel.
+   - Em recibo: quem ASSINA o recibo e dá quitação. Quem aparece depois de "Recebi de" é o pagador,
+     e é o oposto do que este campo pede.
+   - Em fatura: o emissor da fatura, não o sacado nem o tomador.
+2. \`numero_nota\` é o número do próprio documento fiscal. Não confunda com:
+   - chave de acesso da NF-e (44 dígitos), "nosso número" ou linha digitável do boleto;
+   - número do pedido de compra, do contrato, do processo ou do talão impresso no bloco.
+   Recibo avulso e comprovante sem numeração fiscal: o campo é null, mesmo havendo um número
+   impresso na folha.
+3. \`data_emissao\` é quando o documento foi emitido — não o vencimento, não a data de saída da
+   mercadoria, não a data de processamento no banco, não a competência do serviço.`;
+}
+
 function confidentialityExtractionHints(): string {
   return `
 DOCUMENTO DE CONFIDENCIALIDADE / NDA — instruções obrigatórias:
@@ -145,7 +173,15 @@ export function buildCompactExtractorPrompt(
 ): { prompt: string; compactChunks: RetrievedChunk[] } {
   const compactChunks = limitExtractorChunks(chunks);
   const fields = toCompactFields(selectedClass);
-  const ndaHints = isConfidentialityClassRule(selectedClass) ? confidentialityExtractionHints() : '';
+  const ndaHints = isConfidentialityClassRule(selectedClass)
+    ? confidentialityExtractionHints()
+    : '';
+  // As dicas financeiras seguem os campos, não o nome da pasta: o tenant pode
+  // chamá-la de "Fiscal", "Contas a pagar" ou "Documentos Financeiros", e o que
+  // identifica o caso é o campo `numero_nota` ao lado de `fornecedor`.
+  const fieldKeys = new Set(fields.map((field) => field.key));
+  const financialHints =
+    fieldKeys.has('numero_nota') && fieldKeys.has('fornecedor') ? financialExtractionHints() : '';
 
   const prompt = `Você extrai metadados estruturados de documentos para o DOQYN.
 
@@ -170,16 +206,18 @@ Regras gerais:
 
 Além dos campos, preencha "naming" com o que VOCÊ entendeu do documento — não se limite à
 classe informada, que é apenas a pasta onde ele será arquivado:
-- naming.tipo: o que o documento É, em uma ou duas palavras, em MAIÚSCULAS. Use o termo que a
-  pessoa usaria ao procurá-lo: NDA, RECEITA, NOTA FISCAL, REEMBOLSO, DESENHO TECNICO, LAUDO,
-  CURRICULO, PROPOSTA. Nunca use o nome da classe nem palavras vazias como DOCUMENTO ou ARQUIVO.
+- naming.tipo: o que o documento É, em uma a três palavras, em MAIÚSCULAS, com espaço entre elas.
+  Use o termo que a pessoa usaria ao procurá-lo: NDA, RECEITA, NOTA FISCAL, ORDEM DE COMPRA,
+  REEMBOLSO, DESENHO TECNICO, LAUDO, CURRICULO, PROPOSTA, PROCURACAO, ATESTADO MEDICO.
+  Escreva "ORDEM DE COMPRA", nunca "ORDEMDECOMPRA": palavra colada vira nome de arquivo ilegível.
+  Nunca use o nome da classe nem palavras vazias como DOCUMENTO ou ARQUIVO.
 - naming.sujeitos: uma ou duas entidades que distinguem ESTE documento de outro do mesmo tipo —
   as partes de um contrato, o paciente e quem prescreve numa receita, o fornecedor de uma nota,
   a peça de um desenho. Nomes próprios ou razão social, sem qualificação nem documento fiscal.
 - naming.dataReferencia: a data que identifica o documento (assinatura, emissão, validade ou
   revisão), em yyyy-mm-dd. Use null se o documento não trouxer data.
 ${normalizationContract()}
-${ndaHints}
+${ndaHints}${financialHints}
 
 Classe documental: ${selectedClass.name}
 Descrição: ${selectedClass.description?.trim() || '—'}
