@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useCallback, useState } from 'react';
@@ -80,6 +81,7 @@ export function UploadDropzone({
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
+      {...fileDropzoneProps}
     >
       <input type="file" className="hidden" accept={accept} onChange={handleChange} />
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-doqyn-card">

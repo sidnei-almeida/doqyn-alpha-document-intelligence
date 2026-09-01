@@ -2,6 +2,7 @@ import { useCallback, useId, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { MAX_FILE_SIZE_MB, UPLOAD_ACCEPT } from '@/features/document-send/uploadConstants';
 import {
   formatFileSize,
@@ -111,6 +112,7 @@ export function NewVersionUploadDropzone({
             const file = event.dataTransfer.files[0];
             if (file) handleFile(file);
           }}
+          {...fileDropzoneProps}
           className={cn(
             'flex w-full cursor-pointer flex-col items-center justify-center',
             'rounded-[4px] border border-dashed px-5 py-6 text-center',
