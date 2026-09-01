@@ -2420,14 +2420,14 @@
     --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
   }
 
-  [data-appearance='light'] .workspace-canvas {
-    --canvas-well-edge: var(--border-default);
-    --canvas-well-shadow: inset 0 3px 5px -3px rgba(60, 64, 67, 0.28);
-  }
-
+  /* Nestes dois não há poço: as camadas são a mesma superfície, e profundidade
+     falsa sobre tom igual só suja o recorte. O fio de acento faz o trabalho
+     sozinho, e a sombra é declarada nula em vez de removida para que o
+     `box-shadow` composto siga válido. */
+  [data-appearance='light'] .workspace-canvas,
   [data-appearance='dark'] .workspace-canvas {
-    --canvas-well-edge: rgba(255, 255, 255, 0.05);
-    --canvas-well-shadow: inset 0 3px 6px -3px rgba(0, 0, 0, 0.7);
+    --canvas-well-edge: var(--shell-edge);
+    --canvas-well-shadow: inset 0 0 0 0 transparent;
   }
 
   /* O canvas é o scroll da janela: tela que não administra o próprio scroll (como
