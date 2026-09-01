@@ -48,6 +48,22 @@ describe('z-index e popovers ancorados', () => {
     assert.ok(util.includes('var(--z-popover)'));
   });
 
+  it('gaveta conta como host de overlay, mesmo sem aria-modal', () => {
+    const util = readSrc('components/ui/popover/popoverZIndex.ts');
+    const drawer = readSrc('components/layout/WorkspaceSideDrawer.tsx');
+    // `WorkspaceSideDrawer` é role="presentation"; sem esta marca o calendário do
+    // DateField nascia em --z-dropdown (60), atrás do painel da gaveta.
+    assert.ok(util.includes('data-overlay-host'));
+    assert.ok(drawer.includes('data-overlay-host'));
+  });
+
+  it('popover ancora uma camada acima do host, não num valor fixo', () => {
+    const util = readSrc('components/ui/popover/popoverZIndex.ts');
+    // Valor fixo só cobria o modal (95): confirm (100) e tour (110) voltariam a cobrir.
+    assert.ok(util.includes('getComputedStyle'));
+    assert.ok(util.includes('closest<HTMLElement>(OVERLAY_HOST_SELECTOR)'));
+  });
+
   it('popovers problemáticos migram para AnchoredPopover', () => {
     const components = [
       'features/library/components/ContextInfoButton.tsx',

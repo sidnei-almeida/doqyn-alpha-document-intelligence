@@ -79,6 +79,7 @@ export function WorkspaceSideDrawer({
         zIndexClass,
       )}
       role="presentation"
+      data-overlay-host
       data-testid={overlayTestId}
       onClick={handleOverlayClick}
     >
