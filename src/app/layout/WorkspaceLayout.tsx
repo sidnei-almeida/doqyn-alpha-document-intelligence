@@ -10,6 +10,8 @@ import { UploadQueueProvider } from '@/features/upload/UploadQueueProvider';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import { useGlobalDragDrop } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { useSignatureCompletionSync } from '@/features/signature/hooks/useSignatureCompletionSync';
+import { TourProvider } from '@/features/tour/TourProvider';
+import { TourOverlay } from '@/features/tour/components/TourOverlay';
 import { useTenantLiveSync } from '@/features/tenant/useTenantLiveSync';
 
 /**
@@ -57,6 +59,7 @@ function WorkspaceLayoutInner() {
       <UploadDropOverlay isDragging={isDragging} />
       <UploadQueueDrawer />
       <ReviewDrawer />
+      <TourOverlay />
     </div>
   );
 }
@@ -64,7 +67,12 @@ function WorkspaceLayoutInner() {
 export function WorkspaceLayout() {
   return (
     <UploadQueueProvider>
-      <WorkspaceLayoutInner />
+      {/* O tour envolve o shell inteiro: ele aponta para a sidebar, para a
+          barra de cima e para o conteúdo da rota, e navega entre rotas no meio
+          do caminho — precisa sobreviver à troca de página. */}
+      <TourProvider>
+        <WorkspaceLayoutInner />
+      </TourProvider>
     </UploadQueueProvider>
   );
 }

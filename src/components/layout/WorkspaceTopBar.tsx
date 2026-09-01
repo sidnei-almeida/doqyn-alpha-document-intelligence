@@ -1,10 +1,9 @@
 import { useIsFetching } from '@tanstack/react-query';
-import { Icon } from '@/components/ui/Icon';
 import { GlobalSearchCommand } from './GlobalSearchCommand';
 import { HeaderUserMenu } from './HeaderUserMenu';
+import { HelpMenu } from './HelpMenu';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { NotificationsBell } from '@/features/notifications/components/NotificationsBell';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 
 /** Barra superior — fio de separação, busca contida e glifos soltos. */
 export function WorkspaceTopBar() {
@@ -25,15 +24,7 @@ export function WorkspaceTopBar() {
 
       <div className="flex shrink-0 items-center gap-1">
         <NotificationsBell className={iconButtonClass} />
-        <a
-          href="https://doqyn.com"
-          target="_blank"
-          rel="noreferrer"
-          className={iconButtonClass}
-          aria-label="Ajuda"
-        >
-          <Icon name="help" size={ICON_SIZE.nav} />
-        </a>
+        <HelpMenu className={iconButtonClass} />
         <ThemeToggle className="text-doqyn-subtle hover:text-doqyn-text" />
         {/* Fio curto separando os controles do bloco de identidade: são coisas
             de naturezas diferentes na mesma ponta da barra. */}

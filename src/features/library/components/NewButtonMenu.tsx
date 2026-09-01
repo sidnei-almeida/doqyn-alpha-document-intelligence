@@ -65,7 +65,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
   );
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative', className)} data-tour="new-button">
       <input
         ref={fileInputRef}
         type="file"

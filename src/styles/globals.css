@@ -4929,4 +4929,79 @@
       transform: translateY(0) scale(1);
     }
   }
+
+  /* ---------------------------------------------------------------------
+     Tour do produto — holofote e cartão.
+
+     O escurecimento não é uma camada por cima da tela: é a sombra do próprio
+     recorte, com raio maior que a janela. Por isso as quatro medidas do furo
+     são propriedades animáveis e o passo desliza para o próximo em vez de
+     redesenhar — que era o que fazia o holofote piscar entre um alvo e outro.
+     --------------------------------------------------------------------- */
+  .tour-root {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-tour);
+    pointer-events: none;
+  }
+
+  .tour-blocker {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  .tour-spotlight {
+    position: fixed;
+    border-radius: 4px;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1px var(--accent-active),
+      0 0 0 5px color-mix(in srgb, var(--accent-active) 16%, transparent),
+      0 0 0 100vmax var(--tour-scrim);
+    transition:
+      top 300ms var(--ease-emphasized),
+      left 300ms var(--ease-emphasized),
+      width 300ms var(--ease-emphasized),
+      height 300ms var(--ease-emphasized);
+  }
+
+  /* Passo sem alvo (a abertura, e o passo cujo elemento não apareceu): o furo
+     tem tamanho zero no centro, então só o escurecimento aparece — sem o fio
+     de acento pousado num ponto que não quer dizer nada. */
+  .tour-spotlight[data-has-target='false'] {
+    box-shadow: 0 0 0 100vmax var(--tour-scrim);
+  }
+
+  .tour-card {
+    z-index: 1;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    box-shadow: var(--shadow-elevation-2);
+    animation: tour-card-in 220ms var(--ease-standard) both;
+    transition:
+      top 300ms var(--ease-emphasized),
+      left 300ms var(--ease-emphasized);
+  }
+
+  @keyframes tour-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-spotlight,
+    .tour-card {
+      transition: none;
+      animation: none;
+    }
+  }
 }

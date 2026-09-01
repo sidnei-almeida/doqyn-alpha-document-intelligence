@@ -35,6 +35,10 @@ export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps)
     <NavLink
       to={item.path}
       end={item.end}
+      // Âncora do tour: o holofote recorta o item de verdade, e o roteiro se
+      // refere a ele pelo destino — não pela posição na lista, que muda com o
+      // papel de quem está olhando.
+      data-tour={`nav:${item.path}`}
       className={({ isActive }) => navLinkClass(isActive, collapsed)}
     >
       {({ isActive }) => (

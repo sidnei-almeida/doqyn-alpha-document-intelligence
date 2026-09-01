@@ -85,6 +85,10 @@
   --seal: #c2a05a;
   --seal-soft: #241c0e;
 
+  /* Escurecimento do tour. Mais fundo que o de modal: aqui o resto da tela não
+     é só contexto, é o que a pessoa deve parar de ler. */
+  --tour-scrim: rgba(4, 8, 10, 0.78);
+
   /* Paleta dos grupos — identifica, não classifica. Doze tons de peso parecido,
      dessaturados o bastante para conviver com o grafite. O par `-ink` é o traço
      e o `-wash` é o fundo fraco de chip; no claro os dois trocam de papel. */
@@ -280,6 +284,10 @@
   /* Latão — ver a regra de forma no bloco do tema escuro. */
   --seal: #7c6220;
   --seal-soft: #f4eedf;
+
+  /* No claro o mesmo peso de preto apaga a tela; a tinta é mais leve e puxa o
+     grafite da marca em vez de cinza neutro. */
+  --tour-scrim: rgba(16, 24, 30, 0.6);
 
   --status-ok-bg: #e2f2e9;
   --status-ok-text: #1d774d;
@@ -518,6 +526,9 @@
   --z-modal: 95;
   --z-popover: 96;
   --z-confirm: 100;
+  /* O tour explica a tela inteira, inclusive o que estiver em modal, então
+     fica acima de tudo — é a única camada que pode cobrir a de confirmação. */
+  --z-tour: 110;
 
   /* Acento sólido — sem gradiente */
   --gradient-action: var(--accent-active);
