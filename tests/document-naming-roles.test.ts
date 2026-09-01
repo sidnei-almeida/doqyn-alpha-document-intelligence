@@ -27,8 +27,29 @@ describe('nome a partir dos papéis entendidos pela IA', () => {
     });
 
     assert.match(name, /^RECEITA_/, `deve começar pelo tipo: ${name}`);
-    assert.match(name, /Maria/, `deve conter o sujeito: ${name}`);
+    assert.match(name, /Maria/i, `deve conter o sujeito: ${name}`);
     assert.match(name, /2026-06-09/, `deve conter a data: ${name}`);
+  });
+
+  it('o nome proposto sai em caixa alta, e só a extensão fica em minúscula', () => {
+    // Caixa alta é o que separa, na lista, o nome que o sistema deu do nome que
+    // chegou com quem enviou. A extensão fica fora: `.PDF` faz o arquivo parecer
+    // vindo de outro sistema.
+    const name = generateRecommendedFileName({
+      originalFileName: 'scan001.pdf',
+      selectedClass: genericClass,
+      metadata: {},
+      version: 'v1.0',
+      namingRoles: {
+        tipo: 'RECEITA',
+        sujeitos: ['Maria Helena Souza'],
+        dataReferencia: '2026-06-09',
+      },
+    });
+
+    const stem = name.slice(0, name.lastIndexOf('.'));
+    assert.equal(stem, stem.toUpperCase(), `o corpo do nome deve ser caixa alta: ${name}`);
+    assert.ok(name.endsWith('.pdf'), `a extensão deve ficar em minúscula: ${name}`);
   });
 
   it('usa o tipo do documento, não o nome da pasta', () => {
