@@ -73,6 +73,9 @@ export function CrossTenantRecipientField({
   // Enquanto não é e-mail, o que se digita é apelido — e aí a busca por prefixo responde.
   const search = useDirectorySearch(normalized, !isEmail);
 
+  /** Menos de dois caracteres nem chega ao servidor — ver `useDirectorySearch`. */
+  const prefixTooShort = normalized.replace(/^@/, '').length < 2;
+
   /**
    * O histórico **não some ao digitar**, ele estreita.
    *
@@ -114,7 +117,28 @@ export function CrossTenantRecipientField({
   let action: { label: string; run: () => void } | null = null;
 
   if (!isEmail) {
-    resolution = { tone: 'muted', text: idleHint };
+    /**
+     * O caminho por apelido não tinha estado nenhum: procurando, deu erro e não achou ninguém
+     * mostravam todos a mesma dica de sempre. Uma busca que voltava vazia era indistinguível de
+     * uma busca que nunca aconteceu, e quem digitava o apelido inteiro de alguém concluía que o
+     * campo estava quebrado.
+     *
+     * Buscar pelo próprio apelido cai aqui também: o servidor filtra quem consulta
+     * (`hit.id !== user.id`), então a resposta é vazia — correta, e ilegível sem esta linha.
+     * Distinguir esse caso pelo nome exigiria `username` em `/api/me`, que a sessão verificada
+     * do auth-service não carrega; o vazio genérico já diz a verdade.
+     */
+    if (prefixTooShort) {
+      resolution = { tone: 'muted', text: idleHint };
+    } else if (search.isLoading) {
+      resolution = { tone: 'muted', text: 'Procurando…' };
+    } else if (search.isError) {
+      resolution = { tone: 'warn', text: 'Não foi possível consultar agora.' };
+    } else if (hits.length === 0 && !mostrarFrequentes) {
+      resolution = { tone: 'warn', text: 'Ninguém com esse começo de nome de usuário.' };
+    } else {
+      resolution = { tone: 'muted', text: idleHint };
+    }
   } else if (lookup.isLoading) {
     resolution = { tone: 'muted', text: 'Procurando…' };
   } else if (lookup.isError || !lookup.data) {
