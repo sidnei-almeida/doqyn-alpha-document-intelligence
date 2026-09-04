@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import type { AnimationEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { DoqynMark } from '@/components/brand/DoqynMark';
@@ -50,14 +51,6 @@ type DocumentSpec = {
   body: React.ReactNode;
   annotations: Anno[];
 };
-
-/**
- * O tempo de um documento no quadro, em milissegundos.
- *
- * É o mesmo número da animação `auth-doc-life` em `globals.css`. Se divergirem,
- * a página some antes da troca ou salta depois dela.
- */
-const DOCUMENT_MS = 8400;
 
 /** A página é montada em blocos com cláusula nomeada, não como um bloco único
  *  de tarja cinza: é a cláusula que dá sentido ao fio da extração que sai dali.
@@ -867,11 +860,6 @@ const DOCUMENTS: DocumentSpec[] = [
   },
 ];
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 export function AntechamberDocument() {
   const location = useLocation();
   // A leitura se repete a cada navegação — trocar de tela é ato deliberado, e
@@ -883,21 +871,32 @@ export function AntechamberDocument() {
   const [index, setIndex] = useState(0);
 
   /**
-   * O laço não roda para quem pediu menos movimento.
+   * A troca é o fim da animação, não um temporizador paralelo.
    *
-   * O CSS já anula as animações nesse modo, mas o temporizador não é CSS: sem
-   * este desvio, a página trocaria de documento em silêncio a cada oito
-   * segundos — movimento sem aviso, que é pior que a animação recusada.
+   * Havia dois relógios aqui: `auth-doc-life` no compositor e um `setInterval`
+   * de 8400ms no event loop. Como a animação termina em `opacity: 0` e segura
+   * esse estado (`both`), qualquer atraso do timer — e `setInterval` atrasa por
+   * natureza, mais ainda em aba de fundo ou sob tarefa longa — deixava a folha
+   * apagada esperando o React remontar. Era o branco entre um documento e o
+   * seguinte, e ele crescia a cada volta, porque o atraso se acumula.
+   *
+   * Ouvindo `animationend` os dois viram um só: a página só é trocada quando a
+   * animação de fato acabou, e a remontagem reinicia a animação. Não há o que
+   * dessincronizar.
+   *
+   * `animationend` borbulha, e dentro da folha há dezenas de animações mais
+   * curtas (`auth-write`, `auth-line`, `auth-scan`). Por isso o filtro duplo:
+   * só o alvo que disparou, e só a animação de vida do documento.
+   *
+   * Em `prefers-reduced-motion` o CSS anula `auth-doc`, então o evento nunca
+   * chega e o laço não anda — que é o comportamento que a regra pede, agora
+   * sem precisar de um desvio em JavaScript para consegui-lo.
    */
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    const timer = window.setInterval(
-      () => setIndex((current) => (current + 1) % DOCUMENTS.length),
-      DOCUMENT_MS,
-    );
-    return () => window.clearInterval(timer);
-  }, []);
+  const advance = (event: AnimationEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.animationName !== 'auth-doc-life') return;
+    setIndex((current) => (current + 1) % DOCUMENTS.length);
+  };
 
   const doc = DOCUMENTS[index];
 
@@ -908,7 +907,7 @@ export function AntechamberDocument() {
       <div className="flex items-stretch">
         {/* A chave é o documento: trocá-la remonta a folha inteira, e é o que
             faz o texto se escrever e a varredura descer de novo a cada tipo. */}
-        <div key={doc.id} className="auth-doc flex items-stretch">
+        <div key={doc.id} className="auth-doc flex items-stretch" onAnimationEnd={advance}>
           <div className="relative w-[min(46vh,464px)]">
             {/* a página, em proporção A4 */}
             <div className="auth-page relative flex aspect-[1/1.414] flex-col overflow-hidden rounded-[3px] bg-[#FBFCFC] px-8 py-7">

@@ -4965,6 +4965,12 @@
      A duração aqui e a do temporizador em `AntechamberDocument` são o mesmo
      número: se divergirem, a página some antes da troca ou salta depois dela. */
 
+  /* O tempo de um documento no quadro, e o único lugar onde ele existe.
+     `AntechamberDocument` troca a página no `animationend` desta animação, então
+     o ritmo do painel se ajusta mudando só este número. Havia uma cópia dele em
+     JavaScript temporizando a troca em paralelo: como a animação termina em
+     `opacity: 0` e segura o estado, bastava o timer atrasar um pouco para a
+     folha ficar apagada esperando a remontagem — e `setInterval` atrasa sempre. */
   .auth-doc {
     animation: auth-doc-life 8.4s ease-in-out both;
   }
