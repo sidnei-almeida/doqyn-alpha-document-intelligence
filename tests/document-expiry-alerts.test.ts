@@ -62,6 +62,39 @@ describe('alerta de vencimento — cálculo de marcos', () => {
     assert.equal(resolveDueOffset(45, [30, 7, 1]), null);
   });
 
+  it('com o padrão novo, o vencido tem marco próprio a cada passo', () => {
+    const offsets = normalizeExpiryAlertConfig(undefined).offsetsDays;
+
+    // O caso que motivou a mudança: documento que venceu ontem. Com [30, 7, 1] ele devolvia 1 —
+    // o mesmo marco entregue na véspera, que o índice único descarta. Ninguém era avisado.
+    assert.equal(resolveDueOffset(-1, offsets), -1);
+
+    // E cada degrau depois tem chave própria, então o aviso se repete sem repetir a mesma chave.
+    assert.equal(resolveDueOffset(0, offsets), 0);
+    assert.equal(resolveDueOffset(-3, offsets), -3);
+    assert.equal(resolveDueOffset(-7, offsets), -7);
+    assert.equal(resolveDueOffset(-30, offsets), -30);
+
+    // Entre dois marcos, vale o já alcançado: quem venceu há 2 dias segue no de -1 até chegar em
+    // -3, e não recebe nada nesse intervalo.
+    assert.equal(resolveDueOffset(-2, offsets), -1);
+    assert.equal(resolveDueOffset(-20, offsets), -15);
+
+    // Passado o último marco, o assunto encerra em vez de virar aviso diário perpétuo.
+    assert.equal(resolveDueOffset(-31, offsets), -30);
+  });
+
+  it('a janela de varredura alcança o marco negativo mais distante', () => {
+    const offsets = normalizeExpiryAlertConfig(undefined).offsetsDays;
+    const now = new Date('2026-08-10T12:00:00Z');
+    const { start, end } = computeScanWindow(offsets, now);
+
+    // Sem cobrir -30, o documento vencido há um mês sairia da consulta e o último marco nunca
+    // seria entregue — a janela precisa ir além do marco, não só até ele.
+    assert.ok(start <= new Date(Date.UTC(2026, 6, 11)), `janela começa cedo demais: ${start}`);
+    assert.ok(end >= new Date(Date.UTC(2026, 8, 9)), `janela termina cedo demais: ${end}`);
+  });
+
   it('o dia do vencimento é o marco zero, se configurado', () => {
     assert.equal(resolveDueOffset(0, [7, 0]), 0);
     assert.equal(resolveDueOffset(0, [7, 1]), 1);
@@ -147,14 +180,44 @@ describe('alerta de vencimento — fuso', () => {
 });
 
 describe('alerta de vencimento — normalização da configuração', () => {
-  it('usa 30/7/1 quando nada é informado', () => {
+  it('nasce ligado, com os marcos padrão e avisando depois de vencer', () => {
     const config = normalizeExpiryAlertConfig(undefined);
     assert.deepEqual(config.offsetsDays, DEFAULT_EXPIRY_OFFSETS_DAYS);
-    assert.equal(config.enabled, false);
+    // Ligado por padrão: guardar a data de vencimento e não avisar era o defeito que fazia um
+    // documento vencido não gerar notificação nenhuma.
+    assert.equal(config.enabled, true);
+    // Sem isto os marcos negativos do padrão seriam filtrados na própria normalização.
+    assert.equal(config.notifyAfterExpiry, true);
   });
 
-  it('descarta marcos negativos a menos que avisar-após-vencer esteja ligado', () => {
-    assert.deepEqual(normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7] }).offsetsDays, [30, 7]);
+  it('o padrão cobre antes, no dia e depois do vencimento', () => {
+    const { offsetsDays } = normalizeExpiryAlertConfig(undefined);
+
+    assert.ok(offsetsDays.includes(0), 'o dia do vencimento precisa ter marco próprio');
+    assert.ok(
+      offsetsDays.some((offset) => offset < 0),
+      'sem marco negativo o documento vence e nunca mais avisa',
+    );
+    // Decrescente: é como a tela apresenta, do mais distante ao mais vencido.
+    assert.deepEqual(
+      offsetsDays,
+      [...offsetsDays].sort((a, b) => b - a),
+    );
+  });
+
+  it('respeita quem desligou de propósito', () => {
+    // O default só vale na ausência do campo. `false` gravado é uma decisão, e a normalização
+    // não pode desfazê-la.
+    assert.equal(normalizeExpiryAlertConfig({ enabled: false }).enabled, false);
+    assert.equal(normalizeExpiryAlertConfig({ notifyAfterExpiry: false }).notifyAfterExpiry, false);
+  });
+
+  it('descarta marcos negativos quando avisar-após-vencer está desligado', () => {
+    assert.deepEqual(
+      normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7], notifyAfterExpiry: false })
+        .offsetsDays,
+      [30, 7],
+    );
     assert.deepEqual(
       normalizeExpiryAlertConfig({ offsetsDays: [30, 7, -7], notifyAfterExpiry: true }).offsetsDays,
       [30, 7, -7],
@@ -163,9 +226,9 @@ describe('alerta de vencimento — normalização da configuração', () => {
 
   it('deduplica, ordena do mais distante ao mais próximo e rejeita lixo', () => {
     const config = normalizeExpiryAlertConfig({
-      offsetsDays: [7, 30, 7, 1.5 as unknown as number, 9999, 1],
+      offsetsDays: [7, 30, 7, 1.5 as unknown as number, 9999, 1, -1],
     });
-    assert.deepEqual(config.offsetsDays, [30, 7, 1]);
+    assert.deepEqual(config.offsetsDays, [30, 7, 1, -1]);
   });
 
   it('deduplica e limpa os grupos destinatários', () => {
@@ -214,6 +277,48 @@ describe('alerta de vencimento — quem é avisado', () => {
     assert.ok(service.includes('new Set([document.ownerUserId || ownerUserId])'));
   });
 
+  it('em conta PF a categoria sem regra usa o padrão, e a desligada continua muda', () => {
+    const now = new Date('2026-08-10T12:00:00Z');
+    const padrao = normalizeExpiryAlertConfig(undefined);
+    const desligada = normalizeExpiryAlertConfig({ enabled: false });
+
+    const documento = (id: string, classId: string, validityDate: string) =>
+      ({
+        _id: id,
+        classId,
+        title: `Doc ${id}`,
+        ownerUserId: 'user_dono',
+        searchMeta: { validityDate: new Date(validityDate) },
+      }) as never;
+
+    // É assim que o caminho PF resolve a configuração: a regra da categoria quando existe, o
+    // padrão quando não existe. Exigir regra era o que fazia um documento vencido não avisar
+    // ninguém numa conta onde o dono é o único destinatário possível.
+    const configuradas = new Map([['cat_desligada', desligada]]);
+
+    const { pending } = buildPendingExpiryNotifications({
+      tenantId: 'tenant_pf',
+      documents: [
+        // Venceu ontem, categoria sem regra nenhuma.
+        documento('doc_sem_regra', 'cat_sem_regra', '2026-08-09T00:00:00Z'),
+        // Mesmo prazo, mas o dono desligou o alerta desta categoria.
+        documento('doc_desligado', 'cat_desligada', '2026-08-09T00:00:00Z'),
+      ],
+      resolveConfig: (document) => configuradas.get(document.classId) ?? padrao,
+      now,
+      resolveRecipients: (document) => new Set([document.ownerUserId as string]),
+    });
+
+    assert.deepEqual(
+      pending.map((notification) => [notification.documentId, notification.expiry?.offsetDays]),
+      [['doc_sem_regra', -1]],
+    );
+    assert.equal(pending[0].title, 'Doc doc_sem_regra venceu há 1 dia');
+    // Chave própria do marco negativo: o aviso de "venceu" não colide com o de "vence em 1 dia"
+    // entregue na véspera, que é o que o índice único descartava.
+    assert.equal(pending[0].eventKey, 'doc_sem_regra:-1');
+  });
+
   it('gera um alerta por destinatário e ignora documento fora do marco', () => {
     const now = new Date('2026-08-10T12:00:00Z');
     const config = normalizeExpiryAlertConfig({ enabled: true, offsetsDays: [30, 7, 1] });
@@ -235,7 +340,7 @@ describe('alerta de vencimento — quem é avisado', () => {
         documento('doc_longe', '2026-10-09T00:00:00Z', 'user_dono'),
         documento('doc_orfao', '2026-08-11T00:00:00Z'),
       ],
-      configByCategory: new Map([['cat_1', config]]),
+      resolveConfig: () => config,
       now,
       resolveRecipients: (document) =>
         new Set(document.ownerUserId ? [document.ownerUserId, 'user_gestor'] : []),
