@@ -532,7 +532,7 @@ export function RequestAccessPage() {
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          entrar
+          Entrar
         </Link>
       </AuthFooterLink>
     </>
