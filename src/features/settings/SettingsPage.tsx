@@ -29,6 +29,7 @@ export function SettingsPage() {
       eyebrow={SETTINGS_UI_PATTERN.pageEyebrow}
       title={meta.label}
       description={meta.description}
+      className="settings-page-shell"
       bodyClassName="min-h-0 settings-page"
     >
       <SettingsLayout section={section} items={navItems} onSectionChange={setSection}>

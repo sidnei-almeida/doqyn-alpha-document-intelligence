@@ -12,7 +12,7 @@ type SettingsSidebarNavProps = {
 export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarNavProps) {
   return (
     <nav className="settings-sidebar-nav" aria-label="Seções de configurações">
-      <ul className="settings-sidebar-nav__list hidden lg:block">
+      <ul className="settings-sidebar-nav__list">
         {items.map((item) => {
           const isActive = item.id === active;
           return (
@@ -41,11 +41,7 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
         })}
       </ul>
 
-      <div
-        className="settings-tabs-nav lg:hidden"
-        role="tablist"
-        aria-label="Seções de configurações"
-      >
+      <div className="settings-tabs-nav" role="tablist" aria-label="Seções de configurações">
         {items.map((item) => {
           const isActive = item.id === active;
           return (

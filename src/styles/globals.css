@@ -2961,38 +2961,57 @@
     --settings-transition: 150ms;
     --settings-panel-border: color-mix(in srgb, var(--border-subtle) 65%, transparent);
     --settings-panel-bg: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+  }
 
-    /* Duas medidas, não uma. A coluna carrega linha de registro e grade de campo, que
-       precisam de largura; o texto corrido dentro dela continua preso à medida de
-       leitura. Travar as duas no mesmo número era o que apertava a grade de fatos numa
-       tela larga e ainda deixava metade do monitor vazia. */
+  /*
+   * Três medidas, não uma. Prosa, linha de registro e campo de formulário não são bem
+   * servidos pelo mesmo número: travar os três em 46rem apertava a grade de fatos até
+   * quebrar um e-mail no meio do endereço e ainda deixava metade do monitor vazia.
+   *
+   * Os tokens vivem no `.page-shell` inteiro, e não só no corpo, porque o título da
+   * página precisa acompanhar o mesmo centro do conteúdo — senão centralizar a coluna
+   * deixaria o cabeçalho sozinho na margem esquerda.
+   */
+  .settings-page-shell {
+    --settings-nav: 16.5rem;
+    --settings-gap: 1.5rem;
     --settings-measure: 46rem;
     --settings-prose: 46rem;
     --settings-form: 38rem;
+
+    /* Coluna e índice caminham juntos para o centro quando sobra tela. Sem isto, todo o
+       excedente de uma ultrawide vira vão morto de um lado só. */
+    width: 100%;
+    max-width: calc(var(--settings-nav) + var(--settings-gap) + var(--settings-measure));
+    margin-inline: auto;
   }
 
   @media (min-width: 1280px) {
-    .settings-page {
+    .settings-page-shell {
+      --settings-nav: 17.5rem;
+      --settings-gap: 1.75rem;
       --settings-measure: 52rem;
     }
   }
 
   @media (min-width: 1536px) {
-    .settings-page {
+    .settings-page-shell {
       --settings-measure: 58rem;
     }
   }
 
   @media (min-width: 1920px) {
-    .settings-page {
+    .settings-page-shell {
       --settings-measure: 64rem;
     }
   }
 
+  /* As colunas saem dos mesmos tokens que dimensionam o `.settings-page-shell`: um número
+     só descrito em dois lugares sairia de sincronia na primeira mudança de faixa. */
   .settings-shell {
     display: grid;
-    grid-template-columns: minmax(14rem, 16.5rem) minmax(0, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: minmax(14rem, var(--settings-nav, 16.5rem)) minmax(0, 1fr);
+    gap: var(--settings-gap, 1.5rem);
     align-items: start;
     width: 100%;
     min-height: 0;
@@ -3000,8 +3019,7 @@
 
   @media (min-width: 1280px) {
     .settings-shell {
-      grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
-      gap: 1.75rem;
+      grid-template-columns: minmax(15rem, var(--settings-nav, 17.5rem)) minmax(0, 1fr);
     }
   }
 
@@ -3736,13 +3754,23 @@
     cursor: default;
   }
 
+  /* A alternância entre índice e pílulas mora aqui, não em `hidden`/`lg:hidden` na JSX:
+     deste ponto do arquivo em diante tudo está em `@layer utilities`, então uma classe de
+     componente vem depois do `.hidden` do Tailwind com a mesma especificidade e ganha. O
+     `hidden` não fazia nada, e abaixo de 1024px as duas navegações apareciam juntas. */
   .settings-sidebar-nav__list {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 0.25rem;
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  @media (min-width: 1024px) {
+    .settings-sidebar-nav__list {
+      display: flex;
+    }
   }
 
   /* Índice das seções: régua de acento marca onde se está, sem caixa em volta. */
@@ -3912,6 +3940,12 @@
     overflow-x: auto;
     padding-bottom: 0.25rem;
     scrollbar-width: thin;
+  }
+
+  @media (min-width: 1024px) {
+    .settings-tabs-nav {
+      display: none;
+    }
   }
 
   .settings-tab-item {
