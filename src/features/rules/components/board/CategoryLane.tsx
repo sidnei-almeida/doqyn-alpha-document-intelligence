@@ -20,6 +20,13 @@ export type CategoryLaneProps = {
   /** Estado e proporção de alcance da categoria — o selo e a régua do cabeçalho. */
   reach: CategoryReach;
   simulation?: SimulationResult | null;
+  /**
+   * O cabeçalho de alcance — quantas pessoas veem, quantos grupos conectados, a régua e o selo.
+   *
+   * Ausente em tenant PF, onde ele mediria uma pessoa só contra si mesma: "1 pessoa alcança ·
+   * 0 grupos conectados" com um medidor cheio não é informação, é um placar sem jogo.
+   */
+  showReach?: boolean;
   isAdmin: boolean;
   onOpenDetails: () => void;
   onConfigureExtraction?: () => void;
@@ -95,6 +102,7 @@ export function CategoryLane({
   previewCount,
   reach,
   simulation,
+  showReach = true,
   isAdmin,
   onOpenDetails,
   onConfigureExtraction,
@@ -119,41 +127,45 @@ export function CategoryLane({
         <CategoryGlyph category={category} />
         <div className="min-w-0 flex-1">
           <p className="access-lane__name">{category.name}</p>
-          <p className="access-lane__score" aria-live="polite">
-            {previewCount != null && delta !== 0 ? (
-              <>
-                <span className="access-lane__score-from">{peopleCount}</span>
-                <span aria-hidden> → </span>
-                <span className="access-lane__score-to">{previewCount} pessoas veem</span>
-                <span className="access-lane__score-delta">
-                  {delta > 0 ? `+${delta}` : String(delta)}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="access-lane__score-to">{peopleCount}</span>
-                {peopleCount === 1 ? ' pessoa alcança' : ' pessoas alcançam'}
-                <span className="access-lane__score-sep" aria-hidden>
-                  ·
-                </span>
-                <span className="access-lane__score-to">{reach.groupCount}</span>
-                {reach.groupCount === 1 ? ' grupo conectado' : ' grupos conectados'}
-              </>
-            )}
-          </p>
-          <div
-            className="access-lane__meter"
-            data-state={reach.state}
-            role="img"
-            aria-label={`${Math.round(reach.coverage * 100)}% das pessoas da empresa alcançam esta categoria`}
-          >
-            <span
-              className="access-lane__meter-fill"
-              style={{ width: `${Math.round(reach.coverage * 100)}%` }}
-            />
-          </div>
+          {showReach ? (
+            <>
+              <p className="access-lane__score" aria-live="polite">
+                {previewCount != null && delta !== 0 ? (
+                  <>
+                    <span className="access-lane__score-from">{peopleCount}</span>
+                    <span aria-hidden> → </span>
+                    <span className="access-lane__score-to">{previewCount} pessoas veem</span>
+                    <span className="access-lane__score-delta">
+                      {delta > 0 ? `+${delta}` : String(delta)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="access-lane__score-to">{peopleCount}</span>
+                    {peopleCount === 1 ? ' pessoa alcança' : ' pessoas alcançam'}
+                    <span className="access-lane__score-sep" aria-hidden>
+                      ·
+                    </span>
+                    <span className="access-lane__score-to">{reach.groupCount}</span>
+                    {reach.groupCount === 1 ? ' grupo conectado' : ' grupos conectados'}
+                  </>
+                )}
+              </p>
+              <div
+                className="access-lane__meter"
+                data-state={reach.state}
+                role="img"
+                aria-label={`${Math.round(reach.coverage * 100)}% das pessoas da empresa alcançam esta categoria`}
+              >
+                <span
+                  className="access-lane__meter-fill"
+                  style={{ width: `${Math.round(reach.coverage * 100)}%` }}
+                />
+              </div>
+            </>
+          ) : null}
         </div>
-        {outOfReach ? (
+        {!showReach ? null : outOfReach ? (
           <span className="access-lane__flag">fora do alcance</span>
         ) : (
           <span className="access-lane__seal" data-state={reach.state}>

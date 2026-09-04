@@ -1109,6 +1109,12 @@
     .access-board {
       grid-template-columns: 15rem minmax(0, 1fr);
     }
+
+    /* Sem o trilho de grupos (tenant PF), a primeira coluna ficaria reservada e vazia — as
+       faixas começariam 15rem adentro atrás de nada. */
+    .access-board[data-groups='false'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .access-board__rail {

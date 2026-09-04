@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/features/auth/useAuth';
 import { canAccessRulesPage } from '@/features/rules/utils/rulesAccess';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import { AccessMatrixView } from './components/access/AccessMatrixView';
 import { AccessBoard } from './components/board/AccessBoard';
 import { SimulateAccessBanner, SimulateAccessSelect } from './components/access/SimulateAccessBar';
@@ -29,7 +30,7 @@ type RulesTab = 'acessos' | 'matriz';
 const NEW_CATEGORY_PARAM = 'nova';
 
 export function RulesPage() {
-  const { user, hasAnyRole } = useAuth();
+  const { user, hasAnyRole, tenant } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<RulesTab>('acessos');
   const [groupModalOpen, setGroupModalOpen] = useState(false);
@@ -39,6 +40,13 @@ export function RulesPage() {
   const [simulatedMemberId, setSimulatedMemberId] = useState('');
 
   const isAdmin = canAccessRulesPage(hasAnyRole) || user?.role === 'admin';
+  /**
+   * Grupos só existem onde há mais de uma pessoa. Em PF o pool individual é filtrado por
+   * `ownerUserId` (`server/tenancy/documentOwnership.ts`), então não há entre quem repartir:
+   * o trilho, o placar de cobertura, o "Ver como" e a Matriz saem da tela. Categoria e regra
+   * de extração ficam — é o que PF de fato configura.
+   */
+  const showGroups = !isIndividualTenant(tenant?.tenantType);
 
   useEffect(() => {
     if (!isAdmin || searchParams.get(NEW_CATEGORY_PARAM) !== 'categoria') return;
@@ -92,7 +100,11 @@ export function RulesPage() {
       <PageShell
         eyebrow="Governança"
         title="Regras de acesso"
-        description="Conecte grupos de pessoas às categorias de documentos."
+        description={
+          showGroups
+            ? 'Conecte grupos de pessoas às categorias de documentos.'
+            : 'Categorias e o que a IA extrai de cada uma.'
+        }
       >
         <EmptyState
           stretch
@@ -112,23 +124,31 @@ export function RulesPage() {
     <PageShell
       eyebrow="Governança"
       title="Regras de acesso"
-      description="Quem não está num grupo conectado não vê os documentos da categoria."
+      description={
+        showGroups
+          ? 'Quem não está num grupo conectado não vê os documentos da categoria.'
+          : 'Categorias e o que a IA extrai de cada uma.'
+      }
       actions={
         isAdmin ? (
           <div className="flex flex-wrap items-center gap-2">
-            <SimulateAccessSelect
-              members={members}
-              activeMemberId={simulatedMemberId}
-              onChange={setSimulatedMemberId}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setGroupModalOpen(true)}
-            >
-              Novo grupo
-            </Button>
+            {showGroups ? (
+              <>
+                <SimulateAccessSelect
+                  members={members}
+                  activeMemberId={simulatedMemberId}
+                  onChange={setSimulatedMemberId}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setGroupModalOpen(true)}
+                >
+                  Novo grupo
+                </Button>
+              </>
+            ) : null}
             <Button type="button" size="sm" onClick={() => setCategoryModalOpen(true)}>
               Nova categoria
             </Button>
@@ -144,22 +164,30 @@ export function RulesPage() {
         />
       )}
 
-      <Tabs
-        tabs={[
-          { id: 'acessos', label: 'Acessos' },
-          { id: 'matriz', label: 'Matriz' },
-        ]}
-        activeTab={activeTab}
-        onChange={(id) => setActiveTab(id as RulesTab)}
-        className="-mt-2"
-      />
+      {/* A Matriz é categorias × grupos: sem grupos ela não tem segunda dimensão, e uma aba
+          sozinha não é escolha. */}
+      {showGroups ? (
+        <Tabs
+          tabs={[
+            { id: 'acessos', label: 'Acessos' },
+            { id: 'matriz', label: 'Matriz' },
+          ]}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as RulesTab)}
+          className="-mt-2"
+        />
+      ) : null}
 
-      {activeTab === 'acessos' &&
+      {(activeTab === 'acessos' || !showGroups) &&
         (categories.length === 0 ? (
           <EmptyState
             stretch
             title="Nenhuma categoria de documentos ainda."
-            description="Crie uma categoria para começar a organizar o acesso por grupos."
+            description={
+              showGroups
+                ? 'Crie uma categoria para começar a organizar o acesso por grupos.'
+                : 'Crie uma categoria para dizer à IA o que extrair de cada documento.'
+            }
             action={
               isAdmin ? (
                 <Button type="button" onClick={() => setCategoryModalOpen(true)}>
@@ -175,6 +203,7 @@ export function RulesPage() {
             groupMemberCounts={groupMemberCounts}
             members={members}
             isAdmin={isAdmin}
+            showGroups={showGroups}
             simulatedMember={simulatedMember}
             onPermissionChange={updateGroupClassPermissions}
             onOpenCategoryDetails={(categoryId) =>
@@ -186,7 +215,7 @@ export function RulesPage() {
           />
         ))}
 
-      {activeTab === 'matriz' && (
+      {activeTab === 'matriz' && showGroups && (
         <AccessMatrixView
           categories={categories}
           groups={groups}

@@ -44,6 +44,15 @@ export type AccessBoardProps = {
   /** Todas as pessoas da empresa — é o denominador da cobertura. */
   members: CompanyMember[];
   isAdmin: boolean;
+  /**
+   * A dimensão de grupos do quadro — o trilho à esquerda, o placar de cobertura e o cabeçalho
+   * de alcance de cada faixa.
+   *
+   * Ausente em tenant PF: `documentOwnership` prende o pool individual a `ownerUserId`, então
+   * não há segunda pessoa entre quem repartir acesso. Sobram as categorias e a extração, que é
+   * o que PF de fato configura.
+   */
+  showGroups?: boolean;
   simulatedMember: CompanyMember | null;
   onPermissionChange: (
     groupId: string,
@@ -82,6 +91,7 @@ export function AccessBoard({
   groupMemberCounts,
   members,
   isAdmin,
+  showGroups = true,
   simulatedMember,
   onPermissionChange,
   onOpenCategoryDetails,
@@ -200,34 +210,38 @@ export function AccessBoard({
         setHoverCategoryId(null);
       }}
     >
-      <GovernanceScoreboard progress={progress} isAdmin={isAdmin} onCreateGroup={onCreateGroup} />
+      {showGroups ? (
+        <GovernanceScoreboard progress={progress} isAdmin={isAdmin} onCreateGroup={onCreateGroup} />
+      ) : null}
 
-      <div className="access-board">
-        <aside className="access-board__rail" aria-label="Grupos da empresa">
-          <p className="register-label text-doqyn-subtle">Grupos</p>
-          <p className="type-caption text-doqyn-subtle">
-            {focusedCategory
-              ? `Quem ainda não alcança ${focusedCategory.name} aparece aceso.`
-              : 'Arraste um grupo para a categoria que ele deve alcançar.'}
-          </p>
-          <div className="access-board__rail-list">
-            {groups.map((group) => {
-              const missing = focusedCategory
-                ? !hasAnyPermission(getCategoryGroupPermissions(focusedCategory, group.id))
-                : false;
-              return (
-                <div key={group.id} data-missing={missing} className="access-board__rail-item">
-                  <GroupToken
-                    group={group}
-                    memberCount={memberCountOf(group)}
-                    disabled={!isAdmin}
-                    onOpenGroupDetails={() => onOpenGroupDetails(group.id)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </aside>
+      <div className="access-board" data-groups={showGroups ? 'true' : 'false'}>
+        {showGroups ? (
+          <aside className="access-board__rail" aria-label="Grupos da empresa">
+            <p className="register-label text-doqyn-subtle">Grupos</p>
+            <p className="type-caption text-doqyn-subtle">
+              {focusedCategory
+                ? `Quem ainda não alcança ${focusedCategory.name} aparece aceso.`
+                : 'Arraste um grupo para a categoria que ele deve alcançar.'}
+            </p>
+            <div className="access-board__rail-list">
+              {groups.map((group) => {
+                const missing = focusedCategory
+                  ? !hasAnyPermission(getCategoryGroupPermissions(focusedCategory, group.id))
+                  : false;
+                return (
+                  <div key={group.id} data-missing={missing} className="access-board__rail-item">
+                    <GroupToken
+                      group={group}
+                      memberCount={memberCountOf(group)}
+                      disabled={!isAdmin}
+                      onOpenGroupDetails={() => onOpenGroupDetails(group.id)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+        ) : null}
 
         <div className="access-board__lanes">
           {categories.map((category) => {
@@ -255,6 +269,7 @@ export function AccessBoard({
                   simulation={
                     simulatedMember ? simulateMemberAccess(simulatedMember, category, groups) : null
                   }
+                  showReach={showGroups}
                   isAdmin={isAdmin}
                   onOpenDetails={() => onOpenCategoryDetails(category.id)}
                   onConfigureExtraction={
@@ -263,7 +278,7 @@ export function AccessBoard({
                       : undefined
                   }
                   emptyLabel={
-                    connected.length === 0
+                    showGroups && connected.length === 0
                       ? 'Ninguém alcança esta categoria — só administradores.'
                       : ''
                   }
