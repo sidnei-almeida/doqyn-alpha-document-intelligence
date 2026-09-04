@@ -192,7 +192,7 @@ export function DocumentRequestsPage() {
         emptyDescription={
           received
             ? 'Quando alguém pedir um documento a você, ele aparece aqui.'
-            : 'Peça um documento a alguém da empresa e acompanhe por aqui.'
+            : 'Peça um documento a alguém e acompanhe por aqui.'
         }
         onRowClick={(item) => {
           // Atendido leva ao documento; o resto não tem para onde ir ainda.

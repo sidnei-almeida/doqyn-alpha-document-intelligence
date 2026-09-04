@@ -107,7 +107,7 @@ export function UsernameField({
     if (status === 'checking') return 'Conferindo…';
     if (status === 'free') return 'Disponível.';
     if (status === 'taken') return REASON_TEXT[reason ?? 'taken'] ?? REASON_TEXT.taken;
-    return 'É por ele que pessoas de outras empresas encontram você.';
+    return 'É por ele que pessoas de fora encontram você.';
   }, [reason, status, username.length]);
 
   return (

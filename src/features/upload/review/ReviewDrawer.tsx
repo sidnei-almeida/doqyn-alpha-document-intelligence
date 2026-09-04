@@ -358,7 +358,7 @@ export function ReviewDrawer() {
         </label>
         {!isDocumentAdmin && (
           <p className="mt-2 text-micro text-doqyn-muted">
-            Um administrador da empresa revisará os metadados na Auditoria antes de publicar na
+            Um administrador revisará os metadados na Auditoria antes de publicar na
             Biblioteca.
           </p>
         )}
