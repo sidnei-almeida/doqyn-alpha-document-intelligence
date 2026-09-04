@@ -101,7 +101,7 @@ export const AI_ERROR_MESSAGES = {
   visionOcrRequiredForImages:
     'Análise de imagens exige Vision OCR configurado. Ative VISION_OCR_ENABLED e as credenciais GCP.',
   rulesNotSeeded:
-    'Não há classes e regras de documentos configuradas para esta empresa.',
+    'Não há classes e regras de documentos configuradas.',
   rulesNoCategories:
     'Crie ao menos uma categoria documental com critérios de classificação antes de analisar documentos.',
   rulesNoExtraction:

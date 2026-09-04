@@ -48,7 +48,7 @@ export function CategoryQuickPicker({
   if (categories.length === 0) {
     return (
       <EmptyHint bare>
-        Nenhuma categoria configurada para a empresa. Crie uma em Regras antes de classificar à mão.
+        Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão.
       </EmptyHint>
     );
   }
@@ -66,7 +66,7 @@ export function CategoryQuickPicker({
         />
       )}
 
-      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias da empresa">
+      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias">
         {filtered.map((category) => {
           const isSelected = category.id === selectedClassId;
           const isSuggested = category.id === suggestedClassId;

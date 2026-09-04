@@ -362,7 +362,7 @@ export async function analyzePdfBuffer(input: {
   logs.push(
     createLog(
       'Trechos relevantes selecionados',
-      `${classificationChunks.length} trecho(s) selecionado(s) para análise com base nas regras da empresa.`,
+      `${classificationChunks.length} trecho(s) selecionado(s) para análise com base nas regras configuradas.`,
       'done',
     ),
   );
@@ -517,7 +517,7 @@ export async function analyzePdfBuffer(input: {
   logs.push(
     createLog(
       'Classe identificada',
-      `O documento foi classificado como "${classification.className}" com base nas regras da empresa.`,
+      `O documento foi classificado como "${classification.className}" com base nas regras configuradas.`,
       'done',
     ),
   );

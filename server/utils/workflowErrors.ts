@@ -75,7 +75,7 @@ export function buildDocumentRulesNotConfiguredError(
     },
     default: {
       message:
-        'Não há classes e regras de documentos configuradas para esta empresa. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
+        'Não há classes e regras de documentos configuradas. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
       suggestion: 'Cadastre ao menos uma classe documental e uma regra ativa.',
     },
   };
