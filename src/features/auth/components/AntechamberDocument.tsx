@@ -11,12 +11,20 @@ import { DoqynMark } from '@/components/brand/DoqynMark';
  * conteúdo se escreve, uma varredura desce lendo, e cada extração assenta
  * quando a varredura passa pela linha de onde ela saiu.
  *
- * Cinco tipos passam pelo mesmo quadro — contrato, desenho técnico, planilha,
- * nota fiscal e uma folha digitalizada —, porque é isso que o app aceita, e um
- * contrato sozinho contaria só um quinto da história. A digitalizada existe por
- * um motivo próprio: é o único caso em que a leitura não é trivial, e é
- * justamente o que o OCR faz. Mostrar só documento nascido digital esconderia a
- * parte difícil do produto.
+ * Sete tipos passam pelo mesmo quadro: contrato, habilitação, desenho técnico,
+ * planilha, conta de luz, nota fiscal e uma folha digitalizada. É isso que o app
+ * aceita, e um contrato sozinho contaria um sétimo da história.
+ *
+ * Dois deles são de pessoa física, e estão aí por uma razão que não é decorativa:
+ * quem chega nesta tela ainda não escolheu entre abrir uma empresa e guardar os
+ * próprios papéis. Um painel só de contrato e nota fiscal responde essa pergunta
+ * antes de ela ser feita, e responde errado. A habilitação vem em segundo lugar
+ * no laço de propósito: quem olha o login por quinze segundos vê dois documentos,
+ * e um deles precisa ser de pessoa.
+ *
+ * A digitalizada existe por um motivo próprio: é o único caso em que a leitura
+ * não é trivial, e é justamente o que o OCR faz. Mostrar só documento nascido
+ * digital esconderia a parte difícil do produto.
  *
  * **O laço não fere a regra "nada pisca", e o que o protege é o ritmo.** Cada
  * documento fica quase oito segundos parado depois de lido, e a troca é por
@@ -491,6 +499,274 @@ function ScannedBody() {
   );
 }
 
+/* ── Documentos de pessoa física ───────────────────────────────────────────
+   O acervo de uma pessoa não é feito de contrato e nota fiscal. É feito do que
+   ela precisa provar: quem é, onde mora, quanto ganha. Por isso os dois que
+   entram aqui são de porte — a habilitação e a conta de luz —, e não versões
+   menores dos documentos de empresa.
+
+   Os dois chegam pela mesma porta: fotografados ou digitalizados, nunca
+   nascidos digitais. É por isso que ambos usam `auth-deskew` e vivem dentro de
+   um recorte com borda: o que a página mostra não é a carteira, é a folha em
+   que a carteira foi copiada. Tentar desenhar a carteira em tamanho de carteira
+   quebraria a proporção A4 que o laço inteiro depende de manter.
+
+   A fidelidade é baixa de propósito, como no resto do painel: campos nomeados e
+   tarjas, sem retrato, sem selo e sem brasão. O que precisa ser reconhecível é
+   o *tipo* de documento, não o documento. --------------------------------- */
+
+const LICENSE_FRONT: Array<[string, number]> = [
+  ['Nome', 88],
+  ['Doc. identidade · órgão emissor · UF', 70],
+  ['CPF', 52],
+  ['Data de nascimento', 44],
+];
+
+const LICENSE_BACK: Array<[string, number]> = [
+  ['Filiação', 86],
+  ['Local de nascimento', 64],
+  ['Observações', 74],
+];
+
+/** A moldura de uma cópia: borda fina, papel um tom abaixo da folha. */
+const LICENSE_CARD =
+  'flex flex-1 flex-col gap-2.5 border border-[#DFE4E7] bg-[#F7F9FA] p-3.5';
+
+function LicenseFields({ fields, from }: { fields: Array<[string, number]>; from: number }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-[9px]">
+      {fields.map(([label, width], i) => (
+        <div key={label} className="flex flex-col gap-[3px]">
+          <span
+            className="auth-write block font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]"
+            style={{ animationDelay: `${from + i * 80}ms` }}
+          >
+            {label}
+          </span>
+          <span
+            className="auth-line block h-[4px] rounded-[1px] bg-[#C2CBD1]"
+            style={{ width: `${width}%`, animationDelay: `${from + 30 + i * 80}ms` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LicenseBody() {
+  return (
+    <div className="mt-4 flex flex-1 flex-col" aria-hidden>
+      <div className="auth-deskew flex flex-1 flex-col gap-2 pb-4">
+        {/* Frente e verso na mesma folha. Não é licença de desenho: é o que
+            qualquer pessoa faz ao digitalizar um documento de bolso, e é o que
+            preenche uma A4 sem inventar conteúdo que a carteira não tem. */}
+        <span className="font-mono text-[6px] uppercase tracking-[0.16em] text-[#B3BCC2]">
+          Frente
+        </span>
+        <div className={LICENSE_CARD}>
+          <div className="flex gap-3">
+            {/* Lugar do retrato, e fica vazio: desenhar um rosto aqui faria a
+                peça parecer um documento de verdade, e ela não é nem precisa
+                ser. O painel só precisa que o tipo seja reconhecível. */}
+            <div className="h-[72px] w-[54px] shrink-0 border border-[#DFE4E7] bg-[#EDF0F2]" />
+            <LicenseFields fields={LICENSE_FRONT} from={700} />
+          </div>
+
+          {/* Os três campos que a extração devolve vêm escritos, não em tarja:
+              é neles que os fios da direita se prendem. */}
+          <div className="mt-auto flex items-start justify-between gap-3 border-t border-[#E4E9EC] pt-2.5">
+            {[
+              ['Categoria', 'AB'],
+              ['Nº registro', '0421 8873 990'],
+              ['1ª habilitação', '11 fev 2009'],
+            ].map(([label, value], i) => (
+              <div key={label} className="flex flex-col gap-[3px]">
+                <span className="font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]">
+                  {label}
+                </span>
+                <span
+                  className="auth-write block font-mono text-[7.5px] text-[#5A6B75]"
+                  style={{ animationDelay: `${1180 + i * 90}ms` }}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <span className="mt-1 font-mono text-[6px] uppercase tracking-[0.16em] text-[#B3BCC2]">
+          Verso
+        </span>
+        <div className={LICENSE_CARD}>
+          <LicenseFields fields={LICENSE_BACK} from={1520} />
+
+          <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#E4E9EC] pt-2.5">
+            <div className="flex flex-col gap-[3px]">
+              <span className="font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]">
+                Validade
+              </span>
+              <span
+                className="auth-write block font-mono text-[9px] text-[#14181B]"
+                style={{ animationDelay: '2280ms' }}
+              >
+                04 mar 2031
+              </span>
+            </div>
+
+            {/* A assinatura do portador, que é o que fecha o verso. */}
+            <svg
+              viewBox="0 0 96 26"
+              className="auth-write w-[96px]"
+              style={{ animationDelay: '2360ms' }}
+              fill="none"
+            >
+              <path
+                d="M3 20c6-11 11 5 16-5s8 9 13 1 10 5 15-6 10 8 16 1"
+                stroke="#5A6B75"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                opacity="0.7"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Doze meses de consumo. O desenho de uma conta de luz é este gráfico, e é o
+ *  que a distingue de qualquer outro comprovante à primeira vista. */
+const CONSUMPTION: number[] = [52, 61, 47, 39, 44, 58, 71, 66, 49, 43, 55, 63];
+
+/** O que a conta precisa demonstrar por lei, e o que preenche o pé da folha. */
+const BILL_TARIFF: Array<[string, string]> = [
+  ['Energia elétrica', '104,18'],
+  ['Distribuição', '41,92'],
+  ['Encargos setoriais', '12,60'],
+  ['ICMS · PIS · COFINS', '28,74'],
+];
+
+const BILL_ROWS: Array<[string, string]> = [
+  ['Consumo do mês', '214 kWh'],
+  ['Bandeira tarifária', 'Verde'],
+  ['Leitura anterior', '02 ago 2026'],
+  ['Próxima leitura', '02 out 2026'],
+];
+
+function UtilityBillBody() {
+  return (
+    <div className="mt-5 flex flex-1 flex-col gap-4" aria-hidden>
+      {/* Titular e endereço no alto: numa conta de luz é o bloco que faz dela um
+          comprovante de endereço, e é exatamente o que a extração vai buscar. */}
+      <div
+        className="auth-write flex flex-col gap-1 border-y border-[#EDF0F2] py-2"
+        style={{ animationDelay: '620ms' }}
+      >
+        <span className="font-mono text-[7px] uppercase tracking-[0.14em] text-[#A4AEB4]">
+          Titular · unidade consumidora
+        </span>
+        <span className="font-mono text-[8px] leading-relaxed text-[#5A6B75]">
+          Helena Prado Vasconcelos
+        </span>
+        <span className="font-mono text-[7.5px] leading-relaxed text-[#8B979E]">
+          R. das Laranjeiras, 418 · ap. 72 · Santa Cecília · São Paulo · SP
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span
+          className="auth-write font-mono text-[6.5px] uppercase tracking-[0.14em] text-[#A4AEB4]"
+          style={{ animationDelay: '820ms' }}
+        >
+          Consumo em kWh · 12 meses
+        </span>
+        <div className="flex h-[68px] items-end gap-[5px] border-b border-[#EDF0F2] pb-1">
+          {CONSUMPTION.map((height, i) => (
+            <span
+              key={i}
+              className="auth-line block w-[7px]"
+              style={{
+                height: `${height}%`,
+                // A última coluna é a do mês que está sendo cobrado: vem cheia
+                // porque é o número que a conta está afirmando. As outras são o
+                // histórico, e histórico é referência, não afirmação.
+                backgroundColor: i === CONSUMPTION.length - 1 ? '#8B979E' : '#D6DDE1',
+                animationDelay: `${880 + i * 34}ms`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        {BILL_ROWS.map(([label, value], r) => (
+          <div key={label} className="flex items-center justify-between border-b border-[#F0F3F5] py-[6px]">
+            <span
+              className="auth-write font-mono text-[7.5px] text-[#8B979E]"
+              style={{ animationDelay: `${1340 + r * 90}ms` }}
+            >
+              {label}
+            </span>
+            <span
+              className="auth-write font-mono text-[7.5px] text-[#5A6B75]"
+              style={{ animationDelay: `${1370 + r * 90}ms` }}
+            >
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-auto flex flex-col gap-[5px] pt-1">
+        <span
+          className="auth-write font-mono text-[6.5px] uppercase tracking-[0.14em] text-[#A4AEB4]"
+          style={{ animationDelay: '1700ms' }}
+        >
+          Composição da tarifa
+        </span>
+        {BILL_TARIFF.map(([label, value], i) => (
+          <div key={label} className="flex items-center justify-between">
+            <span
+              className="auth-write font-mono text-[7px] text-[#A4AEB4]"
+              style={{ animationDelay: `${1740 + i * 70}ms` }}
+            >
+              {label}
+            </span>
+            <span
+              className="auth-write font-mono text-[7px] text-[#8B979E]"
+              style={{ animationDelay: `${1760 + i * 70}ms` }}
+            >
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div
+        className="auth-write flex items-center justify-between border-t border-[#C9D1D6] pt-2.5"
+        style={{ animationDelay: '1980ms' }}
+      >
+        <span className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-[#8B979E]">
+          Total a pagar · venc. 18 set
+        </span>
+        <span className="font-mono text-[10px] text-[#14181B]">187,44</span>
+      </div>
+
+      <div className="auth-write flex items-end gap-[2px] pb-5" style={{ animationDelay: '2060ms' }}>
+        {BARCODE.map((weight, i) => (
+          <span
+            key={i}
+            className="block h-6 bg-[#14181B]"
+            style={{ width: `${weight}px`, opacity: i % 2 ? 0.15 : 0.82 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const DOCUMENTS: DocumentSpec[] = [
   {
     id: 'contrato',
@@ -504,6 +780,20 @@ const DOCUMENTS: DocumentSpec[] = [
       { top: '22%', label: 'Partes', value: 'Nortis Engenharia · Vetor Log', delay: 1500 },
       { top: '42%', label: 'Vigência', value: '24 meses · 12 ago 2028', delay: 1960 },
       { top: '80%', label: 'Assinatura', value: '12 ago 2026', delay: 2380 },
+    ],
+  },
+  {
+    id: 'habilitacao',
+    eyebrow: 'Documento pessoal · digitalizado',
+    title: 'Carteira de habilitação',
+    stamp: 'Verificado',
+    hash: 'sha 8c31·5d70',
+    body: <LicenseBody />,
+    annotations: [
+      { top: '7%', label: 'Classificação', value: 'Documentos pessoais', delay: 1280 },
+      { top: '20%', label: 'Titular', value: 'Helena P. Vasconcelos', delay: 1560 },
+      { top: '46%', label: 'Registro', value: '0421 8873 990 · cat. AB', delay: 1960 },
+      { top: '85%', label: 'Validade', value: '04 mar 2031', delay: 2380 },
     ],
   },
   {
@@ -532,6 +822,20 @@ const DOCUMENTS: DocumentSpec[] = [
       { top: '24%', label: 'Competência', value: 'ago 2026', delay: 1500 },
       { top: '50%', label: 'Linhas', value: '148 itens', delay: 1960 },
       { top: '82%', label: 'Total', value: 'R$ 1.284.900,00', delay: 2380 },
+    ],
+  },
+  {
+    id: 'comprovante',
+    eyebrow: 'Conta de energia · comprovante de endereço',
+    title: 'Helena Prado Vasconcelos',
+    stamp: 'Conferido',
+    hash: 'sha b5e9·0c24',
+    body: <UtilityBillBody />,
+    annotations: [
+      { top: '7%', label: 'Classificação', value: 'Comprovante de endereço', delay: 1280 },
+      { top: '19%', label: 'Endereço', value: 'Santa Cecília · São Paulo, SP', delay: 1560 },
+      { top: '39%', label: 'Referência', value: 'set 2026 · 214 kWh', delay: 1960 },
+      { top: '82%', label: 'Vencimento', value: '18 set 2026 · R$ 187,44', delay: 2380 },
     ],
   },
   {
