@@ -86,7 +86,7 @@ export function OverviewEnvironmentHealthCard({
           actionLabel="Sistema"
           onAction={
             !health.hasStorageConfigured
-              ? () => navigate('/settings?section=empresa&tab=sistema')
+              ? () => navigate('/settings?section=organizacao')
               : undefined
           }
           canManage={canManageGovernance}
