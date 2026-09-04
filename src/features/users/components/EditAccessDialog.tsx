@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { LeadDetail } from '@/components/ui/LeadDetail';
 import { useConfirm } from '@/components/confirm/useConfirm';
 import type { CompanyMemberDto } from '../api/usersApi';
 import { cloneAccessFormState, isAccessFormDirty, type AccessFormState } from '../accessFormState';
@@ -60,8 +61,8 @@ export function EditAccessDialog({
     <Modal
       open
       onClose={() => void requestClose()}
-      title={`Editar acesso — ${memberName}`}
-      subtitle={member.email}
+      title="Editar acesso"
+      subtitle={<LeadDetail lead={memberName} detail={member.email} />}
       size="lg"
       // Há dado digitado em jogo: clicar fora não pode descartar em silêncio.
       dismissOnOverlay={false}

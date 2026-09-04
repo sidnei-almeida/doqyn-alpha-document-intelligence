@@ -3582,6 +3582,32 @@
     border-top: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
   }
 
+  /* Dois postos na mesma linha, sem travessão entre eles. O traço que separava
+     "título" de "subtítulo" não pontuava — avisava que o segundo pedaço vale menos.
+     Peso e tamanho dizem isso antes de a pessoa ler.
+
+     Nada aqui é absoluto: o detalhe desce um degrau a partir do que o pai já definiu
+     e desbota a partir da tinta herdada, então a mesma peça serve num subtítulo de
+     página e numa dica de dropzone. Quebra em duas linhas quando não couber, e o
+     `row-gap` curto impede que a quebra pareça dois parágrafos. */
+  .lead-detail {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.6em;
+    row-gap: 0.05em;
+  }
+
+  .lead-detail__lead {
+    font-weight: var(--weight-label);
+  }
+
+  .lead-detail__detail {
+    font-size: 0.92em;
+    font-weight: var(--weight-body);
+    color: color-mix(in srgb, currentColor 72%, transparent);
+  }
+
   .settings-inline-error {
     @apply type-caption text-doqyn-danger;
     margin: 0;

@@ -4,7 +4,7 @@ import { WorkspacePageHeader } from './WorkspacePageHeader';
 
 export type PageShellProps = {
   title: string;
-  description?: string;
+  description?: ReactNode;
   eyebrow?: string;
   actions?: ReactNode;
   className?: string;

@@ -3,6 +3,7 @@ import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useCallback, useState } from 'react';
+import { LeadDetail } from '@/components/ui/LeadDetail';
 
 interface UploadDropzoneProps {
   onFileSelect: (file: File) => void;
@@ -90,7 +91,9 @@ export function UploadDropzone({
       <p className="mt-4 text-sm font-medium text-doqyn-text">
         Arraste o documento ou clique para selecionar
       </p>
-      <p className="mt-1 text-xs text-doqyn-muted">PDF, Word, Excel ou imagens — até 25 MB</p>
+      <p className="mt-1 text-xs text-doqyn-muted">
+        <LeadDetail lead="PDF, Word, Excel ou imagens" detail="até 25 MB" />
+      </p>
     </label>
   );
 }

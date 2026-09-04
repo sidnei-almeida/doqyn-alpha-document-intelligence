@@ -18,6 +18,7 @@ import { OverviewSummaryStrip } from '@/features/dashboard/components/OverviewSu
 import { buildOverviewMetrics } from '@/features/dashboard/utils/buildOverviewMetrics';
 import type { DashboardPeriodKey } from '@/types/dashboard-overview';
 import type { DocumentListItem } from '@/types/document-library';
+import { LeadDetail } from '@/components/ui/LeadDetail';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -61,7 +62,12 @@ export function DashboardPage() {
     <PageShell
       eyebrow="Visão geral"
       title="Painel de controle"
-      description={`Panorama de ${data.tenant.displayName} — documentos, atividade e governança`}
+      description={
+        <LeadDetail
+          lead={`Panorama de ${data.tenant.displayName}`}
+          detail="documentos, atividade e governança"
+        />
+      }
       actions={<OverviewHeaderActions period={period} onPeriodChange={setPeriod} />}
       bodyClassName="overview-page w-full gap-8"
     >
