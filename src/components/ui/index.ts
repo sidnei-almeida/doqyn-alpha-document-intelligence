@@ -45,7 +45,6 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export { Input, type InputProps } from './Input';
 export { PlatformRoleChips } from './PlatformRoleChips';
 export { AnchoredPopover } from './popover/AnchoredPopover';
-export { SegmentedIconToggle } from './SegmentedIconToggle';
 export { CountrySelect, type CountrySelectProps } from './CountrySelect';
 export { Select, type SelectProps } from './Select';
 export { MemberStatusBadge } from './MemberStatusBadge';

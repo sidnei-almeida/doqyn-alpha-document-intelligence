@@ -14,12 +14,16 @@ type SegmentedTextToggleProps<T extends string> = {
 };
 
 /**
- * Escolha entre poucas vistas — irmão de texto do `SegmentedIconToggle`.
+ * Escolha entre poucas vistas, nomeadas.
  *
  * Sem cápsula e sem preenchimento: é controle horizontal, então o escolhido
  * marca com régua de acento embaixo. Nasceu de três telas que resolveram a
  * mesma coisa três vezes — período na Visão Geral, lente na Matriz e status em
  * Usuários — e cada cópia tinha uma altura e um tamanho de texto diferentes.
+ *
+ * Teve um irmão de ícones, para escolhas de duas opções sem texto. Ele saiu:
+ * duas formas da mesma lista viraram um botão que alterna (`ViewModeToggle`),
+ * e a partir de três opções o rótulo escrito é o que torna a escolha possível.
  */
 export function SegmentedTextToggle<T extends string>({
   value,

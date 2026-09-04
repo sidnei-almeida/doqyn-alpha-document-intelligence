@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { DocumentListItem } from '@/types/document-library';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { VIEW_MODE_ICONS, VIEW_MODE_LABELS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
 
 export type ExplorerContextMenuState =
   | { kind: 'empty'; x: number; y: number; scope: 'root' | 'folder' }
@@ -204,18 +205,18 @@ export function ExplorerContextMenu({
             onClick={() => run(() => onShowContextInfo?.())}
           />
           <div className="my-1 border-t border-doqyn-border-subtle" />
-          <MenuItem
-            label="Visualização em grade"
-            icon="grid_view"
-            onClick={() => run(() => onViewModeChange('grid'))}
-            disabled={viewMode === 'grid'}
-          />
-          <MenuItem
-            label="Visualização em lista"
-            icon="view_list"
-            onClick={() => run(() => onViewModeChange('list'))}
-            disabled={viewMode === 'list'}
-          />
+          {/* O botão do cabeçalho alterna sem nomear; aqui as duas vistas aparecem
+              escritas, e é por isto que este caminho continua existindo. Rótulos e
+              glifos vêm do mesmo lugar que ele lê, para não divergirem. */}
+          {VIEW_MODE_ORDER.map((mode) => (
+            <MenuItem
+              key={mode}
+              label={VIEW_MODE_LABELS[mode]}
+              icon={VIEW_MODE_ICONS[mode]}
+              onClick={() => run(() => onViewModeChange(mode))}
+              disabled={viewMode === mode}
+            />
+          ))}
         </>
       )}
 
