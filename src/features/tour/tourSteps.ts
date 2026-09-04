@@ -80,7 +80,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'ia',
     title: 'O quanto a IA decide',
-    body: 'A política de envio e leitura automática vale para a organização inteira: até onde a IA classifica sozinha e quando ela devolve o documento para revisão humana.',
+    body: 'A política de envio e leitura automática vale para tudo que entra: até onde a IA classifica sozinha e quando ela devolve o documento para revisão humana.',
     route: '/settings?section=organizacao',
     target: ['#upload', '.page-shell__body'],
     visible: (access: TourAccess) => access.governsOrganization,

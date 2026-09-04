@@ -26,6 +26,7 @@ export function OrganizationSection() {
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const { upload, trashRetention, dirty, saving, save, discard } = useOrganizationSettings({
     governs,
+    vocabulary,
   });
 
   const canEdit = upload.canManage || governs;

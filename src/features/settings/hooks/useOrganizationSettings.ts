@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTrashRetentionSettings } from '@/features/library/hooks/useTrashMutations';
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
 import { showAppToast } from '@/shared/feedback/appFeedback';
+import type { TenantVocabulary } from '@/lib/tenantVocabulary';
 import { useUploadPolicy } from './useUploadPolicy';
 
 export type RetentionDraft = {
@@ -17,7 +18,13 @@ function signature(value: unknown): string {
  * Rascunho da tela inteira de Organização. A regra de salvamento é uma só: nada vale
  * até confirmar, e uma barra no fim da coluna salva os blocos que mudaram.
  */
-export function useOrganizationSettings({ governs }: { governs: boolean }) {
+export function useOrganizationSettings({
+  governs,
+  vocabulary,
+}: {
+  governs: boolean;
+  vocabulary: TenantVocabulary;
+}) {
   const uploadPolicy = useUploadPolicy();
   const [uploadDraft, setUploadDraft] = useState<WorkflowReviewSettings>(uploadPolicy.policy);
   useEffect(() => {
@@ -77,8 +84,8 @@ export function useOrganizationSettings({ governs }: { governs: boolean }) {
       }
       showAppToast({
         type: 'success',
-        title: 'Configurações da organização salvas',
-        message: 'As mudanças já valem para toda a organização.',
+        title: 'Configurações salvas',
+        message: `As mudanças já valem para ${vocabulary.wholeScope}.`,
       });
     } catch (error) {
       showAppToast({
@@ -98,6 +105,7 @@ export function useOrganizationSettings({ governs }: { governs: boolean }) {
     uploadDirty,
     uploadDraft,
     uploadPolicy,
+    vocabulary,
   ]);
 
   const upload = useMemo(
