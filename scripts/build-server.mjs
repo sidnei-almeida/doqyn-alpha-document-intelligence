@@ -11,7 +11,13 @@ const ROOT = process.cwd();
 const DIST = join(ROOT, 'dist');
 
 const SOURCE_ROOTS = ['api', 'server', 'shared'];
-const SCRIPT_ROOTS = ['scripts/ensure-mongodb-indexes.ts', 'scripts/lib'];
+// Script operacional só entra aqui se precisar rodar na VPS: `tsx` é devDependency e a imagem de
+// produção instala com `--omit=dev`, então o que não é compilado para `dist/` não tem como rodar lá.
+const SCRIPT_ROOTS = [
+  'scripts/ensure-mongodb-indexes.ts',
+  'scripts/enable-expiry-alerts-defaults.ts',
+  'scripts/lib',
+];
 
 function collectTsFiles(dir, acc = []) {
   if (!existsSync(dir)) return acc;
