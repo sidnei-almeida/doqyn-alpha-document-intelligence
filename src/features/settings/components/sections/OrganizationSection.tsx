@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionHeader } from '../SettingsSectionHeader';
 import { SettingsRegisterList } from '../SettingsRegisterList';
 import { SettingsSaveBar } from '../SettingsSaveBar';
+import { StorageUsageSection } from './StorageUsageSection';
 import { TrashRetentionSettingsSection } from './TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './UploadAiSettingsSection';
 import { governsOrganization } from '../../settingsSections';
@@ -45,6 +46,18 @@ export function OrganizationSection() {
           canManage={upload.canManage}
           dirty={upload.dirty}
         />
+      </section>
+
+      {/* Leitura para todo mundo, não só para quem governa: a mesma régua já vive no pé da
+          barra lateral, e esconder aqui o número que a pessoa vê a navegação inteira seria
+          esconder por engano. Não há o que administrar — a cota vem do servidor. */}
+      <section className="settings-block">
+        <SettingsSectionHeader
+          title="Armazenamento"
+          description={`O que os documentos ${vocabulary.ofScope} já ocupam.`}
+          className="settings-block__header"
+        />
+        <StorageUsageSection />
       </section>
 
       {governs ? (

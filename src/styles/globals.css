@@ -3521,6 +3521,67 @@
     }
   }
 
+  /* Armazenamento em Configurações. Mesma régua-fio da barra lateral — 3px, canto reto,
+     neutra até 80% — só que na medida da coluna de leitura, onde o número é o assunto e
+     não contexto de canto de olho. */
+  .settings-storage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .settings-storage__figure {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .settings-storage__used {
+    @apply type-h2;
+    color: var(--text-primary);
+  }
+
+  .settings-storage__quota {
+    @apply type-body;
+    color: var(--text-tertiary);
+  }
+
+  .settings-storage__rule {
+    position: relative;
+    height: 3px;
+    background: color-mix(in srgb, var(--border-default) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .settings-storage__fill {
+    display: block;
+    height: 100%;
+    background: var(--text-secondary);
+    transition: width var(--transition-duration-slow) var(--ease-standard);
+  }
+
+  /* Cor só quando passa a significar alguma coisa. Cheia, a régua não fica teal: o acento
+     continua reservado ao que está acontecendo agora. */
+  .settings-storage__rule[data-level='warn'] .settings-storage__fill {
+    background: var(--status-warn-text);
+  }
+
+  .settings-storage__rule[data-level='danger'] .settings-storage__fill {
+    background: var(--status-danger-text);
+  }
+
+  .settings-storage__meta {
+    @apply type-caption;
+    margin: 0;
+    color: var(--text-tertiary);
+  }
+
+  .settings-storage .settings-register-facts {
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
+  }
+
   .settings-inline-error {
     @apply type-caption text-doqyn-danger;
     margin: 0;

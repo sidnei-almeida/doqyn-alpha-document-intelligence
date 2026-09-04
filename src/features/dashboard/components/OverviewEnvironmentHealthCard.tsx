@@ -77,19 +77,19 @@ export function OverviewEnvironmentHealthCard({
       data-testid="overview-environment-health"
     >
       <div className="flex flex-col">
+        {/* Sem ação, e de propósito: `hasStorageConfigured` é `isStorageConfigured()`, uma
+            checagem das credenciais do R2 no ambiente do servidor. Vale igual para todos os
+            tenants e nenhum administrador a resolve por Configurações — o atalho que existia
+            aqui levava a uma tela onde não há esse botão. Falta storage é assunto de quem
+            opera o deploy, então o indicador acusa e para por aí. */}
         <HealthIndicator
           label="Storage"
           ok={health.hasStorageConfigured}
           detail={
-            health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'
+            health.hasStorageConfigured
+              ? 'Armazenamento configurado'
+              : 'Indisponível no ambiente — contate o suporte'
           }
-          actionLabel="Sistema"
-          onAction={
-            !health.hasStorageConfigured
-              ? () => navigate('/settings?section=organizacao')
-              : undefined
-          }
-          canManage={canManageGovernance}
         />
         <HealthIndicator
           label="Categorias"
