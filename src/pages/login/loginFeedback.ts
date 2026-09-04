@@ -38,7 +38,7 @@ export function getLoginAlertTitle(code: string | null): string | undefined {
     case 'MEMBERSHIP_REJECTED':
       return 'Solicitação rejeitada';
     case 'NO_ACTIVE_MEMBERSHIP':
-      return 'Sem empresa ativa';
+      return 'Sem ambiente ativo';
     case 'SESSION_EXPIRED':
     case 'INVALID_SESSION':
       return 'Sessão expirada';

@@ -351,7 +351,7 @@ export function ExternalRecipientFields({
         label="Organização (opcional)"
         value={value.organizationName}
         onChange={(event) => onChange({ ...value, organizationName: event.target.value })}
-        placeholder="Empresa da pessoa"
+        placeholder="Onde a pessoa trabalha"
         autoComplete="off"
       />
     </div>

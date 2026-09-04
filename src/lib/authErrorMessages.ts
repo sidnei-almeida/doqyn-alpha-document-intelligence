@@ -32,7 +32,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   TENANT_NOT_FOUND: 'Ambiente não encontrado ou indisponível para sua conta.',
   TENANT_INACTIVE: 'Este ambiente não está ativo no DOQYN.',
   TENANT_PROVISIONING_FAILED:
-    'O ambiente desta empresa ainda não está pronto. Tente novamente em alguns minutos ou contate o suporte.',
+    'Este ambiente ainda não está pronto. Tente novamente em alguns minutos ou contate o suporte.',
   MEMBERSHIP_PENDING: 'Sua solicitação de acesso ainda está aguardando aprovação.',
   MEMBERSHIP_BLOCKED: 'Seu acesso a este ambiente foi bloqueado.',
   MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
