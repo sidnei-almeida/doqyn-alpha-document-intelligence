@@ -8,6 +8,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { validateProfileAvatarFile } from '@/features/profile/api/profileApi';
 import { useProfileAvatarMutations, useProfileMe } from '@/features/profile/hooks/useProfile';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import { getAuthRoleLabel } from '@/features/users/platformRoleLabels';
 import type { PlatformRole } from '@/features/users/api/usersApi';
 import { Badge } from '@/components/ui/Badge';
@@ -21,6 +22,7 @@ import { accountProfileApi } from '../../api/accountProfileApi';
  */
 export function ProfileSettingsSection() {
   const { user, roles, tenant, refreshUser } = useAuth();
+  const isIndividual = isIndividualTenant(tenant?.tenantType);
   const profileQuery = useProfileMe(Boolean(user?.id));
   const { uploadMutation, removeMutation } = useProfileAvatarMutations();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -194,12 +196,17 @@ export function ProfileSettingsSection() {
           <dt className="register-label text-doqyn-subtle">E-mail</dt>
           <dd className="type-body mt-0.5 break-words text-doqyn-text">{user?.email ?? '—'}</dd>
         </div>
-        <div>
-          <dt className="register-label text-doqyn-subtle">Organização</dt>
-          <dd className="type-body mt-0.5 break-words text-doqyn-text">
-            {tenant?.displayName ?? user?.companyName ?? '—'}
-          </dd>
-        </div>
+        {/* Em PF o `displayName` do tenant é o nome da própria pessoa, então a linha repetia
+            o que já está nos campos acima sob um rótulo que promete uma organização
+            inexistente. Some em vez de virar "Conta: Fulano". */}
+        {isIndividual ? null : (
+          <div>
+            <dt className="register-label text-doqyn-subtle">Organização</dt>
+            <dd className="type-body mt-0.5 break-words text-doqyn-text">
+              {tenant?.displayName ?? user?.companyName ?? '—'}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="register-label text-doqyn-subtle">Papéis</dt>
           <dd className="mt-1">

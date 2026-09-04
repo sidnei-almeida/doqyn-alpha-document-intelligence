@@ -2,8 +2,10 @@
  * Configurações agrupadas por quem decide, não por assunto.
  *
  * - Minha conta: o que a própria pessoa muda, sem depender de papel.
- * - Organização: o que vale para todo mundo — quem não administra lê e não altera.
+ * - Organização (PJ) / Meu acervo (PF): o que vale para o tenant inteiro — quem não administra
+ *   lê e não altera.
  */
+import { isIndividualTenant, tenantVocabulary } from '@/lib/tenantVocabulary';
 export type SettingsSectionId = 'conta' | 'organizacao';
 
 /** Quem é dono da decisão daquela seção. */
@@ -17,22 +19,34 @@ export type SettingsNavItem = {
   scope: SettingsSectionScope;
 };
 
-export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
-  {
-    id: 'conta',
-    label: 'Minha conta',
-    description: 'Identidade, aparência e acesso',
-    icon: 'person',
-    scope: 'personal',
-  },
-  {
-    id: 'organizacao',
-    label: 'Organização',
-    description: 'Envio, retenção e governança',
-    icon: 'business',
-    scope: 'organization',
-  },
-];
+/**
+ * O rótulo da segunda seção depende do tipo de tenant: em PF não há organização alguma, e
+ * chamar de "Organização" o lugar onde a pessoa configura o próprio acervo prometia uma
+ * estrutura que não existe. O resto — ícone, ordem, descrição — não muda.
+ */
+export function settingsNavItems(tenantType?: string | null): SettingsNavItem[] {
+  const vocabulary = tenantVocabulary(tenantType);
+
+  return [
+    {
+      id: 'conta',
+      label: 'Minha conta',
+      description: 'Identidade, aparência e acesso',
+      icon: 'person',
+      scope: 'personal',
+    },
+    {
+      id: 'organizacao',
+      label: vocabulary.scopeSectionLabel,
+      description: 'Envio, retenção e governança',
+      icon: isIndividualTenant(tenantType) ? 'inventory_2' : 'business',
+      scope: 'organization',
+    },
+  ];
+}
+
+/** Forma PJ, preservada para quem só precisa dos ids/ordem sem contexto de sessão. */
+export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = settingsNavItems('business');
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'conta';
 
@@ -64,8 +78,12 @@ export function parseSettingsSection(value: string | null): SettingsSectionId {
   return LEGACY_SECTION_ALIASES[value] ?? DEFAULT_SETTINGS_SECTION;
 }
 
-export function settingsSectionMeta(section: SettingsSectionId): SettingsNavItem {
-  return SETTINGS_NAV_ITEMS.find((item) => item.id === section) ?? SETTINGS_NAV_ITEMS[0]!;
+export function settingsSectionMeta(
+  section: SettingsSectionId,
+  tenantType?: string | null,
+): SettingsNavItem {
+  const items = settingsNavItems(tenantType);
+  return items.find((item) => item.id === section) ?? items[0]!;
 }
 
 export type SettingsAccess = {
@@ -80,15 +98,15 @@ export function governsOrganization({ tenantType, isCompanyAdmin }: SettingsAcce
 }
 
 /**
- * As duas seções aparecem para todo mundo. Organização é onde a pessoa descobre por que a IA
- * renomeou o arquivo dela; só quem administra vê os blocos que configuram a empresa.
+ * As duas seções aparecem para todo mundo. A segunda é onde a pessoa descobre por que a IA
+ * renomeou o arquivo dela; só quem administra vê os blocos que configuram o tenant.
  */
 export function canViewSettingsSection(): boolean {
   return true;
 }
 
-export function visibleSettingsNavItems(): SettingsNavItem[] {
-  return SETTINGS_NAV_ITEMS;
+export function visibleSettingsNavItems(tenantType?: string | null): SettingsNavItem[] {
+  return settingsNavItems(tenantType);
 }
 
 export function buildSettingsSearchParams(section: SettingsSectionId) {

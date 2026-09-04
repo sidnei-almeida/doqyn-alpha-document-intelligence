@@ -7,6 +7,7 @@ import { SettingsSaveBar } from '../SettingsSaveBar';
 import { TrashRetentionSettingsSection } from './TrashRetentionSettingsSection';
 import { UploadAiSettingsSection } from './UploadAiSettingsSection';
 import { governsOrganization } from '../../settingsSections';
+import { tenantVocabulary } from '@/lib/tenantVocabulary';
 import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
 
 /**
@@ -16,10 +17,12 @@ import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
  */
 export function OrganizationSection() {
   const { hasAnyRole, tenant } = useAuth();
+  const isCompanyAdmin = hasAnyRole(['company_admin']);
   const governs = governsOrganization({
     tenantType: tenant?.tenantType,
-    isCompanyAdmin: hasAnyRole(['company_admin']),
+    isCompanyAdmin,
   });
+  const vocabulary = tenantVocabulary(tenant?.tenantType);
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const { upload, trashRetention, dirty, saving, save, discard } = useOrganizationSettings({
     governs,
@@ -32,7 +35,7 @@ export function OrganizationSection() {
       <section className="settings-block">
         <SettingsSectionHeader
           title="Envio e IA"
-          description="Vale para toda a organização: quando a IA renomeia o arquivo e quando o envio para para revisão."
+          description={`Vale para ${vocabulary.wholeScope}: quando a IA renomeia o arquivo e quando o envio para para revisão.`}
           className="settings-block__header"
         />
         <UploadAiSettingsSection
@@ -65,6 +68,9 @@ export function OrganizationSection() {
             description="Onde a classificação, os fluxos e a visibilidade são definidos."
             className="settings-block__header"
           />
+          {/* O atalho para Usuários só existe para quem consegue abrir a tela. `/users` exige
+              `company_admin` (UserManagementRoute), então em PF ele mandava a pessoa para uma
+              rota que a devolvia calada para a Biblioteca — pior que não oferecer nada. */}
           <SettingsRegisterList
             entries={[
               {
@@ -75,13 +81,18 @@ export function OrganizationSection() {
                 href: '/rules',
                 linkLabel: 'Abrir Regras',
               },
-              {
-                icon: 'group',
-                title: 'Grupos de acesso',
-                description: 'Grupos vinculados às regras de visibilidade e permissões por área.',
-                href: '/users',
-                linkLabel: 'Gerenciar usuários',
-              },
+              ...(isCompanyAdmin
+                ? [
+                    {
+                      icon: 'group',
+                      title: 'Grupos de acesso',
+                      description:
+                        'Grupos vinculados às regras de visibilidade e permissões por área.',
+                      href: '/users',
+                      linkLabel: 'Gerenciar usuários',
+                    },
+                  ]
+                : []),
             ]}
           />
 

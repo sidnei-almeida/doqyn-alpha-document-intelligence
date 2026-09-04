@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CodeInput } from '@/features/email-verification/components/CodeInput';
 import { plural } from '@/lib/plural';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import {
   emailChangeApi,
   getEmailChangeErrorMessage,
@@ -26,7 +27,12 @@ function secondsUntil(iso: string | undefined): number {
  * computador com nada na mão. Os dois chegam na mesma mensagem.
  */
 export function ChangeEmailCard() {
-  const { user, refreshUser } = useAuth();
+  const { user, tenant, refreshUser } = useAuth();
+  // Sugerir um endereço corporativo a quem tem conta pessoal é oferecer um exemplo que não
+  // se parece com o caso de uso dela.
+  const emailPlaceholder = isIndividualTenant(tenant?.tenantType)
+    ? 'voce@exemplo.com'
+    : 'voce@suaempresa.com.br';
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -128,7 +134,7 @@ export function ChangeEmailCard() {
           label="Novo e-mail"
           value={newEmail}
           onChange={(event) => setNewEmail(event.target.value)}
-          placeholder="voce@suaempresa.com.br"
+          placeholder={emailPlaceholder}
           disabled={pending}
         />
         <Input

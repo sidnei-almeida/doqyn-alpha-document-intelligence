@@ -26,8 +26,15 @@ describe('SettingsPage layout', () => {
     assert.equal(layout.includes('settings-content-panel__title'), false);
     assert.equal(layout.includes('Configurações da conta'), false);
     assert.equal(globals.includes('settings-content-max'), false);
-    assert.equal(globals.includes('margin-inline: auto'), false);
     assert.equal(page.includes('max-w-2xl'), false);
+
+    // Antes isto era `globals.includes('margin-inline: auto') === false`, varrendo o arquivo
+    // inteiro. O alvo real era o wrapper `settings-content-max`, que centralizava um painel
+    // interno; a asserção acima já o cobre pelo nome. Centralizar o conjunto (índice + coluna)
+    // é outra coisa, e é o que impede o excedente de uma tela larga de virar vão de um lado só.
+    assert.ok(page.includes('settings-page-shell'));
+    assert.ok(globals.includes('.settings-page-shell'));
+    assert.equal(layout.includes('margin-inline'), false);
   });
 
   it('padrão visual compartilha o cabeçalho e a linha de configuração', () => {

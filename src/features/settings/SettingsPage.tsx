@@ -1,4 +1,5 @@
 import { PageShell } from '@/components/layout/PageShell';
+import { useAuth } from '@/auth/useAuth';
 import { SettingsLayout } from './components/SettingsLayout';
 import { AccountSettingsSection } from './components/sections/AccountSettingsSection';
 import { OrganizationSection } from './components/sections/OrganizationSection';
@@ -21,8 +22,9 @@ function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
 
 export function SettingsPage() {
   const { section, setSection } = useSettingsSection();
-  const navItems = visibleSettingsNavItems();
-  const meta = settingsSectionMeta(section);
+  const { tenant } = useAuth();
+  const navItems = visibleSettingsNavItems(tenant?.tenantType);
+  const meta = settingsSectionMeta(section, tenant?.tenantType);
 
   return (
     <PageShell
