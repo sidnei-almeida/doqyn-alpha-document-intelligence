@@ -109,13 +109,19 @@ export function resolveRecipient(
   };
 }
 
-/** `Fulano (da empresa)` — o nome com a origem, que é o que a confirmação precisa dizer. */
+/**
+ * `Fulano (daqui)` — o nome com a origem, que é o que a confirmação precisa dizer.
+ *
+ * "outra conta DOQYN" em vez de "outra empresa DOQYN": do lado de lá pode haver uma pessoa
+ * física, e a confirmação não tem como saber o tipo do tenant do destinatário — só que ele é
+ * outro. Descrever o que se sabe é melhor que supor uma empresa.
+ */
 export function describeRecipient(recipient: ResolvedRecipient): string {
   const origin =
     recipient.audience === 'internal'
-      ? 'da empresa'
+      ? 'daqui'
       : recipient.audience === 'doqyn'
-        ? 'outra empresa DOQYN'
+        ? 'outra conta DOQYN'
         : 'convidado externo';
   return `${recipient.label} (${origin})`;
 }

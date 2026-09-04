@@ -217,16 +217,17 @@ export function ShareDocumentModal({
       id: share.shareId,
       primary: share.sharedWithName,
       secondary: `${share.sharedWithEmail ?? share.counterpartTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
-      // Oferecido não é concedido: dizer "da empresa" para o que ainda espera aceite prometeria um
-      // acesso que não existe.
+      // Oferecido não é concedido: dizer "daqui" para o que ainda espera aceite prometeria um
+      // acesso que não existe. E do outro lado pode haver uma conta pessoal, então o rótulo diz
+      // "outra conta" em vez de supor uma empresa.
       status:
         share.inboundStatus === 'pending'
           ? { label: 'aguardando aceite', tone: 'pending' as const }
           : share.inboundStatus === 'declined'
             ? { label: 'recusado', tone: 'closed' as const }
             : share.inboundStatus === 'accepted'
-              ? { label: 'outra empresa', tone: 'active' as const }
-              : { label: 'da empresa', tone: 'active' as const },
+              ? { label: 'outra conta', tone: 'active' as const }
+              : { label: 'daqui', tone: 'active' as const },
       actions: [
         {
           label: 'Revogar',

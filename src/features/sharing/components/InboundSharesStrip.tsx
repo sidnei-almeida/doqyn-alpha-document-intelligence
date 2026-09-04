@@ -30,13 +30,15 @@ export function InboundSharesStrip() {
   return (
     <section
       className="mb-6"
-      aria-label="Documentos de outras empresas aguardando decisão"
+      aria-label="Documentos de fora aguardando decisão"
       data-testid="inbound-shares-strip"
     >
       <div className="mb-2 flex items-baseline gap-2">
         <h2 className="text-eyebrow uppercase text-doqyn-primary">Aguardando seu aceite</h2>
         <span className="text-micro text-doqyn-muted">
-          {items.length} {items.length === 1 ? 'documento' : 'documentos'} de fora da sua empresa
+          {/* Quem enviou pode ser uma conta pessoal: "de fora daqui" descreve a fronteira sem
+              supor o tipo do tenant do outro lado. */}
+          {items.length} {items.length === 1 ? 'documento' : 'documentos'} de fora daqui
         </span>
       </div>
 
