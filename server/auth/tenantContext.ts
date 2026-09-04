@@ -20,7 +20,7 @@ export function resolveTenantId(sessionTenantId?: string): string {
   }
 
   throw new ServiceError(
-    'Não foi possível identificar a empresa/tenant ativo da sessão.',
+    'Não foi possível identificar o ambiente ativo da sessão.',
     'TENANT_REQUIRED',
     400,
   );
@@ -62,7 +62,7 @@ export async function getCurrentTenantId(req: VercelRequest): Promise<string> {
   }
 
   throw new ServiceError(
-    'Não foi possível identificar a empresa/tenant ativo da sessão.',
+    'Não foi possível identificar o ambiente ativo da sessão.',
     'TENANT_REQUIRED',
     400,
   );

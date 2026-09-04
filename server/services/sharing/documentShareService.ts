@@ -31,6 +31,7 @@ import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { serializeTenantMember } from '../memberSerialize.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { isInterTenantSharingEnabled } from '../../config/interTenantConfig.js';
+import { tenantVocabulary } from '../../utils/tenantVocabulary.js';
 import { resolveExternalSharingConfig } from '../../config/externalSharingConfig.js';
 import { resolveTenant } from '../../tenancy/tenantResolver.js';
 import { notifyInboundShareReceived } from '../notifications/inboundShareNotifications.js';
@@ -677,7 +678,7 @@ async function resolveShareRecipient(
 
     if (!isInterTenantSharingEnabled()) {
       throw new ServiceError(
-        'Esse e-mail não é de ninguém da sua empresa. Use o link externo para enviar.',
+        'Esse e-mail não é de ninguém deste ambiente. Use o link externo para enviar.',
         'SHARE_RECIPIENT_OUTSIDE_TENANT',
         400,
       );
@@ -713,6 +714,7 @@ async function resolveShareRecipient(
 function resolveShareExpiration(
   raw: string | undefined,
   crossesTenantBorder: boolean,
+  tenantType: string | null | undefined,
 ): Date | null {
   if (!raw?.trim()) return null;
 
@@ -728,7 +730,7 @@ function resolveShareExpiration(
     const maxDays = resolveExternalSharingConfig().maxExternalShareExpirationDays;
     if (parsed.getTime() > Date.now() + maxDays * 24 * 60 * 60 * 1000) {
       throw new ServiceError(
-        `O prazo não pode passar de ${maxDays} dias para fora da empresa.`,
+        `O prazo não pode passar de ${maxDays} dias ${tenantVocabulary(tenantType).outsideScope}.`,
         'SHARE_EXPIRATION_TOO_FAR',
         400,
       );
@@ -824,7 +826,11 @@ export async function createDocumentShareGrant(
   assertSharePermissions(permissions);
 
   const crossesTenantBorder = recipient.scope === 'external_tenant';
-  const expiresAt = resolveShareExpiration(input.expiresAt, crossesTenantBorder);
+  const expiresAt = resolveShareExpiration(
+    input.expiresAt,
+    crossesTenantBorder,
+    ctx.storage.tenantType,
+  );
 
   /**
    * `share` ganha a segunda dimensão: para dentro e para fora do tenant são riscos diferentes.

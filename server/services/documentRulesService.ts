@@ -194,7 +194,7 @@ export async function loadActiveDocumentClassRules(
   const tenantId = companyId?.trim();
   if (!tenantId) {
     throw new ServiceError(
-      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'Não foi possível identificar o ambiente ativo da sessão.',
       'TENANT_REQUIRED',
       400,
     );
@@ -275,7 +275,7 @@ export async function loadActiveDocumentClassRules(
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Nenhuma categoria documental ativa encontrada para esta empresa.',
+      'Nenhuma categoria documental ativa encontrada.',
       'no_categories',
     );
   }
@@ -292,7 +292,7 @@ export async function loadActiveDocumentClassRules(
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Nenhuma regra de classificação/extração ativa encontrada para as categorias desta empresa.',
+      'Nenhuma regra de classificação/extração ativa encontrada para as categorias.',
       'no_extraction_rules',
     );
   }
@@ -340,7 +340,7 @@ export async function getActiveRulesPayload(companyId: string, opts?: { ownerUse
   const tenantId = companyId?.trim();
   if (!tenantId) {
     throw new ServiceError(
-      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'Não foi possível identificar o ambiente ativo da sessão.',
       'TENANT_REQUIRED',
       400,
     );

@@ -19,35 +19,42 @@ const GATE_COPY = {
   },
   blocked: {
     title: 'Acesso bloqueado',
-    message: 'Seu acesso a esta empresa foi bloqueado.',
+    message: 'Seu acesso a este ambiente foi bloqueado.',
     variant: 'error' as const,
   },
   rejected: {
     title: 'Solicitação rejeitada',
-    message: 'Sua solicitação de acesso a esta empresa foi rejeitada.',
+    message: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
     variant: 'error' as const,
   },
   removed: {
     title: 'Acesso removido',
-    message: 'Você não faz mais parte desta empresa no DOQYN.',
+    message: 'Você não faz mais parte deste ambiente no DOQYN.',
     variant: 'warning' as const,
   },
   no_membership: {
-    title: 'Sem empresa ativa',
-    message: 'Sua conta ainda não possui acesso ativo a nenhuma empresa.',
+    title: 'Sem acesso ativo',
+    message: 'Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN.',
     variant: 'info' as const,
   },
 } as const;
 
 const GATE_ACTIONS: Partial<
-  Record<keyof typeof GATE_COPY, Array<{ label: string; href: string; variant?: 'primary' | 'secondary' }>>
+  Record<
+    keyof typeof GATE_COPY,
+    Array<{ label: string; href: string; variant?: 'primary' | 'secondary' }>
+  >
 > = {
-  no_membership: [
-    { label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso', variant: 'primary' },
-    { label: 'Cadastrar uma empresa', href: '/criar-empresa', variant: 'secondary' },
+  /* `/acesso` apresenta os três caminhos — pedir acesso a uma empresa, cadastrar uma, ou abrir
+     conta pessoal. Oferecer só os dois de empresa aqui deixava sem saída justamente quem chegou
+     para guardar documento próprio. */
+  no_membership: [{ label: 'Ver formas de acesso', href: '/acesso', variant: 'primary' }],
+  rejected: [
+    { label: 'Solicitar acesso a outra empresa', href: '/solicitar-acesso', variant: 'primary' },
   ],
-  rejected: [{ label: 'Solicitar acesso a outra empresa', href: '/solicitar-acesso', variant: 'primary' }],
-  removed: [{ label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso', variant: 'primary' }],
+  removed: [
+    { label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso', variant: 'primary' },
+  ],
 };
 
 export function AccessGateScreen({
@@ -68,11 +75,15 @@ export function AccessGateScreen({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-10">
-      <div className="w-full max-w-md flow-enter text-center">
+      <div className="flow-enter w-full max-w-md text-center">
         <AuthBrandLogo subtitle="Acesso à plataforma" className="mb-6" />
 
         <AuthCard className="p-6 text-left">
-          <AlertBanner variant={copy.variant} title={copy.title} message={message ?? copy.message} />
+          <AlertBanner
+            variant={copy.variant}
+            title={copy.title}
+            message={message ?? copy.message}
+          />
 
           {reason === 'pending' && (email || tenantName) ? (
             <dl className="mt-4 space-y-2 rounded-lg border border-doqyn-border bg-doqyn-bg px-3 py-2.5 text-xs text-doqyn-muted">

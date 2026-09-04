@@ -23,18 +23,21 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   EMAIL_CHANGE_EXPIRED: 'Este link de troca expirou. Peça a alteração novamente.',
   EMAIL_CHANGE_ALREADY_USED: 'Esta troca de e-mail já foi confirmada.',
   PASSWORD_CHANGE_REQUIRED: 'Você precisa alterar sua senha antes de continuar.',
-  NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não possui acesso ativo a nenhuma empresa.',
-  NO_ACTIVE_TENANT: 'Selecione uma empresa para continuar.',
-  TENANT_REQUIRED: 'Esta ação exige uma empresa ativa.',
-  TENANT_NOT_FOUND: 'Empresa não encontrada ou indisponível para sua conta.',
-  TENANT_INACTIVE: 'Esta empresa não está ativa no DOQYN.',
+  // Espelho de `server/utils/membershipAccessErrors.ts`: estas disparam antes de haver tenant
+  // resolvido, então não há tipo a consultar e "empresa" era um chute que errava em toda conta
+  // pessoal.
+  NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN.',
+  NO_ACTIVE_TENANT: 'Selecione um ambiente para continuar.',
+  TENANT_REQUIRED: 'Esta ação exige um ambiente ativo.',
+  TENANT_NOT_FOUND: 'Ambiente não encontrado ou indisponível para sua conta.',
+  TENANT_INACTIVE: 'Este ambiente não está ativo no DOQYN.',
   TENANT_PROVISIONING_FAILED:
     'O ambiente desta empresa ainda não está pronto. Tente novamente em alguns minutos ou contate o suporte.',
   MEMBERSHIP_PENDING: 'Sua solicitação de acesso ainda está aguardando aprovação.',
-  MEMBERSHIP_BLOCKED: 'Seu acesso a esta empresa foi bloqueado.',
-  MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a esta empresa foi rejeitada.',
-  MEMBERSHIP_REMOVED: 'Você não faz mais parte desta empresa no DOQYN.',
-  MEMBERSHIP_NOT_ACTIVE: 'Sua associação a esta empresa não está ativa.',
+  MEMBERSHIP_BLOCKED: 'Seu acesso a este ambiente foi bloqueado.',
+  MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
+  MEMBERSHIP_REMOVED: 'Você não faz mais parte deste ambiente no DOQYN.',
+  MEMBERSHIP_NOT_ACTIVE: 'Seu vínculo com este ambiente não está ativo.',
   SESSION_EXPIRED: 'Sua sessão expirou. Faça login novamente.',
   INVALID_SESSION: 'Sua sessão expirou. Faça login novamente.',
   AUTH_REQUIRED: 'Faça login para continuar.',
@@ -76,10 +79,9 @@ export function getFriendlyAuthErrorMessage(
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {
   switch (code) {
     case 'NO_ACTIVE_MEMBERSHIP':
-      return [
-        { label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso' },
-        { label: 'Cadastrar uma empresa', href: '/criar-empresa' },
-      ];
+      // `/acesso` apresenta os três caminhos, inclusive a conta pessoal. Os dois de empresa
+      // sozinhos deixavam sem saída quem chegou para guardar documento próprio.
+      return [{ label: 'Ver formas de acesso', href: '/acesso' }];
     case 'EMAIL_NOT_VERIFIED':
       return [{ label: 'Confirmar e-mail', href: '/confirmar-cadastro' }];
     case 'MEMBERSHIP_REJECTED':
