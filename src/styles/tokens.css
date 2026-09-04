@@ -209,9 +209,12 @@
 /* ── Paleta de papel ──────────────────────────────────────────────────────
    No `standard` o painel e a busca ficam *dentro* da casca grafite, então não
    basta o padrão do documento: os dois precisam redeclarar a paleta para si,
-   ou herdam o grafite de quem os contém. */
+   ou herdam o grafite de quem os contém. O painel da antessala
+   (`.auth-canvas`) entra na mesma lista pelo mesmo motivo: ele também é um
+   recorte de papel aberto dentro da casca. */
 [data-theme='light'],
 [data-appearance='standard'] .workspace-canvas,
+[data-appearance='standard'] .auth-canvas,
 [data-appearance='standard'] .topbar-search {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;

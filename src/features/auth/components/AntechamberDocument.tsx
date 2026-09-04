@@ -607,7 +607,7 @@ export function AntechamberDocument() {
         <div key={doc.id} className="auth-doc flex items-stretch">
           <div className="relative w-[min(46vh,464px)]">
             {/* a página, em proporção A4 */}
-            <div className="auth-page relative flex aspect-[1/1.414] flex-col overflow-hidden rounded-[3px] bg-[#FBFCFC] px-8 py-7 shadow-[0_2px_8px_rgba(0,0,0,.45),0_28px_70px_-12px_rgba(0,0,0,.6)]">
+            <div className="auth-page relative flex aspect-[1/1.414] flex-col overflow-hidden rounded-[3px] bg-[#FBFCFC] px-8 py-7">
               <span className="absolute inset-y-0 left-[22px] w-px bg-[#EBEFF1]" aria-hidden />
 
               <p className="auth-write font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#8B979E] [animation-delay:420ms]">

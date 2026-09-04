@@ -2513,7 +2513,6 @@
     padding-right: var(--shell-inset);
   }
 
-
   /* ── O fio que recolhe a barra encosta no painel ──────────────────────
      A faixa de clique nascia centrada na borda direita da barra, que é onde o
      divisor ficava quando conteúdo e barra se tocavam. Com o painel recuado,
@@ -4598,6 +4597,93 @@
      Uma sequência só, no carregamento, e depois parado. A regra do kit é que
      nada pisca — movimento ocioso disputa atenção. Chegar não é piscar.      */
 
+  /* ── As duas camadas da antessala ─────────────────────────────────────
+     A mesma anatomia do workspace, e de propósito: casca edge-to-edge por
+     fora, painel recortado por dentro. Quem entra vê, antes de digitar a
+     senha, a estrutura que vai encontrar do outro lado do login.
+
+     Aqui a divisão é vertical em vez de concêntrica — o painel abre à
+     esquerda e a casca segue à direita, sob o formulário — mas as camadas são
+     as mesmas, e a paleta de cada uma vem do mesmo lugar: `chrome-dark` vale
+     só no tema padrão, então no claro e no escuro as duas colunas voltam a ser
+     uma superfície só, como o workspace já faz.
+
+     É o que devolve mesa escura à folha: a página tem sombra funda desenhada
+     para separá-la do fundo, e sobre a antessala clara ela não separava nada. */
+
+  .auth-chrome {
+    background: var(--bg-chrome);
+  }
+
+  .auth-canvas {
+    /* Não é `--bg-canvas`: no papel ele é branco puro, e a folha (que é branca
+       por regra da marca, e nunca escurece) desapareceria dentro dele. O painel
+       é a mesa, um degrau abaixo da folha. No escuro a mesa é o próprio canvas. */
+    background: var(--auth-canvas-bg);
+    margin: var(--shell-inset) 0 var(--shell-inset) var(--shell-inset);
+    border-radius: var(--radius-shell);
+    overflow: hidden;
+    /* O recorte é o mesmo do `.workspace-canvas`: anel por dentro e escuro
+       projetado da quina de cima. Contorno por fora leria como cartão pousado
+       sobre a casca, e a hierarquia é a inversa — a casca é que se abre. */
+    box-shadow:
+      inset 0 0 0 1px var(--canvas-well-edge),
+      var(--canvas-well-shadow);
+    /* `color` precisa ser reancorado na fronteira de paleta: a casca resolveu
+       o texto para o claro dela, e ele desceria por herança para dentro do
+       painel. */
+    color: var(--text-primary);
+  }
+
+  /* O painel fica preso à janela em vez de esticar com a coluna do formulário.
+     Sem isto, um cadastro longo estica o grid, e a folha — centrada na altura
+     total, não na da janela — desce para fora da vista de quem preenche. */
+  @media (min-width: 1024px) {
+    .auth-canvas {
+      position: sticky;
+      top: var(--shell-inset);
+      align-self: start;
+      height: calc(100dvh - var(--shell-inset) * 2);
+    }
+  }
+
+  [data-appearance='standard'] .auth-canvas {
+    --canvas-well-edge: rgba(11, 14, 16, 0.14);
+    --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
+  }
+
+  /* Aqui o fio do recorte é neutro, e não o de acento que o workspace usa: lá o
+     painel é onde a pessoa trabalha e merece ser apontado; na antessala quem
+     manda é o formulário, e um fio verdigris contornando o painel inteiro
+     disputaria com ele. */
+  [data-appearance='light'] .auth-canvas,
+  [data-appearance='dark'] .auth-canvas {
+    --canvas-well-edge: var(--border-subtle);
+    --canvas-well-shadow: inset 0 0 0 0 transparent;
+  }
+
+  /* A mesa e o que a folha precisa para se separar dela. É a regra do kit
+     aplicada em tamanho grande: no escuro a sombra é funda porque é ela que
+     separa a folha da mesa; no claro ela recua e um fio assume a borda. */
+  [data-appearance='standard'] .auth-canvas,
+  [data-appearance='light'] .auth-canvas {
+    /* Um degrau abaixo de `--color-surface-container`: contra a folha, que é
+       branca por regra e nunca escurece, o cinza do sistema ainda era pouco. */
+    --auth-canvas-bg: color-mix(
+      in srgb,
+      var(--color-surface-container) 88%,
+      var(--color-text-secondary)
+    );
+    --auth-page-edge: var(--color-border);
+    --auth-page-shadow: 0 1px 2px rgba(20, 24, 27, 0.12), 0 22px 50px -16px rgba(20, 24, 27, 0.32);
+  }
+
+  [data-appearance='dark'] .auth-canvas {
+    --auth-canvas-bg: var(--bg-canvas);
+    --auth-page-edge: transparent;
+    --auth-page-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 28px 70px -12px rgba(0, 0, 0, 0.6);
+  }
+
   .auth-stage {
     animation: auth-rise 0.5s cubic-bezier(0.2, 0, 0, 1) both;
   }
@@ -4622,6 +4708,11 @@
   .auth-page {
     animation: auth-rise 0.72s cubic-bezier(0.2, 0, 0, 1) both;
     animation-delay: 0.04s;
+    /* A sombra vive aqui, e não na marcação, porque depende da mesa em que a
+       folha pousa — e a mesa muda com o tema. */
+    box-shadow:
+      0 0 0 1px var(--auth-page-edge),
+      var(--auth-page-shadow);
   }
 
   /* O texto se escreve: cada linha cresce da margem para fora. */

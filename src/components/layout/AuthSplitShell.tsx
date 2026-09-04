@@ -26,6 +26,16 @@ const COLUMN_WIDTH: Record<string, string> = {
 /**
  * Casca da porta de entrada — "a antessala".
  *
+ * Duas camadas, como o workspace: a casca (`auth-chrome chrome-dark`) vale de
+ * borda a borda e o painel do documento é um recorte dentro dela. É a mesma
+ * anatomia que a pessoa encontra depois do login, e é ela que devolve mesa
+ * escura à folha — a página tem sombra funda desenhada para separá-la do
+ * fundo, e sobre uma antessala clara essa sombra não separava nada.
+ *
+ * A classe `chrome-dark` fica sempre na marcação e só vale no tema padrão: é o
+ * CSS que decide, via `data-appearance`, então trocar de tema não remonta a
+ * casca. No claro e no escuro as duas colunas voltam a ser uma superfície só.
+ *
  * É **rota de layout**, não componente de página: o painel do documento fica
  * montado enquanto a pessoa circula entre entrar, escolher como começar e se
  * cadastrar. Se cada tela montasse a própria casca, a leitura de três segundos
@@ -41,13 +51,13 @@ export function AuthSplitShell() {
   const width = COLUMN_WIDTH[location.pathname] ?? 'max-w-[452px]';
 
   return (
-    <main className="relative grid min-h-screen bg-doqyn-bg lg:grid-cols-[1.15fr_1fr]">
+    <main className="auth-chrome chrome-dark relative grid min-h-screen lg:grid-cols-[1.15fr_1fr]">
       <div className="absolute right-4 top-4 z-10">
         <ThemeToggle />
       </div>
 
       {/* painel do produto — persiste entre as telas */}
-      <section className="relative hidden overflow-hidden border-r border-doqyn-border-subtle bg-doqyn-panel lg:block">
+      <section className="auth-canvas relative hidden lg:block">
         <AntechamberDocument />
       </section>
 
