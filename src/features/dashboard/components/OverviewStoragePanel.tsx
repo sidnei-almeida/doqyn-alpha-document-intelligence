@@ -30,7 +30,7 @@ export function OverviewStoragePanel({
         {recentErrors.map((error) => (
           <li key={error.id}>
             <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
-            <span className="text-doqyn-danger"> — {error.message}</span>
+            <span className="text-doqyn-danger"> · {error.message}</span>
           </li>
         ))}
       </ul>

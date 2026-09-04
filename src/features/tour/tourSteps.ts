@@ -16,12 +16,12 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'boas-vindas',
     title: 'Onde fica cada coisa',
-    body: 'Dois minutos percorrendo o essencial do DOQYN. Dá para sair a qualquer momento — o tour volta pelo ? na barra de cima.',
+    body: 'Dois minutos percorrendo o essencial do DOQYN. Dá para sair a qualquer momento. O tour volta pelo ? na barra de cima.',
   },
   {
     id: 'biblioteca',
     title: 'Biblioteca',
-    body: 'Todo documento que entra no DOQYN mora aqui. É a tela em que você navega, busca e abre — o resto do menu são recortes dela.',
+    body: 'Todo documento que entra no DOQYN mora aqui. É a tela em que você navega, busca e abre. O resto do menu são recortes dela.',
     route: '/biblioteca',
     target: ['[data-tour="nav:/biblioteca"]'],
   },
@@ -34,7 +34,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'classes',
     title: 'As pastas são classes',
-    body: 'Cada pasta é uma classe de documento — contrato, nota fiscal, procuração. O documento cai na classe porque a IA reconheceu o que ele é, não porque alguém o arrastou até lá.',
+    body: 'Cada pasta é uma classe de documento: contrato, nota fiscal, procuração. O documento cai na classe porque a IA reconheceu o que ele é, não porque alguém o arrastou até lá.',
     route: '/biblioteca',
     target: [
       '[data-testid="explorer-folder-grid"]',
@@ -51,7 +51,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'pedidos',
     title: 'Pedidos',
-    body: 'Quando falta um documento, você pede em vez de esperar. O pedido acompanha quem já enviou e quem ainda não — e vira documento na Biblioteca assim que chega.',
+    body: 'Quando falta um documento, você pede em vez de esperar. O pedido acompanha quem já enviou e quem ainda não, e vira documento na Biblioteca assim que chega.',
     target: ['[data-tour="nav:/pedidos"]'],
   },
   {
@@ -65,7 +65,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'regras',
     title: 'Regras de acesso',
-    body: 'É aqui que o acesso é escrito: ligue um grupo a uma classe e escolha os verbos — ver, baixar, enviar. Baixar aceita o meio-termo de pedir aprovação; os outros são sim ou não.',
+    body: 'É aqui que o acesso é escrito: ligue um grupo a uma classe e escolha os verbos (ver, baixar, enviar). Baixar aceita o meio-termo de pedir aprovação; os outros são sim ou não.',
     route: '/rules',
     target: ['.page-shell__body'],
     visible: (access: TourAccess) => access.canAccessRules,
@@ -73,7 +73,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'matriz',
     title: 'Matriz',
-    body: 'A leitura do que as regras produziram: por pessoa, quem alcança cada documento; por grupo, o que cada um recebe, verbo a verbo. A matriz não altera nada — ela existe para conferir antes de descobrir pelo caminho errado.',
+    body: 'A leitura do que as regras produziram: por pessoa, quem alcança cada documento; por grupo, o que cada um recebe, verbo a verbo. A matriz não altera nada: ela existe para conferir antes de descobrir pelo caminho errado.',
     route: '/matriz',
     target: ['.matrix-grid', '.page-shell__body'],
   },
@@ -94,7 +94,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'ajuda',
     title: 'O tour mora aqui',
-    body: 'Sempre que precisar, este ? traz o passeio de volta — do começo, na tela em que você estiver.',
+    body: 'Sempre que precisar, este ? traz o passeio de volta, do começo e na tela em que você estiver.',
     target: ['[data-tour="help"]'],
   },
 ];

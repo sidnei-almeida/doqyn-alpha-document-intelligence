@@ -26,7 +26,7 @@ export function DocumentViewerDetailsPanel({
         onChange={(event) => onSelectVersion(event.target.value)}
         options={data.versions.map((version) => ({
           value: version.versionId,
-          label: `${version.versionLabel ?? version.versionId} — ${version.finalFileName ?? 'sem nome'}`,
+          label: `${version.versionLabel ?? version.versionId} · ${version.finalFileName ?? 'sem nome'}`,
         }))}
       />
     ) : activeVersion?.versionLabel ? (

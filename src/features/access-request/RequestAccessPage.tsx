@@ -431,7 +431,7 @@ export function RequestAccessPage() {
                 required
               />
               <p className="mt-1.5 text-xs text-doqyn-subtle">
-                Informação declarada — o administrador definirá seus grupos reais de acesso.
+                Informação declarada. O administrador definirá seus grupos reais de acesso.
               </p>
             </div>
 
@@ -527,7 +527,7 @@ export function RequestAccessPage() {
       />
 
       <AuthFooterLink>
-        Já tenho conta —{' '}
+        Já tenho conta.{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"

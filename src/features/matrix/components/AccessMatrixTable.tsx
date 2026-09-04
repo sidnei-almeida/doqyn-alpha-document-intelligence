@@ -132,7 +132,7 @@ function AccessCell({
         onFocus={() => setOpen(true)}
         onBlur={scheduleClose}
         disabled={isBusy}
-        aria-label={`${member.name} — ${origin ? ORIGIN_LABEL[origin] : 'sem acesso'}`}
+        aria-label={`${member.name}: ${origin ? ORIGIN_LABEL[origin] : 'sem acesso'}`}
         aria-expanded={open}
         className={cn(
           'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
@@ -250,7 +250,7 @@ function AccessCell({
 
             {cell?.origins.includes('governance') && (
               <Link to="/rules" className="text-caption text-doqyn-muted hover:underline">
-                Este acesso vem da regra — abrir Regras
+                Este acesso vem da regra. Abrir Regras
               </Link>
             )}
           </div>

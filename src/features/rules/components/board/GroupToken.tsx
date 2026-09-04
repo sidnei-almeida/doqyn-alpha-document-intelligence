@@ -63,8 +63,8 @@ export function GroupToken({
           disabled={disabled}
           aria-label={
             category
-              ? `${group.name} em ${category.name} — abrir opções, ou arraste para mover`
-              : `${group.name} — arraste para conceder acesso`
+              ? `${group.name} em ${category.name}: abrir opções, ou arraste para mover`
+              : `${group.name}: arraste para conceder acesso`
           }
           onClick={() => {
             if (!category) {

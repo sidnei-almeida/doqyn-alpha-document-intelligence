@@ -57,7 +57,7 @@ export function ExplorerRootEmpty() {
         e guardado na pasta que a classificação indicar.
       </p>
       <p className="mt-4 text-[12px] text-doqyn-subtle">
-        As pastas inteligentes saem das suas categorias — ajuste em{' '}
+        As pastas inteligentes saem das suas categorias. Ajuste em{' '}
         <Link to="/rules" className="text-doqyn-accent-active hover:underline">
           Regras
         </Link>

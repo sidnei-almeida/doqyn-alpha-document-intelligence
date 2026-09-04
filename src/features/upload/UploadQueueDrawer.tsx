@@ -26,7 +26,7 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   review: 'Aguardando revisão',
   confirming: 'Salvando na Biblioteca…',
   awaiting_approval: 'Aguardando aprovação do admin',
-  ai_paused: 'IA indisponível — tente novamente',
+  ai_paused: 'IA indisponível. Tente novamente',
   still_running: 'Análise em andamento no servidor',
   done: 'Salvo na Biblioteca',
   error: 'Erro',

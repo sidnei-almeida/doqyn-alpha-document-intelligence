@@ -129,7 +129,7 @@ export function AccessMatrixView({
 
       <p className="access-matrix__legend">
         <span className="register-label text-doqyn-subtle">Ordem dos pontos</span> ver · baixar ·
-        enviar{isAdmin ? ' — clique numa célula para editar' : ''}
+        enviar{isAdmin ? '. Clique numa célula para editar' : ''}
       </p>
     </div>
   );

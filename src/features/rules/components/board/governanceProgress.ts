@@ -75,7 +75,7 @@ export function computeGovernanceProgress(
       id: 'groups',
       done: groups.length > 0,
       label: plural(groups.length, 'grupo criado', 'grupos criados'),
-      hint: groups.length === 0 ? 'Crie o primeiro grupo — ele é quem recebe acesso.' : undefined,
+      hint: groups.length === 0 ? 'Crie o primeiro grupo. É ele quem recebe acesso.' : undefined,
     },
     {
       id: 'people',

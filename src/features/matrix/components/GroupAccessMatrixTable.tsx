@@ -125,7 +125,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                         hoverColumn === columnKey && 'matrix-col-active',
                       )}
                     >
-                      <Tooltip label={`${column.label} — ${group.name}`}>
+                      <Tooltip label={`${column.label} · ${group.name}`}>
                         <span className="flex justify-center text-doqyn-subtle">
                           <Icon name={column.icon} size={ICON_SIZE.xs} />
                         </span>

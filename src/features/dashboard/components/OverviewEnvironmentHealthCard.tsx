@@ -88,7 +88,7 @@ export function OverviewEnvironmentHealthCard({
           detail={
             health.hasStorageConfigured
               ? 'Armazenamento configurado'
-              : 'Indisponível no ambiente — contate o suporte'
+              : 'Indisponível no ambiente. Contate o suporte'
           }
         />
         <HealthIndicator

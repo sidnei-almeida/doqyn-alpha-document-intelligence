@@ -91,7 +91,7 @@ export function PlatformRolesSection({
   return (
     <AccessFormSection
       title="Papel na plataforma"
-      description="Define o que a pessoa administra. É um só — não se acumulam."
+      description="Define o que a pessoa administra. É um só, e não se acumulam."
     >
       <div className="divide-y divide-doqyn-border-subtle">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {

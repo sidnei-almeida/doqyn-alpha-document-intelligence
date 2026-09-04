@@ -453,7 +453,7 @@ export function GovernanceDetailDialog({
               </div>
               {isDraftOnlyConnection && (
                 <p className="mt-2 text-center text-[11px] text-doqyn-warning">
-                  Conexão pendente — salve o mapa para aplicar no servidor.
+                  Conexão pendente. Salve o mapa para aplicar no servidor.
                 </p>
               )}
             </div>

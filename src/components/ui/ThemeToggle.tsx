@@ -26,7 +26,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={toggleTheme}
       className={cn('shrink-0', className)}
-      title={`Tema: ${THEME_LABELS[theme]} — ${THEME_HINTS[theme]}. Clique para ${THEME_LABELS[upcoming].toLowerCase()}.`}
+      title={`Tema: ${THEME_LABELS[theme]}. ${THEME_HINTS[theme]}. Clique para ${THEME_LABELS[upcoming].toLowerCase()}.`}
       aria-label={`Tema: ${THEME_LABELS[theme]}. Trocar para ${THEME_LABELS[upcoming].toLowerCase()}.`}
     >
       <Icon name={THEME_ICONS[theme]} size={ICON_SIZE.sm} />

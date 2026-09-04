@@ -68,7 +68,7 @@ export function TrackingPage() {
     <PageShell
       eyebrow="Rastreabilidade"
       title="Tracking documental"
-      description="Investigue quem acessou, visualizou, baixou ou alterou documentos — com rastreabilidade completa e dados sanitizados."
+      description="Investigue quem acessou, visualizou, baixou ou alterou documentos, com rastreabilidade completa e dados sanitizados."
       actions={
         <span className="font-mono text-micro tabular-nums text-doqyn-subtle">{listSummary}</span>
       }

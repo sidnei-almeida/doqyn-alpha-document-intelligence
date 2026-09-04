@@ -103,7 +103,7 @@ export function simulateMemberAccess(
   const firstName = member.name.split(' ')[0] || member.name;
 
   if (isMemberAdmin(member)) {
-    return { sees: true, reason: `${firstName} administra a empresa — vê todas as categorias` };
+    return { sees: true, reason: `${firstName} administra a empresa: vê todas as categorias` };
   }
 
   for (const groupId of member.groupIds) {
@@ -119,7 +119,7 @@ export function simulateMemberAccess(
 }
 
 export function describeMemberGroups(member: CompanyMember, groups: Group[]): string {
-  if (isMemberAdmin(member)) return 'administra a empresa — vê todas as categorias.';
+  if (isMemberAdmin(member)) return 'administra a empresa: vê todas as categorias.';
   const names = member.groupIds
     .map((id) => groups.find((g) => g.id === id)?.name)
     .filter(Boolean) as string[];

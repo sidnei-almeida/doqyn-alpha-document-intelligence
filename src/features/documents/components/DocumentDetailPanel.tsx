@@ -165,7 +165,7 @@ export function DocumentDetailPanel({
               onChange={(event) => setSelectedVersionId(event.target.value)}
               options={data.versions.map((version: DocumentVersionSummary) => ({
                 value: version.versionId,
-                label: `${version.versionLabel ?? version.versionId} — ${version.finalFileName ?? 'sem nome'}`,
+                label: `${version.versionLabel ?? version.versionId} · ${version.finalFileName ?? 'sem nome'}`,
               }))}
             />
           )}

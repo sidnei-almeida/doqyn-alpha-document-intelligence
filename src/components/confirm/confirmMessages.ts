@@ -28,7 +28,7 @@ export function buildDeleteCategoryConfirm(categoryName: string) {
   // servidor que responde, depois.
   return {
     title: 'Excluir categoria?',
-    description: `A categoria "${categoryName}" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria — nenhum documento é apagado.`,
+    description: `A categoria "${categoryName}" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria, e nenhum documento é apagado.`,
     confirmLabel: 'Excluir categoria',
     confirmationText: CONFIRM_DELETE_WORD,
     variant: 'danger' as const,
@@ -58,7 +58,7 @@ export function buildDeleteGroupConfirm(groupName: string, memberCount: number) 
 export function buildRejectApprovalConfirm(name: string) {
   return {
     title: 'Recusar solicitação?',
-    description: `${name} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente — será necessário enviar um novo convite.`,
+    description: `${name} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente: será necessário enviar um novo convite.`,
     confirmLabel: 'Recusar',
     confirmationText: CONFIRM_DELETE_WORD,
     variant: 'danger' as const,

@@ -59,7 +59,7 @@ export function VersioningPage() {
       toast.error('Selecione o arquivo da nova versão');
       return;
     }
-    toast.success('Nova versão registrada — versões anteriores preservadas');
+    toast.success('Nova versão registrada. As anteriores continuam guardadas');
     setSelectedFile(null);
   };
 
@@ -135,7 +135,7 @@ export function VersioningPage() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="warning">Alterações detectadas — revisão recomendada</Badge>
+                <Badge variant="warning">Alterações detectadas, revisão recomendada</Badge>
               </div>
             ) : (
               <p className="text-sm text-doqyn-muted">Apenas uma versão disponível</p>

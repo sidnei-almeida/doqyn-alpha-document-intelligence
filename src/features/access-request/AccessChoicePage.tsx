@@ -71,7 +71,7 @@ export function AccessChoicePage({
       </div>
 
       <AuthFooterLink>
-        Já tenho conta —{' '}
+        Já tenho conta.{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"

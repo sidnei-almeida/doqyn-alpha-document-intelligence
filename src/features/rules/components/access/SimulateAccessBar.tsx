@@ -42,7 +42,7 @@ export function SimulateAccessBanner({ member, groups, onExit }: SimulateAccessB
     <div className="rules-simulation">
       <UserAvatar userId={member.userId} name={member.name} email={member.email} size="sm" />
       <p className="type-body min-w-0 flex-1 text-doqyn-text">
-        Vendo como <strong className="font-medium">{member.name}</strong> —{' '}
+        Vendo como <strong className="font-medium">{member.name}</strong>:{' '}
         {describeMemberGroups(member, groups)}
       </p>
       <Button type="button" variant="ghost" size="sm" onClick={onExit} className="shrink-0">

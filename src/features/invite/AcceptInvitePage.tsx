@@ -253,7 +253,7 @@ export function AcceptInvitePage() {
             <form className="mt-6 space-y-8" onSubmit={handleSubmit}>
               <FormSection
                 title="Empresa"
-                description="Dados da empresa que convidou você — não é necessário informar o CNPJ novamente."
+                description="Dados da empresa que convidou você. Não é necessário informar o CNPJ novamente."
               >
                 <Input
                   label="Empresa"
@@ -351,7 +351,7 @@ export function AcceptInvitePage() {
                     required
                   />
                   <p className="mt-1.5 text-xs text-doqyn-subtle">
-                    Informação declarada — o administrador definirá seus grupos reais de acesso.
+                    Informação declarada. O administrador definirá seus grupos reais de acesso.
                   </p>
                 </div>
               </FormSection>

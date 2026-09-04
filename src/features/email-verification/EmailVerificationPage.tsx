@@ -157,7 +157,7 @@ export function EmailVerificationPage() {
         title="Confirme seu e-mail"
         description={
           status?.email
-            ? `Enviamos um código de 6 dígitos para ${status.email}. Digite-o abaixo — ou use o link do mesmo e-mail, se estiver no aparelho onde o abriu.`
+            ? `Enviamos um código de 6 dígitos para ${status.email}. Digite-o abaixo, ou use o link do mesmo e-mail, se estiver no aparelho onde o abriu.`
             : 'Enviamos um código de 6 dígitos para o endereço do seu cadastro.'
         }
       />

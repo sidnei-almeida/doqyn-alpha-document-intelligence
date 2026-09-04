@@ -25,8 +25,8 @@ export const PERMISSION_VERBS: Array<{ key: PermissionVerb; label: string; short
 
 const STATE_SUFFIX: Record<GovernancePermissionState, string> = {
   deny: '',
-  allow: ' — liberado',
-  require: ' — pedindo aprovação',
+  allow: ': liberado',
+  require: ': pedindo aprovação',
 };
 
 /**

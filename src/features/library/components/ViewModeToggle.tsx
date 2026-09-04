@@ -37,7 +37,7 @@ export function ViewModeToggle({ value, onChange, className }: ViewModeTogglePro
   const label = `${VIEW_MODE_LABELS[value]}. Trocar para ${VIEW_MODE_SHORT_LABELS[upcoming]}.`;
 
   return (
-    <Tooltip label={`${VIEW_MODE_LABELS[value]} — clique para ${VIEW_MODE_SHORT_LABELS[upcoming]}`}>
+    <Tooltip label={`${VIEW_MODE_LABELS[value]}. Clique para ${VIEW_MODE_SHORT_LABELS[upcoming]}`}>
       <button
         type="button"
         onClick={() => onChange(upcoming)}

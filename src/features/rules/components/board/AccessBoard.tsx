@@ -192,8 +192,8 @@ export function AccessBoard({
       group,
       VIEW_ONLY,
       gained > 0
-        ? `${group.name} alcança ${category.name} — mais ${gained} ${gained === 1 ? 'pessoa vê' : 'pessoas veem'}.`
-        : `${group.name} alcança ${category.name} — o grupo ainda não tem pessoas.`,
+        ? `${group.name} alcança ${category.name}: mais ${gained} ${gained === 1 ? 'pessoa vê' : 'pessoas veem'}.`
+        : `${group.name} alcança ${category.name}, mas o grupo ainda não tem pessoas.`,
     );
   }
 
@@ -279,7 +279,7 @@ export function AccessBoard({
                   }
                   emptyLabel={
                     showGroups && connected.length === 0
-                      ? 'Ninguém alcança esta categoria — só administradores.'
+                      ? 'Ninguém alcança esta categoria, só administradores.'
                       : ''
                   }
                 >
