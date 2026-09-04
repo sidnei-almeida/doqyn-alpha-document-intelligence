@@ -181,7 +181,12 @@ export function AudiencePicker({
 }: {
   value: RecipientAudience;
   onChange: (value: RecipientAudience) => void;
-  internalLabel: string;
+  /**
+   * Ausente em tenant PF, onde não existe "outra pessoa daqui": `documentOwnership` prende todo
+   * filtro a `ownerUserId`, então a aba listaria só quem já está enviando. Oferecê-la seria
+   * prometer um destinatário que o backend não tem como entregar.
+   */
+  internalLabel?: string;
   /** Ausente onde o fluxo não atravessa a fronteira da empresa. */
   doqynLabel?: string;
   externalLabel: string;
@@ -191,7 +196,9 @@ export function AudiencePicker({
       value={value}
       onChange={onChange}
       options={[
-        { value: 'internal' as RecipientAudience, label: internalLabel },
+        ...(internalLabel
+          ? [{ value: 'internal' as RecipientAudience, label: internalLabel }]
+          : []),
         ...(doqynLabel ? [{ value: 'doqyn' as RecipientAudience, label: doqynLabel }] : []),
         { value: 'external' as RecipientAudience, label: externalLabel },
       ]}

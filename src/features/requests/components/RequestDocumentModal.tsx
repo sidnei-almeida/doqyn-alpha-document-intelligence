@@ -5,6 +5,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { CrossTenantRecipientField } from '@/features/directory/components/CrossTenantRecipientField';
 import { cn } from '@/lib/utils';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
+import { useAuth } from '@/auth/useAuth';
 
 export type RequestDocumentTarget = {
   userId: string;
@@ -61,7 +63,15 @@ export function RequestDocumentModal({
   saving,
   onSubmit,
 }: RequestDocumentModalProps) {
-  const [scope, setScope] = useState<'internal' | 'external'>('internal');
+  const { tenant } = useAuth();
+  /**
+   * Em PF não há a quem pedir dentro do próprio tenant — ele tem um usuário só. Sobra a origem
+   * externa, e o seletor de duas abas deixa de fazer sentido.
+   */
+  const hasInternalScope = !isIndividualTenant(tenant?.tenantType);
+  const defaultScope: 'internal' | 'external' = hasInternalScope ? 'internal' : 'external';
+
+  const [scope, setScope] = useState<'internal' | 'external'>(defaultScope);
   const [requestedFromUserId, setRequestedFromUserId] = useState('');
   const [requestedFromEmail, setRequestedFromEmail] = useState('');
   const [requestedFromUsername, setRequestedFromUsername] = useState('');
@@ -80,7 +90,7 @@ export function RequestDocumentModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const external = scope === 'external';
+  const external = scope === 'external' || !hasInternalScope;
   const hasTarget = external
     ? requestedFromEmail.trim().includes('@') || Boolean(requestedFromUsername)
     : Boolean(requestedFromUserId);
@@ -88,7 +98,7 @@ export function RequestDocumentModal({
   const canSubmit = Boolean(hasTarget && title.trim() && (external || categoryId)) && !saving;
 
   const reset = () => {
-    setScope('internal');
+    setScope(defaultScope);
     setRequestedFromUserId('');
     setRequestedFromEmail('');
     setRequestedFromUsername('');
@@ -149,29 +159,32 @@ export function RequestDocumentModal({
       }
     >
       <div className="space-y-4">
-        {/* Duas origens, não duas telas: pedir é o mesmo gesto, muda só quem atende. */}
-        <div className="flex gap-1 border-b border-doqyn-border-subtle">
-          {(
-            [
-              ['internal', 'Alguém da empresa'],
-              ['external', 'Outra empresa'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setScope(value)}
-              className={cn(
-                'px-3 pb-2 text-caption transition-colors',
-                scope === value
-                  ? 'border-b-2 border-doqyn-accent-active text-doqyn-text'
-                  : 'text-doqyn-muted hover:text-doqyn-text',
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Duas origens, não duas telas: pedir é o mesmo gesto, muda só quem atende. Em PF só
+            existe uma origem, e um seletor de uma aba só é ruído. */}
+        {hasInternalScope ? (
+          <div className="flex gap-1 border-b border-doqyn-border-subtle">
+            {(
+              [
+                ['internal', 'Alguém da empresa'],
+                ['external', 'Outra empresa'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setScope(value)}
+                className={cn(
+                  'px-3 pb-2 text-caption transition-colors',
+                  scope === value
+                    ? 'border-b-2 border-doqyn-accent-active text-doqyn-text'
+                    : 'text-doqyn-muted hover:text-doqyn-text',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {external ? (
           <div className="flex flex-col gap-2">

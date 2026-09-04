@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { isCompleteWhatsapp } from '@/lib/identifiers';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
+import { useAuth } from '@/auth/useAuth';
 import type { DocumentListItem } from '@/types/document-library';
 import {
   AccessList,
@@ -79,8 +81,20 @@ export function ShareDocumentModal({
 }: ShareDocumentModalProps) {
   const documentId = document?.id ?? null;
   const flow = useStepFlow(STEPS.length, open);
+  const { tenant } = useAuth();
+  /**
+   * Em PF não há "alguém daqui": o tenant tem um usuário só. A aba interna some, e o passo
+   * começa onde ele de fato começa — em quem está fora.
+   */
+  const hasInternalAudience = !isIndividualTenant(tenant?.tenantType);
+  /**
+   * Em PF o passo abre no link externo, não na conta DOQYN: enviar para outro tenant depende de
+   * `isInterTenantSharingEnabled()` no servidor, e abrir num caminho que pode estar desligado
+   * seria trocar uma porta fechada por outra.
+   */
+  const defaultAudience: RecipientAudience = hasInternalAudience ? 'internal' : 'external';
 
-  const [audience, setAudience] = useState<RecipientAudience>('internal');
+  const [audience, setAudience] = useState<RecipientAudience>(defaultAudience);
   const [query, setQuery] = useState('');
   const [internalPick, setInternalPick] = useState<InternalCandidate | null>(null);
   const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);
@@ -110,12 +124,13 @@ export function ShareDocumentModal({
     if (!open || !initialRecipient) return;
     setAudience('internal');
     setInternalPick(initialRecipient);
+    // `initialRecipient` só existe onde há membro para pré-selecionar, o que não ocorre em PF.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
     if (open) return;
-    setAudience('internal');
+    setAudience(defaultAudience);
     setQuery('');
     setInternalPick(null);
     setCrossTenantPick(null);
@@ -124,7 +139,15 @@ export function ShareDocumentModal({
     setCanDownload(false);
     setMessage('');
     setIssuedUrl(null);
-  }, [open]);
+  }, [open, defaultAudience]);
+
+  /**
+   * A sessão pode chegar depois da montagem. Sem esta correção, um `audience` 'internal'
+   * herdado do estado inicial deixaria o seletor sem nenhuma opção marcada em PF.
+   */
+  useEffect(() => {
+    if (!hasInternalAudience && audience === 'internal') setAudience(defaultAudience);
+  }, [hasInternalAudience, audience, defaultAudience]);
 
   const phoneError =
     external.phone && !isCompleteWhatsapp(external.phone) ? INVALID_PHONE_MESSAGE : undefined;
@@ -296,8 +319,8 @@ export function ShareDocumentModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Da sua empresa"
-                doqynLabel="Outra empresa"
+                internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
+                doqynLabel={hasInternalAudience ? 'Outra empresa' : 'Outra conta DOQYN'}
                 externalLabel="Convidado externo"
               />
               {recipient.doqyn ? (

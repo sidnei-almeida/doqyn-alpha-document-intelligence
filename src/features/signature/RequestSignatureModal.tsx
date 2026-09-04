@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { isCompleteWhatsapp } from '@/lib/identifiers';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
+import { useAuth } from '@/auth/useAuth';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import type { DocumentListItem } from '@/types/document-library';
 import {
@@ -87,8 +89,15 @@ export function RequestSignatureModal({
   const documentId = document?.id ?? null;
   const queryClient = useQueryClient();
   const flow = useStepFlow(STEPS.length, open);
+  const { tenant } = useAuth();
+  /**
+   * Em PF não há colega para assinar: o tenant tem um usuário só, e pedir assinatura a si mesmo
+   * não é o caso de uso. A aba interna some e o fluxo abre no convite externo.
+   */
+  const hasInternalAudience = !isIndividualTenant(tenant?.tenantType);
+  const defaultAudience: RecipientAudience = hasInternalAudience ? 'internal' : 'external';
 
-  const [audience, setAudience] = useState<RecipientAudience>('internal');
+  const [audience, setAudience] = useState<RecipientAudience>(defaultAudience);
   const [query, setQuery] = useState('');
   const [internalPick, setInternalPick] = useState<InternalCandidate | null>(null);
   /**
@@ -181,7 +190,7 @@ export function RequestSignatureModal({
 
   useEffect(() => {
     if (open) return;
-    setAudience('internal');
+    setAudience(defaultAudience);
     setQuery('');
     setInternalPick(null);
     setCrossTenantSigner(null);
@@ -192,7 +201,12 @@ export function RequestSignatureModal({
     setMessage('');
     setIssuedUrl(null);
     setInternalDone(false);
-  }, [open]);
+  }, [open, defaultAudience]);
+
+  /** A sessão pode chegar depois da montagem — ver o mesmo guard em `ShareDocumentModal`. */
+  useEffect(() => {
+    if (!hasInternalAudience && audience === 'internal') setAudience(defaultAudience);
+  }, [hasInternalAudience, audience, defaultAudience]);
 
   // Na abertura, quem já veio escolhido — ver `initialRecipient`. Depende só de `open` de
   // propósito: trocar de signatário aqui dentro não pode ser desfeito no render seguinte.
@@ -342,8 +356,8 @@ export function RequestSignatureModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel="Da sua empresa"
-                doqynLabel="Outra empresa"
+                internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
+                doqynLabel={hasInternalAudience ? 'Outra empresa' : 'Outra conta DOQYN'}
                 externalLabel="Convidado externo"
               />
               {audience === 'doqyn' ? (
