@@ -35,7 +35,7 @@ type Resolution =
   | { tone: 'ok'; text: string };
 
 export function CrossTenantRecipientField({
-  label = 'Nome de usuário de quem é de outra empresa',
+  label = 'Nome de usuário de quem é de fora daqui',
   idleHint = 'Quem tem conta DOQYN é achado pelo nome de usuário. O e-mail inteiro também resolve, e é o caminho de quem não tem conta.',
   initialEmail,
   onPick,
@@ -150,7 +150,7 @@ export function CrossTenantRecipientField({
     // desnecessário para quem já é colega.
     resolution = {
       tone: 'warn',
-      text: `${lookup.data.user.name} é da sua empresa. Use a busca acima.`,
+      text: `${lookup.data.user.name} é daqui. Use a busca acima.`,
     };
   } else if (lookup.data.kind === 'doqyn_user') {
     const { name } = lookup.data.user;

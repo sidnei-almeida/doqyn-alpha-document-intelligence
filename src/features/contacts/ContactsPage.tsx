@@ -175,7 +175,7 @@ export function ContactsPage() {
             onAction={handleAction}
           />
           <ContactSection
-            title="De outras empresas"
+            title="De fora daqui"
             hint="O documento continua no acervo de quem envia, e o acesso depende de aceite."
             contacts={externos}
             onAction={handleAction}

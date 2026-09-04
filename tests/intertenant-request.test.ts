@@ -114,7 +114,7 @@ describe('pedir documento a outra empresa', () => {
     // origem interna — o tenant tem um usuário só —, mas as duas continuam no mesmo modal.
     assert.ok(modal.includes("useState<'internal' | 'external'>(defaultScope)"));
     assert.ok(modal.includes("['internal', 'Alguém da empresa']"));
-    assert.ok(modal.includes("['external', 'Outra empresa']"));
+    assert.ok(modal.includes("['external', 'De fora daqui']"));
     assert.ok(modal.includes('requestedFromEmail'));
     // E a categoria some quando o destino é fora.
     assert.ok(modal.includes('{external ? null : ('));

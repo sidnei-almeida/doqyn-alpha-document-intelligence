@@ -93,7 +93,7 @@ export function ContactCard({
         {contact.scope === 'external' ? (
           // O aceite é a diferença que muda o que acontece depois de enviar, e por isso está no
           // cartão e não só no título da seção — o cartão é o que a pessoa lê antes de clicar.
-          <Badge variant="neutral">Outra empresa</Badge>
+          <Badge variant="neutral">De fora</Badge>
         ) : null}
         {contact.saved ? <Badge variant="brand">Salvo</Badge> : null}
       </div>

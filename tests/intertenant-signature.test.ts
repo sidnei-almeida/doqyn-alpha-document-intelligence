@@ -62,7 +62,7 @@ describe('assinatura entre empresas, e o campo que atravessa a fronteira', () =>
     const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
     // Mandar um colega pelo caminho de fora criaria uma pendência de aceite sem motivo.
-    assert.ok(field.includes('é da sua empresa. Use a busca acima.'));
+    assert.ok(field.includes('é daqui. Use a busca acima.'));
   });
 
   it('a lista de acesso mostra a empresa da outra parte, não a nossa', () => {

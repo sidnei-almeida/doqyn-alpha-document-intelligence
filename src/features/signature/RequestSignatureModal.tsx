@@ -357,7 +357,7 @@ export function RequestSignatureModal({
                 value={audience}
                 onChange={setAudience}
                 internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
-                doqynLabel={hasInternalAudience ? 'Outra empresa' : 'Outra conta DOQYN'}
+                doqynLabel="Outra conta DOQYN"
                 externalLabel="Convidado externo"
               />
               {audience === 'doqyn' ? (
@@ -396,7 +396,7 @@ export function RequestSignatureModal({
                       size="sm"
                       onClick={() => setAudience('doqyn')}
                     >
-                      Não é da empresa? Buscar por nome de usuário
+                      Não é daqui? Buscar por nome de usuário
                     </Button>
                   }
                 />

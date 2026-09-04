@@ -143,11 +143,11 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     // que aquele caminho existia, nem que a busca era por apelido.
     assert.ok(flow.includes("'internal' | 'doqyn' | 'external'"));
     for (const modal of [share, sig]) {
-      assert.ok(modal.includes('doqynLabel="Outra empresa"'));
+      assert.ok(modal.includes('doqynLabel="Outra conta DOQYN"'));
       assert.ok(modal.includes("audience === 'doqyn'"));
       // E o campo não é mais repetido embaixo da busca de colegas: duas cópias fariam a pessoa
       // escolher entre elas sem saber a diferença.
-      assert.ok(modal.includes('Não é da empresa? Buscar por nome de usuário'));
+      assert.ok(modal.includes('Não é daqui? Buscar por nome de usuário'));
     }
   });
 
@@ -157,7 +157,7 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     const req = read('src/features/requests/components/RequestDocumentModal.tsx');
 
     // Era o rótulo que mentia: o campo sempre aceitou apelido, e dizia "e-mail".
-    assert.ok(field.includes("label = 'Nome de usuário de quem é de outra empresa'"));
+    assert.ok(field.includes("label = 'Nome de usuário de quem é de fora daqui'"));
     assert.ok(field.includes('placeholder="joao.silva"'));
     assert.ok(sig.includes('label="Nome de usuário de quem vai assinar"'));
     assert.ok(req.includes('label="Nome de usuário de quem vai enviar"'));

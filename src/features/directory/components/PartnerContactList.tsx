@@ -28,7 +28,7 @@ export function PartnerContactList({ onPick }: { onPick: (email: string) => void
         className="flex items-center gap-1.5 text-caption text-doqyn-muted hover:text-doqyn-text"
       >
         <Icon name={open ? 'expand_less' : 'expand_more'} size={ICON_SIZE.xs} aria-hidden />
-        Empresas com quem você já trocou documentos ({known.length})
+        Contas com quem você já trocou documentos ({known.length})
       </button>
 
       {open ? (

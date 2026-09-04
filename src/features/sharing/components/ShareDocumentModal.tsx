@@ -321,7 +321,7 @@ export function ShareDocumentModal({
                 value={audience}
                 onChange={setAudience}
                 internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
-                doqynLabel={hasInternalAudience ? 'Outra empresa' : 'Outra conta DOQYN'}
+                doqynLabel="Outra conta DOQYN"
                 externalLabel="Convidado externo"
               />
               {recipient.doqyn ? (
@@ -329,7 +329,7 @@ export function ShareDocumentModal({
                   <div className="min-w-0">
                     <p className="type-body truncate text-doqyn-text">{recipient.doqyn.name}</p>
                     <p className="type-caption truncate text-doqyn-muted">
-                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`} · de outra empresa
+                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`} · de fora daqui
                     </p>
                   </div>
                   <Button
@@ -383,7 +383,7 @@ export function ShareDocumentModal({
                       size="sm"
                       onClick={() => setAudience('doqyn')}
                     >
-                      Não é da empresa? Buscar por nome de usuário
+                      Não é daqui? Buscar por nome de usuário
                     </Button>
                   }
                 />
@@ -405,9 +405,9 @@ export function ShareDocumentModal({
               onExpiresAtChange={setExpiresAt}
               expiresHint={
                 audience === 'doqyn'
-                  ? 'Fora da empresa o acesso tem prazo: passado ele, a concessão fecha sozinha.'
+                  ? 'Fora daqui o acesso tem prazo: passado ele, a concessão fecha sozinha.'
                   : audience === 'internal'
-                    ? 'Acesso de quem é da empresa não expira: vale enquanto não for revogado.'
+                    ? 'Acesso de quem é daqui não expira: vale enquanto não for revogado.'
                     : 'Passado o prazo, o link para de abrir sozinho.'
               }
               toggles={[

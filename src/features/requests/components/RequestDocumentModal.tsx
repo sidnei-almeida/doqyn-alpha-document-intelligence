@@ -166,7 +166,7 @@ export function RequestDocumentModal({
             {(
               [
                 ['internal', 'Alguém da empresa'],
-                ['external', 'Outra empresa'],
+                ['external', 'De fora daqui'],
               ] as const
             ).map(([value, label]) => (
               <button

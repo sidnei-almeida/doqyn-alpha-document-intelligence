@@ -42,7 +42,7 @@ const EYEBROW: Record<NotificationType, string> = {
   approval_decided: 'Aprovação decidida',
   document_requested: 'Documento solicitado',
   document_request_fulfilled: 'Solicitação atendida',
-  inbound_share_received: 'Recebido de outra empresa',
+  inbound_share_received: 'Recebido de fora',
   inbound_share_accepted: 'Recebimento aceito',
   inbound_share_declined: 'Recebimento recusado',
 };
