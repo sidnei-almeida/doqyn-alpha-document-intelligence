@@ -130,7 +130,11 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
   }
 
   return (
-    <form className={cn('space-y-4', className)} onSubmit={handleSubmit} autoComplete="off">
+    <form
+      className={cn('settings-form-measure space-y-4', className)}
+      onSubmit={handleSubmit}
+      autoComplete="off"
+    >
       <Input
         id="currentPassword"
         variant="rule"

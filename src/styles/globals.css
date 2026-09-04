@@ -2961,6 +2961,32 @@
     --settings-transition: 150ms;
     --settings-panel-border: color-mix(in srgb, var(--border-subtle) 65%, transparent);
     --settings-panel-bg: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+
+    /* Duas medidas, não uma. A coluna carrega linha de registro e grade de campo, que
+       precisam de largura; o texto corrido dentro dela continua preso à medida de
+       leitura. Travar as duas no mesmo número era o que apertava a grade de fatos numa
+       tela larga e ainda deixava metade do monitor vazia. */
+    --settings-measure: 46rem;
+    --settings-prose: 46rem;
+    --settings-form: 38rem;
+  }
+
+  @media (min-width: 1280px) {
+    .settings-page {
+      --settings-measure: 52rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .settings-page {
+      --settings-measure: 58rem;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .settings-page {
+      --settings-measure: 64rem;
+    }
   }
 
   .settings-shell {
@@ -2996,10 +3022,10 @@
     min-width: 0;
   }
 
-  /* Coluna única de leitura: o conteúdo tem medida de texto, o índice fica fora dela. */
+  /* Coluna única: o índice fica fora dela, e a medida cresce por faixa de tela. */
   .settings-layout__content {
     min-width: 0;
-    max-width: 46rem;
+    max-width: var(--settings-measure, 46rem);
   }
 
   /* Sem moldura: o conteúdo senta no canvas, como no resto do app. O respiro de baixo
@@ -3130,6 +3156,7 @@
 
   .settings-field-group__description {
     @apply type-caption mt-1 text-doqyn-subtle;
+    max-width: var(--settings-prose, 46rem);
   }
 
   .settings-field-group__body {
@@ -3433,11 +3460,18 @@
     gap: 0.5rem;
   }
 
+  /* Campo de nome não vira pista de pouso quando a coluna cresce: a medida de
+     formulário é menor que a da coluna de propósito. */
   .settings-identity__fields {
     display: grid;
     flex: 1 1 18rem;
     gap: 1rem 1.25rem;
     min-width: 0;
+    max-width: var(--settings-form, 38rem);
+  }
+
+  .settings-form-measure {
+    max-width: var(--settings-form, 38rem);
   }
 
   @media (min-width: 640px) {
@@ -3446,7 +3480,11 @@
     }
   }
 
-  /* Fatos da conta: rótulo em mono, valor em corpo — registro, não card. */
+  /* Fatos da conta: rótulo em mono, valor em corpo — registro, não card.
+     Três colunas fixas repartiam a largura sem perguntar o que cabia nelas, e um
+     e-mail comum quebrava no meio do endereço. O piso de 15rem é a largura em que um
+     endereço inteiro cabe numa linha: abaixo disso a grade cai para duas colunas em vez
+     de partir o valor. */
   .settings-register-facts {
     display: grid;
     gap: 1rem 1.5rem;
@@ -3455,7 +3493,7 @@
 
   @media (min-width: 640px) {
     .settings-register-facts {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
     }
   }
 
@@ -3814,7 +3852,7 @@
 
   .settings-block__header .settings-section-subtitle {
     margin-top: 0.125rem;
-    max-width: none;
+    max-width: var(--settings-prose, 46rem);
   }
 
   .settings-block .settings-section-body {
@@ -4199,6 +4237,7 @@
     line-height: 1.5;
     margin: 0;
     padding-top: 0.15rem;
+    max-width: var(--settings-prose, 46rem);
   }
 
   .settings-link-action {
