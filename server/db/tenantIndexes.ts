@@ -9,7 +9,7 @@ import {
 export type IndexEnsureResult = {
   collection: string;
   name: string;
-  status: 'created' | 'existing';
+  status: 'created' | 'existing' | 'dropped';
 };
 
 async function ensureCollectionExists(collectionName: string): Promise<boolean> {
@@ -38,6 +38,28 @@ export async function ensureIndexesForCollection(
 
   for (const spec of indexes) {
     const keyStr = JSON.stringify(spec.key);
+
+    /**
+     * Índice com o nome declarado, mas com outra chave: a forma mudou e o antigo ficou para trás.
+     *
+     * Sem isto a criação falha para sempre — o Mongo recusa reaproveitar um nome com chave
+     * diferente, e a checagem por forma de chave logo abaixo nunca encontra o novo, então toda
+     * rodada do job repete o mesmo erro e o índice novo nunca nasce. Foi o que aconteceu com
+     * `inbound_pending_by_recipient`.
+     *
+     * Derruba só quando a chave difere. Enquanto o nome e a forma batem, nada é mexido — soltar e
+     * recriar a cada rodada deixaria a coleção sem índice durante a reconstrução, por nada.
+     */
+    if (spec.name && spec.name !== '_id_') {
+      const sameName = existing.find((idx) => idx.name === spec.name);
+      if (sameName && JSON.stringify(sameName.key) !== keyStr) {
+        await collection.dropIndex(spec.name);
+        const index = existing.indexOf(sameName);
+        if (index >= 0) existing.splice(index, 1);
+        results.push({ collection: collectionName, name: spec.name, status: 'dropped' });
+      }
+    }
+
     const match = existing.find((idx) => JSON.stringify(idx.key) === keyStr);
 
     if (match) {

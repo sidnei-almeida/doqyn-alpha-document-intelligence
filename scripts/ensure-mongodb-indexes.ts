@@ -47,6 +47,20 @@ async function ensureIndexes(collectionName: string, indexes: IndexDescription[]
 
   for (const spec of indexes) {
     const keyStr = JSON.stringify(spec.key);
+
+    // Espelha server/db/tenantIndexes.ts: nome declarado com outra chave é forma antiga que ficou
+    // para trás, e o Mongo recusa reaproveitar o nome — sem derrubar, toda rodada repete o mesmo
+    // erro e o índice novo nunca nasce.
+    if (spec.name && spec.name !== '_id_') {
+      const sameName = existing.find((idx) => idx.name === spec.name);
+      if (sameName && JSON.stringify(sameName.key) !== keyStr) {
+        await collection.dropIndex(spec.name);
+        const index = existing.indexOf(sameName);
+        if (index >= 0) existing.splice(index, 1);
+        results.push({ collection: collectionName, name: spec.name, status: 'dropped' });
+      }
+    }
+
     const already = existing.some((idx) => JSON.stringify(idx.key) === keyStr);
 
     if (already) {
