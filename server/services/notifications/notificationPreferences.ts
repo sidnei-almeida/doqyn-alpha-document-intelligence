@@ -1,7 +1,24 @@
 import type { NotificationChannel, NotificationType } from '../../db/notificationTypes.js';
-import type { NotificationPreferences } from '../../db/types.js';
-import { mergeNotificationPreferences } from '../accessRequestService.js';
+import { DEFAULT_NOTIFICATION_PREFERENCES, type NotificationPreferences } from '../../db/types.js';
 import { listTenantMembers } from '../tenantMemberRepository.js';
+
+/**
+ * As preferências gravadas sobre o default, e não em lugar dele.
+ *
+ * Quem foi gravado antes de um evento existir não tem a chave nova; sem a mescla, o servidor
+ * leria `undefined` como "não quer receber" — o silêncio de um campo que nunca foi perguntado
+ * viraria uma recusa que ninguém deu.
+ *
+ * Morava em `accessRequestService`, que saiu junto com o pedido de acesso.
+ */
+export function mergeNotificationPreferences(
+  input?: Partial<NotificationPreferences>,
+): NotificationPreferences {
+  return {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...(input ?? {}),
+  };
+}
 
 /**
  * Qual chave de preferência governa cada tipo.

@@ -23,7 +23,6 @@ import {
 
 const EMPTY_OVERVIEW: AuditOverview = {
   pendingCount: 0,
-  pendingUsersCount: 0,
   todayEventsCount: 0,
   criticalEventsCount: 0,
   totalEventsCount: 0,
@@ -159,7 +158,6 @@ export function useAuditCenter(documentId?: string) {
   const overview: AuditOverview = {
     ...(overviewQuery.data ?? EMPTY_OVERVIEW),
     pendingCount,
-    pendingUsersCount: pendingCount,
   };
 
   const events = useMemo(

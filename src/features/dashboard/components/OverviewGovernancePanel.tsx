@@ -13,7 +13,6 @@ type OverviewGovernancePanelProps = {
 
 export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelProps) {
   const navigate = useNavigate();
-  const pendingTotal = governance.usersPending + governance.accessRequestsPending;
 
   return (
     <OverviewPanelShell
@@ -66,8 +65,8 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
         <OverviewPanelStatCell>
           <OverviewPanelStat
             label="Pendências"
-            value={pendingTotal}
-            hint={`${governance.usersPending} usuários · ${governance.accessRequestsPending} acessos`}
+            value={governance.usersPending}
+            hint="usuários aguardando"
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>

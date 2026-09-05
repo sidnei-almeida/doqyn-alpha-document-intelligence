@@ -62,10 +62,11 @@ describe('pedidos de aprovação — fila', () => {
 
     assert.ok(query.includes('listApprovalRequests'));
     assert.ok(query.includes('export type PendingApprovalDto'));
-    // Os membros entram por parâmetro: `listGovernanceMembers` precisa do `req` e do ator, e
-    // arrastar a requisição HTTP para dentro do serviço não vale o acoplamento.
-    assert.ok(query.includes('members: GovernanceMemberRecord[]'));
-    assert.ok(handler.includes('listGovernanceMembers'));
+    // As duas origens que restam: as aprovações no formato novo e os envios que ainda não
+    // migraram. O ramo de pessoa saiu junto com o pedido de acesso.
+    assert.ok(query.includes('mapLegacyUploadApproval'));
+    assert.ok(handler.includes('listPendingDocumentUploadApprovals'));
+    assert.equal(query.includes('GovernanceMemberRecord'), false);
   });
 
   it('quem não administra o tenant recebe fila vazia, não erro', () => {
@@ -90,23 +91,10 @@ describe('pedidos de aprovação — fila', () => {
 });
 
 describe('pedidos de aprovação — origens fundidas', () => {
-  it('o detalhe do pedido de acesso vem por chave interna, não do navegador', () => {
-    const client = read('server/integrations/doqynAuthInternalClient.ts');
-    const query = read('server/services/approvals/pendingApprovalsQuery.ts');
+  it('o SPA não fala direto com o auth-service para montar a fila', () => {
     const spa = read('src/features/audit/api/pendingApprovalsApi.ts');
-
-    assert.ok(client.includes('/internal/tenants/'));
-    assert.ok(client.includes('access-requests'));
-    assert.ok(query.includes('loadAccessRequestDetails'));
-    // O SPA não fala mais direto com o auth-service para montar a fila.
     assert.ok(!spa.includes('authServiceJson'));
     assert.ok(!spa.includes('usersApi.list'));
-  });
-
-  it('falha ao enriquecer não derruba a fila', () => {
-    const query = read('server/services/approvals/pendingApprovalsQuery.ts');
-    assert.ok(query.includes('logger.warn'));
-    assert.ok(query.includes('return [];'));
   });
 
   it('a coleção antiga de envios continua sendo lida enquanto o fluxo não migra', () => {
@@ -219,12 +207,15 @@ describe('aprovações — armadilhas do modelo', () => {
     assert.ok(service.includes('APPROVAL_NO_APPROVER'));
   });
 
-  it('recusar pedido de documento não recusa a pessoa', () => {
+  it('a fila é só de documento, e recusar não alcança a pessoa', () => {
     const api = read('src/features/audit/api/pendingApprovalsApi.ts');
     const hook = read('src/features/audit/hooks/useAuditCenter.ts');
 
-    assert.ok(api.includes('export function isDocumentApproval'));
-    assert.ok(hook.includes('if (isDocumentApproval(item))'));
+    // Sem ramo de pessoa não há como confundir "recusar este download" com "recusar o acesso
+    // desta pessoa": a recusa só tem um endpoint para onde ir.
+    assert.equal(api.includes('access_request'), false);
+    assert.ok(api.includes("type: 'document_upload' | 'document_download' | 'document_share'"));
+    assert.equal(hook.includes('usersApi.reject'), false);
   });
 
   it('compartilhar falha fechado no meio-termo', () => {

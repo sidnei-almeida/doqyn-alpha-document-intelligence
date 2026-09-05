@@ -48,7 +48,6 @@ export interface AuditEvent {
 
 export interface AuditOverview {
   pendingCount: number;
-  pendingUsersCount: number;
   todayEventsCount: number;
   criticalEventsCount: number;
   totalEventsCount?: number;

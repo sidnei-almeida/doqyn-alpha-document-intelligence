@@ -1,25 +1,15 @@
 import type { MongoApprovalRequest, PlatformRole } from '../../db/types.js';
-import {
-  fetchTenantAccessRequests,
-  type AuthAccessRequestSnapshot,
-} from '../../integrations/doqynAuthInternalClient.js';
-import { usesDoqynAuth } from '../../auth/authConfig.js';
-import { logger } from '../../utils/logger.js';
-import type { GovernanceMemberRecord } from '../governanceMembersService.js';
 import type { MongoDocumentUploadApproval } from '../../db/types.js';
 import { listApprovalRequests } from './approvalRequestService.js';
 
 /**
  * A forma canônica de um pedido na fila, independente de onde ele nasceu.
  *
- * Os tipos vêm de origens diferentes — três são pessoas esperando acesso (espelhadas do
- * auth-service em `tenant_members`) e os demais são ações sobre documento (`approval_requests`, no
- * Mongo do app). Quem lê a fila não precisa saber disso.
+ * Toda decisão desta fila é sobre documento. Já houve um ramo de pessoa — o pedido de acesso,
+ * espelhado do auth-service em `tenant_members` — que saiu junto com o próprio pedido: quem entra
+ * numa empresa entra convidado, e convite não passa por fila.
  */
 export type PendingApprovalKind =
-  | 'access_request'
-  | 'invite'
-  | 'registration'
   | 'document_upload'
   | 'document_download'
   | 'document_share';
@@ -37,18 +27,6 @@ export type PendingApprovalDto = {
   };
   tenantId: string;
   tenantName?: string;
-  /**
-   * Presente nos três tipos de pessoa, na mesma forma que `/api/company-members` serve — é o que
-   * o cartão de revisão já sabe ler.
-   */
-  member?: GovernanceMemberRecord;
-  /**
-   * O que a pessoa declarou ao pedir acesso — cargo, setor, motivo, consentimento, termos.
-   *
-   * Vem do auth-service, que é o dono desse dado. O espelho em `tenant_members` guarda o
-   * suficiente para operar, não o suficiente para decidir.
-   */
-  accessRequest?: AuthAccessRequestSnapshot;
   /** O que se pede, sobre o quê. Presente em todo pedido de documento. */
   subject?: {
     documentId?: string;
@@ -78,45 +56,6 @@ export type PendingApprovalDto = {
     payload: Record<string, unknown>;
   };
 };
-
-function memberDisplayName(member: GovernanceMemberRecord): string {
-  const parts = [member.firstName, member.lastName].filter(Boolean);
-  if (parts.length > 0) return parts.join(' ');
-  return member.name || member.email;
-}
-
-/**
- * De onde a pessoa veio, deduzido do que ela trouxe.
- *
- * Mesma regra que rodava no navegador: quem declarou motivo pediu acesso; quem já tem conta no
- * auth veio de convite; o resto é cadastro novo. É dedução, não um campo — o dia em que o pedido
- * de acesso virar `MongoApprovalRequest` também, isto deixa de existir.
- */
-function inferMemberKind(member: GovernanceMemberRecord): PendingApprovalKind {
-  if (member.requestedAccess?.source === 'public_form' || member.requestedAccess?.reason) {
-    return 'access_request';
-  }
-  if (member.requestedAccess?.source === 'admin_invite') return 'invite';
-  return 'registration';
-}
-
-function mapMember(member: GovernanceMemberRecord): PendingApprovalDto {
-  return {
-    id: member.id,
-    kind: inferMemberKind(member),
-    status: 'pending',
-    requestedAt: member.requestedAccess?.requestedAt ?? member.createdAt,
-    requestedBy: {
-      userId: member.userId,
-      membershipId: member.id,
-      name: memberDisplayName(member),
-      email: member.email,
-    },
-    tenantId: member.tenantId,
-    tenantName: member.requestedAccess?.tenantDisplayName,
-    member,
-  };
-}
 
 /**
  * Envio pendente no formato antigo.
@@ -206,14 +145,6 @@ export type ListPendingApprovalsInput = {
   tenantId: string;
   userId: string;
   platformRoles: PlatformRole[];
-  /**
-   * Membros do tenant, já serializados pelo caminho de sempre.
-   *
-   * Entram por parâmetro em vez de serem buscados aqui porque `listGovernanceMembers` precisa do
-   * `req` e do ator, e arrastar a requisição HTTP para dentro do serviço só para reaproveitar uma
-   * serialização não vale o acoplamento.
-   */
-  members: GovernanceMemberRecord[];
   /** Envios pendentes no formato antigo, enquanto o fluxo de upload não migra. */
   legacyUploadApprovals: MongoDocumentUploadApproval[];
   limit?: number;
@@ -227,26 +158,6 @@ export type ListPendingApprovalsInput = {
  * outra pessoa para aprovar nada, e `user` não decide. Devolver lista vazia é a resposta certa —
  * não é erro de permissão, é ausência de trabalho.
  */
-/**
- * O detalhe declarado no pedido de acesso, quando houver.
- *
- * Falha de rede aqui não pode derrubar a fila: sem o detalhe a pendência ainda aparece, com nome,
- * e-mail e data — só o cartão de revisão fica mais pobre. Perder a fila inteira por causa do
- * enriquecimento seria trocar um problema pequeno por um grande.
- */
-async function loadAccessRequestDetails(tenantId: string): Promise<AuthAccessRequestSnapshot[]> {
-  if (!usesDoqynAuth()) return [];
-  try {
-    return await fetchTenantAccessRequests(tenantId, 'pending');
-  } catch (error) {
-    logger.warn('falha ao carregar detalhes de solicitações de acesso', {
-      tenantId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return [];
-  }
-}
-
 export async function listPendingApprovalsForTenant(
   input: ListPendingApprovalsInput,
 ): Promise<{ items: PendingApprovalDto[]; nextCursor: string | null }> {
@@ -254,42 +165,22 @@ export async function listPendingApprovalsForTenant(
     return { items: [], nextCursor: null };
   }
 
-  const [requests, accessRequests] = await Promise.all([
-    listApprovalRequests({
-      tenantId: input.tenantId,
-      decidableByUserId: input.userId,
-      status: 'pending',
-      limit: input.limit,
-      cursor: input.cursor,
-    }),
-    loadAccessRequestDetails(input.tenantId),
-  ]);
-  const members = input.members;
-
-  const detailByMembership = new Map(
-    accessRequests
-      .filter((request) => request.membershipId)
-      .map((request) => [request.membershipId as string, request]),
-  );
+  const requests = await listApprovalRequests({
+    tenantId: input.tenantId,
+    decidableByUserId: input.userId,
+    status: 'pending',
+    limit: input.limit,
+    cursor: input.cursor,
+  });
 
   /**
-   * Os membros não paginam.
+   * Duas origens, uma fila: as aprovações no formato novo e os envios que ainda não migraram.
    *
-   * Só os pedidos têm cursor, e a lista sai ordenada do mais recente. Enquanto a fila couber numa
-   * página — que é o caso de qualquer tenant real hoje — a mistura não aparece. Quando um tenant
-   * passar disso, membros e pedidos precisam paginar pela mesma chave, e o caminho é o inverso:
-   * pedido de acesso vira `MongoApprovalRequest` também, e some a fusão.
+   * Só as primeiras têm cursor. Enquanto a fila couber numa página — o caso de qualquer tenant
+   * real hoje — a mistura não aparece; quando passar disso, as duas precisam paginar pela mesma
+   * chave, e o caminho é o envio virar `MongoApprovalRequest` também.
    */
   const items = [
-    ...members
-      .filter((member) => member.status === 'pending')
-      .map((member) => {
-        const item = mapMember(member);
-        const detail = detailByMembership.get(member.id);
-        return detail
-          ? { ...item, accessRequest: detail, tenantName: detail.tenantName ?? item.tenantName }
-          : item;
-      }),
     ...requests.items.map(mapApprovalRequest),
     ...input.legacyUploadApprovals.map(mapLegacyUploadApproval),
   ].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());

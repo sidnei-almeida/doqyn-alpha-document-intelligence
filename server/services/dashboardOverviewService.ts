@@ -53,7 +53,6 @@ export type DashboardOverviewResponse = {
     documentsWithoutCategory: number;
     usersActive: number;
     usersPending: number;
-    accessRequestsPending: number;
   } | null;
   storage: {
     originalFiles: number;
@@ -340,7 +339,6 @@ export async function getDashboardOverview(input: {
             documentsWithoutCategory: 0,
             usersActive: 0,
             usersPending: 0,
-            accessRequestsPending: 0,
           }
         : null,
       storage: isAdmin
@@ -567,7 +565,6 @@ export async function getDashboardOverview(input: {
       documentsWithoutCategory,
       usersActive,
       usersPending,
-      accessRequestsPending: usersPending,
     };
 
     let originalFiles = 0;
