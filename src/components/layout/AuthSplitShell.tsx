@@ -24,6 +24,22 @@ const COLUMN_WIDTH: Record<string, string> = {
 };
 
 /**
+ * Rotas com parâmetro na URL, que não casam por igualdade.
+ *
+ * O convite é `/convite/:token`, então `COLUMN_WIDTH[pathname]` nunca acha — e a tela caía na
+ * largura de 452px, estreita demais para um formulário que pede nome, senha, WhatsApp, cargo e
+ * setor. Mesma medida dos outros cadastros, pelo mesmo motivo.
+ */
+const COLUMN_WIDTH_BY_PREFIX: Array<[string, string]> = [['/convite/', 'max-w-[520px]']];
+
+function resolveColumnWidth(pathname: string): string {
+  const exact = COLUMN_WIDTH[pathname];
+  if (exact) return exact;
+  const prefixed = COLUMN_WIDTH_BY_PREFIX.find(([prefix]) => pathname.startsWith(prefix));
+  return prefixed ? prefixed[1] : 'max-w-[452px]';
+}
+
+/**
  * Casca da porta de entrada — "a antessala".
  *
  * Duas camadas, como o workspace: a casca (`auth-chrome chrome-dark`) vale de
@@ -48,7 +64,7 @@ const COLUMN_WIDTH: Record<string, string> = {
  */
 export function AuthSplitShell() {
   const location = useLocation();
-  const width = COLUMN_WIDTH[location.pathname] ?? 'max-w-[452px]';
+  const width = resolveColumnWidth(location.pathname);
 
   return (
     <main className="auth-chrome chrome-dark relative grid min-h-screen lg:grid-cols-[1.15fr_1fr]">

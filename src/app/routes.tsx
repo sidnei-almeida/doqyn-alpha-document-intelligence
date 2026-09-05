@@ -39,7 +39,6 @@ export const router = createBrowserRouter([
   { path: '/share/:token', element: <ExternalSharePortalRoute /> },
   { path: '/sign/:token', element: <SignaturePortalRoute /> },
   { path: '/verify/signature/:verificationCode', element: <SignatureVerificationRoute /> },
-  { path: '/convite/:token', element: <AcceptInviteRoute /> },
   // A página desenha a própria casca (logo, tema), então fica fora da antessala. A rota faltava:
   // o auth-service já mandava este endereço no e-mail de troca, e quem clicava caía no curinga e
   // era jogado na biblioteca sem que a troca acontecesse.
@@ -52,6 +51,9 @@ export const router = createBrowserRouter([
     children: [
       { element: <PublicRoute />, children: [{ path: '/login', element: <Login /> }] },
       { path: '/acesso', element: <AccessChoiceRoute /> },
+      // Quem chega por convite entra pela mesma porta que todo mundo: mesma casca, mesmo
+      // painel lendo um documento ao lado. Era a única entrada que montava a própria tela.
+      { path: '/convite/:token', element: <AcceptInviteRoute /> },
       { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
       { path: '/criar-empresa', element: <CompanySignupRoute /> },
       { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
