@@ -12,6 +12,10 @@ import type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMem
 import { normalizeEmail } from '../utils/contactNormalize.js';
 import { logger } from '../utils/logger.js';
 import { applyPendingInviteGroups } from './invites/pendingInviteGroupsService.js';
+import {
+  deactivateMemberGroupsForInactiveMember,
+  restoreMemberGroupsForActiveMember,
+} from './documentGroupsService.js';
 
 export type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 
@@ -112,6 +116,17 @@ export async function upsertTenantMemberFromAuthSnapshot(
       .deleteOne({ _id: existingByEmail._id } as Record<string, unknown>);
   }
 
+  /**
+   * O status que este membro tinha no Mongo antes desta rodada.
+   *
+   * Só vale quando é a mesma membership: um documento achado pelo e-mail com outro `_id` é
+   * resquício de uma membership anterior, e acabou de ser apagado logo acima.
+   */
+  const previousStatus =
+    existingByEmail && existingByEmail._id === snapshot.membershipId
+      ? existingByEmail.status
+      : undefined;
+
   const upsertResult = await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
     { _id: snapshot.membershipId } as Record<string, unknown>,
     {
@@ -160,7 +175,77 @@ export async function upsertTenantMemberFromAuthSnapshot(
     });
   }
 
+  await syncGroupMembershipWithMemberStatus({
+    tenantId: snapshot.tenantId,
+    membershipId: snapshot.membershipId,
+    userId: snapshot.userId,
+    previousStatus,
+    status,
+  });
+
   return saved;
+}
+
+/**
+ * O vínculo de grupo acompanha a saída e a volta do membro.
+ *
+ * **Só na virada.** O sync percorre o tenant inteiro a cada quinze segundos; agir por status, e
+ * não por mudança de status, seria uma escrita por membro por ciclo para não mudar nada. Membro
+ * novo também não vira: quem acabou de chegar não tem vínculo anterior a desfazer, e o que o
+ * convite prometeu foi aplicado logo acima.
+ *
+ * **Não lança.** É chamada de dentro da sincronização, que existe para manter dois bancos
+ * alinhados. Um vínculo que não pôde ser mexido não pode deixar o membro fora do Mongo — e o
+ * acesso de quem está bloqueado já está fechado pela revogação de sessão do auth, então falhar
+ * aqui não abre porta nenhuma.
+ */
+async function syncGroupMembershipWithMemberStatus(input: {
+  tenantId: string;
+  membershipId: string;
+  userId: string;
+  previousStatus: TenantMemberStatus | undefined;
+  status: TenantMemberStatus;
+}): Promise<void> {
+  if (!input.previousStatus || input.previousStatus === input.status) return;
+
+  const wasActive = input.previousStatus === 'active';
+  const isActive = input.status === 'active';
+  if (wasActive === isActive) return;
+
+  try {
+    // `ownerUserId` é o que dá escopo certo no tenant PF, onde a coleção é compartilhada e o
+    // filtro é por dono. No PJ ele não muda nada — o escopo já é o tenant.
+    const opts = { ownerUserId: input.userId };
+    const changed = isActive
+      ? await restoreMemberGroupsForActiveMember(
+          input.tenantId,
+          { membershipId: input.membershipId },
+          opts,
+        )
+      : await deactivateMemberGroupsForInactiveMember(
+          input.tenantId,
+          { membershipId: input.membershipId },
+          opts,
+        );
+
+    if (changed > 0) {
+      logger.info('vínculos de grupo acompanharam o status do membro', {
+        tenantId: input.tenantId,
+        membershipId: input.membershipId,
+        from: input.previousStatus,
+        to: input.status,
+        changed,
+      });
+    }
+  } catch (error) {
+    logger.warn('vínculos de grupo não puderam acompanhar o status do membro', {
+      tenantId: input.tenantId,
+      membershipId: input.membershipId,
+      from: input.previousStatus,
+      to: input.status,
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
 }
 
 export async function syncTenantMembersFromAuth(tenantId: string): Promise<number> {

@@ -358,6 +358,12 @@ export type MongoDocumentGroupMember = {
   addedBy: string;
   addedAt: Date;
   scope?: 'global' | 'tenant';
+  /**
+   * Quem desativou o vínculo. Presente só quando foi o sync, ao ver o membro sair de ativo — e é
+   * o que distingue o vínculo que ele pode restaurar do que um administrador tirou à mão.
+   */
+  deactivatedBy?: 'member_status';
+  deactivatedAt?: Date;
 };
 
 /**

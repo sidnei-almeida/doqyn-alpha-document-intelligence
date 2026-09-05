@@ -60,11 +60,16 @@ async function ensureIndexes(collectionName: string, indexes: IndexDescription[]
         unique?: boolean;
         partialFilterExpression?: Record<string, unknown>;
         name?: string;
+        expireAfterSeconds?: number;
       } = {};
       if (spec.unique) options.unique = true;
       if (spec.partialFilterExpression)
         options.partialFilterExpression = spec.partialFilterExpression;
       if (spec.name) options.name = spec.name;
+      // Espelha server/db/tenantIndexes.ts: sem esta linha o TTL era declarado e descartado, e
+      // o índice nascia comum.
+      if (spec.expireAfterSeconds !== undefined)
+        options.expireAfterSeconds = spec.expireAfterSeconds;
 
       const created = await collection.createIndex(spec.key, options);
       results.push({ collection: collectionName, name: created, status: 'created' });
@@ -197,6 +202,19 @@ function tenantScopedIndexes(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, groupId: 1, active: 1 } },
         { key: { tenantId: 1, membershipId: 1, active: 1 } },
         { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
+      ],
+    });
+  }
+
+  if (names.pendingInviteGroups) {
+    out.push({
+      collection: names.pendingInviteGroups,
+      // Espelha server/db/tenantIndexes.ts. O TTL de oito dias é o que impede uma concessão de
+      // acesso que ninguém escolheu: convite revogado ou nunca aceito não pode conceder grupo
+      // meses depois, por outro caminho de entrada.
+      indexes: [
+        { key: { tenantId: 1, emailNormalized: 1 } },
+        { key: { createdAt: 1 }, expireAfterSeconds: 8 * 24 * 60 * 60 },
       ],
     });
   }

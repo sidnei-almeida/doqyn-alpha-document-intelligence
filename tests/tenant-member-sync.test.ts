@@ -54,4 +54,23 @@ describe('tenant member sync — auth para mongo', () => {
     assert.ok(endpoint.includes('upsertTenantMemberFromAuthSnapshot'));
     assert.ok(endpoint.includes('assertAppInternalApiKey'));
   });
+
+  it('vínculo de grupo acompanha o status do membro, e só na virada', () => {
+    const service = read('server/services/tenantMemberSyncService.ts');
+    assert.ok(service.includes('deactivateMemberGroupsForInactiveMember'));
+    assert.ok(service.includes('restoreMemberGroupsForActiveMember'));
+    // Sem a guarda de virada, o sync escreveria uma vez por membro a cada ciclo de quinze
+    // segundos para não mudar nada.
+    assert.ok(service.includes('previousStatus === input.status'));
+    assert.ok(service.includes('wasActive === isActive'));
+  });
+
+  it('restaurar só devolve o que o próprio sync tirou', () => {
+    const groups = read('server/services/documentGroupsService.ts');
+    // A marca é o que separa o vínculo que o sync desativou do que um administrador tirou à
+    // mão. Sem ela, desbloquear devolveria um acesso que alguém retirou de propósito.
+    assert.ok(groups.includes("const MEMBER_STATUS_DEACTIVATION = 'member_status'"));
+    const restore = groups.slice(groups.indexOf('export async function restoreMemberGroupsForActiveMember'));
+    assert.ok(restore.includes('deactivatedBy: MEMBER_STATUS_DEACTIVATION'));
+  });
 });

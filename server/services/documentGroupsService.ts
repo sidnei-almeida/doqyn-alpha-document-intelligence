@@ -294,6 +294,64 @@ export async function removeGroupMember(
   return { groupId, membershipId, removed: true };
 }
 
+/**
+ * A marca de quem desativou o vínculo.
+ *
+ * Só o sync escreve `member_status`, e só ele restaura o que carrega essa marca. Vínculo tirado à
+ * mão pela tela não tem marca nenhuma, e por isso nunca volta sozinho — desfazer uma decisão do
+ * administrador porque a pessoa foi desbloqueada seria devolver um acesso que ele retirou.
+ */
+const MEMBER_STATUS_DEACTIVATION = 'member_status';
+
+/**
+ * O membro deixou de estar ativo; o vínculo de grupo o acompanha.
+ *
+ * Enquanto ele está bloqueado o auth já revoga as sessões, então a linha não concederia nada de
+ * qualquer jeito. Ela importa depois: `loadMemberDocumentGroupIds` filtra por `membershipId`
+ * apenas quando quem chama informa um, e quem chama só com `userId` casa com qualquer linha
+ * daquela pessoa no tenant — inclusive as de uma membership morta.
+ */
+export async function deactivateMemberGroupsForInactiveMember(
+  tenantId: string,
+  input: { membershipId: string },
+  opts?: ServiceOpts,
+): Promise<number> {
+  const { collections, scope } = await resolveContext(tenantId, opts);
+
+  const result = await collections.documentGroupMembers.updateMany(
+    { ...scope, membershipId: input.membershipId, active: true } as Record<string, unknown>,
+    { $set: { active: false, deactivatedBy: MEMBER_STATUS_DEACTIVATION, deactivatedAt: new Date() } },
+  );
+
+  return result.modifiedCount;
+}
+
+/**
+ * O membro voltou a ser ativo; volta com o que o sync tirou dele, e só isso.
+ *
+ * Bloquear e desbloquear é o mesmo par de mãos: quem desbloqueia espera a pessoa de volta como
+ * estava, não uma conta ativa que não enxerga documento nenhum.
+ */
+export async function restoreMemberGroupsForActiveMember(
+  tenantId: string,
+  input: { membershipId: string },
+  opts?: ServiceOpts,
+): Promise<number> {
+  const { collections, scope } = await resolveContext(tenantId, opts);
+
+  const result = await collections.documentGroupMembers.updateMany(
+    {
+      ...scope,
+      membershipId: input.membershipId,
+      active: false,
+      deactivatedBy: MEMBER_STATUS_DEACTIVATION,
+    } as Record<string, unknown>,
+    { $set: { active: true }, $unset: { deactivatedBy: '', deactivatedAt: '' } },
+  );
+
+  return result.modifiedCount;
+}
+
 export async function listMembershipGroupIds(
   tenantId: string,
   membershipId: string,
