@@ -33,13 +33,14 @@ describe('OAuth login frontend', () => {
     assert.equal(source.includes("'/upload'"), false);
   });
 
-  it('OnboardingPage oferece caminhos CPF, CNPJ e pedir acesso', () => {
+  it('OnboardingPage oferece caminhos CPF e CNPJ, e não mais o pedido de acesso', () => {
     const source = readSrc('pages/OnboardingPage.tsx');
-    const access = readSrc('features/access-request/AccessChoicePage.tsx');
+    const access = readSrc('features/access-choice/AccessChoicePage.tsx');
     assert.ok(source.includes('OnboardingPage'));
     assert.ok(access.includes('/criar-acesso-cpf'));
     assert.ok(access.includes('/criar-empresa'));
-    assert.ok(access.includes('/solicitar-acesso'));
+    // Entrar numa empresa que já existe depende de convite, não de um pedido em fila.
+    assert.equal(access.includes('/solicitar-acesso'), false);
   });
 
   it('vite proxy encaminha /oauth para auth-service', () => {

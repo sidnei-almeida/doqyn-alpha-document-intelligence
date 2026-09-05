@@ -50,12 +50,8 @@ const LazyVersioningPage = lazyNamed(
   () => import('@/features/versioning/VersioningPage'),
   'VersioningPage',
 );
-const LazyRequestAccessPage = lazyNamed(
-  () => import('@/features/access-request/RequestAccessPage'),
-  'RequestAccessPage',
-);
 const LazyAccessChoicePage = lazyNamed(
-  () => import('@/features/access-request/AccessChoicePage'),
+  () => import('@/features/access-choice/AccessChoicePage'),
   'AccessChoicePage',
 );
 const LazyCompanySignupPage = lazyNamed(
@@ -130,7 +126,6 @@ export const SettingsRoute = withRouteSuspense(LazySettingsPage);
 export const DashboardRoute = withRouteSuspense(LazyDashboardPage);
 export const VersioningRoute = withRouteSuspense(LazyVersioningPage);
 export const ContactsRoute = withRouteSuspense(LazyContactsPage);
-export const RequestAccessRoute = withRouteSuspense(LazyRequestAccessPage);
 export const AccessChoiceRoute = withRouteSuspense(LazyAccessChoicePage);
 export const CompanySignupRoute = withRouteSuspense(LazyCompanySignupPage);
 export const IndividualSignupRoute = withRouteSuspense(LazyIndividualSignupPage);

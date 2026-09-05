@@ -27,7 +27,6 @@ import { refetchTenantScopedQueries } from '@/features/tenant/tenantLiveSync';
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
   '/convite',
-  '/solicitar-acesso',
   '/criar-empresa',
   '/criar-acesso-cpf',
   '/onboarding',

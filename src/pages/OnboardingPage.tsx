@@ -1,4 +1,4 @@
-import { AccessChoicePage } from '@/features/access-request/AccessChoicePage';
+import { AccessChoicePage } from '@/features/access-choice/AccessChoicePage';
 
 export function OnboardingPage() {
   return (

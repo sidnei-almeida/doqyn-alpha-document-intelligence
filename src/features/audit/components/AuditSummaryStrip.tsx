@@ -44,13 +44,6 @@ const cards = [
     tone: 'danger' as const,
     tab: 'security' as const,
   },
-  // Usuários aguardando entram na mesma fila de pendências: é lá que a decisão acontece.
-  {
-    key: 'pendingUsersCount' as const,
-    label: 'Usuários aguardando',
-    tone: 'attention' as const,
-    tab: 'pending' as const,
-  },
 ];
 
 const TONE_CLASS = {

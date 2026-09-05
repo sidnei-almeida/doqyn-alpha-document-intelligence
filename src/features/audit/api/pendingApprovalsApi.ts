@@ -15,13 +15,7 @@ export type PendingApprovalItem = {
   email: string;
   tenantId: string;
   tenantName?: string;
-  type:
-    | 'access_request'
-    | 'invite'
-    | 'registration'
-    | 'document_upload'
-    | 'document_download'
-    | 'document_share';
+  type: 'document_upload' | 'document_download' | 'document_share';
   status: 'pending';
   requestedAt: string;
   requestedAccess?: CompanyMemberDto['requestedAccess'];
@@ -103,22 +97,6 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
   return (data.items ?? []).map(toPendingApprovalItem);
 }
 
-/**
- * Pedidos sobre documento decidem-se pelo endpoint de aprovações; os de pessoa, pelo de membros.
- *
- * A distinção é o que separa "recusar este download" de "recusar o acesso desta pessoa" — sem
- * ela, recusar um pedido de download expulsaria o solicitante da empresa.
- */
-const DOCUMENT_KINDS: ReadonlySet<PendingApprovalItem['type']> = new Set([
-  'document_upload',
-  'document_download',
-  'document_share',
-]);
-
-export function isDocumentApproval(item: PendingApprovalItem): boolean {
-  return DOCUMENT_KINDS.has(item.type);
-}
-
 export type ApprovalDecision = 'approved' | 'rejected';
 
 export async function decideApprovalRequest(
@@ -143,9 +121,6 @@ export async function decideApprovalRequest(
 }
 
 export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = {
-  access_request: 'Solicitação de acesso',
-  invite: 'Convite pendente',
-  registration: 'Cadastro aguardando aprovação',
   document_upload: 'Envio de documento',
   document_download: 'Download de documento',
   document_share: 'Compartilhamento de documento',

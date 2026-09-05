@@ -17,7 +17,6 @@ import {
   DocumentRequestsRoute,
   OAuthCallbackRoute,
   OnboardingRoute,
-  RequestAccessRoute,
   MatrixRoute,
   RulesRoute,
   NotificationsRoute,
@@ -54,7 +53,6 @@ export const router = createBrowserRouter([
       // Quem chega por convite entra pela mesma porta que todo mundo: mesma casca, mesmo
       // painel lendo um documento ao lado. Era a única entrada que montava a própria tela.
       { path: '/convite/:token', element: <AcceptInviteRoute /> },
-      { path: '/solicitar-acesso', element: <RequestAccessRoute /> },
       { path: '/criar-empresa', element: <CompanySignupRoute /> },
       { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
       // Confirmação de e-mail. Fica na antessala, e fora do `PublicRoute`, de propósito: quem

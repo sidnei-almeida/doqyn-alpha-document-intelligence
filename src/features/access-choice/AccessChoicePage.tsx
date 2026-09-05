@@ -17,7 +17,7 @@ function AccessOption({
 }) {
   return (
     <Link to={to} className={AUTH_CHOICE_ROW}>
-      {/* A numeração é referência, não enfeite: são três caminhos excludentes e
+      {/* A numeração é referência, não enfeite: são dois caminhos excludentes e
           a pessoa escolhe um. Em monoespaçado, como todo rótulo de registro. */}
       <span className="font-mono text-micro tabular-nums text-doqyn-subtle transition-colors group-hover:text-doqyn-accent-active">
         {String(index).padStart(2, '0')}
@@ -50,21 +50,18 @@ export function AccessChoicePage({
       <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
 
       <div className="border-t border-doqyn-border-subtle">
-        <AccessOption
-          to="/solicitar-acesso"
-          index={1}
-          title="Pedir acesso à minha empresa"
-          subtitle="Para quem trabalha numa empresa que já usa o DOQYN."
-        />
+        {/* Entrar numa empresa que já usa o DOQYN não é mais um caminho daqui: quem já está
+            dentro convida, e o convite chega por link. Oferecer um pedido que ninguém mais
+            aprova seria mandar a pessoa para uma fila que não existe. */}
         <AccessOption
           to="/criar-empresa"
-          index={2}
+          index={1}
           title="Cadastrar minha empresa"
           subtitle="Para abrir um ambiente novo para a sua empresa."
         />
         <AccessOption
           to="/criar-acesso-cpf"
-          index={3}
+          index={2}
           title="Acessar como pessoa física"
           subtitle="Para quem guarda documentos próprios, sem empresa."
         />

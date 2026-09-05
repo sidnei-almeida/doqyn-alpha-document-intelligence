@@ -8,13 +8,13 @@ const GATE_COPY = {
   not_linked: {
     title: 'Acesso pendente',
     message:
-      'Seu usuário ainda não está vinculado a um cliente ativo no DOQYN. Entre em contato com o administrador da empresa ou solicite acesso.',
+      'Seu usuário ainda não está vinculado a um cliente ativo no DOQYN. Peça um convite ao administrador da empresa.',
     variant: 'warning' as const,
   },
   pending: {
-    title: 'Aguardando aprovação',
+    title: 'Aguardando liberação',
     message:
-      'Sua solicitação está em análise pelo administrador da empresa. Você receberá acesso assim que for aprovado.',
+      'Seu acesso a esta empresa ainda não foi liberado. Quem administra a empresa resolve isso.',
     variant: 'info' as const,
   },
   blocked: {
@@ -23,13 +23,15 @@ const GATE_COPY = {
     variant: 'error' as const,
   },
   rejected: {
-    title: 'Solicitação rejeitada',
-    message: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
+    title: 'Acesso recusado',
+    message:
+      'Seu acesso a este ambiente foi recusado. Voltar depende de um convite novo de quem administra a empresa.',
     variant: 'error' as const,
   },
   removed: {
     title: 'Acesso removido',
-    message: 'Você não faz mais parte deste ambiente no DOQYN.',
+    message:
+      'Você não faz mais parte deste ambiente no DOQYN. Voltar depende de um convite novo de quem administra a empresa.',
     variant: 'warning' as const,
   },
   no_membership: {
@@ -45,16 +47,13 @@ const GATE_ACTIONS: Partial<
     Array<{ label: string; href: string; variant?: 'primary' | 'secondary' }>
   >
 > = {
-  /* `/acesso` apresenta os três caminhos — pedir acesso a uma empresa, cadastrar uma, ou abrir
-     conta pessoal. Oferecer só os dois de empresa aqui deixava sem saída justamente quem chegou
-     para guardar documento próprio. */
+  /* `/acesso` apresenta os caminhos que a pessoa percorre sozinha — cadastrar uma empresa ou
+     abrir conta pessoal. Entrar numa empresa que já existe não está entre eles: depende de
+     alguém de dentro convidar, e o convite chega por link. */
   no_membership: [{ label: 'Ver formas de acesso', href: '/acesso', variant: 'primary' }],
-  rejected: [
-    { label: 'Solicitar acesso a outra empresa', href: '/solicitar-acesso', variant: 'primary' },
-  ],
-  removed: [
-    { label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso', variant: 'primary' },
-  ],
+  /* Recusado e removido não ganham botão. Voltar depende de um convite novo, que sai das mãos de
+     quem administra a empresa — mandar a pessoa para uma tela onde ela não resolve nada seria
+     fingir que há um caminho. O texto de `GATE_COPY` já diz de quem depende. */
 };
 
 export function AccessGateScreen({

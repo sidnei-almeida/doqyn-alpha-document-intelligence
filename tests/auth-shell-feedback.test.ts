@@ -17,7 +17,7 @@ describe('auth shell e feedback', () => {
   // é `DoqynMark` em SVG com `currentColor`, desenhada uma vez pela casca.
   it('telas públicas herdam a casca e não desenham a própria marca', () => {
     const login = read('src/pages/Login.tsx');
-    const access = read('src/features/access-request/AccessChoicePage.tsx');
+    const access = read('src/features/access-choice/AccessChoicePage.tsx');
 
     for (const [name, source] of [
       ['Login', login],

@@ -69,7 +69,6 @@ describe('layout do workspace', () => {
     assert.ok(newButton.includes('Nova categoria'));
     assert.ok(newButton.includes('/rules?nova=categoria'));
     assert.equal(newButton.includes('Em breve'), false);
-    assert.ok(newButton.includes('/solicitar-acesso'));
     assert.equal(newButton.includes('localStorage'), false);
   });
 

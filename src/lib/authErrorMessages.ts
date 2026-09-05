@@ -79,14 +79,16 @@ export function getFriendlyAuthErrorMessage(
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {
   switch (code) {
     case 'NO_ACTIVE_MEMBERSHIP':
-      // `/acesso` apresenta os três caminhos, inclusive a conta pessoal. Os dois de empresa
-      // sozinhos deixavam sem saída quem chegou para guardar documento próprio.
+      // `/acesso` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
+      // pessoal. Entrar numa empresa que já existe não está lá: depende de convite.
       return [{ label: 'Ver formas de acesso', href: '/acesso' }];
     case 'EMAIL_NOT_VERIFIED':
       return [{ label: 'Confirmar e-mail', href: '/confirmar-cadastro' }];
     case 'MEMBERSHIP_REJECTED':
     case 'MEMBERSHIP_REMOVED':
-      return [{ label: 'Solicitar acesso a uma empresa', href: '/solicitar-acesso' }];
+      // Sem ação: voltar depende de um convite novo, que sai das mãos de quem administra a
+      // empresa. Um botão aqui levaria a uma tela onde a pessoa não resolve nada.
+      return [];
     default:
       return [];
   }

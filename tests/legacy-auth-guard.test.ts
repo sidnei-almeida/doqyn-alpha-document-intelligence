@@ -21,9 +21,4 @@ describe('legacy auth endpoint guards', () => {
     assert.ok(invite.includes('membership_invite'));
   });
 
-  it('bloqueia access-requests legado quando provider é doqyn_auth', () => {
-    const access = read('api/auth/access-requests.ts');
-    assert.ok(access.includes('rejectLegacyAuthEndpoint'));
-    assert.ok(access.includes('public_access_request'));
-  });
 });

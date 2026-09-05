@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
-import { Modal } from '@/components/ui/Modal';
-import { PromptDialog } from '@/components/ui/PromptDialog';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { MemberStatusBadge } from '@/components/ui/MemberStatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -20,16 +18,9 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MemberStatus,
   type PlatformRole,
-  suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
 import { cloneAccessFormState, type AccessFormState } from './accessFormState';
-import {
-  DocumentGroupsSection,
-  NotificationsSection,
-  PlatformRolesSection,
-} from './components/AccessFormSections';
-import { AccessRequestDetailsPanel } from './components/AccessRequestDetailsPanel';
 import { BlockAccessDialog } from './components/BlockAccessDialog';
 import { EditAccessDialog } from './components/EditAccessDialog';
 import { InviteMemberDialog } from './components/InviteMemberDialog';
@@ -80,17 +71,8 @@ export function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingMember, setEditingMember] = useState<CompanyMemberDto | null>(null);
   const [editAccessBaseline, setEditAccessBaseline] = useState<AccessFormState | null>(null);
-  const [approvingMember, setApprovingMember] = useState<CompanyMemberDto | null>(null);
   const [blockingMember, setBlockingMember] = useState<CompanyMemberDto | null>(null);
   const [unblockingMember, setUnblockingMember] = useState<CompanyMemberDto | null>(null);
-  const [rejectingMember, setRejectingMember] = useState<CompanyMemberDto | null>(null);
-
-  const [accessForm, setAccessForm] = useState<AccessFormState>({
-    platformRoles: ['user'],
-    accessGroupIds: [],
-    documentGroupIds: [],
-    notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-  });
 
   const membersQuery = useCompanyMembers(sessionTenantId);
 
@@ -174,42 +156,6 @@ export function UsersPage() {
     }
   };
 
-  const approveMutation = useMutation({
-    mutationFn: () => {
-      if (!approvingMember) throw new Error('Membro não selecionado.');
-      return usersApi.approve(approvingMember.id, accessForm);
-    },
-    onSuccess: async (data) => {
-      showAppToast({ type: 'success', title: 'Solicitação aprovada.' });
-      if ('temporaryPassword' in data && data.temporaryPassword) {
-        showAppToast({
-          type: 'info',
-          title: 'Senha temporária (dev)',
-          message: data.temporaryPassword,
-          duration: 15000,
-        });
-      }
-      setApprovingMember(null);
-      await invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: ({ memberId, reason }: { memberId: string; reason: string }) =>
-      usersApi.reject(memberId, reason),
-    onSuccess: () => {
-      showAppToast({ type: 'success', title: 'Solicitação rejeitada.' });
-      setRejectingMember(null);
-      invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
-
-  const handleRejectMember = (member: CompanyMemberDto) => {
-    setRejectingMember(member);
-  };
-
   const blockMutation = useMutation({
     mutationFn: ({ memberId, reason }: { memberId: string; reason?: string }) =>
       usersApi.block(memberId, undefined, reason),
@@ -272,22 +218,6 @@ export function UsersPage() {
 
   const documentGroups = documentGroupsQuery.data ?? [];
 
-  const openApprove = (member: CompanyMemberDto) => {
-    const suggested = suggestGroupsFromDepartment(
-      member.requestedAccess?.departmentText,
-      documentGroups,
-    );
-    setApprovingMember(member);
-    setAccessForm({
-      platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
-      accessGroupIds: [],
-      documentGroupIds: suggested,
-      notificationPreferences: {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...(member.notificationPreferences ?? {}),
-      },
-    });
-  };
 
   const openEditAccess = (member: CompanyMemberDto) => {
     const baseline = memberToAccessForm(member);
@@ -299,7 +229,7 @@ export function UsersPage() {
     <PageShell
       eyebrow="Administração"
       title="Usuários"
-      description={`Aprove e gerencie acessos de ${tenantDisplayName}.`}
+      description={`Convide pessoas e gerencie acessos de ${tenantDisplayName}.`}
       actions={
         <Button type="button" onClick={() => setInviting(true)}>
           <Icon name="person_add" size={ICON_SIZE.xs} />
@@ -423,16 +353,6 @@ export function UsersPage() {
               <TableRowActionsMenu
                 actions={[
                   {
-                    label: 'Aprovar',
-                    onClick: () => openApprove(member),
-                    hidden: member.status !== 'pending',
-                  },
-                  {
-                    label: 'Rejeitar',
-                    onClick: () => handleRejectMember(member),
-                    hidden: member.status !== 'pending',
-                  },
-                  {
                     label: 'Editar acesso',
                     onClick: () => openEditAccess(member),
                     hidden: member.status !== 'active' && member.status !== 'blocked',
@@ -454,65 +374,6 @@ export function UsersPage() {
           },
         ]}
       />
-
-      {approvingMember && (
-        <Modal
-          open
-          onClose={() => setApprovingMember(null)}
-          title={`Aprovar ${memberDisplayName(approvingMember)}`}
-          subtitle={approvingMember.email}
-          size="lg"
-          // Papel, grupos e avisos já escolhidos: clicar fora não descarta em silêncio.
-          dismissOnOverlay={false}
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setApprovingMember(null)}>
-                Cancelar
-              </Button>
-              <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
-                {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
-              </Button>
-            </>
-          }
-        >
-          <AccessRequestDetailsPanel
-            member={approvingMember}
-            className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
-          />
-          {suggestGroupsFromDepartment(
-            approvingMember.requestedAccess?.departmentText,
-            documentGroups,
-          ).length > 0 && (
-            <p className="mb-4 text-xs text-doqyn-muted">
-              Sugestão: talvez corresponda ao grupo{' '}
-              {documentGroups
-                .filter((g) =>
-                  suggestGroupsFromDepartment(
-                    approvingMember.requestedAccess?.departmentText,
-                    documentGroups,
-                  ).includes(g.id),
-                )
-                .map((g) => g.name)
-                .join(', ')}
-            </p>
-          )}
-          <PlatformRolesSection
-            value={accessForm.platformRoles}
-            onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
-          />
-          <DocumentGroupsSection
-            groups={documentGroups}
-            value={accessForm.documentGroupIds}
-            onChange={(documentGroupIds) => setAccessForm((f) => ({ ...f, documentGroupIds }))}
-          />
-          <NotificationsSection
-            value={accessForm.notificationPreferences}
-            onChange={(notificationPreferences) =>
-              setAccessForm((f) => ({ ...f, notificationPreferences }))
-            }
-          />
-        </Modal>
-      )}
 
       {inviting && (
         <InviteMemberDialog
@@ -561,24 +422,6 @@ export function UsersPage() {
         />
       )}
 
-      <PromptDialog
-        open={Boolean(rejectingMember)}
-        title="Rejeitar solicitação"
-        description={
-          rejectingMember
-            ? `${memberDisplayName(rejectingMember)} · ${rejectingMember.email}`
-            : undefined
-        }
-        label="Motivo da rejeição"
-        placeholder="Descreva o motivo para o solicitante..."
-        confirmLabel="Confirmar rejeição"
-        saving={rejectMutation.isPending}
-        onClose={() => setRejectingMember(null)}
-        onConfirm={(reason) => {
-          if (!rejectingMember) return;
-          rejectMutation.mutate({ memberId: rejectingMember.id, reason });
-        }}
-      />
     </PageShell>
   );
 }

@@ -10,7 +10,6 @@ import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit
 import { auditApi } from '../api/auditApi';
 import {
   decideApprovalRequest,
-  isDocumentApproval,
   listPendingApprovals,
   type PendingApprovalItem,
 } from '../api/pendingApprovalsApi';
@@ -133,10 +132,7 @@ export function useAuditCenter(documentId?: string) {
 
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
-      if (isDocumentApproval(item)) {
-        return decideApprovalRequest(item.id, 'rejected', reason);
-      }
-      return usersApi.reject(item.membershipId, reason).then(() => undefined);
+      return decideApprovalRequest(item.id, 'rejected', reason);
     },
     onSuccess: async () => {
       toast.success('Solicitação rejeitada.');

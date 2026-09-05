@@ -47,7 +47,7 @@ export function PendingApprovalsList({
       <AuditEmptyState
         className="border-t border-doqyn-border"
         title="Não há pendências no momento"
-        description="Novas solicitações de acesso e envios de documentos aparecerão aqui para revisão."
+        description="Envios, downloads e compartilhamentos que dependem de aprovação aparecerão aqui."
       />
     );
   }

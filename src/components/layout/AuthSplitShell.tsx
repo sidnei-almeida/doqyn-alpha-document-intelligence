@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 const COLUMN_WIDTH: Record<string, string> = {
   '/login': 'max-w-[368px]',
   '/acesso': 'max-w-[452px]',
-  '/solicitar-acesso': 'max-w-[520px]',
   '/criar-empresa': 'max-w-[520px]',
   '/criar-acesso-cpf': 'max-w-[520px]',
 };

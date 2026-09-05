@@ -1,13 +1,10 @@
-import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Icon } from '@/components/ui/Icon';
 import { Modal } from '@/components/ui/Modal';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn, formatDateTime } from '@/lib/utils';
-import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { PENDING_TYPE_LABELS, isDocumentApproval } from '../api/pendingApprovalsApi';
+import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 
 type PendingApprovalReviewDialogProps = {
   open: boolean;
@@ -47,13 +44,12 @@ export function PendingApprovalReviewDialog({
   if (!open || !item) return null;
 
   /**
-   * A ficha segue o que se pede, não o tipo exato.
+   * Toda decisão desta fila é sobre documento: envio, download ou compartilhamento.
    *
-   * Roteava por `type !== 'document_upload'`, e por isso um pedido de download abria o painel de
-   * dados cadastrais de quem pediu — junto com o atalho para Usuários, como se a decisão fosse
-   * sobre a pessoa. É a mesma armadilha de decidir por tipo em vez de por natureza.
+   * Já foi sobre pessoa também, quando o pedido de acesso existia — e a ficha então trazia os
+   * dados cadastrais de quem pedia, junto com um atalho para Usuários. Hoje quem entra na
+   * empresa entra por convite, sem fila e sem aprovação.
    */
-  const aboutDocument = isDocumentApproval(item);
 
   return (
     <Modal
@@ -116,19 +112,7 @@ export function PendingApprovalReviewDialog({
           </Badge>
         </div>
 
-        {!aboutDocument && (
-          <AccessRequestDetailsPanel
-            member={item.member}
-            requestedAccess={item.requestedAccess}
-            whatsapp={item.member?.whatsapp}
-            consent={item.member?.consent}
-            terms={item.member?.terms}
-            notificationPreferences={item.member?.notificationPreferences}
-            className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
-          />
-        )}
-
-        {aboutDocument && item.type !== 'document_upload' && (
+        {item.type !== 'document_upload' && (
           <div
             className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
           >
@@ -189,15 +173,6 @@ export function PendingApprovalReviewDialog({
           </div>
         )}
 
-        {!aboutDocument && (
-          <Link
-            to="/users"
-            className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
-          >
-            Gerenciar em Usuários
-            <Icon name="open_in_new" size={12} />
-          </Link>
-        )}
       </div>
     </Modal>
   );

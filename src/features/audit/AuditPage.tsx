@@ -5,7 +5,6 @@ import { Tabs } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
 import { useAuth } from '@/features/auth/useAuth';
-import { ApproveApprovalDialog } from './components/ApproveApprovalDialog';
 import { AuditEmptyState } from './components/AuditEmptyState';
 import { AuditEventDetailsDialog } from './components/AuditEventDetailsDialog';
 import { AuditEventsList } from './components/AuditEventsList';
@@ -15,7 +14,7 @@ import { PendingApprovalReviewDialog } from './components/PendingApprovalReviewD
 import { PendingApprovalsList } from './components/PendingApprovalsList';
 import { RejectApprovalDialog } from './components/RejectApprovalDialog';
 import { useAuditCenter } from './hooks/useAuditCenter';
-import { isDocumentApproval, type PendingApprovalItem } from './api/pendingApprovalsApi';
+import { type PendingApprovalItem } from './api/pendingApprovalsApi';
 import type { AuditEvent } from '@/types/audit';
 import type { AuditTabId } from './utils/auditDisplay';
 
@@ -25,7 +24,6 @@ export function AuditPage() {
   const filterDocId = (location.state as { documentId?: string })?.documentId;
   const [activeTab, setActiveTab] = useState<AuditTabId>('pending');
   const [reviewItem, setReviewItem] = useState<PendingApprovalItem | null>(null);
-  const [approveItem, setApproveItem] = useState<PendingApprovalItem | null>(null);
   const [rejectItem, setRejectItem] = useState<PendingApprovalItem | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
@@ -47,7 +45,6 @@ export function AuditPage() {
     setEventsTab,
     eventFilters,
     setEventFilters,
-    documentGroups,
     approveMutation,
     rejectMutation,
     approveDocumentMutation,
@@ -139,13 +136,7 @@ export function AuditPage() {
                 isAdmin={isAdmin}
                 loading={pendingLoading}
                 onReview={setReviewItem}
-                onApprove={(item) => {
-                  if (isDocumentApproval(item)) {
-                    approveDocumentMutation.mutate(item);
-                    return;
-                  }
-                  setApproveItem(item);
-                }}
+                onApprove={(item) => approveDocumentMutation.mutate(item)}
                 onReject={setRejectItem}
               />
             )}
@@ -221,37 +212,11 @@ export function AuditPage() {
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
           setReviewItem(null);
-          if (isDocumentApproval(item)) {
-            approveDocumentMutation.mutate(item, {
-              onSuccess: () => setApproveItem(null),
-            });
-            return;
-          }
-          setApproveItem(item);
+          approveDocumentMutation.mutate(item);
         }}
         onReject={(item) => {
           setReviewItem(null);
           setRejectItem(item);
-        }}
-      />
-
-      <ApproveApprovalDialog
-        open={Boolean(approveItem) && !!approveItem && !isDocumentApproval(approveItem)}
-        item={approveItem && isDocumentApproval(approveItem) ? null : approveItem}
-        documentGroups={documentGroups}
-        saving={approveMutation.isPending}
-        onClose={() => setApproveItem(null)}
-        onConfirm={(input) => {
-          if (!approveItem) return;
-          approveMutation.mutate(
-            {
-              item: approveItem,
-              platformRoles: input.platformRoles,
-              accessGroupIds: input.accessGroupIds,
-              documentGroupIds: input.documentGroupIds,
-            },
-            { onSuccess: () => setApproveItem(null) },
-          );
         }}
       />
 
