@@ -100,12 +100,16 @@ export const doqynUsersApi = {
     platformRoles: PlatformRole[];
     accessGroupIds: string[];
   }) {
-    void input.accessGroupIds;
     return inviteApi.create({
       email: input.email,
       firstName: input.firstName,
       lastName: input.lastName,
       platformRoles: input.platformRoles,
+      // Os grupos NÃO vão por aqui, e não é esquecimento. O auth-service guarda um registro
+      // próprio de grupo (`AuthAccessGroup`) que a governança nunca consulta: quem decide o
+      // que a pessoa alcança é `documentGroupMembers`, no Mongo. A intenção de grupo é
+      // registrada em `/api/company-members/invite-groups` e aplicada quando a membership
+      // aparece no sync. Mandar para cá gravaria no lugar que não governa.
       companyId: input.companyId,
     });
   },

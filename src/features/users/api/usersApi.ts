@@ -190,6 +190,19 @@ export const usersApi = {
     );
   },
 
+  /**
+   * Registra os grupos que o convidado recebe ao aceitar.
+   *
+   * Chamada depois de o convite existir. Os grupos que governam vivem no Mongo, e no instante
+   * do convite ainda não há membership a que vinculá-los — a intenção fica guardada e o sync
+   * a aplica quando a pessoa entra.
+   */
+  storeInviteGroups: (input: { email: string; accessGroupIds: string[]; companyId?: string }) =>
+    request<{ ok: boolean }>('/company-members/invite-groups', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
   approve: (
     memberId: string,
     input: {

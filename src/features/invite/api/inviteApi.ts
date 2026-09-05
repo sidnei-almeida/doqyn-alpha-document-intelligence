@@ -10,6 +10,8 @@ export type InvitePreview = {
   tenantDisplayName: string;
   tenantTaxIdMasked?: string;
   roles: PlatformRole[];
+  /** A que a pessoa está sendo dado acesso, para ela saber antes de aceitar. */
+  accessGroups: Array<{ groupId: string; name: string }>;
   expiresAt: string;
   requiresAccountCreation: boolean;
   requiresPassword: boolean;

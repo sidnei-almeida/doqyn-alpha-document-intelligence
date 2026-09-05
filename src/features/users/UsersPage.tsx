@@ -19,6 +19,7 @@ import {
   type CompanyMemberDto,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MemberStatus,
+  type PlatformRole,
   suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
@@ -31,6 +32,7 @@ import {
 import { AccessRequestDetailsPanel } from './components/AccessRequestDetailsPanel';
 import { BlockAccessDialog } from './components/BlockAccessDialog';
 import { EditAccessDialog } from './components/EditAccessDialog';
+import { InviteMemberDialog } from './components/InviteMemberDialog';
 import { UnblockAccessDialog } from './components/UnblockAccessDialog';
 import { invalidateUserManagementQueries } from './userManagementQueries';
 import { useCompanyMembers } from './hooks/useCompanyMembers';
@@ -74,6 +76,7 @@ export function UsersPage() {
     tenant?.displayName ?? user?.companyName ?? sessionTenantId ?? 'sua empresa';
 
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
+  const [inviting, setInviting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingMember, setEditingMember] = useState<CompanyMemberDto | null>(null);
   const [editAccessBaseline, setEditAccessBaseline] = useState<AccessFormState | null>(null);
@@ -100,6 +103,69 @@ export function UsersPage() {
 
   const invalidate = async () => {
     await invalidateUserManagementQueries(queryClient, sessionTenantId || undefined);
+  };
+
+  /**
+   * Convidar não usa `useMutation` como o resto da tela.
+   *
+   * As outras ações terminam num toast: aprovou, bloqueou, pronto. Esta produz um link, e o
+   * link precisa voltar para dentro do diálogo, que o mostra até alguém copiar. Uma mutação
+   * resolveria o estado de carregamento, mas o valor de retorno teria de atravessar a mesma
+   * distância de qualquer jeito.
+   */
+  const [invitePending, setInvitePending] = useState(false);
+  const createInvite = async (input: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    platformRoles: PlatformRole[];
+    accessGroupIds: string[];
+  }) => {
+    setInvitePending(true);
+    try {
+      const result = await usersApi.invite({
+        ...input,
+        companyId: sessionTenantId || undefined,
+      });
+      if (!('inviteLink' in result) || !result.inviteLink) {
+        throw new Error('O convite foi criado, mas o serviço não devolveu o link.');
+      }
+
+      // Nesta ordem, e não na inversa: o convite é o que pode ser recusado (e-mail duplicado,
+      // papel não concedível). Guardar a intenção antes deixaria registro para um convite que
+      // nunca nasceu.
+      //
+      // E a falha daqui para baixo não pode derrubar a criação. Passado este ponto o convite
+      // existe e o e-mail já saiu: deixar a exceção subir faria o diálogo dizer "não foi
+      // possível criar", o gestor tentaria de novo, e o reconvite troca o `tokenHash` — a
+      // pessoa receberia dois e-mails com o primeiro link já morto.
+      let groupsWarning: string | undefined;
+      if (input.accessGroupIds.length > 0) {
+        try {
+          await usersApi.storeInviteGroups({
+            email: input.email,
+            accessGroupIds: input.accessGroupIds,
+            companyId: sessionTenantId || undefined,
+          });
+        } catch {
+          groupsWarning =
+            'O convite vale, mas não foi possível guardar os grupos. Defina o acesso em Regras depois que a pessoa entrar.';
+        }
+      }
+
+      return {
+        inviteLink: result.inviteLink,
+        expiresAt: result.invite.expiresAt,
+        // O gestor precisa saber se o e-mail saiu. Com envio desligado ou domínio não
+        // verificado, o convite é criado e nada chega — e sem este aviso ele entrega o link
+        // achando que a pessoa já foi avisada.
+        emailSent: result.emailSent ?? false,
+        emailSkipReason: result.emailSkipReason,
+        groupsWarning,
+      };
+    } finally {
+      setInvitePending(false);
+    }
   };
 
   const approveMutation = useMutation({
@@ -228,6 +294,12 @@ export function UsersPage() {
       eyebrow="Administração"
       title="Usuários"
       description={`Aprove e gerencie acessos de ${tenantDisplayName}.`}
+      actions={
+        <Button type="button" onClick={() => setInviting(true)}>
+          <Icon name="person_add" size={ICON_SIZE.xs} />
+          Convidar
+        </Button>
+      }
       bodyClassName="min-h-0"
     >
       {/* A barra de filtros era um card com borda em volta de um campo e cinco
@@ -434,6 +506,16 @@ export function UsersPage() {
             }
           />
         </Modal>
+      )}
+
+      {inviting && (
+        <InviteMemberDialog
+          documentGroups={documentGroups}
+          saving={invitePending}
+          onInvite={createInvite}
+          onClose={() => setInviting(false)}
+          onInvited={() => void invalidate()}
+        />
       )}
 
       {editingMember && editAccessBaseline && (
