@@ -119,12 +119,18 @@ export function UsersPage() {
     firstName: string;
     lastName: string;
     platformRoles: PlatformRole[];
-    accessGroupIds: string[];
+    documentGroupIds: string[];
   }) => {
     setInvitePending(true);
     try {
       const result = await usersApi.invite({
-        ...input,
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        platformRoles: input.platformRoles,
+        // Os grupos não vão no convite. Quem governa é o grupo do Mongo, e ele é registrado logo
+        // abaixo, na chamada que fala com o banco que decide.
+        accessGroupIds: [],
         companyId: sessionTenantId || undefined,
       });
       if (!('inviteLink' in result) || !result.inviteLink) {
@@ -140,11 +146,11 @@ export function UsersPage() {
       // possível criar", o gestor tentaria de novo, e o reconvite troca o `tokenHash` — a
       // pessoa receberia dois e-mails com o primeiro link já morto.
       let groupsWarning: string | undefined;
-      if (input.accessGroupIds.length > 0) {
+      if (input.documentGroupIds.length > 0) {
         try {
           await usersApi.storeInviteGroups({
             email: input.email,
-            accessGroupIds: input.accessGroupIds,
+            documentGroupIds: input.documentGroupIds,
             companyId: sessionTenantId || undefined,
           });
         } catch {

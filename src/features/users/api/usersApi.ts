@@ -196,8 +196,13 @@ export const usersApi = {
    * Chamada depois de o convite existir. Os grupos que governam vivem no Mongo, e no instante
    * do convite ainda não há membership a que vinculá-los — a intenção fica guardada e o sync
    * a aplica quando a pessoa entra.
+   *
+   * `documentGroupIds`, o mesmo nome que o "Editar acesso" usa, e não `accessGroupIds`: este é o
+   * grupo do Mongo, o que decide o que a pessoa alcança. `accessGroupIds` é o registro do
+   * auth-service, que a governança não consulta — vocabulário trocado aqui foi o que fez a
+   * mesma decisão ser gravada em dois lugares.
    */
-  storeInviteGroups: (input: { email: string; accessGroupIds: string[]; companyId?: string }) =>
+  storeInviteGroups: (input: { email: string; documentGroupIds: string[]; companyId?: string }) =>
     request<{ ok: boolean }>('/company-members/invite-groups', {
       method: 'POST',
       body: JSON.stringify(input),

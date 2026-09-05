@@ -24,12 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return resolveTargetCompanyId(ctx.user, body.companyId);
     },
     handler: async ({ user, companyId }) => {
-      const body = (req.body ?? {}) as { email?: string; accessGroupIds?: string[] };
+      const body = (req.body ?? {}) as { email?: string; documentGroupIds?: string[] };
 
       await storePendingInviteGroups({
         tenantId: companyId,
         email: body.email ?? '',
-        groupIds: body.accessGroupIds ?? [],
+        groupIds: body.documentGroupIds ?? [],
         invitedBy: user.id,
       });
 

@@ -42,7 +42,7 @@ type InviteMemberDialogProps = {
     firstName: string;
     lastName: string;
     platformRoles: PlatformRole[];
-    accessGroupIds: string[];
+    documentGroupIds: string[];
   }) => Promise<InviteResult>;
   onClose: () => void;
   onInvited: () => void;
@@ -77,7 +77,7 @@ export function InviteMemberDialog({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [platformRoles, setPlatformRoles] = useState<PlatformRole[]>(['user']);
-  const [accessGroupIds, setAccessGroupIds] = useState<string[]>([]);
+  const [documentGroupIds, setDocumentGroupIds] = useState<string[]>([]);
   const [created, setCreated] = useState<InviteResult | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -91,7 +91,7 @@ export function InviteMemberDialog({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         platformRoles,
-        accessGroupIds,
+        documentGroupIds,
       });
       setCreated(result);
       onInvited();
@@ -223,13 +223,13 @@ export function InviteMemberDialog({
 
           <DocumentGroupsSection
             groups={documentGroups}
-            value={accessGroupIds}
-            onChange={setAccessGroupIds}
+            value={documentGroupIds}
+            onChange={setDocumentGroupIds}
           />
 
           {/* Sem grupo a conta nasce ativa e vazia, e quem convidou não fica sabendo. Um
               administrador é exceção legítima: ele alcança tudo por papel. */}
-          {accessGroupIds.length === 0 && !platformRoles.includes('company_admin') ? (
+          {documentGroupIds.length === 0 && !platformRoles.includes('company_admin') ? (
             <p className="type-caption text-doqyn-muted">
               Sem nenhum grupo, a pessoa entra mas não alcança documento nenhum. O acesso se dá
               ao grupo, nunca à pessoa solta.
