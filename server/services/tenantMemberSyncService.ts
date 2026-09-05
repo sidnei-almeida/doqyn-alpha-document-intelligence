@@ -11,6 +11,7 @@ import { fetchAuthTenantMembersForSync } from '../integrations/doqynAuthInternal
 import type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 import { normalizeEmail } from '../utils/contactNormalize.js';
 import { logger } from '../utils/logger.js';
+import { applyPendingInviteGroups } from './invites/pendingInviteGroupsService.js';
 
 export type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 
@@ -111,7 +112,7 @@ export async function upsertTenantMemberFromAuthSnapshot(
       .deleteOne({ _id: existingByEmail._id } as Record<string, unknown>);
   }
 
-  await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
+  const upsertResult = await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
     { _id: snapshot.membershipId } as Record<string, unknown>,
     {
       $setOnInsert: { createdAt },
@@ -120,6 +121,8 @@ export async function upsertTenantMemberFromAuthSnapshot(
     },
     { upsert: true },
   );
+  /** Verdadeiro só na primeira vez que este membro chega ao Mongo. */
+  const memberIsNew = upsertResult.upsertedCount > 0;
 
   const saved = await db
     .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
@@ -127,6 +130,34 @@ export async function upsertTenantMemberFromAuthSnapshot(
 
   if (!saved) {
     throw new Error(`Falha ao sincronizar tenant_member ${snapshot.email}.`);
+  }
+
+  /**
+   * O convite prometeu grupos; é aqui que a promessa vira acesso.
+   *
+   * Só depois do upsert, só para quem chegou ativo, e **só quando o membro é novo**.
+   *
+   * `documentGroupMembers` é indexado por `membershipId`, que não existia quando o convite foi
+   * criado; este é o primeiro instante em que a pessoa tem membership e o alpha sabe disso. E é
+   * o único instante que interessa: quem aceita um convite entra no Mongo pela primeira vez
+   * aqui.
+   *
+   * A condição de novidade não é economia de estilo. Sem ela a consulta rodava para todo membro
+   * ativo a cada sincronização — e o sync percorre o tenant inteiro a cada quinze segundos, o
+   * que num tenant de duzentas pessoas são duzentas idas ao banco por ciclo, numa coleção que
+   * fica vazia o tempo todo.
+   *
+   * Não bloqueia nem lança — o serviço engole a própria falha. Sincronizar dois bancos é o
+   * trabalho desta função, e um grupo que não colou não pode deixar o membro fora do Mongo.
+   */
+  if (status === 'active' && memberIsNew) {
+    await applyPendingInviteGroups({
+      tenantId: snapshot.tenantId,
+      email: emailNormalized,
+      membershipId: snapshot.membershipId,
+      userId: snapshot.userId,
+      displayName: [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+    });
   }
 
   return saved;

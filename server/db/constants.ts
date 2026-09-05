@@ -43,6 +43,7 @@ export const COLLECTIONS = {
   documentCategories: 'document_categories',
   documentGroups: 'document_groups',
   documentGroupMembers: 'document_group_members',
+  pendingInviteGroups: 'pending_invite_groups',
   /** Regras de acesso grupo×categoria */
   documentRules: 'document_rules',
   /** Regras de extração IA por categoria */

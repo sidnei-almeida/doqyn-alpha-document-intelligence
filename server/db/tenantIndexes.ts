@@ -53,11 +53,16 @@ export async function ensureIndexesForCollection(
       unique?: boolean;
       partialFilterExpression?: Record<string, unknown>;
       name?: string;
+      expireAfterSeconds?: number;
     } = {};
     if (spec.unique) options.unique = true;
     if (spec.partialFilterExpression)
       options.partialFilterExpression = spec.partialFilterExpression;
     if (spec.name) options.name = spec.name;
+    // Sem esta linha o TTL era declarado e descartado: o índice nascia comum, e a coleção que
+    // depende dele para não crescer para sempre crescia em silêncio.
+    if (spec.expireAfterSeconds !== undefined)
+      options.expireAfterSeconds = spec.expireAfterSeconds;
 
     const created = await collection.createIndex(spec.key, options);
     results.push({ collection: collectionName, name: created, status: 'created' });
@@ -99,6 +104,28 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, groupId: 1, active: 1 } },
         { key: { tenantId: 1, membershipId: 1, active: 1 } },
         { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
+      ],
+    });
+  }
+
+  if (names.pendingInviteGroups) {
+    out.push({
+      collection: names.pendingInviteGroups,
+      indexes: [
+        // A busca do sync, que roda para todo membro que entra.
+        { key: { tenantId: 1, emailNormalized: 1 } },
+        /**
+         * Expira sozinho, e é o que impede uma concessão de acesso que ninguém escolheu.
+         *
+         * O registro guarda "quando esta pessoa entrar, dê estes grupos". Se o convite for
+         * revogado ou simplesmente nunca aceito, ele ficaria guardado para sempre — e a pessoa
+         * receberia os grupos ao entrar por qualquer outro caminho, meses depois, por uma
+         * decisão que alguém tomou e desfez.
+         *
+         * Oito dias: um a mais que os sete de `INVITE_TTL_DAYS`, para a margem cair do lado de
+         * o convite morrer antes da intenção, nunca o contrário.
+         */
+        { key: { createdAt: 1 }, expireAfterSeconds: 8 * 24 * 60 * 60 },
       ],
     });
   }

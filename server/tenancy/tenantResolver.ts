@@ -17,6 +17,7 @@ export type TenantCollectionBaseKey =
   | 'documentCategories'
   | 'documentGroups'
   | 'documentGroupMembers'
+  | 'pendingInviteGroups'
   | 'documentRules'
   | 'documentExtractionRules';
 
@@ -31,6 +32,7 @@ const BASE_COLLECTION_NAMES: Record<TenantCollectionBaseKey, string> = {
   documentCategories: COLLECTIONS.documentCategories,
   documentGroups: COLLECTIONS.documentGroups,
   documentGroupMembers: COLLECTIONS.documentGroupMembers,
+  pendingInviteGroups: COLLECTIONS.pendingInviteGroups,
   documentRules: COLLECTIONS.documentRules,
   documentExtractionRules: COLLECTIONS.documentExtractionRules,
 };
@@ -47,6 +49,7 @@ export type ResolvedTenantCollectionNames = {
   documentCategories?: string;
   documentGroups?: string;
   documentGroupMembers?: string;
+  pendingInviteGroups?: string;
   documentRules?: string;
   documentExtractionRules?: string;
 };
@@ -97,6 +100,7 @@ export function resolveSharedCollections(): ResolvedTenantCollectionNames {
     documentCategories: BASE_COLLECTION_NAMES.documentCategories,
     documentGroups: BASE_COLLECTION_NAMES.documentGroups,
     documentGroupMembers: BASE_COLLECTION_NAMES.documentGroupMembers,
+    pendingInviteGroups: BASE_COLLECTION_NAMES.pendingInviteGroups,
     documentRules: BASE_COLLECTION_NAMES.documentRules,
     documentExtractionRules: BASE_COLLECTION_NAMES.documentExtractionRules,
   };
