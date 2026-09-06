@@ -8,7 +8,7 @@ import { AI_ERROR_MESSAGES } from '../constants.js';
 import { safeParseJsonFromModel } from '../utils/jsonParsing.js';
 import { validateMetadataResult } from '../utils/validation.js';
 import { buildCompactExtractorPrompt } from '../utils/extractorPrompt.js';
-import { completeJsonPrompt, type GroqPromptContext } from './groqClient.js';
+import { completeJsonPromptWithUsage, type GroqPromptContext } from './groqClient.js';
 import { isGroqSaturationError } from '../utils/groqSaturation.js';
 import { logger } from '../../utils/logger.js';
 
@@ -22,12 +22,13 @@ export async function extractMetadataWithRule(input: {
 
   try {
     const { prompt } = buildCompactExtractorPrompt(input.chunks, input.selectedClass);
-    const raw = await completeJsonPrompt(prompt, {
+    const answer = await completeJsonPromptWithUsage(prompt, {
       context: {
         ...input.context,
         operation: 'metadata_extraction',
       },
     });
+    const raw = answer.content;
     const parsed = safeParseJsonFromModel<unknown>(raw);
 
     if (!parsed) {
@@ -52,6 +53,37 @@ export async function extractMetadataWithRule(input: {
     }
 
     const validated = validateMetadataResult(parsed, input.selectedClass);
+
+    /**
+     * Resposta cortada é resultado incompleto, não resultado.
+     *
+     * O caso perverso é o JSON válido **e** truncado: o objeto fecha, o parse passa, e os campos
+     * que ficaram do outro lado do corte somem sem deixar rastro. O documento seguia como completo
+     * com metade dos metadados, e a falha reaparecia depois como "a IA não achou a data de
+     * assinatura" — mandando procurar defeito no modelo, que tinha respondido certo até ser
+     * interrompido.
+     *
+     * Não dá para saber o que faltou; dá para saber que faltou, e isso basta para ir à revisão.
+     */
+    if (answer.truncated) {
+      logger.warn('extração truncada pelo teto de saída — indo para revisão', {
+        requestId: input.context?.requestId,
+        jobId: input.context?.jobId,
+        className: input.selectedClass.name,
+        extractedKeys: Object.keys(validated.metadata ?? {}),
+        requiredFieldKeys,
+      });
+
+      return {
+        ...validated,
+        documentType: validated.documentType ?? input.selectedClass.name,
+        requiresReview: true,
+        reviewReasons: [
+          ...validated.reviewReasons,
+          'A resposta da IA foi cortada antes do fim; pode haver campo faltando.',
+        ],
+      };
+    }
 
     return {
       ...validated,

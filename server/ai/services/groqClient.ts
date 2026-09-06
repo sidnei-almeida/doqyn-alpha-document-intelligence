@@ -111,6 +111,16 @@ export type JsonPromptResult = {
   usage: TokenUsage;
   model: string;
   durationMs: number;
+  /**
+   * A resposta bateu no teto de saída e foi cortada.
+   *
+   * O pior caso do pipeline é este e ele era silencioso: JSON válido **e** truncado ao mesmo tempo.
+   * O objeto fecha, o parse passa, a extração segue, e os campos que ficaram do outro lado do corte
+   * somem sem ninguém reclamar. Foi assim que um teto de saída baixo passou por "o modelo não achou
+   * a data de assinatura". Devolver o sinal é o que permite tratar isso como resultado incompleto
+   * em vez de resultado.
+   */
+  truncated: boolean;
 };
 
 function getGroqApiKey(): string {
@@ -420,7 +430,13 @@ async function repairInvalidJsonAnswer(input: {
   model: string;
   operation: string;
   context?: GroqPromptContext;
-}): Promise<{ content: string; retried: boolean; extraDurationMs?: number; usage: TokenUsage }> {
+}): Promise<{
+  content: string;
+  retried: boolean;
+  extraDurationMs?: number;
+  usage: TokenUsage;
+  truncated: boolean;
+}> {
   if (safeParseJsonFromModel<unknown>(input.answer.content)) {
     /**
      * JSON válido e cortado ao mesmo tempo é o pior caso: o objeto fecha, a extração segue, e os
@@ -438,7 +454,12 @@ async function repairInvalidJsonAnswer(input: {
       });
     }
 
-    return { content: input.answer.content, retried: false, usage: EMPTY_TOKEN_USAGE };
+    return {
+      content: input.answer.content,
+      retried: false,
+      usage: EMPTY_TOKEN_USAGE,
+      truncated: input.answer.finishReason === 'length',
+    };
   }
 
   const truncated = input.answer.finishReason === 'length';
@@ -471,6 +492,7 @@ async function repairInvalidJsonAnswer(input: {
       retried: true,
       extraDurationMs: retry.durationMs,
       usage: retry.usage,
+      truncated: retry.finishReason === 'length',
     };
   } catch (error) {
     logger.warn('repeticao do JSON tambem falhou', {
@@ -481,7 +503,12 @@ async function repairInvalidJsonAnswer(input: {
       reason: error instanceof Error ? error.message : 'unknown',
     });
     // Devolve a resposta original: quem chamou já sabe tratar conteúdo inválido.
-    return { content: input.answer.content, retried: true, usage: EMPTY_TOKEN_USAGE };
+    return {
+      content: input.answer.content,
+      retried: true,
+      usage: EMPTY_TOKEN_USAGE,
+      truncated: input.answer.finishReason === 'length',
+    };
   }
 }
 
@@ -564,6 +591,7 @@ export async function completeJsonPromptWithUsage(
       usage: addTokenUsage(first.usage, repaired.usage),
       model,
       durationMs: Date.now() - startedAt,
+      truncated: repaired.truncated,
     };
   } catch (firstError) {
     const firstDiag = diagnoseClassifierError(firstError);
@@ -612,6 +640,7 @@ export async function completeJsonPromptWithUsage(
             usage: rateRetry.usage,
             model,
             durationMs: Date.now() - startedAt,
+            truncated: rateRetry.finishReason === 'length',
           };
         } catch (retryError) {
           lastError = retryError;
@@ -698,6 +727,7 @@ export async function completeJsonPromptWithUsage(
         usage: retry.usage,
         model,
         durationMs: Date.now() - startedAt,
+        truncated: retry.finishReason === 'length',
       };
     } catch (retryError) {
       const retryDiag = diagnoseClassifierError(retryError);

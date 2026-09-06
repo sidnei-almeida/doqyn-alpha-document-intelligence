@@ -70,6 +70,11 @@ export type RefinementTrail = {
   provenAbsentFields: string[];
   /** true quando os trechos avaliados já eram o documento inteiro — prova sai de graça. */
   evaluatorSawWholeDocument: boolean;
+  /**
+   * Campos cuja ausência não pôde ser provada nem desmentida: a busca não teve em que se ancorar.
+   * Ficam vazios e em revisão — o sistema não sabe, e dizer que sabe seria pior que calar.
+   */
+  unprovableAbsentFields: string[];
 };
 
 export type RefinedExtraction = {
@@ -87,6 +92,29 @@ export type RefinementDeps = {
   evaluate: typeof evaluateExtraction;
   extractFocused: typeof extractFocusedFields;
 };
+
+/**
+ * Trechos para provar ausência: mais largo que a busca comum.
+ *
+ * `MAX_CHUNKS_PER_FIELD` são 3, dimensionados para achar um valor que existe — três trechos bem
+ * pontuados bastam. Provar que algo NÃO existe é a afirmação oposta e não se sustenta na mesma
+ * amostra. Oito ainda é barato porque o passe focado carrega um campo só, e o prompt fica menor que
+ * o de uma extração completa mesmo com o dobro de trechos.
+ */
+const CHUNKS_FOR_ABSENCE_PROOF = 8;
+
+/**
+ * O retriever devolve os primeiros trechos do documento quando nenhum termo pontua
+ * (`hybridChunkRetriever.ts`, `fallbackChunks`). Isso serve à extração, que prefere ler algo a não
+ * ler nada — mas destrói a prova de ausência: procurar na página 1 e concluir que o dado não existe
+ * em cem páginas é o mesmo exagero que a prova veio corrigir, um nível abaixo.
+ *
+ * Trecho pontuado sempre tem score maior que zero (`positive = scored.filter(score > 0)`), então
+ * tudo em zero significa que a busca não teve em que se ancorar.
+ */
+function retrievalFoundNothing(chunks: RetrievedChunk[]): boolean {
+  return chunks.length === 0 || chunks.every((chunk) => chunk.score === 0);
+}
 
 /** Termos do Avaliador entram como aliases sintéticos: é assim que a re-seleção fica mais estreita. */
 function fieldWithHintTerms(field: DocumentRuleField, verdict: FieldVerdict): DocumentRuleField {
@@ -174,6 +202,7 @@ export async function refineExtraction(input: {
     recoveredFields: [],
     clearedFields: [],
     provenAbsentFields: [],
+    unprovableAbsentFields: [],
     // O Avaliador julga sobre a seleção do retriever, não sobre o documento. Quando a seleção é o
     // documento inteiro — o caso de todo arquivo curto —, "não está aqui" já é "não existe" e a
     // prova não custa chamada nenhuma.
@@ -272,24 +301,37 @@ export async function refineExtraction(input: {
       });
     }
 
+    const provable: string[] = [];
     for (const key of needsProof) {
       const field = fieldsByKey.get(key);
       if (!field || targets.some((target) => target.field.key === key)) continue;
+
+      const proofChunks = retrieveChunksForField({
+        chunks: input.chunks,
+        field,
+        selectedClass: input.selectedClass,
+        topK: CHUNKS_FOR_ABSENCE_PROOF,
+      });
+
+      if (retrievalFoundNothing(proofChunks)) {
+        // Sem âncora não há prova nem desmentido. O campo fica vazio e em revisão, e o sistema
+        // deixa de afirmar o que não apurou — a única resposta honesta disponível aqui.
+        trail.unprovableAbsentFields = [...new Set([...trail.unprovableAbsentFields, key])];
+        continue;
+      }
+
+      provable.push(key);
       targets.push({
         field,
         hint: 'O auditor concluiu que este dado não existe no documento, mas ele leu apenas parte dos trechos. Estes são os trechos do documento inteiro que mais se aproximam deste campo. Confirme a ausência ou traga o valor.',
         previousValue: metadata[key]?.normalizedValue ?? metadata[key]?.value ?? null,
-        chunks: retrieveChunksForField({
-          chunks: input.chunks,
-          field,
-          selectedClass: input.selectedClass,
-        }),
+        chunks: proofChunks,
       });
     }
 
     // Confirmação de ausência não é motivo para o laço continuar: se o Avaliador aprovou o resto,
     // o passe focado é o último ato.
-    const onlyProving = actionable.length === 0 && needsProof.length > 0;
+    const onlyProving = actionable.length === 0 && provable.length > 0;
 
     if (evaluation.complete && !onlyProving) {
       trail.stopReason = 'avaliador_aprovou';
@@ -349,7 +391,7 @@ export async function refineExtraction(input: {
      * melhor resultado possível deste laço. O que não voltou está provado ausente, e só agora a
      * afirmação "o documento não traz esse dado" é uma afirmação que o sistema apurou.
      */
-    for (const key of needsProof) {
+    for (const key of provable) {
       if (merged.recoveredKeys.includes(key)) continue;
       trail.provenAbsentFields = [...new Set([...trail.provenAbsentFields, key])];
       clearIfProven(key);
@@ -385,7 +427,7 @@ export async function refineExtraction(input: {
     // orçamento para chegar à mesma resposta. Confirmar ausência conta como progresso: é o passe
     // fazendo exatamente o que foi pedido, e repetir a busca do mesmo campo não mudaria a resposta.
     if (merged.recoveredKeys.length === 0 && !namingImproved) {
-      trail.stopReason = needsProof.length > 0 ? 'ausencia_provada' : 'sem_progresso';
+      trail.stopReason = provable.length > 0 ? 'ausencia_provada' : 'sem_progresso';
       break;
     }
 
@@ -422,7 +464,10 @@ export async function refineExtraction(input: {
     trail.provenAbsentFields.length > 0 ||
     trail.passes.length > 0;
   const requiresReview =
-    missingFields.length > 0 || (recovered ? false : extraction.requiresReview);
+    missingFields.length > 0 ||
+    // Campo que não deu para provar nem desmentir vai para olho humano por definição.
+    trail.unprovableAbsentFields.length > 0 ||
+    (recovered ? false : extraction.requiresReview);
 
   return {
     extraction: {
