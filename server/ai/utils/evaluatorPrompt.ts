@@ -6,6 +6,7 @@ import type {
 } from '../types/documentAi.types.js';
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import type { TriageFinding } from './extractionTriage.js';
+import { classExtractionHints } from './extractorPrompt.js';
 
 export type EvaluatorFieldBrief = {
   key: string;
@@ -20,6 +21,12 @@ export type EvaluatorFieldBrief = {
   confianca: number | null;
   /** Sintomas que a triagem determinística apontou. */
   sintomas: string[];
+  /**
+   * Outros valores do mesmo formato presentes no documento. Presente só quando há disputa — e é
+   * a informação que decide o caso: o modelo não precisa achar a data, precisa escolher entre as
+   * quatro que já estão listadas.
+   */
+  outrosCandidatosNoDocumento?: string[];
 };
 
 function briefValue(extracted: ExtractedMetadataField | undefined): string | number | null {
@@ -35,8 +42,10 @@ export function buildEvaluatorFieldBriefs(input: {
   findings: TriageFinding[];
 }): EvaluatorFieldBrief[] {
   const byKey = new Map<string, string[]>();
+  const candidatesByKey = new Map<string, string[]>();
   for (const finding of input.findings) {
     byKey.set(finding.key, [...(byKey.get(finding.key) ?? []), finding.detail]);
+    if (finding.candidates?.length) candidatesByKey.set(finding.key, finding.candidates);
   }
 
   return input.selectedClass.fields
@@ -54,6 +63,9 @@ export function buildEvaluatorFieldBriefs(input: {
         trechoCitado: extracted?.evidence?.snippet?.trim() || null,
         confianca: extracted?.confidence ?? null,
         sintomas: byKey.get(field.key) ?? [],
+        ...(candidatesByKey.has(field.key)
+          ? { outrosCandidatosNoDocumento: candidatesByKey.get(field.key) }
+          : {}),
       };
     });
 }
@@ -95,6 +107,11 @@ export function buildEvaluatorPrompt(input: {
   findings: TriageFinding[];
   chunks: RetrievedChunk[];
 }): string {
+  // As mesmas dicas que o extrator recebe. Ele erra com elas na mão; o Avaliador precisa das
+  // mesmas para saber o que conferir, e duplicá-las aqui garantiria que as duas cópias
+  // divergissem na primeira correção.
+  const hints = classExtractionHints(input.selectedClass);
+
   return `Você audita a extração de metadados de um documento no DOQYN.
 
 Outro agente já leu o documento e preencheu os campos abaixo. Seu trabalho não é extrair de novo:
@@ -121,21 +138,35 @@ Veredito por campo, escolha exatamente um:
   o vencimento. Escreva em "hint" como distinguir o valor certo do que foi pego.
 
 Regras:
-1. Formato igual não é papel igual. Um documento tem várias datas, vários nomes, vários números.
-   Confira que o trecho encontrado desempenha o papel da description, não que ele se pareça.
-2. Trecho citado que você não encontra no texto é invenção — o campo é "valor_errado" ou
+1. Formato igual não é papel igual, e é aqui que a auditoria ganha o dia. Quando um campo traz
+   "outrosCandidatosNoDocumento", o documento tem mais de um valor daquele formato e o extrator
+   escolheu um deles. Não confirme a escolha por ela ser plausível: percorra a lista e diga qual
+   candidato desempenha o papel que a description pede. Selo de cartório, carimbo de tempo de
+   assinatura digital, data de impressão, data de processamento no banco e data de saída da
+   mercadoria são datas reais e quase nunca são a data que o campo pede.
+   **A lista traz apenas os valores escritos em algarismos.** Data por extenso — "aos treze dias do
+   mês de abril do ano de dois mil e vinte e seis" — não aparece nela, e em documento notarial ou
+   contratual costuma ser justamente a data que vale. Se nenhum candidato da lista faz o papel
+   pedido, procure a data por extenso no texto antes de concluir qualquer coisa: a resposta certa
+   pode estar fora da lista.
+2. Valor que existe no documento não é prova de que o campo deve ser preenchido. Um recibo avulso
+   pode trazer numeração de talão impressa sem ser nota fiscal; uma folha pode trazer protocolo de
+   outro processo. Quando o dado que o campo pede não existe, o veredito é "ausente_de_fato" mesmo
+   havendo um número plausível na página — e o valor atual deve sair.
+3. Trecho citado que você não encontra no texto é invenção — o campo é "valor_errado" ou
    "buscar_de_novo", nunca "ok".
-3. Campo não obrigatório vazio não precisa de veredito de busca: marque "ausente_de_fato".
-4. "complete" é true apenas se nenhum campo obrigatório ficou em "buscar_de_novo" ou "valor_errado".
-5. Julgue também os papéis de nomeação em "naming": "tipo" é o que o documento É (uma a três
+4. Campo não obrigatório vazio não precisa de veredito de busca: marque "ausente_de_fato".
+5. "complete" é true apenas se nenhum campo obrigatório ficou em "buscar_de_novo" ou "valor_errado".
+6. Julgue também os papéis de nomeação em "naming": "tipo" é o que o documento É (uma a três
    palavras, MAIÚSCULAS, com espaço), "sujeitos" são uma ou duas entidades que o distinguem de
    outro do mesmo tipo, "dataReferencia" é a data que o identifica em yyyy-mm-dd. Use as mesmas
    quatro decisões, com as chaves "naming.tipo", "naming.sujeitos" e "naming.dataReferencia".
-6. Responda APENAS com JSON válido, sem markdown.
+7. Responda APENAS com JSON válido, sem markdown.
 
 Formato da resposta:
 {"complete":false,"fields":[{"key":"fornecedor","verdict":"valor_errado","reason":"pegou o banco emissor do boleto, que só transporta o pagamento","hint":"procure o BENEFICIÁRIO ou CEDENTE, não o nome no topo","where":["beneficiário","cedente"]},{"key":"numero_nota","verdict":"ausente_de_fato","reason":"recibo avulso sem numeração fiscal"},{"key":"data_emissao","verdict":"ok"},{"key":"naming.sujeitos","verdict":"buscar_de_novo","reason":"o bloco de assinaturas traz dois nomes que não foram lidos","hint":"leia o fecho do documento","where":["outorgado","assinatura"]}]}
 
+${hints}
 Classe documental: ${input.selectedClass.name}
 Descrição: ${input.selectedClass.description?.trim() || '—'}
 

@@ -17,13 +17,28 @@ import type { DocumentRuleField } from '../types/documentAi.types.js';
  */
 
 const ANCHOR_HINTS = [
-  'assinatura', 'assinado', 'celebracao', 'celebrado', 'emissao', 'emitido',
-  'inicio', 'vigencia_inicio', 'partida', 'firmado',
+  'assinatura',
+  'assinado',
+  'celebracao',
+  'celebrado',
+  'emissao',
+  'emitido',
+  'inicio',
+  'vigencia_inicio',
+  'partida',
+  'firmado',
 ];
 
 const TARGET_HINTS = [
-  'validade', 'vencimento', 'expiracao', 'expira', 'termino', 'fim', 'final',
-  'vigencia_fim', 'caducidade',
+  'validade',
+  'vencimento',
+  'expiracao',
+  'expira',
+  'termino',
+  'fim',
+  'final',
+  'vigencia_fim',
+  'caducidade',
 ];
 
 const DURATION_RE =
@@ -86,10 +101,30 @@ export function addDuration(anchorIso: string, duration: ParsedDuration): string
 }
 
 const MONTHS_PT: Record<string, number> = {
-  janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6,
-  julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
-  jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6,
-  jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12,
+  janeiro: 1,
+  fevereiro: 2,
+  marco: 3,
+  abril: 4,
+  maio: 5,
+  junho: 6,
+  julho: 7,
+  agosto: 8,
+  setembro: 9,
+  outubro: 10,
+  novembro: 11,
+  dezembro: 12,
+  jan: 1,
+  fev: 2,
+  mar: 3,
+  abr: 4,
+  mai: 5,
+  jun: 6,
+  jul: 7,
+  ago: 8,
+  set: 9,
+  out: 10,
+  nov: 11,
+  dez: 12,
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -149,10 +184,7 @@ export type DerivedDate = {
   durationValue: string;
 };
 
-type MetadataLike = Record<
-  string,
-  { value?: unknown; normalizedValue?: unknown } | undefined
->;
+type MetadataLike = Record<string, { value?: unknown; normalizedValue?: unknown } | undefined>;
 
 const readValue = (entry: MetadataLike[string]): string | null => {
   const v = entry?.normalizedValue ?? entry?.value;
@@ -168,14 +200,13 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * FINAL, e só quando existe âncora ISO e prazo relativo já extraídos. Na ausência de qualquer um
  * dos três, não inventa nada — deixar vazio é a resposta correta.
  */
-export function deriveEndDates(
-  fields: DocumentRuleField[],
-  metadata: MetadataLike,
-): DerivedDate[] {
+export function deriveEndDates(fields: DocumentRuleField[], metadata: MetadataLike): DerivedDate[] {
   const anchors = fields
     .filter((f) => f.type === 'date' && fieldMentions(f, ANCHOR_HINTS))
     .map((f) => ({ key: f.key, value: readValue(metadata[f.key]) }))
-    .filter((a): a is { key: string; value: string } => a.value !== null && ISO_DATE_RE.test(a.value));
+    .filter(
+      (a): a is { key: string; value: string } => a.value !== null && ISO_DATE_RE.test(a.value),
+    );
 
   if (anchors.length === 0) return [];
 

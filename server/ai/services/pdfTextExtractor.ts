@@ -1,9 +1,6 @@
 import { PDFParse } from 'pdf-parse';
 import type { ExtractedPdfText, PdfPageText } from '../types/documentAi.types.js';
-import {
-  getPdfAnalysisMaxInputChars,
-  getPdfAnalysisMaxPages,
-} from '../utils/aiConfig.js';
+import { getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
 import { normalizeDocumentText } from '../utils/textNormalization.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -14,7 +11,11 @@ import {
   previewText,
 } from '../utils/pipelineDebug.js';
 
-function truncatePages(pages: PdfPageText[]): { pages: PdfPageText[]; text: string; truncated: boolean } {
+function truncatePages(pages: PdfPageText[]): {
+  pages: PdfPageText[];
+  text: string;
+  truncated: boolean;
+} {
   const maxChars = getPdfAnalysisMaxInputChars();
   let totalChars = 0;
   const result: PdfPageText[] = [];

@@ -49,7 +49,7 @@ const DOCUMENTO = chunk(
 );
 
 describe('triagem determinística', () => {
-  it('documento completo e conferido não vira sintoma nenhum', () => {
+  it('classe financeira nunca é dispensada, mesmo sem sintoma algum', () => {
     const triage = triageExtraction({
       selectedClass: FINANCEIRO,
       chunks: [DOCUMENTO],
@@ -75,7 +75,108 @@ describe('triagem determinística', () => {
       },
     });
 
-    assert.equal(triage.clean, true, JSON.stringify(triage.findings, null, 2));
+    // Nenhum sintoma: tudo preenchido, conferido e no formato.
+    assert.deepEqual(triage.findings, []);
+    // Ainda assim vai a julgamento. `fornecedor` ao lado de `numero_nota` é a classe onde metade
+    // das falhas medidas mora, e todas com valor plausível — o banco do boleto, o pagador do
+    // recibo, o número do talão. Ausência de sintoma é o próprio problema aqui.
+    assert.equal(triage.errorProneClass, true);
+    assert.equal(triage.clean, false);
+  });
+
+  it('classe comum sem sintoma é dispensada e não gasta chamada', () => {
+    const simples: DocumentClassRule = {
+      id: 'cat_op',
+      name: 'Operacional',
+      description: 'Laudos.',
+      keywords: ['laudo'],
+      fields: [{ key: 'titulo', label: 'Título', type: 'string', required: true }],
+      namingTemplate: '{titulo}',
+    };
+
+    const triage = triageExtraction({
+      selectedClass: simples,
+      chunks: [chunk('LAUDO DE ENSAIO DE ESTANQUEIDADE em linha de amônia.')],
+      naming: { tipo: 'LAUDO', sujeitos: ['Talha Sul'], dataReferencia: '2026-09-18' },
+      metadata: {
+        titulo: field({
+          value: 'Laudo de ensaio de estanqueidade',
+          evidence: { snippet: 'LAUDO DE ENSAIO DE ESTANQUEIDADE em linha de amônia' },
+        }),
+      },
+    });
+
+    assert.deepEqual(triage.findings, []);
+    assert.equal(triage.clean, true);
+  });
+
+  it('várias datas no documento viram disputa, com os candidatos na mão', () => {
+    // O caso de `juridico_04` e `operacional_01`: o valor escolhido é uma data real, citada por um
+    // trecho real, no formato certo. Nenhuma conferência mecânica tinha o que apontar — o que dá
+    // para apontar é que havia quatro para escolher.
+    const comDatas = chunk(
+      'Lavrado aos treze dias do mês de abril do ano de dois mil e vinte e seis. ' +
+        'Reconhecimento de firma em 16/04/2026. Impresso em 02/04/2026.',
+    );
+
+    const classe: DocumentClassRule = {
+      id: 'cat_jur',
+      name: 'Jurídico',
+      description: 'Procurações.',
+      keywords: ['procuração'],
+      fields: [
+        { key: 'data_assinatura', label: 'Data de assinatura', type: 'date', required: true },
+      ],
+      namingTemplate: '{data_assinatura}',
+    };
+
+    const triage = triageExtraction({
+      selectedClass: classe,
+      chunks: [comDatas],
+      naming: { tipo: 'PROCURACAO', sujeitos: ['Otávio Pilar'], dataReferencia: '2026-04-13' },
+      metadata: {
+        data_assinatura: field({
+          value: '16/04/2026',
+          normalizedValue: '2026-04-16',
+          evidence: { snippet: 'Reconhecimento de firma em 16/04/2026' },
+        }),
+      },
+    });
+
+    const disputa = triage.findings.find((f) => f.symptom === 'valor_disputado');
+    assert.ok(disputa, JSON.stringify(triage.findings));
+    // Só as datas em algarismos: o selo do cartório e a impressão. A lavratura, por extenso, fica
+    // de fora — e as duas que sobram estão erradas. É por isso que o prompt manda procurar fora da
+    // lista quando nenhum candidato faz o papel pedido, em vez de escolher o menos ruim.
+    assert.deepEqual(disputa?.candidates, ['2026-04-16', '2026-04-02']);
+  });
+
+  it('data única no documento não vira disputa', () => {
+    const classe: DocumentClassRule = {
+      id: 'cat_jur',
+      name: 'Jurídico',
+      description: 'Procurações.',
+      keywords: ['procuração'],
+      fields: [
+        { key: 'data_assinatura', label: 'Data de assinatura', type: 'date', required: true },
+      ],
+      namingTemplate: '{data_assinatura}',
+    };
+
+    const triage = triageExtraction({
+      selectedClass: classe,
+      chunks: [chunk('Assinado em 13/04/2026 pelas partes.')],
+      naming: { tipo: 'PROCURACAO', sujeitos: ['Otávio Pilar'], dataReferencia: '2026-04-13' },
+      metadata: {
+        data_assinatura: field({
+          value: '13/04/2026',
+          normalizedValue: '2026-04-13',
+          evidence: { snippet: 'Assinado em 13/04/2026' },
+        }),
+      },
+    });
+
+    assert.deepEqual(triage.findings, []);
   });
 
   it('campo obrigatório vazio vira sintoma; campo opcional vazio não', () => {

@@ -90,11 +90,7 @@ export function pipelineDebug(
   });
 }
 
-export function pipelineInfo(
-  stage: string,
-  message: string,
-  meta?: Record<string, unknown>,
-): void {
+export function pipelineInfo(stage: string, message: string, meta?: Record<string, unknown>): void {
   if (!isPipelineDebugEnabled()) return;
   logger.info(`[${AI_PIPELINE_DEBUG_TAG}] [${stage}] ${message}`, {
     debugTag: AI_PIPELINE_DEBUG_TAG,
@@ -103,11 +99,7 @@ export function pipelineInfo(
   });
 }
 
-export function pipelineWarn(
-  stage: string,
-  message: string,
-  meta?: Record<string, unknown>,
-): void {
+export function pipelineWarn(stage: string, message: string, meta?: Record<string, unknown>): void {
   logger.warn(`[${AI_PIPELINE_DEBUG_TAG}] [${stage}] ${message}`, {
     debugTag: AI_PIPELINE_DEBUG_TAG,
     stage,

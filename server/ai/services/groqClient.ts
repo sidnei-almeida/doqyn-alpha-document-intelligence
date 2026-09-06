@@ -80,11 +80,15 @@ export function addTokenUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
  * protege a janela por minuto. O orçamento aqui protege outra coisa: quantas vezes o laço pode
  * insistir no mesmo documento.
  */
-function toTokenUsage(usage: {
-  prompt_tokens?: number;
-  completion_tokens?: number;
-  total_tokens?: number;
-} | undefined): TokenUsage {
+function toTokenUsage(
+  usage:
+    | {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+      }
+    | undefined,
+): TokenUsage {
   const promptTokens = usage?.prompt_tokens ?? 0;
   const completionTokens = usage?.completion_tokens ?? 0;
   return {
@@ -216,11 +220,7 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(
-        new AiAnalysisError(
-          AI_ERROR_MESSAGES.groqRequestTimeout,
-          'GROQ_REQUEST_TIMEOUT',
-          504,
-        ),
+        new AiAnalysisError(AI_ERROR_MESSAGES.groqRequestTimeout, 'GROQ_REQUEST_TIMEOUT', 504),
       );
     }, timeoutMs);
 

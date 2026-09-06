@@ -28,17 +28,24 @@ function limitKeywords(keywords: string[], max: number): string[] {
     .slice(0, max);
 }
 
-export function toCompactDocumentClass(docClass: DocumentClassRule): CompactDocumentClassForClassifier {
+export function toCompactDocumentClass(
+  docClass: DocumentClassRule,
+): CompactDocumentClassForClassifier {
   return {
     classId: docClass.id,
     className: docClass.name,
     description: truncateDescription(docClass.description),
     keywords: limitKeywords(docClass.keywords, MAX_POSITIVE_KEYWORDS_PER_CLASS),
-    negativeKeywords: limitKeywords(docClass.negativeKeywords ?? [], MAX_NEGATIVE_KEYWORDS_PER_CLASS),
+    negativeKeywords: limitKeywords(
+      docClass.negativeKeywords ?? [],
+      MAX_NEGATIVE_KEYWORDS_PER_CLASS,
+    ),
   };
 }
 
-export function toCompactDocumentClasses(classes: DocumentClassRule[]): CompactDocumentClassForClassifier[] {
+export function toCompactDocumentClasses(
+  classes: DocumentClassRule[],
+): CompactDocumentClassForClassifier[] {
   return classes.map(toCompactDocumentClass);
 }
 
@@ -74,7 +81,11 @@ export function estimateLegacyClassifierPromptChars(
 export function buildCompactClassifierPrompt(
   chunks: RetrievedChunk[],
   classes: DocumentClassRule[],
-): { prompt: string; compactChunks: RetrievedChunk[]; compactClasses: CompactDocumentClassForClassifier[] } {
+): {
+  prompt: string;
+  compactChunks: RetrievedChunk[];
+  compactClasses: CompactDocumentClassForClassifier[];
+} {
   const compactClasses = toCompactDocumentClasses(classes);
   const compactChunks = limitClassifierChunks(chunks);
   const classesJson = JSON.stringify(compactClasses);

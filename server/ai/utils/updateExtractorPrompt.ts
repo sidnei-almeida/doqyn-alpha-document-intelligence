@@ -4,10 +4,7 @@ import {
   augmentConfidentialityClassForExtraction,
   isConfidentialityClassRule,
 } from './documentClassHeuristics.js';
-import {
-  MAX_CHARS_PER_EXTRACTOR_CHUNK,
-  MAX_EXTRACTOR_FIELDS_IN_PROMPT,
-} from '../constants.js';
+import { MAX_CHARS_PER_EXTRACTOR_CHUNK, MAX_EXTRACTOR_FIELDS_IN_PROMPT } from '../constants.js';
 
 export type PreviousVersionContext = {
   documentId: string;
@@ -44,8 +41,7 @@ export function buildUpdateExtractorPrompt(input: {
   const compactChunks = limitExtractorChunks(input.chunks);
   const classForFields = augmentConfidentialityClassForExtraction(input.selectedClass);
   const sorted = [...classForFields.fields].sort((a, b) => {
-    const partyBoost =
-      Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
+    const partyBoost = Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
     if (partyBoost !== 0) return partyBoost;
     return Number(b.required) - Number(a.required);
   });

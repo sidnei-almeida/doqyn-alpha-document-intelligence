@@ -1,4 +1,8 @@
-import type { DocumentClassRule, ExtractedMetadataField, RetrievedChunk } from '../types/documentAi.types.js';
+import type {
+  DocumentClassRule,
+  ExtractedMetadataField,
+  RetrievedChunk,
+} from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from './documentClassHeuristics.js';
 import { normalizeStringFieldValue } from '../services/documentValidators.js';
 import { isValidPartyName, sanitizePartyMetadataValue } from './partyNameValidation.js';
@@ -26,8 +30,7 @@ const PARTY_LABEL_PATTERNS: Array<{ key: keyof InferredParties; pattern: RegExp 
   },
   {
     key: 'parte_receptora',
-    pattern:
-      /contratad[oa]\s*[:,]\s*([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^\n.;]{2,70}?)(?=\s*(?:,|\.|;|inscrit|$))/i,
+    pattern: /contratad[oa]\s*[:,]\s*([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][^\n.;]{2,70}?)(?=\s*(?:,|\.|;|inscrit|$))/i,
   },
 ];
 
@@ -68,7 +71,9 @@ function inferPartiesFromDenomination(text: string): InferredParties {
 
   for (const block of blocks) {
     const flat = block.replace(/\s+/g, ' ').trim();
-    const denomination = flat.match(/doravante\s+denominad[oa]?\s+(?:a\s+|o\s+)?([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]{2,30})$/i);
+    const denomination = flat.match(
+      /doravante\s+denominad[oa]?\s+(?:a\s+|o\s+)?([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]{2,30})$/i,
+    );
     if (!denomination) continue;
 
     const role = denomination[1]?.trim() ?? '';

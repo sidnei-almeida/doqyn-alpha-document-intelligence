@@ -4,23 +4,10 @@ export const MAX_TEXT_CHARS = 50_000;
 export const MIN_TEXT_CHARS = 300;
 
 export const ALLOWED_PDF_MIME_TYPES = ['application/pdf'] as const;
-export const ALLOWED_IMAGE_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-] as const;
-export const ALLOWED_MIME_TYPES = [
-  ...ALLOWED_PDF_MIME_TYPES,
-  ...ALLOWED_IMAGE_MIME_TYPES,
-] as const;
+export const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const ALLOWED_MIME_TYPES = [...ALLOWED_PDF_MIME_TYPES, ...ALLOWED_IMAGE_MIME_TYPES] as const;
 
-export const ALLOWED_ANALYSIS_EXTENSIONS = [
-  '.pdf',
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-] as const;
+export const ALLOWED_ANALYSIS_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'] as const;
 
 export type AllowedAnalysisMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 
@@ -90,18 +77,15 @@ export const CLASSIFICATION_CONFIDENCE_THRESHOLD = MIN_CLASSIFICATION_CONFIDENCE
 
 export const AI_ERROR_MESSAGES = {
   pdfOnly: 'Envie apenas arquivos PDF nesta etapa.',
-  unsupportedFormat:
-    'Envie PDF ou imagem (JPG, PNG ou WebP) nesta etapa.',
+  unsupportedFormat: 'Envie PDF ou imagem (JPG, PNG ou WebP) nesta etapa.',
   fileTooLarge: 'O arquivo excede o limite de 15MB.',
   emptyFile: 'O arquivo enviado está vazio.',
   insufficientText:
     'Texto insuficiente ou não extraível. O documento pode ser escaneado ou baseado em imagem.',
-  visionOcrFailed:
-    'OCR automático falhou. O documento foi enviado para revisão manual.',
+  visionOcrFailed: 'OCR automático falhou. O documento foi enviado para revisão manual.',
   visionOcrRequiredForImages:
     'Análise de imagens exige Vision OCR configurado. Ative VISION_OCR_ENABLED e as credenciais GCP.',
-  rulesNotSeeded:
-    'Não há classes e regras de documentos configuradas.',
+  rulesNotSeeded: 'Não há classes e regras de documentos configuradas.',
   rulesNoCategories:
     'Crie ao menos uma categoria documental com critérios de classificação antes de analisar documentos.',
   rulesNoExtraction:
@@ -113,14 +97,12 @@ export const AI_ERROR_MESSAGES = {
     'Não foi possível concluir a classificação automática. O documento foi separado para revisão.',
   aiUnavailable:
     'Limite temporário da análise automática atingido. Aguarde alguns minutos e tente novamente.',
-  aiUnavailableReviewReason:
-    'Limite temporário da IA atingido. Tente novamente mais tarde.',
+  aiUnavailableReviewReason: 'Limite temporário da IA atingido. Tente novamente mais tarde.',
   groqDailyTokenLimit:
     'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset da cota ou use um modelo menor (ex.: openai/gpt-oss-20b).',
   groqContextLimit:
     'O documento excede o limite de contexto do modelo. Reduza PDF_ANALYSIS_MAX_INPUT_CHARS ou envie um PDF menor.',
-  groqRequestTimeout:
-    'A análise automática demorou demais e foi interrompida. Tente novamente.',
+  groqRequestTimeout: 'A análise automática demorou demais e foi interrompida. Tente novamente.',
   invalidAiResponse:
     'A resposta da IA veio em formato inválido. O documento foi marcado para revisão.',
   aiProviderNotConfigured:

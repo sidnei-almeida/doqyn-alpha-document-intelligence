@@ -56,7 +56,10 @@ export function getGroqMaxOutputTokens(): number {
 }
 
 export function getPdfAnalysisMaxInputChars(): number {
-  return readPositiveInt(process.env.PDF_ANALYSIS_MAX_INPUT_CHARS, DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS);
+  return readPositiveInt(
+    process.env.PDF_ANALYSIS_MAX_INPUT_CHARS,
+    DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS,
+  );
 }
 
 export function getPdfAnalysisMaxPages(): number {

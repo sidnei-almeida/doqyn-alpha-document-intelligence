@@ -83,7 +83,13 @@ function evaluationSaying(verdict: 'buscar_de_novo' | 'ausente_de_fato'): Evalua
     fields: [{ key: 'numero_nota', verdict, hint: 'procure o número fiscal', where: ['nota fiscal'] }],
     usage: { promptTokens: 400, completionTokens: 100, totalTokens: 500 },
     skipped: false,
-    triage: { findings: [], suspectFieldKeys: [], suspectNamingKeys: [], clean: false },
+    triage: {
+      findings: [],
+      suspectFieldKeys: ['numero_nota'],
+      suspectNamingKeys: [],
+      errorProneClass: false,
+      clean: false,
+    },
   };
 }
 
@@ -101,6 +107,36 @@ const baseInput = {
   selectedClass: CLASSE,
   classification: CLASSIFICACAO,
   context: { jobId: 'job_test', companyId: 'tenant_test' },
+};
+
+function evaluationClearing(key: string, questionado = true): EvaluationResult {
+  return {
+    complete: true,
+    fields: [{ key, verdict: 'ausente_de_fato', reason: 'recibo avulso sem numeração fiscal' }],
+    usage: { promptTokens: 400, completionTokens: 100, totalTokens: 500 },
+    skipped: false,
+    triage: {
+      findings: [],
+      suspectFieldKeys: questionado ? [key] : [],
+      suspectNamingKeys: [],
+      errorProneClass: true,
+      clean: false,
+    },
+  };
+}
+
+/** Recibo avulso: o extrator preencheu `numero_nota` com a numeração do talão. */
+const EXTRACAO_COM_TALAO: MetadataExtractionResult = {
+  documentType: 'Financeiro',
+  version: 'v1.0',
+  metadata: {
+    fornecedor: field('Aparecida Simões da Rocha', 'Recebi de'),
+    numero_nota: field('0447', 'Nº 0447'),
+  },
+  missingFields: [],
+  requiresReview: false,
+  reviewReasons: [],
+  naming: { tipo: 'RECIBO', sujeitos: ['Aparecida'], dataReferencia: '2026-02-02' },
 };
 
 describe('laço de refino', () => {
@@ -215,6 +251,40 @@ describe('laço de refino', () => {
     assert.equal(focusedCalls, 0);
     assert.equal(result.trail.stopReason, 'orcamento_esgotado');
     assert.equal(result.trail.tokenBudget, 600);
+  });
+
+  it('apaga o valor que o Avaliador declarou ausente do documento', async () => {
+    process.env[ENV_KEY] = 'true';
+
+    // `financeiro_03`: o recibo traz "Nº 0447" impresso no talão e o extrator preenche
+    // `numero_nota` com isso. O gabarito diz que o certo é vazio. Antes deste comportamento a
+    // conclusão do Avaliador morria no relatório e o 0447 seguia para o banco.
+    const result = await refineExtraction({
+      ...baseInput,
+      analysisProvider: providerReturning(EXTRACAO_COM_TALAO),
+      budget: createTokenBudget(15_000),
+      deps: { evaluate: async () => evaluationClearing('numero_nota') },
+    });
+
+    assert.equal(result.extraction.metadata.numero_nota, undefined);
+    assert.deepEqual(result.trail.clearedFields, ['numero_nota']);
+    // Campo obrigatório vazio volta a contar como faltante: a pessoa confirma que não existe.
+    assert.deepEqual(result.extraction.missingFields, ['numero_nota']);
+  });
+
+  it('não apaga campo que a triagem nunca questionou', async () => {
+    process.env[ENV_KEY] = 'true';
+
+    const result = await refineExtraction({
+      ...baseInput,
+      analysisProvider: providerReturning(EXTRACAO_COM_TALAO),
+      budget: createTokenBudget(15_000),
+      // O Avaliador se distraiu: declarou ausente um campo que ninguém tinha questionado.
+      deps: { evaluate: async () => evaluationClearing('numero_nota', false) },
+    });
+
+    assert.equal(result.extraction.metadata.numero_nota?.value, '0447');
+    assert.deepEqual(result.trail.clearedFields, []);
   });
 
   it('respeita o teto de passes mesmo quando cada passe recupera algo', async () => {

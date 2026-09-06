@@ -23,12 +23,11 @@ export async function extractMetadataWithRule(input: {
   try {
     const { prompt } = buildCompactExtractorPrompt(input.chunks, input.selectedClass);
     const raw = await completeJsonPrompt(prompt, {
-        context: {
-          ...input.context,
-          operation: 'metadata_extraction',
-        },
+      context: {
+        ...input.context,
+        operation: 'metadata_extraction',
       },
-    );
+    });
     const parsed = safeParseJsonFromModel<unknown>(raw);
 
     if (!parsed) {

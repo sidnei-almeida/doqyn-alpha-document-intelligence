@@ -23,6 +23,8 @@ import type {
   RetrievedChunk,
 } from '../types/documentAi.types.js';
 import { isUsableNamingSubject } from '../services/documentNaming.js';
+import { findFieldCandidates } from './fieldCandidates.js';
+import { isConfidentialityClassRule, hasFinancialRoleFields } from './documentClassHeuristics.js';
 
 export type TriageSymptom =
   /** Campo obrigatório voltou vazio. Pode ser abstenção correta ou leitura falha — o modelo decide. */
@@ -34,6 +36,8 @@ export type TriageSymptom =
   | 'confianca_baixa'
   /** `normalizedValue` não obedece o `type` declarado do campo. */
   | 'normalizacao_invalida'
+  /** O documento tem mais de um valor deste formato: escolher é onde o erro mora. */
+  | 'valor_disputado'
   | 'tipo_ausente'
   | 'tipo_generico'
   | 'tipo_igual_a_classe'
@@ -48,10 +52,14 @@ export type TriageFinding = {
   symptom: TriageSymptom;
   /** Frase curta em pt-BR que entra no dossiê do prompt. */
   detail: string;
+  /** Os outros valores do mesmo formato presentes no documento. Só em `valor_disputado`. */
+  candidates?: string[];
 };
 
 export type ExtractionTriage = {
   findings: TriageFinding[];
+  /** Classe com valor plausível e errado conhecido — julga mesmo sem sintoma. */
+  errorProneClass: boolean;
   /** Chaves de campo com sintoma — as que valem re-busca focada. */
   suspectFieldKeys: string[];
   /** Papéis de nomeação com sintoma. */
@@ -208,6 +216,19 @@ function triageNamingRoles(input: {
   return findings;
 }
 
+/**
+ * Classes onde o repositório já sabe que existe valor plausível e errado esperando.
+ *
+ * Documento financeiro tem o banco emissor no topo do boleto e o pagador na primeira linha do
+ * recibo; NDA tem o título e os rótulos de papel disputando o campo das partes. O prompt do
+ * extrator carrega dicas específicas para os dois casos justamente porque metade das falhas
+ * medidas mora ali — e ainda assim erra. Aqui isso vira gatilho: nessas classes o julgamento
+ * acontece mesmo sem sintoma, porque a ausência de sintoma é o próprio problema.
+ */
+function classIsErrorProne(selectedClass: DocumentClassRule): boolean {
+  return hasFinancialRoleFields(selectedClass) || isConfidentialityClassRule(selectedClass);
+}
+
 export function triageExtraction(input: {
   selectedClass: DocumentClassRule;
   metadata: Record<string, ExtractedMetadataField>;
@@ -269,6 +290,27 @@ export function triageExtraction(input: {
         detail: typeCheck.detail,
       });
     }
+
+    /**
+     * Formato válido não é papel certo.
+     *
+     * Este é o sintoma que faltava. `juridico_04` traz quatro datas e o extrator pegou o selo de
+     * reconhecimento de firma em vez da lavratura; `operacional_01` traz cinco e pegou o carimbo
+     * de tempo do ICP-Brasil em vez da emissão. Nos dois o snippet era real, a data era válida e a
+     * confiança era alta — nenhuma conferência mecânica tinha o que apontar. O que existe para
+     * apontar é a disputa: quando o documento traz um candidato só, escolher é trivial; quando traz
+     * quatro, a escolha é exatamente onde o erro mora.
+     */
+    const candidates = findFieldCandidates({ field, chunks: input.chunks });
+    if (candidates.length >= 2) {
+      findings.push({
+        key: field.key,
+        label: field.label,
+        symptom: 'valor_disputado',
+        detail: `o documento tem ${candidates.length} valores deste formato — confirme que o escolhido faz o papel pedido`,
+        candidates,
+      });
+    }
   }
 
   findings.push(...triageNamingRoles({ roles: input.naming, selectedClass: input.selectedClass }));
@@ -284,6 +326,7 @@ export function triageExtraction(input: {
     findings,
     suspectFieldKeys,
     suspectNamingKeys,
-    clean: findings.length === 0,
+    errorProneClass: classIsErrorProne(input.selectedClass),
+    clean: findings.length === 0 && !classIsErrorProne(input.selectedClass),
   };
 }

@@ -136,7 +136,8 @@ export async function ocrPdfPages(
   }
 
   const maxPages = Math.max(1, options?.maxPages ?? getVisionOcrMaxPages());
-  const hint = options?.pageCountHint && options.pageCountHint > 0 ? options.pageCountHint : maxPages;
+  const hint =
+    options?.pageCountHint && options.pageCountHint > 0 ? options.pageCountHint : maxPages;
   const pagesToProcess = Math.min(maxPages, hint);
   const dpi = getVisionOcrDpi();
   const timeoutMs = getVisionOcrTimeoutMs();

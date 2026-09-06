@@ -31,9 +31,7 @@ export type VersionUpdateExtractionResult = MetadataExtractionResult & {
 
 function parseStringArray(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter(Boolean);
+  return raw.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
 }
 
 function mergeComparison(
@@ -41,15 +39,21 @@ function mergeComparison(
   heuristic: VersionComparisonResult,
 ): VersionComparisonResult {
   return {
-    changedFields: [...new Set([...heuristic.changedFields, ...parseStringArray(modelComparison.changedFields)])],
+    changedFields: [
+      ...new Set([...heuristic.changedFields, ...parseStringArray(modelComparison.changedFields)]),
+    ],
     addedFields: heuristic.addedFields,
     removedFields: heuristic.removedFields,
-    riskWarnings: [...new Set([...heuristic.riskWarnings, ...parseStringArray(modelComparison.riskWarnings)])],
+    riskWarnings: [
+      ...new Set([...heuristic.riskWarnings, ...parseStringArray(modelComparison.riskWarnings)]),
+    ],
     sameDocumentConfidence:
       typeof modelComparison.sameDocumentConfidence === 'number'
         ? Math.min(1, Math.max(0, modelComparison.sameDocumentConfidence))
         : heuristic.sameDocumentConfidence,
-    mainChanges: [...new Set([...parseStringArray(modelComparison.mainChanges), ...heuristic.mainChanges])],
+    mainChanges: [
+      ...new Set([...parseStringArray(modelComparison.mainChanges), ...heuristic.mainChanges]),
+    ],
   };
 }
 
@@ -79,7 +83,11 @@ export async function extractMetadataForVersionUpdate(input: {
 
     const parsed = safeParseJsonFromModel<Record<string, unknown>>(raw);
     if (!parsed) {
-      return buildFallback(requiredFieldKeys, input.selectedClass.name, input.previousVersion.expectedNextVersionLabel);
+      return buildFallback(
+        requiredFieldKeys,
+        input.selectedClass.name,
+        input.previousVersion.expectedNextVersionLabel,
+      );
     }
 
     const validated = validateMetadataResult(parsed, input.selectedClass);
@@ -146,7 +154,9 @@ export async function extractMetadataForVersionUpdate(input: {
         ...parseStringArray(parsed.riskWarnings),
         ...versionComparison.riskWarnings,
         ...(!seemsSameDocument
-          ? ['O modelo indicou que o arquivo pode ser um documento diferente — revisão manual obrigatória.']
+          ? [
+              'O modelo indicou que o arquivo pode ser um documento diferente — revisão manual obrigatória.',
+            ]
           : []),
       ]),
     ];
@@ -188,7 +198,11 @@ export async function extractMetadataForVersionUpdate(input: {
       throw error;
     }
 
-    return buildFallback(requiredFieldKeys, input.selectedClass.name, input.previousVersion.expectedNextVersionLabel);
+    return buildFallback(
+      requiredFieldKeys,
+      input.selectedClass.name,
+      input.previousVersion.expectedNextVersionLabel,
+    );
   }
 }
 

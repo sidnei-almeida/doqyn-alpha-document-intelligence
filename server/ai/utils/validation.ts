@@ -141,7 +141,6 @@ export function applyFieldNormalization(
   };
 }
 
-
 /** Palavras que não identificam nada — se o modelo devolver isso como tipo, é como não devolver. */
 const EMPTY_TYPE_TOKENS = new Set([
   'documento',
@@ -342,8 +341,7 @@ export function validateMetadataResult(
   }
 
   return {
-    documentType:
-      typeof data.documentType === 'string' ? data.documentType : selectedClass.name,
+    documentType: typeof data.documentType === 'string' ? data.documentType : selectedClass.name,
     version: typeof data.version === 'string' ? data.version : 'v1.0',
     metadata,
     missingFields: mergedMissing,

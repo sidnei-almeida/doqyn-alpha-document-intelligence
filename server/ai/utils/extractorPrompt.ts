@@ -3,6 +3,7 @@ import { MAX_CHARS_PER_EXTRACTOR_CHUNK, MAX_EXTRACTOR_FIELDS_IN_PROMPT } from '.
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import {
   augmentConfidentialityClassForExtraction,
+  hasFinancialRoleFields,
   isConfidentialityClassRule,
 } from './documentClassHeuristics.js';
 
@@ -161,6 +162,19 @@ Exemplo de metadados corretos para NDA:
 }
 
 /**
+ * As dicas que valem para esta classe, concatenadas.
+ *
+ * Exportado porque o Avaliador precisa exatamente das mesmas: ele audita um extrator que já teve
+ * essas instruções na mão e errou mesmo assim, então conferir sem elas seria conferir contra um
+ * critério mais frouxo que o da própria tarefa.
+ */
+export function classExtractionHints(selectedClass: DocumentClassRule): string {
+  const nda = isConfidentialityClassRule(selectedClass) ? confidentialityExtractionHints() : '';
+  const financial = hasFinancialRoleFields(selectedClass) ? financialExtractionHints() : '';
+  return `${nda}${financial}`;
+}
+
+/**
  * Tudo que não muda entre documentos vem antes dos trechos, de propósito: o cache de prompt da
  * Groq casa por prefixo e desconta 50% do que reaproveitar. Como instruções, campos da classe e
  * formato de resposta são idênticos para todo documento da mesma classe, deixá-los no início
@@ -179,9 +193,7 @@ export function buildCompactExtractorPrompt(
   // As dicas financeiras seguem os campos, não o nome da pasta: o tenant pode
   // chamá-la de "Fiscal", "Contas a pagar" ou "Documentos Financeiros", e o que
   // identifica o caso é o campo `numero_nota` ao lado de `fornecedor`.
-  const fieldKeys = new Set(fields.map((field) => field.key));
-  const financialHints =
-    fieldKeys.has('numero_nota') && fieldKeys.has('fornecedor') ? financialExtractionHints() : '';
+  const financialHints = hasFinancialRoleFields(selectedClass) ? financialExtractionHints() : '';
 
   const prompt = `Você extrai metadados estruturados de documentos para o DOQYN.
 

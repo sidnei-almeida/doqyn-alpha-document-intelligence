@@ -39,11 +39,7 @@ export function validateAnalysisUpload(input: {
   }
 
   if (!extensionAllowedForAnalysis(input.originalFileName)) {
-    throw new AiAnalysisError(
-      AI_ERROR_MESSAGES.unsupportedFormat,
-      'INVALID_EXTENSION',
-      400,
-    );
+    throw new AiAnalysisError(AI_ERROR_MESSAGES.unsupportedFormat, 'INVALID_EXTENSION', 400);
   }
 
   const resolved = resolveAnalysisMimeType({
@@ -53,22 +49,10 @@ export function validateAnalysisUpload(input: {
 
   if (!resolved) {
     const mime = input.mimeType.toLowerCase();
-    if (
-      mime &&
-      mime !== 'application/octet-stream' &&
-      !isAllowedAnalysisMimeType(mime)
-    ) {
-      throw new AiAnalysisError(
-        AI_ERROR_MESSAGES.unsupportedFormat,
-        'INVALID_MIME',
-        400,
-      );
+    if (mime && mime !== 'application/octet-stream' && !isAllowedAnalysisMimeType(mime)) {
+      throw new AiAnalysisError(AI_ERROR_MESSAGES.unsupportedFormat, 'INVALID_MIME', 400);
     }
-    throw new AiAnalysisError(
-      AI_ERROR_MESSAGES.unsupportedFormat,
-      'INVALID_MIME',
-      400,
-    );
+    throw new AiAnalysisError(AI_ERROR_MESSAGES.unsupportedFormat, 'INVALID_MIME', 400);
   }
 
   return resolved;

@@ -59,6 +59,8 @@ export type RefinementTrail = {
   /** Campos que o Avaliador declarou realmente ausentes do documento. */
   absentFields: string[];
   recoveredFields: string[];
+  /** Campos preenchidos com valor que o documento não sustenta, apagados pelo Avaliador. */
+  clearedFields: string[];
 };
 
 export type RefinedExtraction = {
@@ -161,6 +163,7 @@ export async function refineExtraction(input: {
     tokenBudget: budget.limit(),
     absentFields: [],
     recoveredFields: [],
+    clearedFields: [],
   };
 
   if (!trail.enabled) {
@@ -185,14 +188,30 @@ export async function refineExtraction(input: {
     usage = addTokenUsage(usage, evaluation.usage);
     budget.spend(evaluation.usage.totalTokens);
 
-    trail.absentFields = [
-      ...new Set([
-        ...trail.absentFields,
-        ...evaluation.fields
-          .filter((verdict) => verdict.verdict === 'ausente_de_fato')
-          .map((verdict) => verdict.key),
-      ]),
-    ];
+    const absentNow = evaluation.fields
+      .filter((verdict) => verdict.verdict === 'ausente_de_fato')
+      .map((verdict) => verdict.key);
+    trail.absentFields = [...new Set([...trail.absentFields, ...absentNow])];
+
+    /**
+     * Ausência declarada apaga o valor que estava lá.
+     *
+     * Sem isto o Avaliador ficava sem dentes justamente no caso que ele resolve melhor: o recibo
+     * avulso de `financeiro_03` traz "Nº 0447" impresso no talão, o extrator preenche `numero_nota`
+     * com isso, e o gabarito diz que o certo é vazio. O Avaliador reconhece que não há nota fiscal
+     * ali — e antes disso a conclusão dele morria no relatório, com o 0447 seguindo para o banco.
+     *
+     * Só apaga campo que a triagem já tinha marcado como suspeito. "Ausente de fato" sobre campo
+     * que ninguém questionou é o Avaliador se distraindo, e apagar por isso destruiria dado bom.
+     */
+    const questioned = new Set(evaluation.triage.suspectFieldKeys);
+    for (const key of absentNow) {
+      if (!questioned.has(key) || !isFilled(metadata[key])) continue;
+      metadata = Object.fromEntries(
+        Object.entries(metadata).filter(([entryKey]) => entryKey !== key),
+      );
+      trail.clearedFields = [...new Set([...trail.clearedFields, key])];
+    }
 
     if (evaluation.complete) {
       trail.stopReason = 'avaliador_aprovou';
@@ -320,7 +339,8 @@ export async function refineExtraction(input: {
    * toca (resposta inválida do modelo, confiança baixa em campo opcional), e apagá-los sem ter
    * mudado nada esconderia problema real.
    */
-  const recovered = trail.recoveredFields.length > 0 || trail.passes.length > 0;
+  const recovered =
+    trail.recoveredFields.length > 0 || trail.clearedFields.length > 0 || trail.passes.length > 0;
   const requiresReview =
     missingFields.length > 0 || (recovered ? false : extraction.requiresReview);
 
