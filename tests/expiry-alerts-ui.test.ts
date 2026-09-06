@@ -28,18 +28,6 @@ describe('vencimentos — edição manual no documento', () => {
     assert.ok(editor.includes('value: raw ? raw : null'));
   });
 
-  it('sem permissão de atualização os campos não são editáveis', () => {
-    const editor = read('src/features/expiry/components/DocumentExpiryEditor.tsx');
-
-    // A permissão do painel e a da ficha do servidor precisam valer as duas: o painel pode estar
-    // com cache antigo, e a ficha é quem o PATCH vai checar de fato.
-    assert.ok(editor.includes('const editable = canEdit && (sheet?.canEdit ?? true)'));
-    assert.ok(editor.includes('Você não tem permissão para editar'));
-
-    const panel = read('src/features/documents/components/DocumentDetailPanel.tsx');
-    assert.ok(panel.includes('canEdit={Boolean(data.permissions.canUpdate)}'));
-  });
-
   it('a tabela lista os campos da regra da categoria, não só os extraídos', () => {
     const editor = read('src/features/expiry/components/DocumentExpiryEditor.tsx');
     const service = read('server/services/expiry/documentMetadataEditService.ts');

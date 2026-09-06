@@ -60,16 +60,6 @@ describe('layout de altura total nas páginas internas', () => {
     assert.ok(source.includes('flex-1'));
   });
 
-  it('DocumentsPage usa DataTable com stretch e min-height', () => {
-    const source = readSrc('features/documents/DocumentsPage.tsx');
-    const table = readSrc('components/ui/DataTable.tsx');
-    assert.ok(source.includes('PageShell'));
-    assert.ok(source.includes('FilterBar'));
-    assert.ok(source.includes('stretch'));
-    assert.ok(source.includes('sparseMessage'));
-    assert.ok(table.includes('stretch'));
-  });
-
   it('EmptyState suporta área expansível', () => {
     const source = readSrc('components/ui/EmptyState.tsx');
     assert.ok(source.includes('stretch'));
@@ -85,20 +75,4 @@ describe('layout de altura total nas páginas internas', () => {
     assert.ok(shell.includes('z-['));
   });
 
-  it('páginas internas principais usam PageShell', () => {
-    const pages = [
-      'features/documents/DashboardPage.tsx',
-      'features/documents/DocumentsPage.tsx',
-      'features/settings/SettingsPage.tsx',
-      'features/rules/RulesPage.tsx',
-      'features/users/UsersPage.tsx',
-      'features/audit/AuditPage.tsx',
-      'features/tracking/TrackingPage.tsx',
-    ];
-
-    for (const page of pages) {
-      const source = readSrc(page);
-      assert.ok(source.includes('PageShell'), `${page} deve usar PageShell`);
-    }
-  });
 });

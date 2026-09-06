@@ -22,15 +22,15 @@ describe('aprovação de acesso — persistência e cache', () => {
     assert.equal(source.includes("from '@/features/rules/api/rulesApi'"), false);
   });
 
-  it('ApproveApprovalDialog usa apenas grupos documentais na UI', () => {
-    const source = readSrc('src/features/audit/components/ApproveApprovalDialog.tsx');
+  it('quem escolhe grupo escolhe o do Mongo, e a tela diz de onde ele vem', () => {
+    // `ApproveApprovalDialog` saiu com o pedido de acesso. A escolha de grupo sobreviveu no
+    // convite, e é a mesma seção de formulário — é a ligação com Regras que este teste guarda.
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
-    assert.equal(source.includes('accessGroups'), false);
-    assert.ok(source.includes('documentGroups'));
+    const convite = readSrc('src/features/users/components/InviteMemberDialog.tsx');
     assert.ok(sections.includes('title="Grupos"'));
-    // A cópia foi reescrita; o que este teste guarda é a ligação com Regras, e não a frase.
     assert.ok(sections.includes('Os mesmos grupos de Regras'));
-    assert.ok(source.includes('documentGroupIds'));
+    assert.ok(convite.includes('documentGroupIds'));
+    assert.equal(convite.includes('accessGroupIds'), false);
   });
 
   it('usersApi.approve envia accessGroupIds e documentGroupIds separados', () => {

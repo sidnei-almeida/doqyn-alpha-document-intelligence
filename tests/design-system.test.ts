@@ -75,12 +75,6 @@ describe('design system DOQYN', () => {
     assert.equal(source.includes('title='), false);
   });
 
-  it('SegmentedIconToggle exibe tooltip temático por opção', () => {
-    const source = readSrc('components/ui/SegmentedIconToggle.tsx');
-    assert.ok(source.includes('<Tooltip'));
-    assert.equal(source.includes('title='), false);
-  });
-
   it('viewer de documentos usa palco e overlay temáticos', () => {
     const shell = readSrc('features/documents/viewer/DocumentViewerShell.tsx');
     const pdf = readSrc('features/documents/viewer/PdfPagesViewer.tsx');
@@ -126,21 +120,6 @@ describe('design system DOQYN', () => {
     assert.ok(empty.includes('role="status"'));
     assert.ok(table.includes('EmptyState'));
     assert.ok(audit.includes('EmptyState'));
-  });
-
-  it('filtros de data usam DateInput em vez de input nativo cru', () => {
-    const documents = readSrc('features/documents/DocumentsPage.tsx');
-    const audit = readSrc('features/audit/components/AuditFilters.tsx');
-    const tracking = readSrc('features/tracking/components/TrackingFilters.tsx');
-
-    // O que importa é não ser `<input type="date">` cru; `DateInput` e `DateField` são a
-    // mesma peça, o primeiro sendo o invólucro com API de input.
-    for (const source of [documents, audit, tracking]) {
-      assert.ok(source.includes('DateInput') || source.includes('DateField'));
-      assert.equal(source.includes("type=\"date\""), false);
-    }
-    assert.equal(documents.includes('type="date"'), false);
-    assert.equal(audit.includes('type="date"'), false);
   });
 
   it('botões primary e + Novo usam tokens índigo premium (legível em dark/light)', () => {

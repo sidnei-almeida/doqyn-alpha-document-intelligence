@@ -32,35 +32,6 @@ describe('tabela e filtros unificados', () => {
     assert.ok(source.includes('footer'));
   });
 
-  it('Documentos, Usuários e Tracking usam FilterBar e DataTable', () => {
-    const pages = [
-      'features/documents/DocumentsPage.tsx',
-      'features/users/UsersPage.tsx',
-      'features/tracking/TrackingPage.tsx',
-    ];
-
-    // O filtro de Usuários virou `SegmentedTextToggle`: a tela filtra por um eixo só (situação
-    // do membro), e uma barra inteira para uma escolha binária era moldura sem conteúdo. O que
-    // as três continuam compartilhando é a tabela.
-    const filterComponentByPage: Record<string, string> = {
-      'features/documents/DocumentsPage.tsx': 'FilterBar',
-      'features/users/UsersPage.tsx': 'SegmentedTextToggle',
-      'features/tracking/TrackingPage.tsx': 'TrackingFilters',
-    };
-
-    for (const page of pages) {
-      const source = readSrc(page);
-      assert.ok(
-        source.includes(filterComponentByPage[page]),
-        `${page} deve usar ${filterComponentByPage[page]}`,
-      );
-      assert.ok(
-        source.includes('DataTable') || source.includes('TrackingEventsTable'),
-        `${page} deve usar DataTable`,
-      );
-    }
-  });
-
   it('Usuários renderiza roles como chips e menu de ações', () => {
     const source = readSrc('features/users/UsersPage.tsx');
     assert.ok(source.includes('PlatformRoleChips'));

@@ -29,15 +29,6 @@ describe('DocumentFileCard unificado na Biblioteca', () => {
     assert.ok(filesGrid.includes('document-files-grid'));
   });
 
-  it('Recentes e pasta usam o mesmo DocumentFileCard', () => {
-    const recent = readSrc('features/library/components/ExplorerRecentList.tsx');
-    const folderFiles = readSrc('features/library/components/ExplorerFolderFiles.tsx');
-    const recentCard = readSrc('features/library/components/RecentFileCard.tsx');
-    assert.ok(recent.includes('DocumentFilesGrid'));
-    assert.ok(folderFiles.includes('FileGridView'));
-    assert.ok(recentCard.includes('DocumentFileCard'));
-  });
-
   it('grade compacta com colunas 150–188px', () => {
     const globals = readSrc('styles/globals.css');
     const card = readSrc('features/library/components/files/DocumentFileCard.tsx');

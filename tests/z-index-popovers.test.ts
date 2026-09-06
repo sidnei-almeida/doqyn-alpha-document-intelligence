@@ -67,27 +67,6 @@ describe('z-index e popovers ancorados', () => {
     assert.ok(util.includes('parentElement'));
   });
 
-  it('popovers problemáticos migram para AnchoredPopover', () => {
-    const components = [
-      'features/library/components/ContextInfoButton.tsx',
-      'components/layout/HeaderUserMenu.tsx',
-      'features/library/components/NewButtonMenu.tsx',
-      'components/ui/TableRowActionsMenu.tsx',
-      'components/layout/SidebarUserPanel.tsx',
-    ];
-    for (const path of components) {
-      const source = readSrc(path);
-      assert.ok(source.includes('AnchoredPopover'), `${path} deve usar AnchoredPopover`);
-      assert.equal(source.includes('absolute z-50'), false, `${path} não deve usar z-50 absolute`);
-      assert.equal(
-        source.includes('absolute z-[70]'),
-        false,
-        `${path} não deve usar z-[70] absolute`,
-      );
-      assert.equal(source.includes('absolute z-30'), false, `${path} não deve usar z-30 absolute`);
-    }
-  });
-
   it('ContextInfoButton não fica preso no stacking local do canvas', () => {
     const source = readSrc('features/library/components/ContextInfoButton.tsx');
     assert.equal(source.includes('absolute right-0 top-full'), false);

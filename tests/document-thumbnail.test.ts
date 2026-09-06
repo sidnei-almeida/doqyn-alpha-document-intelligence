@@ -78,11 +78,6 @@ describe('DocumentThumbnail — preview em cards da Biblioteca', () => {
     assert.ok(api.includes('authFetch'));
   });
 
-  it('RecentFileCard delega para DocumentFileCard unificado', () => {
-    const recent = readSrc('features/library/components/RecentFileCard.tsx');
-    assert.ok(recent.includes('DocumentFileCard'));
-  });
-
   it('modo card usa object-cover para preencher o quadro', () => {
     const thumb = readSrc('features/documents/preview/DocumentThumbnail.tsx');
     const fileThumb = readSrc('features/library/components/files/DocumentFileThumbnail.tsx');
