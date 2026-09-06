@@ -66,7 +66,21 @@ export function normalizeCurrency(value: string | number): {
  * `normalizedValue` é usado para buscar, ordenar e comparar, limpar aqui não
  * perde nada e conserta a comparação.
  */
-const FIELD_LABEL_PREFIX = /^(?:[\p{L}][\p{L}\s]{0,28}?\s*)?(?:n[ºo°]\.?|n\.[ºo°]|:)\s*/iu;
+/**
+ * `n[ºo°]` juntava a letra "o" com os ordinais tipográficos, sem fronteira de palavra e com a
+ * flag `i`. Qualquer nome com as letras "no" nos primeiros trinta caracteres era decapitado:
+ * `MERIDIANO SOFTWORKS LTDA.` virava `SOFTWORKS LTDA.`, `NORTIS ENGENHARIA S.A.` virava
+ * `RTIS ENGENHARIA S.A.`, `ALDEIA TECNOLOGIA...` virava `LOGIA E AUTOMAÇÃO...`. Em português isso
+ * alcança Nortis, Tecnologia, Meridiano, Bruno, Antônio, Nogueira, Fernando, Nova — e sem barulho
+ * nenhum, porque `value` continuava correto e só `normalizedValue` saía mutilado. Como é
+ * `normalizedValue` que busca, ordena, compara e alerta, o dado certo existia e não era achável.
+ *
+ * `º` e `°` continuam soltos: são caracteres que nunca aparecem no meio de uma palavra. O "no"
+ * em ASCII, que é o ambíguo, agora exige não vir depois de letra e vir seguido de espaço ou
+ * dígito — "Nota fiscal no 4471" continua limpando, "NORTIS" não.
+ */
+const FIELD_LABEL_PREFIX =
+  /^(?:[\p{L}][\p{L}\s]{0,28}?\s*)?(?:n[º°]\.?|n\.[º°]|(?<![\p{L}])no\.?(?=[\s\d])|:)\s*/iu;
 
 function stripLeadingFieldLabel(value: string): string {
   const stripped = value.replace(FIELD_LABEL_PREFIX, '').trim();
