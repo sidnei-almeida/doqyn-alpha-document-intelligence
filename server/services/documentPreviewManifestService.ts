@@ -122,6 +122,21 @@ function mapPreviewStatus(
   return 'failed';
 }
 
+function isMissingStorageObjectError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as {
+    name?: string;
+    Code?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  return (
+    candidate.name === 'NoSuchKey' ||
+    candidate.name === 'NotFound' ||
+    candidate.Code === 'NoSuchKey' ||
+    candidate.$metadata?.httpStatusCode === 404
+  );
+}
+
 async function resolvePreviewVersion(input: {
   tenantId: string;
   ownerUserId: string;
@@ -435,12 +450,18 @@ async function readCachedPageAsset(input: {
   if (!provider) return null;
 
   const preview = input.version.storage?.preview;
-  const file = await provider.readDocumentPreview(
-    objectKey,
-    input.tenantId,
-    preview?.bucketAlias,
-    input.storageScope,
-  );
+  let file;
+  try {
+    file = await provider.readDocumentPreview(
+      objectKey,
+      input.tenantId,
+      preview?.bucketAlias,
+      input.storageScope,
+    );
+  } catch (error) {
+    if (isMissingStorageObjectError(error)) return null;
+    throw error;
+  }
 
   return {
     buffer: file.buffer,
@@ -596,12 +617,24 @@ export async function readDocumentPreviewImageAsset(input: {
     throw new ServiceError('Storage não configurado.', 'STORAGE_NOT_CONFIGURED', 503);
   }
 
-  const file = await provider.readDocumentPreview(
-    objectKey,
-    input.tenantId,
-    preview.bucketAlias,
-    input.storageScope,
-  );
+  let file;
+  try {
+    file = await provider.readDocumentPreview(
+      objectKey,
+      input.tenantId,
+      preview.bucketAlias,
+      input.storageScope,
+    );
+  } catch (error) {
+    if (isMissingStorageObjectError(error)) {
+      throw new ServiceError(
+        'Preview de imagem ainda não disponível.',
+        'PREVIEW_NOT_READY',
+        404,
+      );
+    }
+    throw error;
+  }
 
   const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
 
