@@ -30,7 +30,6 @@ export type MeMembership = {
 
 export type MeSession = {
   ok?: boolean;
-  authProvider?: string;
   user: MeUser;
   tenant: MeTenant;
   membership: MeMembership;

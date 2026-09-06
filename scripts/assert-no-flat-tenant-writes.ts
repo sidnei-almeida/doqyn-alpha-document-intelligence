@@ -27,7 +27,6 @@ const ALLOWED_PATH_PATTERNS = [
   /scripts\/test-tenant-isolation/,
   /scripts\/assert-no-flat/,
   /scripts\/test-/,
-  /scripts\/validate-flow/,
   /scripts\/audit-etapa/,
   /server\/db\/setupMongo/,
   /server\/tenancy\//,

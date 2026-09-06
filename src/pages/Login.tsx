@@ -28,7 +28,7 @@ function extractVerificationTicket(error: unknown): string | null {
 }
 
 export function Login() {
-  const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,7 +99,7 @@ export function Login() {
     <>
       <AuthHeading title="Entrar no sistema" />
 
-      {supportsOAuth && enabledProviders.length > 0 && (
+      {enabledProviders.length > 0 && (
         <div className="flex flex-col gap-2.5">
           {enabledProviders.includes('google') && (
             <button

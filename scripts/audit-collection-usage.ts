@@ -70,7 +70,6 @@ function classify(file: string, collection: string, snippet: string): Occurrence
     needsGetTenantCollections = false;
   } else if (
     lower.includes('test-') ||
-    lower.includes('validate-flow') ||
     lower.includes('mock') ||
     lower.includes('.mjs')
   ) {

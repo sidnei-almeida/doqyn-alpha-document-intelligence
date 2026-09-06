@@ -8,7 +8,7 @@ import { getCurrentSession, SessionApiError } from '@/auth/sessionApi';
 import { ApiError, shouldLogoutForError } from '@/lib/apiErrors';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 import { AuthContext, type AuthContextValue } from '@/auth/authContext';
-import { redirectToOAuth, isOAuthEnabled } from '@/auth/oauthLogin';
+import { redirectToOAuth } from '@/auth/oauthLogin';
 import { clearPreviewCachesForTenant } from '@/features/documents/preview/clearPreviewCaches';
 import { clearSessionScopedCaches } from '@/auth/clearSessionScopedCaches';
 import { buildSessionFingerprintFromAuth } from '@/auth/sessionFingerprint';
@@ -337,7 +337,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [tenant?.tenantId]);
 
   const supportsSso = false;
-  const supportsOAuth = isOAuthEnabled();
   const isAuthenticated = Boolean(user) && !accessGate;
 
   const value = useMemo<AuthContextValue>(
@@ -353,7 +352,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       supportsSso,
-      supportsOAuth,
       login,
       loginWithSSO,
       loginWithGoogle,
@@ -376,7 +374,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       supportsSso,
-      supportsOAuth,
       login,
       loginWithSSO,
       loginWithGoogle,

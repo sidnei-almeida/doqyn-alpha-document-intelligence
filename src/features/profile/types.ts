@@ -11,7 +11,6 @@ export type ProfileMe = {
   displayName: string;
   firstName?: string;
   lastName?: string;
-  authProvider?: string;
   avatar: ProfileAvatar;
   tenant: {
     tenantId: string;

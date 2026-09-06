@@ -17,7 +17,8 @@ describe('OAuth login frontend', () => {
     const source = readSrc('pages/Login.tsx');
     assert.ok(source.includes('Continuar com Google'));
     assert.ok(source.includes('Continuar com Microsoft'));
-    assert.ok(source.includes('supportsOAuth'));
+    // O portão é a lista que o auth-service devolve: botão que aparece tem credencial atrás.
+    assert.ok(source.includes('enabledProviders.length > 0'));
   });
 
   it('redirect OAuth aponta para /oauth/*/start', () => {

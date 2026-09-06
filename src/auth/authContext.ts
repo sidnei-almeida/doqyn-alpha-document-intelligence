@@ -14,7 +14,6 @@ export type AuthContextValue = {
   isLoading: boolean;
   error: string | null;
   supportsSso: boolean;
-  supportsOAuth: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   loginWithSSO: () => Promise<void>;
   loginWithGoogle: (returnUrl?: string) => void;
