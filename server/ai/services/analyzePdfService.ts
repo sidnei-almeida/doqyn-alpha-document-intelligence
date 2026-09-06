@@ -33,7 +33,9 @@ import {
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
-import { getGroqModelFromEnv } from '../utils/aiConfig.js';
+import { getExtractionTokenBudget, getGroqModelFromEnv } from '../utils/aiConfig.js';
+import { createTokenBudget } from '../utils/tokenBudget.js';
+import { refineExtraction } from './extractionRefinementLoop.js';
 import {
   type AnalyzeRequestContext,
   createLog,
@@ -588,10 +590,16 @@ export async function analyzePdfBuffer(input: {
     }),
   );
 
-  const extraction = await analysisProvider.extractMetadata({
-    chunks: extractionChunks,
+  const refined = await refineExtraction({
+    analysisProvider,
+    // Os chunks inteiros, não a seleção: o passe focado re-seleciona por campo, com os termos que
+    // o Avaliador escreveu, e re-selecionar dentro da seleção anterior repetiria o mesmo recorte
+    // que já falhou.
+    chunks,
+    extractionChunks,
     selectedClass: extractionClass,
     classification,
+    budget: createTokenBudget(getExtractionTokenBudget()),
     context: {
       requestId: context.requestId,
       jobId,
@@ -599,6 +607,7 @@ export async function analyzePdfBuffer(input: {
       database: rulesLoad.database,
     },
   });
+  const extraction = refined.extraction;
   timer.mark('extraction');
 
   const enrichedMetadata = enrichMetadataWithPartyHeuristics({
@@ -616,6 +625,18 @@ export async function analyzePdfBuffer(input: {
       'done',
     ),
   );
+
+  if (refined.trail.enabled && refined.trail.passes.length > 0) {
+    logs.push(
+      createLog(
+        'Revisão automática da extração',
+        refined.trail.recoveredFields.length
+          ? `Uma segunda leitura recuperou: ${refined.trail.recoveredFields.join(', ')}.`
+          : 'Os campos pendentes foram reprocurados e o documento realmente não os traz.',
+        'done',
+      ),
+    );
+  }
 
   const recommendedFileName = generateRecommendedFileName({
     originalFileName: input.originalFileName,
@@ -667,6 +688,15 @@ export async function analyzePdfBuffer(input: {
     classificationRequiresReview: classification.requiresReview,
     extractionMissingFields: extraction.missingFields,
     extractionRequiresReview: extraction.requiresReview,
+    refinement: {
+      enabled: refined.trail.enabled,
+      passes: refined.trail.passes.length,
+      stopReason: refined.trail.stopReason,
+      tokensSpent: refined.trail.tokensSpent,
+      tokenBudget: refined.trail.tokenBudget,
+      recoveredFields: refined.trail.recoveredFields,
+      absentFields: refined.trail.absentFields,
+    },
     recommendedFileName,
     metadataKeys: Object.keys(extraction.metadata ?? {}),
     stageDurationsMs: durations,

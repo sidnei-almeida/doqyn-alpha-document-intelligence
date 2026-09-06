@@ -23,7 +23,7 @@ import {
   validateCpf,
 } from '../services/documentValidators.js';
 
-function parseEvidence(raw: unknown): EvidenceSnippet | undefined {
+export function parseEvidence(raw: unknown): EvidenceSnippet | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
 
   const data = raw as Record<string, unknown>;
@@ -104,7 +104,7 @@ export function validateClassificationResult(
   };
 }
 
-function applyFieldNormalization(
+export function applyFieldNormalization(
   field: DocumentRuleField,
   value: string | number | null,
   modelNormalized?: string | number | null,
@@ -162,7 +162,7 @@ const EMPTY_TYPE_TOKENS = new Set([
  * vez de virar sujeira no nome — foi assim que marcadores de campo vazio acabaram batizando
  * arquivos como `sem_data_v1_0.pdf`.
  */
-function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles | undefined {
+export function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const data = raw as Record<string, unknown>;
 

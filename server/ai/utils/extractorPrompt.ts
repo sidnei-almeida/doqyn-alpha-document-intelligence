@@ -68,7 +68,7 @@ function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorFiel
  * schema já separa `value` (o que está escrito) de `normalizedValue` (a forma padronizada), o
  * caminho mais barato é o próprio modelo entregar as duas.
  */
-function normalizationContract(): string {
+export function normalizationContract(): string {
   return `
 PADRONIZAÇÃO — obrigatória para todo campo preenchido:
 Cada campo tem dois lados. \`value\` é o que está literalmente escrito no documento. \`normalizedValue\`
