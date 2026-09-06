@@ -39,7 +39,9 @@ export type RefinementStopReason =
   | 'nada_para_reprocurar'
   | 'teto_de_passes'
   | 'orcamento_esgotado'
-  | 'sem_progresso';
+  | 'sem_progresso'
+  /** O campo foi reprocurado no documento inteiro e realmente não está lá. */
+  | 'ausencia_provada';
 
 export type RefinementPassTrail = {
   pass: number;
@@ -61,6 +63,13 @@ export type RefinementTrail = {
   recoveredFields: string[];
   /** Campos preenchidos com valor que o documento não sustenta, apagados pelo Avaliador. */
   clearedFields: string[];
+  /**
+   * Ausências que foram confirmadas por busca no documento inteiro, e não apenas nos trechos que
+   * o retriever tinha escolhido. É a diferença entre "não achei" e "não existe".
+   */
+  provenAbsentFields: string[];
+  /** true quando os trechos avaliados já eram o documento inteiro — prova sai de graça. */
+  evaluatorSawWholeDocument: boolean;
 };
 
 export type RefinedExtraction = {
@@ -164,6 +173,11 @@ export async function refineExtraction(input: {
     absentFields: [],
     recoveredFields: [],
     clearedFields: [],
+    provenAbsentFields: [],
+    // O Avaliador julga sobre a seleção do retriever, não sobre o documento. Quando a seleção é o
+    // documento inteiro — o caso de todo arquivo curto —, "não está aqui" já é "não existe" e a
+    // prova não custa chamada nenhuma.
+    evaluatorSawWholeDocument: input.extractionChunks.length >= input.chunks.length,
   };
 
   if (!trail.enabled) {
@@ -193,30 +207,48 @@ export async function refineExtraction(input: {
       .map((verdict) => verdict.key);
     trail.absentFields = [...new Set([...trail.absentFields, ...absentNow])];
 
-    /**
-     * Ausência declarada apaga o valor que estava lá.
-     *
-     * Sem isto o Avaliador ficava sem dentes justamente no caso que ele resolve melhor: o recibo
-     * avulso de `financeiro_03` traz "Nº 0447" impresso no talão, o extrator preenche `numero_nota`
-     * com isso, e o gabarito diz que o certo é vazio. O Avaliador reconhece que não há nota fiscal
-     * ali — e antes disso a conclusão dele morria no relatório, com o 0447 seguindo para o banco.
-     *
-     * Só apaga campo que a triagem já tinha marcado como suspeito. "Ausente de fato" sobre campo
-     * que ninguém questionou é o Avaliador se distraindo, e apagar por isso destruiria dado bom.
-     */
     const questioned = new Set(evaluation.triage.suspectFieldKeys);
-    for (const key of absentNow) {
-      if (!questioned.has(key) || !isFilled(metadata[key])) continue;
+
+    /**
+     * Ausência sobre trecho selecionado não é ausência.
+     *
+     * O Avaliador julga o que o retriever entregou, não o documento. Quando ele diz "esse dado não
+     * está aqui", o que ele sabe dizer é "não está nos trechos que me deram" — e num contrato de
+     * cem páginas isso não é a mesma frase. Declarar ausência com base numa leitura parcial é
+     * afirmar mais do que se apurou, e é justamente a afirmação em que o usuário vai confiar para
+     * parar de procurar.
+     *
+     * Então a ausência vira alvo de busca, não conclusão: o campo entra no passe focado com
+     * `retrieveChunksForField` sobre TODOS os chunks. Só depois de procurar no documento inteiro,
+     * com os termos daquele campo, e não achar, é que a ausência fica provada.
+     *
+     * E não custa quase nada: quando a seleção já era o documento inteiro, a prova é dispensada; e
+     * quando não era, os campos ausentes entram no mesmo passe focado que já ia acontecer.
+     */
+    const needsProof = absentNow.filter(
+      (key) => !trail.evaluatorSawWholeDocument && fieldsByKey.has(key),
+    );
+    const provenNow = absentNow.filter((key) => !needsProof.includes(key));
+    trail.provenAbsentFields = [...new Set([...trail.provenAbsentFields, ...provenNow])];
+
+    /**
+     * Ausência provada apaga o valor que estava lá.
+     *
+     * O recibo avulso de `financeiro_03` traz "Nº 0447" impresso no talão, o extrator preenche
+     * `numero_nota` com isso, e o gabarito diz que o certo é vazio. Sem apagar, a conclusão do
+     * Avaliador morria no relatório e o 0447 seguia para o banco.
+     *
+     * Só apaga campo que a triagem já tinha questionado — "ausente de fato" sobre campo que
+     * ninguém perguntou é o modelo se distraindo — e só quando a ausência está provada.
+     */
+    const clearIfProven = (key: string) => {
+      if (!questioned.has(key) || !isFilled(metadata[key])) return;
       metadata = Object.fromEntries(
         Object.entries(metadata).filter(([entryKey]) => entryKey !== key),
       );
       trail.clearedFields = [...new Set([...trail.clearedFields, key])];
-    }
-
-    if (evaluation.complete) {
-      trail.stopReason = 'avaliador_aprovou';
-      break;
-    }
+    };
+    for (const key of provenNow) clearIfProven(key);
 
     const actionable = evaluation.fields.filter(
       (verdict) => verdict.verdict === 'buscar_de_novo' || verdict.verdict === 'valor_errado',
@@ -238,6 +270,30 @@ export async function refineExtraction(input: {
           selectedClass: input.selectedClass,
         }),
       });
+    }
+
+    for (const key of needsProof) {
+      const field = fieldsByKey.get(key);
+      if (!field || targets.some((target) => target.field.key === key)) continue;
+      targets.push({
+        field,
+        hint: 'O auditor concluiu que este dado não existe no documento, mas ele leu apenas parte dos trechos. Estes são os trechos do documento inteiro que mais se aproximam deste campo. Confirme a ausência ou traga o valor.',
+        previousValue: metadata[key]?.normalizedValue ?? metadata[key]?.value ?? null,
+        chunks: retrieveChunksForField({
+          chunks: input.chunks,
+          field,
+          selectedClass: input.selectedClass,
+        }),
+      });
+    }
+
+    // Confirmação de ausência não é motivo para o laço continuar: se o Avaliador aprovou o resto,
+    // o passe focado é o último ato.
+    const onlyProving = actionable.length === 0 && needsProof.length > 0;
+
+    if (evaluation.complete && !onlyProving) {
+      trail.stopReason = 'avaliador_aprovou';
+      break;
     }
 
     const namingVerdicts = actionable.filter((verdict) => verdict.key.startsWith('naming.'));
@@ -285,6 +341,20 @@ export async function refineExtraction(input: {
     const merged = mergeFocusedMetadata({ current: metadata, incoming: focused.metadata });
     metadata = merged.metadata;
 
+    /**
+     * A prova fecha aqui.
+     *
+     * Cada campo em `needsProof` foi reprocurado no documento inteiro. O que voltou com evidência
+     * nunca esteve ausente — o retriever é que não tinha entregue o trecho, e recuperá-lo é o
+     * melhor resultado possível deste laço. O que não voltou está provado ausente, e só agora a
+     * afirmação "o documento não traz esse dado" é uma afirmação que o sistema apurou.
+     */
+    for (const key of needsProof) {
+      if (merged.recoveredKeys.includes(key)) continue;
+      trail.provenAbsentFields = [...new Set([...trail.provenAbsentFields, key])];
+      clearIfProven(key);
+    }
+
     const namingImproved = Boolean(
       focused.naming &&
       (focused.naming.tipo !== naming?.tipo ||
@@ -312,9 +382,16 @@ export async function refineExtraction(input: {
     trail.recoveredFields = [...new Set([...trail.recoveredFields, ...merged.recoveredKeys])];
 
     // Passe que não mudou nada é o modelo repetindo, não convergindo. Insistir daqui gasta o
-    // orçamento para chegar à mesma resposta.
+    // orçamento para chegar à mesma resposta. Confirmar ausência conta como progresso: é o passe
+    // fazendo exatamente o que foi pedido, e repetir a busca do mesmo campo não mudaria a resposta.
     if (merged.recoveredKeys.length === 0 && !namingImproved) {
-      trail.stopReason = 'sem_progresso';
+      trail.stopReason = needsProof.length > 0 ? 'ausencia_provada' : 'sem_progresso';
+      break;
+    }
+
+    // Só faltava provar ausência, e ficou provado. Não há segundo passe a fazer.
+    if (onlyProving) {
+      trail.stopReason = 'ausencia_provada';
       break;
     }
 
@@ -340,7 +417,10 @@ export async function refineExtraction(input: {
    * mudado nada esconderia problema real.
    */
   const recovered =
-    trail.recoveredFields.length > 0 || trail.clearedFields.length > 0 || trail.passes.length > 0;
+    trail.recoveredFields.length > 0 ||
+    trail.clearedFields.length > 0 ||
+    trail.provenAbsentFields.length > 0 ||
+    trail.passes.length > 0;
   const requiresReview =
     missingFields.length > 0 || (recovered ? false : extraction.requiresReview);
 

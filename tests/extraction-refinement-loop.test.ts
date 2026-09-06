@@ -287,6 +287,86 @@ describe('laço de refino', () => {
     assert.deepEqual(result.trail.clearedFields, []);
   });
 
+  it('leitura parcial não basta para declarar ausência — o campo é reprocurado', async () => {
+    process.env[ENV_KEY] = 'true';
+    let focusedCalls = 0;
+
+    // O documento tem três chunks; o retriever entregou um. "Não está aqui" só significa "não
+    // está nos trechos que me deram" — e o dado estava no chunk que não foi selecionado.
+    const result = await refineExtraction({
+      ...baseInput,
+      chunks: [CHUNK, { ...CHUNK, id: 'c2', chunkIndex: 1 }, { ...CHUNK, id: 'c3', chunkIndex: 2 }],
+      extractionChunks: [RETRIEVED],
+      analysisProvider: providerReturning(EXTRACAO_INCOMPLETA),
+      budget: createTokenBudget(15_000),
+      deps: {
+        evaluate: async () => evaluationSaying('ausente_de_fato'),
+        extractFocused: async (): Promise<FocusedExtractionResult> => {
+          focusedCalls += 1;
+          return {
+            metadata: { numero_nota: field('4471', 'Nota fiscal 4471') },
+            usage: { promptTokens: 300, completionTokens: 80, totalTokens: 380 },
+          };
+        },
+      },
+    });
+
+    assert.equal(focusedCalls, 1, 'a ausência tinha que virar busca');
+    assert.equal(result.extraction.metadata.numero_nota?.value, '4471');
+    assert.deepEqual(result.trail.recoveredFields, ['numero_nota']);
+    // Nunca esteve ausente: o retriever é que não tinha entregue o trecho.
+    assert.deepEqual(result.trail.provenAbsentFields, []);
+    assert.equal(result.trail.evaluatorSawWholeDocument, false);
+  });
+
+  it('reprocurado no documento inteiro e não achado, a ausência fica provada', async () => {
+    process.env[ENV_KEY] = 'true';
+
+    const result = await refineExtraction({
+      ...baseInput,
+      chunks: [CHUNK, { ...CHUNK, id: 'c2', chunkIndex: 1 }],
+      extractionChunks: [RETRIEVED],
+      analysisProvider: providerReturning(EXTRACAO_COM_TALAO),
+      budget: createTokenBudget(15_000),
+      deps: {
+        evaluate: async () => evaluationClearing('numero_nota'),
+        extractFocused: async (): Promise<FocusedExtractionResult> => ({
+          metadata: {},
+          usage: { promptTokens: 300, completionTokens: 80, totalTokens: 380 },
+        }),
+      },
+    });
+
+    assert.deepEqual(result.trail.provenAbsentFields, ['numero_nota']);
+    assert.equal(result.trail.stopReason, 'ausencia_provada');
+    // Só agora o valor do talão sai: antes da prova, apagar seria confiar numa leitura parcial.
+    assert.deepEqual(result.trail.clearedFields, ['numero_nota']);
+    assert.equal(result.extraction.metadata.numero_nota, undefined);
+  });
+
+  it('quando a seleção já era o documento inteiro, a prova não custa chamada', async () => {
+    process.env[ENV_KEY] = 'true';
+    let focusedCalls = 0;
+
+    const result = await refineExtraction({
+      ...baseInput,
+      analysisProvider: providerReturning(EXTRACAO_COM_TALAO),
+      budget: createTokenBudget(15_000),
+      deps: {
+        evaluate: async () => evaluationClearing('numero_nota'),
+        extractFocused: async (): Promise<FocusedExtractionResult> => {
+          focusedCalls += 1;
+          return { metadata: {}, usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } };
+        },
+      },
+    });
+
+    assert.equal(result.trail.evaluatorSawWholeDocument, true);
+    assert.equal(focusedCalls, 0);
+    assert.deepEqual(result.trail.provenAbsentFields, ['numero_nota']);
+    assert.deepEqual(result.trail.clearedFields, ['numero_nota']);
+  });
+
   it('respeita o teto de passes mesmo quando cada passe recupera algo', async () => {
     process.env[ENV_KEY] = 'true';
     process.env.EXTRACTION_REFINEMENT_MAX_PASSES = '2';

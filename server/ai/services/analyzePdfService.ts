@@ -704,7 +704,9 @@ export async function analyzePdfBuffer(input: {
         'Revisão automática da extração',
         refined.trail.recoveredFields.length
           ? `Uma segunda leitura recuperou: ${refined.trail.recoveredFields.join(', ')}.`
-          : 'Os campos pendentes foram reprocurados e o documento realmente não os traz.',
+          : refined.trail.provenAbsentFields.length
+            ? `Reprocurado no documento inteiro: ${refined.trail.provenAbsentFields.join(', ')} realmente não consta.`
+            : 'Os campos pendentes foram reprocurados e nada mudou.',
         'done',
       ),
     );
@@ -768,6 +770,9 @@ export async function analyzePdfBuffer(input: {
       tokenBudget: refined.trail.tokenBudget,
       recoveredFields: refined.trail.recoveredFields,
       absentFields: refined.trail.absentFields,
+      provenAbsentFields: refined.trail.provenAbsentFields,
+      clearedFields: refined.trail.clearedFields,
+      evaluatorSawWholeDocument: refined.trail.evaluatorSawWholeDocument,
     },
     recommendedFileName,
     metadataKeys: Object.keys(extraction.metadata ?? {}),
