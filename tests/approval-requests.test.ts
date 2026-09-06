@@ -196,10 +196,11 @@ describe('aprovações — armadilhas do modelo', () => {
     assert.ok(indexes.includes("'subject.documentId': { $exists: true }"));
     // O índice da primeira versão precisa cair pelo nome: a forma da chave mudou.
     assert.ok(indexes.includes('SUPERSEDED_APPROVAL_REQUEST_INDEXES'));
-    // O job do Compose é este script, não `setupMongo`: sem derrubar lá, o índice antigo
+    // O job do Compose é este script, não `setupMongo`. Ele chama o caminho próprio da coleção,
+    // que derruba os antigos antes de garantir os novos — sem isso o índice da primeira versão
     // sobrevive em produção e barra o segundo compartilhamento pendente do mesmo documento.
     const script = read('scripts/ensure-mongodb-indexes.ts');
-    assert.ok(script.includes('SUPERSEDED_APPROVAL_REQUEST_INDEXES'));
+    assert.ok(script.includes('ensureApprovalRequestIndexes'));
   });
 
   it('pedido sem aprovador é recusado, não gravado', () => {
