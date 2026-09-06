@@ -44,6 +44,8 @@ export function buildClassificationReviewPrompt(input: {
   chunks: RetrievedChunk[];
   classes: DocumentClassRule[];
   firstReason: string;
+  /** O que o primeiro classificador disse que o documento é, antes de não achar pasta. */
+  documentType?: string | null;
 }): string {
   const classes = input.classes.map((entry) => ({
     id: entry.id,
@@ -52,10 +54,24 @@ export function buildClassificationReviewPrompt(input: {
     palavrasChave: entry.keywords?.slice(0, 12),
   }));
 
+  /**
+   * O tipo que ele mesmo declarou, devolvido a ele.
+   *
+   * O primeiro classificador responde em duas etapas: diz o que o documento é e depois escolhe a
+   * pasta. Quando ele acerta a primeira e falha na segunda — leu ATESTADO MÉDICO e concluiu que
+   * nenhuma pasta serve —, a contradição está no próprio resultado dele. Trazê-la de volta é mais
+   * barato e mais direto que pedir uma releitura do zero.
+   */
+  const typeLine = input.documentType
+    ? `\nEle chegou a identificar o documento como: ${input.documentType}. Se isso está certo, a
+pergunta que sobra é apenas onde esse tipo mora — e um tipo real quase sempre mora em algum lugar.\n`
+    : '';
+
   return `Um primeiro classificador não conseguiu encaixar este documento em nenhuma pasta e o
 mandou para revisão manual. Você é a segunda opinião.
 
 Motivo que ele deu: "${input.firstReason}"
+${typeLine}
 
 Antes de concordar com ele, entenda o que está sendo perguntado. Estas não são definições
 jurídicas nem categorias exaustivas — são PASTAS onde o documento vai ser arquivado, criadas por
@@ -110,6 +126,7 @@ export async function reviewFailedClassification(input: {
         chunks: input.chunks,
         classes: input.classes,
         firstReason: input.classification.reason,
+        documentType: input.classification.documentType,
       }),
       {
         context: { ...input.context, operation: 'classification_review' },

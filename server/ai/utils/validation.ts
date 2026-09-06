@@ -94,6 +94,33 @@ export function validateClassificationResult(
     requiresReview = confidence < MIN_CLASSIFICATION_CONFIDENCE;
   }
 
+  /**
+   * Alternativa nomeada e não descartada derruba a confiança.
+   *
+   * O erro que sobrava na medição não era o classificador hesitar — era ele decidir errado com
+   * 0.97 de confiança e nunca ser questionado. `juridico_01` é um NDA e foi para Contratos;
+   * `juridico_04` é uma procuração e foi para Contratos. Nos dois casos a classe escolhida é
+   * defensável, porque a ampla sempre é, e nada no resultado registrava que havia uma segunda
+   * opção melhor.
+   *
+   * Agora o prompt exige nomear a segunda classe e dizer o que a descarta. Quando o modelo nomeia
+   * uma alternativa e não consegue articular a diferença, ele não separou as duas — e alta
+   * confiança sobre uma separação que não existe é justamente o que produz erro silencioso. A
+   * conferência é grosseira de propósito: ela não julga a qualidade do argumento, só exige que
+   * exista um. O trabalho é forçar a comparação, não pontuá-la.
+   */
+  const alternativeReason = parseAlternativeReason(data.alternativa);
+  if (
+    alternativeReason !== null &&
+    alternativeReason.length < 20 &&
+    confidence >= MIN_CLASSIFICATION_CONFIDENCE
+  ) {
+    confidence = Math.min(confidence, MIN_CLASSIFICATION_CONFIDENCE - 0.01);
+    requiresReview = true;
+  }
+
+  const documentType = parseDocumentType(data.tipoDocumental, className);
+
   return {
     classId: validClass ? classId : null,
     className: validClass ? className : null,
@@ -101,7 +128,31 @@ export function validateClassificationResult(
     requiresReview,
     reason,
     evidence,
+    documentType,
   };
+}
+
+/**
+ * A justificativa de descarte da segunda classe. `null` quando não há alternativa nomeada — que é
+ * resposta legítima: documento sem segunda opção plausível não tem o que descartar.
+ */
+function parseAlternativeReason(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  const classId = typeof data.classId === 'string' ? data.classId.trim() : '';
+  if (!classId) return null;
+  return typeof data.porQueNao === 'string' ? data.porQueNao.trim() : '';
+}
+
+/** Mesmas guardas do `naming.tipo`: vazio, genérico ou igual ao nome da pasta é como não vir. */
+function parseDocumentType(raw: unknown, className: string | null): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > 40) return null;
+  const normalized = trimmed.toLowerCase();
+  if (EMPTY_TYPE_TOKENS.has(normalized)) return null;
+  if (className && normalized === className.trim().toLowerCase()) return null;
+  return trimmed;
 }
 
 export function applyFieldNormalization(
