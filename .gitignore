@@ -100,3 +100,4 @@ __pycache__/
 # Vivem só na máquina de quem os usa: são material de avaliação do modelo, não
 # do produto, e o repositório já recusa `*.pdf` desde antes deles existirem.
 synthetic_document_dataset/
+synthetic_document_dataset.zip
