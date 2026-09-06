@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useAuth } from '@/features/auth/useAuth';
-import { DEFAULT_NOTIFICATION_PREFERENCES, usersApi } from '@/features/users/api/usersApi';
+import { usersApi } from '@/features/users/api/usersApi';
 import { invalidateUserManagementQueries } from '@/features/users/userManagementQueries';
 import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
@@ -104,31 +104,6 @@ export function useAuditCenter(documentId?: string) {
     await invalidateUserManagementQueries(queryClient, tenantId || undefined);
   };
 
-  const approveMutation = useMutation({
-    mutationFn: ({
-      item,
-      platformRoles,
-      accessGroupIds,
-      documentGroupIds,
-    }: {
-      item: PendingApprovalItem;
-      platformRoles: Parameters<typeof usersApi.approve>[1]['platformRoles'];
-      accessGroupIds: string[];
-      documentGroupIds: string[];
-    }) =>
-      usersApi.approve(item.membershipId, {
-        platformRoles,
-        accessGroupIds,
-        documentGroupIds,
-        notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-      }),
-    onSuccess: async () => {
-      toast.success('Solicitação aprovada com sucesso.');
-      await invalidateAll();
-    },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
-  });
-
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
       return decideApprovalRequest(item.id, 'rejected', reason);
@@ -200,7 +175,6 @@ export function useAuditCenter(documentId?: string) {
     eventFilters,
     setEventFilters: updateEventFilters,
     documentGroups: documentGroupsQuery.data ?? [],
-    approveMutation,
     rejectMutation,
     approveDocumentMutation,
     refresh: invalidateAll,

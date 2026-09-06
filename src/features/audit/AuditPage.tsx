@@ -45,7 +45,6 @@ export function AuditPage() {
     setEventsTab,
     eventFilters,
     setEventFilters,
-    approveMutation,
     rejectMutation,
     approveDocumentMutation,
   } = useAuditCenter(filterDocId);
@@ -207,7 +206,7 @@ export function AuditPage() {
         item={reviewItem}
         isAdmin={isAdmin}
         saving={
-          approveMutation.isPending || rejectMutation.isPending || approveDocumentMutation.isPending
+          rejectMutation.isPending || approveDocumentMutation.isPending
         }
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
