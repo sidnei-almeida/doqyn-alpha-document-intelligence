@@ -114,6 +114,8 @@ export async function evaluateExtraction(input: {
   metadata: Record<string, ExtractedMetadataField>;
   naming?: DocumentNamingRoles;
   chunks: RetrievedChunk[];
+  /** O tipo declarado pelo classificador, para confrontar com o que o extrator leu. */
+  classifierDocumentType?: string | null;
   context?: GroqPromptContext;
   model?: string;
 }): Promise<EvaluationResult> {
@@ -122,6 +124,7 @@ export async function evaluateExtraction(input: {
     metadata: input.metadata,
     naming: input.naming,
     chunks: input.chunks,
+    classifierDocumentType: input.classifierDocumentType,
   });
 
   // Documento sem sintoma não vira chamada. É o que mantém o refino barato: o custo cai sobre o

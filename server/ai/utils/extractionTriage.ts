@@ -24,6 +24,7 @@ import type {
 } from '../types/documentAi.types.js';
 import { isUsableNamingSubject } from '../services/documentNaming.js';
 import { findFieldCandidates } from './fieldCandidates.js';
+import { findCoherenceProblems, typesDisagree } from './fieldCoherence.js';
 import { isConfidentialityClassRule, hasFinancialRoleFields } from './documentClassHeuristics.js';
 
 export type TriageSymptom =
@@ -38,6 +39,10 @@ export type TriageSymptom =
   | 'normalizacao_invalida'
   /** O documento tem mais de um valor deste formato: escolher é onde o erro mora. */
   | 'valor_disputado'
+  /** Campos que, isolados, passam — e juntos são impossíveis. Validade antes da assinatura. */
+  | 'incoerencia_entre_campos'
+  /** Classificador e extrator leram o documento como coisas diferentes. */
+  | 'tipo_divergente'
   | 'tipo_ausente'
   | 'tipo_generico'
   | 'tipo_igual_a_classe'
@@ -234,6 +239,8 @@ export function triageExtraction(input: {
   metadata: Record<string, ExtractedMetadataField>;
   naming?: DocumentNamingRoles;
   chunks: RetrievedChunk[];
+  /** O tipo que o classificador declarou, para confrontar com o que o extrator leu. */
+  classifierDocumentType?: string | null;
 }): ExtractionTriage {
   const haystack = buildHaystack(input.chunks);
   const findings: TriageFinding[] = [];
@@ -314,6 +321,43 @@ export function triageExtraction(input: {
   }
 
   findings.push(...triageNamingRoles({ roles: input.naming, selectedClass: input.selectedClass }));
+
+  /**
+   * Conferências que atravessam campos.
+   *
+   * Cada campo isolado passa em tudo e o conjunto é impossível: validade anterior à assinatura,
+   * CNPJ que não fecha o dígito. Nenhum agente que julga campo a campo detecta isso, porque a
+   * informação que denuncia o erro não está dentro de nenhum dos campos, e sim na relação entre
+   * eles. Custa zero e é a única camada que enxerga esse tipo de falha.
+   */
+  const labelByKey = new Map(input.selectedClass.fields.map((field) => [field.key, field.label]));
+  for (const problem of findCoherenceProblems({
+    selectedClass: input.selectedClass,
+    metadata: input.metadata,
+  })) {
+    findings.push({
+      key: problem.key,
+      label: labelByKey.get(problem.key) ?? problem.key,
+      symptom: 'incoerencia_entre_campos',
+      detail: problem.detail,
+    });
+  }
+
+  /**
+   * Duas leituras do mesmo papel, dois tipos diferentes.
+   *
+   * O classificador declara o tipo antes de escolher a pasta; o extrator declara ao montar o nome
+   * do arquivo. Concordar não prova acerto, mas discordar prova que um dos dois errou — e as duas
+   * leituras já aconteceram, então o sinal não custa nada.
+   */
+  if (typesDisagree(input.classifierDocumentType, input.naming?.tipo)) {
+    findings.push({
+      key: 'naming.tipo',
+      label: 'Tipo do documento',
+      symptom: 'tipo_divergente',
+      detail: `o classificador leu "${input.classifierDocumentType}" e o extrator leu "${input.naming?.tipo}" — um dos dois errou`,
+    });
+  }
 
   const suspectFieldKeys = [
     ...new Set(findings.filter((f) => !f.key.startsWith('naming.')).map((f) => f.key)),

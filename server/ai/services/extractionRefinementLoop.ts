@@ -225,6 +225,7 @@ export async function refineExtraction(input: {
       metadata,
       naming,
       chunks: input.extractionChunks,
+      classifierDocumentType: input.classification.documentType,
       context: input.context,
     });
 
