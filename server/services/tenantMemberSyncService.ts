@@ -16,6 +16,7 @@ import {
   deactivateMemberGroupsForInactiveMember,
   restoreMemberGroupsForActiveMember,
 } from './documentGroupsService.js';
+import { notifyMemberJoined } from './notifications/memberNotifications.js';
 
 export type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 
@@ -173,6 +174,11 @@ export async function upsertTenantMemberFromAuthSnapshot(
       userId: snapshot.userId,
       displayName: [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
     });
+
+    // Depois dos grupos, e não antes: o aviso diz que a pessoa entrou, e ela só entrou de fato
+    // quando alcança alguma coisa. Avisar primeiro mandaria quem administra olhar uma conta que
+    // ainda não enxerga documento nenhum.
+    await notifyMemberJoined({ tenantId: snapshot.tenantId, member: saved });
   }
 
   await syncGroupMembershipWithMemberStatus({

@@ -7,6 +7,18 @@ import type {
   PlatformRole,
 } from './usersApi';
 
+export type PendingInviteDto = {
+  inviteId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  roles: PlatformRole[];
+  invitedByMembershipId: string;
+  invitedByUserId: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 type AuthMembership = {
   membershipId: string;
   tenantId: string;
@@ -110,6 +122,24 @@ export const doqynUsersApi = {
       // `/api/company-members/invite-groups` e aplicada quando a membership aparece no sync.
       companyId: input.companyId,
     });
+  },
+
+  /**
+   * Quem foi convidado e ainda não entrou.
+   *
+   * A linha da tela vem do convite no auth-service, e não de um registro-fantasma no Mongo: o
+   * convite já tem e-mail, papéis, quem convidou e prazo. Duplicá-lo criaria uma segunda verdade
+   * a reconciliar, e um aceite que falhasse deixaria a cópia para trás, convidando para sempre.
+   */
+  listPendingInvites(tenantId?: string) {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    return authServiceJson<{ invites: PendingInviteDto[] }>(`/invites${query}`).then(
+      (data) => data.invites ?? [],
+    );
+  },
+
+  revokeInvite(inviteId: string) {
+    return authServiceJson(`/invites/${inviteId}/revoke`, { method: 'POST', body: '{}' });
   },
 
   approve(

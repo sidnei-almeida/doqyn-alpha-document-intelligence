@@ -18,6 +18,10 @@ export type StatusBadgeConfig = {
 const MEMBER_LABELS: Record<string, string> = {
   ...RULES_MEMBER_STATUS_LABELS,
   rejected: 'Rejeitado',
+  // Convidado não é membro ainda: existe um convite com o nome dele e nenhuma conta atrás. A
+  // linha aparece na lista para que quem convidou veja que o convite saiu, e some quando a
+  // pessoa entra.
+  invited: 'Convidado',
 };
 
 const MEMBER_SEMANTICS: Record<string, StatusSemantic> = {
@@ -25,6 +29,7 @@ const MEMBER_SEMANTICS: Record<string, StatusSemantic> = {
   pending: 'pending',
   blocked: 'danger',
   rejected: 'neutral',
+  invited: 'pending',
 };
 
 export function getDocumentStatusBadge(status: DocumentStatus): StatusBadgeConfig {

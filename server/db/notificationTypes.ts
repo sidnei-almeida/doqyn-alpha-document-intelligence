@@ -19,7 +19,8 @@ export type NotificationType =
   | 'document_request_fulfilled'
   | 'inbound_share_received'
   | 'inbound_share_accepted'
-  | 'inbound_share_declined';
+  | 'inbound_share_declined'
+  | 'member_joined';
 
 export type NotificationStatus = 'unread' | 'read' | 'dismissed';
 

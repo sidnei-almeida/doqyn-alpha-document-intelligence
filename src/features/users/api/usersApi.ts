@@ -5,7 +5,14 @@ import { doqynUsersApi } from './doqynUsersApi';
 const API_BASE = '/api';
 
 export type PlatformRole = 'company_admin' | 'individual_admin' | 'user';
-export type MemberStatus = 'pending' | 'active' | 'blocked' | 'rejected';
+/**
+ * `invited` não é status de membership — é a ausência dela.
+ *
+ * A linha vem de um convite pendente no auth-service, e existe para que quem convidou veja que o
+ * convite saiu em vez de encarar uma lista onde nada mudou. Quando a pessoa aceita, o convite sai
+ * da lista de pendentes e o membro real toma o lugar.
+ */
+export type MemberStatus = 'invited' | 'pending' | 'active' | 'blocked' | 'rejected';
 
 export type NotificationPreferencesDto = {
   email: boolean;
@@ -207,6 +214,17 @@ export const usersApi = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+
+  /**
+   * Quem foi convidado e ainda não entrou, para a lista mostrar a pessoa antes da conta existir.
+   *
+   * Só no provedor doqyn_auth: é lá que o convite vive. No caminho legado não há convite a listar,
+   * e devolver lista vazia é a resposta certa — não é erro, é ausência.
+   */
+  listPendingInvites: (companyId?: string) =>
+    usesDoqynAuth() ? doqynUsersApi.listPendingInvites(companyId) : Promise.resolve([]),
+
+  revokeInvite: (inviteId: string) => doqynUsersApi.revokeInvite(inviteId),
 
   approve: (
     memberId: string,

@@ -111,7 +111,9 @@ export function mapCompanyMemberDtoToRulesMember(member: CompanyMemberDto): Comp
     email: member.email,
     position: member.requestedAccess?.jobTitle,
     role: mapPlatformRolesToUserRole(member.platformRoles),
-    status: member.status,
+    // Convidado não é membro: não tem membership, não entra em grupo e não alcança documento.
+    // A tela de Regras só conhece quem já existe, e por isso a linha do convite não chega aqui.
+    status: member.status === 'invited' ? 'pending' : member.status,
     groupIds: documentGroupIds,
     createdAt: member.createdAt,
   };

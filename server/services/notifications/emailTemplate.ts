@@ -45,11 +45,13 @@ const EYEBROW: Record<NotificationType, string> = {
   inbound_share_received: 'Recebido de fora',
   inbound_share_accepted: 'Recebimento aceito',
   inbound_share_declined: 'Recebimento recusado',
+  member_joined: 'Entrou na empresa',
 };
 
 /** O verbo do botão acompanha o fato: "revisar" e "abrir" pedem coisas diferentes. */
 const ACTION_LABEL: Partial<Record<NotificationType, string>> = {
   signature_required: 'Abrir para assinar',
+  member_joined: 'Ver em Usuários',
   approval_requested: 'Revisar pedido',
   document_requested: 'Ver o que foi pedido',
   document_expiring: 'Abrir documento',

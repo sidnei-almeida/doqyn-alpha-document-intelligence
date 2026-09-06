@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import type { CompanyMemberDto, MemberStatus } from '../api/usersApi';
 
 const STATUS_LABELS: Record<MemberStatus, string> = {
+  invited: 'Convidado',
   active: 'Ativo',
   pending: 'Pendente',
   blocked: 'Bloqueado',

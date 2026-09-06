@@ -54,6 +54,9 @@ export const PREFERENCE_KEY_BY_TYPE: Record<
   inbound_share_received: null,
   inbound_share_accepted: null,
   inbound_share_declined: null,
+  // Também sem preferência. Quem convidou começou a conversa, e este aviso é o fim dela: a pessoa
+  // aceitou e a conta existe. Silenciá-lo deixaria o convite parecendo pendente para sempre.
+  member_joined: null,
 };
 
 /**
@@ -131,6 +134,11 @@ export const EMAIL_ELIGIBLE_TYPES: ReadonlySet<NotificationType> = new Set([
   'approval_requested',
   'inbound_share_received',
   'document_shared',
+  // Entrou uma pessoa na empresa. Não é atividade de documento: é mudança no quadro de quem
+  // alcança o ambiente, e quem convidou pode estar longe da tela por dias esperando exatamente
+  // isto. É também o único aviso que fecha um convite — sem ele, o silêncio se confunde com o
+  // convite ainda pendente.
+  'member_joined',
 ]);
 
 export function isEmailEligible(type: NotificationType): boolean {

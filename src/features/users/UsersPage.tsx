@@ -32,6 +32,7 @@ import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 const STATUS_FILTER_LABELS: Record<MemberStatus | 'all', string> = {
   all: 'Todos',
   active: 'Ativo',
+  invited: 'Convidado',
   pending: 'Pendente',
   blocked: 'Bloqueado',
   rejected: 'Rejeitado',
@@ -75,6 +76,20 @@ export function UsersPage() {
   const [unblockingMember, setUnblockingMember] = useState<CompanyMemberDto | null>(null);
 
   const membersQuery = useCompanyMembers(sessionTenantId);
+
+  /**
+   * Quem foi convidado e ainda não entrou.
+   *
+   * Consulta separada porque a origem é outra: membros vêm do Mongo do app, convites vivem no
+   * auth-service. Juntá-las no servidor faria a lista de membros esperar por uma chamada externa
+   * que ela não precisa — e uma falha ao ler convites apagaria a lista inteira.
+   */
+  const invitesQuery = useQuery({
+    queryKey: ['pending-invites', sessionTenantId],
+    queryFn: () => usersApi.listPendingInvites(sessionTenantId || undefined),
+    enabled: Boolean(sessionTenantId),
+    ...tenantLiveSyncQueryOptions(),
+  });
 
   const documentGroupsQuery = useQuery({
     queryKey: ['document-groups', sessionTenantId],
@@ -196,8 +211,57 @@ export function UsersPage() {
     onError: (err: Error) => showApiErrorToast(err),
   });
 
+  const revokeInviteMutation = useMutation({
+    mutationFn: (inviteId: string) => usersApi.revokeInvite(inviteId),
+    onSuccess: async () => {
+      showAppToast({ type: 'success', title: 'Convite revogado.' });
+      await invalidate();
+      await queryClient.invalidateQueries({ queryKey: ['pending-invites', sessionTenantId] });
+    },
+    onError: (err: Error) => showApiErrorToast(err),
+  });
+
+  /**
+   * O convite vira uma linha na mesma tabela, e não uma seção à parte.
+   *
+   * Quem convidou quer ver a pessoa na lista — é isso que confirma que o convite saiu. Uma caixa
+   * separada faria a lista de usuários continuar dizendo que nada aconteceu.
+   *
+   * O `id` é o do convite, e o status `invited` é o que a linha carrega no lugar de uma
+   * membership que ainda não existe.
+   */
+  const invitedRows = useMemo<CompanyMemberDto[]>(() => {
+    const agora = Date.now();
+    return (invitesQuery.data ?? []).map((invite) => ({
+      id: invite.inviteId,
+      companyId: sessionTenantId,
+      tenantId: sessionTenantId,
+      email: invite.email,
+      firstName: invite.firstName ?? undefined,
+      lastName: invite.lastName ?? undefined,
+      name:
+        [invite.firstName, invite.lastName].filter(Boolean).join(' ').trim() || invite.email,
+      platformRoles: invite.roles,
+      tenantRoles: invite.roles,
+      status: 'invited' as const,
+      accessGroupIds: [],
+      documentGroupIds: [],
+      groupIds: [],
+      createdAt: invite.createdAt,
+      updatedAt: invite.expiresAt,
+      // Vencido continua na lista, e de propósito: some-lo faria o convite desaparecer sem que
+      // ninguém tenha sido avisado, e quem administra concluiria que a pessoa entrou.
+      requestedAccess: {
+        reason:
+          new Date(invite.expiresAt).getTime() < agora
+            ? 'Convite vencido'
+            : `Convite válido até ${new Date(invite.expiresAt).toLocaleDateString('pt-BR')}`,
+      },
+    }));
+  }, [invitesQuery.data, sessionTenantId]);
+
   const members = useMemo(() => {
-    const list = membersQuery.data?.members ?? [];
+    const list = [...invitedRows, ...(membersQuery.data?.members ?? [])];
     const query = searchQuery.trim().toLowerCase();
     return list.filter((member) => {
       if (statusFilter !== 'all' && member.status !== statusFilter) return false;
@@ -214,7 +278,7 @@ export function UsersPage() {
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [membersQuery.data?.members, statusFilter, searchQuery]);
+  }, [invitedRows, membersQuery.data?.members, statusFilter, searchQuery]);
 
   const documentGroups = documentGroupsQuery.data ?? [];
 
@@ -258,7 +322,7 @@ export function UsersPage() {
 
         <SegmentedTextToggle
           value={statusFilter}
-          options={(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => ({
+          options={(['all', 'active', 'invited', 'blocked', 'rejected'] as const).map((status) => ({
             value: status,
             label: STATUS_FILTER_LABELS[status],
           }))}
@@ -326,7 +390,12 @@ export function UsersPage() {
             header: 'Grupos',
             render: (member) => (
               <span className="meta-text">
-                {member.status === 'pending' && member.requestedAccess?.departmentText ? (
+                {/* No convite ainda não há grupo aplicado — a intenção só vira vínculo quando a
+                    pessoa entra. O que a coluna tem a dizer aqui é o prazo, que é o que separa um
+                    convite vivo de um que já morreu. */}
+                {member.status === 'invited' ? (
+                  <span className="text-doqyn-muted">{member.requestedAccess?.reason ?? '—'}</span>
+                ) : member.status === 'pending' && member.requestedAccess?.departmentText ? (
                   <Tooltip
                     label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}
                   >
@@ -367,6 +436,15 @@ export function UsersPage() {
                     label: 'Desbloquear acesso',
                     onClick: () => setUnblockingMember(member),
                     hidden: member.status !== 'blocked',
+                  },
+                  {
+                    // Revogar é a única ação possível sobre um convite: o link só existiu em
+                    // texto no instante da criação, então não há como copiá-lo de novo. Para
+                    // reenviar, convida-se outra vez — e o convite novo mata o anterior.
+                    label: 'Revogar convite',
+                    onClick: () => revokeInviteMutation.mutate(member.id),
+                    tone: 'danger',
+                    hidden: member.status !== 'invited',
                   },
                 ]}
               />
