@@ -14,13 +14,13 @@ export function redirectToOAuth(provider: OAuthProvider, returnUrl?: string): vo
 }
 
 export function isOAuthEnabled(): boolean {
-  return import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
+  return true;
 }
 
 /**
  * Provedores realmente habilitados no auth-service.
  *
- * `isOAuthEnabled()` só diz que o app usa `doqyn_auth`; não diz quais provedores estão configurados.
+ * `isOAuthEnabled()` não diz quais provedores estão configurados no auth-service.
  * Sem consultar isto, a tela desenhava os dois botões e quem clicasse num provedor sem credencial
  * recebia um JSON de 404 `OAUTH_PROVIDER_DISABLED`. Botão que existe tem de funcionar.
  *

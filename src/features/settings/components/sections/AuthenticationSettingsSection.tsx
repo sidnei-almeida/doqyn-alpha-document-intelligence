@@ -1,4 +1,3 @@
-import { usesDoqynAuth } from '@/auth/authConfig';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { ChangePasswordForm } from '../ChangePasswordForm';
 import { ChangeEmailCard } from '../ChangeEmailCard';
@@ -8,10 +7,6 @@ import { ChangeEmailCard } from '../ChangeEmailCard';
  * confirma o seu — provedor, cookie e OAuth são detalhe de infraestrutura e não aparecem.
  */
 export function AuthenticationSettingsSection() {
-  if (!usesDoqynAuth()) {
-    return null;
-  }
-
   return (
     <SettingsSectionBody>
       <div className="settings-subblock">

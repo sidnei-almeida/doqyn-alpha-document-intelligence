@@ -1,5 +1,5 @@
-import { getAuthBasePath, usesDoqynAuth } from '@/auth/authConfig';
-import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
+import { getAuthBasePath } from '@/auth/authConfig';
+import { authFetch } from '@/auth/apiAuth';
 import { mapMeSessionToAuthUser } from '@/auth/mapMeSession';
 import type { AuthUser } from '@/features/auth/types';
 import type { MeSession } from '@/auth/sessionTypes';
@@ -52,77 +52,20 @@ export async function doqynMeRequest(): Promise<MeSession | null> {
 }
 
 export async function loginRequest(input: LoginInput): Promise<AuthUser> {
-  if (usesDoqynAuth()) {
-    await doqynLoginRequest(input);
-    const session = await doqynMeRequest();
-    if (!session) {
-      throw new ApiError({
-        status: 401,
-        code: 'AUTH_REQUIRED',
-        message: 'Não foi possível carregar a sessão após login.',
-      });
-    }
-    return mapMeSessionToAuthUser(session);
+  await doqynLoginRequest(input);
+  const session = await doqynMeRequest();
+  if (!session) {
+    throw new ApiError({
+      status: 401,
+      code: 'AUTH_REQUIRED',
+      message: 'Não foi possível carregar a sessão após login.',
+    });
   }
-
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    throw await parseApiError(response);
-  }
-
-  const data = (await response.json()) as { user: AuthUser };
-  return data.user;
-}
-
-export async function meRequest(): Promise<AuthUser | null> {
-  if (usesDoqynAuth()) {
-    const session = await doqynMeRequest();
-    return session ? mapMeSessionToAuthUser(session) : null;
-  }
-
-  const response = await authFetch('/api/auth/me', { method: 'GET' });
-
-  if (response.status === 401) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw await parseApiError(response);
-  }
-
-  const data = (await response.json()) as MeSession & { legacyUser?: AuthUser };
-
-  if (data.legacyUser) {
-    return data.legacyUser;
-  }
-
-  if (data.user && data.tenant && data.membership) {
-    return mapMeSessionToAuthUser(data);
-  }
-
-  return (data as unknown as { user: AuthUser }).user ?? null;
+  return mapMeSessionToAuthUser(session);
 }
 
 export async function logoutRequest(): Promise<void> {
-  if (usesDoqynAuth()) {
-    await doqynLogoutRequest();
-    return;
-  }
-
-  const response = await fetch('/api/auth/logout', {
-    method: 'POST',
-    credentials: getFetchCredentials(),
-  });
-
-  if (!response.ok) {
-    throw await parseApiError(response);
-  }
+  await doqynLogoutRequest();
 }
 
 export { ApiError };

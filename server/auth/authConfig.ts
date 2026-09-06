@@ -14,7 +14,7 @@ export function getDoqynAuthBaseUrl(): string {
 export function getDoqynAuthInternalApiKey(): string {
   const key = process.env.DOQYN_AUTH_INTERNAL_API_KEY?.trim();
   if (!key) {
-    throw new Error('DOQYN_AUTH_INTERNAL_API_KEY is required when AUTH_PROVIDER=doqyn_auth');
+    throw new Error('DOQYN_AUTH_INTERNAL_API_KEY is required');
   }
   return key;
 }

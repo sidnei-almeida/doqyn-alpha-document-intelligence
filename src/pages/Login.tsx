@@ -12,7 +12,6 @@ import {
   AUTH_SECONDARY_BUTTON,
 } from '@/features/auth/components/authControls';
 import { useAuth } from '@/features/auth/useAuth';
-import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
 import { SessionApiError } from '@/auth/sessionApi';
 import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
@@ -61,10 +60,6 @@ export function Login() {
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const showCredentialForm =
-    AUTH_MODE === 'temporary' ||
-    AUTH_MODE === 'mock' ||
-    import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/biblioteca';
 
@@ -129,95 +124,83 @@ export function Login() {
             </button>
           )}
 
-          {showCredentialForm && (
-            <div className="flex items-center gap-3 py-3">
-              <span className="h-px flex-1 bg-doqyn-border-subtle" />
-              <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-                ou
-              </span>
-              <span className="h-px flex-1 bg-doqyn-border-subtle" />
-            </div>
-          )}
+          <div className="flex items-center gap-3 py-3">
+            <span className="h-px flex-1 bg-doqyn-border-subtle" />
+            <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+              ou
+            </span>
+            <span className="h-px flex-1 bg-doqyn-border-subtle" />
+          </div>
         </div>
       )}
 
-      {showCredentialForm && (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Input
-            id="email"
-            label="E-mail"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="voce@empresa.com"
-            autoComplete="email"
-            required
-          />
-
-          <Input
-            id="password"
-            label="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            revealable
-            required
-          />
-
-          <div className="flex items-center justify-between gap-3">
-            <Checkbox
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              label={<span className="text-caption text-doqyn-muted">Lembrar acesso</span>}
-              wrapperClassName="items-center"
-            />
-            <button
-              type="button"
-              className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline"
-            >
-              Esqueci minha senha
-            </button>
-          </div>
-
-          {error ? (
-            <AlertBanner
-              variant={getLoginAlertVariant(errorCode)}
-              title={getLoginAlertTitle(errorCode)}
-              message={error}
-            >
-              {errorActions.length > 0 ? (
-                <div className="mt-2 flex flex-col gap-2">
-                  {errorActions.map((action) => (
-                    <Link key={action.href} to={action.href}>
-                      <Button type="button" variant="secondary" className="w-full">
-                        {action.label}
-                      </Button>
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </AlertBanner>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={isSubmitting || !email.trim() || !password}
-            className={cn(AUTH_PRIMARY_BUTTON, 'mt-1 w-full')}
-          >
-            {isSubmitting ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-      )}
-
-      {!showCredentialForm && error ? (
-        <AlertBanner
-          variant={getLoginAlertVariant(errorCode)}
-          title={getLoginAlertTitle(errorCode)}
-          message={error}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Input
+          id="email"
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="voce@empresa.com"
+          autoComplete="email"
+          required
         />
-      ) : null}
+
+        <Input
+          id="password"
+          label="Senha"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          revealable
+          required
+        />
+
+        <div className="flex items-center justify-between gap-3">
+          <Checkbox
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            label={<span className="text-caption text-doqyn-muted">Lembrar acesso</span>}
+            wrapperClassName="items-center"
+          />
+          <button
+            type="button"
+            className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline"
+          >
+            Esqueci minha senha
+          </button>
+        </div>
+
+        {error ? (
+          <AlertBanner
+            variant={getLoginAlertVariant(errorCode)}
+            title={getLoginAlertTitle(errorCode)}
+            message={error}
+          >
+            {errorActions.length > 0 ? (
+              <div className="mt-2 flex flex-col gap-2">
+                {errorActions.map((action) => (
+                  <Link key={action.href} to={action.href}>
+                    <Button type="button" variant="secondary" className="w-full">
+                      {action.label}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </AlertBanner>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={isSubmitting || !email.trim() || !password}
+          className={cn(AUTH_PRIMARY_BUTTON, 'mt-1 w-full')}
+        >
+          {isSubmitting ? 'Entrando...' : 'Entrar'}
+        </button>
+      </form>
 
       <AuthFooterLink>
         Não tem acesso ainda?{' '}

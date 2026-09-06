@@ -2,8 +2,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_APP_NAME: string;
-  readonly VITE_AUTH_MODE: string;
-  readonly VITE_AUTH_PROVIDER: string;
   readonly VITE_AUTH_BASE_PATH: string;
   /** Quando true, a fila da Biblioteca confirma documentos completed sem ReviewDrawer. */
   readonly VITE_UPLOAD_AUTO_CONFIRM_ENABLED?: string;

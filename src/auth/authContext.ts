@@ -1,6 +1,5 @@
 import { createContext } from 'react';
 import type { AuthUser } from '@/features/auth/types';
-import type { getAuthProviderType } from '@/auth/authConfig';
 import type { AccessGateReason, MeMembership, MeTenant } from '@/auth/sessionTypes';
 
 export type AuthContextValue = {
@@ -14,8 +13,6 @@ export type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  authMode: string;
-  authProvider: ReturnType<typeof getAuthProviderType>;
   supportsSso: boolean;
   supportsOAuth: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;

@@ -93,7 +93,6 @@ Pares verificados:
   Alpha.DOQYN_AUTH_INTERNAL_API_KEY == Auth.DOQYN_INTERNAL_API_KEY
   Alpha.DOQYN_APP_INTERNAL_API_KEY  == Auth.DOQYN_APP_INTERNAL_API_KEY
   Alpha.DOQYN_AUTH_COOKIE_NAME      == Auth.SESSION_COOKIE_NAME
-  Alpha.AUTH_PROVIDER + VITE_AUTH_PROVIDER == doqyn_auth
   Auth.ALLOWED_ORIGINS contém Alpha.DOQYN_PUBLIC_APP_URL
   (recomendado) Alpha.DOQYN_PUBLIC_APP_URL == Auth.DOQYN_APP_PUBLIC_URL
   (recomendado) URLs base Auth↔Alpha coerentes
@@ -167,19 +166,6 @@ function main() {
       continue;
     }
     add(`${alphaKey} ↔ ${authKey}`, st === 'ok' ? 'ok' : st, why);
-  }
-
-  // Providers
-  const authProvider = (alpha.AUTH_PROVIDER ?? '').trim().toLowerCase();
-  const viteProvider = (alpha.VITE_AUTH_PROVIDER ?? '').trim().toLowerCase();
-  if (authProvider === 'doqyn_auth' && viteProvider === 'doqyn_auth') {
-    add('AUTH_PROVIDER + VITE_AUTH_PROVIDER', 'ok', 'ambos doqyn_auth');
-  } else {
-    add(
-      'AUTH_PROVIDER + VITE_AUTH_PROVIDER',
-      'fail',
-      `esperado doqyn_auth / doqyn_auth; atual: ${authProvider || '(vazio)'} / ${viteProvider || '(vazio)'}`,
-    );
   }
 
   // URLs públicas / CORS

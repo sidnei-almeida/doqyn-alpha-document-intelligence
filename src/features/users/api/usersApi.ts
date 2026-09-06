@@ -1,5 +1,4 @@
 import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
-import { usesDoqynAuth } from '@/auth/authConfig';
 import { doqynUsersApi } from './doqynUsersApi';
 
 const API_BASE = '/api';
@@ -181,20 +180,10 @@ export const usersApi = {
     platformRoles: PlatformRole[];
     accessGroupIds: string[];
   }) => {
-    if (usesDoqynAuth()) {
-      // Sem chamador desde `5ac8ae2`, quando o convite saiu da tela de Usuários — e de propósito
-      // preservado: a rota `/api/company-members/invite` continua no ar, o auth-service emite o
-      // token, e o e-mail de convite é um dos que ganharam a marca. É a ligação que a tela nova
-      // vai usar quando voltar, não sobra de refatoração.
-      return doqynUsersApi.invite(input);
-    }
-    return request<{ member: CompanyMemberDto; temporaryPassword?: string }>(
-      '/company-members/invite',
-      {
-        method: 'POST',
-        body: JSON.stringify(input),
-      },
-    );
+    // Sem chamador desde `5ac8ae2`, quando o convite saiu da tela de Usuários — e de propósito
+    // preservado: o auth-service emite o token e o e-mail de convite é um dos que ganharam a
+    // marca. É a ligação que a tela nova vai usar quando voltar, não sobra de refatoração.
+    return doqynUsersApi.invite(input);
   },
 
   /**
@@ -215,14 +204,8 @@ export const usersApi = {
       body: JSON.stringify(input),
     }),
 
-  /**
-   * Quem foi convidado e ainda não entrou, para a lista mostrar a pessoa antes da conta existir.
-   *
-   * Só no provedor doqyn_auth: é lá que o convite vive. No caminho legado não há convite a listar,
-   * e devolver lista vazia é a resposta certa — não é erro, é ausência.
-   */
-  listPendingInvites: (companyId?: string) =>
-    usesDoqynAuth() ? doqynUsersApi.listPendingInvites(companyId) : Promise.resolve([]),
+  /** Quem foi convidado e ainda não entrou, para a lista mostrar a pessoa antes da conta existir. */
+  listPendingInvites: (companyId?: string) => doqynUsersApi.listPendingInvites(companyId),
 
   revokeInvite: (inviteId: string) => doqynUsersApi.revokeInvite(inviteId),
 
@@ -259,27 +242,10 @@ export const usersApi = {
     });
   },
 
-  block: (memberId: string, tenantId?: string, reason?: string) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.block(memberId, tenantId, reason);
-    }
-    const body: Record<string, string> = {};
-    if (reason?.trim()) body.reason = reason.trim();
-    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/block`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  },
+  block: (memberId: string, tenantId?: string, reason?: string) =>
+    doqynUsersApi.block(memberId, tenantId, reason),
 
-  activate: (memberId: string, tenantId?: string) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.activate(memberId, tenantId);
-    }
-    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/activate`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-  },
+  activate: (memberId: string, tenantId?: string) => doqynUsersApi.activate(memberId, tenantId),
 
   updateAccess: (
     memberId: string,
@@ -290,27 +256,10 @@ export const usersApi = {
     },
     tenantId?: string,
   ) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.updateAccess(memberId, input, tenantId);
-    }
-    return request<{ member: CompanyMemberDto }>(`/company-members/${memberId}/access`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        tenantRoles: input.platformRoles,
-        accessGroupIds: input.accessGroupIds,
-        notificationPreferences: input.notificationPreferences,
-      }),
-    });
+    return doqynUsersApi.updateAccess(memberId, input, tenantId);
   },
 
-  listAccessGroups: (tenantId?: string) => {
-    if (usesDoqynAuth()) {
-      return doqynUsersApi.listAccessGroups(tenantId);
-    }
-    return request<{ groups: Array<{ id: string; name: string }> }>('/access-groups').then(
-      (data) => data.groups ?? [],
-    );
-  },
+  listAccessGroups: (tenantId?: string) => doqynUsersApi.listAccessGroups(tenantId),
 
   listDocumentGroups: async (): Promise<
     Array<{ id: string; name: string; description?: string; memberCount?: number }>

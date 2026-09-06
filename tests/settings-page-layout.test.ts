@@ -97,7 +97,6 @@ describe('SettingsPage layout', () => {
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
     const auth = readSrc('features/settings/components/sections/AuthenticationSettingsSection.tsx');
     assert.ok(account.includes('AuthenticationSettingsSection'));
-    assert.ok(auth.includes('usesDoqynAuth'));
     // O formulário passou a ser montado direto; `PasswordChangeCard` era só o invólucro.
     assert.ok(auth.includes('ChangePasswordForm'));
     assert.ok(auth.includes('ChangeEmailCard'));
