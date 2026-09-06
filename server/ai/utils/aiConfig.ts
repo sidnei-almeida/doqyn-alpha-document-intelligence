@@ -27,6 +27,17 @@ export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 100;
 /** Chunks enviados ao extrator. Antes fixo em 8 (~14k chars), o que descartava
  * quase todo documento longo mesmo com o texto já extraído. */
 export const DEFAULT_EXTRACTION_MAX_CHUNKS = 40;
+/**
+ * Teto de tokens por documento, somando classificação, extração, avaliação e re-extrações.
+ *
+ * Medido em 01/09/2026: um documento gasta ~4.000 tokens no caminho reto (1,3k de classificação,
+ * 2,2k de extração, mais a saída). O teto de 15.000 dá espaço a dois passes focados e duas
+ * chamadas de avaliação, e ainda deixa margem — mas impede que um único documento consuma quase
+ * dois minutos inteiros da vazão da conta (8.000 tokens/min medidos na mesma data).
+ */
+export const DEFAULT_EXTRACTION_TOKEN_BUDGET = 15_000;
+/** Quantas vezes o laço pode voltar ao documento depois da extração inicial. */
+export const DEFAULT_EXTRACTION_REFINEMENT_MAX_PASSES = 2;
 
 function readPositiveInt(envValue: string | undefined, fallback: number): number {
   const parsed = Number(envValue);
@@ -54,6 +65,28 @@ export function getPdfAnalysisMaxPages(): number {
 
 export function getExtractionMaxChunks(): number {
   return readPositiveInt(process.env.EXTRACTION_MAX_CHUNKS, DEFAULT_EXTRACTION_MAX_CHUNKS);
+}
+
+export function getExtractionTokenBudget(): number {
+  return readPositiveInt(
+    process.env.EXTRACTION_TOKEN_BUDGET_PER_DOCUMENT,
+    DEFAULT_EXTRACTION_TOKEN_BUDGET,
+  );
+}
+
+export function getExtractionRefinementMaxPasses(): number {
+  return readPositiveInt(
+    process.env.EXTRACTION_REFINEMENT_MAX_PASSES,
+    DEFAULT_EXTRACTION_REFINEMENT_MAX_PASSES,
+  );
+}
+
+/**
+ * O refino nasce desligado. Ele muda o resultado da análise de todo documento, e a decisão de
+ * ligá-lo depende da bancada do conjunto difícil, não de estar implementado.
+ */
+export function isExtractionRefinementEnabled(): boolean {
+  return process.env.EXTRACTION_REFINEMENT_ENABLED?.trim().toLowerCase() === 'true';
 }
 
 export function getGroqRequestTimeoutMs(): number {

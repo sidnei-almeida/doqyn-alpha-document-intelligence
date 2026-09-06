@@ -45,6 +45,70 @@ export type CompleteJsonPromptOptions = {
   model?: string;
 };
 
+/**
+ * Gasto de uma chamada, na moeda que importa aqui.
+ *
+ * O teto de refino é medido em token, não em requisição nem em segundo: a conta Groq limita por
+ * tokens/minuto, e é essa janela que um laço de re-extração pode consumir inteira sozinho. Sem
+ * devolver o gasto a quem chamou, `completion.usage` só vivia no log — informação boa demais para
+ * ficar onde nenhum código consegue ler.
+ */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+export const EMPTY_TOKEN_USAGE: TokenUsage = {
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0,
+};
+
+export function addTokenUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
+  return {
+    promptTokens: a.promptTokens + b.promptTokens,
+    completionTokens: a.completionTokens + b.completionTokens,
+    totalTokens: a.totalTokens + b.totalTokens,
+  };
+}
+
+/**
+ * A Groq não reporta uso quando a requisição falha, então erro conta como zero. Isso subestima o
+ * gasto real de um documento que tomou 429 no meio — mas subestimar o consumido é o lado seguro:
+ * o limitador de vazão (`groqRateLimiter`) já cobra a estimativa antes da chamada, e é ele que
+ * protege a janela por minuto. O orçamento aqui protege outra coisa: quantas vezes o laço pode
+ * insistir no mesmo documento.
+ */
+function toTokenUsage(usage: {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+} | undefined): TokenUsage {
+  const promptTokens = usage?.prompt_tokens ?? 0;
+  const completionTokens = usage?.completion_tokens ?? 0;
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens: usage?.total_tokens ?? promptTokens + completionTokens,
+  };
+}
+
+type GroqCompletionAnswer = {
+  content: string;
+  durationMs: number;
+  finishReason?: string | null;
+  usage: TokenUsage;
+};
+
+export type JsonPromptResult = {
+  content: string;
+  /** Soma de todas as tentativas — repetição de JSON e retentativa de rate limit incluídas. */
+  usage: TokenUsage;
+  model: string;
+  durationMs: number;
+};
+
 function getGroqApiKey(): string {
   const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) {
@@ -178,7 +242,7 @@ async function callGroqCompletion(
   useResponseFormat: boolean,
   model: string,
   operation: string,
-): Promise<{ content: string; durationMs: number; finishReason?: string | null }> {
+): Promise<GroqCompletionAnswer> {
   const startedAt = Date.now();
 
   pipelineDebug('groq.call', 'enviando chat.completions.create', {
@@ -271,11 +335,15 @@ async function callGroqCompletion(
       }).catch(() => undefined);
     }
 
+    const tokenUsage = toTokenUsage(usage);
+
     recordAiProviderRequest({
       provider: 'groq',
       operation,
       status: 'success',
       durationSeconds: durationMs / 1000,
+      promptTokens: tokenUsage.promptTokens,
+      completionTokens: tokenUsage.completionTokens,
     });
 
     pipelineInfo('groq.call', 'chat.completions ok', {
@@ -290,7 +358,7 @@ async function callGroqCompletion(
       responsePreview: previewText(content, 280),
     });
 
-    return { content: content.trim(), durationMs, finishReason };
+    return { content: content.trim(), durationMs, finishReason, usage: tokenUsage };
   } catch (error) {
     recordAiProviderRequest({
       provider: 'groq',
@@ -321,12 +389,12 @@ async function callGroqCompletion(
  * exatamente a vazão que a conta gratuita não tem para dar.
  */
 async function repairInvalidJsonAnswer(input: {
-  answer: { content: string; durationMs: number; finishReason?: string | null };
+  answer: GroqCompletionAnswer;
   prompt: string;
   model: string;
   operation: string;
   context?: GroqPromptContext;
-}): Promise<{ content: string; retried: boolean; extraDurationMs?: number }> {
+}): Promise<{ content: string; retried: boolean; extraDurationMs?: number; usage: TokenUsage }> {
   if (safeParseJsonFromModel<unknown>(input.answer.content)) {
     /**
      * JSON válido e cortado ao mesmo tempo é o pior caso: o objeto fecha, a extração segue, e os
@@ -344,7 +412,7 @@ async function repairInvalidJsonAnswer(input: {
       });
     }
 
-    return { content: input.answer.content, retried: false };
+    return { content: input.answer.content, retried: false, usage: EMPTY_TOKEN_USAGE };
   }
 
   const truncated = input.answer.finishReason === 'length';
@@ -372,7 +440,12 @@ async function repairInvalidJsonAnswer(input: {
       input.operation,
     );
 
-    return { content: retry.content, retried: true, extraDurationMs: retry.durationMs };
+    return {
+      content: retry.content,
+      retried: true,
+      extraDurationMs: retry.durationMs,
+      usage: retry.usage,
+    };
   } catch (error) {
     logger.warn('repeticao do JSON tambem falhou', {
       requestId: input.context?.requestId,
@@ -382,14 +455,25 @@ async function repairInvalidJsonAnswer(input: {
       reason: error instanceof Error ? error.message : 'unknown',
     });
     // Devolve a resposta original: quem chamou já sabe tratar conteúdo inválido.
-    return { content: input.answer.content, retried: true };
+    return { content: input.answer.content, retried: true, usage: EMPTY_TOKEN_USAGE };
   }
 }
 
+/**
+ * Só o texto. Mantida para os chamadores que não têm o que fazer com o gasto.
+ */
 export async function completeJsonPrompt(
   prompt: string,
   options?: CompleteJsonPromptOptions,
 ): Promise<string> {
+  return (await completeJsonPromptWithUsage(prompt, options)).content;
+}
+
+export async function completeJsonPromptWithUsage(
+  prompt: string,
+  options?: CompleteJsonPromptOptions,
+): Promise<JsonPromptResult> {
+  const startedAt = Date.now();
   const context = options?.context;
   const operation = context?.operation ?? 'json_prompt';
   const model =
@@ -452,7 +536,12 @@ export async function completeJsonPrompt(
       retriedAfterRateLimit: false,
     });
 
-    return repaired.content;
+    return {
+      content: repaired.content,
+      usage: addTokenUsage(first.usage, repaired.usage),
+      model,
+      durationMs: Date.now() - startedAt,
+    };
   } catch (firstError) {
     const firstDiag = diagnoseClassifierError(firstError);
 
@@ -495,7 +584,12 @@ export async function completeJsonPrompt(
             attempt: attempt + 1,
           });
 
-          return rateRetry.content;
+          return {
+            content: rateRetry.content,
+            usage: rateRetry.usage,
+            model,
+            durationMs: Date.now() - startedAt,
+          };
         } catch (retryError) {
           lastError = retryError;
         }
@@ -576,7 +670,12 @@ export async function completeJsonPrompt(
         retriedWithoutResponseFormat: true,
       });
 
-      return retry.content;
+      return {
+        content: retry.content,
+        usage: retry.usage,
+        model,
+        durationMs: Date.now() - startedAt,
+      };
     } catch (retryError) {
       const retryDiag = diagnoseClassifierError(retryError);
 
