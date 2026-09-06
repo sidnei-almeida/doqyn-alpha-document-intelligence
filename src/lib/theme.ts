@@ -43,19 +43,22 @@ export function isTheme(value: unknown): value is Theme {
   return typeof value === 'string' && (THEMES as string[]).includes(value);
 }
 
-export function getSystemTheme(): Theme {
-  if (typeof window === 'undefined') return 'standard';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'standard';
-}
-
 export function getStoredTheme(): Theme | null {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   return isTheme(stored) ? stored : null;
 }
 
+/**
+ * O primeiro tema é sempre o `standard`, e não o que o sistema operacional prefere.
+ *
+ * O DOQYN tem uma aparência própria — casca de grafite, painel de papel — e é ela que
+ * apresenta o produto a quem chega. Herdar `prefers-color-scheme` fazia quem usa o sistema no
+ * escuro abrir direto no terceiro tema da lista, sem nunca ter escolhido nenhum. A partir da
+ * primeira escolha vale o que a pessoa escolheu, que é o que `getStoredTheme` guarda.
+ */
 export function resolveInitialTheme(): Theme {
-  return getStoredTheme() ?? getSystemTheme();
+  return getStoredTheme() ?? 'standard';
 }
 
 export function nextTheme(current: Theme): Theme {
