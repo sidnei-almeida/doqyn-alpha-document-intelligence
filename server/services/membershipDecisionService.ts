@@ -1,9 +1,7 @@
 import type { VercelRequest } from '@vercel/node';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import type { AuthUser } from '../auth/types.js';
 import { callDoqynAuthAdmin } from '../integrations/doqynAuthAdminClient.js';
 import { createUserAuditLog } from './userAuditService.js';
-import { approveCompanyMember, rejectCompanyMember } from './userManagementService.js';
 import { resolveGovernanceMemberIdentity } from './governanceMembersService.js';
 import { syncMemberDocumentGroups } from './documentGroupsService.js';
 import {
@@ -132,26 +130,6 @@ export async function approveMembershipDecision(
     documentGroupIdsCount: documentGroupIds.length,
   });
 
-  if (!usesDoqynAuth()) {
-    const result = await approveCompanyMember(actor, memberId, input);
-    if (documentGroupIds.length > 0) {
-      const identity = await resolveGovernanceMemberIdentity(req, actor, tenantId, memberId);
-      await syncMemberDocumentGroups(tenantId, actor.id, {
-        membershipId: memberId,
-        userId: identity.userId,
-        displayName: identity.displayName,
-        email: identity.email,
-        documentGroupIds,
-      });
-    }
-    logger.info('membership approve completed (mongo)', {
-      tenantId,
-      membershipId: memberId,
-      documentGroupIdsCount: documentGroupIds.length,
-    });
-    return result;
-  }
-
   const detail = await callDoqynAuthAdmin<{ member: { user: { email: string } } }>(
     req,
     `/auth/admin/members/${memberId}`,
@@ -230,11 +208,6 @@ export async function rejectMembershipDecision(
     sanitizedReason = sanitizeRejectionReason(reason);
   } catch {
     throw new ServiceError('Informe o motivo da rejeição.', 'REJECTION_REASON_REQUIRED', 400);
-  }
-
-  if (!usesDoqynAuth()) {
-    const result = await rejectCompanyMember(actor, memberId, { reason: sanitizedReason });
-    return result;
   }
 
   const detail = await callDoqynAuthAdmin<{ member: { user: { email: string } } }>(

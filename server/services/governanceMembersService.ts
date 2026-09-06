@@ -1,5 +1,4 @@
 import type { VercelRequest } from '@vercel/node';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import {
   assertCanManageCompany,
   mapLegacyRoleFromPlatformRoles,
@@ -16,7 +15,6 @@ import {
 } from './documentGroupsService.js';
 import { serializeTenantMember } from './memberSerialize.js';
 import {
-  getTenantMemberById,
   listTenantMembers,
 } from './tenantMemberRepository.js';
 import { syncTenantMembersFromAuth } from './tenantMemberSyncService.js';
@@ -250,21 +248,20 @@ export async function listGovernanceMembers(
     await listAllGroupMemberships(tenantId, { ownerUserId: actor.id }),
   );
 
-  if (usesDoqynAuth()) {
-    const members = await listAuthGovernanceMembers(req, tenantId, documentGroupMap);
-    try {
-      await syncTenantMembersFromAuth(tenantId);
-    } catch {
-      // Listagem admin continua mesmo se o espelhamento falhar pontualmente.
-    }
-    logger.info('governance members listed', {
-      tenantId,
-      memberCount: members.length,
-      accessGroupsInTenant: new Set(members.flatMap((m) => m.accessGroupIds)).size,
-      documentGroupsInTenant: new Set(members.flatMap((m) => m.documentGroupIds)).size,
-    });
-    return members;
+  const members = await listAuthGovernanceMembers(req, tenantId, documentGroupMap);
+  try {
+    await syncTenantMembersFromAuth(tenantId);
+  } catch {
+    // Listagem admin continua mesmo se o espelhamento falhar pontualmente.
   }
+  logger.info('governance members listed', {
+    tenantId,
+    memberCount: members.length,
+    accessGroupsInTenant: new Set(members.flatMap((m) => m.accessGroupIds)).size,
+    documentGroupsInTenant: new Set(members.flatMap((m) => m.documentGroupIds)).size,
+  });
+  return members;
+  
 
   const mongoMembers = await listTenantMembers(tenantId);
   return mongoMembers.map((member) => {
@@ -283,30 +280,16 @@ export async function resolveGovernanceMemberIdentity(
 ): Promise<{ userId: string; displayName: string; email: string }> {
   assertCanManageCompany(actor, tenantId);
 
-  if (usesDoqynAuth()) {
-    const detail = await callDoqynAuthAdmin<{ member: AuthMemberDetail }>(
-      req,
-      `/auth/admin/members/${membershipId}`,
-      { query: { tenantId } },
-    );
-    const { user } = detail.member;
-    return {
-      userId: user.id,
-      displayName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
-      email: user.email,
-    };
-  }
-
-  const member = await getTenantMemberById(membershipId);
-  if (!member || member.tenantId !== tenantId) {
-    throw new ServiceError('Membro não encontrado.', 'NOT_FOUND', 404);
-  }
-
-  const name = [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
+  const detail = await callDoqynAuthAdmin<{ member: AuthMemberDetail }>(
+    req,
+    `/auth/admin/members/${membershipId}`,
+    { query: { tenantId } },
+  );
+  const { user } = detail.member;
   return {
-    userId: member.authUserId ?? member.memberId ?? member._id,
-    displayName: name,
-    email: member.email,
+    userId: user.id,
+    displayName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
+    email: user.email,
   };
 }
 

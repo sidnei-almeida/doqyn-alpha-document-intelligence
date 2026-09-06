@@ -6,7 +6,6 @@ import type {
   PlatformRole,
   TenantMemberStatus,
 } from '../db/types.js';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import { fetchAuthTenantMembersForSync } from '../integrations/doqynAuthInternalClient.js';
 import type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 import { normalizeEmail } from '../utils/contactNormalize.js';
@@ -255,7 +254,7 @@ async function syncGroupMembershipWithMemberStatus(input: {
 }
 
 export async function syncTenantMembersFromAuth(tenantId: string): Promise<number> {
-  if (!usesDoqynAuth() || !isMongoNativeConfigured()) {
+  if (!isMongoNativeConfigured()) {
     return 0;
   }
 
@@ -281,7 +280,7 @@ export async function ensureTenantMembersSyncedForOperations(
   tenantId: string,
   options?: { force?: boolean },
 ): Promise<void> {
-  if (!usesDoqynAuth() || !isMongoNativeConfigured()) {
+  if (!isMongoNativeConfigured()) {
     return;
   }
 

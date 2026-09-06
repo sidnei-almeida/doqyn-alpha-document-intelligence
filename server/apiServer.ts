@@ -29,7 +29,6 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/health/deep': () => import('../api/health/deep.js'),
   '/api/metrics': () => import('../api/metrics.js'),
-  '/api/auth/login': () => import('../api/auth/login.js'),
   '/api/auth/me': () => import('../api/auth/me.js'),
   '/api/me': () => import('../api/me.js'),
   '/api/auth/logout': () => import('../api/auth/logout.js'),
@@ -55,7 +54,6 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/company-members': () => import('../api/company-members/index.js'),
   '/api/document-requests': () => import('../api/document-requests/index.js'),
   '/api/inbound-shares': () => import('../api/inbound-shares/index.js'),
-  '/api/company-members/invite': () => import('../api/company-members/invite.js'),
   '/api/company-members/invite-groups': () =>
     import('../api/company-members/invite-groups.js'),
   '/api/document-classes': () => import('../api/document-classes/index.js'),

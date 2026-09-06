@@ -1,8 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
 import { DEV_TENANT_ID } from '../db/constants.js';
-import { usesDoqynAuth } from './authConfig.js';
 import { getDoqynSessionTokenFromRequest } from './providers/doqynAuthProvider.js';
-import { getSessionFromRequest } from './session.js';
 import type { AuthUser } from './types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 
@@ -41,24 +39,13 @@ export function resolveCompanyId(sessionCompanyId?: string): string {
 }
 
 export async function getCurrentTenantId(req: VercelRequest): Promise<string> {
-  if (usesDoqynAuth()) {
-    const token = getDoqynSessionTokenFromRequest(req);
-    if (token) {
-      const { verifyDoqynAuthSession } = await import('./providers/doqynAuthProvider.js');
-      try {
-        const session = await verifyDoqynAuthSession(req);
-        if (session?.activeMembership) {
-          return session.activeMembership.tenantId;
-        }
-      } catch {
-        // continua para sessão legada
-      }
+  const token = getDoqynSessionTokenFromRequest(req);
+  if (token) {
+    const { verifyDoqynAuthSession } = await import('./providers/doqynAuthProvider.js');
+    const session = await verifyDoqynAuthSession(req);
+    if (session?.activeMembership) {
+      return session.activeMembership.tenantId;
     }
-  }
-
-  const user = await getSessionFromRequest(req);
-  if (user) {
-    return getTenantIdFromUser(user);
   }
 
   throw new ServiceError(

@@ -2,12 +2,10 @@ import { randomUUID } from 'node:crypto';
 import type { VercelRequest } from '@vercel/node';
 import type { AuthUser } from '../auth/types.js';
 import { getTenantIdFromUser } from '../auth/tenantContext.js';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import {
   verifyDoqynAuthSession,
   mapDoqynSessionToAuthUser,
 } from '../auth/providers/doqynAuthProvider.js';
-import { requireAuth } from '../auth/requireAuth.js';
 import type { TenantType } from '../db/types.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { ensureTenantMembersSyncedForOperations } from '../services/tenantMemberSyncService.js';
@@ -139,46 +137,36 @@ export async function requireDocumentAuthContext(
   req: VercelRequest,
   res: { status: (code: number) => { json: (body: unknown) => void } },
 ): Promise<DocumentAuthContext | null> {
-  if (usesDoqynAuth()) {
-    const session = await verifyDoqynAuthSession(req);
-    if (!session?.activeMembership) {
-      res.status(401).json({
-        message: 'Não autenticado.',
-        code: 'INVALID_SESSION',
-      });
-      return null;
-    }
-
-    const { user, activeMembership } = session;
-    const collections = await getTenantCollections(activeMembership.tenantId, {
-      userId: user.id,
-      membershipId: activeMembership.membershipId,
+  const session = await verifyDoqynAuthSession(req);
+  if (!session?.activeMembership) {
+    res.status(401).json({
+      message: 'Não autenticado.',
+      code: 'INVALID_SESSION',
     });
-
-    void ensureTenantMembersSyncedForOperations(activeMembership.tenantId);
-
-    return {
-      user: mapDoqynSessionToAuthUser(session),
-      ctx: {
-        tenantId: activeMembership.tenantId,
-        userId: user.id,
-        membershipId: activeMembership.membershipId,
-        tenantType: activeMembership.tenantType,
-        storage: collections.storage,
-        storageScope: await buildStorageScopeFromTenant(collections.tenant, user.id),
-        collections,
-        requestId: resolveRequestId(req),
-        startedAt: Date.now(),
-      },
-    };
+    return null;
   }
 
-  const user = await requireAuth(req, res as never);
-  if (!user) return null;
+  const { user, activeMembership } = session;
+  const collections = await getTenantCollections(activeMembership.tenantId, {
+    userId: user.id,
+    membershipId: activeMembership.membershipId,
+  });
+
+  void ensureTenantMembersSyncedForOperations(activeMembership.tenantId);
 
   return {
-    user,
-    ctx: await buildDocumentRequestContext(user, req),
+    user: mapDoqynSessionToAuthUser(session),
+    ctx: {
+      tenantId: activeMembership.tenantId,
+      userId: user.id,
+      membershipId: activeMembership.membershipId,
+      tenantType: activeMembership.tenantType,
+      storage: collections.storage,
+      storageScope: await buildStorageScopeFromTenant(collections.tenant, user.id),
+      collections,
+      requestId: resolveRequestId(req),
+      startedAt: Date.now(),
+    },
   };
 }
 
