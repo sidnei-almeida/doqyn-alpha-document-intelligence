@@ -33,9 +33,14 @@ import {
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
-import { getExtractionTokenBudget, getGroqModelFromEnv } from '../utils/aiConfig.js';
+import {
+  getExtractionTokenBudget,
+  getGroqModelFromEnv,
+  isExtractionRefinementEnabled,
+} from '../utils/aiConfig.js';
 import { createTokenBudget } from '../utils/tokenBudget.js';
 import { refineExtraction } from './extractionRefinementLoop.js';
+import { reviewFailedClassification } from './classificationReviewAgent.js';
 import {
   type AnalyzeRequestContext,
   createLog,
@@ -380,7 +385,7 @@ export async function analyzePdfBuffer(input: {
   });
 
   groqCalled = true;
-  const classification = await analysisProvider.classify({
+  let classification = await analysisProvider.classify({
     chunks: classificationChunks,
     classes: documentClassRules,
     context: {
@@ -448,7 +453,72 @@ export async function analyzePdfBuffer(input: {
     };
   }
 
-  if (classification.requiresReview || !classification.classId) {
+  /**
+   * Classe recusada não é o fim da linha.
+   *
+   * O primeiro classificador recusa por literalidade — a descrição da pasta não cita o tipo, e ele
+   * conclui que o documento não pertence a lugar nenhum. `rh_02` mostrou o custo: o mesmo atestado
+   * médico entrou em Recursos Humanos com 0.7 na variante imagem e foi recusado com 0.0 nas outras
+   * duas, com OCR praticamente idêntico. Sem classe, a extração nem roda e o documento vai para
+   * revisão sem um único campo — mesmo que o modelo já tenha lido o nome da médica e a data.
+   *
+   * A segunda opinião custa uma chamada e só nos documentos que já iam para revisão de qualquer
+   * jeito. A revisão continua marcada: o ganho é o metadado, não a aprovação automática.
+   */
+  let rescuedClassification: ClassificationResult | null = null;
+  if (
+    (classification.requiresReview || !classification.classId) &&
+    isExtractionRefinementEnabled()
+  ) {
+    const review = await reviewFailedClassification({
+      chunks: classificationChunks,
+      classes: documentClassRules,
+      classification,
+      context: {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        database: rulesLoad.database,
+      },
+    });
+
+    if (review.classId) {
+      logger.info('classificação resgatada na segunda opinião', {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        firstReason: classification.reason,
+        classId: review.classId,
+        className: review.className,
+        confidence: review.confidence,
+        tokens: review.usage.totalTokens,
+      });
+
+      rescuedClassification = {
+        ...classification,
+        classId: review.classId,
+        className: review.className,
+        confidence: review.confidence,
+        reason: review.reason,
+        // Continua em revisão de propósito: o primeiro classificador não teve certeza, e resgatar
+        // a pasta não transforma dúvida em confirmação. O que muda é que agora há metadado e nome
+        // para a pessoa conferir, em vez de uma tela vazia.
+        requiresReview: true,
+        reviewReason: 'Classe sugerida na segunda leitura — confirme antes de arquivar.',
+      };
+      classification = rescuedClassification;
+
+      logs.push(
+        createLog(
+          'Classe sugerida na segunda leitura',
+          `A primeira classificação não encontrou pasta. Uma segunda leitura sugere ${review.className}.`,
+          'done',
+        ),
+      );
+    }
+  }
+
+  if (!rescuedClassification && (classification.requiresReview || !classification.classId)) {
     const proposed = await proposeNameWithoutClass({
       analysisProvider,
       chunks: classificationChunks,
@@ -524,7 +594,9 @@ export async function analyzePdfBuffer(input: {
     ),
   );
 
-  const selectedClass = getDocumentClassRuleById(documentClassRules, classification.classId);
+  // Chegar aqui sem classId é impossível pelos ramos acima, mas o compilador não enxerga isso e
+  // um `!` aqui esconderia uma regressão futura atrás de um crash em produção.
+  const selectedClass = getDocumentClassRuleById(documentClassRules, classification.classId ?? '');
   if (!selectedClass) {
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf classe fora das regras configuradas', context, {
