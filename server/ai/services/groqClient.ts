@@ -133,6 +133,18 @@ export function getGroqExtractorModel(): string {
   return process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModel();
 }
 
+/**
+ * O juiz pode rodar num modelo diferente do extrator.
+ *
+ * Julgar é escolher entre quatro vereditos; extrair é produzir a resposta certa entre milhares.
+ * Espaço de saída menor perdoa modelo menor, e é essa a hipótese que a bancada do conjunto difícil
+ * mede. Enquanto ela não decidir, o default é o mesmo modelo de sempre: barganhar qualidade antes
+ * de medir seria trocar acerto por economia no escuro.
+ */
+export function getGroqEvaluatorModel(): string {
+  return process.env.GROQ_EVALUATOR_MODEL?.trim() || getGroqModel();
+}
+
 export function isGroqApiKeyConfigured(): boolean {
   return Boolean(process.env.GROQ_API_KEY?.trim());
 }
@@ -232,6 +244,20 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
  * baixar o esforço, a extração de um documento inteiro gasta o orçamento raciocinando e devolve
  * JSON cortado. O pipeline quer campos preenchidos, não deliberação: `low` é o que serve.
  */
+function modelForOperation(operation: string): string {
+  switch (operation) {
+    case 'document_classification':
+      return getGroqClassifierModel();
+    case 'metadata_extraction':
+    case 'focused_extraction':
+      return getGroqExtractorModel();
+    case 'extraction_evaluation':
+      return getGroqEvaluatorModel();
+    default:
+      return getGroqModel();
+  }
+}
+
 function usesReasoningEffort(model: string): boolean {
   const normalized = model.toLowerCase();
   return normalized.includes('gpt-oss') || normalized.includes('qwen3');
@@ -476,12 +502,9 @@ export async function completeJsonPromptWithUsage(
   const startedAt = Date.now();
   const context = options?.context;
   const operation = context?.operation ?? 'json_prompt';
-  const model =
-    operation === 'document_classification'
-      ? getGroqClassifierModel()
-      : operation === 'metadata_extraction'
-        ? getGroqExtractorModel()
-        : options?.model ?? getGroqModel();
+  // O modelo explícito vence o mapa por operação: é assim que a bancada roda o mesmo Avaliador
+  // duas vezes, num modelo cada, sem mexer em variável de ambiente entre as chamadas.
+  const model = options?.model?.trim() || modelForOperation(operation);
   const responseFormat = 'json_object';
   const promptChars = prompt.length;
 

@@ -647,3 +647,10 @@ export function generateRecommendedFileName(input: {
   }
   return upperCaseStem(limitFileNameLength(stripSensitiveIdentifiersFromFileName(limited)));
 }
+
+/**
+ * Mesmo teste, exportado sob nome que diz de onde o sujeito vem. A triagem da extração precisa
+ * saber se `naming.sujeitos` trouxe entidade ou só rótulo, e duplicar a lista de termos genéricos
+ * garantiria que as duas cópias divergissem na primeira vez que alguém acrescentasse um termo.
+ */
+export { isUsableSubject as isUsableNamingSubject };
