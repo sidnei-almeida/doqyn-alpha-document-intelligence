@@ -28,12 +28,17 @@ export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 100;
  * quase todo documento longo mesmo com o texto já extraído. */
 export const DEFAULT_EXTRACTION_MAX_CHUNKS = 40;
 /**
- * Teto de tokens por documento, somando classificação, extração, avaliação e re-extrações.
+ * Teto de tokens do **refino** por documento — avaliação e re-extrações.
  *
- * Medido em 01/09/2026: um documento gasta ~4.000 tokens no caminho reto (1,3k de classificação,
- * 2,2k de extração, mais a saída). O teto de 15.000 dá espaço a dois passes focados e duas
- * chamadas de avaliação, e ainda deixa margem — mas impede que um único documento consuma quase
- * dois minutos inteiros da vazão da conta (8.000 tokens/min medidos na mesma data).
+ * Não cobre classificação nem a extração inicial: as duas acontecem antes de o orçamento existir e
+ * são o custo obrigatório de qualquer documento, com ou sem refino. O que este teto governa é o
+ * quanto o laço pode gastar ADICIONALMENTE insistindo no mesmo arquivo.
+ *
+ * Medido em 01/09/2026: o caminho reto custa ~4.000 tokens (1,3k de classificação, 2,2k de
+ * extração, mais a saída). Um refino típico soma uma avaliação (~2.000) e um passe focado
+ * (~2.000), então 15.000 deixa folga larga. O teto existe para o caso ruim, não para o típico:
+ * impedir que um documento teimoso consuma sozinho quase dois minutos da vazão da conta (8.000
+ * tokens/min medidos na mesma data).
  */
 export const DEFAULT_EXTRACTION_TOKEN_BUDGET = 15_000;
 /** Quantas vezes o laço pode voltar ao documento depois da extração inicial. */

@@ -17,7 +17,11 @@ import type {
   RetrievedChunk,
 } from '../types/documentAi.types.js';
 import { safeParseJsonFromModel } from '../utils/jsonParsing.js';
-import { buildEvaluatorFieldBriefs, buildEvaluatorPrompt } from '../utils/evaluatorPrompt.js';
+import {
+  buildEvaluatorFieldBriefs,
+  buildEvaluatorPrompt,
+  selectEvaluatorChunks,
+} from '../utils/evaluatorPrompt.js';
 import { triageExtraction, type ExtractionTriage } from '../utils/extractionTriage.js';
 import {
   completeJsonPromptWithUsage,
@@ -47,6 +51,14 @@ export type EvaluationResult = {
   /** true quando a triagem não achou sintoma e o modelo nem chegou a ser chamado. */
   skipped: boolean;
   triage: ExtractionTriage;
+  /**
+   * Quantos trechos o modelo realmente leu.
+   *
+   * Não é o mesmo que a triagem viu: ela confere snippet contra o texto inteiro, de graça, enquanto
+   * o prompt carrega só o que cabe no orçamento. Quem declara ausência é o modelo, então é este
+   * número — e não o da triagem — que diz se a leitura cobriu o documento.
+   */
+  promptChunkCount: number;
 };
 
 const VERDICT_KINDS = new Set<FieldVerdictKind>([
@@ -113,7 +125,13 @@ export async function evaluateExtraction(input: {
   selectedClass: DocumentClassRule;
   metadata: Record<string, ExtractedMetadataField>;
   naming?: DocumentNamingRoles;
+  /** Todos os trechos avaliados. A triagem os usa inteiros: conferir texto não custa token. */
   chunks: RetrievedChunk[];
+  /**
+   * Os trechos que vão no prompt. Quando ausente, são escolhidos aqui — quem chama pode passá-los
+   * para estimar o custo antes de decidir se a chamada cabe no orçamento.
+   */
+  promptChunks?: RetrievedChunk[];
   /** O tipo declarado pelo classificador, para confrontar com o que o extrator leu. */
   classifierDocumentType?: string | null;
   context?: GroqPromptContext;
@@ -136,8 +154,12 @@ export async function evaluateExtraction(input: {
       usage: EMPTY_TOKEN_USAGE,
       skipped: true,
       triage,
+      promptChunkCount: 0,
     };
   }
+
+  const promptChunks =
+    input.promptChunks ?? selectEvaluatorChunks({ chunks: input.chunks, metadata: input.metadata });
 
   const fields = buildEvaluatorFieldBriefs({
     selectedClass: input.selectedClass,
@@ -150,7 +172,7 @@ export async function evaluateExtraction(input: {
     fields,
     naming: input.naming,
     findings: triage.findings,
-    chunks: input.chunks,
+    chunks: promptChunks,
   });
 
   try {
@@ -173,7 +195,14 @@ export async function evaluateExtraction(input: {
         responseChars: answer.content.length,
         responsePreview: answer.content.slice(0, 200),
       });
-      return { complete: true, fields: [], usage: answer.usage, skipped: false, triage };
+      return {
+        complete: true,
+        fields: [],
+        usage: answer.usage,
+        skipped: false,
+        triage,
+        promptChunkCount: promptChunks.length,
+      };
     }
 
     return {
@@ -182,6 +211,7 @@ export async function evaluateExtraction(input: {
       usage: answer.usage,
       skipped: false,
       triage,
+      promptChunkCount: promptChunks.length,
     };
   } catch (error) {
     // Saturação sobe intacta: o worker devolve o job à fila em vez de degradar o documento para
@@ -200,6 +230,13 @@ export async function evaluateExtraction(input: {
       errorMessage: error instanceof Error ? error.message : String(error),
     });
 
-    return { complete: true, fields: [], usage: EMPTY_TOKEN_USAGE, skipped: false, triage };
+    return {
+      complete: true,
+      fields: [],
+      usage: EMPTY_TOKEN_USAGE,
+      skipped: false,
+      triage,
+      promptChunkCount: promptChunks.length,
+    };
   }
 }

@@ -72,6 +72,8 @@ function avaliadorDizAusente(): EvaluationResult {
     fields: [{ key: 'numero_nota', verdict: 'ausente_de_fato', reason: 'não vi nota fiscal' }],
     usage: { promptTokens: 400, completionTokens: 100, totalTokens: 500 },
     skipped: false,
+    // O fake entrega um trecho, e é o documento inteiro nos casos curtos destes testes.
+    promptChunkCount: 1,
     triage: {
       findings: [],
       suspectFieldKeys: ['numero_nota'],
@@ -123,6 +125,70 @@ describe('prova de ausência não se apoia em busca sem âncora', () => {
       // Não sabe: nem apaga o valor nem afirma que ele está certo. Olho humano decide.
       assert.deepEqual(result.trail.clearedFields, []);
       assert.equal(result.extraction.requiresReview, true);
+    } finally {
+      if (previousEnv === undefined) delete process.env[ENV_KEY];
+      else process.env[ENV_KEY] = previousEnv;
+    }
+  });
+});
+
+describe('orçamento do refino: freio antes da maior chamada', () => {
+  const CLASSE_LONGA: DocumentClassRule = {
+    id: 'cat_contratos',
+    name: 'Contratos',
+    description: 'Contratos.',
+    keywords: ['contrato'],
+    fields: [
+      { key: 'fornecedor', label: 'Fornecedor', type: 'string', required: true },
+      { key: 'data_assinatura', label: 'Data de assinatura', type: 'date', required: true },
+    ],
+    namingTemplate: '{fornecedor}',
+  };
+
+  /** Documento longo: quarenta trechos de 1.800 caracteres, como o extrator recebe no teto. */
+  const CHUNKS_LONGOS: DocumentChunk[] = Array.from({ length: 40 }, (_, index) => ({
+    id: `c${index}`,
+    chunkIndex: index,
+    pageNumber: index + 1,
+    text: 'contrato '.repeat(200),
+  }));
+
+  it('avaliação que não cabe no orçamento não é feita', async () => {
+    process.env[ENV_KEY] = 'true';
+    let evaluateCalls = 0;
+
+    try {
+      const result = await refineExtraction({
+        chunks: CHUNKS_LONGOS,
+        extractionChunks: CHUNKS_LONGOS.map((chunk) => ({
+          ...chunk,
+          score: 5,
+          matchedTerms: [],
+          reason: 'extraction',
+        })),
+        selectedClass: CLASSE_LONGA,
+        classification: CLASSIFICACAO,
+        context: { jobId: 'job_test', companyId: 'tenant_test' },
+        analysisProvider: {
+          name: 'groq',
+          isConfigured: () => true,
+          classify: async () => CLASSIFICACAO,
+          extractMetadata: async () => EXTRACAO,
+        } satisfies DocumentAnalysisProvider,
+        // Orçamento pequeno: nem a avaliação cabe.
+        budget: createTokenBudget(500),
+        deps: {
+          evaluate: async () => {
+            evaluateCalls += 1;
+            return avaliadorDizAusente();
+          },
+        },
+      });
+
+      // O freio existia só para o passe focado; o Avaliador, que é a chamada mais cara, gastava
+      // primeiro e debitava depois. Num documento longo isso estourava o teto sozinho.
+      assert.equal(evaluateCalls, 0);
+      assert.equal(result.trail.stopReason, 'orcamento_esgotado');
     } finally {
       if (previousEnv === undefined) delete process.env[ENV_KEY];
       else process.env[ENV_KEY] = previousEnv;

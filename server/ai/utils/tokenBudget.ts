@@ -1,5 +1,9 @@
 /**
- * Orçamento de tokens de um documento.
+ * Orçamento de tokens do refino de um documento.
+ *
+ * Governa o que o laço gasta ADICIONALMENTE — avaliação e re-extrações. A classificação e a
+ * extração inicial acontecem antes e não debitam daqui: são o custo obrigatório de qualquer
+ * documento, e cortá-las não é decisão que este orçamento tenha como tomar.
  *
  * O laço de refino pode, em princípio, insistir para sempre: avalia, não gostou, busca de novo,
  * avalia de novo. O que impede isso não é o dinheiro — a diferença entre os modelos gpt-oss é

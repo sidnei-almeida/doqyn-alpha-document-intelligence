@@ -8,6 +8,63 @@ import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import type { TriageFinding } from './extractionTriage.js';
 import { classExtractionHints } from './extractorPrompt.js';
 
+/**
+ * Teto de trechos no prompt do Avaliador.
+ *
+ * O Avaliador recebia a mesma seleção do extrator — até `EXTRACTION_MAX_CHUNKS` (40) de 1.800
+ * caracteres, ou 72.000 caracteres, uns 18.400 tokens numa chamada só. Num documento longo isso
+ * estourava sozinho o orçamento inteiro do refino, e o passe focado nunca chegava a caber: o laço
+ * virava uma avaliação sem ação, o oposto do que foi desenhado.
+ *
+ * Ele não precisa dos quarenta. Precisa dos trechos que sustentam os campos que está julgando —
+ * e a triagem, que é quem confere se o snippet citado existe de verdade, continua vendo tudo,
+ * porque conferir texto não custa token.
+ */
+const MAX_CHUNKS_FOR_EVALUATOR = 8;
+
+function normalizeForMatch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/**
+ * Os trechos que o juiz precisa ver, e só eles.
+ *
+ * Primeiro os que carregam alguma evidência citada: sem eles o Avaliador não consegue conferir o
+ * que o extrator afirmou, e julgar sem poder conferir é adivinhar. Depois os mais bem pontuados,
+ * até o teto — são os que o retriever considerou mais próximos dos campos da classe.
+ */
+export function selectEvaluatorChunks(input: {
+  chunks: RetrievedChunk[];
+  metadata: Record<string, ExtractedMetadataField>;
+}): RetrievedChunk[] {
+  if (input.chunks.length <= MAX_CHUNKS_FOR_EVALUATOR) return input.chunks;
+
+  const snippets = Object.values(input.metadata)
+    .map((field) => field.evidence?.snippet?.trim())
+    .filter((snippet): snippet is string => Boolean(snippet && snippet.length >= 8))
+    .map(normalizeForMatch);
+
+  const carryingEvidence = new Set<string>();
+  for (const chunk of input.chunks) {
+    const haystack = normalizeForMatch(chunk.text);
+    if (snippets.some((snippet) => haystack.includes(snippet))) {
+      carryingEvidence.add(chunk.id);
+    }
+  }
+
+  const withEvidence = input.chunks.filter((chunk) => carryingEvidence.has(chunk.id));
+  const rest = input.chunks
+    .filter((chunk) => !carryingEvidence.has(chunk.id))
+    .sort((a, b) => b.score - a.score);
+
+  return [...withEvidence, ...rest].slice(0, MAX_CHUNKS_FOR_EVALUATOR);
+}
+
 export type EvaluatorFieldBrief = {
   key: string;
   label: string;

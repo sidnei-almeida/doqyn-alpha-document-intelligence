@@ -21,6 +21,7 @@ import type {
 import type { DocumentAnalysisProvider } from '../providers/types.js';
 import { retrieveChunksForField } from '../../services/hybridChunkRetriever.js';
 import { evaluateExtraction, type FieldVerdict } from './extractionEvaluatorAgent.js';
+import { selectEvaluatorChunks } from '../utils/evaluatorPrompt.js';
 import { extractFocusedFields } from './focusedExtractorAgent.js';
 import type { FocusedTarget } from '../utils/focusedExtractorPrompt.js';
 import { addTokenUsage, EMPTY_TOKEN_USAGE, type GroqPromptContext } from './groqClient.js';
@@ -164,6 +165,43 @@ function estimatePassCost(targets: FocusedTarget[]): number {
   return estimateGroqTokens(promptChars);
 }
 
+function estimateEvaluationCost(chunks: RetrievedChunk[]): number {
+  const promptChars = chunks.reduce((total, chunk) => total + chunk.text.length, 2_500);
+  return estimateGroqTokens(promptChars);
+}
+
+/**
+ * Corta a lista de alvos até caber, em vez de recusar o passe inteiro.
+ *
+ * O `canAfford` era tudo ou nada: um alvo a mais do que cabia derrubava o passe completo, incluindo
+ * os campos que caberiam sozinhos. Num documento longo isso derrubava justamente a prova de
+ * ausência, que é a que mais precisa de trecho e a que só existe em documento longo.
+ *
+ * A ordem não é arbitrária: campo obrigatório antes de opcional, e busca antes de prova. Quem
+ * precisa recuperar um dado tem mais a ganhar que quem só vai confirmar que ele não existe.
+ */
+function trimTargetsToBudget(input: { targets: FocusedTarget[]; budget: TokenBudget }): {
+  kept: FocusedTarget[];
+  dropped: string[];
+} {
+  const ordered = [...input.targets].sort(
+    (a, b) => Number(b.field.required) - Number(a.field.required),
+  );
+
+  const kept: FocusedTarget[] = [];
+  const dropped: string[] = [];
+  for (const target of ordered) {
+    const candidate = [...kept, target];
+    if (input.budget.canAfford(estimatePassCost(candidate))) {
+      kept.push(target);
+    } else {
+      dropped.push(target.field.key);
+    }
+  }
+
+  return { kept, dropped };
+}
+
 export async function refineExtraction(input: {
   analysisProvider: DocumentAnalysisProvider;
   /** Todos os chunks do documento — o passe focado re-seleciona a partir daqui. */
@@ -220,17 +258,53 @@ export async function refineExtraction(input: {
   let usage = EMPTY_TOKEN_USAGE;
 
   for (let pass = 1; pass <= maxPasses; pass += 1) {
+    /**
+     * O freio precisa vir antes da maior chamada, não depois.
+     *
+     * O `canAfford` existia só para o passe focado, e o Avaliador — que é a chamada mais cara —
+     * passava sem ser conferido: gastava primeiro e debitava depois. Num documento longo ele
+     * sozinho estourava o teto, e aí nenhum passe focado cabia mais. O laço virava uma avaliação
+     * sem ação, exatamente o contrário do que ele existe para fazer.
+     */
+    const promptChunks = selectEvaluatorChunks({
+      chunks: input.extractionChunks,
+      metadata,
+    });
+    const evaluationEstimate = estimateEvaluationCost(promptChunks);
+    if (!budget.canAfford(evaluationEstimate)) {
+      trail.stopReason = 'orcamento_esgotado';
+      logger.info('avaliação não cabe no orçamento de tokens', {
+        requestId: input.context.requestId,
+        jobId: input.context.jobId,
+        pass,
+        spent: budget.spent(),
+        limit: budget.limit(),
+        estimate: evaluationEstimate,
+      });
+      break;
+    }
+
     const evaluation = await evaluate({
       selectedClass: input.selectedClass,
       metadata,
       naming,
       chunks: input.extractionChunks,
+      promptChunks,
       classifierDocumentType: input.classification.documentType,
       context: input.context,
     });
 
     usage = addTokenUsage(usage, evaluation.usage);
     budget.spend(evaluation.usage.totalTokens);
+
+    /**
+     * Quem declara ausência é o modelo, então o que conta é o que ELE leu.
+     *
+     * A triagem confere snippet contra o texto inteiro de graça; o prompt carrega só o que cabe.
+     * Medir a cobertura pela triagem daria um "vi o documento todo" que o modelo não viu — e a
+     * ausência voltaria a ser afirmada sobre leitura parcial, que é o que a prova veio corrigir.
+     */
+    trail.evaluatorSawWholeDocument = evaluation.promptChunkCount >= input.chunks.length;
 
     const absentNow = evaluation.fields
       .filter((verdict) => verdict.verdict === 'ausente_de_fato')
@@ -356,24 +430,28 @@ export async function refineExtraction(input: {
       break;
     }
 
-    const estimate = estimatePassCost(targets);
-    if (!budget.canAfford(estimate)) {
-      trail.stopReason = 'orcamento_esgotado';
-      logger.info('refino interrompido pelo orçamento de tokens', {
+    const trimmed = trimTargetsToBudget({ targets, budget });
+    if (trimmed.dropped.length > 0) {
+      logger.info('alvos cortados para caber no orçamento de tokens', {
         requestId: input.context.requestId,
         jobId: input.context.jobId,
         pass,
         spent: budget.spent(),
         limit: budget.limit(),
-        estimate,
-        pendingKeys: targets.map((target) => target.field.key),
+        kept: trimmed.kept.map((target) => target.field.key),
+        dropped: trimmed.dropped,
       });
+    }
+
+    if (trimmed.kept.length === 0 && !namingTarget) {
+      trail.stopReason = 'orcamento_esgotado';
       break;
     }
 
+    const keptKeys = new Set(trimmed.kept.map((target) => target.field.key));
     const focused = await extractFocused({
       selectedClass: input.selectedClass,
-      targets,
+      targets: trimmed.kept,
       naming: namingTarget,
       context: input.context,
     });
@@ -393,6 +471,9 @@ export async function refineExtraction(input: {
      * afirmação "o documento não traz esse dado" é uma afirmação que o sistema apurou.
      */
     for (const key of provable) {
+      // Alvo cortado por orçamento não foi procurado, então não há ausência provada nem
+      // desmentida. Contá-lo como provado seria transformar falta de orçamento em conclusão.
+      if (!keptKeys.has(key)) continue;
       if (merged.recoveredKeys.includes(key)) continue;
       trail.provenAbsentFields = [...new Set([...trail.provenAbsentFields, key])];
       clearIfProven(key);

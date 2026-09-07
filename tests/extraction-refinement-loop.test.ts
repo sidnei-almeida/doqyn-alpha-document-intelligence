@@ -83,6 +83,8 @@ function evaluationSaying(verdict: 'buscar_de_novo' | 'ausente_de_fato'): Evalua
     fields: [{ key: 'numero_nota', verdict, hint: 'procure o número fiscal', where: ['nota fiscal'] }],
     usage: { promptTokens: 400, completionTokens: 100, totalTokens: 500 },
     skipped: false,
+    // O fake entrega um trecho, e é o documento inteiro nos casos curtos destes testes.
+    promptChunkCount: 1,
     triage: {
       findings: [],
       suspectFieldKeys: ['numero_nota'],
@@ -115,6 +117,8 @@ function evaluationClearing(key: string, questionado = true): EvaluationResult {
     fields: [{ key, verdict: 'ausente_de_fato', reason: 'recibo avulso sem numeração fiscal' }],
     usage: { promptTokens: 400, completionTokens: 100, totalTokens: 500 },
     skipped: false,
+    // O fake entrega um trecho, e é o documento inteiro nos casos curtos destes testes.
+    promptChunkCount: 1,
     triage: {
       findings: [],
       suspectFieldKeys: questionado ? [key] : [],

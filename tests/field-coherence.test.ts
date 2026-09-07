@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { findCoherenceProblems, typesDisagree } from '../server/ai/utils/fieldCoherence.js';
 import { validateCnpj, validateCpf } from '../server/ai/services/documentValidators.js';
 import { triageExtraction } from '../server/ai/utils/extractionTriage.js';
+import { selectEvaluatorChunks } from '../server/ai/utils/evaluatorPrompt.js';
 import type {
   DocumentClassRule,
   ExtractedMetadataField,
@@ -191,5 +192,44 @@ describe('a triagem incorpora as conferências novas', () => {
     });
 
     assert.ok(!triage.findings.some((f) => f.symptom === 'tipo_divergente'));
+  });
+});
+
+describe('seleção de trechos para o Avaliador', () => {
+  function chunk(id: string, text: string, score: number): RetrievedChunk {
+    return { id, chunkIndex: Number(id.slice(1)), pageNumber: 1, text, score, matchedTerms: [], reason: 'extraction' };
+  }
+
+  it('documento curto vai inteiro, sem corte', () => {
+    const chunks = [chunk('c0', 'um', 1), chunk('c1', 'dois', 2)];
+    assert.equal(selectEvaluatorChunks({ chunks, metadata: {} }).length, 2);
+  });
+
+  it('documento longo é cortado, mas o trecho que sustenta a evidência fica', () => {
+    // Sem esta regra, o Avaliador julgaria um valor sem poder conferir o trecho que o comprova —
+    // e julgar sem poder conferir é adivinhar.
+    const chunks = [
+      ...Array.from({ length: 20 }, (_, i) => chunk(`c${i}`, `texto irrelevante ${i}`, 100 - i)),
+      chunk('c99', 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda', 0),
+    ];
+
+    const selecionados = selectEvaluatorChunks({
+      chunks,
+      metadata: {
+        fornecedor: {
+          label: 'Fornecedor',
+          value: 'Talha Sul',
+          confidence: 0.9,
+          source: 'document_text',
+          evidence: { snippet: 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda' },
+        },
+      },
+    });
+
+    assert.ok(selecionados.length <= 8);
+    assert.ok(
+      selecionados.some((c) => c.id === 'c99'),
+      'o trecho com a evidência tem score 0 e ainda assim precisa entrar',
+    );
   });
 });
