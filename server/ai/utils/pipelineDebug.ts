@@ -1,10 +1,17 @@
 import { createHash } from 'node:crypto';
 /**
- * TEMPORÁRIO — logs extremamente verbosos do pipeline de IA/OCR.
- * Prefixo fixo `AI_PIPELINE_DEBUG` para grepar e remover depois.
+ * Logs verbosos do pipeline de IA/OCR. Prefixo fixo `AI_PIPELINE_DEBUG` para grepar.
  *
- * Desligar: AI_PIPELINE_DEBUG=false
- * Ligar (default enquanto depuramos): AI_PIPELINE_DEBUG=true ou omitido
+ * **Ferramenta de desenvolvimento, e só.** O rastro carrega conteúdo do documento — trecho do
+ * texto extraído (`previewText`), snippet de evidência, valor de campo. Em produção isso é dado de
+ * cliente escrito no log da máquina, legível por quem tiver acesso ao servidor ou à coleta de
+ * logs, e nenhum usuário consentiu com isso ao subir um contrato.
+ *
+ * Por isso a variável não basta: com `NODE_ENV=production` o rastro fica desligado mesmo se alguém
+ * exportar `AI_PIPELINE_DEBUG=true`. Depurar produção se faz com o dado, não com o texto — foi
+ * assim que a data de vencimento de 07/09 foi encontrada, lendo a regra e o metadado no Mongo.
+ *
+ * Em desenvolvimento: `AI_PIPELINE_DEBUG=true` no `.env` local.
  */
 import { logger } from '../../utils/logger.js';
 
@@ -13,6 +20,9 @@ export const AI_PIPELINE_DEBUG_TAG = 'AI_PIPELINE_DEBUG';
 const DEFAULT_PREVIEW_CHARS = 240;
 
 export function isPipelineDebugEnabled(): boolean {
+  // Produção nunca, nem com a variável ligada: o rastro imprime conteúdo do documento.
+  if (process.env.NODE_ENV === 'production') return false;
+
   const raw = process.env.AI_PIPELINE_DEBUG?.trim().toLowerCase();
   if (raw === 'true' || raw === '1' || raw === 'yes') return true;
   // Default OFF — ligar só com AI_PIPELINE_DEBUG=true
