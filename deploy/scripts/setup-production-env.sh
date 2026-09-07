@@ -52,6 +52,18 @@ prompt_default() {
   fi
 }
 
+# Lê um valor do .env atual antes de ele ser sobrescrito. Serve para o que não pode ser
+# regerado sem perda — segredo que abre dado já cifrado.
+read_existing() {
+  local key="$1"
+  local fallback="${2:-}"
+  local found=""
+  if [[ -f "$ENV_FILE" ]]; then
+    found="$(sed -n "s/^${key}=//p" "$ENV_FILE" | head -1)"
+  fi
+  echo "${found:-$fallback}"
+}
+
 urlencode() {
   local raw="$1"
   if command -v python3 >/dev/null 2>&1; then
@@ -207,6 +219,35 @@ echo -n "OAUTH_GOOGLE_CLIENT_SECRET: "
 read -r -s OAUTH_GOOGLE_CLIENT_SECRET
 echo ""
 
+echo ""
+# O login Microsoft era escrito como `OAUTH_MICROSOFT_ENABLED=false` cravado, e as credenciais
+# não eram escritas de forma alguma — só o redirect. Quem tinha Entra funcionando o mantinha por
+# edição à mão no `.env`, que este script sobrescreve. Rodá-lo de novo derrubava o login.
+info "OAuth Microsoft / Entra (deixe vazio para configurar depois)"
+read -r -p "OAUTH_MICROSOFT_CLIENT_ID: " OAUTH_MICROSOFT_CLIENT_ID
+echo -n "OAUTH_MICROSOFT_CLIENT_SECRET: "
+read -r -s OAUTH_MICROSOFT_CLIENT_SECRET
+echo ""
+# `common` aceita conta corporativa e pessoal. Um GUID de tenant restringe a uma organização.
+OAUTH_MICROSOFT_TENANT="$(prompt_default "OAUTH_MICROSOFT_TENANT" "common")"
+
+echo ""
+# O portão do compartilhamento externo. Sem esta variável o padrão é o de desenvolvimento —
+# fechado em produção —, e o 403 leva junto a assinatura de convidado, que passa por aqui para
+# dar acesso ao signatário de fora.
+EXTERNAL_SHARING_ENABLED="$(prompt_default "EXTERNAL_SHARING_ENABLED (convite externo e assinatura de convidado)" "$(read_existing EXTERNAL_SHARING_ENABLED "true")")"
+
+# Chave preservada, nunca regerada: ela abre os links já cifrados. Gerar uma nova a cada
+# execução tornaria ilegível todo convite e portal emitido antes — sem erro visível, os links
+# apenas parariam de ser recuperáveis. É a mesma armadilha que derrubava o login Microsoft
+# quando este script era rodado de novo.
+EXTERNAL_LINK_ENCRYPTION_KEY="$(read_existing EXTERNAL_LINK_ENCRYPTION_KEY "")"
+if [[ -z "$EXTERNAL_LINK_ENCRYPTION_KEY" ]]; then
+  EXTERNAL_LINK_ENCRYPTION_KEY="$(generate_base64_32)"
+else
+  info "EXTERNAL_LINK_ENCRYPTION_KEY preservada do .env atual."
+fi
+
 info "Gerando chaves internas sincronizadas entre auth e alpha..."
 DOQYN_INTERNAL_API_KEY="$(generate_base64_32)"
 DOQYN_APP_INTERNAL_API_KEY="$(generate_base64_32)"
@@ -271,19 +312,34 @@ PASSWORD_RESET_TOKEN_HASH_SECRET=${PASSWORD_RESET_TOKEN_HASH_SECRET}
 PASSWORD_PEPPER=${PASSWORD_PEPPER}
 PASSWORD_RESET_TTL_MINUTES=30
 EMAIL_VERIFICATION_TTL_HOURS=24
+EMAIL_VERIFICATION_CODE_TTL_MINUTES=15
+EMAIL_VERIFICATION_MAX_ATTEMPTS=5
+EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60
+EMAIL_VERIFICATION_TICKET_TTL_MINUTES=30
+# Sem SMTP o código não sai, e o cadastro por formulário recusa na porta em vez de criar conta
+# inalcançável — ver assertSignupEmailDeliverable no auth-service. Enquanto ficar false, a entrada
+# nova é só por Google ou Microsoft.
 EMAIL_ENABLED=false
+# A troca de e-mail depende do mesmo envio, e por isso acompanha EMAIL_ENABLED.
+EMAIL_CHANGE_ENABLED=false
+EMAIL_CHANGE_TTL_HOURS=24
+EMAIL_CHANGE_CODE_TTL_MINUTES=15
+EMAIL_CHANGE_MAX_ATTEMPTS=5
+EMAIL_CHANGE_RESEND_COOLDOWN_SECONDS=60
 OAUTH_GOOGLE_ENABLED=$([[ -n "$OAUTH_GOOGLE_CLIENT_ID" ]] && echo true || echo false)
 OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
 OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
 OAUTH_GOOGLE_REDIRECT_URI=${OAUTH_GOOGLE_REDIRECT_URI}
-OAUTH_MICROSOFT_ENABLED=false
+OAUTH_MICROSOFT_ENABLED=$([[ -n "$OAUTH_MICROSOFT_CLIENT_ID" ]] && echo true || echo false)
+OAUTH_MICROSOFT_CLIENT_ID=${OAUTH_MICROSOFT_CLIENT_ID}
+OAUTH_MICROSOFT_CLIENT_SECRET=${OAUTH_MICROSOFT_CLIENT_SECRET}
+OAUTH_MICROSOFT_TENANT=${OAUTH_MICROSOFT_TENANT}
 OAUTH_MICROSOFT_REDIRECT_URI=${OAUTH_MICROSOFT_REDIRECT_URI}
 OAUTH_POST_LOGIN_REDIRECT_URL=${OAUTH_POST_LOGIN_REDIRECT_URL}
 OAUTH_ERROR_REDIRECT_URL=${OAUTH_ERROR_REDIRECT_URL}
 
 # Alpha API
 APP_ENV=production
-AUTH_PROVIDER=doqyn_auth
 API_PORT=3001
 DOQYN_AUTH_BASE_URL=http://auth-api:4100
 DOQYN_AUTH_INTERNAL_API_KEY=${DOQYN_INTERNAL_API_KEY}
@@ -293,6 +349,11 @@ MONGODB_DATABASE=${MONGODB_DB:-doqyn_prod}
 MONGODB_USE_ATLAS=${MONGODB_USE_ATLAS:-false}
 MONGODB_SERVER_SELECTION_TIMEOUT_MS=$([[ "${MONGODB_USE_ATLAS}" == "true" ]] && echo 10000 || echo 5000)
 STORAGE_PROVIDER=r2
+
+# Compartilhamento externo e assinatura de convidado
+EXTERNAL_SHARING_ENABLED=${EXTERNAL_SHARING_ENABLED}
+EXTERNAL_LINK_ENCRYPTION_KEY=${EXTERNAL_LINK_ENCRYPTION_KEY}
+
 R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
 R2_ENDPOINT=${R2_ENDPOINT}
 R2_REGION=auto
@@ -395,7 +456,6 @@ TRACKING_IP_HASH_SALT=${TRACKING_IP_HASH_SALT}
 
 # Frontend (build-time)
 VITE_APP_NAME=DOQYN
-VITE_AUTH_PROVIDER=doqyn_auth
 VITE_AUTH_BASE_PATH=/auth
 VITE_UPLOAD_ANALYZE_TIMEOUT_MS=60000
 EOF
@@ -414,4 +474,10 @@ echo ""
 if [[ -n "$OAUTH_GOOGLE_CLIENT_ID" ]]; then
   warn "No Google Cloud Console, cadastre redirect URI:"
   echo "  ${OAUTH_GOOGLE_REDIRECT_URI}"
+fi
+if [[ -n "$OAUTH_MICROSOFT_CLIENT_ID" ]]; then
+  warn "No Azure (App registration), cadastre redirect URI:"
+  echo "  ${OAUTH_MICROSOFT_REDIRECT_URI}"
+  # Sem esta claim opcional, conta corporativa chega sem o e-mail confirmado pelo provedor.
+  warn "E habilite as optional claims 'email' e 'xms_edov' em Token configuration."
 fi

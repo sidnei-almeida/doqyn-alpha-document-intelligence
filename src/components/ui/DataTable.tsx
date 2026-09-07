@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from './EmptyState';
 
@@ -27,20 +27,35 @@ export type DataTableProps<T> = {
   className?: string;
   stretch?: boolean;
   density?: 'comfortable' | 'compact';
+  /**
+   * Detalhe aberto embaixo da própria linha, ocupando a largura da tabela.
+   * Um registro que se abre no lugar mantém o antes e o depois à vista; uma
+   * gaveta lateral cobre a lista justamente quando se está comparando linhas.
+   */
+  renderExpanded?: (item: T) => ReactNode;
+  expandedKey?: string | null;
 };
 
+/**
+ * A tabela é registro, não card.
+ *
+ * Era uma caixa com borda, canto de 8px e cabeçalho preenchido — a moldura em
+ * volta de uma lista que o espaço já separava. Agora abre com um fio, o
+ * cabeçalho é rótulo de registro em monoespaçado e as linhas se separam por
+ * fio, como as pastas da Biblioteca e a grade da Matriz.
+ */
 const DENSITY_STYLES = {
   comfortable: {
-    head: 'type-label px-4 py-3 text-left uppercase tracking-wide text-doqyn-muted',
-    cell: 'type-body px-4 py-3.5 align-middle',
+    head: 'register-label px-4 py-3 text-left text-doqyn-subtle',
+    cell: 'type-label px-4 py-3.5 align-middle',
     footer: 'px-4 py-3',
-    thead: 'border-b border-doqyn-border bg-doqyn-card',
+    thead: 'border-b border-doqyn-border-subtle',
   },
   compact: {
-    head: 'type-label px-3 py-2 text-left text-[11px] uppercase tracking-wide text-doqyn-muted',
-    cell: 'type-body px-3 py-2 align-middle leading-snug',
+    head: 'register-label px-3 py-2 text-left text-doqyn-subtle',
+    cell: 'type-label px-3 py-2 align-middle leading-snug',
     footer: 'px-3 py-2',
-    thead: 'border-b border-doqyn-border-subtle bg-doqyn-surface',
+    thead: 'border-b border-doqyn-border-subtle',
   },
 } as const;
 
@@ -61,6 +76,8 @@ export function DataTable<T>({
   className,
   stretch = false,
   density = 'comfortable',
+  renderExpanded,
+  expandedKey = null,
 }: DataTableProps<T>) {
   const densityStyle = DENSITY_STYLES[density];
   if (data.length === 0) {
@@ -81,7 +98,7 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        'flex flex-col overflow-hidden rounded-lg border border-doqyn-border bg-doqyn-surface',
+        'flex flex-col border-t border-doqyn-border',
         stretch && 'min-h-[420px] flex-1',
         className,
       )}
@@ -105,23 +122,38 @@ export function DataTable<T>({
               const key = keyExtractor(item);
               const isSelected = selectedKey === key;
 
+              const isExpanded = Boolean(renderExpanded) && expandedKey === key;
+
               return (
-                <tr
-                  key={key}
-                  onClick={() => onRowClick?.(item)}
-                  className={cn(
-                    'border-b border-doqyn-border-subtle transition-colors last:border-0',
-                    (onRowClick || density === 'compact') &&
-                      'cursor-pointer hover:bg-doqyn-surface-hover/70',
-                    isSelected && 'bg-doqyn-primary-bg',
+                <Fragment key={key}>
+                  <tr
+                    onClick={() => onRowClick?.(item)}
+                    aria-expanded={renderExpanded ? isExpanded : undefined}
+                    className={cn(
+                      // A régua de acento vem de `box-shadow` interno, não de um
+                      // `::before`: pseudo-elemento filho de <tr> vira célula
+                      // anônima e empurra a linha inteira uma coluna para a
+                      // direita — o nome aparecia debaixo do cabeçalho do e-mail.
+                      'data-table-row border-b border-doqyn-border-subtle/75 transition-colors last:border-0',
+                      (onRowClick || density === 'compact') && 'cursor-pointer',
+                      (isSelected || isExpanded) && 'data-table-row--selected',
+                      isExpanded && 'border-b-0',
+                    )}
+                  >
+                    {columns.map((col) => (
+                      <td key={col.key} className={cn(densityStyle.cell, col.className)}>
+                        {col.render(item)}
+                      </td>
+                    ))}
+                  </tr>
+                  {isExpanded && (
+                    <tr className="data-table-row--expanded border-b border-doqyn-border-subtle/75">
+                      <td colSpan={columns.length} className="p-0">
+                        {renderExpanded?.(item)}
+                      </td>
+                    </tr>
                   )}
-                >
-                  {columns.map((col) => (
-                    <td key={col.key} className={cn(densityStyle.cell, col.className)}>
-                      {col.render(item)}
-                    </td>
-                  ))}
-                </tr>
+                </Fragment>
               );
             })}
           </tbody>
@@ -130,10 +162,8 @@ export function DataTable<T>({
 
       {showSparseFooter && (
         <div className="flex flex-1 flex-col items-center justify-center border-t border-doqyn-border-subtle px-6 py-10 text-center">
-          <p className="text-sm font-medium text-doqyn-text">{sparseMessage}</p>
-          {sparseDescription && (
-            <p className="caption-text mt-1 max-w-md">{sparseDescription}</p>
-          )}
+          <p className="text-label font-medium text-doqyn-text">{sparseMessage}</p>
+          {sparseDescription && <p className="caption-text mt-1 max-w-md">{sparseDescription}</p>}
           {sparseAction && <div className="mt-4">{sparseAction}</div>}
         </div>
       )}

@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 
 interface CategoryModalProps {
   open: boolean;
@@ -10,74 +9,54 @@ interface CategoryModalProps {
   onCreate: (name: string) => void;
 }
 
+const FORM_ID = 'nova-categoria';
+
 export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
   const [name, setName] = useState('');
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) setName('');
   }, [open]);
 
-  if (!open) return null;
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
     if (!name.trim()) return;
     onCreate(name.trim());
     onClose();
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) {
-      onClose();
-    }
-  };
-
   return (
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center modal-overlay-scrim p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="category-modal-title"
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Nova categoria"
+      subtitle="Categoria é a pasta da Biblioteca vista pela governança."
+      dismissOnOverlay={false}
+      footer={
+        <>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form={FORM_ID} size="sm" disabled={!name.trim()}>
+            Criar categoria
+          </Button>
+        </>
+      }
     >
-      <div className="w-full max-w-md rounded-lg border border-doqyn-border bg-doqyn-surface p-6 shadow-xl">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 id="category-modal-title" className="text-lg font-semibold text-doqyn-text">
-            Nova categoria
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-doqyn-muted hover:text-doqyn-text"
-            aria-label="Fechar"
-          >
-            <Icon name="close" size={ICON_SIZE.md} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            id="category-name"
-            label="Nome"
-            placeholder="ex: Contrato, Nota Fiscal, Proposta..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            autoFocus
-          />
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={!name.trim()}>
-              Criar categoria
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Input
+          id="category-name"
+          variant="rule"
+          label="Nome da categoria"
+          placeholder="Contratos, Notas fiscais…"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          required
+        />
+        <p className="type-caption text-doqyn-subtle">
+          Depois de criada, você conecta os grupos que enxergam os documentos dela.
+        </p>
+      </form>
+    </Modal>
   );
 }

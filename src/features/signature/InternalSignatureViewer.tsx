@@ -77,13 +77,14 @@ export function InternalSignatureViewer({
           onZoomOut: () => viewerActionsRef.current?.zoomOut(),
           onFitWidth: () => viewerActionsRef.current?.fitWidth(),
           onFitPage: () => viewerActionsRef.current?.fitPage(),
-          onPreviousPage: isPdfViewer
-            ? () => viewerActionsRef.current?.previousPage()
-            : undefined,
+          onPreviousPage: isPdfViewer ? () => viewerActionsRef.current?.previousPage() : undefined,
           onNextPage: isPdfViewer ? () => viewerActionsRef.current?.nextPage() : undefined,
         }}
       >
-        <div className="doqyn-secure-viewer flex h-full min-h-0 flex-col" data-testid="internal-signature-preview-viewer">
+        <div
+          className="doqyn-secure-viewer flex h-full min-h-0 flex-col"
+          data-testid="internal-signature-preview-viewer"
+        >
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
             Visualização protegida para assinatura interna.
           </p>

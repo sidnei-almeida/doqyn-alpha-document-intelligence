@@ -48,13 +48,14 @@ describe('Fase B.9 — upload e análise de imagens', () => {
 
     const confirm = read('server/services/confirmAnalysisService.ts');
     assert.match(confirm, /contentMimeType/);
-    assert.match(confirm, /mimeType: z\.string/);
+    // O schema saiu do literal para `optionalName`, reusado por vários campos opcionais —
+    // continua sendo `z.string()`, só que declarado uma vez.
+    assert.match(confirm, /mimeType: optionalName/);
+    assert.match(confirm, /const optionalName = z\s*\n?\s*\.string\(\)/);
   });
 
   it('assinatura continua PDF-only (regressão)', () => {
-    const promote = read(
-      'server/services/signatures/promoteSignedPdfToDocumentVersion.ts',
-    );
+    const promote = read('server/services/signatures/promoteSignedPdfToDocumentVersion.ts');
     assert.match(promote, /application\/pdf|pdf/i);
 
     const signatureTest = read('tests/document-signature.test.ts');
@@ -65,12 +66,11 @@ describe('Fase B.9 — upload e análise de imagens', () => {
     delete process.env.VISION_OCR_ENABLED;
     delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-    const { extractTextFromDocumentImage, isVisionOcrFailure } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    ).then(async (mod) => {
-      const review = await import('../server/ai/services/visionOcrFailureReview.js');
-      return { ...mod, isVisionOcrFailure: review.isVisionOcrFailure };
-    });
+    const { extractTextFromDocumentImage, isVisionOcrFailure } =
+      await import('../server/ai/services/documentTextExtractor.js').then(async (mod) => {
+        const review = await import('../server/ai/services/visionOcrFailureReview.js');
+        return { ...mod, isVisionOcrFailure: review.isVisionOcrFailure };
+      });
 
     const result = await extractTextFromDocumentImage(Buffer.from('fake-image'));
     assert.equal(result.source, 'google_vision');

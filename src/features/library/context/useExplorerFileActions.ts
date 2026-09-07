@@ -1,10 +1,7 @@
 import { useContext, useMemo } from 'react';
 import type { DocumentListItem } from '@/types/document-library';
 import type { FileInteractIntent } from '../hooks/useExplorerSelection';
-import {
-  ExplorerActionsContext,
-  ExplorerFileListScopeContext,
-} from './explorerActionsContext';
+import { ExplorerActionsContext, ExplorerFileListScopeContext } from './explorerActionsContext';
 
 /** Ações de arquivo — lê contexto global; ordem vem do escopo local ou prop. */
 export function useExplorerFileActions(localOrderedIds?: string[]) {

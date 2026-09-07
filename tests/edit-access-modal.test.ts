@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import {
-  cloneAccessFormState,
-  isAccessFormDirty,
-} from '../src/features/users/accessFormState.js';
+import { cloneAccessFormState, isAccessFormDirty } from '../src/features/users/accessFormState.js';
 import {
   ASSIGNABLE_PLATFORM_ROLES,
   PLATFORM_ROLE_LABELS,
@@ -62,7 +59,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(dialog.includes('PlatformRolesSection'));
     assert.ok(dialog.includes('isAccessFormDirty'));
     assert.ok(dialog.includes('Descartar alterações'));
-    assert.ok(sections.includes('from \'@/components/ui/Checkbox\''));
+    assert.ok(sections.includes("from '@/components/ui/Checkbox'"));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
 
@@ -113,13 +110,13 @@ describe('modal Editar acesso — UX e dirty state', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('GroupsEmptyState'));
     assert.ok(sections.includes('Nenhum grupo criado ainda.'));
-    assert.ok(sections.includes('Crie grupos na tela Regras'));
+    assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
   });
 
   it('grupos usam cards com Checkbox customizado', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('DocumentGroupsSection'));
-    assert.ok(sections.includes('Mesmos grupos criados em Regras'));
+    assert.ok(sections.includes('Os mesmos grupos de Regras'));
     assert.ok(sections.includes('memberCount'));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
@@ -130,7 +127,9 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(page.includes('tenant?.tenantId ?? user?.companyId'));
     assert.equal(page.includes('Empresa (companyId)'), false);
     assert.equal(page.includes('setCompanyId'), false);
-    assert.ok(page.includes('usersApi.list()'));
+    // A consulta foi para `useCompanyMembers`, que é quem chama `usersApi.list()`.
+    assert.ok(page.includes('useCompanyMembers(sessionTenantId)'));
+    assert.ok(readSrc('features/users/hooks/useCompanyMembers.ts').includes('usersApi.list()'));
   });
 
   it('mutation de salvar envia payload correto com roles e grupos', () => {
@@ -148,13 +147,6 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(page.includes('EditAccessDialog'));
     assert.equal(page.includes('function RoleCheckboxes'), false);
     assert.equal(page.includes('function GroupCheckboxes'), false);
-  });
-
-  it('modal de convite exibe link copiável como na requisição de assinatura', () => {
-    const page = readSrc('features/users/UsersPage.tsx');
-    assert.ok(page.includes('ExternalInviteLinkField'));
-    assert.ok(page.includes('user-invite-link-success'));
-    assert.ok(page.includes('inviteResult'));
   });
 });
 

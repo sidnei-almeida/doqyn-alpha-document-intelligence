@@ -123,6 +123,27 @@ describe('deriveEndDates', () => {
     assert.equal(derived.length, 0);
   });
 
+  it('a descrição não vota: âncora descrita com a palavra "validade" não vira destino', () => {
+    // Caso real do banco de produção: a regra padrão descreve `data_referencia` como
+    // "Data que identifica o documento: emissão, assinatura, validade ou revisão."
+    const padraoFields = [
+      field({
+        key: 'data_referencia',
+        label: 'Data de referência',
+        type: 'date',
+        description: 'Data que identifica o documento: emissão, assinatura, validade ou revisão.',
+      }),
+      field({ key: 'data_vencimento', label: 'Data de vencimento', type: 'date' }),
+    ];
+
+    const derived = deriveEndDates(padraoFields, { data_referencia: { normalizedValue: '2026-06-09' } }, 'Vigorará pelo prazo de 3 (três) anos.');
+
+    assert.equal(derived.length, 1, 'só o campo de vencimento é destino');
+    assert.equal(derived[0].targetKey, 'data_vencimento');
+    assert.equal(derived[0].anchorKey, 'data_referencia');
+    assert.equal(derived[0].value, '2029-06-09');
+  });
+
   it('funciona em outro tipo documental sem nenhuma regra específica', () => {
     // Apólice: vocabulário totalmente diferente, mesma mecânica.
     const apoliceFields = [

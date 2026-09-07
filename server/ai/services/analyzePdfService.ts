@@ -1,14 +1,18 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  AI_ERROR_MESSAGES,
-  MIN_TEXT_CHARS,
-} from '../constants.js';
+import { AI_ERROR_MESSAGES, MIN_TEXT_CHARS } from '../constants.js';
 import {
   loadActiveDocumentClassRules,
   getDocumentClassRuleById,
   isDocumentRulesNotSeededError,
 } from '../../services/documentRulesService.js';
-import type { AnalyzePdfResponse, ProcessingLogItem } from '../types/documentAi.types.js';
+import type {
+  AnalyzePdfResponse,
+  ClassificationResult,
+  DocumentClassRule,
+  DocumentNamingRoles,
+  ProcessingLogItem,
+  RetrievedChunk,
+} from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
 import { resolveAnalysisProvider } from '../providers/resolveAnalysisProvider.js';
@@ -24,19 +28,19 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
-  buildTextExtractionFailedResponse,
+  buildTextExtractionReviewResponse,
   isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
-import {
-  bufferMeta,
-  pipelineInfo,
-  pipelineWarn,
-  previewText,
-} from '../utils/pipelineDebug.js';
-import {
-  getGroqModelFromEnv,
-} from '../utils/aiConfig.js';
+import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
+import { getExtractionTokenBudget, isExtractionRefinementEnabled } from '../utils/aiConfig.js';
+import { getGroqClassifierModel, getGroqExtractorModel, getGroqModel } from './groqClient.js';
+import { getInferenceProviderName } from '../providers/inferenceProvider.js';
+import { createTokenBudget } from '../utils/tokenBudget.js';
+import { refineExtraction } from './extractionRefinementLoop.js';
+import { resolveExpiryProvenance } from '../utils/expiryProvenance.js';
+import { recordDocumentExpiryProvenance } from '../../metrics/prometheus.js';
+import { reviewFailedClassification } from './classificationReviewAgent.js';
 import {
   type AnalyzeRequestContext,
   createLog,
@@ -55,6 +59,80 @@ type StageDurationsMs = {
   finalization?: number;
   total?: number;
 };
+
+/**
+ * Classe de mentira, usada só para pedir ao extrator o que ele entendeu do documento.
+ *
+ * Não tem campo nenhum de propósito: o que interessa dela é o bloco `naming`
+ * (tipo, sujeitos, data), que o prompt do extrator preenche a partir da leitura
+ * e não da classe. Campos autorados aqui só gastariam contexto pedindo dado que
+ * ninguém configurou.
+ */
+const UNCLASSIFIED_NAMING_CLASS: DocumentClassRule = {
+  id: '__sem_classe__',
+  name: 'Documento',
+  description: 'Documento sem classe determinada. Descreva o que ele é.',
+  keywords: [],
+  fields: [],
+  namingTemplate: '{titulo}_{data_assinatura}_v{version}',
+};
+
+/**
+ * Nome proposto para o documento que a classificação não soube encaixar.
+ *
+ * O nome vinha atrelado à classe: sem classe, `recommendedFileName` era `null` e
+ * o arquivo ficava com o nome que veio do disco — `dwadaw.png` para um atestado
+ * médico que a IA tinha lido inteiro e sabia descrever ("é um atestado médico,
+ * não corresponde a nenhuma das classes definidas"). Duas perguntas diferentes
+ * estavam amarradas: em que pasta isto mora, e como isto se chama. A segunda não
+ * depende da primeira.
+ *
+ * Devolve `null` quando o extrator também não soube dizer o que é. Nome ruim
+ * inventado sobre nada é pior que o nome original, que ao menos foi escolhido
+ * por alguém.
+ */
+async function proposeNameWithoutClass(input: {
+  analysisProvider: ReturnType<typeof resolveAnalysisProvider>;
+  chunks: RetrievedChunk[];
+  classification: ClassificationResult;
+  originalFileName: string;
+  context: { requestId?: string; jobId: string; companyId: string; database?: string };
+}): Promise<{ fileName: string | null; roles: DocumentNamingRoles | undefined }> {
+  try {
+    const extraction = await input.analysisProvider.extractMetadata({
+      chunks: input.chunks,
+      selectedClass: UNCLASSIFIED_NAMING_CLASS,
+      classification: input.classification,
+      context: input.context,
+    });
+
+    const roles = extraction.naming;
+    if (!roles?.tipo || (roles.sujeitos.length === 0 && !roles.dataReferencia)) {
+      return { fileName: null, roles };
+    }
+
+    return {
+      fileName: generateRecommendedFileName({
+        originalFileName: input.originalFileName,
+        selectedClass: UNCLASSIFIED_NAMING_CLASS,
+        metadata: {},
+        version: extraction.version,
+        namingRoles: roles,
+      }),
+      roles,
+    };
+  } catch (error) {
+    // Falhar aqui não pode derrubar a análise: o documento já vai para revisão
+    // de qualquer jeito, e sem nome proposto ele apenas volta ao que era antes.
+    logger.warn('nome sem classe não pôde ser proposto', {
+      jobId: input.context.jobId,
+      companyId: input.context.companyId,
+      errorName: (error as Error)?.name,
+      errorMessage: (error as Error)?.message,
+    });
+    return { fileName: null, roles: undefined };
+  }
+}
 
 function createStageTimer() {
   const startedAt = Date.now();
@@ -104,9 +182,13 @@ export async function analyzePdfBuffer(input: {
     fileHashPrefix: fileHash.slice(0, 12),
     ...bufferMeta(input.buffer, 'pdf'),
     analysisProvider: analysisProvider.name,
-    groqModel: getGroqModelFromEnv(),
-    classifierModel: process.env.GROQ_CLASSIFIER_MODEL?.trim() || getGroqModelFromEnv(),
-    extractorModel: process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModelFromEnv(),
+    // Os modelos vêm do resolvedor, não das variáveis cruas: com outro fornecedor de inferência
+    // ativo, ler `GROQ_*` aqui imprimiria no log um modelo que ninguém chamou — e log que mente
+    // sobre configuração é o que faz diagnóstico começar pelo lugar errado.
+    inferenceProvider: getInferenceProviderName(),
+    groqModel: getGroqModel(),
+    classifierModel: getGroqClassifierModel(),
+    extractorModel: getGroqExtractorModel(),
     requestId: context.requestId,
     batchId: context.batchId,
     itemId: context.itemId,
@@ -199,7 +281,7 @@ export async function analyzePdfBuffer(input: {
     });
 
     if (isInsufficientTextAfterOcr(extracted)) {
-      return buildTextExtractionFailedResponse({
+      return buildTextExtractionReviewResponse({
         jobId,
         originalFileName: input.originalFileName,
         fileHash,
@@ -291,7 +373,7 @@ export async function analyzePdfBuffer(input: {
   logs.push(
     createLog(
       'Trechos relevantes selecionados',
-      `${classificationChunks.length} trecho(s) selecionado(s) para análise com base nas regras da empresa.`,
+      `${classificationChunks.length} trecho(s) selecionado(s) para análise com base nas regras configuradas.`,
       'done',
     ),
   );
@@ -307,7 +389,7 @@ export async function analyzePdfBuffer(input: {
   });
 
   groqCalled = true;
-  const classification = await analysisProvider.classify({
+  let classification = await analysisProvider.classify({
     chunks: classificationChunks,
     classes: documentClassRules,
     context: {
@@ -375,7 +457,85 @@ export async function analyzePdfBuffer(input: {
     };
   }
 
-  if (classification.requiresReview || !classification.classId) {
+  /**
+   * Classe recusada não é o fim da linha.
+   *
+   * O primeiro classificador recusa por literalidade — a descrição da pasta não cita o tipo, e ele
+   * conclui que o documento não pertence a lugar nenhum. `rh_02` mostrou o custo: o mesmo atestado
+   * médico entrou em Recursos Humanos com 0.7 na variante imagem e foi recusado com 0.0 nas outras
+   * duas, com OCR praticamente idêntico. Sem classe, a extração nem roda e o documento vai para
+   * revisão sem um único campo — mesmo que o modelo já tenha lido o nome da médica e a data.
+   *
+   * A segunda opinião custa uma chamada e só nos documentos que já iam para revisão de qualquer
+   * jeito. A revisão continua marcada: o ganho é o metadado, não a aprovação automática.
+   */
+  let rescuedClassification: ClassificationResult | null = null;
+  if (
+    (classification.requiresReview || !classification.classId) &&
+    isExtractionRefinementEnabled()
+  ) {
+    const review = await reviewFailedClassification({
+      chunks: classificationChunks,
+      classes: documentClassRules,
+      classification,
+      context: {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        database: rulesLoad.database,
+      },
+    });
+
+    if (review.classId) {
+      logger.info('classificação resgatada na segunda opinião', {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        firstReason: classification.reason,
+        classId: review.classId,
+        className: review.className,
+        confidence: review.confidence,
+        tokens: review.usage.totalTokens,
+      });
+
+      rescuedClassification = {
+        ...classification,
+        classId: review.classId,
+        className: review.className,
+        confidence: review.confidence,
+        reason: review.reason,
+        // Continua em revisão de propósito: o primeiro classificador não teve certeza, e resgatar
+        // a pasta não transforma dúvida em confirmação. O que muda é que agora há metadado e nome
+        // para a pessoa conferir, em vez de uma tela vazia.
+        requiresReview: true,
+        reviewReason: 'Classe sugerida na segunda leitura — confirme antes de arquivar.',
+      };
+      classification = rescuedClassification;
+
+      logs.push(
+        createLog(
+          'Classe sugerida na segunda leitura',
+          `A primeira classificação não encontrou pasta. Uma segunda leitura sugere ${review.className}.`,
+          'done',
+        ),
+      );
+    }
+  }
+
+  if (!rescuedClassification && (classification.requiresReview || !classification.classId)) {
+    const proposed = await proposeNameWithoutClass({
+      analysisProvider,
+      chunks: classificationChunks,
+      classification,
+      originalFileName: input.originalFileName,
+      context: {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        database: rulesLoad.database,
+      },
+    });
+
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf revisão necessária após classificação', context, {
       textCharCount,
@@ -386,17 +546,28 @@ export async function analyzePdfBuffer(input: {
       confidence: classification.confidence,
       requiresReview: classification.requiresReview,
       reason: classification.reason,
+      namingRolesType: proposed.roles?.tipo ?? null,
+      recommendedFileName: proposed.fileName,
       stageDurationsMs: durations,
     });
 
     logs.push(
       createLog(
         'Revisão necessária',
-        classification.reason ||
-          'Nenhuma classe foi identificada com confiança suficiente.',
+        classification.reason || 'Nenhuma classe foi identificada com confiança suficiente.',
         'done',
       ),
     );
+
+    if (proposed.fileName) {
+      logs.push(
+        createLog(
+          'Nome sugerido mesmo sem classe',
+          `A IA não encontrou classe para este documento, mas leu o que ele é e sugeriu "${proposed.fileName}". Escolha a pasta na revisão.`,
+          'done',
+        ),
+      );
+    }
 
     return {
       jobId,
@@ -404,7 +575,7 @@ export async function analyzePdfBuffer(input: {
       originalFileName: input.originalFileName,
       fileHash,
       fileSizeBytes,
-      recommendedFileName: null,
+      recommendedFileName: proposed.fileName,
       textExtraction: {
         status: 'completed',
         pageCount: extracted.pageCount,
@@ -422,12 +593,14 @@ export async function analyzePdfBuffer(input: {
   logs.push(
     createLog(
       'Classe identificada',
-      `O documento foi classificado como "${classification.className}" com base nas regras da empresa.`,
+      `O documento foi classificado como "${classification.className}" com base nas regras configuradas.`,
       'done',
     ),
   );
 
-  const selectedClass = getDocumentClassRuleById(documentClassRules, classification.classId);
+  // Chegar aqui sem classId é impossível pelos ramos acima, mas o compilador não enxerga isso e
+  // um `!` aqui esconderia uma regressão futura atrás de um crash em produção.
+  const selectedClass = getDocumentClassRuleById(documentClassRules, classification.classId ?? '');
   if (!selectedClass) {
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf classe fora das regras configuradas', context, {
@@ -484,16 +657,25 @@ export async function analyzePdfBuffer(input: {
     selectedClass: extractionClass,
   });
 
-  logger.debug('Retrieval híbrido concluído', buildRetrievalStats({
-    totalChunks: chunks.length,
-    classificationChunks,
-    extractionChunks,
-  }));
+  logger.debug(
+    'Retrieval híbrido concluído',
+    buildRetrievalStats({
+      totalChunks: chunks.length,
+      classificationChunks,
+      extractionChunks,
+    }),
+  );
 
-  const extraction = await analysisProvider.extractMetadata({
-    chunks: extractionChunks,
+  const refined = await refineExtraction({
+    analysisProvider,
+    // Os chunks inteiros, não a seleção: o passe focado re-seleciona por campo, com os termos que
+    // o Avaliador escreveu, e re-selecionar dentro da seleção anterior repetiria o mesmo recorte
+    // que já falhou.
+    chunks,
+    extractionChunks,
     selectedClass: extractionClass,
     classification,
+    budget: createTokenBudget(getExtractionTokenBudget()),
     context: {
       requestId: context.requestId,
       jobId,
@@ -501,6 +683,7 @@ export async function analyzePdfBuffer(input: {
       database: rulesLoad.database,
     },
   });
+  const extraction = refined.extraction;
   timer.mark('extraction');
 
   const enrichedMetadata = enrichMetadataWithPartyHeuristics({
@@ -518,6 +701,20 @@ export async function analyzePdfBuffer(input: {
       'done',
     ),
   );
+
+  if (refined.trail.enabled && refined.trail.passes.length > 0) {
+    logs.push(
+      createLog(
+        'Revisão automática da extração',
+        refined.trail.recoveredFields.length
+          ? `Uma segunda leitura recuperou: ${refined.trail.recoveredFields.join(', ')}.`
+          : refined.trail.provenAbsentFields.length
+            ? `Reprocurado no documento inteiro: ${refined.trail.provenAbsentFields.join(', ')} realmente não consta.`
+            : 'Os campos pendentes foram reprocurados e nada mudou.',
+        'done',
+      ),
+    );
+  }
 
   const recommendedFileName = generateRecommendedFileName({
     originalFileName: input.originalFileName,
@@ -538,6 +735,14 @@ export async function analyzePdfBuffer(input: {
 
   const requiresReview = extraction.requiresReview || classification.requiresReview;
   const status = requiresReview ? 'requires_review' : 'completed';
+
+  /**
+   * O alerta de vencimento depende de `data_vencimento`, e não havia número nenhum sobre quantos
+   * documentos saem com ele. Sem contagem, "melhorou" é impressão.
+   */
+  const expiryProvenance = resolveExpiryProvenance(selectedClass, extraction.metadata ?? {});
+  recordDocumentExpiryProvenance(expiryProvenance);
+
   timer.mark('finalization');
 
   const durations = timer.finish();
@@ -569,6 +774,19 @@ export async function analyzePdfBuffer(input: {
     classificationRequiresReview: classification.requiresReview,
     extractionMissingFields: extraction.missingFields,
     extractionRequiresReview: extraction.requiresReview,
+    refinement: {
+      enabled: refined.trail.enabled,
+      passes: refined.trail.passes.length,
+      stopReason: refined.trail.stopReason,
+      tokensSpent: refined.trail.tokensSpent,
+      tokenBudget: refined.trail.tokenBudget,
+      recoveredFields: refined.trail.recoveredFields,
+      absentFields: refined.trail.absentFields,
+      provenAbsentFields: refined.trail.provenAbsentFields,
+      clearedFields: refined.trail.clearedFields,
+      evaluatorSawWholeDocument: refined.trail.evaluatorSawWholeDocument,
+    },
+    expiryProvenance,
     recommendedFileName,
     metadataKeys: Object.keys(extraction.metadata ?? {}),
     stageDurationsMs: durations,

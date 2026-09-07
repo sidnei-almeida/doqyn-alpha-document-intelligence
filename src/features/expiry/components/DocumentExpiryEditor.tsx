@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { CANONICAL_VALIDITY_KEY } from '@shared/metadataKeyNormalize';
 import {
   getDocumentMetadataSheet,
   updateDocumentMetadata,
@@ -15,10 +17,22 @@ import {
 
 /**
  * Chave canônica de vencimento usada quando a categoria não declara nenhum campo de validade.
- * Manter em sincronia com `VALIDITY_SOURCE_KEYS` em `server/services/confirm/projectSearchMeta.ts`:
- * gravar outra chave preencheria o metadado sem nunca disparar alerta.
+ *
+ * É `data_validade` porque é a que sobrevive à canonicalização (`canonicalizeMetadataKey`, em
+ * `shared/metadataKeyNormalize.ts`, renomeia `data_vencimento` para cá ao confirmar a versão) e a
+ * que `VALIDITY_SOURCE_KEYS` (`server/services/confirm/projectSearchMeta.ts`) lê para virar
+ * `searchMeta.validityDate`. Gravar a outra faz o dado aparecer duas vezes na ficha: a linha da
+ * regra vazia e o valor real logo abaixo, como campo fora da regra.
  */
-const VALIDITY_KEY = 'data_vencimento';
+const VALIDITY_KEY = CANONICAL_VALIDITY_KEY;
+
+/**
+ * Campos que são parágrafo, não linha.
+ *
+ * O resumo tem até 400 caracteres; num `<input>` de uma linha só se lê o começo, e para conferir o
+ * fim é preciso arrastar o cursor. Papel pautado continua sendo papel: só cresce em altura.
+ */
+const LONG_TEXT_KEYS = new Set(['resumo']);
 
 export type DocumentExpiryEditorProps = {
   documentId: string;
@@ -84,10 +98,12 @@ function expiryNotice(
   return { variant: 'info', text: `Vence em ${days} dia(s).` };
 }
 
+/* Atenção e erro pedem decisão, então mantêm preenchimento; "vence em 2480
+   dias" é informação, e informação marca com fio. */
 const NOTICE_CLASS: Record<'danger' | 'warning' | 'info', string> = {
   danger: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
   warning: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
-  info: 'border-doqyn-info-border bg-doqyn-info-bg text-doqyn-info',
+  info: 'notice-rule border-doqyn-border-strong text-doqyn-muted',
 };
 
 /**
@@ -205,12 +221,12 @@ export function DocumentExpiryEditor({
   });
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Carregando ficha de metadados…</p>;
+    return <p className="text-caption text-doqyn-muted">Carregando ficha de metadados…</p>;
   }
 
   if (error || !sheet) {
     return (
-      <p className="text-muted-foreground text-sm">
+      <p className="text-caption text-doqyn-muted">
         Não foi possível carregar os metadados deste documento.
       </p>
     );
@@ -222,78 +238,98 @@ export function DocumentExpiryEditor({
   return (
     <div className="space-y-3">
       {notice && (
-        <p className={`rounded-md border px-3 py-2 text-xs ${NOTICE_CLASS[notice.variant]}`}>
+        <p
+          className={
+            notice.variant === 'info'
+              ? `py-0.5 text-caption ${NOTICE_CLASS[notice.variant]}`
+              : `rounded-[4px] border px-3 py-2 text-caption ${NOTICE_CLASS[notice.variant]}`
+          }
+        >
           {notice.text}
         </p>
       )}
 
       {missingRequired > 0 && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-caption text-doqyn-muted">
           {missingRequired} campo(s) obrigatório(s) da categoria
           {sheet.categoryName ? ` "${sheet.categoryName}"` : ''} sem preenchimento.
         </p>
       )}
 
-      <div className="border-border overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="text-muted-foreground bg-doqyn-neutral-bg text-xs">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">Campo</th>
-              <th className="px-3 py-2 text-left font-medium">Valor</th>
-              <th className="px-3 py-2 text-right font-medium">Origem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const status = sourceLabel(row);
-              const value = drafts[row.key] ?? initialValues[row.key] ?? '';
+      {/* Lista de campos, não tabela.
+          Um cabeçalho "Campo · Valor · Origem" só se justifica quando há muitas
+          linhas para comparar entre si — aqui cada linha é um campo que a pessoa
+          preenche, e o que ela faz é editar, não comparar. Então cada campo abre
+          com o próprio rótulo, o controle vem abaixo em régua e a procedência
+          fica ao lado do nome, discreta. */}
+      <div className="border-t border-doqyn-border">
+        {rows.map((row) => {
+          const status = sourceLabel(row);
+          const value = drafts[row.key] ?? initialValues[row.key] ?? '';
 
-              return (
-                <tr key={row.key} className="border-border border-t align-middle">
-                  <td className="px-3 py-2">
-                    <span className="font-medium">{row.label}</span>
-                    {row.required && <span className="ml-1 text-doqyn-danger">*</span>}
-                    <span className="text-muted-foreground block text-xs">{row.key}</span>
-                  </td>
-                  <td className="px-3 py-2">
-                    {editable ? (
-                      row.type === 'date' ? (
-                        <DateInput
-                          aria-label={row.label}
-                          value={value}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
-                          }
-                        />
-                      ) : (
-                        <Input
-                          aria-label={row.label}
-                          type={row.type === 'number' ? 'number' : 'text'}
-                          placeholder={row.description ?? 'Não informado'}
-                          value={value}
-                          onChange={(event) =>
-                            setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
-                          }
-                        />
-                      )
-                    ) : (
-                      <span className={value ? '' : 'text-muted-foreground'}>{value || '—'}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Badge variant={status.variant} size="xs">
-                      {status.label}
-                    </Badge>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          return (
+            <div
+              key={row.key}
+              className="border-b border-doqyn-border-subtle/60 py-3 last:border-0"
+            >
+              <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-label font-medium text-doqyn-text">{row.label}</span>
+                  {row.required && <span className="ml-1 text-doqyn-danger">*</span>}
+                  <span className="ml-2 font-mono text-micro text-doqyn-subtle">{row.key}</span>
+                </div>
+                <Badge variant={status.variant} size="xs">
+                  {status.label}
+                </Badge>
+              </div>
+
+              {editable ? (
+                LONG_TEXT_KEYS.has(row.key) ? (
+                  <Textarea
+                    variant="rule"
+                    rows={3}
+                    aria-label={row.label}
+                    placeholder={row.description ?? 'Não informado'}
+                    value={value}
+                    onChange={(event) =>
+                      setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
+                    }
+                  />
+                ) : row.type === 'date' ? (
+                  <DateInput
+                    variant="rule"
+                    aria-label={row.label}
+                    value={value}
+                    onChange={(event) =>
+                      setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
+                    }
+                  />
+                ) : (
+                  <Input
+                    variant="rule"
+                    aria-label={row.label}
+                    type={row.type === 'number' ? 'number' : 'text'}
+                    placeholder={row.description ?? 'Não informado'}
+                    value={value}
+                    onChange={(event) =>
+                      setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
+                    }
+                  />
+                )
+              ) : (
+                <p
+                  className={value ? 'text-label text-doqyn-text' : 'text-label text-doqyn-subtle'}
+                >
+                  {value || '—'}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {!editable && (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-caption text-doqyn-muted">
           Você não tem permissão para editar os metadados deste documento.
         </p>
       )}
@@ -301,62 +337,84 @@ export function DocumentExpiryEditor({
       {editable && (
         <>
           {extraFields.length > 0 && (
-            <div className="space-y-2">
+            <div className="border-t border-doqyn-border">
               {extraFields.map((field, index) => (
-                <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <Input
-                    aria-label="Chave do campo"
-                    placeholder="chave (ex.: numero_apolice)"
-                    value={field.key}
-                    onChange={(event) =>
-                      setExtraFields((prev) =>
-                        prev.map((item, i) =>
-                          i === index ? { ...item, key: event.target.value } : item,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    aria-label="Rótulo do campo"
-                    placeholder="rótulo exibido"
-                    value={field.label}
-                    onChange={(event) =>
-                      setExtraFields((prev) =>
-                        prev.map((item, i) =>
-                          i === index ? { ...item, label: event.target.value } : item,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    aria-label="Valor do campo"
-                    placeholder="valor"
-                    value={field.value}
-                    onChange={(event) =>
-                      setExtraFields((prev) =>
-                        prev.map((item, i) =>
-                          i === index ? { ...item, value: event.target.value } : item,
-                        ),
-                      )
-                    }
-                  />
+                <div
+                  key={index}
+                  className="border-b border-doqyn-border-subtle/60 py-3 last:border-0"
+                >
+                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                    <span className="text-label font-medium text-doqyn-text">
+                      Campo fora da regra
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setExtraFields((prev) => prev.filter((_, i) => i !== index))}
+                      className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-danger hover:underline"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                  <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
+                    <Input
+                      variant="rule"
+                      aria-label="Chave do campo"
+                      placeholder="chave (ex.: numero_apolice)"
+                      value={field.key}
+                      onChange={(event) =>
+                        setExtraFields((prev) =>
+                          prev.map((item, i) =>
+                            i === index ? { ...item, key: event.target.value } : item,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      variant="rule"
+                      aria-label="Rótulo do campo"
+                      placeholder="rótulo exibido"
+                      value={field.label}
+                      onChange={(event) =>
+                        setExtraFields((prev) =>
+                          prev.map((item, i) =>
+                            i === index ? { ...item, label: event.target.value } : item,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      variant="rule"
+                      aria-label="Valor do campo"
+                      placeholder="valor"
+                      value={field.value}
+                      onChange={(event) =>
+                        setExtraFields((prev) =>
+                          prev.map((item, i) =>
+                            i === index ? { ...item, value: event.target.value } : item,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2">
-            <Button
+          <div className="flex items-center justify-between gap-3 border-t border-doqyn-border-subtle pt-3">
+            {/* Acrescentar um campo é caminho lateral, não decisão: link de
+                texto ao lado do botão que de fato grava. */}
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={() => setExtraFields((prev) => [...prev, { key: '', label: '', value: '' }])}
+              className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
             >
               Adicionar campo fora da regra
-            </Button>
+            </button>
 
             <Button
               type="button"
+              size="sm"
               onClick={() => save.mutate()}
               disabled={!isDirty || save.isPending}
             >

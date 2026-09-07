@@ -48,7 +48,7 @@ describe('workflowErrors backend', () => {
 
   it('workflowErrorFromUnknown mapeia AiAnalysisError com código conhecido', () => {
     const error = new AiAnalysisError(
-      'Não há classes e regras de documentos configuradas para esta empresa.',
+      'Não há classes e regras de documentos configuradas.',
       'DOCUMENT_RULES_NOT_CONFIGURED',
       503,
     );

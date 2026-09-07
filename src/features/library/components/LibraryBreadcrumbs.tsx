@@ -19,7 +19,10 @@ export function LibraryBreadcrumbs({ segments, onNavigateRoot }: LibraryBreadcru
   const isAtRoot = segments.length === 0;
 
   return (
-    <nav aria-label="Localização na Biblioteca" className="flex min-w-0 items-center gap-0.5 text-[12px]">
+    <nav
+      aria-label="Localização na Biblioteca"
+      className="flex min-w-0 items-center gap-0.5 text-[12px]"
+    >
       <button
         type="button"
         onClick={onNavigateRoot}

@@ -28,17 +28,24 @@ function limitKeywords(keywords: string[], max: number): string[] {
     .slice(0, max);
 }
 
-export function toCompactDocumentClass(docClass: DocumentClassRule): CompactDocumentClassForClassifier {
+export function toCompactDocumentClass(
+  docClass: DocumentClassRule,
+): CompactDocumentClassForClassifier {
   return {
     classId: docClass.id,
     className: docClass.name,
     description: truncateDescription(docClass.description),
     keywords: limitKeywords(docClass.keywords, MAX_POSITIVE_KEYWORDS_PER_CLASS),
-    negativeKeywords: limitKeywords(docClass.negativeKeywords ?? [], MAX_NEGATIVE_KEYWORDS_PER_CLASS),
+    negativeKeywords: limitKeywords(
+      docClass.negativeKeywords ?? [],
+      MAX_NEGATIVE_KEYWORDS_PER_CLASS,
+    ),
   };
 }
 
-export function toCompactDocumentClasses(classes: DocumentClassRule[]): CompactDocumentClassForClassifier[] {
+export function toCompactDocumentClasses(
+  classes: DocumentClassRule[],
+): CompactDocumentClassForClassifier[] {
   return classes.map(toCompactDocumentClass);
 }
 
@@ -74,23 +81,48 @@ export function estimateLegacyClassifierPromptChars(
 export function buildCompactClassifierPrompt(
   chunks: RetrievedChunk[],
   classes: DocumentClassRule[],
-): { prompt: string; compactChunks: RetrievedChunk[]; compactClasses: CompactDocumentClassForClassifier[] } {
+): {
+  prompt: string;
+  compactChunks: RetrievedChunk[];
+  compactClasses: CompactDocumentClassForClassifier[];
+} {
   const compactClasses = toCompactDocumentClasses(classes);
   const compactChunks = limitClassifierChunks(chunks);
   const classesJson = JSON.stringify(compactClasses);
 
   const prompt = `Classifique o documento usando apenas as classes abaixo.
 
+Responda em duas etapas, nesta ordem — a ordem importa:
+
+ETAPA 1 — diga o que o documento É, em "tipoDocumental": uma a três palavras em MAIÚSCULAS, o
+termo que a pessoa usaria ao procurá-lo (NDA, PROCURACAO, ATESTADO MEDICO, NOTA FISCAL, ORDEM DE
+COMPRA, LAUDO, RECIBO, ATA). Isto vem antes da pasta de propósito: decidir onde arquivar sem ter
+decidido o que é leva a escolher pela semelhança superficial. Nunca escreva DOCUMENTO ou ARQUIVO, e
+nunca repita o nome de uma classe.
+
+ETAPA 2 — só então escolha a pasta onde esse tipo mora.
+
 Regras:
 - Use somente classId da lista.
 - Decida pela NATUREZA do instrumento — o que ele É —, não pelos assuntos que ele cita de passagem.
   Um relatório que fala sobre contratos não é um contrato; um e-mail que anexa uma nota fiscal não é
   uma nota fiscal. Procure o que o documento faz: quem se obriga a quê, perante quem.
+- A MAIS ESPECÍFICA VENCE. Muito documento cabe em duas pastas porque uma delas é ampla: um NDA é um
+  contrato, uma procuração cria obrigações, um atestado é um documento de pessoal. Quando duas
+  classes servem e uma descreve o documento mais de perto, escolha a específica — a ampla é o
+  destino de quem não achou melhor lugar, não a resposta certa por ser sempre defensável.
+- Descrição de pasta é exemplo do que costuma morar lá, não lista fechada do que pode. Um atestado
+  médico mora em Recursos Humanos mesmo que a descrição fale em admissão e folha e não cite
+  atestado. Recusar por falta de menção literal joga o documento na revisão manual por tecnicismo.
 - keywords e negativeKeywords são pistas configuradas pelo tenant, não gatilhos: a presença de uma
   palavra-chave não classifica sozinha, e a ausência não desclassifica.
+- Em "alternativa", nomeie a segunda classe mais plausível e diga em "porQueNao" o que no documento
+  a descarta. Se você não consegue apontar o que separa as duas, elas não estão separadas: baixe a
+  confiança para 0.6 ou menos e marque requiresReview=true. Não havendo segunda opção plausível,
+  alternativa=null.
 - Se o documento não pertencer a nenhuma classe, classId=null com requiresReview=true. É resposta
-  correta e esperada, preferível a forçar a classe menos errada.
-- Se não houver confiança suficiente, requiresReview=true e classId=null.
+  correta e esperada, preferível a forçar a classe menos errada. Mas "não cabe em nenhuma" é
+  diferente de "a descrição não cita este tipo" — veja a regra da descrição acima.
 - Em evidence, cite os trechos que revelam a natureza do documento, não os que apenas repetem uma
   palavra-chave.
 - Responda apenas JSON válido.
@@ -99,7 +131,7 @@ Classes:
 ${classesJson}
 
 Formato:
-{"classId":"id_ou_null","className":"nome_ou_null","confidence":0.0,"requiresReview":false,"reason":"curta","evidence":[{"pageNumber":1,"snippet":"trecho"}]}
+{"tipoDocumental":"NDA","classId":"id_ou_null","className":"nome_ou_null","confidence":0.0,"requiresReview":false,"reason":"curta","alternativa":{"classId":"id","porQueNao":"o que no documento descarta esta"},"evidence":[{"pageNumber":1,"snippet":"trecho"}]}
 
 Trechos:
 ${formatChunksForPrompt(compactChunks)}`;

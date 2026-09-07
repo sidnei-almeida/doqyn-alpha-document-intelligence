@@ -5,82 +5,17 @@ import type {
   PerItemNamingChoice,
   WorkflowReviewSettings,
 } from '../types/reviewWorkflowSettings';
-import {
-  REVIEW_SETTINGS_STORAGE_KEY,
-  REVIEW_SETTINGS_VERSION,
-} from '../types/reviewWorkflowSettings';
+import { DEFAULT_TENANT_UPLOAD_POLICY, normalizeTenantUploadPolicy } from '@shared/uploadPolicy';
 import type { DocumentNamingMode } from './resolveDocumentNaming';
 import { previewFinalFileName } from './resolveDocumentNaming';
-import {
-  AUTO_DELAY_SECONDS_DEFAULT,
-  AUTO_DELAY_STORAGE_KEY,
-  AUTO_MODE_STORAGE_KEY,
-  clampAutoDelaySeconds,
-  MIN_CLASSIFICATION_CONFIDENCE,
-} from '../uploadConstants';
-import { loadAutoDelaySeconds, loadAutoMode } from './autoDelayStorage';
+import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
 
-export const DEFAULT_WORKFLOW_REVIEW_SETTINGS: WorkflowReviewSettings = {
-  autoReviewEnabled: false,
-  autoAcceptDelaySeconds: AUTO_DELAY_SECONDS_DEFAULT,
-  pauseOnLowConfidence: true,
-  pauseOnMissingFields: true,
-  pauseOnSensitiveDocs: false,
-
-  defaultNamingPolicy: 'ai_suggested',
-  aiRenameEnabled: true,
-
-  aiMetadataEnabled: true,
-  aiClassificationEnabled: true,
-  preventSensitiveDataInFileName: true,
-
-  applyToBatch: false,
-  pauseOnConflict: true,
-  continueWhenSafe: true,
-};
+/** Padrão de fábrica da política — o valor real vem do tenant (`/api/settings/upload-policy`). */
+export const DEFAULT_WORKFLOW_REVIEW_SETTINGS: WorkflowReviewSettings =
+  DEFAULT_TENANT_UPLOAD_POLICY;
 
 function mergeSettings(partial?: Partial<WorkflowReviewSettings>): WorkflowReviewSettings {
-  return {
-    ...DEFAULT_WORKFLOW_REVIEW_SETTINGS,
-    ...partial,
-    autoAcceptDelaySeconds: clampAutoDelaySeconds(
-      partial?.autoAcceptDelaySeconds ?? DEFAULT_WORKFLOW_REVIEW_SETTINGS.autoAcceptDelaySeconds,
-    ),
-  };
-}
-
-/** Carrega settings com fallback das chaves legadas do modo Auto. */
-export function loadReviewWorkflowSettings(): WorkflowReviewSettings {
-  try {
-    const raw = localStorage.getItem(REVIEW_SETTINGS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as { version?: number; settings?: Partial<WorkflowReviewSettings> };
-      if (parsed?.settings && typeof parsed.settings === 'object') {
-        return mergeSettings(parsed.settings);
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  return mergeSettings({
-    autoReviewEnabled: loadAutoMode(),
-    autoAcceptDelaySeconds: loadAutoDelaySeconds(),
-  });
-}
-
-export function saveReviewWorkflowSettings(settings: WorkflowReviewSettings): void {
-  const normalized = mergeSettings(settings);
-  try {
-    localStorage.setItem(
-      REVIEW_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ version: REVIEW_SETTINGS_VERSION, settings: normalized }),
-    );
-    localStorage.setItem(AUTO_MODE_STORAGE_KEY, normalized.autoReviewEnabled ? 'true' : 'false');
-    localStorage.setItem(AUTO_DELAY_STORAGE_KEY, String(normalized.autoAcceptDelaySeconds));
-  } catch {
-    // ignore
-  }
+  return normalizeTenantUploadPolicy(partial);
 }
 
 export function cloneReviewWorkflowSettings(
@@ -159,8 +94,7 @@ export function shouldPauseForReview(
   }
 
   if (settings.pauseOnMissingFields) {
-    const missing =
-      rawAnalysis.extraction?.missingFields ?? metadata.missingFields ?? [];
+    const missing = rawAnalysis.extraction?.missingFields ?? metadata.missingFields ?? [];
     if (missing.length > 0) return true;
   }
 
@@ -185,7 +119,11 @@ export function canAutoAcceptWithSettings(
 
   const namingMode = resolveEffectiveNamingForItem(settings);
   if (!settings.aiRenameEnabled && !input.rawAnalysis?.originalFileName?.trim()) return false;
-  if (settings.aiRenameEnabled && namingMode === 'ai_suggested' && !input.rawAnalysis?.recommendedFileName?.trim()) {
+  if (
+    settings.aiRenameEnabled &&
+    namingMode === 'ai_suggested' &&
+    !input.rawAnalysis?.recommendedFileName?.trim()
+  ) {
     return false;
   }
 

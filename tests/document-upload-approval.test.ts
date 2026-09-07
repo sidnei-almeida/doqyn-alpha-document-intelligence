@@ -72,7 +72,7 @@ describe('document upload approval', () => {
   });
 
   it('expõe APIs de envio e aprovação', () => {
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
     assert.ok(devServer.includes('/api/documents/submit-upload-approval'));
     assert.ok(devServer.includes('/api/documents/upload-approvals'));
     assert.ok(devServer.includes('upload-approvals/[approvalId]/approve'));
@@ -81,10 +81,14 @@ describe('document upload approval', () => {
     assert.ok(listApi.includes("from '../../../server/services/documentUploadApprovalService.js'"));
 
     const approveApi = read('api/documents/upload-approvals/[approvalId]/approve.ts');
-    assert.ok(approveApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"));
+    assert.ok(
+      approveApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"),
+    );
 
     const rejectApi = read('api/documents/upload-approvals/[approvalId]/reject.ts');
-    assert.ok(rejectApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"));
+    assert.ok(
+      rejectApi.includes("from '../../../../server/services/documentUploadApprovalService.js'"),
+    );
   });
 
   it('fila de upload envia para aprovação quando usuário não é admin', () => {
@@ -96,7 +100,10 @@ describe('document upload approval', () => {
 
   it('auditoria lista envios de documento pendentes', () => {
     const pendingApi = read('src/features/audit/api/pendingApprovalsApi.ts');
+    // A listagem por tipo virou uma só, `listPendingApprovals`, e o tipo entrou no conjunto de
+    // `DOCUMENT_KINDS` — que é o que separa recusar um envio de recusar a pessoa.
     assert.ok(pendingApi.includes('document_upload'));
-    assert.ok(pendingApi.includes('listDocumentUploadApprovals'));
+    assert.ok(pendingApi.includes('listPendingApprovals'));
+    assert.ok(pendingApi.includes('isDocumentApproval'));
   });
 });

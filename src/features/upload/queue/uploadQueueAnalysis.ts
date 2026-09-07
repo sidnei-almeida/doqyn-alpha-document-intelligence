@@ -34,9 +34,7 @@ export function parseUploadAnalyzeMaxWaitMs(
 }
 
 const uploadAnalyzeMaxWaitEnv =
-  typeof import.meta !== 'undefined'
-    ? import.meta.env?.VITE_UPLOAD_ANALYZE_MAX_WAIT_MS
-    : undefined;
+  typeof import.meta !== 'undefined' ? import.meta.env?.VITE_UPLOAD_ANALYZE_MAX_WAIT_MS : undefined;
 
 /**
  * Teto de acompanhamento do navegador.
@@ -54,12 +52,12 @@ export const UPLOAD_ANALYZE_MAX_POLL_FAILURES = 5;
 
 /** O documento não falhou: o navegador é que parou de acompanhar. O texto precisa dizer isso. */
 export function uploadAnalyzeStillRunningMessage(): string {
-  return 'A análise continua no servidor. O documento aparece na Biblioteca assim que terminar — não precisa reenviar.';
+  return 'A análise continua no servidor. O documento aparece na Biblioteca assim que terminar, e não precisa reenviar.';
 }
 
 /** Aqui sim houve falha, mas é de contato com o servidor, não do documento. */
 export function uploadAnalyzePollFailureMessage(): string {
-  return 'Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado — confira na Biblioteca antes de reenviar.';
+  return 'Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado. Confira na Biblioteca antes de reenviar.';
 }
 
 export function analysisFailureMessage(

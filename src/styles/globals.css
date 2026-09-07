@@ -1,5 +1,7 @@
-@import 'material-symbols/rounded.css';
+@import 'material-symbols/sharp.css';
 @import '@fontsource-variable/geist-mono/wght.css';
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/newsreader/wght.css';
 @import './tokens.css';
 
 @tailwind base;
@@ -125,6 +127,41 @@
     box-shadow: 0 0 0 1px var(--color-primary);
   }
 
+  /* `color` precisa ser reancorado em cada fronteira de paleta. Trocar a paleta
+     troca as variáveis, mas `color` já foi resolvido para uma cor concreta lá em
+     cima e continua descendo por herança — foi assim que o nome do usuário na
+     tabela apareceu em cinza-claro sobre a folha branca. Vale para os três
+     temas: nos que não misturam paletas a regra apenas reafirma o que já era. */
+  .chrome-dark,
+  .workspace-canvas,
+  .topbar-search {
+    color: var(--text-primary);
+  }
+
+  /* A busca como folha branca é exclusividade do `standard`: ali ela é a única
+     coisa clara dentro da casca grafite, e o branco a faz par com o painel de
+     baixo. Nos outros dois temas a casca já é da mesma paleta do conteúdo, e um
+     campo branco no meio dela viraria um retalho. */
+  [data-appearance='standard'] .topbar-search .search-command {
+    background: var(--color-background);
+    border-color: transparent;
+  }
+
+  [data-appearance='standard'] .topbar-search .search-command:hover {
+    background: var(--color-surface);
+  }
+
+  [data-appearance='standard'] .topbar-search .search-command:focus {
+    background: var(--color-background);
+    border-color: transparent;
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  /* O marcador do atalho é branco no tema claro e sumiria dentro da folha. */
+  [data-appearance='standard'] .topbar-search kbd {
+    background: var(--color-surface-container);
+  }
+
   :root:not([data-theme]) {
     color-scheme: dark;
   }
@@ -203,6 +240,16 @@
     outline: none;
     border-color: var(--accent-active);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-active) 35%, transparent);
+  }
+
+  /* O campo pautado não tem caixa, então também não pode ganhar uma no foco.
+     O anel de 1px colava no texto — que começa em zero de propósito, alinhado
+     ao rótulo — e o resultado lia como texto espremido contra a borda. Quem
+     avisa que o campo está ativo é a própria pauta, que engrossa e assume o
+     acento. */
+  textarea.field-rule:focus,
+  textarea.field-rule:focus-visible {
+    box-shadow: none;
   }
 }
 
@@ -311,7 +358,7 @@
   }
 
   .badge-text {
-    @apply font-display font-medium leading-none tracking-[0.01em] normal-case;
+    @apply font-display font-medium normal-case leading-none tracking-[0.01em];
   }
 
   .eyebrow-text {
@@ -324,27 +371,6 @@
 
   .meta-text {
     @apply type-caption text-doqyn-subtle;
-  }
-
-  .date-input {
-    color-scheme: light dark;
-  }
-
-  .date-input::-webkit-calendar-picker-indicator {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    opacity: 0;
-  }
-
-  .date-input::-webkit-datetime-edit {
-    padding: 0;
-  }
-
-  .date-input::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
   }
 }
 
@@ -371,116 +397,200 @@
   .workspace-sidebar {
     width: var(--workspace-sidebar-width);
     min-width: var(--workspace-sidebar-width);
-    overflow: hidden;
+    /* Sem fio: o vão em volta do painel é que separa índice de conteúdo, e ele
+       existe nos três temas. Quem marca o divisor quando alguém aponta para ele
+       é a pista do recolhedor — ver SidebarEdgeToggle. */
+    border-right: none;
+    overflow: visible;
   }
 
   .workspace-sidebar-nav {
     min-height: 0;
   }
 
-  .workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav {
-    overflow: hidden;
-    scrollbar-width: none;
+  /* ── Armazenamento no pé da lista ─────────────────────────────────────
+     Fio em cima, etiqueta, régua e duas linhas de registro. O valor vai na mono
+     tabular para que os números fiquem em coluna: dois algarismos a mais não
+     podem deslocar a leitura de um bloco que a pessoa consulta de canto de
+     olho. */
+  .sidebar-usage {
+    flex-shrink: 0;
+    margin-top: 1.25rem;
+    padding: 0.875rem 0.5rem 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 40%, transparent);
   }
 
-  .workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav::-webkit-scrollbar {
-    display: none;
+  /* A régua é fio, não pílula: 3px e canto reto, a mesma forma que o campo em
+     foco e o item ativo usam. Arredondar as pontas aqui traria de volta a
+     linguagem de produto de consumo que a barra inteira abandonou. */
+  .sidebar-usage__rule {
+    position: relative;
+    height: 3px;
+    margin: 0.5rem 0 0.5rem;
+    background: color-mix(in srgb, var(--border-default) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .sidebar-usage__fill {
+    display: block;
+    height: 100%;
+    background: var(--text-secondary);
+    transition: width var(--transition-duration-slow) var(--ease-standard);
+  }
+
+  /* Cor só quando passa a significar alguma coisa. Até 80% a régua é neutra. */
+  .sidebar-usage__rule[data-level='warn'] .sidebar-usage__fill {
+    background: var(--status-warn-text);
+  }
+
+  .sidebar-usage__rule[data-level='danger'] .sidebar-usage__fill {
+    background: var(--status-danger-text);
+  }
+
+  .sidebar-usage__figure {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+  }
+
+  .sidebar-usage__used {
+    color: var(--text-primary);
+  }
+
+  .sidebar-usage__quota {
+    color: var(--text-tertiary);
+  }
+
+  .sidebar-usage__meta {
+    margin: 0.125rem 0 0;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: var(--text-tertiary);
+  }
+
+  /* Recolhida: o mesmo dado no menor tamanho em que ainda se lê. */
+  .sidebar-usage--collapsed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0 0.5rem;
+  }
+
+  .sidebar-usage__percent {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+
+  .sidebar-usage--collapsed .sidebar-usage__rule {
+    width: 20px;
+    margin: 0;
   }
 
   /* Sidebar — itens de navegação (ativo sem borda no dark; borda suave no light) */
+  /* ── Sidebar: régua, não pílula ───────────────────────────────────────
+     O item ativo era uma pílula preenchida e arredondada — a assinatura de
+     qualquer app de arquivos. Agora ele reage como tudo o mais no sistema: um
+     fio de acento na borda esquerda, do mesmo jeito que a régua do campo assume
+     no foco e a linha de escolha assume no hover. O canto vira reto porque o
+     arredondado é o que fazia a barra inteira parecer produto de consumo.   */
+
   .sidebar-nav-link {
-    border: 1px solid transparent;
+    position: relative;
+    border-radius: var(--radius-sm);
     transition:
       background-color var(--transition-duration) var(--ease-standard),
-      color var(--transition-duration) var(--ease-standard),
-      border-color var(--transition-duration) var(--ease-standard);
+      color var(--transition-duration) var(--ease-standard);
+  }
+
+  .sidebar-nav-link::before {
+    content: '';
+    position: absolute;
+    inset-block: 4px;
+    left: 0;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background-color var(--transition-duration) var(--ease-standard);
   }
 
   .sidebar-nav-link--active {
-    background-color: var(--sidebar-selected-bg);
-    color: var(--sidebar-selected-text);
+    background-color: transparent;
+    color: var(--text-primary);
   }
 
-  [data-theme='light'] .sidebar-nav-link--active {
-    border-color: var(--sidebar-selected-border);
+  .sidebar-nav-link--active::before {
+    background: var(--accent-active);
   }
 
-  [data-theme='dark'] .sidebar-nav-link--active {
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  /* ===== Sidebar — logo por tema ===== */
-
-  .sidebar-brand-logo__img {
-    display: none;
-  }
-
-  [data-theme='dark'] .sidebar-brand-logo__img--dark-theme {
-    display: block;
-  }
-
-  [data-theme='light'] .sidebar-brand-logo__img--light-theme {
-    display: block;
-  }
-
-  /* ===== Auth — mesma logo da sidebar ===== */
-
-  .auth-brand-logo__img {
-    display: none;
-  }
-
-  [data-theme='dark'] .auth-brand-logo__img--dark-theme {
-    display: block;
-  }
-
-  [data-theme='light'] .auth-brand-logo__img--light-theme {
-    display: block;
+  .sidebar-nav-link:hover:not(.sidebar-nav-link--active) {
+    background-color: var(--sidebar-item-hover-bg);
   }
 
   /* ===== Sidebar — botão "+ Novo" (Material filled, flat) ===== */
 
+  /* ── Enviar documento: linha de ação, não bloco ───────────────────────
+     Era um retângulo preenchido de largura total no topo do rail — a coisa mais
+     alta da tela para uma ação entre muitas, e o último pedaço de outro app
+     sobrando aqui. Agora é a primeira linha do índice, separada das demais por
+     um fio: o acento vive só no glifo, e a linha reage como qualquer item de
+     navegação.                                                               */
+
   .sidebar-new-button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
     width: 100%;
-    min-height: var(--field-height);
-    padding: 0 0.75rem;
-    border-radius: var(--radius-new-button);
+    min-height: 2.5rem;
+    padding: 0 0.75rem 0 0.875rem;
+    border-radius: var(--radius-sm);
     border: none;
-    background: var(--new-button-bg);
-    color: var(--new-button-text);
+    background: transparent;
+    color: var(--text-primary);
     font-family: var(--font-display);
     font-size: var(--text-label);
     font-weight: var(--weight-label);
     line-height: 1;
     letter-spacing: var(--tracking-label);
-    box-shadow: var(--shadow-new-button);
     cursor: pointer;
     user-select: none;
-    transition:
-      background-color var(--transition-duration-fast) var(--ease-standard),
-      box-shadow var(--transition-duration-fast) var(--ease-standard);
+    text-align: left;
+    transition: background-color var(--transition-duration-fast) var(--ease-standard);
   }
 
-  .sidebar-new-button:hover:not(:disabled) {
-    background: var(--new-button-bg-hover);
-    box-shadow: var(--shadow-new-button-hover);
+  .sidebar-new-button__label {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .sidebar-new-button:active:not(:disabled) {
-    background: var(--new-button-bg-active);
+  .sidebar-new-button__glyph {
+    color: var(--accent-active);
+    flex: none;
+  }
+
+  .sidebar-new-button__chevron {
+    color: var(--text-tertiary);
+    flex: none;
+  }
+
+  .sidebar-new-button:hover:not(:disabled),
+  .sidebar-new-button[aria-expanded='true'] {
+    background: var(--sidebar-item-hover-bg);
   }
 
   .sidebar-new-button:focus-visible {
     outline: none;
-    box-shadow: var(--new-button-focus-ring);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
   }
 
-  .sidebar-new-button[aria-expanded='true'] {
-    background: var(--new-button-bg-active);
+  .sidebar-new-button--collapsed {
+    width: 2.5rem;
+    justify-content: center;
+    padding: 0;
   }
 
   .sidebar-new-button[aria-expanded='true']:hover:not(:disabled) {
@@ -719,9 +829,13 @@
     background: var(--bg-thumbnail-chrome);
   }
 
+  /* A folha se separa do palco por fio, não por sombra difusa: sombra grande
+     era o único material do sistema que não tinha aresta, e num palco escuro
+     ela só borrava a borda da página. */
   .viewer-page-surface {
     background: var(--viewer-page-bg);
-    box-shadow: var(--shadow-viewer-page);
+    border: 1px solid var(--border-subtle);
+    box-shadow: none;
   }
 
   .viewer-page-image {
@@ -731,6 +845,1405 @@
 
   .modal-overlay-scrim {
     background: var(--overlay-scrim);
+  }
+
+  /* ===== Diálogo (primitivo Modal, em portal) =========================
+     Um só desenho para todo diálogo do app: canto de 4px, fio no lugar de
+     sombra pesada, cabeçalho e rodapé fixos e corpo que rola sozinho quando
+     o conteúdo passa da altura da janela.                                */
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    backdrop-filter: blur(2px);
+  }
+
+  /* Confirmar nasce de dentro de outro modal — precisa passar por cima dele. */
+  .modal-overlay--confirm {
+    z-index: var(--z-confirm);
+  }
+
+  /* ── Camada sobreposta: o teal recua ──────────────────────────────────
+     Numa janela pequena, o acento aparecia três vezes ao mesmo tempo — passo
+     atual, campo em foco e botão de ação — e a soma lia como cor decorativa em
+     vez de sinal. Aqui o teal fica reservado ao que está *acontecendo agora*:
+     o campo que a pessoa está preenchendo. Passo e ação passam para o grafite,
+     que já é a cor da casca; a hierarquia continua a mesma, mas dita por peso
+     e não por matiz.
+
+     A troca é por token, não por classe em cada botão: o botão principal lê
+     `--new-button-*`, então redefinir esses tokens veste todos de uma vez,
+     inclusive os que ainda nem existem. O valor vem da paleta
+     (`--overlay-action-*`), não fixo no código: sobre papel a ação é grafite,
+     sobre grafite ela inverte e vira clara. Fixar o grafite dava um botão que
+     sumia no fundo do próprio diálogo no tema escuro.
+
+     O alcance usa a definição que o próprio app já dá de superfície sobreposta
+     (`OVERLAY_HOST_SELECTOR`, em `popover/popoverZIndex.ts`) mais a camada de
+     popover — diálogo, gaveta, menu e balão entram juntos, e nenhum deles
+     precisou ser tocado. */
+  [aria-modal='true'],
+  [data-overlay-host],
+  .popover-layer {
+    --new-button-bg: var(--overlay-action-bg);
+    --new-button-bg-hover: var(--overlay-action-bg-hover);
+    --new-button-bg-active: var(--overlay-action-bg-active);
+    --new-button-text: var(--overlay-action-text);
+  }
+
+  .modal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(85vh, 52rem);
+    min-height: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .modal-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.125rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-panel__title {
+    @apply type-h2 text-doqyn-text;
+    margin: 0;
+  }
+
+  .modal-panel__subtitle {
+    @apply type-caption text-doqyn-muted;
+    margin-top: 0.25rem;
+    min-width: 0;
+  }
+
+  .modal-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem;
+    width: 1.75rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .modal-panel__close:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+  }
+
+  .modal-panel__toolbar {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-panel__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  .modal-panel__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ===== Quadro de acesso (/rules) =====================================
+     Coluna de grupos à esquerda, uma faixa por categoria à direita. Conceder é
+     levar a ficha até a faixa; o placar da faixa responde antes de soltar.     */
+
+  /* ===== Placar da governança =========================================
+     Trilha enquanto falta um passo, cobertura depois. A régua é a mesma
+     anatomia do resto do sistema: fio de fundo, acento preenchendo, sem
+     pílula e sem caixa.                                                    */
+
+  .gov-board {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .gov-board__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .gov-board__percent {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-h1);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--accent-active);
+    margin: 0;
+  }
+
+  /* "2 de 3" não é medida contínua: recua para não competir com a trilha. */
+  .gov-board__percent--steps {
+    font-size: var(--text-label);
+    color: var(--text-tertiary);
+  }
+
+  .gov-board__count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .gov-meter {
+    position: relative;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .gov-meter__fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-active);
+    transition: width var(--transition-duration-slow, 320ms) var(--ease-standard);
+  }
+
+  .gov-trail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: gov-step;
+  }
+
+  .gov-trail__step {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    color: var(--text-tertiary);
+  }
+
+  .gov-trail__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    color: var(--accent-active);
+    flex-shrink: 0;
+  }
+
+  .gov-trail__step--done .gov-trail__mark {
+    border-color: color-mix(in srgb, var(--accent-active) 55%, transparent);
+  }
+
+  /* O passo aberto é o único que fala em voz alta; os fechados já foram lidos. */
+  .gov-trail__step--live {
+    color: var(--text-primary);
+  }
+
+  .gov-trail__step--live .gov-trail__mark {
+    border-color: var(--accent-active);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-active) 12%, transparent);
+  }
+
+  .gov-trail__label {
+    @apply type-caption;
+    color: inherit;
+  }
+
+  .gov-trail__hint {
+    @apply type-caption;
+    color: var(--text-tertiary);
+  }
+
+  .gov-trail__action {
+    @apply register-label;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+    color: var(--accent-active);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .gov-trail__action:hover {
+    border-bottom-color: var(--accent-active);
+  }
+
+  .access-board {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    min-width: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .access-board {
+      grid-template-columns: 15rem minmax(0, 1fr);
+    }
+
+    /* Sem o trilho de grupos (tenant PF), a primeira coluna ficaria reservada e vazia — as
+       faixas começariam 15rem adentro atrás de nada. */
+    .access-board[data-groups='false'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .access-board__rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    padding-right: 1.25rem;
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .access-board__rail-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .access-board__rail-list {
+      flex-direction: column;
+      flex-wrap: nowrap;
+    }
+  }
+
+  /* Com uma faixa em foco, quem ainda não alcança ela acende; o resto recua. */
+  .access-board__rail-item[data-missing='true'] .group-token {
+    border-color: color-mix(in srgb, var(--swatch) 70%, transparent);
+  }
+
+  .access-board__lanes {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .access-lane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border-subtle);
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      opacity var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .access-lane:first-child {
+    border-top: 0;
+  }
+
+  .access-lane--over {
+    background: var(--bg-surface-hover);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
+  .access-lane--dim {
+    opacity: 0.45;
+  }
+
+  .access-lane__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .access-lane__name {
+    @apply type-body font-medium text-doqyn-text;
+    margin: 0;
+  }
+
+  .access-lane__score {
+    @apply type-caption text-doqyn-muted;
+    margin: 0.125rem 0 0;
+  }
+
+  .access-lane__score-from {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+  }
+
+  .access-lane__score-to {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .access-lane__score-delta {
+    margin-left: 0.375rem;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    color: var(--accent-active);
+  }
+
+  /* Selo de estado da faixa: diz o efeito, não a configuração. "sem ninguém"
+     é a categoria sem grupo; "grupo sem pessoas" é a regra que existe e não
+     alcança — a diferença entre as duas é o que o admin precisa ver. */
+
+  .access-lane__seal {
+    @apply register-label;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .access-lane__seal[data-state='reached'] {
+    color: var(--accent-active);
+  }
+
+  .access-lane__seal[data-state='empty-groups'] {
+    color: var(--status-warn-text);
+  }
+
+  .access-lane__meter {
+    position: relative;
+    height: 2px;
+    max-width: 14rem;
+    margin-top: 0.625rem;
+    background: color-mix(in srgb, var(--border-strong) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .access-lane__meter-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent-active);
+    transition: width var(--transition-duration-slow, 320ms) var(--ease-standard);
+  }
+
+  .access-lane__meter[data-state='unreached'] .access-lane__meter-fill,
+  .access-lane__meter[data-state='empty-groups'] .access-lane__meter-fill {
+    background: var(--border-strong);
+  }
+
+  .access-lane__score-sep {
+    margin: 0 0.375rem;
+    color: var(--text-tertiary);
+  }
+
+  .access-lane__flag {
+    @apply register-label;
+    color: var(--text-tertiary);
+  }
+
+  .access-lane__tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    align-items: center;
+  }
+
+  .access-lane__empty {
+    @apply type-caption text-doqyn-subtle;
+  }
+
+  .access-lane__empty:not(:first-child) {
+    display: none;
+  }
+
+  /* Ficha de grupo: canto de 4px, fio do próprio tom, nunca preenchida. */
+  .group-token {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.375rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      opacity var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .group-token:hover {
+    border-color: color-mix(in srgb, var(--swatch) 70%, transparent);
+  }
+
+  .group-token--dragging {
+    opacity: 0.35;
+  }
+
+  .group-token--overlay {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+    cursor: grabbing;
+  }
+
+  .group-token__grip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    cursor: grab;
+    @apply type-caption text-doqyn-text;
+  }
+
+  .group-token__name {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .group-token__count {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+  }
+
+  /* Verbos: rótulo apagado quando desligado, aceso quando vale. */
+  .permission-verbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Verbo é rótulo de leitura, não carimbo: minúscula, e o fio de acento diz o que vale. */
+  .permission-verbs__mark {
+    font-family: var(--font-body);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    padding: 0.0625rem 0.125rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-tertiary);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  /* Liberado: fio cheio no acento. É o estado que não pede nada de ninguém. */
+  .permission-verbs__mark[data-state='allow'] {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-active);
+  }
+
+  /* Pedindo aprovação: mesmo fio, tracejado. A interrupção é a metáfora — o verbo existe, mas
+     passa por alguém antes de acontecer. Cor de atenção separa de "liberado" sem gritar. */
+  .permission-verbs__mark[data-state='require'] {
+    color: var(--text-primary);
+    border-bottom-style: dashed;
+    border-bottom-color: var(--status-warn-border);
+  }
+
+  /* O meio-termo do cartão da célula: régua curta, não pílula. */
+  .permission-popover__state {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.125rem 0;
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border-strong);
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .permission-popover__state[data-state='require'] {
+    color: var(--text-primary);
+    border-bottom-style: dashed;
+    border-bottom-color: var(--status-warn-border);
+  }
+
+  .permission-popover__state:hover {
+    color: var(--text-primary);
+  }
+
+  .permission-verbs--grid .permission-verbs__mark {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+
+  .permission-verbs--grid .permission-verbs__mark[data-state='allow'] {
+    background: var(--accent-active);
+    border-color: var(--accent-active);
+  }
+
+  /* Na grade não há espaço para tracejado: o ponto fica vazado com a borda de atenção — cheio é
+     liberado, contornado é pedindo, apagado é não. */
+  .permission-verbs--grid .permission-verbs__mark[data-state='require'] {
+    background: transparent;
+    border-color: var(--status-warn-border);
+    border-width: 2px;
+  }
+
+  .access-board__undo {
+    position: sticky;
+    bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.625rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .access-board__undo p {
+    flex: 1;
+    margin: 0;
+  }
+
+  /* Sem caixa: o glifo é só o alinhamento do traço na cor da categoria. */
+  .category-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .category-glyph--sm {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* ===== Matriz de acesso ==============================================
+     Grade de auditoria: sem moldura, fio entre as linhas, cabeçalho e primeira
+     coluna fixos, e o cruzamento acende linha e coluna — a mesma leitura da
+     Matriz de documentos.                                                     */
+
+  .access-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .access-matrix__scroll {
+    overflow: auto;
+    max-height: min(65vh, 40rem);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .access-matrix__table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .access-matrix__corner,
+  .access-matrix__col {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 0.625rem 0.875rem;
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: center;
+    white-space: nowrap;
+    color: var(--text-tertiary);
+    transition: color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .access-matrix__corner {
+    left: 0;
+    z-index: 3;
+    text-align: left;
+  }
+
+  .access-matrix__col[data-lit='true'] {
+    color: var(--text-primary);
+  }
+
+  .access-matrix__row-head {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.875rem;
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: left;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .access-matrix__cell {
+    padding: 0.25rem 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: center;
+    transition: background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .access-matrix__cell[data-lit='true'] {
+    background: var(--bg-surface-hover);
+  }
+
+  .matrix-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 3rem;
+    padding: 0.375rem 0.5rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-tertiary);
+    transition: border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .matrix-cell:hover:not(:disabled) {
+    border-bottom-color: var(--accent-active);
+  }
+
+  .access-matrix__legend {
+    @apply type-caption text-doqyn-muted;
+    margin: 0;
+  }
+
+  /* Ponto da cor do grupo: 8px, contorno do próprio tom, preenchimento fraco. */
+  .group-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--swatch);
+    background: color-mix(in srgb, var(--swatch) 45%, transparent);
+  }
+
+  /* Roda de cores do grupo: doze amostras de mesmo peso, marcadas por contorno. */
+  .group-palette {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.5rem;
+    max-width: 18rem;
+  }
+
+  .group-palette__swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: color-mix(in srgb, var(--swatch) 55%, transparent);
+    color: var(--text-on-accent);
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .group-palette__swatch:hover {
+    border-color: color-mix(in srgb, var(--swatch) 60%, transparent);
+  }
+
+  .group-palette__swatch[data-active='true'] {
+    border-color: var(--swatch);
+    background: var(--swatch);
+    box-shadow:
+      0 0 0 2px var(--bg-surface),
+      0 0 0 3px var(--swatch);
+  }
+
+  .group-palette__swatch[data-color='ardosia'] {
+    --swatch: var(--group-ardosia);
+  }
+  .group-palette__swatch[data-color='azul'] {
+    --swatch: var(--group-azul);
+  }
+  .group-palette__swatch[data-color='indigo'] {
+    --swatch: var(--group-indigo);
+  }
+  .group-palette__swatch[data-color='violeta'] {
+    --swatch: var(--group-violeta);
+  }
+  .group-palette__swatch[data-color='magenta'] {
+    --swatch: var(--group-magenta);
+  }
+  .group-palette__swatch[data-color='carmim'] {
+    --swatch: var(--group-carmim);
+  }
+  .group-palette__swatch[data-color='telha'] {
+    --swatch: var(--group-telha);
+  }
+  .group-palette__swatch[data-color='ambar'] {
+    --swatch: var(--group-ambar);
+  }
+  .group-palette__swatch[data-color='oliva'] {
+    --swatch: var(--group-oliva);
+  }
+  .group-palette__swatch[data-color='musgo'] {
+    --swatch: var(--group-musgo);
+  }
+  .group-palette__swatch[data-color='esmeralda'] {
+    --swatch: var(--group-esmeralda);
+  }
+  .group-palette__swatch[data-color='turquesa'] {
+    --swatch: var(--group-turquesa);
+  }
+
+  /* Ações da ficha de governança: empilhadas, largura total, dentro do rodapé
+     do diálogo — a ação principal por último, como no resto do sistema. */
+  /* Ações da ficha: a principal por último à direita, a destrutiva discreta à esquerda. */
+  .governance-detail-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .governance-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .governance-link-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+    border-left: 2px solid transparent;
+    text-align: left;
+    transition:
+      border-color var(--transition-duration-fast) var(--ease-standard),
+      background-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .governance-link-row:hover {
+    border-left-color: var(--accent-active);
+    background: var(--bg-surface-hover);
+  }
+
+  /* Simulação de acesso: régua de acento à esquerda, sem caixa — é estado da
+     tela, não um cartão de conteúdo. */
+  .rules-simulation {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface-hover);
+  }
+
+  /* ===== Portais de convidado (convite · assinatura) ===================
+     Quem chega aqui não tem conta e nunca viu o produto. A porta é a mesma da
+     antessala: fio no topo, marca à esquerda, estado à direita, e o documento
+     como peça principal — folha branca nos dois temas.                       */
+
+  .guest-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background: var(--bg-app);
+    color: var(--text-primary);
+  }
+
+  .guest-shell__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .guest-shell__header-aside {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .guest-shell__main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .guest-shell[data-layout='stage'] .guest-shell__main {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .guest-shell[data-layout='work'] .guest-shell__main {
+    padding: 1.25rem 1.5rem 1.75rem;
+  }
+
+  .guest-shell__footer {
+    padding: 0.875rem 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+  }
+
+  .guest-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin: auto;
+  }
+
+  /* Sem moldura: a coluna é o próprio papel, e o que separa é o fio. */
+  .guest-card {
+    width: 100%;
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  .guest-card--narrow {
+    max-width: 28rem;
+  }
+
+  /* Serifada acima do piso de 20px, a mesma voz da porta de entrada. */
+  .guest-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-h1);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .guest-title--sm {
+    font-size: 1.25rem;
+  }
+
+  .guest-register {
+    display: grid;
+    gap: 0.875rem;
+    margin: 1.75rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .guest-register__row {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .guest-quote {
+    margin: 1.5rem 0 0;
+    padding: 0.25rem 0 0.25rem 1rem;
+    border-left: 2px solid var(--accent-active);
+    @apply type-body text-doqyn-text;
+    line-height: 1.55;
+  }
+
+  .guest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Selo: latão em contorno, nunca preenchido. */
+  .guest-seal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.1875rem 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--seal) 55%, transparent);
+    border-radius: var(--radius-pill);
+    @apply register-label;
+    color: var(--seal);
+  }
+
+  /* ── Portal de assinatura ─────────────────────────────────────────── */
+
+  .sign-layout {
+    display: grid;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 88rem;
+    margin: 0 auto;
+    min-height: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .sign-layout {
+      grid-template-columns: minmax(0, 1fr) 22rem;
+      align-items: start;
+    }
+  }
+
+  .sign-layout__sheet {
+    min-width: 0;
+  }
+
+  .sign-sheet--placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: min(60vh, 34rem);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+  }
+
+  .sign-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+  }
+
+  .sign-rail__block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sign-rail__block--flush {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .sign-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sign-steps__item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    @apply type-caption;
+    color: var(--text-tertiary);
+  }
+
+  .sign-steps__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    flex-shrink: 0;
+  }
+
+  .sign-steps__item[data-state='current'] {
+    color: var(--text-primary);
+  }
+
+  .sign-steps__item[data-state='current'] .sign-steps__mark {
+    border-color: var(--accent-active);
+    color: var(--accent-active);
+  }
+
+  .sign-steps__item[data-state='done'] {
+    color: var(--text-secondary);
+  }
+
+  .sign-steps__item[data-state='done'] .sign-steps__mark {
+    border-color: color-mix(in srgb, var(--seal) 55%, transparent);
+    color: var(--seal);
+  }
+
+  .sign-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sign-facts li {
+    position: relative;
+    padding-left: 0.875rem;
+    @apply type-caption text-doqyn-muted;
+    line-height: 1.5;
+  }
+
+  .sign-facts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 0.375rem;
+    height: 1px;
+    background: var(--border-strong);
+  }
+
+  /* O código de verificação é atestação: mono tabular, dentro de fio de latão. */
+  .sign-seal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 1.75rem;
+    padding: 1rem 1.125rem;
+    border: 1px solid color-mix(in srgb, var(--seal) 40%, transparent);
+    border-radius: var(--radius-sm);
+  }
+
+  .sign-seal__code {
+    font-family: var(--font-family-mono);
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--seal);
+    margin: 0;
+  }
+
+  /* ── Atestado público de assinatura ───────────────────────────────── */
+
+  .verify-verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--seal);
+  }
+
+  .verify-verdict[data-valid='false'] {
+    border-left-color: var(--status-warn-text);
+  }
+
+  .verify-verdict > span,
+  .verify-verdict svg {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+    color: var(--seal);
+  }
+
+  .verify-verdict[data-valid='false'] svg {
+    color: var(--status-warn-text);
+  }
+
+  .verify-code {
+    margin: 1.5rem 0 0;
+    font-family: var(--font-family-mono);
+    font-size: 1.0625rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    color: var(--seal);
+  }
+
+  .verify-hashes {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .verify-hash {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .verify-hash__value {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    line-height: 1.5;
+    word-break: break-all;
+    color: var(--text-secondary);
+  }
+
+  /* ===== Revisão antes de um ato irreversível ==========================
+     Ficha de registro: rótulo em mono, valor em corpo, linhas separadas por
+     fio. O aviso é faixa de latão à esquerda — latão atesta, não preenche.  */
+
+  .review-attention {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.75rem 0 0.75rem 0.875rem;
+    border-left: 2px solid var(--seal);
+    color: var(--text-secondary);
+  }
+
+  .review-attention p {
+    @apply type-body;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .review-attention > span,
+  .review-attention svg {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+    color: var(--seal);
+  }
+
+  .review-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .review-section + .review-section {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .review-section__list {
+    display: grid;
+    gap: 0.875rem 1.5rem;
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .review-section__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .review-section__row {
+    min-width: 0;
+  }
+
+  /* ===== Fluxo de destinatário (compartilhar · assinar) ===============
+     Os dois diálogos que mandam um documento para fora usam a mesma forma:
+     trilha de passos em régua, campos em linha, lista de quem tem acesso
+     separada por fio, e o link emitido em mono.                            */
+
+  .recipient-steps {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recipient-steps__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 2px solid transparent;
+    @apply type-label text-doqyn-subtle;
+    transition:
+      color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .recipient-steps__index {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+  }
+
+  /* O passo atual é marcado por peso, não por cor: o fio embaixo é do mesmo
+     grafite do texto. Ver a nota em `.modal-panel`. */
+  .recipient-steps__item[data-state='current'] .recipient-steps__button {
+    border-bottom-color: var(--text-primary);
+    color: var(--text-primary);
+  }
+
+  .recipient-steps__item[data-state='done'] .recipient-steps__button {
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .recipient-steps__item[data-state='done'] .recipient-steps__button:hover {
+    color: var(--text-primary);
+  }
+
+  .recipient-fields {
+    display: grid;
+    gap: 1rem 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .recipient-fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .recipient-candidates {
+    display: flex;
+    flex-direction: column;
+    max-height: 13rem;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .recipient-candidate {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    border-left: 2px solid transparent;
+    text-align: left;
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .recipient-candidate:hover {
+    background: var(--bg-surface-hover);
+    border-left-color: var(--accent-active);
+  }
+
+  .recipient-chosen {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border-left: 2px solid var(--accent-active);
+    background: var(--bg-surface-hover);
+  }
+
+  .recipient-chosen > div {
+    flex: 1;
+  }
+
+  .recipient-summary {
+    display: grid;
+    gap: 0.875rem;
+    margin: 0;
+  }
+
+  .recipient-summary__row {
+    display: grid;
+    gap: 0.125rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-summary__row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .recipient-access {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .recipient-access__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recipient-access__row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-access__row:last-child {
+    border-bottom: 0;
+  }
+
+  .recipient-access__row > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recipient-access__status {
+    @apply register-label;
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  .recipient-access__status[data-tone='active'] {
+    color: var(--accent-active);
+  }
+
+  .recipient-access__status[data-tone='pending'] {
+    color: var(--text-secondary);
+  }
+
+  .recipient-access__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .recipient-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .recipient-link__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .recipient-link__value {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    color: var(--text-secondary);
   }
 
   /* ===== Mapa de governança (/rules) ===== */
@@ -866,25 +2379,71 @@
     min-height: 0;
     flex: 1;
     flex-direction: column;
-    background: var(--bg-chrome);
+    background: var(--bg-app);
   }
 
-  /* Moldura fina do painel: respiro pequeno no topo/esquerda (encontro sidebar/topbar)
-     e gutter um pouco maior à direita/embaixo, como no Drive. */
+  /* ── A área de conteúdo deixa de ser um painel ────────────────────────
+     Era um cartão de cantos arredondados flutuando sobre a base, com respiro
+     em volta — a moldura do Drive. Ela criava dois problemas de uma vez: um
+     canto arredondado que não existe em nenhum outro lugar do sistema, e um
+     fio de header que terminava no vazio em vez de encostar em algo.
+
+     Agora o conteúdo é a própria base, contínuo até a borda da janela. O que
+     separa a barra do conteúdo é o fio do divisor; o que separa o topo é o fio
+     do header. Nada mais precisa de caixa.                                   */
+
+  /* TESTE VISUAL — casca: chrome grafite por fora, painel branco por dentro.
+     O conteúdo volta a ser um painel, agora com canto largo e sem fio de
+     separação: o que separa barra de conteúdo é o próprio vão escuro. */
   .workspace-canvas {
     display: flex;
     min-height: 0;
     min-width: 0;
     flex: 1;
     flex-direction: column;
-    background: var(--bg-chrome);
-    padding: 0.25rem 0.5rem 0.5rem;
+    background: var(--bg-canvas);
+    margin: 0 var(--shell-inset) var(--shell-inset) var(--shell-inset-left);
+    border-radius: var(--radius-shell);
+    overflow: hidden;
+    /* ── Quem está por cima é a casca ─────────────────────────────────
+       O painel com contorno e canto arredondado lia como cartão pousado
+       *sobre* a casca — a hierarquia invertida. O conteúdo não flutua na
+       moldura; a moldura é que se abre para ele.
+
+       A correção é toda de sombra, e ela é interna: o fio de borda vira anel
+       por dentro (`inset 0 0 0 1px`), e a quina de cima projeta escuro para
+       dentro da abertura. O olho lê isso como recorte, não como peça solta —
+       a mesma pista que separa um botão em relevo de um encaixe. */
+    box-shadow:
+      inset 0 0 0 1px var(--canvas-well-edge),
+      var(--canvas-well-shadow);
   }
 
-  @media (min-width: 640px) {
-    .workspace-canvas {
-      padding: 0.25rem 0.75rem 0.75rem 0.5rem;
-    }
+  /* A tinta do poço vem da casca, não do painel: quem projeta a sombra é a
+     borda de cima, e ela é da camada de fora. */
+  [data-appearance='standard'] .workspace-canvas {
+    --canvas-well-edge: rgba(11, 14, 16, 0.14);
+    --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
+  }
+
+  /* Nestes dois não há poço: as camadas são a mesma superfície, e profundidade
+     falsa sobre tom igual só suja o recorte. O fio de acento faz o trabalho
+     sozinho, e a sombra é declarada nula em vez de removida para que o
+     `box-shadow` composto siga válido. */
+  [data-appearance='light'] .workspace-canvas,
+  [data-appearance='dark'] .workspace-canvas {
+    --canvas-well-edge: var(--shell-edge);
+    --canvas-well-shadow: inset 0 0 0 0 transparent;
+  }
+
+  /* O canvas é o scroll da janela: tela que não administra o próprio scroll (como
+     Configurações) rolava para fora da vista, porque `overflow: hidden` aqui vencia
+     o `overflow-y-auto` da marcação. Telas com scroll próprio seguem com min-h-0 e
+     não passam a rolar duas vezes. */
+  /* O respiro lateral do conteúdo sai do token, não de classe utilitária: a
+     barra de cima lê o mesmo valor para alinhar a busca. */
+  .page-outlet {
+    padding-inline: var(--shell-page-gutter);
   }
 
   .workspace-canvas-inner {
@@ -892,10 +2451,9 @@
     min-height: 0;
     flex: 1;
     flex-direction: column;
-    overflow: hidden;
-    border-radius: var(--radius-workspace);
-    background: var(--bg-canvas);
-    box-shadow: var(--shadow-workspace-panel);
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: transparent;
   }
 
   /* ===== Workspace / Biblioteca — animações e superfícies ===== */
@@ -916,8 +2474,14 @@
     @apply type-eyebrow mb-0;
   }
 
+  /* Título de página em serifada — 24px está acima do piso de 20px que o kit
+     fixou para a Newsreader. É a mesma voz da porta de entrada, agora dentro do
+     app. Abaixo desse tamanho a serifada continua proibida. */
   .workspace-page-title {
     @apply type-h1;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.012em;
   }
 
   .workspace-page-subtitle {
@@ -934,9 +2498,91 @@
     @apply type-caption mt-1 text-doqyn-subtle;
   }
 
+  /* ── Barra superior: fio, não faixa ───────────────────────────────────
+     Era um bloco preenchido separando a marca do conteúdo — a assinatura de
+     chrome de navegador. Agora a barra divide a base do app e é separada por um
+     fio de cabelo, do mesmo jeito que as seções da página. O que existe ali é
+     conteúdo, não moldura.                                                   */
+
+  /* Barra e sidebar não têm fio: o vão em volta do painel já faz a separação, e
+     isso vale nos três temas — a estrutura de duas camadas não muda de tema
+     para tema, só as cores dela mudam.
+
+     O recuo dos dois lados é o mesmo do painel: a busca começa na quina
+     esquerda da folha e os glifos terminam na direita. Quem alinha é a borda do
+     painel, não o texto que mora dentro dele. */
   .workspace-topbar {
     z-index: var(--z-sticky);
-    background: var(--bg-chrome);
+    background: var(--bg-app);
+    border-bottom: none;
+    padding-left: var(--shell-inset-left);
+    padding-right: var(--shell-inset);
+  }
+
+  /* ── O fio que recolhe a barra encosta no painel ──────────────────────
+     A faixa de clique nascia centrada na borda direita da barra, que é onde o
+     divisor ficava quando conteúdo e barra se tocavam. Com o painel recuado,
+     esse ponto passou a flutuar no vão escuro, longe de qualquer borda. Aqui a
+     faixa atravessa o vão inteiro e o fio vai parar na quina do painel: é ali
+     que a pessoa lê a divisão, então é ali que ela deve poder pegar. */
+  .sidebar-edge-toggle {
+    right: calc(-1 * var(--shell-inset-left));
+    width: calc(var(--shell-inset-left) + 4px);
+    transform: none;
+  }
+
+  /* A pista — um chevron sozinho, sem caixa nem fundo, apontando para onde a
+     barra vai. Ela nasce na altura em que o ponteiro tocou a borda
+     (`--sidebar-edge-grip-y`, escrita pelo próprio componente) e volta ao meio
+     quando o mouse sai, que é onde o teclado a encontra. Fica inteira à
+     esquerda da quina do painel: assim o glifo pousa sempre no grafite e nunca
+     metade sobre a folha branca. */
+  .sidebar-edge-toggle-grip {
+    position: absolute;
+    top: var(--sidebar-edge-grip-y, 50%);
+    right: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    color: var(--text-disabled);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-duration-fast) var(--ease-standard),
+      color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .sidebar-edge-toggle:hover .sidebar-edge-toggle-grip {
+    opacity: 1;
+    color: var(--text-secondary);
+  }
+
+  .sidebar-edge-toggle:focus-visible .sidebar-edge-toggle-grip {
+    opacity: 1;
+    color: var(--accent-active);
+  }
+
+  /* Glifo solto: um controle secundário e sempre presente não precisa de caixa
+     para ser encontrado. Mesma decisão do alternador de tema. */
+  .topbar-glyph-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-pill);
+    color: var(--text-subtle, var(--text-tertiary));
+    transition: color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .topbar-glyph-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .topbar-glyph-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
   }
 
   .workspace-action-btn {
@@ -946,48 +2592,144 @@
     min-height: var(--workspace-page-action-size);
   }
 
-  /* ===== Visão Geral / Painel de controle ===== */
+  /* Rótulo de registro — cabeçalho de coluna, eyebrow de bloco, contagem.
+     Monoespaçado em caixa alta porque é rótulo, não frase. Vive aqui, e não
+     dentro de uma tela, porque três telas já o tinham redesenhado por conta. */
+
+  .register-label {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ===== Campo em linha fora da antessala ================================
+     Mesma anatomia do campo de `.auth-route`: régua embaixo, sem caixa. Vive
+     aqui, e não lá, porque as telas internas vão migrando uma a uma e o campo
+     não pode ser redesenhado de novo em cada uma. O fio mora no invólucro para
+     que o ícone de busca fique dentro do mesmo controle que o texto.        */
+
+  .field-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: border-color var(--transition-duration-fast) var(--ease-standard);
+  }
+
+  .field-rule:hover {
+    border-bottom-color: var(--border-strong);
+  }
+
+  .field-rule--error {
+    border-bottom-color: var(--text-danger, var(--accent-active));
+  }
+
+  .field-rule:focus-within {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+  }
+
+  .field-rule input {
+    height: 100%;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-primary);
+  }
+
+  .field-rule input:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* O mesmo fio serve escolha e data: um filtro de severidade não é um campo
+     de outra família só porque abre uma lista. A seta nativa sai porque cada
+     navegador desenha a sua, e três setas diferentes na mesma régua leem como
+     três controles diferentes. */
+
+  .field-rule select {
+    height: 100%;
+    width: 100%;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .field-rule select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .field-rule select option {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
+  /* Aviso de contexto — fio à esquerda, sem caixa. Dizer de qual documento é a
+     vista, ou o que a aba de segurança reúne, é nota de escopo, não alerta:
+     não precisa de fundo próprio para ser lido, só de uma marca de onde
+     começa. A caixa fica reservada ao que pede decisão. */
+
+  .notice-rule {
+    border-left: 2px solid var(--border-strong);
+    padding-left: 0.75rem;
+  }
+
+  .notice-rule--accent {
+    border-left-color: var(--accent-active);
+  }
+
+  /* ===== Visão Geral — o painel é um boletim, não um mosaico ==============
+     Eram nove cards com borda, sombra e canto de 14px flutuando sobre o fundo:
+     a mesma moldura repetida nove vezes, sem que nenhuma delas separasse nada
+     que já não estivesse separado pelo espaço. Agora a página lê como um
+     documento — cada bloco abre com um fio, o rótulo do bloco é monoespaçado
+     como cabeçalho de registro, e a lista é linha, não pilha de caixas.      */
 
   .overview-page {
-    --overview-panel-radius: 0.875rem;
+    --overview-rule: color-mix(in srgb, var(--border-subtle) 75%, transparent);
+    --overview-rule-strong: var(--border-default);
     --overview-transition: 150ms;
-    --overview-panel-border: var(--border-default);
-    --overview-panel-bg: var(--bg-surface);
-    --overview-panel-bg-primary: var(--bg-surface);
-    --overview-panel-bg-muted: var(--bg-surface-2);
   }
 
+  /* Bloco de conteúdo: fio de abertura em cima, nada em volta. */
   .overview-panel {
-    border: 1px solid var(--overview-panel-border);
-    background: var(--overview-panel-bg);
-    border-radius: var(--overview-panel-radius);
-    box-shadow: var(--shadow-elevation-1);
-    transition: border-color var(--overview-transition) var(--ease-standard);
+    border-top: 1px solid var(--overview-rule-strong);
+    background: transparent;
   }
 
-  .overview-panel--primary {
-    background: var(--overview-panel-bg-primary);
+  .overview-panel-header {
+    border-bottom: 1px solid var(--overview-rule);
   }
 
-  .overview-panel--secondary {
-    background: var(--overview-panel-bg);
+  .overview-panel-body {
+    flex: 1;
   }
 
-  .overview-panel--muted {
-    background: var(--overview-panel-bg-muted);
-    border-color: color-mix(in srgb, var(--border-subtle) 45%, transparent);
+  .overview-register-label {
+    @apply register-label;
   }
 
   .overview-section-title {
-    @apply type-h2;
+    @apply overview-register-label;
+    color: var(--text-secondary);
   }
 
   .overview-section-subtitle {
-    @apply type-body text-doqyn-muted;
+    @apply type-caption text-doqyn-subtle;
   }
 
   .overview-kpi-label {
-    @apply type-label text-doqyn-subtle;
+    @apply overview-register-label;
+    color: var(--text-tertiary);
   }
 
   .overview-kpi-value {
@@ -995,76 +2737,156 @@
   }
 
   .overview-kpi-subtext {
-    @apply type-caption;
+    @apply type-caption text-doqyn-subtle;
   }
 
   .overview-governance-value {
     @apply type-display text-doqyn-text;
   }
 
-  .overview-stat-text {
-    @apply type-h2;
-  }
-
   .overview-row-meta {
-    @apply type-caption;
+    @apply type-caption text-doqyn-muted;
   }
 
+  /* Data em coluna é registro: mono, tabular, alinhada. */
   .overview-timestamp {
-    @apply type-caption text-doqyn-subtle;
+    font-family: var(--font-family-mono);
+    font-size: var(--text-micro);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
   }
 
-  .overview-interactive-row {
+  /* ── Linha de registro ────────────────────────────────────────────────
+     Separada por fio, marcada por régua de acento no hover. Mesma gramática
+     das pastas da Biblioteca e da lista de assinaturas.                    */
+
+  .overview-row {
+    position: relative;
+    border-bottom: 1px solid var(--overview-rule);
     transition: background-color var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-interactive-row:hover {
-    background: color-mix(in srgb, var(--bg-surface-hover) 55%, transparent);
+  .overview-row::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 2px;
+    background: transparent;
+    transition: background-color var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-activity-item + .overview-activity-item {
-    margin-top: 0;
+  .overview-row:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
   }
 
-  .overview-health-badge {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 9999px;
-    padding: 0.2rem 0.55rem;
-    @apply type-label uppercase;
+  .overview-row:hover::before,
+  .overview-row:focus-within::before {
+    background: var(--accent-active);
   }
 
-  .overview-health-badge--ok {
-    background: var(--status-ok-bg);
+  .overview-row:last-child {
+    border-bottom-color: transparent;
+  }
+
+  /* ── Faixa de números ─────────────────────────────────────────────────
+     Célula sem fundo próprio, dividida por fio vertical. O hover marca com
+     régua embaixo — controle horizontal marca embaixo, lista marca à esquerda. */
+
+  .overview-metric-cell {
+    position: relative;
+    min-height: 6.75rem;
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  .overview-metric-cell::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  .overview-metric-cell:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
+  }
+
+  .overview-metric-cell:hover::after,
+  .overview-metric-cell:focus-visible::after {
+    background: var(--accent-active);
+  }
+
+  .overview-metric-cell:focus-visible {
+    outline: none;
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
+  }
+
+  /* ── Estado ───────────────────────────────────────────────────────────
+     Atestado é texto, alerta é etiqueta preenchida. A separação de forma é o
+     que impede que "está tudo certo" e "olhe para isto" leiam igual.        */
+
+  .overview-status-mark {
+    @apply overview-register-label;
+    color: var(--text-tertiary);
+  }
+
+  .overview-status-mark--ok {
     color: var(--status-ok-text);
   }
 
-  .overview-health-badge--pending {
+  .overview-status-tag {
+    @apply overview-register-label;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 2px;
+    padding: 0.15rem 0.35rem;
     background: var(--status-warn-bg);
     color: var(--status-warn-text);
   }
 
-  .overview-health-badge--restricted {
-    background: var(--status-neutral-bg);
-    color: var(--status-neutral-text);
-  }
+  /* ── Medidor de distribuição ──────────────────────────────────────────
+     Fio grosso, ponta reta. Preenchimento é neutro de propósito: o acento
+     significa interativo, e uma barra de contagem não é clicável.           */
 
-  .overview-distribution-track {
-    height: 0.375rem;
+  .overview-meter {
+    height: 3px;
     overflow: hidden;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--bg-surface-2) 80%, transparent);
+    background: color-mix(in srgb, var(--border-subtle) 85%, transparent);
   }
 
-  .overview-distribution-fill {
+  .overview-meter-fill {
     height: 100%;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--text-primary) 22%, transparent);
+    background: color-mix(in srgb, var(--text-primary) 32%, transparent);
     transition: width var(--overview-transition) var(--ease-standard);
   }
 
-  .overview-metric-cell {
-    min-height: 7.5rem;
+  /* ── Grade de números por bloco ───────────────────────────────────────
+     O fio de 1px entre células é o fundo da grade aparecendo pelo vão; a
+     célula repete o fundo da página para que só o vão marque.               */
+
+  .overview-stat-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--overview-rule);
+  }
+
+  .overview-stat-cell {
+    background: var(--bg-app);
+  }
+
+  .overview-stat {
+    transition: background-color var(--overview-transition) var(--ease-standard);
+  }
+
+  button.overview-stat:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+  }
+
+  button.overview-stat:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent-active) 35%, transparent);
+    outline-offset: -2px;
   }
 
   .overview-main-grid > *,
@@ -1072,21 +2894,70 @@
     min-height: 0;
   }
 
-  .overview-insights-grid > * > * {
-    height: 100%;
+  /* Linha de tabela — fio embaixo, régua de acento à esquerda no hover e na
+     escolhida. A régua é sombra interna porque `::before` dentro de <tr> vira
+     célula anônima e desalinha a linha inteira. */
+
+  .data-table-row {
+    transition:
+      background-color var(--transition-duration-fast) var(--ease-standard),
+      box-shadow var(--transition-duration-fast) var(--ease-standard);
   }
 
-  .overview-governance-stat:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent-active) 35%, transparent);
-    outline-offset: -2px;
+  .data-table-row:hover {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
   }
 
-  .overview-panel-header {
-    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
+  .data-table-row--selected {
+    background: color-mix(in srgb, var(--overlay-hover) 40%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
   }
 
-  .overview-panel-body {
-    flex: 1;
+  /* Detalhe aberto no lugar da linha — mesma régua de acento à esquerda, para
+     que o bloco leia como continuação do registro e não como outra superfície. */
+  .data-table-row--expanded {
+    background: color-mix(in srgb, var(--bg-surface) 45%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent-active);
+  }
+
+  /* ===== Matriz — cruzamento é registro ==================================
+     A matriz não é uma tabela decorada: é o cruzamento de duas listas. Então
+     não há card em volta, o cabeçalho é rótulo de registro em monoespaçado, e
+     o que ajuda a ler é o cruzamento em si — linha e coluna acendem juntas sob
+     o cursor, que é o gesto de quem percorre uma grade com o dedo.          */
+
+  .matrix-grid {
+    border-top: 1px solid var(--border-default);
+  }
+
+  .matrix-head-label {
+    @apply register-label;
+    color: var(--text-tertiary);
+  }
+
+  /* A primeira coluna acompanha o rolamento horizontal, então repete o fundo
+     da página e fecha com um fio — sem ele o nome do documento flutua por
+     cima das células quando a grade rola. */
+  .matrix-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg-app);
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  .matrix-row {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 75%, transparent);
+  }
+
+  .matrix-row:hover,
+  .matrix-row:hover .matrix-sticky-col {
+    background: color-mix(in srgb, var(--bg-surface-hover) 45%, transparent);
+  }
+
+  .matrix-col-active {
+    background: color-mix(in srgb, var(--bg-surface-hover) 40%, transparent);
   }
 
   /* ===== Settings — layout e seções ===== */
@@ -1098,10 +2969,55 @@
     --settings-panel-bg: color-mix(in srgb, var(--bg-surface) 72%, transparent);
   }
 
+  /*
+   * Três medidas, não uma. Prosa, linha de registro e campo de formulário não são bem
+   * servidos pelo mesmo número: travar os três em 46rem apertava a grade de fatos até
+   * quebrar um e-mail no meio do endereço e ainda deixava metade do monitor vazia.
+   *
+   * Os tokens vivem no `.page-shell` inteiro, e não só no corpo, porque o título da
+   * página precisa acompanhar o mesmo centro do conteúdo — senão centralizar a coluna
+   * deixaria o cabeçalho sozinho na margem esquerda.
+   */
+  .settings-page-shell {
+    --settings-nav: 16.5rem;
+    --settings-gap: 1.5rem;
+    --settings-measure: 46rem;
+    --settings-prose: 46rem;
+    --settings-form: 38rem;
+
+    /* Coluna e índice caminham juntos para o centro quando sobra tela. Sem isto, todo o
+       excedente de uma ultrawide vira vão morto de um lado só. */
+    width: 100%;
+    max-width: calc(var(--settings-nav) + var(--settings-gap) + var(--settings-measure));
+    margin-inline: auto;
+  }
+
+  @media (min-width: 1280px) {
+    .settings-page-shell {
+      --settings-nav: 17.5rem;
+      --settings-gap: 1.75rem;
+      --settings-measure: 52rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .settings-page-shell {
+      --settings-measure: 58rem;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .settings-page-shell {
+      --settings-measure: 64rem;
+    }
+  }
+
+  /* As colunas saem dos mesmos tokens que dimensionam o `.settings-page-shell`: um número
+     só descrito em dois lugares sairia de sincronia na primeira mudança de faixa. */
   .settings-shell {
     display: grid;
-    grid-template-columns: minmax(14rem, 16.5rem) minmax(0, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: minmax(14rem, var(--settings-nav, 16.5rem)) minmax(0, 1fr);
+    gap: var(--settings-gap, 1.5rem);
     align-items: start;
     width: 100%;
     min-height: 0;
@@ -1109,8 +3025,7 @@
 
   @media (min-width: 1280px) {
     .settings-shell {
-      grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
-      gap: 1.75rem;
+      grid-template-columns: minmax(15rem, var(--settings-nav, 17.5rem)) minmax(0, 1fr);
     }
   }
 
@@ -1131,30 +3046,19 @@
     min-width: 0;
   }
 
+  /* Coluna única: o índice fica fora dela, e a medida cresce por faixa de tela. */
   .settings-layout__content {
     min-width: 0;
-    max-width: none;
+    max-width: var(--settings-measure, 46rem);
   }
 
+  /* Sem moldura: o conteúdo senta no canvas, como no resto do app. O respiro de baixo
+     fica aqui, e não no corpo da página: o corpo tem altura travada pelo canvas, e a
+     barra de salvar encostava na borda da janela sem nada depois dela. */
   .settings-content-panel {
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
-    border-radius: calc(var(--settings-panel-radius) + 0.125rem);
-    padding: 1.25rem;
+    padding: 0.25rem 0 3rem;
     width: 100%;
     min-height: 0;
-  }
-
-  @media (min-width: 640px) {
-    .settings-content-panel {
-      padding: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .settings-content-panel {
-      padding: 1.75rem 2rem;
-    }
   }
 
   .settings-content-panel__body {
@@ -1250,11 +3154,10 @@
     }
   }
 
+  /* Grupo de campos: rótulo em mono sobre fio, sem caixa. */
   .settings-field-group {
-    border: 1px solid var(--settings-panel-border);
-    background: var(--settings-panel-bg);
-    border-radius: var(--settings-panel-radius);
-    padding: 1.125rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.875rem;
   }
 
   .settings-field-group--fill {
@@ -1268,15 +3171,16 @@
   }
 
   .settings-field-group__header {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .settings-field-group__title {
-    @apply type-h2;
+    @apply register-label text-doqyn-subtle;
   }
 
   .settings-field-group__description {
     @apply type-caption mt-1 text-doqyn-subtle;
+    max-width: var(--settings-prose, 46rem);
   }
 
   .settings-field-group__body {
@@ -1297,13 +3201,7 @@
     grid-template-columns: 1fr;
   }
 
-  @media (min-width: 1024px) {
-    .settings-workflow-panel__grid,
-    .settings-workflow-panel__grid--balanced {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: stretch;
-    }
-  }
+  /* Sem segunda coluna: a tela de Configurações lê de cima para baixo, em coluna única. */
 
   .settings-choice-list {
     display: flex;
@@ -1419,16 +3317,16 @@
     line-height: 1.45;
   }
 
+  /* Resumo do que está em vigor: linha entre fios, sem caixa. */
   .settings-summary-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--settings-panel-radius);
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
+    padding: 0.625rem 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .settings-summary-bar__label {
@@ -1469,14 +3367,12 @@
   }
 
   .settings-retention-section {
-    align-items: center;
+    align-items: flex-start;
   }
 
   .settings-retention-card {
     width: 100%;
-    max-width: 32rem;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 34rem;
   }
 
   .settings-retention-form {
@@ -1527,6 +3423,194 @@
     margin-top: 0.25rem;
     padding-top: 1rem;
     border-top: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  }
+
+  /* Barra da tela: uma só, no fim da coluna. Não flutua sobre o conteúdo — a régua
+     de cima já separa, e barra flutuante escondia o bloco de retenção. */
+  .settings-save-bar--screen {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .settings-block__action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  /* Ação do bloco alinhada à direita: o olho termina a leitura e encontra o salvar. */
+  .settings-block__action--end {
+    justify-content: flex-end;
+  }
+
+  /* Sub-bloco: dois assuntos dentro do mesmo bloco, separados por respiro e rótulo mono. */
+  .settings-subblock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .settings-subblock + .settings-subblock {
+    margin-top: 0.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 60%, transparent);
+  }
+
+  .settings-subblock__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .settings-subblock__header .settings-section-note {
+    margin-top: 0;
+  }
+
+  /* Identidade: retrato à esquerda, campos em régua à direita. */
+  .settings-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .settings-identity__avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Campo de nome não vira pista de pouso quando a coluna cresce: a medida de
+     formulário é menor que a da coluna de propósito. */
+  .settings-identity__fields {
+    display: grid;
+    flex: 1 1 18rem;
+    gap: 1rem 1.25rem;
+    min-width: 0;
+    max-width: var(--settings-form, 38rem);
+  }
+
+  .settings-form-measure {
+    max-width: var(--settings-form, 38rem);
+  }
+
+  @media (min-width: 640px) {
+    .settings-identity__fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Fatos da conta: rótulo em mono, valor em corpo — registro, não card.
+     Três colunas fixas repartiam a largura sem perguntar o que cabia nelas, e um
+     e-mail comum quebrava no meio do endereço. O piso de 15rem é a largura em que um
+     endereço inteiro cabe numa linha: abaixo disso a grade cai para duas colunas em vez
+     de partir o valor. */
+  .settings-register-facts {
+    display: grid;
+    gap: 1rem 1.5rem;
+    padding-top: 0.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .settings-register-facts {
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    }
+  }
+
+  /* Armazenamento em Configurações. Mesma régua-fio da barra lateral — 3px, canto reto,
+     neutra até 80% — só que na medida da coluna de leitura, onde o número é o assunto e
+     não contexto de canto de olho. */
+  .settings-storage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .settings-storage__figure {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .settings-storage__used {
+    @apply type-h2;
+    color: var(--text-primary);
+  }
+
+  .settings-storage__quota {
+    @apply type-body;
+    color: var(--text-tertiary);
+  }
+
+  .settings-storage__rule {
+    position: relative;
+    height: 3px;
+    background: color-mix(in srgb, var(--border-default) 55%, transparent);
+    overflow: hidden;
+  }
+
+  .settings-storage__fill {
+    display: block;
+    height: 100%;
+    background: var(--text-secondary);
+    transition: width var(--transition-duration-slow) var(--ease-standard);
+  }
+
+  /* Cor só quando passa a significar alguma coisa. Cheia, a régua não fica teal: o acento
+     continua reservado ao que está acontecendo agora. */
+  .settings-storage__rule[data-level='warn'] .settings-storage__fill {
+    background: var(--status-warn-text);
+  }
+
+  .settings-storage__rule[data-level='danger'] .settings-storage__fill {
+    background: var(--status-danger-text);
+  }
+
+  .settings-storage__meta {
+    @apply type-caption;
+    margin: 0;
+    color: var(--text-tertiary);
+  }
+
+  .settings-storage .settings-register-facts {
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
+  }
+
+  /* Dois postos na mesma linha, sem travessão entre eles. O traço que separava
+     "título" de "subtítulo" não pontuava — avisava que o segundo pedaço vale menos.
+     Peso e tamanho dizem isso antes de a pessoa ler.
+
+     Nada aqui é absoluto: o detalhe desce um degrau a partir do que o pai já definiu
+     e desbota a partir da tinta herdada, então a mesma peça serve num subtítulo de
+     página e numa dica de dropzone. Quebra em duas linhas quando não couber, e o
+     `row-gap` curto impede que a quebra pareça dois parágrafos. */
+  .lead-detail {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.6em;
+    row-gap: 0.05em;
+  }
+
+  .lead-detail__lead {
+    font-weight: var(--weight-label);
+  }
+
+  .lead-detail__detail {
+    font-size: 0.92em;
+    font-weight: var(--weight-body);
+    color: color-mix(in srgb, currentColor 72%, transparent);
+  }
+
+  .settings-inline-error {
+    @apply type-caption text-doqyn-danger;
+    margin: 0;
   }
 
   .settings-save-bar--inset {
@@ -1685,37 +3769,47 @@
     appearance: none;
   }
 
+  /* Escolha entre poucas vistas: régua embaixo do escolhido, não cápsula. */
   .settings-segmented-control {
     display: inline-flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .settings-segmented-control__item {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    min-height: 2.5rem;
-    padding: 0 0.875rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--settings-panel-border);
-    background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+    gap: 0.375rem;
+    min-height: 2.25rem;
+    padding: 0 0.625rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
     @apply type-label text-doqyn-muted;
-    transition:
-      background-color var(--settings-transition) var(--ease-standard),
-      border-color var(--settings-transition) var(--ease-standard),
-      color var(--settings-transition) var(--ease-standard);
+    transition: color var(--settings-transition) var(--ease-standard);
+  }
+
+  .settings-segmented-control__item::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.625rem;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    transition: background-color var(--settings-transition) var(--ease-standard);
   }
 
   .settings-segmented-control__item:hover {
     color: var(--text-primary);
-    background: var(--bg-hover);
   }
 
   .settings-segmented-control__item--active {
-    border-color: color-mix(in srgb, var(--accent-active) 35%, var(--border-subtle));
-    background: color-mix(in srgb, var(--accent-active-bg) 60%, transparent);
     color: var(--text-primary);
+  }
+
+  .settings-segmented-control__item--active::after {
+    background: var(--accent-active);
   }
 
   .settings-view-preview {
@@ -1723,7 +3817,7 @@
     width: 3.25rem;
     height: 2.5rem;
     padding: 0.3rem;
-    border-radius: 0.5rem;
+    border-radius: 4px;
     border: 1px solid var(--settings-panel-border);
     background: color-mix(in srgb, var(--bg-surface) 65%, transparent);
     gap: 0.2rem;
@@ -1753,8 +3847,12 @@
     cursor: default;
   }
 
+  /* A alternância entre índice e pílulas mora aqui, não em `hidden`/`lg:hidden` na JSX:
+     deste ponto do arquivo em diante tudo está em `@layer utilities`, então uma classe de
+     componente vem depois do `.hidden` do Tailwind com a mesma especificidade e ganha. O
+     `hidden` não fazia nada, e abaixo de 1024px as duas navegações apareciam juntas. */
   .settings-sidebar-nav__list {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 0.25rem;
     margin: 0;
@@ -1762,31 +3860,124 @@
     list-style: none;
   }
 
+  @media (min-width: 1024px) {
+    .settings-sidebar-nav__list {
+      display: flex;
+    }
+  }
+
+  /* Índice das seções: régua de acento marca onde se está, sem caixa em volta. */
   .settings-nav-item {
     display: flex;
     width: 100%;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.6875rem 0.8125rem;
-    border-radius: var(--settings-panel-radius);
-    border: 1px solid transparent;
+    padding: 0.625rem 0.75rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
     color: var(--text-secondary);
     text-align: left;
     transition:
-      background-color var(--settings-transition) var(--ease-standard),
       border-color var(--settings-transition) var(--ease-standard),
       color var(--settings-transition) var(--ease-standard);
   }
 
   .settings-nav-item:hover {
-    background: color-mix(in srgb, var(--bg-hover) 70%, transparent);
     color: var(--text-primary);
   }
 
   .settings-nav-item--active {
-    background: color-mix(in srgb, var(--bg-selected) 85%, transparent);
-    border-color: var(--settings-panel-border);
+    border-left-color: var(--accent-active);
     color: var(--text-primary);
+  }
+
+  /* ===== Lista de registro das Configurações ============================
+     Um assunto por linha, régua entre elas. A grade de cards saiu: a caixa
+     não informava nada que o texto já não dissesse.                        */
+
+  .settings-register {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .settings-register__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .settings-register__row:last-child {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .settings-register__glyph {
+    display: flex;
+    padding-top: 0.125rem;
+    color: var(--text-subtle);
+  }
+
+  .settings-register__copy {
+    flex: 1 1 auto;
+  }
+
+  .settings-register__title {
+    @apply type-body font-medium text-doqyn-text;
+  }
+
+  .settings-register__description {
+    @apply type-caption mt-0.5 text-doqyn-muted;
+  }
+
+  .settings-register__action {
+    @apply type-caption inline-flex shrink-0 items-center gap-0.5 rounded-[4px] px-1 py-0.5 font-medium text-doqyn-muted;
+    transition: color 150ms;
+  }
+
+  .settings-register__action:hover {
+    @apply text-doqyn-text;
+  }
+
+  /* ===== Bloco de configuração ==========================================
+     Seção composta: um assunto por bloco, separados por fio. A caixa saiu —
+     o que divide um assunto do outro é a linha, como na Visão Geral.        */
+
+  .settings-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    min-width: 0;
+  }
+
+  .settings-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .settings-blocks > .settings-block + .settings-block {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.75rem;
+  }
+
+  .settings-block__header {
+    margin: 0;
+  }
+
+  .settings-block__header .settings-section-title {
+    font-size: 0.9375rem;
+  }
+
+  .settings-block__header .settings-section-subtitle {
+    margin-top: 0.125rem;
+    max-width: var(--settings-prose, 46rem);
+  }
+
+  .settings-block .settings-section-body {
+    gap: 1rem;
   }
 
   .settings-composite-section {
@@ -1798,20 +3989,6 @@
   .settings-profile-page {
     gap: 1.5rem;
     width: 100%;
-  }
-
-  .settings-profile-secondary-grid {
-    display: grid;
-    gap: 1.5rem;
-    align-items: start;
-    width: 100%;
-  }
-
-  @media (min-width: 1024px) {
-    .settings-profile-secondary-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1.25rem 1.5rem;
-    }
   }
 
   .settings-profile-block {
@@ -1858,6 +4035,12 @@
     scrollbar-width: thin;
   }
 
+  @media (min-width: 1024px) {
+    .settings-tabs-nav {
+      display: none;
+    }
+  }
+
   .settings-tab-item {
     flex-shrink: 0;
     height: 2rem;
@@ -1895,15 +4078,13 @@
     @apply type-body mt-1 max-w-[42rem] text-doqyn-subtle;
   }
 
+  /* O card era a moldura de tudo; agora é só um agrupador com respiro. */
   .settings-card {
-    border: 1px solid var(--settings-panel-border);
-    background: var(--settings-panel-bg);
-    border-radius: var(--settings-panel-radius);
     height: fit-content;
   }
 
   .settings-card--padded {
-    padding: 1.25rem;
+    padding: 0;
   }
 
   .settings-card--compact {
@@ -1912,37 +4093,6 @@
 
   .settings-card--flush {
     padding: 0;
-  }
-
-  .settings-auth-overview {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .settings-auth-overview__toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    @apply type-caption font-medium text-doqyn-primary;
-    transition: opacity var(--settings-transition) var(--ease-standard);
-  }
-
-  .settings-auth-overview__toggle:hover {
-    opacity: 0.85;
-  }
-
-  .settings-auth-overview .settings-summary-bar {
-    gap: 0.75rem 1.25rem;
-  }
-
-  .settings-auth-overview .settings-summary-bar__label {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .settings-auth-overview .settings-summary-bar__chip {
-    white-space: normal;
   }
 
   .settings-password-strength {
@@ -1968,7 +4118,8 @@
     background: var(--status-danger-text);
   }
 
-  .settings-password-strength[data-level='medium'] .settings-password-strength__segment:nth-child(-n + 2) {
+  .settings-password-strength[data-level='medium']
+    .settings-password-strength__segment:nth-child(-n + 2) {
     background: var(--status-warn-text);
   }
 
@@ -2087,10 +4238,6 @@
 
   .settings-dt {
     @apply type-eyebrow text-doqyn-subtle;
-  }
-
-  .settings-dd {
-    @apply type-body mt-1 break-words;
   }
 
   .settings-info-card {
@@ -2217,100 +4364,7 @@
     line-height: 1.5;
     margin: 0;
     padding-top: 0.15rem;
-  }
-
-  .settings-system-overview {
-    display: grid;
-    gap: 1.25rem;
-  }
-
-  @media (min-width: 768px) {
-    .settings-system-overview {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1.5rem;
-    }
-  }
-
-  .settings-system-group__title {
-    @apply type-eyebrow text-doqyn-subtle;
-    margin-bottom: 0.625rem;
-  }
-
-  .settings-system-group__list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    margin: 0;
-  }
-
-  .settings-system-fact {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.625rem 0.5rem;
-    border-radius: 0.5rem;
-  }
-
-  .settings-system-fact:hover {
-    background: color-mix(in srgb, var(--bg-hover) 45%, transparent);
-  }
-
-  .settings-system-fact__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    flex-shrink: 0;
-    margin-top: 0.1rem;
-    border-radius: 0.5rem;
-    background: color-mix(in srgb, var(--bg-surface-2) 55%, transparent);
-    color: var(--text-secondary);
-    border: 1px solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
-  }
-
-  .settings-system-fact__label {
-    @apply type-caption text-doqyn-subtle;
-  }
-
-  .settings-system-fact__value {
-    @apply type-body text-doqyn-text;
-    margin: 0.125rem 0 0;
-    word-break: break-word;
-  }
-
-  .settings-system-advanced {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding-top: 0.25rem;
-  }
-
-  .settings-system-advanced__toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    align-self: flex-start;
-    @apply type-caption font-medium text-doqyn-primary;
-    transition: opacity var(--settings-transition) var(--ease-standard);
-  }
-
-  .settings-system-advanced__toggle:hover {
-    opacity: 0.85;
-  }
-
-  .settings-system-advanced__panel {
-    padding: 0.75rem 0.875rem;
-    border-radius: 0.625rem;
-    border: 1px dashed color-mix(in srgb, var(--border-subtle) 85%, transparent);
-    background: color-mix(in srgb, var(--bg-surface) 40%, transparent);
-  }
-
-  .settings-system-note {
-    @apply type-caption text-doqyn-subtle;
-    line-height: 1.45;
-    margin: 0;
-    padding-top: 0.25rem;
+    max-width: var(--settings-prose, 46rem);
   }
 
   .settings-link-action {
@@ -2337,22 +4391,24 @@
 
   /* ===== Explorer — pastas e arquivos ===== */
 
+  /* ── Pasta é linha de índice, não caixa ───────────────────────────────
+     A marcação e o contêiner já diziam isso ("registro, não mosaico"), mas
+     sobrou desta folha uma borda de quatro lados da época em que era cartão.
+     Empilhadas, essas caixas encostavam uma na outra e o fio entre duas linhas
+     saía com o dobro da espessura — o que lia como tabela quebrada, não como
+     índice. Fica só o fio de baixo, que é o que separa um registro do próximo. */
   .explorer-folder-card {
-    border: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 55%, transparent);
   }
 
   .explorer-folder-card:hover {
-    border-color: color-mix(in srgb, var(--border-subtle) 85%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--border-subtle) 85%, transparent);
   }
 
-  /* Light — cards de pasta estilo Drive: branco, borda 1px, sem sombra nem chip pastel */
-  [data-theme='light'] .explorer-folder-card {
-    border-color: var(--border-default);
-    box-shadow: none;
-  }
-
+  [data-theme='light'] .explorer-folder-card,
   [data-theme='light'] .explorer-folder-card:hover {
-    border-color: var(--border-default);
+    border-bottom-color: var(--border-default);
     box-shadow: none;
   }
 
@@ -2364,28 +4420,43 @@
     background: var(--bg-surface);
   }
 
-  .explorer-file-card {
-    border: 1px solid color-mix(in srgb, var(--border-subtle) 45%, transparent);
-  }
+  /* A borda do card saiu junto com o card: o que delimita o documento agora é
+     a sombra da própria folha. Sobrando, ela desenhava um retângulo fantasma em
+     volta do nome do arquivo. */
 
   .document-files-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 188px));
+    gap: 1.75rem 1.5rem;
     justify-content: start;
   }
 
+  /* A miniatura é papel, e papel é branco nos dois temas. Antes ela herdava
+     o grafite da moldura e o documento sumia dentro da própria interface —
+     exatamente o contrário da tese do kit. */
   .document-file-card__preview {
-    background: var(--bg-thumbnail-chrome);
+    background: var(--viewer-page-bg);
     isolation: isolate;
+    box-shadow: var(--shadow-page-thumb);
+    border: 1px solid var(--border-page-thumb);
   }
 
+  .document-file-card:hover .document-file-card__preview {
+    box-shadow: var(--shadow-page-thumb-hover);
+  }
+
+  /* Ações rápidas: canto reto e sem vidro. A pílula desfocada era um material
+     que não existe em nenhum outro lugar do sistema — e ela pousa em cima de
+     uma folha branca, onde borrão de fundo não tem o que borrar. Fica uma
+     superfície chapada com fio, como todo o resto. */
   .explorer-quick-actions {
     border: 1px solid var(--explorer-quick-actions-border);
     background: var(--explorer-quick-actions-bg);
-    box-shadow: var(--explorer-quick-actions-shadow);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    box-shadow: none;
+  }
+
+  .explorer-quick-actions .explorer-icon-btn {
+    border-radius: 3px;
   }
 
   .explorer-quick-actions .explorer-icon-btn {
@@ -2397,17 +4468,15 @@
     color: var(--explorer-quick-actions-icon-hover);
   }
 
+  /* A marca de favorito pousa direto na folha — a folha é branca nos dois
+     temas, então a tinta é fixa e um halo de 1px a sustenta sobre qualquer
+     miniatura. O disco com blur saiu: era uma bolha escura sobre papel. */
   .document-favorite-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: var(--radius-pill);
-    background: var(--document-favorite-badge-bg);
-    box-shadow: var(--document-favorite-badge-shadow);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    color: var(--document-favorite-ink);
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9));
   }
 
   .explorer-marquee-selection {
@@ -2426,26 +4495,28 @@
     background: var(--bg-surface);
   }
 
+  /* ── Filtro: controle de texto, não pílula ───────────────────────────
+     A pílula preenchida e arredondada era a assinatura do Drive. Aqui o filtro
+     é um controle de texto com fio embaixo: pesa o quanto deve pesar (é ajuste,
+     não ação) e some no ruído quando não está em uso. Quando há filtro ativo,
+     o fio assume o acento — é o que diz que a lista abaixo não é a lista
+     inteira.                                                                */
+
   .explorer-filter-chip {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.4375rem;
     height: 2rem;
-    padding: 0 0.75rem;
-    border-radius: var(--radius-pill);
+    padding: 0 0.125rem;
+    border-radius: 0;
+    border-bottom: 1px solid var(--border-subtle);
     @apply type-label text-doqyn-muted;
-    background: var(--bg-surface);
+    background: transparent;
     transition:
-      background-color var(--transition-duration-fast) var(--ease-standard),
+      border-color var(--transition-duration-fast) var(--ease-standard),
       color var(--transition-duration-fast) var(--ease-standard);
     cursor: pointer;
-  }
-
-  /* Light — pills de filtro estilo Drive: cinza container + texto primário */
-  [data-theme='light'] .explorer-filter-chip {
-    background: var(--color-surface-container);
-    color: var(--text-primary);
   }
 
   [data-theme='light'] .toolbar-pill-idle {
@@ -2454,12 +4525,14 @@
   }
 
   .explorer-filter-chip:hover {
-    background: var(--bg-surface-hover);
+    border-bottom-color: var(--border-strong);
     color: var(--text-primary);
   }
 
   .explorer-filter-chip--active {
-    background: var(--bg-selected);
+    background: transparent;
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
     color: var(--text-primary);
   }
 
@@ -2502,18 +4575,22 @@
     pointer-events: none;
   }
 
+  /* A seleção não abre uma caixa. Era um painel de largura total, com borda e
+     fundo próprios, que aparecia entre os filtros e o conteúdo e empurrava a
+     página para baixo — muita cerimônia para um estado que dura segundos, e um
+     deslocamento de layout a cada clique. Agora ela vive na própria linha dos
+     filtros: a contagem em monoespaçado e as ações em texto, sem moldura.     */
   .explorer-selection-toolbar {
-    border-radius: var(--radius-lg);
-    border: 1px solid color-mix(in srgb, var(--accent-active) 18%, var(--border-subtle));
-    background: color-mix(in srgb, var(--bg-surface) 92%, var(--accent-active-bg));
-    padding: 0.375rem 0.5rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
   }
 
   .explorer-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-pill);
+    border-radius: 3px;
     padding: 0.375rem;
     color: var(--text-tertiary);
     transition:
@@ -2522,8 +4599,11 @@
       opacity var(--transition-duration-fast) var(--ease-standard);
   }
 
+  /* Glifo de ação: sem fundo no hover. O preenchimento em pílula era o que
+     dava a esses controles a cara de barra do Drive — a cor do próprio glifo já
+     confirma que ele respondeu. */
   .explorer-icon-btn:hover {
-    background-color: var(--overlay-hover);
+    background-color: transparent;
     color: var(--text-primary);
   }
 
@@ -2679,6 +4759,467 @@
     animation: flow-enter 0.28s ease-out both;
   }
 
+  /* ── Antessala: a entrada da porta da frente ──────────────────────────
+     Uma sequência só, no carregamento, e depois parado. A regra do kit é que
+     nada pisca — movimento ocioso disputa atenção. Chegar não é piscar.      */
+
+  /* ── As duas camadas da antessala ─────────────────────────────────────
+     A mesma anatomia do workspace, e de propósito: casca edge-to-edge por
+     fora, painel recortado por dentro. Quem entra vê, antes de digitar a
+     senha, a estrutura que vai encontrar do outro lado do login.
+
+     Aqui a divisão é vertical em vez de concêntrica — o painel abre à
+     esquerda e a casca segue à direita, sob o formulário — mas as camadas são
+     as mesmas, e a paleta de cada uma vem do mesmo lugar: `chrome-dark` vale
+     só no tema padrão, então no claro e no escuro as duas colunas voltam a ser
+     uma superfície só, como o workspace já faz.
+
+     É o que devolve mesa escura à folha: a página tem sombra funda desenhada
+     para separá-la do fundo, e sobre a antessala clara ela não separava nada. */
+
+  .auth-chrome {
+    background: var(--bg-chrome);
+  }
+
+  .auth-canvas {
+    /* Não é `--bg-canvas`: no papel ele é branco puro, e a folha (que é branca
+       por regra da marca, e nunca escurece) desapareceria dentro dele. O painel
+       é a mesa, um degrau abaixo da folha. No escuro a mesa é o próprio canvas. */
+    background: var(--auth-canvas-bg);
+    margin: var(--shell-inset) 0 var(--shell-inset) var(--shell-inset);
+    border-radius: var(--radius-shell);
+    overflow: hidden;
+    /* O recorte é o mesmo do `.workspace-canvas`: anel por dentro e escuro
+       projetado da quina de cima. Contorno por fora leria como cartão pousado
+       sobre a casca, e a hierarquia é a inversa — a casca é que se abre. */
+    box-shadow:
+      inset 0 0 0 1px var(--canvas-well-edge),
+      var(--canvas-well-shadow);
+    /* `color` precisa ser reancorado na fronteira de paleta: a casca resolveu
+       o texto para o claro dela, e ele desceria por herança para dentro do
+       painel. */
+    color: var(--text-primary);
+  }
+
+  /* O painel fica preso à janela em vez de esticar com a coluna do formulário.
+     Sem isto, um cadastro longo estica o grid, e a folha — centrada na altura
+     total, não na da janela — desce para fora da vista de quem preenche. */
+  @media (min-width: 1024px) {
+    .auth-canvas {
+      position: sticky;
+      top: var(--shell-inset);
+      align-self: start;
+      height: calc(100dvh - var(--shell-inset) * 2);
+    }
+  }
+
+  [data-appearance='standard'] .auth-canvas {
+    --canvas-well-edge: rgba(11, 14, 16, 0.14);
+    --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
+  }
+
+  /* Aqui o fio do recorte é neutro, e não o de acento que o workspace usa: lá o
+     painel é onde a pessoa trabalha e merece ser apontado; na antessala quem
+     manda é o formulário, e um fio verdigris contornando o painel inteiro
+     disputaria com ele. */
+  [data-appearance='light'] .auth-canvas,
+  [data-appearance='dark'] .auth-canvas {
+    --canvas-well-edge: var(--border-subtle);
+    --canvas-well-shadow: inset 0 0 0 0 transparent;
+  }
+
+  /* A mesa e o que a folha precisa para se separar dela. É a regra do kit
+     aplicada em tamanho grande: no escuro a sombra é funda porque é ela que
+     separa a folha da mesa; no claro ela recua e um fio assume a borda. */
+  [data-appearance='standard'] .auth-canvas,
+  [data-appearance='light'] .auth-canvas {
+    /* Um degrau abaixo de `--color-surface-container`: contra a folha, que é
+       branca por regra e nunca escurece, o cinza do sistema ainda era pouco. */
+    --auth-canvas-bg: color-mix(
+      in srgb,
+      var(--color-surface-container) 88%,
+      var(--color-text-secondary)
+    );
+    --auth-page-edge: var(--color-border);
+    --auth-page-shadow: 0 1px 2px rgba(20, 24, 27, 0.12), 0 22px 50px -16px rgba(20, 24, 27, 0.32);
+  }
+
+  [data-appearance='dark'] .auth-canvas {
+    --auth-canvas-bg: var(--bg-canvas);
+    --auth-page-edge: transparent;
+    --auth-page-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 28px 70px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  .auth-stage {
+    animation: auth-rise 0.5s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  /* Transição entre as telas da antessala: só a coluna da direita se move,
+     porque o painel do documento persiste na rota de layout. */
+  .auth-route {
+    animation: auth-route 0.34s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes auth-route {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auth-page {
+    animation: auth-rise 0.72s cubic-bezier(0.2, 0, 0, 1) both;
+    animation-delay: 0.04s;
+    /* A sombra vive aqui, e não na marcação, porque depende da mesa em que a
+       folha pousa — e a mesa muda com o tema. */
+    box-shadow:
+      0 0 0 1px var(--auth-page-edge),
+      var(--auth-page-shadow);
+  }
+
+  /* O texto se escreve: cada linha cresce da margem para fora. */
+  .auth-line {
+    animation: auth-write-line 0.34s cubic-bezier(0.2, 0, 0, 1) both;
+    transform-origin: left center;
+  }
+
+  .auth-write {
+    animation: auth-fade 0.42s ease-out both;
+  }
+
+  /* A varredura desce a página uma vez, lendo. Não volta. */
+  .auth-scan {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--accent-active) 13%, transparent) 62%,
+      color-mix(in srgb, var(--accent-active) 42%, transparent)
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-active) 62%, transparent);
+    animation: auth-scan 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.16s both;
+  }
+
+  @keyframes auth-write-line {
+    from {
+      opacity: 0;
+      transform: scaleX(0.04);
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes auth-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes auth-scan {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(265%);
+      opacity: 0;
+    }
+  }
+  .auth-stage--caption {
+    animation-delay: 0.94s;
+  }
+  .auth-stage--mark {
+    animation-delay: 0.1s;
+  }
+  .auth-stage--title {
+    animation-delay: 0.2s;
+  }
+  .auth-stage--form {
+    animation-delay: 0.31s;
+  }
+  .auth-stage--foot {
+    animation-delay: 0.44s;
+  }
+
+  /* ── O laço de documentos ────────────────────────────────────────────
+     Três tipos passam pelo mesmo quadro: contrato, desenho e tabela. O que
+     protege a regra "nada pisca" não é a ausência de laço — é o ritmo. Cada
+     documento fica quase oito segundos parado depois de lido, e a troca é por
+     esmaecimento, não por corte. O que se vê de canto de olho é uma página
+     sendo lida devagar, não um letreiro alternando.
+
+     A duração aqui e a do temporizador em `AntechamberDocument` são o mesmo
+     número: se divergirem, a página some antes da troca ou salta depois dela. */
+
+  /* O tempo de um documento no quadro, e o único lugar onde ele existe.
+     `AntechamberDocument` troca a página no `animationend` desta animação, então
+     o ritmo do painel se ajusta mudando só este número. Havia uma cópia dele em
+     JavaScript temporizando a troca em paralelo: como a animação termina em
+     `opacity: 0` e segura o estado, bastava o timer atrasar um pouco para a
+     folha ficar apagada esperando a remontagem — e `setInterval` atrasa sempre. */
+  .auth-doc {
+    animation: auth-doc-life 8.4s ease-in-out both;
+  }
+
+  @keyframes auth-doc-life {
+    from {
+      opacity: 0;
+    }
+    5% {
+      opacity: 1;
+    }
+    92% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* A folha digitalizada endireita uma vez, quando a varredura acaba de passar.
+
+     É o que o OCR faz antes de ler, e é a única parte da história que um
+     documento nascido digital não conta. Menos de um grau, sem volta: a regra
+     que veta piscar veta o vaivém, não o gesto único que assenta. */
+  .auth-deskew {
+    animation: auth-deskew 0.9s cubic-bezier(0.2, 0, 0, 1) 1.94s both;
+    transform-origin: center center;
+  }
+
+  @keyframes auth-deskew {
+    from {
+      transform: rotate(-0.75deg) translateX(2px);
+    }
+    to {
+      transform: rotate(0deg) translateX(0);
+    }
+  }
+
+  /* A miniatura da fila de upload: a mesma varredura da antessala, do tamanho de um ícone.
+
+     Aqui ela **repete**, e é a única animação do app que repete de propósito: enquanto a IA lê,
+     há trabalho acontecendo, e parar o movimento diria que acabou. Ela some no instante em que o
+     estado sai de "analisando" — não é o relógio que a interrompe, é o fato. */
+  .upload-thumb__scan {
+    top: 0;
+    height: 46%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--accent-active) 16%, transparent) 60%,
+      color-mix(in srgb, var(--accent-active) 46%, transparent)
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-active) 70%, transparent);
+    animation: upload-thumb-scan 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @keyframes upload-thumb-scan {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    14% {
+      opacity: 1;
+    }
+    86% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(220%);
+      opacity: 0;
+    }
+  }
+
+  /* O fio do glifo de IA: parado, mora na última linha, que é onde a leitura acaba. Correndo,
+     percorre as linhas de cima para baixo — o mesmo gesto da varredura, no tamanho de um ícone. */
+  .ai-reading__thread {
+    transform: translateY(0);
+  }
+
+  .ai-reading__thread--running {
+    animation: ai-reading-thread 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @keyframes ai-reading-thread {
+    from {
+      transform: translateY(-9px);
+      opacity: 0.25;
+    }
+    18% {
+      opacity: 1;
+    }
+    82% {
+      opacity: 1;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 0.25;
+    }
+  }
+
+  /* A pilha do lote: o avanço é transição, não animação — cada folha vai para a posição nova
+     quando a da frente sai, e quem manda no tempo é o evento, não um temporizador. */
+  .upload-stack__sheet {
+    transition:
+      transform 0.44s cubic-bezier(0.2, 0, 0, 1),
+      opacity 0.44s ease-out;
+    /* A borda separa uma folha da outra onde a sombra não alcança: no escuro, papel sobre papel
+       sem contorno vira uma mancha clara só. */
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.55),
+      0 0 0 1px rgb(0 0 0 / 0.35);
+  }
+
+  /* A folha que terminou sai pela direita, e é a única saída da pilha. */
+  .upload-stack__sheet--leaving {
+    animation: upload-stack-leave 0.46s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  @keyframes upload-stack-leave {
+    from {
+      opacity: 1;
+      transform: translateX(0) rotate(0deg);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(26px) rotate(7deg);
+    }
+  }
+
+  /* O carimbo do fim sobe da borda de baixo, uma vez. */
+  .upload-thumb__stamp {
+    animation: upload-thumb-stamp 0.36s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes upload-thumb-stamp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* O fio da extração cresce da página para fora, e o rótulo vem junto. */
+  .auth-anno {
+    animation: auth-anno 0.44s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes auth-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes auth-anno {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* ── Campo com linha, não com caixa ───────────────────────────────────
+     Formulário em papel é linha pautada. A régua engrossa e assume o acento no
+     foco; o rótulo acompanha. Sem brilho, sem halo.
+
+     O escopo é a antessala inteira (`.auth-route`), não um wrapper por campo:
+     com dez campos numa tela de cadastro, marcar cada um à mão garantiria que
+     alguém esquecesse um e a tela ficasse com dois tratamentos. Checkbox e
+     radio ficam de fora — ali a caixa é a própria affordance.                */
+
+  .auth-route input:not([type='checkbox']):not([type='radio']),
+  .auth-route select,
+  /* O Select do design system não é um <select>: é um button com listbox.
+     Sem este seletor ele fica sendo o único campo em caixa no meio de uma
+     coluna de campos em linha. */
+  .auth-route button[aria-haspopup='listbox'],
+  .auth-route textarea {
+    border-radius: 0;
+    border-width: 0 0 1px 0;
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* 38px, não 44: com a caixa alta o texto centraliza longe da régua e o
+     rótulo parece órfão. O campo de linha pede o texto assentado sobre ela. */
+  .auth-route input:not([type='checkbox']):not([type='radio']),
+  .auth-route select,
+  .auth-route button[aria-haspopup='listbox'] {
+    height: 38px;
+    padding-bottom: 2px;
+  }
+
+  .auth-route select {
+    /* o chevron do Select é posicionado por dentro; sem folga ele encosta no texto */
+    padding-right: 26px;
+  }
+
+  .auth-route input:not([type='checkbox']):not([type='radio']):hover,
+  .auth-route select:hover,
+  .auth-route button[aria-haspopup='listbox']:hover,
+  .auth-route textarea:hover {
+    border-bottom-color: var(--border-strong);
+  }
+
+  .auth-route input:not([type='checkbox']):not([type='radio']):focus-visible,
+  .auth-route select:focus-visible,
+  .auth-route button[aria-haspopup='listbox']:focus-visible,
+  .auth-route textarea:focus-visible {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--accent-active);
+    box-shadow: none;
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-stage,
+    .auth-route,
+    .auth-anno,
+    .auth-deskew,
+    .upload-thumb__scan,
+    .upload-thumb__stamp,
+    .upload-stack__sheet,
+    .upload-stack__sheet--leaving,
+    .ai-reading__thread--running,
+    .auth-page,
+    .auth-line,
+    .auth-write,
+    .auth-doc,
+    .auth-scan {
+      animation: none;
+    }
+
+    .auth-scan {
+      display: none;
+    }
+  }
+
   @keyframes flow-enter {
     from {
       opacity: 0;
@@ -2707,12 +5248,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.12),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
     animation: processing-shimmer 1.6s ease-in-out infinite;
   }
 
@@ -2900,6 +5436,81 @@
     to {
       opacity: 1;
       transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+     Tour do produto — holofote e cartão.
+
+     O escurecimento não é uma camada por cima da tela: é a sombra do próprio
+     recorte, com raio maior que a janela. Por isso as quatro medidas do furo
+     são propriedades animáveis e o passo desliza para o próximo em vez de
+     redesenhar — que era o que fazia o holofote piscar entre um alvo e outro.
+     --------------------------------------------------------------------- */
+  .tour-root {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-tour);
+    pointer-events: none;
+  }
+
+  .tour-blocker {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  .tour-spotlight {
+    position: fixed;
+    border-radius: 4px;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1px var(--accent-active),
+      0 0 0 5px color-mix(in srgb, var(--accent-active) 16%, transparent),
+      0 0 0 100vmax var(--tour-scrim);
+    transition:
+      top 300ms var(--ease-emphasized),
+      left 300ms var(--ease-emphasized),
+      width 300ms var(--ease-emphasized),
+      height 300ms var(--ease-emphasized);
+  }
+
+  /* Passo sem alvo (a abertura, e o passo cujo elemento não apareceu): o furo
+     tem tamanho zero no centro, então só o escurecimento aparece — sem o fio
+     de acento pousado num ponto que não quer dizer nada. */
+  .tour-spotlight[data-has-target='false'] {
+    box-shadow: 0 0 0 100vmax var(--tour-scrim);
+  }
+
+  .tour-card {
+    z-index: 1;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    box-shadow: var(--shadow-elevation-2);
+    animation: tour-card-in 220ms var(--ease-standard) both;
+    transition:
+      top 300ms var(--ease-emphasized),
+      left 300ms var(--ease-emphasized);
+  }
+
+  @keyframes tour-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-spotlight,
+    .tour-card {
+      transition: none;
+      animation: none;
     }
   }
 }

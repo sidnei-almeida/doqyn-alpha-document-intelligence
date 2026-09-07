@@ -1,7 +1,15 @@
 import type { ApiDocumentClass, ApiGroup, ApiMember } from '../api/rulesApi';
-import type { CompanyMember, DocumentCategory, DocumentIcon, Group, GroupColor, UserRole } from '@/types/rules';
+import type {
+  CompanyMember,
+  DocumentCategory,
+  DocumentIcon,
+  Group,
+  GroupColor,
+  UserRole,
+} from '@/types/rules';
 import type { CompanyMemberDto, PlatformRole } from '@/features/users/api/usersApi';
 import { collectLinkedDocumentGroupIds } from '@/lib/entityIds';
+import { normalizeGroupColor } from '@shared/groupPalette';
 
 const ICON_KEYS = new Set<DocumentIcon>([
   'file-text',
@@ -21,11 +29,7 @@ function toDocumentIcon(iconKey?: string): DocumentIcon {
 }
 
 function toGroupColor(color?: string): GroupColor {
-  const allowed: GroupColor[] = ['blue', 'green', 'amber', 'red', 'purple'];
-  if (color && allowed.includes(color as GroupColor)) {
-    return color as GroupColor;
-  }
-  return 'blue';
+  return normalizeGroupColor(color);
 }
 
 export function mapApiGroup(group: ApiGroup): Group {
@@ -88,9 +92,7 @@ export function mapApiMember(member: ApiMember) {
 }
 
 function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
-  if (
-    platformRoles.some((role) => role === 'company_admin' || role === 'individual_admin')
-  ) {
+  if (platformRoles.some((role) => role === 'company_admin' || role === 'individual_admin')) {
     return 'admin';
   }
   return 'member';
@@ -99,8 +101,7 @@ function mapPlatformRolesToUserRole(platformRoles: PlatformRole[]): UserRole {
 export function mapCompanyMemberDtoToRulesMember(member: CompanyMemberDto): CompanyMember {
   const documentGroupIds = member.documentGroupIds ?? member.groupIds ?? [];
   const displayName =
-    member.name ??
-    ([member.firstName, member.lastName].filter(Boolean).join(' ') || member.email);
+    member.name ?? ([member.firstName, member.lastName].filter(Boolean).join(' ') || member.email);
 
   return {
     id: member.id,
@@ -110,7 +111,9 @@ export function mapCompanyMemberDtoToRulesMember(member: CompanyMemberDto): Comp
     email: member.email,
     position: member.requestedAccess?.jobTitle,
     role: mapPlatformRolesToUserRole(member.platformRoles),
-    status: member.status,
+    // Convidado não é membro: não tem membership, não entra em grupo e não alcança documento.
+    // A tela de Regras só conhece quem já existe, e por isso a linha do convite não chega aqui.
+    status: member.status === 'invited' ? 'pending' : member.status,
     groupIds: documentGroupIds,
     createdAt: member.createdAt,
   };

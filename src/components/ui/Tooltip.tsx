@@ -1,7 +1,10 @@
 import { createPortal } from 'react-dom';
 import { useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { useAnchoredFloating, type FloatingPlacement } from '@/components/ui/popover/useAnchoredFloating';
+import {
+  useAnchoredFloating,
+  type FloatingPlacement,
+} from '@/components/ui/popover/useAnchoredFloating';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 

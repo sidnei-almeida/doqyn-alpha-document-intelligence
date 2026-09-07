@@ -38,10 +38,9 @@ describe('buildVectorSearchFilter', () => {
   it('sempre recorta por tenant — sem isso o vizinho mais próximo pode ser de outro cliente', () => {
     const filter = buildVectorSearchFilter(businessStorage);
     assert.ok(filterPaths(filter).includes('tenantId'));
-    assert.deepEqual(
-      (filter.$and as Record<string, unknown>[])[0],
-      { tenantId: { $eq: 'tenant_a' } },
-    );
+    assert.deepEqual((filter.$and as Record<string, unknown>[])[0], {
+      tenantId: { $eq: 'tenant_a' },
+    });
   });
 
   it('acrescenta ownerUserId no tenant PF', () => {

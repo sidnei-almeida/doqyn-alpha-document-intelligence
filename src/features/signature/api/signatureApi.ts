@@ -95,11 +95,14 @@ export async function createDocumentSignatureRequest(
     permissions?: { canDownloadAfterSign?: boolean };
   },
 ) {
-  const response = await authFetch(`/api/documents/${encodeURIComponent(documentId)}/signature-requests`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
+  const response = await authFetch(
+    `/api/documents/${encodeURIComponent(documentId)}/signature-requests`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }

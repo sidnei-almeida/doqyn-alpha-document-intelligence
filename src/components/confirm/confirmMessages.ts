@@ -20,9 +20,15 @@ export function buildRemoveGroupFromCategoryConfirm(groupName: string, categoryN
 }
 
 export function buildDeleteCategoryConfirm(categoryName: string) {
+  // O efeito da exclusão não está na pasta que some: está nos documentos que se mexem. Dizer
+  // "precisarão ser reclassificados" mandava a pessoa fazer à mão o que o servidor já faz.
+  //
+  // Sem número aqui de propósito: a tela só conhece o que carregou, e com filtro ativo o número
+  // seria menor que o real — pequeno demais para uma decisão irreversível. Quantos se moveram é o
+  // servidor que responde, depois.
   return {
     title: 'Excluir categoria?',
-    description: `A categoria "${categoryName}" será removida permanentemente. Documentos vinculados a ela precisarão ser reclassificados.`,
+    description: `A categoria "${categoryName}" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria, e nenhum documento é apagado.`,
     confirmLabel: 'Excluir categoria',
     confirmationText: CONFIRM_DELETE_WORD,
     variant: 'danger' as const,
@@ -52,7 +58,7 @@ export function buildDeleteGroupConfirm(groupName: string, memberCount: number) 
 export function buildRejectApprovalConfirm(name: string) {
   return {
     title: 'Recusar solicitação?',
-    description: `${name} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente — será necessário enviar um novo convite.`,
+    description: `${name} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente: será necessário enviar um novo convite.`,
     confirmLabel: 'Recusar',
     confirmationText: CONFIRM_DELETE_WORD,
     variant: 'danger' as const,

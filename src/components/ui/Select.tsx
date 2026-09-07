@@ -13,20 +13,40 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
 
-export interface SelectProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'value' | 'onChange'> {
+export interface SelectProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'value' | 'onChange'
+> {
   label?: string;
   error?: string;
   options: { value: string; label: string }[];
   value?: string;
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
+  /** `boxed` para formulários, `rule` para barras de filtro. */
+  variant?: 'boxed' | 'rule';
 }
 
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(
-  ({ className, label, error, id, options, value = '', disabled, onChange, ...props }, ref) => {
+  (
+    {
+      className,
+      label,
+      error,
+      id,
+      options,
+      value = '',
+      disabled,
+      onChange,
+      variant = 'boxed',
+      ...props
+    },
+    ref,
+  ) => {
     const [open, setOpen] = useState(false);
     const [anchorWidth, setAnchorWidth] = useState<number>();
     const anchorRef = useRef<HTMLButtonElement>(null);
     const selectedLabel = options.find((option) => option.value === value)?.label;
+    const isRule = variant === 'rule';
 
     useLayoutEffect(() => {
       if (!open || !anchorRef.current) return;
@@ -46,9 +66,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
     };
 
     return (
-      <div className={fieldWrapperClass}>
+      <div className={isRule ? 'flex min-w-0 flex-col gap-1.5' : fieldWrapperClass}>
         {label && (
-          <label htmlFor={id} className={fieldLabelClass}>
+          <label
+            htmlFor={id}
+            className={isRule ? 'register-label text-doqyn-subtle' : fieldLabelClass}
+          >
             {label}
           </label>
         )}
@@ -59,9 +82,14 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
           disabled={disabled}
           onClick={() => !disabled && setOpen((current) => !current)}
           className={cn(
-            fieldControlClass,
-            'flex items-center justify-between gap-2 text-left',
-            error && 'border-doqyn-danger focus-visible:ring-doqyn-danger/30',
+            'flex w-full items-center justify-between gap-2 text-left',
+            isRule
+              ? 'field-rule text-label'
+              : cn(
+                  fieldControlClass,
+                  error && 'border-doqyn-danger focus-visible:ring-doqyn-danger/30',
+                ),
+            disabled && 'cursor-not-allowed opacity-40',
             className,
           )}
           aria-expanded={open}
@@ -71,9 +99,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
           <span className="min-w-0 truncate">{selectedLabel ?? 'Selecionar'}</span>
           <Icon
             name="expand_more"
-            size={ICON_SIZE.sm}
+            size={isRule ? ICON_SIZE.xs : ICON_SIZE.sm}
             className={cn(
-              'shrink-0 text-doqyn-muted transition-transform duration-[var(--transition-duration-fast)]',
+              'shrink-0 text-doqyn-subtle transition-transform duration-[var(--transition-duration-fast)]',
               open && 'rotate-180',
             )}
           />

@@ -37,8 +37,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     label: 'Compartilhados comigo',
     description: 'Documentos enviados por outras pessoas aos quais você tem acesso.',
     emptyTitle: 'Nada compartilhado com você ainda',
-    emptyDescription:
-      'Quando alguém compartilhar um documento com você, ele aparecerá aqui.',
+    emptyDescription: 'Quando alguém compartilhar um documento com você, ele aparecerá aqui.',
     showFolders: false,
   },
   'para-assinar': {
@@ -47,8 +46,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     label: 'Para assinar',
     description: 'Documentos que aguardam sua assinatura eletrônica.',
     emptyTitle: 'Nenhum documento pendente de assinatura.',
-    emptyDescription:
-      'Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui.',
+    emptyDescription: 'Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui.',
     showFolders: false,
   },
   recentes: {
@@ -73,11 +71,9 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
     id: 'lixeira',
     slug: 'lixeira',
     label: 'Lixeira',
-    description:
-      'Documentos excluídos neste ambiente. Restaure antes do prazo; depois eles passam para Desativados.',
+    description: 'Restaure antes do prazo; depois vão para Desativados.',
     emptyTitle: 'A lixeira está vazia',
-    emptyDescription:
-      'Documentos excluídos aparecem aqui durante o período de retenção.',
+    emptyDescription: 'Documentos excluídos aparecem aqui durante o período de retenção.',
     showFolders: false,
   },
   desativados: {

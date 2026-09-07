@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 /**
  * Escolha de categoria em um clique.
@@ -46,9 +47,9 @@ export function CategoryQuickPicker({
 
   if (categories.length === 0) {
     return (
-      <p className="text-[11px] text-doqyn-muted">
-        Nenhuma categoria configurada para a empresa. Crie uma em Regras antes de classificar à mão.
-      </p>
+      <EmptyHint bare>
+        Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão.
+      </EmptyHint>
     );
   }
 
@@ -65,7 +66,7 @@ export function CategoryQuickPicker({
         />
       )}
 
-      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias da empresa">
+      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias">
         {filtered.map((category) => {
           const isSelected = category.id === selectedClassId;
           const isSuggested = category.id === suggestedClassId;
@@ -85,10 +86,12 @@ export function CategoryQuickPicker({
               )}
               data-testid={`category-quick-pick-${category.id}`}
             >
-              {isSelected && <Icon name="check" size={ICON_SIZE.xs} className="text-doqyn-primary" />}
+              {isSelected && (
+                <Icon name="check" size={ICON_SIZE.xs} className="text-doqyn-primary" />
+              )}
               {category.name}
               {isSuggested && !isSelected && (
-                <span className="text-[10px] uppercase tracking-wide text-doqyn-accent">IA</span>
+                <span className="text-doqyn-accent text-[10px] uppercase tracking-wide">IA</span>
               )}
             </button>
           );
@@ -96,7 +99,9 @@ export function CategoryQuickPicker({
       </div>
 
       {filtered.length === 0 && (
-        <p className="mt-2 text-[11px] text-doqyn-muted">Nenhuma categoria com esse nome.</p>
+        <EmptyHint bare className="mt-2">
+          Nenhuma categoria com esse nome.
+        </EmptyHint>
       )}
     </div>
   );

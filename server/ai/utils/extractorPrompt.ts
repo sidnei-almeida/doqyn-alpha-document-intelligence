@@ -3,6 +3,7 @@ import { MAX_CHARS_PER_EXTRACTOR_CHUNK, MAX_EXTRACTOR_FIELDS_IN_PROMPT } from '.
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import {
   augmentConfidentialityClassForExtraction,
+  hasFinancialRoleFields,
   isConfidentialityClassRule,
 } from './documentClassHeuristics.js';
 
@@ -38,8 +39,7 @@ function limitExtractorChunks(chunks: RetrievedChunk[]): RetrievedChunk[] {
 function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorField[] {
   const classForFields = augmentConfidentialityClassForExtraction(selectedClass);
   const sorted = [...classForFields.fields].sort((a, b) => {
-    const partyBoost =
-      Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
+    const partyBoost = Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
     if (partyBoost !== 0) return partyBoost;
     const validityBoost =
       Number(VALIDITY_FIELD_KEYS.has(b.key)) - Number(VALIDITY_FIELD_KEYS.has(a.key));
@@ -69,7 +69,7 @@ function toCompactFields(selectedClass: DocumentClassRule): CompactExtractorFiel
  * schema já separa `value` (o que está escrito) de `normalizedValue` (a forma padronizada), o
  * caminho mais barato é o próprio modelo entregar as duas.
  */
-function normalizationContract(): string {
+export function normalizationContract(): string {
   return `
 PADRONIZAÇÃO — obrigatória para todo campo preenchido:
 Cada campo tem dois lados. \`value\` é o que está literalmente escrito no documento. \`normalizedValue\`
@@ -87,12 +87,36 @@ Padronize \`normalizedValue\` conforme o \`type\` declarado do campo:
   do dado ("CONTRATANTE:", "Nome:"), preserve a grafia própria de nomes e razões sociais.
 - type "boolean": true ou false.
 
-VALORES DERIVADOS:
-Quando o documento traz uma data âncora e um prazo relativo em vez da data final, calcule.
-Exemplo do padrão: âncora 2026-06-09 + "7 (sete) anos" → 2033-06-09. Vale para vigência, validade,
-garantia, carência, renovação — qualquer par âncora+prazo. Registre no evidence.snippet que o valor
-foi calculado e de quais trechos. Sem âncora explícita no texto, o campo é null: nunca use a data de
-hoje, de upload ou de criação do arquivo como âncora.
+VALORES DERIVADOS — o campo mais esquecido, e o que mais dá trabalho depois:
+Data final quase nunca está escrita. O que o documento traz é uma data âncora e um prazo, em
+lugares diferentes, e cabe a você juntar os dois. Não desista de um campo de vencimento, validade
+ou término só porque não achou uma data escrita para ele.
+
+Procure em duas etapas:
+1. A âncora — a data que identifica o documento: assinatura, celebração, emissão, referência,
+   lavratura, início de vigência.
+2. O prazo — em qualquer lugar do texto, inclusive no meio de uma cláusula que trata de outro
+   assunto. "Pelo prazo de 3 (três) anos", "vigorará por 5 anos", "válido por 90 dias", "garantia
+   de 24 meses". O prazo raramente está perto do rótulo do campo.
+
+Some os dois e escreva a data final em yyyy-mm-dd. Exemplo: âncora 2026-06-09 + "3 (três) anos" →
+2029-06-09. Registre no evidence.snippet os DOIS trechos que sustentam a conta — o da âncora e o do
+prazo.
+
+Cuidado com o prazo errado: um documento traz vários. Pagamento em 30 dias, aviso prévio de 60,
+entrega em 15 — nenhum desses governa a validade do documento. Use o prazo ligado a vigência,
+validade, confidencialidade, garantia ou ao objeto principal.
+
+Quando mais de um prazo parecer governar, vale o da obrigação central DESTE documento — a que dá
+nome ao que ele é, não a de uma cláusula acessória. Num acordo de confidencialidade é o prazo de
+sigilo, e não o de não aliciamento ou não concorrência, que são obrigações dentro dele. Num termo
+de garantia é o prazo de garantia; numa apólice, o da cobertura; num contrato de prestação, o da
+vigência. Leia o documento antes de escolher: o mesmo raciocínio dá respostas diferentes conforme
+o que ele é. Havendo dois prazos igualmente centrais, deixe o campo null e explique em
+reviewReasons: é melhor que alguém decida do que escolher no par ou ímpar.
+
+Sem âncora explícita no texto, o campo é null. Nunca use a data de hoje, de upload ou de criação do
+arquivo como âncora.
 
 ABSTENÇÃO:
 null é resposta correta e frequente. Preencher um campo com valor plausível mas não comprovado é
@@ -104,6 +128,35 @@ Um documento costuma conter vários valores do mesmo formato — várias datas, 
 nomes, vários valores. Formato igual não significa mesmo papel. Antes de preencher, confira que o
 trecho encontrado desempenha exatamente o papel descrito em \`description\`. Proximidade no texto não
 é evidência.`;
+}
+
+/**
+ * Documento financeiro — quem paga, quem recebe e quem só intermedeia.
+ *
+ * Metade das falhas de extração medidas no conjunto de teste está aqui, e todas
+ * do mesmo feitio: o modelo pega a razão social mais destacada da página. Num
+ * boleto isso é o banco, que está no topo em caixa alta e não prestou serviço
+ * nenhum; num recibo é o pagador, que aparece primeiro na frase. Não é falta de
+ * leitura, é falta de dizer qual papel o campo pede.
+ */
+function financialExtractionHints(): string {
+  return `
+DOCUMENTO FINANCEIRO — quem é quem:
+1. \`fornecedor\` é quem ENTREGOU o produto ou o serviço e tem a receber. Nunca é o banco, a
+   operadora de cartão ou a plataforma de cobrança: essas só transportam o dinheiro.
+   - Em boleto: o BENEFICIÁRIO / CEDENTE. O nome no alto do boleto é o banco emissor — ignore-o.
+   - Em nota fiscal / DANFE: o EMITENTE. O DESTINATÁRIO é quem compra, e costuma estar em caixa
+     maior — tamanho não indica papel.
+   - Em recibo: quem ASSINA o recibo e dá quitação. Quem aparece depois de "Recebi de" é o pagador,
+     e é o oposto do que este campo pede.
+   - Em fatura: o emissor da fatura, não o sacado nem o tomador.
+2. \`numero_nota\` é o número do próprio documento fiscal. Não confunda com:
+   - chave de acesso da NF-e (44 dígitos), "nosso número" ou linha digitável do boleto;
+   - número do pedido de compra, do contrato, do processo ou do talão impresso no bloco.
+   Recibo avulso e comprovante sem numeração fiscal: o campo é null, mesmo havendo um número
+   impresso na folha.
+3. \`data_emissao\` é quando o documento foi emitido — não o vencimento, não a data de saída da
+   mercadoria, não a data de processamento no banco, não a competência do serviço.`;
 }
 
 function confidentialityExtractionHints(): string {
@@ -133,6 +186,19 @@ Exemplo de metadados corretos para NDA:
 }
 
 /**
+ * As dicas que valem para esta classe, concatenadas.
+ *
+ * Exportado porque o Avaliador precisa exatamente das mesmas: ele audita um extrator que já teve
+ * essas instruções na mão e errou mesmo assim, então conferir sem elas seria conferir contra um
+ * critério mais frouxo que o da própria tarefa.
+ */
+export function classExtractionHints(selectedClass: DocumentClassRule): string {
+  const nda = isConfidentialityClassRule(selectedClass) ? confidentialityExtractionHints() : '';
+  const financial = hasFinancialRoleFields(selectedClass) ? financialExtractionHints() : '';
+  return `${nda}${financial}`;
+}
+
+/**
  * Tudo que não muda entre documentos vem antes dos trechos, de propósito: o cache de prompt da
  * Groq casa por prefixo e desconta 50% do que reaproveitar. Como instruções, campos da classe e
  * formato de resposta são idênticos para todo documento da mesma classe, deixá-los no início
@@ -145,7 +211,13 @@ export function buildCompactExtractorPrompt(
 ): { prompt: string; compactChunks: RetrievedChunk[] } {
   const compactChunks = limitExtractorChunks(chunks);
   const fields = toCompactFields(selectedClass);
-  const ndaHints = isConfidentialityClassRule(selectedClass) ? confidentialityExtractionHints() : '';
+  const ndaHints = isConfidentialityClassRule(selectedClass)
+    ? confidentialityExtractionHints()
+    : '';
+  // As dicas financeiras seguem os campos, não o nome da pasta: o tenant pode
+  // chamá-la de "Fiscal", "Contas a pagar" ou "Documentos Financeiros", e o que
+  // identifica o caso é o campo `numero_nota` ao lado de `fornecedor`.
+  const financialHints = hasFinancialRoleFields(selectedClass) ? financialExtractionHints() : '';
 
   const prompt = `Você extrai metadados estruturados de documentos para o DOQYN.
 
@@ -170,16 +242,26 @@ Regras gerais:
 
 Além dos campos, preencha "naming" com o que VOCÊ entendeu do documento — não se limite à
 classe informada, que é apenas a pasta onde ele será arquivado:
-- naming.tipo: o que o documento É, em uma ou duas palavras, em MAIÚSCULAS. Use o termo que a
-  pessoa usaria ao procurá-lo: NDA, RECEITA, NOTA FISCAL, REEMBOLSO, DESENHO TECNICO, LAUDO,
-  CURRICULO, PROPOSTA. Nunca use o nome da classe nem palavras vazias como DOCUMENTO ou ARQUIVO.
+- naming.tipo: o que o documento É, em uma a três palavras, em MAIÚSCULAS, com espaço entre elas.
+  Use o termo que a pessoa usaria ao procurá-lo: NDA, RECEITA, NOTA FISCAL, ORDEM DE COMPRA,
+  REEMBOLSO, DESENHO TECNICO, LAUDO, CURRICULO, PROPOSTA, PROCURACAO, ATESTADO MEDICO.
+  Escreva "ORDEM DE COMPRA", nunca "ORDEMDECOMPRA": palavra colada vira nome de arquivo ilegível.
+  Nunca use o nome da classe nem palavras vazias como DOCUMENTO ou ARQUIVO.
 - naming.sujeitos: uma ou duas entidades que distinguem ESTE documento de outro do mesmo tipo —
   as partes de um contrato, o paciente e quem prescreve numa receita, o fornecedor de uma nota,
   a peça de um desenho. Nomes próprios ou razão social, sem qualificação nem documento fiscal.
 - naming.dataReferencia: a data que identifica o documento (assinatura, emissão, validade ou
   revisão), em yyyy-mm-dd. Use null se o documento não trouxer data.
+
+Preencha também "resumo": um parágrafo de duas a três linhas, em português, dizendo o que o
+documento é e do que trata — quem são as partes ou o objeto, e o que ele estabelece, cobra ou
+atesta. É para alguém entender o documento sem abri-lo.
+- Só o que está escrito no documento. Não interprete consequências, não julgue, não recomende.
+- Sem repetir o nome do arquivo, sem preâmbulo ("Este documento..."), sem listar campo por campo:
+  os campos já estão em metadata, e repeti-los aqui desperdiça as três linhas.
+- No máximo 400 caracteres. Documento ilegível ou sem conteúdo aproveitável: use null.
 ${normalizationContract()}
-${ndaHints}
+${ndaHints}${financialHints}
 
 Classe documental: ${selectedClass.name}
 Descrição: ${selectedClass.description?.trim() || '—'}
@@ -188,7 +270,7 @@ fields (ordem de prioridade):
 ${JSON.stringify(fields, null, 2)}
 
 Formato de resposta (repare em value × normalizedValue nos dois exemplos):
-{"documentType":"string","version":"v1.0","naming":{"tipo":"NDA","sujeitos":["Cristiano Baldissera","Sidnei Almeida"],"dataReferencia":"2026-06-09"},"metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
+{"documentType":"string","version":"v1.0","resumo":"Acordo de confidencialidade entre Cristiano Baldissera e Sidnei Almeida, celebrado em 09/06/2026. Protege informações técnicas e comerciais trocadas na avaliação de uma parceria, com sigilo de sete anos e cláusulas de não concorrência e não aliciamento por três anos.","naming":{"tipo":"NDA","sujeitos":["Cristiano Baldissera","Sidnei Almeida"],"dataReferencia":"2026-06-09"},"metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
 
 Trechos do documento:
 ${formatChunksForPrompt(compactChunks)}`;

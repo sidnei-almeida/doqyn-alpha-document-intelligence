@@ -19,9 +19,9 @@ type ExplorerActionsProviderProps = {
   onToggleStar: (documentId: string, currentIsFavorite?: boolean) => void;
   onOpenContextMenu: (state: ExplorerContextMenuState) => void;
 } & FileItemActionHandlers & {
-  onDetails: (doc: DocumentListItem) => void;
-  onViewSignatures?: (doc: DocumentListItem) => void;
-};
+    onDetails: (doc: DocumentListItem) => void;
+    onViewSignatures?: (doc: DocumentListItem) => void;
+  };
 
 export function ExplorerActionsProvider({
   children,

@@ -153,6 +153,33 @@ export const aiProviderLatencySeconds = new Histogram({
   registers: [prometheusRegistry],
 });
 
+/**
+ * Token é a moeda real do pipeline. A latência já era medida, mas ela esconde o que interessa
+ * quando o laço de refino entra em produção: duas chamadas curtas podem custar mais da janela por
+ * minuto que uma longa. Separado por `kind` porque entrada e saída têm preço e limite diferentes.
+ */
+export const aiProviderTokensTotal = new Counter({
+  name: 'doqyn_ai_provider_tokens_total',
+  help: 'Tokens consumidos no provedor de IA',
+  labelNames: ['provider', 'operation', 'kind'] as const,
+  registers: [prometheusRegistry],
+});
+
+/**
+ * De onde veio a data de vencimento de cada documento analisado.
+ *
+ * O alerta de vencimento depende deste campo, e até aqui não havia contagem de quantos documentos
+ * saíam com ele. `ausente` é o número que importa acompanhar: é o documento cujo alerta nunca vai
+ * disparar. `sem_campo` fica separado porque classe sem data final não é falha e não pode inflar a
+ * taxa de acerto nem a de erro.
+ */
+export const documentExpiryProvenanceTotal = new Counter({
+  name: 'doqyn_document_expiry_provenance_total',
+  help: 'Origem da data de vencimento nos documentos analisados',
+  labelNames: ['origin'] as const,
+  registers: [prometheusRegistry],
+});
+
 export const quotaExceededTotal = new Counter({
   name: 'doqyn_quota_exceeded_total',
   help: 'Total de rejeições por quota de tenant excedida',
@@ -265,11 +292,20 @@ export function recordAnalysisSaturationRequeue(input: { jobKind: string }): voi
   analysisSaturationRequeuesTotal.inc({ job_kind: input.jobKind });
 }
 
+export function recordDocumentExpiryProvenance(origin: string): void {
+  if (!isPrometheusEnabled()) return;
+
+  documentExpiryProvenanceTotal.inc({ origin });
+}
+
 export function recordAiProviderRequest(input: {
   provider: string;
   operation: string;
   status: 'success' | 'error' | 'rate_limit';
   durationSeconds: number;
+  /** Ausentes quando a chamada falhou: a Groq não reporta uso em resposta de erro. */
+  promptTokens?: number;
+  completionTokens?: number;
 }): void {
   if (!isPrometheusEnabled()) return;
 
@@ -282,6 +318,19 @@ export function recordAiProviderRequest(input: {
     { provider: input.provider, operation: input.operation },
     input.durationSeconds,
   );
+
+  if (input.promptTokens) {
+    aiProviderTokensTotal.inc(
+      { provider: input.provider, operation: input.operation, kind: 'prompt' },
+      input.promptTokens,
+    );
+  }
+  if (input.completionTokens) {
+    aiProviderTokensTotal.inc(
+      { provider: input.provider, operation: input.operation, kind: 'completion' },
+      input.completionTokens,
+    );
+  }
 }
 
 export function recordVisionOcrRequest(input: {

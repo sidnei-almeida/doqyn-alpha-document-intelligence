@@ -71,8 +71,16 @@ async function loadVersionRecord(input: {
   return (version as MongoDocumentVersion | null) ?? null;
 }
 
-export async function queryDocumentRag(input: DocumentRagQueryInput): Promise<DocumentRagQueryResponse> {
-  const mode = input.mode ?? (input.compareVersionId || input.compareVersionLabel ? 'compare' : input.currentOnly === false ? 'version' : 'current');
+export async function queryDocumentRag(
+  input: DocumentRagQueryInput,
+): Promise<DocumentRagQueryResponse> {
+  const mode =
+    input.mode ??
+    (input.compareVersionId || input.compareVersionLabel
+      ? 'compare'
+      : input.currentOnly === false
+        ? 'version'
+        : 'current');
 
   if (mode === 'compare') {
     const currentResult = await queryDocumentChunksForRag({
@@ -108,8 +116,14 @@ export async function queryDocumentRag(input: DocumentRagQueryInput): Promise<Do
             newMetadata: currentVersion.metadata ?? {},
             oldCategory: previousVersion.classification?.className,
             newCategory: currentVersion.classification?.className,
-            oldSummary: buildMetadataSummary(previousVersion.metadata ?? {}, previousVersion.classification?.className),
-            newSummary: buildMetadataSummary(currentVersion.metadata ?? {}, currentVersion.classification?.className),
+            oldSummary: buildMetadataSummary(
+              previousVersion.metadata ?? {},
+              previousVersion.classification?.className,
+            ),
+            newSummary: buildMetadataSummary(
+              currentVersion.metadata ?? {},
+              currentVersion.classification?.className,
+            ),
           })
         : undefined;
 
@@ -252,7 +266,10 @@ export async function answerWhatChanged(input: {
     newMetadata: toVersion.metadata ?? {},
     oldCategory: fromVersion.classification?.className,
     newCategory: toVersion.classification?.className,
-    oldSummary: buildMetadataSummary(fromVersion.metadata ?? {}, fromVersion.classification?.className),
+    oldSummary: buildMetadataSummary(
+      fromVersion.metadata ?? {},
+      fromVersion.classification?.className,
+    ),
     newSummary: buildMetadataSummary(toVersion.metadata ?? {}, toVersion.classification?.className),
   });
 

@@ -39,9 +39,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     assertCanAccessDocument(doc as Record<string, unknown>, docCtx.storage);
 
-    const mode = (typeof req.query.mode === 'string' ? req.query.mode : 'current') as DocumentRagQueryMode;
+    const mode = (
+      typeof req.query.mode === 'string' ? req.query.mode : 'current'
+    ) as DocumentRagQueryMode;
     const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
-    const versionLabel = typeof req.query.versionLabel === 'string' ? req.query.versionLabel : undefined;
+    const versionLabel =
+      typeof req.query.versionLabel === 'string' ? req.query.versionLabel : undefined;
     const compareVersionId =
       typeof req.query.compareVersionId === 'string' ? req.query.compareVersionId : undefined;
     const compareVersionLabel =

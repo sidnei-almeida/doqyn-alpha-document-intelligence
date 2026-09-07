@@ -5,10 +5,7 @@ import { normalizeApiRouteLabel } from '../server/metrics/apiRouteLabel.js';
 describe('Prometheus — labels de rota', () => {
   it('normaliza IDs dinâmicos sem explodir cardinalidade', () => {
     assert.equal(normalizeApiRouteLabel('/api/health'), '/api/health');
-    assert.equal(
-      normalizeApiRouteLabel('/api/ai/jobs/job_abc123xyz'),
-      '/api/ai/jobs/:jobId',
-    );
+    assert.equal(normalizeApiRouteLabel('/api/ai/jobs/job_abc123xyz'), '/api/ai/jobs/:jobId');
     assert.equal(
       normalizeApiRouteLabel('/api/documents/507f1f77bcf86cd799439011'),
       '/api/documents/:documentId',

@@ -20,7 +20,7 @@ import {
   saveTenantMember,
   updateTenantMemberFields,
 } from './tenantMemberRepository.js';
-import { mergeNotificationPreferences } from './accessRequestService.js';
+import { mergeNotificationPreferences } from './notifications/notificationPreferences.js';
 
 async function getMemberOrThrowForActor(actor: AuthUser, memberId: string): Promise<MongoTenantMember> {
   const member = await getTenantMemberById(memberId);

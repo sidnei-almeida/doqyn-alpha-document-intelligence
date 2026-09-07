@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readDocumentPreviewPageImage } from '../../server/services/documentPreviewManifestService.js';
+import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
+import { emitDocumentFailureEvent } from '../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { setPreviewAssetCacheHeaders } from '../../server/utils/previewCacheHeaders.js';
@@ -12,8 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireDocumentAuthContext(req, res);
   if (!auth) return;
 
-  const documentId =
-    typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
+  const documentId = typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
   const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
   const pageRaw = typeof req.query.page === 'string' ? req.query.page : undefined;
   const pageNumber = pageRaw ? Number.parseInt(pageRaw, 10) : NaN;
@@ -41,15 +42,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
     res.setHeader('Content-Disposition', `inline; filename="${file.fileName.replace(/"/g, '')}"`);
-    setPreviewAssetCacheHeaders(
-      res,
-      `"${documentId}:${versionId}:page:${pageNumber}"`,
-      { immutable: false },
-    );
+    setPreviewAssetCacheHeaders(res, `"${documentId}:${versionId}:page:${pageNumber}"`, {
+      immutable: false,
+    });
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     return res.status(200).send(file.buffer);
   } catch (error) {
+    await emitDocumentFailureEvent(buildDocumentAuditContext(auth.ctx, auth.user), req, {
+      action: 'document.preview_failed',
+      description: 'Falha ao servir página do preview.',
+      documentId,
+      versionId,
+      error,
+      source: 'preview_page',
+    });
+
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });
     }

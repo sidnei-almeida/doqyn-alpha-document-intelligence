@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
-import type { DocumentDetailResponse, DocumentListFilters, DocumentListItem } from '@/types/document-library';
+import type {
+  DocumentDetailResponse,
+  DocumentListFilters,
+  DocumentListItem,
+} from '@/types/document-library';
 import { documentHasPendingSignature } from '@/features/signature/utils/signatureSummaryDisplay';
 import { serializeDocumentFilters } from '@/features/library/utils/libraryFilterUtils';
 import { logLibraryDev } from '@/features/upload/utils/uploadDevLog';

@@ -6,7 +6,7 @@ import type {
   PlatformRole,
   TenantMemberStatus,
 } from '../db/types.js';
-import { getDb } from '../db/mongoClient.js';
+import { getDb, isMongoNativeConfigured } from '../db/mongoClient.js';
 import {
   getMemberAccessGroupIds,
   getMemberPlatformRoles,
@@ -21,7 +21,9 @@ import {
 } from './tenantMemberSyncService.js';
 
 export function tenantMemberToCompanyMember(member: MongoTenantMember): MongoCompanyMember {
-  const tenantRoles = member.tenantRoles?.length ? member.tenantRoles : (['user'] as PlatformRole[]);
+  const tenantRoles = member.tenantRoles?.length
+    ? member.tenantRoles
+    : (['user'] as PlatformRole[]);
   const accessGroupIds = getMemberAccessGroupIds(member as unknown as MongoCompanyMember);
   const authUserId = member.authUserId;
 
@@ -103,19 +105,23 @@ export async function findTenantMemberByEmailInTenant(
   const emailNormalized = normalizeEmail(email);
   const statusFilter = statuses?.length ? { status: { $in: statuses } } : {};
 
-  const member = await db.collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers).findOne({
-    tenantId,
-    emailNormalized,
-    ...statusFilter,
-  } as Record<string, unknown>);
+  const member = await db
+    .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
+    .findOne({
+      tenantId,
+      emailNormalized,
+      ...statusFilter,
+    } as Record<string, unknown>);
 
   if (member) return member;
 
-  const legacy = await db.collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers).findOne({
-    companyId: tenantId,
-    email: emailNormalized,
-    ...statusFilter,
-  } as Record<string, unknown>);
+  const legacy = await db
+    .collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers)
+    .findOne({
+      companyId: tenantId,
+      email: emailNormalized,
+      ...statusFilter,
+    } as Record<string, unknown>);
 
   return legacy ? companyMemberToTenantMember(legacy) : null;
 }
@@ -147,11 +153,13 @@ export async function saveTenantMember(member: MongoTenantMember): Promise<Mongo
     updatedAt: new Date(),
   };
 
-  await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
-    { _id: doc._id } as Record<string, unknown>,
-    { $set: doc, $unset: { keycloakUserId: '' } },
-    { upsert: true },
-  );
+  await db
+    .collection(REGISTRY_COLLECTIONS.tenantMembers)
+    .updateOne(
+      { _id: doc._id } as Record<string, unknown>,
+      { $set: doc, $unset: { keycloakUserId: '' } },
+      { upsert: true },
+    );
 
   return doc;
 }
@@ -209,4 +217,31 @@ export async function updateTenantMemberFields(
   };
 
   return saveTenantMember(updated);
+}
+
+/**
+ * Em que empresas esta pessoa está ativa.
+ *
+ * `tenant_members` é registro compartilhado, não coleção por tenant: a resposta atravessa a
+ * fronteira sem precisar perguntar ao auth-service, e sem que o diretório precise contar a
+ * ninguém onde alguém trabalha.
+ *
+ * Existe para entregar aviso a quem está fora. Uma notificação é gravada com `tenantId`, e o sino
+ * consulta por `tenantId` mais `userId` — sem saber as empresas da pessoa, o aviso do que chegou
+ * de outra empresa era gravado num tenant vazio e ninguém o via.
+ */
+export async function findActiveTenantIdsForUser(userId: string): Promise<string[]> {
+  if (!isMongoNativeConfigured() || !userId?.trim()) return [];
+
+  const db = await getDb();
+  const members = await db
+    .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
+    .find({ status: 'active', $or: [{ authUserId: userId }, { memberId: userId }] } as Record<
+      string,
+      unknown
+    >)
+    .project({ tenantId: 1 })
+    .toArray();
+
+  return [...new Set(members.map((member) => String(member.tenantId)).filter(Boolean))];
 }

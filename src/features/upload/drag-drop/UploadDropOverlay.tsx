@@ -10,7 +10,7 @@ export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
 
   return (
     <div
-      className="bg-doqyn-bg/80 pointer-events-none fixed inset-0 z-[90] flex items-center justify-center backdrop-blur-sm"
+      className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center bg-doqyn-bg/80 backdrop-blur-sm"
       role="presentation"
       data-testid="upload-drop-overlay"
     >

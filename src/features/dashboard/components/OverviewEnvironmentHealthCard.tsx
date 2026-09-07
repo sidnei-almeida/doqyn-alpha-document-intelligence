@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
+import { OverviewLinkAction } from './OverviewLinkAction';
 import { OverviewPanelShell } from './OverviewPanelShell';
 
 type HealthIndicatorProps = {
@@ -15,6 +16,11 @@ type HealthIndicatorProps = {
   canManage?: boolean;
 };
 
+/**
+ * Atestado é texto, alerta é etiqueta. A pílula verde de "OK" repetida três
+ * vezes gritava o que já é o esperado; agora o que preenche é o que precisa
+ * de decisão.
+ */
 function HealthIndicator({
   label,
   ok,
@@ -24,55 +30,25 @@ function HealthIndicator({
   canManage = true,
 }: HealthIndicatorProps) {
   const restricted = !ok && !canManage;
-  const badgeLabel = ok ? 'OK' : restricted ? 'Restrito' : 'Atenção';
   const resolvedDetail =
-    detail ??
-    (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
+    detail ?? (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
 
   return (
-    <div className="overview-health-row flex items-center justify-between gap-3 rounded-lg px-1 py-2">
-      <div className="flex min-w-0 items-center gap-3">
-        <Icon
-          name={ok ? 'check_circle' : restricted ? 'lock' : 'circle'}
-          filled={ok}
-          size={ICON_SIZE.md}
-          className={cn(
-            'shrink-0',
-            ok
-              ? 'text-emerald-600/80 dark:text-emerald-400/80'
-              : restricted
-                ? 'text-doqyn-muted'
-                : 'text-doqyn-warning',
-          )}
-          aria-hidden
-        />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-doqyn-text">{label}</p>
-          {resolvedDetail && <p className="text-xs text-doqyn-muted">{resolvedDetail}</p>}
-        </div>
+    <div className="overview-row flex items-center justify-between gap-3 py-3 pl-4 pr-1">
+      <div className="min-w-0">
+        <p className="text-label font-medium text-doqyn-text">{label}</p>
+        {resolvedDetail && <p className="overview-row-meta mt-0.5">{resolvedDetail}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span
-          className={cn(
-            'overview-health-badge',
-            ok
-              ? 'overview-health-badge--ok'
-              : restricted
-                ? 'overview-health-badge--restricted'
-                : 'overview-health-badge--pending',
-          )}
-        >
-          {badgeLabel}
-        </span>
+      <div className="flex shrink-0 items-center gap-2.5">
+        {ok ? (
+          <span className="overview-status-mark overview-status-mark--ok">OK</span>
+        ) : restricted ? (
+          <span className="overview-status-mark">Restrito</span>
+        ) : (
+          <span className="overview-status-tag">Atenção</span>
+        )}
         {!ok && canManage && actionLabel && onAction && (
-          <button
-            type="button"
-            onClick={onAction}
-            className="overview-health-action flex items-center gap-0.5 text-xs font-medium text-doqyn-primary hover:underline"
-          >
-            {actionLabel}
-            <Icon name="chevron_right" size={14} aria-hidden />
-          </button>
+          <OverviewLinkAction onClick={onAction}>{actionLabel}</OverviewLinkAction>
         )}
       </div>
     </div>
@@ -97,22 +73,23 @@ export function OverviewEnvironmentHealthCard({
       title="Saúde do ambiente"
       subtitle="Integridade operacional"
       titleId="overview-health-title"
-      className="h-full"
-      bodyClassName="flex flex-col gap-3 px-4 pb-4 pt-0 sm:px-5 sm:pb-5"
+      bodyClassName="flex flex-col"
       data-testid="overview-environment-health"
     >
-      <div className="space-y-1">
+      <div className="flex flex-col">
+        {/* Sem ação, e de propósito: `hasStorageConfigured` é `isStorageConfigured()`, uma
+            checagem das credenciais do R2 no ambiente do servidor. Vale igual para todos os
+            tenants e nenhum administrador a resolve por Configurações — o atalho que existia
+            aqui levava a uma tela onde não há esse botão. Falta storage é assunto de quem
+            opera o deploy, então o indicador acusa e para por aí. */}
         <HealthIndicator
           label="Storage"
           ok={health.hasStorageConfigured}
-          detail={health.hasStorageConfigured ? 'Armazenamento configurado' : 'Verifique integração'}
-          actionLabel="Sistema"
-          onAction={
-            !health.hasStorageConfigured
-              ? () => navigate('/settings?section=empresa&tab=sistema')
-              : undefined
+          detail={
+            health.hasStorageConfigured
+              ? 'Armazenamento configurado'
+              : 'Indisponível no ambiente. Contate o suporte'
           }
-          canManage={canManageGovernance}
         />
         <HealthIndicator
           label="Categorias"
@@ -152,24 +129,24 @@ export function OverviewEnvironmentHealthCard({
         />
       </div>
 
-      {bucketNameMasked && (
-        <p className="text-xs text-doqyn-muted border-t border-doqyn-border-subtle/70 pt-3">
-          Bucket: <span className="font-medium text-doqyn-text">{bucketNameMasked}</span>
-        </p>
-      )}
-
       {health.warnings.length > 0 && (
-        <ul className="overview-health-warnings max-h-28 space-y-2 overflow-y-auto border-t border-doqyn-border-subtle/70 pt-3 scrollbar-thin">
+        <ul className="scrollbar-thin max-h-28 space-y-2 overflow-y-auto pt-3">
           {health.warnings.map((warning) => (
             <li
               key={warning}
-              className="flex items-start gap-2 text-xs leading-relaxed text-doqyn-warning"
+              className="flex items-start gap-2 text-caption leading-relaxed text-doqyn-warning"
             >
               <Icon name="warning" size={ICON_SIZE.xs} className="mt-0.5 shrink-0" aria-hidden />
               <span>{warning}</span>
             </li>
           ))}
         </ul>
+      )}
+
+      {bucketNameMasked && (
+        <p className={cn('overview-row-meta mt-auto pl-4 pt-3')}>
+          Bucket <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
+        </p>
       )}
     </OverviewPanelShell>
   );

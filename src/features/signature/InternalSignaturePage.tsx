@@ -29,7 +29,7 @@ type PreviewState =
   | { kind: 'unavailable'; message: string }
   | { kind: 'error'; message: string };
 
-function formatDate(iso: string): string {
+function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -160,7 +160,7 @@ export function InternalSignaturePage() {
 
   const expiresLabel = useMemo(() => {
     if (!payload?.expiresAt) return null;
-    return formatDate(payload.expiresAt);
+    return formatDateTime(payload.expiresAt);
   }, [payload?.expiresAt]);
 
   const handleSign = async () => {
@@ -358,7 +358,7 @@ export function InternalSignaturePage() {
             title: 'Documento',
             fields: [
               { label: 'Nome', value: payload?.documentName ?? '' },
-              { label: 'Versão', value: payload?.versionLabel ? `v${payload.versionLabel}` : '—' },
+              { label: 'Versão', value: payload?.versionLabel ?? '—' },
               { label: 'Solicitante', value: payload?.issuerName ?? '' },
             ],
           },
@@ -366,8 +366,7 @@ export function InternalSignaturePage() {
         attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
         submitting={signing}
         confirmLabel="Confirmar assinatura"
-        cancelLabel="Cancelar"
-        editLabel="Voltar"
+        cancelLabel="Voltar"
         onCancel={() => setConfirmOpen(false)}
         onEdit={() => setConfirmOpen(false)}
         onConfirm={() => void handleSign()}

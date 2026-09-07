@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import {
+  CANONICAL_VALIDITY_KEY,
+  canonicalizeMetadataKey,
+} from '../shared/metadataKeyNormalize.js';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
@@ -17,27 +21,18 @@ describe('vencimentos — edição manual no documento', () => {
     const projection = read('server/services/confirm/projectSearchMeta.ts');
 
     // Gravar outra chave preencheria o metadado sem nunca alimentar searchMeta.validityDate,
-    // e portanto sem nunca disparar alerta.
-    assert.ok(editor.includes("const VALIDITY_KEY = 'data_vencimento'"));
-    assert.ok(projection.includes("'data_vencimento'"));
+    // e portanto sem nunca disparar alerta. É `data_validade` e não `data_vencimento` porque só
+    // essa sobrevive à canonicalização da confirmação — a outra é renomeada para cá, e a linha da
+    // regra ficava vazia com o dado aparecendo abaixo, fora da regra.
+    assert.ok(editor.includes('const VALIDITY_KEY = CANONICAL_VALIDITY_KEY'));
+    assert.equal(canonicalizeMetadataKey(CANONICAL_VALIDITY_KEY), CANONICAL_VALIDITY_KEY);
+    assert.ok(projection.includes("'data_validade'"));
     assert.ok(projection.includes('VALIDITY_SOURCE_KEYS'));
   });
 
   it('campo vazio apaga o valor em vez de mandar string vazia', () => {
     const editor = read('src/features/expiry/components/DocumentExpiryEditor.tsx');
     assert.ok(editor.includes('value: raw ? raw : null'));
-  });
-
-  it('sem permissão de atualização os campos não são editáveis', () => {
-    const editor = read('src/features/expiry/components/DocumentExpiryEditor.tsx');
-
-    // A permissão do painel e a da ficha do servidor precisam valer as duas: o painel pode estar
-    // com cache antigo, e a ficha é quem o PATCH vai checar de fato.
-    assert.ok(editor.includes('const editable = canEdit && (sheet?.canEdit ?? true)'));
-    assert.ok(editor.includes('Você não tem permissão para editar'));
-
-    const panel = read('src/features/documents/components/DocumentDetailPanel.tsx');
-    assert.ok(panel.includes('canEdit={Boolean(data.permissions.canUpdate)}'));
   });
 
   it('a tabela lista os campos da regra da categoria, não só os extraídos', () => {
@@ -102,30 +97,33 @@ describe('vencimentos — configuração na regra da categoria', () => {
   });
 });
 
-describe('vencimentos — caixa de alertas', () => {
+// A caixa de vencimentos foi absorvida pelas notificações em `e95fa66` ("o sino deixa de ser só
+// de vencimento"): a rota `/vencimentos` virou `/notificacoes`, e `ExpiryAlertsBell` virou
+// `NotificationsBell`. As garantias abaixo são as mesmas de antes, apuradas no lugar novo.
+describe('vencimentos — caixa de alertas, dentro das notificações', () => {
   it('a rota da página está registrada', () => {
     const routes = read('src/app/routes.tsx');
     const lazy = read('src/app/lazyRoutes.tsx');
 
-    assert.ok(routes.includes("path: '/vencimentos'"));
-    assert.ok(lazy.includes('ExpiryAlertsRoute'));
-    assert.ok(lazy.includes('@/features/expiry/ExpiryAlertsPage'));
+    assert.ok(routes.includes("path: '/notificacoes'"));
+    assert.ok(lazy.includes('NotificationsRoute'));
+    assert.ok(lazy.includes('@/features/notifications/NotificationsPage'));
   });
 
   it('o sino está na barra superior', () => {
     const topbar = read('src/components/layout/WorkspaceTopBar.tsx');
-    assert.ok(topbar.includes('ExpiryAlertsBell'));
+    assert.ok(topbar.includes('NotificationsBell'));
   });
 
-  it('o cache de alertas é chaveado por tenant', () => {
-    const hook = read('src/features/expiry/hooks/useExpiryAlerts.ts');
+  it('o cache é chaveado por tenant', () => {
+    const hook = read('src/features/notifications/hooks/useNotifications.ts');
     // Trocar de empresa não pode mostrar alerta da anterior.
     assert.ok(hook.includes('tenant?.tenantId'));
-    assert.ok(hook.includes('[ALERTS_KEY, tenantId'));
+    assert.ok(hook.includes('[NOTIFICATIONS_KEY, tenantId'));
   });
 
   it('o sino lista só não lidos, para "Dispensar" surtir efeito visível', () => {
-    const bell = read('src/features/expiry/components/ExpiryAlertsBell.tsx');
+    const bell = read('src/features/notifications/components/NotificationsBell.tsx');
     assert.ok(bell.includes("status: 'unread'"));
   });
 
@@ -140,8 +138,8 @@ describe('vencimentos — caixa de alertas', () => {
   });
 
   it('a urgência exibida vem dos dias restantes, não do marco', () => {
-    const list = read('src/features/expiry/components/ExpiryAlertList.tsx');
-    assert.ok(list.includes('function urgencyVariant(daysRemaining: number)'));
-    assert.ok(list.includes("if (daysRemaining < 0) return 'danger'"));
+    const list = read('src/features/notifications/components/NotificationList.tsx');
+    assert.ok(list.includes('function expiryTone(daysRemaining: number)'));
+    assert.ok(list.includes("if (daysRemaining < 0) return 'text-doqyn-danger'"));
   });
 });

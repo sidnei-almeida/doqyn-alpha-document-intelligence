@@ -8,34 +8,63 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   /** Exibe botão para alternar visibilidade quando o tipo é password. */
   revealable?: boolean;
+  /** `boxed` para formulários, `rule` para barras de filtro. */
+  variant?: 'boxed' | 'rule';
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, type, revealable = false, disabled, ...props }, ref) => {
+  (
+    {
+      className,
+      label,
+      error,
+      id,
+      type,
+      revealable = false,
+      disabled,
+      variant = 'boxed',
+      ...props
+    },
+    ref,
+  ) => {
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const [revealed, setRevealed] = useState(false);
     const isPassword = type === 'password';
     const showToggle = revealable && isPassword;
     const resolvedType = showToggle && revealed ? 'text' : type;
+    const isRule = variant === 'rule';
 
     return (
-      <div className={fieldWrapperClass}>
+      <div className={isRule ? 'flex min-w-0 flex-col gap-1.5' : fieldWrapperClass}>
         {label ? (
-          <label htmlFor={inputId} className={fieldLabelClass}>
+          <label
+            htmlFor={inputId}
+            className={isRule ? 'register-label text-doqyn-subtle' : fieldLabelClass}
+          >
             {label}
           </label>
         ) : null}
-        <div className={cn(showToggle && 'relative')}>
+        <div
+          className={cn(
+            isRule && 'field-rule',
+            isRule && error && 'field-rule--error',
+            showToggle && 'relative',
+          )}
+        >
           <input
             ref={ref}
             id={inputId}
             type={resolvedType}
             disabled={disabled}
             className={cn(
-              fieldControlClass,
+              isRule
+                ? 'text-label placeholder:text-doqyn-subtle'
+                : cn(
+                    fieldControlClass,
+                    error && 'border-doqyn-danger focus-visible:ring-doqyn-danger/30',
+                  ),
               showToggle && 'pr-10',
-              error && 'border-doqyn-danger focus-visible:ring-doqyn-danger/30',
               className,
             )}
             {...props}

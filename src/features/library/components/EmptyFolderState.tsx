@@ -1,6 +1,5 @@
-import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
-import { ICON_SIZE } from '@/lib/iconDefaults';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type EmptyFolderStateProps = {
   hasActiveFilters: boolean;
@@ -13,7 +12,12 @@ type EmptyFolderStateProps = {
 };
 
 /**
- * Empty state dentro de pasta — minimalista, flat, com ação de upload.
+ * Vazio dentro de pasta.
+ *
+ * O convite deixou de ser um bloco preenchido: numa tela feita só de fio e
+ * texto, ele era a única superfície pintada — e o teal saturado no meio do vão
+ * gritava mais alto do que a frase que explica o que fazer. Agora é botão de
+ * contorno, e o arrastar-e-soltar continua logo abaixo, como segunda via.
  */
 export function EmptyFolderState({
   hasActiveFilters,
@@ -26,45 +30,47 @@ export function EmptyFolderState({
 }: EmptyFolderStateProps) {
   if (hasActiveFilters) {
     return (
-      <div
-        className="flex min-h-[min(360px,50vh)] flex-col items-center justify-center px-6 py-16 text-center"
-        data-testid="library-empty-state"
-      >
-        <p className="text-[15px] font-medium text-doqyn-text">Nenhum documento para os filtros atuais</p>
-        <p className="mt-2 max-w-sm text-[13px] text-doqyn-muted">
-          Ajuste a busca ou os filtros para ampliar os resultados.
-        </p>
-        <Button type="button" variant="secondary" size="sm" className="mt-5" onClick={onClearFilters}>
-          Limpar filtros
-        </Button>
+      <div data-testid="library-empty-state">
+        <EmptyState
+          title="Nenhum documento para os filtros atuais"
+          description="Ajuste a busca ou os filtros para ampliar os resultados."
+          action={
+            <Button type="button" variant="secondary" size="sm" onClick={onClearFilters}>
+              Limpar filtros
+            </Button>
+          }
+        />
       </div>
     );
   }
 
+  /**
+   * Sem pictograma.
+   *
+   * A nuvem de upload no meio da tela era a terceira marca visual para a mesma ideia: o resto do
+   * app abre o vazio com o fio curto do `EmptyState`, e a Biblioteca inteira vazia com a folha
+   * desenhada. Três desenhos para "não há nada aqui" fazem parecer três situações diferentes — e a
+   * nuvem ainda repetia em imagem o que o botão logo abaixo já diz em palavra.
+   */
   return (
-    <div
-      className="flex min-h-[min(400px,55vh)] flex-col items-center justify-center px-6 py-16 text-center"
-      data-testid="library-empty-state"
-    >
-      <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-doqyn-card text-doqyn-muted">
-        {showUploadActions ? (
-          <Icon name="cloud_upload" size={ICON_SIZE.md} />
-        ) : (
-          <Icon name="folder_open" size={ICON_SIZE.md} />
-        )}
-      </span>
-      <p className="text-[15px] font-medium text-doqyn-text">{title}</p>
-      <p className="mt-2 max-w-md text-[13px] leading-relaxed text-doqyn-muted">{description}</p>
-      {showUploadActions && (
-        <>
-          <Button type="button" variant="primary" size="md" className="mt-6" onClick={onUploadClick}>
-            {uploadButtonLabel}
-          </Button>
-          <p className="mt-4 text-[12px] text-doqyn-subtle">
-            Você também pode arrastar arquivos para esta janela.
-          </p>
-        </>
-      )}
+    <div data-testid="library-empty-state">
+      <EmptyState
+        title={title}
+        description={description}
+        stretch
+        action={
+          showUploadActions ? (
+            <div className="flex flex-col items-center gap-4">
+              <Button type="button" variant="secondary" size="md" onClick={onUploadClick}>
+                {uploadButtonLabel}
+              </Button>
+              <p className="text-caption text-doqyn-subtle">
+                Você também pode arrastar arquivos para esta janela.
+              </p>
+            </div>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

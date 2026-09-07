@@ -10,13 +10,15 @@ type OverviewPanelShellProps = {
   onAction?: () => void;
   action?: ReactNode;
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'muted';
   className?: string;
   bodyClassName?: string;
   'data-testid'?: string;
 };
 
-/** Shell compartilhado dos painéis — header, superfície e ritmo consistentes. */
+/**
+ * Abertura de bloco — fio em cima, rótulo de registro, fio abaixo do cabeçalho.
+ * Não há caixa: o que separa um bloco do outro é a linha e o espaço.
+ */
 export function OverviewPanelShell({
   title,
   subtitle,
@@ -25,7 +27,6 @@ export function OverviewPanelShell({
   onAction,
   action,
   children,
-  variant = 'secondary',
   className,
   bodyClassName,
   'data-testid': testId,
@@ -38,21 +39,16 @@ export function OverviewPanelShell({
 
   return (
     <section
-      className={cn(
-        'overview-panel flex h-full flex-col',
-        variant === 'primary' && 'overview-panel--primary',
-        variant === 'muted' && 'overview-panel--muted',
-        className,
-      )}
+      className={cn('overview-panel flex flex-col', className)}
       aria-labelledby={titleId}
       data-testid={testId}
     >
-      <header className="overview-panel-header flex items-start justify-between gap-3 px-4 py-4 sm:px-5 sm:py-[1.125rem]">
+      <header className="overview-panel-header flex items-baseline justify-between gap-4 py-3.5">
         <div className="min-w-0">
           <h2 id={titleId} className="overview-section-title">
             {title}
           </h2>
-          {subtitle && <p className="overview-section-subtitle mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="overview-section-subtitle mt-1">{subtitle}</p>}
         </div>
         {headerAction}
       </header>

@@ -42,7 +42,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!categoryId || !body.fields || !body.namingTemplate) {
           return {
             status: 400,
-            body: { message: 'categoryId, fields e namingTemplate são obrigatórios.', code: 'VALIDATION_ERROR' },
+            body: {
+              message: 'categoryId, fields e namingTemplate são obrigatórios.',
+              code: 'VALIDATION_ERROR',
+            },
           };
         }
 

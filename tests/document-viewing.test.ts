@@ -131,16 +131,12 @@ describe('preview error messages', () => {
 
 describe('dev-server binary responses', () => {
   it('toVercelRes implementa send para preview/download', () => {
-    const source = readFileSync(join(process.cwd(), 'server/dev-server.ts'), 'utf8');
+    const source = readFileSync(join(process.cwd(), 'server/apiServer.ts'), 'utf8');
     assert.match(source, /send\(data: string \| Buffer \| Uint8Array\)/);
   });
 });
 
 describe('document viewing UI', () => {
-  const pageSource = readFileSync(
-    join(process.cwd(), 'src/features/documents/DocumentsPage.tsx'),
-    'utf8',
-  );
   const viewerSource = readFileSync(
     join(process.cwd(), 'src/features/documents/components/DocumentPreviewViewer.tsx'),
     'utf8',
@@ -159,20 +155,6 @@ describe('document viewing UI', () => {
   );
   const indexHandlerSource = readFileSync(join(process.cwd(), 'api/documents/index.ts'), 'utf8');
   const itemHandlerSource = readFileSync(join(process.cwd(), 'api/documents/item.ts'), 'utf8');
-
-  it('DocumentsPage não usa MOCK_DOCUMENTS', () => {
-    assert.equal(pageSource.includes('MOCK_DOCUMENTS'), false);
-    assert.match(pageSource, /useDocuments/);
-  });
-
-  it('DocumentsPage usa modal central e ações de tabela', () => {
-    assert.match(pageSource, /DocumentViewerModal/);
-    assert.match(pageSource, /Detalhes/);
-    assert.match(pageSource, /canDownload/);
-    assert.match(pageSource, /canViewTracking/);
-    assert.match(pageSource, /latestVersionId/);
-    assert.doesNotMatch(pageSource, /objectKey|r2\.cloudflarestorage/i);
-  });
 
   it('useDocuments chama API real com tenant no queryKey', () => {
     assert.match(hookSource, /listDocuments/);
@@ -231,10 +213,7 @@ describe('document viewing UI', () => {
 
 describe('document list mapping', () => {
   it('listDocuments retorna permissions e storage por item', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'server/services/documentService.ts'),
-      'utf8',
-    );
+    const source = readFileSync(join(process.cwd(), 'server/services/documentService.ts'), 'utf8');
     assert.match(source, /canViewTracking/);
     assert.match(source, /hasOriginal/);
     assert.match(source, /hasPreview/);

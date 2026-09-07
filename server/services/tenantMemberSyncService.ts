@@ -6,11 +6,16 @@ import type {
   PlatformRole,
   TenantMemberStatus,
 } from '../db/types.js';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import { fetchAuthTenantMembersForSync } from '../integrations/doqynAuthInternalClient.js';
 import type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 import { normalizeEmail } from '../utils/contactNormalize.js';
 import { logger } from '../utils/logger.js';
+import { applyPendingInviteGroups } from './invites/pendingInviteGroupsService.js';
+import {
+  deactivateMemberGroupsForInactiveMember,
+  restoreMemberGroupsForActiveMember,
+} from './documentGroupsService.js';
+import { notifyMemberJoined } from './notifications/memberNotifications.js';
 
 export type { AuthTenantMemberSyncSnapshot } from '../integrations/authTenantMemberTypes.js';
 
@@ -111,7 +116,18 @@ export async function upsertTenantMemberFromAuthSnapshot(
       .deleteOne({ _id: existingByEmail._id } as Record<string, unknown>);
   }
 
-  await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
+  /**
+   * O status que este membro tinha no Mongo antes desta rodada.
+   *
+   * Só vale quando é a mesma membership: um documento achado pelo e-mail com outro `_id` é
+   * resquício de uma membership anterior, e acabou de ser apagado logo acima.
+   */
+  const previousStatus =
+    existingByEmail && existingByEmail._id === snapshot.membershipId
+      ? existingByEmail.status
+      : undefined;
+
+  const upsertResult = await db.collection(REGISTRY_COLLECTIONS.tenantMembers).updateOne(
     { _id: snapshot.membershipId } as Record<string, unknown>,
     {
       $setOnInsert: { createdAt },
@@ -120,6 +136,8 @@ export async function upsertTenantMemberFromAuthSnapshot(
     },
     { upsert: true },
   );
+  /** Verdadeiro só na primeira vez que este membro chega ao Mongo. */
+  const memberIsNew = upsertResult.upsertedCount > 0;
 
   const saved = await db
     .collection<MongoTenantMember>(REGISTRY_COLLECTIONS.tenantMembers)
@@ -129,11 +147,114 @@ export async function upsertTenantMemberFromAuthSnapshot(
     throw new Error(`Falha ao sincronizar tenant_member ${snapshot.email}.`);
   }
 
+  /**
+   * O convite prometeu grupos; é aqui que a promessa vira acesso.
+   *
+   * Só depois do upsert, só para quem chegou ativo, e **só quando o membro é novo**.
+   *
+   * `documentGroupMembers` é indexado por `membershipId`, que não existia quando o convite foi
+   * criado; este é o primeiro instante em que a pessoa tem membership e o alpha sabe disso. E é
+   * o único instante que interessa: quem aceita um convite entra no Mongo pela primeira vez
+   * aqui.
+   *
+   * A condição de novidade não é economia de estilo. Sem ela a consulta rodava para todo membro
+   * ativo a cada sincronização — e o sync percorre o tenant inteiro a cada quinze segundos, o
+   * que num tenant de duzentas pessoas são duzentas idas ao banco por ciclo, numa coleção que
+   * fica vazia o tempo todo.
+   *
+   * Não bloqueia nem lança — o serviço engole a própria falha. Sincronizar dois bancos é o
+   * trabalho desta função, e um grupo que não colou não pode deixar o membro fora do Mongo.
+   */
+  if (status === 'active' && memberIsNew) {
+    await applyPendingInviteGroups({
+      tenantId: snapshot.tenantId,
+      email: emailNormalized,
+      membershipId: snapshot.membershipId,
+      userId: snapshot.userId,
+      displayName: [firstName, lastName].filter(Boolean).join(' ').trim() || undefined,
+    });
+
+    // Depois dos grupos, e não antes: o aviso diz que a pessoa entrou, e ela só entrou de fato
+    // quando alcança alguma coisa. Avisar primeiro mandaria quem administra olhar uma conta que
+    // ainda não enxerga documento nenhum.
+    await notifyMemberJoined({ tenantId: snapshot.tenantId, member: saved });
+  }
+
+  await syncGroupMembershipWithMemberStatus({
+    tenantId: snapshot.tenantId,
+    membershipId: snapshot.membershipId,
+    userId: snapshot.userId,
+    previousStatus,
+    status,
+  });
+
   return saved;
 }
 
+/**
+ * O vínculo de grupo acompanha a saída e a volta do membro.
+ *
+ * **Só na virada.** O sync percorre o tenant inteiro a cada quinze segundos; agir por status, e
+ * não por mudança de status, seria uma escrita por membro por ciclo para não mudar nada. Membro
+ * novo também não vira: quem acabou de chegar não tem vínculo anterior a desfazer, e o que o
+ * convite prometeu foi aplicado logo acima.
+ *
+ * **Não lança.** É chamada de dentro da sincronização, que existe para manter dois bancos
+ * alinhados. Um vínculo que não pôde ser mexido não pode deixar o membro fora do Mongo — e o
+ * acesso de quem está bloqueado já está fechado pela revogação de sessão do auth, então falhar
+ * aqui não abre porta nenhuma.
+ */
+async function syncGroupMembershipWithMemberStatus(input: {
+  tenantId: string;
+  membershipId: string;
+  userId: string;
+  previousStatus: TenantMemberStatus | undefined;
+  status: TenantMemberStatus;
+}): Promise<void> {
+  if (!input.previousStatus || input.previousStatus === input.status) return;
+
+  const wasActive = input.previousStatus === 'active';
+  const isActive = input.status === 'active';
+  if (wasActive === isActive) return;
+
+  try {
+    // `ownerUserId` é o que dá escopo certo no tenant PF, onde a coleção é compartilhada e o
+    // filtro é por dono. No PJ ele não muda nada — o escopo já é o tenant.
+    const opts = { ownerUserId: input.userId };
+    const changed = isActive
+      ? await restoreMemberGroupsForActiveMember(
+          input.tenantId,
+          { membershipId: input.membershipId },
+          opts,
+        )
+      : await deactivateMemberGroupsForInactiveMember(
+          input.tenantId,
+          { membershipId: input.membershipId },
+          opts,
+        );
+
+    if (changed > 0) {
+      logger.info('vínculos de grupo acompanharam o status do membro', {
+        tenantId: input.tenantId,
+        membershipId: input.membershipId,
+        from: input.previousStatus,
+        to: input.status,
+        changed,
+      });
+    }
+  } catch (error) {
+    logger.warn('vínculos de grupo não puderam acompanhar o status do membro', {
+      tenantId: input.tenantId,
+      membershipId: input.membershipId,
+      from: input.previousStatus,
+      to: input.status,
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
+}
+
 export async function syncTenantMembersFromAuth(tenantId: string): Promise<number> {
-  if (!usesDoqynAuth() || !isMongoNativeConfigured()) {
+  if (!isMongoNativeConfigured()) {
     return 0;
   }
 
@@ -159,7 +280,7 @@ export async function ensureTenantMembersSyncedForOperations(
   tenantId: string,
   options?: { force?: boolean },
 ): Promise<void> {
-  if (!usesDoqynAuth() || !isMongoNativeConfigured()) {
+  if (!isMongoNativeConfigured()) {
     return;
   }
 

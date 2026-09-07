@@ -4,11 +4,12 @@ import { SHARED_APP_COLLECTIONS } from '../../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../../db/mongoClient.js';
 import type { MongoUserDocumentFavorite } from '../../db/types.js';
 import type { AuthUser } from '../../auth/types.js';
-import {
-  loadDocumentAccessContext,
-} from '../../tenancy/documentAccess.js';
+import { loadDocumentAccessContext } from '../../tenancy/documentAccess.js';
 import { canUserListDocumentWithShare } from '../../tenancy/documentShareAccess.js';
-import { findActiveShareGrantForUser, findActiveShareGrantsForUser } from '../sharing/documentShareService.js';
+import {
+  findActiveShareGrantForUser,
+  findActiveShareGrantsForUser,
+} from '../sharing/documentShareService.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import type { DocumentRequestContext } from '../../tenancy/documentRequestContext.js';
@@ -16,6 +17,7 @@ import type { TenantStorageContext } from '../../tenancy/tenantStorage.js';
 import { buildDocumentListItems } from '../documentListItems.js';
 import type { MongoDocument } from '../../db/types.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
+import { isForeignScope, resolveDocumentReadScope } from '../../tenancy/documentReadScope.js';
 
 type FavoriteLookupResult = {
   activeIds: Set<string>;
@@ -58,14 +60,27 @@ async function loadAccessibleDocument(
   user: AuthUser,
   membershipId?: string,
 ) {
-  const { documents } = await getTenantCollections(tenantId, {
+  // Documento de outra empresa também pode ser favoritado: o favorito é uma marca de quem lê,
+  // guardada no tenant dele, e não toca o acervo de origem.
+  const scope = await resolveDocumentReadScope({
+    tenantId,
+    ownerUserId: user.id,
+    documentId,
     userId: user.id,
-    membershipId,
   });
 
-  const doc = await documents.findOne({
+  const foreign = isForeignScope(scope);
+
+  const collections = await getTenantCollections(scope.tenantId, {
+    userId: scope.ownerUserId,
+    membershipId: foreign ? undefined : membershipId,
+  });
+
+  const doc = await collections.documents.findOne({
     _id: documentId,
-    ...tenantScopeFilterFromContext(storage),
+    // O escopo do documento de fora é o do acervo dele, não o de quem lê: filtrar pelo `storage`
+    // da sessão procuraria o documento na prateleira errada e devolveria "não encontrado".
+    ...tenantScopeFilterFromContext(foreign ? collections.storage : storage),
     deletedAt: { $in: [null, undefined] },
     permanentlyDeletedAt: { $in: [null, undefined] },
     deactivatedAt: { $in: [null, undefined] },
@@ -73,6 +88,11 @@ async function loadAccessibleDocument(
 
   if (!doc) {
     throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
+  }
+
+  // A concessão aceita já é a autorização, e a governança de quem lê não alcança este documento.
+  if (foreign) {
+    return { doc: doc as MongoDocument, memberGroupIds: [] as string[] };
   }
 
   const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({

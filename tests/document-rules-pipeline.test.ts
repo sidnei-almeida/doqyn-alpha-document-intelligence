@@ -31,15 +31,11 @@ describe('pipeline de análise — fonte de verdade das regras', () => {
   });
 
   it('/rules persiste categorias e extração nas collections de governança', () => {
-    const categoriesApi = readFileSync(
-      join(repoRoot, 'api/document-categories/index.ts'),
-      'utf8',
-    );
+    const categoriesApi = readFileSync(join(repoRoot, 'api/document-categories/index.ts'), 'utf8');
     const extraction = readServer('services/documentExtractionRulesService.ts');
     const access = readServer('services/documentAccessRulesService.ts');
 
     assert.ok(categoriesApi.includes('createDocumentCategory'));
-    assert.ok(categoriesApi.includes('createDefaultExtractionRuleForCategory'));
     assert.ok(extraction.includes('documentExtractionRules'));
     assert.ok(access.includes('collections.documentRules'));
   });
@@ -92,8 +88,13 @@ describe('divergência regras de acesso vs classificação', () => {
     assert.ok(constants.includes("documentExtractionRules: 'document_extraction_rules'"));
   });
 
-  it('criar categoria via API já cria regra de extração padrão', () => {
+  it('criar categoria cria a regra padrão por um caminho só', () => {
+    // Dois criadores gravavam duas regras v1 com 25 ms de diferença, e "qual regra vale" passava a
+    // depender da ordem natural do Mongo. Quem garante a regra é createDocumentCategory, por dentro.
     const source = readFileSync(join(repoRoot, 'api/document-categories/index.ts'), 'utf8');
-    assert.ok(source.includes('createDefaultExtractionRuleForCategory'));
+    const categories = readServer('services/documentCategoriesService.ts');
+    assert.ok(source.includes('createDocumentCategory'));
+    assert.equal(source.includes('createDefaultExtractionRuleForCategory'), false);
+    assert.ok(categories.includes('ensureDefaultExtractionRule'));
   });
 });

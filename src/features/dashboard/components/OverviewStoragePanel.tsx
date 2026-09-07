@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { formatStorageBytes } from '../utils/buildOverviewMetrics';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 import {
   OverviewPanelStat,
   OverviewPanelStatCell,
@@ -25,16 +26,16 @@ export function OverviewStoragePanel({
 
   const errorStatus =
     recentErrors.length > 0 ? (
-      <ul className="max-h-24 space-y-1.5 overflow-y-auto pr-1 text-doqyn-danger scrollbar-thin">
+      <ul className="scrollbar-thin max-h-24 space-y-1.5 overflow-y-auto pr-1">
         {recentErrors.map((error) => (
           <li key={error.id}>
             <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
-            <span className="text-doqyn-danger"> — {error.message}</span>
+            <span className="text-doqyn-danger"> · {error.message}</span>
           </li>
         ))}
       </ul>
     ) : (
-      <p className="text-doqyn-muted">Nenhum erro recente no período.</p>
+      <EmptyHint bare>Nenhum erro recente no período.</EmptyHint>
     );
 
   return (
@@ -68,7 +69,7 @@ export function OverviewStoragePanel({
             label="Tamanho total"
             value={formatStorageBytes(storage.totalSizeBytes)}
             hint="no bucket"
-            valueClassName="text-[1.35rem] leading-tight sm:text-[1.5rem]"
+            valueClassName="text-h1 leading-tight"
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
@@ -76,7 +77,12 @@ export function OverviewStoragePanel({
             label="Downloads"
             value={
               <span className="inline-flex items-center gap-1.5">
-                <Icon name="download" size={ICON_SIZE.xs} className="text-doqyn-muted" aria-hidden />
+                <Icon
+                  name="download"
+                  size={ICON_SIZE.xs}
+                  className="text-doqyn-muted"
+                  aria-hidden
+                />
                 {downloadsInPeriod}
               </span>
             }
@@ -86,8 +92,8 @@ export function OverviewStoragePanel({
         </OverviewPanelStatCell>
       </OverviewPanelStatGrid>
 
-      <div className="border-t border-doqyn-border-subtle/60 px-4 py-3 sm:px-5">
-        <div className="min-h-[1.25rem] text-sm leading-relaxed">{errorStatus}</div>
+      <div className="border-t border-doqyn-border-subtle/75 px-4 py-3">
+        <div className="min-h-[1.25rem] text-caption leading-relaxed">{errorStatus}</div>
       </div>
     </OverviewPanelShell>
   );

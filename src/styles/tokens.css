@@ -1,110 +1,144 @@
 /**
  * DOQYN — design tokens (dark + light)
  * Linguagem minimalista inspirada em file managers modernos: superfícies suaves,
- * bordas discretas, acento azul contido. Identidade DOQYN discreta.
+ * bordas discretas, acento único em teal corporativo sobre neutros grafite frios.
+ * Identidade DOQYN discreta.
  */
 
-[data-theme='dark'] {
+/* ── Paleta grafite ───────────────────────────────────────────────────────
+   Vale para o documento inteiro no tema escuro, e só para a casca no `standard`
+   — ali o padrão do documento é papel, e a casca é a exceção local. */
+[data-theme='dark'],
+[data-appearance='standard'] .chrome-dark {
   /* Base uniforme atrás de sidebar+topbar (Drive dark); painel interno mais claro que a base */
-  --bg-chrome: #121212;
+  --bg-chrome: #0b0e10;
   --bg-shell: var(--bg-chrome);
-  --bg-canvas: #1e1e1e;
-  --bg-thumbnail-chrome: #1e1e1e;
+  --bg-canvas: #12161a;
+  --bg-thumbnail-chrome: #12161a;
   --bg-app: var(--bg-chrome);
   --bg-sidebar: var(--bg-shell);
-  --bg-surface: #1e1e1e;
-  --bg-surface-2: #242424;
-  --bg-surface-3: #2c2c2c;
-  --bg-surface-hover: #2c2c2c;
-  --bg-hover: #2c2c2c;
-  --bg-selected: #1d2a3a;
+  --bg-surface: #161b20;
+  --bg-surface-2: #1c2228;
+  --bg-surface-3: #232a31;
+  --bg-surface-hover: #232a31;
+  --bg-hover: #232a31;
+  --bg-selected: #10292b; /* tinta suave do acento */
 
-  /* Sidebar — item ativo índigo/violeta discreto (harmonia com + Novo, sem competir) */
-  --sidebar-selected-bg: rgba(99, 102, 241, 0.18);
+  /* Sidebar — item ativo no acento teal, translúcido sobre a base grafite */
+  --sidebar-selected-bg: rgba(53, 166, 159, 0.18);
   --sidebar-selected-border: transparent;
-  --sidebar-selected-text: #f5f7ff;
-  --sidebar-selected-icon: #a5b4fc;
+  --sidebar-selected-text: #dcf0ee;
+  --sidebar-selected-icon: #35a69f;
   --sidebar-item-hover-bg: rgba(148, 163, 184, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 42%, transparent);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 42%, transparent);
 
   /* Menu rápido sobre preview — vidro escuro (contraste sobre página branca) */
-  --explorer-quick-actions-bg: rgba(30, 30, 30, 0.84);
-  --explorer-quick-actions-border: rgba(255, 255, 255, 0.14);
-  --explorer-quick-actions-icon: #d2d5da;
-  --explorer-quick-actions-icon-hover: #f1f3f4;
+  --explorer-quick-actions-bg: #1c2228;
+  --explorer-quick-actions-border: #2a323a;
+  --explorer-quick-actions-icon: #d3d9de;
+  --explorer-quick-actions-icon-hover: #e8edf0;
   --explorer-quick-actions-icon-hover-bg: rgba(255, 255, 255, 0.1);
   --explorer-quick-actions-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
 
   /* Badge de favorito sobre preview */
-  --document-favorite-badge-bg: rgba(30, 30, 30, 0.78);
-  --document-favorite-badge-shadow: 0 1px 4px rgba(0, 0, 0, 0.32);
+  /* Tinta da marca de favorito na miniatura — fixa nos dois temas porque
+     pousa sobre a folha, e a folha nunca escurece. */
+  --document-favorite-ink: #3f4a52;
 
   /* Marquee selection — retângulo de seleção no file explorer */
   --marquee-bg: rgba(148, 163, 184, 0.06);
   --marquee-border: rgba(148, 163, 184, 0.22);
 
-  /* Botão "+ Novo" — índigo flat (Material filled, sem elevação pesada) */
-  --new-button-bg: #5c5cf0;
-  --new-button-bg-hover: #6d6df2;
-  --new-button-bg-active: #4f46e5;
-  --new-button-text: #ffffff;
-  --new-button-chevron: rgba(255, 255, 255, 0.9);
+  /* Botão "+ Novo" — acento teal flat (Material filled, sem elevação pesada) */
+  --new-button-bg: var(--accent-active);
+  --new-button-bg-hover: var(--accent-hover);
+  --new-button-bg-active: var(--accent-press);
+  --new-button-text: var(--text-on-accent);
+  --new-button-chevron: rgba(4, 16, 15, 0.9);
   --new-button-border: transparent;
   --shadow-new-button: none;
   --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #818cf8 55%, transparent);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 55%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--bg-surface);
   --new-menu-border: var(--border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: rgba(99, 102, 241, 0.12);
-  --new-menu-item-active: rgba(99, 102, 241, 0.18);
-  --new-menu-icon: #818cf8;
+  --new-menu-item-hover: rgba(53, 166, 159, 0.12);
+  --new-menu-item-active: rgba(53, 166, 159, 0.18);
+  --new-menu-icon: var(--accent-active);
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: #333333;
-  --border-strong: #3f3f3f;
+  --border-subtle: #212930;
+  --border-default: #2a323a;
+  --border-strong: #3a444d;
 
-  --text-primary: #e8eaed;
-  --text-secondary: #9aa0a6;
-  --text-tertiary: #80868b;
-  --text-disabled: #5f6368;
+  --text-primary: #e8edf0;
+  --text-secondary: #a3afb8;
+  --text-tertiary: #828f98;
+  --text-disabled: #55606a;
 
-  --accent-active: #8ab4f8;
-  --accent-hover: #aecbfa;
-  --accent-active-bg: #1d2a3a;
-  --text-on-accent: #121212;
+  --accent-active: #35a69f;
+  --accent-hover: #45b3ab;
+  --accent-press: #2a8b85;
+  --accent-active-bg: #10292b;
+  --text-on-accent: #04100f;
 
-  --status-ok-bg: #1e3b26;
-  --status-ok-text: #81c995;
-  --status-ok-border: color-mix(in srgb, #81c995 32%, transparent);
-  --status-ok-dot: #81c995;
+  /* Latão — exclusivo de atestação (assinado, verificado, selado).
+     Regra de forma: latão é sempre contorno de 1px, nunca preenchimento.
+     É isso que o separa do âmbar de alerta em um chip de 11px. */
+  --seal: #c2a05a;
+  --seal-soft: #241c0e;
 
-  --status-danger-bg: #3c2422;
-  --status-danger-text: #f28b82;
-  --status-danger-border: color-mix(in srgb, #f28b82 32%, transparent);
-  --status-danger-dot: #f28b82;
+  /* Escurecimento do tour. Mais fundo que o de modal: aqui o resto da tela não
+     é só contexto, é o que a pessoa deve parar de ler. */
+  --tour-scrim: rgba(4, 8, 10, 0.78);
 
-  --status-warn-bg: #3d3222;
-  --status-warn-text: #fdd663;
-  --status-warn-border: color-mix(in srgb, #fdd663 32%, transparent);
-  --status-warn-dot: #fdd663;
+  /* Paleta dos grupos — identifica, não classifica. Doze tons de peso parecido,
+     dessaturados o bastante para conviver com o grafite. O par `-ink` é o traço
+     e o `-wash` é o fundo fraco de chip; no claro os dois trocam de papel. */
+  --group-ardosia: #8fa3ad;
+  --group-azul: #6aa7d8;
+  --group-indigo: #8a95e0;
+  --group-violeta: #a98ada;
+  --group-magenta: #cf7fb8;
+  --group-carmim: #d8808c;
+  --group-telha: #d59274;
+  --group-ambar: #d2a95f;
+  --group-oliva: #a9b070;
+  --group-musgo: #7fb187;
+  --group-esmeralda: #5fb59b;
+  --group-turquesa: #63aec2;
 
-  --status-pending-bg: #3d3222;
-  --status-pending-text: #fdd663;
-  --status-pending-border: color-mix(in srgb, #fdd663 28%, transparent);
-  --status-pending-dot: #fdd663;
+  --status-ok-bg: #132b23;
+  --status-ok-text: #57c08a;
+  --status-ok-border: color-mix(in srgb, var(--status-ok-text) 32%, transparent);
+  --status-ok-dot: #57c08a;
 
-  --status-info-bg: #1d2a3a;
-  --status-info-text: #8ab4f8;
-  --status-info-border: color-mix(in srgb, #8ab4f8 32%, transparent);
-  --status-info-dot: #8ab4f8;
+  --status-danger-bg: #311d1b;
+  --status-danger-text: #ec7b72;
+  --status-danger-border: color-mix(in srgb, var(--status-danger-text) 32%, transparent);
+  --status-danger-dot: #ec7b72;
 
-  --status-neutral-bg: #242424;
-  --status-neutral-text: #9aa0a6;
-  --status-neutral-border: #3f3f3f;
-  --status-neutral-dot: #80868b;
+  --status-warn-bg: #31240f;
+  --status-warn-text: #e2a052;
+  --status-warn-border: color-mix(in srgb, var(--status-warn-text) 32%, transparent);
+  --status-warn-dot: #e2a052;
+
+  /* "Em fila" é estado neutro, não alerta — não gasta a atenção do âmbar. */
+  --status-pending-bg: #1c2228;
+  --status-pending-text: #a3afb8;
+  --status-pending-border: color-mix(in srgb, var(--status-pending-text) 24%, transparent);
+  --status-pending-dot: #828f98;
+
+  --status-info-bg: #15233b;
+  --status-info-text: #7faef5;
+  --status-info-border: color-mix(in srgb, var(--status-info-text) 32%, transparent);
+  --status-info-dot: #7faef5;
+
+  --status-neutral-bg: #1c2228;
+  --status-neutral-text: #a3afb8;
+  --status-neutral-border: #3a444d;
+  --status-neutral-dot: #828f98;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -128,24 +162,37 @@
   --shadow-action-glow: none;
   --shadow-card-hover: none;
   --shadow-viewer-page: var(--shadow-elevation-2);
+  /* Miniatura de documento: sobre o grafite, a sombra é o que separa a folha da
+     mesa, então ela pode ser funda. */
+  --shadow-page-thumb: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 26px -8px rgba(0, 0, 0, 0.45);
+  --shadow-page-thumb-hover: 0 2px 4px rgba(0, 0, 0, 0.36), 0 18px 38px -10px rgba(0, 0, 0, 0.55);
+  --border-page-thumb: transparent;
   --overlay-scrim: rgba(0, 0, 0, 0.6);
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — superfície inverse Material, sem borda */
-  --toast-bg: #3c4043;
-  --toast-text: #e8eaed;
-  --toast-muted: #bdc1c6;
-  --toast-action: #8ab4f8;
+  --toast-bg: #272e36;
+  --toast-text: #e8edf0;
+  --toast-muted: #bac4cc;
+  --toast-action: #45b3ab;
   --toast-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #3c4043;
-  --tooltip-text: #e8eaed;
+  --tooltip-bg: #272e36;
+  --tooltip-text: #e8edf0;
+
+  /* Ação principal dentro de camada sobreposta — ver a nota em `globals.css`.
+     Sobre grafite o botão inverte: a folha clara é que salta. Repetir o
+     grafite aqui daria um botão que some no fundo do próprio diálogo. */
+  --overlay-action-bg: #e8edf0;
+  --overlay-action-bg-hover: #ffffff;
+  --overlay-action-bg-active: #c6d0d6;
+  --overlay-action-text: #0b0e10;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(255, 255, 255, 0.16);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
-  --selection-bg: rgba(138, 180, 248, 0.3);
+  --selection-bg: rgba(53, 166, 159, 0.3);
 
   --governance-flow-card-bg: var(--bg-surface-3);
   --governance-flow-card-border: color-mix(
@@ -159,122 +206,145 @@
     0 4px 14px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-[data-theme='light'] {
+/* ── Paleta de papel ──────────────────────────────────────────────────────
+   No `standard` o painel e a busca ficam *dentro* da casca grafite, então não
+   basta o padrão do documento: os dois precisam redeclarar a paleta para si,
+   ou herdam o grafite de quem os contém. O painel da antessala
+   (`.auth-canvas`) entra na mesma lista pelo mesmo motivo: ele também é um
+   recorte de papel aberto dentro da casca. */
+[data-theme='light'],
+[data-appearance='standard'] .workspace-canvas,
+[data-appearance='standard'] .auth-canvas,
+[data-appearance='standard'] .topbar-search {
   /* Aliases Google Workspace — mapeiam para tokens semânticos existentes */
   --color-background: #ffffff;
-  --color-surface: #f8f9fa;
-  --color-surface-container: #f1f3f4;
-  --color-border: #dadce0;
-  --color-border-subtle: #e8eaed;
-  --color-text-primary: #202124;
-  --color-text-secondary: #5f6368;
-  --color-icon-neutral: #5f6368;
-  --color-primary: #1a73e8;
-  --color-primary-hover: #1967d2;
-  --color-primary-surface: #e8f0fe;
+  --color-surface: #f5f7f8;
+  --color-surface-container: #edf0f2;
+  /* Um degrau mais escuros do que eram. Os fios foram calibrados contra a base
+     cinza-clara do tema; na casca o conteúdo pousa em branco puro, e ali eles
+     sumiam. Ainda são fios, não molduras — só passaram a existir. */
+  --color-border: #c3ccd2;
+  --color-border-subtle: #dbe1e5;
+  --color-text-primary: #11171b;
+  --color-text-secondary: #4a575f;
+  --color-icon-neutral: #4a575f;
+  --color-primary: #0e6e6a;
+  --color-primary-hover: #12837b;
+  --color-primary-surface: #dcedeb;
 
-  --bg-chrome: var(--color-surface);
-  --bg-shell: var(--color-surface);
+  /* A casca é um degrau mais funda que `--color-surface`: contra a folha branca
+     do painel, o cinza antigo não conseguia dizer onde uma camada terminava. */
+  --bg-chrome: #eef1f3;
+  --bg-shell: var(--bg-chrome);
   --bg-canvas: var(--color-background);
   --bg-thumbnail-chrome: var(--color-surface-container);
   --bg-app: var(--bg-chrome);
   --bg-sidebar: var(--bg-shell);
   --bg-surface: var(--color-background);
   --bg-surface-2: var(--color-surface-container);
-  --bg-surface-3: #e8eaed;
+  --bg-surface-3: #e4e8eb;
   --bg-surface-hover: var(--color-surface-container);
   --bg-hover: var(--color-surface-container);
   --bg-selected: var(--color-primary-surface);
 
-  /* Sidebar — item ativo índigo/violeta suave (fundo sólido claro, distinto do dark translúcido) */
-  --sidebar-selected-bg: #eef2ff;
-  --sidebar-selected-border: #c7d2fe;
-  --sidebar-selected-text: #312e81;
-  --sidebar-selected-icon: #6366f1;
-  --sidebar-item-hover-bg: rgba(99, 102, 241, 0.08);
-  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 35%, transparent);
+  /* Sidebar — item ativo em teal suave (fundo sólido claro, distinto do dark translúcido) */
+  --sidebar-selected-bg: #dcedeb;
+  --sidebar-selected-border: #b4dad6;
+  --sidebar-selected-text: #0a5754;
+  --sidebar-selected-icon: #0e6e6a;
+  --sidebar-item-hover-bg: rgba(14, 110, 106, 0.08);
+  --sidebar-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 35%, transparent);
 
   /* Menu rápido sobre preview — vidro claro */
-  --explorer-quick-actions-bg: rgba(255, 255, 255, 0.94);
-  --explorer-quick-actions-border: rgba(218, 220, 224, 0.92);
-  --explorer-quick-actions-icon: #5f6368;
-  --explorer-quick-actions-icon-hover: #202124;
+  --explorer-quick-actions-bg: #ffffff;
+  --explorer-quick-actions-border: #d3d9de;
+  --explorer-quick-actions-icon: #5a6068;
+  --explorer-quick-actions-icon-hover: #1a1d21;
   --explorer-quick-actions-icon-hover-bg: rgba(60, 64, 67, 0.08);
   --explorer-quick-actions-shadow: 0 1px 4px rgba(60, 64, 67, 0.12);
 
   /* Badge de favorito sobre preview */
-  --document-favorite-badge-bg: rgba(255, 255, 255, 0.94);
-  --document-favorite-badge-shadow: 0 1px 3px rgba(60, 64, 67, 0.14);
+  --document-favorite-ink: #3f4a52;
 
   /* Marquee selection — retângulo de seleção no file explorer */
-  --marquee-bg: rgba(99, 102, 241, 0.1);
-  --marquee-border: rgba(99, 102, 241, 0.38);
+  --marquee-bg: rgba(14, 110, 106, 0.1);
+  --marquee-border: rgba(14, 110, 106, 0.38);
 
-  /* Botão "+ Novo" — índigo flat (Material filled) */
-  --new-button-bg: #4f46e5;
-  --new-button-bg-hover: #4338ca;
-  --new-button-bg-active: #3730a3;
-  --new-button-text: #ffffff;
+  /* Botão "+ Novo" — acento teal flat (Material filled) */
+  --new-button-bg: var(--accent-active);
+  --new-button-bg-hover: var(--accent-hover);
+  --new-button-bg-active: var(--accent-press);
+  --new-button-text: var(--text-on-accent);
   --new-button-chevron: rgba(255, 255, 255, 0.92);
   --new-button-border: transparent;
   --shadow-new-button: none;
   --shadow-new-button-hover: none;
-  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, #6366f1 40%, transparent);
+  --new-button-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-active) 40%, transparent);
 
   /* Menu dropdown do "+ Novo" */
   --new-menu-bg: var(--color-background);
   --new-menu-border: var(--color-border-subtle);
   --new-menu-shadow: var(--shadow-elevation-2);
-  --new-menu-item-hover: #f1f3f4;
-  --new-menu-item-active: #e8eaed;
-  --new-menu-icon: #4f46e5;
+  --new-menu-item-hover: #edf0f2;
+  --new-menu-item-active: #e4e8eb;
+  --new-menu-icon: var(--accent-active);
 
   --border-subtle: var(--color-border-subtle);
   --border-default: var(--color-border);
-  --border-strong: #c4c7c5;
+  --border-strong: #a4aeb6;
 
-  --text-primary: #202124;
-  --text-secondary: #5f6368;
-  /* Terciário precisa ficar acima de 4.5:1 sobre branco (AA) e ainda assim mais
-     claro que o secundário — #70757a dá 4.65:1 contra os 6.05:1 do secundário.
-     O #80868b do tema escuro reprovaria aqui (3.68:1). */
-  --text-tertiary: #70757a;
-  --text-disabled: #9aa0a6;
+  --text-primary: #11171b;
+  --text-secondary: #4a575f;
+  /* Terciário precisa ficar acima de 4.5:1 sobre a base clara (AA) e ainda assim
+     mais claro que o secundário: 5.03:1 contra os 6.93:1 do secundário. O
+     terciário do tema escuro é mais claro e reprovaria aqui. */
+  --text-tertiary: #5f6c74;
+  --text-disabled: #98a3aa;
 
   --accent-active: var(--color-primary);
   --accent-hover: var(--color-primary-hover);
+  --accent-press: #0a5754;
   --accent-active-bg: var(--color-primary-surface);
   --text-on-accent: #ffffff;
 
-  --status-ok-bg: #e6f4ea;
-  --status-ok-text: #1e8e3e;
-  --status-ok-border: color-mix(in srgb, #1e8e3e 24%, transparent);
-  --status-ok-dot: #1e8e3e;
+  /* Latão — ver a regra de forma no bloco do tema escuro. */
+  --seal: #7c6220;
+  --seal-soft: #f4eedf;
 
-  --status-danger-bg: #fce8e6;
-  --status-danger-text: #d93025;
-  --status-danger-border: color-mix(in srgb, #d93025 24%, transparent);
-  --status-danger-dot: #d93025;
+  /* No claro o mesmo peso de preto apaga a tela; a tinta é mais leve e puxa o
+     grafite da marca em vez de cinza neutro. */
+  --tour-scrim: rgba(16, 24, 30, 0.6);
 
-  --status-warn-bg: #fef7e0;
-  --status-warn-text: #b06000;
-  --status-warn-border: color-mix(in srgb, #f9ab00 28%, transparent);
-  --status-warn-dot: #f9ab00;
+  --status-ok-bg: #e2f2e9;
+  --status-ok-text: #1d774d;
+  --status-ok-border: color-mix(in srgb, var(--status-ok-text) 24%, transparent);
+  --status-ok-dot: #1d774d;
 
-  --status-pending-bg: #fef7e0;
-  --status-pending-text: #b06000;
-  --status-pending-border: color-mix(in srgb, #f9ab00 24%, transparent);
-  --status-pending-dot: #f9ab00;
+  --status-danger-bg: #fbe8e6;
+  --status-danger-text: #b03a32;
+  --status-danger-border: color-mix(in srgb, var(--status-danger-text) 24%, transparent);
+  --status-danger-dot: #b03a32;
 
-  --status-info-bg: var(--color-primary-surface);
-  --status-info-text: var(--color-primary);
-  --status-info-border: color-mix(in srgb, #1a73e8 20%, transparent);
-  --status-info-dot: var(--color-primary);
+  --status-warn-bg: #fbeedd;
+  --status-warn-text: #8c5410;
+  --status-warn-border: color-mix(in srgb, var(--status-warn-text) 28%, transparent);
+  --status-warn-dot: #8c5410;
+
+  /* "Em fila" é estado neutro, não alerta — ver o bloco do tema escuro. */
+  --status-pending-bg: #edf0f2;
+  --status-pending-text: #4a575f;
+  --status-pending-border: color-mix(in srgb, var(--status-pending-text) 24%, transparent);
+  --status-pending-dot: #4a575f;
+
+  --status-info-bg: #e2ebfa;
+  --status-info-text: #1b62c9;
+  --status-info-border: color-mix(in srgb, var(--status-info-text) 20%, transparent);
+  --status-info-dot: #1b62c9;
 
   --status-neutral-bg: var(--color-surface-container);
   --status-neutral-text: var(--color-text-secondary);
   --status-neutral-border: var(--color-border-subtle);
-  --status-neutral-dot: #9aa0a6;
+  --status-neutral-dot: #98a3aa;
 
   --feedback-info-bg: var(--bg-surface-2);
   --feedback-info-border: var(--border-default);
@@ -298,29 +368,56 @@
   --shadow-action-glow: none;
   --shadow-card-hover: none;
   --shadow-viewer-page: var(--shadow-elevation-2);
+  /* No claro a mesma sombra fica pesada: papel branco sobre base quase branca
+     não precisa de profundidade, precisa de contorno. A sombra recua e um fio
+     assume o trabalho de dizer onde a folha termina. */
+  --shadow-page-thumb: 0 1px 2px rgba(60, 64, 67, 0.08), 0 4px 10px -4px rgba(60, 64, 67, 0.12);
+  --shadow-page-thumb-hover:
+    0 1px 3px rgba(60, 64, 67, 0.12), 0 8px 18px -6px rgba(60, 64, 67, 0.16);
+  --border-page-thumb: var(--border-default);
   --overlay-scrim: rgba(32, 33, 36, 0.45);
   --viewer-page-bg: #ffffff;
 
   /* Snackbar / toast — inverse surface (igual em light/dark, padrão Google) */
-  --toast-bg: #323232;
-  --toast-text: #f1f3f4;
-  --toast-muted: #dadce0;
-  --toast-action: #aecbfa;
+  --toast-bg: #272e36;
+  --toast-text: #e8edf0;
+  --toast-muted: #bac4cc;
+  --toast-action: #45b3ab;
   --toast-shadow: 0 2px 8px rgba(60, 64, 67, 0.28), 0 4px 16px rgba(60, 64, 67, 0.16);
 
   /* Tooltip — inverse surface (padrão Google), sem borda */
-  --tooltip-bg: #3c4043;
-  --tooltip-text: #f1f3f4;
+  --tooltip-bg: #272e36;
+  --tooltip-text: #e8edf0;
+
+  /* Ação principal dentro de camada sobreposta — ver a nota em `globals.css`. */
+  --overlay-action-bg: #1c2228;
+  --overlay-action-bg-hover: #2a323a;
+  --overlay-action-bg-active: #0b0e10;
+  --overlay-action-text: #ffffff;
 
   /* Scrollbar temática + seleção de texto */
   --scrollbar-thumb: rgba(60, 64, 67, 0.28);
   --scrollbar-thumb-hover: rgba(60, 64, 67, 0.45);
-  --selection-bg: rgba(26, 115, 232, 0.18);
+  --selection-bg: rgba(14, 110, 106, 0.18);
 
   --governance-flow-card-bg: var(--color-background);
   --governance-flow-card-border: var(--border-default);
   --governance-flow-card-shadow: var(--shadow-elevation-1);
   --governance-flow-card-shadow-hover: var(--shadow-elevation-2);
+
+  /* No claro os mesmos doze tons escurecem: o contraste é contra papel, não contra grafite. */
+  --group-ardosia: #5c707b;
+  --group-azul: #2f6f9f;
+  --group-indigo: #4c56a8;
+  --group-violeta: #7350a8;
+  --group-magenta: #a2447f;
+  --group-carmim: #a8404e;
+  --group-telha: #a45836;
+  --group-ambar: #8d6a1c;
+  --group-oliva: #6c7530;
+  --group-musgo: #3f7d4c;
+  --group-esmeralda: #1f7f68;
+  --group-turquesa: #256f85;
 }
 
 :root,
@@ -340,9 +437,16 @@
   --color-text-tertiary: var(--text-tertiary);
   --color-text-disabled: var(--text-disabled);
 
-  /* Tipografia — Google Sans Flex (display/UI) + Roboto (corpo) */
-  --font-display: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif;
-  --font-body: 'Roboto', system-ui, sans-serif;
+  /* Tipografia — Inter variável, auto-hospedada (display/UI e corpo).
+     --font-display continua Inter de propósito: ele veste o rótulo da sidebar
+     em 13px e o wordmark, e serifada abaixo de 20px vira ruído. */
+  --font-display: 'Inter Variable', Inter, system-ui, sans-serif;
+  --font-body: 'Inter Variable', Inter, system-ui, sans-serif;
+
+  /* Newsreader — serifada de texto, contraste médio, sustenta o traço sobre
+     fundo escuro. Só em título de 20px para cima, estado vazio e portal
+     externo. Ainda sem ponto de uso: a aplicação é o passo seguinte. */
+  --font-serif: 'Newsreader Variable', Newsreader, 'Source Serif 4', Georgia, serif;
 
   --text-eyebrow: 11px;
   --weight-eyebrow: 500;
@@ -406,16 +510,29 @@
   --font-weight-medium: var(--weight-label);
   --font-weight-semibold: var(--weight-h2);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-shell: 20px;
-  --radius-workspace: 18px;
+  /* Três degraus mais a pílula. Canto muito arredondado lê como produto de
+     consumo; a sobriedade que este comprador espera mora no canto mais seco.
+     xl/shell/workspace continuam existindo como alias de lg para não obrigar
+     nenhum consumidor a mudar. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: var(--radius-lg);
+  /* TESTE VISUAL: casca — painel branco flutuando sobre chrome grafite. O canto
+     do painel é o mesmo do campo de busca: a casca não inventa um raio próprio. */
+  --radius-shell: var(--radius-sm);
+  --radius-workspace: var(--radius-shell);
   --radius-pill: 9999px;
-  --radius-new-button: 8px;
+  --radius-new-button: var(--radius-md);
 
-  --shell-inset: 10px;
+  --shell-inset: 16px;
+  /* O vão da esquerda é menor que o resto: ali não há moldura a respirar, há um
+     divisor. Barra e painel quase se encostam, e o fio que recolhe a barra mora
+     nesse vão. */
+  --shell-inset-left: 8px;
+  /* Respiro interno do painel. Vira token porque a barra de cima precisa dele:
+     o começo da busca tem de cair na mesma coluna do título da página. */
+  --shell-page-gutter: 28px;
   --shadow-shell: none;
 
   --space-1: 4px;
@@ -431,7 +548,10 @@
   --field-height: 40px;
   --icon-button-size: 36px;
 
-  --workspace-sidebar-width-expanded: 256px;
+  /* A largura sai do rótulo mais longo, não de um número redondo: "Compartilhados
+     comigo" termina em 202px, e o que sobra é o mesmo respiro que ele tem à
+     esquerda. Barra de índice é justa; folga vira peso. */
+  --workspace-sidebar-width-expanded: 224px;
   --workspace-sidebar-width-collapsed: 72px;
   --workspace-sidebar-width: var(--workspace-sidebar-width-expanded);
   --workspace-topbar-height: 64px;
@@ -450,19 +570,27 @@
   --z-modal: 95;
   --z-popover: 96;
   --z-confirm: 100;
+  /* O tour explica a tela inteira, inclusive o que estiver em modal, então
+     fica acima de tudo — é a única camada que pode cobrir a de confirmação. */
+  --z-tour: 110;
 
   /* Acento sólido — sem gradiente */
   --gradient-action: var(--accent-active);
   --gradient-action-soft: var(--accent-active-bg);
 
   /* Cores de pasta (sólidas) */
-  --folder-accent-juridico: #5b8fc7;
-  --folder-accent-financeiro: #4a9b7f;
-  --folder-accent-rh: #8b6bb8;
-  --folder-accent-compras: #c49252;
-  --folder-accent-operacional: #5a94c4;
-  --folder-accent-contratos: #6b7ec4;
-  --folder-accent-default: #80868b;
+  /* Cor por categoria é a exceção deliberada à regra de acento único: num
+     gerenciador de arquivos ela identifica a pasta, não sinaliza interação.
+     Por isso o croma é baixo — lê como aba de índice arquivística, não como
+     ícone de aplicativo, e não disputa com o verdigris. Todas passam 3:1 sobre
+     as duas bases (medido; são glifos preenchidos, não texto). */
+  --folder-accent-juridico: #6485a9;
+  --folder-accent-financeiro: #5a8e7b;
+  --folder-accent-rh: #98718f;
+  --folder-accent-compras: #a47f52;
+  --folder-accent-operacional: #6f8e95;
+  --folder-accent-contratos: #7d82ab;
+  --folder-accent-default: #767f88;
 
   --color-cat-juridico: var(--folder-accent-juridico);
   --color-cat-financeiro: var(--folder-accent-financeiro);
@@ -495,6 +623,21 @@
 
   /* Pasta padrão — ícone amarelo Drive (após o bloco compartilhado para vencer o cascade) */
   --folder-accent-default: #fbc02d;
+}
+
+/* ── Claro e escuro: uma folha só, recortada a fio ────────────────────────
+   O `standard` separa as camadas por tom — grafite fora, papel dentro. Esses
+   dois não: a casca e o painel são a mesma superfície, e quem divide é um fio
+   de acento. É o efeito do desenho antigo, de painéis contíguos separados por
+   fio de cabelo, agora com o canto de 4px em vez do canto reto.
+
+   O acento aqui não sinaliza estado, delimita — por isso entra fraco, a menos
+   de um terço. Cheio, viraria contorno de campo em foco e brigaria com o único
+   lugar onde o teal ainda quer dizer "agora". */
+[data-appearance='light'],
+[data-appearance='dark'] {
+  --bg-chrome: var(--bg-canvas);
+  --shell-edge: color-mix(in srgb, var(--accent-active) 30%, transparent);
 }
 
 :root:not([data-theme]) {

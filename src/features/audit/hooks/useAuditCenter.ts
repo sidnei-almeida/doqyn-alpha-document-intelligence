@@ -3,19 +3,16 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useAuth } from '@/features/auth/useAuth';
-import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  usersApi,
-} from '@/features/users/api/usersApi';
+import { usersApi } from '@/features/users/api/usersApi';
 import { invalidateUserManagementQueries } from '@/features/users/userManagementQueries';
 import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 import type { AuditEvent, AuditEventFilters, AuditOverview } from '@/types/audit';
 import { auditApi } from '../api/auditApi';
 import {
-  approveDocumentUploadApproval,
-  rejectDocumentUploadApproval,
-} from '../api/documentUploadApprovalsApi';
-import { listPendingApprovals, type PendingApprovalItem } from '../api/pendingApprovalsApi';
+  decideApprovalRequest,
+  listPendingApprovals,
+  type PendingApprovalItem,
+} from '../api/pendingApprovalsApi';
 import {
   buildAuditEventsQuery,
   dedupeAuditEvents,
@@ -26,13 +23,25 @@ import {
 
 const EMPTY_OVERVIEW: AuditOverview = {
   pendingCount: 0,
-  pendingUsersCount: 0,
   todayEventsCount: 0,
   criticalEventsCount: 0,
   totalEventsCount: 0,
 };
 
 const EVENTS_PAGE_SIZE = 50;
+
+/**
+ * O aviso de sucesso diz o que aconteceu, e cada tipo faz coisa diferente.
+ *
+ * Aprovar um envio publica o documento; aprovar um compartilhamento o entrega a alguém; aprovar um
+ * download só libera quem pediu. Uma frase só para os três diria a verdade em um caso e mentiria
+ * nos outros dois.
+ */
+const APPROVED_MESSAGE: Record<string, string> = {
+  document_upload: 'Documento aprovado e disponível na Biblioteca.',
+  document_download: 'Download liberado para o solicitante.',
+  document_share: 'Compartilhamento aprovado e concedido.',
+};
 
 export function useAuditCenter(documentId?: string) {
   const { user, roles } = useAuth();
@@ -95,40 +104,9 @@ export function useAuditCenter(documentId?: string) {
     await invalidateUserManagementQueries(queryClient, tenantId || undefined);
   };
 
-  const approveMutation = useMutation({
-    mutationFn: ({
-      item,
-      platformRoles,
-      accessGroupIds,
-      documentGroupIds,
-    }: {
-      item: PendingApprovalItem;
-      platformRoles: Parameters<typeof usersApi.approve>[1]['platformRoles'];
-      accessGroupIds: string[];
-      documentGroupIds: string[];
-    }) =>
-      usersApi.approve(
-        item.membershipId,
-        {
-          platformRoles,
-          accessGroupIds,
-          documentGroupIds,
-          notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-        },
-      ),
-    onSuccess: async () => {
-      toast.success('Solicitação aprovada com sucesso.');
-      await invalidateAll();
-    },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
-  });
-
   const rejectMutation = useMutation({
     mutationFn: ({ item, reason }: { item: PendingApprovalItem; reason: string }) => {
-      if (item.type === 'document_upload' && item.documentUpload?.approvalId) {
-        return rejectDocumentUploadApproval(item.documentUpload.approvalId, reason).then(() => undefined);
-      }
-      return usersApi.reject(item.membershipId, reason);
+      return decideApprovalRequest(item.id, 'rejected', reason);
     },
     onSuccess: async () => {
       toast.success('Solicitação rejeitada.');
@@ -138,15 +116,15 @@ export function useAuditCenter(documentId?: string) {
     onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
   });
 
-  const approveDocumentUploadMutation = useMutation({
-    mutationFn: (approvalId: string) => approveDocumentUploadApproval(approvalId),
-    onSuccess: async () => {
-      toast.success('Documento aprovado e disponível na Biblioteca.');
+  const approveDocumentMutation = useMutation({
+    mutationFn: (item: PendingApprovalItem) => decideApprovalRequest(item.id, 'approved'),
+    onSuccess: async (_result, item) => {
+      toast.success(APPROVED_MESSAGE[item.type] ?? 'Pedido aprovado.');
       await invalidateAll();
       await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['library-documents'] });
     },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o envio.'),
+    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o pedido.'),
   });
 
   const pendingItems = pendingQuery.data ?? [];
@@ -155,7 +133,6 @@ export function useAuditCenter(documentId?: string) {
   const overview: AuditOverview = {
     ...(overviewQuery.data ?? EMPTY_OVERVIEW),
     pendingCount,
-    pendingUsersCount: pendingCount,
   };
 
   const events = useMemo(
@@ -198,9 +175,8 @@ export function useAuditCenter(documentId?: string) {
     eventFilters,
     setEventFilters: updateEventFilters,
     documentGroups: documentGroupsQuery.data ?? [],
-    approveMutation,
     rejectMutation,
-    approveDocumentUploadMutation,
+    approveDocumentMutation,
     refresh: invalidateAll,
   };
 }

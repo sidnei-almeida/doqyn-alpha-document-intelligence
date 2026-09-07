@@ -101,10 +101,7 @@ describe('contrato da correção manual no confirm', () => {
   });
 
   it('a rota de campos da categoria está registrada no dispatcher', () => {
-    const server = readFileSync(
-      new URL('../server/apiServer.ts', import.meta.url),
-      'utf8',
-    );
+    const server = readFileSync(new URL('../server/apiServer.ts', import.meta.url), 'utf8');
 
     // Arquivo em api/ não vira rota sozinho fora da Vercel — precisa estar na tabela.
     assert.match(server, /document-categories\\\/\(\[\^\/\]\+\)\\\/fields/);

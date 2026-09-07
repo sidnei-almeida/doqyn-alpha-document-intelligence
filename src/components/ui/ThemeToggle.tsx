@@ -1,28 +1,35 @@
 import { useTheme } from '@/contexts/useTheme';
 import { Icon } from '@/components/ui/Icon';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { nextTheme, THEME_HINTS, THEME_ICONS, THEME_LABELS } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
+/**
+ * Seletor de tema — um glifo que percorre os três a cada clique.
+ *
+ * Padrão → claro → escuro → padrão. O ícone é o estado: contraste, sol, lua.
+ *
+ * Foi um menu de três por um tempo, pela ideia de que alternar sem nomear vira
+ * adivinhação. Na prática o menu cobrava dois cliques e uma leitura para o que
+ * é uma preferência de superfície — a pessoa troca, olha a tela e decide. O que
+ * o menu dizia em texto passa para o rótulo acessível e para a dica do
+ * ponteiro, que nomeiam o tema atual e o próximo sem ocupar a tela.
+ *
+ * O atalho `Ctrl/Cmd + Shift + L` percorre a mesma lista.
+ */
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const upcoming = nextTheme(theme);
 
   return (
-    <Tooltip label="Alternar tema (Ctrl+Shift+L)">
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className={cn(
-          'inline-flex h-icon-btn min-h-icon-btn w-icon-btn min-w-icon-btn cursor-pointer items-center justify-center rounded-md border border-doqyn-border bg-doqyn-surface text-doqyn-muted transition-colors duration-100',
-          'hover:border-doqyn-border-strong hover:bg-doqyn-surface-hover hover:text-doqyn-text',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-sidebar',
-          className,
-        )}
-        aria-label="Alternar tema claro/escuro"
-      >
-        <Icon name={isDark ? 'light_mode' : 'dark_mode'} size={ICON_SIZE.sm} />
-      </button>
-    </Tooltip>
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className={cn('shrink-0', className)}
+      title={`Tema: ${THEME_LABELS[theme]}. ${THEME_HINTS[theme]}. Clique para ${THEME_LABELS[upcoming].toLowerCase()}.`}
+      aria-label={`Tema: ${THEME_LABELS[theme]}. Trocar para ${THEME_LABELS[upcoming].toLowerCase()}.`}
+    >
+      <Icon name={THEME_ICONS[theme]} size={ICON_SIZE.sm} />
+    </button>
   );
 }

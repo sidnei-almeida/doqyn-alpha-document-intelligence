@@ -173,9 +173,7 @@ export async function searchDocumentChunksByVector(input: {
     tuning: input.tuning,
   });
 
-  const rows = await input.ctx.collections.documentChunks
-    .aggregate(pipeline)
-    .toArray();
+  const rows = await input.ctx.collections.documentChunks.aggregate(pipeline).toArray();
 
   return rows.map((row) => ({
     chunkId: String(row._id),

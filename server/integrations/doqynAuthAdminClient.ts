@@ -47,7 +47,9 @@ export async function callDoqynAuthAdmin<T>(
 
   if (!response.ok) {
     throw new ServiceError(
-      typeof data.message === 'string' ? data.message : 'Não foi possível concluir a operação no auth-service.',
+      typeof data.message === 'string'
+        ? data.message
+        : 'Não foi possível concluir a operação no auth-service.',
       typeof data.code === 'string' ? data.code : 'AUTH_ADMIN_FAILED',
       response.status,
     );

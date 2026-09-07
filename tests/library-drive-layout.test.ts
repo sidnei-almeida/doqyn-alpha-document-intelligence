@@ -12,18 +12,6 @@ function readSrc(relativePath: string): string {
 }
 
 describe('layout drive-inspired da Biblioteca', () => {
-  it('pastas usam tile horizontal drive-folder-tile', () => {
-    const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
-    assert.ok(card.includes('drive-folder-tile'));
-    assert.ok(card.includes('hover:bg-doqyn-surface-hover'));
-    assert.equal(card.includes('folder.description'), false);
-  });
-
-  it('grade de pastas é responsiva com mais colunas', () => {
-    const grid = readSrc('features/library/components/ExplorerFolderGrid.tsx');
-    assert.ok(grid.includes('xl:grid-cols-4'));
-    assert.equal(grid.includes('Categorias de governança'), false);
-  });
 
   it('Biblioteca continua mostrando pastas na área principal', () => {
     const page = readSrc('features/library/LibraryPage.tsx');

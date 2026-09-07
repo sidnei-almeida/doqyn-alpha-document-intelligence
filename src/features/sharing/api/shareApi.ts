@@ -9,6 +9,8 @@ export type ShareableUser = {
   firstName?: string;
   lastName?: string;
   alreadyShared: boolean;
+  /** Veio do histórico de quem está escolhendo. Só marcado quando não há busca digitada. */
+  frequent?: boolean;
 };
 
 export type DocumentShareEntry = {
@@ -24,6 +26,11 @@ export type DocumentShareEntry = {
   message?: string | null;
   createdAt: string;
   sharedByUserId: string;
+  expiresAt?: string | null;
+  /** Nulo quando o compartilhamento é de casa: lá não há aceite a esperar. */
+  inboundStatus?: 'pending' | 'accepted' | 'declined' | null;
+  /** A empresa da outra parte, conhecida só depois do aceite. */
+  counterpartTenantName?: string | null;
 };
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -45,9 +52,15 @@ export async function fetchDocumentShares(documentId: string): Promise<{
 export async function createDocumentShare(
   documentId: string,
   input: {
-    sharedWithUserId: string;
+    /** Do seletor de membros. Um dos dois basta. */
+    sharedWithUserId?: string;
+    /** Do campo que atravessa a fronteira: o servidor resolve se é de casa ou de fora. */
+    sharedWithEmail?: string;
+    /** Da busca por apelido. O diretório não devolve e-mail a quem só buscou. */
+    sharedWithUsername?: string;
     permissions?: { canView?: boolean; canDownload?: boolean };
     message?: string;
+    expiresAt?: string;
   },
 ): Promise<{ shareId: string; updated: boolean }> {
   const encoded = encodeURIComponent(documentId);
@@ -59,10 +72,7 @@ export async function createDocumentShare(
   return parseJson(response);
 }
 
-export async function revokeDocumentShare(
-  documentId: string,
-  shareId: string,
-): Promise<void> {
+export async function revokeDocumentShare(documentId: string, shareId: string): Promise<void> {
   const doc = encodeURIComponent(documentId);
   const share = encodeURIComponent(shareId);
   const response = await authFetch(`/api/documents/${doc}/shares/${share}`, {

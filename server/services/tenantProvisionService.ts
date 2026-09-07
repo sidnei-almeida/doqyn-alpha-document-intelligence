@@ -19,6 +19,8 @@ import { logger } from '../utils/logger.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
 import { ensureUncategorizedCategory } from './documentCategoriesService.js';
+import { ensureTenantStorageBucket } from './tenantStorageConfigService.js';
+import { getR2ConfigFromEnv } from '../storage/storageConfig.js';
 import { getTenantById } from './tenantsService.js';
 
 export type ProvisionTenantInput = {
@@ -38,7 +40,12 @@ export type ProvisionTenantOutput = {
   collectionPrefix: string;
   createdCollections: string[];
   createdIndexes: string[];
+  storage: ProvisionStorageResult;
 };
+
+export type ProvisionStorageResult =
+  | { ok: true; bucket: string; created: boolean; skipped: boolean }
+  | { ok: false; error: string };
 
 function assertProvisionInput(input: ProvisionTenantInput): void {
   if (!isSafeTenantIdentifier(input.tenantId)) {
@@ -105,6 +112,48 @@ async function writeProvisionAudit(
     metadata: metadata ?? {},
     createdAt: new Date(),
   } as Record<string, unknown>);
+}
+
+/**
+ * Bucket + CORS na criação da conta.
+ *
+ * Falhar aqui **não** derruba o cadastro: o tenant fica com `corsStatus: 'failed'` no registry e a
+ * próxima tentativa de upload reconcilia de novo. O que não pode acontecer é o oposto — cadastro
+ * concluído, bucket sem política, e a API devolvendo URL assinada que o navegador rejeita em
+ * silêncio. Por isso o caminho de presign recusa enquanto a CORS não estiver confirmada.
+ */
+async function provisionTenantStorage(
+  tenantId: string,
+  tenantType: TenantType,
+): Promise<ProvisionStorageResult> {
+  // Instalação sem R2 (storage local em desenvolvimento) não tem bucket para provisionar.
+  if (!getR2ConfigFromEnv()) {
+    return { ok: true, bucket: '', created: false, skipped: true };
+  }
+
+  const tenant = await getTenantById(tenantId);
+  if (!tenant) {
+    return { ok: false, error: 'Tenant não encontrado no registry após a gravação.' };
+  }
+
+  try {
+    const result = await ensureTenantStorageBucket(tenant);
+    logger.info('provisão: bucket e CORS garantidos', {
+      tenantId,
+      tenantType,
+      bucket: result.bucket,
+      created: result.created,
+    });
+    return { ok: true, bucket: result.bucket, created: result.created, skipped: false };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.warn('provisão: bucket ou CORS não puderam ser garantidos', {
+      tenantId,
+      tenantType,
+      error: message,
+    });
+    return { ok: false, error: message };
+  }
 }
 
 export async function provisionTenantEnvironment(
@@ -178,6 +227,12 @@ export async function provisionTenantEnvironment(
     'Provisionamento iniciado.',
   );
 
+  // O bucket precisa existir com CORS antes do primeiro envio, e não durante ele: o navegador
+  // faz `PUT` direto no R2 com URL assinada, então bucket sem política barra no preflight e o
+  // upload morre sem nenhuma requisição chegar ao servidor. PJ ganha bucket próprio; PF divide o
+  // `R2_DEFAULT_BUCKET`, que também é reconciliado aqui.
+  const storageResult = await provisionTenantStorage(input.tenantId, input.tenantType);
+
   // Provisionar tenant não cria mais coleção nem índice próprio: desde o Passo 7 todos os tenants
   // dividem o mesmo conjunto compartilhado. A chamada permanece porque o primeiro provisionamento
   // de uma instalação nova ainda precisa materializar esse conjunto — do segundo tenant em diante
@@ -225,6 +280,22 @@ export async function provisionTenantEnvironment(
   await writeProvisionAudit(
     input.tenantId,
     input.tenantType,
+    storageResult.ok ? 'tenant.provision.storage_ready' : 'tenant.provision.storage_failed',
+    storageResult.ok
+      ? 'Bucket e CORS garantidos.'
+      : 'Bucket ou CORS não puderam ser garantidos no cadastro.',
+    storageResult.ok
+      ? {
+          bucket: storageResult.bucket,
+          created: storageResult.created,
+          skipped: storageResult.skipped,
+        }
+      : { error: storageResult.error },
+  );
+
+  await writeProvisionAudit(
+    input.tenantId,
+    input.tenantType,
     'tenant.provision.completed',
     'Provisionamento concluído.',
     {
@@ -241,6 +312,7 @@ export async function provisionTenantEnvironment(
     collectionPrefix,
     createdCollections: [...new Set(createdCollections)],
     createdIndexes,
+    storage: storageResult,
   };
 }
 

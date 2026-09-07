@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { MongoDocumentGroup, MongoDocumentGroupMember } from '../db/types.js';
+import { normalizeGroupColor } from '../../shared/groupPalette.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { slugifyName } from '../utils/slugify.js';
@@ -18,7 +19,11 @@ async function resolveContext(tenantId: string, opts?: ServiceOpts) {
   return { collections, scope, storage: collections.storage };
 }
 
-export function serializeDocumentGroup(group: MongoDocumentGroup, memberCount = 0, linkedCategoryCount = 0) {
+export function serializeDocumentGroup(
+  group: MongoDocumentGroup,
+  memberCount = 0,
+  linkedCategoryCount = 0,
+) {
   return {
     id: group._id,
     tenantId: group.tenantId ?? group.companyId,
@@ -26,6 +31,7 @@ export function serializeDocumentGroup(group: MongoDocumentGroup, memberCount = 
     name: group.name,
     slug: group.slug,
     description: group.description,
+    color: normalizeGroupColor(group.color),
     active: group.active,
     memberCount,
     linkedCategoryCount,
@@ -52,18 +58,11 @@ export function serializeGroupMember(member: MongoDocumentGroupMember) {
 
 export async function listDocumentGroups(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const groups = await collections.documentGroups
-    .find(scope)
-    .sort({ name: 1 })
-    .toArray();
+  const groups = await collections.documentGroups.find(scope).sort({ name: 1 }).toArray();
 
-  const members = await collections.documentGroupMembers
-    .find({ ...scope, active: true })
-    .toArray();
+  const members = await collections.documentGroupMembers.find({ ...scope, active: true }).toArray();
 
-  const rules = await collections.documentRules
-    .find({ ...scope, active: true })
-    .toArray();
+  const rules = await collections.documentRules.find({ ...scope, active: true }).toArray();
 
   const memberCounts = new Map<string, number>();
   for (const member of members as MongoDocumentGroupMember[]) {
@@ -90,7 +89,7 @@ export async function listDocumentGroups(tenantId: string, opts?: ServiceOpts) {
 export async function createDocumentGroup(
   tenantId: string,
   userId: string,
-  input: { name: string; description?: string; slug?: string },
+  input: { name: string; description?: string; slug?: string; color?: string },
 ) {
   const name = input.name?.trim();
   if (!name) {
@@ -118,7 +117,10 @@ export async function createDocumentGroup(
   // que o id estava livre e o insert estourava E11000 — ou seja, a segunda empresa a criar um grupo
   // "Diretoria" recebia 500. Nomes de grupo se repetem entre empresas por natureza.
   let id = `group_${slug.replace(/-/g, '_')}`;
-  const existingId = await collections.documentGroups.findOne({ _id: id } as Record<string, unknown>);
+  const existingId = await collections.documentGroups.findOne({ _id: id } as Record<
+    string,
+    unknown
+  >);
 
   if (existingId) {
     id = `group_${randomUUID().slice(0, 8)}`;
@@ -132,6 +134,7 @@ export async function createDocumentGroup(
       name,
       slug,
       description: input.description?.trim() || '',
+      color: normalizeGroupColor(input.color),
       active: true,
       createdBy: userId,
       createdAt: now,
@@ -148,7 +151,7 @@ export async function createDocumentGroup(
 export async function updateDocumentGroup(
   tenantId: string,
   groupId: string,
-  input: { name?: string; description?: string; active?: boolean },
+  input: { name?: string; description?: string; active?: boolean; color?: string },
   opts?: ServiceOpts,
 ) {
   const { collections, scope } = await resolveContext(tenantId, opts);
@@ -171,6 +174,7 @@ export async function updateDocumentGroup(
   }
   if (input.description !== undefined) patch.description = input.description.trim();
   if (input.active !== undefined) patch.active = input.active;
+  if (input.color !== undefined) patch.color = normalizeGroupColor(input.color);
 
   await collections.documentGroups.updateOne(
     { ...scope, _id: groupId } as Record<string, unknown>,
@@ -212,11 +216,7 @@ export async function assertDocumentGroupExists(
   return group as MongoDocumentGroup;
 }
 
-export async function listGroupMembers(
-  tenantId: string,
-  groupId: string,
-  opts?: ServiceOpts,
-) {
+export async function listGroupMembers(tenantId: string, groupId: string, opts?: ServiceOpts) {
   await assertDocumentGroupExists(tenantId, groupId, opts);
   const { collections, scope } = await resolveContext(tenantId, opts);
 
@@ -294,6 +294,64 @@ export async function removeGroupMember(
   return { groupId, membershipId, removed: true };
 }
 
+/**
+ * A marca de quem desativou o vínculo.
+ *
+ * Só o sync escreve `member_status`, e só ele restaura o que carrega essa marca. Vínculo tirado à
+ * mão pela tela não tem marca nenhuma, e por isso nunca volta sozinho — desfazer uma decisão do
+ * administrador porque a pessoa foi desbloqueada seria devolver um acesso que ele retirou.
+ */
+const MEMBER_STATUS_DEACTIVATION = 'member_status';
+
+/**
+ * O membro deixou de estar ativo; o vínculo de grupo o acompanha.
+ *
+ * Enquanto ele está bloqueado o auth já revoga as sessões, então a linha não concederia nada de
+ * qualquer jeito. Ela importa depois: `loadMemberDocumentGroupIds` filtra por `membershipId`
+ * apenas quando quem chama informa um, e quem chama só com `userId` casa com qualquer linha
+ * daquela pessoa no tenant — inclusive as de uma membership morta.
+ */
+export async function deactivateMemberGroupsForInactiveMember(
+  tenantId: string,
+  input: { membershipId: string },
+  opts?: ServiceOpts,
+): Promise<number> {
+  const { collections, scope } = await resolveContext(tenantId, opts);
+
+  const result = await collections.documentGroupMembers.updateMany(
+    { ...scope, membershipId: input.membershipId, active: true } as Record<string, unknown>,
+    { $set: { active: false, deactivatedBy: MEMBER_STATUS_DEACTIVATION, deactivatedAt: new Date() } },
+  );
+
+  return result.modifiedCount;
+}
+
+/**
+ * O membro voltou a ser ativo; volta com o que o sync tirou dele, e só isso.
+ *
+ * Bloquear e desbloquear é o mesmo par de mãos: quem desbloqueia espera a pessoa de volta como
+ * estava, não uma conta ativa que não enxerga documento nenhum.
+ */
+export async function restoreMemberGroupsForActiveMember(
+  tenantId: string,
+  input: { membershipId: string },
+  opts?: ServiceOpts,
+): Promise<number> {
+  const { collections, scope } = await resolveContext(tenantId, opts);
+
+  const result = await collections.documentGroupMembers.updateMany(
+    {
+      ...scope,
+      membershipId: input.membershipId,
+      active: false,
+      deactivatedBy: MEMBER_STATUS_DEACTIVATION,
+    } as Record<string, unknown>,
+    { $set: { active: true }, $unset: { deactivatedBy: '', deactivatedAt: '' } },
+  );
+
+  return result.modifiedCount;
+}
+
 export async function listMembershipGroupIds(
   tenantId: string,
   membershipId: string,
@@ -310,9 +368,7 @@ export async function listMembershipGroupIds(
 
 export async function listAllGroupMemberships(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const members = await collections.documentGroupMembers
-    .find({ ...scope, active: true })
-    .toArray();
+  const members = await collections.documentGroupMembers.find({ ...scope, active: true }).toArray();
 
   return (members as MongoDocumentGroupMember[]).map(serializeGroupMember);
 }

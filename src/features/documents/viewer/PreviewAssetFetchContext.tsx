@@ -13,7 +13,9 @@ export function PreviewAssetFetchProvider({
   children: ReactNode;
 }) {
   return (
-    <PreviewAssetFetchContext.Provider value={fetchAsset}>{children}</PreviewAssetFetchContext.Provider>
+    <PreviewAssetFetchContext.Provider value={fetchAsset}>
+      {children}
+    </PreviewAssetFetchContext.Provider>
   );
 }
 

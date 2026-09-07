@@ -84,7 +84,11 @@ describe('document audit helpers', () => {
   });
 
   it('buildDocumentAuditContext usa sessão, não payload externo', () => {
-    const ctx = buildDocumentAuditContext(businessCtx('company_a'), businessUser('company_a'), 'req_1');
+    const ctx = buildDocumentAuditContext(
+      businessCtx('company_a'),
+      businessUser('company_a'),
+      'req_1',
+    );
     assert.equal(ctx.tenantId, 'company_a');
     assert.equal(ctx.actorUserId, 'user_admin');
     assert.equal(ctx.requestId, 'req_1');

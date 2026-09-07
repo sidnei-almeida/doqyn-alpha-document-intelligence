@@ -53,7 +53,6 @@ export type DashboardOverviewResponse = {
     documentsWithoutCategory: number;
     usersActive: number;
     usersPending: number;
-    accessRequestsPending: number;
   } | null;
   storage: {
     originalFiles: number;
@@ -340,7 +339,6 @@ export async function getDashboardOverview(input: {
             documentsWithoutCategory: 0,
             usersActive: 0,
             usersPending: 0,
-            accessRequestsPending: 0,
           }
         : null,
       storage: isAdmin
@@ -399,6 +397,8 @@ export async function getDashboardOverview(input: {
     totalVersions,
     previewReady,
     previewFailed,
+    failedPreviewDocumentIds,
+    errorEventDocumentIds,
     downloadsInPeriod,
     viewsInPeriod,
     trackingEventsInPeriod,
@@ -415,6 +415,16 @@ export async function getDashboardOverview(input: {
     collections.documentVersions.countDocuments({
       ...scope,
       'storage.preview.status': 'failed',
+    } as Record<string, unknown>),
+    collections.documentVersions.distinct('documentId', {
+      ...scope,
+      'storage.preview.status': 'failed',
+    } as Record<string, unknown>),
+    collections.auditLogs.distinct('documentId', {
+      ...scope,
+      documentId: { $ne: null },
+      'metadata.severity': 'error',
+      createdAt: { $gte: period.from, $lte: period.to },
     } as Record<string, unknown>),
     collections.auditLogs.countDocuments({
       ...scope,
@@ -469,7 +479,20 @@ export async function getDashboardOverview(input: {
   const documentsInAnalysis = statusCounts.get('in_analysis') ?? 0;
   const documentsAwaitingReview = statusCounts.get('awaiting_review') ?? 0;
   const documentsProcessed = statusCounts.get('processed') ?? 0;
-  const documentsWithErrors = previewFailed + (statusCounts.get('other') ?? 0);
+  // Um documento que não abre é um documento com erro, mesmo que o preview
+  // conste como pronto no banco: `storage.preview.status` diz que o arquivo foi
+  // gerado, não que ele está sendo entregue. Contar só o estado fazia o painel
+  // anunciar "0 erros" logo acima de uma lista de incidentes — duas medidas
+  // diferentes com o mesmo nome. Aqui as duas entram, sem contar o mesmo
+  // documento duas vezes.
+  const documentsWithErrors = new Set<string>();
+  for (const documentId of failedPreviewDocumentIds) {
+    if (typeof documentId === 'string') documentsWithErrors.add(documentId);
+  }
+  for (const documentId of errorEventDocumentIds) {
+    if (typeof documentId === 'string') documentsWithErrors.add(documentId);
+  }
+  const documentsWithErrorsCount = documentsWithErrors.size + (statusCounts.get('other') ?? 0);
 
   const documentsByStatus = ['processed', 'in_analysis', 'awaiting_review', 'error']
     .map((status) => ({
@@ -477,7 +500,7 @@ export async function getDashboardOverview(input: {
       label: STATUS_LABELS[status] ?? status,
       count:
         status === 'error'
-          ? documentsWithErrors
+          ? documentsWithErrorsCount
           : status === 'in_analysis'
             ? documentsInAnalysis
             : status === 'awaiting_review'
@@ -542,7 +565,6 @@ export async function getDashboardOverview(input: {
       documentsWithoutCategory,
       usersActive,
       usersPending,
-      accessRequestsPending: usersPending,
     };
 
     let originalFiles = 0;
@@ -641,7 +663,7 @@ export async function getDashboardOverview(input: {
       documentsInAnalysis,
       documentsAwaitingReview,
       documentsProcessed,
-      documentsWithErrors,
+      documentsWithErrors: documentsWithErrorsCount,
       totalVersions,
       previewReady,
       previewFailed,

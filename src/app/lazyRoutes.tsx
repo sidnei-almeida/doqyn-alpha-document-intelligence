@@ -19,36 +19,35 @@ function withRouteSuspense(LazyComponent: ReturnType<typeof lazyNamed>) {
 }
 
 const LazyAuditPage = lazyNamed(() => import('@/features/audit/AuditPage'), 'AuditPage');
-const LazyRulesRoute = lazyNamed(
-  () => import('@/features/rules/RulesRoute'),
-  'RulesRoute',
-);
+const LazyRulesRoute = lazyNamed(() => import('@/features/rules/RulesRoute'), 'RulesRoute');
 const LazyMatrixPage = lazyNamed(() => import('@/features/matrix/MatrixPage'), 'MatrixPage');
-const LazyExpiryAlertsPage = lazyNamed(
-  () => import('@/features/expiry/ExpiryAlertsPage'),
-  'ExpiryAlertsPage',
+const LazyNotificationsPage = lazyNamed(
+  () => import('@/features/notifications/NotificationsPage'),
+  'NotificationsPage',
 );
 const LazyLibraryPage = lazyNamed(() => import('@/features/library/LibraryPage'), 'LibraryPage');
-const LazyDocumentSendPage = lazyNamed(
-  () => import('@/features/document-send/DocumentSendPage'),
-  'DocumentSendPage',
+const LazyDocumentRequestsPage = lazyNamed(
+  () => import('@/features/requests/DocumentRequestsPage'),
+  'DocumentRequestsPage',
 );
 const LazyUserManagementRoute = lazyNamed(
   () => import('@/features/users/UserManagementRoute'),
   'UserManagementRoute',
 );
-const LazySettingsPage = lazyNamed(() => import('@/features/documents/SettingsPage'), 'SettingsPage');
-const LazyDashboardPage = lazyNamed(() => import('@/features/documents/DashboardPage'), 'DashboardPage');
-const LazyVersioningPage = lazyNamed(
-  () => import('@/features/versioning/VersioningPage'),
-  'VersioningPage',
+const LazySettingsPage = lazyNamed(
+  () => import('@/features/documents/SettingsPage'),
+  'SettingsPage',
 );
-const LazyRequestAccessPage = lazyNamed(
-  () => import('@/features/access-request/RequestAccessPage'),
-  'RequestAccessPage',
+const LazyContactsPage = lazyNamed(
+  () => import('@/features/contacts/ContactsPage'),
+  'ContactsPage',
+);
+const LazyDashboardPage = lazyNamed(
+  () => import('@/features/documents/DashboardPage'),
+  'DashboardPage',
 );
 const LazyAccessChoicePage = lazyNamed(
-  () => import('@/features/access-request/AccessChoicePage'),
+  () => import('@/features/access-choice/AccessChoicePage'),
   'AccessChoicePage',
 );
 const LazyCompanySignupPage = lazyNamed(
@@ -72,6 +71,14 @@ const LazyAcceptInvitePage = lazyNamed(
 const LazyConfirmEmailChangePage = lazyNamed(
   () => import('@/features/settings/ConfirmEmailChangePage'),
   'ConfirmEmailChangePage',
+);
+const LazyEmailVerificationPage = lazyNamed(
+  () => import('@/features/email-verification/EmailVerificationPage'),
+  'EmailVerificationPage',
+);
+const LazyVerifyEmailLinkPage = lazyNamed(
+  () => import('@/features/email-verification/VerifyEmailLinkPage'),
+  'VerifyEmailLinkPage',
 );
 
 const LazyTrackingRoute = lazyNamed(
@@ -106,15 +113,14 @@ export const SignatureVerificationRoute = withRouteSuspense(LazySignatureVerific
 export const InternalSignatureRoute = withRouteSuspense(LazyInternalSignaturePage);
 export const AuditRoute = withRouteSuspense(LazyAuditPage);
 export const RulesRoute = withRouteSuspense(LazyRulesRoute);
-export const ExpiryAlertsRoute = withRouteSuspense(LazyExpiryAlertsPage);
+export const NotificationsRoute = withRouteSuspense(LazyNotificationsPage);
 export const MatrixRoute = withRouteSuspense(LazyMatrixPage);
 export const LibraryRoute = withRouteSuspense(LazyLibraryPage);
-export const DocumentSendRoute = withRouteSuspense(LazyDocumentSendPage);
+export const DocumentRequestsRoute = withRouteSuspense(LazyDocumentRequestsPage);
 export const UserManagementRouteLazy = withRouteSuspense(LazyUserManagementRoute);
 export const SettingsRoute = withRouteSuspense(LazySettingsPage);
 export const DashboardRoute = withRouteSuspense(LazyDashboardPage);
-export const VersioningRoute = withRouteSuspense(LazyVersioningPage);
-export const RequestAccessRoute = withRouteSuspense(LazyRequestAccessPage);
+export const ContactsRoute = withRouteSuspense(LazyContactsPage);
 export const AccessChoiceRoute = withRouteSuspense(LazyAccessChoicePage);
 export const CompanySignupRoute = withRouteSuspense(LazyCompanySignupPage);
 export const IndividualSignupRoute = withRouteSuspense(LazyIndividualSignupPage);
@@ -123,3 +129,5 @@ export const OAuthCallbackRoute = withRouteSuspense(LazyOAuthCallbackPage);
 export const OnboardingRoute = withRouteSuspense(LazyOnboardingPage);
 export const AcceptInviteRoute = withRouteSuspense(LazyAcceptInvitePage);
 export const ConfirmEmailChangeRoute = withRouteSuspense(LazyConfirmEmailChangePage);
+export const EmailVerificationRoute = withRouteSuspense(LazyEmailVerificationPage);
+export const VerifyEmailLinkRoute = withRouteSuspense(LazyVerifyEmailLinkPage);

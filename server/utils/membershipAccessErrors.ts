@@ -1,10 +1,16 @@
+/**
+ * Estas mensagens disparam **antes** de haver tenant resolvido — é justamente a ausência de
+ * vínculo ativo que as provoca. Não há tipo a consultar, então dizer "empresa" era um chute que
+ * errava toda vez que quem lê tem conta pessoal. Aqui, e só aqui, o termo neutro é a resposta
+ * certa, e não um meio-termo entre PF e PJ.
+ */
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não possui acesso ativo a nenhuma empresa.',
+  NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN.',
   MEMBERSHIP_PENDING: 'Sua solicitação de acesso ainda está aguardando aprovação.',
-  MEMBERSHIP_BLOCKED: 'Seu acesso a esta empresa foi bloqueado.',
-  MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a esta empresa foi rejeitada.',
-  TENANT_INACTIVE: 'Esta empresa não está ativa no DOQYN.',
-  NO_ACTIVE_TENANT: 'Selecione uma empresa para continuar.',
+  MEMBERSHIP_BLOCKED: 'Seu acesso a este ambiente foi bloqueado.',
+  MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
+  TENANT_INACTIVE: 'Este ambiente não está ativo no DOQYN.',
+  NO_ACTIVE_TENANT: 'Selecione um ambiente para continuar.',
 };
 
 type MembershipLike = {

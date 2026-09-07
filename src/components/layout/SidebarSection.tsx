@@ -9,14 +9,15 @@ type SidebarSectionProps = {
 };
 
 /** Agrupa itens da sidebar com rótulo discreto. */
-export function SidebarSection({ label, children, className, collapsed = false }: SidebarSectionProps) {
+export function SidebarSection({
+  label,
+  children,
+  className,
+  collapsed = false,
+}: SidebarSectionProps) {
   return (
     <div className={cn('px-1', className)}>
-      {label && !collapsed && (
-        <p className="type-eyebrow mb-1.5 px-3 text-doqyn-subtle">
-          {label}
-        </p>
-      )}
+      {label && !collapsed && <p className="type-eyebrow mb-1.5 px-3 text-doqyn-subtle">{label}</p>}
       <div className={cn('flex flex-col', collapsed ? 'gap-0' : 'gap-0.5')}>{children}</div>
     </div>
   );

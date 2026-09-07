@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../../../server/audit/buildDocumentAuditContext.js';
-import {
-  revokeDocumentExternalShareGrant,
-} from '../../../../server/services/sharing/externalDocumentShareService.js';
+import { revokeDocumentExternalShareGrant } from '../../../../server/services/sharing/externalDocumentShareService.js';
 import { emitTrackingEvent } from '../../../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../../../server/utils/serviceErrors.js';

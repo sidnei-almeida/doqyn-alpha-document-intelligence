@@ -1,18 +1,4 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'DOQYN';
-export const AUTH_PROVIDER = import.meta.env.VITE_AUTH_PROVIDER ?? '';
-export const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? 'temporary';
-
-export const AUTH_PROVIDER_LABELS: Record<string, string> = {
-  doqyn_auth: 'doqyn-auth-service',
-  mock: 'Desenvolvimento (mock)',
-  temporary: 'Acesso por credenciais (legado)',
-};
-
-export const AUTH_MODE_LABELS: Record<string, string> = {
-  temporary: 'Acesso por credenciais',
-  mock: 'Demonstração',
-};
-
 export const ACCESS_GROUPS = ['Financeiro', 'Frete', 'Jurídico', 'RH'] as const;
 
 export const DOCUMENT_TYPES = [
@@ -52,6 +38,8 @@ export const NAV_ITEMS_PRIMARY = [
 export const NAV_ITEMS_LIBRARY_VIEWS = [
   { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
   { label: 'Para assinar', path: '/biblioteca/assinaturas', icon: 'draw' },
+  { label: 'Pedidos', path: '/pedidos', icon: 'assignment' },
+  { label: 'Contatos', path: '/contatos', icon: 'group' },
   { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
   { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
   { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },

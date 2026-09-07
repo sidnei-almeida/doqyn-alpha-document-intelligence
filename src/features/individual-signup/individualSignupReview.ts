@@ -16,6 +16,8 @@ import {
 export type IndividualSignupFormValues = {
   firstName: string;
   lastName: string;
+  /** O handle público. Ver `UsernameField`: é por ele que outra empresa acha esta pessoa. */
+  username: string;
   email: string;
   country: CountryCode;
   whatsapp: string;
@@ -30,9 +32,11 @@ export type IndividualSignupFormValues = {
   fromAuthenticatedSession: boolean;
 };
 
-export function validateIndividualSignupForm(
-  values: IndividualSignupFormValues,
-): { valid: boolean; error?: string; field?: 'acceptedTerms' } {
+export function validateIndividualSignupForm(values: IndividualSignupFormValues): {
+  valid: boolean;
+  error?: string;
+  field?: 'acceptedTerms';
+} {
   if (!values.acceptedTerms) {
     return {
       valid: false,
@@ -54,6 +58,7 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
   const base = {
     firstName: values.firstName,
     lastName: values.lastName,
+    username: values.username,
     country: values.country,
     taxIdType: taxIdSpec.type,
     whatsapp: toPhoneApiValue(values.country, values.whatsapp),
@@ -87,6 +92,7 @@ export function buildIndividualSignupReviewSections(
           label: 'Nome completo',
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
+        { label: 'Nome de usuário', value: safeDisplayValue(values.username) },
         { label: 'E-mail', value: safeDisplayValue(values.email) },
         { label: 'País', value: getCountryName(values.country) },
         { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
@@ -123,8 +129,7 @@ export function buildIndividualSignupReviewSections(
 
 export const INDIVIDUAL_SIGNUP_REVIEW_COPY = {
   title: 'Revisar cadastro',
-  description:
-    'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
+  description: 'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
   attentionMessage:
     'Verifique principalmente CPF, e-mail e WhatsApp. Informações incorretas podem atrasar seu acesso.',
   confirmLabel: 'Confirmar e cadastrar',

@@ -9,7 +9,11 @@ function resolveToken(req: VercelRequest): string | undefined {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') {
+  // HEAD junto com GET: o robô da Meta sonda o endereço antes de buscá-lo, para saber tipo e
+  // tamanho, e um 405 nessa sondagem faz ele desistir da prévia sem nunca tentar o GET. Era por
+  // isso que a mensagem saía mostrando só o domínio mesmo com as meta tags corretas.
+  const isHead = req.method === 'HEAD';
+  if (req.method !== 'GET' && !isHead) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
@@ -23,6 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const html = renderOgPortalHtml(metadata);
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'private, max-age=300, stale-while-revalidate=600');
+  // `public`: a página não fala mais do documento, então não há o que proteger de cache
+  // intermediário — e é isso que permite ao robô guardar o resultado em vez de repetir a busca.
+  res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  res.setHeader('Content-Length', String(Buffer.byteLength(html, 'utf8')));
+
+  if (isHead) return res.status(200).end();
   return res.status(200).send(html);
 }

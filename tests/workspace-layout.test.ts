@@ -36,7 +36,7 @@ describe('layout do workspace', () => {
     assert.ok(search.includes('Ctrl'));
     assert.ok(search.includes('isMacPlatform'));
     assert.ok(search.includes('metaKey') && search.includes('ctrlKey'));
-    assert.ok(search.includes("navigate(`/biblioteca"));
+    assert.ok(search.includes('navigate(`/biblioteca'));
   });
 
   it('TopBar reaproveita sessão atual (usuário e tenant)', () => {
@@ -58,14 +58,17 @@ describe('layout do workspace', () => {
     assert.ok(newButton.includes('sidebar-new-menu'));
   });
 
-  it('+ Novo tem upload de arquivo e pasta funcional; nova pasta permanece futura', () => {
+  it('+ Novo tem upload de arquivo e de pasta, e cria categoria', () => {
     const newButton = readSrc('features/library/components/NewButtonMenu.tsx');
     assert.ok(newButton.includes('Upload de arquivo'));
     assert.ok(newButton.includes('Upload de pasta'));
     assert.ok(newButton.includes('startUploadFromFiles'));
-    assert.ok(newButton.includes('Nova pasta'));
-    assert.ok(newButton.includes('Em breve'));
-    assert.ok(newButton.includes('/solicitar-acesso'));
+    // "Nova pasta" prometia uma pasta manual que nunca ia existir — pasta da Biblioteca é
+    // categoria de governança. O item virou "Nova categoria" e leva ao formulário que a cria,
+    // em vez de ficar marcado como "Em breve" para sempre.
+    assert.ok(newButton.includes('Nova categoria'));
+    assert.ok(newButton.includes('/rules?nova=categoria'));
+    assert.equal(newButton.includes('Em breve'), false);
     assert.equal(newButton.includes('localStorage'), false);
   });
 
@@ -81,7 +84,13 @@ describe('layout do workspace', () => {
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     assert.ok(sidebar.includes('SidebarNavItem'));
     assert.equal(sidebar.includes('ComingSoonNavItem'), false);
-    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
+    for (const label of [
+      'Compartilhados comigo',
+      'Para assinar',
+      'Recentes',
+      'Favoritos',
+      'Lixeira',
+    ]) {
       assert.ok(constants.includes(label), `${label} presente`);
     }
   });

@@ -214,7 +214,11 @@ export async function plantDocumentGroupMembership(input: {
   };
 
   await documentGroupMembers.insertOne(
-    withTenantFieldsFromContext(storage, payload, input.userId) as unknown as MongoDocumentGroupMember,
+    withTenantFieldsFromContext(
+      storage,
+      payload,
+      input.userId,
+    ) as unknown as MongoDocumentGroupMember,
   );
   plantedTenantIds.add(input.tenantId);
 }

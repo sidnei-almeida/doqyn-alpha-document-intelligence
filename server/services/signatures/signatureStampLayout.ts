@@ -21,8 +21,10 @@ const STAMP_HEIGHT = 32;
 const STAMP_GAP = 5;
 const STAMP_FONT_SIZE = 6;
 const STAMP_LINE_HEIGHT = 8;
-const STAMP_PADDING_X = 5;
+/** O fio de latão vive dentro do padding esquerdo — a caixa não muda de tamanho. */
+const STAMP_PADDING_X = 7;
 const STAMP_PADDING_Y = 4;
+const STAMP_RULE_WIDTH = 1.4;
 
 export function getSignatureStampMetrics() {
   return {
@@ -30,6 +32,7 @@ export function getSignatureStampMetrics() {
     lineHeight: STAMP_LINE_HEIGHT,
     paddingX: STAMP_PADDING_X,
     paddingY: STAMP_PADDING_Y,
+    ruleWidth: STAMP_RULE_WIDTH,
     marker: SIGNATURE_STAMP_MARKER,
   };
 }
@@ -51,12 +54,16 @@ function formatStampDate(date: Date): string {
   }).format(date);
 }
 
+/**
+ * Três linhas, em ordem de leitura: quem assinou, quando, e o código que prova.
+ * O nome carrega o peso; data e código são registro, em corpo menor.
+ */
 export function buildCompactStampLines(stamp: SignatureStampData): string[] {
   const shortCode = stamp.verificationCode.replace(/^DOQYN-/i, '');
   return [
     truncateSignerName(stamp.signerName),
-    `${formatStampDate(stamp.signedAt)} · ${SIGNATURE_STAMP_MARKER}`,
-    shortCode,
+    `Assinado em ${formatStampDate(stamp.signedAt)}`,
+    `${SIGNATURE_STAMP_MARKER} ${shortCode}`,
   ];
 }
 

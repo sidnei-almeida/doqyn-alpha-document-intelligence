@@ -12,14 +12,6 @@ function readSrc(relativePath: string): string {
 }
 
 describe('sidebar DOQYN', () => {
-  it('item ativo usa tokens índigo discretos da sidebar e pill radius', () => {
-    const source = readSrc('components/layout/SidebarNavItem.tsx');
-    assert.ok(source.includes('rounded-full'));
-    assert.ok(source.includes('sidebar-nav-link--active'));
-    assert.ok(source.includes('ICON_SIZE.nav'));
-    assert.equal(source.includes('border-l-[3px]'), false);
-    assert.equal(source.includes('shadow-action-glow'), false);
-  });
 
   it('seção Administração usa headers discretos', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
@@ -35,8 +27,18 @@ describe('sidebar DOQYN', () => {
     assert.ok(source.includes('/biblioteca'));
     assert.ok(source.includes('NewButtonMenu'));
     assert.ok(source.includes('useSidebarCollapsed'));
-    assert.ok(source.includes('sidebar-collapse-toggle'));
-    assert.ok(source.includes('chevron_left'));
+    // O botão de colapsar saiu para `SidebarEdgeToggle`, que vive na borda entre sidebar e
+    // conteúdo — a sidebar passou a montá-lo em vez de desenhá-lo.
+    assert.ok(source.includes('SidebarEdgeToggle'));
+    assert.ok(
+      readSrc('components/layout/SidebarEdgeToggle.tsx').includes('sidebar-collapse-toggle'),
+    );
+    // O chevron flutuante ao lado da marca foi removido de propósito: o divisor entre barra e
+    // conteúdo virou o próprio controle, e reage no hover como o resto do sistema.
+    assert.equal(source.includes('chevron_left'), false);
+    const edge = readSrc('components/layout/SidebarEdgeToggle.tsx');
+    assert.ok(edge.includes('cursor-col-resize'));
+    assert.ok(edge.includes('group-hover:bg-doqyn-accent-active'));
     assert.equal(source.includes('explorer-icon-btn'), false);
     assert.ok(source.includes('data-collapsed'));
     assert.ok(collapsed.includes('--workspace-sidebar-width-collapsed'));
@@ -54,7 +56,13 @@ describe('sidebar DOQYN', () => {
   it('navegação principal inclui views da Biblioteca', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
-    for (const label of ['Compartilhados comigo', 'Para assinar', 'Recentes', 'Favoritos', 'Lixeira']) {
+    for (const label of [
+      'Compartilhados comigo',
+      'Para assinar',
+      'Recentes',
+      'Favoritos',
+      'Lixeira',
+    ]) {
       assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
     }
   });
@@ -77,8 +85,11 @@ describe('sidebar DOQYN', () => {
   it('ThemeToggle tem affordance de clique com hover e cursor pointer', () => {
     const source = readSrc('components/ui/ThemeToggle.tsx');
     assert.ok(source.includes('cursor-pointer'));
-    assert.ok(source.includes('hover:bg-doqyn-surface-hover'));
-    assert.ok(source.includes('h-icon-btn'));
+    // O hover deixou de preencher: no sistema novo o realce é de cor, não de fundo — bloco
+    // preenchido ficou reservado à ação principal da tela.
+    assert.ok(source.includes('hover:text-doqyn-text'));
+    assert.equal(source.includes('hover:bg-doqyn-surface-hover'), false);
+    assert.ok(source.includes('h-9 w-9'));
   });
 });
 
@@ -91,6 +102,8 @@ describe('header do usuário', () => {
     assert.ok(menu.includes('header-user-menu'));
     assert.ok(menu.includes('header-user-menu-dropdown'));
     assert.ok(menu.includes('Sair'));
-    assert.ok(menu.includes('ThemeToggle'));
+    // O tema saiu do menu do usuário e virou controle da própria barra: é preferência de
+    // visualização, não ação de conta.
+    assert.ok(topbar.includes('ThemeToggle'));
   });
 });

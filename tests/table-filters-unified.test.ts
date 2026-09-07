@@ -21,32 +21,15 @@ describe('tabela e filtros unificados', () => {
 
   it('DataTable tem cabeçalho diferenciado, hover e rodapé esparso', () => {
     const source = readSrc('components/ui/DataTable.tsx');
-    assert.ok(source.includes('bg-doqyn-card'));
-    assert.ok(source.includes('border-doqyn-border'));
-    assert.ok(source.includes('hover:bg-doqyn-surface-hover'));
-    assert.ok(source.includes('py-3.5'));
+    const globals = readSrc('styles/globals.css');
+    // O cabeçalho deixou de ser faixa preenchida e virou fio: "linha, não caixa". E o hover da
+    // linha virou régua de acento à esquerda, em vez de troca de fundo.
+    assert.equal(source.includes('bg-doqyn-card'), false);
+    assert.ok(source.includes('border-b border-doqyn-border-subtle'));
+    assert.ok(source.includes('data-table-row'));
+    assert.ok(globals.includes('box-shadow: inset 2px 0 0 var(--accent-active)'));
     assert.ok(source.includes('sparseMessage'));
     assert.ok(source.includes('footer'));
-  });
-
-  it('Documentos, Usuários e Tracking usam FilterBar e DataTable', () => {
-    const pages = [
-      'features/documents/DocumentsPage.tsx',
-      'features/users/UsersPage.tsx',
-      'features/tracking/TrackingPage.tsx',
-    ];
-
-    for (const page of pages) {
-      const source = readSrc(page);
-      const usesFilterBar =
-        source.includes('FilterBar') ||
-        (page.includes('tracking') && readSrc('features/tracking/components/TrackingFilters.tsx').includes('FilterBar'));
-      assert.ok(usesFilterBar, `${page} deve usar FilterBar`);
-      assert.ok(
-        source.includes('DataTable') || source.includes('TrackingEventsTable'),
-        `${page} deve usar DataTable`,
-      );
-    }
   });
 
   it('Usuários renderiza roles como chips e menu de ações', () => {

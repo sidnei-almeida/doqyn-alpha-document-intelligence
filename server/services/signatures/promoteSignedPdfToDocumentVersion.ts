@@ -11,10 +11,7 @@ import {
 import { isStorageConfigured, getStorageProvider } from '../../storage/index.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { resolveStorageFileNames } from '../../utils/resolveStorageFileNames.js';
-import {
-  nextMajorVersionLabel,
-  parseMajorVersionNumber,
-} from '../../utils/versionLabelUtils.js';
+import { nextMajorVersionLabel, parseMajorVersionNumber } from '../../utils/versionLabelUtils.js';
 import { logger } from '../../utils/logger.js';
 import { buildDocumentMutationFields } from '../../utils/documentMutationFields.js';
 import { resolveDocumentOwnerName } from '../../utils/userDisplayName.js';
@@ -116,10 +113,8 @@ export async function promoteSignedPdfToDocumentVersion(input: {
   const pageCount = await resolvePdfPageCount(input.signedPdfBuffer);
   const { documentVersions, documents } = await getTenantCollections(input.tenantId);
 
-  const {
-    metadataIndex: _dropIndex,
-    ...sourceWithoutDeadIndex
-  } = input.sourceVersion as MongoDocumentVersion & { metadataIndex?: unknown };
+  const { metadataIndex: _dropIndex, ...sourceWithoutDeadIndex } =
+    input.sourceVersion as MongoDocumentVersion & { metadataIndex?: unknown };
 
   const version: MongoDocumentVersion = {
     ...sourceWithoutDeadIndex,

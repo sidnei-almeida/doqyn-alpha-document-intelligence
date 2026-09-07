@@ -298,10 +298,10 @@ describe('integração version-aware RAG — wiring', () => {
 
   it('frontend usa analyze-pdf-update em modo atualização', () => {
     const analyze = read('src/features/document-send/services/analyzePdf.ts');
-    const page = read('src/features/document-send/DocumentSendPage.tsx');
+    const drawer = read('src/features/document-update-version/UpdateDocumentVersionDrawer.tsx');
     assert.ok(analyze.includes('/api/ai/analyze-pdf-update'));
     assert.ok(analyze.includes('documentId'));
-    assert.ok(page.includes('documentId: updateTargetDocumentId'));
+    assert.ok(drawer.includes('documentId'));
   });
 
   it('RAG query API suporta versão atual, histórica e comparação', () => {
@@ -333,9 +333,8 @@ describe('integração version-aware RAG — wiring', () => {
 
 describe('fluxo de versões — labels', () => {
   it('upload inicial usa v1.0 e update incrementa major', async () => {
-    const { nextMajorVersionLabel, normalizeVersionLabel } = await import(
-      '../server/utils/versionLabelUtils.js'
-    );
+    const { nextMajorVersionLabel, normalizeVersionLabel } =
+      await import('../server/utils/versionLabelUtils.js');
     assert.equal(normalizeVersionLabel('v1'), 'v1.0');
     assert.equal(nextMajorVersionLabel('v1.0'), 'v2.0');
     assert.equal(nextMajorVersionLabel('v2.0'), 'v3.0');

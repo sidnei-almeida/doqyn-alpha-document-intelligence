@@ -8,10 +8,7 @@ import {
   resolveEventFiltersForTab,
   sanitizeAuditMetadataForDisplay,
 } from '../src/features/audit/utils/auditDisplay.ts';
-import {
-  maskEmail,
-  sanitizeRejectionReason,
-} from '../server/utils/maskSensitiveData.ts';
+import { maskEmail, sanitizeRejectionReason } from '../server/utils/maskSensitiveData.ts';
 
 describe('audit center', () => {
   it('isAuditAdmin reconhece administradores', () => {
@@ -52,16 +49,44 @@ describe('audit center', () => {
       type: 'USER_APPROVED',
       from: '2025-01-01',
     });
-    assert.equal(allFilters.q, undefined);
+    // A busca sobrevive à troca de aba: `q` é o campo de texto, não filtro avançado, e apagá-lo
+    // ao clicar em "Todos" fazia a pessoa perder o que tinha acabado de digitar. O que some são
+    // severidade e tipo, que só fazem sentido dentro das abas que os oferecem.
+    assert.equal(allFilters.q, 'teste');
     assert.equal(allFilters.severity, undefined);
+    assert.equal(allFilters.type, undefined);
     assert.equal(allFilters.from, '2025-01-01');
   });
 
   it('dedupeAuditEvents remove duplicatas por id', () => {
     const events = dedupeAuditEvents([
-      { id: 'a', action: 'USER_APPROVED', description: '1', severity: 'success', source: 'user', tenantId: 't1', createdAt: '2025-01-01' },
-      { id: 'a', action: 'USER_APPROVED', description: '2', severity: 'success', source: 'user', tenantId: 't1', createdAt: '2025-01-01' },
-      { id: 'b', action: 'USER_REJECTED', description: '3', severity: 'critical', source: 'user', tenantId: 't1', createdAt: '2025-01-02' },
+      {
+        id: 'a',
+        action: 'USER_APPROVED',
+        description: '1',
+        severity: 'success',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-01',
+      },
+      {
+        id: 'a',
+        action: 'USER_APPROVED',
+        description: '2',
+        severity: 'success',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-01',
+      },
+      {
+        id: 'b',
+        action: 'USER_REJECTED',
+        description: '3',
+        severity: 'critical',
+        source: 'user',
+        tenantId: 't1',
+        createdAt: '2025-01-02',
+      },
     ]);
     assert.equal(events.length, 2);
   });

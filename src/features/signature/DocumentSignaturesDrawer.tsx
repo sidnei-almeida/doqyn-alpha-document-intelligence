@@ -9,7 +9,7 @@ import { WorkspaceSideDrawer } from '@/components/layout/WorkspaceSideDrawer';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { TruncatedText } from '@/components/ui/TruncatedText';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
 import {
   cancelDocumentSignatureRequest,
@@ -26,6 +26,7 @@ import {
 } from '@/features/signature/utils/signatureSummaryDisplay';
 import { DocumentApiError } from '@/features/documents/api/documentsApi.errors';
 import { invalidateSignatureQueries } from '@/features/signature/utils/invalidateSignatureQueries';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 import {
   canRevokeSignatureRequestEntry,
   isSignatureRequestEntryOpen,
@@ -84,7 +85,7 @@ function SignatureRequestCard({
   const verificationCode = entry.signature?.verificationCode;
 
   return (
-    <section className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 p-4">
+    <section className="rounded-[4px] border border-doqyn-border-subtle p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
@@ -112,24 +113,24 @@ function SignatureRequestCard({
         </div>
         <div>
           <dt className="text-doqyn-muted">Solicitado em</dt>
-          <dd>{formatDate(entry.createdAt)}</dd>
+          <dd>{formatDateTime(entry.createdAt)}</dd>
         </div>
         {entry.signature?.signedAt ? (
           <div>
             <dt className="text-doqyn-muted">Assinado em</dt>
-            <dd>{formatDate(entry.signature.signedAt)}</dd>
+            <dd>{formatDateTime(entry.signature.signedAt)}</dd>
           </div>
         ) : null}
         {entry.expiresAt ? (
           <div>
             <dt className="text-doqyn-muted">Expira em</dt>
-            <dd>{formatDate(entry.expiresAt)}</dd>
+            <dd>{formatDateTime(entry.expiresAt)}</dd>
           </div>
         ) : null}
       </dl>
 
       {entry.message ? (
-        <blockquote className="mt-3 rounded-md border border-doqyn-border-subtle px-3 py-2 text-caption leading-relaxed text-doqyn-subtle">
+        <blockquote className="mt-3 rounded-[4px] border border-doqyn-border-subtle px-3 py-2 text-caption leading-relaxed text-doqyn-subtle">
           {entry.message}
         </blockquote>
       ) : null}
@@ -343,7 +344,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       </div>
 
       {!isLoading && !isError && data?.items.length === 0 ? (
-        <p className="text-caption text-doqyn-muted">Nenhuma assinatura solicitada.</p>
+        <EmptyHint bare>Nenhuma assinatura solicitada.</EmptyHint>
       ) : null}
     </WorkspaceSideDrawer>
   );

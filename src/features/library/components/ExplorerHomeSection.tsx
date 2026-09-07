@@ -10,7 +10,7 @@ type ExplorerHomeSectionProps = {
   'data-testid'?: string;
 };
 
-/** Seção da home da Biblioteca — título discreto e conteúdo arejado. */
+/** Seção da home da Biblioteca — rótulo em monoespaçado sobre fio. */
 export function ExplorerHomeSection({
   title,
   description,
@@ -21,12 +21,15 @@ export function ExplorerHomeSection({
 }: ExplorerHomeSectionProps) {
   return (
     <section className={cn('explorer-home-section', className)} data-testid={testId}>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
+      {/* Eyebrow em monoespaçado sobre fio, no lugar do título em 13px solto:
+          é o mesmo rótulo de seção que os formulários da antessala usam, e o
+          fio dá ao bloco um começo visível sem precisar de caixa. */}
+      <div className="mb-4 flex items-baseline justify-between gap-3 border-b border-doqyn-border-subtle pb-2.5">
         <div className="min-w-0">
-          <h2 className="text-[13px] font-medium text-doqyn-text">{title}</h2>
-          {description && (
-            <p className="mt-0.5 text-[12px] text-doqyn-subtle">{description}</p>
-          )}
+          <h2 className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+            {title}
+          </h2>
+          {description && <p className="mt-1 text-caption text-doqyn-subtle">{description}</p>}
         </div>
         {action}
       </div>

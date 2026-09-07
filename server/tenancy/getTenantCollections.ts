@@ -21,6 +21,7 @@ import {
   type ResolvedTenantCollectionNames,
 } from './tenantResolver.js';
 import { resolveTenantStorageContext, type TenantStorageContext } from './tenantStorage.js';
+import type { PendingInviteGroups } from '../services/invites/pendingInviteGroupsService.js';
 
 export type TenantCollections = {
   tenant: MongoTenant;
@@ -37,6 +38,7 @@ export type TenantCollections = {
   documentCategories?: Collection<MongoDocumentCategory>;
   documentGroups?: Collection<MongoDocumentGroup>;
   documentGroupMembers?: Collection<MongoDocumentGroupMember>;
+  pendingInviteGroups?: Collection<PendingInviteGroups>;
   documentRules?: Collection<MongoDocumentAccessRule>;
   documentExtractionRules?: Collection<MongoDocumentExtractionRule>;
 };
@@ -47,6 +49,7 @@ export type TenantDbCollections = {
   documentCategories: Collection<MongoDocumentCategory> | undefined;
   documentGroups: Collection<MongoDocumentGroup> | undefined;
   documentGroupMembers: Collection<MongoDocumentGroupMember> | undefined;
+  pendingInviteGroups: Collection<PendingInviteGroups> | undefined;
   documentRules: Collection<MongoDocumentAccessRule> | undefined;
   documentExtractionRules: Collection<MongoDocumentExtractionRule> | undefined;
   documents: Collection<MongoDocument>;
@@ -84,6 +87,9 @@ export function getTenantDbCollections(
       : undefined,
     documentGroupMembers: resolvedNames.documentGroupMembers
       ? db.collection<MongoDocumentGroupMember>(resolvedNames.documentGroupMembers)
+      : undefined,
+    pendingInviteGroups: resolvedNames.pendingInviteGroups
+      ? db.collection<PendingInviteGroups>(resolvedNames.pendingInviteGroups)
       : undefined,
     documentRules: resolvedNames.documentRules
       ? db.collection<MongoDocumentAccessRule>(resolvedNames.documentRules)

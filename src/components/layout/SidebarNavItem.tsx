@@ -21,18 +21,26 @@ type SidebarNavItemProps = {
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
   cn(
-    'sidebar-nav-link group explorer-interactive flex items-center gap-3 rounded-full font-display text-label font-medium leading-none',
+    'sidebar-nav-link group explorer-interactive flex items-center gap-3 font-display text-label leading-none',
     'focus-visible:outline-none focus-visible:shadow-[var(--sidebar-focus-ring)]',
-    collapsed ? 'h-9 w-10 justify-center px-0' : 'h-10 px-3',
+    collapsed ? 'h-9 w-10 justify-center px-0' : 'h-10 pl-3.5 pr-3',
     isActive
-      ? 'sidebar-nav-link--active'
-      : 'text-doqyn-muted hover:bg-doqyn-sidebar-item-hover hover:text-doqyn-text',
+      ? 'sidebar-nav-link--active font-medium'
+      : 'font-normal text-doqyn-muted hover:text-doqyn-text',
   );
 
-/** Item de navegação — ícone + label; ativo com fundo suave e fill. */
+/** Item de navegação — ícone + label; ativo marcado por régua de acento. */
 export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps) {
   const link = (
-    <NavLink to={item.path} end={item.end} className={({ isActive }) => navLinkClass(isActive, collapsed)}>
+    <NavLink
+      to={item.path}
+      end={item.end}
+      // Âncora do tour: o holofote recorta o item de verdade, e o roteiro se
+      // refere a ele pelo destino — não pela posição na lista, que muda com o
+      // papel de quem está olhando.
+      data-tour={`nav:${item.path}`}
+      className={({ isActive }) => navLinkClass(isActive, collapsed)}
+    >
       {({ isActive }) => (
         <>
           <Icon
@@ -41,7 +49,9 @@ export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps)
             size={ICON_SIZE.nav}
             className={cn(
               'shrink-0',
-              isActive ? 'text-doqyn-sidebar-selected-icon' : 'text-doqyn-muted group-hover:text-doqyn-text',
+              isActive
+                ? 'text-doqyn-sidebar-selected-icon'
+                : 'text-doqyn-muted group-hover:text-doqyn-text',
             )}
           />
           {!collapsed && <span className="truncate">{item.label}</span>}

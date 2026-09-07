@@ -26,170 +26,87 @@ describe('SettingsPage layout', () => {
     assert.equal(layout.includes('settings-content-panel__title'), false);
     assert.equal(layout.includes('Configurações da conta'), false);
     assert.equal(globals.includes('settings-content-max'), false);
-    assert.equal(globals.includes('margin-inline: auto'), false);
     assert.equal(page.includes('max-w-2xl'), false);
+
+    // Antes isto era `globals.includes('margin-inline: auto') === false`, varrendo o arquivo
+    // inteiro. O alvo real era o wrapper `settings-content-max`, que centralizava um painel
+    // interno; a asserção acima já o cobre pelo nome. Centralizar o conjunto (índice + coluna)
+    // é outra coisa, e é o que impede o excedente de uma tela larga de virar vão de um lado só.
+    assert.ok(page.includes('settings-page-shell'));
+    assert.ok(globals.includes('.settings-page-shell'));
+    assert.equal(layout.includes('margin-inline'), false);
   });
 
-  it('padrão visual compartilha badge Ativo/Em breve e SettingsRow', () => {
+  it('padrão visual compartilha o cabeçalho e a linha de configuração', () => {
     const pattern = readSrc('features/settings/settingsUiPattern.ts');
-    const badge = readSrc('features/settings/components/SettingsStatusBadge.tsx');
     const row = readSrc('features/settings/components/SettingsRow.tsx');
-    const info = readSrc('features/settings/components/SettingsInfoCard.tsx');
-    const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
-    assert.ok(pattern.includes('Hierarquia de cabeçalho'));
-    assert.ok(badge.includes("variant=\"success\""));
-    assert.ok(badge.includes("variant=\"neutral\""));
-    assert.ok(badge.includes('border-dashed'));
-    assert.ok(badge.includes("from '@/components/ui/Badge'"));
+    const header = readSrc('features/settings/components/SettingsSectionHeader.tsx');
+
+    // `SettingsStatusBadge` e `SettingsInfoCard` saíram com a reestruturação: o "Em breve" era
+    // etiqueta em bloco que a tela não precisava, e o card virou linha — "linha, não caixa".
+    assert.ok(pattern.includes('SETTINGS_UI_PATTERN'));
     assert.ok(row.includes('settings-row'));
-    assert.ok(info.includes('SettingsStatusBadge'));
-    assert.ok(info.includes('featured'));
-    assert.ok(globals.includes('settings-row-list'));
-    assert.ok(globals.includes('border-style: dashed'));
-    assert.ok(globals.includes('settings-info-card--featured'));
-    assert.ok(globals.includes('settings-callout'));
-    assert.ok(globals.includes('var(--accent-active)'));
+    assert.ok(row.includes('settings-row__label'));
+    assert.ok(header.includes('SettingsSectionHeader'));
   });
 
-  it('menu interno lista quatro seções de configurações', () => {
-    const nav = readSrc('features/settings/components/SettingsSidebarNav.tsx');
+  it('o menu interno lista as duas seções, agrupadas por quem decide', () => {
     const sections = readSrc('features/settings/settingsSections.ts');
-    assert.ok(nav.includes('SETTINGS_NAV_ITEMS'));
-    assert.ok(sections.includes("'perfil'"));
-    assert.ok(sections.includes("'upload-ia'"));
-    assert.ok(sections.includes("'seguranca'"));
-    assert.ok(sections.includes("'empresa'"));
-    assert.ok(sections.includes('COMPANY_SETTINGS_TABS'));
-    assert.ok(sections.includes("id: 'perfil'"));
-    assert.ok(sections.includes("id: 'upload-ia'"));
-    assert.ok(sections.includes("id: 'seguranca'"));
-    assert.ok(sections.includes("id: 'empresa'"));
-    assert.equal(sections.includes('ACCOUNT_SETTINGS_TABS'), false);
-    assert.equal(sections.includes("id: 'organizacao'"), false);
-    assert.equal(sections.includes("id: 'lixeira'"), false);
-    assert.equal(sections.includes("id: 'autenticacao'"), false);
+    const nav = readSrc('features/settings/components/SettingsSidebarNav.tsx');
+
+    // Eram quatro seções por assunto (Perfil, Preferências, Upload e IA, Empresa). Passaram a ser
+    // duas por dono da decisão: o que a pessoa muda sozinha, e o que vale para todo mundo.
+    assert.ok(sections.includes('SETTINGS_NAV_ITEMS'));
+    assert.ok(sections.includes("id: 'conta'"));
+    assert.ok(sections.includes("id: 'organizacao'"));
+    assert.ok(sections.includes("scope: 'personal'"));
+    assert.ok(sections.includes("scope: 'organization'"));
+    assert.ok(nav.includes('SETTINGS_NAV_ITEMS') || nav.includes('items'));
+
+    const ids = [...sections.matchAll(/id: '([a-z-]+)',\n\s+label:/g)].map((m) => m[1]);
+    assert.deepEqual(ids, ['conta', 'organizacao']);
   });
 
-  it('Preferências usa linhas de configuração com tema segmentado', () => {
-    const prefs = readSrc('features/settings/components/sections/PreferencesSettingsSection.tsx');
-    assert.ok(prefs.includes('SettingsRow'));
-    assert.ok(prefs.includes('setTheme'));
-    assert.ok(prefs.includes("'Claro'"));
-    assert.ok(prefs.includes("'Escuro'"));
-    assert.ok(prefs.includes('LibraryViewPreview'));
-    assert.ok(prefs.includes('Densidade visual'));
-    assert.ok(prefs.includes('lock'));
-    assert.ok(prefs.includes('muted'));
-    assert.equal(prefs.includes('ThemeToggle'), false);
-    assert.equal(prefs.includes('SettingsInfoCard'), false);
-  });
-
-  it('Perfil é tela única sem subtabs', () => {
-    const page = readSrc('features/settings/SettingsPage.tsx');
+  it('Minha conta reúne perfil, preferências e autenticação numa tela só', () => {
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
-    const profile = readSrc('features/settings/components/sections/ProfileSettingsSection.tsx');
-    const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
-    assert.ok(page.includes('AccountSettingsSection'));
     assert.ok(account.includes('ProfileSettingsSection'));
     assert.ok(account.includes('PreferencesSettingsSection'));
     assert.ok(account.includes('AuthenticationSettingsSection'));
-    assert.ok(account.includes('settings-profile-page'));
-    assert.ok(account.includes('settings-profile-secondary-grid'));
-    assert.ok(account.includes('Identidade'));
-    assert.ok(account.includes('Preferências'));
-    assert.ok(account.includes('Acesso'));
-    assert.equal(account.includes('SettingsSubTabs'), false);
-    assert.equal(account.includes('onTabChange'), false);
-    assert.ok(profile.includes('UserAvatar'));
-    assert.ok(profile.includes('Alterar foto'));
-    assert.ok(profile.includes('settings-profile-avatar-trigger'));
-    assert.ok(profile.includes('settings-profile-layout'));
-    assert.ok(profile.includes('PlatformRoleChips'));
-    assert.ok(profile.includes('Detalhes da conta'));
-    assert.ok(profile.includes('photo_camera'));
-    assert.equal(profile.includes('max-w-2xl'), false);
-    assert.ok(globals.includes('settings-profile-secondary-grid'));
-    assert.ok(globals.includes('.settings-profile-page .settings-card--compact'));
+    // Sem sub-abas: as três chegam empilhadas, cada uma com seu cabeçalho.
+    assert.ok(account.includes('SettingsSectionHeader'));
+    assert.equal(account.includes('useState'), false);
   });
 
-  it('clicar em Upload e IA mostra seção Upload e IA', () => {
-    const page = readSrc('features/settings/SettingsPage.tsx');
+  it('Organização reúne envio, IA e retenção, e só quem administra altera', () => {
+    const org = readSrc('features/settings/components/sections/OrganizationSection.tsx');
+    assert.ok(org.includes('UploadAiSettingsSection'));
+    assert.ok(org.includes('TrashRetentionSettingsSection'));
+    // Quem não administra lê e não altera — a barra de salvar depende disso.
+    assert.ok(org.includes('governsOrganization'));
+    assert.ok(org.includes('SettingsSaveBar'));
+  });
+
+  it('Upload e IA saiu do localStorage e passou a ser da organização', () => {
     const upload = readSrc('features/settings/components/sections/UploadAiSettingsSection.tsx');
-    const panel = readSrc('features/document-send/components/ReviewWorkflowSettingsPanel.tsx');
-    const saveBar = readSrc('features/settings/components/SettingsSaveBar.tsx');
-    assert.ok(page.includes("case 'upload-ia'"));
-    assert.ok(upload.includes('ReviewWorkflowSettingsPanel'));
-    assert.ok(upload.includes('useUploadQueueContext'));
-    assert.ok(upload.includes('SettingsSaveBar'));
-    assert.ok(upload.includes('setDraft'));
-    assert.ok(upload.includes('Alterações não salvas') || saveBar.includes('Alterações não salvas'));
-    assert.ok(panel.includes('SettingsFieldGroup'));
-    assert.ok(panel.includes('settings-workflow-panel'));
+    const org = readSrc('features/settings/components/sections/OrganizationSection.tsx');
+    assert.ok(org.includes('UploadAiSettingsSection'));
+    assert.equal(upload.includes('localStorage'), false);
   });
 
-  it('clicar em Segurança mostra seção Segurança', () => {
-    const page = readSrc('features/settings/SettingsPage.tsx');
-    const security = readSrc('features/settings/components/sections/SecuritySettingsSection.tsx');
-    const info = readSrc('features/settings/components/SettingsInfoCard.tsx');
-    assert.ok(page.includes("case 'seguranca'"));
-    assert.ok(security.includes('SettingsInfoCard'));
-    assert.ok(security.includes('/tracking'));
-    assert.ok(security.includes('settings-summary-bar'));
-    assert.ok(security.includes('settings-cards-grid--balanced'));
-    assert.ok(security.includes('recursos de segurança ativos'));
-    assert.ok(info.includes("status?: 'ok' | 'pending' | 'neutral'"));
-    assert.ok(info.includes("linkLabel = 'Abrir'"));
-    assert.ok(info.includes('settings-info-card__action'));
-  });
-
-  it('Empresa composto mostra governança, retenção e sistema', () => {
-    const page = readSrc('features/settings/SettingsPage.tsx');
-    const company = readSrc('features/settings/components/sections/CompanySettingsSection.tsx');
-    const org = readSrc('features/settings/components/sections/OrganizationSettingsSection.tsx');
-    const system = readSrc('features/settings/components/sections/SystemSettingsSection.tsx');
-    assert.ok(page.includes('CompanySettingsSection'));
-    assert.ok(company.includes('OrganizationSettingsSection'));
-    assert.ok(company.includes('TrashRetentionSettingsSection'));
-    assert.ok(company.includes('SystemSettingsSection'));
-    assert.ok(company.includes("'governanca'"));
-    assert.ok(company.includes("'retencao'"));
-    assert.ok(company.includes("'sistema'"));
-    assert.ok(company.includes('canManageRetention'));
-    assert.ok(org.includes('settings-cards-grid--2col'));
-    assert.ok(org.includes('featured'));
-    assert.ok(org.includes('settings-callout'));
-    assert.ok(org.includes('/rules'));
-    assert.ok(org.includes('Abrir Regras'));
-    assert.ok(org.includes('/users'));
-    assert.ok(org.includes('Gerenciar usuários'));
-    assert.ok(system.includes('Sobre o sistema'));
-    assert.ok(system.includes('settings-system-overview'));
-    assert.ok(system.includes('Ver detalhes avançados'));
-    assert.ok(system.includes('settings-cards-grid--3col'));
-    assert.ok(system.includes("status=\"ok\""));
-    assert.ok(system.includes("status=\"pending\""));
-    assert.ok(system.includes('APP_NAME'));
-    assert.ok(system.includes('import.meta.env.MODE'));
-  });
-
-  it('Autenticação permanece na tela única de Perfil', () => {
+  it('Autenticação fica dentro de Minha conta', () => {
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
     const auth = readSrc('features/settings/components/sections/AuthenticationSettingsSection.tsx');
     assert.ok(account.includes('AuthenticationSettingsSection'));
-    assert.ok(auth.includes('usesDoqynAuth'));
-    assert.ok(auth.includes('PasswordChangeCard'));
-    assert.ok(auth.includes('Ver detalhes técnicos'));
-    assert.ok(auth.includes('settings-locked-option'));
-    assert.ok(auth.includes('Sessões ativas'));
+    // O formulário passou a ser montado direto; `PasswordChangeCard` era só o invólucro.
+    assert.ok(auth.includes('ChangePasswordForm'));
+    assert.ok(auth.includes('ChangeEmailCard'));
   });
 
   it('alterar senha fica sempre visível na autenticação', () => {
-    const card = readSrc('features/settings/components/PasswordChangeCard.tsx');
+    const auth = readSrc('features/settings/components/sections/AuthenticationSettingsSection.tsx');
     const form = readSrc('features/settings/components/ChangePasswordForm.tsx');
-    assert.ok(card.includes('SettingsFieldGroup'));
-    assert.ok(card.includes('ChangePasswordForm'));
-    assert.equal(card.includes('useState(false)'), false);
-    assert.equal(card.includes('aria-expanded'), false);
+    // Sempre visível: nada de acordeão escondendo a troca de senha atrás de um clique.
+    assert.equal(auth.includes('aria-expanded'), false);
     assert.ok(form.includes('revealable'));
     assert.ok(form.includes('settings-password-checklist'));
     assert.ok(form.includes('settings-password-strength'));
@@ -203,22 +120,20 @@ describe('SettingsPage layout', () => {
     assert.equal(panel.includes('settings-choice-item__input'), false);
   });
 
-  it('header do usuário aponta só para configurações da conta', () => {
+  it('header do usuário aponta só para configurações', () => {
     const menu = readSrc('components/layout/HeaderUserMenu.tsx');
-    assert.ok(menu.includes('Configurações da conta'));
+    assert.ok(menu.includes('/settings'));
     assert.equal(menu.includes('ProfileSettingsDialog'), false);
     assert.equal(menu.includes('Configurações de perfil'), false);
-    assert.equal(menu.includes('>Perfil<'), false);
   });
 
   it('nenhuma configuração crítica some do app', () => {
-    const page = readSrc('features/settings/SettingsPage.tsx');
     const account = readSrc('features/settings/components/sections/AccountSettingsSection.tsx');
-    const company = readSrc('features/settings/components/sections/CompanySettingsSection.tsx');
+    const org = readSrc('features/settings/components/sections/OrganizationSection.tsx');
     const legacy = readSrc('features/documents/SettingsPage.tsx');
-    assert.ok(page.includes('UploadAiSettingsSection'));
+    assert.ok(org.includes('UploadAiSettingsSection'));
     assert.ok(account.includes('AuthenticationSettingsSection'));
-    assert.ok(company.includes('TrashRetentionSettingsSection'));
+    assert.ok(org.includes('TrashRetentionSettingsSection'));
     assert.ok(legacy.includes("from '@/features/settings/SettingsPage'"));
   });
 
@@ -228,21 +143,22 @@ describe('SettingsPage layout', () => {
     assert.ok(profile.includes('avatarUrl={displayAvatarUrl}'));
   });
 
-  it('estado por URL section e tab funciona com redirects legados', () => {
+  it('URLs antigas continuam abrindo em algum lugar certo', () => {
     const hook = readSrc('features/settings/hooks/useSettingsSection.ts');
     const sections = readSrc('features/settings/settingsSections.ts');
+
+    // `?tab=` deixou de existir — cada seção é uma tela só — mas as URLs guardadas por aí não
+    // podem cair numa tela em branco.
     assert.ok(hook.includes("searchParams.get('section')"));
-    assert.ok(hook.includes("searchParams.get('tab')"));
+    assert.ok(hook.includes("params.delete('tab')"));
     assert.ok(hook.includes('parseSettingsSection'));
-    assert.ok(hook.includes('parseSettingsTab'));
-    assert.ok(hook.includes('LEGACY_SECTION_REDIRECTS'));
-    assert.ok(hook.includes('isLegacyAccountTabParam'));
-    assert.ok(sections.includes('upload-ia'));
-    assert.ok(sections.includes('LEGACY_SECTION_REDIRECTS'));
+    assert.ok(sections.includes('LEGACY_SECTION_ALIASES'));
+    for (const legacy of ['perfil', 'preferencias', 'autenticacao', 'upload-ia', 'empresa', 'lixeira']) {
+      assert.ok(sections.includes(`${legacy.includes('-') ? `'${legacy}'` : legacy}:`), legacy);
+    }
+
+    // A âncora `#upload` das Configurações antigas também.
     assert.ok(hook.includes("hash === 'upload'"));
-    assert.ok(hook.includes("setSection('upload-ia')"));
-    assert.ok(sections.includes("preferencias: { section: 'perfil' }"));
-    assert.ok(sections.includes("autenticacao: { section: 'perfil' }"));
-    assert.ok(sections.includes("lixeira: { section: 'empresa', tab: 'retencao' }"));
+    assert.ok(hook.includes("setSection('organizacao')"));
   });
 });

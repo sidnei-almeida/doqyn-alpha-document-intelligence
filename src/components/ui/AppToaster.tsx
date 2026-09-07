@@ -5,9 +5,14 @@ import { TOAST_DURATIONS } from '@/shared/feedback/appFeedback';
 export function AppToaster() {
   const { theme } = useTheme();
 
+  // O sonner só conhece claro e escuro. O `standard` mistura os dois, e o toast
+  // vive fora das duas camadas (portal no body, superfície inverse nos dois
+  // temas) — então ele segue a paleta do painel, que é a de papel.
+  const toasterTheme = theme === 'dark' ? 'dark' : 'light';
+
   return (
     <Toaster
-      theme={theme}
+      theme={toasterTheme}
       position="bottom-center"
       offset={20}
       // Teto para quem chama `toast.*` do sonner direto, sem passar por `showAppToast`: o padrão

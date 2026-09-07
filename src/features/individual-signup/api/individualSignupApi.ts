@@ -3,6 +3,8 @@ import { getAuthBasePath } from '@/auth/authConfig';
 export type IndividualSignupInput = {
   firstName: string;
   lastName: string;
+  /** Apelido escolhido no cadastro. Vazio, o servidor deriva um do e-mail. */
+  username?: string;
   /** ISO 3166-1 alpha-2. Obrigatório: o backend valida documento e telefone por país. */
   country: string;
   /** `cpf` no Brasil, `tax_id` nos demais países. */
@@ -24,6 +26,12 @@ export type IndividualSignupResponse = {
   ok: boolean;
   message?: string;
   code?: string;
+  /**
+   * A conta foi criada, mas o acesso só abre depois do código do e-mail — e por isso não veio
+   * cookie de sessão nesta resposta. Ver `signupOrchestrator.ts` no auth-service.
+   */
+  emailVerificationRequired?: boolean;
+  verificationTicket?: string;
 };
 
 export async function submitIndividualSignup(

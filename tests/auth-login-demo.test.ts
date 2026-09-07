@@ -73,10 +73,7 @@ describe('demo seed constants auth-service', () => {
   const authRoot = join(__dirname, '..', '..', 'doqyn-auth-service');
 
   it('demo seed define o admin da empresa demo e a senha DevDoqyn@123', () => {
-    const constants = readFileSync(
-      join(authRoot, 'src/demo/demoSeed.constants.ts'),
-      'utf8',
-    );
+    const constants = readFileSync(join(authRoot, 'src/demo/demoSeed.constants.ts'), 'utf8');
     // A conta `admin.global@doqyn.dev` foi substituída: carregava o papel administrativo de
     // plataforma e, por isso, nunca exercitava as regras de governança que o produto vende.
     assert.ok(constants.includes('rafael.mendes@doqyn.dev'));

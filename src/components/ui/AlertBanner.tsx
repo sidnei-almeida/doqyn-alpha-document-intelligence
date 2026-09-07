@@ -62,9 +62,7 @@ export function AlertBanner({
         className={cn('mt-0.5 shrink-0', styles.iconClass)}
       />
       <div className="min-w-0 flex-1 space-y-1">
-        {title ? (
-          <p className="text-sm font-medium text-doqyn-text">{title}</p>
-        ) : null}
+        {title ? <p className="text-sm font-medium text-doqyn-text">{title}</p> : null}
         <p className={cn('text-sm', title ? 'text-doqyn-muted' : 'text-doqyn-text')}>{message}</p>
         {children}
       </div>

@@ -76,7 +76,10 @@ describe('tracking securityContext', () => {
 
   it('evento externo registra isExternalGuest=true', () => {
     const context = buildSecurityContext(
-      { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' }, socket: {} },
+      {
+        headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' },
+        socket: {},
+      },
       { isExternalGuest: true, authMethod: 'external_share_token' },
     );
     assert.equal(context.isExternalGuest, true);
@@ -128,7 +131,7 @@ describe('tracking securityContext', () => {
   });
 
   it('UI de tracking exibe contexto resumido', () => {
-    const drawer = read('src/features/tracking/components/TrackingEventDetailsDrawer.tsx');
+    const drawer = read('src/features/tracking/components/TrackingEventLogDetail.tsx');
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(drawer.includes('formatSecurityContextDisplay'));
     assert.ok(drawer.includes('Contexto de acesso'));

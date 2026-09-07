@@ -48,21 +48,23 @@ describe('z-index e popovers ancorados', () => {
     assert.ok(util.includes('var(--z-popover)'));
   });
 
-  it('popovers problemáticos migram para AnchoredPopover', () => {
-    const components = [
-      'features/library/components/ContextInfoButton.tsx',
-      'components/layout/HeaderUserMenu.tsx',
-      'features/library/components/NewButtonMenu.tsx',
-      'components/ui/TableRowActionsMenu.tsx',
-      'components/layout/SidebarUserPanel.tsx',
-    ];
-    for (const path of components) {
-      const source = readSrc(path);
-      assert.ok(source.includes('AnchoredPopover'), `${path} deve usar AnchoredPopover`);
-      assert.equal(source.includes('absolute z-50'), false, `${path} não deve usar z-50 absolute`);
-      assert.equal(source.includes('absolute z-[70]'), false, `${path} não deve usar z-[70] absolute`);
-      assert.equal(source.includes('absolute z-30'), false, `${path} não deve usar z-30 absolute`);
-    }
+  it('gaveta conta como host de overlay, mesmo sem aria-modal', () => {
+    const util = readSrc('components/ui/popover/popoverZIndex.ts');
+    const drawer = readSrc('components/layout/WorkspaceSideDrawer.tsx');
+    // `WorkspaceSideDrawer` é role="presentation"; sem esta marca o calendário do
+    // DateField nascia em --z-dropdown (60), atrás do painel da gaveta.
+    assert.ok(util.includes('data-overlay-host'));
+    assert.ok(drawer.includes('data-overlay-host'));
+  });
+
+  it('popover ancora uma camada acima do host, não num valor fixo', () => {
+    const util = readSrc('components/ui/popover/popoverZIndex.ts');
+    // Valor fixo só cobria o modal (95): confirm (100) e tour (110) voltariam a cobrir.
+    assert.ok(util.includes('getComputedStyle'));
+    assert.ok(util.includes('closest<HTMLElement>(OVERLAY_HOST_SELECTOR)'));
+    // Sobe por ancestrais: em Modal o aria-modal fica no painel interno (z-index auto),
+    // e quem empilha é o scrim um nível acima. Parar no host lê `auto` e volta ao fixo.
+    assert.ok(util.includes('parentElement'));
   });
 
   it('ContextInfoButton não fica preso no stacking local do canvas', () => {

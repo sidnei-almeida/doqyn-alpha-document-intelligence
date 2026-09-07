@@ -196,8 +196,11 @@ describe('dashboard overview UI', () => {
       'utf8',
     );
     assert.match(healthCard, /canManageGovernance/);
-    assert.match(healthCard, /overview-health-badge--restricted/);
-    assert.match(healthCard, /Aguardando configuração pelo administrador/);
+    // A etiqueta "restrito" deixou de ser variante de badge preenchido e virou marca de status
+    // com a palavra — o mesmo tratamento que "OK" e "Atenção" já tinham.
+    assert.match(healthCard, /const restricted = !ok && !canManage/);
+    assert.match(healthCard, /Restrito/);
+    assert.match(healthCard, /Configuração gerenciada pelo administrador/);
     assert.match(healthCard, /Categorias ativas no ambiente/);
   });
 
@@ -205,8 +208,8 @@ describe('dashboard overview UI', () => {
     assert.doesNotMatch(pageSource, /objectKey|r2\.cloudflarestorage|presigned/i);
   });
 
-  it('dev-server registra rota /api/dashboard/overview', () => {
-    const devServerSource = readFileSync(join(repoRoot, 'server/dev-server.ts'), 'utf8');
+  it('a tabela de rotas registra rota /api/dashboard/overview', () => {
+    const devServerSource = readFileSync(join(repoRoot, 'server/apiServer.ts'), 'utf8');
     assert.match(devServerSource, /\/api\/dashboard\/overview/);
   });
 });

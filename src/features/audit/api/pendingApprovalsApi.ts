@@ -1,9 +1,13 @@
-import { authServiceJson } from '@/auth/authServiceClient';
-import { usesDoqynAuth } from '@/auth/authConfig';
+import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
-import { usersApi } from '@/features/users/api/usersApi';
-import { listDocumentUploadApprovals } from './documentUploadApprovalsApi';
 
+/**
+ * Um pedido esperando decisão, na forma que o servidor devolve.
+ *
+ * Antes esta lista era montada aqui: uma chamada para membros, outra para aprovações de envio, e
+ * uma terceira direto ao auth-service — três origens fundidas à mão, com o tipo de cada item
+ * deduzido no navegador. Agora `/api/approval-requests` faz a fusão e devolve uma lista só.
+ */
 export type PendingApprovalItem = {
   id: string;
   membershipId: string;
@@ -11,7 +15,7 @@ export type PendingApprovalItem = {
   email: string;
   tenantId: string;
   tenantName?: string;
-  type: 'access_request' | 'invite' | 'registration' | 'document_upload';
+  type: 'document_upload' | 'document_download' | 'document_share';
   status: 'pending';
   requestedAt: string;
   requestedAccess?: CompanyMemberDto['requestedAccess'];
@@ -21,233 +25,103 @@ export type PendingApprovalItem = {
     originalFileName: string;
     classId: string | null;
     className: string | null;
-    fileHash: string;
     payload: Record<string, unknown>;
   };
+  /** O que se pede, sobre o quê — presente em todo pedido de documento. */
+  subject?: {
+    documentId?: string;
+    documentName?: string;
+    categoryName?: string;
+    /** Em `document_share`, o destinatário: o segundo lado da decisão. */
+    memberId?: string;
+    memberName?: string;
+  };
+  /** O que a aprovação concede — presente só em `document_share`. */
+  grants?: {
+    canView: boolean;
+    canDownload: boolean;
+  };
 };
 
-type AuthAccessRequestDetail = {
+type PendingApprovalDto = {
   id: string;
-  status: string;
-  membershipId: string | null;
-  tenantId: string;
-  tenantName: string | null;
+  kind: PendingApprovalItem['type'];
+  status: 'pending';
   requestedAt: string;
-  requester: {
-    name: string;
-    email: string;
-    whatsapp: string | null;
-    firstName: string | null;
-    lastName: string | null;
+  requestedBy: { userId?: string; membershipId?: string; name: string; email: string };
+  tenantId: string;
+  tenantName?: string;
+  member?: CompanyMemberDto;
+  accessRequest?: {
+    consent?: unknown;
+    terms?: unknown;
+    notificationPreferences?: unknown;
+    requestedAccess?: unknown;
   };
-  requestedAccess: {
-    personType: string;
-    taxIdType: string;
-    taxIdMasked: string | null;
-    tenantDisplayName: string | null;
-    jobTitle: string | null;
-    departmentText: string | null;
-    reason: string | null;
-    requestedAt: string;
-    source: 'access_request';
-  };
-  consent: {
-    textVersion: string | null;
-    acceptedAt: string;
-    operationalNotificationsConsent: boolean;
-  } | null;
-  terms: {
-    accepted: boolean;
-    version: string | null;
-    acceptedAt: string;
-  } | null;
-  notificationPreferences: CompanyMemberDto['notificationPreferences'] | null;
+  documentUpload?: PendingApprovalItem['documentUpload'];
+  subject?: PendingApprovalItem['subject'];
+  grants?: PendingApprovalItem['grants'];
 };
 
-function memberDisplayName(member: CompanyMemberDto): string {
-  if (member.firstName || member.lastName) {
-    return [member.firstName, member.lastName].filter(Boolean).join(' ');
-  }
-  return member.name ?? member.email;
-}
-
-function inferPendingType(member: CompanyMemberDto): PendingApprovalItem['type'] {
-  if (member.requestedAccess?.source === 'access_request' || member.requestedAccess?.reason) {
-    return 'access_request';
-  }
-  if (member.username || member.authUserId) {
-    return 'invite';
-  }
-  return 'registration';
-}
-
-function mapMemberToPending(member: CompanyMemberDto): PendingApprovalItem {
+function toPendingApprovalItem(dto: PendingApprovalDto): PendingApprovalItem {
   return {
-    id: member.id,
-    membershipId: member.id,
-    name: memberDisplayName(member),
-    email: member.email,
-    tenantId: member.tenantId ?? member.companyId,
-    tenantName: member.requestedAccess?.tenantDisplayName,
-    type: inferPendingType(member),
+    id: dto.id,
+    membershipId: dto.requestedBy.membershipId ?? dto.id,
+    name: dto.requestedBy.name,
+    email: dto.requestedBy.email,
+    tenantId: dto.tenantId,
+    tenantName: dto.tenantName,
+    type: dto.kind,
     status: 'pending',
-    requestedAt: member.requestedAccess?.requestedAt ?? member.createdAt,
-    requestedAccess: member.requestedAccess,
-    member,
+    requestedAt: dto.requestedAt,
+    requestedAccess: dto.member?.requestedAccess,
+    member: dto.member,
+    documentUpload: dto.documentUpload,
+    subject: dto.subject,
+    grants: dto.grants,
   };
 }
 
-function mapAuthRequestToPending(request: AuthAccessRequestDetail): PendingApprovalItem | null {
-  if (!request.membershipId) return null;
+export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
+  const response = await authFetch('/api/approval-requests', {
+    method: 'GET',
+    credentials: getFetchCredentials(),
+    headers: withAuthHeaders(),
+  });
 
-  const member: CompanyMemberDto = {
-    id: request.membershipId,
-    companyId: request.tenantId,
-    tenantId: request.tenantId,
-    email: request.requester.email,
-    name: request.requester.name,
-    firstName: request.requester.firstName ?? undefined,
-    lastName: request.requester.lastName ?? undefined,
-    whatsapp: request.requester.whatsapp ?? undefined,
-    platformRoles: ['user'],
-    tenantRoles: ['user'],
-    status: 'pending',
-    accessGroupIds: [],
-    documentGroupIds: [],
-    groupIds: [],
-    requestedAccess: {
-      personType:
-        request.requestedAccess.personType === 'individual' ||
-        request.requestedAccess.personType === 'business'
-          ? request.requestedAccess.personType
-          : undefined,
-      taxIdType:
-        request.requestedAccess.taxIdType?.toUpperCase() === 'CPF'
-          ? 'CPF'
-          : request.requestedAccess.taxIdType?.toUpperCase() === 'CNPJ'
-            ? 'CNPJ'
-            : undefined,
-      taxIdMasked: request.requestedAccess.taxIdMasked ?? undefined,
-      tenantDisplayName:
-        request.requestedAccess.tenantDisplayName ?? request.tenantName ?? undefined,
-      jobTitle: request.requestedAccess.jobTitle ?? undefined,
-      departmentText: request.requestedAccess.departmentText ?? undefined,
-      reason: request.requestedAccess.reason ?? undefined,
-      requestedAt: request.requestedAccess.requestedAt,
-      source: request.requestedAccess.source,
+  if (!response.ok) {
+    throw new Error('Não foi possível carregar as pendências.');
+  }
+
+  const data = (await response.json()) as { items?: PendingApprovalDto[] };
+  return (data.items ?? []).map(toPendingApprovalItem);
+}
+
+export type ApprovalDecision = 'approved' | 'rejected';
+
+export async function decideApprovalRequest(
+  requestId: string,
+  decision: ApprovalDecision,
+  reason?: string,
+): Promise<void> {
+  const response = await authFetch(
+    `/api/approval-requests/${encodeURIComponent(requestId)}/decide`,
+    {
+      method: 'POST',
+      credentials: getFetchCredentials(),
+      headers: { ...withAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision, reason }),
     },
-    consent: request.consent
-      ? {
-          textVersion: request.consent.textVersion ?? undefined,
-          acceptedAt: request.consent.acceptedAt,
-          operationalNotificationsConsent: request.consent.operationalNotificationsConsent,
-        }
-      : undefined,
-    terms: request.terms
-      ? {
-          accepted: request.terms.accepted,
-          version: request.terms.version ?? undefined,
-          acceptedAt: request.terms.acceptedAt,
-        }
-      : undefined,
-    notificationPreferences: request.notificationPreferences ?? undefined,
-    createdAt: request.requestedAt,
-    updatedAt: request.requestedAt,
-  };
+  );
 
-  return {
-    id: request.membershipId,
-    membershipId: request.membershipId,
-    name: request.requester.name,
-    email: request.requester.email,
-    tenantId: request.tenantId,
-    tenantName: request.tenantName ?? request.requestedAccess.tenantDisplayName ?? undefined,
-    type: 'access_request',
-    status: 'pending',
-    requestedAt: request.requestedAt,
-    requestedAccess: member.requestedAccess,
-    member,
-  };
-}
-
-function mergePendingItem(
-  existing: PendingApprovalItem,
-  incoming: PendingApprovalItem,
-): PendingApprovalItem {
-  return {
-    ...existing,
-    ...incoming,
-    requestedAccess: incoming.requestedAccess ?? existing.requestedAccess,
-    member: incoming.member ?? existing.member,
-    tenantName: incoming.tenantName ?? existing.tenantName,
-    name: incoming.name !== '—' ? incoming.name : existing.name,
-    email: incoming.email !== '—' ? incoming.email : existing.email,
-  };
-}
-
-export async function listPendingApprovals(tenantId?: string): Promise<PendingApprovalItem[]> {
-  const { members } = await usersApi.list(tenantId);
-  const pendingMembers = members.filter((member) => member.status === 'pending').map(mapMemberToPending);
-  const byId = new Map(pendingMembers.map((item) => [item.id, item]));
-
-  let documentUploadItems: PendingApprovalItem[] = [];
-  const uploads = await listDocumentUploadApprovals();
-  documentUploadItems = uploads.map((upload) => ({
-    id: upload.id,
-    membershipId: upload.submittedBy.membershipId ?? upload.submittedBy.userId,
-    name: upload.submittedBy.name,
-    email: upload.submittedBy.email,
-    tenantId: tenantId ?? '',
-    type: 'document_upload' as const,
-    status: 'pending' as const,
-    requestedAt: upload.createdAt,
-    documentUpload: {
-      approvalId: upload.id,
-      originalFileName: upload.originalFileName,
-      classId: upload.classId,
-      className: upload.className,
-      fileHash: upload.fileHash,
-      payload: upload.payload,
-    },
-  }));
-
-  for (const item of documentUploadItems) {
-    byId.set(item.id, item);
-  }
-
-  if (!usesDoqynAuth()) {
-    return [...byId.values()].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    );
-  }
-
-  try {
-    const query = tenantId ? `?status=pending&tenantId=${encodeURIComponent(tenantId)}` : '?status=pending';
-    const data = await authServiceJson<{ requests: AuthAccessRequestDetail[] }>(
-      `/admin/access-requests${query}`,
-    );
-
-    for (const request of data.requests ?? []) {
-      const mapped = mapAuthRequestToPending(request);
-      if (!mapped) continue;
-
-      const existing = byId.get(mapped.id);
-      byId.set(mapped.id, existing ? mergePendingItem(existing, mapped) : mapped);
-    }
-
-    return [...byId.values()].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    );
-  } catch {
-    return [...byId.values()].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    );
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(body.message ?? 'Não foi possível registrar a decisão.');
   }
 }
 
 export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = {
-  access_request: 'Solicitação de acesso',
-  invite: 'Convite pendente',
-  registration: 'Cadastro aguardando aprovação',
   document_upload: 'Envio de documento',
+  document_download: 'Download de documento',
+  document_share: 'Compartilhamento de documento',
 };

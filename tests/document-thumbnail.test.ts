@@ -47,7 +47,7 @@ describe('DocumentThumbnail — preview em cards da Biblioteca', () => {
     const thumb = readSrc('features/documents/preview/DocumentThumbnail.tsx');
     assert.ok(hook.includes('canPreview'));
     assert.ok(thumb.includes('previewBlocked'));
-    assert.ok(thumb.includes("canPreview === false"));
+    assert.ok(thumb.includes('canPreview === false'));
   });
 
   it('erro no preview mostra fallback icon', () => {
@@ -76,11 +76,6 @@ describe('DocumentThumbnail — preview em cards da Biblioteca', () => {
     assert.equal(hook.includes('presigned'), false);
     assert.ok(api.includes('/preview/manifest'));
     assert.ok(api.includes('authFetch'));
-  });
-
-  it('RecentFileCard delega para DocumentFileCard unificado', () => {
-    const recent = readSrc('features/library/components/RecentFileCard.tsx');
-    assert.ok(recent.includes('DocumentFileCard'));
   });
 
   it('modo card usa object-cover para preencher o quadro', () => {

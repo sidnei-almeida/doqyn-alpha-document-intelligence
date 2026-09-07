@@ -1,6 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { usesDoqynAuth } from './authConfig.js';
-import { getSessionFromRequest } from './session.js';
 import {
   mapDoqynSessionToAuthUser,
   verifyDoqynAuthSession,
@@ -10,57 +8,47 @@ import { logger } from '../utils/logger.js';
 import { isServiceError } from '../utils/serviceErrors.js';
 
 export async function requireAuth(req: VercelRequest, res: VercelResponse): Promise<AuthUser | null> {
-  if (usesDoqynAuth()) {
-    try {
-      const session = await verifyDoqynAuthSession(req);
-      if (!session) {
-        res.status(401).json({ error: 'Unauthorized', code: 'INVALID_SESSION' });
-        return null;
-      }
+  try {
+    const session = await verifyDoqynAuthSession(req);
+    if (!session) {
+      res.status(401).json({ error: 'Unauthorized', code: 'INVALID_SESSION' });
+      return null;
+    }
 
-      if (!session.activeMembership) {
-        res.status(403).json({
-          error: 'Forbidden',
-          message: 'Nenhuma membership ativa selecionada.',
-          code: 'NO_ACTIVE_MEMBERSHIP',
-        });
-        return null;
-      }
-
-      const user = mapDoqynSessionToAuthUser(session);
-      (req as VercelRequest & { auth?: AuthUser }).auth = user;
-      return user;
-    } catch (error) {
-      if (isServiceError(error)) {
-        res.status(error.statusCode).json({
-          error: error.statusCode === 403 ? 'Forbidden' : 'Unauthorized',
-          message: error.message,
-          code: error.code,
-        });
-        return null;
-      }
-
-      logger.warn('doqyn_auth session verify failed', {
-        message: error instanceof Error ? error.message : 'unknown',
-      });
-      res.status(502).json({
-        error: 'Bad Gateway',
-        message: 'Não foi possível validar a sessão no auth-service.',
-        code: 'AUTH_SERVICE_UNAVAILABLE',
+    if (!session.activeMembership) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'Nenhuma membership ativa selecionada.',
+        code: 'NO_ACTIVE_MEMBERSHIP',
       });
       return null;
     }
-  }
 
-  const user = await getSessionFromRequest(req);
-  if (!user) {
-    res.status(401).json({ error: 'Unauthorized' });
+    const user = mapDoqynSessionToAuthUser(session);
+    (req as VercelRequest & { auth?: AuthUser }).auth = user;
+    return user;
+  } catch (error) {
+    if (isServiceError(error)) {
+      res.status(error.statusCode).json({
+        error: error.statusCode === 403 ? 'Forbidden' : 'Unauthorized',
+        message: error.message,
+        code: error.code,
+      });
+      return null;
+    }
+
+    logger.warn('doqyn_auth session verify failed', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+    res.status(502).json({
+      error: 'Bad Gateway',
+      message: 'Não foi possível validar a sessão no auth-service.',
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
     return null;
   }
-
-  (req as VercelRequest & { auth?: AuthUser }).auth = user;
-  return user;
 }
+
 
 export function requireAnyRole(user: AuthUser, roles: string[], res: VercelResponse): boolean {
   const userRoles = new Set<string>(user.platformRoles ?? []);

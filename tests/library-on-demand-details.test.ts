@@ -69,8 +69,12 @@ describe('detalhes sob demanda na Biblioteca', () => {
     assert.ok(drawer.includes('library-details-drawer'));
     assert.ok(drawer.includes('library-details-drawer-close'));
     assert.ok(drawer.includes('WorkspaceSideDrawer'));
-    assert.ok(shell.includes('explorer-icon-btn shrink-0'));
-    assert.ok(shell.includes("event.key === 'Escape'"));
+    // O botão de fechar deixou de repetir classes soltas e passou a ser o `IconButton` do
+    // design system — a anatomia do controle mora lá, não em cada casca.
+    assert.ok(shell.includes('IconButton'));
+    // Escape passou a consultar a pilha de camadas: só a do topo fecha, senão fechar um
+    // popover fecharia a gaveta atrás dele junto.
+    assert.ok(shell.includes("event.key !== 'Escape' || !isTopLayer()"));
     assert.ok(drawer.includes('Fechar painel de detalhes'));
     assert.ok(drawer.includes('canPreview'));
     assert.ok(drawer.includes('/tracking?documentId='));

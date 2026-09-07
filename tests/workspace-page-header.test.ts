@@ -42,16 +42,6 @@ describe('WorkspacePageHeader padronizado', () => {
     assert.ok(header.includes('ExplorerToolbarActions'));
   });
 
-  it('pastas renderizam como cards com container visual', () => {
-    const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
-    const globals = readSrc('styles/globals.css');
-    assert.ok(card.includes('explorer-folder-card'));
-    assert.ok(card.includes('bg-doqyn-surface'));
-    assert.ok(card.includes('shadow-sm'));
-    assert.ok(card.includes('rounded-xl'));
-    assert.ok(globals.includes('.explorer-folder-card'));
-  });
-
   it('pastas mantêm abertura e menu de contexto', () => {
     const card = readSrc('features/library/components/ExplorerFolderCard.tsx');
     assert.ok(card.includes('onOpen'));

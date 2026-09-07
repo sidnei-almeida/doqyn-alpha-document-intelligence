@@ -13,7 +13,9 @@ describe('Observabilidade em produção', () => {
     assert.ok(compose.includes('prom/prometheus'));
     assert.ok(compose.includes('grafana/grafana'));
     assert.ok(compose.includes('prometheus_data:'));
-    assert.ok(compose.includes('doqyn-worker-preview:9100') || compose.includes('doqyn-worker-preview'));
+    assert.ok(
+      compose.includes('doqyn-worker-preview:9100') || compose.includes('doqyn-worker-preview'),
+    );
   });
 
   it('prometheus scrape api, workers e redis', () => {
@@ -32,9 +34,12 @@ describe('Observabilidade em produção', () => {
     assert.ok(down.includes('compose_production_observability'));
   });
 
-  it('setup produção habilita observabilidade por padrão', () => {
+  it('setup produção deixa observabilidade desligada, e diz como subir', () => {
     const setup = read('deploy/scripts/setup-production-env.sh');
-    assert.ok(setup.includes('OBSERVABILITY_ENABLE=true'));
+    // Prometheus + Grafana somam ~900 MB de teto: com Mongo local a stack passa de 7 GB numa
+    // VPS de 8 GB. Ficam sob demanda, e o script tem de explicar isso a quem lê o `.env`.
+    assert.ok(setup.includes('OBSERVABILITY_ENABLE=false'));
+    assert.ok(setup.includes('up-observability.sh'));
     assert.ok(setup.includes('sync-observability-secrets.sh'));
   });
 

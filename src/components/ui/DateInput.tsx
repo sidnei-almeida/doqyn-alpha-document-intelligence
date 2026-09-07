@@ -1,44 +1,35 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
-import { cn } from '@/lib/utils';
-import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
+import type { ChangeEvent } from 'react';
+import { DateField } from './DateField';
 
-export interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface DateInputProps {
+  id?: string;
   label?: string;
   error?: string;
+  value?: string;
+  placeholder?: string;
+  min?: string;
+  max?: string;
+  disabled?: boolean;
+  className?: string;
+  /** `boxed` para formulários, `rule` para barras de filtro. */
+  variant?: 'boxed' | 'rule';
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  'aria-label'?: string;
 }
 
-export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
-  ({ className, label, error, id, placeholder, ...props }, ref) => (
-    <div className={fieldWrapperClass}>
-      {label && (
-        <label htmlFor={id} className={fieldLabelClass}>
-          {label}
-        </label>
-      )}
-      <div className="relative">
-        <input
-          ref={ref}
-          id={id}
-          type="date"
-          placeholder={placeholder}
-          className={cn(
-            fieldControlClass,
-            'date-input pr-9 [color-scheme:light_dark]',
-            error && 'border-doqyn-danger focus-visible:ring-doqyn-danger/30',
-            className,
-          )}
-          {...props}
-        />
-        <Icon
-          name="calendar_today"
-          size={ICON_SIZE.sm}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-doqyn-muted"
-        />
-      </div>
-      {error && <p className="form-error">{error}</p>}
-    </div>
-  ),
-);
-DateInput.displayName = 'DateInput';
+/**
+ * Campo de data com a API de `<input>` que as telas já usam — por dentro é o
+ * `DateField`, que abre o calendário do produto em vez do calendário do
+ * navegador. O evento sintético mantém `onChange={(e) => ...e.target.value}`
+ * funcionando em quem já chamava assim.
+ */
+export function DateInput({ onChange, ...props }: DateInputProps) {
+  return (
+    <DateField
+      {...props}
+      onChange={(isoDate) =>
+        onChange?.({ target: { value: isoDate } } as ChangeEvent<HTMLInputElement>)
+      }
+    />
+  );
+}

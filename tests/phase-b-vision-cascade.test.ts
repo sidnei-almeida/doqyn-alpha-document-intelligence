@@ -28,9 +28,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
   });
 
   it('shouldAttemptVisionOcr só dispara abaixo do threshold com Vision pronto', async () => {
-    const { shouldAttemptVisionOcr } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { shouldAttemptVisionOcr } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     assert.equal(
       shouldAttemptVisionOcr({
@@ -73,9 +72,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
   it('resolveVisionOcrPageLimit respeita VISION_OCR_MAX_PAGES', async () => {
     process.env.VISION_OCR_MAX_PAGES = '3';
     process.env.PDF_ANALYSIS_MAX_PAGES = '10';
-    const { resolveVisionOcrPageLimit } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { resolveVisionOcrPageLimit } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     assert.equal(resolveVisionOcrPageLimit({ pageCountHint: 50 }), 3);
     assert.equal(resolveVisionOcrPageLimit({ pageCountHint: 2 }), 2);
@@ -87,9 +85,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-does-not-matter.json';
 
     let ocrCalls = 0;
-    const { extractTextFromDocumentPdf } = await import(
-      '../server/ai/services/documentTextExtractor.js'
-    );
+    const { extractTextFromDocumentPdf } =
+      await import('../server/ai/services/documentTextExtractor.js');
 
     const result = await extractTextFromDocumentPdf(Buffer.from('%PDF-fake'), {
       extractNative: async () => ({
@@ -133,9 +130,8 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
 
     try {
       let receivedMaxPages: number | undefined;
-      const { extractTextFromDocumentPdf } = await import(
-        '../server/ai/services/documentTextExtractor.js'
-      );
+      const { extractTextFromDocumentPdf } =
+        await import('../server/ai/services/documentTextExtractor.js');
 
       const result = await extractTextFromDocumentPdf(Buffer.from('%PDF-scan'), {
         extractNative: async () => ({
@@ -196,12 +192,10 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath;
 
     try {
-      const { extractTextFromDocumentPdf } = await import(
-        '../server/ai/services/documentTextExtractor.js'
-      );
-      const { buildVisionOcrFailedReviewResponse, isVisionOcrFailure } = await import(
-        '../server/ai/services/visionOcrFailureReview.js'
-      );
+      const { extractTextFromDocumentPdf } =
+        await import('../server/ai/services/documentTextExtractor.js');
+      const { buildVisionOcrFailedReviewResponse, isVisionOcrFailure } =
+        await import('../server/ai/services/visionOcrFailureReview.js');
 
       const extracted = await extractTextFromDocumentPdf(Buffer.from('%PDF-fail'), {
         extractNative: async () => ({
@@ -229,9 +223,14 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
         logs: [],
       });
 
+      // OCR que falha manda para revisão manual, não erra o arquivo: um PDF escaneado que a
+      // máquina não leu continua utilizável, e quem envia escolhe a categoria à mão. Isto já
+      // devolveu `failed`, quando a confirmação ainda exigia classe da IA e o documento ficava
+      // preso — ver o comentário em `visionOcrFailureReview.ts`.
       assert.equal(review.status, 'requires_review');
       assert.equal(review.errorCode, 'VISION_OCR_FAILED');
       assert.equal(review.classification.requiresReview, true);
+      assert.equal(review.classification.classId, null);
       assert.equal(review.extraction, null);
     } finally {
       restoreEnv(snapshot);
@@ -263,9 +262,35 @@ describe('Fase B.8 — cascata OCR e controle de custo', () => {
     assert.match(setup, /VISION_OCR_ENABLED=false/);
     assert.match(setup, /GOOGLE_APPLICATION_CREDENTIALS=\/run\/secrets\/gcp-vision-sa\.json/);
   });
+});
 
-  it('bulkFileValidation reconhece VISION_OCR_FAILED', () => {
-    const source = read('src/features/document-send/utils/bulkFileValidation.ts');
-    assert.match(source, /VISION_OCR_FAILED/);
+describe('OCR que falha chega até a revisão manual', () => {
+  it('a cadeia inteira leva à gaveta, e ela cobra a categoria', () => {
+    const root = process.cwd();
+    const read = (p: string) => readFileSync(join(root, p), 'utf8');
+
+    // 1. O status que sai do servidor é o que a fila lê para decidir.
+    const builder = read('server/ai/services/visionOcrFailureReview.ts');
+    assert.ok(builder.includes("status: 'requires_review'"));
+    assert.ok(builder.includes('requiresReview: true'));
+
+    // 2. `failed` desviaria para 'fail' antes de qualquer checagem de revisão.
+    const core = read('src/features/upload/queue/uploadQueueCore.ts');
+    assert.ok(core.includes("if (raw.status === 'failed') {"));
+    assert.ok(core.includes('shouldPauseForReview(settings, pauseInput)'));
+
+    // 3. `requires_review` pausa mesmo com as preferências de auto-confirmar ligadas.
+    const settings = read('src/features/document-send/utils/reviewWorkflowSettings.ts');
+    assert.ok(settings.includes("rawAnalysis.status === 'requires_review'"));
+
+    // 4. Sem classe da IA, a gaveta não deixa confirmar até alguém escolher — é o que impede o
+    //    beco sem saída que justificava o `failed`.
+    const drawer = read('src/features/upload/review/ReviewDrawer.tsx');
+    assert.ok(drawer.includes('const needsManualCategory = !aiClassId'));
+    assert.ok(drawer.includes('!needsManualCategory'));
+
+    // 5. E a confirmação aceita a categoria escolhida no lugar da que a IA não deu.
+    const confirm = read('src/features/document-send/services/normalizeConfirmPayload.ts');
+    assert.ok(confirm.includes('Boolean(fallback?.manualClassId?.trim())'));
   });
 });

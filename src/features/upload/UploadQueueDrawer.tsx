@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AiReadingGlyph } from '@/components/ui/AiReadingGlyph';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -16,6 +17,8 @@ import {
 import { formatQueueWaitLabel } from './queue/queueWaitLabel';
 import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusProgress';
 import { useUploadQueueContext } from './uploadQueueContext';
+import { UploadScanThumb } from './components/UploadScanThumb';
+import { UploadScanStack } from './components/UploadScanStack';
 
 const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   queued: 'Na fila',
@@ -23,36 +26,11 @@ const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
   review: 'Aguardando revisão',
   confirming: 'Salvando na Biblioteca…',
   awaiting_approval: 'Aguardando aprovação do admin',
-  ai_paused: 'IA indisponível — tente novamente',
+  ai_paused: 'IA indisponível. Tente novamente',
   still_running: 'Análise em andamento no servidor',
   done: 'Salvo na Biblioteca',
   error: 'Erro',
 };
-
-function StatusIcon({ status }: { status: UploadQueueItemStatus }) {
-  if (status === 'analyzing' || status === 'confirming') {
-    return (
-      <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin text-doqyn-info" />
-    );
-  }
-  if (status === 'done') {
-    return <Icon name="check_circle" size={ICON_SIZE.sm} className="text-doqyn-success" />;
-  }
-  if (status === 'error' || status === 'ai_paused') {
-    return <Icon name="error" size={ICON_SIZE.sm} className="text-doqyn-danger" />;
-  }
-  // Nem erro nem espera vazia: o servidor está trabalhando, a aba é que parou de perguntar.
-  if (status === 'still_running') {
-    return <Icon name="cloud_sync" size={ICON_SIZE.sm} className="text-doqyn-info" />;
-  }
-  if (status === 'review') {
-    return <Icon name="visibility" size={ICON_SIZE.sm} className="text-doqyn-warning" />;
-  }
-  if (status === 'awaiting_approval') {
-    return <Icon name="hourglass_top" size={ICON_SIZE.sm} className="text-doqyn-info" />;
-  }
-  return <Icon name="description" size={ICON_SIZE.sm} className="text-doqyn-muted" />;
-}
 
 function QueueRow({
   item,
@@ -65,15 +43,21 @@ function QueueRow({
 
   const subtitle = useMemo(() => {
     if (
-      (item.status === 'error' ||
-        item.status === 'ai_paused' ||
-        item.status === 'still_running') &&
+      (item.status === 'error' || item.status === 'ai_paused' || item.status === 'still_running') &&
       item.errorMessage
     ) {
       return item.errorMessage;
     }
     if (item.status === 'done' && item.documentId) {
-      return `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
+      // Onde foi parar é a pergunta de quem acabou de enviar — "salvo" sozinho não responde. A
+      // classe é o que a análise decidiu, e é ela que diz em qual pasta o documento está.
+      // A pasta do servidor manda; a classificação da análise é só o palpite anterior a ela.
+      const classe = (
+        item.savedCategoryName ?? item.analysis?.raw.classification.className
+      )?.trim();
+      return classe
+        ? `Salvo em ${classe} · ${formatFileSize(item.fileSize)}`
+        : `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
     }
     if (item.status === 'awaiting_approval') {
       return `Enviado para aprovação · ${formatFileSize(item.fileSize)}`;
@@ -95,7 +79,9 @@ function QueueRow({
 
   return (
     <li className="flex items-center gap-3 border-t border-doqyn-border-subtle px-4 py-3 first:border-t-0">
-      <StatusIcon status={item.status} />
+      {/* A página que está sendo lida, e não um ícone de estado: o ícone dizia "algo acontece",
+          a miniatura diz **o quê** — e é o arquivo dele. O ícone volta quando não há miniatura. */}
+      <UploadScanThumb item={item} />
       <div className="min-w-0 flex-1">
         <TruncatedText as="p" className="text-label text-doqyn-text">
           {item.fileName}
@@ -135,7 +121,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => cancelAutoConfirm(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
           Pausar
         </button>
@@ -144,7 +130,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => openReview(item.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
+          className="shrink-0 rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
         >
           Revisar
         </button>
@@ -156,7 +142,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => retryItem(item.id)}
-          className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
           aria-label="Tentar novamente"
         >
           <Icon name="replay" size={ICON_SIZE.sm} />
@@ -170,7 +156,7 @@ function QueueRow({
         <button
           type="button"
           onClick={() => removeItem(item.id)}
-          className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
           aria-label="Remover da fila"
         >
           <Icon name="close" size={ICON_SIZE.sm} />
@@ -260,7 +246,7 @@ export function UploadQueueDrawer() {
   return (
     <section
       className={cn(
-        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-modal',
+        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-surface shadow-modal',
         leaving && 'queue-drawer-leave',
       )}
       aria-label="Fila de upload"
@@ -270,19 +256,19 @@ export function UploadQueueDrawer() {
     >
       <header className="border-b border-doqyn-border-subtle px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Icon
-              name="auto_awesome"
-              size={ICON_SIZE.sm}
-              className="shrink-0 text-doqyn-accent-active"
-            />
+          <div className="flex min-w-0 items-center gap-2.5">
+            {/* Papel à esquerda, e o sinal de que é a IA lendo logo antes do texto: a pilha diz
+                o que está sendo lido, o glifo diz quem está lendo. O fio dele corre enquanto houver
+                trabalho e para junto com a fila. */}
+            <UploadScanStack items={items} />
+            <AiReadingGlyph reading={pendingCount > 0} className="text-doqyn-accent-active" />
             <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
             <Tooltip label="Preferências de upload">
               <Link
                 to="/settings?section=upload-ia"
-                className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
                 aria-label="Preferências de upload"
               >
                 <Icon name="settings" size={ICON_SIZE.sm} />
@@ -292,7 +278,7 @@ export function UploadQueueDrawer() {
               <button
                 type="button"
                 onClick={() => setLeaving(true)}
-                className="rounded-md px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+                className="rounded-[4px] px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
                 Limpar
               </button>
@@ -300,7 +286,7 @@ export function UploadQueueDrawer() {
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
-              className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+              className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               aria-label={collapsed ? 'Expandir fila' : 'Recolher fila'}
             >
               <Icon

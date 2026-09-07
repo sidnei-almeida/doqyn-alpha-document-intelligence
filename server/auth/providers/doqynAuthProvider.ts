@@ -111,7 +111,6 @@ export function mapDoqynSessionToAuthUser(session: DoqynVerifiedSession): AuthUs
     membershipStatus: activeMembership?.status,
     tenantType: activeMembership?.tenantType,
     tenantStatus: activeMembership ? 'active' : undefined,
-    authProvider: 'doqyn_auth',
     avatarVersion: user.avatarVersion ?? 0,
     avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
     avatarStatus: user.avatarStatus ?? undefined,

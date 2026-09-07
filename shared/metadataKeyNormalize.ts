@@ -5,6 +5,8 @@
 
 /** Labels canônicos (capitalização estável) para chaves conhecidas. */
 export const CANONICAL_METADATA_LABELS: Record<string, string> = {
+  partes_envolvidas: 'Partes envolvidas',
+  data_referencia: 'Data de referência',
   parte_reveladora: 'Parte reveladora',
   parte_receptora: 'Parte receptora',
   data_assinatura: 'Data de assinatura',
@@ -48,6 +50,14 @@ export const CANONICAL_METADATA_LABELS: Record<string, string> = {
  */
 export const STANDARD_DETAILS_KEYS: readonly string[] = [
   'titulo',
+  /**
+   * Os campos da regra padrão entram aqui porque são os que todo tenant recebe ao criar uma
+   * categoria pela interface. Sem eles, o painel Detalhes de um documento comum mostrava só a
+   * validade, e "partes envolvidas" — o campo que diz de quem é o documento — só existia dentro do
+   * editor de metadados, que é tela de edição e não de leitura.
+   */
+  'partes_envolvidas',
+  'data_referencia',
   'parte_reveladora',
   'parte_receptora',
   'fornecedor',
@@ -68,8 +78,25 @@ export const STANDARD_DETAILS_KEYS: readonly string[] = [
   'tipo',
 ];
 
+/**
+ * O nome da data de validade — um só, em todo o produto.
+ *
+ * Existe como constante porque já foi três literais soltos em três camadas, e uma delas escolheu
+ * `data_vencimento`: a regra padrão gravava esse nome, `canonicalizeMetadataKey` o renomeava para
+ * `data_validade` ao confirmar a versão, e a ficha passava a mostrar a linha da regra vazia com o
+ * mesmo dado logo abaixo, como campo fora da regra. Chave nova de validade se escreve daqui.
+ *
+ * `VALIDITY_ABSOLUTE_KEYS` continua aceitando os outros nomes porque LER é outra história: o tenant
+ * pode ter nomeado o campo dele de qualquer jeito, e dado que já está no banco não se renomeia.
+ */
+export const CANONICAL_VALIDITY_KEY = 'data_validade';
+
 /** Chaves de validade absoluta — o builder une num único campo "Validade". */
-export const VALIDITY_ABSOLUTE_KEYS = new Set(['data_validade', 'vigencia_fim', 'data_vencimento']);
+export const VALIDITY_ABSOLUTE_KEYS = new Set([
+  CANONICAL_VALIDITY_KEY,
+  'vigencia_fim',
+  'data_vencimento',
+]);
 
 /** Aliases textuais (já slugificados) → chave canônica. */
 const ALIAS_TO_CANONICAL_KEY: Record<string, string> = {

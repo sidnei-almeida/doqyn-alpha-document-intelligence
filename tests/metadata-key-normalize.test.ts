@@ -22,7 +22,10 @@ describe('metadataKeyNormalize', () => {
   it('resolve labels estáveis', () => {
     assert.equal(resolveMetadataLabel('parte_reveladora', 'parte reveladora'), 'Parte reveladora');
     assert.equal(resolveMetadataLabel('Parte Reveladora'), 'Parte reveladora');
-    assert.equal(resolveMetadataLabel('data_assinatura', 'Data De Assinatura'), 'Data de assinatura');
+    assert.equal(
+      resolveMetadataLabel('data_assinatura', 'Data De Assinatura'),
+      'Data de assinatura',
+    );
   });
 
   it('dedupeMetadataRecord funde duplicatas por capitalização', () => {
@@ -52,9 +55,8 @@ describe('metadataKeyNormalize', () => {
 
 describe('buildStandardDetailsFields', () => {
   it('monta ficha standard com validade inferida', async () => {
-    const { buildStandardDetailsFields } = await import(
-      '../src/features/document-update-version/utils/documentMetadataDisplay.ts'
-    );
+    const { buildStandardDetailsFields } =
+      await import('../src/features/document-update-version/utils/documentMetadataDisplay.ts');
 
     const fields = buildStandardDetailsFields({
       metadata: {
@@ -94,9 +96,8 @@ describe('buildStandardDetailsFields', () => {
   });
 
   it('validade sem âncora fica não determinada', async () => {
-    const { buildStandardDetailsFields } = await import(
-      '../src/features/document-update-version/utils/documentMetadataDisplay.ts'
-    );
+    const { buildStandardDetailsFields } =
+      await import('../src/features/document-update-version/utils/documentMetadataDisplay.ts');
 
     const fields = buildStandardDetailsFields({
       metadata: {

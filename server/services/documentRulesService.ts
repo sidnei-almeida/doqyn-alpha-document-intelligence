@@ -194,7 +194,7 @@ export async function loadActiveDocumentClassRules(
   const tenantId = companyId?.trim();
   if (!tenantId) {
     throw new ServiceError(
-      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'Não foi possível identificar o ambiente ativo da sessão.',
       'TENANT_REQUIRED',
       400,
     );
@@ -275,7 +275,7 @@ export async function loadActiveDocumentClassRules(
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Nenhuma categoria documental ativa encontrada para esta empresa.',
+      'Nenhuma categoria documental ativa encontrada.',
       'no_categories',
     );
   }
@@ -292,7 +292,7 @@ export async function loadActiveDocumentClassRules(
     } as Record<string, unknown>);
 
     throw new DocumentRulesNotSeededError(
-      'Nenhuma regra de classificação/extração ativa encontrada para as categorias desta empresa.',
+      'Nenhuma regra de classificação/extração ativa encontrada para as categorias.',
       'no_extraction_rules',
     );
   }
@@ -340,7 +340,7 @@ export async function getActiveRulesPayload(companyId: string, opts?: { ownerUse
   const tenantId = companyId?.trim();
   if (!tenantId) {
     throw new ServiceError(
-      'Não foi possível identificar a empresa/tenant ativo da sessão.',
+      'Não foi possível identificar o ambiente ativo da sessão.',
       'TENANT_REQUIRED',
       400,
     );
@@ -471,6 +471,37 @@ function emptyRuleFor(companyId: string, classId: string): MongoDocumentExtracti
   } as MongoDocumentExtractionRule;
 }
 
+/**
+ * A regra ativa de uma classe, quando por acidente existe mais de uma.
+ *
+ * Até 07/09/2026 a escolha era `find(...)` sobre uma lista ordenada por `version` desc — o que
+ * resolve versões diferentes e não resolve empate. E empate era a regra, não a exceção: criar
+ * categoria pela interface gravava DUAS regras v1 (o handler da API chamava um criador além do que
+ * o próprio serviço de categorias já garantia), então seis das sete classes em produção tinham
+ * duas ativas e quem vencia era a ordem natural do Mongo.
+ *
+ * A causa foi removida, mas a desempate fica: dado velho continua existindo, e "qual regra vale"
+ * não pode depender de em que ordem o banco devolveu os documentos. Vence a mais recente; empate de
+ * data devolve a primeira e registra aviso, porque a essa altura o dado é que está errado.
+ */
+export function pickActiveRule<T extends { version?: number; updatedAt?: Date; createdAt?: Date }>(
+  candidates: T[],
+  context: { tenantId: string; classId: string },
+): T | undefined {
+  if (candidates.length <= 1) return candidates[0];
+
+  logger.warn('mais de uma regra de extração ativa para a mesma classe', {
+    tenantId: context.tenantId,
+    classId: context.classId,
+    count: candidates.length,
+  });
+
+  const time = (rule: T) => (rule.updatedAt ?? rule.createdAt)?.getTime() ?? 0;
+  return [...candidates].sort(
+    (a, b) => (b.version ?? 0) - (a.version ?? 0) || time(b) - time(a),
+  )[0];
+}
+
 export async function getMongoClassAndRule(input: {
   companyId: string;
   classId: string;
@@ -490,7 +521,10 @@ export async function getMongoClassAndRule(input: {
 
   if (governance) {
     const docClass = governance.categories.find((c) => c._id === input.classId && c.active);
-    const rule = governance.extractionRules.find((r) => r.categoryId === input.classId && r.active);
+    const rule = pickActiveRule(
+      governance.extractionRules.filter((r) => r.categoryId === input.classId && r.active),
+      { tenantId: input.companyId, classId: input.classId },
+    );
     if (docClass && rule) return { docClass, rule };
     if (docClass && input.allowMissingRule)
       return { docClass, rule: emptyRuleFor(input.companyId, input.classId) };
@@ -504,7 +538,10 @@ export async function getMongoClassAndRule(input: {
   const docClass = legacy.categories.find((c) => c._id === input.classId && c.active);
   if (!docClass) return null;
 
-  const rule = legacy.extractionRules.find((r) => r.classId === input.classId && r.active);
+  const rule = pickActiveRule(
+    legacy.extractionRules.filter((r) => r.classId === input.classId && r.active),
+    { tenantId: input.companyId, classId: input.classId },
+  );
   if (!rule) {
     return input.allowMissingRule
       ? { docClass, rule: emptyRuleFor(input.companyId, input.classId) }

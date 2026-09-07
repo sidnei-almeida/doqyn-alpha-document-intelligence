@@ -1,7 +1,11 @@
 import { WorkspaceSideDrawer } from '@/components/layout/WorkspaceSideDrawer';
 import { TruncatedText } from '@/components/ui/TruncatedText';
+import { IconButton } from '@/components/ui/IconButton';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import { DocumentExpiryEditor } from '@/features/expiry/components/DocumentExpiryEditor';
 import type { DocumentListItem } from '@/types/document-library';
+import { DocumentNameField } from './DocumentNameField';
 
 /**
  * Ficha de metadados do documento, aberta da própria Biblioteca.
@@ -19,6 +23,9 @@ export function DocumentMetadataDrawer({
 }) {
   if (!document) return null;
 
+  const fileName = document.currentFileName ?? document.displayName ?? document.documentId;
+  const canEditMetadata = Boolean(document.permissions?.canEditMetadata);
+
   return (
     <WorkspaceSideDrawer
       title="Metadados do documento"
@@ -26,24 +33,30 @@ export function DocumentMetadataDrawer({
       testId="document-metadata-drawer"
       zIndexClass="z-[95]"
       header={
-        <header className="border-b border-doqyn-border-subtle px-4 py-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-primary">
-            Metadados
-          </p>
-          <TruncatedText as="h2" className="mt-0.5 text-[14px] font-semibold text-doqyn-text">
-            {document.currentFileName ?? document.displayName ?? document.documentId}
-          </TruncatedText>
-          <p className="mt-0.5 text-[11px] text-doqyn-muted">
-            {document.categoryName ?? 'Sem categoria'}
-          </p>
+        <header className="flex items-start justify-between gap-3 border-b border-doqyn-border-subtle px-5 py-4">
+          <div className="min-w-0 flex-1">
+            {/* O eyebrow era acento; acento é para o que se clica. */}
+            <p className="register-label text-doqyn-subtle">Metadados</p>
+            <TruncatedText as="h2" className="type-h2 mt-1 text-doqyn-text">
+              {fileName}
+            </TruncatedText>
+            <p className="mt-1 text-caption text-doqyn-muted">
+              {document.categoryName ?? 'Sem categoria'}
+            </p>
+          </div>
+          <IconButton label="Fechar metadados" onClick={onClose}>
+            <Icon name="close" size={ICON_SIZE.sm} />
+          </IconButton>
         </header>
       }
     >
-      <div className="px-4 py-3">
-        <DocumentExpiryEditor
+      <div className="space-y-4">
+        <DocumentNameField
           documentId={document.documentId}
-          canEdit={Boolean(document.permissions?.canEditMetadata)}
+          fileName={fileName}
+          canEdit={canEditMetadata}
         />
+        <DocumentExpiryEditor documentId={document.documentId} canEdit={canEditMetadata} />
       </div>
     </WorkspaceSideDrawer>
   );

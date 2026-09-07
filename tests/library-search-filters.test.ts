@@ -76,7 +76,17 @@ describe('busca e filtros da Biblioteca (frontend)', () => {
 
   it('useLibraryRouteState persiste q, filtros, sort e direction', () => {
     const route = readSrc('features/library/hooks/useLibraryRouteState.ts');
-    for (const key of ['q', 'status', 'type', 'period', 'owner', 'scope', 'sort', 'direction', 'view']) {
+    for (const key of [
+      'q',
+      'status',
+      'type',
+      'period',
+      'owner',
+      'scope',
+      'sort',
+      'direction',
+      'view',
+    ]) {
       assert.ok(route.includes(`'${key}'`), `param ${key}`);
     }
     assert.ok(route.includes('clearFilters'));

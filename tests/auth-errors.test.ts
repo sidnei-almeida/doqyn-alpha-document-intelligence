@@ -14,7 +14,9 @@ function parseApiErrorBody(
     details?: Record<string, unknown>;
     requestId?: string;
   };
-  const code = body.code ?? (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
+  const code =
+    body.code ??
+    (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
   const message = body.message ?? fallbackMessage;
 
   return {
@@ -45,7 +47,13 @@ function accessCodeToGate(code: string) {
 }
 
 function shouldLogoutForError(code: string): boolean {
-  return ['INVALID_SESSION', 'SESSION_EXPIRED', 'AUTH_REQUIRED', 'NO_SESSION', 'UNAUTHORIZED'].includes(code);
+  return [
+    'INVALID_SESSION',
+    'SESSION_EXPIRED',
+    'AUTH_REQUIRED',
+    'NO_SESSION',
+    'UNAUTHORIZED',
+  ].includes(code);
 }
 
 describe('parseApiErrorBody', () => {
@@ -74,14 +82,18 @@ describe('parseApiErrorBody', () => {
 describe('auth error messages', () => {
   it('mapeia NO_ACTIVE_MEMBERSHIP', () => {
     const message = getFriendlyAuthErrorMessage('NO_ACTIVE_MEMBERSHIP');
-    assert.match(message, /nenhuma empresa/i);
+    // Sem tenant resolvido não há tipo a consultar, então a mensagem deixou de dizer "empresa":
+    // ela chega igual a quem tem conta pessoal.
+    assert.match(message, /nenhum ambiente/i);
+    assert.doesNotMatch(message, /empresa/i);
   });
 
   it('oferece CTAs para NO_ACTIVE_MEMBERSHIP', () => {
+    // Um CTA só, para a tela que apresenta os três caminhos — incluindo a conta pessoal, que
+    // os dois links de empresa não ofereciam.
     const actions = getAuthErrorActions('NO_ACTIVE_MEMBERSHIP');
-    assert.equal(actions.length, 2);
-    assert.equal(actions[0]?.href, '/solicitar-acesso');
-    assert.equal(actions[1]?.href, '/criar-empresa');
+    assert.equal(actions.length, 1);
+    assert.equal(actions[0]?.href, '/acesso');
   });
 });
 

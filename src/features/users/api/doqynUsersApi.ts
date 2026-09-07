@@ -7,6 +7,18 @@ import type {
   PlatformRole,
 } from './usersApi';
 
+export type PendingInviteDto = {
+  inviteId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  roles: PlatformRole[];
+  invitedByMembershipId: string;
+  invitedByUserId: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 type AuthMembership = {
   membershipId: string;
   tenantId: string;
@@ -58,7 +70,10 @@ function mapDetailToDto(detail: MemberDetail): CompanyMemberDto {
   };
 }
 
-async function fetchMemberDetail(membershipId: string, tenantId?: string): Promise<CompanyMemberDto> {
+async function fetchMemberDetail(
+  membershipId: string,
+  tenantId?: string,
+): Promise<CompanyMemberDto> {
   const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
   const data = await authServiceJson<{ member: MemberDetail }>(
     `/admin/members/${membershipId}${query}`,
@@ -68,7 +83,9 @@ async function fetchMemberDetail(membershipId: string, tenantId?: string): Promi
 
 export const doqynUsersApi = {
   async listAccessGroups(tenantId?: string): Promise<Array<{ id: string; name: string }>> {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}&status=active` : '?status=active';
+    const query = tenantId
+      ? `?tenantId=${encodeURIComponent(tenantId)}&status=active`
+      : '?status=active';
     const data = await authServiceJson<{
       groups: Array<{ groupId: string; name: string; status: string }>;
     }>(`/admin/access-groups${query}`);
@@ -95,14 +112,34 @@ export const doqynUsersApi = {
     platformRoles: PlatformRole[];
     accessGroupIds: string[];
   }) {
-    void input.accessGroupIds;
     return inviteApi.create({
       email: input.email,
       firstName: input.firstName,
       lastName: input.lastName,
       platformRoles: input.platformRoles,
+      // Os grupos não vão por aqui, e o auth-service já não os aceita: quem decide o que a
+      // pessoa alcança é `documentGroupMembers`, no Mongo. A intenção é registrada em
+      // `/api/company-members/invite-groups` e aplicada quando a membership aparece no sync.
       companyId: input.companyId,
     });
+  },
+
+  /**
+   * Quem foi convidado e ainda não entrou.
+   *
+   * A linha da tela vem do convite no auth-service, e não de um registro-fantasma no Mongo: o
+   * convite já tem e-mail, papéis, quem convidou e prazo. Duplicá-lo criaria uma segunda verdade
+   * a reconciliar, e um aceite que falhasse deixaria a cópia para trás, convidando para sempre.
+   */
+  listPendingInvites(tenantId?: string) {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    return authServiceJson<{ invites: PendingInviteDto[] }>(`/invites${query}`).then(
+      (data) => data.invites ?? [],
+    );
+  },
+
+  revokeInvite(inviteId: string) {
+    return authServiceJson(`/invites/${inviteId}/revoke`, { method: 'POST', body: '{}' });
   },
 
   approve(
@@ -167,11 +204,13 @@ export const doqynUsersApi = {
     return authServiceJson(`/admin/members/${membershipId}/roles${query}`, {
       method: 'PATCH',
       body: JSON.stringify({ roles: input.platformRoles }),
-    }).then(() =>
-      authServiceJson(`/admin/members/${membershipId}/access-groups${query}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ accessGroupIds: input.accessGroupIds }),
-      }),
-    ).then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
+    })
+      .then(() =>
+        authServiceJson(`/admin/members/${membershipId}/access-groups${query}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ accessGroupIds: input.accessGroupIds }),
+        }),
+      )
+      .then(async () => ({ member: await fetchMemberDetail(membershipId, tenantId) }));
   },
 };

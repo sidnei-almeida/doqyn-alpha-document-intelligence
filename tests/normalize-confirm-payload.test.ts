@@ -6,9 +6,7 @@ import {
   validateConfirmableAnalysis,
 } from '../src/features/document-send/services/normalizeConfirmPayload.ts';
 
-function makeAnalyzeResponse(
-  overrides: Partial<AnalyzePdfResponse> = {},
-): AnalyzePdfResponse {
+function makeAnalyzeResponse(overrides: Partial<AnalyzePdfResponse> = {}): AnalyzePdfResponse {
   return {
     jobId: 'job-1',
     status: 'requires_review',
@@ -57,7 +55,11 @@ describe('normalizeConfirmPayload', () => {
   it('validateConfirmableAnalysis exige classId e jobId', () => {
     assert.equal(validateConfirmableAnalysis(makeAnalyzeResponse()), null);
     assert.match(
-      validateConfirmableAnalysis(makeAnalyzeResponse({ classification: { ...makeAnalyzeResponse().classification, classId: null } })) ?? '',
+      validateConfirmableAnalysis(
+        makeAnalyzeResponse({
+          classification: { ...makeAnalyzeResponse().classification, classId: null },
+        }),
+      ) ?? '',
       /Classificação ausente/,
     );
     assert.match(

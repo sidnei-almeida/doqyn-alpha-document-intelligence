@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { emitClientTrackingEvent } from '@/features/tracking/api/trackingClientEvents';
 import type { DocumentVersionSummary } from '@/types/document-library';
-import {
-  fetchDocumentDownloadBlob,
-  triggerBlobDownload,
-} from '../api/documentsApi.blobs';
+import { fetchDocumentDownloadBlob, triggerBlobDownload } from '../api/documentsApi.blobs';
 import { getPreviewErrorMessage, getPreviewStatusLabel } from '../utils/previewErrors';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useDocumentDetail } from '../hooks/useDocuments';
@@ -48,7 +45,9 @@ export function DocumentViewerModal({
   const viewerActionsRef = useRef<ViewerActions | null>(null);
 
   const [showDetails, setShowDetails] = useState(initialShowDetails);
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(initialVersionId ?? null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
+    initialVersionId ?? null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -70,12 +69,15 @@ export function DocumentViewerModal({
 
   const activeVersionId = useMemo(() => {
     if (!data) return null;
-    return selectedVersionId ?? data.latestVersion?.versionId ?? data.document.latestVersionId ?? null;
+    return (
+      selectedVersionId ?? data.latestVersion?.versionId ?? data.document.latestVersionId ?? null
+    );
   }, [data, selectedVersionId]);
 
-  const activeVersion = data?.versions.find(
-    (version: DocumentVersionSummary) => version.versionId === activeVersionId,
-  ) ?? null;
+  const activeVersion =
+    data?.versions.find(
+      (version: DocumentVersionSummary) => version.versionId === activeVersionId,
+    ) ?? null;
 
   const displayName =
     activeVersion?.finalFileName ??
@@ -185,6 +187,48 @@ export function DocumentViewerModal({
     return 'Não foi possível carregar o preview.';
   }, [manifestQuery.error]);
 
+  // Falha ao abrir também é história: a trilha precisa mostrar que houve
+  // tentativa e que ela não terminou em sucesso. Uma emissão por motivo, para
+  // que um erro que persiste no re-render não vire uma enxurrada de eventos.
+  const reportedOpenFailureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !documentId) return;
+
+    const reason = error
+      ? 'document_detail_failed'
+      : manifestQuery.isError
+        ? 'preview_manifest_failed'
+        : manifest?.status === 'failed'
+          ? 'preview_generation_failed'
+          : null;
+    if (!reason) return;
+
+    const key = `${documentId}:${activeVersionId ?? ''}:${reason}`;
+    if (reportedOpenFailureRef.current === key) return;
+    reportedOpenFailureRef.current = key;
+
+    emitClientTrackingEvent({
+      action: 'document.preview_failed',
+      documentId,
+      versionId: activeVersionId ?? undefined,
+      metadata: {
+        source: 'viewer_modal',
+        reason,
+        message: detailErrorMessage ?? manifestErrorMessage ?? undefined,
+      },
+    });
+  }, [
+    open,
+    documentId,
+    activeVersionId,
+    error,
+    manifestQuery.isError,
+    manifest?.status,
+    detailErrorMessage,
+    manifestErrorMessage,
+  ]);
+
   const handleDownload = useCallback(async () => {
     const canDownload = manifest?.permissions.canDownload ?? data?.permissions.canDownload;
     if (!documentId || !activeVersionId || !canDownload || isDownloading) return;
@@ -241,7 +285,7 @@ export function DocumentViewerModal({
     previewStatusLabel,
     typeBadge,
   ].filter(Boolean);
-  const subtitle = subtitleParts.join(' • ');
+  const subtitle = subtitleParts.join(' · ');
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0

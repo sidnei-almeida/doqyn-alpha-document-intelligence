@@ -47,10 +47,7 @@ function isAllowed(rel: string): boolean {
 
 describe('persistência Mongo — formato canônico', () => {
   it('server/api não gravam company_members, companies, document_classes, access_groups, preview/index', () => {
-    const files = [
-      ...walk(join(root, 'server')),
-      ...walk(join(root, 'api')),
-    ];
+    const files = [...walk(join(root, 'server')), ...walk(join(root, 'api'))];
     const violations: string[] = [];
 
     for (const file of files) {

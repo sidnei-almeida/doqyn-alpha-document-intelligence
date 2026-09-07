@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveAuthUserDisplayName } from '../server/utils/userDisplayName.js';
-import { buildDocumentMutationFields, buildInitialDocumentOwnershipFields } from '../server/utils/documentMutationFields.js';
+import {
+  buildDocumentMutationFields,
+  buildInitialDocumentOwnershipFields,
+} from '../server/utils/documentMutationFields.js';
 import { canTransferDocumentOwnership } from '../server/services/documentTransferOwnershipService.js';
 import { resolveDocumentPermissions } from '../server/tenancy/documentAccess.js';
 import type { AuthUser } from '../server/auth/types.js';
@@ -100,14 +103,8 @@ describe('proprietário do documento', () => {
 
   it('transferência permitida para proprietário ou admin', () => {
     const doc = { ownerUserId: 'owner_1', access: {}, classId: 'class_1' };
-    assert.equal(
-      canTransferDocumentOwnership(businessUser('owner_1'), doc),
-      true,
-    );
-    assert.equal(
-      canTransferDocumentOwnership(businessUser('other'), doc),
-      false,
-    );
+    assert.equal(canTransferDocumentOwnership(businessUser('owner_1'), doc), true);
+    assert.equal(canTransferDocumentOwnership(businessUser('other'), doc), false);
     assert.equal(
       resolveDocumentPermissions(businessUser('other', 'admin'), doc, []).canTransferOwnership,
       true,

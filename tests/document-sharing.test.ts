@@ -21,7 +21,7 @@ describe('document sharing — modelo Mongo', () => {
     const types = read('server/db/types.ts');
     assert.ok(types.includes('MongoDocumentShareGrant'));
     assert.ok(types.includes('sharedWithUserId'));
-    assert.ok(types.includes("status: DocumentShareGrantStatus"));
+    assert.ok(types.includes('status: DocumentShareGrantStatus'));
   });
 
   it('índices únicos parciais para share ativo', () => {
@@ -62,7 +62,9 @@ describe('document sharing — serviço e segurança', () => {
 
   it('revogar share não remove acesso base por grupo', () => {
     const access = read('server/tenancy/documentShareAccess.ts');
-    assert.ok(access.includes('canUserListDocument(user, doc, memberGroupIds)'));
+    // A função ganhou um quarto argumento — o índice de governança — mas a garantia é a mesma:
+    // revogar o share cai de volta no acesso por grupo, não zera o acesso da pessoa.
+    assert.ok(access.includes('canUserListDocument(user, doc, memberGroupIds, governanceIndex)'));
   });
 });
 
@@ -85,8 +87,8 @@ describe('document sharing — API', () => {
     assert.ok(revoke.includes("action: 'document.share_revoked'"));
   });
 
-  it('dev-server registra rotas', () => {
-    const dev = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas', () => {
+    const dev = read('server/apiServer.ts');
     assert.ok(dev.includes('/api/shared-with-me/documents'));
     assert.ok(dev.includes('/api/share/users'));
     assert.ok(dev.includes('/shares'));
@@ -96,10 +98,14 @@ describe('document sharing — API', () => {
 describe('document sharing — frontend', () => {
   it('ShareDocumentModal busca usuários e lista acessos', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    assert.ok(modal.includes('share-document-modal'));
-    assert.ok(modal.includes('Buscar usuário'));
-    assert.ok(modal.includes('Pessoas com acesso compartilhado'));
-    assert.ok(modal.includes('Permitir download'));
+    const flow = read('src/features/documents/recipients/RecipientFlow.tsx');
+    // O diálogo virou passos, e a busca do destinatário mora em `RecipientFlow`, compartilhada
+    // com assinar e requisitar. O `Modal` do design system substituiu a casca própria.
+    assert.ok(modal.includes('<Modal'));
+    assert.ok(modal.includes('Compartilhar documento'));
+    assert.ok(flow.includes('Buscar pessoa'));
+    assert.ok(modal.includes('AccessList'));
+    assert.ok(modal.includes('Quem tem acesso'));
   });
 
   it('Compartilhados comigo usa API dedicada', () => {

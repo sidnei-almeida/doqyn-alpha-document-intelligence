@@ -25,6 +25,7 @@ import {
 import { createR2StorageProvider } from '../server/storage/r2/r2StorageProvider.js';
 import type { R2Config } from '../server/storage/storageConfig.js';
 import { ServiceError } from '../server/utils/serviceErrors.js';
+import { setCorsEnv, withBucketCorsStub } from './helpers/r2CorsMock.js';
 
 const BASE_R2_CONFIG: R2Config = {
   accountId: 'abc123',
@@ -46,10 +47,11 @@ const INDIVIDUAL_TENANT = 'individual_maria_d4e5f6';
 const OWNER_USER_ID = '11111111-1111-1111-1111-111111111111';
 
 function createMockClient(handler: (command: unknown) => Promise<unknown>): S3Client {
-  return { send: handler } as unknown as S3Client;
+  return { send: withBucketCorsStub(handler) } as unknown as S3Client;
 }
 
 function setR2Env(): void {
+  setCorsEnv();
   process.env.STORAGE_PROVIDER = 'r2';
   process.env.R2_ACCOUNT_ID = 'abc123';
   process.env.R2_ENDPOINT = 'https://abc123.r2.cloudflarestorage.com';
@@ -117,8 +119,7 @@ describe('resolveTenantStorageScope', () => {
           tenantId: INDIVIDUAL_TENANT,
           tenantType: 'individual',
         }),
-      (error: unknown) =>
-        error instanceof ServiceError && error.code === 'OWNER_USER_REQUIRED',
+      (error: unknown) => error instanceof ServiceError && error.code === 'OWNER_USER_REQUIRED',
     );
   });
 });
@@ -237,7 +238,9 @@ describe('r2 provider com storageScope', () => {
     assert.equal(stored.bucket, scope.bucketName);
     assert.match(
       stored.storageKey,
-      new RegExp(`^documents/doc_biz/versions/ver_biz/original/${STORAGE_FILE_NAME.replace('.', '\\.')}$`),
+      new RegExp(
+        `^documents/doc_biz/versions/ver_biz/original/${STORAGE_FILE_NAME.replace('.', '\\.')}$`,
+      ),
     );
     assert.equal(ensureBucketForScope.mock.calls.length, 1);
     assert.deepEqual(ensureBucketForScope.mock.calls[0]?.arguments[0], {
@@ -264,10 +267,7 @@ describe('r2 provider com storageScope', () => {
       if (command instanceof PutObjectCommand) {
         const input = command.input;
         assert.equal(input.Bucket, 'doqyn-alpha');
-        assert.match(
-          String(input.Key),
-          new RegExp(`^${scope.basePrefix}/documents/doc_ind/`),
-        );
+        assert.match(String(input.Key), new RegExp(`^${scope.basePrefix}/documents/doc_ind/`));
         return { ETag: '"etag-ind"' };
       }
       return {};
@@ -351,8 +351,14 @@ describe('ensureBucketForStorageScope', () => {
 
     assert.equal(result.bucket, 'doqyn-alpha');
     assert.equal(result.created, false);
-    assert.equal(commands.some((c) => c instanceof HeadBucketCommand), true);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), false);
+    assert.equal(
+      commands.some((c) => c instanceof HeadBucketCommand),
+      true,
+    );
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      false,
+    );
   });
 
   it('per_tenant garante bucket derivado do tenantId', async () => {
@@ -393,7 +399,10 @@ describe('ensureBucketForStorageScope', () => {
 
     assert.equal(result.created, true);
     assert.equal(result.bucket, 'doqyn-alpha');
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      true,
+    );
   });
 });
 
@@ -403,7 +412,10 @@ describe('basePrefix determinístico', () => {
     const b = buildIndividualBasePrefix(INDIVIDUAL_TENANT);
     assert.equal(a, b);
 
-    const hash = createHash('sha256').update(INDIVIDUAL_TENANT.toLowerCase()).digest('hex').slice(0, 16);
+    const hash = createHash('sha256')
+      .update(INDIVIDUAL_TENANT.toLowerCase())
+      .digest('hex')
+      .slice(0, 16);
     assert.equal(a, `individuals/${hash}`);
   });
 });

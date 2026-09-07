@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
@@ -28,10 +28,7 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
   });
 
   it('nenhum nome de coleção é montado com sufixo de tenant', () => {
-    for (const path of [
-      'server/tenancy/tenantStorage.ts',
-      'server/tenancy/tenantResolver.ts',
-    ]) {
+    for (const path of ['server/tenancy/tenantStorage.ts', 'server/tenancy/tenantResolver.ts']) {
       const source = read(path);
       assert.equal(
         /\$\{base\}_\$\{prefix\}/.test(source),
@@ -116,22 +113,46 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
       // destinatário externo pode receber de vários tenants — cruzar tenant é o propósito
       recipientEmailNormalized: 'destinatário externo recebe de múltiplos tenants',
       'signers.userId': 'signatário pode ser externo ao tenant do documento',
+      requestedByUserId:
+        'espelho de signers.userId — a afinidade de contato olha quem esta pessoa chamou para ' +
+        'assinar, e o chamado pode estar em outro tenant',
       'signers.emailNormalized': 'idem — busca por e-mail do signatário',
       signerEmailHash: 'idem — histórico do signatário entre tenants',
       // escopo por usuário, que já é mais estreito que o tenant
       userId: 'favoritos e alertas são por usuário, escopo mais estreito que tenant',
+      ownerUserId: 'contatos salvos são de uma pessoa, não de uma empresa',
+      notificationId: 'identificador único da notificação',
+      // varredura de fundo: roda para todos os tenants de uma vez, e é justamente o tenant que
+      // ela não pode ter no filtro
+      status:
+        'trabalho de fundo que atravessa tenants — posição na fila de análise e a varredura ' +
+        'diária que vence pedido parado',
       sharedWithUserId: 'concessões recebidas por um usuário',
       sharedByUserId: 'concessões emitidas por um usuário',
     };
 
-    const files = [
-      'server/db/documentShareGrantsIndexes.ts',
-      'server/db/externalDocumentShareGrantsIndexes.ts',
-      'server/db/documentSignatureIndexes.ts',
-      'server/db/documentExpiryAlertIndexes.ts',
-      'server/db/documentUploadApprovalIndexes.ts',
-      'server/db/userDocumentFavoritesIndexes.ts',
-    ];
+    /**
+     * Varre o diretório, e não uma lista escrita à mão.
+     *
+     * A lista fixa envelheceu duas vezes: `documentExpiryAlertIndexes.ts` sumiu quando os alertas
+     * viraram notificações, e o teste passou a estourar em vez de conferir. Pior que isso — um
+     * arquivo de índice NOVO nunca entrava na lista, então a guarda inteira não o via. Varrer é o
+     * que faz "índice novo fora do padrão quebra o teste" ser verdade.
+     */
+    const indexDir = join(repoRoot, 'server/db');
+    const files = readdirSync(indexDir)
+      .filter(
+        (name) =>
+          name.endsWith('Indexes.ts') &&
+          // `tenantIndexes.ts` é a máquina que aplica os outros, não declara índice.
+          name !== 'tenantIndexes.ts' &&
+          // Índice vetorial do Atlas tem outra forma — campos de filtro, não `key: {}` — e já
+          // traz `tenantId` entre eles. A regra de prefixo não se aplica.
+          name !== 'vectorIndexes.ts',
+      )
+      .map((name) => `server/db/${name}`)
+      .sort();
+    assert.ok(files.length >= 6, `esperava vários arquivos de índice, achei ${files.length}`);
 
     let total = 0;
     for (const file of files) {

@@ -20,14 +20,21 @@ function resolveDocumentId(req: VercelRequest): string | undefined {
 function readCreateBody(req: VercelRequest) {
   const body = req.body as {
     sharedWithUserId?: unknown;
+    sharedWithEmail?: unknown;
+    sharedWithUsername?: unknown;
     permissions?: { canView?: boolean; canDownload?: boolean };
     message?: unknown;
+    expiresAt?: unknown;
   };
   return {
     sharedWithUserId:
       typeof body?.sharedWithUserId === 'string' ? body.sharedWithUserId : undefined,
+    sharedWithEmail: typeof body?.sharedWithEmail === 'string' ? body.sharedWithEmail : undefined,
+    sharedWithUsername:
+      typeof body?.sharedWithUsername === 'string' ? body.sharedWithUsername : undefined,
     permissions: body?.permissions,
     message: typeof body?.message === 'string' ? body.message : undefined,
+    expiresAt: typeof body?.expiresAt === 'string' ? body.expiresAt : undefined,
   };
 }
 
@@ -53,17 +60,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST') {
       const body = readCreateBody(req);
-      if (!body.sharedWithUserId?.trim()) {
+      // Um dos dois basta: o id vem do seletor de membros, o e-mail do campo que atravessa a
+      // fronteira da empresa.
+      if (
+        !body.sharedWithUserId?.trim() &&
+        !body.sharedWithEmail?.trim() &&
+        !body.sharedWithUsername?.trim()
+      ) {
         return res.status(400).json({
-          message: 'sharedWithUserId é obrigatório.',
+          message: 'Informe o destinatário do compartilhamento.',
           code: 'MISSING_SHARED_WITH_USER',
         });
       }
 
       const result = await createDocumentShareGrant(auth.ctx, auth.user, documentId, {
         sharedWithUserId: body.sharedWithUserId,
+        sharedWithEmail: body.sharedWithEmail,
+        sharedWithUsername: body.sharedWithUsername,
         permissions: body.permissions,
         message: body.message,
+        expiresAt: body.expiresAt,
       });
 
       if (!result.updated) {

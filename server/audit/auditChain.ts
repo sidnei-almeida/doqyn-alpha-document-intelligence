@@ -65,7 +65,9 @@ export function canonicalize(value: unknown, version = AUDIT_CHAIN_VERSION): str
 
   if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
-      .filter(([, item]) => (version >= 2 ? item !== undefined && item !== null : item !== undefined))
+      .filter(([, item]) =>
+        version >= 2 ? item !== undefined && item !== null : item !== undefined,
+      )
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
     return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalize(item, version)}`).join(',')}}`;
   }
@@ -161,10 +163,7 @@ export async function reserveChainSlot(
  * Best-effort e condicionado ao `seq` reservado: se outro processo já avançou a cadeia, não há o
  * que desfazer sem apagar o trabalho dele, e a verificação acusaria o buraco de qualquer forma.
  */
-export async function rollbackChainSlot(
-  tenantId: string,
-  stamp: AuditChainStamp,
-): Promise<void> {
+export async function rollbackChainSlot(tenantId: string, stamp: AuditChainStamp): Promise<void> {
   try {
     const heads = await getChainHeadsCollection();
     await heads.updateOne(

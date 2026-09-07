@@ -32,6 +32,16 @@ export type ClassificationResult = {
   requiresReview: boolean;
   reason: string;
   evidence: EvidenceSnippet[];
+  /**
+   * O que o documento É, segundo o próprio classificador — NDA, PROCURACAO, ATESTADO MEDICO.
+   *
+   * Existe porque escolher a pasta sem ter dito o tipo leva a classificar por semelhança
+   * superficial: um NDA "estabelece obrigações entre partes" e cai em Contratos. Declarar o tipo
+   * primeiro é o que separa "o que isto é" de "onde isto mora", e sobrevive à classe errada — o
+   * atestado de `rh_02` foi lido como ATESTADO MÉDICO nas três variantes, inclusive nas duas em
+   * que nenhuma pasta foi escolhida.
+   */
+  documentType?: string | null;
   /** Código interno para diagnóstico (ex.: GROQ_RATE_LIMIT). */
   errorCode?: string;
   /** Motivo de revisão legível para UI/logs. */
@@ -45,6 +55,8 @@ export type ExtractedMetadataField = {
   confidence: number;
   /** `manual` = preenchido por quem revisou o envio, antes de salvar. */
   source: 'document_text' | 'no_ai' | 'derived' | 'manual';
+  /** Só em `derived`: se o prazo veio de um campo extraído ou do corpo do documento. */
+  derivedFrom?: 'campo' | 'texto';
   evidence?: EvidenceSnippet;
   currency?: string;
 };
@@ -75,6 +87,14 @@ export type MetadataExtractionResult = {
   reviewReasons: string[];
   /** Ausente quando o modelo não devolveu o bloco ou devolveu algo inaproveitável. */
   naming?: DocumentNamingRoles;
+  /**
+   * Parágrafo curto dizendo o que o documento é e do que trata, escrito pelo modelo.
+   *
+   * Não sai do papel como os outros campos: é leitura, não extração. Serve para quem abre a
+   * biblioteca reconhecer o documento sem abrir o arquivo. `null` quando o modelo não devolveu ou
+   * devolveu algo inaproveitável — resumo inventado é pior que resumo nenhum.
+   */
+  summary?: string | null;
 };
 
 export type ProcessingLogItem = {

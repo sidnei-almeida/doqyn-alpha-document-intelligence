@@ -101,7 +101,10 @@ describe('cache do registry de tenants — Passo 4 do plano de escala', () => {
 
     // A verificação não pode incrementar: senão upload que falha depois queima cota do tenant.
     const checkAt = quotas.indexOf('export async function assertTenantQuotaAvailable');
-    const checkBody = quotas.slice(checkAt, quotas.indexOf('export async function assertTenantQuota('));
+    const checkBody = quotas.slice(
+      checkAt,
+      quotas.indexOf('export async function assertTenantQuota('),
+    );
     assert.equal(checkBody.includes('redisIncrWithTtl'), false);
   });
 
@@ -134,9 +137,8 @@ describe('cache do registry de tenants — Passo 4 do plano de escala', () => {
     process.env.REDIS_ENABLED = 'false';
 
     try {
-      const { getCachedTenant, setCachedTenant, invalidateTenantRegistryCache } = await import(
-        '../server/tenancy/tenantRegistryCache.js'
-      );
+      const { getCachedTenant, setCachedTenant, invalidateTenantRegistryCache } =
+        await import('../server/tenancy/tenantRegistryCache.js');
 
       assert.equal(await getCachedTenant('tenant_pj_test'), null);
       await setCachedTenant('tenant_pj_test', {

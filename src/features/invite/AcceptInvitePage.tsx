@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DoqynLogo } from '@/components/brand';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDialog';
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ApiError } from '@/lib/apiErrors';
 import { inviteApi, type InvitePreview } from './api/inviteApi';
@@ -40,8 +39,12 @@ function FormSection({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="section-title">{title}</h2>
-        {description && <p className="mt-1 text-xs text-doqyn-muted">{description}</p>}
+        {/* Régua com rótulo de registro, a mesma dos outros cadastros da antessala. Era um
+            `section-title` solto, que não pertencia a nenhuma das duas linguagens. */}
+        <div className="border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+          {title}
+        </div>
+        {description && <p className="mt-2 text-xs text-doqyn-muted">{description}</p>}
       </div>
       {children}
     </section>
@@ -92,7 +95,8 @@ export function AcceptInvitePage() {
         setPageState({
           kind: 'error',
           title: mapInviteErrorTitle(code),
-          message: error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
+          message:
+            error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
           code,
         });
       }
@@ -198,229 +202,214 @@ export function AcceptInvitePage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-8">
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
+    <>
+      {pageState.kind === 'loading' && (
+        <>
+          <AuthHeading title="Convite" description="Conferindo se este convite ainda vale…" />
+        </>
+      )}
 
-      <div className="w-full max-w-2xl flow-enter">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Convite" />
-        </div>
-
-        {pageState.kind === 'loading' && (
-          <p className="text-center text-sm text-doqyn-muted">Validando convite…</p>
-        )}
-
-        {pageState.kind === 'error' && (
-          <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
-            <h1 className="text-lg font-semibold text-doqyn-text">{pageState.title}</h1>
-            <p className="mt-2 text-sm text-doqyn-muted">{pageState.message}</p>
-            <Link to="/login" className="mt-4 inline-block text-sm text-doqyn-primary hover:underline">
+      {/* Sem cartão em volta. O aviso é o conteúdo da coluna, e a casca da antessala já é a
+          moldura — desenhar outra dentro dela empilhava duas superfícies para dizer uma frase. */}
+      {pageState.kind === 'error' && (
+        <>
+          <AuthHeading title={pageState.title} description={pageState.message} />
+          <AuthFooterLink>
+            <Link
+              to="/login"
+              className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+            >
               Ir para o login
             </Link>
-          </div>
-        )}
+          </AuthFooterLink>
+        </>
+      )}
 
-        {pageState.kind === 'success' && (
-          <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
-            <h1 className="text-lg font-semibold text-doqyn-text">Convite aceito</h1>
-            <p className="mt-2 text-sm text-doqyn-muted">{pageState.message}</p>
-            <Button className="mt-4 w-full" onClick={() => navigate('/login', { replace: true })}>
-              Ir para o login
-            </Button>
-          </div>
-        )}
+      {pageState.kind === 'success' && (
+        <>
+          <AuthHeading title="Convite aceito" description={pageState.message} />
+          <Button className="w-full" onClick={() => navigate('/login', { replace: true })}>
+            Ir para o login
+          </Button>
+        </>
+      )}
 
-        {pageState.kind === 'ready' && (
-          <div className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6">
-            <h1 className="text-lg font-semibold text-doqyn-text">Aceitar convite</h1>
-            <p className="mt-2 text-sm text-doqyn-muted">
-              Complete seu cadastro para acessar <strong>{pageState.invite.tenantDisplayName}</strong>.
-            </p>
+      {pageState.kind === 'ready' && (
+        <>
+          <AuthHeading
+            title={`Você foi convidado para ${pageState.invite.tenantDisplayName}`}
+            description="Complete seu cadastro e entre. A empresa vem do convite, então não há CNPJ a informar."
+          />
 
-            <form className="mt-6 space-y-8" onSubmit={handleSubmit}>
-              <FormSection
-                title="Empresa"
-                description="Dados da empresa que convidou você — não é necessário informar o CNPJ novamente."
-              >
+          <form className="space-y-8" onSubmit={handleSubmit}>
+            <FormSection
+              title="Empresa"
+              description="Dados da empresa que convidou você. Não é necessário informar o CNPJ novamente."
+            >
+              <Input label="Empresa" value={pageState.invite.tenantDisplayName} readOnly disabled />
+              {pageState.invite.tenantTaxIdMasked ? (
+                <Input label="CNPJ" value={pageState.invite.tenantTaxIdMasked} readOnly disabled />
+              ) : null}
+              <Input label="E-mail do convite" value={pageState.invite.email} readOnly disabled />
+            </FormSection>
+
+            <div className="h-px bg-doqyn-border-subtle" />
+
+            <FormSection
+              title="Seus dados"
+              description="Informações de contato e contexto do seu acesso."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Empresa"
-                  value={pageState.invite.tenantDisplayName}
-                  readOnly
-                  disabled
+                  label="Nome"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  autoComplete="given-name"
+                  required
                 />
-                {pageState.invite.tenantTaxIdMasked ? (
-                  <Input
-                    label="CNPJ"
-                    value={pageState.invite.tenantTaxIdMasked}
-                    readOnly
-                    disabled
-                  />
-                ) : null}
-                <Input label="E-mail do convite" value={pageState.invite.email} readOnly disabled />
-              </FormSection>
-
-              <div className="h-px bg-doqyn-border-subtle" />
-
-              <FormSection
-                title="Seus dados"
-                description="Informações de contato e contexto do seu acesso."
-              >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Input
-                    label="Nome"
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    autoComplete="given-name"
-                    required
-                  />
-                  <Input
-                    label="Sobrenome"
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    autoComplete="family-name"
-                    required
-                  />
-                </div>
-
-                {pageState.invite.requiresPassword ? (
-                  <>
-                    <Input
-                      label="Senha de acesso"
-                      type="password"
-                      revealable
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      autoComplete="new-password"
-                      required
-                      minLength={8}
-                    />
-                    <Input
-                      label="Confirmar senha"
-                      type="password"
-                      revealable
-                      value={confirmPassword}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                      autoComplete="new-password"
-                      required
-                      minLength={8}
-                    />
-                  </>
-                ) : (
-                  <p className="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-2 text-sm text-doqyn-muted">
-                    Sua conta já existe no DOQYN. Ao continuar, o acesso à empresa será vinculado ao
-                    seu usuário atual. Use a senha que você já utiliza no login.
-                  </p>
-                )}
-
-                {pageState.invite.requiresWhatsapp ? (
-                  <WhatsappInput
-                    label="WhatsApp"
-                    value={whatsapp}
-                    onChange={setWhatsapp}
-                    required
-                  />
-                ) : null}
-
                 <Input
-                  label="Cargo ou função"
-                  value={jobTitle}
-                  onChange={(event) => setJobTitle(event.target.value)}
-                  placeholder="Ex.: Analista Financeiro"
+                  label="Sobrenome"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  autoComplete="family-name"
                   required
-                />
-
-                <div>
-                  <Input
-                    label="Setor informado"
-                    value={departmentText}
-                    onChange={(event) => setDepartmentText(event.target.value)}
-                    placeholder="Ex.: Financeiro, Jurídico, RH"
-                    required
-                  />
-                  <p className="mt-1.5 text-xs text-doqyn-subtle">
-                    Informação declarada — o administrador definirá seus grupos reais de acesso.
-                  </p>
-                </div>
-              </FormSection>
-
-              <div className="h-px bg-doqyn-border-subtle" />
-
-              <div className="space-y-4">
-                <TermsAcceptanceCheckbox
-                  checked={acceptedTerms}
-                  onChange={(value) => {
-                    setAcceptedTerms(value);
-                    if (value) setTermsError(null);
-                  }}
-                  error={termsError}
-                  privacyHref={undefined}
-                  required
-                />
-
-                <Checkbox
-                  checked={informationDeclaration}
-                  onChange={(event) => {
-                    setInformationDeclaration(event.target.checked);
-                    if (event.target.checked) setDeclarationError(null);
-                  }}
-                  required
-                  wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-                  label={
-                    <span className="text-sm leading-relaxed text-doqyn-muted">
-                      Declaro que as informações fornecidas são verdadeiras e que aceito o convite
-                      para acessar a empresa informada.
-                    </span>
-                  }
-                  description={
-                    declarationError ? (
-                      <span className="form-error text-xs">{declarationError}</span>
-                    ) : undefined
-                  }
-                />
-
-                <Checkbox
-                  checked={consent}
-                  onChange={(event) => setConsent(event.target.checked)}
-                  required
-                  wrapperClassName="rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3"
-                  label={<span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>}
                 />
               </div>
 
-              <div className="flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <Link
-                  to="/login"
-                  className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
-                >
-                  Já tenho conta
-                </Link>
-                <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-                  Revisar e aceitar
-                </Button>
-              </div>
-            </form>
+              {pageState.invite.requiresPassword ? (
+                <>
+                  <Input
+                    label="Senha de acesso"
+                    type="password"
+                    revealable
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                  />
+                  <Input
+                    label="Confirmar senha"
+                    type="password"
+                    revealable
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                  />
+                </>
+              ) : (
+                <p className="border-l-2 border-doqyn-accent-active/40 pl-3 text-sm text-doqyn-muted">
+                  Sua conta já existe no DOQYN. Ao continuar, o acesso à empresa será vinculado ao
+                  seu usuário atual. Use a senha que você já utiliza no login.
+                </p>
+              )}
 
-            <ReviewBeforeSubmitDialog
-              open={reviewOpen}
-              title={ACCEPT_INVITE_REVIEW_COPY.title}
-              description={ACCEPT_INVITE_REVIEW_COPY.description}
-              sections={reviewSections}
-              submitting={submitting}
-              confirmLabel={ACCEPT_INVITE_REVIEW_COPY.confirmLabel}
-              onCancel={() => {
-                if (!submitting) setReviewOpen(false);
-              }}
-              onEdit={() => {
-                if (!submitting) setReviewOpen(false);
-              }}
-              onConfirm={handleConfirmSubmit}
-            />
-          </div>
-        )}
-      </div>
-    </main>
+              {pageState.invite.requiresWhatsapp ? (
+                <WhatsappInput label="WhatsApp" value={whatsapp} onChange={setWhatsapp} required />
+              ) : null}
+
+              <Input
+                label="Cargo ou função"
+                value={jobTitle}
+                onChange={(event) => setJobTitle(event.target.value)}
+                placeholder="Ex.: Analista Financeiro"
+                required
+              />
+
+              <div>
+                <Input
+                  label="Setor informado"
+                  value={departmentText}
+                  onChange={(event) => setDepartmentText(event.target.value)}
+                  placeholder="Ex.: Financeiro, Jurídico, RH"
+                  required
+                />
+                <p className="mt-1.5 text-xs text-doqyn-subtle">
+                  Informação declarada. O administrador definirá seus grupos reais de acesso.
+                </p>
+              </div>
+            </FormSection>
+
+            <div className="h-px bg-doqyn-border-subtle" />
+
+            <div className="space-y-4">
+              <TermsAcceptanceCheckbox
+                wrapperClassName="border-0 bg-transparent px-0 py-1"
+                checked={acceptedTerms}
+                onChange={(value) => {
+                  setAcceptedTerms(value);
+                  if (value) setTermsError(null);
+                }}
+                error={termsError}
+                privacyHref={undefined}
+                required
+              />
+
+              <Checkbox
+                checked={informationDeclaration}
+                onChange={(event) => {
+                  setInformationDeclaration(event.target.checked);
+                  if (event.target.checked) setDeclarationError(null);
+                }}
+                required
+                wrapperClassName="border-0 bg-transparent px-0 py-1"
+                label={
+                  <span className="text-sm leading-relaxed text-doqyn-muted">
+                    Declaro que as informações fornecidas são verdadeiras e que aceito o convite
+                    para acessar a empresa informada.
+                  </span>
+                }
+                description={
+                  declarationError ? (
+                    <span className="form-error text-xs">{declarationError}</span>
+                  ) : undefined
+                }
+              />
+
+              <Checkbox
+                checked={consent}
+                onChange={(event) => setConsent(event.target.checked)}
+                required
+                wrapperClassName="border-0 bg-transparent px-0 py-1"
+                label={
+                  <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
+                }
+              />
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <Link
+                to="/login"
+                className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
+              >
+                Já tenho conta
+              </Link>
+              <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
+                Revisar e aceitar
+              </Button>
+            </div>
+          </form>
+
+          <ReviewBeforeSubmitDialog
+            open={reviewOpen}
+            title={ACCEPT_INVITE_REVIEW_COPY.title}
+            description={ACCEPT_INVITE_REVIEW_COPY.description}
+            sections={reviewSections}
+            submitting={submitting}
+            confirmLabel={ACCEPT_INVITE_REVIEW_COPY.confirmLabel}
+            onCancel={() => {
+              if (!submitting) setReviewOpen(false);
+            }}
+            onEdit={() => {
+              if (!submitting) setReviewOpen(false);
+            }}
+            onConfirm={handleConfirmSubmit}
+          />
+        </>
+      )}
+    </>
   );
 }
 

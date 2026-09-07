@@ -128,9 +128,7 @@ export function buildAcceptInviteReviewSections(
       title: 'Empresa',
       fields: [
         { label: 'Empresa', value: safeDisplayValue(options.tenantDisplayName) },
-        ...(options.tenantTaxIdMasked
-          ? [{ label: 'CNPJ', value: options.tenantTaxIdMasked }]
-          : []),
+        ...(options.tenantTaxIdMasked ? [{ label: 'CNPJ', value: options.tenantTaxIdMasked }] : []),
       ],
     },
     {
@@ -139,9 +137,7 @@ export function buildAcceptInviteReviewSections(
         { label: 'Nome', value: safeDisplayValue(values.firstName) },
         { label: 'Sobrenome', value: safeDisplayValue(values.lastName) },
         { label: 'E-mail', value: safeDisplayValue(options.email) },
-        ...(options.requiresPassword
-          ? [{ label: PASSWORD_REVIEW_LABEL, value: '••••••••' }]
-          : []),
+        ...(options.requiresPassword ? [{ label: PASSWORD_REVIEW_LABEL, value: '••••••••' }] : []),
         ...(options.requiresWhatsapp
           ? [{ label: 'WhatsApp', value: formatPhone(values.whatsapp) }]
           : []),

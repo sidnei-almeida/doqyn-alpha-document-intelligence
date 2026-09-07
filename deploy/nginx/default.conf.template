@@ -70,6 +70,17 @@ server {
 
   client_max_body_size 30m;
   root /usr/share/nginx/html;
+
+  # O nginx não conhece `.mjs` e o serve como `application/octet-stream`. O navegador recusa
+  # módulo ES com esse tipo, e o pdf.js cai no "fake worker": renderiza na thread principal.
+  #
+  # Resolvido por `location`, e não por um bloco `types` — este SUBSTITUI o mapa inteiro de tipos
+  # em vez de acrescentar. Declarar só o `mjs` apagava `text/html` junto, e o navegador passava a
+  # BAIXAR o index.html em vez de abrir o app.
+  location ~ \.mjs$ {
+    default_type application/javascript;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+  }
   index index.html;
 
   # Métricas Prometheus — apenas rede interna (scrape direto no container API).

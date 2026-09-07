@@ -8,7 +8,7 @@ export type WorkspacePageHeaderProps = {
   /** Rótulo curto acima do título (ex.: Governança). */
   eyebrow?: string;
   title: ReactNode;
-  subtitle?: string;
+  subtitle?: ReactNode;
   /** Metadado discreto abaixo do subtítulo (ex.: contagem de arquivos). */
   meta?: ReactNode;
   /** Elemento ao lado do título (ex.: chevron decorativo). */

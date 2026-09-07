@@ -5,12 +5,12 @@ import type {
   RetrievedChunk,
 } from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
+import { limitFileNameLength, sanitizeFileNameSegment } from '../utils/sanitizeFileName.js';
 import {
-  ensurePdfExtension,
-  limitFileNameLength,
-  sanitizeFileNameSegment,
-} from '../utils/sanitizeFileName.js';
-import { stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore } from '../../../shared/storageFileName.js';
+  ensureDocumentExtension,
+  extensionFromFileName,
+  stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore,
+} from '../../../shared/storageFileName.js';
 import { normalizeDate } from './documentValidators.js';
 import {
   enrichMetadataWithPartyHeuristics,
@@ -70,7 +70,9 @@ function looksLikeProperName(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length < 3) return false;
   if (/\b(LTDA|LTDA\.|S\.A\.|SA|ME|EPP|EIRELI|INC|LLC)\b/i.test(trimmed)) return true;
-  if (/^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)+$/.test(trimmed)) {
+  if (
+    /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)+$/.test(trimmed)
+  ) {
     return true;
   }
   return (
@@ -86,14 +88,17 @@ function isGenericTitleValue(value: string, className: string): boolean {
 
   const upperRatio =
     value.replace(/[^A-Za-zÀ-ÿ]/g, '').length > 0
-      ? (value.replace(/[^A-ZÀ-Ÿ]/g, '').length / value.replace(/[^A-Za-zÀ-ÿ]/g, '').length)
+      ? value.replace(/[^A-ZÀ-Ÿ]/g, '').length / value.replace(/[^A-Za-zÀ-ÿ]/g, '').length
       : 0;
 
   if (value.length > 36 && upperRatio > 0.75 && !looksLikeProperName(value)) {
     return true;
   }
 
-  if (GENERIC_TITLE_PATTERNS.some((pattern) => pattern.test(value)) && !looksLikeProperName(value)) {
+  if (
+    GENERIC_TITLE_PATTERNS.some((pattern) => pattern.test(value)) &&
+    !looksLikeProperName(value)
+  ) {
     return true;
   }
 
@@ -109,10 +114,7 @@ const PARTY_METADATA_KEYS = new Set([
   'beneficiario',
 ]);
 
-function formatFieldValueForName(
-  key: string,
-  field: ExtractedMetadataField | undefined,
-): string {
+function formatFieldValueForName(key: string, field: ExtractedMetadataField | undefined): string {
   const value = getFieldDisplayValue(key, field);
 
   if (!value) {
@@ -135,7 +137,6 @@ function formatFieldValueForName(
 
   return sanitizeFileNameSegment(value, 'Documento');
 }
-
 
 /**
  * Marcadores de campo ausente produzidos por `formatFieldValueForName`.
@@ -165,7 +166,9 @@ function collapseRepeatedSegmentRuns(segments: string[]): string[] {
     let index = 0;
     while (index + size * 2 <= result.length) {
       const first = result.slice(index, index + size).map((value) => value.toLowerCase());
-      const second = result.slice(index + size, index + size * 2).map((value) => value.toLowerCase());
+      const second = result
+        .slice(index + size, index + size * 2)
+        .map((value) => value.toLowerCase());
 
       if (first.join('_') === second.join('_')) {
         result.splice(index + size, size);
@@ -296,9 +299,12 @@ function buildRichFallbackName(input: {
     : sanitizeFileNameSegment(input.selectedClass.name.split(' ')[0] ?? 'Documento', 'Documento');
 
   const version = normalizeVersion(input.version);
-  const parts = [prefix, 'SemPartesIdentificadas', data !== 'sem_data' ? data : null, `v${version}`].filter(
-    Boolean,
-  ) as string[];
+  const parts = [
+    prefix,
+    'SemPartesIdentificadas',
+    data !== 'sem_data' ? data : null,
+    `v${version}`,
+  ].filter(Boolean) as string[];
 
   return parts.join('_');
 }
@@ -308,7 +314,11 @@ function buildDisambiguatedBaseName(
   metadata: Record<string, ExtractedMetadataField>,
 ): string {
   if (isConfidentialityClassRule(selectedClass)) {
-    const reveladora = partySegment('parte_reveladora', metadata.parte_reveladora, selectedClass.name);
+    const reveladora = partySegment(
+      'parte_reveladora',
+      metadata.parte_reveladora,
+      selectedClass.name,
+    );
     const receptora = partySegment('parte_receptora', metadata.parte_receptora, selectedClass.name);
     const data = formatFieldValueForName('data_assinatura', metadata.data_assinatura);
 
@@ -340,7 +350,10 @@ function buildDisambiguatedBaseName(
       ? formatFieldValueForName('data_assinatura', metadata.data_assinatura)
       : formatFieldValueForName('data_emissao', metadata.data_emissao);
 
-  const typePrefix = sanitizeFileNameSegment(selectedClass.name.split(' ')[0] ?? 'Documento', 'Documento');
+  const typePrefix = sanitizeFileNameSegment(
+    selectedClass.name.split(' ')[0] ?? 'Documento',
+    'Documento',
+  );
   const parts = [typePrefix];
 
   if (fornecedor && fornecedor !== 'Documento') parts.push(fornecedor);
@@ -463,7 +476,6 @@ export function stripSensitiveIdentifiersFromFileName(fileName: string): string 
   return stripSensitiveIdentifiersFromFileNameCore(fileName);
 }
 
-
 /**
  * Nome a partir dos papéis que o modelo entendeu do documento.
  *
@@ -531,6 +543,25 @@ function buildNameFromRoles(roles: DocumentNamingRoles | undefined): string | nu
   return parts.join('_');
 }
 
+/**
+ * Caixa alta no nome que a IA propõe — e só nele.
+ *
+ * O nome gerado vinha com a caixa que o documento usava, então dois arquivos da
+ * mesma classe apareciam como `Contrato_Talha_Sul_...` e `CONTRATO_TALHA_SUL_...`
+ * lado a lado, conforme o texto de origem. Caixa alta separa à primeira vista o
+ * que o sistema nomeou do que chegou com o nome de quem enviou, e tira a
+ * variação que não significava nada.
+ *
+ * A extensão fica de fora: `.PDF` não acrescenta nada e faz o arquivo parecer
+ * vindo de outro sistema. Os segmentos já saem sem acento de
+ * `sanitizeFileNameSegment`, então não há caractere que mude de forma aqui.
+ */
+function upperCaseStem(fileName: string): string {
+  const lastDot = fileName.lastIndexOf('.');
+  if (lastDot <= 0) return fileName.toUpperCase();
+  return `${fileName.slice(0, lastDot).toUpperCase()}${fileName.slice(lastDot).toLowerCase()}`;
+}
+
 export function generateRecommendedFileName(input: {
   originalFileName: string;
   selectedClass: DocumentClassRule;
@@ -549,6 +580,18 @@ export function generateRecommendedFileName(input: {
 
   const fromRoles = buildNameFromRoles(input.namingRoles);
 
+  /**
+   * O que o modelo entendeu vence a classe quando ele foi específico.
+   *
+   * A classe é a pasta, não o tipo: uma procuração arquivada em Jurídico
+   * continua sendo uma procuração. O resgate abaixo existe para NDA que saiu
+   * sem as partes, e passava por cima de nome bom — `PROCURACAO_OTAVIO_PILAR_
+   * BANDEIRA_NETO_SOLANGE_FERRARI_DUPRAT_2026-04-16` virava `NDA_2026-04-16`,
+   * porque a procuração não tem `parte_reveladora` para o teste encontrar.
+   * Tipo mais sujeito é evidência suficiente de que o modelo leu o documento.
+   */
+  const rolesNameIsSpecific = Boolean(fromRoles) && (input.namingRoles?.sujeitos?.length ?? 0) > 0;
+
   let name =
     fromRoles ??
     applyNamingTemplate({
@@ -565,13 +608,17 @@ export function generateRecommendedFileName(input: {
     !isBareGenericFileName(disambiguated) &&
     meaningfulNameSegments(disambiguated).length >= meaningfulNameSegments(name).length;
 
-  if (templateIsWeak || disambiguatedIsBetter) {
+  if (!rolesNameIsSpecific && (templateIsWeak || disambiguatedIsBetter)) {
     if (!isBareGenericFileName(disambiguated)) {
       name = disambiguated;
     }
   }
 
-  if (isConfidentialityClassRule(input.selectedClass) && !nameHasPartyContext(name, metadata)) {
+  if (
+    !rolesNameIsSpecific &&
+    isConfidentialityClassRule(input.selectedClass) &&
+    !nameHasPartyContext(name, metadata)
+  ) {
     if (!isBareGenericFileName(disambiguated)) {
       name = disambiguated;
     } else {
@@ -589,10 +636,21 @@ export function generateRecommendedFileName(input: {
     name = buildRichFallbackName({ ...input, metadata });
   }
 
-  const fileName = ensurePdfExtension(`${name}.pdf`.replace(/\.pdf\.pdf$/i, '.pdf'));
+  // A extensão vem do arquivo que chegou, não é `.pdf` fixa. Imagem é entrada de
+  // primeira classe desde que o OCR passou a ler foto de documento, e um `.png`
+  // renomeado para `.pdf` fica com o nome mentindo sobre o próprio conteúdo.
+  const extension = extensionFromFileName(input.originalFileName);
+  const fileName = ensureDocumentExtension(name, extension);
   const limited = limitFileNameLength(fileName);
   if (input.preventSensitiveDataInFileName === false) {
-    return limited;
+    return upperCaseStem(limited);
   }
-  return limitFileNameLength(stripSensitiveIdentifiersFromFileName(limited));
+  return upperCaseStem(limitFileNameLength(stripSensitiveIdentifiersFromFileName(limited)));
 }
+
+/**
+ * Mesmo teste, exportado sob nome que diz de onde o sujeito vem. A triagem da extração precisa
+ * saber se `naming.sujeitos` trouxe entidade ou só rótulo, e duplicar a lista de termos genéricos
+ * garantiria que as duas cópias divergissem na primeira vez que alguém acrescentasse um termo.
+ */
+export { isUsableSubject as isUsableNamingSubject };

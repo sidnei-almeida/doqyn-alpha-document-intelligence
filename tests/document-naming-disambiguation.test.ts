@@ -6,7 +6,10 @@ import { describe, it } from 'node:test';
 import { generateRecommendedFileName } from '../server/ai/services/documentNaming.js';
 import { enrichMetadataWithPartyHeuristics } from '../server/ai/utils/partyMetadataHeuristics.js';
 import { isValidPartyName } from '../server/ai/utils/partyNameValidation.js';
-import type { DocumentClassRule, ExtractedMetadataField } from '../server/ai/types/documentAi.types.js';
+import type {
+  DocumentClassRule,
+  ExtractedMetadataField,
+} from '../server/ai/types/documentAi.types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -105,10 +108,7 @@ describe('nomenclatura inteligente de documentos', () => {
       originalFileName: 'nda.pdf',
       selectedClass: ndaClass,
       metadata: {
-        titulo: field(
-          'titulo',
-          'ACORDO DE CONFIDENCIALIDADE NAO CONCORRENCIA NAO ALICIAMENTO',
-        ),
+        titulo: field('titulo', 'ACORDO DE CONFIDENCIALIDADE NAO CONCORRENCIA NAO ALICIAMENTO'),
       },
       version: 'v1',
     });

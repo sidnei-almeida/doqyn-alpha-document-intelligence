@@ -3,8 +3,7 @@ import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { getDb } from '../db/mongoClient.js';
 import type { MongoDocumentUploadApproval } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
-import { isDocumentAdmin, loadDocumentAccessContext, userHasDocumentGroupAccess } from '../tenancy/documentAccess.js';
-import { userHasGovernanceCategoryPermission } from '../tenancy/governanceAccessIndex.js';
+import { isDocumentAdmin, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import { resolveCategoryAccessGroupIds } from './documentAccessRulesService.js';
 import { getMongoClassAndRule } from './documentRulesService.js';
@@ -15,6 +14,8 @@ import {
   type ConfirmAnalysisInput,
 } from './confirmAnalysisService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { assertCanSubmitToCategory } from './categoryUploadPermission.js';
+import { resolveRequestForFulfillment } from './requests/documentRequestService.js';
 
 function uploadApprovalsCollection() {
   return getDb().then((db) =>
@@ -28,37 +29,6 @@ function resolveSubmitterDisplayName(user: AuthUser): string {
   return user.name?.trim() || user.email;
 }
 
-function assertCanSubmitUpload(input: {
-  user: AuthUser;
-  classId: string;
-  updateGroupIds: string[];
-  memberGroupIds: string[];
-  governanceIndex: Awaited<ReturnType<typeof loadDocumentAccessContext>>['governanceIndex'];
-}): void {
-  if (isDocumentAdmin(input.user)) return;
-
-  if (!input.updateGroupIds.length) return;
-
-  if (userHasDocumentGroupAccess(input.updateGroupIds, input.memberGroupIds)) return;
-
-  if (
-    userHasGovernanceCategoryPermission(
-      input.governanceIndex,
-      input.classId,
-      input.memberGroupIds,
-      'update',
-    )
-  ) {
-    return;
-  }
-
-  throw new ServiceError(
-    'Você não tem permissão para enviar documentos nesta categoria.',
-    'DOCUMENT_UPLOAD_DENIED',
-    403,
-  );
-}
-
 export async function submitDocumentUploadForApproval(input: {
   payload: ConfirmAnalysisInput;
   user: AuthUser;
@@ -67,7 +37,25 @@ export async function submitDocumentUploadForApproval(input: {
   const data = confirmAnalysisSchema.parse(input.payload);
   const tenantId = input.ctx.tenantId;
 
-  if (!data.classification.classId) {
+  /**
+   * A categoria efetiva, na mesma ordem do confirm: pedido > escolha humana > IA.
+   *
+   * Este caminho olhava só para a classe da IA, e com isso o resgate manual — que existe
+   * justamente para o documento que a IA não classificou — não funcionava para quem depende de
+   * aprovação: a pessoa escolhia a categoria na revisão e recebia "Classificação inválida". Um
+   * envio que cumpre pedido cai no mesmo buraco, e nele a escolha nem é de quem envia.
+   *
+   * O par desta decisão está em `confirmAnalysisService`; mudar uma sem a outra faz o envio
+   * aprovado cair em categoria diferente da que a revisão mostrou.
+   */
+  const fulfilledRequest = data.documentRequestId?.trim()
+    ? await resolveRequestForFulfillment(tenantId, input.ctx.userId, data.documentRequestId.trim())
+    : null;
+
+  const effectiveClassId =
+    fulfilledRequest?.categoryId ?? data.manualClassId?.trim() ?? data.classification.classId;
+
+  if (!effectiveClassId) {
     throw new ConfirmAnalysisError(
       'Classificação inválida. Não é possível enviar sem uma classe identificada.',
       'INVALID_CLASSIFICATION',
@@ -85,7 +73,7 @@ export async function submitDocumentUploadForApproval(input: {
 
   const classAndRule = await getMongoClassAndRule({
     companyId: tenantId,
-    classId: data.classification.classId,
+    classId: effectiveClassId,
     ownerUserId: input.ctx.userId,
   });
 
@@ -109,13 +97,27 @@ export async function submitDocumentUploadForApproval(input: {
     membershipId: input.ctx.membershipId,
   });
 
-  assertCanSubmitUpload({
-    user: input.user,
-    classId: data.classification.classId,
-    updateGroupIds,
-    memberGroupIds: accessCtx.memberGroupIds,
-    governanceIndex: accessCtx.governanceIndex,
-  });
+  /**
+   * Cumprir um pedido dispensa a permissão de envio na categoria de destino.
+   *
+   * **Pedir é o ato de autorização.** Quem pediu escolheu a categoria e, ao pedir, autorizou aquele
+   * documento a entrar ali. Exigir que o remetente também alcance a categoria mataria o caso que
+   * originou a funcionalidade: o RH pede o comprovante ao funcionário, e o funcionário não tem — nem
+   * deve ter — permissão de enviar na categoria do RH.
+   *
+   * O que não se dispensa é o resto: a categoria continua sendo a do pedido, o pedido tem de ser
+   * dele e estar aberto (`resolveRequestForFulfillment` já recusou o contrário), e o envio segue
+   * para a mesma fila de aprovação.
+   */
+  if (!fulfilledRequest) {
+    assertCanSubmitToCategory({
+      user: input.user,
+      classId: effectiveClassId,
+      updateGroupIds,
+      memberGroupIds: accessCtx.memberGroupIds,
+      governanceIndex: accessCtx.governanceIndex,
+    });
+  }
 
   const collection = await uploadApprovalsCollection();
   const existingPending = await collection.findOne({
@@ -144,8 +146,8 @@ export async function submitDocumentUploadForApproval(input: {
     },
     payload: data as unknown as Record<string, unknown>,
     originalFileName: data.originalFileName,
-    classId: data.classification.classId,
-    className: data.classification.className ?? classAndRule.docClass.name,
+    classId: effectiveClassId,
+    className: classAndRule.docClass.name,
     fileHash: data.fileHash,
     jobId: data.jobId,
     createdAt: now,

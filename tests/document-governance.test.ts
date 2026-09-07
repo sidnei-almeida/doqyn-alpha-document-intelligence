@@ -7,11 +7,18 @@ function hasAnyPermission(permissions: MongoDocumentAccessPermissions): boolean 
 }
 
 function permissionsFromRule(
-  rules: Array<{ groupId: string; categoryId: string; permissions: MongoDocumentAccessPermissions; active: boolean }>,
+  rules: Array<{
+    groupId: string;
+    categoryId: string;
+    permissions: MongoDocumentAccessPermissions;
+    active: boolean;
+  }>,
   groupId: string,
   categoryId: string,
 ): MongoDocumentAccessPermissions {
-  const rule = rules.find((item) => item.groupId === groupId && item.categoryId === categoryId && item.active);
+  const rule = rules.find(
+    (item) => item.groupId === groupId && item.categoryId === categoryId && item.active,
+  );
   return (
     rule?.permissions ?? {
       view: false,

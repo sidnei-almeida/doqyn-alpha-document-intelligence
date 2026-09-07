@@ -34,7 +34,7 @@ describe('nome do arquivo quando faltam metadados', () => {
 
     // Antes saía `sem_data_v1_0.pdf`: o marcador tem underscore e escapava do filtro de segmento.
     assert.ok(!/sem_data/i.test(name), `nome não deve conter marcador de ausência: ${name}`);
-    assert.ok(name.includes('Invoice'), `nome deve preservar o documento original: ${name}`);
+    assert.match(name, /Invoice/i, `nome deve preservar o documento original: ${name}`);
   });
 
   it('não repete o mesmo bloco de segmentos', () => {
@@ -48,7 +48,10 @@ describe('nome do arquivo quando faltam metadados', () => {
       version: 'v1.0',
     });
 
-    const segments = name.replace(/\.pdf$/i, '').toLowerCase().split('_');
+    const segments = name
+      .replace(/\.pdf$/i, '')
+      .toLowerCase()
+      .split('_');
     const firstRun = segments.slice(0, 3).join('_');
     assert.ok(
       !segments.slice(3).join('_').startsWith(firstRun),

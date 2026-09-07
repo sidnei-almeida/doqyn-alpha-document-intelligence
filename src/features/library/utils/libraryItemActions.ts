@@ -30,7 +30,6 @@ export type FileItemActionHandlers = {
   onPreview: (doc: DocumentListItem) => void;
   onDownload: (doc: DocumentListItem) => void;
   onTracking: (doc: DocumentListItem) => void;
-  onRename?: (doc: DocumentListItem) => void;
   onMove?: (doc: DocumentListItem) => void;
   onShare?: (doc: DocumentListItem) => void;
   onRequestSignature?: (doc: DocumentListItem) => void;
@@ -53,7 +52,6 @@ export function buildFileItemActions(
   return [
     { label: 'Abrir', onClick: () => handlers.onOpen(doc), hidden: !canPreview },
     { label: 'Visualizar', onClick: () => handlers.onPreview(doc), hidden: !canPreview },
-    { label: 'Renomear', onClick: () => handlers.onRename?.(doc), hidden: !handlers.onRename },
     { label: 'Mover para pasta', onClick: () => handlers.onMove?.(doc), hidden: !handlers.onMove },
     { label: 'Compartilhar', onClick: () => handlers.onShare?.(doc), hidden: !handlers.onShare },
     {

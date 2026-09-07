@@ -278,7 +278,7 @@ export function UpdateDocumentVersionDrawer({
           />
         ) : (
           <div className="flex shrink-0 items-center justify-between border-b border-doqyn-border-subtle px-4 py-3">
-            <p className="text-[12px] font-semibold text-doqyn-text">Atualizar documento</p>
+            <p className="register-label text-doqyn-subtle">Atualizar documento</p>
             <button
               type="button"
               onClick={handleClose}
@@ -292,128 +292,130 @@ export function UpdateDocumentVersionDrawer({
         )
       }
     >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {phase === 'loading' && (
-            <p className="px-5 py-8 text-center text-[13px] text-doqyn-muted">
-              Carregando documento e histórico de versões...
-            </p>
-          )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {phase === 'loading' && (
+          <p className="px-5 py-8 text-center text-caption text-doqyn-muted">
+            Carregando documento e histórico de versões…
+          </p>
+        )}
 
-          {phase === 'error' && (
-            <div className="px-5 py-4">
-              <div className="rounded-xl border border-doqyn-danger/30 bg-doqyn-danger/5 p-4">
-                <p className="text-[13px] font-medium text-doqyn-danger">Não foi possível continuar</p>
-                <p className="mt-1 text-[12px] text-doqyn-text">
-                  {errorMessage ?? 'Erro desconhecido.'}
-                </p>
-              </div>
+        {phase === 'error' && (
+          <div className="px-5 py-4">
+            <div className="notice-rule border-l-doqyn-danger py-1">
+              <p className="text-label font-medium text-doqyn-danger">Não foi possível continuar</p>
+              <p className="mt-1 text-caption text-doqyn-muted">
+                {errorMessage ?? 'Erro desconhecido.'}
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
-          {phase === 'success' && successResult && (
-            <div className="px-5 py-4">
-              <div
-                className="rounded-xl border border-doqyn-success/30 bg-doqyn-success/5 p-4"
-                data-testid="update-version-success"
-              >
-                <p className="text-[13px] font-medium text-doqyn-success">Nova versão criada</p>
-                <p className="mt-1 text-[12px] text-doqyn-text">
-                  O documento foi atualizado para{' '}
-                  <span className="font-medium">{successResult.versionLabel}</span>. Versões anteriores
-                  permanecem no histórico.
-                </p>
-              </div>
+        {phase === 'success' && successResult && (
+          <div className="px-5 py-4">
+            <div
+              className="notice-rule border-l-doqyn-success py-1"
+              data-testid="update-version-success"
+            >
+              <p className="text-label font-medium text-doqyn-success">Nova versão criada</p>
+              <p className="mt-1 text-caption text-doqyn-muted">
+                O documento foi atualizado para{' '}
+                <span className="font-mono text-micro tabular-nums text-doqyn-text">
+                  {successResult.versionLabel}
+                </span>
+                .
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
-          {detail && !['loading', 'success'].includes(phase) && phase !== 'error' && (
-            <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              {phase === 'review' || phase === 'confirming' ? (
-                analysis && (
-                  <NewVersionReviewStep
-                    fileName={analysis.file.name}
-                    metadata={analysis.metadata}
-                    comparisonRows={comparisonRows}
+        {detail && !['loading', 'success'].includes(phase) && phase !== 'error' && (
+          <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            {phase === 'review' || phase === 'confirming' ? (
+              analysis && (
+                <NewVersionReviewStep
+                  fileName={analysis.file.name}
+                  metadata={analysis.metadata}
+                  comparisonRows={comparisonRows}
+                  currentVersionLabel={currentVersionLabel}
+                  nextVersionLabel={nextVersionLabel}
+                  requiresReview={requiresReview ?? false}
+                  reviewChecked={reviewChecked}
+                  onReviewCheckedChange={setReviewChecked}
+                />
+              )
+            ) : (
+              <div className="flex min-h-full flex-col gap-4">
+                <div className="shrink-0 space-y-4">
+                  <CurrentDocumentSummaryCard
+                    document={detail.document}
+                    currentVersionLabel={currentVersionLabel}
+                    compact
+                  />
+                  <CurrentMetadataPanel fields={metadataFields} compact />
+                  <VersionHistorySummary
                     currentVersionLabel={currentVersionLabel}
                     nextVersionLabel={nextVersionLabel}
-                    requiresReview={requiresReview ?? false}
-                    reviewChecked={reviewChecked}
-                    onReviewCheckedChange={setReviewChecked}
+                    versions={versions.map((version) => ({
+                      ...version,
+                      isCurrent:
+                        version.isCurrent ??
+                        (version.versionId === detail.latestVersion?.versionId ||
+                          version.versionLabel === currentVersionLabel),
+                    }))}
+                    compact
                   />
-                )
-              ) : (
-                <div className="flex min-h-full flex-col gap-3">
-                  <div className="shrink-0 space-y-3">
-                    <CurrentDocumentSummaryCard
-                      document={detail.document}
-                      currentVersionLabel={currentVersionLabel}
-                      compact
-                    />
-                    <CurrentMetadataPanel fields={metadataFields} compact />
-                    <VersionHistorySummary
-                      currentVersionLabel={currentVersionLabel}
-                      nextVersionLabel={nextVersionLabel}
-                      versions={versions.map((version) => ({
-                        ...version,
-                        isCurrent:
-                          version.isCurrent ??
-                          (version.versionId === detail.latestVersion?.versionId ||
-                            version.versionLabel === currentVersionLabel),
-                      }))}
-                      compact
-                    />
-                  </div>
-
-                  {phase === 'analyzing' && selectedFile ? (
-                    <NewVersionAnalyzingPanel
-                      fileName={selectedFile.name}
-                      fileSize={selectedFile.size}
-                      currentVersionLabel={currentVersionLabel}
-                      nextVersionLabel={nextVersionLabel}
-                      fillHeight
-                    />
-                  ) : (
-                    <NewVersionUploadDropzone
-                      nextVersionLabel={nextVersionLabel}
-                      disabled={!canUpdate}
-                      selectedFile={selectedFile}
-                      fillHeight
-                      onFileSelected={handleFileSelected}
-                      onClearFile={() => {
-                        setSelectedFile(null);
-                        setPhase('ready');
-                      }}
-                      onValidationError={(message) => toast.error(message)}
-                    />
-                  )}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
 
-        <div className="shrink-0 border-t border-doqyn-border-subtle px-4 py-3">
-          <ConfirmNewVersionActions
-            phase={
-              phase === 'ready'
-                ? 'ready'
-                : phase === 'analyzing'
-                  ? 'analyzing'
-                  : phase === 'review'
-                    ? 'review'
-                    : phase === 'confirming'
-                      ? 'confirming'
-                      : phase === 'success'
-                        ? 'success'
-                        : 'error'
-            }
-            nextVersionLabel={nextVersionLabel}
-            canConfirm={canConfirm}
-            onConfirm={() => void handleConfirm()}
-            onClose={handleClose}
-            onRetry={resetFlow}
-          />
-        </div>
+                {phase === 'analyzing' && selectedFile ? (
+                  <NewVersionAnalyzingPanel
+                    fileName={selectedFile.name}
+                    fileSize={selectedFile.size}
+                    currentVersionLabel={currentVersionLabel}
+                    nextVersionLabel={nextVersionLabel}
+                    fillHeight
+                  />
+                ) : (
+                  <NewVersionUploadDropzone
+                    nextVersionLabel={nextVersionLabel}
+                    disabled={!canUpdate}
+                    selectedFile={selectedFile}
+                    fillHeight
+                    onFileSelected={handleFileSelected}
+                    onClearFile={() => {
+                      setSelectedFile(null);
+                      setPhase('ready');
+                    }}
+                    onValidationError={(message) => toast.error(message)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-doqyn-border-subtle px-5 py-3">
+        <ConfirmNewVersionActions
+          phase={
+            phase === 'ready'
+              ? 'ready'
+              : phase === 'analyzing'
+                ? 'analyzing'
+                : phase === 'review'
+                  ? 'review'
+                  : phase === 'confirming'
+                    ? 'confirming'
+                    : phase === 'success'
+                      ? 'success'
+                      : 'error'
+          }
+          nextVersionLabel={nextVersionLabel}
+          canConfirm={canConfirm}
+          onConfirm={() => void handleConfirm()}
+          onClose={handleClose}
+          onRetry={resetFlow}
+        />
+      </div>
     </WorkspaceSideDrawer>
   );
 }

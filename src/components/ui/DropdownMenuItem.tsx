@@ -13,7 +13,10 @@ export type DropdownMenuItemProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export const DropdownMenuItem = forwardRef<HTMLButtonElement, DropdownMenuItemProps>(
-  ({ selected = false, tone = 'default', itemRole = 'option', className, children, ...props }, ref) => (
+  (
+    { selected = false, tone = 'default', itemRole = 'option', className, children, ...props },
+    ref,
+  ) => (
     <button
       ref={ref}
       type="button"

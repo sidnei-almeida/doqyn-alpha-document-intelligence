@@ -26,7 +26,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   });
 
   it('/rules (vistas de acesso) não renderiza gestão de membros', () => {
-    const card = readSrc('features/rules/components/access/CategoryAccessCard.tsx');
+    const card = readSrc('features/rules/components/board/AccessBoard.tsx');
     const popover = readSrc('features/rules/components/access/PermissionPopover.tsx');
     for (const source of [card, popover]) {
       assert.equal(source.includes('Adicionar membro'), false);
@@ -37,7 +37,9 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
   it('/rules (GovernanceDetailDialog) orienta gestão de membros em Usuários', () => {
     const source = readSrc('features/rules/components/governance/GovernanceDetailDialog.tsx');
-    assert.ok(source.includes('Gerencie membros'));
+    // A frase virou link no meio do texto — "gerenciar em Usuários" — em vez de instrução solta.
+    assert.ok(source.includes('gerenciar em Usuários'));
+    assert.ok(source.includes('to="/users"'));
     assert.equal(source.includes('Adicionar membro'), false);
     assert.equal(source.includes('onAddMember'), false);
     assert.equal(source.includes('onRemoveMember'), false);
@@ -84,10 +86,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.equal(accessGroupIdsConflictWithDocumentGroups(accessGroupIds, documentGroupIds), false);
 
     const polluted = [...accessGroupIds, 'group_administrativo'];
-    assert.equal(
-      accessGroupIdsConflictWithDocumentGroups(polluted, documentGroupIds),
-      true,
-    );
+    assert.equal(accessGroupIdsConflictWithDocumentGroups(polluted, documentGroupIds), true);
   });
 
   it('usersApi.updateDocumentGroups usa PUT /company-members/:id/groups com documentGroupIds', () => {
@@ -130,11 +129,16 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
     assert.deepEqual(form.accessGroupIds, ['group_juridico']);
     assert.deepEqual(form.documentGroupIds, ['group_administrativo']);
-    assert.equal(accessGroupIdsConflictWithDocumentGroups(form.accessGroupIds, form.documentGroupIds), false);
+    assert.equal(
+      accessGroupIdsConflictWithDocumentGroups(form.accessGroupIds, form.documentGroupIds),
+      false,
+    );
   });
 
   it('/rules reflete contador de membros read-only a partir de groupIds documentais', () => {
-    const groups = [{ id: 'group_administrativo', name: 'Administrativo', color: 'blue' as const, active: true }];
+    const groups = [
+      { id: 'group_administrativo', name: 'Administrativo', color: 'blue' as const, active: true },
+    ];
     const members = [
       {
         id: 'm1',

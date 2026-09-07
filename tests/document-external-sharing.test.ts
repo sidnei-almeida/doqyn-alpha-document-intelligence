@@ -25,7 +25,7 @@ describe('document external sharing — modelo Mongo', () => {
     const types = read('server/db/types.ts');
     assert.ok(types.includes('MongoExternalDocumentShareGrant'));
     assert.ok(types.includes('inviteTokenHash'));
-    assert.ok(types.includes("status: ExternalDocumentShareGrantStatus"));
+    assert.ok(types.includes('status: ExternalDocumentShareGrantStatus'));
     assert.ok(types.includes('recipientPhoneNormalized'));
     assert.ok(types.includes('recipientPhoneMasked'));
   });
@@ -81,21 +81,35 @@ describe('document external sharing — segurança', () => {
 
 describe('document external sharing — API e ACL', () => {
   it('endpoints internos e públicos de external share', () => {
-    assert.ok(read('api/documents/[documentId]/external-shares.ts').includes('createDocumentExternalShareGrant'));
-    assert.ok(read('api/documents/[documentId]/external-shares/[shareId].ts').includes('revokeDocumentExternalShareGrant'));
+    assert.ok(
+      read('api/documents/[documentId]/external-shares.ts').includes(
+        'createDocumentExternalShareGrant',
+      ),
+    );
+    assert.ok(
+      read('api/documents/[documentId]/external-shares/[shareId].ts').includes(
+        'revokeDocumentExternalShareGrant',
+      ),
+    );
     assert.ok(
       read('api/documents/[documentId]/external-shares/[shareId]/regenerate-invite.ts').includes(
         'regenerateDocumentExternalShareGrant',
       ),
     );
     assert.ok(read('api/external-shares/[token]/accept.ts').includes('acceptExternalShareInvite'));
-    assert.ok(read('api/external-shares/[token]/document.ts').includes('getExternalShareDocumentDetail'));
-    assert.ok(read('api/external-shares/[token]/preview.ts').includes('getExternalSharePreviewManifest'));
-    assert.ok(read('api/external-shares/[token]/download.ts').includes('readExternalShareDocumentDownload'));
+    assert.ok(
+      read('api/external-shares/[token]/document.ts').includes('getExternalShareDocumentDetail'),
+    );
+    assert.ok(
+      read('api/external-shares/[token]/preview.ts').includes('getExternalSharePreviewManifest'),
+    );
+    assert.ok(
+      read('api/external-shares/[token]/download.ts').includes('readExternalShareDocumentDownload'),
+    );
   });
 
-  it('dev-server registra rotas externas', () => {
-    const devServer = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas externas', () => {
+    const devServer = read('server/apiServer.ts');
     assert.ok(devServer.includes('external-shares'));
     assert.ok(devServer.includes('external-shares/[token]/preview.js'));
     assert.ok(devServer.includes('regenerate-invite.js'));
@@ -162,7 +176,7 @@ describe('document external sharing — ativação do convite', () => {
       service.indexOf('export async function getExternalSharePortalPayload'),
       service.indexOf('export function buildExternalShareTrackingMetadata'),
     );
-    assert.equal(portalFn.includes('status: \'active\''), false);
+    assert.equal(portalFn.includes("status: 'active'"), false);
     assert.equal(portalFn.includes('touchAccess: true'), false);
     assert.ok(portalFn.includes('status: grant.status'));
   });
@@ -172,7 +186,7 @@ describe('document external sharing — ativação do convite', () => {
     assert.ok(acceptHandler.includes('acceptExternalShareInvite'));
     assert.ok(acceptHandler.includes('document.external_share_accepted'));
     assert.ok(acceptHandler.includes("req.method !== 'POST'"));
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
     assert.ok(devServer.includes('external-shares/[token]/accept.js'));
   });
 
@@ -197,7 +211,12 @@ describe('document external sharing — ativação do convite', () => {
 
   it('portal não autoaceita no carregamento', () => {
     const portal = read('src/features/external-share/ExternalSharePortalPage.tsx');
-    assert.equal(portal.includes('if (payload.status === \'pending\') {\n          await acceptExternalShareInvite'), false);
+    assert.equal(
+      portal.includes(
+        "if (payload.status === 'pending') {\n          await acceptExternalShareInvite",
+      ),
+      false,
+    );
     assert.ok(portal.includes('external-share-accept'));
     assert.ok(portal.includes("payload.status === 'active'"));
   });
@@ -205,31 +224,30 @@ describe('document external sharing — ativação do convite', () => {
   it('cliente chama POST /accept e não POST na raiz do token', () => {
     const api = read('src/features/sharing/api/externalShareApi.ts');
     assert.ok(api.includes('/accept'));
-    assert.equal(api.includes('`/api/external-shares/${encoded}`, { method: \'POST\' }'), false);
+    assert.equal(api.includes("`/api/external-shares/${encoded}`, { method: 'POST' }"), false);
   });
 });
 
 describe('document external sharing — UI', () => {
-  it('modal de compartilhar tem abas interna e externa', () => {
+  // As abas viraram passos: `c05b414` fez compartilhar e assinar caírem no mesmo fluxo, com
+  // `AudiencePicker` escolhendo o público antes de qualquer campo. "Convidado externo" é uma das
+  // opções do seletor, não mais uma aba paralela.
+  it('modal de compartilhar escolhe o público antes dos campos', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
-    assert.ok(modal.includes('Pessoas da empresa'));
-    assert.ok(modal.includes('Convidados externos'));
-    assert.ok(modal.includes('share-tab-internal'));
-    assert.ok(modal.includes('share-tab-external'));
-    assert.ok(modal.includes('external-share-email'));
-    assert.ok(modal.includes('external-share-can-download'));
-    assert.ok(modal.includes('ExternalInviteLinkField'));
-    assert.ok(modal.includes('external-share-invite-url'));
-    assert.ok(modal.includes('Compartilhe o link abaixo com o convidado'));
+    assert.ok(modal.includes('AudiencePicker'));
+    assert.ok(modal.includes('externalLabel='));
+    assert.ok(modal.includes('useStepFlow'));
+    assert.ok(modal.includes('createExternalShare'));
+    assert.ok(modal.includes('recipient.external'));
   });
 
   it('modal externo expõe badges de revogar e renovar com tooltip', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
-    assert.ok(modal.includes('ExternalShareActionBadge'));
-    assert.ok(modal.includes('Renovar'));
+    // As ações viraram itens de menu da própria linha do convite, em vez de badges soltos.
     assert.ok(modal.includes('Revogar'));
+    assert.ok(modal.includes('revokeExternalShare'));
     assert.ok(modal.includes('regenerateExternalShare'));
     assert.ok(api.includes('regenerate-invite'));
     assert.ok(hooks.includes('regenerateExternalShare'));
@@ -239,7 +257,9 @@ describe('document external sharing — UI', () => {
     const portal = read('src/features/external-share/ExternalSharePortalPage.tsx');
     const routes = read('src/app/routes.tsx');
     assert.ok(portal.includes('external-share-portal'));
-    assert.ok(portal.includes('DoqynLogo'));
+    // A marca do portal saiu para `GuestPortalShell`, compartilhada com o portal de assinatura.
+    assert.ok(portal.includes('GuestPortalShell'));
+    assert.ok(read('src/features/guest-portal/GuestPortalShell.tsx').includes('DoqynLogo'));
     assert.equal(portal.includes('Sidebar'), false);
     assert.equal(portal.includes('AppLayout'), false);
     assert.ok(routes.includes('/guest/share/:token'));
@@ -313,12 +333,22 @@ describe('document external sharing — telefone do convidado', () => {
     const modal = read('src/features/sharing/components/ShareDocumentModal.tsx');
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
-    assert.ok(modal.includes('WhatsappInput'));
-    assert.ok(modal.includes('Telefone / WhatsApp'));
-    assert.ok(modal.includes('external-share-phone'));
+    // O campo de telefone foi para `RecipientFlow`, a peça do destinatário que os três verbos
+    // (compartilhar, assinar, requisitar) montam.
+    assert.ok(modal.includes('RecipientFlow') || modal.includes('recipient.external'));
+    assert.ok(
+      read('src/features/documents/recipients/RecipientFlow.tsx').includes('WhatsappInput'),
+    );
+    assert.ok(
+      read('src/features/documents/recipients/RecipientFlow.tsx').includes(
+        'label="Telefone (opcional)"',
+      ),
+    );
+    assert.ok(read('src/features/documents/recipients/RecipientFlow.tsx').includes('phoneError'));
     assert.ok(modal.includes('recipientPhone'));
     assert.ok(modal.includes('isCompleteWhatsapp'));
-    assert.ok(modal.includes('recipientPhoneMasked'));
+    // O telefone volta mascarado do servidor, e é a API quem carrega essa forma.
+    assert.ok(api.includes('recipientPhoneMasked'));
     assert.ok(api.includes('recipientPhone'));
     assert.ok(hooks.includes('recipientPhone'));
   });

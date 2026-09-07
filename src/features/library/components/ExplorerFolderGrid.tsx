@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { ExplorerFolderCard } from './ExplorerFolderCard';
 import { ExplorerHomeSection } from './ExplorerHomeSection';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type ExplorerFolderGridProps = {
   folders: LibraryFolder[];
@@ -23,18 +24,19 @@ export function ExplorerFolderGrid({
   if (folders.length === 0) {
     return (
       <ExplorerHomeSection title="Pastas inteligentes" data-testid="explorer-folder-grid-empty">
-        <div className="explorer-folder-grid-empty rounded-xl px-6 py-10 text-center">
-          <p className="text-[14px] font-medium text-doqyn-text">
-            Nenhuma pasta inteligente configurada
-          </p>
-          <p className="mt-2 text-[12px] text-doqyn-muted">
-            Crie categorias em{' '}
-            <Link to="/rules" className="text-doqyn-accent-active hover:underline">
-              Regras
-            </Link>{' '}
-            para organizar documentos por classificação da IA.
-          </p>
-        </div>
+        <EmptyState
+          title="Nenhuma pasta inteligente configurada"
+          description={
+            <>
+              Crie categorias em{' '}
+              <Link to="/rules" className="text-doqyn-accent-active hover:underline">
+                Regras
+              </Link>{' '}
+              para organizar documentos por classificação da IA.
+            </>
+          }
+          className="py-10"
+        />
       </ExplorerHomeSection>
     );
   }
@@ -42,11 +44,13 @@ export function ExplorerFolderGrid({
   return (
     <ExplorerHomeSection title="Pastas inteligentes" data-testid="explorer-folder-grid">
       <div
+        // Registro, não mosaico: as pastas empilham como linhas de índice. Em
+        // tela larga viram duas colunas para não desperdiçar a metade direita,
+        // mas cada coluna continua sendo uma pilha de linhas — quatro colunas
+        // transformavam o fio de separação em célula de tabela quebrada.
         className={cn(
-          'grid gap-2',
-          viewMode === 'grid'
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-            : 'grid-cols-1',
+          'grid gap-x-10',
+          viewMode === 'grid' ? 'grid-cols-1 2xl:grid-cols-2' : 'grid-cols-1',
         )}
       >
         {folders.map((folder) => (

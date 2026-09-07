@@ -4,46 +4,46 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { SettingsCard } from './SettingsCard';
-import { SettingsRow, SettingsRowList } from './SettingsRow';
+import { CodeInput } from '@/features/email-verification/components/CodeInput';
+import { plural } from '@/lib/plural';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import {
   emailChangeApi,
   getEmailChangeErrorMessage,
   type RequestEmailChangeResponse,
 } from '../api/emailChangeApi';
 
+/** Segundos que faltam até `iso`, nunca negativo. */
+function secondsUntil(iso: string | undefined): number {
+  if (!iso) return 0;
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 1000));
+}
+
+/**
+ * Troca de e-mail é pedido, não campo: o endereço só muda depois que a pessoa prova ter acesso ao
+ * novo — pelos 6 dígitos aqui, ou pelo link do mesmo e-mail.
+ *
+ * O código existe porque o link sozinho obrigava quem lê o e-mail no celular a voltar ao
+ * computador com nada na mão. Os dois chegam na mesma mensagem.
+ */
 export function ChangeEmailCard() {
-  const { user, refreshUser } = useAuth();
+  const { user, tenant, refreshUser } = useAuth();
+  // Sugerir um endereço corporativo a quem tem conta pessoal é oferecer um exemplo que não
+  // se parece com o caso de uso dela.
+  const emailPlaceholder = isIndividualTenant(tenant?.tenantType)
+    ? 'voce@exemplo.com'
+    : 'voce@suaempresa.com.br';
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [devLink, setDevLink] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
   const statusQuery = useQuery({
     queryKey: ['email-change-status'],
     queryFn: async () => emailChangeApi.getStatus(),
   });
-
-  const requestMutation = useMutation({
-    mutationFn: (): Promise<RequestEmailChangeResponse> =>
-      emailChangeApi.request({
-        newEmail,
-        password,
-      }),
-    onSuccess: async (result: RequestEmailChangeResponse) => {
-      toast.success(result.message);
-      setPassword('');
-      setDevLink(result.confirmUrl ?? null);
-      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
-    },
-    onError: (error) => toast.error(getEmailChangeErrorMessage(error)),
-  });
-
-  useEffect(() => {
-    if (statusQuery.data?.pending) {
-      setNewEmail(statusQuery.data.newEmail);
-    }
-  }, [statusQuery.data]);
 
   const pendingStatus =
     statusQuery.data && statusQuery.data.pending === true && 'newEmail' in statusQuery.data
@@ -51,79 +51,173 @@ export function ChangeEmailCard() {
       : null;
   const pending = pendingStatus !== null;
 
+  function absorb(result: RequestEmailChangeResponse) {
+    toast.success(result.message);
+    setPassword('');
+    setCode('');
+    setDevCode(result.confirmCode ?? null);
+  }
+
+  const requestMutation = useMutation({
+    mutationFn: (): Promise<RequestEmailChangeResponse> =>
+      emailChangeApi.request({ newEmail, password }),
+    onSuccess: async (result) => {
+      absorb(result);
+      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
+    },
+    onError: (error) => toast.error(getEmailChangeErrorMessage(error)),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (): Promise<RequestEmailChangeResponse> => emailChangeApi.resend(),
+    onSuccess: async (result) => {
+      absorb(result);
+      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
+    },
+    onError: async (error) => {
+      toast.error(getEmailChangeErrorMessage(error));
+      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: (value: string) => emailChangeApi.confirmCode(value),
+    onSuccess: async (result) => {
+      toast.success(result.message);
+      setCode('');
+      setNewEmail('');
+      setDevCode(null);
+      // O endereço mudou na conta, e a sessão em memória ainda tem o antigo — sem isto o card
+      // continua anunciando "o endereço atual é" o que acabou de deixar de ser.
+      await refreshUser();
+      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
+    },
+    onError: async (error) => {
+      setCode('');
+      toast.error(getEmailChangeErrorMessage(error));
+      // A contagem de tentativas restantes vive no servidor; recarregá-la é o que mantém o aviso
+      // desta tela honesto depois de cada erro.
+      await queryClient.invalidateQueries({ queryKey: ['email-change-status'] });
+    },
+  });
+
+  useEffect(() => {
+    if (pendingStatus) {
+      setNewEmail(pendingStatus.newEmail);
+      setCooldown(secondsUntil(pendingStatus.canResendAt));
+    }
+  }, [pendingStatus]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  const attemptsLeft = pendingStatus?.attemptsLeft;
+  const blocked = attemptsLeft === 0;
+
   return (
-    <SettingsCard density="compact" className="max-w-2xl">
-      <div className="border-b border-doqyn-border px-4 py-4 sm:px-5">
-        <h3 className="text-base font-semibold text-doqyn-text">E-mail da conta</h3>
-        <p className="mt-1 text-sm text-doqyn-muted">
-          Use o e-mail profissional da empresa. Enviaremos um link de confirmação para o novo
-          endereço antes de aplicar a troca.
+    <div className="settings-subblock">
+      <div className="settings-subblock__header">
+        <p className="register-label text-doqyn-subtle">Trocar e-mail</p>
+        <p className="settings-section-note">
+          O endereço atual é {user?.email ?? '—'}. Enviamos um código de 6 dígitos ao novo e-mail
+          antes de aplicar a troca.
         </p>
       </div>
 
-      <div className="px-4 py-4 sm:px-5">
-        <SettingsRowList>
-          <SettingsRow
-            label="E-mail atual"
-            control={<p className="text-sm text-doqyn-text">{user?.email ?? '—'}</p>}
-          />
-          <SettingsRow
-            label="Novo e-mail"
-            description="Deve ser um endereço profissional válido da sua empresa."
-            control={
-              <Input
-                type="email"
-                value={newEmail}
-                onChange={(event) => setNewEmail(event.target.value)}
-                placeholder="voce@suaempresa.com.br"
-                disabled={pending}
-              />
-            }
-          />
-          <SettingsRow
-            label="Senha atual"
-            description="Confirme sua identidade para solicitar a troca."
-            control={
-              <Input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Sua senha"
-                disabled={pending}
-              />
-            }
-          />
-        </SettingsRowList>
+      <div className="settings-identity__fields">
+        <Input
+          variant="rule"
+          type="email"
+          label="Novo e-mail"
+          value={newEmail}
+          onChange={(event) => setNewEmail(event.target.value)}
+          placeholder={emailPlaceholder}
+          disabled={pending}
+        />
+        <Input
+          variant="rule"
+          type="password"
+          revealable
+          label="Senha atual"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Confirme sua identidade"
+          disabled={pending}
+        />
+      </div>
 
-        {pendingStatus ? (
-          <p className="mt-4 rounded-md border border-doqyn-border bg-doqyn-card px-3 py-2 text-sm text-doqyn-muted">
-            Confirmação pendente para <strong>{pendingStatus.newEmail}</strong>. Verifique a caixa
-            de entrada do novo e-mail e clique no link recebido.
+      {pendingStatus ? (
+        <div className="flex flex-col gap-4">
+          <p className="settings-section-note">
+            Enviamos um código para{' '}
+            <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>.
+            Digite-o abaixo, ou use o link do mesmo e-mail.
           </p>
-        ) : null}
 
-        {devLink ? (
-          <p className="mt-3 break-all rounded-md border border-dashed border-doqyn-border px-3 py-2 text-xs text-doqyn-muted">
-            Link de desenvolvimento: {devLink}
-          </p>
-        ) : null}
+          <CodeInput
+            value={code}
+            onChange={setCode}
+            onComplete={(value) => confirmMutation.mutate(value)}
+            disabled={confirmMutation.isPending || blocked}
+            invalid={confirmMutation.isError}
+          />
 
-        <div className="mt-5 flex flex-wrap gap-2">
+          {/* Só depois de errar — ver `EmailVerificationPage`, mesmo raciocínio. */}
+          {typeof attemptsLeft === 'number' && (confirmMutation.isError || blocked) ? (
+            <p className="settings-section-note">
+              {blocked
+                ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
+                : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
+            </p>
+          ) : null}
+
+          {devCode ? (
+            <p className="settings-section-note">Código de desenvolvimento: {devCode}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="settings-block__action settings-block__action--end">
+        {pending ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => resendMutation.mutate()}
+              disabled={resendMutation.isPending || cooldown > 0}
+            >
+              {cooldown > 0
+                ? `Reenviar em ${cooldown}s`
+                : resendMutation.isPending
+                  ? 'Reenviando…'
+                  : 'Reenviar código'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => confirmMutation.mutate(code)}
+              disabled={code.length !== 6 || confirmMutation.isPending || blocked}
+            >
+              {confirmMutation.isPending ? 'Confirmando…' : 'Confirmar troca'}
+            </Button>
+          </>
+        ) : (
           <Button
+            type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => requestMutation.mutate()}
-            disabled={requestMutation.isPending || pending || !newEmail || !password}
+            disabled={requestMutation.isPending || !newEmail || !password}
           >
             {requestMutation.isPending ? 'Enviando…' : 'Solicitar troca de e-mail'}
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => void refreshUser()}
-            disabled={requestMutation.isPending}
-          >
-            Atualizar status
-          </Button>
-        </div>
+        )}
       </div>
-    </SettingsCard>
+    </div>
   );
 }

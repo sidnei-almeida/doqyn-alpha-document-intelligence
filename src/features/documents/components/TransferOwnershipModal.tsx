@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import type { DocumentListItem } from '@/types/document-library';
@@ -78,65 +78,22 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
   const documentName = document.currentFileName ?? document.displayName ?? 'Documento';
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="transfer-ownership-title"
-        className="w-full max-w-md rounded-xl border border-doqyn-border-subtle bg-doqyn-card p-5 shadow-xl"
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 id="transfer-ownership-title" className="text-base font-semibold text-doqyn-text">
-              Transferir propriedade
-            </h2>
-            <p className="mt-1 text-sm text-doqyn-muted">{documentName}</p>
-          </div>
-          <button
+    <Modal
+      open
+      onClose={onClose}
+      title="Transferir propriedade"
+      subtitle={documentName}
+      size="sm"
+      // Destino e motivo já escolhidos: clicar fora não descarta em silêncio.
+      dismissOnOverlay={false}
+      footer={
+        <>
+          <Button
             type="button"
+            variant="secondary"
             onClick={onClose}
-            className="rounded-md p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-            aria-label="Fechar"
-          >
-            <Icon name="close" size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-sm">
-            <p className="text-doqyn-muted">Proprietário atual</p>
-            <p className="font-medium text-doqyn-text">
-              {document.ownerName ?? document.createdBy?.displayName ?? '—'}
-            </p>
-          </div>
-
-          <Select
-            id="transfer-ownership-target"
-            label="Novo proprietário"
-            value={selectedUserId}
-            onChange={(event) => setSelectedUserId(event.target.value)}
-            options={[
-              { value: '', label: 'Selecione um usuário' },
-              ...eligibleMembers.map((member) => ({
-                value: memberUserId(member),
-                label: memberDisplayName(member),
-              })),
-            ]}
-            disabled={membersQuery.isLoading || transferMutation.isPending}
-          />
-
-          <Input
-            id="transfer-ownership-reason"
-            label="Motivo (opcional)"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Ex.: mudança de responsável pela pasta"
             disabled={transferMutation.isPending}
-          />
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={transferMutation.isPending}>
+          >
             Cancelar
           </Button>
           <Button
@@ -146,8 +103,41 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
           >
             Transferir
           </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-sm">
+          <p className="text-doqyn-muted">Proprietário atual</p>
+          <p className="font-medium text-doqyn-text">
+            {document.ownerName ?? document.createdBy?.displayName ?? '—'}
+          </p>
         </div>
+
+        <Select
+          id="transfer-ownership-target"
+          label="Novo proprietário"
+          value={selectedUserId}
+          onChange={(event) => setSelectedUserId(event.target.value)}
+          options={[
+            { value: '', label: 'Selecione um usuário' },
+            ...eligibleMembers.map((member) => ({
+              value: memberUserId(member),
+              label: memberDisplayName(member),
+            })),
+          ]}
+          disabled={membersQuery.isLoading || transferMutation.isPending}
+        />
+
+        <Input
+          id="transfer-ownership-reason"
+          label="Motivo (opcional)"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Ex.: mudança de responsável pela pasta"
+          disabled={transferMutation.isPending}
+        />
       </div>
-    </div>
+    </Modal>
   );
 }

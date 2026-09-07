@@ -75,13 +75,13 @@ export function BulkSelectionToolbar({
       className="explorer-selection-toolbar flex flex-1 flex-wrap items-center justify-between gap-3"
       data-testid="explorer-selection-toolbar"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-accent-active">
+          {selectedCount} {selectedCount === 1 ? 'selecionado' : 'selecionados'}
+        </span>
         <IconButton label="Limpar seleção" onClick={onClear}>
-          <Icon name="close" size={ICON_SIZE.sm} />
+          <Icon name="close" size={ICON_SIZE.xs} />
         </IconButton>
-        <p className="text-[13px] font-medium text-doqyn-text">
-          {selectedCount} {selectedCount === 1 ? 'item selecionado' : 'itens selecionados'}
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-1">

@@ -39,7 +39,9 @@ describe('confirmAnalysis persiste campos de tenant', () => {
       'utf8',
     );
     assert.ok(service.includes('withTenantFieldsFromContext'));
-    assert.ok(service.includes("processingStatus: needsReview ? 'processed_with_review' : 'processed'"));
+    assert.ok(
+      service.includes("processingStatus: needsReview ? 'processed_with_review' : 'processed'"),
+    );
     assert.ok(service.includes('classId: docClass._id'));
 
     const doc = applyDocumentOwnershipOnInsert(
@@ -69,13 +71,19 @@ describe('listDocuments — visibilidade pós-upload', () => {
   });
 
   it('documento jurídico usa classId como categoryId na API', () => {
-    const mapper = readFileSync(join(__dirname, '..', 'server', 'services', 'documentService.ts'), 'utf8');
+    const mapper = readFileSync(
+      join(__dirname, '..', 'server', 'services', 'documentService.ts'),
+      'utf8',
+    );
     assert.ok(mapper.includes('categoryId: doc.classId'));
-    assert.ok(mapper.includes("if (filters.categoryId) query.classId = filters.categoryId"));
+    assert.ok(mapper.includes('if (filters.categoryId) query.classId = filters.categoryId'));
   });
 
   it('filtro Processado inclui processed_with_review', () => {
-    const service = readFileSync(join(__dirname, '..', 'server', 'services', 'documentService.ts'), 'utf8');
+    const service = readFileSync(
+      join(__dirname, '..', 'server', 'services', 'documentService.ts'),
+      'utf8',
+    );
     assert.ok(service.includes("'processed', 'processed_with_review'"));
   });
 });
@@ -88,7 +96,7 @@ describe('cache / invalidação da Biblioteca', () => {
     assert.ok(helper.includes("queryKey: ['dashboard-overview']"));
     assert.ok(helper.includes("refetchType: 'all'"));
     assert.ok(helper.includes('refetchQueries'));
-    assert.ok(helper.includes("documents:refetch-after-confirm"));
+    assert.ok(helper.includes('documents:refetch-after-confirm'));
   });
 
   it('UploadQueueProvider aguarda invalidateLibrary após confirm', () => {
@@ -102,7 +110,7 @@ describe('cache / invalidação da Biblioteca', () => {
     const hook = readSrc('features/documents/hooks/useDocuments.ts');
     assert.ok(hook.includes('enabled: isAuthenticated'));
     assert.ok(hook.includes("logLibraryDev('documents:list-success'"));
-    assert.ok(hook.includes("tenant?.tenantId ?? user?.companyId"));
+    assert.ok(hook.includes('tenant?.tenantId ?? user?.companyId'));
   });
 });
 
@@ -132,7 +140,7 @@ describe('fluxo upload → confirm → listagem (contratos)', () => {
       join(__dirname, '..', 'server', 'services', 'documentService.ts'),
       'utf8',
     );
-    assert.ok(filter.includes("if (filters.categoryId) query.classId = filters.categoryId"));
+    assert.ok(filter.includes('if (filters.categoryId) query.classId = filters.categoryId'));
   });
 
   it('auto-confirm off mantém review; auto-confirm on só completa após confirm', () => {

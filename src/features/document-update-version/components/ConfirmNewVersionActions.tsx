@@ -46,10 +46,11 @@ export function ConfirmNewVersionActions({
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-[11px] text-doqyn-muted">
-        A versão anterior permanecerá no histórico.
-      </p>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* A promessa aparecia três vezes na mesma gaveta — no rótulo do bloco,
+          dentro da área de arrastar e aqui. Fica só neste rodapé, que é onde a
+          decisão acontece. */}
+      <p className="text-caption text-doqyn-muted">A versão anterior permanece no histórico.</p>
       <div className="flex flex-wrap items-center justify-end gap-2">
         {phase === 'review' && onConfirm && (
           <Button

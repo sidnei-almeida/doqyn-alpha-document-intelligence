@@ -1,15 +1,8 @@
 import type { VercelRequest } from '@vercel/node';
-import { usesDoqynAuth } from '../auth/authConfig.js';
 import type { AuthUser } from '../auth/types.js';
 import { callDoqynAuthAdmin } from '../integrations/doqynAuthAdminClient.js';
 import { createUserAuditLog } from './userAuditService.js';
-import {
-  approveCompanyMember,
-  rejectCompanyMember,
-} from './userManagementService.js';
-import {
-  resolveGovernanceMemberIdentity,
-} from './governanceMembersService.js';
+import { resolveGovernanceMemberIdentity } from './governanceMembersService.js';
 import { syncMemberDocumentGroups } from './documentGroupsService.js';
 import {
   invalidateTenantMemberSyncCache,
@@ -20,6 +13,8 @@ import { maskEmail, sanitizeRejectionReason } from '../utils/maskSensitiveData.j
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { logger } from '../utils/logger.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { notifyAccessDecision } from './notifications/documentNotifications.js';
+import { getTenantMemberById } from './tenantMemberRepository.js';
 
 type ApproveInput = {
   platformRoles?: string[];
@@ -90,6 +85,33 @@ async function logRejectedMembershipAudit(
   });
 }
 
+/**
+ * Avisa a pessoa da decisão sobre o acesso dela.
+ *
+ * O `userId` sai do membro já espelhado no Mongo, e não de uma consulta nova ao auth: a sincronia
+ * acabou de rodar acima, e o caminho de aprovação só resolvia identidade quando havia grupo
+ * documental a sincronizar.
+ */
+async function notifyMembershipDecision(
+  actor: AuthUser,
+  tenantId: string,
+  memberId: string,
+  approved: boolean,
+  reason?: string,
+): Promise<void> {
+  const member = await getTenantMemberById(memberId).catch(() => null);
+  await notifyAccessDecision({
+    tenantId,
+    memberUserId: member?.authUserId,
+    memberId,
+    approved,
+    reason,
+    actorUserId: actor.id,
+    actorName: actor.name,
+    tenantName: actor.companyName,
+  });
+}
+
 export async function approveMembershipDecision(
   req: VercelRequest,
   actor: AuthUser,
@@ -107,26 +129,6 @@ export async function approveMembershipDecision(
     accessGroupIdsCount: input.accessGroupIds.length,
     documentGroupIdsCount: documentGroupIds.length,
   });
-
-  if (!usesDoqynAuth()) {
-    const result = await approveCompanyMember(actor, memberId, input);
-    if (documentGroupIds.length > 0) {
-      const identity = await resolveGovernanceMemberIdentity(req, actor, tenantId, memberId);
-      await syncMemberDocumentGroups(tenantId, actor.id, {
-        membershipId: memberId,
-        userId: identity.userId,
-        displayName: identity.displayName,
-        email: identity.email,
-        documentGroupIds,
-      });
-    }
-    logger.info('membership approve completed (mongo)', {
-      tenantId,
-      membershipId: memberId,
-      documentGroupIdsCount: documentGroupIds.length,
-    });
-    return result;
-  }
 
   const detail = await callDoqynAuthAdmin<{ member: { user: { email: string } } }>(
     req,
@@ -171,6 +173,8 @@ export async function approveMembershipDecision(
     });
   }
 
+  await notifyMembershipDecision(actor, tenantId, memberId, true);
+
   logger.info('membership approve completed (auth)', {
     tenantId,
     membershipId: memberId,
@@ -206,11 +210,6 @@ export async function rejectMembershipDecision(
     throw new ServiceError('Informe o motivo da rejeição.', 'REJECTION_REASON_REQUIRED', 400);
   }
 
-  if (!usesDoqynAuth()) {
-    const result = await rejectCompanyMember(actor, memberId, { reason: sanitizedReason });
-    return result;
-  }
-
   const detail = await callDoqynAuthAdmin<{ member: { user: { email: string } } }>(
     req,
     `/auth/admin/members/${memberId}`,
@@ -238,6 +237,8 @@ export async function rejectMembershipDecision(
       message: error instanceof Error ? error.message : 'unknown',
     });
   }
+
+  await notifyMembershipDecision(actor, tenantId, memberId, false, sanitizedReason);
 
   return {
     member: {

@@ -6,7 +6,7 @@ import {
 } from './identifiers/taxId';
 import { formatWhatsapp } from './identifiers/whatsapp';
 
-export const PASSWORD_REVIEW_LABEL = 'Senha definida — não exibida por segurança';
+export const PASSWORD_REVIEW_LABEL = 'Senha definida (não exibida por segurança)';
 
 export function safeDisplayValue(value: string | undefined | null): string {
   return value?.trim() ? value.trim() : '—';

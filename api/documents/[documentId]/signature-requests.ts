@@ -35,20 +35,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const documentId = resolveDocumentId(req);
   if (!documentId) {
-    return res.status(400).json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
+    return res
+      .status(400)
+      .json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
   }
 
   const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
 
   try {
     if (req.method === 'GET') {
-      const result = await listDocumentSignatureRequests(auth.ctx, auth.user, documentId);
+      const result = await listDocumentSignatureRequests(auth.ctx, auth.user, documentId, {
+        origin: resolveOrigin(req),
+      });
       return res.status(200).json(result);
     }
 
     if (req.method === 'POST') {
       const body = req.body as Record<string, unknown>;
-      const resolvedSignerType = body.signerType === 'internal_user' ? 'internal_user' : 'external_guest';
+      const resolvedSignerType =
+        body.signerType === 'internal_user' ? 'internal_user' : 'external_guest';
       const result = await createDocumentSignatureRequest(
         auth.ctx,
         auth.user,
@@ -58,7 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           signerEmail: typeof body.signerEmail === 'string' ? body.signerEmail : '',
           signerPhone: typeof body.signerPhone === 'string' ? body.signerPhone : undefined,
           signerOrganizationName:
-            typeof body.signerOrganizationName === 'string' ? body.signerOrganizationName : undefined,
+            typeof body.signerOrganizationName === 'string'
+              ? body.signerOrganizationName
+              : undefined,
           signerType: resolvedSignerType,
           signerUserId: typeof body.signerUserId === 'string' ? body.signerUserId : undefined,
           message: typeof body.message === 'string' ? body.message : undefined,

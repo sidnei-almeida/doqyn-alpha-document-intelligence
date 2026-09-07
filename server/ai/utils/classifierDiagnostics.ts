@@ -109,7 +109,11 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
       };
     }
 
-    if (error.code === 'GROQ_RATE_LIMIT' || error.code === 'GROQ_DAILY_TOKEN_LIMIT' || error.code === 'GROQ_CONTEXT_LIMIT') {
+    if (
+      error.code === 'GROQ_RATE_LIMIT' ||
+      error.code === 'GROQ_DAILY_TOKEN_LIMIT' ||
+      error.code === 'GROQ_CONTEXT_LIMIT'
+    ) {
       return {
         code: error.code,
         internalMessage: error.message,
@@ -127,7 +131,10 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
   const groqErrorCode = readErrorCode(error);
   const errorName = error instanceof Error ? error.name : 'Error';
 
-  if (lower.includes('missing required environment variable: groq_api_key') || lower.includes('groq_api_key')) {
+  if (
+    lower.includes('missing required environment variable: groq_api_key') ||
+    lower.includes('groq_api_key')
+  ) {
     return {
       code: 'GROQ_API_KEY_MISSING',
       internalMessage: 'GROQ_API_KEY missing',
@@ -202,7 +209,7 @@ export function diagnoseClassifierError(error: unknown): ClassifierDiagnostic {
     };
   }
 
-  if (httpStatus === 404 || lower.includes('model') && lower.includes('not found')) {
+  if (httpStatus === 404 || (lower.includes('model') && lower.includes('not found'))) {
     return {
       code: 'GROQ_MODEL_ERROR',
       internalMessage: `Groq model or response format error: ${sanitized}`,

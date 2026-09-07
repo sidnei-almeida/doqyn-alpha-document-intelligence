@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { OverviewPanelShell } from './OverviewPanelShell';
 import {
-  OverviewPanelFooter,
   OverviewPanelStat,
   OverviewPanelStatCell,
   OverviewPanelStatGrid,
@@ -14,7 +13,6 @@ type OverviewGovernancePanelProps = {
 
 export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelProps) {
   const navigate = useNavigate();
-  const pendingTotal = governance.usersPending + governance.accessRequestsPending;
 
   return (
     <OverviewPanelShell
@@ -67,21 +65,12 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
         <OverviewPanelStatCell>
           <OverviewPanelStat
             label="Pendências"
-            value={pendingTotal}
-            hint={`${governance.usersPending} usuários · ${governance.accessRequestsPending} acessos`}
+            value={governance.usersPending}
+            hint="usuários aguardando"
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>
       </OverviewPanelStatGrid>
-
-      <OverviewPanelFooter
-        links={[
-          { label: 'Mapa de regras', path: '/rules' },
-          { label: 'Usuários', path: '/users' },
-          { label: 'Upload e IA', path: '/settings?section=upload-ia' },
-        ]}
-        onNavigate={navigate}
-      />
     </OverviewPanelShell>
   );
 }

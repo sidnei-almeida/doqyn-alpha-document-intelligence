@@ -1,12 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
-import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { cn, formatDate } from '@/lib/utils';
+import { Modal } from '@/components/ui/Modal';
 import { TruncatedText } from '@/components/ui/TruncatedText';
-import { AccessRequestDetailsPanel } from '@/features/users/components/AccessRequestDetailsPanel';
+import { cn, formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 
@@ -45,131 +41,26 @@ export function PendingApprovalReviewDialog({
   onApprove,
   onReject,
 }: PendingApprovalReviewDialogProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
-
   if (!open || !item) return null;
 
+  /**
+   * Toda decisão desta fila é sobre documento: envio, download ou compartilhamento.
+   *
+   * Já foi sobre pessoa também, quando o pedido de acesso existia — e a ficha então trazia os
+   * dados cadastrais de quem pedia, junto com um atalho para Usuários. Hoje quem entra na
+   * empresa entra por convite, sem fila e sem aprovação.
+   */
+
   return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm"
-      onClick={(event) => {
-        if (event.target === overlayRef.current) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="pending-review-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-doqyn-border bg-doqyn-surface shadow-2xl"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-doqyn-border px-5 py-4">
-          <div className="min-w-0">
-            <h2 id="pending-review-title" className="text-base font-semibold text-doqyn-text">
-              Revisar solicitação
-            </h2>
-            <p className="mt-0.5 text-xs text-doqyn-muted">{PENDING_TYPE_LABELS[item.type]}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-md p-1 text-doqyn-muted hover:bg-doqyn-hover hover:text-doqyn-text"
-            aria-label="Fechar"
-          >
-            <Icon name="close" size={ICON_SIZE.xs} />
-          </button>
-        </div>
-
-        <div className="space-y-4 px-5 py-4 text-sm">
-          <dl className="detail-grid grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3">
-            <div className="detail-item min-w-0">
-              <dt className="text-xs text-doqyn-muted">Solicitante</dt>
-              <dd className="detail-value mt-0.5 break-words font-medium text-doqyn-text">
-                {item.name}
-              </dd>
-            </div>
-            <div className="detail-item min-w-0">
-              <dt className="text-xs text-doqyn-muted">E-mail</dt>
-              <dd className="detail-value mt-0.5 break-all text-doqyn-text">{item.email}</dd>
-            </div>
-            <div className="detail-item min-w-0">
-              <dt className="text-xs text-doqyn-muted">Organização</dt>
-              <dd className="mt-0.5">
-                <OrganizationValue tenantName={item.tenantName} tenantId={item.tenantId} />
-              </dd>
-            </div>
-            <div className="detail-item min-w-0">
-              <dt className="text-xs text-doqyn-muted">Data</dt>
-              <dd className="detail-value mt-0.5 whitespace-nowrap text-doqyn-text">
-                {formatDate(item.requestedAt)}
-              </dd>
-            </div>
-          </dl>
-
-          <div>
-            <p className="text-xs text-doqyn-muted">Status</p>
-            <Badge variant="warning" className="mt-1">
-              Pendente
-            </Badge>
-          </div>
-
-          {item.type !== 'document_upload' && (
-            <AccessRequestDetailsPanel
-              member={item.member}
-              requestedAccess={item.requestedAccess}
-              whatsapp={item.member?.whatsapp}
-              consent={item.member?.consent}
-              terms={item.member?.terms}
-              notificationPreferences={item.member?.notificationPreferences}
-              className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
-            />
-          )}
-
-          {item.type === 'document_upload' && item.documentUpload && (
-            <div className={cn('rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4 space-y-3')}>
-              <div>
-                <p className="text-xs text-doqyn-muted">Arquivo</p>
-                <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
-                  {item.documentUpload.originalFileName}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-doqyn-muted">Categoria sugerida</p>
-                <p className="mt-0.5 text-sm text-doqyn-text">
-                  {item.documentUpload.className ?? item.documentUpload.classId ?? '—'}
-                </p>
-              </div>
-              <p className="text-xs text-doqyn-muted">
-                Os metadados foram extraídos automaticamente pela IA. Ao aprovar, o documento será
-                publicado na Biblioteca em nome do solicitante.
-              </p>
-            </div>
-          )}
-
-          {item.type !== 'document_upload' && (
-            <Link
-              to="/users"
-              className="inline-flex items-center gap-1 text-xs text-doqyn-primary hover:underline"
-            >
-              Gerenciar em Usuários
-              <Icon name="open_in_new" size={12} />
-            </Link>
-          )}
-        </div>
-
-        {isAdmin && (
-          <div className="flex justify-end gap-2 border-t border-doqyn-border px-5 py-4">
+    <Modal
+      open
+      onClose={onClose}
+      title="Revisar solicitação"
+      subtitle={PENDING_TYPE_LABELS[item.type]}
+      size="lg"
+      footer={
+        isAdmin ? (
+          <>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Cancelar
             </Button>
@@ -184,9 +75,105 @@ export function PendingApprovalReviewDialog({
             <Button type="button" onClick={() => onApprove(item)} disabled={saving}>
               {item.type === 'document_upload' ? 'Aprovar documento' : 'Aprovar'}
             </Button>
+          </>
+        ) : undefined
+      }
+    >
+      <div className="space-y-4 text-sm">
+        <dl className="detail-grid grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3">
+          <div className="detail-item min-w-0">
+            <dt className="text-xs text-doqyn-muted">Solicitante</dt>
+            <dd className="detail-value mt-0.5 break-words font-medium text-doqyn-text">
+              {item.name}
+            </dd>
+          </div>
+          <div className="detail-item min-w-0">
+            <dt className="text-xs text-doqyn-muted">E-mail</dt>
+            <dd className="detail-value mt-0.5 break-all text-doqyn-text">{item.email}</dd>
+          </div>
+          <div className="detail-item min-w-0">
+            <dt className="text-xs text-doqyn-muted">Organização</dt>
+            <dd className="mt-0.5">
+              <OrganizationValue tenantName={item.tenantName} tenantId={item.tenantId} />
+            </dd>
+          </div>
+          <div className="detail-item min-w-0">
+            <dt className="text-xs text-doqyn-muted">Data</dt>
+            <dd className="detail-value mt-0.5 whitespace-nowrap text-doqyn-text">
+              {formatDateTime(item.requestedAt)}
+            </dd>
+          </div>
+        </dl>
+
+        <div>
+          <p className="text-xs text-doqyn-muted">Status</p>
+          <Badge variant="warning" className="mt-1">
+            Pendente
+          </Badge>
+        </div>
+
+        {item.type !== 'document_upload' && (
+          <div
+            className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+          >
+            <div>
+              <p className="text-xs text-doqyn-muted">Documento</p>
+              <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
+                {item.subject?.documentName ?? item.subject?.documentId ?? '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-doqyn-muted">Categoria</p>
+              <p className="mt-0.5 text-sm text-doqyn-text">{item.subject?.categoryName ?? '—'}</p>
+            </div>
+            {item.type === 'document_share' && (
+              <>
+                <div>
+                  <p className="text-xs text-doqyn-muted">Compartilhar com</p>
+                  <p className="mt-0.5 text-sm text-doqyn-text">
+                    {item.subject?.memberName ?? item.subject?.memberId ?? '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-doqyn-muted">O que será concedido</p>
+                  <p className="mt-0.5 text-sm text-doqyn-text">
+                    {item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'}
+                  </p>
+                </div>
+              </>
+            )}
+            <p className="text-xs text-doqyn-muted">
+              {item.type === 'document_share'
+                ? 'Ao aprovar, o documento é compartilhado com essa pessoa em nome do solicitante.'
+                : 'Ao aprovar, o solicitante fica liberado para baixar este documento por sete dias.'}
+            </p>
           </div>
         )}
+
+        {item.type === 'document_upload' && item.documentUpload && (
+          <div
+            className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
+          >
+            <div>
+              <p className="text-xs text-doqyn-muted">Arquivo</p>
+              <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
+                {item.documentUpload.originalFileName}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-doqyn-muted">Categoria sugerida</p>
+              <p className="mt-0.5 text-sm text-doqyn-text">
+                {item.documentUpload.className ?? item.documentUpload.classId ?? '—'}
+              </p>
+            </div>
+            <p className="text-xs text-doqyn-muted">
+              Os metadados foram extraídos automaticamente pela IA. Ao aprovar, o documento será
+              publicado na Biblioteca em nome do solicitante.
+            </p>
+          </div>
+        )}
+
       </div>
-    </div>
+    </Modal>
   );
 }

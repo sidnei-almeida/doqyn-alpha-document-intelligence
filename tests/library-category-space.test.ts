@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { buildLibraryDocumentFilters, libraryListScopeKey } from '../src/features/library/utils/libraryFilterUtils';
+import {
+  buildLibraryDocumentFilters,
+  libraryListScopeKey,
+} from '../src/features/library/utils/libraryFilterUtils';
 import {
   findLibraryCategory,
   resolveLibraryCategoryId,

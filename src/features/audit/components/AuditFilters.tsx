@@ -1,6 +1,8 @@
-import { DateInput } from '@/components/ui/DateInput';
-import { Input } from '@/components/ui/Input';
+import type { ReactNode } from 'react';
+import { Icon } from '@/components/ui/Icon';
+import { DateField } from '@/components/ui/DateField';
 import { Select } from '@/components/ui/Select';
+import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AuditEventFilters, AuditSeverity } from '@/types/audit';
 import { AUDIT_SEVERITY_LABELS } from '@/types/audit';
 
@@ -20,50 +22,85 @@ const severityOptions: Array<{ value: AuditSeverity | ''; label: string }> = [
   })),
 ];
 
+/**
+ * Ajuste de vista, não formulário: cada campo é uma régua com o rótulo de
+ * registro em cima. Eram cinco caixas de canto arredondado enfileiradas, o
+ * mesmo peso visual de um formulário de cadastro para uma escolha que só filtra
+ * uma lista.
+ */
+function FilterField({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={id} className="register-label text-doqyn-subtle">
+        {label}
+      </label>
+      <div className="field-rule">{children}</div>
+    </div>
+  );
+}
+
 export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersProps) {
   const showEventType = mode === 'full';
   const showSeverity = mode === 'full' || mode === 'security';
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-      <Input
-        id="audit-search"
-        label="Buscar"
-        placeholder="Ação, usuário, documento..."
-        value={filters.q ?? ''}
-        onChange={(event) => onChange({ ...filters, q: event.target.value })}
-      />
-      {showEventType && (
-        <Input
-          id="audit-type"
-          label="Tipo de evento"
-          placeholder="Ex.: document.created"
-          value={filters.type ?? ''}
-          onChange={(event) => onChange({ ...filters, type: event.target.value })}
+    <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-5">
+      <FilterField id="audit-search" label="Buscar">
+        <Icon name="search" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
+        <input
+          id="audit-search"
+          type="search"
+          placeholder="Ação, usuário, documento..."
+          className="text-label placeholder:text-doqyn-subtle"
+          value={filters.q ?? ''}
+          onChange={(event) => onChange({ ...filters, q: event.target.value })}
         />
+      </FilterField>
+
+      {showEventType && (
+        <FilterField id="audit-type" label="Tipo de evento">
+          <input
+            id="audit-type"
+            type="text"
+            placeholder="Ex.: document.created"
+            className="font-mono text-caption placeholder:text-doqyn-subtle"
+            value={filters.type ?? ''}
+            onChange={(event) => onChange({ ...filters, type: event.target.value })}
+          />
+        </FilterField>
       )}
+
       {showSeverity && (
         <Select
           id="audit-severity"
+          variant="rule"
           label="Severidade"
           value={filters.severity ?? ''}
+          options={severityOptions.map((option) => ({ ...option, value: option.value }))}
           onChange={(event) =>
             onChange({ ...filters, severity: event.target.value as AuditSeverity | '' })
           }
-          options={severityOptions}
         />
       )}
-      <DateInput
+
+      <DateField
         id="audit-from"
+        variant="rule"
         label="De"
+        placeholder="Início"
         value={filters.from ?? ''}
-        onChange={(event) => onChange({ ...filters, from: event.target.value })}
+        max={filters.to || undefined}
+        onChange={(isoDate) => onChange({ ...filters, from: isoDate })}
       />
-      <DateInput
+
+      <DateField
         id="audit-to"
+        variant="rule"
         label="Até"
+        placeholder="Fim"
         value={filters.to ?? ''}
-        onChange={(event) => onChange({ ...filters, to: event.target.value })}
+        min={filters.from || undefined}
+        onChange={(isoDate) => onChange({ ...filters, to: isoDate })}
       />
     </div>
   );

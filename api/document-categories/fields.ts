@@ -36,9 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : '';
 
   if (!categoryId) {
-    return res
-      .status(400)
-      .json({ message: 'categoryId é obrigatório.', code: 'VALIDATION_ERROR' });
+    return res.status(400).json({ message: 'categoryId é obrigatório.', code: 'VALIDATION_ERROR' });
   }
 
   try {

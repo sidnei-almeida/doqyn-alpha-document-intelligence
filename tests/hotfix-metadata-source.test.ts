@@ -28,9 +28,17 @@ describe('Hotfix P0 — mapExtractedFieldSource', () => {
       'server/services/confirmUpdateDocumentVersionService.ts',
     ]) {
       const source = readFileSync(join(ROOT, rel), 'utf8');
-      assert.ok(source.includes('mapExtractedFieldSource'));
+      // O mapeamento foi para `confirm/confirmVersionShared.ts`, que os dois caminhos importam —
+      // é o que garante que eles não voltem a divergir, que era o defeito original.
+      assert.ok(source.includes('confirmVersionShared.js'));
       assert.equal(source.includes("field.source === 'no_ai' ? 'ai' : 'ai'"), false);
       assert.ok(source.includes('sanitizeAuditMetadata'));
     }
+
+    const shared = readFileSync(
+      join(ROOT, 'server/services/confirm/confirmVersionShared.ts'),
+      'utf8',
+    );
+    assert.ok(shared.includes('mapExtractedFieldSource'));
   });
 });

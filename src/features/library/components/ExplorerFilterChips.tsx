@@ -20,7 +20,6 @@ type ExplorerFilterChipsProps = {
 };
 
 type FilterChipProps = {
-  icon: string;
   label: string;
   value: string;
   options: Array<{ value: string; label: string }>;
@@ -28,7 +27,7 @@ type FilterChipProps = {
   defaultValue?: string;
 };
 
-function FilterChip({ icon, label, value, options, onChange, defaultValue = '' }: FilterChipProps) {
+function FilterChip({ label, value, options, onChange, defaultValue = '' }: FilterChipProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== defaultValue;
@@ -41,16 +40,21 @@ function FilterChip({ icon, label, value, options, onChange, defaultValue = '' }
         type="button"
         onClick={() => setOpen((current) => !current)}
         className={
-          isActive
-            ? 'explorer-filter-chip explorer-filter-chip--active'
-            : 'explorer-filter-chip'
+          isActive ? 'explorer-filter-chip explorer-filter-chip--active' : 'explorer-filter-chip'
         }
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={label}
       >
-        <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0" />
-        <span className="max-w-[7rem] truncate">{displayLabel}</span>
+        {/* Sem o glifo à esquerda. Cinco ícones genéricos enfileirados eram o
+            que fazia a barra de filtros ler como a do Drive — e nenhum deles
+            informava: "funil", "documento" e "pessoa" não dizem qual filtro é.
+            Quem diz é o próprio rótulo, que já está aqui. */}
+        {/* 7rem cortava o próprio rótulo padrão: "Todos os status" virava
+            "Todos os stat...". Um filtro que não cabe o nome do estado em
+            que está não informa nada. O truncamento continua valendo para
+            valor escolhido comprido, que é onde ele serve. */}
+        <span className="max-w-[11rem] truncate">{displayLabel}</span>
         <Icon
           name="keyboard_arrow_down"
           size={ICON_SIZE.xs}
@@ -94,14 +98,20 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
   const sortValue = encodeSortOptionValue(state.sort, state.direction);
 
   return (
+    // Filtrar e ordenar são naturezas diferentes: o filtro reduz o conjunto, a
+    // ordenação reorganiza o mesmo conjunto. Enfileirados juntos pareciam cinco
+    // controles iguais. A ordenação vai para a outra ponta, e um rótulo em
+    // monoespaçado abre a fila dizendo o que aquilo é.
     <div
-      className="flex flex-wrap items-center gap-2"
+      className="flex w-full flex-wrap items-center gap-x-7 gap-y-2"
       data-testid="explorer-filter-chips"
       role="group"
       aria-label="Filtros da biblioteca"
     >
+      <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+        Filtrar
+      </span>
       <FilterChip
-        icon="filter_list"
         label="Filtrar por status"
         value={state.status}
         defaultValue=""
@@ -109,7 +119,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(status) => onStateChange({ status })}
       />
       <FilterChip
-        icon="draft"
         label="Filtrar por tipo"
         value={state.type}
         defaultValue=""
@@ -117,7 +126,6 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(type) => onStateChange({ type: type as LibraryRouteState['type'] })}
       />
       <FilterChip
-        icon="calendar_month"
         label="Filtrar por período"
         value={state.period}
         defaultValue=""
@@ -125,29 +133,32 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         onChange={(period) => onStateChange({ period: period as LibraryRouteState['period'] })}
       />
       <FilterChip
-        icon="person"
         label="Filtrar por proprietário"
         value={state.owner}
         defaultValue=""
         options={OWNER_FILTER_OPTIONS}
         onChange={(owner) => onStateChange({ owner: owner as LibraryRouteState['owner'] })}
       />
-      <FilterChip
-        icon="swap_vert"
-        label="Ordenar por"
-        value={sortValue}
-        defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
-        options={SORT_FILTER_OPTIONS.map((option) => ({
-          value: encodeSortOptionValue(option.sort, option.direction),
-          label: option.label,
-        }))}
-        onChange={(next) => {
-          const match = SORT_FILTER_OPTIONS.find(
-            (option) => encodeSortOptionValue(option.sort, option.direction) === next,
-          );
-          if (match) onStateChange({ sort: match.sort, direction: match.direction });
-        }}
-      />
+      <span className="ml-auto flex items-center gap-3">
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+          Ordenar
+        </span>
+        <FilterChip
+          label="Ordenar por"
+          value={sortValue}
+          defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
+          options={SORT_FILTER_OPTIONS.map((option) => ({
+            value: encodeSortOptionValue(option.sort, option.direction),
+            label: option.label,
+          }))}
+          onChange={(next) => {
+            const match = SORT_FILTER_OPTIONS.find(
+              (option) => encodeSortOptionValue(option.sort, option.direction) === next,
+            );
+            if (match) onStateChange({ sort: match.sort, direction: match.direction });
+          }}
+        />
+      </span>
     </div>
   );
 }

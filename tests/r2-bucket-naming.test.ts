@@ -108,10 +108,7 @@ describe('buildTenantBucketName', () => {
 
   it('identifica bucket legado doqyn-t-*', () => {
     assert.equal(isLegacyTenantBucketName('doqyn-t-73dcc57ebaf7'), true);
-    assert.equal(
-      isLegacyTenantBucketName('doqyn-dev-t-alpha-consultoria-73dcc57ebaf7'),
-      false,
-    );
+    assert.equal(isLegacyTenantBucketName('doqyn-dev-t-alpha-consultoria-73dcc57ebaf7'), false);
   });
 
   it('getTenantBucketName usa padrão amigável em per_tenant', () => {

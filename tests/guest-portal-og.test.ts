@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { renderOgPortalHtml } from '../server/og/renderOgPortalHtml.js';
 import type { OgPortalMetadata } from '../server/og/ogPortalMetadata.js';
@@ -13,14 +13,10 @@ function read(relativePath: string): string {
 const sampleSignMetadata: OgPortalMetadata = {
   kind: 'sign',
   available: true,
-  title: 'Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN',
-  description:
-    'Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00.',
-  documentName: 'Contrato de Prestação de Serviços',
-  issuerName: 'Maria Silva',
-  versionLabel: 'v2.0',
+  title: 'Documento para assinar · DOQYN',
+  description: 'Alguém solicitou sua assinatura em um documento. Abra o link para ver e assinar.',
   statusLabel: 'Assinatura pendente',
-  imageUrl: 'https://app.doqyn.com/api/og/guest/sign/sample-token/image',
+  imageUrl: 'https://app.doqyn.com/og/portal-card-sign.png',
   canonicalUrl: 'https://app.doqyn.com/guest/sign/sample-token',
   portalPath: '/guest/sign/sample-token',
   ctaLabel: 'Abrir e assinar',
@@ -30,21 +26,26 @@ describe('guest portal Open Graph', () => {
   it('renderiza HTML com meta tags Open Graph e Twitter Cards', () => {
     const html = renderOgPortalHtml(sampleSignMetadata);
 
-    assert.ok(html.includes('<meta property="og:title" content="Assinar: Contrato de Prestação de Serviços · v2.0 · DOQYN" />'));
-    assert.ok(html.includes('<meta property="og:description" content="Maria Silva solicitou sua assinatura neste documento. Válido até 15/08/2026, 18:00:00." />'));
+    assert.ok(
+      html.includes('<meta property="og:title" content="Documento para assinar · DOQYN" />'),
+    );
     assert.ok(
       html.includes(
-        '<meta property="og:image" content="https://app.doqyn.com/api/og/guest/sign/sample-token/image" />',
+        '<meta property="og:image" content="https://app.doqyn.com/og/portal-card-sign.png" />',
       ),
     );
-    assert.ok(html.includes('<meta property="og:url" content="https://app.doqyn.com/guest/sign/sample-token" />'));
+    assert.ok(
+      html.includes(
+        '<meta property="og:url" content="https://app.doqyn.com/guest/sign/sample-token" />',
+      ),
+    );
     assert.ok(html.includes('<meta property="og:type" content="website" />'));
     assert.ok(html.includes('<meta name="twitter:card" content="summary_large_image" />'));
     assert.ok(html.includes('Abrir e assinar'));
   });
 
   it('expõe rotas OG no dev-server e na Vercel', () => {
-    const devServer = read('server/dev-server.ts');
+    const devServer = read('server/apiServer.ts');
     const vercel = read('vercel.json');
 
     assert.ok(devServer.includes('/api/og/guest/share/'));
@@ -66,16 +67,73 @@ describe('guest portal Open Graph', () => {
     assert.ok(signPortal.includes('useGuestPortalPageMeta'));
   });
 
-  it('usa imagem padrão em public/og para convites sem preview', () => {
-    const metadata: OgPortalMetadata = {
-      ...sampleSignMetadata,
-      kind: 'share',
-      imageUrl: 'https://app.doqyn.com/og/portal-default.webp',
-      canonicalUrl: 'https://app.doqyn.com/guest/share/sample-token',
-      portalPath: '/guest/share/sample-token',
-      ctaLabel: 'Aceitar e abrir',
-    };
-    const html = renderOgPortalHtml(metadata);
-    assert.ok(html.includes('https://app.doqyn.com/og/portal-default.webp'));
+  /**
+   * O robô que monta a prévia do link não se autentica, e o card que ele produz fica visível
+   * para todo o grupo onde o link for colado. Estes três casos existem porque o caminho antigo
+   * publicava ali o preview da primeira página, o nome do arquivo e a mensagem do remetente.
+   */
+  describe('o cartão do link não fala do documento', () => {
+    it('nenhuma rota serve imagem derivada do documento para o robô', () => {
+      const dispatcher = read('server/apiServer.ts');
+      const metadata = read('server/og/ogPortalMetadata.ts');
+
+      assert.ok(!dispatcher.includes('/api/og/guest/share/([^/]+)/image'));
+      assert.ok(!dispatcher.includes('/api/og/guest/sign/([^/]+)/image'));
+      assert.ok(!metadata.includes('/image`'));
+      assert.ok(!existsSync(new URL('api/og/guest/sign/[token]/image.ts', root)));
+      assert.ok(!existsSync(new URL('api/og/guest/share/[token]/image.ts', root)));
+    });
+
+    it('os cartões de marca existem em PNG, que é o que o WhatsApp renderiza', () => {
+      // WebP não aparece em prévia de link no WhatsApp — era por isso que o cartão nunca
+      // chegava ao chat mesmo com as meta tags corretas.
+      for (const name of ['portal-card-sign', 'portal-card-share', 'portal-card']) {
+        assert.ok(existsSync(new URL(`public/og/${name}.png`, root)), `falta ${name}.png`);
+      }
+    });
+
+    it('a casca do app declara o cartão, para quem busca a prévia com user-agent de navegador', () => {
+      // O WhatsApp Web busca pelo navegador do usuário, então nunca chega na página do robô.
+      const html = read('index.html');
+
+      assert.ok(
+        // A URL leva `?v=N`: sem trocar a URL da imagem, quem já viu a prévia antiga continua
+        // vendo o cartão em cache.
+        /property="og:image" content="https:\/\/app\.doqyn\.com\/og\/portal-card\.png\?v=\d+"/.test(
+          html,
+        ),
+      );
+      assert.ok(html.includes('property="og:image:width" content="1200"'));
+      assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));
+    });
+
+    it('a página do robô responde HEAD, que é a sondagem que vem antes do GET', () => {
+      // 405 no HEAD faz o robô da Meta desistir da prévia sem nunca tentar o GET.
+      for (const kind of ['sign', 'share']) {
+        const handler = read(`api/og/guest/${kind}/[token].ts`);
+        assert.ok(handler.includes("req.method === 'HEAD'"), `${kind} não aceita HEAD`);
+        assert.ok(handler.includes('if (isHead) return res.status(200).end();'));
+      }
+    });
+
+    it('robots.txt deixa o robô social passar e barra só o buscador', () => {
+      const robots = read('public/robots.txt');
+
+      // Bloquear /guest/ para todos custaria a prévia: facebookexternalhit respeita robots.txt.
+      assert.ok(robots.includes('User-agent: Googlebot'));
+      assert.ok(robots.includes('Disallow: /guest/'));
+      assert.ok(robots.includes('User-agent: *\nAllow: /'));
+      assert.ok(!robots.includes('User-agent: *\nDisallow: /guest/'));
+    });
+
+    it('o corpo servido ao robô não carrega nome de documento nem remetente', () => {
+      const html = renderOgPortalHtml(sampleSignMetadata);
+
+      assert.ok(html.includes('<meta name="robots" content="noindex, nofollow" />'));
+      assert.ok(!html.includes('Contrato'));
+      assert.ok(!html.includes('Maria Silva'));
+      // O fallback do renderizador é o que aparece quando o metadata não traz o documento.
+      assert.ok(html.includes('Documento'));
+    });
   });
 });

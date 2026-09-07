@@ -7,7 +7,8 @@ import {
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 
 function resolveDocumentId(req: VercelRequest): string | undefined {
-  const fromParams = (req as VercelRequest & { params?: { documentId?: string } }).params?.documentId;
+  const fromParams = (req as VercelRequest & { params?: { documentId?: string } }).params
+    ?.documentId;
   if (typeof fromParams === 'string' && fromParams.trim()) return fromParams.trim();
   const fromQuery = req.query.documentId;
   if (typeof fromQuery === 'string' && fromQuery.trim()) return fromQuery.trim();

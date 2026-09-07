@@ -66,6 +66,9 @@ describe('editor usa o canônico no campo de data', () => {
 
   it('campo de texto continua mostrando o que o documento diz', () => {
     const editor = readRepoFile('src/features/expiry/components/DocumentExpiryEditor.tsx');
-    assert.match(editor, /return row\.value === null \|\| row\.value === undefined \? '' : String\(row\.value\);/);
+    assert.match(
+      editor,
+      /return row\.value === null \|\| row\.value === undefined \? '' : String\(row\.value\);/,
+    );
   });
 });

@@ -15,10 +15,22 @@ export function isInsufficientTextAfterOcr(extracted: ExtractedDocumentText): bo
 }
 
 /**
- * Extração de texto irrecuperável → status failed (não 500/422), com código claro.
- * Evita beco sem saída de requires_review sem classId.
+ * Texto que a máquina não conseguiu ler → revisão manual, não erro.
+ *
+ * Isto já foi `status: 'failed'`, e o motivo escrito aqui era evitar "beco sem saída de
+ * requires_review sem classId": a confirmação exigia classe, a análise não tinha nenhuma para
+ * dar, e o documento ficava preso. O beco foi fechado do outro lado — `ReviewDrawer` passou a
+ * cobrar a categoria de quem envia (`needsManualCategory`), e `normalizeConfirmPayload` aceita
+ * `manualClassId` no lugar da classe da IA.
+ *
+ * Fechado o beco, `failed` virou a resposta errada. Um PDF escaneado que o OCR não leu continua
+ * sendo um documento perfeitamente utilizável: quem envia abre, reconhece, escolhe a categoria e
+ * preenche a ficha à mão. Errar o arquivo obrigava a pessoa a reenviar o mesmo PDF para receber o
+ * mesmo erro — a máquina não ia ler daquela vez também.
+ *
+ * O `errorCode` continua indo junto, e é ele que explica na tela por que não veio classificação.
  */
-export function buildTextExtractionFailedResponse(input: {
+export function buildTextExtractionReviewResponse(input: {
   jobId: string;
   originalFileName: string;
   fileHash: string;
@@ -32,7 +44,8 @@ export function buildTextExtractionFailedResponse(input: {
     classId: null,
     className: null,
     confidence: 0,
-    requiresReview: false,
+    // Sem texto não há como sugerir classe, e é justamente isso que a revisão resolve.
+    requiresReview: true,
     reason: input.reason,
     errorCode: input.errorCode,
     evidence: [],
@@ -40,7 +53,7 @@ export function buildTextExtractionFailedResponse(input: {
 
   return {
     jobId: input.jobId,
-    status: 'failed',
+    status: 'requires_review',
     errorCode: input.errorCode,
     originalFileName: input.originalFileName,
     fileHash: input.fileHash,
@@ -69,7 +82,7 @@ export function buildTextExtractionFailedResponse(input: {
   };
 }
 
-/** @deprecated use buildTextExtractionFailedResponse */
+/** Atalho para o caso do OCR — o mais comum dos dois, e o que tem mensagem própria. */
 export function buildVisionOcrFailedReviewResponse(input: {
   jobId: string;
   originalFileName: string;
@@ -78,7 +91,7 @@ export function buildVisionOcrFailedReviewResponse(input: {
   extracted: ExtractedDocumentText;
   logs: ProcessingLogItem[];
 }): AnalyzePdfResponse {
-  return buildTextExtractionFailedResponse({
+  return buildTextExtractionReviewResponse({
     ...input,
     errorCode: 'VISION_OCR_FAILED',
     reason: AI_ERROR_MESSAGES.visionOcrFailed,

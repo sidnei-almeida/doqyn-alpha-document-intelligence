@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { summarizeWorkflowLogMessage } from '../src/features/document-send/utils/workflowLogHelpers.ts';
 import { sanitizeAuditMetadataForDisplay } from '../src/features/audit/utils/auditDisplay.ts';
-import { buildTrackingEventsQuery, formatTrackingAction } from '../src/features/tracking/utils/trackingDisplay.ts';
+import {
+  buildTrackingEventsQuery,
+  formatTrackingAction,
+} from '../src/features/tracking/utils/trackingDisplay.ts';
 
 describe('workflow logs minimalistas', () => {
   it('summarizeWorkflowLogMessage prioriza friendlyTitle', () => {
@@ -44,15 +47,5 @@ describe('tracking page helpers', () => {
   it('formatTrackingAction usa labels em português', () => {
     assert.equal(formatTrackingAction('document.preview_viewed'), 'Preview visualizado');
     assert.equal(formatTrackingAction('document.download_denied'), 'Download negado');
-  });
-
-  it('TrackingSummaryStrip usa cards temáticos sem ícones em fundo preto', () => {
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'features', 'tracking', 'components', 'TrackingSummaryStrip.tsx'),
-      'utf8',
-    );
-    assert.ok(source.includes('border-doqyn-border-subtle'));
-    assert.ok(source.includes('bg-doqyn-primary-bg'));
-    assert.equal(source.includes('bg-doqyn-bg'), false);
   });
 });

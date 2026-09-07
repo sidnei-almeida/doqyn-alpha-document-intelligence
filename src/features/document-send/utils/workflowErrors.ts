@@ -61,9 +61,7 @@ export function parseWorkflowErrorPayload(
       title: sanitizeText(error.title),
       suggestion: error.suggestion ? sanitizeText(error.suggestion) : undefined,
       devHint: error.devHint ? sanitizeText(error.devHint) : undefined,
-      technicalDetail: error.technicalDetail
-        ? sanitizeText(error.technicalDetail)
-        : undefined,
+      technicalDetail: error.technicalDetail ? sanitizeText(error.technicalDetail) : undefined,
       toastMessage: buildWorkflowToastMessage(error),
       requestId: payload.requestId,
     };

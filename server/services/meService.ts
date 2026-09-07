@@ -28,7 +28,6 @@ function resolveAvatarUrl(input: {
 }
 export type MeResponse = {
   ok?: boolean;
-  authProvider?: string;
   user: {
     id?: string;
     email: string;
@@ -55,8 +54,6 @@ export type MeResponse = {
     tenantRoles: string[];
     accessGroupIds: string[];
   };
-  /** Compatibilidade temporária com clientes que ainda leem user plano */
-  legacyUser?: AuthUser;
 };
 
 export async function resolveMeResponse(user: AuthUser): Promise<MeResponse> {
@@ -96,7 +93,6 @@ export async function resolveMeResponse(user: AuthUser): Promise<MeResponse> {
       tenantRoles: [...tenantRoles],
       accessGroupIds,
     },
-    legacyUser: user,
   };
 }
 
@@ -127,7 +123,6 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
 
   return {
     ok: true,
-    authProvider: 'doqyn_auth',
     user: {
       id: user.id,
       email: user.email,
@@ -154,28 +149,6 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
       status: activeMembership.status,
       tenantRoles: [...activeMembership.roles],
       accessGroupIds: [...activeMembership.accessGroupIds],
-    },
-    legacyUser: {
-      id: user.id,
-      email: user.email,
-      name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
-      firstName: user.firstName ?? undefined,
-      lastName: user.lastName ?? undefined,
-      companyId: activeMembership.tenantId,
-      tenantId: activeMembership.tenantId,
-      companyName: activeMembership.tenantDisplayName ?? activeMembership.tenantId,
-      role: activeMembership.roles.includes('company_admin') ? 'manager' : 'user',
-      area: '',
-      groups: activeMembership.accessGroupIds,
-      memberId: activeMembership.membershipId,
-      membershipId: activeMembership.membershipId,
-      platformRoles: activeMembership.roles,
-      membershipStatus: activeMembership.status,
-      tenantType: activeMembership.tenantType,
-      authProvider: 'doqyn_auth',
-      avatarVersion: user.avatarVersion ?? 0,
-      avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
-      avatarStatus: user.avatarStatus ?? undefined,
     },
   };
 }

@@ -24,7 +24,6 @@ export type AuthUser = {
   membershipStatus?: string;
   tenantType?: string;
   tenantStatus?: string;
-  authProvider?: 'doqyn_auth' | 'temporary';
   authUserId?: string;
   platformRoles?: PlatformRole[];
   avatarVersion?: number;

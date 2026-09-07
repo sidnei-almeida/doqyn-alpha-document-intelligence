@@ -9,8 +9,20 @@ import {
 export type IndexEnsureResult = {
   collection: string;
   name: string;
-  status: 'created' | 'existing';
+  status: 'created' | 'existing' | 'dropped' | 'error';
+  error?: string;
 };
+
+/**
+ * O que fazer quando a criação de um índice falha.
+ *
+ * O provisionamento de tenant deixa a exceção subir: um índice único que não nasceu é um tenant
+ * que aceita duplicata, e é melhor a criação falhar do que seguir com a garantia faltando.
+ *
+ * O job de operação não pode: ele percorre a base inteira, e abortar no primeiro erro deixaria
+ * todas as coleções seguintes sem índice por causa de uma. Lá a falha vira linha de relatório.
+ */
+export type EnsureIndexOptions = { continueOnError?: boolean };
 
 async function ensureCollectionExists(collectionName: string): Promise<boolean> {
   const db = await getDb();
@@ -25,7 +37,9 @@ async function ensureCollectionExists(collectionName: string): Promise<boolean> 
 export async function ensureIndexesForCollection(
   collectionName: string,
   indexes: IndexDescription[],
+  options?: EnsureIndexOptions,
 ): Promise<IndexEnsureResult[]> {
+  const continueOnError = options?.continueOnError ?? false;
   const createdCollection = await ensureCollectionExists(collectionName);
   const db = await getDb();
   const collection = db.collection(collectionName);
@@ -38,6 +52,28 @@ export async function ensureIndexesForCollection(
 
   for (const spec of indexes) {
     const keyStr = JSON.stringify(spec.key);
+
+    /**
+     * Índice com o nome declarado, mas com outra chave: a forma mudou e o antigo ficou para trás.
+     *
+     * Sem isto a criação falha para sempre — o Mongo recusa reaproveitar um nome com chave
+     * diferente, e a checagem por forma de chave logo abaixo nunca encontra o novo, então toda
+     * rodada do job repete o mesmo erro e o índice novo nunca nasce. Foi o que aconteceu com
+     * `inbound_pending_by_recipient`.
+     *
+     * Derruba só quando a chave difere. Enquanto o nome e a forma batem, nada é mexido — soltar e
+     * recriar a cada rodada deixaria a coleção sem índice durante a reconstrução, por nada.
+     */
+    if (spec.name && spec.name !== '_id_') {
+      const sameName = existing.find((idx) => idx.name === spec.name);
+      if (sameName && JSON.stringify(sameName.key) !== keyStr) {
+        await collection.dropIndex(spec.name);
+        const index = existing.indexOf(sameName);
+        if (index >= 0) existing.splice(index, 1);
+        results.push({ collection: collectionName, name: spec.name, status: 'dropped' });
+      }
+    }
+
     const match = existing.find((idx) => JSON.stringify(idx.key) === keyStr);
 
     if (match) {
@@ -49,24 +85,39 @@ export async function ensureIndexesForCollection(
       continue;
     }
 
-    const options: {
+    const createOptions: {
       unique?: boolean;
       partialFilterExpression?: Record<string, unknown>;
       name?: string;
+      expireAfterSeconds?: number;
     } = {};
-    if (spec.unique) options.unique = true;
+    if (spec.unique) createOptions.unique = true;
     if (spec.partialFilterExpression)
-      options.partialFilterExpression = spec.partialFilterExpression;
-    if (spec.name) options.name = spec.name;
+      createOptions.partialFilterExpression = spec.partialFilterExpression;
+    if (spec.name) createOptions.name = spec.name;
+    // Sem esta linha o TTL era declarado e descartado: o índice nascia comum, e a coleção que
+    // depende dele para não crescer para sempre crescia em silêncio.
+    if (spec.expireAfterSeconds !== undefined)
+      createOptions.expireAfterSeconds = spec.expireAfterSeconds;
 
-    const created = await collection.createIndex(spec.key, options);
-    results.push({ collection: collectionName, name: created, status: 'created' });
+    try {
+      const created = await collection.createIndex(spec.key, createOptions);
+      results.push({ collection: collectionName, name: created, status: 'created' });
+    } catch (error) {
+      if (!continueOnError) throw error;
+      results.push({
+        collection: collectionName,
+        name: keyStr,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+    }
   }
 
   return results;
 }
 
-function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
+export function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
   collection: string;
   indexes: IndexDescription[];
 }> {
@@ -99,6 +150,28 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
         { key: { tenantId: 1, groupId: 1, active: 1 } },
         { key: { tenantId: 1, membershipId: 1, active: 1 } },
         { key: { tenantId: 1, groupId: 1, membershipId: 1 }, unique: true },
+      ],
+    });
+  }
+
+  if (names.pendingInviteGroups) {
+    out.push({
+      collection: names.pendingInviteGroups,
+      indexes: [
+        // A busca do sync, que roda para todo membro que entra.
+        { key: { tenantId: 1, emailNormalized: 1 } },
+        /**
+         * Expira sozinho, e é o que impede uma concessão de acesso que ninguém escolheu.
+         *
+         * O registro guarda "quando esta pessoa entrar, dê estes grupos". Se o convite for
+         * revogado ou simplesmente nunca aceito, ele ficaria guardado para sempre — e a pessoa
+         * receberia os grupos ao entrar por qualquer outro caminho, meses depois, por uma
+         * decisão que alguém tomou e desfez.
+         *
+         * Oito dias: um a mais que os sete de `INVITE_TTL_DAYS`, para a margem cair do lado de
+         * o convite morrer antes da intenção, nunca o contrário.
+         */
+        { key: { createdAt: 1 }, expireAfterSeconds: 8 * 24 * 60 * 60 },
       ],
     });
   }
@@ -190,35 +263,84 @@ function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Array<{
  * custo que este passo existe para cortar. As consultas de PF passaram a liderar por `tenantId`
  * (ver `buildDocumentOwnershipFilter`) e usam os índices abaixo.
  */
-export async function ensureSharedCollectionIndexes(): Promise<IndexEnsureResult[]> {
-  return ensureTenantDataIndexes(resolveSharedCollections());
+export async function ensureSharedCollectionIndexes(
+  options?: EnsureIndexOptions,
+): Promise<IndexEnsureResult[]> {
+  return ensureTenantDataIndexes(resolveSharedCollections(), options);
 }
 
 export async function ensureTenantDataIndexes(
   names: ResolvedTenantCollectionNames,
+  options?: EnsureIndexOptions,
 ): Promise<IndexEnsureResult[]> {
   const all: IndexEnsureResult[] = [];
   for (const group of tenantScopedIndexSpecs(names)) {
-    const results = await ensureIndexesForCollection(group.collection, group.indexes);
+    const results = await ensureIndexesForCollection(group.collection, group.indexes, options);
     all.push(...results);
   }
   return all;
 }
 
-export async function ensureRegistryTenantIndexes(): Promise<void> {
-  await ensureIndexesForCollection(REGISTRY_COLLECTIONS.tenants, [
-    { key: { tenantId: 1 }, unique: true },
-    {
-      key: { taxIdHash: 1 },
-      unique: true,
-      partialFilterExpression: { taxIdHash: { $exists: true } },
-    },
-    { key: { slug: 1 }, unique: true },
-    { key: { status: 1 } },
-    // resolveTenant() busca com { $or: [{ tenantId }, { companyId }] } em quase toda
-    // requisição. Um $or só usa índice se TODOS os ramos forem indexados — sem este,
-    // o ramo companyId força COLLSCAN no registry a cada request. Parcial porque nem
-    // todo tenant tem companyId (não é único: tenantId e companyId podem coincidir).
-    { key: { companyId: 1 }, partialFilterExpression: { companyId: { $exists: true } } },
-  ]);
+/**
+ * Os índices do registro — tenants e membros — numa lista só.
+ *
+ * Moravam em dois lugares: aqui, inline no `ensureRegistryTenantIndexes`, e no
+ * `scripts/ensure-mongodb-indexes.ts`. As duas listas divergiram: o script criava três índices a
+ * mais em `tenants` e oito em `tenant_members` que o provisionamento nunca criava. Quem provisionou
+ * pelo app ficou com menos índice do que quem rodou o job — e ninguém notou, porque índice que
+ * falta não dá erro, dá lentidão.
+ */
+export const REGISTRY_INDEX_SPECS: Array<{ collection: string; indexes: IndexDescription[] }> = [
+  {
+    collection: REGISTRY_COLLECTIONS.tenants,
+    indexes: [
+      { key: { tenantId: 1 }, unique: true },
+      // Parcial porque o Mongo trata campo ausente como null, e único só aceita um null: sem
+      // isto, o segundo tenant sem `taxIdHash` quebra com duplicate-key.
+      {
+        key: { taxIdHash: 1 },
+        unique: true,
+        partialFilterExpression: { taxIdHash: { $exists: true } },
+      },
+      { key: { slug: 1 }, unique: true },
+      { key: { status: 1 } },
+      // `resolveTenant()` busca com { $or: [{ tenantId }, { companyId }] } em quase toda
+      // requisição, e um $or só usa índice se TODOS os ramos forem indexados — sem este, o ramo
+      // do companyId força varredura completa do registro a cada request. Parcial porque nem todo
+      // tenant tem companyId, e não é único porque os dois campos podem coincidir.
+      { key: { companyId: 1 }, partialFilterExpression: { companyId: { $exists: true } } },
+      { key: { tenantType: 1, status: 1 } },
+      { key: { createdAt: 1 } },
+      { key: { updatedAt: 1 } },
+    ],
+  },
+  {
+    collection: REGISTRY_COLLECTIONS.tenantMembers,
+    indexes: [
+      { key: { tenantId: 1, status: 1 } },
+      // Um e-mail por tenant, mas só entre quem conta: bloqueado e rejeitado saem do único para
+      // que a mesma pessoa possa ser convidada de novo depois.
+      {
+        key: { tenantId: 1, emailNormalized: 1 },
+        unique: true,
+        partialFilterExpression: { status: { $in: ['active', 'pending'] } },
+      },
+      { key: { tenantId: 1, authUserId: 1 } },
+      { key: { authUserId: 1, status: 1 } },
+      { key: { tenantId: 1, accessGroupIds: 1 } },
+      { key: { tenantId: 1, createdAt: 1 } },
+      { key: { tenantId: 1, updatedAt: 1 } },
+      { key: { memberId: 1 }, unique: true },
+    ],
+  },
+];
+
+export async function ensureRegistryTenantIndexes(
+  options?: EnsureIndexOptions,
+): Promise<IndexEnsureResult[]> {
+  const all: IndexEnsureResult[] = [];
+  for (const group of REGISTRY_INDEX_SPECS) {
+    all.push(...(await ensureIndexesForCollection(group.collection, group.indexes, options)));
+  }
+  return all;
 }

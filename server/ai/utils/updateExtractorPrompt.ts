@@ -4,10 +4,7 @@ import {
   augmentConfidentialityClassForExtraction,
   isConfidentialityClassRule,
 } from './documentClassHeuristics.js';
-import {
-  MAX_CHARS_PER_EXTRACTOR_CHUNK,
-  MAX_EXTRACTOR_FIELDS_IN_PROMPT,
-} from '../constants.js';
+import { MAX_CHARS_PER_EXTRACTOR_CHUNK, MAX_EXTRACTOR_FIELDS_IN_PROMPT } from '../constants.js';
 
 export type PreviousVersionContext = {
   documentId: string;
@@ -44,8 +41,7 @@ export function buildUpdateExtractorPrompt(input: {
   const compactChunks = limitExtractorChunks(input.chunks);
   const classForFields = augmentConfidentialityClassForExtraction(input.selectedClass);
   const sorted = [...classForFields.fields].sort((a, b) => {
-    const partyBoost =
-      Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
+    const partyBoost = Number(PARTY_FIELD_KEYS.has(b.key)) - Number(PARTY_FIELD_KEYS.has(a.key));
     if (partyBoost !== 0) return partyBoost;
     return Number(b.required) - Number(a.required);
   });
@@ -80,7 +76,10 @@ Tarefa:
 4. Avaliar se parece o MESMO documento (atualização legítima) ou um documento DIFERENTE.
 5. Se parecer documento diferente: seemsSameDocument=false, requiresReview=true, sem auto-confirmação silenciosa.
 6. Use version="${input.previousVersion.expectedNextVersionLabel}" na resposta.
-7. Responda APENAS com JSON válido, sem markdown.
+7. Preencha "resumo": um parágrafo de duas a três linhas dizendo o que o NOVO arquivo é e do que
+   trata. Escreva sobre o arquivo novo, não sobre o anterior — se o conteúdo mudou, o resumo muda.
+   Só o que está escrito, no máximo 400 caracteres, null se não houver conteúdo aproveitável.
+8. Responda APENAS com JSON válido, sem markdown.
 ${ndaHints}
 
 Classe documental: ${input.selectedClass.name}
@@ -93,7 +92,7 @@ Trechos do NOVO arquivo:
 ${formatChunksForPrompt(compactChunks)}
 
 Formato de resposta:
-{"documentType":"string","version":"${input.previousVersion.expectedNextVersionLabel}","metadata":{"campo":{"label":"...","value":"...","normalizedValue":"...","confidence":0.9,"source":"document_text","evidence":{"pageNumber":1,"snippet":"..."}}},"missingFields":[],"requiresReview":false,"reviewReasons":[],"mainChanges":["..."],"changedFields":["campo"],"riskWarnings":["..."],"seemsSameDocument":true,"sameDocumentConfidence":0.9,"sameDocumentEvidence":["motivo curto"]}`;
+{"documentType":"string","version":"${input.previousVersion.expectedNextVersionLabel}","resumo":"Acordo de confidencialidade entre as mesmas partes, agora com sigilo de dez anos e nova cláusula de auditoria.","metadata":{"campo":{"label":"...","value":"...","normalizedValue":"...","confidence":0.9,"source":"document_text","evidence":{"pageNumber":1,"snippet":"..."}}},"missingFields":[],"requiresReview":false,"reviewReasons":[],"mainChanges":["..."],"changedFields":["campo"],"riskWarnings":["..."],"seemsSameDocument":true,"sameDocumentConfidence":0.9,"sameDocumentEvidence":["motivo curto"]}`;
 
   return { prompt, compactChunks };
 }

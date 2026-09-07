@@ -315,24 +315,33 @@ describe('addDoqynWatermarkToPdf', () => {
 
 describe('doqyn logo watermark asset', () => {
   it('rasteriza logo horizontal com canal alpha', async () => {
-    const { rasterizeDoqynWatermarkLogo, DOQYN_HORIZONTAL_LOGO_ASPECT } = await import(
-      '../server/preview/watermarkAsset.js'
-    );
+    const { rasterizeDoqynWatermarkLogo, DOQYN_HORIZONTAL_LOGO_ASPECT } =
+      await import('../server/preview/watermarkAsset.js');
     const logo = await rasterizeDoqynWatermarkLogo(480);
     assert.ok(logo.length > 0);
     const meta = await sharp(logo).metadata();
     assert.equal(meta.format, 'png');
     assert.ok((meta.width ?? 0) > (meta.height ?? 0));
-    assert.ok(Math.abs((meta.width ?? 1) / (meta.height ?? 1) - DOQYN_HORIZONTAL_LOGO_ASPECT) < 0.05);
+    assert.ok(
+      Math.abs((meta.width ?? 1) / (meta.height ?? 1) - DOQYN_HORIZONTAL_LOGO_ASPECT) < 0.05,
+    );
     assert.equal(meta.hasAlpha, true);
 
     const { data } = await sharp(logo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     let grayPixels = 0;
     for (let index = 0; index < data.length; index += 4) {
       if (data[index + 3] < 32) continue;
-      assert.equal(data[index], 128);
-      assert.equal(data[index + 1], 128);
-      assert.equal(data[index + 2], 128);
+      const [r, g, b] = [data[index]!, data[index + 1]!, data[index + 2]!];
+
+      // Neutro é o que importa: os três canais iguais entre si. Um desvio aqui significaria
+      // matiz na marca d'água, que ela não pode ter.
+      assert.equal(r, g);
+      assert.equal(g, b);
+
+      // E perto de 128. A igualdade exata era possível no caminho antigo, que recalculava a cor
+      // pixel a pixel; o SVG rasterizado deixa o antialiasing das bordas variar por alguns
+      // pontos, e exigir 128 cravado reprovaria a borda de toda letra.
+      assert.ok(Math.abs(r - 128) <= 4, `cinza fora da faixa: ${r}`);
       grayPixels += 1;
     }
     assert.ok(grayPixels > 100);
@@ -361,7 +370,9 @@ describe('document preview quality', () => {
     assert.ok(renderer.includes('config.pageDpi'));
     assert.ok(images.includes('maxWidth: 1680'));
     assert.ok(images.includes('buildDoqynLogoWatermarkOverlay'));
-    assert.ok(watermarkAsset.includes('doqyn-horizontal.webp'));
+    // O raster da marca antiga saiu com o rebrand: a marca d'água passou a ser o SVG do selo,
+    // onde a cor já nasce fixa e não precisa ser recalculada pixel a pixel.
+    assert.ok(watermarkAsset.includes('doqyn-watermark.svg'));
     assert.ok(watermarkAsset.includes('DOQYN_HORIZONTAL_LOGO_ASPECT'));
     assert.ok(watermarkAsset.includes('DOQYN_WATERMARK_GRAY'));
     assert.ok(images.includes('mozjpeg: true'));

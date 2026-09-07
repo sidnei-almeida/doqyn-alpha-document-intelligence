@@ -1,8 +1,5 @@
 import type { Job } from 'bullmq';
-import {
-  startChunkingWorker,
-  type ChunkingQueueJobPayload,
-} from '../queues/chunkingQueue.js';
+import { startChunkingWorker, type ChunkingQueueJobPayload } from '../queues/chunkingQueue.js';
 import { persistChunksAfterVersionConfirm } from '../services/confirmVersionChunkPersistence.js';
 import { getStorageProvider } from '../storage/index.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
@@ -61,6 +58,9 @@ export async function processChunkingJob(job: Job<ChunkingQueueJobPayload>): Pro
     storage: collections.storage,
     storageScope,
     collections,
+    // O job é a unidade de correlação aqui: não há request para herdar o id.
+    requestId: `job_${payload.documentId}`,
+    startedAt: Date.now(),
   };
 
   await persistChunksAfterVersionConfirm({

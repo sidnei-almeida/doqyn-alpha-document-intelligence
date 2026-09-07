@@ -19,7 +19,10 @@ type InternalAvatarUpdateInput = {
   status: 'active' | 'removed';
 };
 
-async function callInternal<T>(path: string, options?: { method?: string; body?: unknown }): Promise<T> {
+async function callInternal<T>(
+  path: string,
+  options?: { method?: string; body?: unknown },
+): Promise<T> {
   const baseUrl = getDoqynAuthBaseUrl();
   const apiKey = getDoqynAuthInternalApiKey();
 
@@ -73,4 +76,103 @@ export async function fetchAuthTenantMembersForSync(
     `/internal/tenants/${encodeURIComponent(tenantId)}/members`,
   );
   return result.members ?? [];
+}
+
+/**
+ * O diretório DOQYN: existe alguém com este e-mail?
+ *
+ * O auth-service devolve **resposta uniforme** — inexistente, desativado e (quando existir a
+ * preferência de visibilidade) quem não quer ser achado têm a mesma forma. Repassar essa
+ * uniformidade é responsabilidade de quem chama: transformar o `found: false` em erro, ou em
+ * mensagem diferente conforme o caso, desfaz do lado de cá o que foi construído do lado de lá.
+ */
+export type DirectoryUserSnapshot = {
+  id: string;
+  displayName: string;
+};
+
+export async function lookupDirectoryUserByEmail(
+  email: string,
+): Promise<DirectoryUserSnapshot | null> {
+  const result = await callInternal<{
+    ok: true;
+    found: boolean;
+    user: DirectoryUserSnapshot | null;
+  }>(`/internal/users/lookup?email=${encodeURIComponent(email)}`);
+
+  return result.found ? (result.user ?? null) : null;
+}
+
+/**
+ * A busca navegável do diretório, por prefixo de handle.
+ *
+ * É o único caminho digitável que o schema do auth-service permite: o nome está cifrado e o
+ * e-mail só tem hash determinístico, e nenhum dos dois responde prefixo. O handle é a peça que
+ * torna o diretório navegável sem tirar nome nenhum da criptografia.
+ */
+export type DirectorySearchHit = {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  avatarVersion: number;
+  avatarStatus: 'active' | 'removed' | null;
+};
+
+export async function searchDirectoryUsersByUsername(
+  prefix: string,
+  limit = 8,
+): Promise<DirectorySearchHit[]> {
+  const query = `?q=${encodeURIComponent(prefix)}&limit=${encodeURIComponent(String(limit))}`;
+  const result = await callInternal<{ ok: true; users?: DirectorySearchHit[] }>(
+    `/internal/users/search${query}`,
+  );
+  return result.users ?? [];
+}
+
+/**
+ * Apelido e nome de contas que já se conhece pelo id.
+ *
+ * Não é descoberta: quem chama já tem os ids. Serve para rotular quem está na tela — a lista de
+ * contatos, o seletor de destinatário — sem guardar uma cópia do handle que envelheceria a cada
+ * troca de apelido. O campo `username` do cadastro por tenant **não serve**: ele guarda o e-mail,
+ * de um esquema anterior ao handle.
+ */
+export async function fetchUsernamesByIds(
+  userIds: string[],
+): Promise<Map<string, { username: string; displayName: string }>> {
+  if (!userIds.length) return new Map();
+
+  const result = await callInternal<{
+    ok: true;
+    users?: Array<{ id: string; username: string; displayName: string }>;
+    // `callInternal` já serializa: passar string aqui mandaria JSON dentro de JSON.
+  }>('/internal/users/usernames', { method: 'POST', body: { userIds } });
+
+  return new Map(
+    (result.users ?? []).map((user) => [
+      user.id,
+      { username: user.username, displayName: user.displayName },
+    ]),
+  );
+}
+
+/**
+ * O e-mail de um usuário, para o sistema entregar — não para a tela mostrar.
+ *
+ * A busca por apelido não devolve e-mail de propósito: entregá-lo a quem digitou duas letras faria
+ * do diretório uma lista de endereços. Mas quem foi escolhido precisa receber aviso, e o convite
+ * de assinatura precisa de um destinatário real. Esta chamada é servidor-para-servidor, com a
+ * chave interna, e o resultado nunca volta ao cliente.
+ */
+export async function fetchDirectoryUserEmail(userId: string): Promise<string | null> {
+  try {
+    const result = await callInternal<{ ok: true; user?: { email?: string } }>(
+      `/internal/users/${encodeURIComponent(userId)}`,
+    );
+    return result.user?.email?.trim().toLowerCase() ?? null;
+  } catch {
+    // Sem e-mail, o fluxo segue: o que depende dele é entrega, não autorização.
+    return null;
+  }
 }

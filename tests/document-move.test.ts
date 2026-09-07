@@ -84,8 +84,8 @@ describe('document move — API', () => {
     assert.ok(api.includes('documentIds'));
   });
 
-  it('dev-server registra rotas de move', () => {
-    const dev = read('server/dev-server.ts');
+  it('a tabela de rotas registra rotas de move', () => {
+    const dev = read('server/apiServer.ts');
     assert.ok(dev.includes('/api/documents/batch/move'));
     assert.ok(dev.includes('/move'));
   });
@@ -149,7 +149,10 @@ describe('document move — frontend', () => {
 
   it('menu de pasta não inclui Mover documento', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
-    const folderBlock = menu.slice(menu.indexOf("state.kind === 'folder'"), menu.indexOf("state.kind === 'file'"));
+    const folderBlock = menu.slice(
+      menu.indexOf("state.kind === 'folder'"),
+      menu.indexOf("state.kind === 'file'"),
+    );
     assert.equal(folderBlock.includes('Mover'), false);
   });
 });

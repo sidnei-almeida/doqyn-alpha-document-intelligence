@@ -16,9 +16,13 @@ import {
   headTenantBucket,
 } from '../server/storage/r2/r2BucketProvisioner.js';
 import { createR2StorageProvider } from '../server/storage/r2/r2StorageProvider.js';
-import { getStorageProvider, resetStorageProviderCache } from '../server/storage/getStorageProvider.js';
+import {
+  getStorageProvider,
+  resetStorageProviderCache,
+} from '../server/storage/getStorageProvider.js';
 import type { R2Config } from '../server/storage/storageConfig.js';
 import { validateR2Endpoint } from '../server/storage/storageConfig.js';
+import { setCorsEnv, withBucketCorsStub } from './helpers/r2CorsMock.js';
 
 const BASE_R2_CONFIG: R2Config = {
   accountId: 'abc123',
@@ -36,7 +40,7 @@ const BASE_R2_CONFIG: R2Config = {
 };
 
 function createMockClient(handler: (command: unknown) => Promise<unknown>): S3Client {
-  return { send: handler } as unknown as S3Client;
+  return { send: withBucketCorsStub(handler) } as unknown as S3Client;
 }
 
 describe('r2 bucket naming', () => {
@@ -97,6 +101,9 @@ describe('r2 clients', () => {
 });
 
 describe('r2 bucket provisioner', () => {
+  // Provisionar bucket agora reconcilia o CORS junto — sem origem configurada nada é provisionado.
+  beforeEach(setCorsEnv);
+
   it('ensureTenantBucket chama HeadBucket e CreateBucket quando necessário', async () => {
     const commands: unknown[] = [];
     const adminClient = createMockClient(async (command) => {
@@ -121,8 +128,14 @@ describe('r2 bucket provisioner', () => {
 
     assert.equal(result.created, true);
     assert.match(result.bucket, /^doqyn-t-[a-f0-9]{12}$/);
-    assert.equal(commands.some((c) => c instanceof HeadBucketCommand), true);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof HeadBucketCommand),
+      true,
+    );
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      true,
+    );
   });
 
   it('ensureTenantBucket é idempotente se bucket já existe', async () => {
@@ -142,7 +155,10 @@ describe('r2 bucket provisioner', () => {
     });
 
     assert.equal(result.created, false);
-    assert.equal(commands.some((c) => c instanceof CreateBucketCommand), false);
+    assert.equal(
+      commands.some((c) => c instanceof CreateBucketCommand),
+      false,
+    );
   });
 
   it('createTenantBucket trata BucketAlreadyOwnedByYou como OK', async () => {
@@ -212,9 +228,15 @@ describe('r2 storage provider', () => {
 
     assert.equal(stored.provider, 'r2');
     assert.equal(stored.bucket, 'doqyn-t-a94f3c82d1b4');
-    assert.match(stored.storageKey, /^documents\/doc_001\/versions\/ver_001\/original\/documento\.pdf$/);
+    assert.match(
+      stored.storageKey,
+      /^documents\/doc_001\/versions\/ver_001\/original\/documento\.pdf$/,
+    );
     assert.equal(stored.etag, '"etag-123"');
-    assert.equal(commands.some((c) => c instanceof PutObjectCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof PutObjectCommand),
+      true,
+    );
     assert.equal(ensureBucket.mock.calls.length, 1);
   });
 
@@ -261,7 +283,10 @@ describe('r2 storage provider', () => {
       'doqyn-t-a94f3c82d1b4',
     );
 
-    assert.equal(commands.some((c) => c instanceof DeleteObjectCommand), true);
+    assert.equal(
+      commands.some((c) => c instanceof DeleteObjectCommand),
+      true,
+    );
   });
 });
 

@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/auth/useAuth';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import {
@@ -29,9 +28,12 @@ export function HeaderUserMenu() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'explorer-interactive flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 sm:pr-3',
-          'hover:bg-doqyn-surface-hover',
-          open && 'bg-doqyn-surface-hover',
+          // Canto de 4px em vez de pílula, e o cargo em monoespaçado: ele é
+          // rótulo de registro, não segunda linha de nome. Antes as duas linhas
+          // tinham o mesmo peso e o bloco competia com o conteúdo da página.
+          'explorer-interactive flex items-center gap-2.5 rounded-[4px] py-1 pl-1 pr-2 sm:pr-2.5',
+          'transition-colors hover:bg-doqyn-hover/60',
+          open && 'bg-doqyn-hover/60',
         )}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -39,11 +41,15 @@ export function HeaderUserMenu() {
       >
         <UserAvatar name={displayName} email={user?.email} avatarUrl={user?.avatarUrl} size="md" />
         <span className="hidden min-w-0 text-left md:block">
-          <span className="block max-w-[140px] truncate text-label leading-tight text-doqyn-text lg:max-w-[180px]">
+          <span className="block max-w-[140px] truncate text-caption font-medium leading-tight text-doqyn-text lg:max-w-[160px]">
             {displayName}
           </span>
+          {/* O cargo em monoespaçado, sem caixa alta nem entreletra larga: em
+              "Administrador da empresa" isso estourava a largura e o rótulo
+              saía cortado na borda. O mono sozinho já dá o caráter de registro,
+              e separa o cargo do nome sem competir com ele. */}
           {(primaryRole || orgLabel) && (
-            <span className="block max-w-[140px] truncate text-micro leading-tight text-doqyn-muted lg:max-w-[180px]">
+            <span className="mt-0.5 block max-w-[150px] truncate font-mono text-[10px] leading-tight text-doqyn-subtle lg:max-w-[190px]">
               {primaryRole ? getPlatformRoleLabel(primaryRole) : orgLabel}
             </span>
           )}
@@ -60,7 +66,7 @@ export function HeaderUserMenu() {
         data-testid="header-user-menu-dropdown"
         className="w-56 max-w-[calc(100vw-1rem)] py-1"
       >
-        <div className="border-b border-doqyn-border-subtle px-3 py-2.5">
+        <div className="border-b border-doqyn-border-subtle px-3.5 py-3">
           <div className="flex items-center gap-2.5">
             <UserAvatar
               name={displayName}
@@ -73,30 +79,29 @@ export function HeaderUserMenu() {
               {user?.email && <p className="truncate text-micro text-doqyn-muted">{user.email}</p>}
             </div>
           </div>
-          {orgLabel && <p className="mt-1 truncate text-micro text-doqyn-subtle">{orgLabel}</p>}
+          {orgLabel && (
+            <p className="mt-2 truncate font-mono text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
+              {orgLabel}
+            </p>
+          )}
         </div>
 
         <Link
           to="/settings"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-text hover:bg-doqyn-surface-hover"
+          className="explorer-interactive relative flex w-full items-center gap-2.5 rounded-none px-3.5 py-2 text-left text-label font-normal text-doqyn-text before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:before:bg-doqyn-accent-active"
           onClick={() => setOpen(false)}
         >
           <Icon name="settings" size={ICON_SIZE.md} />
-          Configurações da conta
+          Configurações
         </Link>
-
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
-          <span className="text-label font-normal text-doqyn-text">Tema</span>
-          <ThemeToggle />
-        </div>
 
         <div className="my-1 border-t border-doqyn-border-subtle" />
 
         <button
           type="button"
           role="menuitem"
-          className="explorer-interactive flex w-full items-center gap-2.5 px-3 py-2 text-left text-label font-normal text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
+          className="explorer-interactive relative flex w-full items-center gap-2.5 rounded-none px-3.5 py-2 text-left text-label font-normal text-doqyn-muted before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:text-doqyn-text hover:before:bg-doqyn-accent-active"
           onClick={() => {
             setOpen(false);
             logout();

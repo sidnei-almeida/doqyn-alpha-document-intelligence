@@ -31,10 +31,10 @@ describe('navegação da Biblioteca', () => {
     assert.equal(routes.includes('Navigate to="/upload"'), false);
   });
 
-  it('/upload permanece como rota legada acessível', () => {
+  it('/upload deixou de existir: o envio vive só na Biblioteca', () => {
     const routes = readSrc('app/routes.tsx');
-    assert.ok(routes.includes("path: '/upload'"));
-    assert.ok(routes.includes('DocumentSendRoute'));
+    assert.equal(routes.includes("path: '/upload'"), false);
+    assert.equal(routes.includes('DocumentSendRoute'), false);
   });
 
   it('nav primária tem Biblioteca e não tem Envio de Documentos nem /documents', () => {
@@ -66,11 +66,5 @@ describe('navegação da Biblioteca', () => {
     assert.ok(rulesRoute.includes('Navigate to="/biblioteca"'));
     assert.ok(rulesRoute.includes('canAccessRulesPage'));
     assert.equal(protectedRoute.includes('/upload'), false);
-  });
-
-  it('página legada de envio exibe aviso apontando para a Biblioteca', () => {
-    const sendPage = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(sendPage.includes('fluxo legado'));
-    assert.ok(sendPage.includes('/biblioteca'));
   });
 });

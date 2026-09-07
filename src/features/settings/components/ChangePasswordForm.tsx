@@ -130,9 +130,14 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
   }
 
   return (
-    <form className={cn('space-y-4', className)} onSubmit={handleSubmit} autoComplete="off">
+    <form
+      className={cn('settings-form-measure space-y-4', className)}
+      onSubmit={handleSubmit}
+      autoComplete="off"
+    >
       <Input
         id="currentPassword"
+        variant="rule"
         label="Senha atual"
         type="password"
         revealable
@@ -145,6 +150,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       <div className="space-y-2">
         <Input
           id="newPassword"
+          variant="rule"
           label="Nova senha"
           type="password"
           revealable
@@ -155,41 +161,51 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
           disabled={submitting}
         />
 
-        <div
-          className="settings-password-strength"
-          data-level={strength.level}
-          aria-live="polite"
-        >
-          <div className="settings-password-strength__track" aria-hidden>
-            <span className="settings-password-strength__segment" />
-            <span className="settings-password-strength__segment" />
-            <span className="settings-password-strength__segment" />
-          </div>
-          <p className="settings-password-strength__label">{strength.label}</p>
-        </div>
+        {/* Força e requisitos só aparecem depois da primeira tecla.
 
-        <ul className="settings-password-checklist" aria-label="Requisitos da senha">
-          {requirements.map((requirement) => (
-            <li
-              key={requirement.id}
-              className={cn(
-                'settings-password-checklist__item',
-                requirement.met && 'settings-password-checklist__item--met',
-              )}
+            Antes de digitar, três bolinhas apagadas e uma barra vazia leem como erro já cometido —
+            a tela cobra antes de a pessoa tentar. Elas existem para guiar quem está escrevendo, e é
+            só nesse momento que dizem algo. */}
+        {form.newPassword.length > 0 && (
+          <>
+            <div
+              className="settings-password-strength"
+              data-level={strength.level}
+              aria-live="polite"
             >
-              <Icon
-                name={requirement.met ? 'check_circle' : 'radio_button_unchecked'}
-                size={14}
-                filled={requirement.met}
-                aria-hidden
-              />
-              <span>{requirement.label}</span>
-            </li>
-          ))}
-        </ul>
+              <div className="settings-password-strength__track" aria-hidden>
+                <span className="settings-password-strength__segment" />
+                <span className="settings-password-strength__segment" />
+                <span className="settings-password-strength__segment" />
+              </div>
+              <p className="settings-password-strength__label">{strength.label}</p>
+            </div>
+
+            <ul className="settings-password-checklist" aria-label="Requisitos da senha">
+              {requirements.map((requirement) => (
+                <li
+                  key={requirement.id}
+                  className={cn(
+                    'settings-password-checklist__item',
+                    requirement.met && 'settings-password-checklist__item--met',
+                  )}
+                >
+                  <Icon
+                    name={requirement.met ? 'check_circle' : 'radio_button_unchecked'}
+                    size={14}
+                    filled={requirement.met}
+                    aria-hidden
+                  />
+                  <span>{requirement.label}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
       <Input
         id="confirmPassword"
+        variant="rule"
         label="Confirmar nova senha"
         type="password"
         revealable
@@ -199,9 +215,11 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
         error={fieldErrors.confirmPassword}
         disabled={submitting}
       />
-      <Button type="submit" disabled={submitting}>
-        {submitting ? 'Salvando…' : 'Alterar senha'}
-      </Button>
+      <div className="settings-block__action settings-block__action--end">
+        <Button type="submit" variant="secondary" size="sm" disabled={submitting}>
+          {submitting ? 'Salvando…' : 'Alterar senha'}
+        </Button>
+      </div>
     </form>
   );
 }

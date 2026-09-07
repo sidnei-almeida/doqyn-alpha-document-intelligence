@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { DoqynLogo } from '@/components/brand';
-import { Badge } from '@/components/ui/Badge';
-import { VersionBadge } from '@/components/ui/VersionBadge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { TruncatedText } from '@/components/ui/TruncatedText';
+import {
+  GuestPortalShell,
+  GuestRegisterRow,
+  GuestSeal,
+} from '@/features/guest-portal/GuestPortalShell';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { ExternalSharePortalPayload } from '@/features/sharing/api/externalShareApi';
@@ -40,27 +42,28 @@ function formatShareDate(iso: string): string {
 
 function InviteLoadingState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className="guest-state" data-testid="external-share-loading">
       <Icon
         name="progress_activity"
         size={ICON_SIZE.md}
         className="animate-spin text-doqyn-muted"
       />
-      <p className="text-sm text-doqyn-subtle">Carregando convite…</p>
+      <p className="type-caption text-doqyn-subtle">Abrindo o convite…</p>
     </div>
   );
 }
 
 function InviteErrorState({ message, code }: { message: string; code?: string }) {
   return (
-    <div className="mx-auto w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-8 text-center">
-      <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-doqyn-card/70 text-doqyn-muted">
-        <Icon name="link_off" size={ICON_SIZE.md} />
-      </div>
-      <h1 className="text-base font-semibold text-doqyn-text">Compartilhamento indisponível</h1>
-      <p className="mt-2 text-sm leading-relaxed text-doqyn-subtle">{message}</p>
-      {code ? <p className="mt-3 text-xs text-doqyn-muted">Código: {code}</p> : null}
-    </div>
+    <section className="guest-card guest-card--narrow">
+      <p className="register-label text-doqyn-subtle">Convite indisponível</p>
+      <h1 className="guest-title">Este link não abre mais</h1>
+      <p className="type-body mt-3 text-doqyn-muted">{message}</p>
+      {code ? <p className="register-label mt-4 text-doqyn-subtle">Código {code}</p> : null}
+      <p className="type-caption mt-6 text-doqyn-subtle">
+        Peça um novo link a quem compartilhou o documento com você.
+      </p>
+    </section>
   );
 }
 
@@ -76,66 +79,48 @@ function PendingInvitePanel({
   accepting?: boolean;
 }) {
   return (
-    <section className="mx-auto w-full max-w-xl rounded-xl border border-doqyn-border bg-doqyn-surface p-6 sm:p-8">
-      <p className="text-eyebrow uppercase text-doqyn-subtle">
-        Compartilhado por {payload.ownerTenantName}
-      </p>
-      <p className="mt-1 text-xs text-doqyn-muted">
-        {payload.sharedByName}
-        {payload.recipientOrganizationName ? ` · ${payload.recipientOrganizationName}` : ''}
+    <section className="guest-card">
+      <p className="register-label text-doqyn-subtle">Convite de acesso</p>
+
+      <TruncatedText as="h2" className="guest-title mt-2">
+        {payload.document.displayName}
+      </TruncatedText>
+
+      <p className="type-body mt-2 text-doqyn-muted">
+        {payload.sharedByName} compartilhou este documento com você em {payload.ownerTenantName}.
       </p>
 
-      <div className="mt-4 flex gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doqyn-card/70 text-doqyn-muted">
-          <Icon name="description" size={ICON_SIZE.xs} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <TruncatedText as="h2" className="text-base font-semibold text-doqyn-text sm:text-lg">
-            {payload.document.displayName}
-          </TruncatedText>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Badge variant="neutral">{payload.document.categoryName}</Badge>
-            {payload.document.versionLabel ? (
-              <VersionBadge version={payload.document.versionLabel} isCurrent size="sm" />
-            ) : null}
-            <Badge variant="pending">Aguardando aceite</Badge>
-          </div>
-        </div>
-      </div>
-
-      <dl className="mt-4 space-y-1 text-sm text-doqyn-subtle">
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="text-doqyn-muted">Compartilhado em</dt>
-          <dd>{formatShareDate(payload.sharedAt)}</dd>
-        </div>
+      <dl className="guest-register">
+        <GuestRegisterRow
+          label="Categoria"
+          value={payload.document.categoryName || 'Sem categoria'}
+        />
+        {payload.document.versionLabel ? (
+          <GuestRegisterRow label="Versão" value={payload.document.versionLabel} />
+        ) : null}
+        <GuestRegisterRow label="Compartilhado em" value={formatShareDate(payload.sharedAt)} />
         {expiresLabel ? (
-          <div className="flex flex-wrap gap-x-2">
-            <dt className="text-doqyn-muted">Expira em</dt>
-            <dd className="text-doqyn-warning">{expiresLabel}</dd>
-          </div>
+          <GuestRegisterRow label="Acesso até" value={expiresLabel} tone="warning" />
         ) : null}
       </dl>
 
-      {payload.message ? (
-        <blockquote className="mt-4 rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-4 py-3 text-sm leading-relaxed text-doqyn-text">
-          {payload.message}
-        </blockquote>
-      ) : null}
+      {payload.message ? <blockquote className="guest-quote">{payload.message}</blockquote> : null}
 
-      <p className="mt-5 text-sm leading-relaxed text-doqyn-subtle">
-        Você recebeu acesso somente a este documento. Aceite o convite para visualizar o conteúdo
-        compartilhado.
+      <p className="type-caption mt-6 text-doqyn-subtle">
+        O acesso vale só para este documento, fica registrado em nome do seu e-mail e pode ser
+        encerrado a qualquer momento por quem compartilhou.
       </p>
 
-      <Button
-        type="button"
-        onClick={onAccept}
-        disabled={accepting}
-        className="mt-5 w-full sm:w-auto"
-        data-testid="external-share-accept"
-      >
-        {accepting ? 'Aceitando…' : 'Aceitar e visualizar'}
-      </Button>
+      <div className="guest-actions">
+        <Button
+          type="button"
+          onClick={onAccept}
+          disabled={accepting}
+          data-testid="external-share-accept"
+        >
+          {accepting ? 'Abrindo…' : 'Aceitar e abrir documento'}
+        </Button>
+      </div>
     </section>
   );
 }
@@ -150,7 +135,7 @@ export function ExternalSharePortalPage() {
       return {
         title: 'Compartilhamento · DOQYN',
         description: 'Acesse um documento compartilhado com segurança no DOQYN.',
-        imagePath: '/og/portal-default.webp',
+        imagePath: '/og/portal-card-share.png',
       };
     }
 
@@ -164,12 +149,12 @@ export function ExternalSharePortalPage() {
         payload.status === 'pending'
           ? `${payload.sharedByName} convidou você a acessar um documento em ${payload.ownerTenantName}.`
           : `${payload.sharedByName} compartilhou um documento com você via ${payload.ownerTenantName}.`,
-      imagePath:
-        payload.status === 'active' && payload.permissions?.canView
-          ? `/api/og/guest/share/${encodeURIComponent(token)}/image`
-          : '/og/portal-default.webp',
+      // Cartão de marca, nunca o documento: a imagem de prévia é buscada sem autenticação por
+      // quem monta o card do link, e o resultado fica visível para todo o grupo onde ele for
+      // colado.
+      imagePath: '/og/portal-card-share.png',
     };
-  }, [portal, token]);
+  }, [portal]);
 
   useGuestPortalPageMeta(pageMeta);
 
@@ -271,17 +256,16 @@ export function ExternalSharePortalPage() {
   }
 
   return (
-    <div
-      className="flex min-h-screen flex-col bg-doqyn-bg text-doqyn-text"
-      data-testid="external-share-portal"
-    >
-      <header className="shrink-0 border-b border-doqyn-border bg-doqyn-bg px-4 py-3 sm:px-6">
-        <div className="flex w-full items-center justify-between gap-4">
-          <DoqynLogo size="sm" variant="horizontal" subtitle="Acesso seguro a documento" />
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-xl flex-1 items-center justify-center px-4 py-10 sm:px-6">
+    <div data-testid="external-share-portal">
+      <GuestPortalShell
+        subtitle="Acesso seguro a documento"
+        headerAside={
+          portal.kind === 'ready' && isPendingInvite ? (
+            <GuestSeal>Aguardando aceite</GuestSeal>
+          ) : null
+        }
+        footNote="Acesso limitado a este documento. O link pode ser revogado a qualquer momento por quem compartilhou."
+      >
         {portal.kind === 'loading' ? <InviteLoadingState /> : null}
         {portal.kind === 'error' ? (
           <InviteErrorState message={portal.message} code={portal.code} />
@@ -294,14 +278,7 @@ export function ExternalSharePortalPage() {
             accepting={portal.accepting}
           />
         ) : null}
-      </main>
-
-      <footer className="shrink-0 border-t border-doqyn-border px-4 py-3 text-center sm:px-6">
-        <p className="text-micro leading-relaxed text-doqyn-muted">
-          Acesso limitado a este documento. O link pode ser revogado a qualquer momento pelo
-          responsável.
-        </p>
-      </footer>
+      </GuestPortalShell>
     </div>
   );
 }

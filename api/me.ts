@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { usesDoqynAuth } from '../server/auth/authConfig.js';
-import { requireAuth } from '../server/auth/requireAuth.js';
 import { verifyDoqynAuthSession } from '../server/auth/providers/doqynAuthProvider.js';
-import { resolveMeFromDoqynAuth, resolveMeResponse } from '../server/services/meService.js';
+import { resolveMeFromDoqynAuth } from '../server/services/meService.js';
 import { isServiceError } from '../server/utils/serviceErrors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -11,24 +9,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    if (usesDoqynAuth()) {
-      const session = await verifyDoqynAuthSession(req);
-      if (!session) {
-        return res.status(401).json({
-          message: 'Não autenticado.',
-          code: 'INVALID_SESSION',
-        });
-      }
-
-      const payload = resolveMeFromDoqynAuth(session);
-      return res.status(200).json(payload);
+    const session = await verifyDoqynAuthSession(req);
+    if (!session) {
+      return res.status(401).json({
+        message: 'Não autenticado.',
+        code: 'INVALID_SESSION',
+      });
     }
 
-    const user = await requireAuth(req, res as VercelResponse);
-    if (!user) return;
-
-    const payload = await resolveMeResponse(user);
-    return res.status(200).json(payload);
+    return res.status(200).json(resolveMeFromDoqynAuth(session));
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({

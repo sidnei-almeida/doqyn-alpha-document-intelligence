@@ -63,7 +63,10 @@ export const SORT_FILTER_OPTIONS: LibrarySortOption[] = [
   { sort: 'owner', direction: 'asc', label: 'Proprietário' },
 ];
 
-export function encodeSortOptionValue(sort: LibrarySortKey, direction: LibrarySortDirection): string {
+export function encodeSortOptionValue(
+  sort: LibrarySortKey,
+  direction: LibrarySortDirection,
+): string {
   return `${sort}:${direction}`;
 }
 
@@ -74,7 +77,10 @@ export function decodeSortOptionValue(value: string): LibrarySortOption | null {
   return match ?? null;
 }
 
-export function resolveSortOptionLabel(sort: LibrarySortKey, direction: LibrarySortDirection): string {
+export function resolveSortOptionLabel(
+  sort: LibrarySortKey,
+  direction: LibrarySortDirection,
+): string {
   return (
     SORT_FILTER_OPTIONS.find((option) => option.sort === sort && option.direction === direction)
       ?.label ?? 'Ordenação'

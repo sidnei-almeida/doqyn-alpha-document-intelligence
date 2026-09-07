@@ -44,7 +44,9 @@ const DEV_DB_SETUP_HINT =
 export function isDevelopmentEnvironment(): boolean {
   const appEnv = process.env.APP_ENV?.trim().toLowerCase();
   const nodeEnv = process.env.NODE_ENV?.trim().toLowerCase();
-  return appEnv === 'development' || nodeEnv === 'development' || (!appEnv && nodeEnv !== 'production');
+  return (
+    appEnv === 'development' || nodeEnv === 'development' || (!appEnv && nodeEnv !== 'production')
+  );
 }
 
 export function buildDocumentRulesNotConfiguredError(
@@ -73,7 +75,7 @@ export function buildDocumentRulesNotConfiguredError(
     },
     default: {
       message:
-        'Não há classes e regras de documentos configuradas para esta empresa. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
+        'Não há classes e regras de documentos configuradas. Para analisar documentos, cadastre ao menos uma classe documental e uma regra ativa.',
       suggestion: 'Cadastre ao menos uma classe documental e uma regra ativa.',
     },
   };
@@ -102,7 +104,7 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
     category: 'configuration',
     title: 'Configuração documental incompleta',
     message:
-      'A classe ou regra usada na análise não está mais disponível. Verifique as regras documentais da empresa.',
+      'A classe ou regra usada na análise não está mais disponível. Verifique as regras documentais.',
     suggestion: 'Acesse Administração > Regras e confirme que a classe e a regra estão ativas.',
     action: {
       label: 'Ir para Regras',
@@ -113,7 +115,8 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
   GROQ_NOT_CONFIGURED: {
     category: 'ai',
     title: 'Provedor de IA não configurado',
-    message: 'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
+    message:
+      'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
     suggestion: 'Entre em contato com o administrador do sistema.',
     devHint: isDevelopmentEnvironment()
       ? 'Ambiente de desenvolvimento: configure GROQ_API_KEY no servidor.'
@@ -122,7 +125,8 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
   AI_PROVIDER_NOT_CONFIGURED: {
     category: 'ai',
     title: 'Provedor de IA não configurado',
-    message: 'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
+    message:
+      'O provedor de IA não está configurado. Configure GROQ_API_KEY para analisar documentos.',
     suggestion: 'Entre em contato com o administrador do sistema.',
     devHint: isDevelopmentEnvironment()
       ? 'Ambiente de desenvolvimento: configure GROQ_API_KEY no servidor.'
@@ -142,15 +146,16 @@ const ERROR_REGISTRY: Record<string, Omit<WorkflowErrorBody, 'code'> & { code?: 
   },
   TENANT_REQUIRED: {
     category: 'authentication',
-    title: 'Empresa/tenant ativo obrigatório',
-    message: 'Não foi possível identificar a empresa/tenant ativo da sessão.',
-    suggestion: 'Selecione uma empresa ou faça login novamente.',
+    // Sem tenant resolvido não há tipo a consultar — ver `membershipAccessErrors`.
+    title: 'Ambiente ativo obrigatório',
+    message: 'Não foi possível identificar o ambiente ativo da sessão.',
+    suggestion: 'Selecione um ambiente ou faça login novamente.',
   },
   FORBIDDEN: {
     category: 'permission',
     title: 'Sem permissão',
     message: 'Você não tem permissão para executar esta ação.',
-    suggestion: 'Solicite acesso ao administrador da empresa.',
+    suggestion: 'Solicite acesso a quem administra o ambiente.',
   },
   MONGODB_NOT_CONFIGURED: {
     category: 'database',

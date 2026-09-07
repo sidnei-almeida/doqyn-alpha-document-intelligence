@@ -9,8 +9,10 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 describe('Onda 2 — estabilidade', () => {
   it('quotas fail-open sem Redis e default OFF', () => {
     const source = read('server/tenancy/tenantQuotas.ts');
-    assert.ok(source.includes('Fail-open') || source.includes('fail-open') || source.includes('return;'));
-    assert.ok(source.includes("if (!raw) return false"));
+    assert.ok(
+      source.includes('Fail-open') || source.includes('fail-open') || source.includes('return;'),
+    );
+    assert.ok(source.includes('if (!raw) return false'));
     assert.equal(source.includes('QUOTA_SERVICE_UNAVAILABLE'), false);
   });
 

@@ -13,7 +13,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     handler: async ({ companyId, requestId, params, user }) => {
       const id = params.id;
       if (!id) {
-        return { status: 400, body: { message: 'ID da classe é obrigatório.', code: 'MISSING_ID' } };
+        return {
+          status: 400,
+          body: { message: 'ID da classe é obrigatório.', code: 'MISSING_ID' },
+        };
       }
 
       const body = (req.body ?? {}) as {

@@ -2,11 +2,16 @@ import { randomUUID } from 'node:crypto';
 import type { MongoDocumentCategory } from '../db/types.js';
 import { ensureDefaultExtractionRule } from './documentDefaultExtractionRule.js';
 import { ServiceError } from '../utils/serviceErrors.js';
+import { getDb } from '../db/mongoClient.js';
+import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { slugifyName } from '../utils/slugify.js';
 import { isDocumentGroupId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
-import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
+import {
+  tenantScopeFilterFromContext,
+  withClassRuleFieldsFromContext,
+} from '../tenancy/tenantQuery.js';
 
 type ServiceOpts = { ownerUserId?: string };
 
@@ -188,12 +193,159 @@ export async function updateDocumentCategory(
     { $set: patch },
   );
 
+  /**
+   * O nome novo alcança os documentos que já estão dentro.
+   *
+   * `documents.className` é uma cópia, e é dela que a Biblioteca lê o rótulo do cartão — não há
+   * junção com a categoria na listagem. Sem esta propagação, renomear mudaria o nome da pasta e
+   * deixaria todo documento dentro dela anunciando o nome antigo.
+   *
+   * A versão também acompanha, pelo mesmo motivo que `documentMoveService` a atualiza ao mover:
+   * `classification` aqui é onde o documento está, e não um registro histórico do que a IA disse.
+   */
+  if (patch.name && patch.name !== existing.name) {
+    const documentFilter = {
+      ...tenantScopeFilterFromContext(collections.storage),
+      classId: categoryId,
+    } as Record<string, unknown>;
+
+    /**
+     * O documento **não** é tocado em `updatedAt`.
+     *
+     * Renomear a categoria muda o rótulo, não o documento — e "Recentes" ordena por `updatedAt`.
+     * Bater nesse campo faria uma categoria com trezentos documentos inundar a home da Biblioteca
+     * como se todos tivessem acabado de ser mexidos, e ainda mentiria no "modificado por", que
+     * continuaria mostrando quem editou de verdade meses atrás.
+     */
+    await collections.documents.updateMany(documentFilter, {
+      $set: { className: patch.name },
+    });
+    await collections.documentVersions.updateMany(
+      {
+        ...tenantScopeFilterFromContext(collections.storage),
+        'classification.classId': categoryId,
+      } as Record<string, unknown>,
+      { $set: { 'classification.className': patch.name } },
+    );
+  }
+
   const updated = await collections.documentCategories.findOne({
     ...scope,
     _id: categoryId,
   } as Record<string, unknown>);
 
   return serializeDocumentCategory(updated as MongoDocumentCategory);
+}
+
+/**
+ * Apaga a categoria e devolve os documentos dela para Sem categoria.
+ *
+ * **Apagar de verdade, e não desativar.** Categoria desativada com documento dentro é um terceiro
+ * estado que ninguém vê na tela e que toda consulta precisa aprender a ignorar — o tipo de resto
+ * que volta a morder meses depois. O que se perde aqui é a pasta e as regras dela; documento
+ * nenhum some.
+ *
+ * As regras vão junto porque sem a categoria elas não têm o que classificar: extração órfã fica
+ * pendurada num `categoryId` que não existe, e volta a valer sozinha no dia em que alguém criar
+ * outra categoria que caia no mesmo id.
+ */
+export async function deleteDocumentCategory(
+  tenantId: string,
+  categoryId: string,
+  userId: string,
+  opts?: ServiceOpts,
+) {
+  const { collections, scope } = await resolveContext(tenantId, opts);
+
+  const existing = (await collections.documentCategories.findOne({
+    ...scope,
+    _id: categoryId,
+  } as Record<string, unknown>)) as MongoDocumentCategory | null;
+
+  if (!existing) {
+    throw new ServiceError('Categoria documental não encontrada.', 'NOT_FOUND', 404);
+  }
+
+  // Sem categoria é o destino de todo mundo: apagá-la deixaria a exclusão da próxima sem para onde
+  // mandar os documentos.
+  if (existing.slug === UNCATEGORIZED_CATEGORY_SLUG) {
+    throw new ServiceError(
+      'Sem categoria não pode ser excluída: é para onde vão os documentos das categorias apagadas.',
+      'CATEGORY_PROTECTED',
+      400,
+    );
+  }
+
+  const targetId = await ensureUncategorizedCategory(tenantId, userId);
+  const documentScope = tenantScopeFilterFromContext(collections.storage);
+
+  // Sem `updatedAt`: mudar de pasta por decisão administrativa não é edição do documento, e
+  // "Recentes" ordena por esse campo — a categoria inteira subiria para o topo da Biblioteca.
+  const moved = await collections.documents.updateMany(
+    { ...documentScope, classId: categoryId } as Record<string, unknown>,
+    {
+      $set: {
+        classId: targetId,
+        className: UNCATEGORIZED_CATEGORY_NAME,
+        previousClassId: categoryId,
+      },
+    },
+  );
+
+  await collections.documentVersions.updateMany(
+    { ...documentScope, 'classification.classId': categoryId } as Record<string, unknown>,
+    {
+      $set: {
+        'classification.classId': targetId,
+        'classification.className': UNCATEGORIZED_CATEGORY_NAME,
+      },
+    },
+  );
+
+  /**
+   * Os trechos de RAG seguem o documento, como já seguem quando ele é movido à mão
+   * (`documentMoveService`, `updateDocumentChunksCategory`).
+   *
+   * Deixá-los apontando para a categoria morta não é só sujeira: os ids são determinísticos
+   * (`cat_<slug>`), então criar amanhã outra categoria com o mesmo nome faria os trechos órfãos
+   * renascerem ligados a ela — a ressurreição que esta função existe para evitar.
+   */
+  await collections.documentChunks.updateMany(
+    { ...documentScope, categoryId } as Record<string, unknown>,
+    { $set: { categoryId: targetId } },
+  );
+
+  /**
+   * Pedido em aberto que apontava para esta categoria perde o destino.
+   *
+   * O pedido guarda `categoryId`, e é ele que decide onde o documento enviado vai cair. Com a
+   * categoria apagada, quem cumprisse o pedido receberia erro de classificação sem saída. Sem
+   * categoria é o destino honesto: o envio funciona, e o documento fica onde se reclassifica.
+   */
+  const db = await getDb();
+  await db
+    .collection(SHARED_APP_COLLECTIONS.documentRequests)
+    .updateMany(
+      { tenantId, categoryId, status: 'pending' },
+      { $set: { categoryId: targetId, categoryName: UNCATEGORIZED_CATEGORY_NAME } },
+    );
+
+  await collections.documentExtractionRules.deleteMany({
+    ...scope,
+    categoryId,
+  } as Record<string, unknown>);
+  await collections.documentRules.deleteMany({ ...scope, categoryId } as Record<string, unknown>);
+  await collections.documentCategories.deleteOne({
+    ...scope,
+    _id: categoryId,
+  } as Record<string, unknown>);
+
+  return {
+    id: categoryId,
+    name: existing.name,
+    movedDocuments: moved.modifiedCount,
+    targetCategoryId: targetId,
+  };
 }
 
 export async function toggleDocumentCategoryActive(

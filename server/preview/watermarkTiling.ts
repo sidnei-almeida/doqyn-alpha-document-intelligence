@@ -4,7 +4,15 @@ import {
   rasterizeDoqynWatermarkLogo,
 } from './watermarkAsset.js';
 
-export const DEFAULT_WATERMARK_OPACITY = 0.3;
+/**
+ * A opacidade da marca d'água, e o único lugar que a controla.
+ *
+ * Era 0.3, mas o rasterizador atenuava o alfa antes pela luminância da logo — o produto das duas
+ * é o que fazia a marca sumir. Agora que o SVG nasce opaco, este número passou a valer sozinho, e
+ * caiu para o valor que reproduz a intensidade de antes: presente na página, sem competir com o
+ * texto do documento.
+ */
+export const DEFAULT_WATERMARK_OPACITY = 0.17;
 export const DEFAULT_WATERMARK_ROTATION_DEG = -32;
 
 export type WatermarkTilePosition = {

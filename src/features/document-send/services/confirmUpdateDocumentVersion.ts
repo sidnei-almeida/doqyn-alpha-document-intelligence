@@ -27,7 +27,13 @@ export type ConfirmUpdateDocumentVersionOptions = {
 export async function confirmUpdateDocumentVersion(
   payload: AnalyzePdfResponse,
   options: ConfirmUpdateDocumentVersionOptions,
-): Promise<ConfirmUpdateDocumentVersionResponse & { durationMs: number; httpStatus: number; requestId: string }> {
+): Promise<
+  ConfirmUpdateDocumentVersionResponse & {
+    durationMs: number;
+    httpStatus: number;
+    requestId: string;
+  }
+> {
   const requestId = options.context?.requestId ?? createRequestId();
   const context: WorkflowRequestContext = {
     ...options.context,

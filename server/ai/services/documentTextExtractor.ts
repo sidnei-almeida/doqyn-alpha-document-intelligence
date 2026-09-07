@@ -10,10 +10,7 @@ import {
 import type { ExtractedPdfText } from '../types/documentAi.types.js';
 import { getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
 import { recordVisionOcrRequest } from '../../metrics/prometheus.js';
-import {
-  isImageAnalysisMimeType,
-  isPdfAnalysisMimeType,
-} from '../constants.js';
+import { isImageAnalysisMimeType, isPdfAnalysisMimeType } from '../constants.js';
 import {
   getVisionOcrHealth,
   getVisionOcrMaxPages,
@@ -25,7 +22,10 @@ import { ocrImageBuffer, ocrPdfPages } from '../vision/visionOcrService.js';
 import type { VisionOcrResult } from '../vision/visionTypes.js';
 import { extractTextFromPdf } from './pdfTextExtractor.js';
 
-export type DocumentTextExtractionSource = 'pdf_parse' | 'google_vision' | 'pdf_parse+google_vision';
+export type DocumentTextExtractionSource =
+  | 'pdf_parse'
+  | 'google_vision'
+  | 'pdf_parse+google_vision';
 
 export type ExtractedDocumentText = ExtractedPdfText & {
   source: DocumentTextExtractionSource;
@@ -169,12 +169,10 @@ export async function extractTextFromDocumentPdf(
   }
 
   if (!isVisionOcrConfigured()) {
-    pipelineError(
-      'textExtract.cascade',
-      'Vision habilitado mas credenciais ausentes',
-      undefined,
-      { health, charCount: native.charCount },
-    );
+    pipelineError('textExtract.cascade', 'Vision habilitado mas credenciais ausentes', undefined, {
+      health,
+      charCount: native.charCount,
+    });
     logger.info('ocr_cascade', {
       decision: 'skip_vision_not_configured',
       ocrFallbackUsed: false,

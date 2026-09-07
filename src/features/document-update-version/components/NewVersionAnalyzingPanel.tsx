@@ -1,3 +1,4 @@
+import { AiReadingGlyph } from '@/components/ui/AiReadingGlyph';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { formatFileSize } from '@/features/document-send/utils/validateUpload';
@@ -46,15 +47,15 @@ export function NewVersionAnalyzingPanel({
           fillHeight && 'min-h-0 flex-1',
         )}
       >
+        {/* O glifo, e não um spinner: aqui a espera tem dono — é a IA lendo a versão nova. Roda
+            girando serve para qualquer carregamento, e por isso não diz nada sobre este. */}
         <div className="flex h-11 w-11 items-center justify-center rounded-full border border-doqyn-primary/25 bg-doqyn-primary/10">
-          <Icon
-            name="progress_activity"
-            size={ICON_SIZE.nav}
-            className="animate-spin text-doqyn-primary"
-          />
+          <AiReadingGlyph reading className="text-doqyn-primary" />
         </div>
 
-        <p className="mt-4 max-w-full truncate text-[13px] font-medium text-doqyn-text">{fileName}</p>
+        <p className="mt-4 max-w-full truncate text-[13px] font-medium text-doqyn-text">
+          {fileName}
+        </p>
         <p className="mt-1 text-[12px] text-doqyn-muted">{formatFileSize(fileSize)}</p>
       </div>
 

@@ -33,7 +33,8 @@ export function ToolbarSelect({
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== defaultValue;
-  const selectedLabel = options.find((option) => option.value === value)?.label ?? options[0]?.label;
+  const selectedLabel =
+    options.find((option) => option.value === value)?.label ?? options[0]?.label;
 
   return (
     <div className={cn('relative shrink-0', className)}>
@@ -53,7 +54,11 @@ export function ToolbarSelect({
         aria-label={label}
       >
         <Icon name={icon} size={ICON_SIZE.sm} className="shrink-0" />
-        <span className="max-w-[9rem] truncate">{selectedLabel}</span>
+        {/* 9rem cortava o próprio rótulo padrão: "Todos os status" virava
+            "Todos os stat...". Um filtro que não cabe o nome do próprio
+            estado não informa nada. O truncamento continua para valor
+            escolhido comprido, que é onde ele serve. */}
+        <span className="max-w-[12rem] truncate">{selectedLabel}</span>
         <Icon
           name="keyboard_arrow_down"
           size={ICON_SIZE.sm}

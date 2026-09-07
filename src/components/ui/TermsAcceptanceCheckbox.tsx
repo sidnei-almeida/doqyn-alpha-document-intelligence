@@ -37,7 +37,11 @@ export function TermsAcceptanceCheckbox({
         required={required}
         onChange={(event) => onChange(event.target.checked)}
         wrapperClassName={cn(
-          'rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3',
+          // 4px, e não `rounded-md`. O kit fixa o canto em 4px, e as quatro telas que montam
+          // este bloco herdavam 8px daqui sem ter pedido — três delas já mandavam
+          // `border-0 bg-transparent` para apagar a caixa, mas o raio sobrevivia à remoção da
+          // borda e ficava marcando um retângulo invisível de canto redondo demais.
+          'rounded-[4px] border border-doqyn-border-subtle bg-doqyn-bg px-3 py-3',
           error && 'border-red-500/40',
           wrapperClassName,
         )}

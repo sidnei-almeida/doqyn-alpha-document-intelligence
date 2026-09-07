@@ -55,10 +55,11 @@ describe('fila de upload — transições de estado', () => {
   });
 
   it('done marca item com documentId e limpa erro', () => {
-    const state = uploadQueueReducer(
-      [makeItem({ status: 'confirming', errorMessage: 'x' })],
-      { type: 'done', id: 'item-1', documentId: 'doc-9' },
-    );
+    const state = uploadQueueReducer([makeItem({ status: 'confirming', errorMessage: 'x' })], {
+      type: 'done',
+      id: 'item-1',
+      documentId: 'doc-9',
+    });
     assert.equal(state[0].status, 'done');
     assert.equal(state[0].documentId, 'doc-9');
     assert.equal(state[0].errorMessage, undefined);
@@ -239,7 +240,9 @@ describe('provider da fila — integração com contratos existentes', () => {
     const trechoPausa = provider.slice(inicioPausa, inicioPausa + 400);
     assert.ok(trechoPausa.includes('tryPumpQueue();'), 'ai_pause precisa liberar a fila');
 
-    assert.ok(readSrc('features/upload/queue/uploadQueueCore.ts').includes('UPLOAD_PARKED_STATUSES'));
+    assert.ok(
+      readSrc('features/upload/queue/uploadQueueCore.ts').includes('UPLOAD_PARKED_STATUSES'),
+    );
   });
 
   it('provider não cancela analyze in-flight ao mudar status para analyzing', () => {
@@ -303,18 +306,5 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(drawer.includes('role="progressbar"'));
   });
 
-  it('DocumentSendPage legado invalida queries da Biblioteca após salvar', () => {
-    const sendPage = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(sendPage.includes('invalidateDocumentQueries'));
-    assert.ok(sendPage.includes('invalidateLibraryQueries'));
-  });
 
-  it('DocumentSendPage legado mantém auto-confirm próprio, independente da fila da Biblioteca', () => {
-    const sendPage = readSrc('features/document-send/DocumentSendPage.tsx');
-    assert.ok(sendPage.includes('autoConfirmTriggeredRef'));
-    assert.ok(sendPage.includes('ReviewWorkflowSettingsPanel'));
-    assert.ok(sendPage.includes('canAutoAcceptWithSettings'));
-    assert.equal(sendPage.includes('VITE_UPLOAD_AUTO_CONFIRM_ENABLED'), false);
-    assert.equal(sendPage.includes('resolvePostAnalysisAction'), false);
-  });
 });

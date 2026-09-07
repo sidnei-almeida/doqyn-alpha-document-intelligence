@@ -1,6 +1,9 @@
 import type { VercelRequest } from '@vercel/node';
 import { createDocumentAuditLog } from '../../audit/documentAuditLogService.js';
-import type { DocumentAuditContext, DocumentAuditEventInput } from '../../audit/documentAuditTypes.js';
+import type {
+  DocumentAuditContext,
+  DocumentAuditEventInput,
+} from '../../audit/documentAuditTypes.js';
 import { sanitizeAuditMetadata } from '../../utils/sanitizeAuditMetadata.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
@@ -87,8 +90,7 @@ export async function emitTrackingEvent(
   req?: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
 ): Promise<{ id: string } | null> {
   try {
-    const status =
-      event.status ?? resolveTrackingEventStatus(event.action, event.result);
+    const status = event.status ?? resolveTrackingEventStatus(event.action, event.result);
     const actionGroup = event.actionGroup ?? resolveTrackingActionGroup(event.action);
     const { securityContext, securityAuditRestricted, legacySecurity } = buildEventSecurityContext(
       ctx,
@@ -96,20 +98,30 @@ export async function emitTrackingEvent(
       req,
     );
 
+    // Quanto o request levou até este evento. Sem isto a coluna de duração da
+    // trilha ficava vazia em todo evento que não fosse de análise — e um log de
+    // acesso sem tempo não responde "o download demorou porque o arquivo é
+    // grande ou porque o storage engasgou?".
+    const durationMs =
+      typeof event.metadata?.durationMs === 'number'
+        ? event.metadata.durationMs
+        : typeof ctx.startedAt === 'number'
+          ? Math.max(0, Date.now() - ctx.startedAt)
+          : undefined;
+
     const metadata = sanitizeAuditMetadata({
       status,
       actionGroup,
       securityContext,
       security: legacySecurity,
+      ...(durationMs !== undefined ? { durationMs } : {}),
       ...(securityAuditRestricted ? { securityAuditRestricted } : {}),
       ...(event.metadata ?? {}),
     });
 
     return await createDocumentAuditLog(ctx, {
       ...event,
-      result:
-        event.result ??
-        (status === 'failed' || status === 'denied' ? 'error' : 'success'),
+      result: event.result ?? (status === 'failed' || status === 'denied' ? 'error' : 'success'),
       metadata,
     });
   } catch {
@@ -157,6 +169,59 @@ export async function emitAccessDeniedEvent(
         requestId: ctx.requestId,
         isExternalGuest: false,
         authMethod: 'session',
+      }),
+    },
+    req,
+  );
+}
+
+/**
+ * Falha ao servir um documento — a tentativa que não deu certo.
+ *
+ * Um preview que não abre é exatamente o que a trilha precisa mostrar: houve
+ * tentativa, houve erro, o resultado não é sucesso. Sem isto, a única coisa que
+ * ficava registrada era o acesso negado por permissão; arquivo corrompido,
+ * storage fora do ar ou versão apagada sumiam da história, e a investigação via
+ * um documento que ninguém nunca tentou abrir.
+ */
+export async function emitDocumentFailureEvent(
+  ctx: DocumentAuditContext,
+  req: (Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] }) | undefined,
+  input: {
+    action: string;
+    description: string;
+    documentId?: string;
+    versionId?: string;
+    error: unknown;
+    source?: string;
+    documentName?: string;
+  },
+): Promise<void> {
+  const { message, code } = extractServiceErrorInfo(input.error);
+  const statusCode =
+    input.error && typeof input.error === 'object' && 'statusCode' in input.error
+      ? (input.error as { statusCode?: number }).statusCode
+      : undefined;
+
+  await emitTrackingEvent(
+    ctx,
+    {
+      action: input.action,
+      severity: 'error',
+      status: 'failed',
+      result: 'error',
+      description: input.description,
+      documentId: input.documentId,
+      versionId: input.versionId,
+      target: input.documentId
+        ? { type: 'document', id: input.documentId, nameSnapshot: input.documentName }
+        : undefined,
+      metadata: sanitizeAuditMetadata({
+        ...(input.documentName ? { documentName: input.documentName } : {}),
+        reason: message,
+        code,
+        statusCode,
+        source: input.source ?? 'api',
       }),
     },
     req,

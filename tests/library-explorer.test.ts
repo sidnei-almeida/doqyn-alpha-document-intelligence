@@ -27,8 +27,8 @@ describe('File Explorer da Biblioteca', () => {
   it('abrir pasta altera ?space= na URL via useLibraryRouteState', () => {
     const route = readSrc('features/library/hooks/useLibraryRouteState.ts');
     assert.ok(route.includes("space: searchParams.get('space')"));
-    assert.ok(route.includes("next.set(key, value)"));
-    assert.ok(route.includes("next.delete(key)"));
+    assert.ok(route.includes('next.set(key, value)'));
+    assert.ok(route.includes('next.delete(key)'));
   });
 
   it('useLibraryExplorerMode distingue raiz browse, pasta e busca na raiz', () => {
@@ -119,7 +119,7 @@ describe('File Explorer da Biblioteca', () => {
   });
 
   it('raiz sem pastas não parece quebrada (empty state intencional)', () => {
-    const home = readSrc('features/library/components/ExplorerRootHome.tsx');
+    const home = readSrc('features/library/components/ExplorerRootEmpty.tsx');
     const grid = readSrc('features/library/components/ExplorerFolderGrid.tsx');
     assert.ok(home.includes('library-root-empty'));
     assert.ok(grid.includes('explorer-folder-grid-empty'));

@@ -107,7 +107,10 @@ describe('uploadQueueCore', () => {
     const raw = makeAnalysis({ status: 'requires_review' });
     assert.equal(resolveAnalysisOutcome(metadata, raw).status, 'requires_review');
 
-    const paused = resolveAnalysisOutcome(makeMetadata(), makeAnalysis({ status: 'ai_unavailable' }));
+    const paused = resolveAnalysisOutcome(
+      makeMetadata(),
+      makeAnalysis({ status: 'ai_unavailable' }),
+    );
     assert.equal(paused.status, 'ai_paused');
   });
 
@@ -148,7 +151,11 @@ describe('uploadQueueCore', () => {
 
   it('startCountdownSeconds com 0s completa imediatamente', async () => {
     const ticks: number[] = [];
-    const handle = startCountdownSeconds(0, (remaining) => ticks.push(remaining), () => true);
+    const handle = startCountdownSeconds(
+      0,
+      (remaining) => ticks.push(remaining),
+      () => true,
+    );
     const finished = await handle.completed;
     assert.equal(finished, true);
     assert.deepEqual(ticks, [0]);

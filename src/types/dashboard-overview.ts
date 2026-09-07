@@ -38,7 +38,6 @@ export type DashboardOverviewResponse = {
     documentsWithoutCategory: number;
     usersActive: number;
     usersPending: number;
-    accessRequestsPending: number;
   } | null;
   storage: {
     originalFiles: number;

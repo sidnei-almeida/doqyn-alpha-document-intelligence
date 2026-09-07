@@ -90,9 +90,7 @@ export function GuestDocumentViewer({
           onZoomOut: () => viewerActionsRef.current?.zoomOut(),
           onFitWidth: () => viewerActionsRef.current?.fitWidth(),
           onFitPage: () => viewerActionsRef.current?.fitPage(),
-          onPreviousPage: isPdfViewer
-            ? () => viewerActionsRef.current?.previousPage()
-            : undefined,
+          onPreviousPage: isPdfViewer ? () => viewerActionsRef.current?.previousPage() : undefined,
           onNextPage: isPdfViewer ? () => viewerActionsRef.current?.nextPage() : undefined,
           onDownload: permissions.canDownload ? onDownload : undefined,
         }}

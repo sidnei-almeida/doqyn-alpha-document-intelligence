@@ -44,9 +44,8 @@ describe('versionLabelUtils', () => {
 
 describe('confirmUpdateSchema', () => {
   it('exige documentId além do payload de análise', async () => {
-    const { confirmUpdateSchema } = await import(
-      '../server/services/confirmUpdateDocumentVersionService.js'
-    );
+    const { confirmUpdateSchema } =
+      await import('../server/services/confirmUpdateDocumentVersionService.js');
 
     const base = {
       jobId: 'job_test',
@@ -85,9 +84,8 @@ describe('confirmUpdateSchema', () => {
 describe('documentAccess canContribute', () => {
   it('regra de governança "update" concede contribuir E alterar o ciclo de vida (D-24)', async () => {
     const { resolveDocumentPermissions } = await import('../server/tenancy/documentAccess.js');
-    const { buildGovernanceAccessIndex } = await import(
-      '../server/tenancy/governanceAccessIndex.js'
-    );
+    const { buildGovernanceAccessIndex } =
+      await import('../server/tenancy/governanceAccessIndex.js');
     const user = {
       id: 'user_1',
       email: 'u@test.dev',
@@ -139,9 +137,8 @@ describe('documentAccess canContribute', () => {
 
 describe('frontend versionLabel helpers', () => {
   it('espelha regra de próxima versão major', async () => {
-    const { nextMajorVersionLabel } = await import(
-      '../src/features/documents/utils/versionLabel.ts'
-    );
+    const { nextMajorVersionLabel } =
+      await import('../src/features/documents/utils/versionLabel.ts');
     assert.equal(nextMajorVersionLabel('v1.0'), 'v2.0');
     assert.equal(nextMajorVersionLabel('v2.0'), 'v3.0');
   });
@@ -171,7 +168,10 @@ describe('confirmUpdateDocumentVersion client', () => {
   it('exporta função confirmUpdateDocumentVersion', async () => {
     const { readFileSync } = await import('node:fs');
     const source = readFileSync(
-      new URL('../src/features/document-send/services/confirmUpdateDocumentVersion.ts', import.meta.url),
+      new URL(
+        '../src/features/document-send/services/confirmUpdateDocumentVersion.ts',
+        import.meta.url,
+      ),
       'utf8',
     );
     assert.ok(source.includes('export async function confirmUpdateDocumentVersion'));
@@ -194,9 +194,8 @@ describe('ExplorerContextMenu atualização', () => {
 
 describe('preview query keys incluem versionId', () => {
   it('manifest key contém versionId', async () => {
-    const { previewQueryKeys } = await import(
-      '../src/features/documents/preview/previewQueryKeys.ts'
-    );
+    const { previewQueryKeys } =
+      await import('../src/features/documents/preview/previewQueryKeys.ts');
     const key = previewQueryKeys.manifest('tenant', 'doc_1', 'ver_2');
     assert.deepEqual(key, ['document-preview-manifest', 'tenant', 'doc_1', 'ver_2']);
   });
@@ -206,7 +205,10 @@ describe('DocumentVersionHistoryPanel', () => {
   it('componente existe e lista versões via API', async () => {
     const { readFileSync } = await import('node:fs');
     const source = readFileSync(
-      new URL('../src/features/library/components/DocumentVersionHistoryPanel.tsx', import.meta.url),
+      new URL(
+        '../src/features/library/components/DocumentVersionHistoryPanel.tsx',
+        import.meta.url,
+      ),
       'utf8',
     );
     assert.ok(source.includes('listDocumentVersions'));

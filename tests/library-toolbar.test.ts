@@ -54,7 +54,13 @@ describe('toolbar da Biblioteca', () => {
 
   it('ordenação local cobre todas as chaves', () => {
     const sortUtil = readSrc('features/library/utils/sortDocuments.ts');
-    for (const key of ["case 'name'", "case 'status'", "case 'owner'", "case 'updatedAt'", "case 'category'"]) {
+    for (const key of [
+      "case 'name'",
+      "case 'status'",
+      "case 'owner'",
+      "case 'updatedAt'",
+      "case 'category'",
+    ]) {
       assert.ok(sortUtil.includes(key));
     }
   });

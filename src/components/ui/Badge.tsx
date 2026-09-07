@@ -1,26 +1,40 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
+/**
+ * Etiqueta do DOQYN — três formas, e a forma é que carrega o peso:
+ *
+ * · **contorno de fio** (neutro, ativo, informação): o estado apenas informa,
+ *   então marca com fio de 1px e um tique quadrado da cor do estado;
+ * · **etiqueta preenchida** (atenção, erro): preenchimento é reservado ao que
+ *   pede decisão — é o que separa "está tudo certo" de "olhe para isto";
+ * · **selo** (assinado, verificado): latão, contorno de 1px, nunca preenchido,
+ *   e a única forma redonda do sistema.
+ *
+ * O texto é monoespaçado em caixa alta porque etiqueta é rótulo de registro,
+ * não frase. Quem precisa de nome próprio dentro da etiqueta (categoria,
+ * arquivo) passa `normal-case`.
+ */
 const badgeVariants = cva(
-  'badge-text inline-flex shrink-0 items-center justify-center gap-1 rounded-full border font-medium leading-none whitespace-nowrap transition-colors duration-[var(--transition-duration-fast)]',
+  'inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[2px] font-mono font-medium uppercase leading-none tracking-[0.08em] transition-colors duration-[var(--transition-duration-fast)]',
   {
     variants: {
       variant: {
-        default: 'border-doqyn-neutral-border bg-doqyn-neutral-bg text-doqyn-neutral',
-        primary: 'border-doqyn-border-strong bg-doqyn-primary-soft text-doqyn-text',
-        brand:
-          'border-[color-mix(in_srgb,var(--new-button-bg)_36%,transparent)] bg-[color-mix(in_srgb,var(--new-button-bg)_16%,transparent)] text-[color-mix(in_srgb,var(--sidebar-selected-icon)_90%,white)]',
-        success: 'border-doqyn-success-border bg-doqyn-success-bg text-doqyn-success',
-        warning: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
-        danger: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
-        info: 'border-doqyn-info-border bg-doqyn-info-bg text-doqyn-info',
-        pending: 'border-doqyn-pending-border bg-doqyn-pending-bg text-doqyn-pending',
-        neutral: 'border-doqyn-neutral-border bg-doqyn-neutral-bg text-doqyn-neutral',
+        default: 'border border-doqyn-border-subtle text-doqyn-muted',
+        neutral: 'border border-doqyn-border-subtle text-doqyn-muted',
+        primary: 'border border-doqyn-border-strong text-doqyn-text',
+        brand: 'border border-doqyn-accent-active/45 text-doqyn-primary',
+        success: 'border border-doqyn-success-border text-doqyn-success',
+        info: 'border border-doqyn-info-border text-doqyn-info',
+        pending: 'border border-doqyn-pending-border text-doqyn-pending',
+        warning: 'bg-doqyn-warning-bg text-doqyn-warning',
+        danger: 'bg-doqyn-danger-bg text-doqyn-danger',
+        seal: 'rounded-full border border-[var(--seal)] text-[var(--seal)]',
       },
       size: {
-        xs: 'h-[18px] min-h-[18px] px-1.5 text-[10px]',
-        sm: 'h-5 min-h-5 px-2 text-[11px]',
-        md: 'h-6 min-h-6 px-2.5 text-xs',
+        xs: 'h-[18px] min-h-[18px] px-1.5 text-micro',
+        sm: 'h-5 min-h-5 px-2 text-micro',
+        md: 'h-6 min-h-6 px-2.5 text-caption',
       },
     },
     defaultVariants: {
@@ -30,27 +44,26 @@ const badgeVariants = cva(
   },
 );
 
-const dotVariants: Record<NonNullable<VariantProps<typeof badgeVariants>['variant']>, string> = {
+/** Tique quadrado — o redondo do sistema pertence só ao selo. */
+const markVariants: Record<NonNullable<VariantProps<typeof badgeVariants>['variant']>, string> = {
   default: 'bg-doqyn-neutral-dot',
+  neutral: 'bg-doqyn-neutral-dot',
   primary: 'bg-doqyn-accent-active',
-  brand: 'bg-[var(--new-button-bg)]',
+  brand: 'bg-doqyn-accent-active',
   success: 'bg-doqyn-success-dot',
-  warning: 'bg-doqyn-warning-dot',
-  danger: 'bg-doqyn-danger-dot',
   info: 'bg-doqyn-info-dot',
   pending: 'bg-doqyn-pending-dot',
-  neutral: 'bg-doqyn-neutral-dot',
+  warning: '',
+  danger: '',
+  seal: 'bg-[var(--seal)]',
 };
 
-const dotSize: Record<NonNullable<VariantProps<typeof badgeVariants>['size']>, string> = {
-  xs: 'h-1.5 w-1.5',
-  sm: 'h-1.5 w-1.5',
-  md: 'h-2 w-2',
-};
+/** Preenchidas não levam tique: o preenchimento já é a marca. */
+const FILLED_VARIANTS = new Set(['warning', 'danger']);
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
+  extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {
+  /** Mostra o tique do estado à esquerda do rótulo. */
   dot?: boolean;
 }
 
@@ -64,17 +77,15 @@ export function Badge({
 }: BadgeProps) {
   const resolvedVariant = variant ?? 'default';
   const resolvedSize = size ?? 'sm';
+  const showMark = dot && !FILLED_VARIANTS.has(resolvedVariant);
 
   return (
     <span
       className={cn(badgeVariants({ variant: resolvedVariant, size: resolvedSize }), className)}
       {...props}
     >
-      {dot && (
-        <span
-          className={cn('shrink-0 rounded-full', dotSize[resolvedSize], dotVariants[resolvedVariant])}
-          aria-hidden
-        />
+      {showMark && (
+        <span className={cn('h-1 w-1 shrink-0', markVariants[resolvedVariant])} aria-hidden />
       )}
       <span className="truncate">{children}</span>
     </span>

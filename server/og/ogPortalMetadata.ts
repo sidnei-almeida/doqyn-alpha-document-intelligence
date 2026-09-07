@@ -7,7 +7,6 @@ import {
   buildSignaturePortalPath,
   findSignatureRequestByToken,
   getSignaturePortalPayload,
-  loadSignatureRequestDocumentContext,
 } from '../services/signatures/documentSignatureService.js';
 import { isSignatureRequestOpen } from '../services/signatures/signatureRequestStatus.js';
 import { toAbsolutePublicUrl } from '../utils/publicAppUrl.js';
@@ -30,19 +29,40 @@ export type OgPortalMetadata = {
   ctaLabel: string;
 };
 
-function buildShareImageUrl(origin: string, token: string, canUseDocumentPreview: boolean): string {
-  if (!canUseDocumentPreview) {
-    return toAbsolutePublicUrl(origin, '/og/portal-default.webp');
-  }
+/**
+ * O cartão do link não fala do documento — nem em imagem, nem em título, nem em descrição.
+ *
+ * O robô que monta a prévia não se autentica, e o resultado dele fica visível para todo o grupo
+ * onde o link for colado, cacheado por quem o buscou. Antes daqui saía o preview da primeira
+ * página, mais o nome do arquivo e a mensagem do remetente — e a mesma lista de user-agents
+ * inclui `googlebot`, então isso também era candidato a índice de busca. Um NDA anunciava as
+ * partes antes de alguém abrir o link.
+ *
+ * O que o cartão diz é o que o destinatário já sabe por ter recebido o link: existe um documento
+ * esperando por ele, e é do DOQYN. O resto está atrás do portal, que autentica.
+ */
+// A prévia fica em cache no aparelho de quem já colou o link, e o robô não rebusca a imagem
+// enquanto a URL dela não mudar. Suba esta versão sempre que o desenho do cartão mudar.
+const CARD_VERSION = '2';
+
+function cardImageUrl(origin: string, kind: OgPortalKind): string {
   return toAbsolutePublicUrl(
     origin,
-    `/api/og/guest/share/${encodeURIComponent(token)}/image`,
+    kind === 'sign'
+      ? `/og/portal-card-sign.png?v=${CARD_VERSION}`
+      : `/og/portal-card-share.png?v=${CARD_VERSION}`,
   );
 }
 
-function buildSignImageUrl(origin: string, token: string): string {
-  return toAbsolutePublicUrl(origin, `/api/og/guest/sign/${encodeURIComponent(token)}/image`);
-}
+const GENERIC_TITLE: Record<OgPortalKind, string> = {
+  sign: 'Documento para assinar · DOQYN',
+  share: 'Documento compartilhado · DOQYN',
+};
+
+const GENERIC_DESCRIPTION: Record<OgPortalKind, string> = {
+  sign: 'Alguém solicitou sua assinatura em um documento. Abra o link para ver e assinar.',
+  share: 'Um documento foi compartilhado com você. Abra o link para acessar.',
+};
 
 function unavailableMetadata(input: {
   kind: OgPortalKind;
@@ -56,12 +76,13 @@ function unavailableMetadata(input: {
     kind: input.kind,
     available: false,
     title: isSign ? 'Assinatura indisponível · DOQYN' : 'Compartilhamento indisponível · DOQYN',
-    description:
-      input.reason ??
-      (isSign
-        ? 'Este link de assinatura expirou, foi revogado ou não é mais válido.'
-        : 'Este link de compartilhamento expirou, foi revogado ou não é mais válido.'),
-    imageUrl: toAbsolutePublicUrl(input.origin, '/og/portal-default.webp'),
+    // `reason` continua sendo usado pela página que o robô recebe; fora dela, a meta description
+    // é genérica: "revogado pelo remetente" e "expirou" contam história sobre o documento para
+    // quem só viu o link passar num grupo.
+    description: isSign
+      ? 'Este link de assinatura não está mais disponível.'
+      : 'Este link de compartilhamento não está mais disponível.',
+    imageUrl: cardImageUrl(input.origin, input.kind),
     canonicalUrl: toAbsolutePublicUrl(input.origin, input.portalPath),
     portalPath: input.portalPath,
     ctaLabel: isSign ? 'Tentar abrir' : 'Tentar abrir',
@@ -91,35 +112,17 @@ export async function getShareOgMetadata(token: string, origin: string): Promise
   }
 
   try {
+    // O payload ainda é buscado porque é ele que prova que o convite existe e está de pé — mas
+    // nada do que ele carrega sobre o documento entra no cartão.
     const payload = await getExternalSharePortalPayload(token);
-    const canUseDocumentPreview =
-      payload.status === 'active' && Boolean(payload.permissions?.canView);
-    const documentName = payload.document.displayName;
-    const versionSuffix = payload.document.versionLabel
-      ? ` · ${payload.document.versionLabel}`
-      : '';
-
-    const title = `${documentName}${versionSuffix} · DOQYN`;
-    const description = [
-      payload.status === 'pending'
-        ? `${payload.sharedByName} convidou você a acessar um documento em ${payload.ownerTenantName}.`
-        : `${payload.sharedByName} compartilhou um documento com você via ${payload.ownerTenantName}.`,
-      payload.message ? `“${payload.message.trim()}”` : null,
-    ]
-      .filter(Boolean)
-      .join(' ');
 
     return {
       kind: 'share',
       available: true,
-      title,
-      description,
-      documentName,
-      issuerName: payload.sharedByName,
-      ownerTenantName: payload.ownerTenantName,
-      versionLabel: payload.document.versionLabel,
+      title: GENERIC_TITLE.share,
+      description: GENERIC_DESCRIPTION.share,
       statusLabel: payload.status === 'pending' ? 'Aguardando aceite' : 'Documento compartilhado',
-      imageUrl: buildShareImageUrl(origin, token, canUseDocumentPreview),
+      imageUrl: cardImageUrl(origin, 'share'),
       canonicalUrl: toAbsolutePublicUrl(origin, portalPath),
       portalPath,
       ctaLabel: payload.status === 'pending' ? 'Aceitar e abrir' : 'Abrir documento',
@@ -154,32 +157,17 @@ export async function getSignOgMetadata(token: string, origin: string): Promise<
   }
 
   try {
-    const payload = await getSignaturePortalPayload(token);
-    const { doc } = await loadSignatureRequestDocumentContext(request);
-    const documentName = payload.documentName || doc.currentFileName || doc.title;
-    const versionSuffix = payload.versionLabel ? ` · ${payload.versionLabel}` : '';
-
-    const title = `Assinar: ${documentName}${versionSuffix} · DOQYN`;
-    const description = [
-      `${payload.issuerName} solicitou sua assinatura neste documento.`,
-      payload.message ? `“${payload.message.trim()}”` : null,
-      payload.expiresAt
-        ? `Válido até ${new Date(payload.expiresAt).toLocaleString('pt-BR')}.`
-        : null,
-    ]
-      .filter(Boolean)
-      .join(' ');
+    // Buscado para confirmar que a solicitação está aberta e o token vale. O conteúdo do
+    // documento não atravessa daqui para o cartão.
+    await getSignaturePortalPayload(token);
 
     return {
       kind: 'sign',
       available: true,
-      title,
-      description,
-      documentName,
-      issuerName: payload.issuerName,
-      versionLabel: payload.versionLabel,
+      title: GENERIC_TITLE.sign,
+      description: GENERIC_DESCRIPTION.sign,
       statusLabel: 'Assinatura pendente',
-      imageUrl: buildSignImageUrl(origin, token),
+      imageUrl: cardImageUrl(origin, 'sign'),
       canonicalUrl: toAbsolutePublicUrl(origin, portalPath),
       portalPath,
       ctaLabel: 'Abrir e assinar',

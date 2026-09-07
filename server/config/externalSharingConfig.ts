@@ -21,25 +21,48 @@ function readPositiveInt(raw: string | undefined, fallback: number): number {
   return parsed;
 }
 
-const DEFAULT_EXTERNAL_SHARING_CONFIG: ExternalSharingTenantConfig = {
-  externalSharingEnabled: process.env.APP_ENV !== 'production',
-  defaultExternalShareExpirationDays: 7,
-  maxExternalShareExpirationDays: readPositiveInt(
-    process.env.EXTERNAL_SHARE_MAX_EXPIRATION_DAYS,
-    90,
-  ),
-  defaultCanDownload: false,
-  requireEmailCode: false,
-  defaultInviteExpirationDays: 7,
-};
+/**
+ * O portão do compartilhamento externo.
+ *
+ * O default por ambiente — ligado fora de produção, desligado dentro — nasceu como freio
+ * enquanto o fluxo não estava pronto, mas não tinha chave de saída: em produção era
+ * `403 EXTERNAL_SHARING_DISABLED` e ponto, sem variável que ligasse. E como o modal de
+ * assinatura passa por aqui para dar acesso ao signatário de fora, o portão fechado levava
+ * junto a assinatura externa.
+ *
+ * Ausente, o comportamento é exatamente o de antes. Só o valor explícito muda o default.
+ */
+function readExternalSharingEnabled(): boolean {
+  const raw = process.env.EXTERNAL_SHARING_ENABLED?.trim().toLowerCase();
+  if (raw === 'true' || raw === '1') return true;
+  if (raw === 'false' || raw === '0') return false;
+  return process.env.APP_ENV !== 'production';
+}
+
+// Lido a cada chamada, e não uma vez no import: congelado no carregamento do módulo, o valor
+// dependia de quem importou primeiro, e nenhum teste conseguia exercitar os dois lados do portão.
+function defaultExternalSharingConfig(): ExternalSharingTenantConfig {
+  return {
+    externalSharingEnabled: readExternalSharingEnabled(),
+    defaultExternalShareExpirationDays: 7,
+    maxExternalShareExpirationDays: readPositiveInt(
+      process.env.EXTERNAL_SHARE_MAX_EXPIRATION_DAYS,
+      90,
+    ),
+    defaultCanDownload: false,
+    requireEmailCode: false,
+    defaultInviteExpirationDays: 7,
+  };
+}
 
 export function resolveExternalSharingConfig(
   tenantSettings?: Partial<ExternalSharingTenantConfig>,
 ): ExternalSharingTenantConfig {
+  const defaults = defaultExternalSharingConfig();
   return {
-    ...DEFAULT_EXTERNAL_SHARING_CONFIG,
+    ...defaults,
     ...(tenantSettings ?? {}),
     externalSharingEnabled:
-      tenantSettings?.externalSharingEnabled ?? DEFAULT_EXTERNAL_SHARING_CONFIG.externalSharingEnabled,
+      tenantSettings?.externalSharingEnabled ?? defaults.externalSharingEnabled,
   };
 }

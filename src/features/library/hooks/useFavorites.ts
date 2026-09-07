@@ -3,11 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import type { DocumentListItem } from '@/types/document-library';
-import {
-  favoriteDocument,
-  listFavoriteDocuments,
-  unfavoriteDocument,
-} from '../api/favoritesApi';
+import { favoriteDocument, listFavoriteDocuments, unfavoriteDocument } from '../api/favoritesApi';
 
 /**
  * Favoritos são preferência pessoal do usuário (userId), persistidos no MongoDB.

@@ -9,6 +9,11 @@ export const DOCUMENT_SIGNATURE_REQUESTS_INDEXES: IndexDescription[] = [
   { key: { signatureTokenHash: 1 }, unique: true, sparse: true },
   { key: { 'signers.userId': 1, status: 1, createdAt: -1 } },
   { key: { 'signers.emailNormalized': 1, status: 1 } },
+  /**
+   * Quem esta pessoa chamou para assinar. O par de `signers.userId` acima cobria só o outro
+   * sentido — quem foi chamado — e a afinidade de contato precisa dos dois.
+   */
+  { key: { requestedByUserId: 1, status: 1, createdAt: -1 } },
 ];
 
 export const DOCUMENT_SIGNATURES_INDEXES: IndexDescription[] = [

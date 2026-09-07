@@ -10,11 +10,18 @@ import { UploadQueueProvider } from '@/features/upload/UploadQueueProvider';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import { useGlobalDragDrop } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { useSignatureCompletionSync } from '@/features/signature/hooks/useSignatureCompletionSync';
+import { TourProvider } from '@/features/tour/TourProvider';
+import { TourOverlay } from '@/features/tour/components/TourOverlay';
 import { useTenantLiveSync } from '@/features/tenant/useTenantLiveSync';
 
 /**
- * Shell autenticado do workspace — estilo Google Drive:
- * chrome edge-to-edge (sem radius externo) + painel interno arredondado.
+ * Shell autenticado do workspace — duas camadas: a casca edge-to-edge (sidebar
+ * + barra de cima) e o painel de conteúdo, arredondado e recuado dentro dela.
+ *
+ * A estrutura é a mesma nos três temas; o que muda é a paleta de cada camada.
+ * A classe `chrome-dark` fica sempre na marcação, mas só vale no tema padrão —
+ * é o CSS que decide, via `data-appearance`, não o React. Assim trocar de tema
+ * não remonta o shell.
  */
 function WorkspaceLayoutInner() {
   const { startUploadFromFiles } = useUploadQueueContext();
@@ -24,9 +31,7 @@ function WorkspaceLayoutInner() {
   const { data: categories = [] } = useDocumentCategories();
 
   const activeSpaceId = searchParams.get('space') ?? '';
-  const resolvedSpaceId = activeSpaceId
-    ? resolveLibraryCategoryId(activeSpaceId, categories)
-    : '';
+  const resolvedSpaceId = activeSpaceId ? resolveLibraryCategoryId(activeSpaceId, categories) : '';
   const activeCategory = resolvedSpaceId
     ? categories.find((category) => category.id === resolvedSpaceId)
     : undefined;
@@ -41,14 +46,14 @@ function WorkspaceLayoutInner() {
   });
 
   return (
-    <div className="app-chrome h-dvh w-full overflow-hidden">
+    <div className="app-chrome chrome-dark h-dvh w-full overflow-hidden">
       <div className="app-shell flex h-full w-full overflow-hidden">
         <Sidebar />
         <div className="workspace-frame flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceTopBar />
           <main className="main-content workspace-canvas flex min-h-0 min-w-0 flex-1 flex-col">
-            <div className="workspace-canvas-inner flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-thin">
-              <div className="page-outlet flex min-h-full flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6">
+            <div className="workspace-canvas-inner scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto">
+              <div className="page-outlet flex min-h-full flex-1 flex-col py-6 sm:py-7">
                 <Outlet />
               </div>
             </div>
@@ -59,6 +64,7 @@ function WorkspaceLayoutInner() {
       <UploadDropOverlay isDragging={isDragging} />
       <UploadQueueDrawer />
       <ReviewDrawer />
+      <TourOverlay />
     </div>
   );
 }
@@ -66,7 +72,12 @@ function WorkspaceLayoutInner() {
 export function WorkspaceLayout() {
   return (
     <UploadQueueProvider>
-      <WorkspaceLayoutInner />
+      {/* O tour envolve o shell inteiro: ele aponta para a sidebar, para a
+          barra de cima e para o conteúdo da rota, e navega entre rotas no meio
+          do caminho — precisa sobreviver à troca de página. */}
+      <TourProvider>
+        <WorkspaceLayoutInner />
+      </TourProvider>
     </UploadQueueProvider>
   );
 }

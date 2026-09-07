@@ -1,88 +1,41 @@
 import assert from 'node:assert/strict';
-import { describe, it, beforeEach, afterEach } from 'node:test';
-import {
-  AUTO_DELAY_STORAGE_KEY,
-  AUTO_MODE_STORAGE_KEY,
-} from '../src/features/document-send/uploadConstants';
-import {
-  REVIEW_SETTINGS_STORAGE_KEY,
-} from '../src/features/document-send/types/reviewWorkflowSettings';
+import { describe, it } from 'node:test';
+import { DEFAULT_TENANT_UPLOAD_POLICY, normalizeTenantUploadPolicy } from '../shared/uploadPolicy';
 import {
   canAutoAcceptWithSettings,
   DEFAULT_WORKFLOW_REVIEW_SETTINGS,
-  loadReviewWorkflowSettings,
   policyRequiresPerItemChoice,
   resolveEffectiveNamingForItem,
   resolveFinalFileNameForConfirm,
-  saveReviewWorkflowSettings,
   shouldPauseForReview,
 } from '../src/features/document-send/utils/reviewWorkflowSettings';
 
-const memoryStorage = new Map<string, string>();
-
 describe('reviewWorkflowSettings', () => {
-  const originalStorage = globalThis.localStorage;
-
-  beforeEach(() => {
-    memoryStorage.clear();
-    Object.defineProperty(globalThis, 'localStorage', {
-      configurable: true,
-      value: {
-        getItem: (key: string) => memoryStorage.get(key) ?? null,
-        setItem: (key: string, value: string) => {
-          memoryStorage.set(key, value);
-        },
-        removeItem: (key: string) => {
-          memoryStorage.delete(key);
-        },
-      },
-    });
+  it('usa a política de fábrica compartilhada como padrão', () => {
+    assert.deepEqual(DEFAULT_WORKFLOW_REVIEW_SETTINGS, DEFAULT_TENANT_UPLOAD_POLICY);
+    assert.equal(DEFAULT_WORKFLOW_REVIEW_SETTINGS.autoReviewEnabled, false);
+    assert.equal(DEFAULT_WORKFLOW_REVIEW_SETTINGS.defaultNamingPolicy, 'ai_suggested');
+    assert.equal(DEFAULT_WORKFLOW_REVIEW_SETTINGS.preventSensitiveDataInFileName, true);
   });
 
-  afterEach(() => {
-    Object.defineProperty(globalThis, 'localStorage', {
-      configurable: true,
-      value: originalStorage,
-    });
-  });
-
-  it('carrega defaults quando storage vazio', () => {
-    const settings = loadReviewWorkflowSettings();
-    assert.equal(settings.autoReviewEnabled, false);
-    assert.equal(settings.defaultNamingPolicy, 'ai_suggested');
-    assert.equal(settings.preventSensitiveDataInFileName, true);
-  });
-
-  it('migra chaves legadas do modo auto', () => {
-    memoryStorage.set(AUTO_MODE_STORAGE_KEY, 'true');
-    memoryStorage.set(AUTO_DELAY_STORAGE_KEY, '15');
-    const settings = loadReviewWorkflowSettings();
-    assert.equal(settings.autoReviewEnabled, true);
-    assert.equal(settings.autoAcceptDelaySeconds, 15);
-  });
-
-  it('persiste objeto versionado e espelha chaves legadas', () => {
-    saveReviewWorkflowSettings({
-      ...DEFAULT_WORKFLOW_REVIEW_SETTINGS,
+  it('normaliza entrada parcial ou inválida vinda do tenant', () => {
+    const normalized = normalizeTenantUploadPolicy({
       autoReviewEnabled: true,
-      autoAcceptDelaySeconds: 20,
-      defaultNamingPolicy: 'original',
+      autoAcceptDelaySeconds: 99,
+      defaultNamingPolicy: 'inexistente' as never,
     });
 
-    const raw = memoryStorage.get(REVIEW_SETTINGS_STORAGE_KEY);
-    assert.ok(raw?.includes('"version"'));
-    assert.equal(memoryStorage.get(AUTO_MODE_STORAGE_KEY), 'true');
-    assert.equal(memoryStorage.get(AUTO_DELAY_STORAGE_KEY), '20');
+    assert.equal(normalized.autoReviewEnabled, true);
+    assert.equal(normalized.autoAcceptDelaySeconds, 30);
+    assert.equal(normalized.defaultNamingPolicy, 'ai_suggested');
+    assert.equal(normalized.pauseOnLowConfidence, true);
   });
 
-  it('permite delay auto de 0 segundos', () => {
-    saveReviewWorkflowSettings({
-      ...DEFAULT_WORKFLOW_REVIEW_SETTINGS,
-      autoReviewEnabled: true,
-      autoAcceptDelaySeconds: 0,
-    });
-    const settings = loadReviewWorkflowSettings();
-    assert.equal(settings.autoAcceptDelaySeconds, 0);
+  it('aceita delay auto de 0 segundos', () => {
+    assert.equal(
+      normalizeTenantUploadPolicy({ autoAcceptDelaySeconds: 0 }).autoAcceptDelaySeconds,
+      0,
+    );
   });
 
   it('resolve naming efetivo por política', () => {
@@ -100,10 +53,7 @@ describe('reviewWorkflowSettings', () => {
       ),
       'manual',
     );
-    assert.equal(
-      resolveEffectiveNamingForItem({ ...base, aiRenameEnabled: false }),
-      'original',
-    );
+    assert.equal(resolveEffectiveNamingForItem({ ...base, aiRenameEnabled: false }), 'original');
   });
 
   it('policyRequiresPerItemChoice identifica políticas interativas', () => {

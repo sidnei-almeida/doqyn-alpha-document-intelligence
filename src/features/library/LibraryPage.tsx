@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext } from '@dnd-kit/core';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { DocumentViewerModal } from '@/features/documents/viewer';
-import { showApiErrorToast } from '@/shared/feedback/appFeedback';
+import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { ALLOWED_FILE_EXTENSIONS } from '@/features/document-send/uploadConstants';
 import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import type { UploadContext } from '@/features/upload/types';
 import type { DocumentListItem } from '@/types/document-library';
 import { downloadDocument, triggerBlobDownload } from './api/libraryApi';
 import { ExplorerShell } from './components/ExplorerShell';
-import { ExplorerContextMenu, type ExplorerContextMenuState } from './components/ExplorerContextMenu';
+import {
+  ExplorerContextMenu,
+  type ExplorerContextMenuState,
+} from './components/ExplorerContextMenu';
 import { ExplorerRootHome } from './components/ExplorerRootHome';
 import { ExplorerPageHeader } from './components/ExplorerPageHeader';
 import { LibraryBreadcrumbs } from './components/LibraryBreadcrumbs';
@@ -33,6 +36,7 @@ import { useLibraryExplorerMode } from './hooks/useLibraryExplorerMode';
 import { useExplorerSelection } from './hooks/useExplorerSelection';
 import { useExplorerSelectionShortcuts } from './hooks/useExplorerSelectionShortcuts';
 import { useLibraryView } from './hooks/useLibraryView';
+import { InboundSharesStrip } from '@/features/sharing/components/InboundSharesStrip';
 import type { LibraryFolder, LibrarySelection } from './types/library';
 import { SearchScopeHint } from './components/SearchScopeHint';
 import { hasActiveLibraryFilters } from './utils/libraryFilterUtils';
@@ -41,15 +45,13 @@ import {
   resolveCollectionFilterCapabilities,
 } from './utils/libraryCollectionFilterCapabilities';
 import { invalidateLibraryQueries } from './utils/libraryQueryInvalidation';
+import { PromptDialog } from '@/components/ui/PromptDialog';
+import { buildDeleteCategoryConfirm } from '@/components/confirm/confirmMessages';
+import { deleteDocumentClass, updateDocumentClass } from '@/features/rules/api/rulesApi';
 import { findLibraryCategory } from './utils/resolveLibraryCategory';
-import {
-  pickRecentDocuments,
-  pickUncategorizedDocuments,
-} from './utils/libraryHomeSections';
+import { pickRecentDocuments, pickUncategorizedDocuments } from './utils/libraryHomeSections';
 import { useConfirm } from '@/components/confirm/useConfirm';
-import {
-  buildMoveToTrashConfirm,
-} from '@/components/confirm/confirmMessages';
+import { buildMoveToTrashConfirm } from '@/components/confirm/confirmMessages';
 
 import { useTrashMutations } from './hooks/useTrashMutations';
 import { useDeactivatedMutations } from './hooks/useDeactivatedMutations';
@@ -65,10 +67,6 @@ import { signedPdfDownloadName } from '@/features/signature/utils/signatureSumma
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
 
-function notifyComingSoon(label: string) {
-  toast.info(`${label} estará disponível em uma próxima versão.`);
-}
-
 /**
  * Biblioteca — File Explorer com pastas inteligentes (categorias de governança).
  * Raiz: pastas em destaque. Dentro da pasta: arquivos como protagonistas.
@@ -78,8 +76,18 @@ export function LibraryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { tenant, user, hasAnyRole } = useAuth();
-  const { state, update, clearFilters, collection, categories, documents, isLoading, isError, toggleStar, isStarred } =
-    useLibraryView();
+  const {
+    state,
+    update,
+    clearFilters,
+    collection,
+    categories,
+    documents,
+    isLoading,
+    isError,
+    toggleStar,
+    isStarred,
+  } = useLibraryView();
   const filterCapabilities = useMemo(
     () => resolveCollectionFilterCapabilities(collection.id),
     [collection.id],
@@ -110,7 +118,15 @@ export function LibraryPage() {
   const isDeactivatedView = collection.id === 'desativados';
   const isLifecycleArchiveView = isTrashView || isDeactivatedView;
   const isSignaturesView = collection.id === 'para-assinar';
+  const isSharedWithMeView = collection.id === 'compartilhados';
   const canManageDeactivated = hasAnyRole(['company_admin', 'individual_admin']);
+  /**
+   * Categoria é governança: quem não administra o tenant não renomeia nem apaga.
+   *
+   * O servidor recusa de qualquer jeito, mas oferecer o item para depois responder 403 é pior que
+   * não oferecer — a pessoa descobre o limite depois de decidir apagar.
+   */
+  const canManageCategories = hasAnyRole(['company_admin', 'individual_admin']);
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
@@ -168,9 +184,7 @@ export function LibraryPage() {
 
   const uploadContext = useMemo(
     () =>
-      activeSpace
-        ? { categoryId: activeSpace.id, categoryName: activeSpace.name }
-        : undefined,
+      activeSpace ? { categoryId: activeSpace.id, categoryName: activeSpace.name } : undefined,
     [activeSpace],
   );
 
@@ -208,6 +222,11 @@ export function LibraryPage() {
         ? 'Documentos e categorias deste ambiente'
         : collection.description;
 
+  // A raiz não leva subtítulo: "Documentos e categorias deste ambiente"
+  // descreve o óbvio embaixo de um título que já diz Biblioteca. O texto
+  // continua vivo no popover de Informações, onde ele de fato informa.
+  const headerSubtitle = explorer.isBrowseRoot ? undefined : pageDescription;
+
   const libraryOverview = useMemo<LibraryOverview>(
     () => ({
       title: pageTitle,
@@ -230,6 +249,55 @@ export function LibraryPage() {
   const closeDetailsDrawer = useCallback(() => {
     setDetailsDrawer(null);
   }, []);
+
+  const [renameFolder, setRenameFolder] = useState<LibraryFolder | null>(null);
+
+  /**
+   * Renomear a categoria alcança os documentos dentro dela.
+   *
+   * O nome viaja como cópia em cada documento (`className`), e é dela que o cartão da Biblioteca
+   * lê o rótulo — por isso o servidor propaga, e por isso aqui basta invalidar as listas.
+   */
+  const renameCategory = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateDocumentClass(id, { name }),
+    onSuccess: async (_data, variables) => {
+      setRenameFolder(null);
+      showAppToast({
+        type: 'success',
+        title: 'Categoria renomeada',
+        message: `Agora ela se chama ${variables.name}.`,
+      });
+      await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
+    },
+    onError: (error) => showApiErrorToast(error, 'Não foi possível renomear a categoria.'),
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: (folder: LibraryFolder) => deleteDocumentClass(folder.id),
+    onSuccess: async (result) => {
+      showAppToast({
+        type: 'success',
+        title: 'Categoria excluída',
+        message: result.movedDocuments
+          ? `${result.movedDocuments} ${result.movedDocuments === 1 ? 'documento foi' : 'documentos foram'} para Sem categoria.`
+          : 'A categoria estava vazia.',
+      });
+      await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
+    },
+    onError: (error) => showApiErrorToast(error, 'Não foi possível excluir a categoria.'),
+  });
+
+  const handleDeleteFolder = useCallback(
+    async (folder: LibraryFolder) => {
+      // Sem número: `folder.documentCount` conta só o que a view carregou, e com filtro ativo ele
+      // diria "1 documento" enquanto o servidor move a categoria inteira. O total real vai no
+      // aviso de sucesso, que vem do servidor.
+      const accepted = await confirm(buildDeleteCategoryConfirm(folder.name));
+      if (!accepted) return;
+      deleteCategory.mutate(folder);
+    },
+    [confirm, deleteCategory],
+  );
 
   const breadcrumbSegments = useMemo(() => {
     const built = buildLibraryBreadcrumbSegments({
@@ -287,10 +355,13 @@ export function LibraryPage() {
     void invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
   }, [queryClient, tenant?.tenantId, user?.companyId]);
 
-  const triggerUploadPicker = useCallback((context?: UploadContext) => {
-    pendingUploadContextRef.current = context ?? uploadContext;
-    emptyStateFileInputRef.current?.click();
-  }, [uploadContext]);
+  const triggerUploadPicker = useCallback(
+    (context?: UploadContext) => {
+      pendingUploadContextRef.current = context ?? uploadContext;
+      emptyStateFileInputRef.current?.click();
+    },
+    [uploadContext],
+  );
 
   const startUploadInFolder = useCallback(
     (folder: LibraryFolder) => {
@@ -417,10 +488,13 @@ export function LibraryPage() {
     [handleMoveToTrash],
   );
 
-  const openMoveModal = useCallback((docs: DocumentListItem[]) => {
-    if (!docs.length || isLifecycleArchiveView) return;
-    setMoveModalDocs(docs);
-  }, [isLifecycleArchiveView]);
+  const openMoveModal = useCallback(
+    (docs: DocumentListItem[]) => {
+      if (!docs.length || isLifecycleArchiveView) return;
+      setMoveModalDocs(docs);
+    },
+    [isLifecycleArchiveView],
+  );
 
   const handleMoveSingle = useCallback(
     (doc: DocumentListItem) => {
@@ -532,9 +606,7 @@ export function LibraryPage() {
 
   const showFilterMenus =
     !isSignaturesView &&
-    (explorer.isInsideFolder ||
-      explorer.isSearchOrFilterAtRoot ||
-      explorer.isVirtualCollection);
+    (explorer.isInsideFolder || explorer.isSearchOrFilterAtRoot || explorer.isVirtualCollection);
 
   const shellVariant = explorer.isBrowseRoot
     ? 'explorer-root'
@@ -587,9 +659,7 @@ export function LibraryPage() {
         totalDocumentCount={documents.length}
         viewMode={state.view}
         onOpenFolder={openSpace}
-        onFolderContextMenu={(folder, x, y) =>
-          setContextMenu({ kind: 'folder', folder, x, y })
-        }
+        onFolderContextMenu={(folder, x, y) => setContextMenu({ kind: 'folder', folder, x, y })}
         onFolderInfo={openFolderDetails}
         onUploadClick={() => triggerUploadPicker()}
       />
@@ -652,6 +722,9 @@ export function LibraryPage() {
         captureSelectionSnapshot={captureSelectionSnapshot}
         onDragStateChange={setMarqueeDragging}
       >
+        {/* Antes da lista, e não dentro dela: o que espera aceite ainda não é documento do acervo,
+            e misturá-lo às linhas faria parecer que já está lá. */}
+        {isSharedWithMeView && <InboundSharesStrip />}
         {mainContent}
       </MarqueeSelectionProvider>
     </LibraryContentDropZone>
@@ -669,201 +742,219 @@ export function LibraryPage() {
       onDownload={(doc) => void handleDownload(doc)}
       onDetails={openFileDetails}
       onTracking={handleTracking}
-      onRename={() => notifyComingSoon('Renomear')}
       onMove={isLifecycleArchiveView ? undefined : handleMoveSingle}
       onShare={isLifecycleArchiveView ? undefined : handleShareSingle}
       onRequestSignature={isLifecycleArchiveView ? undefined : handleRequestSignature}
       onViewSignatures={isLifecycleArchiveView ? undefined : handleViewSignatures}
       onTrash={isLifecycleArchiveView ? undefined : handleTrashSingle}
     >
-    <DndContext>
-      <input
-        ref={emptyStateFileInputRef}
-        type="file"
-        accept={ALLOWED_FILE_EXTENSIONS.join(',')}
-        multiple
-        className="hidden"
-        onChange={(event) => handleEmptyStateFiles(event.target.files)}
-        aria-hidden
-        tabIndex={-1}
-      />
-
-      <ExplorerShell
-        variant={shellVariant}
-        header={
-          <div className="space-y-0">
-            <ExplorerPageHeader
-              breadcrumb={
-                !explorer.isBrowseRoot ? (
-                  <LibraryBreadcrumbs segments={breadcrumbSegments} onNavigateRoot={goToRoot} />
-                ) : undefined
-              }
-              title={pageTitle}
-              subtitle={pageDescription}
-              meta={
-                <>
-                  {explorer.isInsideFolder && activeSpace && (
-                    <SearchScopeHint
-                      state={state}
-                      folderName={activeSpace.name}
-                      onStateChange={update}
-                    />
-                  )}
-                  {explorer.isInsideFolder && documents.length > 0 && !trimmedQuery ? (
-                    <span>
-                      {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
-                    </span>
-                  ) : undefined}
-                  {/* Sem aviso de "Atualizando…": a revalidação é silenciosa e a lista antiga
-                      fica na tela até a nova chegar. */}
-                </>
-              }
-              state={state}
-              onStateChange={update}
-              onClearFilters={clearFilters}
-              onRefresh={refreshLibrary}
-              showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}
-              showFilterMenus={showFilterMenus}
-              filterCapabilities={filterCapabilities}
-              showTitleChevron={explorer.isBrowseRoot && !hasActiveFilters}
-              folderName={activeSpace?.name}
-              infoButton={
-                <ContextInfoButton
-                  overview={libraryOverview}
-                  folder={activeSpace}
-                  open={infoOpen}
-                  onOpenChange={setInfoOpen}
-                />
-              }
-            />
-            {isError && (
-              <p className="mt-3 text-[12px] text-doqyn-danger">
-                Não foi possível carregar os documentos agora.
-              </p>
-            )}
-          </div>
-        }
-        toolbar={
-          selectedCount > 0 ? (
-            <LibraryToolbar
-              state={state}
-              selectedCount={selectedCount}
-              selectedFileIds={selectedFileIds}
-              selectedFolderCount={selectedFolderIds.size}
-              documents={documents}
-              isTrashView={isTrashView}
-              isDeactivatedView={isDeactivatedView}
-              onClearSelection={clearSelection}
-              onBulkDownload={(docs) => void handleBulkDownload(docs)}
-              onPreview={handlePreview}
-              onMove={handleBulkMove}
-              onTrash={(ids) => void handleMoveToTrash(ids)}
-              onRestore={(ids) => void handleRestoreFromTrash(ids)}
-              onReactivate={(ids) => void handleReactivate(ids)}
-            />
-          ) : undefined
-        }
-        content={content}
-      />
-
-      {detailsDrawer && (
-        <OptionalDetailsDrawer
-          selection={detailsDrawer}
-          onClose={closeDetailsDrawer}
-          onPreview={(doc) => handlePreview(doc)}
-          onDownload={(doc) => void handleDownload(doc)}
-          onUpdateDocument={handleUpdateDocument}
-          onPreviewVersion={(doc, versionId) => handlePreview(doc, versionId)}
-          onViewSignatures={handleViewSignatures}
-          onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
-          onTransferOwnership={(doc) => setTransferModalDoc(doc)}
-          onEditMetadata={handleEditMetadata}
+      <DndContext>
+        <input
+          ref={emptyStateFileInputRef}
+          type="file"
+          accept={ALLOWED_FILE_EXTENSIONS.join(',')}
+          multiple
+          className="hidden"
+          onChange={(event) => handleEmptyStateFiles(event.target.files)}
+          aria-hidden
+          tabIndex={-1}
         />
-      )}
 
-      <ExplorerContextMenu
-        state={contextMenu}
-        onClose={() => setContextMenu(null)}
-        viewMode={state.view}
-        onViewModeChange={(view) => update({ view })}
-        onRefresh={refreshLibrary}
-        onUpload={() => triggerUploadPicker()}
-        onUploadInFolder={startUploadInFolder}
-        onOpenFolder={openSpace}
-        onOpenFile={handleOpen}
-        onPreviewFile={handlePreview}
-        onDownloadFile={(doc) => void handleDownload(doc)}
-        onTrackingFile={handleTracking}
-        onSelectFileDetails={openFileDetails}
-        onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
-        onUpdateDocument={handleUpdateDocument}
-        onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
-        onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
-        onEditMetadataFile={isLifecycleArchiveView ? undefined : handleEditMetadata}
-        onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
-        onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
-        onDownloadSignedPdfFile={
-          isLifecycleArchiveView ? undefined : (doc) => void handleDownloadSignedPdf(doc)
-        }
-        onShowContextInfo={() => setInfoOpen(true)}
-        onShowFolderInfo={openFolderDetails}
-        isTrashView={isTrashView}
-        isDeactivatedView={isDeactivatedView}
-        onTrashFile={handleTrashSingle}
-        onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
-        onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
-        onComingSoon={notifyComingSoon}
-      />
+        <ExplorerShell
+          variant={shellVariant}
+          header={
+            <div className="space-y-0">
+              <ExplorerPageHeader
+                breadcrumb={
+                  !explorer.isBrowseRoot ? (
+                    <LibraryBreadcrumbs segments={breadcrumbSegments} onNavigateRoot={goToRoot} />
+                  ) : undefined
+                }
+                title={pageTitle}
+                subtitle={headerSubtitle}
+                meta={
+                  <>
+                    {explorer.isInsideFolder && activeSpace && (
+                      <SearchScopeHint
+                        state={state}
+                        folderName={activeSpace.name}
+                        onStateChange={update}
+                      />
+                    )}
+                    {explorer.isInsideFolder && documents.length > 0 && !trimmedQuery ? (
+                      <span>
+                        {documents.length} {documents.length === 1 ? 'arquivo' : 'arquivos'}
+                      </span>
+                    ) : undefined}
+                    {/* Sem aviso de "Atualizando…": a revalidação é silenciosa e a lista antiga
+                      fica na tela até a nova chegar. */}
+                  </>
+                }
+                state={state}
+                onStateChange={update}
+                onClearFilters={clearFilters}
+                onRefresh={refreshLibrary}
+                showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}
+                showFilterMenus={showFilterMenus}
+                filterCapabilities={filterCapabilities}
+                showTitleChevron={explorer.isBrowseRoot && !hasActiveFilters}
+                folderName={activeSpace?.name}
+                infoButton={
+                  <ContextInfoButton
+                    overview={libraryOverview}
+                    folder={activeSpace}
+                    open={infoOpen}
+                    onOpenChange={setInfoOpen}
+                  />
+                }
+              />
+              {isError && (
+                <p className="mt-3 text-[12px] text-doqyn-danger">
+                  Não foi possível carregar os documentos agora.
+                </p>
+              )}
+            </div>
+          }
+          toolbar={
+            selectedCount > 0 ? (
+              <LibraryToolbar
+                state={state}
+                selectedCount={selectedCount}
+                selectedFileIds={selectedFileIds}
+                selectedFolderCount={selectedFolderIds.size}
+                documents={documents}
+                isTrashView={isTrashView}
+                isDeactivatedView={isDeactivatedView}
+                onClearSelection={clearSelection}
+                onBulkDownload={(docs) => void handleBulkDownload(docs)}
+                onPreview={handlePreview}
+                onMove={handleBulkMove}
+                onTrash={(ids) => void handleMoveToTrash(ids)}
+                onRestore={(ids) => void handleRestoreFromTrash(ids)}
+                onReactivate={(ids) => void handleReactivate(ids)}
+              />
+            ) : undefined
+          }
+          content={content}
+        />
 
-      <UpdateDocumentVersionDrawer
-        documentId={updateVersionDocumentId}
-        onClose={closeUpdateVersionDrawer}
-      />
+        {detailsDrawer && (
+          <OptionalDetailsDrawer
+            selection={detailsDrawer}
+            onClose={closeDetailsDrawer}
+            onPreview={(doc) => handlePreview(doc)}
+            onDownload={(doc) => void handleDownload(doc)}
+            onUpdateDocument={handleUpdateDocument}
+            onPreviewVersion={(doc, versionId) => handlePreview(doc, versionId)}
+            onViewSignatures={handleViewSignatures}
+            onDownloadSignedPdf={(doc) => void handleDownloadSignedPdf(doc)}
+            onTransferOwnership={(doc) => setTransferModalDoc(doc)}
+            onEditMetadata={handleEditMetadata}
+          />
+        )}
 
-      <DocumentMetadataDrawer document={metadataDoc} onClose={() => setMetadataDoc(null)} />
+        <ExplorerContextMenu
+          state={contextMenu}
+          onClose={() => setContextMenu(null)}
+          viewMode={state.view}
+          onViewModeChange={(view) => update({ view })}
+          onRefresh={refreshLibrary}
+          onUpload={() => triggerUploadPicker()}
+          onUploadInFolder={startUploadInFolder}
+          onOpenFolder={openSpace}
+          onOpenFile={handleOpen}
+          onPreviewFile={handlePreview}
+          onDownloadFile={(doc) => void handleDownload(doc)}
+          onTrackingFile={handleTracking}
+          onSelectFileDetails={openFileDetails}
+          onToggleFavorite={(doc) => toggleStar(doc.documentId, doc.isFavorite)}
+          onUpdateDocument={handleUpdateDocument}
+          onMoveFile={isLifecycleArchiveView ? undefined : handleMoveSingle}
+          onShareFile={isLifecycleArchiveView ? undefined : handleShareSingle}
+          onEditMetadataFile={isLifecycleArchiveView ? undefined : handleEditMetadata}
+          onRequestSignatureFile={isLifecycleArchiveView ? undefined : handleRequestSignature}
+          onViewSignaturesFile={isLifecycleArchiveView ? undefined : handleViewSignatures}
+          onDownloadSignedPdfFile={
+            isLifecycleArchiveView ? undefined : (doc) => void handleDownloadSignedPdf(doc)
+          }
+          onShowContextInfo={() => setInfoOpen(true)}
+          onShowFolderInfo={openFolderDetails}
+          onRenameFolder={canManageCategories ? setRenameFolder : undefined}
+          onDeleteFolder={
+            canManageCategories ? (folder) => void handleDeleteFolder(folder) : undefined
+          }
+          isTrashView={isTrashView}
+          isDeactivatedView={isDeactivatedView}
+          onTrashFile={handleTrashSingle}
+          onRestoreFile={(doc) => void handleRestoreFromTrash([doc.documentId])}
+          onReactivateFile={(doc) => void handleReactivate([doc.documentId])}
+        />
 
-      <ShareDocumentModal
-        open={Boolean(shareModalDoc)}
-        document={shareModalDoc}
-        onClose={() => setShareModalDoc(null)}
-      />
+        <UpdateDocumentVersionDrawer
+          documentId={updateVersionDocumentId}
+          onClose={closeUpdateVersionDrawer}
+        />
 
-      <TransferOwnershipModal
-        open={Boolean(transferModalDoc)}
-        document={transferModalDoc}
-        onClose={() => setTransferModalDoc(null)}
-      />
+        <DocumentMetadataDrawer document={metadataDoc} onClose={() => setMetadataDoc(null)} />
 
-      <RequestSignatureModal
-        open={Boolean(signatureModalDoc)}
-        document={signatureModalDoc}
-        onClose={() => setSignatureModalDoc(null)}
-        onCreated={() => void invalidateLibraryQueries(queryClient, tenant?.tenantId)}
-      />
+        <ShareDocumentModal
+          open={Boolean(shareModalDoc)}
+          document={shareModalDoc}
+          onClose={() => setShareModalDoc(null)}
+        />
 
-      <DocumentSignaturesDrawer
-        document={signaturesDrawerDoc}
-        onClose={() => setSignaturesDrawerDoc(null)}
-      />
+        <TransferOwnershipModal
+          open={Boolean(transferModalDoc)}
+          document={transferModalDoc}
+          onClose={() => setTransferModalDoc(null)}
+        />
 
-      <MoveDocumentModal
-        open={Boolean(moveModalDocs?.length)}
-        documents={moveModalDocs ?? []}
-        categories={categories}
-        isSubmitting={moveDocuments.isPending}
-        onClose={() => setMoveModalDocs(null)}
-        onConfirm={handleConfirmMove}
-      />
+        <RequestSignatureModal
+          open={Boolean(signatureModalDoc)}
+          document={signatureModalDoc}
+          onClose={() => setSignatureModalDoc(null)}
+          onCreated={() => void invalidateLibraryQueries(queryClient, tenant?.tenantId)}
+        />
 
-      <DocumentViewerModal
-        open={Boolean(viewer)}
-        documentId={viewer?.documentId ?? null}
-        initialVersionId={viewer?.versionId}
-        initialShowDetails={viewer?.mode === 'details'}
-        onClose={() => setViewer(null)}
-        onUpdateDocument={openUpdateVersionDrawer}
-      />
-    </DndContext>
+        <DocumentSignaturesDrawer
+          document={signaturesDrawerDoc}
+          onClose={() => setSignaturesDrawerDoc(null)}
+        />
+
+        <PromptDialog
+          open={Boolean(renameFolder)}
+          title="Renomear categoria"
+          description="O nome novo vale para a pasta e para todos os documentos que já estão dentro dela."
+          label="Nome da categoria"
+          initialValue={renameFolder?.name ?? ''}
+          multiline={false}
+          confirmLabel="Renomear"
+          saving={renameCategory.isPending}
+          onClose={() => setRenameFolder(null)}
+          onConfirm={(name) => {
+            if (!renameFolder) return;
+            renameCategory.mutate({ id: renameFolder.id, name });
+          }}
+        />
+
+        <MoveDocumentModal
+          open={Boolean(moveModalDocs?.length)}
+          documents={moveModalDocs ?? []}
+          categories={categories}
+          isSubmitting={moveDocuments.isPending}
+          onClose={() => setMoveModalDocs(null)}
+          onConfirm={handleConfirmMove}
+        />
+
+        <DocumentViewerModal
+          open={Boolean(viewer)}
+          documentId={viewer?.documentId ?? null}
+          initialVersionId={viewer?.versionId}
+          initialShowDetails={viewer?.mode === 'details'}
+          onClose={() => setViewer(null)}
+          onUpdateDocument={openUpdateVersionDrawer}
+        />
+      </DndContext>
     </ExplorerActionsProvider>
   );
 }

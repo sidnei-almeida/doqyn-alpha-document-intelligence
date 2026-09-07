@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
@@ -45,6 +46,7 @@ export function LibraryContentDropZone({
       ref={setRef}
       className={cn('relative flex min-h-0 min-h-full flex-1 flex-col', className)}
       data-testid="library-content-dropzone"
+      {...fileDropzoneProps}
       onDragEnter={(event) => {
         if (!dragEventHasFiles(event)) return;
         event.preventDefault();

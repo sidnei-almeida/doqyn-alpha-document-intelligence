@@ -7,14 +7,24 @@ import {
   isDocumentAdmin,
   resolveDocumentPermissions,
 } from './documentAccess.js';
-import { userHasGovernanceCategoryPermission } from './governanceAccessIndex.js';
+import { resolveGovernanceCategoryPermission } from './governanceAccessIndex.js';
 
 export type DocumentAccessPermissionsWithShare = DocumentAccessPermissions & {
   canShare: boolean;
+  /**
+   * A governança respondeu "pode, pedindo" no verbo `share`.
+   *
+   * Fica fora de `requiresApproval` de propósito: aquele campo é o do documento puro, e `share`
+   * não passa por `DocumentAccessPermissions` — vive em `canUserShareDocument`. Como no download,
+   * `canShare` vem **falso** aqui, para que quem só olha o booleano negue.
+   */
+  shareRequiresApproval: boolean;
   sharedViaGrant: boolean;
 };
 
-function isShareGrantActive(grant: MongoDocumentShareGrant | null | undefined): grant is MongoDocumentShareGrant {
+function isShareGrantActive(
+  grant: MongoDocumentShareGrant | null | undefined,
+): grant is MongoDocumentShareGrant {
   if (!grant || grant.status !== 'active') return false;
   if (grant.expiresAt && grant.expiresAt.getTime() <= Date.now()) return false;
   return true;
@@ -29,11 +39,38 @@ export function canUserShareDocument(
   if (isDocumentAdmin(user)) return true;
   if (doc.ownerUserId && doc.ownerUserId === user.id) return true;
 
-  if (userHasGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share')) {
+  // `allow`, não "tem caminho". `userHasGovernanceCategoryPermission` conta `require` como
+  // verdadeiro — serve para "quem alcança a categoria", e usá-lo aqui liberaria o
+  // compartilhamento sem passar por ninguém no dia em que `share` voltar a aceitar o meio-termo.
+  // Falhar fechado agora é o que torna seguro ligar o portão depois.
+  if (
+    resolveGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share') ===
+    'allow'
+  ) {
     return true;
   }
 
   return resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex).canUpdate;
+}
+
+/**
+ * Verdadeiro quando compartilhar depende de aprovação do administrador.
+ *
+ * Só responde pelo meio-termo: quem já pode compartilhar por qualquer caminho — admin, dono,
+ * `allow` na categoria, ou o `update` que a governança concede — não pede licença, e quem está em
+ * `deny` não tem o que pedir.
+ */
+export function shareRequiresApproval(
+  user: AuthUser,
+  doc: Pick<MongoDocument, 'ownerUserId' | 'access' | 'classId'>,
+  memberGroupIds: string[],
+  governanceIndex?: GovernanceAccessIndex,
+): boolean {
+  if (canUserShareDocument(user, doc, memberGroupIds, governanceIndex)) return false;
+  return (
+    resolveGovernanceCategoryPermission(governanceIndex, doc.classId, memberGroupIds, 'share') ===
+    'require'
+  );
 }
 
 export function canUserListDocumentWithShare(
@@ -56,11 +93,13 @@ export function resolveDocumentPermissionsWithShare(
 ): DocumentAccessPermissionsWithShare {
   const base = resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex);
   const canShare = canUserShareDocument(user, doc, memberGroupIds, governanceIndex);
+  const needsShareApproval = shareRequiresApproval(user, doc, memberGroupIds, governanceIndex);
 
   if (!isShareGrantActive(shareGrant)) {
     return {
       ...base,
       canShare,
+      shareRequiresApproval: needsShareApproval,
       sharedViaGrant: false,
     };
   }
@@ -76,7 +115,16 @@ export function resolveDocumentPermissionsWithShare(
     canTrash: base.canTrash,
     canContribute: base.canContribute,
     canTransferOwnership: base.canTransferOwnership,
+    // O compartilhamento explícito resolve o pedido: quem recebeu o grant já foi autorizado por
+    // alguém, e continuar exigindo aprovação seria pedir duas vezes a mesma licença.
+    requiresApproval: {
+      download: base.requiresApproval.download && sharePerms.canDownload !== true,
+      update: base.requiresApproval.update,
+    },
     canShare: canShare && sharePerms.canShare === true,
+    // Receber por grant não muda o meio-termo do verbo: quem recebeu para ver não ganhou o direito
+    // de repassar. `canShare` acima já exige o `canShare` da concessão.
+    shareRequiresApproval: needsShareApproval,
     sharedViaGrant,
   };
 }

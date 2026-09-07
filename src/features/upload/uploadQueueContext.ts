@@ -13,6 +13,9 @@ export type UploadQueueContextValue = {
   pendingCount: number;
   reviewItemId: string | null;
   reviewSettings: WorkflowReviewSettings;
+  /** Falso para quem não governa o tenant: a política é da organização, não da pessoa. */
+  canManageReviewSettings: boolean;
+  isSavingReviewSettings: boolean;
   autoConfirmCountdown: AutoConfirmCountdown | null;
   updateReviewSettings: (settings: WorkflowReviewSettings) => void;
   startUploadFromFiles: (files: File[], context?: UploadContext) => void;

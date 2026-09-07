@@ -30,11 +30,7 @@ export function TableRowActionsMenu({ actions, align = 'right' }: TableRowAction
       className={cn('relative', align === 'right' && 'flex justify-end')}
       onClick={(event) => event.stopPropagation()}
     >
-      <IconButton
-        ref={anchorRef}
-        label="Ações da linha"
-        onClick={() => setOpen((value) => !value)}
-      >
+      <IconButton ref={anchorRef} label="Ações da linha" onClick={() => setOpen((value) => !value)}>
         <Icon name="more_horiz" size={ICON_SIZE.sm} />
       </IconButton>
 
@@ -44,7 +40,7 @@ export function TableRowActionsMenu({ actions, align = 'right' }: TableRowAction
         onClose={() => setOpen(false)}
         placement={align === 'right' ? 'bottom-end' : 'bottom-start'}
         role="menu"
-        className="min-w-[11rem] rounded-md py-1 shadow-modal"
+        className="min-w-[11rem] py-1 shadow-modal"
       >
         {visibleActions.map((action) => (
           <DropdownMenuItem

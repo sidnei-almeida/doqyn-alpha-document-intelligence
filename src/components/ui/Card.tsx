@@ -18,8 +18,7 @@ const cardVariants = cva('rounded-xl border border-doqyn-border-subtle bg-doqyn-
 });
 
 export interface CardProps
-  extends HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+  extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof cardVariants> {}
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, ...props }, ref) => (
@@ -58,9 +57,7 @@ export const CardDescription = forwardRef<
 CardDescription.displayName = 'CardDescription';
 
 export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('p-4', className)} {...props} />
-  ),
+  ({ className, ...props }, ref) => <div ref={ref} className={cn('p-4', className)} {...props} />,
 );
 CardContent.displayName = 'CardContent';
 
@@ -85,7 +82,9 @@ export function ContentCard({
 }: ContentCardProps) {
   return (
     <Card variant="content" className={className}>
-      <CardHeader className={headerAction ? 'flex-row items-start justify-between gap-3' : undefined}>
+      <CardHeader
+        className={headerAction ? 'flex-row items-start justify-between gap-3' : undefined}
+      >
         <div className="min-w-0">
           {eyebrow && <CardEyebrow className="mb-1">{eyebrow}</CardEyebrow>}
           <CardTitle>{title}</CardTitle>
@@ -137,10 +136,7 @@ export function MetricCard({
       }
     >
       <CardContent
-        className={cn(
-          'flex flex-1 flex-col',
-          isCompact ? 'gap-1 p-3' : 'justify-between p-4',
-        )}
+        className={cn('flex flex-1 flex-col', isCompact ? 'gap-1 p-3' : 'justify-between p-4')}
       >
         <p className="eyebrow-text shrink-0">{label}</p>
         {isCompact ? (

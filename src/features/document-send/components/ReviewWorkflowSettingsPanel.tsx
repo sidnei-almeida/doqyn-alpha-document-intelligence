@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Radio } from '@/components/ui/Radio';
 import { SettingsFieldGroup } from '@/features/settings/components/SettingsFieldGroup';
-import { SettingsStatusBadge } from '@/features/settings/components/SettingsStatusBadge';
 import { cn } from '@/lib/utils';
 import type { DefaultNamingPolicy, WorkflowReviewSettings } from '../types/reviewWorkflowSettings';
 import {
@@ -50,7 +49,7 @@ function CollapsibleSettingsSection({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="hover:bg-doqyn-hover/50 flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-doqyn-text"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-doqyn-text hover:bg-doqyn-hover/50"
       >
         {title}
         <Icon
@@ -89,30 +88,6 @@ function ToggleRow({
       onChange={(event) => onChange(event.target.checked)}
       wrapperClassName={wrapperClassName}
     />
-  );
-}
-
-function ComingSoonToggleRow({
-  label,
-  description,
-  checked,
-}: {
-  label: string;
-  description?: string;
-  checked: boolean;
-}) {
-  return (
-    <div className="settings-locked-option">
-      <Checkbox
-        checked={checked}
-        disabled
-        label={label}
-        description={description}
-        onChange={() => undefined}
-        wrapperClassName="settings-locked-option__control"
-      />
-      <SettingsStatusBadge status="pending" className="settings-locked-option__badge" />
-    </div>
   );
 }
 
@@ -265,11 +240,6 @@ function AutoReviewControls({
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
           />
-          <ComingSoonToggleRow
-            label="Exigir revisão para documentos sensíveis"
-            description="Detecção automática de contratos e dados pessoais."
-            checked={settings.pauseOnSensitiveDocs}
-          />
         </div>
       ) : (
         <>
@@ -288,14 +258,6 @@ function AutoReviewControls({
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
           />
-          <ToggleRow
-            label="Exigir revisão para documentos sensíveis"
-            description="Em breve — detecção automática de contratos e dados pessoais."
-            checked={settings.pauseOnSensitiveDocs}
-            onChange={(checked) => patch({ pauseOnSensitiveDocs: checked })}
-            disabled
-            size={size}
-          />
         </>
       )}
     </>
@@ -305,12 +267,10 @@ function AutoReviewControls({
 function AiSuggestionControls({
   settings,
   patch,
-  lockedFuture = false,
   size = 'compact',
 }: {
   settings: WorkflowReviewSettings;
   patch: (partial: Partial<WorkflowReviewSettings>) => void;
-  lockedFuture?: boolean;
   size?: 'compact' | 'comfortable';
 }) {
   return (
@@ -321,37 +281,6 @@ function AiSuggestionControls({
         onChange={(checked) => patch({ aiRenameEnabled: checked })}
         size={size}
       />
-      {lockedFuture ? (
-        <>
-          <ComingSoonToggleRow
-            label="Permitir IA preencher metadados"
-            description="A análise já executa; o controle fica para uma fase futura."
-            checked={settings.aiMetadataEnabled}
-          />
-          <ComingSoonToggleRow
-            label="Permitir IA sugerir categoria/classe"
-            description="A análise já executa; o controle fica para uma fase futura."
-            checked={settings.aiClassificationEnabled}
-          />
-        </>
-      ) : (
-        <>
-          <ToggleRow
-            label="Permitir IA preencher metadados"
-            description="Análise sempre executa; toggle prepara fase futura."
-            checked={settings.aiMetadataEnabled}
-            onChange={(checked) => patch({ aiMetadataEnabled: checked })}
-            size={size}
-          />
-          <ToggleRow
-            label="Permitir IA sugerir categoria/classe"
-            description="Análise sempre executa; toggle prepara fase futura."
-            checked={settings.aiClassificationEnabled}
-            onChange={(checked) => patch({ aiClassificationEnabled: checked })}
-            size={size}
-          />
-        </>
-      )}
       <ToggleRow
         label="Nunca incluir CPF/CNPJ no nome sugerido"
         checked={settings.preventSensitiveDataInFileName}
@@ -407,6 +336,7 @@ export function ReviewWorkflowSettingsPanel({
   const summary = getReviewSettingsSummaryLabel(settings);
 
   const patch = (partial: Partial<WorkflowReviewSettings>) => {
+    if (disabled) return;
     onChange({ ...settings, ...partial });
   };
 
@@ -461,8 +391,10 @@ export function ReviewWorkflowSettingsPanel({
     </div>
   );
 
+  // `fieldset disabled` desliga todo controle aninhado de uma vez — é o que sustenta a leitura
+  // da política por quem não administra a organização, sem duplicar a prop em cada linha.
   const inlineBody = (
-    <div className="settings-workflow-panel">
+    <fieldset disabled={disabled} className="settings-workflow-panel">
       <div className="settings-workflow-panel__grid settings-workflow-panel__grid--balanced">
         <SettingsFieldGroup
           title="Revisão automática"
@@ -483,7 +415,7 @@ export function ReviewWorkflowSettingsPanel({
           description="Controle o que a IA pode sugerir automaticamente."
           className="settings-field-group--fill"
         >
-          <AiSuggestionControls settings={settings} patch={patch} lockedFuture size="comfortable" />
+          <AiSuggestionControls settings={settings} patch={patch} size="comfortable" />
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
@@ -515,7 +447,7 @@ export function ReviewWorkflowSettingsPanel({
           </div>
         </SettingsFieldGroup>
       </div>
-    </div>
+    </fieldset>
   );
 
   if (variant === 'inline') {
@@ -533,7 +465,7 @@ export function ReviewWorkflowSettingsPanel({
         disabled={disabled}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'bg-doqyn-bg/40 hover:bg-doqyn-hover/50 inline-flex max-w-full items-center gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2 text-xs font-medium text-doqyn-text transition-colors',
+          'inline-flex max-w-full items-center gap-2 rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-xs font-medium text-doqyn-text transition-colors hover:bg-doqyn-hover/50',
           disabled && 'cursor-not-allowed opacity-50',
           open && 'border-doqyn-primary/40 bg-doqyn-primary/10',
         )}

@@ -2,35 +2,19 @@ import { useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   DEFAULT_SETTINGS_SECTION,
-  getDefaultTabForSection,
-  isLegacyAccountTabParam,
-  isLegacySettingsSection,
-  LEGACY_SECTION_REDIRECTS,
+  isSettingsSection,
   parseSettingsSection,
-  parseSettingsTab,
-  type CompanySettingsTab,
   type SettingsSectionId,
-  type SettingsTabId,
 } from '../settingsSections';
 
-function applyCanonicalParams(
-  params: URLSearchParams,
-  section: SettingsSectionId,
-  tab: SettingsTabId | null,
-) {
-  const defaultTab = getDefaultTabForSection(section);
-
+function applySection(params: URLSearchParams, section: SettingsSectionId) {
   if (section === DEFAULT_SETTINGS_SECTION) {
     params.delete('section');
   } else {
     params.set('section', section);
   }
-
-  if (tab && tab !== defaultTab) {
-    params.set('tab', tab);
-  } else {
-    params.delete('tab');
-  }
+  // Não existe mais sub-aba: cada seção é uma tela só.
+  params.delete('tab');
 }
 
 export function useSettingsSection() {
@@ -39,14 +23,13 @@ export function useSettingsSection() {
   const rawSection = searchParams.get('section');
   const rawTab = searchParams.get('tab');
   const section = parseSettingsSection(rawSection);
-  const tab = parseSettingsTab(section, rawSection, rawTab);
 
   const setSection = useCallback(
     (next: SettingsSectionId) => {
       setSearchParams(
         (params) => {
           const updated = new URLSearchParams(params);
-          applyCanonicalParams(updated, next, getDefaultTabForSection(next));
+          applySection(updated, next);
           return updated;
         },
         { replace: true },
@@ -55,68 +38,22 @@ export function useSettingsSection() {
     [setSearchParams],
   );
 
-  const setTab = useCallback(
-    (nextTab: SettingsTabId) => {
-      setSearchParams(
-        (params) => {
-          const updated = new URLSearchParams(params);
-          applyCanonicalParams(updated, section, nextTab);
-          return updated;
-        },
-        { replace: true },
-      );
-    },
-    [section, setSearchParams],
-  );
-
-  const setCompanyTab = useCallback(
-    (nextTab: CompanySettingsTab) => {
-      setTab(nextTab);
-    },
-    [setTab],
-  );
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Âncora antiga de "Upload e IA" (#upload) continua caindo na seção certa.
     const hash = window.location.hash.replace('#', '');
-    if (hash === 'upload' && !searchParams.get('section')) {
-      setSection('upload-ia');
+    if (hash === 'upload' && !rawSection) {
+      setSection('organizacao');
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       return;
     }
 
-    if (rawSection && isLegacySettingsSection(rawSection)) {
-      const redirect = LEGACY_SECTION_REDIRECTS[rawSection];
-      setSearchParams(
-        (params) => {
-          const updated = new URLSearchParams(params);
-          applyCanonicalParams(updated, redirect.section, redirect.tab ?? null);
-          return updated;
-        },
-        { replace: true },
-      );
-      return;
+    const needsRewrite = (rawSection !== null && !isSettingsSection(rawSection)) || rawTab !== null;
+    if (needsRewrite) {
+      setSection(section);
     }
+  }, [rawSection, rawTab, section, setSection]);
 
-    // Limpa ?tab=identidade|preferencias|acesso no Perfil (tabs removidas).
-    if (section === 'perfil' && isLegacyAccountTabParam(rawTab)) {
-      setSearchParams(
-        (params) => {
-          const updated = new URLSearchParams(params);
-          applyCanonicalParams(updated, 'perfil', null);
-          return updated;
-        },
-        { replace: true },
-      );
-    }
-  }, [rawSection, rawTab, searchParams, section, setSearchParams, setSection]);
-
-  return {
-    section,
-    tab,
-    setSection,
-    setTab,
-    setCompanyTab,
-  };
+  return { section, setSection };
 }

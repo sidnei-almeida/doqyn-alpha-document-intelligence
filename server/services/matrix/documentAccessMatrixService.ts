@@ -10,6 +10,7 @@ import type {
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../../tenancy/tenantQuery.js';
 import {
+  groupIdsReaching,
   loadGovernanceAccessIndex,
   type GovernanceAccessIndex,
 } from '../../tenancy/governanceAccessIndex.js';
@@ -40,11 +41,28 @@ type ListedDocument = Awaited<ReturnType<typeof listDocuments>>['items'][number]
 
 export type DocumentAccessOrigin = 'owner' | 'admin' | 'governance' | 'share';
 
+/**
+ * O que a pessoa pode fazer com o documento, verbo a verbo.
+ *
+ * Mesma conta que `resolveDocumentPermissions` faz na hora de autorizar — administrador e dono
+ * podem tudo, o resto sai da regra da categoria — mais o compartilhamento direto, que concede
+ * apenas ver e baixar. A matriz mostrava só que havia acesso; sem os verbos, "tem acesso" tanto
+ * podia significar leitura quanto poder alterar o arquivo.
+ */
+export type DocumentAccessVerbs = {
+  canView: boolean;
+  canDownload: boolean;
+  canUpdate: boolean;
+  canAudit: boolean;
+  canShare: boolean;
+};
+
 export type DocumentAccessCell = {
   documentId: string;
   membershipId: string;
   origins: DocumentAccessOrigin[];
   canDownload: boolean;
+  permissions: DocumentAccessVerbs;
   /** Grupos que sustentam o acesso por governança — o atalho para `/rules` usa isto. */
   viaGroupIds: string[];
   /** Presente quando há compartilhamento direto: é o que a matriz consegue revogar. */
@@ -110,8 +128,7 @@ function governanceGroupsFor(
   categoryId: string | undefined,
   bucket: keyof GovernanceAccessIndex,
 ): Set<string> {
-  if (!categoryId) return new Set();
-  return index[bucket].get(categoryId) ?? new Set();
+  return groupIdsReaching(index[bucket], categoryId);
 }
 
 export async function buildDocumentAccessMatrix(input: {
@@ -167,7 +184,9 @@ export async function buildDocumentAccessMatrix(input: {
   const [members, groupRows, governance, grants, externalGrants] = await Promise.all([
     listOperationalTenantMembers(input.tenantId),
     collections.documentGroups
-      ? collections.documentGroups.find({ ...scope, active: true } as Record<string, unknown>).toArray()
+      ? collections.documentGroups
+          .find({ ...scope, active: true } as Record<string, unknown>)
+          .toArray()
       : Promise.resolve([] as MongoDocumentGroup[]),
     loadGovernanceAccessIndex(input.tenantId, { ownerUserId: input.userId }),
     db
@@ -309,8 +328,7 @@ export async function buildDocumentAccessMatrix(input: {
 
       if (viaGroupIds.length > 0) {
         origins.push('governance');
-        canDownload =
-          canDownload || member.groupIds.some((groupId) => downloadGroups.has(groupId));
+        canDownload = canDownload || member.groupIds.some((groupId) => downloadGroups.has(groupId));
       }
 
       const grant = docGrants.find((entry) => entry.sharedWithUserId === member.userId);
@@ -322,11 +340,25 @@ export async function buildDocumentAccessMatrix(input: {
 
       if (origins.length === 0) continue;
 
+      const isFullAccess = origins.includes('owner') || origins.includes('admin');
+      const hasGovernanceVerb = (groups: Set<string>) =>
+        member.groupIds.some((groupId) => groups.has(groupId));
+
       cells.push({
         documentId,
         membershipId: member.membershipId,
         origins,
         canDownload,
+        permissions: {
+          canView:
+            isFullAccess ||
+            viaGroupIds.length > 0 ||
+            Boolean(grant && (grant.permissions?.canView ?? true)),
+          canDownload,
+          canUpdate: isFullAccess || hasGovernanceVerb(updateGroups),
+          canAudit: isFullAccess || hasGovernanceVerb(auditGroups),
+          canShare: isFullAccess || hasGovernanceVerb(shareGroups),
+        },
         viaGroupIds,
         shareGrantId,
       });

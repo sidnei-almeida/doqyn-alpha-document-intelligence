@@ -29,19 +29,9 @@ function ownerName(doc: DocumentListItem): string {
 }
 
 /** Linha de arquivo — clique seleciona, duplo clique abre viewer. */
-export function FileRow({
-  document: doc,
-  compact = false,
-  variant = 'default',
-}: FileRowProps) {
-  const {
-    isFileSelected,
-    isStarred,
-    interactFile,
-    openFile,
-    openFileContextMenu,
-    toggleStar,
-  } = useExplorerFileActions();
+export function FileRow({ document: doc, compact = false, variant = 'default' }: FileRowProps) {
+  const { isFileSelected, isStarred, interactFile, openFile, openFileContextMenu, toggleStar } =
+    useExplorerFileActions();
 
   const isExplorer = variant === 'explorer' || compact;
   const isSelected = isFileSelected(doc.documentId);
@@ -89,7 +79,7 @@ export function FileRow({
         {...pointerHandlers}
         {...rowKeyHandlers}
         className={cn(
-          'group explorer-interactive cursor-pointer outline-none',
+          'explorer-interactive group cursor-pointer outline-none',
           'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-doqyn-accent-active/35',
           isSelected ? 'explorer-item-selected explorer-selected' : 'hover:bg-doqyn-surface-hover',
         )}
@@ -107,7 +97,9 @@ export function FileRow({
             <div className="min-w-0 flex-1">
               <p className="flex min-w-0 items-center gap-1.5">
                 <DocumentFavoriteBadge document={doc} variant="inline" />
-                <TruncatedText className="min-w-0 flex-1 text-[13px] font-medium text-doqyn-text">{name}</TruncatedText>
+                <TruncatedText className="min-w-0 flex-1 text-[13px] font-medium text-doqyn-text">
+                  {name}
+                </TruncatedText>
               </p>
               <p className="meta-text mt-0.5 truncate md:hidden">
                 {ownerName(doc)} · {formatDate(doc.updatedAt)}
@@ -166,7 +158,7 @@ export function FileRow({
       {...pointerHandlers}
       {...rowKeyHandlers}
       className={cn(
-        'group explorer-interactive cursor-pointer border-b border-doqyn-border-subtle outline-none',
+        'explorer-interactive group cursor-pointer border-b border-doqyn-border-subtle outline-none',
         'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-doqyn-accent-active/35',
         isSelected ? 'explorer-item-selected explorer-selected' : 'hover:bg-doqyn-surface-hover',
       )}
@@ -186,7 +178,9 @@ export function FileRow({
           <div className="min-w-0 flex-1">
             <p className="flex min-w-0 items-center gap-1.5">
               <DocumentFavoriteBadge document={doc} variant="inline" />
-              <TruncatedText className="min-w-0 flex-1 text-[14px] font-medium text-doqyn-text">{name}</TruncatedText>
+              <TruncatedText className="min-w-0 flex-1 text-[14px] font-medium text-doqyn-text">
+                {name}
+              </TruncatedText>
             </p>
             <p className="meta-text mt-0.5 truncate">
               {ownerName(doc)} · {formatDate(doc.updatedAt)}
@@ -194,7 +188,9 @@ export function FileRow({
           </div>
         </div>
       </td>
-      <td className="hidden px-4 py-3 text-[12px] text-doqyn-muted lg:table-cell">{ownerName(doc)}</td>
+      <td className="hidden px-4 py-3 text-[12px] text-doqyn-muted lg:table-cell">
+        {ownerName(doc)}
+      </td>
       <td className="hidden px-4 py-3 lg:table-cell">
         {tags.length > 0 ? (
           <span className="text-[12px] text-doqyn-muted">{tags.slice(0, 3).join(', ')}</span>

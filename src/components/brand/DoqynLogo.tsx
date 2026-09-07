@@ -39,7 +39,10 @@ const subtitleSize: Record<DoqynLogoSize, string> = {
   login: 'mt-3 text-[11px] tracking-[0.28em]',
 };
 
-function resolveVariant(variant: DoqynLogoVariant | undefined, showMark?: boolean): DoqynLogoVariant {
+function resolveVariant(
+  variant: DoqynLogoVariant | undefined,
+  showMark?: boolean,
+): DoqynLogoVariant {
   if (variant) return variant;
   if (showMark === false) return 'wordmark';
   return 'horizontal';

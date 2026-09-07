@@ -1,5 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
+import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { Icon } from '@/components/ui/Icon';
+import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
@@ -20,11 +22,19 @@ export type WorkspaceSideDrawerProps = {
   onOverlayClick?: () => void;
   header?: ReactNode;
   headerActions?: ReactNode;
+  /** Faixa fixa no rodapé — não rola com o corpo. Some quando não há ação. */
+  footer?: ReactNode;
   bodyClassName?: string;
   children: ReactNode;
 };
 
-/** Drawer lateral padronizado do workspace — overlay, header, Escape e corpo rolável. */
+/**
+ * Gaveta lateral do workspace — overlay, cabeçalho, Escape e corpo rolável.
+ *
+ * O cabeçalho fala a mesma língua das páginas: rótulo de registro em cima,
+ * nome em seguida. O respiro é o mesmo do resto do sistema, para que a gaveta
+ * não pareça uma tela apertada colada na lateral.
+ */
 export function WorkspaceSideDrawer({
   open = true,
   onClose,
@@ -41,17 +51,22 @@ export function WorkspaceSideDrawer({
   onOverlayClick,
   header,
   headerActions,
+  footer,
   bodyClassName,
   children,
 }: WorkspaceSideDrawerProps) {
+  const isTopLayer = useOverlayLayer(open);
+  const handleKeyDown = useStableCallback((event: KeyboardEvent) => {
+    // Só a camada do topo responde: um modal aberto por cima fecha primeiro.
+    if (event.key !== 'Escape' || !isTopLayer()) return;
+    onClose();
+  });
+
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, handleKeyDown]);
 
   if (!open) return null;
 
@@ -64,12 +79,15 @@ export function WorkspaceSideDrawer({
         zIndexClass,
       )}
       role="presentation"
+      data-overlay-host
       data-testid={overlayTestId}
       onClick={handleOverlayClick}
     >
       <aside
         className={cn(
-          'drawer-enter-right flex h-full w-full flex-col overflow-hidden border-l border-doqyn-border-subtle bg-doqyn-surface shadow-dropdown',
+          // O fundo é o da página, não uma superfície elevada: a gaveta é um
+          // pedaço do mesmo documento, aberto pela lateral.
+          'drawer-enter-right flex h-full w-full flex-col overflow-hidden border-l border-doqyn-border bg-doqyn-bg shadow-modal',
           maxWidthClass,
         )}
         aria-label={ariaLabel ?? title}
@@ -77,39 +95,45 @@ export function WorkspaceSideDrawer({
         onClick={(event) => event.stopPropagation()}
       >
         {header ?? (
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-doqyn-border-subtle px-4 py-3">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-doqyn-border-subtle px-5 py-4">
             <div className="min-w-0 flex-1">
-              <p className="text-caption font-semibold text-doqyn-text">{title}</p>
+              <TruncatedText as="h2" className="type-h2 text-doqyn-text">
+                {title}
+              </TruncatedText>
               {subtitle ? (
-                <TruncatedText className="mt-0.5 text-micro text-doqyn-muted">
-                  {subtitle}
-                </TruncatedText>
+                // O invólucro do tooltip é `inline-flex`: sem um bloco em volta,
+                // o subtítulo encosta no fim do título em vez de descer uma linha.
+                <div className="mt-1">
+                  <TruncatedText className="register-label text-doqyn-subtle">
+                    {subtitle}
+                  </TruncatedText>
+                </div>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-0.5">
               {headerActions}
-              <button
-                type="button"
-                onClick={onClose}
-                className="explorer-icon-btn shrink-0"
-                aria-label={closeAriaLabel}
-                data-testid={closeTestId}
-              >
+              <IconButton label={closeAriaLabel} onClick={onClose} data-testid={closeTestId}>
                 <Icon name="close" size={ICON_SIZE.sm} />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}
 
         <div
           className={cn(
-            'min-h-0 flex-1 px-4 py-3',
+            'min-h-0 flex-1 px-5 py-4',
             scrollable && 'scrollbar-thin overflow-y-auto',
             bodyClassName,
           )}
         >
           {children}
         </div>
+
+        {footer ? (
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-doqyn-border-subtle px-5 py-3">
+            {footer}
+          </div>
+        ) : null}
       </aside>
     </div>
   );

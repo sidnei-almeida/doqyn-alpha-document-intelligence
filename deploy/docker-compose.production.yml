@@ -369,7 +369,6 @@ services:
       dockerfile: docker/Dockerfile.nginx
       args:
         VITE_APP_NAME: ${VITE_APP_NAME:-DOQYN}
-        VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER:-doqyn_auth}
         VITE_AUTH_BASE_PATH: ${VITE_AUTH_BASE_PATH:-/auth}
         VITE_PRESIGNED_UPLOAD_ENABLED: ${VITE_PRESIGNED_UPLOAD_ENABLED:-false}
     mem_limit: 128m

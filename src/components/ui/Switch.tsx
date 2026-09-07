@@ -51,7 +51,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
           <span
             aria-hidden
             className={cn(
-              'absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full bg-doqyn-text transition-transform duration-200',
+              'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-doqyn-text transition-transform duration-200',
               checked && 'translate-x-4 bg-doqyn-primary',
             )}
           />

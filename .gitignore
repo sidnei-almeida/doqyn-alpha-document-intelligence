@@ -92,3 +92,12 @@ CLAUDE.md
 
 # Estado efêmero do GSD (sentinela de isolamento por execução)
 .gsd/
+
+# Cache do gerador de cartões OG (scripts/og/build-og-cards.py)
+__pycache__/
+
+# Documentos sintéticos de teste — geradores, gabarito e arquivos.
+# Vivem só na máquina de quem os usa: são material de avaliação do modelo, não
+# do produto, e o repositório já recusa `*.pdf` desde antes deles existirem.
+synthetic_document_dataset/
+synthetic_document_dataset.zip

@@ -40,11 +40,20 @@ describe('visualização dentro da pasta', () => {
     assert.ok(actions.includes('FilterMenu'));
   });
 
-  it('empty state da pasta é minimalista com upload', () => {
+  it('empty state da pasta fala o vocabulário comum, sem pictograma', () => {
     const empty = readSrc('features/library/components/EmptyFolderState.tsx');
     assert.ok(empty.includes('Enviar documento'));
     assert.ok(empty.includes('library-empty-state'));
-    assert.equal(empty.includes('EmptyState'), false);
+    /**
+     * A proibição anterior — não usar `EmptyState` — nasceu quando ele era um bloco preenchido de
+     * canto arredondado, e a pasta vazia queria o oposto disso. O `EmptyState` perdeu a moldura e
+     * virou o padrão do app; manter a proibição hoje obrigaria esta tela a reescrever à mão o que
+     * já existe, que foi exatamente o que aconteceu.
+     */
+    assert.ok(empty.includes('EmptyState'));
+    // Sem pictograma: o resto do app abre o vazio com o fio curto, não com um desenho no meio.
+    assert.equal(empty.includes('cloud_upload'), false);
+    assert.equal(empty.includes('folder_open'), false);
   });
 
   it('OptionalDetailsDrawer minimalista com metadados essenciais', () => {

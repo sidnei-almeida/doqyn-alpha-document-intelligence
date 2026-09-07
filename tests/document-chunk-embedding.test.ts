@@ -20,7 +20,11 @@ function fakeCollection(docs: FakeChunk[]) {
   const matches = (doc: FakeChunk, filter: Record<string, unknown>): boolean =>
     Object.entries(filter).every(([key, expected]) => {
       const actual =
-        key === '_id' ? doc._id : key === 'embedding' ? (doc.embedding ?? null) : doc[key as 'tenantId'];
+        key === '_id'
+          ? doc._id
+          : key === 'embedding'
+            ? (doc.embedding ?? null)
+            : doc[key as 'tenantId'];
       if (expected !== null && typeof expected === 'object' && '$gt' in (expected as object)) {
         return String(actual) > String((expected as { $gt: string }).$gt);
       }
@@ -138,7 +142,10 @@ describe('embedChunksMatching', () => {
   });
 
   it('não manda chunk vazio ao modelo — vetor de prefixo puro atrai qualquer pergunta', async () => {
-    const { collection, docs } = fakeCollection([chunk('chunk_1', '   '), chunk('chunk_2', 'real')]);
+    const { collection, docs } = fakeCollection([
+      chunk('chunk_1', '   '),
+      chunk('chunk_2', 'real'),
+    ]);
     const seen: string[] = [];
 
     const result = await embedChunksMatching(

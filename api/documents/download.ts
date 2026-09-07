@@ -4,6 +4,7 @@ import { buildDocumentNameSnapshot } from '../../server/audit/documentNameSnapsh
 import { readDocumentVersionFile } from '../../server/services/documentFileService.js';
 import {
   emitAccessDeniedEvent,
+  emitDocumentFailureEvent,
   emitTrackingEvent,
   extractServiceErrorInfo,
   shouldEmitAccessDeniedFromError,
@@ -22,10 +23,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const documentId = typeof req.query.documentId === 'string' ? req.query.documentId : undefined;
   const versionId = typeof req.query.versionId === 'string' ? req.query.versionId : undefined;
-  const disposition = typeof req.query.disposition === 'string' ? req.query.disposition : 'attachment';
+  const disposition =
+    typeof req.query.disposition === 'string' ? req.query.disposition : 'attachment';
 
   if (!documentId) {
-    return res.status(400).json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
+    return res
+      .status(400)
+      .json({ message: 'documentId é obrigatório.', code: 'MISSING_DOCUMENT_ID' });
   }
 
   const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
@@ -95,6 +99,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).send(file.buffer);
   } catch (error) {
+    // A tentativa já foi registrada na entrada; aqui fica o desfecho. Sem o
+    // par, a trilha mostrava um download que começou e nunca terminou, sem
+    // dizer por quê.
     if (shouldEmitAccessDeniedFromError(error)) {
       const info = extractServiceErrorInfo(error);
       await emitAccessDeniedEvent(auditCtx, req, {
@@ -104,6 +111,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         reason: info.message,
         code: info.code,
         requiredPermission: 'canDownload',
+      });
+    } else {
+      await emitDocumentFailureEvent(auditCtx, req, {
+        action: 'document.download_failed',
+        description: 'Falha ao baixar o documento.',
+        documentId,
+        versionId,
+        error,
+        source: 'api',
       });
     }
     if (isServiceError(error)) {

@@ -1,9 +1,11 @@
 import type { AuthUser } from '../auth/types.js';
 import { canViewDocumentTracking } from '../auth/permissions.js';
-import type { MongoDocument, MongoDocumentShareGrant, MongoPreviewStorageSlot } from '../db/types.js';
-import {
-  loadMemberDocumentGroupIds,
-} from '../tenancy/documentAccess.js';
+import type {
+  MongoDocument,
+  MongoDocumentShareGrant,
+  MongoPreviewStorageSlot,
+} from '../db/types.js';
+import { loadMemberDocumentGroupIds } from '../tenancy/documentAccess.js';
 import { loadGovernanceAccessIndex } from '../tenancy/governanceAccessIndex.js';
 import {
   canUserListDocumentWithShare,
@@ -27,6 +29,16 @@ export type DocumentListItemPermissions = {
   canShare?: boolean;
   canTransferOwnership?: boolean;
   sharedViaGrant?: boolean;
+  /**
+   * Verbos em que a governança respondeu "pode, pedindo".
+   *
+   * Sem isto na lista, o menu desabilita a ação — o `canX` vem falso de propósito — e o meio-termo
+   * vira porta trancada: existe portão no servidor e nenhuma campainha na tela.
+   */
+  requiresApproval?: {
+    download: boolean;
+    share: boolean;
+  };
 };
 
 function mapPreviewStatus(
@@ -62,8 +74,7 @@ function mapDocumentListItem(
   const resolvedOwnerName =
     (record.ownerName as string | undefined)?.trim() ||
     (doc.ownerUserId ? displayNames?.get(doc.ownerUserId) : undefined);
-  const resolvedCreatedByName =
-    createdByUserId ? displayNames?.get(createdByUserId) : undefined;
+  const resolvedCreatedByName = createdByUserId ? displayNames?.get(createdByUserId) : undefined;
   const resolvedUpdatedByName =
     (record.updatedByName as string | undefined)?.trim() ||
     (doc.updatedBy ? displayNames?.get(doc.updatedBy) : undefined);
@@ -81,16 +92,17 @@ function mapDocumentListItem(
     versionLabel: versionMeta?.versionLabel,
     currentVersionLabel: versionMeta?.versionLabel,
     originalFileName: (record.originalFileName as string | undefined) ?? doc.currentFileName,
-    displayName:
-      (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
+    displayName: (record.displayName as string | undefined) ?? doc.title ?? doc.currentFileName,
     documentType: (record.documentType as string | undefined) ?? doc.className,
-    version: (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
-    versionCount: (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
+    version:
+      (record.version as number | undefined) ?? (record.versionCount as number | undefined) ?? 1,
+    versionCount:
+      (record.versionCount as number | undefined) ?? (record.version as number | undefined) ?? 1,
     ownerUserId: doc.ownerUserId,
     ownerName: resolvedOwnerName,
     updatedBy: doc.updatedBy,
     updatedByName: resolvedUpdatedByName,
-    area: (record.area as string | undefined),
+    area: record.area as string | undefined,
     accessGroups: (record.accessGroups as string[] | undefined) ?? doc.access?.viewGroupIds,
     metadata: record.metadata,
     processingStatus: doc.processingStatus ?? (record.processingStatusLegacy as string | undefined),
@@ -137,9 +149,7 @@ export async function buildDocumentListItems(input: {
       : []);
 
   const governanceIndex =
-    user && ownerUserId
-      ? await loadGovernanceAccessIndex(tenantId, { ownerUserId })
-      : undefined;
+    user && ownerUserId ? await loadGovernanceAccessIndex(tenantId, { ownerUserId }) : undefined;
 
   const versionIds = docs
     .map((doc) => doc.currentVersionId)
@@ -216,6 +226,8 @@ export async function buildDocumentListItems(input: {
           canShare: false,
           canTransferOwnership: false,
           sharedViaGrant: false,
+          requiresApproval: { download: false, update: false },
+          shareRequiresApproval: false,
         };
     const permissions: DocumentListItemPermissions = {
       canPreview: perms.canPreview,
@@ -225,6 +237,10 @@ export async function buildDocumentListItems(input: {
       canShare: perms.canShare,
       canTransferOwnership: perms.canTransferOwnership,
       sharedViaGrant: perms.sharedViaGrant,
+      requiresApproval: {
+        download: perms.requiresApproval.download,
+        share: perms.shareRequiresApproval,
+      },
       canViewTracking: user
         ? canViewDocumentTracking(user, {
             ownerUserId: doc.ownerUserId,
@@ -239,8 +255,7 @@ export async function buildDocumentListItems(input: {
     const versionLabel =
       versionMetaFromDoc?.versionLabel ??
       normalizeVersionLabel(
-        (docRecord.currentVersionLabel as string | undefined) ??
-          versionMetaFromDoc?.versionLabel,
+        (docRecord.currentVersionLabel as string | undefined) ?? versionMetaFromDoc?.versionLabel,
       );
     return mapDocumentListItem(
       doc,

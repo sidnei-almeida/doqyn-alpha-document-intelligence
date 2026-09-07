@@ -19,7 +19,11 @@ function upsertMetaTag(attribute: 'name' | 'property', key: string, content: str
 }
 
 /** Atualiza title e meta básicas no cliente (não substitui OG server-side para crawlers). */
-export function useGuestPortalPageMeta({ title, description, imagePath }: GuestPortalPageMetaInput) {
+export function useGuestPortalPageMeta({
+  title,
+  description,
+  imagePath,
+}: GuestPortalPageMetaInput) {
   useEffect(() => {
     document.title = title;
     upsertMetaTag('name', 'description', description);

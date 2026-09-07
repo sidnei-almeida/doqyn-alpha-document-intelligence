@@ -93,7 +93,7 @@ export async function createDocumentExtractionRule(
   const active = input.active ?? true;
   validateFields(input.fields, active);
 
-  const { collections, scope, storage } = await resolveContext(tenantId, { ownerUserId: userId });
+  const { collections, storage } = await resolveContext(tenantId, { ownerUserId: userId });
   const now = new Date();
   const version = input.version ?? 1;
 
@@ -186,50 +186,3 @@ export async function updateDocumentExtractionRule(
   return serializeExtractionRule(updated as MongoDocumentExtractionRule);
 }
 
-/**
- * Cria regra de extração mínima v1 para uma categoria recém-criada no tenant atual.
- * Escopo: somente o tenantId informado — não cria em outros tenants nem catálogo global.
- * Não roda no provisionamento de empresa nova; só ao criar categoria via API/UI.
- *
- * TODO: Futuro — regras de extração devem ser configuradas explicitamente por classe
- * documental do tenant. A regra default criada junto da categoria é apenas um rascunho
- * inicial do tenant, não catálogo global.
- */
-export async function createDefaultExtractionRuleForCategory(
-  tenantId: string,
-  userId: string,
-  categoryId: string,
-  slug: string,
-) {
-  void slug;
-  return createDocumentExtractionRule(tenantId, userId, {
-    categoryId,
-    version: 1,
-    active: true,
-    fields: [
-      {
-        key: 'referencia',
-        label: 'Referência / parte principal',
-        type: 'string',
-        required: false,
-        aliases: ['referência', 'referencia', 'parte', 'empresa', 'fornecedor', 'cliente'],
-      },
-      {
-        key: 'titulo',
-        label: 'Título',
-        type: 'string',
-        required: false,
-        aliases: ['título', 'titulo', 'assunto'],
-      },
-      {
-        key: 'data_assinatura',
-        label: 'Data de referência',
-        type: 'date',
-        required: false,
-        aliases: ['data de assinatura', 'data', 'emitido em'],
-      },
-    ],
-    namingTemplate: '{referencia}_{titulo}_{data_assinatura}_v{version}',
-    minimumConfidence: 0.7,
-  });
-}

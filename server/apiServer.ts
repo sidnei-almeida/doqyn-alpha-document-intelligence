@@ -4,10 +4,9 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
-import {
-  scheduleDailyExpirySweep,
-  startExpiryAlertWorker,
-} from './queues/expiryAlertQueue.js';
+import { startEmailOutboxDrain } from './services/notifications/emailOutboxDrain.js';
+import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
+import { assertPublicAppBaseUrlInProduction } from './config/publicUrlConfig.js';
 import { logger } from './utils/logger.js';
 import { startInProcessAnalysisWorker } from './workers/analysisWorker.js';
 import { initPrometheusMetrics, recordHttpRequest } from './metrics/prometheus.js';
@@ -30,30 +29,30 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health': () => import('../api/health.js'),
   '/api/health/deep': () => import('../api/health/deep.js'),
   '/api/metrics': () => import('../api/metrics.js'),
-  '/api/auth/login': () => import('../api/auth/login.js'),
-  '/api/auth/me': () => import('../api/auth/me.js'),
   '/api/me': () => import('../api/me.js'),
-  '/api/auth/logout': () => import('../api/auth/logout.js'),
   '/api/documents': () => import('../api/documents/index.js'),
   '/api/documents/upload-url': () => import('../api/documents/upload-url.js'),
   '/api/documents/download': () => import('../api/documents/download.js'),
   '/api/documents/preview': () => import('../api/documents/preview.js'),
   '/api/documents/confirm-analysis': () => import('../api/documents/confirm-analysis.js'),
-  '/api/documents/submit-upload-approval': () => import('../api/documents/submit-upload-approval.js'),
+  '/api/documents/submit-upload-approval': () =>
+    import('../api/documents/submit-upload-approval.js'),
   '/api/documents/upload-approvals': () => import('../api/documents/upload-approvals/index.js'),
   '/api/documents/confirm-update': () => import('../api/documents/confirm-update.js'),
   '/api/dashboard/overview': () => import('../api/dashboard/overview.js'),
+  '/api/tenant/usage': () => import('../api/tenant/usage.js'),
   '/api/document-rules/active': () => import('../api/document-rules/active.js'),
   '/api/document-rules': () => import('../api/document-rules/index.js'),
   '/api/document-rules/matrix': () => import('../api/document-rules/matrix.js'),
   '/api/access-groups': () => import('../api/access-groups/index.js'),
-  '/api/auth/access-requests': () => import('../api/auth/access-requests.js'),
   '/api/internal/tenants/provision': () => import('../api/internal/tenants/provision.js'),
   '/api/internal/memberships/revoke-shares': () =>
     import('../api/internal/memberships/revoke-shares.js'),
   '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
-  '/api/company-members/invite': () => import('../api/company-members/invite.js'),
+  '/api/document-requests': () => import('../api/document-requests/index.js'),
+  '/api/inbound-shares': () => import('../api/inbound-shares/index.js'),
+  '/api/company-members/invite-groups': () => import('../api/company-members/invite-groups.js'),
   '/api/document-classes': () => import('../api/document-classes/index.js'),
   '/api/document-categories': () => import('../api/document-categories/index.js'),
   '/api/document-groups': () => import('../api/document-groups/index.js'),
@@ -65,8 +64,14 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/tracking/verify-chain': () => import('../api/tracking/verify-chain.js'),
   '/api/tracking/client-event': () => import('../api/tracking/client-event.js'),
   '/api/favorites/documents': () => import('../api/favorites/documents.js'),
-  '/api/expiry-alerts': () => import('../api/expiry-alerts/index.js'),
+  '/api/notifications': () => import('../api/notifications/index.js'),
+  '/api/approval-requests': () => import('../api/approval-requests/index.js'),
   '/api/shared-with-me/documents': () => import('../api/shared-with-me/documents.js'),
+  '/api/directory/lookup': () => import('../api/directory/lookup.js'),
+  '/api/directory/partners': () => import('../api/directory/partners.js'),
+  '/api/directory/search': () => import('../api/directory/search.js'),
+  '/api/directory/frequent-contacts': () => import('../api/directory/frequent-contacts.js'),
+  '/api/directory/contacts': () => import('../api/directory/contacts.js'),
   '/api/share/users': () => import('../api/share/users.js'),
   '/api/profile/me': () => import('../api/profile/me.js'),
   '/api/profile/avatar': () => import('../api/profile/avatar.js'),
@@ -77,10 +82,12 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/trash/documents': () => import('../api/trash/documents.js'),
   '/api/deactivated/documents': () => import('../api/deactivated/documents.js'),
   '/api/settings/trash-retention': () => import('../api/settings/trash-retention.js'),
+  '/api/settings/upload-policy': () => import('../api/settings/upload-policy.js'),
   '/api/documents/batch/trash': () => import('../api/documents/batch/trash.js'),
   '/api/documents/batch/restore': () => import('../api/documents/batch/restore.js'),
   '/api/documents/batch/reactivate': () => import('../api/documents/batch/reactivate.js'),
-  '/api/documents/batch/permanent-delete': () => import('../api/documents/batch/permanent-delete.js'),
+  '/api/documents/batch/permanent-delete': () =>
+    import('../api/documents/batch/permanent-delete.js'),
   '/api/documents/batch/move': () => import('../api/documents/batch/move.js'),
 };
 
@@ -95,7 +102,20 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/access-groups\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/access-groups/toggle-active.js'),
     },
-    { regex: /^\/api\/access-groups\/([^/]+)$/, loader: () => import('../api/access-groups/item.js') },
+    {
+      regex: /^\/api\/access-groups\/([^/]+)$/,
+      loader: () => import('../api/access-groups/item.js'),
+    },
+    {
+      regex: /^\/api\/document-requests\/([^/]+)\/cancel$/,
+      loader: () => import('../api/document-requests/[requestId]/cancel.js'),
+      paramKeys: ['requestId'],
+    },
+    {
+      regex: /^\/api\/inbound-shares\/([^/]+)\/decide$/,
+      loader: () => import('../api/inbound-shares/[grantId]/decide.js'),
+      paramKeys: ['grantId'],
+    },
     {
       regex: /^\/api\/company-members\/([^/]+)\/approve$/,
       loader: () => import('../api/company-members/approve.js'),
@@ -124,7 +144,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/company-members\/([^/]+)\/groups$/,
       loader: () => import('../api/company-members/groups.js'),
     },
-    { regex: /^\/api\/company-members\/([^/]+)$/, loader: () => import('../api/company-members/item.js') },
+    {
+      regex: /^\/api\/company-members\/([^/]+)$/,
+      loader: () => import('../api/company-members/item.js'),
+    },
     {
       regex: /^\/api\/document-classes\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-classes/toggle-active.js'),
@@ -137,7 +160,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/document-classes\/([^/]+)\/notifications$/,
       loader: () => import('../api/document-classes/notifications.js'),
     },
-    { regex: /^\/api\/document-classes\/([^/]+)$/, loader: () => import('../api/document-classes/item.js') },
+    {
+      regex: /^\/api\/document-classes\/([^/]+)$/,
+      loader: () => import('../api/document-classes/item.js'),
+    },
     {
       regex: /^\/api\/document-categories\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-categories/toggle-active.js'),
@@ -147,12 +173,18 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['categoryId'],
       loader: () => import('../api/document-categories/fields.js'),
     },
-    { regex: /^\/api\/document-categories\/([^/]+)$/, loader: () => import('../api/document-categories/item.js') },
+    {
+      regex: /^\/api\/document-categories\/([^/]+)$/,
+      loader: () => import('../api/document-categories/item.js'),
+    },
     {
       regex: /^\/api\/document-groups\/([^/]+)\/members$/,
       loader: () => import('../api/document-groups/members.js'),
     },
-    { regex: /^\/api\/document-groups\/([^/]+)$/, loader: () => import('../api/document-groups/item.js') },
+    {
+      regex: /^\/api\/document-groups\/([^/]+)$/,
+      loader: () => import('../api/document-groups/item.js'),
+    },
     {
       regex: /^\/api\/document-extraction-rules\/([^/]+)$/,
       loader: () => import('../api/document-extraction-rules/item.js'),
@@ -161,7 +193,10 @@ function resolveRoute(pathname: string): RouteMatch | null {
       regex: /^\/api\/document-rules\/([^/]+)\/toggle-active$/,
       loader: () => import('../api/document-rules/toggle-active.js'),
     },
-    { regex: /^\/api\/document-rules\/([^/]+)$/, loader: () => import('../api/document-rules/item.js') },
+    {
+      regex: /^\/api\/document-rules\/([^/]+)$/,
+      loader: () => import('../api/document-rules/item.js'),
+    },
     {
       regex: /^\/api\/documents\/upload-approvals\/([^/]+)\/approve$/,
       loader: () => import('../api/documents/upload-approvals/[approvalId]/approve.js'),
@@ -213,9 +248,19 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['documentId'],
     },
     {
-      regex: /^\/api\/expiry-alerts\/([^/]+)$/,
-      loader: () => import('../api/expiry-alerts/[alertId].js'),
-      paramKeys: ['alertId'],
+      regex: /^\/api\/documents\/([^/]+)\/rename$/,
+      loader: () => import('../api/documents/[documentId]/rename.js'),
+      paramKeys: ['documentId'],
+    },
+    {
+      regex: /^\/api\/notifications\/([^/]+)$/,
+      loader: () => import('../api/notifications/[notificationId].js'),
+      paramKeys: ['notificationId'],
+    },
+    {
+      regex: /^\/api\/approval-requests\/([^/]+)\/decide$/,
+      loader: () => import('../api/approval-requests/[requestId]/decide.js'),
+      paramKeys: ['requestId'],
     },
     {
       regex: /^\/api\/documents\/([^/]+)\/external-shares\/([^/]+)\/regenerate-invite$/,
@@ -289,18 +334,8 @@ function resolveRoute(pathname: string): RouteMatch | null {
       paramKeys: ['signatureRequestId'],
     },
     {
-      regex: /^\/api\/og\/guest\/share\/([^/]+)\/image$/,
-      loader: () => import('../api/og/guest/share/[token]/image.js'),
-      paramKeys: ['token'],
-    },
-    {
       regex: /^\/api\/og\/guest\/share\/([^/]+)$/,
       loader: () => import('../api/og/guest/share/[token].js'),
-      paramKeys: ['token'],
-    },
-    {
-      regex: /^\/api\/og\/guest\/sign\/([^/]+)\/image$/,
-      loader: () => import('../api/og/guest/sign/[token]/image.js'),
       paramKeys: ['token'],
     },
     {
@@ -508,11 +543,27 @@ export type StartApiServerOptions = {
 };
 
 export async function startApiServer(options?: StartApiServerOptions): Promise<Server> {
+  // Falha aqui, e não no meio da requisição: sem endereço público o servidor recusa montar
+  // qualquer link que saia para fora, e a recusa chegava ao usuário como 500 genérico na
+  // criação da solicitação de assinatura externa.
+  assertPublicAppBaseUrlInProduction();
+
   initPrometheusMetrics();
   await connectRedisOnBoot();
 
   if (options?.inProcessWorkers !== false) {
     startInProcessAnalysisWorker();
+  }
+
+  // Canal de e-mail: só sobe se houver provedor configurado. Sem `NOTIFICATION_EMAIL_PROVIDER`
+  // nenhuma entrega nasce `queued`, e drenar uma fila que ninguém enche seria consulta por nada.
+  try {
+    startEmailOutboxDrain();
+  } catch (error) {
+    // Configuração pela metade não pode derrubar o boot: o aviso in-app continua funcionando.
+    logger.error('canal de e-mail não iniciado', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
   }
 
   // Alertas de vencimento: registra a varredura diária e sobe o consumidor. Sem Redis ambos são
@@ -580,7 +631,10 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
       const mod = await route.loader();
       const vercelReq = toVercelReq(req, query, body);
       const vercelRes = toVercelRes(res);
-      await mod.default(vercelReq as unknown as VercelRequest, vercelRes as unknown as VercelResponse);
+      await mod.default(
+        vercelReq as unknown as VercelRequest,
+        vercelRes as unknown as VercelResponse,
+      );
     } catch (error) {
       console.error(error);
       res.statusCode = 500;

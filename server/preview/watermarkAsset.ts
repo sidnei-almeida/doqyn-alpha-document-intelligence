@@ -4,55 +4,40 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const ASSET_DIR = join(dirname(fileURLToPath(import.meta.url)), 'assets');
-const HORIZONTAL_LOGO_PATH = join(ASSET_DIR, 'doqyn-horizontal.webp');
+const WATERMARK_SVG_PATH = join(ASSET_DIR, 'doqyn-watermark.svg');
 
 /** Tom cinza neutro da marca d'água (legível em fundo claro, discreto em fundo escuro). */
 export const DOQYN_WATERMARK_GRAY = { r: 128, g: 128, b: 128 };
 
-/** Proporção do lockup horizontal oficial (ícone + DOQYN). */
-export const DOQYN_HORIZONTAL_LOGO_ASPECT = 960 / 320;
+/** Proporção do lockup horizontal oficial (selo + DOQYN). */
+export const DOQYN_HORIZONTAL_LOGO_ASPECT = 240 / 80;
 
-let horizontalLogoBuffer: Buffer | null = null;
+let watermarkSvg: Buffer | null = null;
 
-function getHorizontalLogoBuffer(): Buffer {
-  if (!horizontalLogoBuffer) {
-    horizontalLogoBuffer = readFileSync(HORIZONTAL_LOGO_PATH);
+function getWatermarkSvg(): Buffer {
+  if (!watermarkSvg) {
+    watermarkSvg = readFileSync(WATERMARK_SVG_PATH);
   }
-  return horizontalLogoBuffer;
+  return watermarkSvg;
 }
 
-/** Rasteriza a logo horizontal DOQYN em cinza uniforme (fundo transparente) para previews. */
+/**
+ * Rasteriza o selo DOQYN para a camada de marca d'água.
+ *
+ * Era um `.webp` da marca antiga — o ícone genérico de documento que o rebrand abandonou — e a cor
+ * precisava ser recalculada pixel a pixel, atenuando o alfa pela luminância para uniformizar o
+ * cinza. Esse passo era metade de uma atenuação dupla: ele derrubava o alfa, e a composição
+ * derrubava de novo, deixando a marca quase invisível.
+ *
+ * Com o SVG a cor já nasce fixa, então não há o que recalcular. A opacidade passa a ter um dono
+ * só: `DEFAULT_WATERMARK_OPACITY`, no ponto de composição.
+ */
 export async function rasterizeDoqynWatermarkLogo(targetWidth: number): Promise<Buffer> {
   const width = Math.max(160, Math.min(2800, Math.round(targetWidth)));
-  const height = Math.max(48, Math.round(width / DOQYN_HORIZONTAL_LOGO_ASPECT));
 
-  const { data, info } = await sharp(getHorizontalLogoBuffer())
-    .resize(width, height, { fit: 'inside' })
+  return sharp(getWatermarkSvg(), { density: 300 })
+    .resize(width, null, { fit: 'inside' })
     .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const { r, g, b } = DOQYN_WATERMARK_GRAY;
-  for (let index = 0; index < data.length; index += 4) {
-    const alpha = data[index + 3];
-    if (alpha < 4) {
-      data[index + 3] = 0;
-      continue;
-    }
-
-    const luminance = Math.round(
-      data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114,
-    );
-    const shapeAlpha = Math.round((alpha / 255) * (luminance / 255) * 255);
-    data[index] = r;
-    data[index + 1] = g;
-    data[index + 2] = b;
-    data[index + 3] = shapeAlpha > 0 ? Math.max(shapeAlpha, Math.round(alpha * 0.9)) : 0;
-  }
-
-  return sharp(data, {
-    raw: { width: info.width, height: info.height, channels: 4 },
-  })
     .png()
     .toBuffer();
 }

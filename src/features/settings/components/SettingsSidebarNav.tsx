@@ -1,18 +1,19 @@
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { SETTINGS_NAV_ITEMS, type SettingsSectionId } from '../settingsSections';
+import type { SettingsNavItem, SettingsSectionId } from '../settingsSections';
 
 type SettingsSidebarNavProps = {
   active: SettingsSectionId;
+  items: SettingsNavItem[];
   onSelect: (section: SettingsSectionId) => void;
 };
 
-export function SettingsSidebarNav({ active, onSelect }: SettingsSidebarNavProps) {
+export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarNavProps) {
   return (
     <nav className="settings-sidebar-nav" aria-label="Seções de configurações">
-      <ul className="settings-sidebar-nav__list hidden lg:block">
-        {SETTINGS_NAV_ITEMS.map((item) => {
+      <ul className="settings-sidebar-nav__list">
+        {items.map((item) => {
           const isActive = item.id === active;
           return (
             <li key={item.id}>
@@ -30,7 +31,9 @@ export function SettingsSidebarNav({ active, onSelect }: SettingsSidebarNavProps
                 />
                 <span className="min-w-0 text-left">
                   <span className="block text-[13px] font-medium leading-tight">{item.label}</span>
-                  <span className="mt-0.5 block text-[11px] text-doqyn-muted">{item.description}</span>
+                  <span className="mt-0.5 block text-[11px] text-doqyn-muted">
+                    {item.description}
+                  </span>
                 </span>
               </button>
             </li>
@@ -38,8 +41,8 @@ export function SettingsSidebarNav({ active, onSelect }: SettingsSidebarNavProps
         })}
       </ul>
 
-      <div className="settings-tabs-nav lg:hidden" role="tablist" aria-label="Seções de configurações">
-        {SETTINGS_NAV_ITEMS.map((item) => {
+      <div className="settings-tabs-nav" role="tablist" aria-label="Seções de configurações">
+        {items.map((item) => {
           const isActive = item.id === active;
           return (
             <button

@@ -11,7 +11,10 @@ type ExplorerSelectionIndicatorProps = {
  * Indicador premium de seleção — visível apenas quando o item está selecionado.
  * Substitui checkbox/radio fixo no canto do card.
  */
-export function ExplorerSelectionIndicator({ visible, className }: ExplorerSelectionIndicatorProps) {
+export function ExplorerSelectionIndicator({
+  visible,
+  className,
+}: ExplorerSelectionIndicatorProps) {
   if (!visible) return null;
 
   return (

@@ -77,7 +77,9 @@ export function getGroqTokensPerMinute(): number {
  * abaixo do limite dela. O observado vem antes do padrão porque é o número real da conta, e o
  * padrão é chute.
  */
-async function resolveEffectiveLimits(model: string): Promise<{ requests: number; tokens: number }> {
+async function resolveEffectiveLimits(
+  model: string,
+): Promise<{ requests: number; tokens: number }> {
   const envRequests = process.env.GROQ_MAX_REQUESTS_PER_MINUTE?.trim();
   const envTokens = process.env.GROQ_MAX_TOKENS_PER_MINUTE?.trim();
 
@@ -89,10 +91,10 @@ async function resolveEffectiveLimits(model: string): Promise<{ requests: number
   return {
     requests: envRequests
       ? getGroqRequestsPerMinute()
-      : observed?.requestsPerMinute ?? DEFAULT_REQUESTS_PER_MINUTE,
+      : (observed?.requestsPerMinute ?? DEFAULT_REQUESTS_PER_MINUTE),
     tokens: envTokens
       ? getGroqTokensPerMinute()
-      : observed?.tokensPerMinute ?? DEFAULT_TOKENS_PER_MINUTE,
+      : (observed?.tokensPerMinute ?? DEFAULT_TOKENS_PER_MINUTE),
   };
 }
 
@@ -114,10 +116,7 @@ export function getGroqRateLimitMaxWaitMs(): number {
 const DEFAULT_EXPECTED_OUTPUT_TOKENS = 400;
 
 export function getGroqExpectedOutputTokens(): number {
-  return readPositiveInt(
-    process.env.GROQ_EXPECTED_OUTPUT_TOKENS,
-    DEFAULT_EXPECTED_OUTPUT_TOKENS,
-  );
+  return readPositiveInt(process.env.GROQ_EXPECTED_OUTPUT_TOKENS, DEFAULT_EXPECTED_OUTPUT_TOKENS);
 }
 
 /**
@@ -189,7 +188,9 @@ async function tryConsume(
   if (!client) return { ok: true };
 
   const { requests, tokens, resetInMs } = windowKeys(deps.now(), request.model);
-  const { requests: requestLimit, tokens: tokenLimit } = await resolveEffectiveLimits(request.model);
+  const { requests: requestLimit, tokens: tokenLimit } = await resolveEffectiveLimits(
+    request.model,
+  );
 
   const usedRequests = await client.incr(requests);
   const usedTokens = await client.incrby(tokens, request.estimatedTokens);

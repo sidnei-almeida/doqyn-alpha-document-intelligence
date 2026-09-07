@@ -78,8 +78,14 @@ describe('isolamento tenant — regras de classificação', () => {
     const tenantB = 'company_beta_nd';
     const catA = tenantNdaCategory(tenantA);
     const catB = tenantNdaCategory(tenantB);
-    const rulesA = mapCategoryExtractionRules([catA], [tenantNdaRule(tenantA, catA._id, 'campo_a')]);
-    const rulesB = mapCategoryExtractionRules([catB], [tenantNdaRule(tenantB, catB._id, 'campo_b')]);
+    const rulesA = mapCategoryExtractionRules(
+      [catA],
+      [tenantNdaRule(tenantA, catA._id, 'campo_a')],
+    );
+    const rulesB = mapCategoryExtractionRules(
+      [catB],
+      [tenantNdaRule(tenantB, catB._id, 'campo_b')],
+    );
 
     assert.equal(rulesA.length, 1);
     assert.equal(rulesB.length, 1);
@@ -155,7 +161,10 @@ describe('isolamento tenant — regras de classificação', () => {
   });
 
   it('heurísticas NDA usam keywords do tenant, não ID fixo de seed', () => {
-    const source = readFileSync(join(repoRoot, 'server/ai/utils/documentClassHeuristics.ts'), 'utf8');
+    const source = readFileSync(
+      join(repoRoot, 'server/ai/utils/documentClassHeuristics.ts'),
+      'utf8',
+    );
     assert.equal(source.includes('class_confidentiality_agreement'), false);
     assert.ok(
       isConfidentialityClassRule({
@@ -196,19 +205,17 @@ describe('isolamento tenant — regras de classificação', () => {
     assert.equal(error.code, 'DOCUMENT_RULES_NOT_CONFIGURED');
   });
 
-  it('G. createDefaultExtractionRuleForCategory é tenant-scoped', () => {
+  it('G. a regra padrão da categoria é tenant-scoped', () => {
     const source = readFileSync(
-      join(repoRoot, 'server/services/documentExtractionRulesService.ts'),
+      join(repoRoot, 'server/services/documentDefaultExtractionRule.ts'),
       'utf8',
     );
     const provision = readFileSync(
       join(repoRoot, 'server/services/tenantProvisionService.ts'),
       'utf8',
     );
-    assert.ok(source.includes('createDefaultExtractionRuleForCategory'));
-    assert.ok(source.includes('createDocumentExtractionRule(tenantId'));
-    assert.ok(source.includes('documentExtractionRules'));
-    assert.ok(source.includes('não catálogo global'));
+    assert.ok(source.includes('ensureDefaultExtractionRule'));
+    assert.ok(source.includes('requireTenantGovernanceCollections'));
     assert.equal(provision.includes('createDefaultExtractionRuleForCategory'), false);
     assert.equal(provision.includes('createDocumentCategory'), false);
   });

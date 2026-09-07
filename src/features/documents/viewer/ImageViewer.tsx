@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { cn } from '@/lib/utils';
 import { usePreviewAsset } from './usePreviewAsset';
 import type { ViewerComponentProps } from './viewerRegistry';
@@ -21,9 +21,12 @@ export function ImageViewer({
   const [rotation, setRotation] = useState(0);
   const [fitMode, setFitMode] = useState<'width' | 'screen' | 'custom'>('screen');
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
-    null,
-  );
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
 
   const imageMeta = manifest.image;
   const previewUrl = useMemo(() => {
@@ -100,8 +103,13 @@ export function ImageViewer({
 
   if (!imageMeta) {
     return (
-      <div className={cn('viewer-image flex h-full items-center justify-center px-6 text-center', className)}>
-        <p className="text-sm text-doqyn-muted">Metadados de imagem indisponíveis.</p>
+      <div
+        className={cn(
+          'viewer-image flex h-full items-center justify-center px-6 text-center',
+          className,
+        )}
+      >
+        <p className="text-caption text-doqyn-muted">Metadados de imagem indisponíveis.</p>
       </div>
     );
   }
@@ -135,20 +143,25 @@ export function ImageViewer({
         dragRef.current = null;
       }}
     >
-      <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
-        <span className="rounded-md border border-doqyn-border bg-doqyn-bg/90 px-2 py-1 text-xs text-doqyn-muted">
+      {/* Dimensão é registro: monoespaçada, sem caixa em volta. */}
+      <div className="absolute left-4 top-3 z-10 flex items-center gap-1.5">
+        <span className="rounded-[2px] bg-doqyn-bg/85 px-1.5 py-0.5 font-mono text-micro tabular-nums text-doqyn-subtle">
           {imageMeta.width} × {imageMeta.height}px
         </span>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setRotation((r) => (r + 90) % 360)}>
-          <Icon name="rotate_right" size={14} />
-        </Button>
+        <IconButton
+          label="Girar 90°"
+          className="bg-doqyn-bg/80"
+          onClick={() => setRotation((r) => (r + 90) % 360)}
+        >
+          <Icon name="rotate_right" size={ICON_SIZE.sm} />
+        </IconButton>
       </div>
 
       <div className="flex h-full w-full items-center justify-center overflow-hidden">
         {state === 'loading' && (
-          <div className="flex items-center gap-2 text-sm text-doqyn-muted">
+          <div className="flex items-center gap-2 text-caption text-doqyn-muted">
             <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-            Carregando imagem...
+            Carregando imagem…
           </div>
         )}
         {state === 'ready' && objectUrl && (

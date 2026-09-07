@@ -38,7 +38,7 @@ export function LibraryToolbar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="py-1" data-testid="library-toolbar">
+    <div data-testid="library-toolbar">
       <BulkSelectionToolbar
         selectedCount={selectedCount}
         selectedFileIds={selectedFileIds}

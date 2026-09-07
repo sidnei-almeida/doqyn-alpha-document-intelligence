@@ -1,38 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
-import { PromptDialog } from '@/components/ui/PromptDialog';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { MemberStatusBadge } from '@/components/ui/MemberStatusBadge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
 import { DataTable } from '@/components/ui/DataTable';
-import { FilterBar, FilterBarField } from '@/components/ui/FilterBar';
 import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
+import { Icon } from '@/components/ui/Icon';
+import { ICON_SIZE } from '@/lib/iconDefaults';
+import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { PlatformRoleChips } from '@/components/ui/PlatformRoleChips';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
-import { Input } from '@/components/ui/Input';
-import { ExternalInviteLinkField } from '@/components/ui/ExternalInviteLinkField';
 import { useAuth } from '@/auth/useAuth';
 import {
   type CompanyMemberDto,
   DEFAULT_NOTIFICATION_PREFERENCES,
   type MemberStatus,
   type PlatformRole,
-  suggestGroupsFromDepartment,
   usersApi,
 } from './api/usersApi';
-import type { CreateInviteResponse } from '@/features/invite/api/inviteApi';
 import { cloneAccessFormState, type AccessFormState } from './accessFormState';
-import {
-  DocumentGroupsSection,
-  NotificationsSection,
-  PlatformRolesSection,
-} from './components/AccessFormSections';
-import { AccessRequestDetailsPanel } from './components/AccessRequestDetailsPanel';
 import { BlockAccessDialog } from './components/BlockAccessDialog';
 import { EditAccessDialog } from './components/EditAccessDialog';
+import { InviteMemberDialog } from './components/InviteMemberDialog';
 import { UnblockAccessDialog } from './components/UnblockAccessDialog';
 import { invalidateUserManagementQueries } from './userManagementQueries';
 import { useCompanyMembers } from './hooks/useCompanyMembers';
@@ -41,6 +32,7 @@ import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
 const STATUS_FILTER_LABELS: Record<MemberStatus | 'all', string> = {
   all: 'Todos',
   active: 'Ativo',
+  invited: 'Convidado',
   pending: 'Pendente',
   blocked: 'Bloqueado',
   rejected: 'Rejeitado',
@@ -58,8 +50,12 @@ function memberToAccessForm(member: CompanyMemberDto): AccessFormState {
     platformRoles: member.platformRoles.length ? [...member.platformRoles] : ['user'],
     accessGroupIds: [...member.accessGroupIds],
     documentGroupIds: [...(member.documentGroupIds ?? member.groupIds ?? [])],
+    // Espalhado sobre o default, não em lugar dele: quem foi gravado antes de um evento existir
+    // não tem a chave nova, e sem a mescla a caixa apareceria desmarcada enquanto o servidor
+    // tratava como ligada.
     notificationPreferences: {
-      ...(member.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFERENCES),
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...(member.notificationPreferences ?? {}),
     },
   };
 }
@@ -72,32 +68,28 @@ export function UsersPage() {
     tenant?.displayName ?? user?.companyName ?? sessionTenantId ?? 'sua empresa';
 
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
+  const [inviting, setInviting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ link: string; intro: string } | null>(null);
   const [editingMember, setEditingMember] = useState<CompanyMemberDto | null>(null);
   const [editAccessBaseline, setEditAccessBaseline] = useState<AccessFormState | null>(null);
-  const [approvingMember, setApprovingMember] = useState<CompanyMemberDto | null>(null);
   const [blockingMember, setBlockingMember] = useState<CompanyMemberDto | null>(null);
   const [unblockingMember, setUnblockingMember] = useState<CompanyMemberDto | null>(null);
-  const [rejectingMember, setRejectingMember] = useState<CompanyMemberDto | null>(null);
-
-  const [inviteForm, setInviteForm] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    platformRoles: ['user'] as PlatformRole[],
-    accessGroupIds: [] as string[],
-  });
-
-  const [accessForm, setAccessForm] = useState<AccessFormState>({
-    platformRoles: ['user'],
-    accessGroupIds: [],
-    documentGroupIds: [],
-    notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFERENCES },
-  });
 
   const membersQuery = useCompanyMembers(sessionTenantId);
+
+  /**
+   * Quem foi convidado e ainda não entrou.
+   *
+   * Consulta separada porque a origem é outra: membros vêm do Mongo do app, convites vivem no
+   * auth-service. Juntá-las no servidor faria a lista de membros esperar por uma chamada externa
+   * que ela não precisa — e uma falha ao ler convites apagaria a lista inteira.
+   */
+  const invitesQuery = useQuery({
+    queryKey: ['pending-invites', sessionTenantId],
+    queryFn: () => usersApi.listPendingInvites(sessionTenantId || undefined),
+    enabled: Boolean(sessionTenantId),
+    ...tenantLiveSyncQueryOptions(),
+  });
 
   const documentGroupsQuery = useQuery({
     queryKey: ['document-groups', sessionTenantId],
@@ -110,117 +102,73 @@ export function UsersPage() {
     await invalidateUserManagementQueries(queryClient, sessionTenantId || undefined);
   };
 
-  const closeInviteModal = () => {
-    setInviteOpen(false);
-    setInviteResult(null);
-    setInviteForm({
-      email: '',
-      firstName: '',
-      lastName: '',
-      platformRoles: ['user'],
-      accessGroupIds: [],
-    });
-  };
-
-  const openInviteModal = () => {
-    setInviteResult(null);
-    setInviteOpen(true);
-  };
-
-  const inviteMutation = useMutation({
-    mutationFn: (): Promise<
-      CreateInviteResponse | { member: CompanyMemberDto; temporaryPassword?: string }
-    > =>
-      usersApi.invite({
-        ...inviteForm,
-      }),
-    onSuccess: (data) => {
-      if ('emailSent' in data && data.emailSent) {
-        showAppToast({
-          type: 'success',
-          title: 'Convite enviado por e-mail.',
-          message: 'O convidado receberá o link no e-mail informado.',
-        });
-        closeInviteModal();
-        void invalidate();
-        return;
+  /**
+   * Convidar não usa `useMutation` como o resto da tela.
+   *
+   * As outras ações terminam num toast: aprovou, bloqueou, pronto. Esta produz um link, e o
+   * link precisa voltar para dentro do diálogo, que o mostra até alguém copiar. Uma mutação
+   * resolveria o estado de carregamento, mas o valor de retorno teria de atravessar a mesma
+   * distância de qualquer jeito.
+   */
+  const [invitePending, setInvitePending] = useState(false);
+  const createInvite = async (input: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    platformRoles: PlatformRole[];
+    documentGroupIds: string[];
+  }) => {
+    setInvitePending(true);
+    try {
+      const result = await usersApi.invite({
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        platformRoles: input.platformRoles,
+        // Os grupos não vão no convite. Quem governa é o grupo do Mongo, e ele é registrado logo
+        // abaixo, na chamada que fala com o banco que decide.
+        accessGroupIds: [],
+        companyId: sessionTenantId || undefined,
+      });
+      if (!('inviteLink' in result) || !result.inviteLink) {
+        throw new Error('O convite foi criado, mas o serviço não devolveu o link.');
       }
 
-      if ('inviteLink' in data && typeof data.inviteLink === 'string') {
-        const reasonMessages: Record<string, string> = {
-          smtp_not_configured:
-            'Convite criado. Configure o SMTP em Configurações → Empresa → Governança para envio automático por e-mail.',
-          email_disabled:
-            'Convite criado. O envio automático está desativado neste ambiente — compartilhe o link abaixo com o convidado.',
-          domain_mismatch:
-            'Convite criado. Seu e-mail precisa ser do mesmo domínio do SMTP da empresa para envio automático.',
-          send_failed:
-            'Convite criado, mas o e-mail não foi enviado. Compartilhe o link abaixo com o convidado.',
-        };
-        const reason =
-          'emailSkipReason' in data && typeof data.emailSkipReason === 'string'
-            ? data.emailSkipReason
-            : undefined;
-        setInviteResult({
-          link: data.inviteLink,
-          intro:
-            reason && reasonMessages[reason]
-              ? reasonMessages[reason]
-              : 'Convite criado. Compartilhe o link abaixo com o convidado.',
-        });
-        void invalidate();
-        return;
+      // Nesta ordem, e não na inversa: o convite é o que pode ser recusado (e-mail duplicado,
+      // papel não concedível). Guardar a intenção antes deixaria registro para um convite que
+      // nunca nasceu.
+      //
+      // E a falha daqui para baixo não pode derrubar a criação. Passado este ponto o convite
+      // existe e o e-mail já saiu: deixar a exceção subir faria o diálogo dizer "não foi
+      // possível criar", o gestor tentaria de novo, e o reconvite troca o `tokenHash` — a
+      // pessoa receberia dois e-mails com o primeiro link já morto.
+      let groupsWarning: string | undefined;
+      if (input.documentGroupIds.length > 0) {
+        try {
+          await usersApi.storeInviteGroups({
+            email: input.email,
+            documentGroupIds: input.documentGroupIds,
+            companyId: sessionTenantId || undefined,
+          });
+        } catch {
+          groupsWarning =
+            'O convite vale, mas não foi possível guardar os grupos. Defina o acesso em Regras depois que a pessoa entrar.';
+        }
       }
 
-      showAppToast({ type: 'success', title: 'Usuário convidado com sucesso.' });
-      if ('temporaryPassword' in data && typeof data.temporaryPassword === 'string') {
-        showAppToast({
-          type: 'info',
-          title: 'Senha temporária (dev)',
-          message: data.temporaryPassword,
-          duration: 15000,
-        });
-      }
-      closeInviteModal();
-      void invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: () => {
-      if (!approvingMember) throw new Error('Membro não selecionado.');
-      return usersApi.approve(approvingMember.id, accessForm);
-    },
-    onSuccess: async (data) => {
-      showAppToast({ type: 'success', title: 'Solicitação aprovada.' });
-      if ('temporaryPassword' in data && data.temporaryPassword) {
-        showAppToast({
-          type: 'info',
-          title: 'Senha temporária (dev)',
-          message: data.temporaryPassword,
-          duration: 15000,
-        });
-      }
-      setApprovingMember(null);
-      await invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: ({ memberId, reason }: { memberId: string; reason: string }) =>
-      usersApi.reject(memberId, reason),
-    onSuccess: () => {
-      showAppToast({ type: 'success', title: 'Solicitação rejeitada.' });
-      setRejectingMember(null);
-      invalidate();
-    },
-    onError: (err: Error) => showApiErrorToast(err),
-  });
-
-  const handleRejectMember = (member: CompanyMemberDto) => {
-    setRejectingMember(member);
+      return {
+        inviteLink: result.inviteLink,
+        expiresAt: result.invite.expiresAt,
+        // O gestor precisa saber se o e-mail saiu. Com envio desligado ou domínio não
+        // verificado, o convite é criado e nada chega — e sem este aviso ele entrega o link
+        // achando que a pessoa já foi avisada.
+        emailSent: result.emailSent ?? false,
+        emailSkipReason: result.emailSkipReason,
+        groupsWarning,
+      };
+    } finally {
+      setInvitePending(false);
+    }
   };
 
   const blockMutation = useMutation({
@@ -263,8 +211,57 @@ export function UsersPage() {
     onError: (err: Error) => showApiErrorToast(err),
   });
 
+  const revokeInviteMutation = useMutation({
+    mutationFn: (inviteId: string) => usersApi.revokeInvite(inviteId),
+    onSuccess: async () => {
+      showAppToast({ type: 'success', title: 'Convite revogado.' });
+      await invalidate();
+      await queryClient.invalidateQueries({ queryKey: ['pending-invites', sessionTenantId] });
+    },
+    onError: (err: Error) => showApiErrorToast(err),
+  });
+
+  /**
+   * O convite vira uma linha na mesma tabela, e não uma seção à parte.
+   *
+   * Quem convidou quer ver a pessoa na lista — é isso que confirma que o convite saiu. Uma caixa
+   * separada faria a lista de usuários continuar dizendo que nada aconteceu.
+   *
+   * O `id` é o do convite, e o status `invited` é o que a linha carrega no lugar de uma
+   * membership que ainda não existe.
+   */
+  const invitedRows = useMemo<CompanyMemberDto[]>(() => {
+    const agora = Date.now();
+    return (invitesQuery.data ?? []).map((invite) => ({
+      id: invite.inviteId,
+      companyId: sessionTenantId,
+      tenantId: sessionTenantId,
+      email: invite.email,
+      firstName: invite.firstName ?? undefined,
+      lastName: invite.lastName ?? undefined,
+      name:
+        [invite.firstName, invite.lastName].filter(Boolean).join(' ').trim() || invite.email,
+      platformRoles: invite.roles,
+      tenantRoles: invite.roles,
+      status: 'invited' as const,
+      accessGroupIds: [],
+      documentGroupIds: [],
+      groupIds: [],
+      createdAt: invite.createdAt,
+      updatedAt: invite.expiresAt,
+      // Vencido continua na lista, e de propósito: some-lo faria o convite desaparecer sem que
+      // ninguém tenha sido avisado, e quem administra concluiria que a pessoa entrou.
+      requestedAccess: {
+        reason:
+          new Date(invite.expiresAt).getTime() < agora
+            ? 'Convite vencido'
+            : `Convite válido até ${new Date(invite.expiresAt).toLocaleDateString('pt-BR')}`,
+      },
+    }));
+  }, [invitesQuery.data, sessionTenantId]);
+
   const members = useMemo(() => {
-    const list = membersQuery.data?.members ?? [];
+    const list = [...invitedRows, ...(membersQuery.data?.members ?? [])];
     const query = searchQuery.trim().toLowerCase();
     return list.filter((member) => {
       if (statusFilter !== 'all' && member.status !== statusFilter) return false;
@@ -281,23 +278,10 @@ export function UsersPage() {
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [membersQuery.data?.members, statusFilter, searchQuery]);
+  }, [invitedRows, membersQuery.data?.members, statusFilter, searchQuery]);
 
   const documentGroups = documentGroupsQuery.data ?? [];
 
-  const openApprove = (member: CompanyMemberDto) => {
-    const suggested = suggestGroupsFromDepartment(
-      member.requestedAccess?.departmentText,
-      documentGroups,
-    );
-    setApprovingMember(member);
-    setAccessForm({
-      platformRoles: member.platformRoles.length ? member.platformRoles : ['user'],
-      accessGroupIds: [],
-      documentGroupIds: suggested,
-      notificationPreferences: member.notificationPreferences ?? { ...DEFAULT_NOTIFICATION_PREFERENCES },
-    });
-  };
 
   const openEditAccess = (member: CompanyMemberDto) => {
     const baseline = memberToAccessForm(member);
@@ -307,39 +291,49 @@ export function UsersPage() {
 
   return (
     <PageShell
+      eyebrow="Administração"
       title="Usuários"
-      description={`Convide, aprove e gerencie acessos de ${tenantDisplayName}.`}
-      actions={<Button onClick={openInviteModal}>Convidar usuário</Button>}
+      description={`Convide pessoas e gerencie acessos de ${tenantDisplayName}.`}
+      actions={
+        <Button type="button" onClick={() => setInviting(true)}>
+          <Icon name="person_add" size={ICON_SIZE.xs} />
+          Convidar
+        </Button>
+      }
       bodyClassName="min-h-0"
     >
-      <FilterBar summary={`${members.length} ${members.length === 1 ? 'usuário' : 'usuários'}`}>
-        <FilterBarField span={2} className="lg:col-span-2">
-          <Input
+      {/* A barra de filtros era um card com borda em volta de um campo e cinco
+          botões preenchidos — cinco ações principais para uma escolha que é
+          ajuste de vista. Agora é campo em régua, status em régua e a contagem
+          em monoespaçado na outra ponta. */}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <label className="field-rule w-full sm:max-w-xs">
+          <Icon name="search" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
+          <input
             id="users-search"
-            label="Buscar"
-            placeholder="Nome ou e-mail..."
+            type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Buscar por nome ou e-mail"
+            className="text-label placeholder:text-doqyn-subtle"
+            aria-label="Buscar usuário"
           />
-        </FilterBarField>
-        <FilterBarField span={2} className="lg:col-span-2">
-          <div>
-            <p className="form-label mb-1.5">Status</p>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'active', 'pending', 'blocked', 'rejected'] as const).map((status) => (
-                <Button
-                  key={status}
-                  variant={statusFilter === status ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setStatusFilter(status)}
-                >
-                  {STATUS_FILTER_LABELS[status]}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </FilterBarField>
-      </FilterBar>
+        </label>
+
+        <SegmentedTextToggle
+          value={statusFilter}
+          options={(['all', 'active', 'invited', 'blocked', 'rejected'] as const).map((status) => ({
+            value: status,
+            label: STATUS_FILTER_LABELS[status],
+          }))}
+          onChange={setStatusFilter}
+          aria-label="Filtrar por status"
+        />
+
+        <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
+          {members.length} {members.length === 1 ? 'usuário' : 'usuários'}
+        </span>
+      </div>
 
       {membersQuery.isError ? (
         <InlineErrorHint
@@ -356,30 +350,25 @@ export function UsersPage() {
         keyExtractor={(member) => member.id}
         emptyMessage={
           membersQuery.isError
-            ? 'Falha ao carregar usuários'
+            ? 'Não foi possível carregar os usuários'
             : membersQuery.isLoading
-              ? 'Carregando usuários...'
-              : 'Nenhum usuário encontrado'
+              ? 'Carregando usuários'
+              : statusFilter === 'all'
+                ? 'Nenhum usuário ainda'
+                : `Nenhum usuário ${STATUS_FILTER_LABELS[statusFilter].toLowerCase()}`
         }
         emptyDescription={
           statusFilter === 'all'
-            ? 'Convide colaboradores para começar a gerenciar acessos da empresa.'
-            : 'Nenhum usuário corresponde ao status selecionado.'
+            ? 'Ninguém com acesso à empresa por enquanto.'
+            : 'Troque o filtro para ver os outros registros.'
         }
-        emptyAction={
-          !membersQuery.isLoading && statusFilter === 'all' ? (
-            <Button onClick={openInviteModal}>Convidar usuário</Button>
-          ) : undefined
-        }
-        sparseMessage="Nenhum outro usuário nesta listagem"
-        sparseDescription="Altere o filtro de status para ver outros registros."
+        sparseMessage="Só isto nesta seleção"
+        sparseDescription="Troque o filtro de status para ver os outros registros."
         columns={[
           {
             key: 'name',
             header: 'Nome',
-            render: (member) => (
-              <span className="font-medium">{memberDisplayName(member)}</span>
-            ),
+            render: (member) => <span className="font-medium">{memberDisplayName(member)}</span>,
           },
           {
             key: 'email',
@@ -401,9 +390,18 @@ export function UsersPage() {
             header: 'Grupos',
             render: (member) => (
               <span className="meta-text">
-                {member.status === 'pending' && member.requestedAccess?.departmentText ? (
-                  <Tooltip label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}>
-                    <span className="text-doqyn-muted">{member.requestedAccess.departmentText}</span>
+                {/* No convite ainda não há grupo aplicado — a intenção só vira vínculo quando a
+                    pessoa entra. O que a coluna tem a dizer aqui é o prazo, que é o que separa um
+                    convite vivo de um que já morreu. */}
+                {member.status === 'invited' ? (
+                  <span className="text-doqyn-muted">{member.requestedAccess?.reason ?? '—'}</span>
+                ) : member.status === 'pending' && member.requestedAccess?.departmentText ? (
+                  <Tooltip
+                    label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}
+                  >
+                    <span className="text-doqyn-muted">
+                      {member.requestedAccess.departmentText}
+                    </span>
                   </Tooltip>
                 ) : (member.documentGroupIds ?? member.groupIds).length ? (
                   (member.documentGroupIds ?? member.groupIds)
@@ -424,16 +422,6 @@ export function UsersPage() {
               <TableRowActionsMenu
                 actions={[
                   {
-                    label: 'Aprovar',
-                    onClick: () => openApprove(member),
-                    hidden: member.status !== 'pending',
-                  },
-                  {
-                    label: 'Rejeitar',
-                    onClick: () => handleRejectMember(member),
-                    hidden: member.status !== 'pending',
-                  },
-                  {
                     label: 'Editar acesso',
                     onClick: () => openEditAccess(member),
                     hidden: member.status !== 'active' && member.status !== 'blocked',
@@ -449,6 +437,15 @@ export function UsersPage() {
                     onClick: () => setUnblockingMember(member),
                     hidden: member.status !== 'blocked',
                   },
+                  {
+                    // Revogar é a única ação possível sobre um convite: o link só existiu em
+                    // texto no instante da criação, então não há como copiá-lo de novo. Para
+                    // reenviar, convida-se outra vez — e o convite novo mata o anterior.
+                    label: 'Revogar convite',
+                    onClick: () => revokeInviteMutation.mutate(member.id),
+                    tone: 'danger',
+                    hidden: member.status !== 'invited',
+                  },
                 ]}
               />
             ),
@@ -456,119 +453,14 @@ export function UsersPage() {
         ]}
       />
 
-      {inviteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-lg">
-            <CardContent className="space-y-4 p-6">
-              <h2 className="text-lg font-medium">
-                {inviteResult ? 'Convite criado' : 'Convidar usuário'}
-              </h2>
-
-              {inviteResult ? (
-                <div className="space-y-4" data-testid="user-invite-link-success">
-                  <ExternalInviteLinkField
-                    value={inviteResult.link}
-                    intro={inviteResult.intro}
-                    testId="user-invite-link"
-                  />
-                  <div className="flex justify-end">
-                    <Button type="button" onClick={closeInviteModal}>
-                      Fechar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <Input
-                    placeholder="E-mail"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Nome"
-                      value={inviteForm.firstName}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Sobrenome"
-                      value={inviteForm.lastName}
-                      onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
-                    />
-                  </div>
-                  <PlatformRolesSection
-                    value={inviteForm.platformRoles}
-                    onChange={(platformRoles) => setInviteForm((f) => ({ ...f, platformRoles }))}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button variant="secondary" onClick={closeInviteModal}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={() => inviteMutation.mutate()} disabled={inviteMutation.isPending}>
-                      {inviteMutation.isPending ? 'Convidando…' : 'Convidar'}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {approvingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-scrim p-4 backdrop-blur-sm">
-          <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto">
-            <CardContent className="space-y-1 p-6">
-              <h2 className="mb-4 text-lg font-medium">Aprovar {memberDisplayName(approvingMember)}</h2>
-              <AccessRequestDetailsPanel
-                member={approvingMember}
-                className="mb-4 rounded-md border border-doqyn-border bg-doqyn-surface p-3 text-xs"
-              />
-              {suggestGroupsFromDepartment(
-                approvingMember.requestedAccess?.departmentText,
-                documentGroups,
-              ).length > 0 && (
-                <p className="mb-4 text-xs text-doqyn-muted">
-                  Sugestão: talvez corresponda ao grupo{' '}
-                  {documentGroups
-                    .filter((g) =>
-                      suggestGroupsFromDepartment(
-                        approvingMember.requestedAccess?.departmentText,
-                        documentGroups,
-                      ).includes(g.id),
-                    )
-                    .map((g) => g.name)
-                    .join(', ')}
-                </p>
-              )}
-              <PlatformRolesSection
-                value={accessForm.platformRoles}
-                onChange={(platformRoles) => setAccessForm((f) => ({ ...f, platformRoles }))}
-              />
-              <DocumentGroupsSection
-                groups={documentGroups}
-                value={accessForm.documentGroupIds}
-                onChange={(documentGroupIds) =>
-                  setAccessForm((f) => ({ ...f, documentGroupIds }))
-                }
-              />
-              <NotificationsSection
-                value={accessForm.notificationPreferences}
-                onChange={(notificationPreferences) =>
-                  setAccessForm((f) => ({ ...f, notificationPreferences }))
-                }
-              />
-              <div className="flex justify-end gap-2 border-t border-doqyn-border-subtle pt-4">
-                <Button variant="secondary" onClick={() => setApprovingMember(null)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
-                  {approveMutation.isPending ? 'Aprovando…' : 'Aprovar'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {inviting && (
+        <InviteMemberDialog
+          documentGroups={documentGroups}
+          saving={invitePending}
+          onInvite={createInvite}
+          onClose={() => setInviting(false)}
+          onInvited={() => void invalidate()}
+        />
       )}
 
       {editingMember && editAccessBaseline && (
@@ -593,9 +485,7 @@ export function UsersPage() {
           tenantDisplayName={tenantDisplayName}
           blocking={blockMutation.isPending}
           onClose={() => setBlockingMember(null)}
-          onConfirm={(reason) =>
-            blockMutation.mutate({ memberId: blockingMember.id, reason })
-          }
+          onConfirm={(reason) => blockMutation.mutate({ memberId: blockingMember.id, reason })}
         />
       )}
 
@@ -610,24 +500,6 @@ export function UsersPage() {
         />
       )}
 
-      <PromptDialog
-        open={Boolean(rejectingMember)}
-        title="Rejeitar solicitação"
-        description={
-          rejectingMember
-            ? `${memberDisplayName(rejectingMember)} · ${rejectingMember.email}`
-            : undefined
-        }
-        label="Motivo da rejeição"
-        placeholder="Descreva o motivo para o solicitante..."
-        confirmLabel="Confirmar rejeição"
-        saving={rejectMutation.isPending}
-        onClose={() => setRejectingMember(null)}
-        onConfirm={(reason) => {
-          if (!rejectingMember) return;
-          rejectMutation.mutate({ memberId: rejectingMember.id, reason });
-        }}
-      />
     </PageShell>
   );
 }

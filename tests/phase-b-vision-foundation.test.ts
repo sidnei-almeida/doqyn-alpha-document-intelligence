@@ -48,11 +48,17 @@ describe('Fase B.7 — Vision OCR foundation', () => {
 
   it('analyzePdfService e update usam documentTextExtractor', () => {
     const analyze = read('server/ai/services/analyzePdfService.ts');
-    assert.ok(analyze.includes('extractTextFromDocumentPdf'));
+    // Passaram a chamar o despachante `extractTextFromDocument`, que escolhe entre o caminho de
+    // PDF e o de imagem pelo mime — antes cada serviço decidia por conta.
+    assert.ok(analyze.includes('extractTextFromDocument('));
     assert.equal(analyze.includes("from './pdfTextExtractor.js'"), false);
 
     const update = read('server/ai/services/analyzePdfUpdateService.ts');
-    assert.ok(update.includes('extractTextFromDocumentPdf'));
+    assert.ok(update.includes('extractTextFromDocument('));
+
+    const extractor = read('server/ai/services/documentTextExtractor.ts');
+    assert.ok(extractor.includes('isImageAnalysisMimeType(mimeType)'));
+    assert.ok(extractor.includes('extractTextFromDocumentPdf'));
   });
 
   it('deep health inclui visionOcr', () => {
@@ -66,9 +72,8 @@ describe('Fase B.7 — Vision OCR foundation', () => {
     const original = process.env.VISION_OCR_ENABLED;
     delete process.env.VISION_OCR_ENABLED;
     try {
-      const { isVisionOcrEnabled, getVisionOcrHealth } = await import(
-        '../server/ai/vision/visionConfig.js'
-      );
+      const { isVisionOcrEnabled, getVisionOcrHealth } =
+        await import('../server/ai/vision/visionConfig.js');
       assert.equal(isVisionOcrEnabled(), false);
       const health = getVisionOcrHealth();
       assert.equal(health.enabled, false);

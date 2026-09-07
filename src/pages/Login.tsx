@@ -1,22 +1,34 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Icon } from '@/components/ui/Icon';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
-import { AuthCard, AuthShell } from '@/components/layout/AuthShell';
+import { cn } from '@/lib/utils';
+import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
+import { GoogleGlyph, MicrosoftGlyph } from '@/features/auth/components/BrandGlyph';
+import {
+  AUTH_PRIMARY_BUTTON,
+  AUTH_SECONDARY_BUTTON,
+} from '@/features/auth/components/authControls';
 import { useAuth } from '@/features/auth/useAuth';
-import { AUTH_MODE } from '@/lib/constants';
 import { ApiError } from '@/lib/apiErrors';
 import { SessionApiError } from '@/auth/sessionApi';
 import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogin';
 import { getAuthErrorActions, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
-import { ICON_SIZE } from '@/lib/iconDefaults';
+import { storeVerificationTicket } from '@/features/email-verification/verificationTicket';
+
+/** O passe de confirmação viaja em `details` porque é o campo que a rota de login já repassa. */
+function extractVerificationTicket(error: unknown): string | null {
+  if (!(error instanceof ApiError) || error.code !== 'EMAIL_NOT_VERIFIED') return null;
+  const ticket = (error.details as { verificationTicket?: unknown } | undefined)
+    ?.verificationTicket;
+  return typeof ticket === 'string' && ticket ? ticket : null;
+}
 
 export function Login() {
-  const { login, loginWithGoogle, loginWithMicrosoft, supportsOAuth } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,10 +60,6 @@ export function Login() {
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const showCredentialForm =
-    AUTH_MODE === 'temporary' ||
-    AUTH_MODE === 'mock' ||
-    import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/biblioteca';
 
@@ -67,6 +75,15 @@ export function Login() {
       await login(email, password, rememberMe);
       navigate(from, { replace: true });
     } catch (err) {
+      // Senha certa, e-mail ainda não confirmado: o auth-service já mandou o código junto com a
+      // recusa, então a tela seguinte pede os dígitos em vez de um botão de "enviar".
+      const ticket = extractVerificationTicket(err);
+      if (ticket) {
+        storeVerificationTicket(ticket);
+        navigate('/confirmar-cadastro', { replace: true, state: { ticket } });
+        return;
+      }
+
       if (err instanceof ApiError || err instanceof SessionApiError) {
         setErrorCode(err.code);
         setError(err.friendlyMessage);
@@ -79,142 +96,121 @@ export function Login() {
   }
 
   return (
-    <AuthShell
-      eyebrow="Document Intelligence"
-      title="Entrar no sistema"
-      description="Plataforma corporativa para gestão segura de documentos e rastreabilidade."
-      showSecureBadge
-      footer={
-        <Link to="/acesso" className="text-doqyn-accent-active transition-colors hover:underline">
-          Não tem acesso ainda?
-        </Link>
-      }
-    >
-      <AuthCard className="p-6">
-        <p className="mb-5 text-xs text-doqyn-muted">
-          {enabledProviders.length > 0
-            ? `Use sua conta ${enabledProviders
-                .map((p) => (p === 'google' ? 'Google' : 'Microsoft'))
-                .join(', ')} ou credenciais DOQYN.`
-            : 'Acesse sua área para enviar e gerenciar documentos.'}
-        </p>
+    <>
+      <AuthHeading title="Entrar no sistema" />
 
-        {supportsOAuth && enabledProviders.length > 0 && (
-          <div className="mb-4 space-y-2.5">
-            {enabledProviders.includes('google') && (
-              <Button
-                type="button"
-                className="w-full"
-                disabled={isSubmitting}
-                onClick={() => loginWithGoogle(from)}
-              >
-                <Icon name="key" size={ICON_SIZE.sm} />
-                Continuar com Google
-              </Button>
-            )}
-            {enabledProviders.includes('microsoft') && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                disabled={isSubmitting}
-                onClick={() => loginWithMicrosoft(from)}
-              >
-                <Icon name="key" size={ICON_SIZE.sm} />
-                Continuar com Microsoft
-              </Button>
-            )}
-
-            {showCredentialForm && (
-              <div className="flex items-center gap-3 pt-1">
-                <span className="h-px flex-1 bg-doqyn-border-subtle" />
-                <span className="text-[10px] uppercase tracking-[0.12em] text-doqyn-subtle">
-                  ou
-                </span>
-                <span className="h-px flex-1 bg-doqyn-border-subtle" />
-              </div>
-            )}
-          </div>
-        )}
-
-        {showCredentialForm && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              id="email"
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu.email@empresa.com"
-              autoComplete="email"
-              required
-            />
-
-            <Input
-              id="password"
-              label="Senha DOQYN"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite sua senha"
-              autoComplete="current-password"
-              required
-            />
-
-            <div className="flex items-center justify-between gap-3">
-              <Checkbox
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                label={<span className="text-xs text-doqyn-muted">Lembrar acesso</span>}
-                wrapperClassName="items-center"
-              />
-              <button
-                type="button"
-                className="text-xs text-doqyn-muted transition-colors hover:text-doqyn-text"
-              >
-                Esqueci minha senha
-              </button>
-            </div>
-
-            {error ? (
-              <AlertBanner
-                variant={getLoginAlertVariant(errorCode)}
-                title={getLoginAlertTitle(errorCode)}
-                message={error}
-              >
-                {errorActions.length > 0 ? (
-                  <div className="mt-2 flex flex-col gap-2">
-                    {errorActions.map((action) => (
-                      <Link key={action.href} to={action.href}>
-                        <Button type="button" variant="secondary" className="w-full">
-                          {action.label}
-                        </Button>
-                      </Link>
-                    ))}
-                  </div>
-                ) : null}
-              </AlertBanner>
-            ) : null}
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting || !email.trim() || !password}
+      {enabledProviders.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          {enabledProviders.includes('google') && (
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => loginWithGoogle(from)}
+              className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
             >
-              <Icon name="lock" size={ICON_SIZE.sm} />
-              {isSubmitting ? 'Entrando...' : 'Entrar com e-mail e senha'}
-            </Button>
-          </form>
-        )}
+              <GoogleGlyph />
+              Continuar com Google
+            </button>
+          )}
+          {enabledProviders.includes('microsoft') && (
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => loginWithMicrosoft(from)}
+              className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
+            >
+              <MicrosoftGlyph />
+              Continuar com Microsoft
+            </button>
+          )}
 
-        {!showCredentialForm && error ? (
+          <div className="flex items-center gap-3 py-3">
+            <span className="h-px flex-1 bg-doqyn-border-subtle" />
+            <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
+              ou
+            </span>
+            <span className="h-px flex-1 bg-doqyn-border-subtle" />
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Input
+          id="email"
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="voce@empresa.com"
+          autoComplete="email"
+          required
+        />
+
+        <Input
+          id="password"
+          label="Senha"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          revealable
+          required
+        />
+
+        <div className="flex items-center justify-between gap-3">
+          <Checkbox
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            label={<span className="text-caption text-doqyn-muted">Lembrar acesso</span>}
+            wrapperClassName="items-center"
+          />
+          <button
+            type="button"
+            className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline"
+          >
+            Esqueci minha senha
+          </button>
+        </div>
+
+        {error ? (
           <AlertBanner
             variant={getLoginAlertVariant(errorCode)}
             title={getLoginAlertTitle(errorCode)}
             message={error}
-          />
+          >
+            {errorActions.length > 0 ? (
+              <div className="mt-2 flex flex-col gap-2">
+                {errorActions.map((action) => (
+                  <Link key={action.href} to={action.href}>
+                    <Button type="button" variant="secondary" className="w-full">
+                      {action.label}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </AlertBanner>
         ) : null}
-      </AuthCard>
-    </AuthShell>
+
+        <button
+          type="submit"
+          disabled={isSubmitting || !email.trim() || !password}
+          className={cn(AUTH_PRIMARY_BUTTON, 'mt-1 w-full')}
+        >
+          {isSubmitting ? 'Entrando...' : 'Entrar'}
+        </button>
+      </form>
+
+      <AuthFooterLink>
+        Não tem acesso ainda?{' '}
+        <Link
+          to="/acesso"
+          className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
+        >
+          Criar acesso
+        </Link>
+      </AuthFooterLink>
+    </>
   );
 }

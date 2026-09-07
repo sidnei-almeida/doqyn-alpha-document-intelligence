@@ -1,13 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Icon } from '@/components/ui/Icon';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { ExternalInviteLinkField } from '@/components/ui/ExternalInviteLinkField';
-import { Input } from '@/components/ui/Input';
-import { WhatsappInput } from '@/components/ui/WhatsappInput';
-import { Tooltip } from '@/components/ui/Tooltip';
-import { ICON_SIZE } from '@/lib/iconDefaults';
-import { isCompleteWhatsapp, WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
+import { Modal } from '@/components/ui/Modal';
+import { isCompleteWhatsapp } from '@/lib/identifiers';
+import { isIndividualTenant } from '@/lib/tenantVocabulary';
+import { useAuth } from '@/auth/useAuth';
 import type { DocumentListItem } from '@/types/document-library';
+import {
+  AccessList,
+  AudiencePicker,
+  ConditionsStep,
+  EMPTY_EXTERNAL_RECIPIENT,
+  ExternalRecipientFields,
+  FlowFooter,
+  InternalRecipientPicker,
+  IssuedLink,
+  StepTrack,
+  SummaryStep,
+  defaultExpirationDate,
+  describeRecipient,
+  expirationDateToIso,
+  formatExpirationDate,
+  formatDateTime,
+  resolveRecipient,
+  statusTone,
+  useStepFlow,
+  type CrossTenantCandidate,
+  type ExternalRecipientDraft,
+  type InternalCandidate,
+  type RecipientAudience,
+} from '@/features/documents/recipients/RecipientFlow';
+import { CrossTenantRecipientField } from '@/features/directory/components/CrossTenantRecipientField';
 import {
   useDocumentShares,
   useShareableUsersSearch,
@@ -17,560 +39,416 @@ import {
   useDocumentExternalShares,
   useExternalShareMutations,
 } from '../hooks/useExternalShareMutations';
-import type { ShareableUser } from '../api/shareApi';
-import type { ExternalDocumentShareEntry } from '../api/externalShareApi';
 
-type ShareTab = 'internal' | 'external';
-
-const INVALID_EXTERNAL_PHONE_MESSAGE =
-  'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
+const STEPS = ['Quem recebe', 'Condições', 'Confirmar'];
+const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
 
 type ShareDocumentModalProps = {
   open: boolean;
   document: DocumentListItem | null;
+  /**
+   * Quem já vem escolhido, quando o envio começou por uma pessoa.
+   *
+   * A tela de Contatos parte de alguém e só depois pergunta qual documento; sem isto, ela
+   * entregaria o modal pedindo para achar de novo a pessoa em que se acabou de clicar.
+   *
+   * Aplicado só na abertura: reaplicar desfaria a troca de destinatário feita aqui dentro.
+   */
+  initialRecipient?: InternalCandidate | null;
   onClose: () => void;
 };
 
-function defaultExpirationIso(days = 7): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 16);
-}
-
-function formatStatusLabel(status: string): string {
+function statusLabel(status: string): string {
   switch (status) {
     case 'active':
-      return 'Ativo';
+      return 'ativo';
     case 'pending':
-      return 'Pendente';
+      return 'pendente';
     case 'revoked':
-      return 'Revogado';
+      return 'revogado';
     case 'expired':
-      return 'Expirado';
+      return 'expirado';
     default:
       return status;
   }
 }
 
-function canRevokeExternalShare(status: ExternalDocumentShareEntry['status']): boolean {
-  return status === 'active' || status === 'pending';
-}
+export function ShareDocumentModal({
+  open,
+  document,
+  initialRecipient,
+  onClose,
+}: ShareDocumentModalProps) {
+  const documentId = document?.id ?? null;
+  const flow = useStepFlow(STEPS.length, open);
+  const { tenant } = useAuth();
+  /**
+   * Em PF não há "alguém daqui": o tenant tem um usuário só. A aba interna some, e o passo
+   * começa onde ele de fato começa — em quem está fora.
+   */
+  const hasInternalAudience = !isIndividualTenant(tenant?.tenantType);
+  /**
+   * Em PF o passo abre no link externo, não na conta DOQYN: enviar para outro tenant depende de
+   * `isInterTenantSharingEnabled()` no servidor, e abrir num caminho que pode estar desligado
+   * seria trocar uma porta fechada por outra.
+   */
+  const defaultAudience: RecipientAudience = hasInternalAudience ? 'internal' : 'external';
 
-function ExternalShareActionBadge({
-  label,
-  tooltip,
-  tone = 'neutral',
-  disabled,
-  onClick,
-  testId,
-}: {
-  label: string;
-  tooltip: string;
-  tone?: 'neutral' | 'danger';
-  disabled?: boolean;
-  onClick: () => void;
-  testId?: string;
-}) {
-  const toneClass =
-    tone === 'danger'
-      ? 'border-doqyn-danger/30 text-doqyn-danger hover:bg-doqyn-danger/10'
-      : 'border-doqyn-border-subtle text-doqyn-subtle hover:bg-doqyn-surface-hover hover:text-doqyn-text';
+  const [audience, setAudience] = useState<RecipientAudience>(defaultAudience);
+  const [query, setQuery] = useState('');
+  const [internalPick, setInternalPick] = useState<InternalCandidate | null>(null);
+  const [external, setExternal] = useState<ExternalRecipientDraft>(EMPTY_EXTERNAL_RECIPIENT);
+  /**
+   * Destinatário de outra empresa DOQYN.
+   *
+   * Vive fora de `internalPick` porque não é membro daqui: não tem id de associação, não aparece na
+   * busca por nome, e o envio para ele nasce pendente do outro lado. Tratá-lo como membro faria a
+   * tela prometer um acesso imediato que não acontece.
+   */
+  const [crossTenantPick, setCrossTenantPick] = useState<CrossTenantCandidate | null>(null);
+  const [expiresAt, setExpiresAt] = useState(() => defaultExpirationDate(7));
+  const [canDownload, setCanDownload] = useState(false);
+  const [message, setMessage] = useState('');
+  const [issuedUrl, setIssuedUrl] = useState<string | null>(null);
 
-  return (
-    <Tooltip label={tooltip} placement="left">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onClick}
-        data-testid={testId}
-        className={[
-          'rounded-full border px-2 py-0.5 text-micro font-medium leading-none transition-colors',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          toneClass,
-        ].join(' ')}
-      >
-        {label}
-      </button>
-    </Tooltip>
-  );
-}
-
-function ExternalShareListItem({
-  share,
-  disabled,
-  onRevoke,
-  onRegenerate,
-}: {
-  share: ExternalDocumentShareEntry;
-  disabled: boolean;
-  onRevoke: (shareId: string) => void;
-  onRegenerate: (shareId: string) => void;
-}) {
-  const showRevoke = canRevokeExternalShare(share.status);
-
-  return (
-    <div
-      className="relative rounded-lg border border-doqyn-border-subtle px-3 py-2 pr-[4.75rem]"
-      data-testid={`external-share-item-${share.shareId}`}
-    >
-      <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
-        {showRevoke ? (
-          <ExternalShareActionBadge
-            label="Revogar"
-            tooltip="Revoga o acesso imediatamente. O link atual deixa de funcionar."
-            tone="danger"
-            disabled={disabled}
-            onClick={() => onRevoke(share.shareId)}
-            testId={`external-share-revoke-${share.shareId}`}
-          />
-        ) : null}
-        <ExternalShareActionBadge
-          label="Renovar"
-          tooltip="Gera um novo link de convite. O link anterior deixa de funcionar e o destinatário precisará aceitar novamente."
-          disabled={disabled}
-          onClick={() => onRegenerate(share.shareId)}
-          testId={`external-share-renew-${share.shareId}`}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-label text-doqyn-text">{share.recipientEmail}</p>
-        <p className="text-micro text-doqyn-subtle">
-          {share.recipientOrganizationName || 'Sem organização'}
-          {' · '}
-          {formatStatusLabel(share.status)}
-          {share.expiresAt
-            ? ` · expira ${new Date(share.expiresAt).toLocaleDateString('pt-BR')}`
-            : ''}
-        </p>
-        <p className="text-micro text-doqyn-subtle">
-          {share.permissions.canDownload ? 'Visualizar e baixar' : 'Somente visualizar'}
-          {share.lastAccessAt
-            ? ` · último acesso ${new Date(share.lastAccessAt).toLocaleString('pt-BR')}`
-            : ''}
-        </p>
-        {share.recipientPhoneMasked ? (
-          <p className="text-micro text-doqyn-subtle">{share.recipientPhoneMasked}</p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-export function ShareDocumentModal({ open, document, onClose }: ShareDocumentModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const [tab, setTab] = useState<ShareTab>('internal');
-  const [search, setSearch] = useState('');
-  const [selectedUser, setSelectedUser] = useState<ShareableUser | null>(null);
-  const [allowDownload, setAllowDownload] = useState(false);
-  const [externalEmail, setExternalEmail] = useState('');
-  const [externalPhone, setExternalPhone] = useState('');
-  const [externalPhoneError, setExternalPhoneError] = useState<string | null>(null);
-  const [externalName, setExternalName] = useState('');
-  const [externalOrganization, setExternalOrganization] = useState('');
-  const [externalAllowDownload, setExternalAllowDownload] = useState(false);
-  const [externalExpiresAt, setExternalExpiresAt] = useState(defaultExpirationIso());
-  const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
-
-  const documentId = document?.documentId ?? null;
-  const sharesQuery = useDocumentShares(documentId, open && tab === 'internal');
-  const externalSharesQuery = useDocumentExternalShares(documentId, open && tab === 'external');
-  const usersQuery = useShareableUsersSearch(documentId, search);
+  const internalShares = useDocumentShares(documentId, open);
+  const externalShares = useDocumentExternalShares(documentId, open);
+  const candidates = useShareableUsersSearch(documentId, query);
   const { shareWithUser, revokeShare } = useShareDocumentMutations(documentId);
   const { createExternalShare, revokeExternalShare, regenerateExternalShare } =
     useExternalShareMutations(documentId);
 
-  const availableUsers = useMemo(
-    () => (usersQuery.data ?? []).filter((user) => !user.alreadyShared),
-    [usersQuery.data],
-  );
-
+  // Na abertura, quem já veio escolhido. `initialRecipient` fora das dependências de propósito:
+  // com ele dentro, trocar de destinatário aqui seria desfeito no render seguinte.
   useEffect(() => {
-    if (!open) {
-      setTab('internal');
-      setSearch('');
-      setSelectedUser(null);
-      setAllowDownload(false);
-      setExternalEmail('');
-      setExternalPhone('');
-      setExternalPhoneError(null);
-      setExternalName('');
-      setExternalOrganization('');
-      setExternalAllowDownload(false);
-      setExternalExpiresAt(defaultExpirationIso());
-      setLastInviteUrl(null);
-    }
+    if (!open || !initialRecipient) return;
+    setAudience('internal');
+    setInternalPick(initialRecipient);
+    // `initialRecipient` só existe onde há membro para pré-selecionar, o que não ocorre em PF.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+    if (open) return;
+    setAudience(defaultAudience);
+    setQuery('');
+    setInternalPick(null);
+    setCrossTenantPick(null);
+    setExternal(EMPTY_EXTERNAL_RECIPIENT);
+    setExpiresAt(defaultExpirationDate(7));
+    setCanDownload(false);
+    setMessage('');
+    setIssuedUrl(null);
+  }, [open, defaultAudience]);
 
-  if (!open || !document) return null;
+  /**
+   * A sessão pode chegar depois da montagem. Sem esta correção, um `audience` 'internal'
+   * herdado do estado inicial deixaria o seletor sem nenhuma opção marcada em PF.
+   */
+  useEffect(() => {
+    if (!hasInternalAudience && audience === 'internal') setAudience(defaultAudience);
+  }, [hasInternalAudience, audience, defaultAudience]);
 
-  const isSubmitting =
-    shareWithUser.isPending ||
-    revokeShare.isPending ||
-    createExternalShare.isPending ||
-    revokeExternalShare.isPending ||
-    regenerateExternalShare.isPending;
+  const phoneError =
+    external.phone && !isCompleteWhatsapp(external.phone) ? INVALID_PHONE_MESSAGE : undefined;
 
-  const handleShare = () => {
-    if (!selectedUser) return;
-    shareWithUser.mutate(
-      { sharedWithUserId: selectedUser.userId, canDownload: allowDownload },
-      {
-        onSuccess: () => {
-          setSelectedUser(null);
-          setSearch('');
-        },
-      },
-    );
-  };
+  /** Quem recebe, pela aba e por mais nada — ver `resolveRecipient`. */
+  const recipient = useMemo(
+    () => resolveRecipient(audience, { internal: internalPick, doqyn: crossTenantPick, external }),
+    [audience, crossTenantPick, external, internalPick],
+  );
 
-  const handleExternalShare = () => {
-    if (!externalEmail.trim()) return;
+  const canAdvance = useMemo(() => {
+    if (flow.step === 0) {
+      if (recipient.external) return recipient.external.email.trim().includes('@') && !phoneError;
+      return Boolean(recipient.internal ?? recipient.doqyn);
+    }
+    // O prazo é obrigatório para tudo que sai da empresa — com conta DOQYN ou sem. O acesso
+    // concedido não é reavaliado depois, e a validade é o único mecanismo que o fecha sozinho.
+    if (flow.step === 1) return recipient.audience === 'internal' || Boolean(expiresAt);
+    return true;
+  }, [expiresAt, flow.step, phoneError, recipient]);
 
-    if (externalPhone.trim() && !isCompleteWhatsapp(externalPhone)) {
-      setExternalPhoneError(INVALID_EXTERNAL_PHONE_MESSAGE);
+  const submitting = shareWithUser.isPending || createExternalShare.isPending;
+
+  const handleSubmit = async () => {
+    if (!documentId) return;
+
+    if (recipient.doqyn) {
+      await shareWithUser.mutateAsync({
+        sharedWithEmail: recipient.doqyn.email,
+        sharedWithUsername: recipient.doqyn.username,
+        canDownload,
+        message: message.trim() || undefined,
+        expiresAt: expirationDateToIso(expiresAt),
+      });
+      onClose();
       return;
     }
-    setExternalPhoneError(null);
 
-    createExternalShare.mutate(
-      {
-        recipientEmail: externalEmail.trim(),
-        recipientPhone: externalPhone.trim() || undefined,
-        recipientName: externalName.trim() || undefined,
-        recipientOrganizationName: externalOrganization.trim() || undefined,
-        canDownload: externalAllowDownload,
-        expiresAt: new Date(externalExpiresAt).toISOString(),
-      },
-      {
-        onSuccess: (result) => {
-          setLastInviteUrl(result.inviteUrl);
-          setExternalEmail('');
-          setExternalPhone('');
-          setExternalPhoneError(null);
-          setExternalName('');
-          setExternalOrganization('');
-          setExternalAllowDownload(false);
-        },
-      },
-    );
-  };
+    if (recipient.internal) {
+      await shareWithUser.mutateAsync({
+        sharedWithUserId: recipient.internal.id,
+        canDownload,
+        message: message.trim() || undefined,
+      });
+      onClose();
+      return;
+    }
 
-  const handleRegenerateExternalShare = (shareId: string) => {
-    regenerateExternalShare.mutate(shareId, {
-      onSuccess: (result) => {
-        setLastInviteUrl(result.inviteUrl);
-      },
+    // Aba escolhida sem pessoa escolhida não vira convite externo: sem esta guarda, quem está em
+    // "Outra empresa" e ainda não escolheu ninguém cairia aqui com o e-mail digitado na outra aba.
+    if (!recipient.external) return;
+
+    const result = await createExternalShare.mutateAsync({
+      recipientEmail: recipient.external.email.trim(),
+      recipientPhone: recipient.external.phone.trim() || undefined,
+      recipientName: recipient.external.name.trim() || undefined,
+      recipientOrganizationName: recipient.external.organizationName.trim() || undefined,
+      canDownload,
+      expiresAt: expirationDateToIso(expiresAt),
+      message: message.trim() || undefined,
     });
+    setIssuedUrl(result.inviteUrl);
   };
+
+  const accessRows = [
+    ...(internalShares.data?.shares ?? []).map((share) => ({
+      id: share.shareId,
+      primary: share.sharedWithName,
+      secondary: `${share.sharedWithEmail ?? share.counterpartTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
+      // Oferecido não é concedido: dizer "daqui" para o que ainda espera aceite prometeria um
+      // acesso que não existe. E do outro lado pode haver uma conta pessoal, então o rótulo diz
+      // "outra conta" em vez de supor uma empresa.
+      status:
+        share.inboundStatus === 'pending'
+          ? { label: 'aguardando aceite', tone: 'pending' as const }
+          : share.inboundStatus === 'declined'
+            ? { label: 'recusado', tone: 'closed' as const }
+            : share.inboundStatus === 'accepted'
+              ? { label: 'outra conta', tone: 'active' as const }
+              : { label: 'daqui', tone: 'active' as const },
+      actions: [
+        {
+          label: 'Revogar',
+          tone: 'danger' as const,
+          disabled: revokeShare.isPending,
+          onClick: () => revokeShare.mutate(share.shareId),
+        },
+      ],
+    })),
+    ...(externalShares.data?.shares ?? []).map((share) => ({
+      id: share.shareId,
+      primary: share.recipientName?.trim() || share.recipientEmail,
+      secondary: `${share.recipientEmail} · expira ${formatDateTime(share.expiresAt)} · ${
+        share.permissions.canDownload ? 'pode baixar' : 'só leitura'
+      }`,
+      status: { label: statusLabel(share.status), tone: statusTone(share.status) },
+      actions: [
+        ...(share.inviteUrl
+          ? [
+              {
+                label: 'Copiar link',
+                onClick: () => void navigator.clipboard.writeText(share.inviteUrl!),
+              },
+            ]
+          : []),
+        {
+          label: 'Novo link',
+          disabled: regenerateExternalShare.isPending,
+          onClick: () =>
+            regenerateExternalShare.mutate(share.shareId, {
+              onSuccess: (result) => setIssuedUrl(result.inviteUrl),
+            }),
+        },
+        {
+          label: 'Revogar',
+          tone: 'danger' as const,
+          disabled: revokeExternalShare.isPending || share.status === 'revoked',
+          onClick: () => revokeExternalShare.mutate(share.shareId),
+        },
+      ],
+    })),
+  ];
+
+  if (!document) return null;
 
   return (
-    <div
-      ref={overlayRef}
-      onClick={(event) => event.target === overlayRef.current && onClose()}
-      className="modal-overlay-scrim fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="share-document-modal-title"
-      data-testid="share-document-modal"
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Compartilhar documento"
+      size="lg"
+      dismissOnOverlay={false}
+      subtitle={
+        <span className="block truncate">
+          {document.currentFileName || document.displayName}
+          {document.categoryName ? ` · ${document.categoryName}` : ''}
+          {document.versionLabel ? ` · ${document.versionLabel}` : ''}
+        </span>
+      }
+      toolbar={<StepTrack steps={STEPS} current={flow.step} onSelect={flow.setStep} />}
+      footer={
+        issuedUrl ? null : (
+          <FlowFooter
+            step={flow.step}
+            stepCount={STEPS.length}
+            canAdvance={canAdvance}
+            submitting={submitting}
+            submitLabel="Compartilhar"
+            onBack={flow.back}
+            onNext={flow.next}
+            onSubmit={() => void handleSubmit()}
+            onCancel={onClose}
+          />
+        )
+      }
     >
-      <div className="flex w-full max-w-lg flex-col rounded-xl border border-doqyn-border bg-doqyn-surface shadow-xl">
-        <div className="border-b border-doqyn-border-subtle px-5 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2
-                id="share-document-modal-title"
-                className="text-base font-semibold text-doqyn-text"
-              >
-                Compartilhar documento
-              </h2>
-              <p className="mt-1 truncate text-label text-doqyn-text">
-                {document.currentFileName ?? document.displayName}
-              </p>
-              <p className="mt-0.5 text-caption text-doqyn-subtle">
-                {document.categoryName ?? '—'}
-                {document.versionLabel ? ` · ${document.versionLabel}` : ''}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded p-1 text-doqyn-muted hover:text-doqyn-text"
-              aria-label="Fechar"
-            >
-              <Icon name="close" size={ICON_SIZE.md} />
-            </button>
-          </div>
-
-          <div className="mt-4 flex gap-2" data-testid="share-document-tabs">
-            <button
-              type="button"
-              onClick={() => setTab('internal')}
-              className={[
-                'rounded-lg px-3 py-1.5 text-caption font-medium',
-                tab === 'internal'
-                  ? 'bg-doqyn-accent-active/12 text-doqyn-accent-active'
-                  : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
-              ].join(' ')}
-              data-testid="share-tab-internal"
-            >
-              Pessoas da empresa
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('external')}
-              className={[
-                'rounded-lg px-3 py-1.5 text-caption font-medium',
-                tab === 'external'
-                  ? 'bg-doqyn-accent-active/12 text-doqyn-accent-active'
-                  : 'text-doqyn-subtle hover:bg-doqyn-surface-hover',
-              ].join(' ')}
-              data-testid="share-tab-external"
-            >
-              Convidados externos
-            </button>
-          </div>
+      {issuedUrl ? (
+        <div className="flex flex-col gap-5">
+          <IssuedLink url={issuedUrl} />
+          <p className="type-caption text-doqyn-muted">
+            O convite vale até {formatExpirationDate(expiresAt)}. Enquanto o acesso existir, este
+            link pode ser copiado de novo aqui na lista.
+          </p>
+          <AccessList title="Quem tem acesso" emptyLabel="Ninguém ainda." rows={accessRows} />
         </div>
-
-        <div className="space-y-4 px-5 py-4">
-          {tab === 'internal' ? (
-            <>
-              <div>
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar usuário por nome ou e-mail…"
-                  aria-label="Buscar usuário"
-                />
-                <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-                  {usersQuery.isLoading ? (
-                    <p className="text-caption text-doqyn-subtle">Buscando usuários…</p>
-                  ) : availableUsers.length === 0 ? (
-                    <p className="text-caption text-doqyn-subtle">
-                      {search.trim()
-                        ? 'Nenhum usuário encontrado.'
-                        : 'Digite para buscar usuários ativos.'}
+      ) : (
+        <div className="flex flex-col gap-6">
+          {flow.step === 0 ? (
+            <div className="flex flex-col gap-5">
+              <AudiencePicker
+                value={audience}
+                onChange={setAudience}
+                internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
+                doqynLabel="Outra conta DOQYN"
+                externalLabel="Convidado externo"
+              />
+              {recipient.doqyn ? (
+                <div className="recipient-chosen">
+                  <div className="min-w-0">
+                    <p className="type-body truncate text-doqyn-text">{recipient.doqyn.name}</p>
+                    <p className="type-caption truncate text-doqyn-muted">
+                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`} · de fora daqui
                     </p>
-                  ) : (
-                    availableUsers.map((user) => {
-                      const isSelected = selectedUser?.userId === user.userId;
-                      return (
-                        <button
-                          key={user.userId}
-                          type="button"
-                          onClick={() => setSelectedUser(user)}
-                          className={[
-                            'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left',
-                            isSelected
-                              ? 'border-doqyn-accent-active/40 bg-doqyn-accent-active/8'
-                              : 'border-transparent hover:border-doqyn-border-subtle hover:bg-doqyn-surface-hover',
-                          ].join(' ')}
-                        >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-doqyn-card text-micro font-semibold text-doqyn-muted">
-                            {(user.name || user.email || '?').slice(0, 2).toUpperCase()}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-label text-doqyn-text">
-                              {user.name}
-                            </span>
-                            {user.email ? (
-                              <span className="block truncate text-micro text-doqyn-subtle">
-                                {user.email}
-                              </span>
-                            ) : null}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCrossTenantPick(null)}
+                  >
+                    Trocar
+                  </Button>
                 </div>
-              </div>
-
-              {selectedUser && (
-                <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
-                  <input
-                    type="checkbox"
-                    checked={allowDownload}
-                    onChange={(event) => setAllowDownload(event.target.checked)}
-                    className="rounded border-doqyn-border"
-                  />
-                  Permitir download
-                </label>
+              ) : audience === 'doqyn' ? (
+                /* Aba própria, e não um rodapé da busca de colegas.
+                 *
+                 * O envio já distinguia os três destinos; a tela mostrava dois, com o terceiro
+                 * pendurado embaixo do primeiro atrás de um "de outra empresa" em letra miúda.
+                 * Quem procurava alguém do DOQYN em outra empresa não tinha como saber que a
+                 * busca era por apelido, nem que aquele caminho existia. */
+                <CrossTenantRecipientField
+                  onPick={setCrossTenantPick}
+                  onFallbackToLink={(email) => {
+                    setAudience('external');
+                    setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
+                  }}
+                  fallbackLabel="Enviar por link com prazo"
+                />
+              ) : audience === 'internal' ? (
+                <InternalRecipientPicker
+                  query={query}
+                  onQueryChange={setQuery}
+                  loading={candidates.isLoading}
+                  candidates={(candidates.data ?? [])
+                    .filter((user) => !user.alreadyShared)
+                    .map((user) => ({
+                      id: user.userId,
+                      name: user.name,
+                      email: user.email ?? '',
+                      frequent: user.frequent,
+                    }))}
+                  selected={internalPick}
+                  onSelect={setInternalPick}
+                  emptyLabel="Ninguém encontrado com esse nome ou e-mail."
+                  emptyAction={
+                    /* A saída para quem não está na empresa, sempre visível — não só quando a
+                       busca volta vazia. Agora ela leva à aba, em vez de repetir o campo aqui:
+                       duas cópias do mesmo campo fariam a pessoa escolher entre elas sem saber a
+                       diferença. */
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAudience('doqyn')}
+                    >
+                      Não é daqui? Buscar por nome de usuário
+                    </Button>
+                  }
+                />
+              ) : (
+                <ExternalRecipientFields
+                  value={external}
+                  onChange={setExternal}
+                  requireName={false}
+                  phoneError={phoneError}
+                />
               )}
+              <AccessList title="Quem tem acesso" emptyLabel="Ninguém ainda." rows={accessRows} />
+            </div>
+          ) : null}
 
-              <div>
-                <p className="mb-2 text-eyebrow uppercase text-doqyn-subtle">
-                  Pessoas com acesso compartilhado
-                </p>
-                {sharesQuery.isLoading ? (
-                  <p className="text-caption text-doqyn-subtle">Carregando…</p>
-                ) : (sharesQuery.data?.shares.length ?? 0) === 0 ? (
-                  <p className="text-caption text-doqyn-subtle">
-                    Ninguém com acesso compartilhado ainda.
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {sharesQuery.data?.shares.map((share) => (
-                      <div
-                        key={share.shareId}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-doqyn-border-subtle px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-label text-doqyn-text">
-                            {share.sharedWithName}
-                          </p>
-                          <p className="text-micro text-doqyn-subtle">
-                            {share.permissions.canDownload
-                              ? 'Visualizar e baixar'
-                              : 'Somente visualizar'}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={isSubmitting}
-                          onClick={() => revokeShare.mutate(share.shareId)}
-                        >
-                          Remover
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-caption text-doqyn-subtle">
-                Convidados externos terão acesso apenas a este documento. O link pode ser revogado a
-                qualquer momento.
-              </p>
+          {flow.step === 1 ? (
+            <ConditionsStep
+              expiresAt={expiresAt}
+              onExpiresAtChange={setExpiresAt}
+              expiresHint={
+                audience === 'doqyn'
+                  ? 'Fora daqui o acesso tem prazo: passado ele, a concessão fecha sozinha.'
+                  : audience === 'internal'
+                    ? 'Acesso de quem é daqui não expira: vale enquanto não for revogado.'
+                    : 'Passado o prazo, o link para de abrir sozinho.'
+              }
+              toggles={[
+                {
+                  id: 'download',
+                  label: 'Permitir baixar o arquivo',
+                  description: 'Sem isto, o documento só pode ser lido na tela.',
+                  checked: canDownload,
+                  onChange: setCanDownload,
+                },
+              ]}
+              message={message}
+              onMessageChange={setMessage}
+              messagePlaceholder="Contexto para quem vai receber."
+            />
+          ) : null}
 
-              <div className="space-y-3">
-                <Input
-                  value={externalEmail}
-                  onChange={(event) => setExternalEmail(event.target.value)}
-                  placeholder="E-mail do destinatário"
-                  aria-label="E-mail do destinatário externo"
-                  type="email"
-                  data-testid="external-share-email"
-                />
-                <div>
-                  <WhatsappInput
-                    id="external-share-phone"
-                    label="Telefone / WhatsApp"
-                    value={externalPhone}
-                    optional
-                    onChange={(value) => {
-                      setExternalPhone(value);
-                      if (externalPhoneError) setExternalPhoneError(null);
-                    }}
-                    placeholder={WHATSAPP_PLACEHOLDER}
-                    error={externalPhoneError ?? undefined}
-                    data-testid="external-share-phone"
-                  />
-                  <p className="mt-1.5 text-xs text-doqyn-subtle">
-                    Opcional. Usaremos este número futuramente para notificações por WhatsApp.
-                  </p>
-                </div>
-                <Input
-                  value={externalName}
-                  onChange={(event) => setExternalName(event.target.value)}
-                  placeholder="Nome (opcional)"
-                  aria-label="Nome do destinatário"
-                />
-                <Input
-                  value={externalOrganization}
-                  onChange={(event) => setExternalOrganization(event.target.value)}
-                  placeholder="Empresa / organização (opcional)"
-                  aria-label="Organização do destinatário"
-                />
-                <label className="block text-caption text-doqyn-subtle">
-                  Expira em
-                  <input
-                    type="datetime-local"
-                    value={externalExpiresAt}
-                    onChange={(event) => setExternalExpiresAt(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-doqyn-border bg-doqyn-surface px-3 py-2 text-label font-normal text-doqyn-text"
-                    data-testid="external-share-expires-at"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-label font-normal text-doqyn-text">
-                  <input
-                    type="checkbox"
-                    checked={externalAllowDownload}
-                    onChange={(event) => setExternalAllowDownload(event.target.checked)}
-                    className="rounded border-doqyn-border"
-                    data-testid="external-share-can-download"
-                  />
-                  Permitir download
-                </label>
-              </div>
-
-              {lastInviteUrl ? (
-                <ExternalInviteLinkField
-                  value={lastInviteUrl}
-                  intro="Convite criado. Compartilhe o link abaixo com o convidado."
-                  testId="external-share-invite-url"
-                />
-              ) : null}
-
-              <div>
-                <p className="mb-2 text-eyebrow uppercase text-doqyn-subtle">
-                  Pessoas externas com acesso
-                </p>
-                {externalSharesQuery.isLoading ? (
-                  <p className="text-caption text-doqyn-subtle">Carregando…</p>
-                ) : (externalSharesQuery.data?.shares.length ?? 0) === 0 ? (
-                  <p className="text-caption text-doqyn-subtle">Nenhum convidado externo ainda.</p>
-                ) : (
-                  <div className="space-y-1">
-                    {externalSharesQuery.data?.shares.map((share) => (
-                      <ExternalShareListItem
-                        key={share.shareId}
-                        share={share}
-                        disabled={isSubmitting}
-                        onRevoke={(shareId) => revokeExternalShare.mutate(shareId)}
-                        onRegenerate={handleRegenerateExternalShare}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+          {flow.step === 2 ? (
+            <SummaryStep
+              rows={[
+                { label: 'Documento', value: document.currentFileName || document.displayName },
+                // Pela aba, e não pela presença do `crossTenantPick`: escolher alguém do DOQYN,
+                // trocar para "Convidado externo" e digitar outro e-mail deixava a confirmação
+                // anunciando o primeiro. É a última linha que se lê antes de enviar.
+                { label: 'Quem recebe', value: describeRecipient(recipient) },
+                { label: 'Pode baixar', value: canDownload ? 'Sim' : 'Não' },
+                {
+                  label: 'Válido até',
+                  value: audience === 'internal' ? 'Sem prazo' : formatExpirationDate(expiresAt),
+                },
+                { label: 'Mensagem', value: message.trim() || '—' },
+              ]}
+              note={
+                audience === 'external'
+                  ? 'O link é gerado agora e fica disponível para copiar enquanto o acesso existir.'
+                  : 'A pessoa passa a ver o documento na Biblioteca dela.'
+              }
+            />
+          ) : null}
         </div>
-
-        <div className="flex items-center justify-end gap-2 border-t border-doqyn-border-subtle px-5 py-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          {tab === 'internal' ? (
-            <Button type="button" onClick={handleShare} disabled={!selectedUser || isSubmitting}>
-              Compartilhar
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={handleExternalShare}
-              disabled={!externalEmail.trim() || isSubmitting}
-              data-testid="external-share-submit"
-            >
-              Criar convite
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

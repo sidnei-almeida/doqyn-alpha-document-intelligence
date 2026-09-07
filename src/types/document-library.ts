@@ -35,6 +35,16 @@ export type DocumentListItemPermissions = {
   canShare?: boolean;
   canTransferOwnership?: boolean;
   sharedViaGrant?: boolean;
+  /**
+   * Verbos que a governança liberou mediante aprovação.
+   *
+   * `canDownload`/`canShare` vêm falsos nesses casos — quem só olha o booleano nega, que é o lado
+   * certo. A tela usa este campo para oferecer o pedido em vez de desabilitar a ação.
+   */
+  requiresApproval?: {
+    download: boolean;
+    share: boolean;
+  };
 };
 
 export type DocumentSharePermissions = {

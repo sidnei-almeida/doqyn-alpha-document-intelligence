@@ -1,19 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
-import {
-  withTenantFieldsFromContext,
-} from '../tenancy/tenantQuery.js';
-import type {
-  MongoDocument,
-  MongoDocumentVersion,
-  MongoProcessingJob,
-} from '../db/types.js';
+import { withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
+import type { MongoDocument, MongoDocumentVersion, MongoProcessingJob } from '../db/types.js';
 import type { AuthUser } from '../auth/types.js';
 import { buildDocumentAuditContext } from '../audit/buildDocumentAuditContext.js';
 import { buildFilenameUpdatedAuditEvent } from '../audit/buildFilenameUpdatedAuditEvent.js';
 import { buildAuditChangeSet } from '../audit/documentAuditHelpers.js';
 import { createDocumentAuditLogs } from '../audit/documentAuditLogService.js';
 import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
+import { notifyDocumentUpdated } from './notifications/documentNotifications.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
 import {
   buildDocumentMutationFields,
@@ -27,10 +22,7 @@ import {
 } from './preview/documentPreviewScheduling.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
-import {
-  resolveStorageFileNames,
-  type NamingMode,
-} from '../utils/resolveStorageFileNames.js';
+import { resolveStorageFileNames, type NamingMode } from '../utils/resolveStorageFileNames.js';
 import { z } from 'zod';
 import {
   confirmAnalysisSchema,
@@ -53,12 +45,12 @@ import {
   normalizeVersionLabel,
   parseMajorVersionNumber,
 } from '../utils/versionLabelUtils.js';
-import {
-  diagnoseClassAndRuleLookup,
-  getMongoClassAndRule,
-} from './documentRulesService.js';
+import { diagnoseClassAndRuleLookup, getMongoClassAndRule } from './documentRulesService.js';
 import { canConfirmDocuments } from '../auth/permissions.js';
-import { loadDocumentAccessContext, resolveDocumentPermissions } from '../tenancy/documentAccess.js';
+import {
+  loadDocumentAccessContext,
+  resolveDocumentPermissions,
+} from '../tenancy/documentAccess.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
@@ -102,13 +94,21 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   });
 
   const classId = requireConfirmClassification({
-    classId: data.classification.classId,
+    /**
+     * Versão nova herda a classe do documento que já existe.
+     *
+     * A categoria é do documento, não da análise: subir uma versão nova não reclassifica nada. E
+     * é isto que impede o beco sem saída quando o OCR não lê o arquivo — a análise devolve
+     * `requires_review` sem classe, o caminho de upload resolve com a categoria que quem envia
+     * escolhe na gaveta, e aqui não há gaveta para escolher. Havia a classe do documento o tempo
+     * todo, a um `??` de distância.
+     */
+    classId: data.classification.classId ?? existingDoc.classId ?? null,
     requiresReview: data.classification.requiresReview,
     extractionRequiresReview: data.extraction.requiresReview,
     manualReviewConfirmed: data.manualReviewConfirmed,
   });
-  const needsReview =
-    data.classification.requiresReview || data.extraction.requiresReview;
+  const needsReview = data.classification.requiresReview || data.extraction.requiresReview;
 
   const namingModeResolved = (data.namingMode ?? 'ai_suggested') as NamingMode;
   const aiSuggestedFileName = data.aiSuggestedFileName ?? data.recommendedFileName ?? '';
@@ -374,10 +374,9 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
 
   try {
     await documentVersions.insertOne(version);
-    await documents.updateOne(
-      { _id: documentId } as Record<string, unknown>,
-      { $set: documentUpdate },
-    );
+    await documents.updateOne({ _id: documentId } as Record<string, unknown>, {
+      $set: documentUpdate,
+    });
     await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer) {
@@ -544,6 +543,19 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   }
 
   await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
+
+  // Versão nova avisa de novo: a chave é o id da versão, não o do documento.
+  await notifyDocumentUpdated({
+    tenantId: input.ctx.tenantId,
+    documentId,
+    documentName: documentNameSnapshot,
+    categoryId: classId,
+    categoryName: docClass.name,
+    ownerUserId: existingDoc.ownerUserId,
+    actorUserId: input.user.id,
+    actorName: input.user.name,
+    eventKey: versionId,
+  });
 
   return {
     documentId,

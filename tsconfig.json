@@ -5,5 +5,12 @@
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.server.json" },
     { "path": "./tsconfig.scripts.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
+    }
+  }
 }

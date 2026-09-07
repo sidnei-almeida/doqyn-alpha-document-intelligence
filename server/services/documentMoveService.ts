@@ -1,10 +1,7 @@
 import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentCategory } from '../db/types.js';
-import {
-  assertCanAccessDocument,
-  tenantScopeFilterFromContext,
-} from '../tenancy/tenantQuery.js';
+import { assertCanAccessDocument, tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import {
   assertCanUpdateDocument,
   loadDocumentAccessContext,
@@ -54,7 +51,11 @@ export type BatchMoveDocumentsResult = {
 async function loadActiveDocumentOrThrow(
   documentId: string,
   ctx: DocumentRequestContext,
-): Promise<{ doc: MongoDocument; memberGroupIds: string[]; governanceIndex: GovernanceAccessIndex }> {
+): Promise<{
+  doc: MongoDocument;
+  memberGroupIds: string[];
+  governanceIndex: GovernanceAccessIndex;
+}> {
   const { documents, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,
     membershipId: ctx.membershipId,
@@ -91,11 +92,7 @@ async function resolveTargetCategory(
   });
 
   if (!category.active) {
-    throw new ServiceError(
-      'A categoria de destino está inativa.',
-      'CATEGORY_INACTIVE',
-      400,
-    );
+    throw new ServiceError('A categoria de destino está inativa.', 'CATEGORY_INACTIVE', 400);
   }
 
   return category;
@@ -130,21 +127,13 @@ export async function moveDocumentToCategory(
   const { doc, memberGroupIds, governanceIndex } = await loadActiveDocumentOrThrow(documentId, ctx);
 
   if (doc.deletedAt) {
-    throw new ServiceError(
-      'Documentos na lixeira não podem ser movidos.',
-      'DOCUMENT_TRASHED',
-      409,
-    );
+    throw new ServiceError('Documentos na lixeira não podem ser movidos.', 'DOCUMENT_TRASHED', 409);
   }
 
   const permissions = resolveDocumentPermissions(user, doc, memberGroupIds, governanceIndex);
   assertCanUpdateDocument(permissions);
 
-  const targetCategory = await resolveTargetCategory(
-    ctx.tenantId,
-    normalizedTargetId,
-    ctx.userId,
-  );
+  const targetCategory = await resolveTargetCategory(ctx.tenantId, normalizedTargetId, ctx.userId);
 
   if (doc.classId === targetCategory._id) {
     return {
@@ -168,8 +157,7 @@ export async function moveDocumentToCategory(
     now,
   });
   const docRecord = doc as Record<string, unknown>;
-  const aiSuggestedClassId =
-    (docRecord.aiSuggestedClassId as string | undefined) ?? doc.classId;
+  const aiSuggestedClassId = (docRecord.aiSuggestedClassId as string | undefined) ?? doc.classId;
 
   const { documents, documentVersions, storage } = await getTenantCollections(ctx.tenantId, {
     userId: ctx.userId,

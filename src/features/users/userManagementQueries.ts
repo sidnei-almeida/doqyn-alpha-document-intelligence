@@ -38,9 +38,7 @@ export async function invalidateUserManagementQueries(
       ];
 
   await Promise.all(
-    scopedKeys.map((queryKey) =>
-      queryClient.invalidateQueries({ queryKey, refetchType: 'all' }),
-    ),
+    scopedKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'all' })),
   );
 
   if (tenantId) {

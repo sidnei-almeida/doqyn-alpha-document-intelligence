@@ -7,6 +7,7 @@ import {
 } from 'react';
 import {
   applyTheme,
+  nextTheme,
   resolveInitialTheme,
   THEME_STORAGE_KEY,
   type Theme,
@@ -29,8 +30,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(next);
   }, []);
 
+  /* São três temas agora, então "alternar" virou "próximo da lista": padrão →
+     claro → escuro → padrão. O atalho continua sendo o caminho de quem já sabe
+     o que quer; quem não sabe escolhe pelo menu, que nomeia os três. */
   const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(nextTheme(theme));
   }, [setTheme, theme]);
 
   useEffect(() => {

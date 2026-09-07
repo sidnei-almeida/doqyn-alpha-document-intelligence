@@ -1,3 +1,5 @@
+import { GROUP_PALETTE } from '@shared/groupPalette';
+import type { GovernancePermissionValue } from '@shared/governancePermissions';
 import type {
   DocumentExtractionRule,
   ExpiryAlertConfig,
@@ -130,19 +132,26 @@ export async function getDocumentGroups(): Promise<ApiGroup[]> {
   return data.groups ?? [];
 }
 
-export async function createDocumentGroup(
-  payload: { name: string; description?: string; color?: string },
-): Promise<ApiGroup> {
+export async function createDocumentGroup(payload: {
+  name: string;
+  description?: string;
+  color?: string;
+}): Promise<ApiGroup> {
+  // A cor ia junto no tipo e ficava para trás no corpo: grupo nascia sempre azul.
   const data = await request<{ group: ApiGroup }>('/document-groups', {
     method: 'POST',
-    body: JSON.stringify({ name: payload.name, description: payload.description }),
+    body: JSON.stringify({
+      name: payload.name,
+      description: payload.description,
+      color: payload.color,
+    }),
   });
-  return { ...unwrap<ApiGroup>(data as Record<string, unknown>, ['group']), color: payload.color ?? 'blue' };
+  return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
 export async function updateDocumentGroup(
   id: string,
-  payload: { name?: string; description?: string | null; active?: boolean },
+  payload: { name?: string; description?: string | null; active?: boolean; color?: string },
 ): Promise<ApiGroup> {
   const data = await request<{ group: ApiGroup }>(`/document-groups/${id}`, {
     method: 'PATCH',
@@ -151,7 +160,9 @@ export async function updateDocumentGroup(
   return unwrap<ApiGroup>(data as Record<string, unknown>, ['group']);
 }
 
-export async function deactivateDocumentGroup(id: string): Promise<{ id: string; active: boolean }> {
+export async function deactivateDocumentGroup(
+  id: string,
+): Promise<{ id: string; active: boolean }> {
   const group = await updateDocumentGroup(id, { active: false });
   return { id: group.id, active: group.active };
 }
@@ -194,9 +205,12 @@ export async function removeMemberFromDocumentGroup(
   groupId: string,
   membershipId: string,
 ): Promise<void> {
-  await request(`/document-groups/${groupId}/members?membershipId=${encodeURIComponent(membershipId)}`, {
-    method: 'DELETE',
-  });
+  await request(
+    `/document-groups/${groupId}/members?membershipId=${encodeURIComponent(membershipId)}`,
+    {
+      method: 'DELETE',
+    },
+  );
 }
 
 // --- Members ---
@@ -309,8 +323,26 @@ export async function updateDocumentClass(
   const category = unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['category']);
   return {
     ...category,
-    permissions: category.permissions ?? { view: [], download: [], update: [], audit: [], share: [] },
+    permissions: category.permissions ?? {
+      view: [],
+      download: [],
+      update: [],
+      audit: [],
+      share: [],
+    },
   };
+}
+
+/**
+ * Apaga a categoria. Os documentos dela vão para Sem categoria, e as regras morrem junto.
+ *
+ * Devolve quantos documentos mudaram de lugar — é o número que a tela precisa dizer depois, porque
+ * o efeito da exclusão não está na pasta que sumiu, e sim nos documentos que se mexeram.
+ */
+export async function deleteDocumentClass(
+  id: string,
+): Promise<{ id: string; name: string; movedDocuments: number; targetCategoryId: string }> {
+  return request(`/document-categories/${id}`, { method: 'DELETE' });
 }
 
 export async function toggleDocumentClass(id: string): Promise<ApiDocumentClass> {
@@ -339,13 +371,10 @@ export async function updateDocumentClassNotifications(
   id: string,
   payload: { notifyOnUpdate: boolean; notifyGroups: string[] },
 ): Promise<ApiDocumentClass> {
-  const data = await request<{ class: ApiDocumentClass }>(
-    `/document-classes/${id}/notifications`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    },
-  );
+  const data = await request<{ class: ApiDocumentClass }>(`/document-classes/${id}/notifications`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
   return unwrap<ApiDocumentClass>(data as Record<string, unknown>, ['class']);
 }
 
@@ -398,12 +427,21 @@ export async function toggleDocumentRule(id: string): Promise<ApiDocumentRule> {
   return updateDocumentRule(id, { active: false });
 }
 
+/**
+ * Permissões de uma célula da Matriz.
+ *
+ * `boolean | 'require'`: `true`/`false` são o formato antigo e continuam válidos, `'require'` é o
+ * terceiro estado — pode, mediante aprovação do administrador. Ler por `toPermissionState`, nunca
+ * pelo valor cru: um `if (permissions.share)` trataria `'require'` como liberado.
+ *
+ * `upload` e `manage` são os nomes persistidos dos verbos `update` e `audit`.
+ */
 export type DocumentAccessPermissions = {
-  view: boolean;
-  download: boolean;
-  upload: boolean;
-  share: boolean;
-  manage: boolean;
+  view: GovernancePermissionValue;
+  download: GovernancePermissionValue;
+  upload: GovernancePermissionValue;
+  share: GovernancePermissionValue;
+  manage: GovernancePermissionValue;
 };
 
 export type DocumentAccessMatrix = {
@@ -480,15 +518,9 @@ export async function updateDocumentAccessMatrixCell(input: {
 
 export type { ApiGroup, ApiMember, ApiDocumentClass, ApiDocumentRule };
 
-export const ALLOWED_FIELD_TYPES: FieldType[] = [
-  'string',
-  'date',
-  'number',
-  'currency',
-  'boolean',
-];
+export const ALLOWED_FIELD_TYPES: FieldType[] = ['string', 'date', 'number', 'currency', 'boolean'];
 
-export const ALLOWED_GROUP_COLORS: GroupColor[] = ['blue', 'green', 'amber', 'red', 'purple'];
+export const ALLOWED_GROUP_COLORS: GroupColor[] = GROUP_PALETTE.map((entry) => entry.key);
 
 export function toExtractionRule(rule: ApiDocumentRule): DocumentExtractionRule {
   return {

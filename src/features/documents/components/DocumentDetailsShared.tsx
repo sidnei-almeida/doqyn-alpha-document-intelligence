@@ -35,11 +35,27 @@ export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandard
   const fields = buildStandardDetailsFields({ metadata, searchMeta });
   if (fields.length === 0) return null;
 
+  /**
+   * O resumo sai da lista e vira bloco.
+   *
+   * As outras linhas são label à esquerda e valor curto à direita; um parágrafo de três linhas
+   * alinhado à direita fica ilegível. Ele também vem primeiro: é o que responde "que documento é
+   * este" antes de qualquer campo.
+   */
+  const summary = fields.find((field) => field.key === 'resumo');
+  const rest = fields.filter((field) => field.key !== 'resumo');
+
   return (
     <div>
       <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">Ficha</p>
+      {summary ? (
+        <div className="border-t border-doqyn-border-subtle py-2">
+          <p className="text-[11px] text-doqyn-muted">{summary.label}</p>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-doqyn-text">{summary.value}</p>
+        </div>
+      ) : null}
       <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
-        {fields.map((field) => (
+        {rest.map((field) => (
           <DocumentDetailField key={field.key} label={field.label} hint={field.hint}>
             {field.value}
           </DocumentDetailField>
@@ -47,6 +63,25 @@ export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandard
       </dl>
     </div>
   );
+}
+
+/**
+ * Dias até vencer, contados em dia cheio de UTC.
+ *
+ * O mesmo número que a tarja da ficha mostra. Aparece aqui como dica porque uma data solta
+ * ("09/06/2033") não responde a pergunta que se faz olhando o painel — falta muito? já passou?
+ */
+function validityHint(validityDate: string): string | undefined {
+  const target = new Date(validityDate);
+  if (Number.isNaN(target.getTime())) return undefined;
+
+  const startOfDay = (date: Date) =>
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const days = Math.round((startOfDay(target) - startOfDay(new Date())) / 86_400_000);
+
+  if (days < 0) return `Vencido há ${Math.abs(days)} dia(s).`;
+  if (days === 0) return 'Vence hoje.';
+  return `Vence em ${days} dia(s).`;
 }
 
 type DocumentSystemDetailsProps = {
@@ -64,13 +99,17 @@ type DocumentSystemDetailsProps = {
   >;
   previewStatus?: string | null;
   showPreviewStatus?: boolean;
+  /** Vencimento projetado do documento — some quando o documento não tem validade. */
+  searchMeta?: DocumentSearchMeta | null;
 };
 
 export function DocumentSystemDetails({
   document,
   previewStatus,
   showPreviewStatus = false,
+  searchMeta,
 }: DocumentSystemDetailsProps) {
+  const validityDate = searchMeta?.validityDate ?? null;
   return (
     <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
       <DocumentDetailField label="Categoria">
@@ -87,6 +126,11 @@ export function DocumentSystemDetails({
       ) : null}
       <DocumentDetailField label="Criado">{formatDate(document.createdAt)}</DocumentDetailField>
       <DocumentDetailField label="Atualizado">{formatDate(document.updatedAt)}</DocumentDetailField>
+      {validityDate ? (
+        <DocumentDetailField label="Vencimento" hint={validityHint(validityDate)}>
+          {formatDate(validityDate)}
+        </DocumentDetailField>
+      ) : null}
       {showPreviewStatus ? (
         <DocumentDetailField label="Preview">
           {getPreviewStatusLabel(previewStatus ?? document.preview?.status)}
@@ -150,6 +194,7 @@ export function DocumentDetailsSections({
         document={document}
         previewStatus={previewStatus}
         showPreviewStatus={showPreviewStatus}
+        searchMeta={searchMeta}
       />
 
       {versionSlot}

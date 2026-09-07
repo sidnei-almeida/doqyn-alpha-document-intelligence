@@ -73,7 +73,7 @@ export function generateDocumentNameFromExtracted(
   originalFileName: string,
 ): string {
   const extension = originalFileName.includes('.')
-    ? originalFileName.split('.').pop() ?? 'pdf'
+    ? (originalFileName.split('.').pop() ?? 'pdf')
     : 'pdf';
 
   return generateDocumentName({

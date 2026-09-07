@@ -9,6 +9,8 @@ export type CompanySignupInput = {
   taxId: string;
   firstName: string;
   lastName: string;
+  /** Apelido escolhido no cadastro. Vazio, o servidor deriva um do e-mail. */
+  username?: string;
   whatsapp: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
@@ -22,9 +24,17 @@ export type CompanySignupResponse = {
   ok: boolean;
   message?: string;
   code?: string;
+  /**
+   * A conta foi criada, mas o acesso só abre depois do código do e-mail — e por isso não veio
+   * cookie de sessão nesta resposta. Ver `signupOrchestrator.ts` no auth-service.
+   */
+  emailVerificationRequired?: boolean;
+  verificationTicket?: string;
 };
 
-export async function submitCompanySignup(input: CompanySignupInput): Promise<CompanySignupResponse> {
+export async function submitCompanySignup(
+  input: CompanySignupInput,
+): Promise<CompanySignupResponse> {
   const response = await fetch(`${getAuthBasePath()}/company-signups`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

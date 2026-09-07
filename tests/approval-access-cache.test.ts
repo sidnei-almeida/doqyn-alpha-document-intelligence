@@ -22,14 +22,15 @@ describe('aprovação de acesso — persistência e cache', () => {
     assert.equal(source.includes("from '@/features/rules/api/rulesApi'"), false);
   });
 
-  it('ApproveApprovalDialog usa apenas grupos documentais na UI', () => {
-    const source = readSrc('src/features/audit/components/ApproveApprovalDialog.tsx');
+  it('quem escolhe grupo escolhe o do Mongo, e a tela diz de onde ele vem', () => {
+    // `ApproveApprovalDialog` saiu com o pedido de acesso. A escolha de grupo sobreviveu no
+    // convite, e é a mesma seção de formulário — é a ligação com Regras que este teste guarda.
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
-    assert.equal(source.includes('accessGroups'), false);
-    assert.ok(source.includes('documentGroups'));
+    const convite = readSrc('src/features/users/components/InviteMemberDialog.tsx');
     assert.ok(sections.includes('title="Grupos"'));
-    assert.ok(sections.includes('Mesmos grupos criados em Regras'));
-    assert.ok(source.includes('documentGroupIds'));
+    assert.ok(sections.includes('Os mesmos grupos de Regras'));
+    assert.ok(convite.includes('documentGroupIds'));
+    assert.equal(convite.includes('accessGroupIds'), false);
   });
 
   it('usersApi.approve envia accessGroupIds e documentGroupIds separados', () => {
@@ -48,7 +49,9 @@ describe('aprovação de acesso — persistência e cache', () => {
 
   it('usersApi.list usa fonte única /company-members (governança)', () => {
     const source = readSrc('src/features/users/api/usersApi.ts');
-    assert.ok(source.includes("request<{ members: GovernanceMemberApi[] }>(`/company-members${query}`)"));
+    assert.ok(
+      source.includes('request<{ members: GovernanceMemberApi[] }>(`/company-members${query}`)'),
+    );
     assert.equal(source.includes('mergeDocumentGroupIds'), false);
     assert.equal(/doqynUsersApi\.list\(/.test(source), false);
   });
@@ -70,7 +73,11 @@ describe('aprovação de acesso — persistência e cache', () => {
 
   it('login limpa cache antes de carregar nova sessão', () => {
     const source = readSrc('src/auth/AuthProvider.tsx');
-    assert.ok(source.includes('queryClient.clear()'));
+    // A limpeza foi extraída para `clearSessionScopedCaches`, que além do React Query também
+    // derruba miniaturas e previews — trocar de usuário deixava a folha do documento anterior
+    // na tela do próximo.
+    assert.ok(source.includes('clearSessionScopedCaches()'));
+    assert.ok(readSrc('src/auth/clearSessionScopedCaches.ts').includes('queryClient.clear()'));
   });
 
   it('splitUserAccessPayload mantém accessGroupIds e documentGroupIds separados', () => {

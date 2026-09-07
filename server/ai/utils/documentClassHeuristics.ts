@@ -56,6 +56,19 @@ export function isConfidentialityClassRule(
   return CONFIDENTIALITY_HINT_PATTERNS.some((pattern) => pattern.test(haystack));
 }
 
+/**
+ * Classe financeira reconhecida pelos campos, não pelo nome da pasta.
+ *
+ * O tenant chama de "Fiscal", "Contas a pagar" ou "Documentos Financeiros" conforme quem criou.
+ * O que identifica o caso é `numero_nota` ao lado de `fornecedor` — os dois campos onde a metade
+ * das falhas medidas mora, porque ambos têm um valor plausível e errado esperando no documento:
+ * o banco emissor do boleto, o pagador do recibo, o número do talão.
+ */
+export function hasFinancialRoleFields(docClass: DocumentClassRule): boolean {
+  const keys = new Set(docClass.fields.map((field) => field.key));
+  return keys.has('numero_nota') && keys.has('fornecedor');
+}
+
 export function extraRetrievalTermsForClass(docClass: DocumentClassRule): string[] {
   if (!isConfidentialityClassRule(docClass)) return [];
   return CONFIDENTIALITY_RETRIEVAL_TERMS;

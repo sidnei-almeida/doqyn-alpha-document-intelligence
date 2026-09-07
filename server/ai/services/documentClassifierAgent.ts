@@ -1,4 +1,8 @@
-import type { ClassificationResult, DocumentClassRule, RetrievedChunk } from '../types/documentAi.types.js';
+import type {
+  ClassificationResult,
+  DocumentClassRule,
+  RetrievedChunk,
+} from '../types/documentAi.types.js';
 import { AI_ERROR_MESSAGES } from '../constants.js';
 import {
   diagnoseClassifierError,
@@ -12,7 +16,11 @@ import {
 import { safeParseJsonFromModel } from '../utils/jsonParsing.js';
 import { validateClassificationResult } from '../utils/validation.js';
 import { logger } from '../../utils/logger.js';
-import { completeJsonPrompt, getGroqClassifierModel, type GroqPromptContext } from './groqClient.js';
+import {
+  completeJsonPrompt,
+  getGroqClassifierModel,
+  type GroqPromptContext,
+} from './groqClient.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
 
@@ -93,7 +101,10 @@ export async function classifyDocumentWithRules(input: {
   );
   const selectedChunksCount = compactChunks.length;
   const totalContextChars = compactChunks.reduce((sum, chunk) => sum + chunk.text.length, 0);
-  const classifierPromptCharsBefore = estimateLegacyClassifierPromptChars(input.chunks, input.classes);
+  const classifierPromptCharsBefore = estimateLegacyClassifierPromptChars(
+    input.chunks,
+    input.classes,
+  );
   const classifierPromptCharsAfter = prompt.length;
   const classesSentCount = compactClasses.length;
 
@@ -149,14 +160,18 @@ export async function classifyDocumentWithRules(input: {
 
     const parsed = safeParseJsonFromModel<Record<string, unknown>>(raw);
     if (!parsed) {
-      logClassifierFailure(context, {
-        code: 'CLASSIFIER_INVALID_JSON',
-        internalMessage: 'Classifier returned invalid JSON',
-      }, {
-        parseFailed: true,
-        validationFailed: false,
-        groqDurationMs: Date.now() - groqStartedAt,
-      });
+      logClassifierFailure(
+        context,
+        {
+          code: 'CLASSIFIER_INVALID_JSON',
+          internalMessage: 'Classifier returned invalid JSON',
+        },
+        {
+          parseFailed: true,
+          validationFailed: false,
+          groqDurationMs: Date.now() - groqStartedAt,
+        },
+      );
       return reviewResult(AI_ERROR_MESSAGES.classificationFailed);
     }
 

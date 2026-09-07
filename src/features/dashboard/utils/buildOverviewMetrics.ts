@@ -9,6 +9,11 @@ export type OverviewMetric = {
   tone?: 'default' | 'attention' | 'danger';
 };
 
+/** "1 downloads" aparecia no painel — o subtexto conta, então concorda. */
+function plural(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
 export function buildOverviewMetrics(
   data: DashboardOverviewResponse,
   period: DashboardPeriodKey,
@@ -44,14 +49,16 @@ export function buildOverviewMetrics(
       key: 'processed',
       label: 'Processados',
       value: summary.documentsProcessed,
-      subtext: `${summary.previewReady} previews prontos`,
+      subtext: `${plural(summary.previewReady, 'preview')} ${summary.previewReady === 1 ? 'pronto' : 'prontos'}`,
       path: '/biblioteca?status=processed',
     },
     {
       key: 'errors',
       label: 'Erros',
       value: summary.documentsWithErrors,
-      subtext: 'preview ou análise',
+      // "preview ou análise" descrevia a origem do erro, não o que o número
+      // conta — e o número conta documentos, não incidentes.
+      subtext: summary.documentsWithErrors === 1 ? 'documento afetado' : 'documentos afetados',
       path: '/audit',
       tone: summary.documentsWithErrors > 0 ? 'danger' : 'default',
     },
@@ -59,7 +66,7 @@ export function buildOverviewMetrics(
       key: 'events',
       label: 'Eventos',
       value: summary.trackingEventsInPeriod,
-      subtext: `${summary.viewsInPeriod} previews · ${summary.downloadsInPeriod} downloads`,
+      subtext: `${plural(summary.viewsInPeriod, 'preview')} · ${plural(summary.downloadsInPeriod, 'download')}`,
       path: '/tracking',
     },
   ];

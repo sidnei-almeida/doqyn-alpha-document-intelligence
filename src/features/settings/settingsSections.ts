@@ -1,150 +1,118 @@
-export type SettingsSectionId = 'perfil' | 'upload-ia' | 'seguranca' | 'empresa';
+/**
+ * Configurações agrupadas por quem decide, não por assunto.
+ *
+ * - Minha conta: o que a própria pessoa muda, sem depender de papel.
+ * - Organização (PJ) / Meu acervo (PF): o que vale para o tenant inteiro — quem não administra
+ *   lê e não altera.
+ */
+import { isIndividualTenant, tenantVocabulary } from '@/lib/tenantVocabulary';
+export type SettingsSectionId = 'conta' | 'organizacao';
 
-export type CompanySettingsTab = 'governanca' | 'retencao' | 'sistema';
-export type SettingsTabId = CompanySettingsTab;
-
-export type LegacySettingsSectionId =
-  | 'preferencias'
-  | 'autenticacao'
-  | 'organizacao'
-  | 'lixeira'
-  | 'sistema';
+/** Quem é dono da decisão daquela seção. */
+export type SettingsSectionScope = 'personal' | 'organization';
 
 export type SettingsNavItem = {
   id: SettingsSectionId;
   label: string;
   description: string;
   icon: string;
+  scope: SettingsSectionScope;
 };
 
-export type SettingsSubTabItem<T extends string = SettingsTabId> = {
-  id: T;
-  label: string;
-};
+/**
+ * O rótulo da segunda seção depende do tipo de tenant: em PF não há organização alguma, e
+ * chamar de "Organização" o lugar onde a pessoa configura o próprio acervo prometia uma
+ * estrutura que não existe. O resto — ícone, ordem, descrição — não muda.
+ */
+export function settingsNavItems(tenantType?: string | null): SettingsNavItem[] {
+  const vocabulary = tenantVocabulary(tenantType);
 
-export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
-  {
-    id: 'perfil',
-    label: 'Perfil',
-    description: 'Identidade, preferências e acesso',
-    icon: 'person',
-  },
-  {
-    id: 'upload-ia',
-    label: 'Upload e IA',
-    description: 'Revisão, nomeação e lote',
-    icon: 'neurology',
-  },
-  {
-    id: 'seguranca',
-    label: 'Segurança',
-    description: 'Auditoria e conformidade',
-    icon: 'shield',
-  },
-  {
-    id: 'empresa',
-    label: 'Empresa',
-    description: 'Governança, retenção e sistema',
-    icon: 'business',
-  },
-];
+  return [
+    {
+      id: 'conta',
+      label: 'Minha conta',
+      description: 'Identidade, aparência e acesso',
+      icon: 'person',
+      scope: 'personal',
+    },
+    {
+      id: 'organizacao',
+      label: vocabulary.scopeSectionLabel,
+      description: 'Envio, retenção e governança',
+      icon: isIndividualTenant(tenantType) ? 'inventory_2' : 'business',
+      scope: 'organization',
+    },
+  ];
+}
 
-export const COMPANY_SETTINGS_TABS: SettingsSubTabItem<CompanySettingsTab>[] = [
-  { id: 'governanca', label: 'Governança' },
-  { id: 'retencao', label: 'Retenção' },
-  { id: 'sistema', label: 'Sistema' },
-];
+/** Forma PJ, preservada para quem só precisa dos ids/ordem sem contexto de sessão. */
+export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = settingsNavItems('business');
 
-export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'perfil';
+export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'conta';
 
-/** URLs legadas → seção canônica (Perfil não usa mais tab). */
-export const LEGACY_SECTION_REDIRECTS: Record<
-  LegacySettingsSectionId,
-  { section: SettingsSectionId; tab?: SettingsTabId | null }
-> = {
-  preferencias: { section: 'perfil' },
-  autenticacao: { section: 'perfil' },
-  organizacao: { section: 'empresa', tab: 'governanca' },
-  lixeira: { section: 'empresa', tab: 'retencao' },
-  sistema: { section: 'empresa', tab: 'sistema' },
+/**
+ * URLs antigas (quatro seções, sub-abas de Empresa) continuam abrindo em algum lugar certo.
+ * O parâmetro `?tab=` deixou de existir: cada seção é uma tela só.
+ */
+const LEGACY_SECTION_ALIASES: Record<string, SettingsSectionId> = {
+  perfil: 'conta',
+  preferencias: 'conta',
+  autenticacao: 'conta',
+  'upload-ia': 'organizacao',
+  empresa: 'organizacao',
+  organizacao: 'organizacao',
+  lixeira: 'organizacao',
+  seguranca: 'conta',
+  sistema: 'conta',
 };
 
 const VALID_SECTIONS = new Set<string>(SETTINGS_NAV_ITEMS.map((item) => item.id));
-const COMPANY_TABS = new Set<string>(COMPANY_SETTINGS_TABS.map((item) => item.id));
-
-/** Tabs legadas de Perfil — só para limpar ?tab= da URL. */
-const LEGACY_ACCOUNT_TAB_PARAMS = new Set(['identidade', 'preferencias', 'acesso']);
-
-export function isLegacySettingsSection(value: string): value is LegacySettingsSectionId {
-  return value in LEGACY_SECTION_REDIRECTS;
-}
-
-export function isCompanySettingsTab(value: string): value is CompanySettingsTab {
-  return COMPANY_TABS.has(value);
-}
-
-export function getDefaultTabForSection(section: SettingsSectionId): SettingsTabId | null {
-  if (section === 'empresa') return 'governanca';
-  return null;
-}
-
-export function parseSettingsSection(value: string | null): SettingsSectionId {
-  if (!value) {
-    return DEFAULT_SETTINGS_SECTION;
-  }
-  if (isLegacySettingsSection(value)) {
-    return LEGACY_SECTION_REDIRECTS[value].section;
-  }
-  if (VALID_SECTIONS.has(value)) {
-    return value as SettingsSectionId;
-  }
-  return DEFAULT_SETTINGS_SECTION;
-}
-
-export function parseSettingsTab(
-  section: SettingsSectionId,
-  sectionParam: string | null,
-  tabParam: string | null,
-): SettingsTabId | null {
-  if (sectionParam && isLegacySettingsSection(sectionParam)) {
-    return LEGACY_SECTION_REDIRECTS[sectionParam].tab ?? null;
-  }
-
-  const defaultTab = getDefaultTabForSection(section);
-  if (!defaultTab) {
-    return null;
-  }
-
-  if (tabParam && section === 'empresa' && isCompanySettingsTab(tabParam)) {
-    return tabParam;
-  }
-
-  return defaultTab;
-}
-
-export function isLegacyAccountTabParam(value: string | null): boolean {
-  return Boolean(value && LEGACY_ACCOUNT_TAB_PARAMS.has(value));
-}
 
 export function isSettingsSection(value: string): value is SettingsSectionId {
   return VALID_SECTIONS.has(value);
 }
 
-export function settingsSectionMeta(section: SettingsSectionId): SettingsNavItem {
-  return SETTINGS_NAV_ITEMS.find((item) => item.id === section) ?? SETTINGS_NAV_ITEMS[0]!;
+export function parseSettingsSection(value: string | null): SettingsSectionId {
+  if (!value) return DEFAULT_SETTINGS_SECTION;
+  if (isSettingsSection(value)) return value;
+  return LEGACY_SECTION_ALIASES[value] ?? DEFAULT_SETTINGS_SECTION;
 }
 
-export function buildSettingsSearchParams(section: SettingsSectionId, tab?: SettingsTabId | null) {
-  const params = new URLSearchParams();
-  const defaultTab = getDefaultTabForSection(section);
+export function settingsSectionMeta(
+  section: SettingsSectionId,
+  tenantType?: string | null,
+): SettingsNavItem {
+  const items = settingsNavItems(tenantType);
+  return items.find((item) => item.id === section) ?? items[0]!;
+}
 
+export type SettingsAccess = {
+  /** `individual` = pessoa física: não há hierarquia a aplicar, o dono vê tudo. */
+  tenantType: string | null | undefined;
+  isCompanyAdmin: boolean;
+};
+
+/** Em tenant PF o dono decide sozinho; em PJ, o que é da organização exige administrador. */
+export function governsOrganization({ tenantType, isCompanyAdmin }: SettingsAccess): boolean {
+  return tenantType === 'individual' || isCompanyAdmin;
+}
+
+/**
+ * As duas seções aparecem para todo mundo. A segunda é onde a pessoa descobre por que a IA
+ * renomeou o arquivo dela; só quem administra vê os blocos que configuram o tenant.
+ */
+export function canViewSettingsSection(): boolean {
+  return true;
+}
+
+export function visibleSettingsNavItems(tenantType?: string | null): SettingsNavItem[] {
+  return settingsNavItems(tenantType);
+}
+
+export function buildSettingsSearchParams(section: SettingsSectionId) {
+  const params = new URLSearchParams();
   if (section !== DEFAULT_SETTINGS_SECTION) {
     params.set('section', section);
   }
-
-  if (tab && tab !== defaultTab) {
-    params.set('tab', tab);
-  }
-
   return params;
 }

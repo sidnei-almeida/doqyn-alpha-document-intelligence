@@ -7,7 +7,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AssignedSignatureRequestItem } from '@/features/signature/api/signatureApi';
 import { useAssignedSignatureRequests } from '@/features/signature/hooks/useAssignedSignatureRequests';
 
-function formatDate(iso: string | null): string {
+function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit',
@@ -97,37 +97,35 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
   if (items.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-doqyn-border-subtle bg-doqyn-surface px-6 py-16 text-center"
+        className="flex min-h-[min(360px,45vh)] flex-col items-center justify-center px-6 py-16 text-center"
         data-testid="signatures-assigned-empty"
       >
-        <Icon name="draw" size={ICON_SIZE.md} className="text-doqyn-muted" />
-        <p className="text-sm font-medium text-doqyn-text">
-          Nenhum documento pendente de assinatura.
-        </p>
-        <p className="max-w-sm text-label font-normal text-doqyn-subtle">
-          Quando alguém solicitar sua assinatura em um documento, ele aparecerá aqui.
+        <Icon name="draw" size={ICON_SIZE.md} className="mb-4 text-doqyn-border-strong" />
+        <p className="text-label font-medium text-doqyn-text">Nada aguardando sua assinatura</p>
+        <p className="mt-1.5 max-w-[42ch] text-caption leading-relaxed text-doqyn-muted">
+          Quando alguém pedir sua assinatura, o documento aparece aqui.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2" data-testid="signatures-assigned-list">
+    <div className="border-t border-doqyn-border-subtle" data-testid="signatures-assigned-list">
       {items.map((item) => (
         <div
           key={item.signatureRequestId}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-doqyn-border-subtle bg-doqyn-surface px-4 py-3"
+          className="group relative flex flex-wrap items-center justify-between gap-3 border-b border-doqyn-border-subtle py-3.5 pl-4 pr-2 transition-colors before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/40 hover:before:bg-doqyn-accent-active"
           data-testid={`signature-assigned-item-${item.signatureRequestId}`}
         >
           <div className="min-w-0">
-            <p className="truncate text-body font-medium text-doqyn-text">{item.documentName}</p>
-            <p className="mt-0.5 text-caption text-doqyn-subtle">
+            <p className="truncate text-label font-medium text-doqyn-text">{item.documentName}</p>
+            <p className="mt-1 text-caption text-doqyn-muted">
               Solicitado por {item.requestedBy}
               {item.versionLabel ? ` · v${item.versionLabel}` : ''}
             </p>
-            <p className="text-micro text-doqyn-muted">
-              {formatDate(item.requestedAt)}
-              {item.expiresAt ? ` · expira ${formatDate(item.expiresAt)}` : ''}
+            <p className="mt-0.5 font-mono text-micro tabular-nums text-doqyn-subtle">
+              {formatDateTime(item.requestedAt)}
+              {item.expiresAt ? ` · expira ${formatDateTime(item.expiresAt)}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">

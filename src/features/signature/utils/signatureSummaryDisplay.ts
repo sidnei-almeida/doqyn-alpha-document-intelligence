@@ -1,4 +1,7 @@
-import type { DocumentSignatureSummary, DocumentSignatureSummaryStatus } from '@/types/document-library';
+import type {
+  DocumentSignatureSummary,
+  DocumentSignatureSummaryStatus,
+} from '@/types/document-library';
 
 const EMPTY_SIGNATURE_SUMMARY: DocumentSignatureSummary = {
   status: 'none',
@@ -23,18 +26,29 @@ export function normalizeSignatureSummary(
   };
 }
 
-export function documentHasPendingSignature(
-  doc: { signatureSummary?: DocumentSignatureSummary | null },
-): boolean {
+export function documentHasPendingSignature(doc: {
+  signatureSummary?: DocumentSignatureSummary | null;
+}): boolean {
   const normalized = normalizeSignatureSummary(doc.signatureSummary);
   return normalized?.status === 'pending';
 }
 
-export function signatureSummaryHasActivity(
-  summary?: DocumentSignatureSummary | null,
-): boolean {
+/**
+ * Solicitação cancelada não é estado do documento — é ausência dele.
+ *
+ * Quem revoga está dizendo que não quer mais aquela assinatura, e uma etiqueta "Cancelado"
+ * pendurada no card contradiz o próprio gesto. O servidor já pensa assim: ao revogar,
+ * `syncDocumentSignatureStatus` grava `signatureStatus: 'none'` no documento. Só o resumo
+ * calculado a partir das solicitações mantinha `cancelled` como estado próprio, e era ele que
+ * a lista lia — duas fontes de verdade discordando na mesma tela.
+ *
+ * O histórico continua inteiro na gaveta de assinaturas, que lista as solicitações uma a uma.
+ * O que sai é a etiqueta, não o registro.
+ */
+export function signatureSummaryHasActivity(summary?: DocumentSignatureSummary | null): boolean {
   const normalized = normalizeSignatureSummary(summary);
-  return Boolean(normalized && normalized.status !== 'none');
+  if (!normalized) return false;
+  return normalized.status !== 'none' && normalized.status !== 'cancelled';
 }
 
 export function signatureSummaryLabel(status: DocumentSignatureSummaryStatus): string | null {
@@ -73,9 +87,11 @@ export function signatureSummaryBadgeVariant(
   }
 }
 
-export function signatureSummaryBadgeLabel(summary?: DocumentSignatureSummary | null): string | null {
+export function signatureSummaryBadgeLabel(
+  summary?: DocumentSignatureSummary | null,
+): string | null {
   const normalized = normalizeSignatureSummary(summary);
-  if (!normalized || normalized.status === 'none') return null;
+  if (!normalized || !signatureSummaryHasActivity(normalized)) return null;
 
   const base = signatureSummaryLabel(normalized.status);
   if (!base) return null;
@@ -104,7 +120,8 @@ export function signatureSummaryTooltip(summary?: DocumentSignatureSummary | nul
 
 export function signatureDetailSummaryText(summary?: DocumentSignatureSummary | null): string {
   const normalized = normalizeSignatureSummary(summary);
-  if (!normalized || normalized.status === 'none') {
+  if (!normalized || !signatureSummaryHasActivity(normalized)) {
+    // Revogada conta como não solicitada, pela mesma razão da etiqueta.
     return 'Nenhuma assinatura solicitada.';
   }
 
@@ -133,10 +150,7 @@ export function signatureDetailSummaryText(summary?: DocumentSignatureSummary | 
   return label ?? 'Assinatura em andamento.';
 }
 
-export function signedPdfDownloadName(
-  documentName: string,
-  verificationCode?: string,
-): string {
+export function signedPdfDownloadName(documentName: string, verificationCode?: string): string {
   const base = documentName.replace(/\.pdf$/i, '') || 'documento';
   return verificationCode ? `${base}-assinado-${verificationCode}.pdf` : `${base}-assinado.pdf`;
 }

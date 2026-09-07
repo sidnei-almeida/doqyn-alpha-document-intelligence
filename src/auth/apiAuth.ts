@@ -1,4 +1,3 @@
-import { usesDoqynAuth } from './authConfig';
 import { shouldSetJsonContentType, withAuthHeaders } from './httpHeaders';
 
 export { shouldSetJsonContentType, withAuthHeaders };
@@ -29,5 +28,3 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
     headers: withAuthHeaders(init?.headers, { json: !isFormData, hasBody }),
   });
 }
-
-export { usesDoqynAuth };

@@ -6,6 +6,11 @@ import type {
   MongoVersionMetadataField,
 } from '../../db/types.js';
 import { isValidPartyName } from '../../ai/utils/partyNameValidation.js';
+import {
+  deriveValidityFrom,
+  isAnchorFieldName,
+  parseDurationParts,
+} from '../../ai/utils/derivedDates.js';
 
 /** Roles canônicos a partir de keys conhecidas do seed / extras comuns. */
 const PERSON_KEY_ROLES: Record<string, string> = {
@@ -85,12 +90,6 @@ const DATE_KEY_HINT = /(data_|_data$|venciment|validade|vigencia|assinatura|emis
 const EXCLUDE_FROM_PERSON =
   /(cnpj|cpf|\brg\b|valor|numero|n[uú]mero|telefone|email|endereco|\bcep\b|codigo|moeda|multa|prazo_vigencia|inscricao)/i;
 
-export type ValidityDuration = {
-  years: number;
-  months: number;
-  days: number;
-};
-
 function normalizeSearchText(value: string): string {
   return value
     .normalize('NFD')
@@ -159,62 +158,23 @@ export function parseMetadataDate(raw: string | number): Date | null {
   return parsed;
 }
 
-/**
- * Interpreta prazos relativos comuns em contratos BR.
- * Ex.: "5 anos", "válido por 24 meses", "pelo prazo de 90 dias".
- */
-export function parseValidityDuration(raw: string | number | null | undefined): ValidityDuration | null {
-  if (raw === null || raw === undefined || raw === '') return null;
-  const text = String(raw)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!text) return null;
-
-  // Se parece data absoluta, não tratar como duração.
-  if (parseMetadataDate(text)) return null;
-
-  let years = 0;
-  let months = 0;
-  let days = 0;
-
-  const yearMatch = text.match(/(\d{1,3})\s*(anos?|ano)\b/);
-  if (yearMatch) years = Number(yearMatch[1]);
-
-  const monthMatch = text.match(/(\d{1,4})\s*(meses?|mes)\b/);
-  if (monthMatch) months = Number(monthMatch[1]);
-
-  const dayMatch = text.match(/(\d{1,5})\s*(dias?|dia)\b/);
-  if (dayMatch) days = Number(dayMatch[1]);
-
-  // Fallback: "prazo de 5" / "valido por 5" sem unidade → anos (comum em NDA).
-  if (years === 0 && months === 0 && days === 0) {
-    const bare = text.match(
-      /(?:prazo|valido por|vigencia(?:\s+de)?)\s*(?:de\s*)?(\d{1,3})\b/,
-    );
-    if (bare) years = Number(bare[1]);
-  }
-
-  if (!Number.isFinite(years) || !Number.isFinite(months) || !Number.isFinite(days)) {
-    return null;
-  }
-  if (years <= 0 && months <= 0 && days <= 0) return null;
-  if (years > 100 || months > 600 || days > 3650) return null;
-
-  return { years, months, days };
+/** `Date` para `yyyy-mm-dd` em UTC — a fronteira entre este módulo e o cálculo puro. */
+function toIsoDay(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
-/** Soma duração em UTC (evita deslocamento de fuso em dd/mm). */
-export function addValidityDuration(anchor: Date, duration: ValidityDuration): Date {
-  const result = new Date(
-    Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), anchor.getUTCDate()),
-  );
-  if (duration.years) result.setUTCFullYear(result.getUTCFullYear() + duration.years);
-  if (duration.months) result.setUTCMonth(result.getUTCMonth() + duration.months);
-  if (duration.days) result.setUTCDate(result.getUTCDate() + duration.days);
-  return result;
+/**
+ * Prazo sem unidade — "prazo de 5", "válido por 5" — é lido como anos.
+ *
+ * Vive aqui, e não em `derivedDates`, de propósito: é chute, não leitura, e só se sustenta porque
+ * o campo já foi reconhecido como campo de prazo de vigência (`isDurationField`). Solto sobre
+ * qualquer texto ele produziria vencimento redondo e inventado.
+ */
+function spellOutBareYears(raw: string): string {
+  const text = normalizeSearchText(raw);
+  if (parseDurationParts(text).length > 0) return raw;
+  const bare = text.match(/(?:prazo|valido por|vigencia(?:\s+de)?)\s*(?:de\s*)?(\d{1,3})\b/);
+  return bare ? `${bare[1]} anos` : raw;
 }
 
 function isDurationField(key: string, label: string): boolean {
@@ -306,8 +266,10 @@ export function projectDocumentSearchMeta(
   const dates: MongoDocumentDateMeta[] = [];
   let documentTitle: string | null = null;
   let validityDate: Date | null = null;
-  const durationCandidates: Array<{ key: string; label: string; duration: ValidityDuration }> = [];
+  const durationCandidates: Array<{ key: string; label: string; raw: string }> = [];
   const anchorByKey = new Map<string, Date>();
+  /** Âncoras reconhecidas pelo vocabulário de `derivedDates`, na ordem em que aparecem. */
+  const hintAnchors: Array<{ key: string; date: Date }> = [];
 
   for (const [key, field] of Object.entries(metadata)) {
     const keyNorm = key.toLowerCase();
@@ -320,9 +282,9 @@ export function projectDocumentSearchMeta(
     }
 
     if (isDurationField(key, label)) {
-      const duration = parseValidityDuration(fieldRawValue(field));
-      if (duration) {
-        durationCandidates.push({ key, label, duration });
+      const raw = fieldRawValue(field);
+      if (raw !== null) {
+        durationCandidates.push({ key, label, raw: spellOutBareYears(String(raw)) });
       }
       continue;
     }
@@ -348,6 +310,18 @@ export function projectDocumentSearchMeta(
           }
           if (dateKind === 'assinatura' || dateKind === 'emissao' || dateKind === 'vigencia_inicio') {
             anchorByKey.set(keyNorm, parsed);
+          }
+          /**
+           * Uma data que não é o fim da validade pode ser o começo dela. `data_referencia` é o caso
+           * real: existia no documento, e a lista de âncoras daqui não a reconhecia.
+           */
+          if (
+            dateKind !== 'vencimento' &&
+            dateKind !== 'validade' &&
+            dateKind !== 'vigencia_fim' &&
+            isAnchorFieldName({ key: keyNorm, label })
+          ) {
+            hintAnchors.push({ key, date: parsed });
           }
           if (VALIDITY_SOURCE_KEYS.has(keyNorm) || dateKind === 'vencimento' || dateKind === 'validade') {
             if (!validityDate || dateKind === 'vencimento' || dateKind === 'vigencia_fim') {
@@ -385,36 +359,37 @@ export function projectDocumentSearchMeta(
   }
 
   if (!validityDate && durationCandidates.length > 0) {
-    let anchor: Date | null = null;
-    let anchorKey: string | null = null;
+    /**
+     * Âncoras em ordem de preferência: as conhecidas primeiro, depois as reconhecidas por kind, e
+     * por último as que só o vocabulário de `derivedDates` enxerga. A conta em si é dele — aqui só
+     * se traduz `Date` para ISO na fronteira, para o módulo puro continuar puro.
+     */
+    const anchorCandidates: Array<{ key: string; date: Date }> = [];
     for (const key of ANCHOR_DATE_PRIORITY) {
       const hit = anchorByKey.get(key) ?? dates.find((d) => d.sourceKey === key)?.date;
-      if (hit) {
-        anchor = hit;
-        anchorKey = key;
-        break;
+      if (hit) anchorCandidates.push({ key, date: hit });
+    }
+    for (const date of dates) {
+      if (date.kind === 'assinatura' || date.kind === 'emissao' || date.kind === 'vigencia_inicio') {
+        anchorCandidates.push({ key: date.sourceKey, date: date.date });
       }
     }
-    if (!anchor) {
-      const byKind = dates.find(
-        (d) =>
-          d.kind === 'assinatura' || d.kind === 'emissao' || d.kind === 'vigencia_inicio',
-      );
-      if (byKind) {
-        anchor = byKind.date;
-        anchorKey = byKind.sourceKey;
-      }
-    }
+    anchorCandidates.push(...hintAnchors);
 
-    if (anchor) {
-      const chosen = durationCandidates[0]!;
-      const inferred = addValidityDuration(anchor, chosen.duration);
+    const derived = deriveValidityFrom(
+      anchorCandidates.map((a) => ({ key: a.key, iso: toIsoDay(a.date) })),
+      durationCandidates.map((d) => ({ key: d.key, raw: d.raw })),
+    );
+
+    if (derived) {
+      const inferred = new Date(`${derived.iso}T00:00:00.000Z`);
+      const chosen = durationCandidates.find((d) => d.key === derived.durationKey);
       validityDate = inferred;
       dates.push({
         kind: 'validade',
         date: inferred,
-        sourceKey: chosen.key,
-        label: `${chosen.label} (inferido de ${anchorKey ?? 'âncora'})`,
+        sourceKey: derived.durationKey,
+        label: `${chosen?.label ?? derived.durationKey} (inferido de ${derived.anchorKey})`,
       });
     }
   }

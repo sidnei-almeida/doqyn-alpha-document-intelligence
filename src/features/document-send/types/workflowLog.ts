@@ -26,12 +26,7 @@ export type WorkflowLogEvent = {
   timestamp: string;
 };
 
-export type WorkflowLogFilter =
-  | 'all'
-  | 'errors'
-  | 'review'
-  | 'saved'
-  | 'current';
+export type WorkflowLogFilter = 'all' | 'errors' | 'review' | 'saved' | 'current';
 
 export type WorkflowLogInput = Omit<WorkflowLogEvent, 'id' | 'timestamp'> & {
   id?: string;

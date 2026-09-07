@@ -1,19 +1,41 @@
 import { useState, type RefObject } from 'react';
+import {
+  fromPermissionState,
+  isRequirablePermission,
+  toPermissionState,
+  type GovernancePermissionState,
+  type GovernancePermissionValue,
+} from '@shared/governancePermissions';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 
 type PermissionRow = {
-  key: 'view' | 'download' | 'upload';
+  key: 'view' | 'download' | 'upload' | 'share';
+  /** Verbo do domínio — `upload` é o nome persistido de `update`. */
+  verb: string;
   label: string;
   hint: string;
 };
 
 const PERMISSION_ROWS: PermissionRow[] = [
-  { key: 'view', label: 'Ver documentos', hint: 'aparecem na biblioteca e no viewer' },
-  { key: 'download', label: 'Baixar', hint: 'download do arquivo original' },
-  { key: 'upload', label: 'Enviar', hint: 'contribuir com novos documentos' },
+  {
+    key: 'view',
+    verb: 'view',
+    label: 'Ver documentos',
+    hint: 'aparecem na biblioteca e no viewer',
+  },
+  { key: 'download', verb: 'download', label: 'Baixar', hint: 'download do arquivo original' },
+  { key: 'upload', verb: 'update', label: 'Enviar', hint: 'contribuir com novos documentos' },
+  /**
+   * Compartilhar fica no cartão, não na régua.
+   *
+   * A régua da célula tem três marcas e é lida de relance, na grade inteira; uma quarta a
+   * transformaria em legenda. Aqui há espaço para o rótulo e para o meio-termo, que é justamente o
+   * caso que originou o pedido — Gestão compartilha direto, Comercial compartilha pedindo.
+   */
+  { key: 'share', verb: 'share', label: 'Compartilhar', hint: 'enviar o documento a outra pessoa' },
 ];
 
 type PermissionPopoverProps = {
@@ -47,13 +69,42 @@ export function PermissionPopover({
 }: PermissionPopoverProps) {
   const [saving, setSaving] = useState(false);
 
-  const toggle = async (key: PermissionRow['key'], value: boolean) => {
+  const apply = async (key: PermissionRow['key'], value: GovernancePermissionValue) => {
     setSaving(true);
     try {
       await onChange({ ...permissions, [key]: value });
     } finally {
       setSaving(false);
     }
+  };
+
+  /**
+   * O meio-termo só aparece quando há acesso e o verbo o aceita.
+   *
+   * Mostrar "pedindo aprovação" numa linha desmarcada obrigaria a explicar um estado que não
+   * existe — sem acesso, não há o que pedir. E ler não entra: exigir aprovação para ver criaria um
+   * pedido por documento consultado.
+   */
+  const renderStateSwitch = (row: PermissionRow) => {
+    const state = toPermissionState(permissions[row.key]);
+    if (state === 'deny' || !isRequirablePermission(row.verb)) return null;
+
+    const nextState: GovernancePermissionState = state === 'require' ? 'allow' : 'require';
+    return (
+      <button
+        type="button"
+        className="permission-popover__state"
+        data-state={state}
+        disabled={saving}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void apply(row.key, fromPermissionState(nextState));
+        }}
+      >
+        {state === 'require' ? 'pedindo aprovação' : 'liberado'}
+      </button>
+    );
   };
 
   const remove = async () => {
@@ -107,14 +158,15 @@ export function PermissionPopover({
           >
             <input
               type="checkbox"
-              checked={permissions[row.key]}
+              checked={toPermissionState(permissions[row.key]) !== 'deny'}
               disabled={saving}
-              onChange={(event) => void toggle(row.key, event.target.checked)}
+              onChange={(event) => void apply(row.key, event.target.checked)}
             />
             <span className="min-w-0 flex-1">
               <span className="type-body block text-doqyn-text">{row.label}</span>
               <span className="type-caption block text-doqyn-subtle">{row.hint}</span>
             </span>
+            {renderStateSwitch(row)}
           </label>
         ))}
       </div>
@@ -123,7 +175,7 @@ export function PermissionPopover({
         type="button"
         disabled={saving}
         onClick={() => void remove()}
-        className="hover:bg-doqyn-danger-bg/40 mt-1.5 flex w-full items-center gap-2 rounded-lg border-t border-doqyn-border-subtle px-2.5 py-2 text-left font-display text-label font-medium text-doqyn-danger disabled:opacity-60"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-lg border-t border-doqyn-border-subtle px-2.5 py-2 text-left font-display text-label font-medium text-doqyn-danger hover:bg-doqyn-danger-bg/40 disabled:opacity-60"
       >
         Remover acesso do grupo
       </button>

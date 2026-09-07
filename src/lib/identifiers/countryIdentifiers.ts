@@ -1,4 +1,10 @@
-import { AsYouType, getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min';
+import {
+  AsYouType,
+  getCountries,
+  getCountryCallingCode,
+  isValidPhoneNumber,
+  parsePhoneNumberFromString,
+} from 'libphonenumber-js/min';
 import type { CountryCode } from 'libphonenumber-js/min';
 import { formatCnpj, formatCpf, isCompleteTaxId, normalizeTaxId } from './taxId';
 
@@ -29,7 +35,10 @@ const GENERIC_TAX_ID_MAX_LENGTH = 20;
 
 /** Aceita letras porque vários documentos as usam (NIF/CIF espanhol, RUC, VAT europeu). */
 function normalizeGenericTaxId(value: string): string {
-  return value.replace(/[^0-9A-Za-z]/g, '').toUpperCase().slice(0, GENERIC_TAX_ID_MAX_LENGTH);
+  return value
+    .replace(/[^0-9A-Za-z]/g, '')
+    .toUpperCase()
+    .slice(0, GENERIC_TAX_ID_MAX_LENGTH);
 }
 
 export type TaxIdSpec = {
@@ -111,8 +120,21 @@ export function listCountries(locale = 'pt-BR'): CountryOption[] {
   return options;
 }
 
+/**
+ * Nome do país, e nunca uma exceção.
+ *
+ * `Intl.DisplayNames.of` lança `RangeError` com qualquer coisa que não seja um código de região
+ * válido — inclusive `undefined` e string vazia, que é o que chega quando o formulário ainda não
+ * teve o país escolhido. Deixar estourar derrubava a tela de revisão inteira por causa de um
+ * rótulo; devolver o código cru mostra algo útil e segue.
+ */
 export function getCountryName(country: CountryCode, locale = 'pt-BR'): string {
-  return new Intl.DisplayNames([locale], { type: 'region' }).of(country) ?? country;
+  if (!country) return '';
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(country) ?? country;
+  } catch {
+    return country;
+  }
 }
 
 export function phonePlaceholder(country: CountryCode): string {

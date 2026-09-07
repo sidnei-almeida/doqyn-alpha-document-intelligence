@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { DocumentListItem } from '@/types/document-library';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { VIEW_MODE_ICONS, VIEW_MODE_LABELS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
 
 export type ExplorerContextMenuState =
   | { kind: 'empty'; x: number; y: number; scope: 'root' | 'folder' }
@@ -41,11 +42,14 @@ type ExplorerContextMenuProps = {
   onReactivateFile?: (doc: DocumentListItem) => void;
   onShowContextInfo?: () => void;
   onShowFolderInfo?: (folder: LibraryFolder) => void;
-  onComingSoon: (label: string) => void;
+  onRenameFolder?: (folder: LibraryFolder) => void;
+  onDeleteFolder?: (folder: LibraryFolder) => void;
 };
 
+// Item de menu é linha de registro, não pílula: canto reto e régua de acento
+// à esquerda no hover — a mesma reação do menu do usuário e do `DropdownMenuItem`.
 const itemClass =
-  'explorer-interactive flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-doqyn-text hover:bg-doqyn-surface-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40';
+  'explorer-interactive relative flex w-full items-center gap-2 rounded-none px-3 py-1.5 text-left text-[12px] text-doqyn-text before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-transparent hover:bg-doqyn-hover/50 hover:before:bg-doqyn-accent-active disabled:cursor-not-allowed disabled:opacity-40';
 
 const fileItemClass = `${itemClass} whitespace-nowrap`;
 
@@ -114,9 +118,21 @@ export function ExplorerContextMenu({
   onReactivateFile,
   onShowContextInfo,
   onShowFolderInfo,
-  onComingSoon,
+  onRenameFolder,
+  onDeleteFolder,
 }: ExplorerContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Sem categoria não se renomeia nem se apaga.
+   *
+   * Ela é o destino de quem perde a pasta: apagá-la deixaria a exclusão da próxima categoria sem
+   * para onde mandar os documentos. O servidor recusa de qualquer jeito — aqui é só para a pessoa
+   * não descobrir isso depois de clicar.
+   */
+  const folder = state?.kind === 'folder' ? state.folder : null;
+  const isUncategorized =
+    folder?.slug === 'sem-categoria' || folder?.name === 'Sem categoria' || false;
 
   useEffect(() => {
     if (!state) return;
@@ -156,8 +172,8 @@ export function ExplorerContextMenu({
       aria-label="Menu de contexto"
       className={
         state.kind === 'file'
-          ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1 shadow-dropdown'
-          : 'menu-enter fixed z-[90] w-56 overflow-hidden rounded-xl border border-doqyn-border-subtle bg-doqyn-surface py-1.5 shadow-dropdown'
+          ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel py-1 shadow-dropdown'
+          : 'menu-enter fixed z-[90] w-56 overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel py-1.5 shadow-dropdown'
       }
       style={position}
       data-testid="explorer-context-menu"
@@ -166,9 +182,14 @@ export function ExplorerContextMenu({
         <>
           <MenuItem label="Enviar documento" icon="upload" onClick={() => run(onUpload)} />
           {state.scope === 'root' && (
-            <Link to="/rules" role="menuitem" className={itemClass} onClick={onClose}>
-              <Icon name="add" size={ICON_SIZE.sm} className="text-doqyn-muted" />
-              Nova categoria (Regras)
+            <Link
+              to="/rules?nova=categoria"
+              role="menuitem"
+              className={itemClass}
+              onClick={onClose}
+            >
+              <Icon name="create_new_folder" size={ICON_SIZE.sm} className="text-doqyn-muted" />
+              Nova categoria
             </Link>
           )}
           {state.scope === 'folder' && (
@@ -179,27 +200,23 @@ export function ExplorerContextMenu({
           )}
           <MenuItem label="Atualizar" icon="refresh" onClick={() => run(onRefresh)} />
           <MenuItem
-            label={
-              state.scope === 'folder'
-                ? 'Ver informações da pasta atual'
-                : 'Ver informações'
-            }
+            label={state.scope === 'folder' ? 'Ver informações da pasta atual' : 'Ver informações'}
             icon="info"
             onClick={() => run(() => onShowContextInfo?.())}
           />
           <div className="my-1 border-t border-doqyn-border-subtle" />
-          <MenuItem
-            label="Visualização em grade"
-            icon="grid_view"
-            onClick={() => run(() => onViewModeChange('grid'))}
-            disabled={viewMode === 'grid'}
-          />
-          <MenuItem
-            label="Visualização em lista"
-            icon="view_list"
-            onClick={() => run(() => onViewModeChange('list'))}
-            disabled={viewMode === 'list'}
-          />
+          {/* O botão do cabeçalho alterna sem nomear; aqui as duas vistas aparecem
+              escritas, e é por isto que este caminho continua existindo. Rótulos e
+              glifos vêm do mesmo lugar que ele lê, para não divergirem. */}
+          {VIEW_MODE_ORDER.map((mode) => (
+            <MenuItem
+              key={mode}
+              label={VIEW_MODE_LABELS[mode]}
+              icon={VIEW_MODE_ICONS[mode]}
+              onClick={() => run(() => onViewModeChange(mode))}
+              disabled={viewMode === mode}
+            />
+          ))}
         </>
       )}
 
@@ -224,9 +241,21 @@ export function ExplorerContextMenu({
             <Icon name="balance" size={ICON_SIZE.sm} className="text-doqyn-muted" />
             Ver regras
           </Link>
-          <MenuItem label="Renomear categoria" icon="edit" disabled onClick={() => undefined} />
-          <MenuItem label="Arquivar categoria" icon="delete" disabled onClick={() => undefined} />
-          <p className="px-3 py-1.5 text-[10px] text-doqyn-subtle">Renomear e arquivar: em breve</p>
+          {/* Sem categoria não se renomeia nem se apaga: é o destino de quem perde a pasta, e
+              sem ela a exclusão da próxima não teria para onde mandar os documentos. */}
+          <MenuItem
+            label="Renomear categoria"
+            icon="edit"
+            disabled={isUncategorized || !onRenameFolder}
+            onClick={() => run(() => onRenameFolder?.(state.folder))}
+          />
+          <MenuItem
+            label="Excluir categoria"
+            icon="delete"
+            danger
+            disabled={isUncategorized || !onDeleteFolder}
+            onClick={() => run(() => onDeleteFolder?.(state.folder))}
+          />
         </>
       )}
 
@@ -234,21 +263,46 @@ export function ExplorerContextMenu({
         <>
           {(() => {
             const doc = state.document;
-            const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
-            const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
+            const canPreview =
+              doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
+            /**
+             * Meio-termo é ação oferecida, não ação bloqueada.
+             *
+             * `canDownload`/`canShare` significam "pode agora" e vêm falsos quando a governança
+             * exige aprovação. Desabilitar aí deixaria o portão do servidor sem campainha: a
+             * pessoa tem caminho e não teria como pedir. O clique segue igual — quem responde 409
+             * e abre o pedido é o servidor.
+             */
+            const downloadNeedsApproval = Boolean(doc.permissions?.requiresApproval?.download);
+            const canDownload = Boolean(
+              (doc.permissions?.canDownload || downloadNeedsApproval) && doc.latestVersionId,
+            );
             const canTracking = Boolean(doc.permissions?.canViewTracking);
             const canUpdate = Boolean(doc.permissions?.canUpdate);
             const archiveView = isTrashView || isDeactivatedView;
             const canMove = Boolean(canUpdate && onMoveFile && !archiveView);
+            const shareNeedsApproval = Boolean(doc.permissions?.requiresApproval?.share);
             const canShare = Boolean(
-              doc.permissions?.canShare && onShareFile && !archiveView && !doc.permissions?.sharedViaGrant,
+              doc.permissions?.canShare &&
+              onShareFile &&
+              !archiveView &&
+              !doc.permissions?.sharedViaGrant,
             );
-            const hasSignatureActivity = doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
+            // Compartilhar aceita o meio-termo; solicitar assinatura não tem portão e continua
+            // preso ao `canShare` estrito — oferecer lá seria prometer um pedido que não existe.
+            const canOpenShare = Boolean(
+              (doc.permissions?.canShare || shareNeedsApproval) &&
+              onShareFile &&
+              !archiveView &&
+              !doc.permissions?.sharedViaGrant,
+            );
+            const hasSignatureActivity =
+              doc.signatureSummary?.status && doc.signatureSummary.status !== 'none';
             const canDownloadSignedPdf = Boolean(
               doc.signatureSummary?.hasSignedPdf &&
-                doc.signatureSummary.latestRequestId &&
-                onDownloadSignedPdfFile &&
-                !archiveView,
+              doc.signatureSummary.latestRequestId &&
+              onDownloadSignedPdfFile &&
+              !archiveView,
             );
             const isFavorite = doc.isFavorite === true;
             return (
@@ -265,6 +319,11 @@ export function ExplorerContextMenu({
                   label="Baixar"
                   icon="download"
                   disabled={!canDownload}
+                  title={
+                    downloadNeedsApproval
+                      ? 'Baixar este documento depende de aprovação do administrador.'
+                      : undefined
+                  }
                   onClick={() => run(() => onDownloadFile?.(doc))}
                 />
                 <MenuItem
@@ -298,13 +357,15 @@ export function ExplorerContextMenu({
                   compact
                   label="Compartilhar"
                   icon="share"
-                  disabled={!canShare}
+                  disabled={!canOpenShare}
                   title={
                     doc.permissions?.sharedViaGrant
                       ? 'Você não pode compartilhar um documento recebido por compartilhamento.'
-                      : !doc.permissions?.canShare
-                        ? 'Você não tem permissão para compartilhar este documento.'
-                        : undefined
+                      : shareNeedsApproval
+                        ? 'Compartilhar este documento depende de aprovação do administrador.'
+                        : !doc.permissions?.canShare
+                          ? 'Você não tem permissão para compartilhar este documento.'
+                          : undefined
                   }
                   onClick={() => run(() => onShareFile?.(doc))}
                 />
@@ -358,13 +419,6 @@ export function ExplorerContextMenu({
                       : 'Conferir e corrigir os campos deste documento'
                   }
                   onClick={() => run(() => onEditMetadataFile?.(doc))}
-                />
-                <MenuItem
-                  compact
-                  label="Renomear"
-                  icon="edit"
-                  disabled
-                  onClick={() => run(() => onComingSoon('Renomear'))}
                 />
                 {isTrashView ? (
                   <>

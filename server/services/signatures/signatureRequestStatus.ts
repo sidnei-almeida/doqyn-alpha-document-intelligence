@@ -1,8 +1,6 @@
 import type { MongoDocumentSignatureRequest } from '../../db/types.js';
 
-export type EffectiveSignatureRequestStatus =
-  | MongoDocumentSignatureRequest['status']
-  | 'expired';
+export type EffectiveSignatureRequestStatus = MongoDocumentSignatureRequest['status'] | 'expired';
 
 export function isSignatureRequestExpired(
   request: Pick<MongoDocumentSignatureRequest, 'expiresAt'>,

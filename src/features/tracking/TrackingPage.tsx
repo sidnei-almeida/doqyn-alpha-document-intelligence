@@ -1,9 +1,8 @@
-import { Icon } from '@/components/ui/Icon';
-import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useMemo } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
-import { TrackingEventDetailsDrawer } from './components/TrackingEventDetailsDrawer';
+import { InlineErrorHint } from '@/components/ui/InlineErrorHint';
+import { TrackingEventLogDetail } from './components/TrackingEventLogDetail';
 import { TrackingEventsTable } from './components/TrackingEventsTable';
 import { TrackingFilters } from './components/TrackingFilters';
 import { TrackingSummaryStrip } from './components/TrackingSummaryStrip';
@@ -28,16 +27,16 @@ const EMPTY_FILTERS: DocumentTrackingFilters = {
 function hasActiveTrackingFilters(filters: DocumentTrackingFilters): boolean {
   return Boolean(
     filters.q ||
-      filters.documentId ||
-      (filters.category && filters.category !== 'all') ||
-      filters.severity ||
-      filters.status ||
-      filters.actionGroup ||
-      filters.requestId ||
-      filters.from ||
-      filters.to ||
-      filters.action ||
-      filters.actorUserId,
+    filters.documentId ||
+    (filters.category && filters.category !== 'all') ||
+    filters.severity ||
+    filters.status ||
+    filters.actionGroup ||
+    filters.requestId ||
+    filters.from ||
+    filters.to ||
+    filters.action ||
+    filters.actorUserId,
   );
 }
 
@@ -53,7 +52,7 @@ export function TrackingPage() {
     loadMore,
     selectedEvent,
     detailLoading,
-    openEvent,
+    toggleEvent,
     closeEvent,
     selectedEventId,
   } = useDocumentTracking();
@@ -69,12 +68,9 @@ export function TrackingPage() {
     <PageShell
       eyebrow="Rastreabilidade"
       title="Tracking documental"
-      description="Investigue quem acessou, visualizou, baixou ou alterou documentos — com rastreabilidade completa e dados sanitizados."
+      description="Investigue quem acessou, visualizou, baixou ou alterou documentos, com rastreabilidade completa e dados sanitizados."
       actions={
-        <div className="flex items-center gap-2 text-doqyn-muted">
-          <Icon name="monitoring" size={ICON_SIZE.xs} />
-          <span className="text-xs">{listSummary}</span>
-        </div>
+        <span className="font-mono text-micro tabular-nums text-doqyn-subtle">{listSummary}</span>
       }
       bodyClassName="min-h-0"
     >
@@ -88,23 +84,40 @@ export function TrackingPage() {
         summary={listSummary}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex min-h-0 flex-col gap-4">
         {isLoading ? (
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-doqyn-border bg-doqyn-surface px-6 py-16 text-sm text-doqyn-muted">
-            Carregando eventos...
-          </div>
+          <p className="border-t border-doqyn-border px-3 py-10 text-center text-caption text-doqyn-muted">
+            Carregando eventos…
+          </p>
         ) : isError ? (
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-doqyn-border bg-doqyn-surface px-6 py-16 text-sm text-doqyn-danger">
-            Não foi possível carregar o tracking documental.
-          </div>
+          <InlineErrorHint message="Não foi possível carregar o tracking documental." />
         ) : (
           <TrackingEventsTable
             items={items}
-            onSelect={openEvent}
-            stretch
+            expandedId={selectedEventId}
+            onToggle={toggleEvent}
+            renderExpanded={() => (
+              <TrackingEventLogDetail
+                event={selectedEvent}
+                loading={detailLoading}
+                onFilterByUser={(userId) => {
+                  setFilters({ ...filters, actorUserId: userId });
+                  closeEvent();
+                }}
+                onFilterByRequestId={(requestId) => {
+                  setFilters({ ...filters, requestId });
+                  closeEvent();
+                }}
+              />
+            )}
             sparseAction={
               showClear ? (
-                <Button type="button" variant="secondary" size="sm" onClick={() => setFilters(EMPTY_FILTERS)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                >
                   Limpar filtros
                 </Button>
               ) : undefined
@@ -121,21 +134,6 @@ export function TrackingPage() {
           />
         )}
       </div>
-
-      <TrackingEventDetailsDrawer
-        open={Boolean(selectedEventId)}
-        event={selectedEvent}
-        loading={detailLoading}
-        onClose={closeEvent}
-        onFilterByUser={(userId) => {
-          setFilters({ ...filters, actorUserId: userId });
-          closeEvent();
-        }}
-        onFilterByRequestId={(requestId) => {
-          setFilters({ ...filters, requestId });
-          closeEvent();
-        }}
-      />
     </PageShell>
   );
 }

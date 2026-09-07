@@ -59,6 +59,18 @@ export function showApiErrorToast(
   fallbackMessage = 'Não foi possível concluir a ação agora. Tente novamente.',
 ): void {
   if (isApiError(error)) {
+    /**
+     * Pedir aprovação não é falhar.
+     *
+     * O servidor abre o pedido e devolve 409 — a ação não aconteceu, mas está a caminho de
+     * alguém. Mostrar isso em vermelho, ao lado de "não foi possível", ensinaria que a
+     * configuração do administrador é um defeito.
+     */
+    if (error.code === 'DOCUMENT_APPROVAL_REQUIRED') {
+      showAppToast({ type: 'info', title: error.friendlyMessage });
+      return;
+    }
+
     showAppToast({
       type: 'error',
       title: error.friendlyMessage,

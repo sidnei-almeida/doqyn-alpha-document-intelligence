@@ -13,14 +13,9 @@ export function redirectToOAuth(provider: OAuthProvider, returnUrl?: string): vo
   window.location.assign(getOAuthStartUrl(provider, returnUrl));
 }
 
-export function isOAuthEnabled(): boolean {
-  return import.meta.env.VITE_AUTH_PROVIDER === 'doqyn_auth';
-}
-
 /**
  * Provedores realmente habilitados no auth-service.
  *
- * `isOAuthEnabled()` só diz que o app usa `doqyn_auth`; não diz quais provedores estão configurados.
  * Sem consultar isto, a tela desenhava os dois botões e quem clicasse num provedor sem credencial
  * recebia um JSON de 404 `OAUTH_PROVIDER_DISABLED`. Botão que existe tem de funcionar.
  *
@@ -28,8 +23,6 @@ export function isOAuthEnabled(): boolean {
  * o login por e-mail e senha continua disponível de qualquer forma.
  */
 export async function fetchEnabledOAuthProviders(): Promise<OAuthProvider[]> {
-  if (!isOAuthEnabled()) return [];
-
   try {
     const response = await fetch('/oauth/providers', { credentials: 'omit' });
     if (!response.ok) return [];

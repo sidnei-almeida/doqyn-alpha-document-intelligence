@@ -3,7 +3,6 @@ import {
   createDocumentCategory,
   listDocumentCategories,
 } from '../../server/services/documentCategoriesService.js';
-import { createDefaultExtractionRuleForCategory } from '../../server/services/documentExtractionRulesService.js';
 import { apiCreated, withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { logger } from '../../server/utils/logger.js';
 
@@ -43,9 +42,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           color: body.color as string | undefined,
           slug: body.slug as string | undefined,
         });
-        await createDefaultExtractionRuleForCategory(companyId, user.id, category.id, category.slug);
         logger.info('document class created (compat)', { requestId, companyId, id: category.id });
-        return apiCreated({ class: { ...category, permissions: { view: [], download: [], update: [], audit: [], share: [] } } });
+        return apiCreated({
+          class: {
+            ...category,
+            permissions: { view: [], download: [], update: [], audit: [], share: [] },
+          },
+        });
       },
     });
   }

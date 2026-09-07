@@ -30,7 +30,6 @@ export type ProfileMeResponse = {
   displayName: string;
   firstName?: string;
   lastName?: string;
-  authProvider?: string;
   avatar: ProfileAvatarPublic;
   tenant: {
     tenantId: string;
@@ -85,7 +84,6 @@ export function buildProfileMeResponse(user: AuthUser, sessionUser?: {
     displayName: user.name,
     firstName: user.firstName,
     lastName: user.lastName,
-    authProvider: user.authProvider,
     avatar: mapAvatarPublic({
       userId: user.id,
       version,

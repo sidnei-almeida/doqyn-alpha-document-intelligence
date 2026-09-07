@@ -9,7 +9,9 @@ import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetada
 function readDocumentIds(req: VercelRequest): string[] {
   const body = req.body as { documentIds?: unknown } | undefined;
   if (!Array.isArray(body?.documentIds)) return [];
-  return body.documentIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+  return body.documentIds.filter(
+    (id): id is string => typeof id === 'string' && id.trim().length > 0,
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

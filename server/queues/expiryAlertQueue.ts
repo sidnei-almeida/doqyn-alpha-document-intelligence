@@ -2,6 +2,7 @@ import { Queue, Worker, type Job } from 'bullmq';
 import { getRedisUrl, isRedisEnabled } from '../redis/redisConfig.js';
 import { listActiveTenants } from '../services/tenantsService.js';
 import { evaluateTenantExpiryAlerts } from '../services/expiry/documentExpiryAlertService.js';
+import { expireOverdueDocumentRequests } from '../services/requests/documentRequestService.js';
 import { logger } from '../utils/logger.js';
 
 const QUEUE_NAME = 'document-expiry-alerts';
@@ -137,7 +138,25 @@ export async function runExpiryAlertJob(payload: ExpiryAlertJobPayload): Promise
     }
   }
 
-  logger.info('daily expiry sweep completed', { tenants: tenants.length, alertsCreated });
+  /**
+   * Pedido parado também vence, e aqui — não no laço acima.
+   *
+   * `document_requests` é coleção compartilhada com `tenantId` no próprio registro, então uma
+   * escrita fecha todos os vencidos de uma vez. Só na varredura completa: a reavaliação sob
+   * demanda de um tenant é sobre vencimento de documento, e não tem por que mexer em pedido.
+   */
+  const requestsExpired = await expireOverdueDocumentRequests().catch((error) => {
+    logger.error('falha ao vencer requisições de documento', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+    return 0;
+  });
+
+  logger.info('daily expiry sweep completed', {
+    tenants: tenants.length,
+    alertsCreated,
+    requestsExpired,
+  });
 }
 
 export function startExpiryAlertWorker(): void {

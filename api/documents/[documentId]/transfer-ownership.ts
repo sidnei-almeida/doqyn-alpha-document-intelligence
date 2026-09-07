@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAuditContext.js';
-import { createDocumentAuditLog } from '../../../server/audit/documentAuditLogService.js';
 import { transferDocumentOwnership } from '../../../server/services/documentTransferOwnershipService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../../server/tenancy/documentRequestContext.js';
@@ -60,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       documentOwnerUserId: result.newOwnerUserId,
     });
 
-    await createDocumentAuditLog(auditCtx, {
+    await emitTrackingEvent(auditCtx, {
       action: 'document.ownership_transferred',
       description: `Propriedade transferida para ${result.newOwnerName}.`,
       documentId,

@@ -48,7 +48,8 @@ export async function getSignaturePreviewManifest(token: string): Promise<Docume
   const { doc, version, storageScope } = await loadSignatureRequestDocumentContext(request);
   const mimeType = version.file?.mimeType?.trim() || 'application/pdf';
   const viewerType = resolveViewerTypeFromMime(mimeType);
-  const fileName = version.finalFileName ?? version.originalFileName ?? doc.currentFileName ?? 'documento';
+  const fileName =
+    version.finalFileName ?? version.originalFileName ?? doc.currentFileName ?? 'documento';
   const permissions = {
     canPreview: request.permissions.canView,
     canDownload: false,
@@ -74,7 +75,12 @@ export async function getSignaturePreviewManifest(token: string): Promise<Docume
   if (viewerType === 'image') {
     const preview = version.storage?.preview;
     const imageMeta = version.previewManifest?.image;
-    if (preview?.status !== 'ready' || !preview.objectKey || !imageMeta?.width || !imageMeta?.height) {
+    if (
+      preview?.status !== 'ready' ||
+      !preview.objectKey ||
+      !imageMeta?.width ||
+      !imageMeta?.height
+    ) {
       return {
         documentId: doc._id,
         versionId: version._id,
@@ -243,7 +249,8 @@ async function buildSignaturePreviewManifestForRequest(
   const { doc, version, storageScope } = await loadSignatureRequestDocumentContext(request);
   const mimeType = version.file?.mimeType?.trim() || 'application/pdf';
   const viewerType = resolveViewerTypeFromMime(mimeType);
-  const fileName = version.finalFileName ?? version.originalFileName ?? doc.currentFileName ?? 'documento';
+  const fileName =
+    version.finalFileName ?? version.originalFileName ?? doc.currentFileName ?? 'documento';
   const permissions = {
     canPreview: request.permissions.canView,
     canDownload: false,
@@ -269,7 +276,12 @@ async function buildSignaturePreviewManifestForRequest(
   if (viewerType === 'image') {
     const preview = version.storage?.preview;
     const imageMeta = version.previewManifest?.image;
-    if (preview?.status !== 'ready' || !preview.objectKey || !imageMeta?.width || !imageMeta?.height) {
+    if (
+      preview?.status !== 'ready' ||
+      !preview.objectKey ||
+      !imageMeta?.width ||
+      !imageMeta?.height
+    ) {
       return {
         documentId: doc._id,
         versionId: version._id,

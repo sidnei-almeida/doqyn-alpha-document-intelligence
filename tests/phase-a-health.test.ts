@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import {
-  resolveOverallStatus,
-  type DeepHealthReport,
-} from '../server/health/deepHealthCheck.js';
+import { resolveOverallStatus, type DeepHealthReport } from '../server/health/deepHealthCheck.js';
 
 function makeChecks(
   overrides: Partial<DeepHealthReport['checks']> = {},
@@ -62,11 +59,15 @@ describe('Fase A — deep health status', () => {
         'degraded',
       );
       assert.equal(
-        resolveOverallStatus(makeChecks({ aiProvider: { ok: false, name: 'groq', configured: false } })),
+        resolveOverallStatus(
+          makeChecks({ aiProvider: { ok: false, name: 'groq', configured: false } }),
+        ),
         'degraded',
       );
       assert.equal(
-        resolveOverallStatus(makeChecks({ r2: { ok: false, configured: false, message: 'missing' } })),
+        resolveOverallStatus(
+          makeChecks({ r2: { ok: false, configured: false, message: 'missing' } }),
+        ),
         'degraded',
       );
     } finally {

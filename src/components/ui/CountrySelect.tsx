@@ -6,6 +6,7 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { listCountries, type CountryCode } from '@/lib/identifiers';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
+import { EmptyHint } from '@/components/ui/EmptyHint';
 
 export interface CountrySelectProps {
   label?: string;
@@ -19,10 +20,7 @@ export interface CountrySelectProps {
 
 /** Ignora acento e caixa: "Espanha" tem de aparecer para quem digita "espanha". */
 function foldForSearch(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 /**
@@ -112,19 +110,25 @@ export function CountrySelect({
         className="max-w-[min(24rem,calc(100vw-1rem))] py-1"
         panelStyle={anchorWidth ? { minWidth: anchorWidth } : undefined}
       >
-        <div className="px-2 pb-1 pt-1">
+        {/* A busca é uma linha, como os campos, e divide a mesma margem
+            esquerda dos itens da lista. Antes ela era uma caixa dentro de um
+            wrapper com padding próprio, o que a deixava 6px mais para dentro
+            que a lista inteira. */}
+        <div className="border-b border-doqyn-border-subtle px-3.5 pb-2 pt-1">
           <input
             ref={searchRef}
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar país"
-            className="type-body h-8 w-full rounded-md border border-doqyn-border-subtle bg-doqyn-surface px-2.5 text-doqyn-text placeholder:text-doqyn-disabled focus-visible:border-doqyn-accent-active focus-visible:outline-none"
+            className="type-body h-8 w-full border-0 bg-transparent px-0 text-doqyn-text placeholder:text-doqyn-disabled focus-visible:outline-none"
           />
         </div>
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="type-body px-3 py-2 text-doqyn-muted">Nenhum país encontrado.</p>
+            <EmptyHint bare className="px-3.5 py-3">
+              Nenhum país encontrado.
+            </EmptyHint>
           ) : (
             filtered.map((country) => (
               <DropdownMenuItem

@@ -23,7 +23,7 @@ import {
   validateCpf,
 } from '../services/documentValidators.js';
 
-function parseEvidence(raw: unknown): EvidenceSnippet | undefined {
+export function parseEvidence(raw: unknown): EvidenceSnippet | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
 
   const data = raw as Record<string, unknown>;
@@ -94,6 +94,33 @@ export function validateClassificationResult(
     requiresReview = confidence < MIN_CLASSIFICATION_CONFIDENCE;
   }
 
+  /**
+   * Alternativa nomeada e não descartada derruba a confiança.
+   *
+   * O erro que sobrava na medição não era o classificador hesitar — era ele decidir errado com
+   * 0.97 de confiança e nunca ser questionado. `juridico_01` é um NDA e foi para Contratos;
+   * `juridico_04` é uma procuração e foi para Contratos. Nos dois casos a classe escolhida é
+   * defensável, porque a ampla sempre é, e nada no resultado registrava que havia uma segunda
+   * opção melhor.
+   *
+   * Agora o prompt exige nomear a segunda classe e dizer o que a descarta. Quando o modelo nomeia
+   * uma alternativa e não consegue articular a diferença, ele não separou as duas — e alta
+   * confiança sobre uma separação que não existe é justamente o que produz erro silencioso. A
+   * conferência é grosseira de propósito: ela não julga a qualidade do argumento, só exige que
+   * exista um. O trabalho é forçar a comparação, não pontuá-la.
+   */
+  const alternativeReason = parseAlternativeReason(data.alternativa);
+  if (
+    alternativeReason !== null &&
+    alternativeReason.length < 20 &&
+    confidence >= MIN_CLASSIFICATION_CONFIDENCE
+  ) {
+    confidence = Math.min(confidence, MIN_CLASSIFICATION_CONFIDENCE - 0.01);
+    requiresReview = true;
+  }
+
+  const documentType = parseDocumentType(data.tipoDocumental, className);
+
   return {
     classId: validClass ? classId : null,
     className: validClass ? className : null,
@@ -101,10 +128,34 @@ export function validateClassificationResult(
     requiresReview,
     reason,
     evidence,
+    documentType,
   };
 }
 
-function applyFieldNormalization(
+/**
+ * A justificativa de descarte da segunda classe. `null` quando não há alternativa nomeada — que é
+ * resposta legítima: documento sem segunda opção plausível não tem o que descartar.
+ */
+function parseAlternativeReason(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Record<string, unknown>;
+  const classId = typeof data.classId === 'string' ? data.classId.trim() : '';
+  if (!classId) return null;
+  return typeof data.porQueNao === 'string' ? data.porQueNao.trim() : '';
+}
+
+/** Mesmas guardas do `naming.tipo`: vazio, genérico ou igual ao nome da pasta é como não vir. */
+function parseDocumentType(raw: unknown, className: string | null): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > 40) return null;
+  const normalized = trimmed.toLowerCase();
+  if (EMPTY_TYPE_TOKENS.has(normalized)) return null;
+  if (className && normalized === className.trim().toLowerCase()) return null;
+  return trimmed;
+}
+
+export function applyFieldNormalization(
   field: DocumentRuleField,
   value: string | number | null,
   modelNormalized?: string | number | null,
@@ -141,7 +192,6 @@ function applyFieldNormalization(
   };
 }
 
-
 /** Palavras que não identificam nada — se o modelo devolver isso como tipo, é como não devolver. */
 const EMPTY_TYPE_TOKENS = new Set([
   'documento',
@@ -162,7 +212,7 @@ const EMPTY_TYPE_TOKENS = new Set([
  * vez de virar sujeira no nome — foi assim que marcadores de campo vazio acabaram batizando
  * arquivos como `sem_data_v1_0.pdf`.
  */
-function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles | undefined {
+export function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const data = raw as Record<string, unknown>;
 
@@ -191,9 +241,42 @@ function parseNamingRoles(raw: unknown, className: string): DocumentNamingRoles 
   return { tipo, sujeitos, dataReferencia };
 }
 
+/** Tamanho que ainda é resumo. Acima disso o modelo começou a recontar o documento inteiro. */
+const MAX_SUMMARY_CHARS = 400;
+
+/**
+ * Confiança do resumo. Não é 1: é texto do modelo, não trecho conferível do documento — e a ficha
+ * usa a confiança para decidir o que mostrar como certo.
+ */
+const SUMMARY_CONFIDENCE = 0.8;
+
+/**
+ * O parágrafo que diz o que o documento é.
+ *
+ * Corta no limite pela última fronteira de frase, e não no meio da palavra: resumo truncado em
+ * "…com sigilo de sete a" parece defeito de sistema. Sem fronteira utilizável, corta duro e marca
+ * com reticências.
+ */
+function parseSummary(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (text.length < 20) return null; // "Documento." não é resumo
+  if (text.length <= MAX_SUMMARY_CHARS) return text;
+
+  const cut = text.slice(0, MAX_SUMMARY_CHARS);
+  const lastStop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '));
+  return lastStop > MAX_SUMMARY_CHARS / 2 ? cut.slice(0, lastStop + 1) : `${cut.trimEnd()}…`;
+}
+
 export function validateMetadataResult(
   raw: unknown,
   selectedClass: DocumentClassRule,
+  /**
+   * Texto do documento. Só serve à derivação de data final, que precisa achar o prazo quando a
+   * classe do tenant não tem campo para guardá-lo — e ela não tem quase nunca.
+   */
+  documentText?: string,
 ): MetadataExtractionResult {
   const requiredFieldKeys = selectedClass.fields.filter((f) => f.required).map((f) => f.key);
 
@@ -285,7 +368,7 @@ export function validateMetadataResult(
   // Data final calculada a partir de âncora + prazo, em código e não pelo LLM: o modelo pequeno
   // não faz essa aritmética (16 de 16 vazias na medição), o grande faz — então pelo LLM o
   // resultado dependeria do modelo configurado. Ver server/ai/utils/derivedDates.ts.
-  for (const derived of deriveEndDates(selectedClass.fields, metadata)) {
+  for (const derived of deriveEndDates(selectedClass.fields, metadata, documentText)) {
     const fieldDef = selectedClass.fields.find((f) => f.key === derived.targetKey);
     if (!fieldDef) continue;
 
@@ -295,6 +378,7 @@ export function validateMetadataResult(
       normalizedValue: derived.value,
       confidence: DERIVED_FIELD_CONFIDENCE,
       source: 'derived',
+      derivedFrom: derived.durationKey === 'texto' ? 'texto' : 'campo',
       evidence: {
         snippet:
           `Calculado: ${derived.anchorValue} (${derived.anchorKey}) + ` +
@@ -304,6 +388,27 @@ export function validateMetadataResult(
 
     const stillMissing = missingFields.indexOf(derived.targetKey);
     if (stillMissing >= 0) missingFields.splice(stillMissing, 1);
+  }
+
+  /**
+   * O resumo entra como campo de metadado, e não como coluna à parte, porque `resumo` já é chave
+   * canônica do produto: tem rótulo em `CANONICAL_METADATA_LABELS`, lugar na ficha do painel
+   * Detalhes (`STANDARD_DETAILS_KEYS`) e linha no editor de metadados. Gravar em outro lugar
+   * significaria reconstruir os três.
+   *
+   * `source: 'document_text'` porque é leitura do documento, ainda que sem trecho literal a citar —
+   * um resumo não tem snippet, ele é a síntese de vários. A triagem não o questiona: ela percorre
+   * os campos da regra, e este não é um deles.
+   */
+  const summary = parseSummary(data.resumo ?? data.summary);
+  if (summary && !metadata.resumo) {
+    metadata.resumo = {
+      label: 'Resumo',
+      value: summary,
+      normalizedValue: summary,
+      confidence: SUMMARY_CONFIDENCE,
+      source: 'document_text',
+    };
   }
 
   const parsedMissing = Array.isArray(data.missingFields)
@@ -342,13 +447,13 @@ export function validateMetadataResult(
   }
 
   return {
-    documentType:
-      typeof data.documentType === 'string' ? data.documentType : selectedClass.name,
+    documentType: typeof data.documentType === 'string' ? data.documentType : selectedClass.name,
     version: typeof data.version === 'string' ? data.version : 'v1.0',
     metadata,
     missingFields: mergedMissing,
     requiresReview,
     reviewReasons: allReviewReasons,
     naming: parseNamingRoles(data.naming, selectedClass.name),
+    summary,
   };
 }

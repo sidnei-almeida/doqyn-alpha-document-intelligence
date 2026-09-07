@@ -1,4 +1,5 @@
 import type { PerItemNamingChoice } from '@/features/document-send/types/reviewWorkflowSettings';
+import type { UploadThumbnail } from '../services/uploadThumbnail';
 import type { AnalysisQueueStatus } from '../services/analyzePdf';
 import type { UploadQueueItem, UploadQueueItemAnalysis, UploadQueueItemStatus } from '../types';
 import {
@@ -12,7 +13,7 @@ export type UploadQueueAction =
   | { type: 'status'; id: string; status: UploadQueueItemStatus }
   | { type: 'queue_status'; id: string; queueStatus: AnalysisQueueStatus }
   | { type: 'analysis'; id: string; analysis: UploadQueueItemAnalysis }
-  | { type: 'done'; id: string; documentId: string }
+  | { type: 'done'; id: string; documentId: string; categoryName?: string }
   | { type: 'awaiting_approval'; id: string; approvalId: string }
   | { type: 'error'; id: string; message: string }
   | { type: 'ai_pause'; id: string; message: string }
@@ -20,7 +21,8 @@ export type UploadQueueAction =
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'clear-finished' }
-  | { type: 'naming'; id: string; choice: PerItemNamingChoice };
+  | { type: 'naming'; id: string; choice: PerItemNamingChoice }
+  | { type: 'thumbnail'; id: string; thumbnail: UploadThumbnail };
 
 export function uploadQueueReducer(
   items: UploadQueueItem[],
@@ -29,6 +31,10 @@ export function uploadQueueReducer(
   switch (action.type) {
     case 'enqueue':
       return [...items, ...action.items];
+    case 'thumbnail':
+      return items.map((item) =>
+        item.id === action.id ? { ...item, thumbnail: action.thumbnail } : item,
+      );
     case 'status':
       return items.map((item) =>
         item.id === action.id ? { ...item, status: action.status } : item,
@@ -47,7 +53,14 @@ export function uploadQueueReducer(
     case 'done':
       return items.map((item) =>
         item.id === action.id
-          ? { ...item, status: 'done' as const, documentId: action.documentId, errorMessage: undefined }
+          ? {
+              ...item,
+              status: 'done' as const,
+              documentId: action.documentId,
+              // A pasta vem do servidor: é a classe final, e não o palpite da análise.
+              savedCategoryName: action.categoryName,
+              errorMessage: undefined,
+            }
           : item,
       );
     case 'awaiting_approval':
@@ -89,18 +102,14 @@ export function uploadQueueReducer(
         // `still_running` também aceita reenvio manual: é decisão de quem está olhando a tela, e
         // aqui ele sabe que pode gerar duplicata. O caminho automático nunca reenvia sozinho.
         item.id === action.id &&
-        (item.status === 'error' ||
-          item.status === 'ai_paused' ||
-          item.status === 'still_running')
+        (item.status === 'error' || item.status === 'ai_paused' || item.status === 'still_running')
           ? { ...item, status: 'queued' as const, errorMessage: undefined, analysis: undefined }
           : item,
       );
     case 'remove':
       return items.filter((item) => item.id !== action.id);
     case 'clear-finished':
-      return items.filter(
-        (item) => item.status !== 'done' && item.status !== 'awaiting_approval',
-      );
+      return items.filter((item) => item.status !== 'done' && item.status !== 'awaiting_approval');
     case 'naming':
       return items.map((item) =>
         item.id === action.id ? { ...item, namingChoice: action.choice } : item,
@@ -137,10 +146,8 @@ export function countAwaitingApproval(items: UploadQueueItem[]): number {
 
 /** Itens concluídos no fluxo: salvos na Biblioteca ou enviados para aprovação. */
 export function countSubmittedItems(items: UploadQueueItem[]): number {
-  return items.filter(
-    (item) =>
-      isItemSavedInLibrary(item) || item.status === 'awaiting_approval',
-  ).length;
+  return items.filter((item) => isItemSavedInLibrary(item) || item.status === 'awaiting_approval')
+    .length;
 }
 
 export function countPendingItems(items: UploadQueueItem[]): number {

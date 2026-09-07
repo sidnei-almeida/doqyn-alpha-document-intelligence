@@ -43,16 +43,27 @@ export function useShareDocumentMutations(documentId: string | null) {
 
   const shareWithUser = useMutation({
     mutationFn: (input: {
-      sharedWithUserId: string;
+      sharedWithUserId?: string;
+      sharedWithEmail?: string;
+      sharedWithUsername?: string;
       canDownload?: boolean;
       message?: string;
+      expiresAt?: string;
     }) =>
       createDocumentShare(documentId!, {
         sharedWithUserId: input.sharedWithUserId,
+        sharedWithEmail: input.sharedWithEmail,
+        sharedWithUsername: input.sharedWithUsername,
         permissions: { canView: true, canDownload: input.canDownload === true },
         message: input.message,
+        expiresAt: input.expiresAt,
       }),
-    onSuccess: () => toast.success('Documento compartilhado.'),
+    onSuccess: (_result, input) =>
+      toast.success(
+        input.sharedWithEmail || input.sharedWithUsername
+          ? 'Enviado. A pessoa precisa aceitar antes de ver o documento.'
+          : 'Documento compartilhado.',
+      ),
     onError: (error) => showApiErrorToast(error, 'Não foi possível compartilhar o documento.'),
     onSettled: invalidate,
   });

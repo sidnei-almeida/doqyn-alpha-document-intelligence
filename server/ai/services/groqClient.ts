@@ -1,10 +1,12 @@
 import Groq from 'groq-sdk';
 import { AI_ERROR_MESSAGES } from '../constants.js';
+import { getGroqMaxOutputTokens, getGroqRequestTimeoutMs } from '../utils/aiConfig.js';
 import {
-  getGroqMaxOutputTokens,
-  getGroqModelFromEnv,
-  getGroqRequestTimeoutMs,
-} from '../utils/aiConfig.js';
+  getInferenceConfig,
+  getInferenceProviderName,
+  isInferenceConfigured,
+  resolveInferenceModel,
+} from '../providers/inferenceProvider.js';
 import {
   diagnoseClassifierError,
   sanitizeDiagnosticText,
@@ -30,7 +32,15 @@ import {
   summarizeError,
 } from '../utils/pipelineDebug.js';
 
-let groqClient: Groq | null = null;
+/**
+ * Cliente por fornecedor, não um só.
+ *
+ * O singleton único guardava o primeiro cliente construído. Trocar `INFERENCE_PROVIDER` — em teste,
+ * ou num processo que atenda mais de um caminho — continuaria falando com o endereço antigo, e o
+ * sintoma seria uma chave rejeitada num endpoint que ninguém escolheu. Chavear pelo destino custa
+ * um Map e elimina a classe inteira de erro.
+ */
+const clientsByTarget = new Map<string, Groq>();
 
 export type GroqPromptContext = {
   requestId?: string;
@@ -45,39 +55,144 @@ export type CompleteJsonPromptOptions = {
   model?: string;
 };
 
-function getGroqApiKey(): string {
-  const apiKey = process.env.GROQ_API_KEY?.trim();
-  if (!apiKey) {
+/**
+ * Gasto de uma chamada, na moeda que importa aqui.
+ *
+ * O teto de refino é medido em token, não em requisição nem em segundo: a conta Groq limita por
+ * tokens/minuto, e é essa janela que um laço de re-extração pode consumir inteira sozinho. Sem
+ * devolver o gasto a quem chamou, `completion.usage` só vivia no log — informação boa demais para
+ * ficar onde nenhum código consegue ler.
+ */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+export const EMPTY_TOKEN_USAGE: TokenUsage = {
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0,
+};
+
+export function addTokenUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
+  return {
+    promptTokens: a.promptTokens + b.promptTokens,
+    completionTokens: a.completionTokens + b.completionTokens,
+    totalTokens: a.totalTokens + b.totalTokens,
+  };
+}
+
+/**
+ * A Groq não reporta uso quando a requisição falha, então erro conta como zero. Isso subestima o
+ * gasto real de um documento que tomou 429 no meio — mas subestimar o consumido é o lado seguro:
+ * o limitador de vazão (`groqRateLimiter`) já cobra a estimativa antes da chamada, e é ele que
+ * protege a janela por minuto. O orçamento aqui protege outra coisa: quantas vezes o laço pode
+ * insistir no mesmo documento.
+ */
+function toTokenUsage(
+  usage:
+    | {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+      }
+    | undefined,
+): TokenUsage {
+  const promptTokens = usage?.prompt_tokens ?? 0;
+  const completionTokens = usage?.completion_tokens ?? 0;
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens: usage?.total_tokens ?? promptTokens + completionTokens,
+  };
+}
+
+type GroqCompletionAnswer = {
+  content: string;
+  durationMs: number;
+  finishReason?: string | null;
+  usage: TokenUsage;
+};
+
+export type JsonPromptResult = {
+  content: string;
+  /** Soma de todas as tentativas — repetição de JSON e retentativa de rate limit incluídas. */
+  usage: TokenUsage;
+  model: string;
+  durationMs: number;
+  /**
+   * A resposta bateu no teto de saída e foi cortada.
+   *
+   * O pior caso do pipeline é este e ele era silencioso: JSON válido **e** truncado ao mesmo tempo.
+   * O objeto fecha, o parse passa, a extração segue, e os campos que ficaram do outro lado do corte
+   * somem sem ninguém reclamar. Foi assim que um teto de saída baixo passou por "o modelo não achou
+   * a data de assinatura". Devolver o sinal é o que permite tratar isso como resultado incompleto
+   * em vez de resultado.
+   */
+  truncated: boolean;
+};
+
+function requireInferenceApiKey(): { apiKey: string; baseURL: string | null } {
+  const config = getInferenceConfig();
+  if (!config.apiKey) {
+    logger.warn('provedor de inferência sem chave configurada', {
+      provider: config.provider,
+      expectedEnv: config.apiKeyEnvName,
+    });
     throw new AiAnalysisError(
       AI_ERROR_MESSAGES.aiProviderNotConfigured,
       'AI_PROVIDER_NOT_CONFIGURED',
       503,
     );
   }
-  return apiKey;
+  return { apiKey: config.apiKey, baseURL: config.baseURL };
 }
 
 export function getGroqModel(): string {
-  return getGroqModelFromEnv();
+  return resolveInferenceModel('default');
 }
 
 export function getGroqClassifierModel(): string {
-  return process.env.GROQ_CLASSIFIER_MODEL?.trim() || getGroqModel();
+  return resolveInferenceModel('classifier');
 }
 
 export function getGroqExtractorModel(): string {
-  return process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModel();
+  return resolveInferenceModel('extractor');
+}
+
+/**
+ * O juiz pode rodar num modelo diferente do extrator.
+ *
+ * Julgar é escolher entre quatro vereditos; extrair é produzir a resposta certa entre milhares.
+ * Espaço de saída menor perdoa modelo menor, e é essa a hipótese que a bancada do conjunto difícil
+ * mede. Enquanto ela não decidir, o default é o mesmo modelo de sempre: barganhar qualidade antes
+ * de medir seria trocar acerto por economia no escuro.
+ */
+export function getGroqEvaluatorModel(): string {
+  return resolveInferenceModel('evaluator');
 }
 
 export function isGroqApiKeyConfigured(): boolean {
-  return Boolean(process.env.GROQ_API_KEY?.trim());
+  return isInferenceConfigured();
 }
 
 function getGroqClient(): Groq {
-  if (!groqClient) {
-    groqClient = new Groq({ apiKey: getGroqApiKey() });
-  }
-  return groqClient;
+  const { apiKey, baseURL } = requireInferenceApiKey();
+  const target = baseURL ?? 'groq-default';
+
+  const existing = clientsByTarget.get(target);
+  if (existing) return existing;
+
+  // `baseURL` ausente deixa o SDK usar o endereço da Groq — o caminho antigo, byte a byte.
+  const client = new Groq(baseURL ? { apiKey, baseURL } : { apiKey });
+  clientsByTarget.set(target, client);
+  return client;
+}
+
+/** Descarta os clientes em cache. Só para teste: em produção o alvo não muda em tempo de execução. */
+export function resetInferenceClientsForTests(): void {
+  clientsByTarget.clear();
 }
 
 function isRateLimitError(error: unknown): boolean {
@@ -140,11 +255,7 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(
-        new AiAnalysisError(
-          AI_ERROR_MESSAGES.groqRequestTimeout,
-          'GROQ_REQUEST_TIMEOUT',
-          504,
-        ),
+        new AiAnalysisError(AI_ERROR_MESSAGES.groqRequestTimeout, 'GROQ_REQUEST_TIMEOUT', 504),
       );
     }, timeoutMs);
 
@@ -161,12 +272,38 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
   });
 }
 
+/**
+ * Modelo que raciocina antes de responder.
+ *
+ * Nesses, `max_tokens` cobre o pensamento **e** a resposta, e o pensamento vem primeiro. Sem
+ * baixar o esforço, a extração de um documento inteiro gasta o orçamento raciocinando e devolve
+ * JSON cortado. O pipeline quer campos preenchidos, não deliberação: `low` é o que serve.
+ */
+function modelForOperation(operation: string): string {
+  switch (operation) {
+    case 'document_classification':
+      return getGroqClassifierModel();
+    case 'metadata_extraction':
+    case 'focused_extraction':
+      return getGroqExtractorModel();
+    case 'extraction_evaluation':
+      return getGroqEvaluatorModel();
+    default:
+      return getGroqModel();
+  }
+}
+
+function usesReasoningEffort(model: string): boolean {
+  const normalized = model.toLowerCase();
+  return normalized.includes('gpt-oss') || normalized.includes('qwen3');
+}
+
 async function callGroqCompletion(
   prompt: string,
   useResponseFormat: boolean,
   model: string,
   operation: string,
-): Promise<{ content: string; durationMs: number; finishReason?: string | null }> {
+): Promise<GroqCompletionAnswer> {
   const startedAt = Date.now();
 
   pipelineDebug('groq.call', 'enviando chat.completions.create', {
@@ -211,6 +348,7 @@ async function callGroqCompletion(
           model,
           temperature: 0.1,
           max_tokens: getGroqMaxOutputTokens(),
+          ...(usesReasoningEffort(model) ? { reasoning_effort: 'low' as const } : {}),
           ...(useResponseFormat ? { response_format: { type: 'json_object' as const } } : {}),
           messages: [
             {
@@ -258,11 +396,15 @@ async function callGroqCompletion(
       }).catch(() => undefined);
     }
 
+    const tokenUsage = toTokenUsage(usage);
+
     recordAiProviderRequest({
-      provider: 'groq',
+      provider: getInferenceProviderName(),
       operation,
       status: 'success',
       durationSeconds: durationMs / 1000,
+      promptTokens: tokenUsage.promptTokens,
+      completionTokens: tokenUsage.completionTokens,
     });
 
     pipelineInfo('groq.call', 'chat.completions ok', {
@@ -277,10 +419,10 @@ async function callGroqCompletion(
       responsePreview: previewText(content, 280),
     });
 
-    return { content: content.trim(), durationMs, finishReason };
+    return { content: content.trim(), durationMs, finishReason, usage: tokenUsage };
   } catch (error) {
     recordAiProviderRequest({
-      provider: 'groq',
+      provider: getInferenceProviderName(),
       operation,
       status: isRateLimitError(error) ? 'rate_limit' : 'error',
       durationSeconds: (Date.now() - startedAt) / 1000,
@@ -308,14 +450,41 @@ async function callGroqCompletion(
  * exatamente a vazão que a conta gratuita não tem para dar.
  */
 async function repairInvalidJsonAnswer(input: {
-  answer: { content: string; durationMs: number; finishReason?: string | null };
+  answer: GroqCompletionAnswer;
   prompt: string;
   model: string;
   operation: string;
   context?: GroqPromptContext;
-}): Promise<{ content: string; retried: boolean; extraDurationMs?: number }> {
+}): Promise<{
+  content: string;
+  retried: boolean;
+  extraDurationMs?: number;
+  usage: TokenUsage;
+  truncated: boolean;
+}> {
   if (safeParseJsonFromModel<unknown>(input.answer.content)) {
-    return { content: input.answer.content, retried: false };
+    /**
+     * JSON válido e cortado ao mesmo tempo é o pior caso: o objeto fecha, a extração segue, e os
+     * campos que ficaram do outro lado do corte somem sem ninguém reclamar. Foi assim que o teto de
+     * saída baixo passou por "o modelo não achou a data de assinatura".
+     */
+    if (input.answer.finishReason === 'length') {
+      logger.warn('groq respondeu JSON válido mas truncado; campos podem estar faltando', {
+        requestId: input.context?.requestId,
+        jobId: input.context?.jobId,
+        operation: input.operation,
+        model: input.model,
+        responseChars: input.answer.content.length,
+        maxOutputTokens: getGroqMaxOutputTokens(),
+      });
+    }
+
+    return {
+      content: input.answer.content,
+      retried: false,
+      usage: EMPTY_TOKEN_USAGE,
+      truncated: input.answer.finishReason === 'length',
+    };
   }
 
   const truncated = input.answer.finishReason === 'length';
@@ -343,7 +512,13 @@ async function repairInvalidJsonAnswer(input: {
       input.operation,
     );
 
-    return { content: retry.content, retried: true, extraDurationMs: retry.durationMs };
+    return {
+      content: retry.content,
+      retried: true,
+      extraDurationMs: retry.durationMs,
+      usage: retry.usage,
+      truncated: retry.finishReason === 'length',
+    };
   } catch (error) {
     logger.warn('repeticao do JSON tambem falhou', {
       requestId: input.context?.requestId,
@@ -353,22 +528,35 @@ async function repairInvalidJsonAnswer(input: {
       reason: error instanceof Error ? error.message : 'unknown',
     });
     // Devolve a resposta original: quem chamou já sabe tratar conteúdo inválido.
-    return { content: input.answer.content, retried: true };
+    return {
+      content: input.answer.content,
+      retried: true,
+      usage: EMPTY_TOKEN_USAGE,
+      truncated: input.answer.finishReason === 'length',
+    };
   }
 }
 
+/**
+ * Só o texto. Mantida para os chamadores que não têm o que fazer com o gasto.
+ */
 export async function completeJsonPrompt(
   prompt: string,
   options?: CompleteJsonPromptOptions,
 ): Promise<string> {
+  return (await completeJsonPromptWithUsage(prompt, options)).content;
+}
+
+export async function completeJsonPromptWithUsage(
+  prompt: string,
+  options?: CompleteJsonPromptOptions,
+): Promise<JsonPromptResult> {
+  const startedAt = Date.now();
   const context = options?.context;
   const operation = context?.operation ?? 'json_prompt';
-  const model =
-    operation === 'document_classification'
-      ? getGroqClassifierModel()
-      : operation === 'metadata_extraction'
-        ? getGroqExtractorModel()
-        : options?.model ?? getGroqModel();
+  // O modelo explícito vence o mapa por operação: é assim que a bancada roda o mesmo Avaliador
+  // duas vezes, num modelo cada, sem mexer em variável de ambiente entre as chamadas.
+  const model = options?.model?.trim() || modelForOperation(operation);
   const responseFormat = 'json_object';
   const promptChars = prompt.length;
 
@@ -423,7 +611,13 @@ export async function completeJsonPrompt(
       retriedAfterRateLimit: false,
     });
 
-    return repaired.content;
+    return {
+      content: repaired.content,
+      usage: addTokenUsage(first.usage, repaired.usage),
+      model,
+      durationMs: Date.now() - startedAt,
+      truncated: repaired.truncated,
+    };
   } catch (firstError) {
     const firstDiag = diagnoseClassifierError(firstError);
 
@@ -466,7 +660,13 @@ export async function completeJsonPrompt(
             attempt: attempt + 1,
           });
 
-          return rateRetry.content;
+          return {
+            content: rateRetry.content,
+            usage: rateRetry.usage,
+            model,
+            durationMs: Date.now() - startedAt,
+            truncated: rateRetry.finishReason === 'length',
+          };
         } catch (retryError) {
           lastError = retryError;
         }
@@ -547,7 +747,13 @@ export async function completeJsonPrompt(
         retriedWithoutResponseFormat: true,
       });
 
-      return retry.content;
+      return {
+        content: retry.content,
+        usage: retry.usage,
+        model,
+        durationMs: Date.now() - startedAt,
+        truncated: retry.finishReason === 'length',
+      };
     } catch (retryError) {
       const retryDiag = diagnoseClassifierError(retryError);
 

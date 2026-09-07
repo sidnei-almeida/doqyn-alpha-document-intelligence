@@ -3,10 +3,7 @@ import { useAuth } from '@/auth/useAuth';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { applyCollectionFilter, RECENT_LIMIT } from '../collections';
 import { sortDocuments } from '../utils/sortDocuments';
-import {
-  buildLibraryDocumentFilters,
-  libraryListScopeKey,
-} from '../utils/libraryFilterUtils';
+import { buildLibraryDocumentFilters, libraryListScopeKey } from '../utils/libraryFilterUtils';
 import { resolveLibraryCategoryId } from '../utils/resolveLibraryCategory';
 import { useDocumentCategories } from './useCategoryFolders';
 import { useFavoriteDocuments, useFavorites } from './useFavorites';

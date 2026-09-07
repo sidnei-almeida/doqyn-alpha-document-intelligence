@@ -262,14 +262,17 @@ describe('document trash — frontend lixeira e desativados', () => {
     assert.equal(page.includes('buildPermanentDeleteConfirm'), false);
   });
 
-  it('menu de contexto de pasta não tem Excluir ativo', () => {
+  it('pasta se exclui, e a exclusão não é a lixeira', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
     const folderBlock = menu.slice(
       menu.indexOf("{state.kind === 'folder' && ("),
       menu.indexOf("{state.kind === 'file' && ("),
     );
-    assert.ok(folderBlock.includes('Arquivar categoria'));
+    assert.ok(folderBlock.includes('Excluir categoria'));
+    // Categoria não vai para a lixeira: ela some, e os documentos dela vão para Sem categoria.
     assert.equal(folderBlock.includes('Mover para lixeira'), false);
+    // Sem categoria é o destino de todo mundo, e por isso não se apaga.
+    assert.ok(folderBlock.includes('isUncategorized'));
   });
 
   it('menu de arquivo tem Mover para lixeira fora da lixeira', () => {
@@ -282,22 +285,26 @@ describe('document trash — frontend lixeira e desativados', () => {
     assert.equal(menu.includes('Excluir permanentemente'), false);
   });
 
-  it('settings tem retenção na aba Empresa com copy de desativação', () => {
+  it('settings tem retenção em Organização, com copy de desativação', () => {
     const sections = read('src/features/settings/settingsSections.ts');
     const page = read('src/features/settings/SettingsPage.tsx');
-    const company = read('src/features/settings/components/sections/CompanySettingsSection.tsx');
+    const company = read('src/features/settings/components/sections/OrganizationSection.tsx');
     const retention = read(
       'src/features/settings/components/sections/TrashRetentionSettingsSection.tsx',
     );
-    assert.ok(sections.includes("'empresa'"));
-    assert.ok(sections.includes("'retencao'"));
-    assert.ok(sections.includes("lixeira: { section: 'empresa', tab: 'retencao' }"));
-    assert.ok(page.includes('CompanySettingsSection'));
+    // A aba "Empresa" virou a seção "Organização", e `?tab=` deixou de existir — as URLs
+    // antigas continuam caindo lá por alias.
+    assert.ok(sections.includes("id: 'organizacao'"));
+    assert.ok(sections.includes("lixeira: 'organizacao'"));
+    assert.ok(page.includes('OrganizationSection'));
     assert.ok(company.includes('TrashRetentionSettingsSection'));
-    assert.ok(company.includes('canManageRetention'));
+    // Quem não administra lê e não altera.
+    assert.ok(company.includes('governsOrganization'));
     assert.ok(retention.includes('settings-retention-preview'));
     assert.ok(retention.includes('desativado'));
-    assert.ok(retention.includes('isDirty'));
+    // O estado sujo subiu para `OrganizationSection`, que é quem tem a barra de salvar: a
+    // seção de retenção divide o mesmo botão com as preferências de envio.
+    assert.ok(company.includes('dirty'));
     assert.ok(retention.includes('RETENTION_DAYS_MIN'));
   });
 
@@ -349,12 +356,10 @@ describe('document trash — frontend lixeira e desativados', () => {
   it('sidebar filtra Desativados para admin+ em Administração', () => {
     const sidebar = read('src/components/layout/Sidebar.tsx');
     const constants = read('src/lib/constants.ts');
-    const libraryViewsBlock = constants.match(
-      /export const NAV_ITEMS_LIBRARY_VIEWS = \[[\s\S]*?\] as const;/,
-    )?.[0] ?? '';
-    const adminBlock = constants.match(
-      /export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/,
-    )?.[0] ?? '';
+    const libraryViewsBlock =
+      constants.match(/export const NAV_ITEMS_LIBRARY_VIEWS = \[[\s\S]*?\] as const;/)?.[0] ?? '';
+    const adminBlock =
+      constants.match(/export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/)?.[0] ?? '';
     assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
     assert.ok(adminBlock.includes('adminOnly: true'));
     assert.ok(adminBlock.includes('Desativados'));

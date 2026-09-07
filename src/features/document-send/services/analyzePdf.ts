@@ -326,14 +326,15 @@ function mapToExtractedMetadata(
     confidenceScore: classification.confidence,
     analysisStatus: response.status,
     missingFields: extraction?.missingFields ?? [],
-    reviewReasons: extraction?.reviewReasons ?? (classification.reviewReason ? [classification.reviewReason] : []),
+    reviewReasons:
+      extraction?.reviewReasons ??
+      (classification.reviewReason ? [classification.reviewReason] : []),
     extractedFields,
     classificationEvidence: classification.evidence,
     classificationReason: classification.reason,
     textExtraction: response.textExtraction,
   };
 }
-
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {

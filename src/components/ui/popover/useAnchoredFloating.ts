@@ -127,16 +127,23 @@ function resolveFloatingPosition(
   return clampVisualPosition(computeVisualPosition(anchor, preferred, panel), panel);
 }
 
-function measurePanel(
-  panelEl: HTMLElement | null,
-  placement: FloatingPlacement,
-): MeasuredPanel {
+/**
+ * Mede o painel por `offsetWidth`/`offsetHeight`, não pelo rect.
+ *
+ * `getBoundingClientRect()` devolve a caixa **transformada**, e o painel entra com
+ * `menu-enter` — `scale(0.98)`. Medindo durante a animação, um popover de 336px media 329,28, e
+ * como `bottom-end` ancora em `anchor.right - width`, ele nascia ~7px à direita do lugar. O erro
+ * ficava invisível até algo disparar um reposicionamento: no sino de notificações, o primeiro
+ * pixel de scroll da lista corrigia a conta e o painel pulava para a esquerda.
+ *
+ * `offset*` é a medida de layout, indiferente a transform — é a que a âncora precisa.
+ */
+function measurePanel(panelEl: HTMLElement | null, placement: FloatingPlacement): MeasuredPanel {
   if (!panelEl) return getFallbackPanelSize(placement);
-  const rect = panelEl.getBoundingClientRect();
   const fallback = getFallbackPanelSize(placement);
   return {
-    width: rect.width > 0 ? rect.width : fallback.width,
-    height: rect.height > 0 ? rect.height : fallback.height,
+    width: panelEl.offsetWidth > 0 ? panelEl.offsetWidth : fallback.width,
+    height: panelEl.offsetHeight > 0 ? panelEl.offsetHeight : fallback.height,
   };
 }
 
@@ -185,9 +192,7 @@ export function useAnchoredFloating(
     const frame = requestAnimationFrame(update);
 
     const resizeObserver =
-      panelRef.current && typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(update)
-        : null;
+      panelRef.current && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
     resizeObserver?.observe(panelRef.current!);
 
     window.addEventListener('resize', update);

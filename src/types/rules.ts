@@ -4,7 +4,9 @@ export type UserRole = 'admin' | 'manager' | 'member' | 'auditor';
 
 export type MemberStatus = 'active' | 'pending' | 'blocked' | 'rejected';
 
-export type GroupColor = 'blue' | 'green' | 'amber' | 'red' | 'purple';
+import type { GroupColor } from '@shared/groupPalette';
+
+export type { GroupColor };
 
 export interface Group {
   id: string;
@@ -48,6 +50,16 @@ export interface DocumentCategory {
     audit: string[];
     share: string[];
   };
+  /**
+   * Estado de cada grupo por verbo, quando não é `allow`.
+   *
+   * As listas acima dizem **quem alcança** a categoria — e quem precisa pedir alcança. Perder a
+   * distinção ali seria mentir para o quadro de Acessos, que mostraria "liberado" onde há pedido
+   * de aprovação. Só o que foge do comum entra aqui, então o mapa costuma estar vazio.
+   */
+  permissionStates?: Partial<
+    Record<'view' | 'download' | 'update' | 'audit' | 'share', Record<string, 'require'>>
+  >;
   keywords: string[];
   negativeKeywords: string[];
   createdAt: string;

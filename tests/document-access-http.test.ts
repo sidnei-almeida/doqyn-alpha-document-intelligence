@@ -3,11 +3,7 @@ import { after, before, describe, it } from 'node:test';
 import type { AuthUser } from '../server/auth/types.js';
 import { resolveDocumentPermissions } from '../server/tenancy/documentAccess.js';
 import { buildGovernanceAccessIndex } from '../server/tenancy/governanceAccessIndex.js';
-import {
-  cleanupFixtures,
-  plantBusinessTenant,
-  plantDocument,
-} from './helpers/documentFixtures.js';
+import { cleanupFixtures, plantBusinessTenant, plantDocument } from './helpers/documentFixtures.js';
 import {
   bootTestApi,
   buildForgedSession,

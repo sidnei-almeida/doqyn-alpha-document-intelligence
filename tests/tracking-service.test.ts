@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CLIENT_TRACKING_ACTIONS, resolveTrackingActionGroup, resolveTrackingEventStatus } from '../server/services/tracking/trackingTypes.js';
-import { hashTrackingValue, parseUserAgentSummary } from '../server/services/tracking/trackingSecurity.js';
+import {
+  CLIENT_TRACKING_ACTIONS,
+  resolveTrackingActionGroup,
+  resolveTrackingEventStatus,
+} from '../server/services/tracking/trackingTypes.js';
+import {
+  hashTrackingValue,
+  parseUserAgentSummary,
+} from '../server/services/tracking/trackingSecurity.js';
 import { sanitizeAuditMetadata } from '../server/utils/sanitizeAuditMetadata.js';
 import { ServiceError } from '../server/utils/serviceErrors.js';
 import { emitClientTrackingEvent } from '../server/services/tracking/trackingService.js';
@@ -74,17 +81,23 @@ describe('tracking service', () => {
   it('emitClientTrackingEvent rejeita ação fora da allowlist', async () => {
     await assert.rejects(
       () =>
-        emitClientTrackingEvent(auditCtx, { headers: {} }, {
-          action: 'document.downloaded',
-        }),
-      (error: unknown) => error instanceof ServiceError && error.code === 'TRACKING_ACTION_FORBIDDEN',
+        emitClientTrackingEvent(
+          auditCtx,
+          { headers: {} },
+          {
+            action: 'document.downloaded',
+          },
+        ),
+      (error: unknown) =>
+        error instanceof ServiceError && error.code === 'TRACKING_ACTION_FORBIDDEN',
     );
   });
 });
 
 describe('tracking display helpers', () => {
   it('buildTrackingEventsQuery inclui novos filtros', async () => {
-    const { buildTrackingEventsQuery } = await import('../src/features/tracking/utils/trackingDisplay.ts');
+    const { buildTrackingEventsQuery } =
+      await import('../src/features/tracking/utils/trackingDisplay.ts');
     const params = buildTrackingEventsQuery({
       status: 'denied',
       actionGroup: 'access',
@@ -98,7 +111,8 @@ describe('tracking display helpers', () => {
   });
 
   it('formatTrackingStatus traduz status', async () => {
-    const { formatTrackingStatus } = await import('../src/features/tracking/utils/trackingDisplay.ts');
+    const { formatTrackingStatus } =
+      await import('../src/features/tracking/utils/trackingDisplay.ts');
     assert.equal(formatTrackingStatus('denied'), 'Negado');
     assert.equal(formatTrackingStatus('success'), 'Sucesso');
   });
