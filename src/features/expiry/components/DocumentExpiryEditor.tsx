@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { Input } from '@/components/ui/Input';
+import { CANONICAL_VALIDITY_KEY } from '@shared/metadataKeyNormalize';
 import {
   getDocumentMetadataSheet,
   updateDocumentMetadata,
@@ -15,10 +16,14 @@ import {
 
 /**
  * Chave canônica de vencimento usada quando a categoria não declara nenhum campo de validade.
- * Manter em sincronia com `VALIDITY_SOURCE_KEYS` em `server/services/confirm/projectSearchMeta.ts`:
- * gravar outra chave preencheria o metadado sem nunca disparar alerta.
+ *
+ * É `data_validade` porque é a que sobrevive à canonicalização (`canonicalizeMetadataKey`, em
+ * `shared/metadataKeyNormalize.ts`, renomeia `data_vencimento` para cá ao confirmar a versão) e a
+ * que `VALIDITY_SOURCE_KEYS` (`server/services/confirm/projectSearchMeta.ts`) lê para virar
+ * `searchMeta.validityDate`. Gravar a outra faz o dado aparecer duas vezes na ficha: a linha da
+ * regra vazia e o valor real logo abaixo, como campo fora da regra.
  */
-const VALIDITY_KEY = 'data_vencimento';
+const VALIDITY_KEY = CANONICAL_VALIDITY_KEY;
 
 export type DocumentExpiryEditorProps = {
   documentId: string;

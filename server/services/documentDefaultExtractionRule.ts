@@ -1,4 +1,5 @@
 import type { MongoDocumentExtractionRule, MongoRuleField } from '../db/types.js';
+import { CANONICAL_VALIDITY_KEY } from '../../shared/metadataKeyNormalize.js';
 import { normalizeExpiryAlertConfig } from './expiry/documentExpiryAlertService.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -37,17 +38,24 @@ export const DEFAULT_EXTRACTION_RULE_FIELDS: MongoRuleField[] = [
      * tinha onde escrevê-la — `deriveEndDates` só preenche campo declarado. Resultado: alerta que
      * nunca dispara, com a data à vista no papel.
      *
-     * A chave é `data_vencimento` porque é a que `VALIDITY_SOURCE_KEYS` (`projectSearchMeta`) lê
-     * para virar `searchMeta.validityDate`. Gravar outra chave preencheria o metadado sem alertar.
+     * A chave é `data_validade` porque é a canônica do produto. Nasceu como `data_vencimento` e o
+     * campo continuou aparecendo vazio na ficha: `canonicalizeMetadataKey`
+     * (`shared/metadataKeyNormalize.ts`) renomeia `data_vencimento` para `data_validade` ao
+     * confirmar a versão, então a linha da regra ficava eternamente sem dono enquanto o mesmo dado
+     * aparecia logo abaixo, sob o nome canônico, como campo fora da regra.
+     *
+     * A regra geral: chave de campo da regra padrão tem que ser a que sobrevive à canonicalização.
+     * `tests/default-extraction-rule-validity.test.ts` cobre isso — qualquer chave que o
+     * normalizador renomearia quebra o teste antes de chegar ao banco de alguém.
      */
-    key: 'data_vencimento',
-    label: 'Data de vencimento',
+    key: CANONICAL_VALIDITY_KEY,
+    label: 'Validade',
     type: 'date',
     required: false,
     description:
       'Data em que o documento perde validade (yyyy-mm-dd). Quase nunca está escrita: some a data ' +
       'âncora ao prazo que governa a validade deste documento. Sem âncora ou sem prazo, deixe null.',
-    aliases: ['vencimento', 'validade', 'vigência fim', 'vigencia fim', 'término', 'termino'],
+    aliases: ['validade', 'vencimento', 'data de vencimento', 'vigência fim', 'vigencia fim', 'término', 'termino'],
   },
   {
     key: 'partes_envolvidas',

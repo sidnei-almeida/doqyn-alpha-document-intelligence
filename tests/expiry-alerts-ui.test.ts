@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import {
+  CANONICAL_VALIDITY_KEY,
+  canonicalizeMetadataKey,
+} from '../shared/metadataKeyNormalize.js';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
@@ -17,9 +21,12 @@ describe('vencimentos — edição manual no documento', () => {
     const projection = read('server/services/confirm/projectSearchMeta.ts');
 
     // Gravar outra chave preencheria o metadado sem nunca alimentar searchMeta.validityDate,
-    // e portanto sem nunca disparar alerta.
-    assert.ok(editor.includes("const VALIDITY_KEY = 'data_vencimento'"));
-    assert.ok(projection.includes("'data_vencimento'"));
+    // e portanto sem nunca disparar alerta. É `data_validade` e não `data_vencimento` porque só
+    // essa sobrevive à canonicalização da confirmação — a outra é renomeada para cá, e a linha da
+    // regra ficava vazia com o dado aparecendo abaixo, fora da regra.
+    assert.ok(editor.includes('const VALIDITY_KEY = CANONICAL_VALIDITY_KEY'));
+    assert.equal(canonicalizeMetadataKey(CANONICAL_VALIDITY_KEY), CANONICAL_VALIDITY_KEY);
+    assert.ok(projection.includes("'data_validade'"));
     assert.ok(projection.includes('VALIDITY_SOURCE_KEYS'));
   });
 

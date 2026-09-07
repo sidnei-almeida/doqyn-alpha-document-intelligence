@@ -21,12 +21,25 @@ import { getDb, closeMongoConnection } from '../server/db/mongoClient.js';
 import { isEndDateFieldName } from '../server/ai/utils/derivedDates.js';
 import { DEFAULT_EXTRACTION_RULE_FIELDS } from '../server/services/documentDefaultExtractionRule.js';
 import type { MongoRuleField } from '../server/db/types.js';
+import { CANONICAL_VALIDITY_KEY } from '../shared/metadataKeyNormalize.js';
 
 const APPLY = process.argv.includes('--apply');
 
 const VALIDITY_FIELD = DEFAULT_EXTRACTION_RULE_FIELDS.find(
-  (field) => field.key === 'data_vencimento',
+  (field) => field.key === CANONICAL_VALIDITY_KEY,
 );
+
+/**
+ * A primeira versão deste script gravou `data_vencimento`, e essa chave não sobrevive à
+ * canonicalização: ao confirmar a versão ela vira `data_validade`, e a linha da regra ficava
+ * eternamente vazia enquanto o mesmo dado aparecia abaixo como campo fora da regra. Renomear é
+ * parte do backfill, não uma migração à parte — quem rodou a versão anterior precisa disto.
+ */
+const LEGACY_VALIDITY_KEY = 'data_vencimento';
+
+function legacyValidityField(fields: MongoRuleField[] | undefined): MongoRuleField | undefined {
+  return (fields ?? []).find((field) => field.key === LEGACY_VALIDITY_KEY);
+}
 
 function hasValidityField(fields: MongoRuleField[] | undefined): boolean {
   return (fields ?? []).some(
@@ -56,12 +69,31 @@ async function main(): Promise<void> {
     for (const rule of rules) {
       scanned += 1;
       const fields = rule.fields as MongoRuleField[] | undefined;
+
+      const legacy = legacyValidityField(fields);
+      if (legacy) {
+        touched += 1;
+        const target = `${name} :: ${rule._id}`;
+        console.log(
+          `  ${APPLY ? 'renomeia' : 'renomearia'} ${LEGACY_VALIDITY_KEY} → ${CANONICAL_VALIDITY_KEY} em ${target}`,
+        );
+        if (APPLY) {
+          const next = (fields ?? []).map((field) =>
+            field.key === LEGACY_VALIDITY_KEY ? { ...VALIDITY_FIELD } : field,
+          );
+          await db
+            .collection(name)
+            .updateOne({ _id: rule._id }, { $set: { fields: next, updatedAt: new Date() } });
+        }
+        continue;
+      }
+
       if (hasValidityField(fields)) continue;
 
       touched += 1;
       const label = `${name} :: ${rule._id} (classe ${rule.classId ?? rule.categoryId ?? '?'})`;
       if (!APPLY) {
-        console.log(`  (relatório) acrescentaria data_vencimento em ${label}`);
+        console.log(`  (relatório) acrescentaria ${CANONICAL_VALIDITY_KEY} em ${label}`);
         continue;
       }
 
@@ -73,7 +105,7 @@ async function main(): Promise<void> {
       await db
         .collection(name)
         .updateOne({ _id: rule._id }, { $set: { fields: next, updatedAt: new Date() } });
-      console.log(`  acrescentado data_vencimento em ${label}`);
+      console.log(`  acrescentado ${CANONICAL_VALIDITY_KEY} em ${label}`);
     }
   }
 
