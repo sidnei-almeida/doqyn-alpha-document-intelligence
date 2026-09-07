@@ -116,6 +116,33 @@ describe('projectDocumentSearchMeta', () => {
     assert.equal(meta.validityDate ?? null, null);
   });
 
+  it('reconhece data_referencia como âncora — o ponto cego que a extração já tinha fechado', () => {
+    const meta = projectDocumentSearchMeta({
+      data_referencia: field('Data de referência', '09/06/2026'),
+      prazo_vigencia: field('Prazo de vigência', '3 anos'),
+    });
+
+    assert.equal(meta.validityDate!.toISOString().slice(0, 10), '2029-06-09');
+  });
+
+  it('soma prazo composto sem perder a parte menor', () => {
+    const meta = projectDocumentSearchMeta({
+      data_assinatura: field('Data de assinatura', '01/01/2026'),
+      prazo_vigencia: field('Prazo de vigência', '1 ano e 6 meses'),
+    });
+
+    assert.equal(meta.validityDate!.toISOString().slice(0, 10), '2027-07-01');
+  });
+
+  it('prazo sem unidade em campo de vigência continua sendo lido como anos', () => {
+    const meta = projectDocumentSearchMeta({
+      data_assinatura: field('Data de assinatura', '09/06/2021'),
+      prazo_vigencia: field('Prazo de vigência', 'prazo de 5'),
+    });
+
+    assert.equal(meta.validityDate!.toISOString().slice(0, 10), '2026-06-09');
+  });
+
   it('usa título extraído sem remover demais campos do blob', () => {
     const metadata = {
       titulo: field('Título', 'Política de Segurança da Informação'),

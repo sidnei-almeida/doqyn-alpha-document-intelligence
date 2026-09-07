@@ -104,11 +104,27 @@ function cutAtSentenceEnd(window: string): string {
 
 const deaccent = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
+function mentions(haystack: string, hints: string[]): boolean {
+  const flat = deaccent(haystack);
+  return hints.some((h) => flat.includes(h));
+}
+
 function fieldMentions(field: DocumentRuleField, hints: string[]): boolean {
-  const haystack = deaccent(
+  return mentions(
     [field.key, field.label, field.description ?? '', ...(field.aliases ?? [])].join(' '),
+    hints,
   );
-  return hints.some((h) => haystack.includes(h));
+}
+
+/**
+ * Diz se um nome de campo descreve o ponto de partida de um prazo.
+ *
+ * Exportada porque a projeção de `searchMeta` precisa da mesma resposta e mantinha uma lista
+ * própria de âncoras — que não conhecia `data_referencia` e por isso repetia, do lado do alerta, o
+ * ponto cego que já tinha sido corrigido do lado da extração.
+ */
+export function isAnchorFieldName(...texts: Array<string | null | undefined>): boolean {
+  return mentions(texts.filter(Boolean).join(' '), ANCHOR_HINTS);
 }
 
 export type ParsedDuration = { amount: number; unit: 'day' | 'week' | 'month' | 'year' };
@@ -156,6 +172,43 @@ export function addDuration(anchorIso: string, duration: ParsedDuration): string
   const lastDayOfTarget = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
   const targetDay = Math.min(day, lastDayOfTarget);
   return new Date(Date.UTC(targetYear, targetMonth, targetDay)).toISOString().slice(0, 10);
+}
+
+/**
+ * Lê prazo composto — "1 ano e 6 meses" — devolvendo uma parte por unidade.
+ *
+ * Existe para valor de campo, nunca para texto corrido. O valor de um campo é uma resposta só; a
+ * frase de um documento pode carregar prazos que não se somam ("vigência de 12 meses, prorrogável
+ * por mais 12"). Por isso vale a primeira ocorrência de cada unidade: unidade repetida é outra
+ * cláusula, não continuação da mesma.
+ */
+export function parseDurationParts(raw: unknown): ParsedDuration[] {
+  if (typeof raw !== 'string') return [];
+  const scanner = new RegExp(DURATION_RE.source, 'gi');
+  const byUnit = new Map<ParsedDuration['unit'], ParsedDuration>();
+
+  for (const match of deaccent(raw).matchAll(scanner)) {
+    const parsed = parseRelativeDuration(match[0]);
+    if (!parsed) continue;
+    if (!byUnit.has(parsed.unit)) byUnit.set(parsed.unit, parsed);
+  }
+
+  return [...byUnit.values()];
+}
+
+const UNIT_ORDER: Record<ParsedDuration['unit'], number> = { year: 0, month: 1, week: 2, day: 3 };
+
+/** Soma várias partes à âncora, do maior grão para o menor. `null` se qualquer soma falhar. */
+export function addDurations(anchorIso: string, durations: ParsedDuration[]): string | null {
+  if (durations.length === 0) return null;
+  const ordered = [...durations].sort((a, b) => UNIT_ORDER[a.unit] - UNIT_ORDER[b.unit]);
+
+  let value: string | null = anchorIso;
+  for (const duration of ordered) {
+    value = addDuration(value, duration);
+    if (!value) return null;
+  }
+  return value;
 }
 
 const MONTHS_PT: Record<string, number> = {
@@ -238,6 +291,16 @@ export type DerivedDate = {
   value: string;
   anchorKey: string;
   anchorValue: string;
+  /** Chave do campo que trouxe o prazo, ou `texto` quando ele foi lido direto do documento. */
+  durationKey: string;
+  durationValue: string;
+};
+
+/** O que a conta devolve quando não há campo de destino envolvido — só a data e sua origem. */
+export type ValidityDerivation = {
+  iso: string;
+  anchorKey: string;
+  anchorIso: string;
   /** Chave do campo que trouxe o prazo, ou `texto` quando ele foi lido direto do documento. */
   durationKey: string;
   durationValue: string;
@@ -347,25 +410,28 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * FINAL, e só quando existe âncora ISO e prazo relativo já extraídos. Na ausência de qualquer um
  * dos três, não inventa nada — deixar vazio é a resposta correta.
  */
-export function deriveEndDates(
-  fields: DocumentRuleField[],
-  metadata: MetadataLike,
-  /** Texto do documento, para achar o prazo quando nenhum campo configurado o carrega. */
+/**
+ * A conta única: âncora ISO + prazo = data final.
+ *
+ * Existe como função separada porque duas partes do produto precisam da mesma resposta e chegaram
+ * a implementá-la duas vezes — esta, durante a extração, e a projeção de `searchMeta`, que alimenta
+ * o alerta de vencimento. As duas divergiam em vocabulário de âncora e em fonte de prazo, e um
+ * produto cujo alerta depende disso não pode ter duas verdades sobre quando o documento vence.
+ *
+ * A ordem de `anchors` e `durations` é a preferência de quem chama: a primeira que servir vence.
+ */
+export function deriveValidityFrom(
+  anchors: Array<{ key: string; iso: string }>,
+  durations: Array<{ key: string; raw: string }>,
+  /** Texto do documento, para achar o prazo quando nenhum campo o carrega. */
   documentText?: string,
-): DerivedDate[] {
-  const anchors = fields
-    .filter((f) => f.type === 'date' && fieldMentions(f, ANCHOR_HINTS))
-    .map((f) => ({ key: f.key, value: readValue(metadata[f.key]) }))
-    .filter(
-      (a): a is { key: string; value: string } => a.value !== null && ISO_DATE_RE.test(a.value),
-    );
+): ValidityDerivation | null {
+  const anchor = anchors.find((a) => ISO_DATE_RE.test(a.iso.trim()));
+  if (!anchor) return null;
 
-  if (anchors.length === 0) return [];
-
-  const durations = fields
-    .map((f) => ({ key: f.key, raw: readValue(metadata[f.key]) }))
-    .map((d) => ({ ...d, parsed: parseRelativeDuration(d.raw) }))
-    .filter((d): d is { key: string; raw: string; parsed: ParsedDuration } => d.parsed !== null);
+  const fromField = durations
+    .map((d) => ({ ...d, parts: parseDurationParts(d.raw) }))
+    .find((d) => d.parts.length > 0);
 
   /**
    * O texto é o segundo lugar onde procurar, nunca o primeiro.
@@ -374,8 +440,45 @@ export function deriveEndDates(
    * Quando os dois existem, o campo vence — ele foi escolhido por alguém que leu o documento
    * inteiro, e a varredura só olha uma janela em volta de um termo.
    */
-  const fromText = durations.length === 0 && documentText ? findDurationInText(documentText) : null;
-  if (durations.length === 0 && !fromText) return [];
+  const fromText = !fromField && documentText ? findDurationInText(documentText) : null;
+  const parts = fromField?.parts ?? (fromText ? [fromText.parsed] : []);
+
+  const iso = addDurations(anchor.iso.trim(), parts);
+  if (!iso) return null;
+
+  return {
+    iso,
+    anchorKey: anchor.key,
+    anchorIso: anchor.iso.trim(),
+    durationKey: fromField?.key ?? 'texto',
+    durationValue: fromField?.raw ?? fromText?.snippet ?? '',
+  };
+}
+
+/**
+ * Encontra campos de data final vazios que podem ser calculados e devolve o cálculo.
+ *
+ * Conservador de propósito: só preenche campo cujo nome, rótulo, descrição ou alias indique data
+ * FINAL, e só quando existe âncora ISO e prazo relativo já extraídos. Na ausência de qualquer um
+ * dos três, não inventa nada — deixar vazio é a resposta correta.
+ */
+export function deriveEndDates(
+  fields: DocumentRuleField[],
+  metadata: MetadataLike,
+  /** Texto do documento, para achar o prazo quando nenhum campo configurado o carrega. */
+  documentText?: string,
+): DerivedDate[] {
+  const anchors = fields
+    .filter((f) => f.type === 'date' && fieldMentions(f, ANCHOR_HINTS))
+    .map((f) => ({ key: f.key, iso: readValue(metadata[f.key]) }))
+    .filter((a): a is { key: string; iso: string } => a.iso !== null);
+
+  const durations = fields
+    .map((f) => ({ key: f.key, raw: readValue(metadata[f.key]) }))
+    .filter((d): d is { key: string; raw: string } => d.raw !== null);
+
+  const derivation = deriveValidityFrom(anchors, durations, documentText);
+  if (!derivation) return [];
 
   const derived: DerivedDate[] = [];
 
@@ -384,21 +487,13 @@ export function deriveEndDates(
     if (!fieldMentions(field, TARGET_HINTS)) continue;
     if (readValue(metadata[field.key]) !== null) continue; // já veio preenchido: respeita o texto
 
-    const anchor = anchors[0];
-    const duration = durations[0];
-    const parsed = duration?.parsed ?? fromText?.parsed;
-    if (!parsed) continue;
-
-    const value = addDuration(anchor.value, parsed);
-    if (!value) continue;
-
     derived.push({
       targetKey: field.key,
-      value,
-      anchorKey: anchor.key,
-      anchorValue: anchor.value,
-      durationKey: duration?.key ?? 'texto',
-      durationValue: duration?.raw ?? fromText?.snippet ?? '',
+      value: derivation.iso,
+      anchorKey: derivation.anchorKey,
+      anchorValue: derivation.anchorIso,
+      durationKey: derivation.durationKey,
+      durationValue: derivation.durationValue,
     });
   }
 
