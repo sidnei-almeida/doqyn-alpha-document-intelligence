@@ -27,6 +27,29 @@ export const DEFAULT_EXTRACTION_RULE_FIELDS: MongoRuleField[] = [
     aliases: ['data', 'data de emissão', 'data de assinatura', 'emitido em'],
   },
   {
+    /**
+     * O campo que o alerta de vencimento lê.
+     *
+     * Ficou de fora até 07/09/2026, e o efeito era invisível: a tela do documento injeta uma linha
+     * "Data de vencimento" mesmo quando a classe não declara campo de validade
+     * (`DocumentExpiryEditor`, `VALIDITY_KEY`), então o campo aparecia como FALTANDO e ninguém via
+     * que ele não existia na regra. A extração calculava a data a partir da âncora e do prazo e não
+     * tinha onde escrevê-la — `deriveEndDates` só preenche campo declarado. Resultado: alerta que
+     * nunca dispara, com a data à vista no papel.
+     *
+     * A chave é `data_vencimento` porque é a que `VALIDITY_SOURCE_KEYS` (`projectSearchMeta`) lê
+     * para virar `searchMeta.validityDate`. Gravar outra chave preencheria o metadado sem alertar.
+     */
+    key: 'data_vencimento',
+    label: 'Data de vencimento',
+    type: 'date',
+    required: false,
+    description:
+      'Data em que o documento perde validade (yyyy-mm-dd). Quase nunca está escrita: some a data ' +
+      'âncora ao prazo que governa a validade deste documento. Sem âncora ou sem prazo, deixe null.',
+    aliases: ['vencimento', 'validade', 'vigência fim', 'vigencia fim', 'término', 'termino'],
+  },
+  {
     key: 'partes_envolvidas',
     label: 'Partes envolvidas',
     type: 'string',
