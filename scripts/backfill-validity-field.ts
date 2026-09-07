@@ -32,7 +32,7 @@ function hasValidityField(fields: MongoRuleField[] | undefined): boolean {
   return (fields ?? []).some(
     (field) =>
       field.type === 'date' &&
-      isEndDateFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])),
+      isEndDateFieldName(field),
   );
 }
 

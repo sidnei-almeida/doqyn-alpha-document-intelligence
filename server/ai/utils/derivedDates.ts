@@ -109,27 +109,47 @@ function mentions(haystack: string, hints: string[]): boolean {
   return hints.some((h) => flat.includes(h));
 }
 
+/**
+ * O nome de um campo — e só o nome.
+ *
+ * `description` fica de fora de propósito. Ela é prosa escrita para o modelo ler, e prosa cita as
+ * palavras do vocabulário sem ser aquilo que elas nomeiam. O caso real, achado no banco de produção
+ * em 07/09/2026: a regra padrão descreve `data_referencia` como "Data que identifica o documento:
+ * emissão, assinatura, validade ou revisão." — a palavra "validade" ali fazia o campo de âncora
+ * passar por campo de vencimento. Uma auditoria de regras concluiu que a classe já tinha campo de
+ * validade quando não tinha, e a derivação teria escrito a data calculada em cima da âncora.
+ *
+ * Chave, rótulo e aliases são o que alguém escolheu para NOMEAR o campo. É neles que a pergunta
+ * "que papel este campo faz" tem resposta.
+ */
+type FieldNaming = {
+  key: string;
+  label?: string | null;
+  aliases?: string[] | null;
+};
+
+function namingText(field: FieldNaming): string {
+  return [field.key, field.label ?? '', ...(field.aliases ?? [])].join(' ');
+}
+
 function fieldMentions(field: DocumentRuleField, hints: string[]): boolean {
-  return mentions(
-    [field.key, field.label, field.description ?? '', ...(field.aliases ?? [])].join(' '),
-    hints,
-  );
+  return mentions(namingText(field), hints);
 }
 
 /**
- * Diz se um nome de campo descreve o ponto de partida de um prazo.
+ * Diz se um campo descreve o ponto de partida de um prazo.
  *
  * Exportada porque a projeção de `searchMeta` precisa da mesma resposta e mantinha uma lista
  * própria de âncoras — que não conhecia `data_referencia` e por isso repetia, do lado do alerta, o
  * ponto cego que já tinha sido corrigido do lado da extração.
  */
-export function isAnchorFieldName(...texts: Array<string | null | undefined>): boolean {
-  return mentions(texts.filter(Boolean).join(' '), ANCHOR_HINTS);
+export function isAnchorFieldName(field: FieldNaming): boolean {
+  return mentions(namingText(field), ANCHOR_HINTS);
 }
 
-/** Diz se um nome de campo descreve a data FINAL — o destino de uma derivação. */
-export function isEndDateFieldName(...texts: Array<string | null | undefined>): boolean {
-  return mentions(texts.filter(Boolean).join(' '), TARGET_HINTS);
+/** Diz se um campo descreve a data FINAL — o destino de uma derivação. */
+export function isEndDateFieldName(field: FieldNaming): boolean {
+  return mentions(namingText(field), TARGET_HINTS);
 }
 
 export type ParsedDuration = { amount: number; unit: 'day' | 'week' | 'month' | 'year' };

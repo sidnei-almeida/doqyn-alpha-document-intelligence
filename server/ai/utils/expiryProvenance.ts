@@ -38,7 +38,7 @@ export function resolveExpiryProvenance(
   const target = selectedClass.fields.find(
     (field) =>
       field.type === 'date' &&
-      isEndDateFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])),
+      isEndDateFieldName(field),
   );
   if (!target) return 'sem_campo';
 

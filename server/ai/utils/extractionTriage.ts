@@ -175,7 +175,7 @@ function triageDerivableExpiry(input: {
   const targets = input.selectedClass.fields.filter(
     (field) =>
       field.type === 'date' &&
-      isEndDateFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])) &&
+      isEndDateFieldName(field) &&
       isEmptyValue(input.metadata[field.key]),
   );
   if (targets.length === 0) return [];
@@ -184,7 +184,7 @@ function triageDerivableExpiry(input: {
     .filter(
       (field) =>
         field.type === 'date' &&
-        isAnchorFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])),
+        isAnchorFieldName(field),
     )
     .map((field) => ({ key: field.key, iso: readIsoValue(input.metadata[field.key]) }))
     .find((candidate): candidate is { key: string; iso: string } => candidate.iso !== null);

@@ -319,7 +319,7 @@ export function projectDocumentSearchMeta(
             dateKind !== 'vencimento' &&
             dateKind !== 'validade' &&
             dateKind !== 'vigencia_fim' &&
-            isAnchorFieldName(keyNorm, label)
+            isAnchorFieldName({ key: keyNorm, label })
           ) {
             hintAnchors.push({ key, date: parsed });
           }
