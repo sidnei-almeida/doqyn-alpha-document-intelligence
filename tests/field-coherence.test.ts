@@ -205,31 +205,56 @@ describe('seleção de trechos para o Avaliador', () => {
     assert.equal(selectEvaluatorChunks({ chunks, metadata: {} }).length, 2);
   });
 
-  it('documento longo é cortado, mas o trecho que sustenta a evidência fica', () => {
-    // Sem esta regra, o Avaliador julgaria um valor sem poder conferir o trecho que o comprova —
-    // e julgar sem poder conferir é adivinhar.
-    const chunks = [
-      ...Array.from({ length: 20 }, (_, i) => chunk(`c${i}`, `texto irrelevante ${i}`, 100 - i)),
-      chunk('c99', 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda', 0),
-    ];
+  it('o teto acompanha EXTRACTION_MAX_CHUNKS, e o trecho com a evidência sempre entra', () => {
+    // Sem a prioridade da evidência, o Avaliador julgaria um valor sem poder conferir o trecho que
+    // o comprova — e julgar sem poder conferir é adivinhar. O trecho que interessa aqui tem score
+    // zero de propósito: por pontuação ele seria o primeiro a sair.
+    const anterior = process.env.EXTRACTION_MAX_CHUNKS;
+    process.env.EXTRACTION_MAX_CHUNKS = '5';
 
-    const selecionados = selectEvaluatorChunks({
-      chunks,
-      metadata: {
-        fornecedor: {
-          label: 'Fornecedor',
-          value: 'Talha Sul',
-          confidence: 0.9,
-          source: 'document_text',
-          evidence: { snippet: 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda' },
+    try {
+      const chunks = [
+        ...Array.from({ length: 20 }, (_, i) => chunk(`c${i}`, `texto irrelevante ${i}`, 100 - i)),
+        chunk('c99', 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda', 0),
+      ];
+
+      const selecionados = selectEvaluatorChunks({
+        chunks,
+        metadata: {
+          fornecedor: {
+            label: 'Fornecedor',
+            value: 'Talha Sul',
+            confidence: 0.9,
+            source: 'document_text',
+            evidence: { snippet: 'BENEFICIARIO: Talha Sul Servicos Industriais Ltda' },
+          },
         },
-      },
-    });
+      });
 
-    assert.ok(selecionados.length <= 8);
-    assert.ok(
-      selecionados.some((c) => c.id === 'c99'),
-      'o trecho com a evidência tem score 0 e ainda assim precisa entrar',
-    );
+      assert.equal(selecionados.length, 5);
+      assert.ok(
+        selecionados.some((c) => c.id === 'c99'),
+        'o trecho com a evidência tem score 0 e ainda assim precisa entrar',
+      );
+    } finally {
+      if (anterior === undefined) delete process.env.EXTRACTION_MAX_CHUNKS;
+      else process.env.EXTRACTION_MAX_CHUNKS = anterior;
+    }
+  });
+
+  it('nunca passa do teto duro, mesmo com configuração enorme', () => {
+    // 24 trechos são ~43.000 caracteres, ~11.000 tokens. Acima disso a avaliação consumiria o
+    // orçamento inteiro do refino na primeira chamada, que é o defeito que o teto existe para
+    // impedir — configuração generosa não pode reintroduzi-lo.
+    const anterior = process.env.EXTRACTION_MAX_CHUNKS;
+    process.env.EXTRACTION_MAX_CHUNKS = '200';
+
+    try {
+      const chunks = Array.from({ length: 60 }, (_, i) => chunk(`c${i}`, `texto ${i}`, 100 - i));
+      assert.equal(selectEvaluatorChunks({ chunks, metadata: {} }).length, 24);
+    } finally {
+      if (anterior === undefined) delete process.env.EXTRACTION_MAX_CHUNKS;
+      else process.env.EXTRACTION_MAX_CHUNKS = anterior;
+    }
   });
 });

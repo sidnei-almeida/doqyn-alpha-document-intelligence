@@ -7,20 +7,31 @@ import type {
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import type { TriageFinding } from './extractionTriage.js';
 import { classExtractionHints } from './extractorPrompt.js';
+import { getExtractionMaxChunks } from './aiConfig.js';
 
 /**
- * Teto de trechos no prompt do Avaliador.
+ * Quantos trechos o Avaliador lê, e por que isso acompanha o extrator.
  *
- * O Avaliador recebia a mesma seleção do extrator — até `EXTRACTION_MAX_CHUNKS` (40) de 1.800
- * caracteres, ou 72.000 caracteres, uns 18.400 tokens numa chamada só. Num documento longo isso
- * estourava sozinho o orçamento inteiro do refino, e o passe focado nunca chegava a caber: o laço
- * virava uma avaliação sem ação, o oposto do que foi desenhado.
+ * O Avaliador recebia a seleção inteira do extrator. Com `EXTRACTION_MAX_CHUNKS` no default de 40
+ * isso são 72.000 caracteres, uns 18.400 tokens numa chamada só — num documento longo estourava
+ * sozinho o orçamento do refino, e o passe focado nunca chegava a caber. O laço virava avaliação
+ * sem ação.
  *
- * Ele não precisa dos quarenta. Precisa dos trechos que sustentam os campos que está julgando —
- * e a triagem, que é quem confere se o snippet citado existe de verdade, continua vendo tudo,
- * porque conferir texto não custa token.
+ * Um teto fixo consertava o custo e criava outro problema: o Avaliador julgando sobre menos texto
+ * do que o extrator usou. Para CONFERIR o que foi afirmado bastam os trechos que carregam a
+ * evidência citada, e a seleção abaixo garante que eles entrem. Mas para DESCOBRIR que faltou algo
+ * ele precisa ver o que o extrator viu — senão declara ausência sobre um recorte mais estreito que
+ * o da própria extração, que é exatamente o exagero que a prova de ausência veio corrigir.
+ *
+ * Por isso segue o extrator, com um teto próprio para o caso em que alguém configure um valor
+ * enorme: 24 trechos são ~43.000 caracteres, ~11.000 tokens, o limite do que cabe no orçamento de
+ * refino sem consumi-lo inteiro na primeira chamada.
  */
-const MAX_CHUNKS_FOR_EVALUATOR = 8;
+const HARD_CAP_CHUNKS_FOR_EVALUATOR = 24;
+
+function maxChunksForEvaluator(): number {
+  return Math.min(getExtractionMaxChunks(), HARD_CAP_CHUNKS_FOR_EVALUATOR);
+}
 
 function normalizeForMatch(value: string): string {
   return value
@@ -42,7 +53,8 @@ export function selectEvaluatorChunks(input: {
   chunks: RetrievedChunk[];
   metadata: Record<string, ExtractedMetadataField>;
 }): RetrievedChunk[] {
-  if (input.chunks.length <= MAX_CHUNKS_FOR_EVALUATOR) return input.chunks;
+  const limit = maxChunksForEvaluator();
+  if (input.chunks.length <= limit) return input.chunks;
 
   const snippets = Object.values(input.metadata)
     .map((field) => field.evidence?.snippet?.trim())
@@ -62,7 +74,7 @@ export function selectEvaluatorChunks(input: {
     .filter((chunk) => !carryingEvidence.has(chunk.id))
     .sort((a, b) => b.score - a.score);
 
-  return [...withEvidence, ...rest].slice(0, MAX_CHUNKS_FOR_EVALUATOR);
+  return [...withEvidence, ...rest].slice(0, limit);
 }
 
 export type EvaluatorFieldBrief = {
