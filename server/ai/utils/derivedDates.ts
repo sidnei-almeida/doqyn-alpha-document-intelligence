@@ -127,6 +127,11 @@ export function isAnchorFieldName(...texts: Array<string | null | undefined>): b
   return mentions(texts.filter(Boolean).join(' '), ANCHOR_HINTS);
 }
 
+/** Diz se um nome de campo descreve a data FINAL — o destino de uma derivação. */
+export function isEndDateFieldName(...texts: Array<string | null | undefined>): boolean {
+  return mentions(texts.filter(Boolean).join(' '), TARGET_HINTS);
+}
+
 export type ParsedDuration = { amount: number; unit: 'day' | 'week' | 'month' | 'year' };
 
 /** Interpreta prazo relativo escrito em português. `null` quando não houver prazo reconhecível. */
@@ -316,7 +321,11 @@ export type TextDuration = {
 };
 
 /**
- * Procura no texto do documento um prazo que governe a validade.
+ * Procura no texto do documento os prazos que governam a validade, do peso mais forte.
+ *
+ * Devolve todos os empatados no topo, e não um vencedor: quem precisa de uma resposta só chama
+ * `findDurationInText`; quem precisa saber que houve disputa — a triagem, para contar ao Avaliador
+ * o que a heurística recusou — precisa ver os dois.
  *
  * Existe porque a derivação dependia de o prazo ter sido extraído para um campo configurado — e a
  * classe do tenant simplesmente pode não ter esse campo. Foi o caso real que originou isto: uma
@@ -329,7 +338,7 @@ export type TextDuration = {
  * certa e origem errada. Data errada em campo de vencimento é pior que campo vazio: o vazio pede
  * conferência, a data errada dispensa.
  */
-export function findDurationInText(text: string): TextDuration | null {
+export function findValidityDurationCandidates(text: string): TextDuration[] {
   const flat = deaccent(text).replace(/\s+/g, ' ');
   const candidates: TextDuration[] = [];
 
@@ -374,24 +383,29 @@ export function findDurationInText(text: string): TextDuration | null {
     }
   });
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return [];
 
   candidates.sort((a, b) => a.contextRank - b.contextRank);
-  const best = candidates[0];
+  return candidates.filter((c) => c.contextRank === candidates[0].contextRank);
+}
 
-  /**
-   * Empate entre prazos diferentes com o mesmo peso de contexto não vira escolha.
-   *
-   * Um NDA pode dizer cinco anos de confidencialidade e três de não aliciamento. As duas leituras
-   * são defensáveis e só uma está certa — e o módulo não tem como saber qual. Devolver `null`
-   * mantém o campo vazio e o documento em revisão, que é a resposta honesta quando há dúvida
-   * genuína.
-   */
-  const sameRank = candidates.filter((c) => c.contextRank === best.contextRank);
-  const distinct = new Set(sameRank.map((c) => `${c.parsed.amount}-${c.parsed.unit}`));
+/**
+ * O prazo que governa a validade, quando só existe um.
+ *
+ * Empate entre prazos diferentes com o mesmo peso de contexto não vira escolha. Um NDA pode dizer
+ * cinco anos de confidencialidade e três de não aliciamento. As duas leituras são defensáveis e só
+ * uma está certa — e o módulo não tem como saber qual. Devolver `null` mantém o campo vazio e o
+ * documento em revisão, que é a resposta honesta quando há dúvida genuína. Quem quiser ver os
+ * candidatos recusados chama `findValidityDurationCandidates`.
+ */
+export function findDurationInText(text: string): TextDuration | null {
+  const candidates = findValidityDurationCandidates(text);
+  if (candidates.length === 0) return null;
+
+  const distinct = new Set(candidates.map((c) => `${c.parsed.amount}-${c.parsed.unit}`));
   if (distinct.size > 1) return null;
 
-  return best;
+  return candidates[0];
 }
 
 type MetadataLike = Record<string, { value?: unknown; normalizedValue?: unknown } | undefined>;

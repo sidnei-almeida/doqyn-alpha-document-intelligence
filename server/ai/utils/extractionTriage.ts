@@ -25,11 +25,18 @@ import type {
 import { isUsableNamingSubject } from '../services/documentNaming.js';
 import { findFieldCandidates } from './fieldCandidates.js';
 import { findCoherenceProblems, typesDisagree } from './fieldCoherence.js';
+import {
+  findValidityDurationCandidates,
+  isAnchorFieldName,
+  isEndDateFieldName,
+} from './derivedDates.js';
 import { isConfidentialityClassRule, hasFinancialRoleFields } from './documentClassHeuristics.js';
 
 export type TriageSymptom =
   /** Campo obrigatório voltou vazio. Pode ser abstenção correta ou leitura falha — o modelo decide. */
   | 'ausente'
+  /** Data final vazia com âncora no metadado e prazo escrito no corpo: a conta não fechou. */
+  | 'vencimento_derivavel'
   /** Preenchido sem o trecho que comprova. O prompt exige evidence.snippet em todo valor. */
   | 'sem_evidencia'
   /** O snippet citado não existe no texto do documento. Invenção, não leitura. */
@@ -137,6 +144,71 @@ function normalizedValueMatchesType(
   }
 
   return { ok: true };
+}
+
+const ISO_ANCHOR = /^\d{4}-\d{2}-\d{2}$/;
+
+function readIsoValue(extracted: ExtractedMetadataField | undefined): string | null {
+  const value = extracted?.normalizedValue ?? extracted?.value;
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  return ISO_ANCHOR.test(text) ? text : null;
+}
+
+/**
+ * Data final vazia quando o documento tinha com que calculá-la.
+ *
+ * "Campo obrigatório voltou vazio" é genérico demais para este campo: o Avaliador recebe "faltou
+ * data_vencimento" e não sabe se deve procurar uma data escrita ou montar uma conta. Aqui a
+ * pergunta já vem respondida — existe âncora ISO no metadado e existe prazo escrito no corpo.
+ *
+ * Depois de `deriveEndDates` ler o texto, este caso é raro de propósito: quando a conta fecha, o
+ * campo já vem preenchido e nada disto dispara. O que sobra é justamente o que a heurística
+ * recusou — dois prazos de mesmo peso disputando, âncora que ela não reconheceu, termo de validade
+ * fora da lista. Em vez de sumir, vira dossiê. E custa zero token: tudo é determinístico.
+ */
+function triageDerivableExpiry(input: {
+  selectedClass: DocumentClassRule;
+  metadata: Record<string, ExtractedMetadataField>;
+  chunks: RetrievedChunk[];
+}): TriageFinding[] {
+  const targets = input.selectedClass.fields.filter(
+    (field) =>
+      field.type === 'date' &&
+      isEndDateFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])) &&
+      isEmptyValue(input.metadata[field.key]),
+  );
+  if (targets.length === 0) return [];
+
+  const anchor = input.selectedClass.fields
+    .filter(
+      (field) =>
+        field.type === 'date' &&
+        isAnchorFieldName(field.key, field.label, field.description, ...(field.aliases ?? [])),
+    )
+    .map((field) => ({ key: field.key, iso: readIsoValue(input.metadata[field.key]) }))
+    .find((candidate): candidate is { key: string; iso: string } => candidate.iso !== null);
+  if (!anchor) return [];
+
+  const durations = findValidityDurationCandidates(
+    input.chunks.map((chunk) => chunk.text).join('\n'),
+  );
+  if (durations.length === 0) return [];
+
+  const distinct = [...new Set(durations.map((d) => d.snippet.replace(/\s+/g, ' ').trim()))];
+  const detail =
+    distinct.length > 1
+      ? `o documento tem âncora (${anchor.key} = ${anchor.iso}) e mais de um prazo disputando a validade (${distinct
+          .map((snippet) => `"${snippet.slice(0, 60)}"`)
+          .join(' e ')}) — diga qual governa o vencimento e por quê, ou deixe null explicando`
+      : `o documento tem âncora (${anchor.key} = ${anchor.iso}) e prazo escrito ("${distinct[0]!.slice(0, 60)}"), mas a data final ficou vazia — confirme o prazo que governa a validade`;
+
+  return targets.map((field) => ({
+    key: field.key,
+    label: field.label,
+    symptom: 'vencimento_derivavel' as const,
+    detail,
+  }));
 }
 
 function isEmptyValue(extracted: ExtractedMetadataField | undefined): boolean {
@@ -319,6 +391,14 @@ export function triageExtraction(input: {
       });
     }
   }
+
+  findings.push(
+    ...triageDerivableExpiry({
+      selectedClass: input.selectedClass,
+      metadata: input.metadata,
+      chunks: input.chunks,
+    }),
+  );
 
   findings.push(...triageNamingRoles({ roles: input.naming, selectedClass: input.selectedClass }));
 

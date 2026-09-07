@@ -330,3 +330,81 @@ describe('triagem dos papéis de nomeação', () => {
     );
   });
 });
+
+describe('data de vencimento que dava para calcular', () => {
+  const CONTRATOS: DocumentClassRule = {
+    id: 'cat_ctr',
+    name: 'Contratos',
+    description: 'Contratos e acordos.',
+    keywords: ['contrato'],
+    fields: [
+      { key: 'data_referencia', label: 'Data de referência', type: 'date', required: true },
+      { key: 'data_vencimento', label: 'Data de vencimento', type: 'date', required: true },
+      { key: 'partes_envolvidas', label: 'Partes envolvidas', type: 'string', required: true },
+    ],
+    namingTemplate: '{partes_envolvidas}_{data_referencia}',
+  };
+
+  const preenchido = (iso: string, snippet: string) =>
+    field({ value: iso, normalizedValue: iso, evidence: { snippet, page: 1 } });
+
+  it('aponta a conta que não fechou quando há âncora e prazo em disputa', () => {
+    const triage = triageExtraction({
+      selectedClass: CONTRATOS,
+      chunks: [
+        chunk(
+          'Celebrado em 09 de junho de 2026. A confidencialidade vigorará pelo prazo de 5 (cinco) anos. ' +
+            'Pelo prazo de 3 (três) anos, o RECEPTOR compromete-se a não aliciamento.',
+        ),
+      ],
+      metadata: {
+        data_referencia: preenchido('2026-06-09', 'Celebrado em 09 de junho de 2026'),
+        data_vencimento: field({ value: null }),
+        partes_envolvidas: preenchido('Alpha e Beta', 'RECEPTOR'),
+      },
+    });
+
+    const finding = triage.findings.find((f) => f.symptom === 'vencimento_derivavel');
+    assert.ok(finding, 'o sintoma dedicado precisa existir');
+    assert.equal(finding!.key, 'data_vencimento');
+    assert.ok(finding!.detail.includes('2026-06-09'), 'a âncora entra no dossiê');
+    assert.ok(finding!.detail.includes('cinco'), 'o prazo disputado entra no dossiê');
+    assert.ok(triage.suspectFieldKeys.includes('data_vencimento'));
+  });
+
+  it('sem âncora no metadado não há conta a cobrar', () => {
+    const triage = triageExtraction({
+      selectedClass: CONTRATOS,
+      chunks: [chunk('A confidencialidade vigorará pelo prazo de 5 (cinco) anos.')],
+      metadata: {
+        data_referencia: field({ value: null }),
+        data_vencimento: field({ value: null }),
+        partes_envolvidas: preenchido('Alpha e Beta', 'RECEPTOR'),
+      },
+    });
+
+    assert.equal(
+      triage.findings.some((f) => f.symptom === 'vencimento_derivavel'),
+      false,
+    );
+  });
+
+  it('campo de vencimento já preenchido não vira sintoma', () => {
+    const triage = triageExtraction({
+      selectedClass: CONTRATOS,
+      chunks: [
+        chunk('Celebrado em 09 de junho de 2026. Vigorará pelo prazo de 3 (três) anos.'),
+      ],
+      metadata: {
+        data_referencia: preenchido('2026-06-09', 'Celebrado em 09 de junho de 2026'),
+        data_vencimento: preenchido('2029-06-09', 'prazo de 3 (três) anos'),
+        partes_envolvidas: preenchido('Alpha e Beta', 'RECEPTOR'),
+      },
+    });
+
+    assert.equal(
+      triage.findings.some((f) => f.symptom === 'vencimento_derivavel'),
+      false,
+    );
+  });
+});
