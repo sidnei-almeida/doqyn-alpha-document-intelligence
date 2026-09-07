@@ -3,7 +3,6 @@ import {
   createDocumentCategory,
   listDocumentCategories,
 } from '../../server/services/documentCategoriesService.js';
-import { createDefaultExtractionRuleForCategory } from '../../server/services/documentExtractionRulesService.js';
 import { apiCreated, withAdminMongoApi } from '../../server/utils/apiHttp.js';
 import { logger } from '../../server/utils/logger.js';
 
@@ -51,13 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           slug: body.slug,
           sortOrder: body.sortOrder,
         });
-
-        await createDefaultExtractionRuleForCategory(
-          companyId,
-          user.id,
-          category.id,
-          category.slug,
-        );
 
         logger.info('document category created', {
           requestId,

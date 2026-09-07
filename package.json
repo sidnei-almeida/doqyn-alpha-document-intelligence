@@ -36,6 +36,7 @@
     "db:backfill-search-meta": "tsx scripts/backfill-document-search-meta.ts",
     "db:repair-normalized-values": "tsx scripts/repair-truncated-normalized-values.ts",
     "db:backfill-validity-field": "tsx scripts/backfill-validity-field.ts",
+    "db:dedupe-extraction-rules": "tsx scripts/dedupe-active-extraction-rules.ts",
     "db:drop-empty-legacy": "tsx scripts/drop-empty-legacy-collections.ts",
     "db:migrate-keycloak-to-auth-user-id": "tsx scripts/migrate-keycloak-to-auth-user-id.ts",
     "db:seed-isolation-test": "tsx scripts/seed-second-tenant-isolation-test.ts",

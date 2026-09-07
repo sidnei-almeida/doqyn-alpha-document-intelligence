@@ -205,19 +205,17 @@ describe('isolamento tenant — regras de classificação', () => {
     assert.equal(error.code, 'DOCUMENT_RULES_NOT_CONFIGURED');
   });
 
-  it('G. createDefaultExtractionRuleForCategory é tenant-scoped', () => {
+  it('G. a regra padrão da categoria é tenant-scoped', () => {
     const source = readFileSync(
-      join(repoRoot, 'server/services/documentExtractionRulesService.ts'),
+      join(repoRoot, 'server/services/documentDefaultExtractionRule.ts'),
       'utf8',
     );
     const provision = readFileSync(
       join(repoRoot, 'server/services/tenantProvisionService.ts'),
       'utf8',
     );
-    assert.ok(source.includes('createDefaultExtractionRuleForCategory'));
-    assert.ok(source.includes('createDocumentExtractionRule(tenantId'));
-    assert.ok(source.includes('documentExtractionRules'));
-    assert.ok(source.includes('não catálogo global'));
+    assert.ok(source.includes('ensureDefaultExtractionRule'));
+    assert.ok(source.includes('requireTenantGovernanceCollections'));
     assert.equal(provision.includes('createDefaultExtractionRuleForCategory'), false);
     assert.equal(provision.includes('createDocumentCategory'), false);
   });
