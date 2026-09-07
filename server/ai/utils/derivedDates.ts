@@ -27,6 +27,19 @@ const ANCHOR_HINTS = [
   'vigencia_inicio',
   'partida',
   'firmado',
+  /**
+   * `referencia`, `documento` e `lavratura` entraram depois de um caso real: uma classe "Contratos"
+   * com os campos `data_referencia`, `data_vencimento` e `partes_envolvidas`. O vencimento saía
+   * vazio com tudo à vista no papel — não por falha de leitura, mas porque a data que existia não
+   * era reconhecida como ponto de partida. A lista descrevia o vocabulário de quem escreveu o
+   * módulo, não o de quem cadastra campo no produto.
+   *
+   * O filtro por `type === 'date'` é o que torna isso seguro: um campo `referencia` que guarda
+   * número de processo nunca chega aqui.
+   */
+  'referencia',
+  'documento',
+  'lavratura',
 ];
 
 const TARGET_HINTS = [
@@ -41,8 +54,53 @@ const TARGET_HINTS = [
   'caducidade',
 ];
 
+/**
+ * Número, o parêntese por extenso que o jurídico gosta de usar, e a unidade — nessa ordem e perto.
+ *
+ * A versão anterior aceitava qualquer distância entre o número e a unidade (`[^)]*?` sem teto).
+ * Em valor de campo isso passava, porque o valor é curto. Sobre o texto do documento vira veneno:
+ * "celebrado em 09 de junho de 2026 … NÃO ALICIAMENTO (3 ANOS)" era lido como **9 anos**, juntando
+ * o dia de uma data com a unidade de outra frase. O prazo saía plausível, redondo e errado.
+ */
 const DURATION_RE =
-  /(\d{1,4})\s*(?:\(|\s)?[^)]*?\)?\s*(dias?|semanas?|quinzenas?|mes(?:es)?|meses|anos?)/i;
+  /(\d{1,4})\s*(?:\([^)]{0,24}\)\s*)?(dias?|semanas?|quinzenas?|mes(?:es)?|meses|anos?)\b/i;
+
+/**
+ * Termos que dizem que um prazo governa a duração do documento.
+ *
+ * Sem eles, varrer o texto atrás de "número + unidade" pegaria o primeiro prazo que aparecesse —
+ * "pagamento em 30 dias", "entrega em 15 dias", "aviso prévio de 60 dias" — e produziria uma data
+ * de vencimento com cara de certa e origem errada. Data errada em campo de vencimento é pior que
+ * campo vazio: o vazio pede conferência, a data errada dispensa.
+ *
+ * A ordem importa: quanto mais alto na lista, mais o termo governa o documento inteiro em vez de
+ * uma cláusula isolada.
+ */
+const VALIDITY_CONTEXT_TERMS = [
+  'vigencia',
+  'vigorara',
+  'vigorar',
+  'vigor',
+  'validade',
+  'valido',
+  'valida',
+  'confidencialidade',
+  'sigilo',
+  'garantia',
+  'carencia',
+  'nao aliciamento',
+  'nao concorrencia',
+  'exclusividade',
+];
+
+/** Quantos caracteres depois do termo ainda contam como "perto". */
+const CONTEXT_WINDOW = 90;
+
+/** Um prazo pertence à frase em que está escrito. Além do ponto final começa outro assunto. */
+function cutAtSentenceEnd(window: string): string {
+  const stop = window.indexOf('.');
+  return stop === -1 ? window : window.slice(0, stop);
+}
 
 const deaccent = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -180,9 +238,98 @@ export type DerivedDate = {
   value: string;
   anchorKey: string;
   anchorValue: string;
+  /** Chave do campo que trouxe o prazo, ou `texto` quando ele foi lido direto do documento. */
   durationKey: string;
   durationValue: string;
 };
+
+export type TextDuration = {
+  parsed: ParsedDuration;
+  /** O trecho literal que sustenta o prazo, para virar evidência do campo derivado. */
+  snippet: string;
+  /** Qual termo de validade ancorou a leitura. Quanto mais alto na lista, mais governa. */
+  contextTerm: string;
+  contextRank: number;
+};
+
+/**
+ * Procura no texto do documento um prazo que governe a validade.
+ *
+ * Existe porque a derivação dependia de o prazo ter sido extraído para um campo configurado — e a
+ * classe do tenant simplesmente pode não ter esse campo. Foi o caso real que originou isto: uma
+ * classe "Contratos" com `data_referencia`, `data_vencimento` e `partes_envolvidas`, e um NDA
+ * dizendo "Pelo prazo de 3 (três) anos" no corpo. O prazo estava escrito, legível, e não tinha
+ * onde pousar. O campo saía FALTANDO com tudo à vista.
+ *
+ * A varredura é ancorada de propósito. Documento tem muitos prazos — pagamento em 30 dias, aviso
+ * prévio de 60, entrega em 15 — e pegar o primeiro produziria uma data de vencimento com cara de
+ * certa e origem errada. Data errada em campo de vencimento é pior que campo vazio: o vazio pede
+ * conferência, a data errada dispensa.
+ */
+export function findDurationInText(text: string): TextDuration | null {
+  const flat = deaccent(text).replace(/\s+/g, ' ');
+  const candidates: TextDuration[] = [];
+
+  VALIDITY_CONTEXT_TERMS.forEach((term, rank) => {
+    let from = 0;
+    for (;;) {
+      const at = flat.indexOf(term, from);
+      if (at === -1) break;
+      from = at + term.length;
+
+      /**
+       * Depois do termo primeiro, antes só como recurso — e nunca atravessando ponto final.
+       *
+       * A janela que abria antes do termo em todos os casos fazia a segunda "vigência" de um
+       * documento enxergar o prazo da primeira frase. As duas ocorrências viravam o mesmo número, o
+       * empate desaparecia, e a ambiguidade que deveria mandar o documento para revisão virava uma
+       * resposta confiante. Cortar no ponto final é o que mantém cada leitura dentro da sua frase.
+       */
+      const after = cutAtSentenceEnd(flat.slice(from, from + CONTEXT_WINDOW));
+      let parsed = parseRelativeDuration(after);
+      let start = from;
+      let end = from + after.length;
+
+      if (!parsed) {
+        // "3 anos de vigência": o número vem antes do termo.
+        const beforeRaw = flat.slice(Math.max(0, at - 40), at);
+        const lastStop = beforeRaw.lastIndexOf('.');
+        const before = lastStop === -1 ? beforeRaw : beforeRaw.slice(lastStop + 1);
+        parsed = parseRelativeDuration(before);
+        start = at - before.length;
+        end = at + term.length;
+      }
+
+      if (!parsed) continue;
+
+      candidates.push({
+        parsed,
+        snippet: text.slice(Math.max(0, start), Math.min(text.length, end)).trim(),
+        contextTerm: term,
+        contextRank: rank,
+      });
+    }
+  });
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => a.contextRank - b.contextRank);
+  const best = candidates[0];
+
+  /**
+   * Empate entre prazos diferentes com o mesmo peso de contexto não vira escolha.
+   *
+   * Um NDA pode dizer cinco anos de confidencialidade e três de não aliciamento. As duas leituras
+   * são defensáveis e só uma está certa — e o módulo não tem como saber qual. Devolver `null`
+   * mantém o campo vazio e o documento em revisão, que é a resposta honesta quando há dúvida
+   * genuína.
+   */
+  const sameRank = candidates.filter((c) => c.contextRank === best.contextRank);
+  const distinct = new Set(sameRank.map((c) => `${c.parsed.amount}-${c.parsed.unit}`));
+  if (distinct.size > 1) return null;
+
+  return best;
+}
 
 type MetadataLike = Record<string, { value?: unknown; normalizedValue?: unknown } | undefined>;
 
@@ -200,7 +347,12 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * FINAL, e só quando existe âncora ISO e prazo relativo já extraídos. Na ausência de qualquer um
  * dos três, não inventa nada — deixar vazio é a resposta correta.
  */
-export function deriveEndDates(fields: DocumentRuleField[], metadata: MetadataLike): DerivedDate[] {
+export function deriveEndDates(
+  fields: DocumentRuleField[],
+  metadata: MetadataLike,
+  /** Texto do documento, para achar o prazo quando nenhum campo configurado o carrega. */
+  documentText?: string,
+): DerivedDate[] {
   const anchors = fields
     .filter((f) => f.type === 'date' && fieldMentions(f, ANCHOR_HINTS))
     .map((f) => ({ key: f.key, value: readValue(metadata[f.key]) }))
@@ -215,7 +367,15 @@ export function deriveEndDates(fields: DocumentRuleField[], metadata: MetadataLi
     .map((d) => ({ ...d, parsed: parseRelativeDuration(d.raw) }))
     .filter((d): d is { key: string; raw: string; parsed: ParsedDuration } => d.parsed !== null);
 
-  if (durations.length === 0) return [];
+  /**
+   * O texto é o segundo lugar onde procurar, nunca o primeiro.
+   *
+   * Campo extraído passou pelo modelo e pela validação; prazo lido do corpo é heurística ancorada.
+   * Quando os dois existem, o campo vence — ele foi escolhido por alguém que leu o documento
+   * inteiro, e a varredura só olha uma janela em volta de um termo.
+   */
+  const fromText = durations.length === 0 && documentText ? findDurationInText(documentText) : null;
+  if (durations.length === 0 && !fromText) return [];
 
   const derived: DerivedDate[] = [];
 
@@ -226,7 +386,10 @@ export function deriveEndDates(fields: DocumentRuleField[], metadata: MetadataLi
 
     const anchor = anchors[0];
     const duration = durations[0];
-    const value = addDuration(anchor.value, duration.parsed);
+    const parsed = duration?.parsed ?? fromText?.parsed;
+    if (!parsed) continue;
+
+    const value = addDuration(anchor.value, parsed);
     if (!value) continue;
 
     derived.push({
@@ -234,8 +397,8 @@ export function deriveEndDates(fields: DocumentRuleField[], metadata: MetadataLi
       value,
       anchorKey: anchor.key,
       anchorValue: anchor.value,
-      durationKey: duration.key,
-      durationValue: duration.raw,
+      durationKey: duration?.key ?? 'texto',
+      durationValue: duration?.raw ?? fromText?.snippet ?? '',
     });
   }
 

@@ -52,7 +52,11 @@ export async function extractMetadataWithRule(input: {
       };
     }
 
-    const validated = validateMetadataResult(parsed, input.selectedClass);
+    const validated = validateMetadataResult(
+      parsed,
+      input.selectedClass,
+      input.chunks.map((chunk) => chunk.text).join('\n'),
+    );
 
     /**
      * Resposta cortada é resultado incompleto, não resultado.

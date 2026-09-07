@@ -244,6 +244,11 @@ export function parseNamingRoles(raw: unknown, className: string): DocumentNamin
 export function validateMetadataResult(
   raw: unknown,
   selectedClass: DocumentClassRule,
+  /**
+   * Texto do documento. Só serve à derivação de data final, que precisa achar o prazo quando a
+   * classe do tenant não tem campo para guardá-lo — e ela não tem quase nunca.
+   */
+  documentText?: string,
 ): MetadataExtractionResult {
   const requiredFieldKeys = selectedClass.fields.filter((f) => f.required).map((f) => f.key);
 
@@ -335,7 +340,7 @@ export function validateMetadataResult(
   // Data final calculada a partir de âncora + prazo, em código e não pelo LLM: o modelo pequeno
   // não faz essa aritmética (16 de 16 vazias na medição), o grande faz — então pelo LLM o
   // resultado dependeria do modelo configurado. Ver server/ai/utils/derivedDates.ts.
-  for (const derived of deriveEndDates(selectedClass.fields, metadata)) {
+  for (const derived of deriveEndDates(selectedClass.fields, metadata, documentText)) {
     const fieldDef = selectedClass.fields.find((f) => f.key === derived.targetKey);
     if (!fieldDef) continue;
 

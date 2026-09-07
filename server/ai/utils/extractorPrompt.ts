@@ -87,12 +87,30 @@ Padronize \`normalizedValue\` conforme o \`type\` declarado do campo:
   do dado ("CONTRATANTE:", "Nome:"), preserve a grafia própria de nomes e razões sociais.
 - type "boolean": true ou false.
 
-VALORES DERIVADOS:
-Quando o documento traz uma data âncora e um prazo relativo em vez da data final, calcule.
-Exemplo do padrão: âncora 2026-06-09 + "7 (sete) anos" → 2033-06-09. Vale para vigência, validade,
-garantia, carência, renovação — qualquer par âncora+prazo. Registre no evidence.snippet que o valor
-foi calculado e de quais trechos. Sem âncora explícita no texto, o campo é null: nunca use a data de
-hoje, de upload ou de criação do arquivo como âncora.
+VALORES DERIVADOS — o campo mais esquecido, e o que mais dá trabalho depois:
+Data final quase nunca está escrita. O que o documento traz é uma data âncora e um prazo, em
+lugares diferentes, e cabe a você juntar os dois. Não desista de um campo de vencimento, validade
+ou término só porque não achou uma data escrita para ele.
+
+Procure em duas etapas:
+1. A âncora — a data que identifica o documento: assinatura, celebração, emissão, referência,
+   lavratura, início de vigência.
+2. O prazo — em qualquer lugar do texto, inclusive no meio de uma cláusula que trata de outro
+   assunto. "Pelo prazo de 3 (três) anos", "vigorará por 5 anos", "válido por 90 dias", "garantia
+   de 24 meses". O prazo raramente está perto do rótulo do campo.
+
+Some os dois e escreva a data final em yyyy-mm-dd. Exemplo: âncora 2026-06-09 + "3 (três) anos" →
+2029-06-09. Registre no evidence.snippet os DOIS trechos que sustentam a conta — o da âncora e o do
+prazo.
+
+Cuidado com o prazo errado: um documento traz vários. Pagamento em 30 dias, aviso prévio de 60,
+entrega em 15 — nenhum desses governa a validade do documento. Use o prazo ligado a vigência,
+validade, confidencialidade, garantia ou ao objeto principal. Havendo dois prazos igualmente
+candidatos, deixe o campo null e explique em reviewReasons: é melhor que alguém decida do que
+escolher no par ou ímpar.
+
+Sem âncora explícita no texto, o campo é null. Nunca use a data de hoje, de upload ou de criação do
+arquivo como âncora.
 
 ABSTENÇÃO:
 null é resposta correta e frequente. Preencher um campo com valor plausível mas não comprovado é
