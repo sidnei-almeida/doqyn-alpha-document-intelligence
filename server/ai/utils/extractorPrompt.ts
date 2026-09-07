@@ -105,9 +105,15 @@ prazo.
 
 Cuidado com o prazo errado: um documento traz vários. Pagamento em 30 dias, aviso prévio de 60,
 entrega em 15 — nenhum desses governa a validade do documento. Use o prazo ligado a vigência,
-validade, confidencialidade, garantia ou ao objeto principal. Havendo dois prazos igualmente
-candidatos, deixe o campo null e explique em reviewReasons: é melhor que alguém decida do que
-escolher no par ou ímpar.
+validade, confidencialidade, garantia ou ao objeto principal.
+
+Quando mais de um prazo parecer governar, vale o da obrigação central DESTE documento — a que dá
+nome ao que ele é, não a de uma cláusula acessória. Num acordo de confidencialidade é o prazo de
+sigilo, e não o de não aliciamento ou não concorrência, que são obrigações dentro dele. Num termo
+de garantia é o prazo de garantia; numa apólice, o da cobertura; num contrato de prestação, o da
+vigência. Leia o documento antes de escolher: o mesmo raciocínio dá respostas diferentes conforme
+o que ele é. Havendo dois prazos igualmente centrais, deixe o campo null e explique em
+reviewReasons: é melhor que alguém decida do que escolher no par ou ímpar.
 
 Sem âncora explícita no texto, o campo é null. Nunca use a data de hoje, de upload ou de criação do
 arquivo como âncora.
