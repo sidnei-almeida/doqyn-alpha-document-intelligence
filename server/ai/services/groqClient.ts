@@ -1,10 +1,12 @@
 import Groq from 'groq-sdk';
 import { AI_ERROR_MESSAGES } from '../constants.js';
+import { getGroqMaxOutputTokens, getGroqRequestTimeoutMs } from '../utils/aiConfig.js';
 import {
-  getGroqMaxOutputTokens,
-  getGroqModelFromEnv,
-  getGroqRequestTimeoutMs,
-} from '../utils/aiConfig.js';
+  getInferenceConfig,
+  getInferenceProviderName,
+  isInferenceConfigured,
+  resolveInferenceModel,
+} from '../providers/inferenceProvider.js';
 import {
   diagnoseClassifierError,
   sanitizeDiagnosticText,
@@ -30,7 +32,15 @@ import {
   summarizeError,
 } from '../utils/pipelineDebug.js';
 
-let groqClient: Groq | null = null;
+/**
+ * Cliente por fornecedor, não um só.
+ *
+ * O singleton único guardava o primeiro cliente construído. Trocar `INFERENCE_PROVIDER` — em teste,
+ * ou num processo que atenda mais de um caminho — continuaria falando com o endereço antigo, e o
+ * sintoma seria uma chave rejeitada num endpoint que ninguém escolheu. Chavear pelo destino custa
+ * um Map e elimina a classe inteira de erro.
+ */
+const clientsByTarget = new Map<string, Groq>();
 
 export type GroqPromptContext = {
   requestId?: string;
@@ -123,28 +133,32 @@ export type JsonPromptResult = {
   truncated: boolean;
 };
 
-function getGroqApiKey(): string {
-  const apiKey = process.env.GROQ_API_KEY?.trim();
-  if (!apiKey) {
+function requireInferenceApiKey(): { apiKey: string; baseURL: string | null } {
+  const config = getInferenceConfig();
+  if (!config.apiKey) {
+    logger.warn('provedor de inferência sem chave configurada', {
+      provider: config.provider,
+      expectedEnv: config.apiKeyEnvName,
+    });
     throw new AiAnalysisError(
       AI_ERROR_MESSAGES.aiProviderNotConfigured,
       'AI_PROVIDER_NOT_CONFIGURED',
       503,
     );
   }
-  return apiKey;
+  return { apiKey: config.apiKey, baseURL: config.baseURL };
 }
 
 export function getGroqModel(): string {
-  return getGroqModelFromEnv();
+  return resolveInferenceModel('default');
 }
 
 export function getGroqClassifierModel(): string {
-  return process.env.GROQ_CLASSIFIER_MODEL?.trim() || getGroqModel();
+  return resolveInferenceModel('classifier');
 }
 
 export function getGroqExtractorModel(): string {
-  return process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModel();
+  return resolveInferenceModel('extractor');
 }
 
 /**
@@ -156,18 +170,29 @@ export function getGroqExtractorModel(): string {
  * de medir seria trocar acerto por economia no escuro.
  */
 export function getGroqEvaluatorModel(): string {
-  return process.env.GROQ_EVALUATOR_MODEL?.trim() || getGroqModel();
+  return resolveInferenceModel('evaluator');
 }
 
 export function isGroqApiKeyConfigured(): boolean {
-  return Boolean(process.env.GROQ_API_KEY?.trim());
+  return isInferenceConfigured();
 }
 
 function getGroqClient(): Groq {
-  if (!groqClient) {
-    groqClient = new Groq({ apiKey: getGroqApiKey() });
-  }
-  return groqClient;
+  const { apiKey, baseURL } = requireInferenceApiKey();
+  const target = baseURL ?? 'groq-default';
+
+  const existing = clientsByTarget.get(target);
+  if (existing) return existing;
+
+  // `baseURL` ausente deixa o SDK usar o endereço da Groq — o caminho antigo, byte a byte.
+  const client = new Groq(baseURL ? { apiKey, baseURL } : { apiKey });
+  clientsByTarget.set(target, client);
+  return client;
+}
+
+/** Descarta os clientes em cache. Só para teste: em produção o alvo não muda em tempo de execução. */
+export function resetInferenceClientsForTests(): void {
+  clientsByTarget.clear();
 }
 
 function isRateLimitError(error: unknown): boolean {
@@ -374,7 +399,7 @@ async function callGroqCompletion(
     const tokenUsage = toTokenUsage(usage);
 
     recordAiProviderRequest({
-      provider: 'groq',
+      provider: getInferenceProviderName(),
       operation,
       status: 'success',
       durationSeconds: durationMs / 1000,
@@ -397,7 +422,7 @@ async function callGroqCompletion(
     return { content: content.trim(), durationMs, finishReason, usage: tokenUsage };
   } catch (error) {
     recordAiProviderRequest({
-      provider: 'groq',
+      provider: getInferenceProviderName(),
       operation,
       status: isRateLimitError(error) ? 'rate_limit' : 'error',
       durationSeconds: (Date.now() - startedAt) / 1000,

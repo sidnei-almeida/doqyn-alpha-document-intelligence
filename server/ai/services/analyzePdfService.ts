@@ -33,11 +33,9 @@ import {
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
-import {
-  getExtractionTokenBudget,
-  getGroqModelFromEnv,
-  isExtractionRefinementEnabled,
-} from '../utils/aiConfig.js';
+import { getExtractionTokenBudget, isExtractionRefinementEnabled } from '../utils/aiConfig.js';
+import { getGroqClassifierModel, getGroqExtractorModel, getGroqModel } from './groqClient.js';
+import { getInferenceProviderName } from '../providers/inferenceProvider.js';
 import { createTokenBudget } from '../utils/tokenBudget.js';
 import { refineExtraction } from './extractionRefinementLoop.js';
 import { reviewFailedClassification } from './classificationReviewAgent.js';
@@ -182,9 +180,13 @@ export async function analyzePdfBuffer(input: {
     fileHashPrefix: fileHash.slice(0, 12),
     ...bufferMeta(input.buffer, 'pdf'),
     analysisProvider: analysisProvider.name,
-    groqModel: getGroqModelFromEnv(),
-    classifierModel: process.env.GROQ_CLASSIFIER_MODEL?.trim() || getGroqModelFromEnv(),
-    extractorModel: process.env.GROQ_EXTRACTOR_MODEL?.trim() || getGroqModelFromEnv(),
+    // Os modelos vêm do resolvedor, não das variáveis cruas: com outro fornecedor de inferência
+    // ativo, ler `GROQ_*` aqui imprimiria no log um modelo que ninguém chamou — e log que mente
+    // sobre configuração é o que faz diagnóstico começar pelo lugar errado.
+    inferenceProvider: getInferenceProviderName(),
+    groqModel: getGroqModel(),
+    classifierModel: getGroqClassifierModel(),
+    extractorModel: getGroqExtractorModel(),
     requestId: context.requestId,
     batchId: context.batchId,
     itemId: context.itemId,
