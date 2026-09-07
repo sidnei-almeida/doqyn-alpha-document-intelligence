@@ -87,6 +87,14 @@ export type MetadataExtractionResult = {
   reviewReasons: string[];
   /** Ausente quando o modelo não devolveu o bloco ou devolveu algo inaproveitável. */
   naming?: DocumentNamingRoles;
+  /**
+   * Parágrafo curto dizendo o que o documento é e do que trata, escrito pelo modelo.
+   *
+   * Não sai do papel como os outros campos: é leitura, não extração. Serve para quem abre a
+   * biblioteca reconhecer o documento sem abrir o arquivo. `null` quando o modelo não devolveu ou
+   * devolveu algo inaproveitável — resumo inventado é pior que resumo nenhum.
+   */
+  summary?: string | null;
 };
 
 export type ProcessingLogItem = {

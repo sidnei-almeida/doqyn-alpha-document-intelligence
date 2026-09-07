@@ -241,6 +241,34 @@ export function parseNamingRoles(raw: unknown, className: string): DocumentNamin
   return { tipo, sujeitos, dataReferencia };
 }
 
+/** Tamanho que ainda é resumo. Acima disso o modelo começou a recontar o documento inteiro. */
+const MAX_SUMMARY_CHARS = 400;
+
+/**
+ * Confiança do resumo. Não é 1: é texto do modelo, não trecho conferível do documento — e a ficha
+ * usa a confiança para decidir o que mostrar como certo.
+ */
+const SUMMARY_CONFIDENCE = 0.8;
+
+/**
+ * O parágrafo que diz o que o documento é.
+ *
+ * Corta no limite pela última fronteira de frase, e não no meio da palavra: resumo truncado em
+ * "…com sigilo de sete a" parece defeito de sistema. Sem fronteira utilizável, corta duro e marca
+ * com reticências.
+ */
+function parseSummary(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (text.length < 20) return null; // "Documento." não é resumo
+  if (text.length <= MAX_SUMMARY_CHARS) return text;
+
+  const cut = text.slice(0, MAX_SUMMARY_CHARS);
+  const lastStop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '));
+  return lastStop > MAX_SUMMARY_CHARS / 2 ? cut.slice(0, lastStop + 1) : `${cut.trimEnd()}…`;
+}
+
 export function validateMetadataResult(
   raw: unknown,
   selectedClass: DocumentClassRule,
@@ -362,6 +390,27 @@ export function validateMetadataResult(
     if (stillMissing >= 0) missingFields.splice(stillMissing, 1);
   }
 
+  /**
+   * O resumo entra como campo de metadado, e não como coluna à parte, porque `resumo` já é chave
+   * canônica do produto: tem rótulo em `CANONICAL_METADATA_LABELS`, lugar na ficha do painel
+   * Detalhes (`STANDARD_DETAILS_KEYS`) e linha no editor de metadados. Gravar em outro lugar
+   * significaria reconstruir os três.
+   *
+   * `source: 'document_text'` porque é leitura do documento, ainda que sem trecho literal a citar —
+   * um resumo não tem snippet, ele é a síntese de vários. A triagem não o questiona: ela percorre
+   * os campos da regra, e este não é um deles.
+   */
+  const summary = parseSummary(data.resumo ?? data.summary);
+  if (summary && !metadata.resumo) {
+    metadata.resumo = {
+      label: 'Resumo',
+      value: summary,
+      normalizedValue: summary,
+      confidence: SUMMARY_CONFIDENCE,
+      source: 'document_text',
+    };
+  }
+
   const parsedMissing = Array.isArray(data.missingFields)
     ? data.missingFields.filter((f): f is string => typeof f === 'string')
     : missingFields;
@@ -405,5 +454,6 @@ export function validateMetadataResult(
     requiresReview,
     reviewReasons: allReviewReasons,
     naming: parseNamingRoles(data.naming, selectedClass.name),
+    summary,
   };
 }

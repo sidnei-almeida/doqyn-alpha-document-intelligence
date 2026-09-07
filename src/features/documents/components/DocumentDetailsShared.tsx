@@ -35,11 +35,27 @@ export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandard
   const fields = buildStandardDetailsFields({ metadata, searchMeta });
   if (fields.length === 0) return null;
 
+  /**
+   * O resumo sai da lista e vira bloco.
+   *
+   * As outras linhas são label à esquerda e valor curto à direita; um parágrafo de três linhas
+   * alinhado à direita fica ilegível. Ele também vem primeiro: é o que responde "que documento é
+   * este" antes de qualquer campo.
+   */
+  const summary = fields.find((field) => field.key === 'resumo');
+  const rest = fields.filter((field) => field.key !== 'resumo');
+
   return (
     <div>
       <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">Ficha</p>
+      {summary ? (
+        <div className="border-t border-doqyn-border-subtle py-2">
+          <p className="text-[11px] text-doqyn-muted">{summary.label}</p>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-doqyn-text">{summary.value}</p>
+        </div>
+      ) : null}
       <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
-        {fields.map((field) => (
+        {rest.map((field) => (
           <DocumentDetailField key={field.key} label={field.label} hint={field.hint}>
             {field.value}
           </DocumentDetailField>

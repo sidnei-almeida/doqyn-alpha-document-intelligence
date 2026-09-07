@@ -252,6 +252,14 @@ classe informada, que é apenas a pasta onde ele será arquivado:
   a peça de um desenho. Nomes próprios ou razão social, sem qualificação nem documento fiscal.
 - naming.dataReferencia: a data que identifica o documento (assinatura, emissão, validade ou
   revisão), em yyyy-mm-dd. Use null se o documento não trouxer data.
+
+Preencha também "resumo": um parágrafo de duas a três linhas, em português, dizendo o que o
+documento é e do que trata — quem são as partes ou o objeto, e o que ele estabelece, cobra ou
+atesta. É para alguém entender o documento sem abri-lo.
+- Só o que está escrito no documento. Não interprete consequências, não julgue, não recomende.
+- Sem repetir o nome do arquivo, sem preâmbulo ("Este documento..."), sem listar campo por campo:
+  os campos já estão em metadata, e repeti-los aqui desperdiça as três linhas.
+- No máximo 400 caracteres. Documento ilegível ou sem conteúdo aproveitável: use null.
 ${normalizationContract()}
 ${ndaHints}${financialHints}
 
@@ -262,7 +270,7 @@ fields (ordem de prioridade):
 ${JSON.stringify(fields, null, 2)}
 
 Formato de resposta (repare em value × normalizedValue nos dois exemplos):
-{"documentType":"string","version":"v1.0","naming":{"tipo":"NDA","sujeitos":["Cristiano Baldissera","Sidnei Almeida"],"dataReferencia":"2026-06-09"},"metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
+{"documentType":"string","version":"v1.0","resumo":"Acordo de confidencialidade entre Cristiano Baldissera e Sidnei Almeida, celebrado em 09/06/2026. Protege informações técnicas e comerciais trocadas na avaliação de uma parceria, com sigilo de sete anos e cláusulas de não concorrência e não aliciamento por três anos.","naming":{"tipo":"NDA","sujeitos":["Cristiano Baldissera","Sidnei Almeida"],"dataReferencia":"2026-06-09"},"metadata":{"data_exemplo":{"label":"Data de assinatura","value":"09 de junho de 2026","normalizedValue":"2026-06-09","confidence":0.93,"source":"document_text","evidence":{"pageNumber":1,"snippet":"Caxias do Sul/RS, 09 de junho de 2026"}},"valor_exemplo":{"label":"Valor mensal","value":"R$ 27.500,00","normalizedValue":27500.00,"confidence":0.95,"source":"document_text","evidence":{"pageNumber":1,"snippet":"VALOR MENSAL: R$ 27.500,00"}}},"missingFields":[],"requiresReview":false,"reviewReasons":[]}
 
 Trechos do documento:
 ${formatChunksForPrompt(compactChunks)}`;

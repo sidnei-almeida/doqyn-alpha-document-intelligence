@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DateInput } from '@/components/ui/DateInput';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { CANONICAL_VALIDITY_KEY } from '@shared/metadataKeyNormalize';
 import {
   getDocumentMetadataSheet,
@@ -24,6 +25,14 @@ import {
  * regra vazia e o valor real logo abaixo, como campo fora da regra.
  */
 const VALIDITY_KEY = CANONICAL_VALIDITY_KEY;
+
+/**
+ * Campos que são parágrafo, não linha.
+ *
+ * O resumo tem até 400 caracteres; num `<input>` de uma linha só se lê o começo, e para conferir o
+ * fim é preciso arrastar o cursor. Papel pautado continua sendo papel: só cresce em altura.
+ */
+const LONG_TEXT_KEYS = new Set(['resumo']);
 
 export type DocumentExpiryEditorProps = {
   documentId: string;
@@ -275,7 +284,18 @@ export function DocumentExpiryEditor({
               </div>
 
               {editable ? (
-                row.type === 'date' ? (
+                LONG_TEXT_KEYS.has(row.key) ? (
+                  <Textarea
+                    variant="rule"
+                    rows={3}
+                    aria-label={row.label}
+                    placeholder={row.description ?? 'Não informado'}
+                    value={value}
+                    onChange={(event) =>
+                      setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
+                    }
+                  />
+                ) : row.type === 'date' ? (
                   <DateInput
                     variant="rule"
                     aria-label={row.label}
