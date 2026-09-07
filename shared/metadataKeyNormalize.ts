@@ -5,6 +5,8 @@
 
 /** Labels canônicos (capitalização estável) para chaves conhecidas. */
 export const CANONICAL_METADATA_LABELS: Record<string, string> = {
+  partes_envolvidas: 'Partes envolvidas',
+  data_referencia: 'Data de referência',
   parte_reveladora: 'Parte reveladora',
   parte_receptora: 'Parte receptora',
   data_assinatura: 'Data de assinatura',
@@ -48,6 +50,14 @@ export const CANONICAL_METADATA_LABELS: Record<string, string> = {
  */
 export const STANDARD_DETAILS_KEYS: readonly string[] = [
   'titulo',
+  /**
+   * Os campos da regra padrão entram aqui porque são os que todo tenant recebe ao criar uma
+   * categoria pela interface. Sem eles, o painel Detalhes de um documento comum mostrava só a
+   * validade, e "partes envolvidas" — o campo que diz de quem é o documento — só existia dentro do
+   * editor de metadados, que é tela de edição e não de leitura.
+   */
+  'partes_envolvidas',
+  'data_referencia',
   'parte_reveladora',
   'parte_receptora',
   'fornecedor',

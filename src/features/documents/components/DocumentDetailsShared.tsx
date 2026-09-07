@@ -49,6 +49,25 @@ export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandard
   );
 }
 
+/**
+ * Dias até vencer, contados em dia cheio de UTC.
+ *
+ * O mesmo número que a tarja da ficha mostra. Aparece aqui como dica porque uma data solta
+ * ("09/06/2033") não responde a pergunta que se faz olhando o painel — falta muito? já passou?
+ */
+function validityHint(validityDate: string): string | undefined {
+  const target = new Date(validityDate);
+  if (Number.isNaN(target.getTime())) return undefined;
+
+  const startOfDay = (date: Date) =>
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const days = Math.round((startOfDay(target) - startOfDay(new Date())) / 86_400_000);
+
+  if (days < 0) return `Vencido há ${Math.abs(days)} dia(s).`;
+  if (days === 0) return 'Vence hoje.';
+  return `Vence em ${days} dia(s).`;
+}
+
 type DocumentSystemDetailsProps = {
   document: Pick<
     DocumentListItem,
@@ -64,13 +83,17 @@ type DocumentSystemDetailsProps = {
   >;
   previewStatus?: string | null;
   showPreviewStatus?: boolean;
+  /** Vencimento projetado do documento — some quando o documento não tem validade. */
+  searchMeta?: DocumentSearchMeta | null;
 };
 
 export function DocumentSystemDetails({
   document,
   previewStatus,
   showPreviewStatus = false,
+  searchMeta,
 }: DocumentSystemDetailsProps) {
+  const validityDate = searchMeta?.validityDate ?? null;
   return (
     <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
       <DocumentDetailField label="Categoria">
@@ -87,6 +110,11 @@ export function DocumentSystemDetails({
       ) : null}
       <DocumentDetailField label="Criado">{formatDate(document.createdAt)}</DocumentDetailField>
       <DocumentDetailField label="Atualizado">{formatDate(document.updatedAt)}</DocumentDetailField>
+      {validityDate ? (
+        <DocumentDetailField label="Vencimento" hint={validityHint(validityDate)}>
+          {formatDate(validityDate)}
+        </DocumentDetailField>
+      ) : null}
       {showPreviewStatus ? (
         <DocumentDetailField label="Preview">
           {getPreviewStatusLabel(previewStatus ?? document.preview?.status)}
@@ -150,6 +178,7 @@ export function DocumentDetailsSections({
         document={document}
         previewStatus={previewStatus}
         showPreviewStatus={showPreviewStatus}
+        searchMeta={searchMeta}
       />
 
       {versionSlot}

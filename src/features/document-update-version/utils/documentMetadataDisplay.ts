@@ -56,8 +56,17 @@ function formatDateOnly(value: string | Date | null | undefined): string | null 
 
 function formatMaybeDateValue(raw: unknown): string {
   if (raw == null || raw === '') return '—';
-  if (typeof raw === 'string' || typeof raw === 'number') {
-    const asDate = formatDateOnly(String(raw));
+
+  // O metadado chega embrulhado ({ value, normalizedValue, label }). Sem desembrulhar antes, a data
+  // escapava do formatador e aparecia crua no painel: "2026-06-09" em vez de "09/06/2026".
+  const unwrapped =
+    typeof raw === 'object' && raw !== null && ('value' in raw || 'normalizedValue' in raw)
+      ? ((raw as { value?: unknown; normalizedValue?: unknown }).normalizedValue ??
+        (raw as { value?: unknown }).value)
+      : raw;
+
+  if (typeof unwrapped === 'string' || typeof unwrapped === 'number') {
+    const asDate = formatDateOnly(String(unwrapped));
     if (asDate) return asDate;
   }
   return formatMetadataValue(raw);

@@ -158,7 +158,10 @@ function FileDetailsBody({
           )}
         </div>
 
-        <DocumentSystemDetails document={detail?.document ?? doc} />
+        <DocumentSystemDetails
+          document={detail?.document ?? doc}
+          searchMeta={detail?.searchMeta}
+        />
 
         <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
           <DocumentDetailField label="Versão">
