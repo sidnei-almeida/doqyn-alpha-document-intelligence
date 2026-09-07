@@ -165,6 +165,21 @@ export const aiProviderTokensTotal = new Counter({
   registers: [prometheusRegistry],
 });
 
+/**
+ * De onde veio a data de vencimento de cada documento analisado.
+ *
+ * O alerta de vencimento depende deste campo, e até aqui não havia contagem de quantos documentos
+ * saíam com ele. `ausente` é o número que importa acompanhar: é o documento cujo alerta nunca vai
+ * disparar. `sem_campo` fica separado porque classe sem data final não é falha e não pode inflar a
+ * taxa de acerto nem a de erro.
+ */
+export const documentExpiryProvenanceTotal = new Counter({
+  name: 'doqyn_document_expiry_provenance_total',
+  help: 'Origem da data de vencimento nos documentos analisados',
+  labelNames: ['origin'] as const,
+  registers: [prometheusRegistry],
+});
+
 export const quotaExceededTotal = new Counter({
   name: 'doqyn_quota_exceeded_total',
   help: 'Total de rejeições por quota de tenant excedida',
@@ -275,6 +290,12 @@ export function recordAnalysisSaturationRequeue(input: { jobKind: string }): voi
   if (!isPrometheusEnabled()) return;
 
   analysisSaturationRequeuesTotal.inc({ job_kind: input.jobKind });
+}
+
+export function recordDocumentExpiryProvenance(origin: string): void {
+  if (!isPrometheusEnabled()) return;
+
+  documentExpiryProvenanceTotal.inc({ origin });
 }
 
 export function recordAiProviderRequest(input: {

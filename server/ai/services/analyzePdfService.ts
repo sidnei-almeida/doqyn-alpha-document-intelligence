@@ -38,6 +38,8 @@ import { getGroqClassifierModel, getGroqExtractorModel, getGroqModel } from './g
 import { getInferenceProviderName } from '../providers/inferenceProvider.js';
 import { createTokenBudget } from '../utils/tokenBudget.js';
 import { refineExtraction } from './extractionRefinementLoop.js';
+import { resolveExpiryProvenance } from '../utils/expiryProvenance.js';
+import { recordDocumentExpiryProvenance } from '../../metrics/prometheus.js';
 import { reviewFailedClassification } from './classificationReviewAgent.js';
 import {
   type AnalyzeRequestContext,
@@ -733,6 +735,14 @@ export async function analyzePdfBuffer(input: {
 
   const requiresReview = extraction.requiresReview || classification.requiresReview;
   const status = requiresReview ? 'requires_review' : 'completed';
+
+  /**
+   * O alerta de vencimento depende de `data_vencimento`, e não havia número nenhum sobre quantos
+   * documentos saem com ele. Sem contagem, "melhorou" é impressão.
+   */
+  const expiryProvenance = resolveExpiryProvenance(selectedClass, extraction.metadata ?? {});
+  recordDocumentExpiryProvenance(expiryProvenance);
+
   timer.mark('finalization');
 
   const durations = timer.finish();
@@ -776,6 +786,7 @@ export async function analyzePdfBuffer(input: {
       clearedFields: refined.trail.clearedFields,
       evaluatorSawWholeDocument: refined.trail.evaluatorSawWholeDocument,
     },
+    expiryProvenance,
     recommendedFileName,
     metadataKeys: Object.keys(extraction.metadata ?? {}),
     stageDurationsMs: durations,

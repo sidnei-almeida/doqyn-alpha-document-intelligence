@@ -350,6 +350,7 @@ export function validateMetadataResult(
       normalizedValue: derived.value,
       confidence: DERIVED_FIELD_CONFIDENCE,
       source: 'derived',
+      derivedFrom: derived.durationKey === 'texto' ? 'texto' : 'campo',
       evidence: {
         snippet:
           `Calculado: ${derived.anchorValue} (${derived.anchorKey}) + ` +

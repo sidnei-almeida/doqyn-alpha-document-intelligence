@@ -55,6 +55,8 @@ export type ExtractedMetadataField = {
   confidence: number;
   /** `manual` = preenchido por quem revisou o envio, antes de salvar. */
   source: 'document_text' | 'no_ai' | 'derived' | 'manual';
+  /** Só em `derived`: se o prazo veio de um campo extraído ou do corpo do documento. */
+  derivedFrom?: 'campo' | 'texto';
   evidence?: EvidenceSnippet;
   currency?: string;
 };
