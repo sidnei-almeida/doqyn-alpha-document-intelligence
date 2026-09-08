@@ -1,0 +1,65 @@
+{
+  "accessFormSections": {
+    "defineOQueA": "Define o que a pessoa administra. É um só, e não se acumulam.",
+    "eACaixaDo": "É a caixa do sino. Não se desliga.",
+    "grupos": "Grupos",
+    "nenhumGrupoCriadoAinda": "Nenhum grupo criado ainda.",
+    "noApp": "No app",
+    "notificacoes": "Notificações",
+    "oQueAvisar": "O que avisar",
+    "osAvisosSaemDo": "Os avisos saem do acesso: só chega o que a pessoa já alcança pelos grupos, ou o que é dela.",
+    "osMesmosGruposDe": "Os mesmos grupos de Regras. São eles que decidem quais categorias a pessoa alcança.",
+    "papelNaPlataforma": "Papel na plataforma",
+    "porOnde": "Por onde",
+    "semGrupoAPessoa": "Sem grupo, a pessoa não alcança categoria alguma. Crie um em Regras e volte aqui."
+  },
+  "blockAccessDialog": {
+    "asSessoesAtivasNesta": "As sessões ativas nesta empresa serão revogadas.",
+    "bloquearAcessoAEmpresa": "Bloquear acesso à empresa?",
+    "cancelar": "Cancelar",
+    "eMail": "E-mail",
+    "empresa": "Empresa",
+    "esteUsuarioPerderaO": "Este usuário perderá o acesso a esta empresa. A conta dele não será apagada e acessos em\n          outras empresas não serão afetados.",
+    "exAcessoSuspensoTemporariamente": "Ex.: acesso suspenso temporariamente",
+    "motivoDoBloqueioOpcional": "Motivo do bloqueio (opcional)",
+    "statusAtual": "Status atual",
+    "usuario": "Usuário"
+  },
+  "editAccessDialog": {
+    "cancelar": "Cancelar",
+    "editarAcesso": "Editar acesso"
+  },
+  "inviteMemberDialog": {
+    "cancelar": "Cancelar",
+    "concluir": "Concluir",
+    "copieOLinkAcima": "Copie o link acima e envie por outro canal.",
+    "depoisDissoElePara": ". Depois disso ele para de abrir, e é\n            preciso convidar de novo.",
+    "eMail": "E-mail",
+    "linkDoConvite": "Link do convite",
+    "nomeOpcional": "Nome (opcional)",
+    "oEMailNao": "O e-mail não foi enviado.",
+    "semNenhumGrupoA": "Sem nenhum grupo, a pessoa entra mas não alcança documento nenhum. O acesso se dá\n              ao grupo, nunca à pessoa solta.",
+    "sobrenomeOpcional": "Sobrenome (opcional)",
+    "valeAte": "Vale até"
+  },
+  "unblockAccessDialog": {
+    "bloqueado": "Bloqueado",
+    "cancelar": "Cancelar",
+    "desbloquearAcessoAEmpresa": "Desbloquear acesso à empresa?",
+    "eMail": "E-mail",
+    "empresa": "Empresa",
+    "oUsuarioVoltaraA": "O usuário voltará a ter acesso a esta empresa. Outras empresas não serão afetadas.",
+    "statusAtual": "Status atual",
+    "usuario": "Usuário"
+  },
+  "userManagementRoute": {
+    "verificandoPermissoes": "Verificando permissões..."
+  },
+  "usersPage": {
+    "buscarPorNomeOu": "Buscar por nome ou e-mail",
+    "buscarUsuario": "Buscar usuário",
+    "convidar": "Convidar",
+    "filtrarPorStatus": "Filtrar por status",
+    "usuarios": "Usuários"
+  }
+}

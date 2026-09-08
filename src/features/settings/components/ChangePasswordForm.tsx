@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { changePassword, ChangePasswordError } from '@/features/settings/api/changePasswordApi';
+import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
   currentPassword: '',
@@ -57,6 +58,8 @@ function getPasswordStrength(
 }
 
 export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
+  const { t } = useTranslation('settings');
+
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof EMPTY_FORM, string>>>(
@@ -138,7 +141,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       <Input
         id="currentPassword"
         variant="rule"
-        label="Senha atual"
+        label={t('changePasswordForm.senhaAtual')}
         type="password"
         revealable
         autoComplete="current-password"
@@ -151,7 +154,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
         <Input
           id="newPassword"
           variant="rule"
-          label="Nova senha"
+          label={t('changePasswordForm.novaSenha')}
           type="password"
           revealable
           autoComplete="new-password"
@@ -181,7 +184,10 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
               <p className="settings-password-strength__label">{strength.label}</p>
             </div>
 
-            <ul className="settings-password-checklist" aria-label="Requisitos da senha">
+            <ul
+              className="settings-password-checklist"
+              aria-label={t('changePasswordForm.requisitosDaSenha')}
+            >
               {requirements.map((requirement) => (
                 <li
                   key={requirement.id}
@@ -206,7 +212,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       <Input
         id="confirmPassword"
         variant="rule"
-        label="Confirmar nova senha"
+        label={t('changePasswordForm.confirmarNovaSenha')}
         type="password"
         revealable
         autoComplete="new-password"

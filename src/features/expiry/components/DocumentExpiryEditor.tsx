@@ -14,6 +14,7 @@ import {
   type MetadataFieldPatch,
   type MetadataSheetRow,
 } from '../api/expiryApi';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Chave canônica de vencimento usada quando a categoria não declara nenhum campo de validade.
@@ -119,6 +120,8 @@ export function DocumentExpiryEditor({
   canEdit,
   onSaved,
 }: DocumentExpiryEditorProps) {
+  const { t } = useTranslation('expiry');
+
   const queryClient = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [extraFields, setExtraFields] = useState<
@@ -221,13 +224,17 @@ export function DocumentExpiryEditor({
   });
 
   if (isLoading) {
-    return <p className="text-caption text-doqyn-muted">Carregando ficha de metadados…</p>;
+    return (
+      <p className="text-caption text-doqyn-muted">
+        {t('documentExpiryEditor.carregandoFichaDeMetadados')}
+      </p>
+    );
   }
 
   if (error || !sheet) {
     return (
       <p className="text-caption text-doqyn-muted">
-        Não foi possível carregar os metadados deste documento.
+        {t('documentExpiryEditor.naoFoiPossivelCarregar')}
       </p>
     );
   }
@@ -251,8 +258,12 @@ export function DocumentExpiryEditor({
 
       {missingRequired > 0 && (
         <p className="text-caption text-doqyn-muted">
-          {missingRequired} campo(s) obrigatório(s) da categoria
-          {sheet.categoryName ? ` "${sheet.categoryName}"` : ''} sem preenchimento.
+          {sheet.categoryName
+            ? t('documentExpiryEditor.missingRequiredInCategory', {
+                count: missingRequired,
+                category: sheet.categoryName,
+              })
+            : t('documentExpiryEditor.missingRequired', { count: missingRequired })}
         </p>
       )}
 
@@ -330,7 +341,7 @@ export function DocumentExpiryEditor({
 
       {!editable && (
         <p className="text-caption text-doqyn-muted">
-          Você não tem permissão para editar os metadados deste documento.
+          {t('documentExpiryEditor.voceNaoTemPermissao')}
         </p>
       )}
 
@@ -345,21 +356,21 @@ export function DocumentExpiryEditor({
                 >
                   <div className="mb-1.5 flex items-baseline justify-between gap-3">
                     <span className="text-label font-medium text-doqyn-text">
-                      Campo fora da regra
+                      {t('documentExpiryEditor.campoForaDaRegra')}
                     </span>
                     <button
                       type="button"
                       onClick={() => setExtraFields((prev) => prev.filter((_, i) => i !== index))}
                       className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-danger hover:underline"
                     >
-                      Remover
+                      {t('documentExpiryEditor.remover')}
                     </button>
                   </div>
                   <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
                     <Input
                       variant="rule"
-                      aria-label="Chave do campo"
-                      placeholder="chave (ex.: numero_apolice)"
+                      aria-label={t('documentExpiryEditor.chaveDoCampo')}
+                      placeholder={t('documentExpiryEditor.chaveExNumeroApolice')}
                       value={field.key}
                       onChange={(event) =>
                         setExtraFields((prev) =>
@@ -371,8 +382,8 @@ export function DocumentExpiryEditor({
                     />
                     <Input
                       variant="rule"
-                      aria-label="Rótulo do campo"
-                      placeholder="rótulo exibido"
+                      aria-label={t('documentExpiryEditor.rotuloDoCampo')}
+                      placeholder={t('documentExpiryEditor.rotuloExibido')}
                       value={field.label}
                       onChange={(event) =>
                         setExtraFields((prev) =>
@@ -384,7 +395,7 @@ export function DocumentExpiryEditor({
                     />
                     <Input
                       variant="rule"
-                      aria-label="Valor do campo"
+                      aria-label={t('documentExpiryEditor.valorDoCampo')}
                       placeholder="valor"
                       value={field.value}
                       onChange={(event) =>
@@ -409,7 +420,7 @@ export function DocumentExpiryEditor({
               onClick={() => setExtraFields((prev) => [...prev, { key: '', label: '', value: '' }])}
               className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
             >
-              Adicionar campo fora da regra
+              {t('documentExpiryEditor.adicionarCampoForaDa')}
             </button>
 
             <Button

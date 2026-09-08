@@ -81,6 +81,12 @@ export default tseslint.config(
       'src/features/requests/**/*.tsx',
       'src/features/directory/**/*.tsx',
       'src/features/contacts/**/*.tsx',
+      // 6.6 — configuração
+      'src/features/settings/**/*.tsx',
+      'src/features/users/**/*.tsx',
+      'src/features/profile/**/*.tsx',
+      'src/features/notifications/**/*.tsx',
+      'src/features/expiry/**/*.tsx',
     ],
     plugins: { i18next },
     rules: {

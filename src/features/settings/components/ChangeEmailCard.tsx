@@ -12,6 +12,7 @@ import {
   getEmailChangeErrorMessage,
   type RequestEmailChangeResponse,
 } from '../api/emailChangeApi';
+import { useTranslation } from 'react-i18next';
 
 /** Segundos que faltam até `iso`, nunca negativo. */
 function secondsUntil(iso: string | undefined): number {
@@ -27,6 +28,8 @@ function secondsUntil(iso: string | undefined): number {
  * computador com nada na mão. Os dois chegam na mesma mensagem.
  */
 export function ChangeEmailCard() {
+  const { t } = useTranslation('settings');
+
   const { user, tenant, refreshUser } = useAuth();
   // Sugerir um endereço corporativo a quem tem conta pessoal é oferecer um exemplo que não
   // se parece com o caso de uso dela.
@@ -120,10 +123,10 @@ export function ChangeEmailCard() {
   return (
     <div className="settings-subblock">
       <div className="settings-subblock__header">
-        <p className="register-label text-doqyn-subtle">Trocar e-mail</p>
+        <p className="register-label text-doqyn-subtle">{t('changeEmailCard.trocarEMail')}</p>
         <p className="settings-section-note">
-          O endereço atual é {user?.email ?? '—'}. Enviamos um código de 6 dígitos ao novo e-mail
-          antes de aplicar a troca.
+          {t('changeEmailCard.oEnderecoAtualE')} {user?.email ?? '—'}
+          {t('changeEmailCard.enviamosUmCodigoDe')}
         </p>
       </div>
 
@@ -131,7 +134,7 @@ export function ChangeEmailCard() {
         <Input
           variant="rule"
           type="email"
-          label="Novo e-mail"
+          label={t('changeEmailCard.novoEMail')}
           value={newEmail}
           onChange={(event) => setNewEmail(event.target.value)}
           placeholder={emailPlaceholder}
@@ -141,10 +144,10 @@ export function ChangeEmailCard() {
           variant="rule"
           type="password"
           revealable
-          label="Senha atual"
+          label={t('changeEmailCard.senhaAtual')}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Confirme sua identidade"
+          placeholder={t('changeEmailCard.confirmeSuaIdentidade')}
           disabled={pending}
         />
       </div>
@@ -152,9 +155,9 @@ export function ChangeEmailCard() {
       {pendingStatus ? (
         <div className="flex flex-col gap-4">
           <p className="settings-section-note">
-            Enviamos um código para{' '}
-            <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>.
-            Digite-o abaixo, ou use o link do mesmo e-mail.
+            {t('changeEmailCard.enviamosUmCodigoPara')}{' '}
+            <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>
+            {t('changeEmailCard.digiteOAbaixoOu')}
           </p>
 
           <CodeInput
@@ -175,7 +178,9 @@ export function ChangeEmailCard() {
           ) : null}
 
           {devCode ? (
-            <p className="settings-section-note">Código de desenvolvimento: {devCode}</p>
+            <p className="settings-section-note">
+              {t('changeEmailCard.codigoDeDesenvolvimento')} {devCode}
+            </p>
           ) : null}
         </div>
       ) : null}

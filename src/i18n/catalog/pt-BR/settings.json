@@ -1,0 +1,103 @@
+{
+  "accountSettingsSection": {
+    "acesso": "Acesso",
+    "fotoPapeisEDetalhes": "Foto, papéis e detalhes da conta.",
+    "identidade": "Identidade",
+    "idiomaTemaEVisualizacao": "Idioma, tema e visualização da Biblioteca.",
+    "preferencias": "Preferências",
+    "senhaEEMail": "Senha e e-mail da conta."
+  },
+  "authenticationSettingsSection": {
+    "alterarSenha": "Alterar senha",
+    "aoTrocarASenha": "Ao trocar a senha, as outras sessões ativas são encerradas."
+  },
+  "changeEmailCard": {
+    "codigoDeDesenvolvimento": "Código de desenvolvimento:",
+    "confirmeSuaIdentidade": "Confirme sua identidade",
+    "digiteOAbaixoOu": ".\n            Digite-o abaixo, ou use o link do mesmo e-mail.",
+    "enviamosUmCodigoDe": ". Enviamos um código de 6 dígitos ao novo e-mail\n          antes de aplicar a troca.",
+    "enviamosUmCodigoPara": "Enviamos um código para",
+    "novoEMail": "Novo e-mail",
+    "oEnderecoAtualE": "O endereço atual é",
+    "senhaAtual": "Senha atual",
+    "trocarEMail": "Trocar e-mail"
+  },
+  "changePasswordForm": {
+    "confirmarNovaSenha": "Confirmar nova senha",
+    "novaSenha": "Nova senha",
+    "requisitosDaSenha": "Requisitos da senha",
+    "senhaAtual": "Senha atual"
+  },
+  "confirmEmailChangePage": {
+    "changingFrom": "Você está alterando o <old>{{current}}</old> para <new>{{next}}</new>.",
+    "confirmarNovoEMail": "Confirmar novo e-mail",
+    "eMailAtualizado": "E-mail atualizado",
+    "irParaLogin": "Ir para login",
+    "validandoLink": "Validando link…",
+    "voltarAoLogin": "Voltar ao login"
+  },
+  "organizationSection": {
+    "alteracoesEm": "Alterações em",
+    "armazenamento": "Armazenamento",
+    "envioEIa": "Envio e IA",
+    "governanca": "Governança",
+    "impactamClassificacaoAutomaticaAlertas": "impactam\n              classificação automática, alertas e permissões na Biblioteca.",
+    "ondeAClassificacaoOs": "Onde a classificação, os fluxos e a visibilidade são definidos.",
+    "porQuantoTempoUm": "Por quanto tempo um documento excluído continua recuperável.",
+    "regras": "Regras",
+    "retencaoDaLixeira": "Retenção da lixeira"
+  },
+  "preferencesSettingsSection": {
+    "aplicadoAoAbrirA": "Aplicado ao abrir a Biblioteca sem preferência na URL.",
+    "padraoClaroOuEscuro": "Padrão, claro ou escuro. Salvo neste navegador.",
+    "tema": "Tema",
+    "temaDaInterface": "Tema da interface",
+    "visualizacaoPadraoDaBiblioteca": "Visualização padrão da Biblioteca",
+    "visualizacaoPadraoDaBiblioteca2": "Visualização padrão da Biblioteca"
+  },
+  "profileSettingsSection": {
+    "alterarFoto": "Alterar foto",
+    "alterarFoto2": "Alterar foto",
+    "eMail": "E-mail",
+    "jpgPngOuWebp": "JPG, PNG ou WebP · até 5 MB",
+    "nome": "Nome",
+    "organizacao": "Organização",
+    "papeis": "Papéis",
+    "removerFoto": "Remover foto",
+    "sobrenome": "Sobrenome"
+  },
+  "settingsLayout": {
+    "conteudoDaSecaoDe": "Conteúdo da seção de configurações",
+    "navegacaoDeConfiguracoes": "Navegação de configurações"
+  },
+  "settingsSaveBar": {
+    "acoesDeSalvamento": "Ações de salvamento"
+  },
+  "settingsSidebarNav": {
+    "secoesDeConfiguracoes": "Seções de configurações",
+    "secoesDeConfiguracoes2": "Seções de configurações"
+  },
+  "storageUsageSection": {
+    "armazenamentoUsado": "Armazenamento usado",
+    "arquivosOriginais": "Arquivos originais",
+    "carregandoUsoDoArmazenamento": "Carregando uso do armazenamento…",
+    "naoFoiPossivelCarregar": "Não foi possível carregar o uso do armazenamento. Recarregue a página para tentar de\n          novo.",
+    "ofQuota": "de {{quota}}",
+    "preVisualizacoes": "Pré-visualizações"
+  },
+  "trashRetentionSettingsSection": {
+    "aumentarDias": "Aumentar dias",
+    "carregandoConfiguracoes": "Carregando configurações…",
+    "defineSeAposO": "Define se, após o prazo, documentos da lixeira passam automaticamente para Desativados.",
+    "desativarAutomaticamenteAposPeriodo": "Desativar automaticamente após período",
+    "diasNaLixeira": "Dias na lixeira",
+    "diasNaLixeira2": "Dias na lixeira",
+    "diminuirDias": "Diminuir dias",
+    "entre1E365": "Entre 1 e 365 dias. Após esse prazo, o documento é desativado (R2/Mongo permanecem).",
+    "modoDeRetencao": "Modo de retenção",
+    "retencaoManualSemDesativacao": "Retenção manual (sem desativação automática)"
+  },
+  "uploadAiSettingsSection": {
+    "quemDefineEstaPolitica": "Quem define esta política é o administrador da organização. Ela decide quando a IA\n          renomeia o seu arquivo e quando o envio para para revisão."
+  }
+}

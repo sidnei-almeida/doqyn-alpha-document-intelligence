@@ -1,0 +1,19 @@
+{
+  "documentExpiryEditor": {
+    "adicionarCampoForaDa": "Adicionar campo fora da regra",
+    "campoForaDaRegra": "Campo fora da regra",
+    "carregandoFichaDeMetadados": "Carregando ficha de metadados…",
+    "chaveDoCampo": "Chave do campo",
+    "chaveExNumeroApolice": "chave (ex.: numero_apolice)",
+    "missingRequiredInCategory_one": "{{count}} campo obrigatório de \"{{category}}\" sem preenchimento.",
+    "missingRequiredInCategory_other": "{{count}} campos obrigatórios de \"{{category}}\" sem preenchimento.",
+    "missingRequired_one": "{{count}} campo obrigatório sem preenchimento.",
+    "missingRequired_other": "{{count}} campos obrigatórios sem preenchimento.",
+    "naoFoiPossivelCarregar": "Não foi possível carregar os metadados deste documento.",
+    "remover": "Remover",
+    "rotuloDoCampo": "Rótulo do campo",
+    "rotuloExibido": "rótulo exibido",
+    "valorDoCampo": "Valor do campo",
+    "voceNaoTemPermissao": "Você não tem permissão para editar os metadados deste documento."
+  }
+}

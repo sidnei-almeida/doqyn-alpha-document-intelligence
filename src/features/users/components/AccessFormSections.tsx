@@ -7,6 +7,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
 import { ASSIGNABLE_PLATFORM_ROLES, getPlatformRoleMeta } from '../platformRoleLabels';
+import { useTranslation } from 'react-i18next';
 
 export type DocumentGroupOption = {
   id: string;
@@ -84,14 +85,16 @@ export function PlatformRolesSection({
   value: PlatformRole[];
   onChange: (roles: PlatformRole[]) => void;
 }) {
+  const { t } = useTranslation('users');
+
   // A ordem de `ASSIGNABLE_PLATFORM_ROLES` é a de privilégio: quem é admin é admin, mesmo com
   // `user` também gravado por um caminho antigo.
   const selected = ASSIGNABLE_PLATFORM_ROLES.find((role) => value.includes(role)) ?? 'user';
 
   return (
     <AccessFormSection
-      title="Papel na plataforma"
-      description="Define o que a pessoa administra. É um só, e não se acumulam."
+      title={t('accessFormSections.papelNaPlataforma')}
+      description={t('accessFormSections.defineOQueA')}
     >
       <div className="divide-y divide-doqyn-border-subtle">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
@@ -123,15 +126,17 @@ export function DocumentGroupsSection({
   value: string[];
   onChange: (ids: string[]) => void;
 }) {
+  const { t } = useTranslation('users');
+
   return (
     <AccessFormSection
-      title="Grupos"
-      description="Os mesmos grupos de Regras. São eles que decidem quais categorias a pessoa alcança."
+      title={t('accessFormSections.grupos')}
+      description={t('accessFormSections.osMesmosGruposDe')}
     >
       {groups.length === 0 ? (
         <GroupsEmptyState
-          title="Nenhum grupo criado ainda."
-          description="Sem grupo, a pessoa não alcança categoria alguma. Crie um em Regras e volte aqui."
+          title={t('accessFormSections.nenhumGrupoCriadoAinda')}
+          description={t('accessFormSections.semGrupoAPessoa')}
           ctaLabel="Abrir Regras"
           ctaHref="/rules"
         />
@@ -206,14 +211,16 @@ export function NotificationsSection({
   value: NotificationPreferencesDto;
   onChange: (value: NotificationPreferencesDto) => void;
 }) {
+  const { t } = useTranslation('users');
+
   return (
     <AccessFormSection
-      title="Notificações"
-      description="Os avisos saem do acesso: só chega o que a pessoa já alcança pelos grupos, ou o que é dela."
+      title={t('accessFormSections.notificacoes')}
+      description={t('accessFormSections.osAvisosSaemDo')}
     >
       <div className="space-y-4">
         <div>
-          <p className="text-caption text-doqyn-subtle">O que avisar</p>
+          <p className="text-caption text-doqyn-subtle">{t('accessFormSections.oQueAvisar')}</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {EVENT_OPTIONS.map(([key, label]) => (
               <Checkbox
@@ -227,7 +234,7 @@ export function NotificationsSection({
         </div>
 
         <div>
-          <p className="text-caption text-doqyn-subtle">Por onde</p>
+          <p className="text-caption text-doqyn-subtle">{t('accessFormSections.porOnde')}</p>
           <div className="mt-2 space-y-2">
             {CHANNEL_OPTIONS.map((channel) => {
               if (channel.key === 'inApp') {
@@ -237,8 +244,8 @@ export function NotificationsSection({
                     checked
                     disabled
                     readOnly
-                    label="No app"
-                    description="É a caixa do sino. Não se desliga."
+                    label={t('accessFormSections.noApp')}
+                    description={t('accessFormSections.eACaixaDo')}
                   />
                 );
               }

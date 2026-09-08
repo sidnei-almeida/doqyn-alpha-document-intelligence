@@ -11,6 +11,7 @@ import {
   PlatformRolesSection,
   type DocumentGroupOption,
 } from './AccessFormSections';
+import { useTranslation } from 'react-i18next';
 
 type InviteResult = {
   inviteLink: string;
@@ -73,6 +74,8 @@ export function InviteMemberDialog({
   onClose,
   onInvited,
 }: InviteMemberDialogProps) {
+  const { t } = useTranslation('users');
+
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -136,12 +139,12 @@ export function InviteMemberDialog({
       footer={
         created ? (
           <Button type="button" onClick={onClose}>
-            Concluir
+            {t('inviteMemberDialog.concluir')}
           </Button>
         ) : (
           <>
             <Button type="button" variant="secondary" onClick={onClose}>
-              Cancelar
+              {t('inviteMemberDialog.cancelar')}
             </Button>
             <Button type="button" onClick={() => void submit()} disabled={!canSubmit}>
               {saving ? 'Criando…' : 'Criar convite'}
@@ -153,7 +156,9 @@ export function InviteMemberDialog({
       {created ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <span className="register-label text-doqyn-subtle">Link do convite</span>
+            <span className="register-label text-doqyn-subtle">
+              {t('inviteMemberDialog.linkDoConvite')}
+            </span>
             <div className="flex items-center gap-2">
               <code className="min-w-0 flex-1 truncate rounded-[3px] border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 font-mono text-micro text-doqyn-text">
                 {created.inviteLink}
@@ -166,23 +171,24 @@ export function InviteMemberDialog({
           </div>
 
           <p className="type-caption text-doqyn-muted">
-            Vale até {formatExpiry(created.expiresAt)}. Depois disso ele para de abrir, e é
-            preciso convidar de novo.
+            {t('inviteMemberDialog.valeAte')} {formatExpiry(created.expiresAt)}
+            {t('inviteMemberDialog.depoisDissoElePara')}
           </p>
 
           {/* O aviso é do tamanho da consequência: o convite existe, mas ninguém foi avisado.
               Sem isto o gestor fecha o diálogo achando que a pessoa recebeu. */}
           {!created.emailSent ? (
-            <p className="border-l-2 border-doqyn-warning/50 pl-3 type-caption text-doqyn-muted">
-              <span className="font-medium text-doqyn-text">O e-mail não foi enviado.</span>{' '}
-              {EMAIL_SKIP_REASON[created.emailSkipReason ?? ''] ??
-                'A entrega não foi confirmada.'}{' '}
-              Copie o link acima e envie por outro canal.
+            <p className="type-caption border-l-2 border-doqyn-warning/50 pl-3 text-doqyn-muted">
+              <span className="font-medium text-doqyn-text">
+                {t('inviteMemberDialog.oEMailNao')}
+              </span>{' '}
+              {EMAIL_SKIP_REASON[created.emailSkipReason ?? ''] ?? 'A entrega não foi confirmada.'}{' '}
+              {t('inviteMemberDialog.copieOLinkAcima')}
             </p>
           ) : null}
 
           {created.groupsWarning ? (
-            <p className="border-l-2 border-doqyn-warning/50 pl-3 type-caption text-doqyn-muted">
+            <p className="type-caption border-l-2 border-doqyn-warning/50 pl-3 text-doqyn-muted">
               {created.groupsWarning}
             </p>
           ) : null}
@@ -192,7 +198,7 @@ export function InviteMemberDialog({
           <Input
             variant="rule"
             type="email"
-            label="E-mail"
+            label={t('inviteMemberDialog.eMail')}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="pessoa@exemplo.com"
@@ -205,14 +211,14 @@ export function InviteMemberDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               variant="rule"
-              label="Nome (opcional)"
+              label={t('inviteMemberDialog.nomeOpcional')}
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
               autoComplete="off"
             />
             <Input
               variant="rule"
-              label="Sobrenome (opcional)"
+              label={t('inviteMemberDialog.sobrenomeOpcional')}
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               autoComplete="off"
@@ -231,8 +237,7 @@ export function InviteMemberDialog({
               administrador é exceção legítima: ele alcança tudo por papel. */}
           {documentGroupIds.length === 0 && !platformRoles.includes('company_admin') ? (
             <p className="type-caption text-doqyn-muted">
-              Sem nenhum grupo, a pessoa entra mas não alcança documento nenhum. O acesso se dá
-              ao grupo, nunca à pessoa solta.
+              {t('inviteMemberDialog.semNenhumGrupoA')}
             </p>
           ) : null}
         </div>

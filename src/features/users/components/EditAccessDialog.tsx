@@ -11,6 +11,7 @@ import {
   PlatformRolesSection,
   type DocumentGroupOption,
 } from './AccessFormSections';
+import { useTranslation } from 'react-i18next';
 
 type EditAccessDialogProps = {
   member: CompanyMemberDto;
@@ -31,6 +32,8 @@ export function EditAccessDialog({
   onClose,
   onSave,
 }: EditAccessDialogProps) {
+  const { t } = useTranslation('users');
+
   const confirm = useConfirm();
   const baselineRef = useRef(cloneAccessFormState(initialForm));
   const [form, setForm] = useState(() => cloneAccessFormState(initialForm));
@@ -61,7 +64,7 @@ export function EditAccessDialog({
     <Modal
       open
       onClose={() => void requestClose()}
-      title="Editar acesso"
+      title={t('editAccessDialog.editarAcesso')}
       subtitle={<LeadDetail lead={memberName} detail={member.email} />}
       size="lg"
       // Há dado digitado em jogo: clicar fora não pode descartar em silêncio.
@@ -77,7 +80,7 @@ export function EditAccessDialog({
             onClick={() => void requestClose()}
             disabled={saving}
           >
-            Cancelar
+            {t('editAccessDialog.cancelar')}
           </Button>
           <Button type="button" onClick={() => onSave(form)} disabled={!dirty || saving}>
             {saving ? 'Salvando…' : 'Salvar'}

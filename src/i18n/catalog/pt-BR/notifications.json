@@ -1,0 +1,21 @@
+{
+  "notificationList": {
+    "carregandoNotificacoes": "Carregando notificações…",
+    "dispensar": "Dispensar",
+    "documentosEnviadosVersoesNovas": "Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos aparecem nesta caixa.",
+    "marcarComoLida": "Marcar como lida",
+    "nadaPorAqui": "Nada por aqui"
+  },
+  "notificationsBell": {
+    "marcarTudoComoLido": "Marcar tudo como lido",
+    "notificacoes": "Notificações",
+    "notificacoes2": "Notificações",
+    "verTodas": "Ver todas"
+  },
+  "notificationsPage": {
+    "documentosEnviadosVersoesNovas": "Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos.",
+    "filtrarNotificacoes": "Filtrar notificações",
+    "marcarTudoComoLido": "Marcar tudo como lido",
+    "notificacoes": "Notificações"
+  }
+}

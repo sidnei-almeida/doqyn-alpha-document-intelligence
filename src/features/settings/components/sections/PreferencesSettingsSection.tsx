@@ -35,7 +35,7 @@ const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: stri
 ];
 
 export function PreferencesSettingsSection() {
-  const { t } = useTranslation(['common', 'components']);
+  const { t } = useTranslation(['settings', 'common', 'components']);
   const { theme, setTheme } = useTheme();
   const { locale, locales, isExposed, setLocale, isSaving, saveError } = useLocale();
   const [defaultView, setDefaultView] = useState<LibraryDefaultView>('grid');
@@ -61,19 +61,19 @@ export function PreferencesSettingsSection() {
             faria parecer que não existem; mostrar pela metade faria parecer abandono.
             Nomeá-los como "em preparo" é a única leitura honesta das três. */}
         <SettingsRow
-          label={t('locale.label')}
+          label={t('common:locale.label')}
           description={
             saveError
-              ? t('locale.saveFailed')
+              ? t('common:locale.saveFailed')
               : hasDraftLocale
-                ? t('locale.descriptionWithDrafts')
-                : t('locale.description')
+                ? t('common:locale.descriptionWithDrafts')
+                : t('common:locale.description')
           }
           control={
             <div
               className="settings-segmented-control"
               role="radiogroup"
-              aria-label={t('locale.label')}
+              aria-label={t('common:locale.label')}
             >
               {locales.map((option) => {
                 const active = locale === option.code;
@@ -86,7 +86,7 @@ export function PreferencesSettingsSection() {
                     aria-checked={active}
                     disabled={!exposed || isSaving}
                     lang={option.code}
-                    title={exposed ? option.nativeName : t('locale.inPreparation')}
+                    title={exposed ? option.nativeName : t('common:locale.inPreparation')}
                     onClick={() => void setLocale(option.code)}
                     className={cn(
                       'settings-segmented-control__item',
@@ -102,13 +102,13 @@ export function PreferencesSettingsSection() {
           }
         />
         <SettingsRow
-          label="Tema"
-          description="Padrão, claro ou escuro. Salvo neste navegador."
+          label={t('preferencesSettingsSection.tema')}
+          description={t('preferencesSettingsSection.padraoClaroOuEscuro')}
           control={
             <div
               className="settings-segmented-control"
               role="radiogroup"
-              aria-label="Tema da interface"
+              aria-label={t('preferencesSettingsSection.temaDaInterface')}
             >
               {THEME_OPTIONS.map((option) => {
                 const active = theme === option.value;
@@ -135,13 +135,13 @@ export function PreferencesSettingsSection() {
         />
 
         <SettingsRow
-          label="Visualização padrão da Biblioteca"
-          description="Aplicado ao abrir a Biblioteca sem preferência na URL."
+          label={t('preferencesSettingsSection.visualizacaoPadraoDaBiblioteca')}
+          description={t('preferencesSettingsSection.aplicadoAoAbrirA')}
           control={
             <div
               className="settings-segmented-control"
               role="radiogroup"
-              aria-label="Visualização padrão da Biblioteca"
+              aria-label={t('preferencesSettingsSection.visualizacaoPadraoDaBiblioteca2')}
             >
               {VIEW_OPTIONS.map((option) => {
                 const active = defaultView === option.value;

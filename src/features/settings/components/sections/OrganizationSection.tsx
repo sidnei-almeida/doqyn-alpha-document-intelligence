@@ -10,6 +10,7 @@ import { UploadAiSettingsSection } from './UploadAiSettingsSection';
 import { governsOrganization } from '../../settingsSections';
 import { tenantVocabulary } from '@/lib/tenantVocabulary';
 import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Uma tela só, em coluna única de blocos separados por fio, com uma regra de salvamento:
@@ -17,6 +18,8 @@ import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
  * bloco de envio e IA — em leitura —, porque é ele que explica o que a IA fez com o arquivo.
  */
 export function OrganizationSection() {
+  const { t } = useTranslation('settings');
+
   const { hasAnyRole, tenant } = useAuth();
   const isCompanyAdmin = hasAnyRole(['company_admin']);
   const governs = governsOrganization({
@@ -36,7 +39,7 @@ export function OrganizationSection() {
     <div className="settings-blocks">
       <section className="settings-block">
         <SettingsSectionHeader
-          title="Envio e IA"
+          title={t('organizationSection.envioEIa')}
           description={`Vale para ${vocabulary.wholeScope}: quando a IA renomeia o arquivo e quando o envio para para revisão.`}
           className="settings-block__header"
         />
@@ -53,7 +56,7 @@ export function OrganizationSection() {
           esconder por engano. Não há o que administrar — a cota vem do servidor. */}
       <section className="settings-block">
         <SettingsSectionHeader
-          title="Armazenamento"
+          title={t('organizationSection.armazenamento')}
           description={`O que os documentos ${vocabulary.ofScope} já ocupam.`}
           className="settings-block__header"
         />
@@ -63,8 +66,8 @@ export function OrganizationSection() {
       {governs ? (
         <section className="settings-block">
           <SettingsSectionHeader
-            title="Retenção da lixeira"
-            description="Por quanto tempo um documento excluído continua recuperável."
+            title={t('organizationSection.retencaoDaLixeira')}
+            description={t('organizationSection.porQuantoTempoUm')}
             className="settings-block__header"
           />
           <TrashRetentionSettingsSection
@@ -78,8 +81,8 @@ export function OrganizationSection() {
       {canAccessRules ? (
         <section className="settings-block">
           <SettingsSectionHeader
-            title="Governança"
-            description="Onde a classificação, os fluxos e a visibilidade são definidos."
+            title={t('organizationSection.governanca')}
+            description={t('organizationSection.ondeAClassificacaoOs')}
             className="settings-block__header"
           />
           {/* O atalho para Usuários só existe para quem consegue abrir a tela. `/users` exige
@@ -115,8 +118,11 @@ export function OrganizationSection() {
               <Icon name="info" size={18} />
             </span>
             <p className="settings-callout__body">
-              Alterações em <strong className="font-medium text-doqyn-text">Regras</strong> impactam
-              classificação automática, alertas e permissões na Biblioteca.
+              {t('organizationSection.alteracoesEm')}{' '}
+              <strong className="font-medium text-doqyn-text">
+                {t('organizationSection.regras')}
+              </strong>{' '}
+              {t('organizationSection.impactamClassificacaoAutomaticaAlertas')}
             </p>
           </aside>
         </section>

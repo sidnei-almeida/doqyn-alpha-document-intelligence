@@ -28,6 +28,7 @@ import { UnblockAccessDialog } from './components/UnblockAccessDialog';
 import { invalidateUserManagementQueries } from './userManagementQueries';
 import { useCompanyMembers } from './hooks/useCompanyMembers';
 import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_FILTER_LABELS: Record<MemberStatus | 'all', string> = {
   all: 'Todos',
@@ -61,6 +62,8 @@ function memberToAccessForm(member: CompanyMemberDto): AccessFormState {
 }
 
 export function UsersPage() {
+  const { t } = useTranslation('users');
+
   const { user, tenant } = useAuth();
   const queryClient = useQueryClient();
   const sessionTenantId = tenant?.tenantId ?? user?.companyId ?? '';
@@ -239,8 +242,7 @@ export function UsersPage() {
       email: invite.email,
       firstName: invite.firstName ?? undefined,
       lastName: invite.lastName ?? undefined,
-      name:
-        [invite.firstName, invite.lastName].filter(Boolean).join(' ').trim() || invite.email,
+      name: [invite.firstName, invite.lastName].filter(Boolean).join(' ').trim() || invite.email,
       platformRoles: invite.roles,
       tenantRoles: invite.roles,
       status: 'invited' as const,
@@ -282,7 +284,6 @@ export function UsersPage() {
 
   const documentGroups = documentGroupsQuery.data ?? [];
 
-
   const openEditAccess = (member: CompanyMemberDto) => {
     const baseline = memberToAccessForm(member);
     setEditingMember(member);
@@ -292,12 +293,13 @@ export function UsersPage() {
   return (
     <PageShell
       eyebrow="Administração"
-      title="Usuários"
+      title={t('usersPage.usuarios')}
       description={`Convide pessoas e gerencie acessos de ${tenantDisplayName}.`}
       actions={
         <Button type="button" onClick={() => setInviting(true)}>
           <Icon name="person_add" size={ICON_SIZE.xs} />
-          Convidar
+
+          {t('usersPage.convidar')}
         </Button>
       }
       bodyClassName="min-h-0"
@@ -314,9 +316,9 @@ export function UsersPage() {
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Buscar por nome ou e-mail"
+            placeholder={t('usersPage.buscarPorNomeOu')}
             className="text-label placeholder:text-doqyn-subtle"
-            aria-label="Buscar usuário"
+            aria-label={t('usersPage.buscarUsuario')}
           />
         </label>
 
@@ -327,7 +329,7 @@ export function UsersPage() {
             label: STATUS_FILTER_LABELS[status],
           }))}
           onChange={setStatusFilter}
-          aria-label="Filtrar por status"
+          aria-label={t('usersPage.filtrarPorStatus')}
         />
 
         <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -499,7 +501,6 @@ export function UsersPage() {
           onConfirm={() => activateMutation.mutate(unblockingMember.id)}
         />
       )}
-
     </PageShell>
   );
 }

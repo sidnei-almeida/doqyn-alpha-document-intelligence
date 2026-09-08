@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type SettingsSaveBarProps = {
   dirty: boolean;
@@ -26,11 +27,13 @@ export function SettingsSaveBar({
   className,
   inset = false,
 }: SettingsSaveBarProps) {
+  const { t } = useTranslation('settings');
+
   return (
     <div
       className={cn('settings-save-bar', inset && 'settings-save-bar--inset', className)}
       role="group"
-      aria-label="Ações de salvamento"
+      aria-label={t('settingsSaveBar.acoesDeSalvamento')}
     >
       <p
         className={cn(

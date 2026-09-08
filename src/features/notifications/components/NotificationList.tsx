@@ -5,6 +5,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { AppNotification, NotificationType } from '../api/notificationsApi';
+import { useTranslation } from 'react-i18next';
 
 export type NotificationListProps = {
   notifications: AppNotification[];
@@ -128,15 +129,21 @@ export function NotificationList({
   onDismiss,
   compact = false,
 }: NotificationListProps) {
+  const { t } = useTranslation('notifications');
+
   if (isLoading) {
-    return <p className="p-4 text-caption text-doqyn-muted">Carregando notificações…</p>;
+    return (
+      <p className="p-4 text-caption text-doqyn-muted">
+        {t('notificationList.carregandoNotificacoes')}
+      </p>
+    );
   }
 
   if (notifications.length === 0) {
     return (
       <EmptyState
-        title="Nada por aqui"
-        description="Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos aparecem nesta caixa."
+        title={t('notificationList.nadaPorAqui')}
+        description={t('notificationList.documentosEnviadosVersoesNovas')}
       />
     );
   }
@@ -222,11 +229,17 @@ export function NotificationList({
 
             <div className="flex shrink-0 items-center gap-0.5">
               {notification.status === 'unread' ? (
-                <IconButton label="Marcar como lida" onClick={() => onMarkRead(notification.id)}>
+                <IconButton
+                  label={t('notificationList.marcarComoLida')}
+                  onClick={() => onMarkRead(notification.id)}
+                >
                   <Icon name="mark_email_read" size={ICON_SIZE.xs} />
                 </IconButton>
               ) : null}
-              <IconButton label="Dispensar" onClick={() => onDismiss(notification.id)}>
+              <IconButton
+                label={t('notificationList.dispensar')}
+                onClick={() => onDismiss(notification.id)}
+              >
                 <Icon name="close" size={ICON_SIZE.xs} />
               </IconButton>
             </div>

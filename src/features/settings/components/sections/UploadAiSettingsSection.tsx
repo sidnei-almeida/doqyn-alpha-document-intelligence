@@ -3,6 +3,7 @@ import { NAMING_POLICY_LABELS } from '@/features/document-send/utils/reviewWorkf
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
 import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionBody } from '../SettingsSectionBody';
+import { useTranslation } from 'react-i18next';
 
 type UploadAiSettingsSectionProps = {
   draft: WorkflowReviewSettings;
@@ -18,12 +19,13 @@ export function UploadAiSettingsSection({
   canManage,
   dirty,
 }: UploadAiSettingsSectionProps) {
+  const { t } = useTranslation('settings');
+
   return (
     <SettingsSectionBody id="upload">
       {canManage ? null : (
         <p className="settings-section-note">
-          Quem define esta política é o administrador da organização. Ela decide quando a IA
-          renomeia o seu arquivo e quando o envio para para revisão.
+          {t('uploadAiSettingsSection.quemDefineEstaPolitica')}
         </p>
       )}
 

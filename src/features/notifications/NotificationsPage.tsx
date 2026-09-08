@@ -5,6 +5,7 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { NotificationList } from './components/NotificationList';
 import { useNotifications } from './hooks/useNotifications';
 import type { NotificationStatus } from './api/notificationsApi';
+import { useTranslation } from 'react-i18next';
 
 const FILTERS: Array<{ value: NotificationStatus | 'all'; label: string }> = [
   { value: 'unread', label: 'Não lidas' },
@@ -13,6 +14,8 @@ const FILTERS: Array<{ value: NotificationStatus | 'all'; label: string }> = [
 ];
 
 export function NotificationsPage() {
+  const { t } = useTranslation('notifications');
+
   const [filter, setFilter] = useState<NotificationStatus | 'all'>('unread');
   const { notifications, unreadCount, isLoading, markRead, dismiss, markAllRead } =
     useNotifications({
@@ -23,18 +26,18 @@ export function NotificationsPage() {
   return (
     <PageShell
       eyebrow="Caixa"
-      title="Notificações"
-      description="Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos."
+      title={t('notificationsPage.notificacoes')}
+      description={t('notificationsPage.documentosEnviadosVersoesNovas')}
       actions={
         unreadCount > 0 ? (
           <Button type="button" variant="ghost" size="sm" onClick={() => markAllRead()}>
-            Marcar tudo como lido
+            {t('notificationsPage.marcarTudoComoLido')}
           </Button>
         ) : undefined
       }
     >
       <SegmentedTextToggle
-        aria-label="Filtrar notificações"
+        aria-label={t('notificationsPage.filtrarNotificacoes')}
         options={FILTERS}
         value={filter}
         onChange={setFilter}

@@ -8,6 +8,7 @@ import { buttonVariants } from '@/components/ui/buttonVariants';
 import { ApiError } from '@/lib/apiErrors';
 import { cn } from '@/lib/utils';
 import { emailChangeApi, getEmailChangeErrorMessage } from '@/features/settings/api/emailChangeApi';
+import { Trans, useTranslation } from 'react-i18next';
 
 type PageState =
   | { kind: 'loading' }
@@ -16,6 +17,8 @@ type PageState =
   | { kind: 'success'; message: string };
 
 export function ConfirmEmailChangePage() {
+  const { t } = useTranslation('settings');
+
   const { token = '' } = useParams();
   const navigate = useNavigate();
   const [pageState, setPageState] = useState<PageState>({ kind: 'loading' });
@@ -91,16 +94,21 @@ export function ConfirmEmailChangePage() {
       <main className="flex flex-1 items-center justify-center px-4 py-8">
         <div className="w-full max-w-md rounded-2xl border border-doqyn-border bg-doqyn-surface p-6 shadow-sm sm:p-8">
           {pageState.kind === 'loading' ? (
-            <p className="text-sm text-doqyn-muted">Validando link…</p>
+            <p className="text-sm text-doqyn-muted">{t('confirmEmailChangePage.validandoLink')}</p>
           ) : null}
 
           {pageState.kind === 'ready' ? (
             <div className="space-y-4">
               <div>
-                <h1 className="text-xl font-semibold text-doqyn-text">Confirmar novo e-mail</h1>
+                <h1 className="text-xl font-semibold text-doqyn-text">
+                  {t('confirmEmailChangePage.confirmarNovoEMail')}
+                </h1>
                 <p className="mt-2 text-sm text-doqyn-muted">
-                  Você está alterando o e-mail da conta de <strong>{pageState.currentEmail}</strong>{' '}
-                  para <strong>{pageState.newEmail}</strong>.
+                  <Trans
+                    i18nKey="settings:confirmEmailChangePage.changingFrom"
+                    values={{ current: pageState.currentEmail, next: pageState.newEmail }}
+                    components={{ old: <strong />, new: <strong /> }}
+                  />
                 </p>
               </div>
               <Button className="w-full" onClick={() => void handleConfirm()} disabled={submitting}>
@@ -111,10 +119,12 @@ export function ConfirmEmailChangePage() {
 
           {pageState.kind === 'success' ? (
             <div className="space-y-3">
-              <h1 className="text-xl font-semibold text-doqyn-text">E-mail atualizado</h1>
+              <h1 className="text-xl font-semibold text-doqyn-text">
+                {t('confirmEmailChangePage.eMailAtualizado')}
+              </h1>
               <p className="text-sm text-doqyn-muted">{pageState.message}</p>
               <Button className="w-full" onClick={() => navigate('/login', { replace: true })}>
-                Ir para login
+                {t('confirmEmailChangePage.irParaLogin')}
               </Button>
             </div>
           ) : null}
@@ -124,7 +134,7 @@ export function ConfirmEmailChangePage() {
               <h1 className="text-xl font-semibold text-doqyn-text">{pageState.title}</h1>
               <p className="text-sm text-doqyn-muted">{pageState.message}</p>
               <Link to="/login" className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}>
-                Voltar ao login
+                {t('confirmEmailChangePage.voltarAoLogin')}
               </Link>
             </div>
           ) : null}
