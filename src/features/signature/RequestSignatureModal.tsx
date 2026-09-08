@@ -39,6 +39,7 @@ import {
   fetchDocumentSignatureRequests,
 } from './api/signatureApi';
 import { invalidateSignatureQueries } from './utils/invalidateSignatureQueries';
+import { useTranslation } from 'react-i18next';
 
 const STEPS = ['Quem assina', 'Condições', 'Confirmar'];
 const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
@@ -86,6 +87,8 @@ export function RequestSignatureModal({
   onClose,
   onCreated,
 }: RequestSignatureModalProps) {
+  const { t } = useTranslation('signature');
+
   const documentId = document?.id ?? null;
   const queryClient = useQueryClient();
   const flow = useStepFlow(STEPS.length, open);
@@ -297,7 +300,7 @@ export function RequestSignatureModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Solicitar assinatura"
+      title={t('requestSignatureModal.solicitarAssinatura')}
       size="lg"
       dismissOnOverlay={false}
       subtitle={
@@ -332,19 +335,19 @@ export function RequestSignatureModal({
         <div className="flex flex-col gap-5">
           {issuedUrl ? (
             <>
-              <IssuedLink url={issuedUrl} label="Link do portal de assinatura" />
+              <IssuedLink url={issuedUrl} label={t('requestSignatureModal.linkDoPortalDe')} />
               <p className="type-caption text-doqyn-muted">
-                Vale até {formatExpirationDate(expiresAt)}. Enquanto a solicitação estiver aberta,
-                este link pode ser copiado de novo na lista abaixo.
+                {t('requestSignatureModal.valeAte')} {formatExpirationDate(expiresAt)}
+                {t('requestSignatureModal.enquantoASolicitacaoEstiver')}
               </p>
             </>
           ) : (
             <p className="type-body text-doqyn-text">
-              {recipient.label} recebeu a solicitação e vê o documento em “Para assinar”.
+              {recipient.label} {t('requestSignatureModal.recebeuASolicitacaoE')}
             </p>
           )}
           <AccessList
-            title="Assinaturas deste documento"
+            title={t('requestSignatureModal.assinaturasDesteDocumento')}
             emptyLabel="Nenhuma solicitação ainda."
             rows={accessRows}
           />
@@ -366,7 +369,7 @@ export function RequestSignatureModal({
                    empresa: quem assina de fora abre a página própria com token e não entra no
                    acervo, então aqui não há aceite a esperar. */
                 <CrossTenantRecipientField
-                  label="Nome de usuário de quem vai assinar"
+                  label={t('requestSignatureModal.nomeDeUsuarioDe')}
                   idleHint="Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo."
                   onPick={setCrossTenantSigner}
                   onFallbackToLink={(email) => {
@@ -396,7 +399,7 @@ export function RequestSignatureModal({
                       size="sm"
                       onClick={() => setAudience('doqyn')}
                     >
-                      Não é daqui? Buscar por nome de usuário
+                      {t('requestSignatureModal.naoEDaquiBuscar')}
                     </Button>
                   }
                 />
@@ -409,7 +412,7 @@ export function RequestSignatureModal({
                 />
               )}
               <AccessList
-                title="Assinaturas deste documento"
+                title={t('requestSignatureModal.assinaturasDesteDocumento2')}
                 emptyLabel="Nenhuma solicitação ainda."
                 rows={accessRows}
               />

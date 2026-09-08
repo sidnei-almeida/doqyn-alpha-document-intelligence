@@ -9,6 +9,7 @@ import {
 import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { ExternalSharePortalPayload } from '@/features/sharing/api/externalShareApi';
 import { fetchExternalShareAssetBlob } from '@/features/sharing/api/externalShareApi';
+import { useTranslation } from 'react-i18next';
 
 type GuestDocumentViewerProps = {
   manifest: DocumentPreviewManifest;
@@ -32,6 +33,8 @@ export function GuestDocumentViewer({
   onDownload,
   isDownloading,
 }: GuestDocumentViewerProps) {
+  const { t } = useTranslation('externalShare');
+
   const viewerActionsRef = useRef<ViewerActions | null>(null);
   const [viewerToolbar, setViewerToolbar] = useState<ViewerToolbarState>({
     scale: 1,
@@ -98,7 +101,7 @@ export function GuestDocumentViewer({
         <div className="doqyn-secure-viewer flex h-full min-h-0 flex-col">
           {showProtectedNotice ? (
             <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-              Visualização protegida. Download indisponível neste convite.
+              {t('guestDocumentViewer.visualizacaoProtegidaDownloadIndisponivel')}
             </p>
           ) : null}
           <ViewerComponent

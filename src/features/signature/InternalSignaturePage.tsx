@@ -22,6 +22,7 @@ import { InternalSignatureViewer } from '@/features/signature/InternalSignatureV
 import { triggerBlobDownload } from '@/features/library/api/libraryApi';
 import { invalidateSignatureQueries } from '@/features/signature/utils/invalidateSignatureQueries';
 import { publishSignatureCompleted } from '@/features/signature/utils/signatureCompletionSync';
+import { useTranslation } from 'react-i18next';
 
 type PreviewState =
   | { kind: 'loading' }
@@ -40,6 +41,8 @@ function formatDateTime(iso: string): string {
 }
 
 function PreviewLoadingPanel() {
+  const { t } = useTranslation('signature');
+
   return (
     <div
       className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-border bg-doqyn-surface"
@@ -50,12 +53,14 @@ function PreviewLoadingPanel() {
         size={ICON_SIZE.md}
         className="animate-spin text-doqyn-muted"
       />
-      <p className="text-sm text-doqyn-subtle">Carregando documento…</p>
+      <p className="text-sm text-doqyn-subtle">{t('internalSignaturePage.carregandoDocumento')}</p>
     </div>
   );
 }
 
 function PreviewUnavailablePanel({ message }: { message: string }) {
+  const { t } = useTranslation('signature');
+
   return (
     <div
       className="flex h-[min(70vh,720px)] flex-col items-center justify-center gap-3 rounded-lg border border-doqyn-warning-border bg-doqyn-warning-bg/40 p-8 text-center"
@@ -63,7 +68,7 @@ function PreviewUnavailablePanel({ message }: { message: string }) {
     >
       <Icon name="visibility_off" size={ICON_SIZE.md} className="text-doqyn-warning" />
       <p className="text-sm font-medium text-doqyn-text">
-        Preview indisponível para este documento.
+        {t('internalSignaturePage.previewIndisponivelParaEste')}
       </p>
       <p className="max-w-md text-sm leading-relaxed text-doqyn-subtle">{message}</p>
     </div>
@@ -71,6 +76,8 @@ function PreviewUnavailablePanel({ message }: { message: string }) {
 }
 
 export function InternalSignaturePage() {
+  const { t } = useTranslation('signature');
+
   const { signatureRequestId = '' } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -211,7 +218,9 @@ export function InternalSignaturePage() {
             size={ICON_SIZE.md}
             className="animate-spin text-doqyn-muted"
           />
-          <p className="text-sm text-doqyn-subtle">Carregando assinatura…</p>
+          <p className="text-sm text-doqyn-subtle">
+            {t('internalSignaturePage.carregandoAssinatura')}
+          </p>
         </div>
       </div>
     );
@@ -221,10 +230,12 @@ export function InternalSignaturePage() {
     return (
       <div className="mx-auto max-w-lg py-12 text-center" data-testid="internal-signature-page">
         <Icon name="error" size={ICON_SIZE.md} className="mx-auto text-doqyn-muted" />
-        <h1 className="mt-4 text-base font-semibold">Assinatura indisponível</h1>
+        <h1 className="mt-4 text-base font-semibold">
+          {t('internalSignaturePage.assinaturaIndisponivel')}
+        </h1>
         <p className="mt-2 text-sm text-doqyn-subtle">{error}</p>
         <Button type="button" className="mt-6" onClick={() => navigate('/biblioteca/assinaturas')}>
-          Voltar para Para assinar
+          {t('internalSignaturePage.voltarParaParaAssinar')}
         </Button>
       </div>
     );
@@ -236,10 +247,12 @@ export function InternalSignaturePage() {
         <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-doqyn-success-bg text-doqyn-success">
           <Icon name="check_circle" size={ICON_SIZE.md} />
         </div>
-        <h1 className="text-lg font-semibold">Documento assinado com sucesso</h1>
+        <h1 className="text-lg font-semibold">
+          {t('internalSignaturePage.documentoAssinadoComSucesso')}
+        </h1>
         {verificationCode ? (
           <p className="mt-3 text-sm text-doqyn-subtle">
-            Código de verificação:{' '}
+            {t('internalSignaturePage.codigoDeVerificacao')}{' '}
             <span className="font-mono font-medium text-doqyn-text">{verificationCode}</span>
           </p>
         ) : null}
@@ -248,7 +261,7 @@ export function InternalSignaturePage() {
             to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
             className="mt-4 inline-block text-sm text-doqyn-accent-active hover:underline"
           >
-            Validar assinatura
+            {t('internalSignaturePage.validarAssinatura')}
           </Link>
         ) : null}
         {payload?.permissions.canDownloadAfterSign ? (
@@ -258,7 +271,11 @@ export function InternalSignaturePage() {
             disabled={downloading}
             onClick={() => void handleDownloadSigned()}
           >
-            {downloading ? 'Baixando…' : 'Baixar PDF assinado'}
+            {t(
+              downloading
+                ? 'internalSignaturePage.downloading'
+                : 'internalSignaturePage.downloadSignedPdf',
+            )}
           </Button>
         ) : null}
         <Button
@@ -267,7 +284,7 @@ export function InternalSignaturePage() {
           className="mt-3 w-full"
           onClick={() => navigate('/biblioteca/assinaturas')}
         >
-          Voltar para Para assinar
+          {t('internalSignaturePage.voltarParaParaAssinar2')}
         </Button>
       </div>
     );
@@ -302,17 +319,17 @@ export function InternalSignaturePage() {
             {payload?.versionLabel ? (
               <VersionBadge version={payload.versionLabel} isCurrent size="sm" />
             ) : null}
-            <Badge variant="pending">Assinatura pendente</Badge>
+            <Badge variant="pending">{t('internalSignaturePage.assinaturaPendente')}</Badge>
           </div>
 
           <dl className="mt-4 space-y-2 text-sm">
             <div>
-              <dt className="text-doqyn-muted">Solicitado por</dt>
+              <dt className="text-doqyn-muted">{t('internalSignaturePage.solicitadoPor')}</dt>
               <dd>{payload?.issuerName}</dd>
             </div>
             {expiresLabel ? (
               <div>
-                <dt className="text-doqyn-muted">Expira em</dt>
+                <dt className="text-doqyn-muted">{t('internalSignaturePage.expiraEm')}</dt>
                 <dd className="text-doqyn-warning">{expiresLabel}</dd>
               </div>
             ) : null}
@@ -326,7 +343,9 @@ export function InternalSignaturePage() {
         </section>
 
         <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
-          <p className="text-label text-doqyn-text">Leia o documento antes de assinar.</p>
+          <p className="text-label text-doqyn-text">
+            {t('internalSignaturePage.leiaODocumentoAntes')}
+          </p>
           <Checkbox
             wrapperClassName="mt-4"
             checked={consentAccepted}
@@ -345,14 +364,14 @@ export function InternalSignaturePage() {
           className="w-full"
           data-testid="internal-signature-submit-button"
         >
-          Assinar documento
+          {t('internalSignaturePage.assinarDocumento')}
         </Button>
       </aside>
 
       <ReviewBeforeSubmitDialog
         open={confirmOpen}
-        title="Confirmar assinatura"
-        description="Revise os dados antes de concluir a assinatura eletrônica."
+        title={t('internalSignaturePage.confirmarAssinatura')}
+        description={t('internalSignaturePage.reviseOsDadosAntes')}
         sections={[
           {
             title: 'Documento',
@@ -365,8 +384,8 @@ export function InternalSignaturePage() {
         ]}
         attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
         submitting={signing}
-        confirmLabel="Confirmar assinatura"
-        cancelLabel="Voltar"
+        confirmLabel={t('internalSignaturePage.confirmarAssinatura2')}
+        cancelLabel={t('internalSignaturePage.voltar')}
         onCancel={() => setConfirmOpen(false)}
         onEdit={() => setConfirmOpen(false)}
         onConfirm={() => void handleSign()}

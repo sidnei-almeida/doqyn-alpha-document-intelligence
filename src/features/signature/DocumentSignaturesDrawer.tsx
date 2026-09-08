@@ -31,6 +31,7 @@ import {
   canRevokeSignatureRequestEntry,
   isSignatureRequestEntryOpen,
 } from '@/features/signature/utils/signatureRequestStatus';
+import { useTranslation } from 'react-i18next';
 
 type DocumentSignaturesDrawerProps = {
   document: DocumentListItem | null;
@@ -81,6 +82,8 @@ function SignatureRequestCard({
   downloadingEvidence: string | null;
   revokingId: string | null;
 }) {
+  const { t } = useTranslation('signature');
+
   const signer = entry.signers[0];
   const verificationCode = entry.signature?.verificationCode;
 
@@ -99,7 +102,7 @@ function SignatureRequestCard({
 
       <dl className="mt-3 space-y-2 text-caption">
         <div>
-          <dt className="text-doqyn-muted">Signatário</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.signatario')}</dt>
           <dd className="text-doqyn-text">{signer?.name ?? '—'}</dd>
           <dd className="text-doqyn-subtle">{signer?.emailMasked ?? '—'}</dd>
           {signer?.phoneMasked ? <dd className="text-doqyn-subtle">{signer.phoneMasked}</dd> : null}
@@ -108,22 +111,22 @@ function SignatureRequestCard({
           ) : null}
         </div>
         <div>
-          <dt className="text-doqyn-muted">Solicitado por</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.solicitadoPor')}</dt>
           <dd>{entry.requestedByName}</dd>
         </div>
         <div>
-          <dt className="text-doqyn-muted">Solicitado em</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.solicitadoEm')}</dt>
           <dd>{formatDateTime(entry.createdAt)}</dd>
         </div>
         {entry.signature?.signedAt ? (
           <div>
-            <dt className="text-doqyn-muted">Assinado em</dt>
+            <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.assinadoEm')}</dt>
             <dd>{formatDateTime(entry.signature.signedAt)}</dd>
           </div>
         ) : null}
         {entry.expiresAt ? (
           <div>
-            <dt className="text-doqyn-muted">Expira em</dt>
+            <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.expiraEm')}</dt>
             <dd>{formatDateTime(entry.expiresAt)}</dd>
           </div>
         ) : null}
@@ -146,7 +149,11 @@ function SignatureRequestCard({
             onClick={() => onRevoke(entry)}
             data-testid="signature-drawer-revoke"
           >
-            {revokingId === entry.signatureRequestId ? 'Revogando…' : 'Revogar'}
+            {t(
+              revokingId === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.revoking'
+                : 'documentSignaturesDrawer.revoke',
+            )}
           </Button>
         ) : null}
         {entry.signature?.hasSignedPdf ? (
@@ -160,7 +167,11 @@ function SignatureRequestCard({
             }
             data-testid="signature-drawer-download-signed"
           >
-            {downloadingSigned === entry.signatureRequestId ? 'Baixando…' : 'Baixar PDF assinado'}
+            {t(
+              downloadingSigned === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.downloading'
+                : 'documentSignaturesDrawer.downloadSignedPdf',
+            )}
           </Button>
         ) : null}
         {entry.signature?.hasEvidence ? (
@@ -171,7 +182,11 @@ function SignatureRequestCard({
             disabled={downloadingEvidence === entry.signatureRequestId}
             onClick={() => onDownloadEvidence(entry.signatureRequestId)}
           >
-            {downloadingEvidence === entry.signatureRequestId ? 'Baixando…' : 'Baixar evidências'}
+            {t(
+              downloadingEvidence === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.downloading'
+                : 'documentSignaturesDrawer.downloadEvidence',
+            )}
           </Button>
         ) : null}
         {verificationCode ? (
@@ -180,7 +195,7 @@ function SignatureRequestCard({
             className="inline-flex items-center gap-1 text-caption text-doqyn-accent-active hover:underline"
             data-testid="signature-drawer-verification-link"
           >
-            Abrir validador
+            {t('documentSignaturesDrawer.abrirValidador')}
           </Link>
         ) : null}
       </div>
@@ -189,6 +204,8 @@ function SignatureRequestCard({
 }
 
 export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignaturesDrawerProps) {
+  const { t } = useTranslation('signature');
+
   const queryClient = useQueryClient();
   const { tenant, user } = useAuth();
   const confirm = useConfirm();
@@ -293,7 +310,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
 
   return (
     <WorkspaceSideDrawer
-      title="Assinaturas do documento"
+      title={t('documentSignaturesDrawer.assinaturasDoDocumento')}
       onClose={onClose}
       testId="document-signatures-drawer"
       overlayTestId="document-signatures-drawer-overlay"
@@ -313,14 +330,18 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
         ) : null}
       </div>
 
-      {isLoading ? <p className="text-caption text-doqyn-muted">Carregando assinaturas…</p> : null}
+      {isLoading ? (
+        <p className="text-caption text-doqyn-muted">
+          {t('documentSignaturesDrawer.carregandoAssinaturas')}
+        </p>
+      ) : null}
       {isError ? (
         <div className="space-y-2">
           <p className="text-caption text-doqyn-danger">
-            Não foi possível carregar as assinaturas.
+            {t('documentSignaturesDrawer.naoFoiPossivelCarregar')}
           </p>
           <Button type="button" size="sm" variant="secondary" onClick={() => void refetch()}>
-            Tentar novamente
+            {t('documentSignaturesDrawer.tentarNovamente')}
           </Button>
         </div>
       ) : null}
@@ -344,7 +365,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       </div>
 
       {!isLoading && !isError && data?.items.length === 0 ? (
-        <EmptyHint bare>Nenhuma assinatura solicitada.</EmptyHint>
+        <EmptyHint bare>{t('documentSignaturesDrawer.nenhumaAssinaturaSolicitada')}</EmptyHint>
       ) : null}
     </WorkspaceSideDrawer>
   );

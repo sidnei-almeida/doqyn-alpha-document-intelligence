@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AssignedSignatureRequestItem } from '@/features/signature/api/signatureApi';
 import { useAssignedSignatureRequests } from '@/features/signature/hooks/useAssignedSignatureRequests';
+import { useTranslation } from 'react-i18next';
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
@@ -69,6 +70,8 @@ type SignaturesAssignedPanelProps = {
 };
 
 export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanelProps) {
+  const { t } = useTranslation('signature');
+
   const navigate = useNavigate();
   const { data, isLoading, isError } = useAssignedSignatureRequests();
   const items = useMemo(() => filterItems(data?.items ?? [], search), [data?.items, search]);
@@ -89,7 +92,7 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
         className="text-label font-normal text-doqyn-danger"
         data-testid="signatures-assigned-error"
       >
-        Não foi possível carregar as assinaturas pendentes.
+        {t('signaturesAssignedPanel.naoFoiPossivelCarregar')}
       </p>
     );
   }
@@ -101,9 +104,11 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
         data-testid="signatures-assigned-empty"
       >
         <Icon name="draw" size={ICON_SIZE.md} className="mb-4 text-doqyn-border-strong" />
-        <p className="text-label font-medium text-doqyn-text">Nada aguardando sua assinatura</p>
+        <p className="text-label font-medium text-doqyn-text">
+          {t('signaturesAssignedPanel.nadaAguardandoSuaAssinatura')}
+        </p>
         <p className="mt-1.5 max-w-[42ch] text-caption leading-relaxed text-doqyn-muted">
-          Quando alguém pedir sua assinatura, o documento aparece aqui.
+          {t('signaturesAssignedPanel.quandoAlguemPedirSua')}
         </p>
       </div>
     );
@@ -120,7 +125,7 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
           <div className="min-w-0">
             <p className="truncate text-label font-medium text-doqyn-text">{item.documentName}</p>
             <p className="mt-1 text-caption text-doqyn-muted">
-              Solicitado por {item.requestedBy}
+              {t('signaturesAssignedPanel.solicitadoPor')} {item.requestedBy}
               {item.versionLabel ? ` · v${item.versionLabel}` : ''}
             </p>
             <p className="mt-0.5 font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -141,7 +146,7 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
                 }
                 data-testid={`signature-assigned-open-${item.signatureRequestId}`}
               >
-                Abrir e assinar
+                {t('signaturesAssignedPanel.abrirEAssinar')}
               </Button>
             ) : null}
           </div>

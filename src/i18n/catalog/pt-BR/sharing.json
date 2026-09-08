@@ -1,0 +1,25 @@
+{
+  "inboundSharesStrip": {
+    "aceitar": "Aceitar",
+    "aguardandoSeuAceite": "Aguardando seu aceite",
+    "documentosDeForaAguardando": "Documentos de fora aguardando decisão",
+    "fromOutside_one": "{{count}} documento de fora daqui",
+    "fromOutside_other": "{{count}} documentos de fora daqui",
+    "recusar": "Recusar"
+  },
+  "permissions": {
+    "canDownload": "pode baixar",
+    "readOnly": "só leitura",
+    "readOnlyLong": "somente leitura"
+  },
+  "shareDocumentModal": {
+    "compartilharDocumento": "Compartilhar documento",
+    "deForaDaqui": "· de fora daqui",
+    "enquantoOAcessoExistir": ". Enquanto o acesso existir, este\n            link pode ser copiado de novo aqui na lista.",
+    "naoEDaquiBuscar": "Não é daqui? Buscar por nome de usuário",
+    "oConviteValeAte": "O convite vale até",
+    "quemTemAcesso": "Quem tem acesso",
+    "quemTemAcesso2": "Quem tem acesso",
+    "trocar": "Trocar"
+  }
+}

@@ -67,6 +67,10 @@ export default tseslint.config(
       'src/features/individual-signup/**/*.tsx',
       'src/features/email-verification/**/*.tsx',
       'src/features/access-choice/**/*.tsx',
+      // 6.3 — portal de convidado: a tela que a contraparte externa vê
+      'src/features/signature/**/*.tsx',
+      'src/features/external-share/**/*.tsx',
+      'src/features/sharing/**/*.tsx',
     ],
     plugins: { i18next },
     rules: {

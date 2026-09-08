@@ -10,6 +10,7 @@ import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { SignaturePortalPayload } from '@/features/signature/api/signatureApi';
 import { fetchSignaturePreviewAssetBlob } from '@/features/signature/api/signatureApi';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type GuestSignatureViewerProps = {
   manifest: DocumentPreviewManifest;
@@ -33,6 +34,8 @@ export function GuestSignatureViewer({
   onDownload,
   isDownloading = false,
 }: GuestSignatureViewerProps) {
+  const { t } = useTranslation('signature');
+
   const viewerActionsRef = useRef<ViewerActions | null>(null);
   const [viewerToolbar, setViewerToolbar] = useState<ViewerToolbarState>({
     scale: 1,
@@ -100,7 +103,7 @@ export function GuestSignatureViewer({
           data-testid="signature-preview-viewer"
         >
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-            Visualização protegida. Leia o documento antes de assinar.
+            {t('guestSignatureViewer.visualizacaoProtegidaLeiaO')}
           </p>
           <ViewerComponent
             manifest={manifest}

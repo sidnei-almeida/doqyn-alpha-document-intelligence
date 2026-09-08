@@ -25,6 +25,7 @@ import {
   GuestRegisterRow,
   GuestSeal,
 } from '@/features/guest-portal/GuestPortalShell';
+import { useTranslation } from 'react-i18next';
 
 type PreviewState =
   | { kind: 'loading' }
@@ -43,6 +44,8 @@ function formatDateTime(iso: string): string {
 }
 
 function PreviewLoadingPanel() {
+  const { t } = useTranslation('signature');
+
   return (
     <div className="sign-sheet sign-sheet--placeholder" data-testid="signature-preview-loading">
       <Icon
@@ -50,7 +53,7 @@ function PreviewLoadingPanel() {
         size={ICON_SIZE.md}
         className="animate-spin text-doqyn-muted"
       />
-      <p className="type-caption text-doqyn-subtle">Abrindo o documento…</p>
+      <p className="type-caption text-doqyn-subtle">{t('signaturePortalPage.abrindoODocumento')}</p>
     </div>
   );
 }
@@ -100,6 +103,8 @@ function SignSteps({
 }
 
 export function SignaturePortalPage() {
+  const { t } = useTranslation('signature');
+
   const { token = '' } = useParams();
   const queryClient = useQueryClient();
   const { tenant, user } = useAuth();
@@ -261,7 +266,9 @@ export function SignaturePortalPage() {
             size={ICON_SIZE.md}
             className="animate-spin text-doqyn-muted"
           />
-          <p className="type-caption text-doqyn-subtle">Abrindo a solicitação…</p>
+          <p className="type-caption text-doqyn-subtle">
+            {t('signaturePortalPage.abrindoASolicitacao')}
+          </p>
         </div>
       </GuestPortalShell>
     );
@@ -271,11 +278,13 @@ export function SignaturePortalPage() {
     return (
       <GuestPortalShell subtitle="Assinatura eletrônica">
         <section className="guest-card guest-card--narrow" data-testid="signature-portal">
-          <p className="register-label text-doqyn-subtle">Solicitação indisponível</p>
-          <h1 className="guest-title">Este link não abre mais</h1>
+          <p className="register-label text-doqyn-subtle">
+            {t('signaturePortalPage.solicitacaoIndisponivel')}
+          </p>
+          <h1 className="guest-title">{t('signaturePortalPage.esteLinkNaoAbre')}</h1>
           <p className="type-body mt-3 text-doqyn-muted">{error}</p>
           <p className="type-caption mt-6 text-doqyn-subtle">
-            Peça uma nova solicitação a quem pediu a sua assinatura.
+            {t('signaturePortalPage.pecaUmaNovaSolicitacao')}
           </p>
         </section>
       </GuestPortalShell>
@@ -286,26 +295,33 @@ export function SignaturePortalPage() {
     return (
       <GuestPortalShell
         subtitle="Assinatura eletrônica"
-        headerAside={<GuestSeal>Assinado</GuestSeal>}
+        headerAside={<GuestSeal>{t('signaturePortalPage.assinado')}</GuestSeal>}
         footNote="A assinatura fica registrada com data, hora e evidências técnicas de auditoria."
       >
         <section className="guest-card guest-card--narrow" data-testid="signature-portal-success">
-          <p className="register-label text-doqyn-subtle">Assinatura concluída</p>
-          <h1 className="guest-title">Documento assinado</h1>
+          <p className="register-label text-doqyn-subtle">
+            {t('signaturePortalPage.assinaturaConcluida')}
+          </p>
+          <h1 className="guest-title">{t('signaturePortalPage.documentoAssinado')}</h1>
           <p className="type-body mt-3 text-doqyn-muted">
-            {payload?.documentName} foi assinado por {payload?.signer.name}.
+            {t('signaturePortalPage.signedByLine', {
+              document: payload?.documentName ?? '',
+              signer: payload?.signer.name ?? '',
+            })}
           </p>
 
           {verificationCode ? (
             <div className="sign-seal">
-              <p className="register-label text-doqyn-subtle">Código de verificação</p>
+              <p className="register-label text-doqyn-subtle">
+                {t('signaturePortalPage.codigoDeVerificacao')}
+              </p>
               <p className="sign-seal__code">{verificationCode}</p>
               <Link
                 to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
                 className="type-caption text-doqyn-primary hover:underline"
                 data-testid="signature-verification-link"
               >
-                Validar esta assinatura
+                {t('signaturePortalPage.validarEstaAssinatura')}
               </Link>
             </div>
           ) : null}
@@ -335,9 +351,10 @@ export function SignaturePortalPage() {
         headerAside={
           <>
             <p className="type-caption text-doqyn-muted">
-              Solicitado por <span className="text-doqyn-text">{payload?.issuerName}</span>
+              {t('signaturePortalPage.solicitadoPor')}{' '}
+              <span className="text-doqyn-text">{payload?.issuerName}</span>
             </p>
-            <GuestSeal>Assinatura pendente</GuestSeal>
+            <GuestSeal>{t('signaturePortalPage.assinaturaPendente')}</GuestSeal>
           </>
         }
         footNote="Ao assinar, seu aceite é registrado com data, hora e evidências técnicas de auditoria."
@@ -349,7 +366,7 @@ export function SignaturePortalPage() {
               <div className="h-full" data-testid="signature-preview-ready">
                 <GuestSignatureViewer manifest={preview.manifest} payload={payload} />
                 <p className="sr-only" data-testid="signature-document-loaded">
-                  Documento carregado
+                  {t('signaturePortalPage.documentoCarregado')}
                 </p>
               </div>
             ) : null}
@@ -365,24 +382,39 @@ export function SignaturePortalPage() {
 
           <aside className="sign-rail">
             <div className="sign-rail__block">
-              <p className="register-label text-doqyn-subtle">O que você vai assinar</p>
+              <p className="register-label text-doqyn-subtle">
+                {t('signaturePortalPage.oQueVoceVai')}
+              </p>
               <TruncatedText as="h2" className="guest-title guest-title--sm mt-1.5">
                 {payload?.documentName ?? 'Documento'}
               </TruncatedText>
               <dl className="guest-register">
                 {payload?.versionLabel ? (
-                  <GuestRegisterRow label="Versão" value={payload.versionLabel} />
+                  <GuestRegisterRow
+                    label={t('signaturePortalPage.versao')}
+                    value={payload.versionLabel}
+                  />
                 ) : null}
-                <GuestRegisterRow label="Signatário" value={payload?.signer.name ?? '—'} />
-                <GuestRegisterRow label="E-mail" value={payload?.signer.emailMasked ?? '—'} />
+                <GuestRegisterRow
+                  label={t('signaturePortalPage.signatario')}
+                  value={payload?.signer.name ?? '—'}
+                />
+                <GuestRegisterRow
+                  label={t('signaturePortalPage.eMail')}
+                  value={payload?.signer.emailMasked ?? '—'}
+                />
                 {expiresLabel ? (
-                  <GuestRegisterRow label="Assine até" value={expiresLabel} tone="warning" />
+                  <GuestRegisterRow
+                    label={t('signaturePortalPage.assineAte')}
+                    value={expiresLabel}
+                    tone="warning"
+                  />
                 ) : null}
               </dl>
               {payload?.isVersionStale && payload.versionLabel ? (
                 <p className="type-caption mt-3 text-doqyn-warning">
-                  A solicitação é da versão {payload.versionLabel}; o documento já tem versão mais
-                  nova.
+                  {t('signaturePortalPage.aSolicitacaoEDa')} {payload.versionLabel}
+                  {t('signaturePortalPage.oDocumentoJaTem')}
                 </p>
               ) : null}
               {payload?.message ? (
@@ -402,10 +434,12 @@ export function SignaturePortalPage() {
             </div>
 
             <div className="sign-rail__block sign-rail__block--flush">
-              <p className="register-label text-doqyn-subtle">Ao assinar</p>
+              <p className="register-label text-doqyn-subtle">
+                {t('signaturePortalPage.aoAssinar')}
+              </p>
               <ul className="sign-facts">
-                <li>O PDF recebe o carimbo da assinatura e um código de verificação público.</li>
-                <li>Data, hora e evidências técnicas ficam na trilha de auditoria.</li>
+                <li>{t('signaturePortalPage.oPdfRecebeO')}</li>
+                <li>{t('signaturePortalPage.dataHoraEEvidencias')}</li>
                 <li>
                   {payload?.permissions.canDownloadAfterSign
                     ? 'Você poderá baixar o PDF assinado nesta mesma tela.'
@@ -423,7 +457,7 @@ export function SignaturePortalPage() {
               className="w-full"
               data-testid="signature-submit-button"
             >
-              Assinar documento
+              {t('signaturePortalPage.assinarDocumento')}
             </Button>
           </aside>
         </div>
@@ -431,8 +465,8 @@ export function SignaturePortalPage() {
 
       <ReviewBeforeSubmitDialog
         open={confirmOpen}
-        title="Confirmar assinatura"
-        description="Revise os dados antes de concluir a assinatura eletrônica."
+        title={t('signaturePortalPage.confirmarAssinatura')}
+        description={t('signaturePortalPage.reviseOsDadosAntes')}
         sections={[
           {
             title: 'Documento',
@@ -452,8 +486,8 @@ export function SignaturePortalPage() {
         ]}
         attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
         submitting={signing}
-        confirmLabel="Confirmar assinatura"
-        cancelLabel="Voltar"
+        confirmLabel={t('signaturePortalPage.confirmarAssinatura2')}
+        cancelLabel={t('signaturePortalPage.voltar')}
         onCancel={() => setConfirmOpen(false)}
         onEdit={() => setConfirmOpen(false)}
         onConfirm={() => void handleSign()}

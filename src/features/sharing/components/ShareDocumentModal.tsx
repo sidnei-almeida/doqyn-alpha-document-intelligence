@@ -39,6 +39,7 @@ import {
   useDocumentExternalShares,
   useExternalShareMutations,
 } from '../hooks/useExternalShareMutations';
+import { useTranslation } from 'react-i18next';
 
 const STEPS = ['Quem recebe', 'Condições', 'Confirmar'];
 const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
@@ -79,6 +80,8 @@ export function ShareDocumentModal({
   initialRecipient,
   onClose,
 }: ShareDocumentModalProps) {
+  const { t } = useTranslation('sharing');
+
   const documentId = document?.id ?? null;
   const flow = useStepFlow(STEPS.length, open);
   const { tenant } = useAuth();
@@ -216,7 +219,7 @@ export function ShareDocumentModal({
     ...(internalShares.data?.shares ?? []).map((share) => ({
       id: share.shareId,
       primary: share.sharedWithName,
-      secondary: `${share.sharedWithEmail ?? share.counterpartTenantName ?? '—'} · ${share.permissions.canDownload ? 'pode baixar' : 'só leitura'}`,
+      secondary: `${share.sharedWithEmail ?? share.counterpartTenantName ?? '—'} · ${t(share.permissions.canDownload ? 'permissions.canDownload' : 'permissions.readOnly')}`,
       // Oferecido não é concedido: dizer "daqui" para o que ainda espera aceite prometeria um
       // acesso que não existe. E do outro lado pode haver uma conta pessoal, então o rótulo diz
       // "outra conta" em vez de supor uma empresa.
@@ -240,9 +243,9 @@ export function ShareDocumentModal({
     ...(externalShares.data?.shares ?? []).map((share) => ({
       id: share.shareId,
       primary: share.recipientName?.trim() || share.recipientEmail,
-      secondary: `${share.recipientEmail} · expira ${formatDateTime(share.expiresAt)} · ${
-        share.permissions.canDownload ? 'pode baixar' : 'só leitura'
-      }`,
+      secondary: `${share.recipientEmail} · expira ${formatDateTime(share.expiresAt)} · ${t(
+        share.permissions.canDownload ? 'permissions.canDownload' : 'permissions.readOnly',
+      )}`,
       status: { label: statusLabel(share.status), tone: statusTone(share.status) },
       actions: [
         ...(share.inviteUrl
@@ -277,7 +280,7 @@ export function ShareDocumentModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Compartilhar documento"
+      title={t('shareDocumentModal.compartilharDocumento')}
       size="lg"
       dismissOnOverlay={false}
       subtitle={
@@ -308,10 +311,14 @@ export function ShareDocumentModal({
         <div className="flex flex-col gap-5">
           <IssuedLink url={issuedUrl} />
           <p className="type-caption text-doqyn-muted">
-            O convite vale até {formatExpirationDate(expiresAt)}. Enquanto o acesso existir, este
-            link pode ser copiado de novo aqui na lista.
+            {t('shareDocumentModal.oConviteValeAte')} {formatExpirationDate(expiresAt)}
+            {t('shareDocumentModal.enquantoOAcessoExistir')}
           </p>
-          <AccessList title="Quem tem acesso" emptyLabel="Ninguém ainda." rows={accessRows} />
+          <AccessList
+            title={t('shareDocumentModal.quemTemAcesso')}
+            emptyLabel="Ninguém ainda."
+            rows={accessRows}
+          />
         </div>
       ) : (
         <div className="flex flex-col gap-6">
@@ -329,7 +336,8 @@ export function ShareDocumentModal({
                   <div className="min-w-0">
                     <p className="type-body truncate text-doqyn-text">{recipient.doqyn.name}</p>
                     <p className="type-caption truncate text-doqyn-muted">
-                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`} · de fora daqui
+                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`}{' '}
+                      {t('shareDocumentModal.deForaDaqui')}
                     </p>
                   </div>
                   <Button
@@ -338,7 +346,7 @@ export function ShareDocumentModal({
                     size="sm"
                     onClick={() => setCrossTenantPick(null)}
                   >
-                    Trocar
+                    {t('shareDocumentModal.trocar')}
                   </Button>
                 </div>
               ) : audience === 'doqyn' ? (
@@ -383,7 +391,7 @@ export function ShareDocumentModal({
                       size="sm"
                       onClick={() => setAudience('doqyn')}
                     >
-                      Não é daqui? Buscar por nome de usuário
+                      {t('shareDocumentModal.naoEDaquiBuscar')}
                     </Button>
                   }
                 />
@@ -395,7 +403,11 @@ export function ShareDocumentModal({
                   phoneError={phoneError}
                 />
               )}
-              <AccessList title="Quem tem acesso" emptyLabel="Ninguém ainda." rows={accessRows} />
+              <AccessList
+                title={t('shareDocumentModal.quemTemAcesso2')}
+                emptyLabel="Ninguém ainda."
+                rows={accessRows}
+              />
             </div>
           ) : null}
 
