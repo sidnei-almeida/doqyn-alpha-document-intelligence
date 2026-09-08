@@ -13,6 +13,7 @@ import { SidebarNavItem } from './SidebarNavItem';
 import { SidebarSection } from './SidebarSection';
 import { SidebarUsage } from './SidebarUsage';
 import { useSidebarCollapsed } from './useSidebarCollapsed';
+import { useTranslation } from 'react-i18next';
 
 interface SidebarProps {
   className?: string;
@@ -23,6 +24,8 @@ interface SidebarProps {
  * Pastas/categorias ficam na Biblioteca, não duplicadas aqui.
  */
 export function Sidebar({ className }: SidebarProps) {
+  const { t } = useTranslation('components');
+
   const { user, roles, hasAnyRole, membership } = useAuth();
   const [searchParams] = useSearchParams();
   const { collapsed, toggleCollapsed } = useSidebarCollapsed();
@@ -103,7 +106,7 @@ export function Sidebar({ className }: SidebarProps) {
 
         {!collapsed && <div className="mx-2 my-3 h-px bg-doqyn-border-subtle/40" aria-hidden />}
 
-        <SidebarSection label="Administração" className="mt-5" collapsed={collapsed}>
+        <SidebarSection label={t('sidebar.administracao')} className="mt-5" collapsed={collapsed}>
           {adminNavItems.map((item) => (
             <SidebarNavItem key={item.path} item={item} collapsed={collapsed} />
           ))}

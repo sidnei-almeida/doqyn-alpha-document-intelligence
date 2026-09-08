@@ -7,6 +7,7 @@ import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { listCountries, type CountryCode } from '@/lib/identifiers';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 export interface CountrySelectProps {
   label?: string;
@@ -36,6 +37,8 @@ export function CountrySelect({
   disabled,
   className,
 }: CountrySelectProps) {
+  const { t } = useTranslation('components');
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [anchorWidth, setAnchorWidth] = useState<number>();
@@ -120,14 +123,14 @@ export function CountrySelect({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar país"
+            placeholder={t('countrySelect.buscarPais')}
             className="type-body h-8 w-full border-0 bg-transparent px-0 text-doqyn-text placeholder:text-doqyn-disabled focus-visible:outline-none"
           />
         </div>
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
             <EmptyHint bare className="px-3.5 py-3">
-              Nenhum país encontrado.
+              {t('countrySelect.nenhumPaisEncontrado')}
             </EmptyHint>
           ) : (
             filtered.map((country) => (

@@ -2,7 +2,16 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { i18n } from '@/i18n';
 
+/**
+ * Fronteira de erro é componente de classe — é a única forma que o React oferece — e hook não
+ * existe ali. Por isso `i18n.t` direto do módulo, em vez de `useTranslation`.
+ *
+ * O que se perde: esta tela não se re-renderiza sozinha ao trocar de idioma. É aceitável, e
+ * quase teórico: ela só aparece depois de a árvore ter quebrado, e nesse estado o caminho é
+ * recarregar a página — que é exatamente o que o botão faz.
+ */
 type AppErrorBoundaryProps = {
   children: ReactNode;
   fallbackTitle?: string;
@@ -43,11 +52,10 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             {this.props.fallbackTitle ?? 'Algo inesperado aconteceu'}
           </h1>
           <p className="mt-2 text-sm text-doqyn-muted">
-            Recarregue a página para continuar. Se o problema persistir, entre em contato com o
-            suporte.
+            {i18n.t('components:appErrorBoundary.recarregueAPaginaPara')}
           </p>
           <Button type="button" className="mt-5 w-full" onClick={this.handleRetry}>
-            Recarregar
+            {i18n.t('components:appErrorBoundary.recarregar')}
           </Button>
         </div>
       </div>

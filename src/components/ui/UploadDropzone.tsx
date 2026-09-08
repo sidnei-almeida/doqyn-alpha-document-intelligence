@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useCallback, useState } from 'react';
 import { LeadDetail } from '@/components/ui/LeadDetail';
+import { useTranslation } from 'react-i18next';
 
 interface UploadDropzoneProps {
   onFileSelect: (file: File) => void;
@@ -20,6 +21,8 @@ export function UploadDropzone({
   className,
   accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg',
 }: UploadDropzoneProps) {
+  const { t } = useTranslation('components');
+
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback(
@@ -89,7 +92,7 @@ export function UploadDropzone({
         <Icon name="upload" size={ICON_SIZE.md} className="text-doqyn-muted" />
       </div>
       <p className="mt-4 text-sm font-medium text-doqyn-text">
-        Arraste o documento ou clique para selecionar
+        {t('uploadDropzone.arrasteODocumentoOu')}
       </p>
       <p className="mt-1 text-xs text-doqyn-muted">
         <LeadDetail lead="PDF, Word, Excel ou imagens" detail="até 25 MB" />

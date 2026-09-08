@@ -49,4 +49,26 @@ export default tseslint.config(
       ],
     },
   },
+  /**
+   * Onda 6.1 concluída: `components/` não volta a ganhar string cravada.
+   *
+   * A promoção para `error` é o que dá sentido a terminar uma onda. Sem ela, a pasta limpa hoje
+   * volta a sujar amanhã e a migração vira trabalho de Sísifo. Cada onda seguinte acrescenta a
+   * sua pasta a esta lista ao fechar.
+   */
+  {
+    files: ['src/components/**/*.tsx'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': [
+        'error',
+        {
+          mode: 'jsx-text-only',
+          'jsx-attributes': {
+            include: ['label', 'title', 'placeholder', 'alt', 'aria-label', 'description'],
+          },
+        },
+      ],
+    },
+  },
 );

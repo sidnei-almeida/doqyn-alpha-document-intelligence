@@ -10,7 +10,7 @@ import {
 } from '@/features/library/utils/libraryDefaultView';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
-import { THEMES, THEME_ICONS, THEME_LABELS, THEME_HINTS } from '@/lib/theme';
+import { THEMES, THEME_ICONS, THEME_LABEL_KEYS, THEME_HINT_KEYS } from '@/lib/theme';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 
@@ -24,9 +24,9 @@ import { SettingsSectionBody } from '../SettingsSectionBody';
  */
 const THEME_OPTIONS = THEMES.map((value) => ({
   value,
-  label: THEME_LABELS[value],
+  labelKey: THEME_LABEL_KEYS[value],
+  hintKey: THEME_HINT_KEYS[value],
   icon: THEME_ICONS[value],
-  hint: THEME_HINTS[value],
 }));
 
 const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: string }> = [
@@ -35,7 +35,7 @@ const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: stri
 ];
 
 export function PreferencesSettingsSection() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'components']);
   const { theme, setTheme } = useTheme();
   const { locale, locales, isExposed, setLocale, isSaving, saveError } = useLocale();
   const [defaultView, setDefaultView] = useState<LibraryDefaultView>('grid');
@@ -118,7 +118,7 @@ export function PreferencesSettingsSection() {
                     type="button"
                     role="radio"
                     aria-checked={active}
-                    title={option.hint}
+                    title={t(option.hintKey)}
                     onClick={() => setTheme(option.value)}
                     className={cn(
                       'settings-segmented-control__item',
@@ -126,7 +126,7 @@ export function PreferencesSettingsSection() {
                     )}
                   >
                     <Icon name={option.icon} size={ICON_SIZE.xs} aria-hidden />
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 );
               })}

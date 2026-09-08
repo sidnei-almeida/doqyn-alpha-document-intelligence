@@ -7,6 +7,7 @@ import {
   storageRatio,
 } from '@/lib/storageFormat';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type SidebarUsageProps = {
   collapsed: boolean;
@@ -30,6 +31,8 @@ type SidebarUsageProps = {
  * inteiro no tooltip.
  */
 export function SidebarUsage({ collapsed }: SidebarUsageProps) {
+  const { t } = useTranslation('components');
+
   const { data, isPending, isError } = useTenantUsage();
 
   // O erro não vira mensagem: isto é contexto de canto de olho, e uma falha
@@ -61,24 +64,31 @@ export function SidebarUsage({ collapsed }: SidebarUsageProps) {
 
   return (
     <div className="sidebar-usage" data-testid="sidebar-usage">
-      <p className="type-eyebrow text-doqyn-subtle">Armazenamento</p>
+      <p className="type-eyebrow text-doqyn-subtle">{t('sidebarUsage.armazenamento')}</p>
 
       {ratio === null ? null : <UsageRule ratio={ratio} level={level} />}
 
       <p className="sidebar-usage__figure">
         <span className="sidebar-usage__used">{usedLabel}</span>
-        {quotaLabel ? <span className="sidebar-usage__quota"> de {quotaLabel}</span> : null}
+        {quotaLabel ? (
+          <span className="sidebar-usage__quota">
+            {' '}
+            {t('sidebarUsage.ofQuota', { quota: quotaLabel })}
+          </span>
+        ) : null}
       </p>
 
       <p className="sidebar-usage__meta">
-        {formatCount(data.documents, 'documento', 'documentos')}
-        {percentLabel ? ` · ${percentLabel} usado` : ''}
+        {t('sidebarUsage.documentCount', { count: data.documents })}
+        {percentLabel ? ` · ${t('sidebarUsage.percentUsed', { percent: percentLabel })}` : ''}
       </p>
     </div>
   );
 }
 
 function UsageRule({ ratio, level }: { ratio: number; level: string }) {
+  const { t } = useTranslation('components');
+
   return (
     <div
       className="sidebar-usage__rule"
@@ -87,7 +97,7 @@ function UsageRule({ ratio, level }: { ratio: number; level: string }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(ratio * 100)}
-      aria-label="Armazenamento usado"
+      aria-label={t('sidebarUsage.armazenamentoUsado')}
     >
       {/* Um fio sempre visível mesmo quando o uso é quase nada: zero de largura
           faz a régua sumir e o bloco parecer quebrado. */}
@@ -97,8 +107,4 @@ function UsageRule({ ratio, level }: { ratio: number; level: string }) {
       />
     </div>
   );
-}
-
-function formatCount(value: number, singular: string, plural: string): string {
-  return `${value.toLocaleString('pt-BR')} ${value === 1 ? singular : plural}`;
 }

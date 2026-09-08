@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Tooltip } from './Tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface VersionBadgeProps {
   version: number | string;
@@ -27,6 +28,8 @@ const SIZE_CLASS = {
  * A versão atual vem no tom do texto; as anteriores recuam para o discreto.
  */
 export function VersionBadge({ version, isCurrent, className, size = 'sm' }: VersionBadgeProps) {
+  const { t } = useTranslation('components');
+
   const label = formatVersionLabel(version);
   const mark = (
     <span
@@ -42,7 +45,7 @@ export function VersionBadge({ version, isCurrent, className, size = 'sm' }: Ver
   );
 
   if (isCurrent) {
-    return <Tooltip label="Versão atual">{mark}</Tooltip>;
+    return <Tooltip label={t('versionBadge.versaoAtual')}>{mark}</Tooltip>;
   }
 
   return mark;

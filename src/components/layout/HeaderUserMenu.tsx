@@ -10,9 +10,12 @@ import {
 } from '@/features/users/platformRoleLabels';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 /** Menu do usuário no canto superior direito — estilo workspace de arquivos. */
 export function HeaderUserMenu() {
+  const { t } = useTranslation('components');
+
   const { user, roles, tenant, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -37,7 +40,7 @@ export function HeaderUserMenu() {
         )}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Menu do usuário"
+        aria-label={t('headerUserMenu.menuDoUsuario')}
       >
         <UserAvatar name={displayName} email={user?.email} avatarUrl={user?.avatarUrl} size="md" />
         <span className="hidden min-w-0 text-left md:block">
@@ -62,7 +65,7 @@ export function HeaderUserMenu() {
         onClose={() => setOpen(false)}
         placement="bottom-end"
         role="menu"
-        aria-label="Conta"
+        aria-label={t('headerUserMenu.conta')}
         data-testid="header-user-menu-dropdown"
         className="w-56 max-w-[calc(100vw-1rem)] py-1"
       >
@@ -93,7 +96,8 @@ export function HeaderUserMenu() {
           onClick={() => setOpen(false)}
         >
           <Icon name="settings" size={ICON_SIZE.md} />
-          Configurações
+
+          {t('headerUserMenu.configuracoes')}
         </Link>
 
         <div className="my-1 border-t border-doqyn-border-subtle" />
@@ -108,7 +112,8 @@ export function HeaderUserMenu() {
           }}
         >
           <Icon name="logout" size={ICON_SIZE.md} />
-          Sair
+
+          {t('headerUserMenu.sair')}
         </button>
       </AnchoredPopover>
     </div>

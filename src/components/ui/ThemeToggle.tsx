@@ -1,8 +1,9 @@
 import { useTheme } from '@/contexts/useTheme';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { nextTheme, THEME_HINTS, THEME_ICONS, THEME_LABELS } from '@/lib/theme';
+import { nextTheme, THEME_HINT_KEYS, THEME_ICONS, THEME_LABEL_KEYS } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Seletor de tema — um glifo que percorre os três a cada clique.
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
  * O atalho `Ctrl/Cmd + Shift + L` percorre a mesma lista.
  */
 export function ThemeToggle({ className }: { className?: string }) {
+  const { t } = useTranslation('components');
   const { theme, toggleTheme } = useTheme();
   const upcoming = nextTheme(theme);
 
@@ -26,8 +28,15 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={toggleTheme}
       className={cn('shrink-0', className)}
-      title={`Tema: ${THEME_LABELS[theme]}. ${THEME_HINTS[theme]}. Clique para ${THEME_LABELS[upcoming].toLowerCase()}.`}
-      aria-label={`Tema: ${THEME_LABELS[theme]}. Trocar para ${THEME_LABELS[upcoming].toLowerCase()}.`}
+      title={t('theme.toggleTitle', {
+        current: t(THEME_LABEL_KEYS[theme]),
+        hint: t(THEME_HINT_KEYS[theme]),
+        next: t(THEME_LABEL_KEYS[upcoming]).toLowerCase(),
+      })}
+      aria-label={t('theme.toggleAriaLabel', {
+        current: t(THEME_LABEL_KEYS[theme]),
+        next: t(THEME_LABEL_KEYS[upcoming]).toLowerCase(),
+      })}
     >
       <Icon name={THEME_ICONS[theme]} size={ICON_SIZE.sm} />
     </button>

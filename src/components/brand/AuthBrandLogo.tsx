@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { DoqynMark } from './DoqynMark';
+import { useTranslation } from 'react-i18next';
 
 type AuthBrandLogoProps = {
   subtitle?: string;
@@ -17,12 +18,14 @@ type AuthBrandLogoProps = {
  * a ponto de a palavra parar de ser lida como palavra.
  */
 export function AuthBrandLogo({ subtitle, className }: AuthBrandLogoProps) {
+  const { t } = useTranslation('components');
+
   return (
     <div className={cn('flex flex-col items-center gap-2.5 text-center', className)}>
       <span className="flex items-center gap-3" aria-label="DOQYN" role="img">
         <DoqynMark size={38} className="shrink-0 text-doqyn-accent-active" />
         <span className="font-display text-[26px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
-          Doqyn
+          {t('authBrandLogo.doqyn')}
         </span>
       </span>
 

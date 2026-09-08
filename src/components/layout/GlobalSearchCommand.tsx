@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type GlobalSearchCommandProps = {
   isFetching?: boolean;
@@ -19,6 +20,8 @@ function isMacPlatform(): boolean {
  * Busca global da TopBar — debounce, URL ?q=, limpar e ESC.
  */
 export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandProps) {
+  const { t } = useTranslation('components');
+
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -124,8 +127,8 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
             else inputRef.current?.blur();
           }
         }}
-        placeholder="Buscar documentos"
-        aria-label="Buscar documentos"
+        placeholder={t('globalSearchCommand.buscarDocumentos')}
+        aria-label={t('globalSearchCommand.buscarDocumentos2')}
         className={cn(
           // Sem régua própria. Empilhada com o fio do header e com as réguas
           // dos filtros logo abaixo, ela virava a terceira linha horizontal em
@@ -151,7 +154,7 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
           <button
             type="button"
             className="explorer-icon-btn pointer-events-auto rounded-full p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-            aria-label="Limpar busca"
+            aria-label={t('globalSearchCommand.limparBusca')}
             onClick={clearSearch}
           >
             <Icon name="close" size={ICON_SIZE.xs} />

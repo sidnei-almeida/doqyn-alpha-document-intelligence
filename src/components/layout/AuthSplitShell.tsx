@@ -6,6 +6,7 @@ import { DoqynMark } from '@/components/brand/DoqynMark';
 import { AntechamberDocument } from '@/features/auth/components/AntechamberDocument';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Largura da coluna do formulário, por rota.
@@ -62,6 +63,8 @@ function resolveColumnWidth(pathname: string): string {
  * largura de celular, o documento viraria enfeite ilegível.
  */
 export function AuthSplitShell() {
+  const { t } = useTranslation('components');
+
   const location = useLocation();
   const width = resolveColumnWidth(location.pathname);
 
@@ -82,7 +85,7 @@ export function AuthSplitShell() {
           <span className="auth-stage auth-stage--mark flex items-center gap-2.5">
             <DoqynMark size={26} className="shrink-0 text-doqyn-accent-active" />
             <span className="font-display text-[17px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
-              Doqyn
+              {t('authSplitShell.doqyn')}
             </span>
           </span>
 
@@ -93,7 +96,8 @@ export function AuthSplitShell() {
 
           <p className="auth-stage auth-stage--foot mt-9 flex items-center gap-1.5 text-micro text-doqyn-subtle">
             <Icon name="shield" size={ICON_SIZE.xs} />
-            Ambiente corporativo seguro
+
+            {t('authSplitShell.ambienteCorporativoSeguro')}
           </p>
         </div>
       </section>

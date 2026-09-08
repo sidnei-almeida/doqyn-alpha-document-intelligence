@@ -4,6 +4,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { parseIsoDate, toIsoDate } from '@/lib/dateValue';
+import { useTranslation } from 'react-i18next';
 
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 const MONTHS = [
@@ -38,6 +39,8 @@ type CalendarPanelProps = {
  * e o dia escolhido por preenchimento de acento — cheio só onde houve decisão.
  */
 export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPanelProps) {
+  const { t } = useTranslation('components');
+
   const selected = parseIsoDate(value);
   const today = new Date();
   const [cursor, setCursor] = useState(() => {
@@ -73,13 +76,13 @@ export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPa
   return (
     <div className="w-[17.5rem] p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
+        <IconButton label={t('calendarPanel.mesAnterior')} onClick={() => shiftMonth(-1)}>
           <Icon name="chevron_left" size={ICON_SIZE.sm} />
         </IconButton>
         <span className="type-label font-medium capitalize text-doqyn-text">
           {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
         </span>
-        <IconButton label="Próximo mês" onClick={() => shiftMonth(1)}>
+        <IconButton label={t('calendarPanel.proximoMes')} onClick={() => shiftMonth(1)}>
           <Icon name="chevron_right" size={ICON_SIZE.sm} />
         </IconButton>
       </div>
@@ -132,7 +135,7 @@ export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPa
           }}
           className="rounded-[4px] px-1.5 py-1 text-caption text-doqyn-muted transition-colors hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
         >
-          Hoje
+          {t('calendarPanel.hoje')}
         </button>
         {onClear && (
           <button
@@ -141,7 +144,7 @@ export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPa
             disabled={!value}
             className="rounded-[4px] px-1.5 py-1 text-caption text-doqyn-muted transition-colors hover:text-doqyn-text focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30 disabled:opacity-40 disabled:hover:text-doqyn-muted"
           >
-            Limpar
+            {t('calendarPanel.limpar')}
           </button>
         )}
       </div>

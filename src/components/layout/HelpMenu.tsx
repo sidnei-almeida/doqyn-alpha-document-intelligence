@@ -5,6 +5,7 @@ import { dropdownMenuItemClass } from '@/components/ui/dropdownMenuStyles';
 import { useTour } from '@/features/tour/useTour';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * O "?" da barra.
@@ -15,6 +16,8 @@ import { cn } from '@/lib/utils';
  * de ajuda que ninguém volta a procurar.
  */
 export function HelpMenu({ className }: { className?: string }) {
+  const { t } = useTranslation('components');
+
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { start } = useTour();
@@ -29,7 +32,7 @@ export function HelpMenu({ className }: { className?: string }) {
         className={cn(className, open && 'text-doqyn-text')}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Ajuda"
+        aria-label={t('helpMenu.ajuda')}
       >
         <Icon name="help" size={ICON_SIZE.nav} />
       </button>
@@ -40,7 +43,7 @@ export function HelpMenu({ className }: { className?: string }) {
         onClose={() => setOpen(false)}
         placement="bottom-end"
         role="menu"
-        aria-label="Ajuda"
+        aria-label={t('helpMenu.ajuda2')}
         className="w-60 max-w-[calc(100vw-1rem)] py-1"
       >
         <button
@@ -54,9 +57,9 @@ export function HelpMenu({ className }: { className?: string }) {
         >
           <Icon name="explore" size={ICON_SIZE.md} />
           <span className="min-w-0 text-left">
-            <span className="block">Ver o tour</span>
+            <span className="block">{t('helpMenu.verOTour')}</span>
             <span className="mt-0.5 block text-micro text-doqyn-muted">
-              Onde fica cada coisa, em 2 min
+              {t('helpMenu.ondeFicaCadaCoisa')}
             </span>
           </span>
         </button>
@@ -75,7 +78,8 @@ export function HelpMenu({ className }: { className?: string }) {
           onClick={() => setOpen(false)}
         >
           <Icon name="open_in_new" size={ICON_SIZE.md} />
-          Central de ajuda
+
+          {t('helpMenu.centralDeAjuda')}
         </a>
       </AnchoredPopover>
     </div>

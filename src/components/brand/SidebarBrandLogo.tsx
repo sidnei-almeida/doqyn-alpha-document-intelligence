@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { DoqynMark } from './DoqynMark';
+import { useTranslation } from 'react-i18next';
 
 type SidebarBrandLogoProps = {
   collapsed?: boolean;
@@ -15,6 +16,8 @@ type SidebarBrandLogoProps = {
  * wordmark quando a barra recolhe.
  */
 export function SidebarBrandLogo({ collapsed = false, className }: SidebarBrandLogoProps) {
+  const { t } = useTranslation('components');
+
   return (
     <div
       className={cn(
@@ -28,7 +31,7 @@ export function SidebarBrandLogo({ collapsed = false, className }: SidebarBrandL
       <DoqynMark size={collapsed ? 24 : 26} className="shrink-0 text-doqyn-accent-active" />
       {collapsed ? null : (
         <span className="font-display text-[17px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
-          Doqyn
+          {t('sidebarBrandLogo.doqyn')}
         </span>
       )}
     </div>

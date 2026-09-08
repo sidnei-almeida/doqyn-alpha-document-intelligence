@@ -7,6 +7,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { ConfirmContext } from './confirmContext';
 import type { ConfirmOptions } from './confirmTypes';
+import { Trans, useTranslation } from 'react-i18next';
 
 type ConfirmState = ConfirmOptions & { open: boolean };
 
@@ -17,6 +18,13 @@ const defaultState: ConfirmState = {
 };
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
+  /* Pede o catálogo de confirmações na montagem, e não na hora do clique.
+     As frases vêm de `confirmMessages`, que é síncrono: se o namespace ainda não estiver
+     carregado quando alguém mandar excluir algo, o diálogo abre mostrando a chave em vez da
+     pergunta — e é justamente o diálogo em que ler antes de responder importa. O provider
+     monta com a casca, muito antes de existir clique. */
+  useTranslation(['confirm', 'components']);
+
   const [state, setState] = useState<ConfirmState>(defaultState);
   const [typedText, setTypedText] = useState('');
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
@@ -96,12 +104,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
         {requiresText && (
           <div className="mt-4 space-y-2">
+            {/* `Trans` e não três pedaços concatenados: em inglês a frase é
+                "Type <word>X</word> to confirm:", com a palavra em outra posição. Montar por
+                pedaço obrigaria cada idioma a caber na ordem do português. */}
             <p className="text-xs text-doqyn-muted">
-              Digite{' '}
-              <span className="font-mono font-medium text-doqyn-text">
-                {state.confirmationText}
-              </span>{' '}
-              para confirmar:
+              <Trans
+                i18nKey="components:confirmProvider.typeToConfirm"
+                values={{ word: state.confirmationText }}
+                components={{
+                  word: <span className="font-mono font-medium text-doqyn-text" />,
+                }}
+              />
             </p>
             <Input
               id="confirm-text-input"
