@@ -57,11 +57,11 @@ describe('sidebar DOQYN', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     for (const label of [
-      'Compartilhados comigo',
-      'Para assinar',
-      'Recentes',
-      'Favoritos',
-      'Lixeira',
+      'nav.compartilhados',
+      'nav.assinaturas',
+      'nav.recentes',
+      'nav.favoritos',
+      'nav.lixeira',
     ]) {
       assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
     }

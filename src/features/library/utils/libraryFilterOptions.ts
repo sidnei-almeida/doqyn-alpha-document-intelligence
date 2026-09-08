@@ -22,7 +22,7 @@ export const STATUS_FILTER_OPTIONS = [
     label:
       value === 'pending_review'
         ? 'Requer revisão'
-        : (DOCUMENT_STATUSES[value as keyof typeof DOCUMENT_STATUSES]?.label ?? value),
+        : (DOCUMENT_STATUSES[value as keyof typeof DOCUMENT_STATUSES]?.labelKey ?? value),
   })),
 ];
 

@@ -362,7 +362,7 @@ describe('document trash — frontend lixeira e desativados', () => {
       constants.match(/export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/)?.[0] ?? '';
     assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
     assert.ok(adminBlock.includes('adminOnly: true'));
-    assert.ok(adminBlock.includes('Desativados'));
+    assert.ok(adminBlock.includes('nav.desativados'));
     assert.ok(!libraryViewsBlock.includes('Desativados'));
     assert.ok(sidebar.includes('canManageDeactivated'));
     assert.ok(sidebar.includes('adminNavItems'));

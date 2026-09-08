@@ -96,7 +96,12 @@ export function Sidebar({ className }: SidebarProps) {
       >
         <SidebarSection collapsed={collapsed}>
           <SidebarNavItem
-            item={{ label: 'Biblioteca', path: '/biblioteca', icon: 'folder', end: true }}
+            item={{
+              labelKey: 'common:nav.biblioteca',
+              path: '/biblioteca',
+              icon: 'folder',
+              end: true,
+            }}
             collapsed={collapsed}
           />
           {libraryViewItems.map((item) => (

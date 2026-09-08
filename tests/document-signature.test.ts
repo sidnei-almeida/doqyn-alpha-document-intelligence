@@ -561,7 +561,7 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     const page = read('src/features/library/LibraryPage.tsx');
     assert.ok(collections.includes('para-assinar'));
     assert.ok(collections.includes("slug: 'assinaturas'"));
-    assert.ok(constants.includes('Para assinar'));
+    assert.ok(constants.includes('nav.assinaturas'));
     assert.ok(panel.includes('signatures-assigned-list'));
     assert.ok(hook.includes('fetchAssignedSignatureRequests'));
     assert.ok(page.includes('SignaturesAssignedPanel'));

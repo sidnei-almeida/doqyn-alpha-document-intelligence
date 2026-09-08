@@ -1,30 +1,77 @@
 {
   "actions": {
+    "back": "Voltar",
     "cancel": "Cancelar",
-    "save": "Salvar",
     "close": "Fechar",
     "confirm": "Confirmar",
     "delete": "Excluir",
-    "back": "Voltar",
     "next": "Avançar",
-    "search": "Buscar",
-    "retry": "Tentar de novo"
+    "retry": "Tentar de novo",
+    "save": "Salvar",
+    "search": "Buscar"
   },
-  "state": {
-    "loading": "Carregando…",
-    "empty": "Nada por aqui",
-    "error": "Não foi possível carregar"
+  "documentStatus": {
+    "active": "Ativo",
+    "analyzing": "Em análise",
+    "available": "Disponível",
+    "needsReview": "Requer revisão",
+    "pendingAnalysis": "Aguardando análise",
+    "pendingReview": "Aguardando revisão",
+    "processed": "Processado",
+    "reviewRequired": "Revisão necessária",
+    "updateProcessed": "Atualização processada",
+    "updated": "Atualizado"
+  },
+  "documents": {
+    "count_one": "{{count}} documento",
+    "count_other": "{{count}} documentos",
+    "empty": "Nenhum documento"
   },
   "locale": {
-    "label": "Idioma",
     "description": "Idioma da interface. Não muda o idioma dos seus documentos.",
     "descriptionWithDrafts": "Idioma da interface. Inglês e espanhol estão em tradução e ainda não podem ser escolhidos.",
     "inPreparation": "Em preparo",
+    "label": "Idioma",
     "saveFailed": "Não foi possível salvar o idioma. Ele voltou ao anterior; tente de novo."
   },
-  "documents": {
-    "empty": "Nenhum documento",
-    "count_one": "{{count}} documento",
-    "count_other": "{{count}} documentos"
+  "memberStatus": {
+    "active": "Ativo",
+    "blocked": "Bloqueado",
+    "invited": "Convidado",
+    "pending": "Pendente",
+    "rejected": "Rejeitado"
+  },
+  "nav": {
+    "assinaturas": "Para assinar",
+    "audit": "Auditoria",
+    "biblioteca": "Biblioteca",
+    "compartilhados": "Compartilhados comigo",
+    "contatos": "Contatos",
+    "dashboard": "Visão Geral",
+    "desativados": "Desativados",
+    "favoritos": "Favoritos",
+    "lixeira": "Lixeira",
+    "matriz": "Matriz",
+    "pedidos": "Pedidos",
+    "recentes": "Recentes",
+    "rules": "Regras",
+    "settings": "Configurações",
+    "tracking": "Tracking",
+    "users": "Usuários"
+  },
+  "processingStep": {
+    "analysisDescription": "Verificação e validação inicial",
+    "analysisLabel": "Análise do documento",
+    "metadataDescription": "Extração de informações relevantes",
+    "metadataLabel": "Classificação e metadados",
+    "readyDescription": "Documento pronto para consulta",
+    "readyLabel": "Disponível com rastreabilidade",
+    "uploadDescription": "Documento registrado com segurança",
+    "uploadLabel": "Upload recebido"
+  },
+  "state": {
+    "empty": "Nada por aqui",
+    "error": "Não foi possível carregar",
+    "loading": "Carregando…"
   }
 }

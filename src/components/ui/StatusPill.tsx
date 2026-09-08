@@ -1,6 +1,7 @@
 import type { DocumentStatus } from '@/types/document';
 import { getDocumentStatusBadge } from '@/lib/statusSemantics';
 import { Badge, type BadgeProps } from './Badge';
+import { useTranslation } from 'react-i18next';
 
 interface StatusPillProps {
   status: DocumentStatus;
@@ -11,6 +12,7 @@ interface StatusPillProps {
 
 /** Badge pill de status de governança — compacto e semântico. */
 export function StatusPill({ status, className, dot = true, size = 'sm' }: StatusPillProps) {
+  const { t } = useTranslation('common');
   const config = getDocumentStatusBadge(status);
 
   return (
@@ -20,7 +22,7 @@ export function StatusPill({ status, className, dot = true, size = 'sm' }: Statu
       className={className}
       dot={dot}
     >
-      {config.label}
+      {t(config.labelKey)}
     </Badge>
   );
 }
