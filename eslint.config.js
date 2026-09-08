@@ -75,6 +75,12 @@ export default tseslint.config(
       'src/features/library/**/*.tsx',
       'src/features/documents/**/*.tsx',
       'src/features/document-update-version/**/*.tsx',
+      // 6.5 — entrada e envio
+      'src/features/upload/**/*.tsx',
+      'src/features/document-send/**/*.tsx',
+      'src/features/requests/**/*.tsx',
+      'src/features/directory/**/*.tsx',
+      'src/features/contacts/**/*.tsx',
     ],
     plugins: { i18next },
     rules: {

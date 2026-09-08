@@ -1,0 +1,9 @@
+{
+  "crossTenantRecipientField": {
+    "comQuemVoceJa": "Com quem você já trocou",
+    "haMaisGenteCom": "Há mais gente com esse começo de nome de usuário. Digite mais letras para estreitar."
+  },
+  "partnerContactList": {
+    "contasComQuemVoce": "Contas com quem você já trocou documentos ("
+  }
+}

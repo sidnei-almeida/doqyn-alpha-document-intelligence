@@ -7,6 +7,7 @@ import { useDirectorySearch } from '../hooks/useDirectorySearch';
 import { useFrequentContacts } from '../hooks/useFrequentContacts';
 import { ContactRow, formatContactMeta } from './ContactRow';
 import { PartnerContactList } from './PartnerContactList';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Campo próprio para achar alguém de **outra** empresa.
@@ -66,6 +67,8 @@ export function CrossTenantRecipientField({
   fallbackLabel?: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation('directory');
+
   const [email, setEmail] = useState(initialEmail ?? '');
   const normalized = email.trim().toLowerCase();
   const isEmail = looksLikeEmail(normalized);
@@ -206,7 +209,9 @@ export function CrossTenantRecipientField({
           para quem ainda não está aqui. */}
       {mostrarFrequentes ? (
         <div>
-          <p className="text-eyebrow uppercase text-doqyn-subtle">Com quem você já trocou</p>
+          <p className="text-eyebrow uppercase text-doqyn-subtle">
+            {t('crossTenantRecipientField.comQuemVoceJa')}
+          </p>
           <ul className="mt-1 max-h-56 overflow-y-auto border-t border-doqyn-border-subtle">
             {recentes.map((contact) => (
               <li key={contact.userId} className="border-b border-doqyn-border-subtle">
@@ -259,7 +264,7 @@ export function CrossTenantRecipientField({
           entregaria de graça. O que a pessoa precisa saber é o que fazer — digitar mais. */}
       {!isEmail && search.data?.hasMore ? (
         <span className="text-micro text-doqyn-subtle">
-          Há mais gente com esse começo de nome de usuário. Digite mais letras para estreitar.
+          {t('crossTenantRecipientField.haMaisGenteCom')}
         </span>
       ) : null}
       {/* O agrupamento por empresa responde outra pergunta — "com quem eu falo naquela empresa" —

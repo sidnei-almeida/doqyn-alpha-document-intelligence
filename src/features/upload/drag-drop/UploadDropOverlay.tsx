@@ -1,4 +1,5 @@
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from 'react-i18next';
 
 type UploadDropOverlayProps = {
   isDragging: boolean;
@@ -6,6 +7,8 @@ type UploadDropOverlayProps = {
 
 /** Overlay fullscreen exibido apenas enquanto o usuário arrasta arquivos sobre a janela. */
 export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
+  const { t } = useTranslation('upload');
+
   if (!isDragging) return null;
 
   return (
@@ -20,11 +23,10 @@ export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
         </span>
         <div>
           <p className="text-h2 font-medium tracking-tight text-doqyn-text">
-            Solte para enviar ao DOQYN
+            {t('uploadDropOverlay.solteParaEnviarAo')}
           </p>
           <p className="mt-2 max-w-sm text-label font-normal leading-relaxed text-doqyn-muted">
-            A IA analisará, classificará e preparará o documento para revisão antes de salvá-lo na
-            Biblioteca.
+            {t('uploadDropOverlay.aIaAnalisaraClassificara')}
           </p>
         </div>
       </div>

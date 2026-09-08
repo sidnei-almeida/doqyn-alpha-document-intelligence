@@ -22,6 +22,7 @@ import {
   type DocumentRequestItem,
 } from './api/documentRequestsApi';
 import { RequestDocumentModal } from './components/RequestDocumentModal';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Onde o documento que cumpriu o pedido de fato aparece.
@@ -49,6 +50,8 @@ const STATUS_VARIANT: Record<DocumentRequestItem['status'], 'pending' | 'success
  * trabalho de qualquer pessoa, não do administrador: é essa a diferença para a fila de Auditoria.
  */
 export function DocumentRequestsPage() {
+  const { t } = useTranslation('requests');
+
   const { tenant } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -158,13 +161,13 @@ export function DocumentRequestsPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="register-label text-doqyn-subtle">BIBLIOTECA</p>
-          <h1 className="type-display text-doqyn-text">Pedidos</h1>
+          <h1 className="type-display text-doqyn-text">{t('documentRequestsPage.pedidos')}</h1>
           <p className="type-body text-doqyn-muted">
-            Documentos que você pediu a alguém, e os que pediram a você.
+            {t('documentRequestsPage.documentosQueVocePediu')}
           </p>
         </div>
         <Button type="button" onClick={() => setModalOpen(true)}>
-          Pedir documento
+          {t('documentRequestsPage.pedirDocumento')}
         </Button>
       </header>
 
@@ -180,7 +183,11 @@ export function DocumentRequestsPage() {
             }
             onClick={() => setDirection(value)}
           >
-            {value === 'received' ? 'Pediram a você' : 'Você pediu'}
+            {t(
+              value === 'received'
+                ? 'documentRequestsPage.tabReceived'
+                : 'documentRequestsPage.tabSent',
+            )}
           </button>
         ))}
       </div>
@@ -188,12 +195,16 @@ export function DocumentRequestsPage() {
       <DataTable
         data={items}
         keyExtractor={(item) => item._id}
-        emptyMessage={received ? 'Ninguém pediu nada a você' : 'Você ainda não pediu nada'}
-        emptyDescription={
+        emptyMessage={t(
           received
-            ? 'Quando alguém pedir um documento a você, ele aparece aqui.'
-            : 'Peça um documento a alguém e acompanhe por aqui.'
-        }
+            ? 'documentRequestsPage.emptyReceivedTitle'
+            : 'documentRequestsPage.emptySentTitle',
+        )}
+        emptyDescription={t(
+          received
+            ? 'documentRequestsPage.emptyReceivedDescription'
+            : 'documentRequestsPage.emptySentDescription',
+        )}
         onRowClick={(item) => {
           // Atendido leva ao documento; o resto não tem para onde ir ainda.
           if (item.fulfilledDocumentId) navigate(fulfilledDocumentPath(item.fulfilledDocumentId));

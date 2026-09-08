@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useDirectorySearch } from '@/features/directory/hooks/useDirectorySearch';
 import { useContactMutations } from '@/features/directory/hooks/useContactMutations';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Adicionar contato pelo nome de usuário.
@@ -18,6 +19,8 @@ import { useContactMutations } from '@/features/directory/hooks/useContactMutati
  * confusa antes.
  */
 export function AddContactField() {
+  const { t } = useTranslation('contacts');
+
   const [query, setQuery] = useState('');
   const normalized = query.trim().toLowerCase().replace(/^@/, '');
   const search = useDirectorySearch(normalized, normalized.length >= 2);
@@ -29,7 +32,7 @@ export function AddContactField() {
     <section className="max-w-xl space-y-2">
       <Input
         variant="rule"
-        label="Adicionar contato pelo nome de usuário"
+        label={t('addContactField.adicionarContatoPeloNome')}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="joao.silva"
@@ -37,10 +40,7 @@ export function AddContactField() {
       />
 
       {normalized.length >= 2 && !search.isLoading && hits.length === 0 ? (
-        <p className="text-micro text-doqyn-subtle">
-          Ninguém com esse nome de usuário. Quem não tem conta DOQYN é convidado por link, no envio
-          do documento.
-        </p>
+        <p className="text-micro text-doqyn-subtle">{t('addContactField.ninguemComEsseNome')}</p>
       ) : null}
 
       {hits.length > 0 ? (
@@ -69,7 +69,7 @@ export function AddContactField() {
                   setQuery('');
                 }}
               >
-                Salvar
+                {t('addContactField.salvar')}
               </Button>
             </li>
           ))}

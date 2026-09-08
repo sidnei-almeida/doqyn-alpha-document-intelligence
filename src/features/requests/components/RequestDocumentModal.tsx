@@ -7,6 +7,7 @@ import { CrossTenantRecipientField } from '@/features/directory/components/Cross
 import { cn } from '@/lib/utils';
 import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import { useAuth } from '@/auth/useAuth';
+import { useTranslation } from 'react-i18next';
 
 export type RequestDocumentTarget = {
   userId: string;
@@ -63,6 +64,8 @@ export function RequestDocumentModal({
   saving,
   onSubmit,
 }: RequestDocumentModalProps) {
+  const { t } = useTranslation('requests');
+
   const { tenant } = useAuth();
   /**
    * Em PF não há a quem pedir dentro do próprio tenant — ele tem um usuário só. Sobra a origem
@@ -139,21 +142,21 @@ export function RequestDocumentModal({
     <Modal
       open={open}
       onClose={close}
-      title="Pedir um documento"
-      subtitle={
+      title={t('requestDocumentModal.pedirUmDocumento')}
+      subtitle={t(
         external
-          ? 'O documento fica no acervo de quem enviar, e você recebe acesso de leitura depois de aceitar.'
-          : 'Quem receber envia pelo fluxo de sempre, e o documento cai na categoria que você escolher.'
-      }
+          ? 'requestDocumentModal.subtitleExternal'
+          : 'requestDocumentModal.subtitleInternal',
+      )}
       size="md"
       dismissOnOverlay={false}
       footer={
         <>
           <Button type="button" variant="secondary" onClick={close} disabled={saving}>
-            Cancelar
+            {t('requestDocumentModal.cancelar')}
           </Button>
           <Button type="button" onClick={() => void submit()} disabled={!canSubmit}>
-            {saving ? 'Enviando…' : 'Pedir'}
+            {t(saving ? 'requestDocumentModal.sending' : 'requestDocumentModal.send')}
           </Button>
         </>
       }
@@ -190,7 +193,7 @@ export function RequestDocumentModal({
           <div className="flex flex-col gap-2">
             <CrossTenantRecipientField
               initialEmail={initialTarget?.scope === 'external' ? initialTarget.email : undefined}
-              label="Nome de usuário de quem vai enviar"
+              label={t('requestDocumentModal.nomeDeUsuarioDe')}
               idleHint="Precisa ter conta DOQYN, e é pelo nome de usuário que se acha. O e-mail inteiro também resolve."
               /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e
                  o link com token serve para receber, não para mandar. */
@@ -203,7 +206,8 @@ export function RequestDocumentModal({
             />
             {requestedFromEmail || requestedFromUsername ? (
               <p className="text-caption text-doqyn-accent-active">
-                Pedido para {requestedFromEmail || `@${requestedFromUsername}`}
+                {t('requestDocumentModal.pedidoPara')}{' '}
+                {requestedFromEmail || `@${requestedFromUsername}`}
               </p>
             ) : null}
           </div>
@@ -212,7 +216,7 @@ export function RequestDocumentModal({
              aparece como um retângulo branco no meio do formulário. O primitivo do app monta a
              própria lista. */
           <Select
-            label="De quem"
+            label={t('requestDocumentModal.deQuem')}
             value={requestedFromUserId}
             onChange={(event) => setRequestedFromUserId(event.target.value)}
             options={[
@@ -227,17 +231,17 @@ export function RequestDocumentModal({
         )}
 
         <Input
-          label="O que você está pedindo"
+          label={t('requestDocumentModal.oQueVoceEsta')}
           value={title}
           maxLength={160}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Comprovante de residência atualizado"
+          placeholder={t('requestDocumentModal.comprovanteDeResidenciaAtualizado')}
         />
 
         {external ? null : (
           <div>
             <Select
-              label="Categoria de destino"
+              label={t('requestDocumentModal.categoriaDeDestino')}
               value={categoryId}
               onChange={(event) => setCategoryId(event.target.value)}
               options={[
@@ -246,24 +250,26 @@ export function RequestDocumentModal({
               ]}
             />
             <span className="mt-1 block text-[11px] text-doqyn-subtle">
-              É aqui que o documento vai cair. Quem enviar não muda essa escolha.
+              {t('requestDocumentModal.eAquiQueO')}
             </span>
           </div>
         )}
 
         <label className="block">
-          <span className="type-label mb-1 block text-doqyn-muted">Detalhes (opcional)</span>
+          <span className="type-label mb-1 block text-doqyn-muted">
+            {t('requestDocumentModal.detalhesOpcional')}
+          </span>
           <textarea
             className="min-h-[80px] w-full rounded-[4px] border border-doqyn-border bg-doqyn-bg px-3 py-2 text-sm text-doqyn-text"
             value={description}
             maxLength={2000}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Conta de luz ou água dos últimos 90 dias."
+            placeholder={t('requestDocumentModal.contaDeLuzOu')}
           />
         </label>
 
         <Input
-          label="Prazo (opcional)"
+          label={t('requestDocumentModal.prazoOpcional')}
           type="date"
           value={dueAt}
           onChange={(event) => setDueAt(event.target.value)}

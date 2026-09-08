@@ -5,6 +5,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Escolha de categoria em um clique.
@@ -27,6 +28,8 @@ export function CategoryQuickPicker({
   /** Categoria que a IA sugeriu, quando houve alguma. Ganha destaque de atalho. */
   suggestedClassId?: string | null;
 }) {
+  const { t } = useTranslation('upload');
+
   const [term, setTerm] = useState('');
 
   const { data: categories = [], isLoading } = useQuery({
@@ -42,15 +45,15 @@ export function CategoryQuickPicker({
   }, [categories, term]);
 
   if (isLoading) {
-    return <p className="text-[11px] text-doqyn-muted">Carregando categorias…</p>;
+    return (
+      <p className="text-[11px] text-doqyn-muted">
+        {t('categoryQuickPicker.carregandoCategorias')}
+      </p>
+    );
   }
 
   if (categories.length === 0) {
-    return (
-      <EmptyHint bare>
-        Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão.
-      </EmptyHint>
-    );
+    return <EmptyHint bare>{t('categoryQuickPicker.nenhumaCategoriaConfiguradaCrie')}</EmptyHint>;
   }
 
   return (
@@ -60,13 +63,17 @@ export function CategoryQuickPicker({
           type="search"
           value={term}
           onChange={(event) => setTerm(event.target.value)}
-          placeholder="Filtrar categorias"
+          placeholder={t('categoryQuickPicker.filtrarCategorias')}
           className="mb-2 w-full rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-[12px] text-doqyn-text placeholder:text-doqyn-subtle"
-          aria-label="Filtrar categorias"
+          aria-label={t('categoryQuickPicker.filtrarCategorias2')}
         />
       )}
 
-      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias">
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="listbox"
+        aria-label={t('categoryQuickPicker.categorias')}
+      >
         {filtered.map((category) => {
           const isSelected = category.id === selectedClassId;
           const isSuggested = category.id === suggestedClassId;
@@ -100,7 +107,7 @@ export function CategoryQuickPicker({
 
       {filtered.length === 0 && (
         <EmptyHint bare className="mt-2">
-          Nenhuma categoria com esse nome.
+          {t('categoryQuickPicker.nenhumaCategoriaComEsse')}
         </EmptyHint>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { usePartnerTenants } from '../hooks/usePartnerTenants';
+import { useTranslation } from 'react-i18next';
 
 /**
  * As empresas com quem já se trocou documento, e quem foi o contato em cada uma.
@@ -14,6 +15,8 @@ import { usePartnerTenants } from '../hooks/usePartnerTenants';
  * a segunda conversa em diante.
  */
 export function PartnerContactList({ onPick }: { onPick: (email: string) => void }) {
+  const { t } = useTranslation('directory');
+
   const [open, setOpen] = useState(false);
   const partners = usePartnerTenants();
   const known = partners.data?.partners ?? [];
@@ -28,7 +31,8 @@ export function PartnerContactList({ onPick }: { onPick: (email: string) => void
         className="flex items-center gap-1.5 text-caption text-doqyn-muted hover:text-doqyn-text"
       >
         <Icon name={open ? 'expand_less' : 'expand_more'} size={ICON_SIZE.xs} aria-hidden />
-        Contas com quem você já trocou documentos ({known.length})
+        {t('partnerContactList.contasComQuemVoce')}
+        {known.length})
       </button>
 
       {open ? (

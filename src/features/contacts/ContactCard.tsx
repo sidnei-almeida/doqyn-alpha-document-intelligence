@@ -4,6 +4,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { formatContactMeta } from '@/features/directory/components/ContactRow';
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type ContactAction = 'share' | 'signature' | 'request' | 'hide';
 
@@ -30,6 +31,8 @@ export function ContactCard({
   contact: FrequentContact;
   onAction: (action: ContactAction, contact: FrequentContact) => void;
 }) {
+  const { t } = useTranslation('contacts');
+
   // Nem toda origem registra o e-mail. Sem ele não há para onde mandar o que quer que seja, e uma
   // ação ativa ofereceria um caminho que falha no envio.
   const semEndereco = contact.scope === 'external' && !contact.email;
@@ -93,9 +96,9 @@ export function ContactCard({
         {contact.scope === 'external' ? (
           // O aceite é a diferença que muda o que acontece depois de enviar, e por isso está no
           // cartão e não só no título da seção — o cartão é o que a pessoa lê antes de clicar.
-          <Badge variant="neutral">De fora</Badge>
+          <Badge variant="neutral">{t('contactCard.deFora')}</Badge>
         ) : null}
-        {contact.saved ? <Badge variant="brand">Salvo</Badge> : null}
+        {contact.saved ? <Badge variant="brand">{t('contactCard.salvo')}</Badge> : null}
       </div>
 
       <p className="register-label text-doqyn-subtle">

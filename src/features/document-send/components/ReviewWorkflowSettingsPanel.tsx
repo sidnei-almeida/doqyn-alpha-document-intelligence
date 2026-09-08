@@ -16,6 +16,7 @@ import {
   NAMING_POLICY_DESCRIPTIONS,
   NAMING_POLICY_LABELS,
 } from '../utils/reviewWorkflowSettings';
+import { useTranslation } from 'react-i18next';
 
 interface ReviewWorkflowSettingsPanelProps {
   settings: WorkflowReviewSettings;
@@ -101,11 +102,13 @@ function NamingPolicyOptions({
   compact?: boolean;
   size?: 'compact' | 'comfortable';
 }) {
+  const { t } = useTranslation('documentSend');
+
   return (
     <div
       className={cn('settings-choice-list', compact && 'settings-choice-list--compact')}
       role="radiogroup"
-      aria-label="Política de nomeação padrão"
+      aria-label={t('reviewWorkflowSettingsPanel.politicaDeNomeacaoPadrao')}
     >
       {NAMING_POLICIES.map((policy) => (
         <Radio
@@ -150,16 +153,20 @@ function AutoDelayStepper({
   adjustDelay: (delta: number) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation('documentSend');
+
   return (
     <div className={cn('settings-stepper-row', disabled && 'settings-stepper-row--disabled')}>
-      <span className="settings-stepper-row__label">Aguardar</span>
+      <span className="settings-stepper-row__label">
+        {t('reviewWorkflowSettingsPanel.aguardar')}
+      </span>
       <div className="settings-stepper">
         <button
           type="button"
           disabled={disabled || settings.autoAcceptDelaySeconds <= AUTO_DELAY_SECONDS_MIN}
           onClick={() => adjustDelay(-1)}
           className="settings-stepper__btn"
-          aria-label="Diminuir segundos"
+          aria-label={t('reviewWorkflowSettingsPanel.diminuirSegundos')}
         >
           <Icon name="remove" size={14} />
         </button>
@@ -176,19 +183,21 @@ function AutoDelayStepper({
             }
           }}
           className="settings-stepper__input"
-          aria-label="Segundos antes da revisão automática"
+          aria-label={t('reviewWorkflowSettingsPanel.segundosAntesDaRevisao')}
         />
         <button
           type="button"
           disabled={disabled || settings.autoAcceptDelaySeconds >= AUTO_DELAY_SECONDS_MAX}
           onClick={() => adjustDelay(1)}
           className="settings-stepper__btn"
-          aria-label="Aumentar segundos"
+          aria-label={t('reviewWorkflowSettingsPanel.aumentarSegundos')}
         >
           <Icon name="add" size={14} />
         </button>
       </div>
-      <span className="settings-stepper-row__suffix">seg</span>
+      <span className="settings-stepper-row__suffix">
+        {t('reviewWorkflowSettingsPanel.secondsSuffix')}
+      </span>
     </div>
   );
 }
@@ -206,11 +215,13 @@ function AutoReviewControls({
   nested?: boolean;
   size?: 'compact' | 'comfortable';
 }) {
+  const { t } = useTranslation('documentSend');
+
   return (
     <>
       <ToggleRow
-        label="Ativar modo automático"
-        description="Aceita análises confiáveis após o tempo configurado."
+        label={t('reviewWorkflowSettingsPanel.ativarModoAutomatico')}
+        description={t('reviewWorkflowSettingsPanel.aceitaAnalisesConfiaveisApos')}
         checked={settings.autoReviewEnabled}
         onChange={(checked) => patch({ autoReviewEnabled: checked })}
         size={size}
@@ -229,13 +240,13 @@ function AutoReviewControls({
             disabled={!settings.autoReviewEnabled}
           />
           <ToggleRow
-            label="Exigir revisão manual em baixa confiança"
+            label={t('reviewWorkflowSettingsPanel.exigirRevisaoManualEm')}
             checked={settings.pauseOnLowConfidence}
             onChange={(checked) => patch({ pauseOnLowConfidence: checked })}
             size={size}
           />
           <ToggleRow
-            label="Exigir revisão manual com campos ausentes"
+            label={t('reviewWorkflowSettingsPanel.exigirRevisaoManualCom')}
             checked={settings.pauseOnMissingFields}
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
@@ -247,13 +258,13 @@ function AutoReviewControls({
             <AutoDelayStepper settings={settings} patch={patch} adjustDelay={adjustDelay} />
           ) : null}
           <ToggleRow
-            label="Exigir revisão manual em baixa confiança"
+            label={t('reviewWorkflowSettingsPanel.exigirRevisaoManualEm2')}
             checked={settings.pauseOnLowConfidence}
             onChange={(checked) => patch({ pauseOnLowConfidence: checked })}
             size={size}
           />
           <ToggleRow
-            label="Exigir revisão manual com campos ausentes"
+            label={t('reviewWorkflowSettingsPanel.exigirRevisaoManualCom2')}
             checked={settings.pauseOnMissingFields}
             onChange={(checked) => patch({ pauseOnMissingFields: checked })}
             size={size}
@@ -273,16 +284,18 @@ function AiSuggestionControls({
   patch: (partial: Partial<WorkflowReviewSettings>) => void;
   size?: 'compact' | 'comfortable';
 }) {
+  const { t } = useTranslation('documentSend');
+
   return (
     <>
       <ToggleRow
-        label="Permitir IA sugerir nome padronizado"
+        label={t('reviewWorkflowSettingsPanel.permitirIaSugerirNome')}
         checked={settings.aiRenameEnabled}
         onChange={(checked) => patch({ aiRenameEnabled: checked })}
         size={size}
       />
       <ToggleRow
-        label="Nunca incluir CPF/CNPJ no nome sugerido"
+        label={t('reviewWorkflowSettingsPanel.nuncaIncluirCpfCnpj')}
         checked={settings.preventSensitiveDataInFileName}
         onChange={(checked) => patch({ preventSensitiveDataInFileName: checked })}
         size={size}
@@ -300,22 +313,24 @@ function BatchControls({
   patch: (partial: Partial<WorkflowReviewSettings>) => void;
   size?: 'compact' | 'comfortable';
 }) {
+  const { t } = useTranslation('documentSend');
+
   return (
     <>
       <ToggleRow
-        label="Aplicar esta configuração aos próximos arquivos do lote"
+        label={t('reviewWorkflowSettingsPanel.aplicarEstaConfiguracaoAos')}
         checked={settings.applyToBatch}
         onChange={(checked) => patch({ applyToBatch: checked })}
         size={size}
       />
       <ToggleRow
-        label="Parar para revisão quando houver conflito"
+        label={t('reviewWorkflowSettingsPanel.pararParaRevisaoQuando')}
         checked={settings.pauseOnConflict}
         onChange={(checked) => patch({ pauseOnConflict: checked })}
         size={size}
       />
       <ToggleRow
-        label="Continuar automaticamente quando estiver seguro"
+        label={t('reviewWorkflowSettingsPanel.continuarAutomaticamenteQuandoEstiver')}
         checked={settings.continueWhenSafe}
         onChange={(checked) => patch({ continueWhenSafe: checked })}
         size={size}
@@ -331,6 +346,8 @@ export function ReviewWorkflowSettingsPanel({
   className,
   variant = 'dropdown',
 }: ReviewWorkflowSettingsPanelProps) {
+  const { t } = useTranslation('documentSend');
+
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const summary = getReviewSettingsSummaryLabel(settings);
@@ -366,26 +383,24 @@ export function ReviewWorkflowSettingsPanel({
 
   const dropdownBody = (
     <div className="scrollbar-thin max-h-[min(70vh,28rem)] overflow-y-auto">
-      <CollapsibleSettingsSection title="Revisão automática">
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.revisaoAutomatica')}>
         <AutoReviewControls settings={settings} patch={patch} adjustDelay={adjustDelay} />
       </CollapsibleSettingsSection>
-      <CollapsibleSettingsSection title="Nome do documento">
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.nomeDoDocumento')}>
         <NamingPolicyOptions
           value={settings.defaultNamingPolicy}
           onChange={(policy) => patch({ defaultNamingPolicy: policy })}
         />
       </CollapsibleSettingsSection>
-      <CollapsibleSettingsSection title="Sugestões da IA">
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.sugestoesDaIa')}>
         <AiSuggestionControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
-      <CollapsibleSettingsSection title="Upload em lote">
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.uploadEmLote')}>
         <BatchControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
-      <CollapsibleSettingsSection title="Segurança">
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.seguranca')}>
         <p className="text-micro leading-relaxed text-doqyn-muted">
-          Nomes são sanitizados (sem barras ou path traversal), limitados a ~180 caracteres e
-          forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome sugerido quando a
-          proteção está ativa.
+          {t('reviewWorkflowSettingsPanel.nomesSaoSanitizadosSem')}
         </p>
       </CollapsibleSettingsSection>
     </div>
@@ -397,8 +412,8 @@ export function ReviewWorkflowSettingsPanel({
     <fieldset disabled={disabled} className="settings-workflow-panel">
       <div className="settings-workflow-panel__grid settings-workflow-panel__grid--balanced">
         <SettingsFieldGroup
-          title="Revisão automática"
-          description="Define quando a análise pode seguir sem intervenção manual."
+          title={t('reviewWorkflowSettingsPanel.revisaoAutomatica2')}
+          description={t('reviewWorkflowSettingsPanel.defineQuandoAAnalise')}
           className="settings-field-group--fill"
         >
           <AutoReviewControls
@@ -411,16 +426,16 @@ export function ReviewWorkflowSettingsPanel({
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
-          title="Sugestões da IA"
-          description="Controle o que a IA pode sugerir automaticamente."
+          title={t('reviewWorkflowSettingsPanel.sugestoesDaIa2')}
+          description={t('reviewWorkflowSettingsPanel.controleOQueA')}
           className="settings-field-group--fill"
         >
           <AiSuggestionControls settings={settings} patch={patch} size="comfortable" />
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
-          title="Nome do documento"
-          description="Política padrão aplicada após a análise da IA."
+          title={t('reviewWorkflowSettingsPanel.nomeDoDocumento2')}
+          description={t('reviewWorkflowSettingsPanel.politicaPadraoAplicadaApos')}
           className="settings-field-group--fill"
         >
           <NamingPolicyOptions
@@ -432,17 +447,17 @@ export function ReviewWorkflowSettingsPanel({
         </SettingsFieldGroup>
 
         <SettingsFieldGroup
-          title="Upload em lote"
-          description="Comportamento ao enviar vários arquivos de uma vez."
+          title={t('reviewWorkflowSettingsPanel.uploadEmLote2')}
+          description={t('reviewWorkflowSettingsPanel.comportamentoAoEnviarVarios')}
           className="settings-field-group--fill"
         >
           <BatchControls settings={settings} patch={patch} size="comfortable" />
           <div className="settings-inline-note">
-            <p className="settings-inline-note__title">Proteção de nomes</p>
+            <p className="settings-inline-note__title">
+              {t('reviewWorkflowSettingsPanel.protecaoDeNomes')}
+            </p>
             <p className="settings-inline-note__body">
-              Nomes são sanitizados (sem barras ou path traversal), limitados a aproximadamente 180
-              caracteres e forçados para extensão .pdf. CPF/CNPJ não entram automaticamente no nome
-              sugerido quando a proteção está ativa.
+              {t('reviewWorkflowSettingsPanel.nomesSaoSanitizadosSem2')}
             </p>
           </div>
         </SettingsFieldGroup>
@@ -473,7 +488,7 @@ export function ReviewWorkflowSettingsPanel({
         aria-haspopup="dialog"
       >
         <Icon name="tune" size={14} className="shrink-0 text-doqyn-primary" />
-        <span>Configurações da revisão</span>
+        <span>{t('reviewWorkflowSettingsPanel.configuracoesDaRevisao')}</span>
         {summary && (
           <Badge variant="default" className="text-micro">
             {summary}
@@ -489,13 +504,15 @@ export function ReviewWorkflowSettingsPanel({
       {open && (
         <div
           role="dialog"
-          aria-label="Configurações da revisão"
+          aria-label={t('reviewWorkflowSettingsPanel.configuracoesDaRevisao2')}
           className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-doqyn-border bg-doqyn-surface shadow-xl"
         >
           <div className="border-b border-doqyn-border-subtle px-4 py-3">
-            <p className="text-sm font-semibold text-doqyn-text">Configurações da revisão</p>
+            <p className="text-sm font-semibold text-doqyn-text">
+              {t('reviewWorkflowSettingsPanel.configuracoesDaRevisao3')}
+            </p>
             <p className="mt-0.5 text-micro text-doqyn-muted">
-              Controle revisão automática, nomeação e comportamento em lote nesta sessão.
+              {t('reviewWorkflowSettingsPanel.controleRevisaoAutomaticaNomeacao')}
             </p>
           </div>
           {dropdownBody}

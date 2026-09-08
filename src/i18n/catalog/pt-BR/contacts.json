@@ -1,0 +1,30 @@
+{
+  "addContactField": {
+    "adicionarContatoPeloNome": "Adicionar contato pelo nome de usuário",
+    "ninguemComEsseNome": "Ninguém com esse nome de usuário. Quem não tem conta DOQYN é convidado por link, no envio\n          do documento.",
+    "salvar": "Salvar"
+  },
+  "contactCard": {
+    "deFora": "De fora",
+    "salvo": "Salvo"
+  },
+  "contactsPage": {
+    "aListaCresceSozinha": "A lista cresce sozinha conforme você compartilha, pede assinatura e requisita documentos. Para adiantar, salve alguém pelo nome de usuário no campo acima.",
+    "carregandoContatos": "Carregando contatos",
+    "comQuemVoceTroca": "Com quem você troca documento, do mais acionado para o menos.",
+    "contatos": "Contatos",
+    "daSuaEmpresa": "Da sua empresa",
+    "deForaDaqui": "De fora daqui",
+    "irParaABiblioteca": "Ir para a Biblioteca",
+    "nenhumContatoAinda": "Nenhum contato ainda"
+  },
+  "pickDocumentDialog": {
+    "buscarDocumento": "Buscar documento",
+    "carregando": "Carregando…",
+    "noDocuments": "Você ainda não tem documentos.",
+    "noMatch": "Nenhum documento com esse nome.",
+    "nomeDoArquivo": "Nome do arquivo",
+    "shareWhich": "Compartilhar qual documento?",
+    "signWhich": "Assinar qual documento?"
+  }
+}
