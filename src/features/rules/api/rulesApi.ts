@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { GROUP_PALETTE } from '@shared/groupPalette';
 import type { GovernancePermissionValue } from '@shared/governancePermissions';
 import type {
@@ -352,7 +353,7 @@ export async function toggleDocumentClass(id: string): Promise<ApiDocumentClass>
   );
   const classes = await getDocumentClasses();
   const found = classes.find((c) => c.id === data.id);
-  if (!found) throw new RulesApiError('Categoria não encontrada.', 404);
+  if (!found) throw new RulesApiError(i18n.t('rules:error.categoriaNaoEncontrada'), 404);
   return { ...found, active: data.active };
 }
 

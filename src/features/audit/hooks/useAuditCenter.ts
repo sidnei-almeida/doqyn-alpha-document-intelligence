@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -109,7 +110,7 @@ export function useAuditCenter(documentId?: string) {
       return decideApprovalRequest(item.id, 'rejected', reason);
     },
     onSuccess: async () => {
-      toast.success('Solicitação rejeitada.');
+      toast.success(i18n.t('audit:toast.solicitacaoRejeitada'));
       await invalidateAll();
       await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
     },

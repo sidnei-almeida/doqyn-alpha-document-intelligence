@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
@@ -45,7 +46,7 @@ export function useExternalShareMutations(documentId: string | null) {
         message: input.message,
       }),
     onSuccess: () => {
-      toast.success('Convite externo criado.');
+      toast.success(i18n.t('sharing:toast.conviteExternoCriado'));
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível criar o convite externo.'),
     onSettled: invalidate,
@@ -53,7 +54,7 @@ export function useExternalShareMutations(documentId: string | null) {
 
   const revokeExternalShare = useMutation({
     mutationFn: (shareId: string) => revokeDocumentExternalShare(documentId!, shareId),
-    onSuccess: () => toast.success('Acesso externo revogado.'),
+    onSuccess: () => toast.success(i18n.t('sharing:toast.acessoExternoRevogado')),
     onError: (error) => showApiErrorToast(error, 'Não foi possível revogar o acesso externo.'),
     onSettled: invalidate,
   });
@@ -61,7 +62,7 @@ export function useExternalShareMutations(documentId: string | null) {
   const regenerateExternalShare = useMutation({
     mutationFn: (shareId: string) => regenerateDocumentExternalShare(documentId!, shareId),
     onSuccess: () => {
-      toast.success('Novo link de convite gerado.');
+      toast.success(i18n.t('sharing:toast.novoLinkGerado'));
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível renovar o convite externo.'),
     onSettled: invalidate,

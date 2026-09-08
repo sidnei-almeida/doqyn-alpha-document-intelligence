@@ -9,6 +9,7 @@ import {
   searchShareableUsers,
 } from '../api/shareApi';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
+import { i18n } from '@/i18n';
 
 export function useDocumentShares(documentId: string | null, enabled = true) {
   return useQuery({
@@ -70,7 +71,7 @@ export function useShareDocumentMutations(documentId: string | null) {
 
   const revokeShare = useMutation({
     mutationFn: (shareId: string) => revokeDocumentShare(documentId!, shareId),
-    onSuccess: () => toast.success('Compartilhamento revogado.'),
+    onSuccess: () => toast.success(i18n.t('sharing:toast.compartilhamentoRevogado')),
     onError: (error) => showApiErrorToast(error, 'Não foi possível revogar o compartilhamento.'),
     onSettled: invalidate,
   });

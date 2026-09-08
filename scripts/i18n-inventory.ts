@@ -160,9 +160,30 @@ function callName(node: ts.CallExpression): string {
   return '';
 }
 
+/**
+ * `'auth:review.field.terms'` é chave de catálogo, não frase.
+ *
+ * Depois da extração, os arquivos de dados guardam chave em `labelKey`, `titleKey` e afins — e
+ * ela cai no mesmo campo `title`/`description` que antes carregava texto. Sem esta regra, o
+ * inventário conta como pendente exatamente o que acabou de ser resolvido, e nunca chega a zero.
+ * O `:` do namespace é o que distingue, e nenhuma frase de tela tem essa forma.
+ */
+const CHAVE_DE_CATALOGO = /^[a-z][a-zA-Z0-9]*:[\w.-]+$/;
+
+/**
+ * `throw new Error('useTheme deve ser usado dentro de ThemeProvider')` fala com quem escreve o
+ * código, não com quem usa o app: é contrato de hook, e a mensagem só aparece se alguém montar a
+ * árvore errada. Traduzir isso não ajuda ninguém e polui o catálogo.
+ */
+const ERRO_DE_PROGRAMACAO = /^use[A-Z]\w*\s/;
+
 function classify(node: ts.Node, text: string): { classification: Classification; reason: string } {
   const parent = node.parent;
   if (!parent) return { classification: 'ambiguous', reason: 'sem contexto' };
+
+  if (CHAVE_DE_CATALOGO.test(text)) {
+    return { classification: 'technical', reason: 'chave de catálogo' };
+  }
 
   if (ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent)) {
     return { classification: 'technical', reason: 'especificador de módulo' };
@@ -197,7 +218,12 @@ function classify(node: ts.Node, text: string): { classification: Classification
 
   if (ts.isNewExpression(parent) && parent.expression.getText().endsWith('Error')) {
     const first = parent.arguments?.[0];
-    if (first === node) return { classification: 'user', reason: 'mensagem de erro' };
+    if (first === node) {
+      if (ERRO_DE_PROGRAMACAO.test(text)) {
+        return { classification: 'technical', reason: 'contrato de hook' };
+      }
+      return { classification: 'user', reason: 'mensagem de erro' };
+    }
   }
 
   if (ts.isJsxAttribute(parent.parent ?? parent)) {

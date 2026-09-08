@@ -1,10 +1,48 @@
 {
+  "analysisError": {
+    "uploadStorageTitle": "Falha no upload para storage",
+    "uploadStorageMessage": "Falha ao enviar o documento para o storage. Tente novamente.",
+    "semAcompanhamentoTitle": "Análise sem acompanhamento",
+    "falhaNaAnaliseTitle": "Falha na análise",
+    "resultadoIndisponivelTitle": "Resultado da análise indisponível",
+    "resultadoIndisponivelMessage": "Análise concluída sem resultado disponível. Tente novamente.",
+    "respostaInvalidaFila": "Resposta inválida do servidor (fila assíncrona)",
+    "respostaInvalida": "Resposta inválida do servidor",
+    "respostaInvalidaSalvar": "Resposta inválida ao salvar documento.",
+    "respostaInvalidaAprovacao": "Resposta inválida ao enviar documento para aprovação.",
+    "respostaInvalidaAtualizar": "Resposta inválida ao atualizar documento.",
+    "naoFoiPossivelAnalisarTitle": "Não foi possível analisar o documento"
+  },
   "documentNamingSection": {
     "digiteONomeFinal": "Digite o nome final do arquivo",
     "modoDeNomeacaoDo": "Modo de nomeação do arquivo",
     "nomeDoArquivoSalvo": "Nome do arquivo salvo",
     "previewDoNomeFinal": "Preview do nome final",
     "sugestaoDaIaOpcional": "Sugestão da IA (opcional):"
+  },
+  "metadataField": {
+    "nomeOriginal": "Nome original",
+    "nomeSugerido": "Nome sugerido",
+    "classeIdentificada": "Classe identificada",
+    "statusDaAnalise": "Status da análise",
+    "confiancaDaClassificacao": "Confiança da classificação",
+    "justificativa": "Justificativa",
+    "camposAusentes": "Campos ausentes",
+    "versaoSugerida": "Versão sugerida",
+    "textoExtraido": "Texto extraído",
+    "statusDePersistencia": "Status de persistência",
+    "armazenamentoDeArquivo": "Armazenamento de arquivo"
+  },
+  "metadataValue": {
+    "analiseConcluida": "Análise concluída",
+    "requerRevisao": "Requer revisão",
+    "erroNaAnalise": "Erro na análise",
+    "caracteres_one": "{{count}} caractere",
+    "caracteres_other": "{{count}} caracteres",
+    "caracteresTruncado_one": "{{count}} caractere (truncado)",
+    "caracteresTruncado_other": "{{count}} caracteres (truncado)",
+    "metadadosConfirmados": "Metadados confirmados",
+    "pendente": "Pendente"
   },
   "reviewWorkflowSettingsPanel": {
     "aceitaAnalisesConfiaveisApos": "Aceita análises confiáveis após o tempo configurado.",

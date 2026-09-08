@@ -90,14 +90,25 @@ export function getFriendlyAuthErrorMessage(
   return phrase ?? server ?? GENERIC_FAILURE;
 }
 
+/**
+ * As duas ações moram em `common`, e não em `auth`.
+ *
+ * O banner de erro de sessão aparece em qualquer tela, inclusive antes de o catálogo `auth` ter
+ * sido pedido — e `common` é o único que já vem no bundle. Um rótulo de botão que às vezes sai
+ * como chave crua seria pior do que qualquer economia de bytes.
+ */
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {
+  initI18n();
+
   switch (code) {
     case 'NO_ACTIVE_MEMBERSHIP':
       // `/acesso` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
       // pessoal. Entrar numa empresa que já existe não está lá: depende de convite.
-      return [{ label: 'Ver formas de acesso', href: '/acesso' }];
+      return [{ label: i18n.t('common:authErrorAction.verFormasDeAcesso'), href: '/acesso' }];
     case 'EMAIL_NOT_VERIFIED':
-      return [{ label: 'Confirmar e-mail', href: '/confirmar-cadastro' }];
+      return [
+        { label: i18n.t('common:authErrorAction.confirmarEmail'), href: '/confirmar-cadastro' },
+      ];
     case 'MEMBERSHIP_REJECTED':
     case 'MEMBERSHIP_REMOVED':
       // Sem ação: voltar depende de um convite novo, que sai das mãos de quem administra a

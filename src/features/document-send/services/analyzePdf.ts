@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/workflowError';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
@@ -204,8 +205,8 @@ async function putFileToStagingUploadUrl(
           error: {
             code: 'STAGING_UPLOAD_FAILED',
             category: 'storage',
-            title: 'Falha no upload para storage',
-            message: 'Falha ao enviar o documento para o storage. Tente novamente.',
+            title: i18n.t('documentSend:analysisError.uploadStorageTitle'),
+            message: i18n.t('documentSend:analysisError.uploadStorageMessage'),
           },
         },
         'Falha ao enviar o documento para o storage.',
@@ -420,7 +421,7 @@ async function pollAnalysisJobResult(
             error: {
               code: isGone ? 'ANALYSIS_JOB_NOT_FOUND' : 'ANALYSIS_POLL_UNREACHABLE',
               category: 'ai',
-              title: 'Análise sem acompanhamento',
+              title: i18n.t('documentSend:analysisError.semAcompanhamentoTitle'),
               message: uploadAnalyzePollFailureMessage(),
             },
           },
@@ -441,7 +442,7 @@ async function pollAnalysisJobResult(
           error: {
             code: payload.errorCode ?? 'ANALYSIS_FAILED',
             category: 'ai',
-            title: 'Falha na análise',
+            title: i18n.t('documentSend:analysisError.falhaNaAnaliseTitle'),
             message: payload.errorMessage ?? 'Falha na análise do documento.',
           },
         },
@@ -467,8 +468,8 @@ async function pollAnalysisJobResult(
             error: {
               code: 'ANALYSIS_RESULT_MISSING',
               category: 'ai',
-              title: 'Resultado da análise indisponível',
-              message: 'Análise concluída sem resultado disponível. Tente novamente.',
+              title: i18n.t('documentSend:analysisError.resultadoIndisponivelTitle'),
+              message: i18n.t('documentSend:analysisError.resultadoIndisponivelMessage'),
             },
           },
           'Análise concluída sem resultado disponível.',
@@ -535,7 +536,7 @@ export async function analyzePdf(
 
     if (response.status === 202) {
       if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
-        throw new Error('Resposta inválida do servidor (fila assíncrona)');
+        throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaFila'));
       }
 
       const queued = payload as AnalyzePdfEnqueueResponse;
@@ -562,7 +563,7 @@ export async function analyzePdf(
     }
 
     if (!payload || !('jobId' in payload)) {
-      throw new Error('Resposta inválida do servidor');
+      throw new Error(i18n.t('documentSend:analysisError.respostaInvalida'));
     }
 
     const result = payload as AnalyzePdfResponse;
@@ -600,7 +601,7 @@ export async function analyzePdf(
 
   if (response.status === 202) {
     if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
-      throw new Error('Resposta inválida do servidor (fila assíncrona)');
+      throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaFila'));
     }
 
     const queued = payload as AnalyzePdfEnqueueResponse;
@@ -627,7 +628,7 @@ export async function analyzePdf(
   }
 
   if (!payload || !('jobId' in payload)) {
-    throw new Error('Resposta inválida do servidor');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalida'));
   }
 
   const result = payload as AnalyzePdfResponse;

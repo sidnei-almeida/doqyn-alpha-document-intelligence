@@ -25,6 +25,9 @@
     "nomeDaCategoria": "Nome da categoria",
     "novaCategoria": "Nova categoria"
   },
+  "error": {
+    "categoriaNaoEncontrada": "Categoria não encontrada."
+  },
   "expiryAlertConfigSection": {
     "alertasDeVencimento": "Alertas de vencimento",
     "ativarAlertasDeVencimento": "Ativar alertas de vencimento",
@@ -126,5 +129,15 @@
     "sairDaSimulacao": "Sair da simulação",
     "vendoComo": "Vendo como",
     "verComo": "Ver como"
+  },
+  "toast": {
+    "grupoCriado": "Grupo criado.",
+    "grupoDesativado": "Grupo desativado.",
+    "grupoAtualizado": "Grupo atualizado.",
+    "permissoesAtualizadas": "Permissões atualizadas.",
+    "categoriaAtualizada": "Categoria atualizada.",
+    "categoriaCriada": "Categoria criada.",
+    "categoriaDesativada": "Categoria desativada.",
+    "configuracaoSalva": "Configuração salva."
   }
 }

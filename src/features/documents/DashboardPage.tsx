@@ -29,7 +29,10 @@ export function DashboardPage() {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useDashboardOverview(period);
 
-  const metrics = useMemo(() => (data ? buildOverviewMetrics(data, period) : []), [data, period]);
+  const metrics = useMemo(
+    () => (data ? buildOverviewMetrics(data, period, t) : []),
+    [data, period, t],
+  );
 
   const openDocument = (doc: DocumentListItem) => {
     if (!doc.permissions?.canPreview) return;

@@ -19,8 +19,11 @@ export type LocaleDefinition = {
   code: SupportedLocale;
   /** Nome do idioma no próprio idioma — é assim que se reconhece o seu numa lista. */
   nativeName: string;
-  /** Nome em português, para quem varre a lista sem achar o próprio. */
-  label: string;
+  /**
+   * Chave do nome do idioma no idioma da interface, para quem varre a lista sem achar o próprio.
+   * O `nativeName` fica ao lado, literal, porque ele não se traduz por definição.
+   */
+  labelKey: string;
   /** Bandeira não identifica idioma (espanhol não é a Espanha); a sigla, sim. */
   short: string;
   status: LocaleStatus;
@@ -32,15 +35,21 @@ export const LOCALES: LocaleDefinition[] = [
   {
     code: 'pt-BR',
     nativeName: 'Português (Brasil)',
-    label: 'Português',
+    labelKey: 'common:locale.ptBR',
     short: 'PT',
     status: 'ready',
   },
-  { code: 'en-US', nativeName: 'English (US)', label: 'Inglês', short: 'EN', status: 'draft' },
+  {
+    code: 'en-US',
+    nativeName: 'English (US)',
+    labelKey: 'common:locale.enUS',
+    short: 'EN',
+    status: 'draft',
+  },
   {
     code: 'es-419',
     nativeName: 'Español (Latinoamérica)',
-    label: 'Espanhol',
+    labelKey: 'common:locale.es419',
     short: 'ES',
     status: 'draft',
   },

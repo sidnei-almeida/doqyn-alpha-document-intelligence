@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { forgetContactDecision, hideContact, saveContact } from '../api/frequentContactsApi';
+import { i18n } from '@/i18n';
 
 /**
  * Salvar e tirar da lista, com a lista se refazendo sozinha depois.
@@ -20,7 +21,7 @@ export function useContactMutations() {
   const save = useMutation({
     mutationFn: saveContact,
     onSuccess: () => {
-      toast.success('Contato salvo.');
+      toast.success(i18n.t('directory:toast.contatoSalvo'));
       invalidate();
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível salvar o contato.'),
@@ -31,7 +32,7 @@ export function useContactMutations() {
     onSuccess: () => {
       // O aviso diz o que aconteceu de verdade: a troca continua registrada, e é ela que responde
       // auditoria. Dizer "excluído" prometeria um apagamento que não houve.
-      toast.success('Contato removido da lista. O histórico de trocas continua registrado.');
+      toast.success(i18n.t('directory:toast.contatoRemovido'));
       invalidate();
     },
     onError: (error) => showApiErrorToast(error, 'Não foi possível remover o contato.'),

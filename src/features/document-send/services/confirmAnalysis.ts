@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
@@ -88,7 +89,7 @@ export async function confirmAnalysis(
   }
 
   if (!data || !('documentId' in data)) {
-    throw new Error('Resposta inválida ao salvar documento.');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaSalvar'));
   }
 
   return {
@@ -149,7 +150,7 @@ export async function submitUploadForApproval(
   }
 
   if (!data || !('approvalId' in data)) {
-    throw new Error('Resposta inválida ao enviar documento para aprovação.');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaAprovacao'));
   }
 
   return {

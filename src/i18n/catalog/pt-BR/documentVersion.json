@@ -24,6 +24,13 @@
   "currentMetadataPanel": {
     "metadadosAtuais": "Metadados atuais"
   },
+  "detailsField": {
+    "validade": "Validade",
+    "validadeNaoDeterminada": "Não determinada",
+    "validadeInferidaHint": "Inferida (assinatura/emissão + prazo)",
+    "titulo": "Título",
+    "dataDeAssinatura": "Data de assinatura"
+  },
   "newVersionAnalyzingPanel": {
     "analisandoNovaVersao": "Analisando nova versão",
     "comparingWith": "Comparando com {{current}} para preparar {{next}}."

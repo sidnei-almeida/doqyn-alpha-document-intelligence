@@ -36,6 +36,11 @@
     "validandoLink": "Validando link…",
     "voltarAoLogin": "Voltar ao login"
   },
+  "nav": {
+    "contaLabel": "Minha conta",
+    "contaDescription": "Identidade, aparência e acesso",
+    "organizacaoDescription": "Envio, retenção e governança"
+  },
   "organizationSection": {
     "alteracoesEm": "Alterações em",
     "armazenamento": "Armazenamento",
@@ -84,6 +89,12 @@
     "naoFoiPossivelCarregar": "Não foi possível carregar o uso do armazenamento. Recarregue a página para tentar de\n          novo.",
     "ofQuota": "de {{quota}}",
     "preVisualizacoes": "Pré-visualizações"
+  },
+  "toast": {
+    "salvo": "Configurações salvas",
+    "falhaSalvar": "Não foi possível salvar",
+    "salvoMessage": "As mudanças já valem para {{scope}}.",
+    "falhaSalvarMessage": "Tente novamente."
   },
   "trashRetentionSettingsSection": {
     "aumentarDias": "Aumentar dias",

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import type { DocumentListItem } from '@/types/document-library';
 import { favoriteDocument, listFavoriteDocuments, unfavoriteDocument } from '../api/favoritesApi';
+import { i18n } from '@/i18n';
 
 /**
  * Favoritos são preferência pessoal do usuário (userId), persistidos no MongoDB.
@@ -42,7 +43,7 @@ export function useFavorites() {
       setOptimistic((current) => new Map(current).set(documentId, nextFavorite));
     },
     onError: () => {
-      toast.error('Não foi possível atualizar os favoritos. Tente novamente.');
+      toast.error(i18n.t('library:toast.falhaAtualizarFavoritos'));
     },
     onSettled: async () => {
       setOptimistic(new Map());

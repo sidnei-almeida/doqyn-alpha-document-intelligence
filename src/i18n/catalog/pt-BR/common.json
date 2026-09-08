@@ -10,6 +10,10 @@
     "save": "Salvar",
     "search": "Buscar"
   },
+  "authErrorAction": {
+    "verFormasDeAcesso": "Ver formas de acesso",
+    "confirmarEmail": "Confirmar e-mail"
+  },
   "documentStatus": {
     "active": "Ativo",
     "analyzing": "Em análise",
@@ -30,8 +34,11 @@
   "locale": {
     "description": "Idioma da interface. Não muda o idioma dos seus documentos.",
     "descriptionWithDrafts": "Idioma da interface. Inglês e espanhol estão em tradução e ainda não podem ser escolhidos.",
+    "enUS": "Inglês",
+    "es419": "Espanhol",
     "inPreparation": "Em preparo",
     "label": "Idioma",
+    "ptBR": "Português",
     "saveFailed": "Não foi possível salvar o idioma. Ele voltou ao anterior; tente de novo."
   },
   "memberStatus": {
@@ -82,5 +89,9 @@
     "genericLabel": "Documento fiscal",
     "genericPlaceholder": "Documento de identificação fiscal",
     "incomplete": "{{label}} incompleto."
+  },
+  "tenantVocabulary": {
+    "scopeSectionLabelBusiness": "Organização",
+    "scopeSectionLabelIndividual": "Meu acervo"
   }
 }

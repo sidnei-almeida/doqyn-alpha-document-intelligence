@@ -218,6 +218,9 @@ function main() {
     'tracking:statusLabel.',
     'tracking:severityLabel.',
     'tracking:deviceType.',
+    /* `getPlatformRoleMeta` monta `users:platformRole.<slug>.label` a partir do papel que o
+       auth-service devolve — mesma natureza, chave que é dado. */
+    'users:platformRole.',
   ];
 
   for (const [ns, chaves] of porNamespace) {

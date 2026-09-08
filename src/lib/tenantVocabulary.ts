@@ -19,22 +19,22 @@ export type TenantVocabulary = {
   wholeScope: string;
   /** Posse: `da empresa` · `da sua conta`. */
   ofScope: string;
-  /** Rótulo da seção de Configurações que reúne o que vale para o tenant inteiro. */
-  scopeSectionLabel: string;
+  /** Chave do rótulo da seção de Configurações que reúne o que vale para o tenant inteiro. */
+  scopeSectionLabelKey: string;
 };
 
 const BUSINESS_VOCABULARY: TenantVocabulary = {
   scope: 'empresa',
   wholeScope: 'toda a organização',
   ofScope: 'da empresa',
-  scopeSectionLabel: 'Organização',
+  scopeSectionLabelKey: 'common:tenantVocabulary.scopeSectionLabelBusiness',
 };
 
 const INDIVIDUAL_VOCABULARY: TenantVocabulary = {
   scope: 'conta',
   wholeScope: 'todo o seu acervo',
   ofScope: 'da sua conta',
-  scopeSectionLabel: 'Meu acervo',
+  scopeSectionLabelKey: 'common:tenantVocabulary.scopeSectionLabelIndividual',
 };
 
 export function isIndividualTenant(tenantType: string | null | undefined): boolean {

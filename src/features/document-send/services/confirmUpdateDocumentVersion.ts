@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
@@ -84,7 +85,7 @@ export async function confirmUpdateDocumentVersion(
   }
 
   if (!data || !('documentId' in data)) {
-    throw new Error('Resposta inválida ao atualizar documento.');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaAtualizar'));
   }
 
   return {

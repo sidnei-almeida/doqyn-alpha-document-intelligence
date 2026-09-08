@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { MetadataDisplayField } from '../types';
 import type { DocumentSearchMeta } from '@/types/document-library';
 import {
@@ -138,7 +139,7 @@ function resolveValidityField(
   if (absoluteRaw != null && absoluteRaw !== '') {
     return {
       key: 'validity',
-      label: 'Validade',
+      label: i18n.t('documentVersion:detailsField.validade'),
       value: formatMaybeDateValue(absoluteRaw),
     };
   }
@@ -146,24 +147,27 @@ function resolveValidityField(
   if (inferredDate || (projected && hasPrazo)) {
     return {
       key: 'validity',
-      label: 'Validade',
-      value: formatDateOnly(inferredDate?.date) ?? projected ?? 'Não determinada',
-      hint: 'Inferida (assinatura/emissão + prazo)',
+      label: i18n.t('documentVersion:detailsField.validade'),
+      value:
+        formatDateOnly(inferredDate?.date) ??
+        projected ??
+        i18n.t('documentVersion:detailsField.validadeNaoDeterminada'),
+      hint: i18n.t('documentVersion:detailsField.validadeInferidaHint'),
     };
   }
 
   if (projected) {
     return {
       key: 'validity',
-      label: 'Validade',
+      label: i18n.t('documentVersion:detailsField.validade'),
       value: projected,
     };
   }
 
   return {
     key: 'validity',
-    label: 'Validade',
-    value: 'Não determinada',
+    label: i18n.t('documentVersion:detailsField.validade'),
+    value: i18n.t('documentVersion:detailsField.validadeNaoDeterminada'),
   };
 }
 
@@ -183,7 +187,11 @@ export function buildStandardDetailsFields(input: {
     (typeof searchMeta?.documentTitle === 'string' && searchMeta.documentTitle.trim()) ||
     formatMetadataValue(byKey.get('titulo'));
   if (title && title !== '—') {
-    fields.push({ key: 'titulo', label: 'Título', value: title });
+    fields.push({
+      key: 'titulo',
+      label: i18n.t('documentVersion:detailsField.titulo'),
+      value: title,
+    });
     used.add('titulo');
   }
 
@@ -207,7 +215,7 @@ export function buildStandardDetailsFields(input: {
     if (formatted) {
       fields.push({
         key: 'data_assinatura',
-        label: 'Data de assinatura',
+        label: i18n.t('documentVersion:detailsField.dataDeAssinatura'),
         value: formatted,
       });
       used.add('data_assinatura');

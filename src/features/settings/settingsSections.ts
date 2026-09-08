@@ -13,8 +13,9 @@ export type SettingsSectionScope = 'personal' | 'organization';
 
 export type SettingsNavItem = {
   id: SettingsSectionId;
-  label: string;
-  description: string;
+  /** Chave, não frase: a lista é constante de módulo e o idioma muda em tempo de execução. */
+  labelKey: string;
+  descriptionKey: string;
   icon: string;
   scope: SettingsSectionScope;
 };
@@ -30,15 +31,15 @@ export function settingsNavItems(tenantType?: string | null): SettingsNavItem[] 
   return [
     {
       id: 'conta',
-      label: 'Minha conta',
-      description: 'Identidade, aparência e acesso',
+      labelKey: 'settings:nav.contaLabel',
+      descriptionKey: 'settings:nav.contaDescription',
       icon: 'person',
       scope: 'personal',
     },
     {
       id: 'organizacao',
-      label: vocabulary.scopeSectionLabel,
-      description: 'Envio, retenção e governança',
+      labelKey: vocabulary.scopeSectionLabelKey,
+      descriptionKey: 'settings:nav.organizacaoDescription',
       icon: isIndividualTenant(tenantType) ? 'inventory_2' : 'business',
       scope: 'organization',
     },

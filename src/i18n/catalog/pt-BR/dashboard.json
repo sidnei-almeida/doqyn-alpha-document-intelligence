@@ -1,4 +1,24 @@
 {
+  "metric": {
+    "documentsLabel": "Documentos",
+    "documentsSubtext": "+{{count}} nos últimos {{days}} dias",
+    "analysisLabel": "Em análise",
+    "analysisSubtext": "processamento em andamento",
+    "reviewLabel": "Aguardando revisão",
+    "reviewSubtext": "confirmação manual",
+    "processedLabel": "Processados",
+    "processedSubtext_one": "{{count}} preview pronto",
+    "processedSubtext_other": "{{count}} previews prontos",
+    "errorsLabel": "Erros",
+    "errorsSubtext_one": "{{count}} documento afetado",
+    "errorsSubtext_other": "{{count}} documentos afetados",
+    "eventsLabel": "Eventos",
+    "eventsSubtext": "{{views}} · {{downloads}}",
+    "previewCount_one": "{{count}} preview",
+    "previewCount_other": "{{count}} previews",
+    "downloadCount_one": "{{count}} download",
+    "downloadCount_other": "{{count}} downloads"
+  },
   "overviewEnvironmentHealthCard": {
     "atencao": "Atenção",
     "bucket": "Bucket",

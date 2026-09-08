@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
 import { parseApiError } from '@/lib/apiErrors';
@@ -91,7 +92,7 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
   });
 
   if (!response.ok) {
-    throw new Error('Não foi possível carregar as pendências.');
+    throw new Error(i18n.t('audit:error.falhaCarregarPendencias'));
   }
 
   const data = (await response.json()) as { items?: PendingApprovalDto[] };

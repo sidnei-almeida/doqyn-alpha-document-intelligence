@@ -40,6 +40,7 @@ import {
   mapCompanyMemberDtoToRulesMember,
 } from '../api/mappers';
 import { useCompanyMembers } from '@/features/users/hooks/useCompanyMembers';
+import { i18n } from '@/i18n';
 
 export type InviteMemberInput = {
   name: string;
@@ -177,7 +178,7 @@ export function useRules(actorName: string) {
         const mapped = mapApiGroup(created);
         setGroups((prev) => [...prev, mapped]);
         addAuditEvent(`${actorName} criou o grupo ${name.trim()}`, name.trim());
-        toast.success('Grupo criado.');
+        toast.success(i18n.t('rules:toast.grupoCriado'));
       } catch (err) {
         handleApiError(err, 'Não foi possível criar o grupo.');
       }
@@ -210,7 +211,7 @@ export function useRules(actorName: string) {
         if (group) {
           addAuditEvent(`${actorName} desativou o grupo ${group.name}`, group.name);
         }
-        toast.success('Grupo desativado.');
+        toast.success(i18n.t('rules:toast.grupoDesativado'));
       } catch (err) {
         handleApiError(err, 'Não foi possível desativar o grupo.');
       }
@@ -228,7 +229,7 @@ export function useRules(actorName: string) {
         });
         const mapped = mapApiGroup(updated);
         setGroups((prev) => prev.map((group) => (group.id === groupId ? mapped : group)));
-        toast.success('Grupo atualizado.');
+        toast.success(i18n.t('rules:toast.grupoAtualizado'));
       } catch (err) {
         handleApiError(err, 'Não foi possível atualizar o grupo.');
       }
@@ -246,7 +247,7 @@ export function useRules(actorName: string) {
         ]);
         setCategories(filterActiveCategories(enrichCategoriesFromMatrix(refreshed, matrix)));
         await invalidateLibraryQueries(queryClient, tenantId);
-        toast.success('Permissões atualizadas.');
+        toast.success(i18n.t('rules:toast.permissoesAtualizadas'));
       } catch (err) {
         handleApiError(err, 'Não foi possível atualizar permissões.');
       }
@@ -263,7 +264,7 @@ export function useRules(actorName: string) {
           getDocumentAccessMatrix(),
         ]);
         setCategories(filterActiveCategories(enrichCategoriesFromMatrix(rawClasses, matrix)));
-        toast.success('Categoria atualizada.');
+        toast.success(i18n.t('rules:toast.categoriaAtualizada'));
       } catch (err) {
         handleApiError(err, 'Não foi possível atualizar a categoria.');
       }
@@ -283,7 +284,7 @@ export function useRules(actorName: string) {
         const refreshedRules = await getDocumentRules();
         setRules(refreshedRules.map(toExtractionRule));
         addAuditEvent(`${actorName} criou a categoria ${trimmed}`, trimmed);
-        toast.success('Categoria criada.');
+        toast.success(i18n.t('rules:toast.categoriaCriada'));
       } catch (err) {
         handleApiError(err, 'Não foi possível criar a categoria.');
       }
@@ -300,7 +301,7 @@ export function useRules(actorName: string) {
         if (category) {
           addAuditEvent(`${actorName} desativou a categoria ${category.name}`, category.name);
         }
-        toast.success('Categoria desativada.');
+        toast.success(i18n.t('rules:toast.categoriaDesativada'));
       } catch (err) {
         handleApiError(err, 'Não foi possível desativar a categoria.');
       }
@@ -373,7 +374,7 @@ export function useRules(actorName: string) {
           `${actorName} atualizou configuração de extração`,
           categories.find((c) => c.id === classId)?.name ?? classId,
         );
-        toast.success('Configuração salva.');
+        toast.success(i18n.t('rules:toast.configuracaoSalva'));
         return savedRule;
       } catch (err) {
         handleApiError(err, 'Não foi possível salvar a configuração.');

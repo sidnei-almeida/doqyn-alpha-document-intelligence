@@ -21,5 +21,11 @@
     "quemTemAcesso": "Quem tem acesso",
     "quemTemAcesso2": "Quem tem acesso",
     "trocar": "Trocar"
+  },
+  "toast": {
+    "conviteExternoCriado": "Convite externo criado.",
+    "acessoExternoRevogado": "Acesso externo revogado.",
+    "novoLinkGerado": "Novo link de convite gerado.",
+    "compartilhamentoRevogado": "Compartilhamento revogado."
   }
 }

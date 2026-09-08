@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type {
   WorkflowErrorApiResponse,
   WorkflowErrorBody,
@@ -38,7 +39,7 @@ function fallbackError(message: string, code?: string): WorkflowErrorDisplay {
   return {
     code: code ?? 'UNEXPECTED_ERROR',
     category: 'unexpected',
-    title: 'Não foi possível analisar o documento',
+    title: i18n.t('documentSend:analysisError.naoFoiPossivelAnalisarTitle'),
     message: safeMessage,
     suggestion: 'Tente novamente. Se o problema persistir, contate o suporte.',
     toastMessage: safeMessage,

@@ -17,5 +17,9 @@
     "filtrarNotificacoes": "Filtrar notificações",
     "marcarTudoComoLido": "Marcar tudo como lido",
     "notificacoes": "Notificações"
+  },
+  "toast": {
+    "falhaAtualizar": "Não foi possível atualizar a notificação. Tente novamente.",
+    "falhaMarcarLidas": "Não foi possível marcar as notificações como lidas."
   }
 }

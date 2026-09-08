@@ -1,6 +1,5 @@
 import type { WorkflowRequestContext } from '../types/workflowLog';
 
-
 let eventCounter = 0;
 
 export function summarizeWorkflowLogMessage(event: {
@@ -42,6 +41,3 @@ export function buildRequestHeaders(context?: WorkflowRequestContext): Record<st
   if (context?.fileName) headers['X-DOQYN-File-Name'] = context.fileName;
   return headers;
 }
-
-
-

@@ -5,5 +5,9 @@
   },
   "partnerContactList": {
     "contasComQuemVoce": "Contas com quem você já trocou documentos ("
+  },
+  "toast": {
+    "contatoSalvo": "Contato salvo.",
+    "contatoRemovido": "Contato removido da lista. O histórico de trocas continua registrado."
   }
 }

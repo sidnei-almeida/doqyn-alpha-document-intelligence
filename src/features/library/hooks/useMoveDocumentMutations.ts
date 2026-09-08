@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/useAuth';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { batchMoveDocumentsToCategory, moveDocumentToCategory } from '../api/moveApi';
 import { invalidateLibraryQueries } from '../utils/libraryQueryInvalidation';
+import { i18n } from '@/i18n';
 
 export function useMoveDocumentMutations() {
   const queryClient = useQueryClient();
@@ -38,7 +39,7 @@ export function useMoveDocumentMutations() {
       if (result.failed.length > 0) {
         toast.warning(`${result.moved} movido(s), ${result.failed.length} falha(s).`);
       } else if (result.moved === 0 && result.skipped.length > 0) {
-        toast.info('Os documentos já estão nesta categoria.');
+        toast.info(i18n.t('library:toast.jaNestaCategoria'));
       } else {
         toast.success(
           result.moved === 1

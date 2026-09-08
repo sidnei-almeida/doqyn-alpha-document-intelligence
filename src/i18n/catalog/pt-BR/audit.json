@@ -43,6 +43,9 @@
   "auditSummaryStrip": {
     "resumoDaAuditoria": "Resumo da auditoria"
   },
+  "error": {
+    "falhaCarregarPendencias": "Não foi possível carregar as pendências."
+  },
   "pendingApprovalReviewDialog": {
     "arquivo": "Arquivo",
     "cancelar": "Cancelar",
@@ -72,5 +75,8 @@
     "descrevaOMotivoPara": "Descreva o motivo para o solicitante...",
     "motivoDaRejeicao": "Motivo da rejeição",
     "rejeitarSolicitacao": "Rejeitar solicitação"
+  },
+  "toast": {
+    "solicitacaoRejeitada": "Solicitação rejeitada."
   }
 }

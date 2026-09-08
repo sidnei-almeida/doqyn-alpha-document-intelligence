@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { PageShell } from '@/components/layout/PageShell';
 import { useAuth } from '@/auth/useAuth';
 import { SettingsLayout } from './components/SettingsLayout';
@@ -21,6 +22,7 @@ function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation('settings');
   const { section, setSection } = useSettingsSection();
   const { tenant } = useAuth();
   const navItems = visibleSettingsNavItems(tenant?.tenantType);
@@ -29,8 +31,8 @@ export function SettingsPage() {
   return (
     <PageShell
       eyebrow={SETTINGS_UI_PATTERN.pageEyebrow}
-      title={meta.label}
-      description={meta.description}
+      title={t(meta.labelKey)}
+      description={t(meta.descriptionKey)}
       className="settings-page-shell"
       bodyClassName="min-h-0 settings-page"
     >

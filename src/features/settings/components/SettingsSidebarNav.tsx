@@ -36,9 +36,11 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
                   className={cn('shrink-0', isActive && 'text-doqyn-accent-active')}
                 />
                 <span className="min-w-0 text-left">
-                  <span className="block text-[13px] font-medium leading-tight">{item.label}</span>
+                  <span className="block text-[13px] font-medium leading-tight">
+                    {t(item.labelKey)}
+                  </span>
                   <span className="mt-0.5 block text-[11px] text-doqyn-muted">
-                    {item.description}
+                    {t(item.descriptionKey)}
                   </span>
                 </span>
               </button>
@@ -63,7 +65,7 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
               onClick={() => onSelect(item.id)}
               className={cn('settings-tab-item', isActive && 'settings-tab-item--active')}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           );
         })}

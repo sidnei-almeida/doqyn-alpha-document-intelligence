@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTrashRetentionSettings } from '@/features/library/hooks/useTrashMutations';
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
@@ -84,14 +85,15 @@ export function useOrganizationSettings({
       }
       showAppToast({
         type: 'success',
-        title: 'Configurações salvas',
-        message: `As mudanças já valem para ${vocabulary.wholeScope}.`,
+        title: i18n.t('settings:toast.salvo'),
+        message: i18n.t('settings:toast.salvoMessage', { scope: vocabulary.wholeScope }),
       });
     } catch (error) {
       showAppToast({
         type: 'error',
-        title: 'Não foi possível salvar',
-        message: error instanceof Error ? error.message : 'Tente novamente.',
+        title: i18n.t('settings:toast.falhaSalvar'),
+        message:
+          error instanceof Error ? error.message : i18n.t('settings:toast.falhaSalvarMessage'),
       });
     } finally {
       setSaving(false);

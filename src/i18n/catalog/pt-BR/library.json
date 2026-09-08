@@ -231,6 +231,16 @@
       "fallback": "Ordenação"
     }
   },
+  "itemAction": {
+    "abrir": "Abrir",
+    "visualizar": "Visualizar",
+    "moverParaPasta": "Mover para pasta",
+    "compartilhar": "Compartilhar",
+    "solicitarAssinatura": "Solicitar assinatura",
+    "baixar": "Baixar",
+    "historicoDeVersoes": "Histórico de versões",
+    "moverParaLixeira": "Mover para lixeira"
+  },
   "libraryBreadcrumbs": {
     "biblioteca": "Biblioteca",
     "localizacaoNaBiblioteca": "Localização na Biblioteca"
@@ -313,6 +323,15 @@
   },
   "sortMenu": {
     "ordenarPor": "Ordenar por"
+  },
+  "toast": {
+    "falhaRecuperarDocumento": "Não foi possível recuperar o documento.",
+    "falhaAtualizarFavoritos": "Não foi possível atualizar os favoritos. Tente novamente.",
+    "jaNestaCategoria": "Os documentos já estão nesta categoria.",
+    "falhaMoverLixeira": "Não foi possível mover para a lixeira.",
+    "falhaRestaurarDocumento": "Não foi possível restaurar o documento.",
+    "configuracoesLixeiraSalvas": "Configurações da lixeira atualizadas.",
+    "falhaSalvarConfiguracoes": "Não foi possível salvar as configurações."
   },
   "typeFilterMenu": {
     "filtrarPorTipo": "Filtrar por tipo"
