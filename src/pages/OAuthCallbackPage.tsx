@@ -26,9 +26,7 @@ function resolveDestination(input: {
 
   if (input.isAuthenticated) {
     const safeReturn =
-      input.returnUrl &&
-      input.returnUrl.startsWith('/') &&
-      !input.returnUrl.startsWith('//')
+      input.returnUrl && input.returnUrl.startsWith('/') && !input.returnUrl.startsWith('//')
         ? input.returnUrl
         : '/biblioteca';
     return safeReturn;
@@ -52,10 +50,14 @@ export function OAuthCallbackPage() {
 
     if (status === 'error') {
       const code = searchParams.get('code') ?? 'OAUTH_CALLBACK_FAILED';
-      const oauthMessage = searchParams.get('message') ?? 'Não foi possível concluir o login social.';
-      navigate(`/login?oauthCode=${encodeURIComponent(code)}&oauthMessage=${encodeURIComponent(oauthMessage)}`, {
-        replace: true,
-      });
+      const oauthMessage =
+        searchParams.get('message') ?? 'Não foi possível concluir o login social.';
+      navigate(
+        `/login?oauthCode=${encodeURIComponent(code)}&oauthMessage=${encodeURIComponent(oauthMessage)}`,
+        {
+          replace: true,
+        },
+      );
       return;
     }
 

@@ -12,6 +12,7 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
 import { DocumentFavoriteBadge } from '@/features/library/components/files/DocumentFavoriteBadge';
+import { useTranslation } from 'react-i18next';
 
 type RecentDocumentRowProps = {
   doc: DocumentListItem;
@@ -21,6 +22,8 @@ type RecentDocumentRowProps = {
 
 /** Linha de registro — o ladrilho do ícone saiu, o fio e a régua fazem o trabalho. */
 export function RecentDocumentRow({ doc, onOpen, onTrack }: RecentDocumentRowProps) {
+  const { t } = useTranslation('dashboard');
+
   const fileName = doc.currentFileName ?? doc.displayName ?? 'Documento';
   const meta = `${doc.categoryName ?? doc.documentType ?? '—'} · ${doc.createdBy?.displayName ?? doc.ownerName ?? '—'}`;
 
@@ -58,12 +61,18 @@ export function RecentDocumentRow({ doc, onOpen, onTrack }: RecentDocumentRowPro
         </div>
         <div className="flex items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
           {doc.permissions?.canPreview && doc.latestVersionId && (
-            <IconButton label="Visualizar" onClick={() => onOpen(doc)}>
+            <IconButton
+              label={t('overviewRecentDocumentsPanel.visualizar')}
+              onClick={() => onOpen(doc)}
+            >
               <Icon name="visibility" size={ICON_SIZE.xs} />
             </IconButton>
           )}
           {doc.permissions?.canViewTracking && (
-            <IconButton label="Tracking" onClick={() => onTrack(doc.documentId)}>
+            <IconButton
+              label={t('overviewRecentDocumentsPanel.tracking')}
+              onClick={() => onTrack(doc.documentId)}
+            >
               <Icon name="history" size={ICON_SIZE.xs} />
             </IconButton>
           )}
@@ -84,11 +93,13 @@ export function OverviewRecentDocumentsPanel({
   isEmpty,
   onOpen,
 }: OverviewRecentDocumentsPanelProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Documentos recentes"
+      title={t('overviewRecentDocumentsPanel.documentosRecentes')}
       subtitle="Últimos envios e atualizações do ambiente"
       titleId="overview-recent-documents-title"
       actionLabel="Ver todos"
@@ -99,8 +110,8 @@ export function OverviewRecentDocumentsPanel({
       {isEmpty ? (
         <OverviewEmptyHint
           icon="description"
-          title="Nenhum documento enviado ainda"
-          description="O primeiro envio começa a contar as métricas e a atividade deste painel."
+          title={t('overviewRecentDocumentsPanel.nenhumDocumentoEnviadoAinda')}
+          description={t('overviewRecentDocumentsPanel.oPrimeiroEnvioComeca')}
         />
       ) : (
         <div className="flex flex-col">

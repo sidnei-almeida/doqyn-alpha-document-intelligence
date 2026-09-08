@@ -9,6 +9,7 @@ import {
   TERMS_LEGAL_NOTICE,
   TERMS_SECTIONS,
 } from '@/legal/terms';
+import { useTranslation } from 'react-i18next';
 
 function formatEffectiveDate(value: string): string {
   const [year, month, day] = value.split('-');
@@ -17,33 +18,42 @@ function formatEffectiveDate(value: string): string {
 }
 
 export function TermsPage() {
+  const { t } = useTranslation('pages');
+
   return (
     <main className="relative min-h-screen bg-doqyn-bg px-4 py-8">
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
 
-      <div className="mx-auto w-full max-w-3xl flow-enter">
+      <div className="flow-enter mx-auto w-full max-w-3xl">
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoqynLogo size="login" variant="horizontal" align="center" showSubtitle subtitle="Termos e Condições" />
+          <DoqynLogo
+            size="login"
+            variant="horizontal"
+            align="center"
+            showSubtitle
+            subtitle="Termos e Condições"
+          />
         </div>
 
         <article className="rounded-xl border border-doqyn-border bg-doqyn-surface p-6 sm:p-8">
           <header className="border-b border-doqyn-border-subtle pb-6">
             <h1 className="text-xl font-semibold text-doqyn-text sm:text-2xl">
-              Termos e Condições de Uso do DOQYN
+              {t('termsPage.termosECondicoesDe')}
             </h1>
-            <p className="mt-3 text-sm text-doqyn-muted">
-              Leia atentamente antes de criar uma conta, cadastrar uma empresa ou solicitar acesso a
-              uma organização.
-            </p>
+            <p className="mt-3 text-sm text-doqyn-muted">{t('termsPage.leiaAtentamenteAntesDe')}</p>
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-doqyn-muted">Versão</dt>
+                <dt className="text-xs uppercase tracking-wide text-doqyn-muted">
+                  {t('termsPage.versao')}
+                </dt>
                 <dd className="mt-0.5 font-medium text-doqyn-text">{DOQYN_TERMS_VERSION}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-doqyn-muted">Vigência</dt>
+                <dt className="text-xs uppercase tracking-wide text-doqyn-muted">
+                  {t('termsPage.vigencia')}
+                </dt>
                 <dd className="mt-0.5 font-medium text-doqyn-text">
                   {formatEffectiveDate(DOQYN_TERMS_EFFECTIVE_DATE)}
                 </dd>
@@ -73,14 +83,16 @@ export function TermsPage() {
               className="inline-flex items-center gap-2 text-sm font-medium text-doqyn-text transition-colors hover:text-doqyn-primary"
             >
               <Icon name="arrow_back" size={ICON_SIZE.sm} />
-              Voltar
+
+              {t('termsPage.voltar')}
             </Link>
           </footer>
         </article>
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-doqyn-subtle">
           <Icon name="shield" size={ICON_SIZE.xs} />
-          Ambiente corporativo seguro
+
+          {t('termsPage.ambienteCorporativoSeguro')}
         </p>
       </div>
     </main>

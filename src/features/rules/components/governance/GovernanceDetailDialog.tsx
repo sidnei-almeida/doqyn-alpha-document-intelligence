@@ -22,6 +22,7 @@ import {
   isRequirablePermission,
   toPermissionState,
 } from '@shared/governancePermissions';
+import { useTranslation } from 'react-i18next';
 
 export type GovernanceEntitySelection =
   | { type: 'category'; id: string }
@@ -95,6 +96,8 @@ export function GovernanceDetailDialog({
   onConfigureExtraction,
   onStartConnectMode,
 }: GovernanceDetailDialogProps) {
+  const { t } = useTranslation('rules');
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<GroupColor>(DEFAULT_GROUP_COLOR);
@@ -217,7 +220,7 @@ export function GovernanceDetailDialog({
             onClose();
           }}
         >
-          Conectar categoria
+          {t('governanceDetailDialog.conectarCategoria')}
         </Button>
       )}
       {selection.type === 'category' && onConfigureExtraction && category && (
@@ -230,7 +233,7 @@ export function GovernanceDetailDialog({
             onClose();
           }}
         >
-          Campos da análise
+          {t('governanceDetailDialog.camposDaAnalise')}
         </Button>
       )}
       {(selection.type === 'category' || selection.type === 'group') && (
@@ -240,13 +243,13 @@ export function GovernanceDetailDialog({
           disabled={saving || !name.trim()}
           onClick={() => void saveEntity()}
         >
-          Salvar alterações
+          {t('governanceDetailDialog.salvarAlteracoes')}
         </Button>
       )}
       {selection.type === 'connection' && (
         <>
           <Button type="button" size="sm" disabled={saving} onClick={() => void savePermissions()}>
-            Salvar permissões
+            {t('governanceDetailDialog.salvarPermissoes')}
           </Button>
           {onDisconnect && category && group && (
             <Button
@@ -266,7 +269,7 @@ export function GovernanceDetailDialog({
                 }
               }}
             >
-              Desconectar
+              {t('governanceDetailDialog.desconectar')}
             </Button>
           )}
         </>
@@ -279,7 +282,7 @@ export function GovernanceDetailDialog({
           className="text-doqyn-danger"
           onClick={() => void onDeleteCategory(selection.id)}
         >
-          Desativar categoria
+          {t('governanceDetailDialog.desativarCategoria')}
         </Button>
       )}
       {selection.type === 'group' && onDeactivateGroup && (
@@ -290,7 +293,7 @@ export function GovernanceDetailDialog({
           className="text-doqyn-danger"
           onClick={() => void onDeactivateGroup(selection.id)}
         >
-          Desativar grupo
+          {t('governanceDetailDialog.desativarGrupo')}
         </Button>
       )}
     </div>
@@ -320,11 +323,15 @@ export function GovernanceDetailDialog({
             {isAdmin ? (
               <>
                 <label className="block space-y-1.5">
-                  <span className="text-xs font-medium text-doqyn-muted">Nome</span>
+                  <span className="text-xs font-medium text-doqyn-muted">
+                    {t('governanceDetailDialog.nome')}
+                  </span>
                   <Input value={name} onChange={(event) => setName(event.target.value)} />
                 </label>
                 <label className="block space-y-1.5">
-                  <span className="text-xs font-medium text-doqyn-muted">Descrição</span>
+                  <span className="text-xs font-medium text-doqyn-muted">
+                    {t('governanceDetailDialog.descricao')}
+                  </span>
                   <Textarea
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
@@ -337,10 +344,10 @@ export function GovernanceDetailDialog({
             )}
             <div>
               <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                Grupos com acesso
+                {t('governanceDetailDialog.gruposComAcesso')}
               </p>
               {connectedGroups.length === 0 ? (
-                <EmptyHint bare>Nenhum grupo conectado.</EmptyHint>
+                <EmptyHint bare>{t('governanceDetailDialog.nenhumGrupoConectado')}</EmptyHint>
               ) : (
                 <ul className="space-y-2">
                   {connectedGroups.map((item) => {
@@ -379,13 +386,13 @@ export function GovernanceDetailDialog({
               <>
                 <Input
                   variant="rule"
-                  label="Nome"
+                  label={t('governanceDetailDialog.nome2')}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
                 <Textarea
                   variant="rule"
-                  label="Descrição"
+                  label={t('governanceDetailDialog.descricao2')}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
                   rows={3}
@@ -399,20 +406,22 @@ export function GovernanceDetailDialog({
               </>
             )}
             <div className="governance-fact">
-              <p className="register-label text-doqyn-subtle">Pessoas no grupo</p>
+              <p className="register-label text-doqyn-subtle">
+                {t('governanceDetailDialog.pessoasNoGrupo')}
+              </p>
               <p className="type-body text-doqyn-text">
                 {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'} ·{' '}
                 <Link to="/users" className="text-doqyn-primary hover:underline">
-                  gerenciar em Usuários
+                  {t('governanceDetailDialog.gerenciarEmUsuarios')}
                 </Link>
               </p>
             </div>
             <div>
               <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
-                Categorias conectadas
+                {t('governanceDetailDialog.categoriasConectadas')}
               </p>
               {connectedCategories.length === 0 ? (
-                <EmptyHint bare>Nenhuma categoria conectada.</EmptyHint>
+                <EmptyHint bare>{t('governanceDetailDialog.nenhumaCategoriaConectada')}</EmptyHint>
               ) : (
                 <ul className="space-y-2">
                   {connectedCategories.map((item) => {
@@ -443,7 +452,7 @@ export function GovernanceDetailDialog({
                 <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
                   {group.name}
                 </span>
-                <span className="text-doqyn-muted">acessa</span>
+                <span className="text-doqyn-muted">{t('governanceDetailDialog.accesses')}</span>
                 <span className="rounded-lg bg-doqyn-surface px-3 py-1.5 font-medium text-doqyn-text">
                   {category.name}
                 </span>
@@ -453,7 +462,7 @@ export function GovernanceDetailDialog({
               </div>
               {isDraftOnlyConnection && (
                 <p className="mt-2 text-center text-[11px] text-doqyn-warning">
-                  Conexão pendente. Salve o mapa para aplicar no servidor.
+                  {t('governanceDetailDialog.conexaoPendenteSalveO')}
                 </p>
               )}
             </div>

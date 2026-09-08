@@ -10,6 +10,7 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
+import { useTranslation } from 'react-i18next';
 
 type PermissionRow = {
   key: 'view' | 'download' | 'upload' | 'share';
@@ -67,6 +68,8 @@ export function PermissionPopover({
   onRemove,
   onOpenGroupDetails,
 }: PermissionPopoverProps) {
+  const { t } = useTranslation('rules');
+
   const [saving, setSaving] = useState(false);
 
   const apply = async (key: PermissionRow['key'], value: GovernancePermissionValue) => {
@@ -130,7 +133,8 @@ export function PermissionPopover({
         <div className="min-w-0 flex-1">
           <p className="type-label truncate text-doqyn-text">{group.name}</p>
           <p className="type-caption truncate text-doqyn-muted">
-            {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'} · em “{categoryName}”
+            {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'} {t('permissionPopover.em')}
+            {categoryName}”
           </p>
         </div>
         {onOpenGroupDetails && (
@@ -142,7 +146,7 @@ export function PermissionPopover({
               onOpenGroupDetails();
             }}
           >
-            Detalhes
+            {t('permissionPopover.detalhes')}
           </button>
         )}
       </div>
@@ -177,7 +181,7 @@ export function PermissionPopover({
         onClick={() => void remove()}
         className="mt-1.5 flex w-full items-center gap-2 rounded-lg border-t border-doqyn-border-subtle px-2.5 py-2 text-left font-display text-label font-medium text-doqyn-danger hover:bg-doqyn-danger-bg/40 disabled:opacity-60"
       >
-        Remover acesso do grupo
+        {t('permissionPopover.removerAcessoDoGrupo')}
       </button>
     </AnchoredPopover>
   );

@@ -7,6 +7,7 @@ import { formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
 import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
 import { AuditEmptyState } from './AuditEmptyState';
+import { useTranslation } from 'react-i18next';
 
 type PendingApprovalsListProps = {
   items: PendingApprovalItem[];
@@ -25,6 +26,8 @@ export function PendingApprovalsList({
   onApprove,
   onReject,
 }: PendingApprovalsListProps) {
+  const { t } = useTranslation('audit');
+
   const navigate = useNavigate();
 
   if (loading) {
@@ -46,8 +49,8 @@ export function PendingApprovalsList({
     return (
       <AuditEmptyState
         className="border-t border-doqyn-border"
-        title="Não há pendências no momento"
-        description="Envios, downloads e compartilhamentos que dependem de aprovação aparecerão aqui."
+        title={t('pendingApprovalsList.naoHaPendenciasNo')}
+        description={t('pendingApprovalsList.enviosDownloadsECompartilhamentos')}
       />
     );
   }
@@ -109,7 +112,7 @@ export function PendingApprovalsList({
           className: 'w-[116px]',
           render: () => (
             <Badge variant="pending" dot>
-              Pendente
+              {t('pendingApprovalsList.pendente')}
             </Badge>
           ),
         },

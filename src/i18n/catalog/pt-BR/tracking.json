@@ -1,0 +1,56 @@
+{
+  "trackingDocumentCell": {
+    "abrirDocumento": "Abrir documento"
+  },
+  "trackingEventLogDetail": {
+    "abrirDocumento": "Abrir documento",
+    "acao": "Ação",
+    "after": "depois:",
+    "alteracoes": "Alterações ·",
+    "ator": "Ator",
+    "before": "antes:",
+    "carregandoDetalhes": "Carregando detalhes…",
+    "contextoDeAcesso": "Contexto de acesso",
+    "documento": "Documento",
+    "duracao": "Duração",
+    "evento": "Evento",
+    "eventoNaoEncontrado": "Evento não encontrado.",
+    "filtrarPorEsteRequest": "Filtrar por este request",
+    "filtrarPorEsteUsuario": "Filtrar por este usuário",
+    "idDaVersao": "ID da versão",
+    "metadados": "Metadados",
+    "request": "Request",
+    "sessao": "Sessão",
+    "verTimelineDoDocumento": "Ver timeline do documento"
+  },
+  "trackingEventsTable": {
+    "nenhumEventoDocumentalEncontrado": "Nenhum evento documental encontrado para os filtros selecionados."
+  },
+  "trackingFilters": {
+    "acao": "Ação",
+    "ate": "Até",
+    "buscar": "Buscar",
+    "categoria": "Categoria",
+    "de": "De",
+    "documento": "Documento",
+    "documentoUsuarioAcao": "Documento, usuário, ação...",
+    "grupo": "Grupo",
+    "idDoDocumento": "ID do documento",
+    "requestId": "Request ID",
+    "resultado": "Resultado",
+    "severidade": "Severidade",
+    "usuarioId": "Usuário (ID)"
+  },
+  "trackingPage": {
+    "carregandoEventos": "Carregando eventos…",
+    "investigueQuemAcessouVisualizou": "Investigue quem acessou, visualizou, baixou ou alterou documentos, com rastreabilidade completa e dados sanitizados.",
+    "limparFiltros": "Limpar filtros",
+    "trackingDocumental": "Tracking documental"
+  },
+  "trackingRoute": {
+    "verificandoPermissoes": "Verificando permissões..."
+  },
+  "trackingSummaryStrip": {
+    "resumoDoTracking": "Resumo do tracking"
+  }
+}

@@ -5,6 +5,7 @@ import { Select } from '@/components/ui/Select';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AuditEventFilters, AuditSeverity } from '@/types/audit';
 import { AUDIT_SEVERITY_LABELS } from '@/types/audit';
+import { useTranslation } from 'react-i18next';
 
 export type AuditFiltersMode = 'full' | 'security' | 'overview';
 
@@ -40,17 +41,19 @@ function FilterField({ id, label, children }: { id: string; label: string; child
 }
 
 export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersProps) {
+  const { t } = useTranslation('audit');
+
   const showEventType = mode === 'full';
   const showSeverity = mode === 'full' || mode === 'security';
 
   return (
     <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-5">
-      <FilterField id="audit-search" label="Buscar">
+      <FilterField id="audit-search" label={t('auditFilters.buscar')}>
         <Icon name="search" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
         <input
           id="audit-search"
           type="search"
-          placeholder="Ação, usuário, documento..."
+          placeholder={t('auditFilters.acaoUsuarioDocumento')}
           className="text-label placeholder:text-doqyn-subtle"
           value={filters.q ?? ''}
           onChange={(event) => onChange({ ...filters, q: event.target.value })}
@@ -58,11 +61,11 @@ export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersP
       </FilterField>
 
       {showEventType && (
-        <FilterField id="audit-type" label="Tipo de evento">
+        <FilterField id="audit-type" label={t('auditFilters.tipoDeEvento')}>
           <input
             id="audit-type"
             type="text"
-            placeholder="Ex.: document.created"
+            placeholder={t('auditFilters.exDocumentCreated')}
             className="font-mono text-caption placeholder:text-doqyn-subtle"
             value={filters.type ?? ''}
             onChange={(event) => onChange({ ...filters, type: event.target.value })}
@@ -74,7 +77,7 @@ export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersP
         <Select
           id="audit-severity"
           variant="rule"
-          label="Severidade"
+          label={t('auditFilters.severidade')}
           value={filters.severity ?? ''}
           options={severityOptions.map((option) => ({ ...option, value: option.value }))}
           onChange={(event) =>
@@ -86,8 +89,8 @@ export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersP
       <DateField
         id="audit-from"
         variant="rule"
-        label="De"
-        placeholder="Início"
+        label={t('auditFilters.de')}
+        placeholder={t('auditFilters.inicio')}
         value={filters.from ?? ''}
         max={filters.to || undefined}
         onChange={(isoDate) => onChange({ ...filters, from: isoDate })}
@@ -96,8 +99,8 @@ export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersP
       <DateField
         id="audit-to"
         variant="rule"
-        label="Até"
-        placeholder="Fim"
+        label={t('auditFilters.ate')}
+        placeholder={t('auditFilters.fim')}
         value={filters.to ?? ''}
         min={filters.from || undefined}
         onChange={(isoDate) => onChange({ ...filters, to: isoDate })}

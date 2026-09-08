@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
 
 type QuickLink = {
   id: string;
@@ -65,12 +66,14 @@ const OPERATIONAL_LINKS: QuickLink[] = [
  * quando só pode existir uma.
  */
 export function OverviewQuickAccessPanel({ isAdmin }: { isAdmin: boolean }) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
   const links = isAdmin ? ADMIN_LINKS : OPERATIONAL_LINKS;
 
   return (
     <OverviewPanelShell
-      title="Acesso rápido"
+      title={t('overviewQuickAccessPanel.acessoRapido')}
       subtitle="Governança e configurações em um clique"
       titleId="overview-quick-access-title"
       bodyClassName="flex flex-col"

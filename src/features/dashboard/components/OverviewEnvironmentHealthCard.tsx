@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { OverviewLinkAction } from './OverviewLinkAction';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
 
 type HealthIndicatorProps = {
   label: string;
@@ -29,6 +30,8 @@ function HealthIndicator({
   onAction,
   canManage = true,
 }: HealthIndicatorProps) {
+  const { t } = useTranslation('dashboard');
+
   const restricted = !ok && !canManage;
   const resolvedDetail =
     detail ?? (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
@@ -43,9 +46,11 @@ function HealthIndicator({
         {ok ? (
           <span className="overview-status-mark overview-status-mark--ok">OK</span>
         ) : restricted ? (
-          <span className="overview-status-mark">Restrito</span>
+          <span className="overview-status-mark">
+            {t('overviewEnvironmentHealthCard.restrito')}
+          </span>
         ) : (
-          <span className="overview-status-tag">Atenção</span>
+          <span className="overview-status-tag">{t('overviewEnvironmentHealthCard.atencao')}</span>
         )}
         {!ok && canManage && actionLabel && onAction && (
           <OverviewLinkAction onClick={onAction}>{actionLabel}</OverviewLinkAction>
@@ -66,11 +71,13 @@ export function OverviewEnvironmentHealthCard({
   bucketNameMasked,
   canManageGovernance = false,
 }: OverviewEnvironmentHealthCardProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Saúde do ambiente"
+      title={t('overviewEnvironmentHealthCard.saudeDoAmbiente')}
       subtitle="Integridade operacional"
       titleId="overview-health-title"
       bodyClassName="flex flex-col"
@@ -83,7 +90,7 @@ export function OverviewEnvironmentHealthCard({
             aqui levava a uma tela onde não há esse botão. Falta storage é assunto de quem
             opera o deploy, então o indicador acusa e para por aí. */}
         <HealthIndicator
-          label="Storage"
+          label={t('overviewEnvironmentHealthCard.storage')}
           ok={health.hasStorageConfigured}
           detail={
             health.hasStorageConfigured
@@ -92,7 +99,7 @@ export function OverviewEnvironmentHealthCard({
           }
         />
         <HealthIndicator
-          label="Categorias"
+          label={t('overviewEnvironmentHealthCard.categorias')}
           ok={health.hasActiveCategories}
           detail={
             health.hasActiveCategories
@@ -110,7 +117,7 @@ export function OverviewEnvironmentHealthCard({
           canManage={canManageGovernance}
         />
         <HealthIndicator
-          label="Regras de IA"
+          label={t('overviewEnvironmentHealthCard.regrasDeIa')}
           ok={health.hasActiveExtractionRules}
           detail={
             health.hasActiveExtractionRules
@@ -145,7 +152,8 @@ export function OverviewEnvironmentHealthCard({
 
       {bucketNameMasked && (
         <p className={cn('overview-row-meta mt-auto pl-4 pt-3')}>
-          Bucket <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
+          {t('overviewEnvironmentHealthCard.bucket')}{' '}
+          <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
         </p>
       )}
     </OverviewPanelShell>

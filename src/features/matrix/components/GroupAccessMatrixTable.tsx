@@ -6,6 +6,7 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { AccessMatrix, AccessMatrixGroupCell } from '../api/matrixApi';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Permissão por grupo — a leitura que serve para governar.
@@ -41,6 +42,8 @@ function EmptyNotice({ icon, title, hint }: { icon: string; title: string; hint?
 }
 
 export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
+  const { t } = useTranslation('matrix');
+
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
 
   const cellIndex = useMemo(() => {
@@ -57,7 +60,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
     return (
       <EmptyNotice
         icon="groups"
-        title="Nenhum grupo configurado"
+        title={t('groupAccessMatrixTable.nenhumGrupoConfigurado')}
         hint="Crie grupos em Regras para governar o acesso por equipe em vez de pessoa a pessoa."
       />
     );
@@ -67,7 +70,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
     return (
       <EmptyNotice
         icon="grid_off"
-        title="Nenhum documento nesta seleção"
+        title={t('groupAccessMatrixTable.nenhumDocumentoNestaSelecao')}
         hint="Ajuste a busca ou a categoria para ver a matriz."
       />
     );
@@ -94,7 +97,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                 rowSpan={2}
                 className="matrix-sticky-col matrix-head-label z-20 min-w-[18rem] px-4 py-3 text-left align-bottom"
               >
-                Documento
+                {t('groupAccessMatrixTable.documento')}
               </th>
               {matrix.groups.map((group) => (
                 <th
@@ -106,7 +109,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                     {group.name}
                   </span>
                   <span className="mt-0.5 block font-mono text-micro tabular-nums text-doqyn-subtle">
-                    {group.memberCount} pessoa{group.memberCount === 1 ? '' : 's'}
+                    {t('groupAccessMatrixTable.memberCount', { count: group.memberCount })}
                   </span>
                 </th>
               ))}
@@ -206,7 +209,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
           to="/rules"
           className="text-caption font-medium text-doqyn-muted hover:text-doqyn-text"
         >
-          Conceder ou remover em Regras
+          {t('groupAccessMatrixTable.concederOuRemoverEm')}
         </Link>
       </div>
     </div>

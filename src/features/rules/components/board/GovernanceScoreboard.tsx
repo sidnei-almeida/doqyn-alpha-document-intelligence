@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { GovernanceProgress, GovernanceStepId } from './governanceProgress';
+import { Trans, useTranslation } from 'react-i18next';
 
 export type GovernanceScoreboardProps = {
   progress: GovernanceProgress;
@@ -23,12 +24,14 @@ export function GovernanceScoreboard({
   isAdmin,
   onCreateGroup,
 }: GovernanceScoreboardProps) {
+  const { t } = useTranslation('rules');
+
   if (progress.complete) {
     const percent = Math.round(progress.coverage * 100);
     return (
-      <section className="gov-board" aria-label="Cobertura da governança">
+      <section className="gov-board" aria-label={t('governanceScoreboard.coberturaDaGovernanca')}>
         <div className="gov-board__head">
-          <p className="register-label text-doqyn-subtle">Cobertura</p>
+          <p className="register-label text-doqyn-subtle">{t('governanceScoreboard.cobertura')}</p>
           <p className="gov-board__percent">{percent}%</p>
         </div>
         <div
@@ -39,9 +42,11 @@ export function GovernanceScoreboard({
           <span className="gov-meter__fill" style={{ width: `${percent}%` }} />
         </div>
         <p className="type-caption text-doqyn-muted">
-          <span className="gov-board__count">{progress.peopleReached}</span> de{' '}
-          {progress.totalPeople} pessoas alcançam ao menos uma categoria por grupo. Administradores
-          veem tudo.
+          <Trans
+            i18nKey="rules:governanceScoreboard.peopleReached"
+            values={{ reached: progress.peopleReached, total: progress.totalPeople }}
+            components={{ count: <span className="gov-board__count" /> }}
+          />
         </p>
       </section>
     );
@@ -51,11 +56,16 @@ export function GovernanceScoreboard({
   const firstOpenId = progress.steps.find((step) => !step.done)?.id ?? null;
 
   return (
-    <section className="gov-board" aria-label="Trilha da governança">
+    <section className="gov-board" aria-label={t('governanceScoreboard.trilhaDaGovernanca')}>
       <div className="gov-board__head">
-        <p className="register-label text-doqyn-subtle">Governança incompleta</p>
+        <p className="register-label text-doqyn-subtle">
+          {t('governanceScoreboard.governancaIncompleta')}
+        </p>
         <p className="gov-board__percent gov-board__percent--steps">
-          {doneCount} de {progress.steps.length}
+          {t('governanceScoreboard.stepsDone', {
+            done: doneCount,
+            total: progress.steps.length,
+          })}
         </p>
       </div>
 
@@ -85,10 +95,12 @@ export function GovernanceScoreboard({
 }
 
 function StepAction({ id, onCreateGroup }: { id: GovernanceStepId; onCreateGroup?: () => void }) {
+  const { t } = useTranslation('rules');
+
   if (id === 'groups' && onCreateGroup) {
     return (
       <button type="button" className="gov-trail__action" onClick={onCreateGroup}>
-        Criar grupo
+        {t('governanceScoreboard.criarGrupo')}
         <Icon name="arrow_forward" size={ICON_SIZE.xs} />
       </button>
     );
@@ -97,7 +109,7 @@ function StepAction({ id, onCreateGroup }: { id: GovernanceStepId; onCreateGroup
   if (id === 'people') {
     return (
       <Link to="/users" className="gov-trail__action">
-        Colocar pessoas
+        {t('governanceScoreboard.colocarPessoas')}
         <Icon name="arrow_forward" size={ICON_SIZE.xs} />
       </Link>
     );

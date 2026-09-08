@@ -3,6 +3,7 @@ import { formatDateTime } from '@/lib/utils';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
 
 type TrackingEvent = {
   id: string;
@@ -39,11 +40,13 @@ export function ActivityLogRow({ actorName, label, documentName, occurredAt }: T
 }
 
 export function OverviewRecentActivityPanel({ events }: { events: TrackingEvent[] }) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Atividade recente"
+      title={t('overviewRecentActivityPanel.atividadeRecente')}
       subtitle="Visualizações, downloads e rastreio"
       titleId="overview-recent-activity-title"
       actionLabel="Ver tracking"
@@ -54,8 +57,8 @@ export function OverviewRecentActivityPanel({ events }: { events: TrackingEvent[
       {events.length === 0 ? (
         <OverviewEmptyHint
           icon="monitoring"
-          title="Nenhuma atividade no período"
-          description="Cada abertura, download e envio entra aqui assim que acontece."
+          title={t('overviewRecentActivityPanel.nenhumaAtividadeNoPeriodo')}
+          description={t('overviewRecentActivityPanel.cadaAberturaDownloadE')}
         />
       ) : (
         <div className="flex flex-col">

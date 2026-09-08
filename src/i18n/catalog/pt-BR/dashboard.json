@@ -1,0 +1,52 @@
+{
+  "overviewEnvironmentHealthCard": {
+    "atencao": "Atenção",
+    "bucket": "Bucket",
+    "categorias": "Categorias",
+    "regrasDeIa": "Regras de IA",
+    "restrito": "Restrito",
+    "saudeDoAmbiente": "Saúde do ambiente",
+    "storage": "Storage"
+  },
+  "overviewGovernancePanel": {
+    "acesso": "Acesso",
+    "categorias": "Categorias",
+    "extracao": "Extração",
+    "governancaDocumental": "Governança documental",
+    "grupos": "Grupos",
+    "pendencias": "Pendências",
+    "usuarios": "Usuários"
+  },
+  "overviewHeaderActions": {
+    "irParaBiblioteca": "Ir para Biblioteca"
+  },
+  "overviewPeriodSelector": {
+    "periodoDoPainel": "Período do painel"
+  },
+  "overviewQuickAccessPanel": {
+    "acessoRapido": "Acesso rápido"
+  },
+  "overviewRecentActivityPanel": {
+    "atividadeRecente": "Atividade recente",
+    "cadaAberturaDownloadE": "Cada abertura, download e envio entra aqui assim que acontece.",
+    "nenhumaAtividadeNoPeriodo": "Nenhuma atividade no período"
+  },
+  "overviewRecentDocumentsPanel": {
+    "documentosRecentes": "Documentos recentes",
+    "nenhumDocumentoEnviadoAinda": "Nenhum documento enviado ainda",
+    "oPrimeiroEnvioComeca": "O primeiro envio começa a contar as métricas e a atividade deste painel.",
+    "tracking": "Tracking",
+    "visualizar": "Visualizar"
+  },
+  "overviewStoragePanel": {
+    "downloads": "Downloads",
+    "nenhumErroRecenteNo": "Nenhum erro recente no período.",
+    "originais": "Originais",
+    "previews": "Previews",
+    "storageEErrosRecentes": "Storage e erros recentes",
+    "tamanhoTotal": "Tamanho total"
+  },
+  "overviewSummaryStrip": {
+    "resumoDoPeriodo": "Resumo do período"
+  }
+}

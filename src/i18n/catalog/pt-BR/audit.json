@@ -1,0 +1,76 @@
+{
+  "auditEventDetailsDialog": {
+    "ator": "Ator",
+    "dataHora": "Data/hora",
+    "descricao": "Descrição",
+    "detalhesDoEvento": "Detalhes do evento",
+    "documento": "Documento",
+    "fechar": "Fechar",
+    "metadados": "Metadados",
+    "origem": "Origem",
+    "requestId": "Request ID",
+    "severidade": "Severidade"
+  },
+  "auditEventsList": {
+    "ajusteABuscaOu": "Ajuste a busca ou aguarde novas ações no sistema.",
+    "carregandoEventos": "Carregando eventos",
+    "nenhumEventoEncontrado": "Nenhum evento encontrado",
+    "verDetalhesDoEvento": "Ver detalhes do evento"
+  },
+  "auditFilters": {
+    "acaoUsuarioDocumento": "Ação, usuário, documento...",
+    "ate": "Até",
+    "buscar": "Buscar",
+    "de": "De",
+    "exDocumentCreated": "Ex.: document.created",
+    "fim": "Fim",
+    "inicio": "Início",
+    "severidade": "Severidade",
+    "tipoDeEvento": "Tipo de evento"
+  },
+  "auditPage": {
+    "acessoRestrito": "Acesso restrito",
+    "acompanheAprovacoesAcoesAdministrativas": "Acompanhe aprovações, ações administrativas e histórico de eventos do sistema.",
+    "apenasAdministradoresPodemConsultar": "Apenas administradores podem consultar pendências e aprovar solicitações.",
+    "auditoria": "Auditoria",
+    "eventosDeBloqueioRejeicao": "Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no\n                tenant.",
+    "exibindoEventosDoDocumento": "Exibindo eventos do documento",
+    "fimDoHistorico": "Fim do histórico",
+    "naoFoiPossivelCarregar": "Não foi possível carregar pendências",
+    "naoFoiPossivelCarregar2": "Não foi possível carregar eventos.",
+    "tenteAtualizarAPagina": "Tente atualizar a página ou verifique sua conexão."
+  },
+  "auditSummaryStrip": {
+    "resumoDaAuditoria": "Resumo da auditoria"
+  },
+  "pendingApprovalReviewDialog": {
+    "arquivo": "Arquivo",
+    "cancelar": "Cancelar",
+    "categoria": "Categoria",
+    "categoriaSugerida": "Categoria sugerida",
+    "compartilharCom": "Compartilhar com",
+    "data": "Data",
+    "documento": "Documento",
+    "eMail": "E-mail",
+    "oQueSeraConcedido": "O que será concedido",
+    "organizacao": "Organização",
+    "osMetadadosForamExtraidos": "Os metadados foram extraídos automaticamente pela IA. Ao aprovar, o documento será\n              publicado na Biblioteca em nome do solicitante.",
+    "pendente": "Pendente",
+    "rejeitar": "Rejeitar",
+    "revisarSolicitacao": "Revisar solicitação",
+    "solicitante": "Solicitante",
+    "status": "Status"
+  },
+  "pendingApprovalsList": {
+    "enviosDownloadsECompartilhamentos": "Envios, downloads e compartilhamentos que dependem de aprovação aparecerão aqui.",
+    "naoHaPendenciasNo": "Não há pendências no momento",
+    "pendente": "Pendente"
+  },
+  "rejectApprovalDialog": {
+    "cancelar": "Cancelar",
+    "confirmarRejeicao": "Confirmar rejeição",
+    "descrevaOMotivoPara": "Descreva o motivo para o solicitante...",
+    "motivoDaRejeicao": "Motivo da rejeição",
+    "rejeitarSolicitacao": "Rejeitar solicitação"
+  }
+}

@@ -8,6 +8,7 @@ import type { AuditEvent } from '@/types/audit';
 import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
 import { AuditEmptyState } from './AuditEmptyState';
 import { SkeletonList } from '@/components/ui/SkeletonList';
+import { useTranslation } from 'react-i18next';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -24,12 +25,14 @@ type AuditEventsListProps = {
 };
 
 export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsListProps) {
+  const { t } = useTranslation('audit');
+
   if (loading) {
     return (
       <SkeletonList
         className="border-t border-doqyn-border"
         rowClassName="h-[52px] py-0"
-        label="Carregando eventos"
+        label={t('auditEventsList.carregandoEventos')}
       />
     );
   }
@@ -38,8 +41,8 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
     return (
       <AuditEmptyState
         className="border-t border-doqyn-border"
-        title="Nenhum evento encontrado"
-        description="Ajuste a busca ou aguarde novas ações no sistema."
+        title={t('auditEventsList.nenhumEventoEncontrado')}
+        description={t('auditEventsList.ajusteABuscaOu')}
       />
     );
   }
@@ -122,7 +125,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           render: (event) => (
             <div className="flex justify-end">
               <IconButton
-                label="Ver detalhes do evento"
+                label={t('auditEventsList.verDetalhesDoEvento')}
                 onClick={(clickEvent) => {
                   clickEvent.stopPropagation();
                   onOpenDetails(event);

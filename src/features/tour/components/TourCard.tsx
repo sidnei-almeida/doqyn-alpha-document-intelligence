@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { TourStep } from '../tourTypes';
+import { useTranslation } from 'react-i18next';
 
 type TourCardProps = {
   step: TourStep;
@@ -46,6 +47,8 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
   { step, index, total, onSkip, onPrevious, onNext, style, titleId, bodyId },
   ref,
 ) {
+  const { t } = useTranslation('tour');
+
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
@@ -71,7 +74,7 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
           type="button"
           onClick={onSkip}
           className="explorer-interactive -mr-1.5 flex h-7 w-7 items-center justify-center rounded-[4px] text-doqyn-subtle transition-colors hover:bg-doqyn-hover/60 hover:text-doqyn-text"
-          aria-label="Fechar o tour"
+          aria-label={t('tourCard.fecharOTour')}
         >
           <Icon name="close" size={ICON_SIZE.sm} />
         </button>
@@ -101,7 +104,7 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
         <div className="flex items-center gap-2">
           {!isFirst && (
             <Button variant="ghost" size="sm" onClick={onPrevious}>
-              Voltar
+              {t('tourCard.voltar')}
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={onNext} autoFocus>

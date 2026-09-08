@@ -18,6 +18,7 @@ import { fetchEnabledOAuthProviders, type OAuthProvider } from '@/auth/oauthLogi
 import { getAuthErrorActions, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { getLoginAlertTitle, getLoginAlertVariant } from '@/pages/login/loginFeedback';
 import { storeVerificationTicket } from '@/features/email-verification/verificationTicket';
+import { useTranslation } from 'react-i18next';
 
 /** O passe de confirmação viaja em `details` porque é o campo que a rota de login já repassa. */
 function extractVerificationTicket(error: unknown): string | null {
@@ -28,6 +29,8 @@ function extractVerificationTicket(error: unknown): string | null {
 }
 
 export function Login() {
+  const { t } = useTranslation('pages');
+
   const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
   const navigate = useNavigate();
@@ -97,7 +100,7 @@ export function Login() {
 
   return (
     <>
-      <AuthHeading title="Entrar no sistema" />
+      <AuthHeading title={t('login.entrarNoSistema')} />
 
       {enabledProviders.length > 0 && (
         <div className="flex flex-col gap-2.5">
@@ -109,7 +112,8 @@ export function Login() {
               className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
             >
               <GoogleGlyph />
-              Continuar com Google
+
+              {t('login.continuarComGoogle')}
             </button>
           )}
           {enabledProviders.includes('microsoft') && (
@@ -120,14 +124,15 @@ export function Login() {
               className={cn(AUTH_SECONDARY_BUTTON, 'w-full')}
             >
               <MicrosoftGlyph />
-              Continuar com Microsoft
+
+              {t('login.continuarComMicrosoft')}
             </button>
           )}
 
           <div className="flex items-center gap-3 py-3">
             <span className="h-px flex-1 bg-doqyn-border-subtle" />
             <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-              ou
+              {t('login.or')}
             </span>
             <span className="h-px flex-1 bg-doqyn-border-subtle" />
           </div>
@@ -137,7 +142,7 @@ export function Login() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <Input
           id="email"
-          label="E-mail"
+          label={t('login.eMail')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -148,7 +153,7 @@ export function Login() {
 
         <Input
           id="password"
-          label="Senha"
+          label={t('login.senha')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -162,14 +167,16 @@ export function Login() {
           <Checkbox
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            label={<span className="text-caption text-doqyn-muted">Lembrar acesso</span>}
+            label={
+              <span className="text-caption text-doqyn-muted">{t('login.lembrarAcesso')}</span>
+            }
             wrapperClassName="items-center"
           />
           <button
             type="button"
             className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline"
           >
-            Esqueci minha senha
+            {t('login.esqueciMinhaSenha')}
           </button>
         </div>
 
@@ -203,12 +210,12 @@ export function Login() {
       </form>
 
       <AuthFooterLink>
-        Não tem acesso ainda?{' '}
+        {t('login.naoTemAcessoAinda')}{' '}
         <Link
           to="/acesso"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Criar acesso
+          {t('login.criarAcesso')}
         </Link>
       </AuthFooterLink>
     </>

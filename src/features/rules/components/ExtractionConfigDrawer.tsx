@@ -19,6 +19,7 @@ import type {
   FieldType,
 } from '@/types/rules';
 import { ALLOWED_FIELD_TYPES } from '../api/rulesApi';
+import { useTranslation } from 'react-i18next';
 
 interface ExtractionConfigDrawerProps {
   open: boolean;
@@ -74,6 +75,8 @@ export function ExtractionConfigDrawer({
   onSave,
   groups = [],
 }: ExtractionConfigDrawerProps) {
+  const { t } = useTranslation('rules');
+
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
   const [negativeKeywords, setNegativeKeywords] = useState('');
@@ -128,7 +131,7 @@ export function ExtractionConfigDrawer({
   return (
     <WorkspaceSideDrawer
       onClose={onClose}
-      title="Campos da análise"
+      title={t('extractionConfigDrawer.camposDaAnalise')}
       subtitle={category.name}
       testId="extraction-drawer"
       closeTestId="extraction-drawer-close"
@@ -138,7 +141,7 @@ export function ExtractionConfigDrawer({
       footer={
         <>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
+            {t('extractionConfigDrawer.cancelar')}
           </Button>
           <Button type="submit" form={FORM_ID} disabled={saving || !namingTemplate.trim()}>
             {saving ? 'Salvando…' : 'Salvar'}
@@ -147,15 +150,15 @@ export function ExtractionConfigDrawer({
       }
     >
       <form id={FORM_ID} onSubmit={(e) => void handleSubmit(e)} className="space-y-7">
-        <DrawerSection label="Reconhecimento" bodyClassName="space-y-4">
+        <DrawerSection label={t('extractionConfigDrawer.reconhecimento')} bodyClassName="space-y-4">
           <p className="text-caption text-doqyn-subtle">
-            É por estes termos que a análise reconhece um documento como desta categoria.
+            {t('extractionConfigDrawer.ePorEstesTermos')}
           </p>
 
           <Textarea
             id="class-description"
             variant="rule"
-            label="Descrição"
+            label={t('extractionConfigDrawer.descricao')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -164,48 +167,47 @@ export function ExtractionConfigDrawer({
           <Textarea
             id="class-keywords"
             variant="rule"
-            label="Termos que identificam este documento"
+            label={t('extractionConfigDrawer.termosQueIdentificamEste')}
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             rows={2}
-            placeholder="Separe por vírgula"
+            placeholder={t('extractionConfigDrawer.separePorVirgula')}
           />
 
           <Textarea
             id="class-negative-keywords"
             variant="rule"
-            label="Termos a evitar"
+            label={t('extractionConfigDrawer.termosAEvitar')}
             value={negativeKeywords}
             onChange={(e) => setNegativeKeywords(e.target.value)}
             rows={2}
-            placeholder="Separe por vírgula"
+            placeholder={t('extractionConfigDrawer.separePorVirgula2')}
           />
         </DrawerSection>
 
         <DrawerSection
-          label="Análise"
+          label={t('extractionConfigDrawer.analise')}
           bodyClassName="space-y-4"
           aside={
             <span className="flex items-center gap-2 text-caption text-doqyn-muted">
-              Ativa
+              {t('extractionConfigDrawer.ativa')}
               <Switch
                 checked={active}
                 onCheckedChange={setActive}
-                aria-label="Regra ativa para análise"
+                aria-label={t('extractionConfigDrawer.regraAtivaParaAnalise')}
               />
             </span>
           }
         >
           <p className="text-caption text-doqyn-subtle">
-            Como o documento é nomeado ao entrar, e a partir de que confiança a extração vale sem
-            revisão.
+            {t('extractionConfigDrawer.comoODocumentoE')}
           </p>
 
           <Input
             id="naming-template"
             variant="rule"
-            label="Nome sugerido"
-            placeholder="Use {campo} para variáveis"
+            label={t('extractionConfigDrawer.nomeSugerido')}
+            placeholder={t('extractionConfigDrawer.useCampoParaVariaveis')}
             value={namingTemplate}
             onChange={(e) => setNamingTemplate(e.target.value)}
             required
@@ -215,7 +217,7 @@ export function ExtractionConfigDrawer({
             <Input
               id="min-confidence"
               variant="rule"
-              label="Confiança mínima"
+              label={t('extractionConfigDrawer.confiancaMinima')}
               type="number"
               min={0}
               max={1}
@@ -225,13 +227,13 @@ export function ExtractionConfigDrawer({
               onChange={(e) => setMinimumConfidence(e.target.value)}
             />
             <p className="text-micro text-doqyn-muted">
-              Abaixo disso a extração vai para revisão em vez de valer sozinha.
+              {t('extractionConfigDrawer.abaixoDissoAExtracao')}
             </p>
           </div>
         </DrawerSection>
 
         <DrawerSection
-          label="Campos extraídos"
+          label={t('extractionConfigDrawer.camposExtraidos')}
           bodyClassName="divide-y divide-doqyn-border-subtle"
           aside={
             <Button
@@ -241,7 +243,8 @@ export function ExtractionConfigDrawer({
               onClick={() => setFields((prev) => [...prev, emptyField()])}
             >
               <Icon name="add" size={ICON_SIZE.xs} />
-              Campo
+
+              {t('extractionConfigDrawer.campo')}
             </Button>
           }
         >
@@ -255,14 +258,14 @@ export function ExtractionConfigDrawer({
                 <div className="flex gap-3">
                   <Input
                     variant="rule"
-                    placeholder="Chave (ex: parte_receptora)"
+                    placeholder={t('extractionConfigDrawer.chaveExParteReceptora')}
                     value={field.key}
                     onChange={(e) => updateField(index, { key: e.target.value })}
                     className="font-mono text-micro"
                   />
                   <Input
                     variant="rule"
-                    placeholder="Rótulo"
+                    placeholder={t('extractionConfigDrawer.rotulo')}
                     value={field.label}
                     onChange={(e) => updateField(index, { label: e.target.value })}
                   />
@@ -283,12 +286,13 @@ export function ExtractionConfigDrawer({
                       checked={field.required}
                       onChange={(e) => updateField(index, { required: e.target.checked })}
                     />
-                    Obrigatório
+
+                    {t('extractionConfigDrawer.obrigatorio')}
                   </label>
                 </div>
                 <Input
                   variant="rule"
-                  placeholder="Aliases (separados por vírgula)"
+                  placeholder={t('extractionConfigDrawer.aliasesSeparadosPorVirgula')}
                   value={tagsToString(field.aliases ?? [])}
                   onChange={(e) => updateField(index, { aliases: tagsFromString(e.target.value) })}
                 />
@@ -296,7 +300,7 @@ export function ExtractionConfigDrawer({
 
               {fields.length > 1 && (
                 <IconButton
-                  label="Remover campo"
+                  label={t('extractionConfigDrawer.removerCampo')}
                   className="mt-1"
                   onClick={() => setFields((prev) => prev.filter((_, i) => i !== index))}
                 >

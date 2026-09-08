@@ -1,5 +1,6 @@
 import type { DashboardPeriodKey } from '@/types/dashboard-overview';
 import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
+import { useTranslation } from 'react-i18next';
 
 const PERIOD_OPTIONS: Array<{ value: DashboardPeriodKey; label: string }> = [
   { value: '7d', label: '7 dias' },
@@ -15,12 +16,14 @@ export function OverviewPeriodSelector({
   value: DashboardPeriodKey;
   onChange: (period: DashboardPeriodKey) => void;
 }) {
+  const { t } = useTranslation('dashboard');
+
   return (
     <SegmentedTextToggle
       value={value}
       options={PERIOD_OPTIONS}
       onChange={onChange}
-      aria-label="Período do painel"
+      aria-label={t('overviewPeriodSelector.periodoDoPainel')}
       className="[&>button]:text-caption"
     />
   );

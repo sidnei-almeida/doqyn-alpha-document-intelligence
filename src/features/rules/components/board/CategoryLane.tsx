@@ -10,6 +10,7 @@ import type { DocumentCategory } from '@/types/rules';
 import { CategoryGlyph } from '../access/CategoryGlyph';
 import type { SimulationResult } from '../access/accessModel';
 import { reachLabel, type CategoryReach } from './governanceProgress';
+import { useTranslation } from 'react-i18next';
 
 export type CategoryLaneProps = {
   category: DocumentCategory;
@@ -43,6 +44,8 @@ function LaneMenu({
   onOpenDetails: () => void;
   onConfigureExtraction?: () => void;
 }) {
+  const { t } = useTranslation('rules');
+
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -70,7 +73,8 @@ function LaneMenu({
           }}
         >
           <Icon name="info" size={ICON_SIZE.xs} aria-hidden />
-          Detalhes da categoria
+
+          {t('categoryLane.detalhesDaCategoria')}
         </button>
         {onConfigureExtraction ? (
           <button
@@ -82,7 +86,8 @@ function LaneMenu({
             }}
           >
             <Icon name="tune" size={ICON_SIZE.xs} aria-hidden />
-            Campos da análise
+
+            {t('categoryLane.camposDaAnalise')}
           </button>
         ) : null}
       </AnchoredPopover>
@@ -109,6 +114,7 @@ export function CategoryLane({
   children,
   emptyLabel,
 }: CategoryLaneProps) {
+  const { t } = useTranslation('rules');
   const { setNodeRef, isOver } = useDroppable({
     id: `lane:${category.id}`,
     data: { categoryId: category.id },
@@ -134,7 +140,9 @@ export function CategoryLane({
                   <>
                     <span className="access-lane__score-from">{peopleCount}</span>
                     <span aria-hidden> → </span>
-                    <span className="access-lane__score-to">{previewCount} pessoas veem</span>
+                    <span className="access-lane__score-to">
+                      {t('categoryLane.previewReach', { count: previewCount })}
+                    </span>
                     <span className="access-lane__score-delta">
                       {delta > 0 ? `+${delta}` : String(delta)}
                     </span>
@@ -166,7 +174,7 @@ export function CategoryLane({
           ) : null}
         </div>
         {!showReach ? null : outOfReach ? (
-          <span className="access-lane__flag">fora do alcance</span>
+          <span className="access-lane__flag">{t('categoryLane.outOfReach')}</span>
         ) : (
           <span className="access-lane__seal" data-state={reach.state}>
             {reachLabel(reach.state)}

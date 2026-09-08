@@ -11,6 +11,7 @@ import {
   formatTrackingStatus,
 } from '../utils/trackingDisplay';
 import { TrackingDocumentCell } from './TrackingDocumentCell';
+import { useTranslation } from 'react-i18next';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -57,6 +58,8 @@ export function TrackingEventsTable({
   sparseAction,
   footer,
 }: TrackingEventsTableProps) {
+  const { t } = useTranslation('tracking');
+
   return (
     <DataTable
       stretch={stretch}
@@ -67,7 +70,7 @@ export function TrackingEventsTable({
       onRowClick={onToggle}
       expandedKey={expandedId}
       renderExpanded={renderExpanded}
-      emptyMessage="Nenhum evento documental encontrado para os filtros selecionados."
+      emptyMessage={t('trackingEventsTable.nenhumEventoDocumentalEncontrado')}
       emptyDescription="Ajuste os filtros ou amplie o período para ver mais atividade."
       emptyAction={sparseAction}
       sparseMessage="Nenhum outro evento para os filtros atuais"

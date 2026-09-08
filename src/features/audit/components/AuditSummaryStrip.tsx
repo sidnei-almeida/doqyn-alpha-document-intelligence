@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { AuditOverview } from '@/types/audit';
+import { useTranslation } from 'react-i18next';
 
 type AuditSummaryStripProps = {
   overview: AuditOverview;
@@ -58,13 +59,15 @@ export function AuditSummaryStrip({
   showPending = true,
   onSelect,
 }: AuditSummaryStripProps) {
+  const { t } = useTranslation('audit');
+
   const visibleCards = showPending
     ? cards
     : cards.filter((card) => !card.key.startsWith('pending'));
 
   return (
     <section
-      aria-label="Resumo da auditoria"
+      aria-label={t('auditSummaryStrip.resumoDaAuditoria')}
       className="grid gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-2 xl:grid-cols-4"
     >
       {visibleCards.map(({ key, label, tone, tab }) => {

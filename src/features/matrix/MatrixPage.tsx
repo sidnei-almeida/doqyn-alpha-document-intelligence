@@ -13,6 +13,7 @@ import { createDocumentShare, revokeDocumentShare } from '@/features/sharing/api
 import { fetchAccessMatrix } from './api/matrixApi';
 import { AccessMatrixTable } from './components/AccessMatrixTable';
 import { GroupAccessMatrixTable } from './components/GroupAccessMatrixTable';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Matriz de documentos.
@@ -49,6 +50,8 @@ function CategoryFilter({
   options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation('matrix');
+
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== '';
@@ -65,7 +68,7 @@ function CategoryFilter({
         }
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label="Filtrar por categoria"
+        aria-label={t('matrixPage.filtrarPorCategoria')}
       >
         <span className="max-w-[11rem] truncate">{label}</span>
         <Icon
@@ -81,7 +84,7 @@ function CategoryFilter({
         onClose={() => setOpen(false)}
         placement="bottom-start"
         role="listbox"
-        aria-label="Categoria"
+        aria-label={t('matrixPage.categoria')}
         className="min-w-[12rem] max-w-[min(18rem,calc(100vw-1rem))] py-1"
       >
         {options.map((option) => (
@@ -102,6 +105,8 @@ function CategoryFilter({
 }
 
 export function MatrixPage() {
+  const { t } = useTranslation('matrix');
+
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<MatrixTab>('people');
   const [search, setSearch] = useState('');
@@ -152,19 +157,18 @@ export function MatrixPage() {
   const activeLens = LENSES.find((lens) => lens.key === tab) ?? LENSES[0];
   const documentCount = data?.documents.length ?? 0;
   const axisCount = tab === 'people' ? (data?.members.length ?? 0) : (data?.groups.length ?? 0);
-  const axisNoun = tab === 'people' ? 'pessoa' : 'grupo';
 
   return (
     <PageShell
       eyebrow="Governança"
-      title="Matriz de documentos"
+      title={t('matrixPage.matrizDeDocumentos')}
       description={activeLens.description}
       actions={
         <SegmentedTextToggle
           value={tab}
           options={LENSES.map((lens) => ({ value: lens.key, label: lens.label }))}
           onChange={setTab}
-          aria-label="Lente da matriz"
+          aria-label={t('matrixPage.lenteDaMatriz')}
         />
       }
       bodyClassName="matrix-page w-full gap-6"
@@ -179,9 +183,9 @@ export function MatrixPage() {
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar na matriz"
+            placeholder={t('matrixPage.buscarNaMatriz')}
             className="text-label placeholder:text-doqyn-subtle"
-            aria-label="Buscar na matriz"
+            aria-label={t('matrixPage.buscarNaMatriz2')}
           />
         </label>
 
@@ -196,8 +200,10 @@ export function MatrixPage() {
 
         {data && (
           <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
-            {documentCount} documento{documentCount === 1 ? '' : 's'} · {axisCount} {axisNoun}
-            {axisCount === 1 ? '' : 's'}
+            {t('matrixPage.documentCount', { count: documentCount })} ·{' '}
+            {t(tab === 'people' ? 'matrixPage.peopleAxis' : 'matrixPage.groupAxis', {
+              count: axisCount,
+            })}
           </span>
         )}
       </div>
@@ -206,14 +212,15 @@ export function MatrixPage() {
         {isLoading && (
           <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 text-caption text-doqyn-muted">
             <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
-            Montando a matriz
+
+            {t('matrixPage.montandoAMatriz')}
           </div>
         )}
 
         {!isLoading && error && (
           <div className="flex min-h-[12rem] flex-col items-center justify-center px-6 text-center">
             <p className="text-label font-medium text-doqyn-text">
-              Não foi possível montar a matriz
+              {t('matrixPage.naoFoiPossivelMontar')}
             </p>
             <p className="mt-1.5 max-w-[42ch] text-caption text-doqyn-muted">
               {(error as Error).message}

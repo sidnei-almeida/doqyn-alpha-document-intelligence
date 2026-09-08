@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { TrackingSummary } from '@/types/document-tracking';
+import { useTranslation } from 'react-i18next';
 
 type TrackingSummaryStripProps = {
   summary: TrackingSummary | undefined;
@@ -27,6 +28,8 @@ type StripEntry = {
  * alguma coisa.
  */
 export function TrackingSummaryStrip({ summary, loading = false }: TrackingSummaryStripProps) {
+  const { t } = useTranslation('tracking');
+
   const entries: StripEntry[] = [
     { key: 'totalEvents', label: 'Eventos', value: summary?.totalEvents ?? 0 },
     { key: 'previews', label: 'Previews', value: summary?.previews ?? 0 },
@@ -44,7 +47,7 @@ export function TrackingSummaryStrip({ summary, loading = false }: TrackingSumma
 
   return (
     <section
-      aria-label="Resumo do tracking"
+      aria-label={t('trackingSummaryStrip.resumoDoTracking')}
       className="grid shrink-0 gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
     >
       {entries.map(({ key, label, value, tone = 'default' }) => (

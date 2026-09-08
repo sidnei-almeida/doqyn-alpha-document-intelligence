@@ -1,0 +1,130 @@
+{
+  "accessBoard": {
+    "desfazer": "Desfazer",
+    "dispensar": "Dispensar",
+    "grupos": "Grupos",
+    "gruposDaEmpresa": "Grupos da empresa"
+  },
+  "accessMatrixView": {
+    "categoria": "Categoria",
+    "ordemDosPontos": "Ordem dos pontos",
+    "verBaixarEnviar": "ver · baixar ·\n        enviar"
+  },
+  "categoryLane": {
+    "camposDaAnalise": "Campos da análise",
+    "detalhesDaCategoria": "Detalhes da categoria",
+    "outOfReach": "fora do alcance",
+    "previewReach_one": "{{count}} pessoa vê",
+    "previewReach_other": "{{count}} pessoas veem"
+  },
+  "categoryModal": {
+    "cancelar": "Cancelar",
+    "contratosNotasFiscais": "Contratos, Notas fiscais…",
+    "criarCategoria": "Criar categoria",
+    "depoisDeCriadaVoce": "Depois de criada, você conecta os grupos que enxergam os documentos dela.",
+    "nomeDaCategoria": "Nome da categoria",
+    "novaCategoria": "Nova categoria"
+  },
+  "expiryAlertConfigSection": {
+    "alertasDeVencimento": "Alertas de vencimento",
+    "ativarAlertasDeVencimento": "Ativar alertas de vencimento",
+    "avisaQuemTemAcesso": "Avisa quem tem acesso a esta categoria pelo mapa de regras quando um documento estiver perto\n        de vencer. O dono do documento é sempre avisado.",
+    "avisarComAntecedenciaDe": "Avisar com antecedência de (dias)",
+    "continuarAvisandoDepoisDe": "Continuar avisando depois de vencido (use números negativos acima, ex.: -7)",
+    "marcarGruposLimitaO": "Marcar grupos limita o aviso a eles. Grupo sem permissão de ver a categoria no mapa de\n              regras não recebe, mesmo marcado aqui.",
+    "nenhumGrupoDocumentalCadastrado": "Nenhum grupo documental cadastrado. Sem grupos, só o dono do documento é avisado.",
+    "nenhumGrupoMarcadoTodos": "Nenhum grupo marcado: todos os grupos com acesso de leitura a esta categoria serão\n              avisados.",
+    "restringirAGruposOpcional": "Restringir a grupos (opcional)",
+    "umAvisoPorMarco": "Um aviso por marco. Use 0 para avisar no próprio dia do vencimento."
+  },
+  "extractionConfigDrawer": {
+    "abaixoDissoAExtracao": "Abaixo disso a extração vai para revisão em vez de valer sozinha.",
+    "aliasesSeparadosPorVirgula": "Aliases (separados por vírgula)",
+    "analise": "Análise",
+    "ativa": "Ativa",
+    "campo": "Campo",
+    "camposDaAnalise": "Campos da análise",
+    "camposExtraidos": "Campos extraídos",
+    "cancelar": "Cancelar",
+    "chaveExParteReceptora": "Chave (ex: parte_receptora)",
+    "comoODocumentoE": "Como o documento é nomeado ao entrar, e a partir de que confiança a extração vale sem\n            revisão.",
+    "confiancaMinima": "Confiança mínima",
+    "descricao": "Descrição",
+    "ePorEstesTermos": "É por estes termos que a análise reconhece um documento como desta categoria.",
+    "nomeSugerido": "Nome sugerido",
+    "obrigatorio": "Obrigatório",
+    "reconhecimento": "Reconhecimento",
+    "regraAtivaParaAnalise": "Regra ativa para análise",
+    "removerCampo": "Remover campo",
+    "rotulo": "Rótulo",
+    "separePorVirgula": "Separe por vírgula",
+    "separePorVirgula2": "Separe por vírgula",
+    "termosAEvitar": "Termos a evitar",
+    "termosQueIdentificamEste": "Termos que identificam este documento",
+    "useCampoParaVariaveis": "Use {campo} para variáveis"
+  },
+  "governanceDetailDialog": {
+    "accesses": "acessa",
+    "camposDaAnalise": "Campos da análise",
+    "categoriasConectadas": "Categorias conectadas",
+    "conectarCategoria": "Conectar categoria",
+    "conexaoPendenteSalveO": "Conexão pendente. Salve o mapa para aplicar no servidor.",
+    "desativarCategoria": "Desativar categoria",
+    "desativarGrupo": "Desativar grupo",
+    "desconectar": "Desconectar",
+    "descricao": "Descrição",
+    "descricao2": "Descrição",
+    "gerenciarEmUsuarios": "gerenciar em Usuários",
+    "gruposComAcesso": "Grupos com acesso",
+    "nenhumGrupoConectado": "Nenhum grupo conectado.",
+    "nenhumaCategoriaConectada": "Nenhuma categoria conectada.",
+    "nome": "Nome",
+    "nome2": "Nome",
+    "pessoasNoGrupo": "Pessoas no grupo",
+    "salvarAlteracoes": "Salvar alterações",
+    "salvarPermissoes": "Salvar permissões"
+  },
+  "governanceScoreboard": {
+    "cobertura": "Cobertura",
+    "coberturaDaGovernanca": "Cobertura da governança",
+    "colocarPessoas": "Colocar pessoas",
+    "criarGrupo": "Criar grupo",
+    "governancaIncompleta": "Governança incompleta",
+    "peopleReached": "<count>{{reached}}</count> de {{total}} pessoas alcançam ao menos uma categoria por grupo. Administradores veem tudo.",
+    "stepsDone": "{{done}} de {{total}}",
+    "trilhaDaGovernanca": "Trilha da governança"
+  },
+  "groupModal": {
+    "asPessoasEntramNo": "As pessoas entram no grupo pela tela de Usuários.",
+    "cancelar": "Cancelar",
+    "criarGrupo": "Criar grupo",
+    "juridicoFinanceiro": "Jurídico, Financeiro…",
+    "nomeDoGrupo": "Nome do grupo",
+    "novoGrupo": "Novo grupo"
+  },
+  "permissionPopover": {
+    "detalhes": "Detalhes",
+    "em": "· em “",
+    "removerAcessoDoGrupo": "Remover acesso do grupo"
+  },
+  "rulesPage": {
+    "carregandoGovernancaDocumental": "Carregando governança documental…",
+    "naoFoiPossivelCarregar": "Não foi possível carregar as regras agora.",
+    "nenhumaCategoriaDeDocumentos": "Nenhuma categoria de documentos ainda.",
+    "novaCategoria": "Nova categoria",
+    "novaCategoria2": "Nova categoria",
+    "novoGrupo": "Novo grupo",
+    "regrasDeAcesso": "Regras de acesso",
+    "regrasDeAcesso2": "Regras de acesso",
+    "tentarNovamente": "Tentar novamente",
+    "verifiqueSuaConexaoE": "Verifique sua conexão e tente novamente."
+  },
+  "rulesRoute": {
+    "verificandoPermissoes": "Verificando permissões..."
+  },
+  "simulateAccessBar": {
+    "sairDaSimulacao": "Sair da simulação",
+    "vendoComo": "Vendo como",
+    "verComo": "Ver como"
+  }
+}

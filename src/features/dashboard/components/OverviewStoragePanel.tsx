@@ -10,6 +10,7 @@ import {
   OverviewPanelStatCell,
   OverviewPanelStatGrid,
 } from './OverviewPanelStat';
+import { useTranslation } from 'react-i18next';
 
 type OverviewStoragePanelProps = {
   storage: NonNullable<DashboardOverviewResponse['storage']>;
@@ -22,6 +23,8 @@ export function OverviewStoragePanel({
   downloadsInPeriod,
   recentErrors,
 }: OverviewStoragePanelProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   const errorStatus =
@@ -35,12 +38,12 @@ export function OverviewStoragePanel({
         ))}
       </ul>
     ) : (
-      <EmptyHint bare>Nenhum erro recente no período.</EmptyHint>
+      <EmptyHint bare>{t('overviewStoragePanel.nenhumErroRecenteNo')}</EmptyHint>
     );
 
   return (
     <OverviewPanelShell
-      title="Storage e erros recentes"
+      title={t('overviewStoragePanel.storageEErrosRecentes')}
       subtitle="Uso de arquivos e incidentes no período"
       titleId="overview-storage-title"
       actionLabel="Abrir tracking"
@@ -50,7 +53,7 @@ export function OverviewStoragePanel({
       <OverviewPanelStatGrid columnsClassName="grid-cols-2 sm:grid-cols-4">
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Originais"
+            label={t('overviewStoragePanel.originais')}
             value={storage.originalFiles}
             hint="arquivos"
             onClick={() => navigate('/biblioteca')}
@@ -58,7 +61,7 @@ export function OverviewStoragePanel({
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Previews"
+            label={t('overviewStoragePanel.previews')}
             value={storage.previewFiles}
             hint="gerados"
             onClick={() => navigate('/biblioteca')}
@@ -66,7 +69,7 @@ export function OverviewStoragePanel({
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Tamanho total"
+            label={t('overviewStoragePanel.tamanhoTotal')}
             value={formatStorageBytes(storage.totalSizeBytes)}
             hint="no bucket"
             valueClassName="text-h1 leading-tight"
@@ -74,7 +77,7 @@ export function OverviewStoragePanel({
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Downloads"
+            label={t('overviewStoragePanel.downloads')}
             value={
               <span className="inline-flex items-center gap-1.5">
                 <Icon

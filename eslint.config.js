@@ -87,6 +87,14 @@ export default tseslint.config(
       'src/features/profile/**/*.tsx',
       'src/features/notifications/**/*.tsx',
       'src/features/expiry/**/*.tsx',
+      // 6.7 — governança e leitura
+      'src/features/rules/**/*.tsx',
+      'src/features/matrix/**/*.tsx',
+      'src/features/audit/**/*.tsx',
+      'src/features/tracking/**/*.tsx',
+      'src/features/dashboard/**/*.tsx',
+      'src/features/tour/**/*.tsx',
+      'src/pages/**/*.tsx',
     ],
     plugins: { i18next },
     rules: {

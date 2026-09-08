@@ -6,6 +6,7 @@ import { getCategoryGroupPermissions, hasAnyPermission } from './accessModel';
 import { CategoryGlyph } from './CategoryGlyph';
 import { PermissionVerbs } from './PermissionVerbs';
 import { PermissionPopover } from './PermissionPopover';
+import { useTranslation } from 'react-i18next';
 
 type MatrixCellProps = {
   category: DocumentCategory;
@@ -73,6 +74,8 @@ export function AccessMatrixView({
   isAdmin,
   onPermissionChange,
 }: AccessMatrixViewProps) {
+  const { t } = useTranslation('rules');
+
   const [hover, setHover] = useState<{ row: string; col: string } | null>(null);
 
   return (
@@ -82,7 +85,9 @@ export function AccessMatrixView({
           <thead>
             <tr>
               <th className="access-matrix__corner">
-                <span className="register-label text-doqyn-subtle">Categoria</span>
+                <span className="register-label text-doqyn-subtle">
+                  {t('accessMatrixView.categoria')}
+                </span>
               </th>
               {groups.map((group) => (
                 <th
@@ -128,8 +133,11 @@ export function AccessMatrixView({
       </div>
 
       <p className="access-matrix__legend">
-        <span className="register-label text-doqyn-subtle">Ordem dos pontos</span> ver · baixar ·
-        enviar{isAdmin ? '. Clique numa célula para editar' : ''}
+        <span className="register-label text-doqyn-subtle">
+          {t('accessMatrixView.ordemDosPontos')}
+        </span>{' '}
+        {t('accessMatrixView.verBaixarEnviar')}
+        {isAdmin ? '. Clique numa célula para editar' : ''}
       </p>
     </div>
   );

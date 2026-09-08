@@ -27,6 +27,7 @@ import { GovernanceScoreboard } from './GovernanceScoreboard';
 import { computeCategoryReach, computeGovernanceProgress } from './governanceProgress';
 import { GroupToken } from './GroupToken';
 import { toPermissionState, type GovernancePermissionState } from '@shared/governancePermissions';
+import { useTranslation } from 'react-i18next';
 
 const VIEW_ONLY: DocumentAccessPermissions = { ...EMPTY_CONNECTION_PERMISSIONS, view: true };
 
@@ -99,6 +100,8 @@ export function AccessBoard({
   onConfigureExtraction,
   onCreateGroup,
 }: AccessBoardProps) {
+  const { t } = useTranslation('rules');
+
   const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
   const [hoverCategoryId, setHoverCategoryId] = useState<string | null>(null);
   const [undo, setUndo] = useState<PendingUndo | null>(null);
@@ -216,8 +219,8 @@ export function AccessBoard({
 
       <div className="access-board" data-groups={showGroups ? 'true' : 'false'}>
         {showGroups ? (
-          <aside className="access-board__rail" aria-label="Grupos da empresa">
-            <p className="register-label text-doqyn-subtle">Grupos</p>
+          <aside className="access-board__rail" aria-label={t('accessBoard.gruposDaEmpresa')}>
+            <p className="register-label text-doqyn-subtle">{t('accessBoard.grupos')}</p>
             <p className="type-caption text-doqyn-subtle">
               {focusedCategory
                 ? `Quem ainda não alcança ${focusedCategory.name} aparece aceso.`
@@ -341,10 +344,10 @@ export function AccessBoard({
               void onPermissionChange(target.groupId, target.categoryId, target.previous);
             }}
           >
-            Desfazer
+            {t('accessBoard.desfazer')}
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => setUndo(null)}>
-            Dispensar
+            {t('accessBoard.dispensar')}
           </Button>
         </div>
       ) : null}
