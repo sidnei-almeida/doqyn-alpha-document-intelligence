@@ -17,6 +17,7 @@ import {
   validateAcceptInviteForm,
   type AcceptInviteFormValues,
 } from './inviteAcceptReview';
+import { useTranslation } from 'react-i18next';
 
 const CONSENT_TEXT =
   'Aceito receber notificações operacionais do DOQYN por e-mail e WhatsApp relacionadas a documentos, aprovações, assinaturas, atualizações de acesso e comunicações necessárias ao uso da plataforma.';
@@ -52,6 +53,8 @@ function FormSection({
 }
 
 export function AcceptInvitePage() {
+  const { t } = useTranslation('auth');
+
   const { token = '' } = useParams();
   const navigate = useNavigate();
   const [pageState, setPageState] = useState<PageState>({ kind: 'loading' });
@@ -205,7 +208,10 @@ export function AcceptInvitePage() {
     <>
       {pageState.kind === 'loading' && (
         <>
-          <AuthHeading title="Convite" description="Conferindo se este convite ainda vale…" />
+          <AuthHeading
+            title={t('acceptInvitePage.convite')}
+            description={t('acceptInvitePage.conferindoSeEsteConvite')}
+          />
         </>
       )}
 
@@ -219,7 +225,7 @@ export function AcceptInvitePage() {
               to="/login"
               className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
             >
-              Ir para o login
+              {t('acceptInvitePage.irParaOLogin')}
             </Link>
           </AuthFooterLink>
         </>
@@ -227,9 +233,12 @@ export function AcceptInvitePage() {
 
       {pageState.kind === 'success' && (
         <>
-          <AuthHeading title="Convite aceito" description={pageState.message} />
+          <AuthHeading
+            title={t('acceptInvitePage.conviteAceito')}
+            description={pageState.message}
+          />
           <Button className="w-full" onClick={() => navigate('/login', { replace: true })}>
-            Ir para o login
+            {t('acceptInvitePage.irParaOLogin2')}
           </Button>
         </>
       )}
@@ -237,38 +246,48 @@ export function AcceptInvitePage() {
       {pageState.kind === 'ready' && (
         <>
           <AuthHeading
-            title={`Você foi convidado para ${pageState.invite.tenantDisplayName}`}
-            description="Complete seu cadastro e entre. A empresa vem do convite, então não há CNPJ a informar."
+            title={t('acceptInvitePage.invitedTo', { tenant: pageState.invite.tenantDisplayName })}
+            description={t('acceptInvitePage.completeSeuCadastroE')}
           />
 
           <form className="space-y-8" onSubmit={handleSubmit}>
             <FormSection
-              title="Empresa"
-              description="Dados da empresa que convidou você. Não é necessário informar o CNPJ novamente."
+              title={t('acceptInvitePage.empresa')}
+              description={t('acceptInvitePage.dadosDaEmpresaQue')}
             >
-              <Input label="Empresa" value={pageState.invite.tenantDisplayName} readOnly disabled />
+              <Input
+                label={t('acceptInvitePage.empresa2')}
+                value={pageState.invite.tenantDisplayName}
+                readOnly
+                disabled
+              />
               {pageState.invite.tenantTaxIdMasked ? (
                 <Input label="CNPJ" value={pageState.invite.tenantTaxIdMasked} readOnly disabled />
               ) : null}
-              <Input label="E-mail do convite" value={pageState.invite.email} readOnly disabled />
+              <Input
+                label={t('acceptInvitePage.eMailDoConvite')}
+                value={pageState.invite.email}
+                readOnly
+                disabled
+              />
             </FormSection>
 
             <div className="h-px bg-doqyn-border-subtle" />
 
             <FormSection
-              title="Seus dados"
-              description="Informações de contato e contexto do seu acesso."
+              title={t('acceptInvitePage.seusDados')}
+              description={t('acceptInvitePage.informacoesDeContatoE')}
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Nome"
+                  label={t('acceptInvitePage.nome')}
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
                   autoComplete="given-name"
                   required
                 />
                 <Input
-                  label="Sobrenome"
+                  label={t('acceptInvitePage.sobrenome')}
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   autoComplete="family-name"
@@ -279,7 +298,7 @@ export function AcceptInvitePage() {
               {pageState.invite.requiresPassword ? (
                 <>
                   <Input
-                    label="Senha de acesso"
+                    label={t('acceptInvitePage.senhaDeAcesso')}
                     type="password"
                     revealable
                     value={password}
@@ -289,7 +308,7 @@ export function AcceptInvitePage() {
                     minLength={8}
                   />
                   <Input
-                    label="Confirmar senha"
+                    label={t('acceptInvitePage.confirmarSenha')}
                     type="password"
                     revealable
                     value={confirmPassword}
@@ -301,33 +320,37 @@ export function AcceptInvitePage() {
                 </>
               ) : (
                 <p className="border-l-2 border-doqyn-accent-active/40 pl-3 text-sm text-doqyn-muted">
-                  Sua conta já existe no DOQYN. Ao continuar, o acesso à empresa será vinculado ao
-                  seu usuário atual. Use a senha que você já utiliza no login.
+                  {t('acceptInvitePage.suaContaJaExiste')}
                 </p>
               )}
 
               {pageState.invite.requiresWhatsapp ? (
-                <WhatsappInput label="WhatsApp" value={whatsapp} onChange={setWhatsapp} required />
+                <WhatsappInput
+                  label={t('acceptInvitePage.whatsapp')}
+                  value={whatsapp}
+                  onChange={setWhatsapp}
+                  required
+                />
               ) : null}
 
               <Input
-                label="Cargo ou função"
+                label={t('acceptInvitePage.cargoOuFuncao')}
                 value={jobTitle}
                 onChange={(event) => setJobTitle(event.target.value)}
-                placeholder="Ex.: Analista Financeiro"
+                placeholder={t('acceptInvitePage.exAnalistaFinanceiro')}
                 required
               />
 
               <div>
                 <Input
-                  label="Setor informado"
+                  label={t('acceptInvitePage.setorInformado')}
                   value={departmentText}
                   onChange={(event) => setDepartmentText(event.target.value)}
-                  placeholder="Ex.: Financeiro, Jurídico, RH"
+                  placeholder={t('acceptInvitePage.exFinanceiroJuridicoRh')}
                   required
                 />
                 <p className="mt-1.5 text-xs text-doqyn-subtle">
-                  Informação declarada. O administrador definirá seus grupos reais de acesso.
+                  {t('acceptInvitePage.informacaoDeclaradaOAdministrador')}
                 </p>
               </div>
             </FormSection>
@@ -357,8 +380,7 @@ export function AcceptInvitePage() {
                 wrapperClassName="border-0 bg-transparent px-0 py-1"
                 label={
                   <span className="text-sm leading-relaxed text-doqyn-muted">
-                    Declaro que as informações fornecidas são verdadeiras e que aceito o convite
-                    para acessar a empresa informada.
+                    {t('acceptInvitePage.declaroQueAsInformacoes')}
                   </span>
                 }
                 description={
@@ -384,10 +406,10 @@ export function AcceptInvitePage() {
                 to="/login"
                 className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
               >
-                Já tenho conta
+                {t('acceptInvitePage.jaTenhoConta')}
               </Link>
               <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-                Revisar e aceitar
+                {t('acceptInvitePage.revisarEAceitar')}
               </Button>
             </div>
           </form>

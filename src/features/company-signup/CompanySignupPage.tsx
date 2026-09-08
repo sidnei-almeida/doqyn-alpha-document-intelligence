@@ -25,11 +25,14 @@ import {
   validateCompanySignupForm,
   type CompanySignupFormValues,
 } from './companySignupReview';
+import { useTranslation } from 'react-i18next';
 
 const COMPANY_AUTHORIZATION_TEXT =
   'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
 
 export function CompanySignupPage() {
+  const { t } = useTranslation('auth');
+
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -191,25 +194,30 @@ export function CompanySignupPage() {
   return (
     <>
       <AuthHeading
-        title="Cadastrar minha empresa"
-        description="Use esta opção se a sua empresa ainda não tem um ambiente no DOQYN."
+        title={t('companySignupPage.cadastrarMinhaEmpresa')}
+        description={t('companySignupPage.useEstaOpcaoSe')}
       />
 
       <form onSubmit={handleSubmit}>
         <div className="mb-5 border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-          Dados da empresa
+          {t('companySignupPage.dadosDaEmpresa')}
         </div>
 
         <div className="space-y-4">
           <Input
             id="companyName"
-            label="Nome da empresa"
+            label={t('companySignupPage.nomeDaEmpresa')}
             autoComplete="organization"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
-          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <CountrySelect
+            id="country"
+            label={t('companySignupPage.pais')}
+            value={country}
+            onChange={handleCountryChange}
+          />
           <TaxIdInput
             id="taxId"
             country={country}
@@ -223,7 +231,7 @@ export function CompanySignupPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="firstName"
-              label="Nome do responsável"
+              label={t('companySignupPage.nomeDoResponsavel')}
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -231,7 +239,7 @@ export function CompanySignupPage() {
             />
             <Input
               id="lastName"
-              label="Sobrenome"
+              label={t('companySignupPage.sobrenome')}
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -248,7 +256,7 @@ export function CompanySignupPage() {
 
           <Input
             id="email"
-            label="E-mail corporativo"
+            label={t('companySignupPage.eMailCorporativo')}
             autoComplete="email"
             type="email"
             value={email}
@@ -258,12 +266,12 @@ export function CompanySignupPage() {
           />
           {fromAuthenticatedSession && (
             <p className="type-label -mt-2 text-doqyn-muted">
-              E-mail confirmado pela conta com que você entrou.
+              {t('companySignupPage.eMailConfirmadoPela')}
             </p>
           )}
           <WhatsappInput
             id="whatsapp"
-            label="WhatsApp"
+            label={t('companySignupPage.whatsapp')}
             country={country}
             value={whatsapp}
             onChange={setWhatsapp}
@@ -273,7 +281,7 @@ export function CompanySignupPage() {
             <>
               <Input
                 id="password"
-                label="Senha"
+                label={t('companySignupPage.senha')}
                 autoComplete="new-password"
                 type="password"
                 value={password}
@@ -283,7 +291,7 @@ export function CompanySignupPage() {
               />
               <Input
                 id="confirmPassword"
-                label="Confirmar senha"
+                label={t('companySignupPage.confirmarSenha')}
                 autoComplete="new-password"
                 type="password"
                 value={confirmPassword}
@@ -335,10 +343,10 @@ export function CompanySignupPage() {
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
           <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
-            Voltar
+            {t('companySignupPage.voltar')}
           </Link>
           <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>
-            Cadastrar empresa
+            {t('companySignupPage.cadastrarEmpresa')}
           </button>
         </div>
       </form>
@@ -361,12 +369,12 @@ export function CompanySignupPage() {
       />
 
       <AuthFooterLink>
-        Já tenho conta.{' '}
+        {t('companySignupPage.jaTenhoConta')}{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Entrar
+          {t('companySignupPage.entrar')}
         </Link>
       </AuthFooterLink>
     </>

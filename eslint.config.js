@@ -50,14 +50,24 @@ export default tseslint.config(
     },
   },
   /**
-   * Onda 6.1 concluída: `components/` não volta a ganhar string cravada.
+   * Ondas concluídas da Fase 6: estas pastas não voltam a ganhar string cravada.
    *
    * A promoção para `error` é o que dá sentido a terminar uma onda. Sem ela, a pasta limpa hoje
    * volta a sujar amanhã e a migração vira trabalho de Sísifo. Cada onda seguinte acrescenta a
    * sua pasta a esta lista ao fechar.
    */
   {
-    files: ['src/components/**/*.tsx'],
+    files: [
+      // 6.1 — design system
+      'src/components/**/*.tsx',
+      // 6.2 — antessala: é a primeira tela de quem chega de fora
+      'src/features/auth/**/*.tsx',
+      'src/features/invite/**/*.tsx',
+      'src/features/company-signup/**/*.tsx',
+      'src/features/individual-signup/**/*.tsx',
+      'src/features/email-verification/**/*.tsx',
+      'src/features/access-choice/**/*.tsx',
+    ],
     plugins: { i18next },
     rules: {
       'i18next/no-literal-string': [

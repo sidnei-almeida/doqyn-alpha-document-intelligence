@@ -274,14 +274,25 @@ function main() {
         output = output.slice(0, edit.start) + edit.replacement + output.slice(edit.end);
       }
 
+      /**
+       * O import entra depois do **último `ImportDeclaration`**, lido da árvore.
+       *
+       * A primeira versão procurava a última linha começando com `import ` — e num import
+       * multilinha essa linha é a primeira (`import {`), não a última. O resultado foi um
+       * `import` enfiado no meio de outro, com erro de sintaxe em quatro arquivos. Prefixo de
+       * linha não sabe onde uma declaração termina; a árvore sabe.
+       */
       if (!output.includes("from 'react-i18next'")) {
-        const lines = output.split('\n');
-        const lastImport = lines.reduce(
-          (acc, line, index) => (line.startsWith('import ') ? index : acc),
-          -1,
+        const parsed = ts.createSourceFile(
+          file,
+          output,
+          ts.ScriptTarget.ES2022,
+          true,
+          ts.ScriptKind.TSX,
         );
-        lines.splice(lastImport + 1, 0, "import { useTranslation } from 'react-i18next';");
-        output = lines.join('\n');
+        const imports = parsed.statements.filter(ts.isImportDeclaration);
+        const insertAt = imports.length > 0 ? imports[imports.length - 1]!.getEnd() : 0;
+        output = `${output.slice(0, insertAt)}\nimport { useTranslation } from 'react-i18next';${output.slice(insertAt)}`;
       }
 
       writeFileSync(file, output);

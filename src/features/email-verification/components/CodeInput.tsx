@@ -1,5 +1,6 @@
 import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const LENGTH = 6;
 
@@ -29,6 +30,8 @@ export function CodeInput({
   invalid,
   autoFocus,
 }: CodeInputProps) {
+  const { t } = useTranslation('auth');
+
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const digits = value.padEnd(LENGTH, ' ').slice(0, LENGTH).split('');
 
@@ -110,7 +113,11 @@ export function CodeInput({
   }
 
   return (
-    <div className="flex items-end gap-2" role="group" aria-label="Código de confirmação">
+    <div
+      className="flex items-end gap-2"
+      role="group"
+      aria-label={t('codeInput.codigoDeConfirmacao')}
+    >
       {digits.map((digit, index) => (
         <input
           // A posição é a identidade da casa: não há lista reordenável aqui.
@@ -125,7 +132,7 @@ export function CodeInput({
           value={digit.trim()}
           disabled={disabled}
           autoFocus={autoFocus && index === 0}
-          aria-label={`Dígito ${index + 1} de ${LENGTH}`}
+          aria-label={t('codeInput.digitOf', { position: index + 1, total: LENGTH })}
           onChange={(event) => handleChange(index, event.target.value)}
           onKeyDown={(event) => handleKeyDown(index, event)}
           onPaste={handlePaste}

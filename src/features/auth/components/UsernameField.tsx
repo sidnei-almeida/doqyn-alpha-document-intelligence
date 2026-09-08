@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * O nome de usuário, escolhido no cadastro.
@@ -50,6 +51,8 @@ export function UsernameField({
   suggestion?: string;
   onValidityChange?: (valid: boolean) => void;
 }) {
+  const { t } = useTranslation('auth');
+
   const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<'idle' | 'checking' | 'free' | 'taken'>('idle');
   const [reason, setReason] = useState<string | null>(null);
@@ -113,7 +116,7 @@ export function UsernameField({
   return (
     <div>
       <Input
-        label="Nome de usuário"
+        label={t('usernameField.nomeDeUsuario')}
         value={value}
         onChange={(event) => {
           setTouched(true);

@@ -3,6 +3,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { AUTH_CHOICE_ROW } from '@/features/auth/components/authControls';
+import { useTranslation } from 'react-i18next';
 
 function AccessOption({
   to,
@@ -45,6 +46,8 @@ export function AccessChoicePage({
   title?: string;
   description?: string;
 } = {}) {
+  const { t } = useTranslation('auth');
+
   return (
     <>
       <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
@@ -56,24 +59,24 @@ export function AccessChoicePage({
         <AccessOption
           to="/criar-empresa"
           index={1}
-          title="Cadastrar minha empresa"
+          title={t('accessChoicePage.cadastrarMinhaEmpresa')}
           subtitle="Para abrir um ambiente novo para a sua empresa."
         />
         <AccessOption
           to="/criar-acesso-cpf"
           index={2}
-          title="Acessar como pessoa física"
+          title={t('accessChoicePage.acessarComoPessoaFisica')}
           subtitle="Para quem guarda documentos próprios, sem empresa."
         />
       </div>
 
       <AuthFooterLink>
-        Já tenho conta.{' '}
+        {t('accessChoicePage.jaTenhoConta')}{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Entrar
+          {t('accessChoicePage.entrar')}
         </Link>
       </AuthFooterLink>
     </>
