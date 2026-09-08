@@ -17,13 +17,13 @@ describe('sidebar DOQYN', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(section.includes('text-doqyn-subtle'));
-    assert.ok(sidebar.includes('Administração'));
+    assert.ok(sidebar.includes('.administracao'));
   });
 
   it('sidebar workspace: Biblioteca, + Novo, modo colapsável', () => {
     const source = readSrc('components/layout/Sidebar.tsx');
     const collapsed = readSrc('components/layout/useSidebarCollapsed.ts');
-    assert.ok(source.includes('Biblioteca'));
+    assert.ok(source.includes('.biblioteca'));
     assert.ok(source.includes('/biblioteca'));
     assert.ok(source.includes('NewButtonMenu'));
     assert.ok(source.includes('useSidebarCollapsed'));
@@ -101,7 +101,7 @@ describe('header do usuário', () => {
     assert.equal(topbar.includes('SidebarUserPanel'), false);
     assert.ok(menu.includes('header-user-menu'));
     assert.ok(menu.includes('header-user-menu-dropdown'));
-    assert.ok(menu.includes('Sair'));
+    assert.ok(menu.includes('.sair'));
     // O tema saiu do menu do usuário e virou controle da própria barra: é preferência de
     // visualização, não ação de conta.
     assert.ok(topbar.includes('ThemeToggle'));

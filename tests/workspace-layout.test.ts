@@ -60,8 +60,8 @@ describe('layout do workspace', () => {
 
   it('+ Novo tem upload de arquivo e de pasta, e cria categoria', () => {
     const newButton = readSrc('features/library/components/NewButtonMenu.tsx');
-    assert.ok(newButton.includes('Upload de arquivo'));
-    assert.ok(newButton.includes('Upload de pasta'));
+    assert.ok(newButton.includes('.uploadDeArquivo'));
+    assert.ok(newButton.includes('.uploadDePasta'));
     assert.ok(newButton.includes('startUploadFromFiles'));
     // "Nova pasta" prometia uma pasta manual que nunca ia existir — pasta da Biblioteca é
     // categoria de governança. O item virou "Nova categoria" e leva ao formulário que a cria,

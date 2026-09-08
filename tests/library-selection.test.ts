@@ -225,7 +225,7 @@ describe('toolbar de seleção contextual', () => {
     assert.ok(bulk.includes("selectedCount === 1 ? 'selecionado' : 'selecionados'"));
     assert.ok(bulk.includes('Visualizar'));
     assert.ok(bulk.includes('Baixar'));
-    assert.ok(bulk.includes('Excluir'));
+    assert.ok(bulk.includes('.excluir'));
   });
 });
 

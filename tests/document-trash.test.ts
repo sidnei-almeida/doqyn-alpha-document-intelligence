@@ -246,8 +246,8 @@ describe('document trash — frontend lixeira e desativados', () => {
 
   it('lixeira mostra Restaurar; desativados mostra Recuperar; sem exclusão permanente', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
-    assert.ok(toolbar.includes('Restaurar'));
-    assert.ok(toolbar.includes('Recuperar'));
+    assert.ok(toolbar.includes('.restaurar'));
+    assert.ok(toolbar.includes('.recuperar'));
     assert.ok(toolbar.includes('onReactivate'));
     assert.equal(toolbar.includes('Excluir permanentemente'), false);
     assert.equal(toolbar.includes('onPermanentDelete'), false);

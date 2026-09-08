@@ -38,7 +38,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   it('/rules (GovernanceDetailDialog) orienta gestão de membros em Usuários', () => {
     const source = readSrc('features/rules/components/governance/GovernanceDetailDialog.tsx');
     // A frase virou link no meio do texto — "gerenciar em Usuários" — em vez de instrução solta.
-    assert.ok(source.includes('gerenciar em Usuários'));
+    assert.ok(source.includes('.gerenciarEmUsuarios'));
     assert.ok(source.includes('to="/users"'));
     assert.equal(source.includes('Adicionar membro'), false);
     assert.equal(source.includes('onAddMember'), false);

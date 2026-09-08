@@ -293,7 +293,7 @@ describe('provider da fila — integração com contratos existentes', () => {
     assert.ok(drawer.includes('confirmReview'));
     assert.ok(drawer.includes('reviewChecked'));
     assert.ok(drawer.includes('DocumentNamingSection'));
-    assert.ok(drawer.includes('Confirmar e salvar'));
+    assert.ok(drawer.includes('.confirmSaveButton'));
   });
 
   it('UploadQueueDrawer não usa headline enganosa "Uploads concluídos"', () => {

@@ -107,9 +107,9 @@ describe('document move — frontend', () => {
   it('MoveDocumentModal lista categorias e confirma destino', () => {
     const modal = read('src/features/library/components/MoveDocumentModal.tsx');
     assert.ok(modal.includes('move-document-modal'));
-    assert.ok(modal.includes('Categoria atual'));
+    assert.ok(modal.includes('.categoriaAtual'));
     assert.ok(modal.includes('Mover para'));
-    assert.ok(modal.includes('Buscar categoria'));
+    assert.ok(modal.includes('.buscarCategoria2'));
   });
 
   it('moveApi chama endpoints corretos', () => {

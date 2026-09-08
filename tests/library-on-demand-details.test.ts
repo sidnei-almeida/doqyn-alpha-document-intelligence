@@ -47,7 +47,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
   it('menu de contexto da área vazia tem ver informações', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('onShowContextInfo'));
-    assert.ok(menu.includes('Ver informações'));
+    assert.ok(menu.includes('.verInformacoes'));
     assert.ok(menu.includes('Ver informações da pasta atual'));
   });
 
@@ -59,7 +59,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
 
   it('menu de contexto do arquivo tem ver detalhes', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
-    assert.ok(menu.includes('Ver detalhes'));
+    assert.ok(menu.includes('.verDetalhes'));
     assert.ok(menu.includes('onSelectFileDetails'));
   });
 

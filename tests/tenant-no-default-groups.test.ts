@@ -30,13 +30,13 @@ describe('empresa nova sem grupos documentais padrão', () => {
 
   it('/users mostra empty state quando não há grupos', () => {
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('Nenhum grupo criado ainda.'));
+    assert.ok(sections.includes('.nenhumGrupoCriadoAinda'));
     assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
   });
 
   it('/rules mostra empty state real sem mocks', () => {
     const source = readSrc('src/features/rules/RulesPage.tsx');
-    assert.ok(source.includes('Nenhuma categoria de documentos ainda.'));
+    assert.ok(source.includes('.nenhumaCategoriaDeDocumentos'));
     assert.equal(source.includes('INITIAL_GROUPS'), false);
     assert.equal(source.includes('mockData'), false);
   });

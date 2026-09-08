@@ -15,8 +15,8 @@ function readSrc(relativePath: string): string {
 describe('OAuth login frontend', () => {
   it('LoginPage mostra botões Google e Microsoft', () => {
     const source = readSrc('pages/Login.tsx');
-    assert.ok(source.includes('Continuar com Google'));
-    assert.ok(source.includes('Continuar com Microsoft'));
+    assert.ok(source.includes('.continuarComGoogle'));
+    assert.ok(source.includes('.continuarComMicrosoft'));
     // O portão é a lista que o auth-service devolve: botão que aparece tem credencial atrás.
     assert.ok(source.includes('enabledProviders.length > 0'));
   });

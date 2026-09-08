@@ -115,7 +115,7 @@ describe('busca e filtros da Biblioteca (frontend)', () => {
 
   it('ActiveFilterChips permite limpar filtros ativos', () => {
     const chips = readSrc('features/library/components/ActiveFilterChips.tsx');
-    assert.ok(chips.includes('Limpar filtros'));
+    assert.ok(chips.includes('.limparFiltros'));
     assert.ok(chips.includes('hasActiveLibraryFilters'));
   });
 

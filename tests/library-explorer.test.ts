@@ -55,7 +55,7 @@ describe('File Explorer da Biblioteca', () => {
     assert.ok(filters.includes('categoryId'));
     assert.ok(filters.includes('resolveLibraryCategoryId'));
     assert.ok(filters.includes('categories'));
-    assert.ok(page.includes('Esta pasta ainda está vazia'));
+    assert.ok(page.includes('.estaPastaAindaEsta'));
     assert.ok(page.includes('EmptyFolderState'));
   });
 
@@ -65,7 +65,7 @@ describe('File Explorer da Biblioteca', () => {
     assert.ok(page.includes('onNavigateRoot={goToRoot}'));
     assert.ok(page.includes("update({ space: '' })"));
     assert.ok(crumbs.includes('onNavigateRoot'));
-    assert.ok(crumbs.includes('Biblioteca'));
+    assert.ok(crumbs.includes('.biblioteca'));
   });
 
   it('ExplorerFolderCard abre pasta sem seleção radio', () => {
@@ -82,10 +82,10 @@ describe('File Explorer da Biblioteca', () => {
     assert.ok(menu.includes("kind: 'empty'"));
     assert.ok(menu.includes("kind: 'folder'"));
     assert.ok(menu.includes("kind: 'file'"));
-    assert.ok(menu.includes('Enviar documento'));
-    assert.ok(menu.includes('Enviar documento nesta pasta'));
+    assert.ok(menu.includes('.enviarDocumento'));
+    assert.ok(menu.includes('.enviarDocumentoNestaPasta'));
     assert.ok(menu.includes('Visualizar'));
-    assert.ok(menu.includes('Ver tracking'));
+    assert.ok(menu.includes('.verTracking'));
     assert.equal(menu.includes('Criar arquivo'), false);
   });
 
@@ -102,7 +102,7 @@ describe('File Explorer da Biblioteca', () => {
 
   it('ReviewDrawer mostra pasta de destino e aviso de mismatch', () => {
     const drawer = readSrc('features/upload/review/ReviewDrawer.tsx');
-    assert.ok(drawer.includes('Pasta atual:'));
+    assert.ok(drawer.includes('.pastaAtual'));
     assert.ok(drawer.includes('hasCategoryMismatch'));
     assert.ok(drawer.includes('item.context?.categoryName'));
   });

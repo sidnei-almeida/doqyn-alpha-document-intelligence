@@ -102,8 +102,8 @@ describe('document sharing — frontend', () => {
     // O diálogo virou passos, e a busca do destinatário mora em `RecipientFlow`, compartilhada
     // com assinar e requisitar. O `Modal` do design system substituiu a casca própria.
     assert.ok(modal.includes('<Modal'));
-    assert.ok(modal.includes('Compartilhar documento'));
-    assert.ok(flow.includes('Buscar pessoa'));
+    assert.ok(modal.includes('.compartilharDocumento'));
+    assert.ok(flow.includes('.buscarPessoa'));
     assert.ok(modal.includes('AccessList'));
     assert.ok(modal.includes('Quem tem acesso'));
   });

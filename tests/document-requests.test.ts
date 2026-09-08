@@ -347,7 +347,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const dialog = read('src/features/audit/components/PendingApprovalReviewDialog.tsx');
 
     assert.ok(query.includes('function readSharePermissions'));
-    assert.ok(dialog.includes('O que será concedido'));
+    assert.ok(dialog.includes('.oQueSeraConcedido'));
     assert.ok(dialog.includes("item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'"));
   });
 });

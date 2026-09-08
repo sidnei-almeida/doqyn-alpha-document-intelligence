@@ -25,10 +25,10 @@ describe('bloqueio de acesso na tela /users', () => {
 
   it('BlockAccessDialog confirma bloqueio com motivo opcional', () => {
     const dialog = readSrc('features/users/components/BlockAccessDialog.tsx');
-    assert.ok(dialog.includes('Bloquear acesso à empresa?'));
+    assert.ok(dialog.includes('.bloquearAcessoAEmpresa'));
     assert.ok(dialog.includes('Motivo do bloqueio'));
     assert.ok(dialog.includes('maxLength={300}'));
-    assert.ok(dialog.includes('As sessões ativas nesta empresa serão revogadas.'));
+    assert.ok(dialog.includes('.asSessoesAtivasNesta'));
   });
 
   it('doqynUsersApi.block envia body JSON válido', () => {

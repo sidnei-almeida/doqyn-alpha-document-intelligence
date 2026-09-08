@@ -109,7 +109,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
   it('grupos vazios mostram empty state com CTA para Regras', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('GroupsEmptyState'));
-    assert.ok(sections.includes('Nenhum grupo criado ainda.'));
+    assert.ok(sections.includes('.nenhumGrupoCriadoAinda'));
     assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
   });
 

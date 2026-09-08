@@ -376,7 +376,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(badge.includes('document-signature-badge-button'));
     assert.ok(summaryDisplay.includes('signedSigners'));
     assert.ok(summaryService.includes('signedSigners'));
-    assert.ok(menu.includes('Ver assinaturas'));
+    assert.ok(menu.includes('.verAssinaturas'));
     assert.ok(menu.includes('Baixar PDF assinado'));
     assert.ok(menu.includes('disabled={!canShare}'));
     assert.ok(drawer.includes('document-signatures-drawer'));
@@ -387,7 +387,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(drawer.includes('signature-drawer-revoke'));
     assert.ok(drawer.includes('cancelDocumentSignatureRequest'));
     assert.ok(drawer.includes('buildRevokeSignatureRequestConfirm'));
-    assert.ok(details.includes('Assinatura'));
+    assert.ok(details.includes('.assinatura'));
     assert.ok(page.includes('DocumentSignaturesDrawer'));
     assert.ok(page.includes('downloadSignatureRequestSignedPdf'));
     assert.ok(api.includes('/signature-requests/'));

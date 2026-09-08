@@ -147,7 +147,7 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
       assert.ok(modal.includes("audience === 'doqyn'"));
       // E o campo não é mais repetido embaixo da busca de colegas: duas cópias fariam a pessoa
       // escolher entre elas sem saber a diferença.
-      assert.ok(modal.includes('Não é daqui? Buscar por nome de usuário'));
+      assert.ok(modal.includes('.naoEDaquiBuscar'));
     }
   });
 

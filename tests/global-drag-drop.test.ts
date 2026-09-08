@@ -15,7 +15,7 @@ describe('drag and drop global de upload', () => {
   it('overlay só renderiza durante o drag', () => {
     const overlay = readSrc('features/upload/drag-drop/UploadDropOverlay.tsx');
     assert.ok(overlay.includes('if (!isDragging) return null'));
-    assert.ok(overlay.includes('Solte para enviar ao DOQYN'));
+    assert.ok(overlay.includes('.solteParaEnviarAo'));
     assert.ok(
       overlay.includes('A IA analisará, classificará e preparará o documento para revisão'),
     );

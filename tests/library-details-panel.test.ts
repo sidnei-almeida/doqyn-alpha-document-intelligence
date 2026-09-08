@@ -31,7 +31,7 @@ describe('painel de detalhes da Biblioteca', () => {
     for (const field of ['Categoria', 'Proprietário', 'Atualizado']) {
       assert.ok(shared.includes(field), `campo ${field} presente no compartilhado`);
     }
-    assert.ok(drawer().includes('Versão'), 'campo Versão presente no drawer');
+    assert.ok(drawer().includes('.versao'), 'campo Versão presente no drawer');
   });
 
   it('popover de contexto com link para Regras quando há categoria', () => {
