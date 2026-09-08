@@ -5,6 +5,7 @@ import { AppErrorBoundary } from '@/components/ui/AppErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { LocaleSync } from '@/i18n/LocaleSync';
 import { queryClient } from './queryClient';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ConfirmProvider>
             <AppErrorBoundary>
               <AuthProvider>
+                <LocaleSync />
                 {children}
                 <AppToaster />
               </AuthProvider>

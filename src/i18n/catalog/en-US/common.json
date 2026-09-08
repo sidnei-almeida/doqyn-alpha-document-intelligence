@@ -19,7 +19,8 @@
     "label": "Language",
     "description": "Interface language. It does not change the language of your documents.",
     "descriptionWithDrafts": "Interface language. English and Spanish are still being translated and cannot be selected yet.",
-    "inPreparation": "In preparation"
+    "inPreparation": "In preparation",
+    "saveFailed": "Could not save the language. It was reverted; try again."
   },
   "documents": {
     "empty": "No documents",

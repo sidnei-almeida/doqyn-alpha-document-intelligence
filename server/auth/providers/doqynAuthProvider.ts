@@ -21,6 +21,8 @@ export type DoqynPublicUser = {
   avatarVersion?: number;
   avatarUpdatedAt?: string | null;
   avatarStatus?: 'active' | 'removed' | null;
+  locale?: string;
+  timeZone?: string | null;
 };
 
 export type DoqynPublicMembership = {
@@ -114,6 +116,8 @@ export function mapDoqynSessionToAuthUser(session: DoqynVerifiedSession): AuthUs
     avatarVersion: user.avatarVersion ?? 0,
     avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
     avatarStatus: user.avatarStatus ?? undefined,
+    locale: user.locale,
+    timeZone: user.timeZone ?? null,
   };
 }
 

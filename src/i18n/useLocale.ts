@@ -1,13 +1,16 @@
 /**
  * Leitura e troca do idioma da interface.
  *
- * O que a Fase 2 vai mudar aqui: `setLocale` passará a gravar em `AuthUser.locale` pelo
- * auth-service, e não só no `localStorage`. A gravação local continua, como cache de arranque
- * — é ela que impede o app de piscar no idioma errado antes de a sessão chegar. O que não pode
- * continuar é ser a única memória: e-mail é renderizado pelo servidor, que não enxerga o
- * navegador de ninguém.
+ * A escolha vive no perfil, no `doqyn-auth-service` — não no navegador. O `localStorage`
+ * continua sendo escrito, mas só como cache de arranque: é ele que evita o app piscar no
+ * idioma errado no quadro anterior à chegada da sessão. Quem manda, quando a sessão chega,
+ * é o servidor (ver `LocaleSync`).
+ *
+ * A troca é otimista: a tela muda na hora e a gravação vai atrás. Se a gravação falhar, o
+ * idioma volta ao que era — mostrar inglês e ter guardado português seria pior que não trocar.
  */
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
+import { accountPreferencesApi } from '@/features/settings/api/accountPreferencesApi';
 import { i18n } from './index';
 import {
   DEFAULT_LOCALE,
@@ -29,25 +32,53 @@ function currentLocale(): SupportedLocale {
   return normalizeLocale(i18n.language) ?? DEFAULT_LOCALE;
 }
 
+/** Cache de arranque. Falha em silêncio: navegador com armazenamento bloqueado ainda troca. */
+export function rememberLocale(locale: SupportedLocale): void {
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    /* Sem memória local o idioma ainda vale nesta sessão; só não sobrevive ao recarregar. */
+  }
+}
+
 export type UseLocaleResult = {
   locale: SupportedLocale;
   /** Todos os idiomas conhecidos, inclusive os que ainda não são oferecidos. */
   locales: LocaleDefinition[];
   /** Se este idioma já pode ser escolhido por alguém que não conhece `?lang=`. */
   isExposed: (locale: SupportedLocale) => boolean;
-  setLocale: (locale: SupportedLocale) => void;
+  setLocale: (locale: SupportedLocale) => Promise<void>;
+  /** Verdadeiro enquanto a gravação no perfil não confirma. */
+  isSaving: boolean;
+  /** Preenchido quando a gravação falhou e o idioma foi revertido. */
+  saveError: boolean;
 };
 
 export function useLocale(): UseLocaleResult {
   const locale = useSyncExternalStore(subscribe, currentLocale, () => DEFAULT_LOCALE);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
-  const setLocale = useCallback((next: SupportedLocale) => {
+  const setLocale = useCallback(async (next: SupportedLocale) => {
+    const previous = currentLocale();
+    if (next === previous) return;
+
+    setSaveError(false);
+    setIsSaving(true);
+    rememberLocale(next);
+    await i18n.changeLanguage(next);
+
     try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
+      await accountPreferencesApi.update({ locale: next });
     } catch {
-      /* Navegador com armazenamento bloqueado ainda troca de idioma — só não lembra depois. */
+      /* Reverte tela e cache juntos: guardar uma escolha que o servidor recusou faria o
+           idioma "voltar sozinho" no próximo login, sem explicação. */
+      rememberLocale(previous);
+      await i18n.changeLanguage(previous);
+      setSaveError(true);
+    } finally {
+      setIsSaving(false);
     }
-    void i18n.changeLanguage(next);
   }, []);
 
   const isExposed = useCallback(
@@ -55,5 +86,5 @@ export function useLocale(): UseLocaleResult {
     [],
   );
 
-  return { locale, locales: LOCALES, isExposed, setLocale };
+  return { locale, locales: LOCALES, isExposed, setLocale, isSaving, saveError };
 }

@@ -19,7 +19,8 @@
     "label": "Idioma",
     "description": "Idioma de la interfaz. No cambia el idioma de sus documentos.",
     "descriptionWithDrafts": "Idioma de la interfaz. El inglés y el español están en traducción y aún no pueden elegirse.",
-    "inPreparation": "En preparación"
+    "inPreparation": "En preparación",
+    "saveFailed": "No se pudo guardar el idioma. Volvió al anterior; inténtelo de nuevo."
   },
   "documents": {
     "empty": "Ningún documento",

@@ -37,7 +37,7 @@ const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: stri
 export function PreferencesSettingsSection() {
   const { t } = useTranslation('common');
   const { theme, setTheme } = useTheme();
-  const { locale, locales, isExposed, setLocale } = useLocale();
+  const { locale, locales, isExposed, setLocale, isSaving, saveError } = useLocale();
   const [defaultView, setDefaultView] = useState<LibraryDefaultView>('grid');
   const hasDraftLocale = locales.some((option) => !isExposed(option.code));
 
@@ -62,7 +62,13 @@ export function PreferencesSettingsSection() {
             Nomeá-los como "em preparo" é a única leitura honesta das três. */}
         <SettingsRow
           label={t('locale.label')}
-          description={hasDraftLocale ? t('locale.descriptionWithDrafts') : t('locale.description')}
+          description={
+            saveError
+              ? t('locale.saveFailed')
+              : hasDraftLocale
+                ? t('locale.descriptionWithDrafts')
+                : t('locale.description')
+          }
           control={
             <div
               className="settings-segmented-control"
@@ -78,10 +84,10 @@ export function PreferencesSettingsSection() {
                     type="button"
                     role="radio"
                     aria-checked={active}
-                    disabled={!exposed}
+                    disabled={!exposed || isSaving}
                     lang={option.code}
                     title={exposed ? option.nativeName : t('locale.inPreparation')}
-                    onClick={() => setLocale(option.code)}
+                    onClick={() => void setLocale(option.code)}
                     className={cn(
                       'settings-segmented-control__item',
                       active && 'settings-segmented-control__item--active',

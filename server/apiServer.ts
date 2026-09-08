@@ -30,6 +30,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health/deep': () => import('../api/health/deep.js'),
   '/api/metrics': () => import('../api/metrics.js'),
   '/api/me': () => import('../api/me.js'),
+  '/api/session/refresh': () => import('../api/session/refresh.js'),
   '/api/documents': () => import('../api/documents/index.js'),
   '/api/documents/upload-url': () => import('../api/documents/upload-url.js'),
   '/api/documents/download': () => import('../api/documents/download.js'),
@@ -627,6 +628,27 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
           body = contentType.includes('application/json') ? JSON.parse(raw) : raw;
         }
       }
+
+      /**
+       * Toda resposta declara em que idioma está, e que o idioma pedido muda o corpo.
+       *
+       * `Vary` é o que importa: sem ele, um proxy ou CDN entre o navegador e a API pode servir
+       * a alguém em espanhol a resposta que guardou para alguém em português — e o defeito
+       * aparece só na máquina de quem está atrás do cache, o que o torna quase impossível de
+       * reproduzir.
+       *
+       * Enquanto o servidor não traduz nada, o valor é o que o cliente pediu. Quando a Fase 3
+       * mudar o contrato de erro, ele passa a ser o idioma em que a resposta foi de fato
+       * montada, que pode ser o de fallback.
+       */
+      const requestedLanguage = req.headers['accept-language'];
+      if (typeof requestedLanguage === 'string' && requestedLanguage.trim()) {
+        res.setHeader('Content-Language', requestedLanguage.split(',')[0]!.trim());
+      }
+      res.setHeader(
+        'Vary',
+        res.getHeader('Vary') ? `${res.getHeader('Vary')}, Accept-Language` : 'Accept-Language',
+      );
 
       const mod = await route.loader();
       const vercelReq = toVercelReq(req, query, body);

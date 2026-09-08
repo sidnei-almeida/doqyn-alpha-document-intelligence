@@ -19,6 +19,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  /**
+   * Avisa o alpha de que o que ele guardou sobre esta sessão está velho.
+   *
+   * O front edita conta falando direto com o auth-service, então o alpha não fica sabendo
+   * quando idioma, nome ou avatar mudam — e serve por até 45 segundos a sessão em cache.
+   */
+  session: {
+    refresh: () =>
+      authFetch(`${API_BASE}/session/refresh`, {
+        method: 'POST',
+        credentials: getFetchCredentials(),
+        headers: withAuthHeaders(),
+      }),
+  },
+
   health: () => request<{ status: string; timestamp: string; environment: string }>('/health'),
 
   documents: {

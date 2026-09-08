@@ -32,6 +32,8 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
     avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
     avatarStatus: user.avatarStatus ?? null,
     avatarUrl: user.avatarUrl,
+    locale: user.locale,
+    timeZone: user.timeZone ?? null,
   };
 }
 

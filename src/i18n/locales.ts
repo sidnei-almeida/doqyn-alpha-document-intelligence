@@ -29,9 +29,21 @@ export type LocaleDefinition = {
 export const DEFAULT_LOCALE: SupportedLocale = 'pt-BR';
 
 export const LOCALES: LocaleDefinition[] = [
-  { code: 'pt-BR', nativeName: 'Português (Brasil)', label: 'Português', short: 'PT', status: 'ready' },
+  {
+    code: 'pt-BR',
+    nativeName: 'Português (Brasil)',
+    label: 'Português',
+    short: 'PT',
+    status: 'ready',
+  },
   { code: 'en-US', nativeName: 'English (US)', label: 'Inglês', short: 'EN', status: 'draft' },
-  { code: 'es-419', nativeName: 'Español (Latinoamérica)', label: 'Espanhol', short: 'ES', status: 'draft' },
+  {
+    code: 'es-419',
+    nativeName: 'Español (Latinoamérica)',
+    label: 'Espanhol',
+    short: 'ES',
+    status: 'draft',
+  },
 ];
 
 export const SUPPORTED_LOCALES: SupportedLocale[] = LOCALES.map((locale) => locale.code);

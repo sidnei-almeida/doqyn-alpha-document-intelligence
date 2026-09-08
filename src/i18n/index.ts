@@ -29,9 +29,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES, applyLocale, resolveInitialLocale } 
 import type { SupportedLocale } from './locales';
 
 /** O Vite resolve isto em build: um chunk por arquivo de catálogo. */
-const catalogLoaders = import.meta.glob<{ default: Record<string, unknown> }>(
-  './catalog/*/*.json',
-);
+const catalogLoaders = import.meta.glob<{ default: Record<string, unknown> }>('./catalog/*/*.json');
 
 const DEFAULT_NAMESPACE = 'common';
 

@@ -36,8 +36,9 @@ function memo<T>(key: string, build: () => T): T {
 
 function dateTimeFormat(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
   const locale = activeLocale();
-  return memo(`dt:${locale}:${JSON.stringify(options)}`, () =>
-    new Intl.DateTimeFormat(locale, options),
+  return memo(
+    `dt:${locale}:${JSON.stringify(options)}`,
+    () => new Intl.DateTimeFormat(locale, options),
   );
 }
 
@@ -71,8 +72,9 @@ export function formatLongDate(value: Date | string | number): string {
 
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
   const locale = activeLocale();
-  const formatter = memo(`n:${locale}:${JSON.stringify(options ?? {})}`, () =>
-    new Intl.NumberFormat(locale, options),
+  const formatter = memo(
+    `n:${locale}:${JSON.stringify(options ?? {})}`,
+    () => new Intl.NumberFormat(locale, options),
   );
   return formatter.format(value);
 }
@@ -113,8 +115,9 @@ export function formatRelativeTime(value: Date | string | number, from: Date = n
   if (!date) return '';
 
   const locale = activeLocale();
-  const formatter = memo(`rt:${locale}`, () =>
-    new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
+  const formatter = memo(
+    `rt:${locale}`,
+    () => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
   );
 
   const diff = date.getTime() - from.getTime();
@@ -142,8 +145,9 @@ export function formatList(items: string[], type: Intl.ListFormatType = 'conjunc
  */
 export function compareText(a: string, b: string): number {
   const locale = activeLocale();
-  const collator = memo(`c:${locale}`, () =>
-    new Intl.Collator(locale, { sensitivity: 'base', numeric: true }),
+  const collator = memo(
+    `c:${locale}`,
+    () => new Intl.Collator(locale, { sensitivity: 'base', numeric: true }),
   );
   return collator.compare(a, b);
 }
