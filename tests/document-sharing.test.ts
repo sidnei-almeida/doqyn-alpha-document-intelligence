@@ -105,7 +105,7 @@ describe('document sharing — frontend', () => {
     assert.ok(modal.includes('.compartilharDocumento'));
     assert.ok(flow.includes('.buscarPessoa'));
     assert.ok(modal.includes('AccessList'));
-    assert.ok(modal.includes('Quem tem acesso'));
+    assert.ok(modal.includes('.quemTemAcesso'));
   });
 
   it('Compartilhados comigo usa API dedicada', () => {

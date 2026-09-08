@@ -62,7 +62,7 @@ describe('visualização dentro da pasta', () => {
     const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
     assert.ok(panel.includes('DocumentDetailsShared'));
     assert.ok(shared.includes('.atualizado'));
-    assert.ok(panel.includes('Visualizar'));
+    assert.ok(panel.includes('.visualizar'));
     assert.ok(panel.includes('/tracking?documentId='));
     assert.equal(panel.includes('DetailsPanelTabs'), false);
   });

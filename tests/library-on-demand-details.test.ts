@@ -33,7 +33,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
     assert.ok(page.includes('ContextInfoButton'));
     const button = readSrc('features/library/components/ContextInfoButton.tsx');
     assert.ok(button.includes('library-context-info-button'));
-    assert.ok(button.includes('Informações'));
+    assert.ok(button.includes('.informacoes'));
   });
 
   it('clicar no ícone abre popover de informações', () => {

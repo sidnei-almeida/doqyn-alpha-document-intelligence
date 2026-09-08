@@ -31,7 +31,7 @@ describe('empresa nova sem grupos documentais padrão', () => {
   it('/users mostra empty state quando não há grupos', () => {
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('.nenhumGrupoCriadoAinda'));
-    assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
+    assert.ok(sections.includes('.semGrupoAPessoa'));
   });
 
   it('/rules mostra empty state real sem mocks', () => {

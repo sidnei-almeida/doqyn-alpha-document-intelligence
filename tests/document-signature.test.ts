@@ -377,7 +377,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(summaryDisplay.includes('signedSigners'));
     assert.ok(summaryService.includes('signedSigners'));
     assert.ok(menu.includes('.verAssinaturas'));
-    assert.ok(menu.includes('Baixar PDF assinado'));
+    assert.ok(menu.includes('.baixarPdfAssinado'));
     assert.ok(menu.includes('disabled={!canShare}'));
     assert.ok(drawer.includes('document-signatures-drawer'));
     assert.ok(drawer.includes('document-signatures-drawer-close'));

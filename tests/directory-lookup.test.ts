@@ -93,7 +93,7 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
 
     // O aviso diz o que fazer, e não quantos são: a contagem total é o que um diretório
     // varrível entregaria de graça.
-    assert.ok(field.includes('Digite mais letras para estreitar'));
+    assert.ok(field.includes('.haMaisGenteCom'));
     assert.ok(!field.includes('search.data?.total'));
   });
 
@@ -160,7 +160,7 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     assert.ok(field.includes("label = 'Nome de usuário de quem é de fora daqui'"));
     assert.ok(field.includes('placeholder="joao.silva"'));
     assert.ok(sig.includes('.nomeDeUsuarioDe'));
-    assert.ok(req.includes('label="Nome de usuário de quem vai enviar"'));
+    assert.ok(req.includes('.nomeDeUsuarioDe'));
 
     // O e-mail continua aceito: é ele que leva a quem **não** tem conta, e recebe por link.
     assert.ok(field.includes('onFallbackToLink'));

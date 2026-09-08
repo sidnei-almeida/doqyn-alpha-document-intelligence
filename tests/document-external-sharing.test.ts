@@ -285,7 +285,7 @@ describe('document external sharing — UI', () => {
   it('botão baixar depende de canDownload no portal', () => {
     const guestViewer = read('src/features/external-share/GuestDocumentViewer.tsx');
     assert.ok(guestViewer.includes('permissions.canDownload'));
-    assert.ok(guestViewer.includes('Download indisponível neste convite'));
+    assert.ok(guestViewer.includes('.visualizacaoProtegidaDownloadIndisponivel'));
   });
 });
 

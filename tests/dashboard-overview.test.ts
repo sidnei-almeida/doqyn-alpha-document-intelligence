@@ -172,7 +172,7 @@ describe('dashboard overview UI', () => {
     assert.match(pageSource, /buildOverviewMetrics|OverviewSummaryStrip/);
     assert.match(periodSource, /7 dias|30 dias|90 dias/);
     assert.match(pageSource, /\.carregandoVisaoGeral/);
-    assert.match(pageSource, /Não foi possível carregar a visão geral/);
+    assert.match(pageSource, /\.naoFoiPossivelCarregar/);
     assert.match(documentsPanelSource, /Nenhum documento enviado ainda/);
   });
 
@@ -187,7 +187,7 @@ describe('dashboard overview UI', () => {
     assert.match(pageSource, /OverviewQuickAccessPanel/);
     assert.match(pageSource, /canManageGovernance=\{isAdmin\}/);
     assert.match(governanceSource, /\.governancaDocumental/);
-    assert.match(activityPanelSource, /Atividade recente/);
+    assert.match(activityPanelSource, /\.atividadeRecente/);
   });
 
   it('saúde do ambiente diferencia acesso restrito para usuário comum', () => {

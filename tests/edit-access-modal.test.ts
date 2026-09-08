@@ -110,13 +110,13 @@ describe('modal Editar acesso — UX e dirty state', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('GroupsEmptyState'));
     assert.ok(sections.includes('.nenhumGrupoCriadoAinda'));
-    assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
+    assert.ok(sections.includes('.semGrupoAPessoa'));
   });
 
   it('grupos usam cards com Checkbox customizado', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('DocumentGroupsSection'));
-    assert.ok(sections.includes('Os mesmos grupos de Regras'));
+    assert.ok(sections.includes('.osMesmosGruposDe'));
     assert.ok(sections.includes('memberCount'));
     assert.equal(sections.includes('type="checkbox"'), false);
   });

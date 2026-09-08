@@ -277,7 +277,7 @@ describe('document trash — frontend lixeira e desativados', () => {
 
   it('menu de arquivo tem Mover para lixeira fora da lixeira', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
-    assert.ok(menu.includes('Mover para lixeira'));
+    assert.ok(menu.includes('.moverParaLixeira'));
     assert.ok(menu.includes('isTrashView'));
     assert.ok(menu.includes('isDeactivatedView'));
     assert.ok(menu.includes('onTrashFile'));
@@ -311,7 +311,7 @@ describe('document trash — frontend lixeira e desativados', () => {
   it('confirmMessages não inclui permanent delete', () => {
     const messages = read('src/components/confirm/confirmMessages.ts');
     assert.ok(messages.includes('buildMoveToTrashConfirm'));
-    assert.ok(messages.includes('desativado'));
+    assert.ok(messages.includes('.description'));
     assert.equal(messages.includes('buildPermanentDeleteConfirm'), false);
   });
 

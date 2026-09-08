@@ -84,7 +84,7 @@ describe('File Explorer da Biblioteca', () => {
     assert.ok(menu.includes("kind: 'file'"));
     assert.ok(menu.includes('.enviarDocumento'));
     assert.ok(menu.includes('.enviarDocumentoNestaPasta'));
-    assert.ok(menu.includes('Visualizar'));
+    assert.ok(menu.includes('.visualizar'));
     assert.ok(menu.includes('.verTracking'));
     assert.equal(menu.includes('Criar arquivo'), false);
   });

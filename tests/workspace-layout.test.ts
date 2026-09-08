@@ -31,7 +31,7 @@ describe('layout do workspace', () => {
     const topbar = readSrc('components/layout/WorkspaceTopBar.tsx');
     const search = readSrc('components/layout/GlobalSearchCommand.tsx');
     assert.ok(topbar.includes('GlobalSearchCommand'));
-    assert.ok(search.includes('Buscar documentos'));
+    assert.ok(search.includes('.buscarDocumentos'));
     assert.ok(search.includes('keyboard_command_key'));
     assert.ok(search.includes('Ctrl'));
     assert.ok(search.includes('isMacPlatform'));
@@ -66,7 +66,7 @@ describe('layout do workspace', () => {
     // "Nova pasta" prometia uma pasta manual que nunca ia existir — pasta da Biblioteca é
     // categoria de governança. O item virou "Nova categoria" e leva ao formulário que a cria,
     // em vez de ficar marcado como "Em breve" para sempre.
-    assert.ok(newButton.includes('Nova categoria'));
+    assert.ok(newButton.includes('.novaCategoria'));
     assert.ok(newButton.includes('/rules?nova=categoria'));
     assert.equal(newButton.includes('Em breve'), false);
     assert.equal(newButton.includes('localStorage'), false);
