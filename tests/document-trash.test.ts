@@ -268,7 +268,7 @@ describe('document trash — frontend lixeira e desativados', () => {
       menu.indexOf("{state.kind === 'folder' && ("),
       menu.indexOf("{state.kind === 'file' && ("),
     );
-    assert.ok(folderBlock.includes('Excluir categoria'));
+    assert.ok(folderBlock.includes('.excluirCategoria'));
     // Categoria não vai para a lixeira: ela some, e os documentos dela vão para Sem categoria.
     assert.equal(folderBlock.includes('Mover para lixeira'), false);
     // Sem categoria é o destino de todo mundo, e por isso não se apaga.

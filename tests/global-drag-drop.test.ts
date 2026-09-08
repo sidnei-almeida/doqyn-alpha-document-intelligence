@@ -17,7 +17,7 @@ describe('drag and drop global de upload', () => {
     assert.ok(overlay.includes('if (!isDragging) return null'));
     assert.ok(overlay.includes('.solteParaEnviarAo'));
     assert.ok(
-      overlay.includes('A IA analisará, classificará e preparará o documento para revisão'),
+      overlay.includes('.aIaAnalisaraClassificara'),
     );
   });
 

@@ -67,7 +67,7 @@ export function ConfirmNewVersionActions({
             data-testid="update-version-confirm-button"
           >
             <Icon name="upload" size={ICON_SIZE.sm} />
-            {t('confirmNewVersionActions.confirmar')} {nextVersionLabel}
+            {t('confirmNewVersionActions.confirmVersion', { version: nextVersionLabel })}
           </Button>
         )}
         {(phase === 'analyzing' || phase === 'confirming') && (

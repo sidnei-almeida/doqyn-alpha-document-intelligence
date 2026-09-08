@@ -34,7 +34,7 @@ describe('login demo e robustez de auth', () => {
   it('ProtectedRoute aguarda isLoading antes de redirecionar', () => {
     const route = readSrc('features/auth/ProtectedRoute.tsx');
     assert.ok(route.includes('isLoading'));
-    assert.ok(route.includes('Verificando acesso'));
+    assert.ok(route.includes('.verificandoAcesso'));
   });
 
   it('useProfileMe só busca com sessão e não lança erro fatal', () => {

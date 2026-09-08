@@ -224,7 +224,7 @@ describe('toolbar de seleção contextual', () => {
     // A palavra "item" saiu do contador: com o ícone e as ações ao lado, ela era ruído.
     assert.ok(bulk.includes("selectedCount === 1 ? 'selecionado' : 'selecionados'"));
     assert.ok(bulk.includes('.visualizar'));
-    assert.ok(bulk.includes('Baixar'));
+    assert.ok(bulk.includes('.baixar'));
     assert.ok(bulk.includes('.excluir'));
   });
 });

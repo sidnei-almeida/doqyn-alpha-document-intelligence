@@ -173,7 +173,7 @@ describe('dashboard overview UI', () => {
     assert.match(periodSource, /7 dias|30 dias|90 dias/);
     assert.match(pageSource, /\.carregandoVisaoGeral/);
     assert.match(pageSource, /\.naoFoiPossivelCarregar/);
-    assert.match(documentsPanelSource, /Nenhum documento enviado ainda/);
+    assert.match(documentsPanelSource, /\.nenhumDocumentoEnviadoAinda/);
   });
 
   it('DashboardPage abre DocumentViewerModal ao clicar documento', () => {

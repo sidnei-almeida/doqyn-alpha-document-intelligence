@@ -28,7 +28,7 @@ describe('painel de detalhes da Biblioteca', () => {
     // o drawer o renderiza e acrescenta os seus próprios.
     const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
     assert.ok(drawer().includes('DocumentDetailsShared'), 'drawer usa o componente compartilhado');
-    for (const field of ['Categoria', 'Proprietário', 'Atualizado']) {
+    for (const field of ['.categoria', '.proprietario', '.atualizado']) {
       assert.ok(shared.includes(field), `campo ${field} presente no compartilhado`);
     }
     assert.ok(drawer().includes('.versao'), 'campo Versão presente no drawer');

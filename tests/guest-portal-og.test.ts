@@ -41,7 +41,7 @@ describe('guest portal Open Graph', () => {
     );
     assert.ok(html.includes('<meta property="og:type" content="website" />'));
     assert.ok(html.includes('<meta name="twitter:card" content="summary_large_image" />'));
-    assert.ok(html.includes('.abrirEAssinar'));
+    assert.ok(html.includes('Abrir e assinar'));
   });
 
   it('expõe rotas OG no dev-server e na Vercel', () => {
@@ -133,7 +133,7 @@ describe('guest portal Open Graph', () => {
       assert.ok(!html.includes('Contrato'));
       assert.ok(!html.includes('Maria Silva'));
       // O fallback do renderizador é o que aparece quando o metadata não traz o documento.
-      assert.ok(html.includes('.documento'));
+      assert.ok(html.includes('Documento'));
     });
   });
 });

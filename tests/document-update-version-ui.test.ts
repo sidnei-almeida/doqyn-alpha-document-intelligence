@@ -90,7 +90,7 @@ describe('fluxo dedicado de atualização de versão', () => {
     const actions = readSrc(
       'features/document-update-version/components/ConfirmNewVersionActions.tsx',
     );
-    assert.ok(actions.includes('Confirmar {nextVersionLabel}'));
+    assert.ok(actions.includes('.confirmVersion'));
     assert.equal(actions.includes('Enviar documento'), false);
   });
 
@@ -115,7 +115,7 @@ describe('fluxo dedicado de atualização de versão', () => {
     const header = readSrc(
       'features/document-update-version/components/UpdateDocumentVersionHeader.tsx',
     );
-    assert.ok(header.includes('Atualizar documento'));
+    assert.ok(header.includes('.atualizarDocumento'));
     assert.ok(header.includes('Nova versão de'));
     assert.equal(header.includes('Envio de Documentos'), false);
   });

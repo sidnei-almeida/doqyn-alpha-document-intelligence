@@ -84,7 +84,7 @@ describe('layout da Biblioteca', () => {
 
   it('empty state da pasta é direto, sem pictograma, com ação de upload', () => {
     const empty = readSrc('features/library/components/EmptyFolderState.tsx');
-    assert.ok(empty.includes('.enviarDocumento'));
+    assert.ok(empty.includes('Enviar documento'));
     assert.ok(empty.includes('library-empty-state'));
     // A nuvem no meio da tela saiu: era a terceira marca visual para "não há nada aqui", e
     // repetia em imagem o que o botão logo abaixo diz em palavra.

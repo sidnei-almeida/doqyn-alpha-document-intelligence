@@ -91,6 +91,13 @@ const lazyCatalogBackend = {
   },
 };
 
+/**
+ * `import.meta.env` é do Vite, como `import.meta.glob`. Em Node ele é `undefined`, e ler
+ * `.DEV` dele derruba o processo — foi o que aconteceu com `parseApiErrorBody` num teste, que
+ * só toca i18n de raspão para montar a frase amigável do erro.
+ */
+const isDev = Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
+
 let initialized = false;
 
 export function initI18n(): I18nInstance {
@@ -119,9 +126,9 @@ export function initI18n(): I18nInstance {
          ali derrubaria a casca inteira para carregar um catálogo de feature. Sem ele, a chave
          cai no fallback por um quadro e assenta — que é degradação, não tela em branco. */
       react: { useSuspense: false },
-      saveMissing: import.meta.env.DEV,
+      saveMissing: isDev,
       missingKeyHandler: (languages, namespace, key) => {
-        if (!import.meta.env.DEV) return;
+        if (!isDev) return;
         console.warn(
           `[i18n] chave ausente: ${namespace}:${key} (${languages.join(', ')}) — caiu no ${DEFAULT_LOCALE}`,
         );
@@ -136,7 +143,7 @@ export function initI18n(): I18nInstance {
        * pareceria funcionando e esconderia o defeito. O que impede isso de chegar em produção
        * é o portão de CI da Fase 13, não uma maquiagem aqui.
        */
-      parseMissingKeyHandler: (key) => (import.meta.env.DEV ? `⟦${key}⟧` : key),
+      parseMissingKeyHandler: (key) => (isDev ? `⟦${key}⟧` : key),
     });
 
   applyLocale(locale);

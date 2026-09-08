@@ -341,7 +341,7 @@ describe('document external sharing — telefone do convidado', () => {
     );
     assert.ok(
       read('src/features/documents/recipients/RecipientFlow.tsx').includes(
-        'label="Telefone (opcional)"',
+        ".telefoneOpcional",
       ),
     );
     assert.ok(read('src/features/documents/recipients/RecipientFlow.tsx').includes('phoneError'));
