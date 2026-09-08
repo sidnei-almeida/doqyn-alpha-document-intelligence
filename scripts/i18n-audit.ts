@@ -17,7 +17,7 @@
  * 4. **Frase idêntica em contextos diferentes.** Aviso: em outro idioma elas podem divergir, e
  *    quem traduz precisa saber que são duas.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { globSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import ts from 'typescript';
