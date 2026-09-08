@@ -215,7 +215,7 @@ export function LibraryPage() {
       ? (activeSpace?.name ?? 'Pasta')
       : explorer.isBrowseRoot
         ? 'Biblioteca'
-        : (collection.label ?? 'Biblioteca');
+        : t(collection.labelKey);
 
   const pageDescription = trimmedQuery
     ? `${documents.length} ${documents.length === 1 ? 'documento encontrado' : 'documentos encontrados'} para “${trimmedQuery}”`
@@ -223,7 +223,7 @@ export function LibraryPage() {
       ? 'Documentos classificados nesta categoria pela IA.'
       : explorer.isBrowseRoot
         ? 'Documentos e categorias deste ambiente'
-        : collection.description;
+        : t(collection.descriptionKey);
 
   // A raiz não leva subtítulo: "Documentos e categorias deste ambiente"
   // descreve o óbvio embaixo de um título que já diz Biblioteca. O texto
@@ -304,7 +304,7 @@ export function LibraryPage() {
 
   const breadcrumbSegments = useMemo(() => {
     const built = buildLibraryBreadcrumbSegments({
-      collectionLabel: collection.label,
+      collectionLabel: t(collection.labelKey),
       spaceName: activeSpace?.name,
       isRootCollection: explorer.isRootCollection,
     });
@@ -323,10 +323,11 @@ export function LibraryPage() {
   }, [
     activeSpace?.name,
     clearSelection,
-    collection.label,
+    collection.labelKey,
     collection.slug,
     explorer.isRootCollection,
     navigate,
+    t,
   ]);
 
   const openSpace = useCallback(
@@ -691,12 +692,12 @@ export function LibraryPage() {
             ? trimmedQuery
               ? 'Nenhum documento encontrado'
               : 'Nenhum documento para os filtros atuais'
-            : collection.emptyTitle
+            : t(collection.emptyTitleKey)
         }
         description={
           hasActiveFilters
             ? 'Tente ajustar os filtros ou buscar outro termo.'
-            : collection.emptyDescription
+            : t(collection.emptyDescriptionKey)
         }
         showUploadActions={explorer.isInsideFolder}
         uploadButtonLabel="Enviar documento"

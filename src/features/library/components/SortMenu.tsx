@@ -26,7 +26,7 @@ export function SortMenu({ sort, direction, onChange }: SortMenuProps) {
       defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
       options={SORT_FILTER_OPTIONS.map((option) => ({
         value: encodeSortOptionValue(option.sort, option.direction),
-        label: option.label,
+        label: t(option.labelKey),
       }))}
       onChange={(next) => {
         const resolved = decodeSortOptionValue(next);

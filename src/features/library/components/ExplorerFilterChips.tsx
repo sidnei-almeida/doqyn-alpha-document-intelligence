@@ -12,6 +12,7 @@ import {
   STATUS_FILTER_OPTIONS,
   TYPE_FILTER_OPTIONS,
   encodeSortOptionValue,
+  resolveFilterOptions,
 } from '../utils/libraryFilterOptions';
 import { useTranslation } from 'react-i18next';
 
@@ -118,28 +119,28 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
         label={t('explorerFilterChips.filtrarPorStatus')}
         value={state.status}
         defaultValue=""
-        options={STATUS_FILTER_OPTIONS}
+        options={resolveFilterOptions(STATUS_FILTER_OPTIONS, t)}
         onChange={(status) => onStateChange({ status })}
       />
       <FilterChip
         label={t('explorerFilterChips.filtrarPorTipo')}
         value={state.type}
         defaultValue=""
-        options={TYPE_FILTER_OPTIONS}
+        options={resolveFilterOptions(TYPE_FILTER_OPTIONS, t)}
         onChange={(type) => onStateChange({ type: type as LibraryRouteState['type'] })}
       />
       <FilterChip
         label={t('explorerFilterChips.filtrarPorPeriodo')}
         value={state.period}
         defaultValue=""
-        options={PERIOD_FILTER_OPTIONS}
+        options={resolveFilterOptions(PERIOD_FILTER_OPTIONS, t)}
         onChange={(period) => onStateChange({ period: period as LibraryRouteState['period'] })}
       />
       <FilterChip
         label={t('explorerFilterChips.filtrarPorProprietario')}
         value={state.owner}
         defaultValue=""
-        options={OWNER_FILTER_OPTIONS}
+        options={resolveFilterOptions(OWNER_FILTER_OPTIONS, t)}
         onChange={(owner) => onStateChange({ owner: owner as LibraryRouteState['owner'] })}
       />
       <span className="ml-auto flex items-center gap-3">
@@ -152,7 +153,7 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
           defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
           options={SORT_FILTER_OPTIONS.map((option) => ({
             value: encodeSortOptionValue(option.sort, option.direction),
-            label: option.label,
+            label: t(option.labelKey),
           }))}
           onChange={(next) => {
             const match = SORT_FILTER_OPTIONS.find(

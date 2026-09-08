@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import {
   DOQYN_TERMS_EFFECTIVE_DATE,
   DOQYN_TERMS_VERSION,
-  TERMS_LEGAL_NOTICE,
+  TERMS_LEGAL_NOTICE_KEY,
   TERMS_SECTIONS,
 } from '@/legal/terms';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ function formatEffectiveDate(value: string): string {
 }
 
 export function TermsPage() {
-  const { t } = useTranslation('pages');
+  const { t } = useTranslation(['pages', 'legal']);
 
   return (
     <main className="relative min-h-screen bg-doqyn-bg px-4 py-8">
@@ -60,17 +60,17 @@ export function TermsPage() {
               </div>
             </dl>
             <p className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-sm text-amber-200/90">
-              {TERMS_LEGAL_NOTICE}
+              {t(TERMS_LEGAL_NOTICE_KEY)}
             </p>
           </header>
 
           <div className="space-y-8 py-8">
             {TERMS_SECTIONS.map((section) => (
               <section key={section.id} id={section.id} className="scroll-mt-24">
-                <h2 className="text-base font-semibold text-doqyn-text">{section.title}</h2>
+                <h2 className="text-base font-semibold text-doqyn-text">{t(section.titleKey)}</h2>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-doqyn-muted">
-                  {section.paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
+                  {section.paragraphKeys.map((paragraphKey) => (
+                    <p key={paragraphKey}>{t(paragraphKey)}</p>
                   ))}
                 </div>
               </section>

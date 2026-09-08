@@ -82,13 +82,13 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
 
       <div className="px-5 pb-5 pt-3">
         <h2 id={titleId} className="font-display text-[17px] leading-snug text-doqyn-text">
-          {step.title}
+          {t(step.titleKey)}
         </h2>
         {/* A régua curta sob o título é a mesma marca do cartão de link e do
             cabeçalho de página: separa sem desenhar caixa. */}
         <span aria-hidden className="mt-2.5 block h-px w-9 bg-doqyn-accent-active" />
         <p id={bodyId} className="mt-3.5 text-body leading-relaxed text-doqyn-muted">
-          {step.body}
+          {t(step.bodyKey)}
         </p>
       </div>
 

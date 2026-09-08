@@ -184,7 +184,10 @@ function main() {
   ]) {
     if (arquivo.includes('/catalog/')) continue;
     const fonte = readFileSync(resolve(ROOT, arquivo), 'utf8');
-    for (const m of fonte.matchAll(/'([a-zA-Z]+):([\w.]+)'/g)) {
+    /* O hífen entra no padrão porque a chave herda o identificador do dado — o passo do tour
+       chama-se `boas-vindas`, a seção dos termos `company-access` — e sem ele essas chaves
+       apareciam órfãs mesmo estando escritas por extenso no código. */
+    for (const m of fonte.matchAll(/'([a-zA-Z]+):([\w.-]+)'/g)) {
       const ns = m[1]!;
       if (!porNamespace.has(ns)) continue;
       usadas.add(`${ns}:${m[2]!.replace(/_(one|other|zero)$/, '')}`);
@@ -201,11 +204,29 @@ function main() {
    */
   const DINAMICOS = new Set(['errors']);
 
+  /**
+   * Subárvore consultada por chave montada em runtime, dentro de um namespace que no resto é
+   * estático.
+   *
+   * A Central de Rastreamento traduz o código do evento (`tracking:actionLabel.document.moved`)
+   * lendo o próprio código que o servidor gravou. Isolar o namespace inteiro como dinâmico
+   * cegaria a auditoria para as dezenas de chaves estáticas que ele também tem; o que se
+   * dispensa é só o galho onde a chave é dado.
+   */
+  const PREFIXOS_DINAMICOS = [
+    'tracking:actionLabel.',
+    'tracking:statusLabel.',
+    'tracking:severityLabel.',
+    'tracking:deviceType.',
+  ];
+
   for (const [ns, chaves] of porNamespace) {
     if (DINAMICOS.has(ns)) continue;
     for (const chave of chaves) {
       const base = chave.replace(/_(one|other|zero)$/, '');
-      if (!usadas.has(`${ns}:${base}`)) avisos.push(`órfã: ${ns}:${chave}`);
+      const completa = `${ns}:${base}`;
+      if (PREFIXOS_DINAMICOS.some((prefixo) => completa.startsWith(prefixo))) continue;
+      if (!usadas.has(completa)) avisos.push(`órfã: ${ns}:${chave}`);
     }
   }
 

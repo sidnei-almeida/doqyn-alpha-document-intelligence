@@ -1,7 +1,11 @@
 {
   "activeFilterChips": {
+    "busca": "Busca: {{query}}",
+    "emPasta": "Em: {{folderName}}",
     "filtrosAtivos": "Filtros ativos",
-    "limparFiltros": "Limpar filtros"
+    "limparFiltros": "Limpar filtros",
+    "removerFiltro": "Remover filtro {{label}}",
+    "todaABiblioteca": "Toda a biblioteca"
   },
   "bulkSelectionToolbar": {
     "baixar": "Baixar",
@@ -11,6 +15,50 @@
     "recuperar": "Recuperar",
     "restaurar": "Restaurar",
     "visualizar": "Visualizar"
+  },
+  "collections": {
+    "root": {
+      "label": "Biblioteca",
+      "description": "Todos os documentos e espaços deste ambiente.",
+      "emptyTitle": "Esta biblioteca ainda está vazia",
+      "emptyDescription": "Envie seu primeiro documento para o DOQYN analisar, classificar e preparar para revisão."
+    },
+    "compartilhados": {
+      "label": "Compartilhados comigo",
+      "description": "Documentos enviados por outras pessoas aos quais você tem acesso.",
+      "emptyTitle": "Nada compartilhado com você ainda",
+      "emptyDescription": "Quando alguém compartilhar um documento com você, ele aparecerá aqui."
+    },
+    "paraAssinar": {
+      "label": "Para assinar",
+      "description": "Documentos que aguardam sua assinatura eletrônica.",
+      "emptyTitle": "Nenhum documento pendente de assinatura.",
+      "emptyDescription": "Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui."
+    },
+    "recentes": {
+      "label": "Recentes",
+      "description": "Os documentos atualizados mais recentemente neste ambiente.",
+      "emptyTitle": "Nenhuma atividade recente",
+      "emptyDescription": "Os documentos atualizados nos últimos dias aparecem aqui."
+    },
+    "favoritos": {
+      "label": "Favoritos",
+      "description": "Seus documentos marcados com estrela, para acesso rápido.",
+      "emptyTitle": "Nenhum documento favorito",
+      "emptyDescription": "Marque documentos com estrela para encontrá-los rapidamente."
+    },
+    "lixeira": {
+      "label": "Lixeira",
+      "description": "Restaure antes do prazo; depois vão para Desativados.",
+      "emptyTitle": "A lixeira está vazia",
+      "emptyDescription": "Documentos excluídos aparecem aqui durante o período de retenção."
+    },
+    "desativados": {
+      "label": "Desativados",
+      "description": "Documentos desativados após o prazo na lixeira. Somente administradores podem recuperar.",
+      "emptyTitle": "Nenhum documento desativado",
+      "emptyDescription": "Quando o prazo da lixeira termina, os documentos passam para cá sem exclusão física."
+    }
   },
   "contextInfoButton": {
     "informacoes": "Informações",
@@ -136,8 +184,52 @@
     "status": "Status",
     "tags": "Tags"
   },
+  "filterFallback": {
+    "status": "Status",
+    "type": "Tipo",
+    "period": "Período",
+    "owner": "Proprietário"
+  },
   "filterMenu": {
     "filtrarPorStatus": "Filtrar por status"
+  },
+  "filterOption": {
+    "status": {
+      "all": "Todos os status",
+      "active": "Ativo",
+      "processed": "Processado",
+      "analyzing": "Em análise",
+      "pending_review": "Requer revisão",
+      "archived": "Arquivado"
+    },
+    "type": {
+      "all": "Todos os tipos",
+      "pdf": "PDF",
+      "image": "Imagem",
+      "other": "Outros"
+    },
+    "period": {
+      "all": "Qualquer data",
+      "today": "Hoje",
+      "7d": "Últimos 7 dias",
+      "30d": "Últimos 30 dias",
+      "month": "Este mês"
+    },
+    "owner": {
+      "all": "Todos",
+      "me": "Eu",
+      "others": "Outros usuários"
+    },
+    "sort": {
+      "updatedAtDesc": "Mais recentes",
+      "updatedAtAsc": "Mais antigos",
+      "nameAsc": "Nome A–Z",
+      "nameDesc": "Nome Z–A",
+      "category": "Categoria",
+      "status": "Status",
+      "owner": "Proprietário",
+      "fallback": "Ordenação"
+    }
   },
   "libraryBreadcrumbs": {
     "biblioteca": "Biblioteca",

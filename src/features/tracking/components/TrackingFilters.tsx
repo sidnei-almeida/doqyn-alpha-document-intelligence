@@ -59,7 +59,7 @@ export function TrackingFilters({
           onChange={(event) => onChange({ ...filters, category: event.target.value })}
           options={TRACKING_CATEGORY_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -72,7 +72,7 @@ export function TrackingFilters({
           onChange={(event) => onChange({ ...filters, actionGroup: event.target.value })}
           options={TRACKING_ACTION_GROUP_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -85,7 +85,7 @@ export function TrackingFilters({
           onChange={(event) => onChange({ ...filters, status: event.target.value })}
           options={TRACKING_STATUS_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -98,7 +98,7 @@ export function TrackingFilters({
           onChange={(event) => onChange({ ...filters, severity: event.target.value })}
           options={TRACKING_SEVERITY_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>

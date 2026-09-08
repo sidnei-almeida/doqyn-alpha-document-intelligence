@@ -1,3 +1,13 @@
+/**
+ * Os Termos e Condições de Uso: o que é dado, e o que é texto.
+ *
+ * Versão, data de vigência e rota são dado — entram no registro de aceite e viajam para o
+ * auth-service, então não mudam com o idioma da interface. O texto vive em `legal.json`.
+ *
+ * Namespace próprio, e não `pages`, de propósito: texto jurídico não se traduz junto com o resto
+ * da tela. Ele exige revisão de quem responde por ele em cada jurisdição, e um arquivo separado é
+ * o que torna esse portão visível — quem traduzir `pages.json` não arrasta os termos junto.
+ */
 export const DOQYN_TERMS_VERSION = 'v1.0-dev';
 export const DOQYN_TERMS_EFFECTIVE_DATE = '2026-07-02';
 export const DOQYN_TERMS_ROUTE = '/termos';
@@ -5,119 +15,84 @@ export const DOQYN_TERMS_ROUTE = '/termos';
 export const DOQYN_PRIVACY_VERSION = 'v1.0-dev';
 export const DOQYN_PRIVACY_ROUTE = '/privacidade';
 
-export const TERMS_LEGAL_NOTICE =
-  'Este texto é uma versão preliminar para ambiente de desenvolvimento e deve ser revisado juridicamente antes do uso em produção.';
+export const TERMS_LEGAL_NOTICE_KEY = 'legal:notice';
 
-export const TERMS_SECTIONS = [
+export type TermsSection = {
+  id: string;
+  titleKey: string;
+  /** Uma chave por parágrafo: o tradutor vê cada um inteiro, e a contagem fica no código. */
+  paragraphKeys: readonly string[];
+};
+
+export const TERMS_SECTIONS: readonly TermsSection[] = [
   {
     id: 'about',
-    title: '1. Sobre o DOQYN',
-    paragraphs: [
-      'O DOQYN é uma plataforma de inteligência documental voltada a empresas e usuários individuais, com recursos de organização, análise, governança e auditoria de documentos.',
-      'Ao utilizar o DOQYN, você concorda com estes Termos e Condições de Uso na versão vigente no momento do cadastro ou da solicitação de acesso.',
-    ],
+    titleKey: 'legal:section.about.title',
+    paragraphKeys: ['legal:section.about.p1', 'legal:section.about.p2'],
   },
   {
     id: 'eligibility',
-    title: '2. Elegibilidade e responsabilidade do usuário',
-    paragraphs: [
-      'Você declara possuir capacidade legal para aceitar estes termos e fornecer informações verdadeiras, completas e atualizadas.',
-      'É sua responsabilidade manter seus dados de contato corretos e proteger suas credenciais de acesso.',
-    ],
+    titleKey: 'legal:section.eligibility.title',
+    paragraphKeys: ['legal:section.eligibility.p1', 'legal:section.eligibility.p2'],
   },
   {
     id: 'company-access',
-    title: '3. Cadastro de empresa e solicitação de acesso',
-    paragraphs: [
-      'Empresas podem ser cadastradas por administradores autorizados. Usuários que solicitam acesso a uma empresa existente dependem de aprovação administrativa.',
-      'Informações incorretas ou incompletas podem atrasar ou impedir a liberação do acesso.',
-    ],
+    titleKey: 'legal:section.company-access.title',
+    paragraphKeys: ['legal:section.company-access.p1', 'legal:section.company-access.p2'],
   },
   {
     id: 'individual',
-    title: '4. Uso individual por CPF',
-    paragraphs: [
-      'Usuários pessoa física podem criar acesso individual para gerenciar documentos pessoais conforme as regras da plataforma.',
-      'O uso deve respeitar a legislação aplicável e as permissões concedidas dentro do ambiente.',
-    ],
+    titleKey: 'legal:section.individual.title',
+    paragraphKeys: ['legal:section.individual.p1', 'legal:section.individual.p2'],
   },
   {
     id: 'documents',
-    title: '5. Upload, análise e armazenamento de documentos',
-    paragraphs: [
-      'Documentos enviados à plataforma podem ser processados, classificados, versionados e disponibilizados conforme as permissões definidas para sua conta ou organização.',
-      'Você é responsável pelo conteúdo enviado e pela autorização para tratá-lo na plataforma.',
-    ],
+    titleKey: 'legal:section.documents.title',
+    paragraphKeys: ['legal:section.documents.p1', 'legal:section.documents.p2'],
   },
   {
     id: 'ai',
-    title: '6. Uso de recursos de inteligência artificial',
-    paragraphs: [
-      'O DOQYN pode utilizar recursos automatizados e de inteligência artificial para apoiar análise, classificação e extração de informações documentais.',
-      'Resultados automatizados devem ser revisados quando necessário. Eles não substituem análise humana especializada em todos os casos.',
-    ],
+    titleKey: 'legal:section.ai.title',
+    paragraphKeys: ['legal:section.ai.p1', 'legal:section.ai.p2'],
   },
   {
     id: 'governance',
-    title: '7. Permissões, grupos e governança documental',
-    paragraphs: [
-      'O acesso a documentos, grupos e funcionalidades é controlado por papéis, permissões e políticas definidas pelos administradores da organização.',
-      'Alterações de acesso podem ser auditadas para fins operacionais e de conformidade.',
-    ],
+    titleKey: 'legal:section.governance.title',
+    paragraphKeys: ['legal:section.governance.p1', 'legal:section.governance.p2'],
   },
   {
     id: 'responsibility',
-    title: '8. Responsabilidades sobre os documentos enviados',
-    paragraphs: [
-      'Você garante possuir direito ou autorização para enviar, compartilhar e tratar os documentos disponibilizados no DOQYN.',
-      'É vedado o uso da plataforma para conteúdo ilícito, fraudulento ou que viole direitos de terceiros.',
-    ],
+    titleKey: 'legal:section.responsibility.title',
+    paragraphKeys: ['legal:section.responsibility.p1', 'legal:section.responsibility.p2'],
   },
   {
     id: 'security',
-    title: '9. Segurança da conta',
-    paragraphs: [
-      'Mantenha sua senha em sigilo e notifique a organização ou o suporte em caso de suspeita de uso indevido.',
-      'Medidas de segurança são adotadas de forma proporcional, sem garantia de proteção absoluta contra todos os riscos.',
-    ],
+    titleKey: 'legal:section.security.title',
+    paragraphKeys: ['legal:section.security.p1', 'legal:section.security.p2'],
   },
   {
     id: 'limitations',
-    title: '10. Limitações de uso',
-    paragraphs: [
-      'É proibido tentar burlar controles de acesso, explorar vulnerabilidades, sobrecarregar a plataforma ou utilizá-la fora das finalidades previstas.',
-      'O DOQYN pode impor limites operacionais razoáveis para preservar estabilidade e segurança.',
-    ],
+    titleKey: 'legal:section.limitations.title',
+    paragraphKeys: ['legal:section.limitations.p1', 'legal:section.limitations.p2'],
   },
   {
     id: 'suspension',
-    title: '11. Suspensão ou bloqueio de acesso',
-    paragraphs: [
-      'O acesso pode ser suspenso ou bloqueado em caso de violação destes termos, risco de segurança, exigência legal ou decisão administrativa da organização.',
-      'Registros relevantes podem ser mantidos para auditoria conforme a política aplicável.',
-    ],
+    titleKey: 'legal:section.suspension.title',
+    paragraphKeys: ['legal:section.suspension.p1', 'legal:section.suspension.p2'],
   },
   {
     id: 'audit',
-    title: '12. Auditoria e registros operacionais',
-    paragraphs: [
-      'Eventos relevantes de cadastro, solicitação de acesso, aprovações, alterações e operações críticas podem ser registrados para rastreabilidade.',
-      'Esses registros visam apoiar governança, suporte e conformidade operacional.',
-    ],
+    titleKey: 'legal:section.audit.title',
+    paragraphKeys: ['legal:section.audit.p1', 'legal:section.audit.p2'],
   },
   {
     id: 'changes',
-    title: '13. Alterações nos termos',
-    paragraphs: [
-      'Estes termos podem ser atualizados. Quando houver nova versão, o aceite poderá ser solicitado novamente em fluxos de cadastro, acesso ou uso da plataforma.',
-      'A versão aceita e a data do aceite podem ser registradas para fins de auditoria.',
-    ],
+    titleKey: 'legal:section.changes.title',
+    paragraphKeys: ['legal:section.changes.p1', 'legal:section.changes.p2'],
   },
   {
     id: 'contact',
-    title: '14. Contato',
-    paragraphs: [
-      'Para dúvidas sobre estes termos ou sobre o uso da plataforma, utilize os canais oficiais de suporte ou contato informados pela sua organização ou pelo DOQYN.',
-    ],
+    titleKey: 'legal:section.contact.title',
+    paragraphKeys: ['legal:section.contact.p1'],
   },
-] as const;
+];

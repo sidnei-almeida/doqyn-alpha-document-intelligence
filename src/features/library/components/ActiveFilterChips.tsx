@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { LibraryRouteState } from '../types/library';
@@ -8,7 +9,7 @@ import {
   PERIOD_FILTER_OPTIONS,
   STATUS_FILTER_OPTIONS,
   TYPE_FILTER_OPTIONS,
-  resolveSortOptionLabel,
+  resolveSortOptionLabelKey,
 } from '../utils/libraryFilterOptions';
 import { useTranslation } from 'react-i18next';
 
@@ -21,13 +22,15 @@ type ActiveFilterChipsProps = {
 };
 
 function RemovableChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { t } = useTranslation('library');
+
   return (
     <span className="explorer-filter-chip explorer-filter-chip--active inline-flex items-center gap-1 pr-1">
       <span className="max-w-[12rem] truncate">{label}</span>
       <button
         type="button"
         className="rounded-full p-0.5 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-        aria-label={`Remover filtro ${label}`}
+        aria-label={t('activeFilterChips.removerFiltro', { label })}
         onClick={onRemove}
       >
         <Icon name="close" size={ICON_SIZE.xs} />
@@ -36,12 +39,20 @@ function RemovableChip({ label, onRemove }: { label: string; onRemove: () => voi
   );
 }
 
+/**
+ * Acha a frase do valor ativo, ou cai no nome do próprio filtro.
+ *
+ * Recebe `t` em vez de resolver por dentro porque a lista guarda chave: o chip precisa da frase
+ * do idioma corrente, e é o componente que re-renderiza quando ele muda.
+ */
 function labelFor(
-  options: Array<{ value: string; label: string }>,
+  options: ReadonlyArray<{ value: string; labelKey: string }>,
   value: string,
-  fallback: string,
+  fallbackKey: string,
+  t: TFunction,
 ): string {
-  return options.find((option) => option.value === value)?.label ?? fallback;
+  const match = options.find((option) => option.value === value);
+  return t(match?.labelKey ?? fallbackKey);
 }
 
 /** Chips removíveis para busca e filtros ativos. */
@@ -70,7 +81,7 @@ export function ActiveFilterChips({
   if (state.q.trim()) {
     chips.push({
       key: 'q',
-      label: `Busca: ${state.q.trim()}`,
+      label: t('activeFilterChips.busca', { query: state.q.trim() }),
       onRemove: () => onStateChange({ q: '' }),
     });
   }
@@ -78,7 +89,7 @@ export function ActiveFilterChips({
   if (folderName && state.scope !== 'all') {
     chips.push({
       key: 'scope-folder',
-      label: `Em: ${folderName}`,
+      label: t('activeFilterChips.emPasta', { folderName }),
       onRemove: () => onStateChange({ scope: 'all' }),
     });
   }
@@ -86,7 +97,7 @@ export function ActiveFilterChips({
   if (caps.status && state.status) {
     chips.push({
       key: 'status',
-      label: labelFor(STATUS_FILTER_OPTIONS, state.status, 'Status'),
+      label: labelFor(STATUS_FILTER_OPTIONS, state.status, 'library:filterFallback.status', t),
       onRemove: () => onStateChange({ status: '' }),
     });
   }
@@ -94,7 +105,7 @@ export function ActiveFilterChips({
   if (caps.type && state.type) {
     chips.push({
       key: 'type',
-      label: labelFor(TYPE_FILTER_OPTIONS, state.type, 'Tipo'),
+      label: labelFor(TYPE_FILTER_OPTIONS, state.type, 'library:filterFallback.type', t),
       onRemove: () => onStateChange({ type: '' }),
     });
   }
@@ -102,7 +113,7 @@ export function ActiveFilterChips({
   if (caps.period && state.period) {
     chips.push({
       key: 'period',
-      label: labelFor(PERIOD_FILTER_OPTIONS, state.period, 'Período'),
+      label: labelFor(PERIOD_FILTER_OPTIONS, state.period, 'library:filterFallback.period', t),
       onRemove: () => onStateChange({ period: '' }),
     });
   }
@@ -110,7 +121,7 @@ export function ActiveFilterChips({
   if (caps.owner && state.owner) {
     chips.push({
       key: 'owner',
-      label: labelFor(OWNER_FILTER_OPTIONS, state.owner, 'Proprietário'),
+      label: labelFor(OWNER_FILTER_OPTIONS, state.owner, 'library:filterFallback.owner', t),
       onRemove: () => onStateChange({ owner: '' }),
     });
   }
@@ -118,12 +129,12 @@ export function ActiveFilterChips({
   if (state.scope === 'all' && folderName) {
     chips.push({
       key: 'scope-all',
-      label: 'Toda a biblioteca',
+      label: t('activeFilterChips.todaABiblioteca'),
       onRemove: () => onStateChange({ scope: '' }),
     });
   }
 
-  const sortLabel = resolveSortOptionLabel(state.sort, state.direction);
+  const sortLabel = t(resolveSortOptionLabelKey(state.sort, state.direction));
   const isDefaultSort = state.sort === 'updatedAt' && state.direction === 'desc';
   if (caps.sort && !isDefaultSort) {
     chips.push({

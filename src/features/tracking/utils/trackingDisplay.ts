@@ -1,109 +1,67 @@
+/**
+ * Rótulos e formatos da Central de Rastreamento.
+ *
+ * Duas naturezas convivem aqui, e cada uma resolve o idioma num momento diferente:
+ *
+ * **As listas de opção de filtro são constante de módulo.** Guardam `labelKey`, e quem monta o
+ * `<Select>` resolve com o `t` do componente — resolver no import congelaria o idioma da sessão
+ * inteira no primeiro carregamento do módulo.
+ *
+ * **As funções de formato resolvem na chamada.** Rodam por linha da tabela, já dentro do render,
+ * e por isso podem falar direto com a instância do i18next.
+ *
+ * O mapa de ações vale um parágrafo à parte. A chave do catálogo é o próprio código do evento
+ * (`document.upload_started`), e o ponto que separa domínio de ação vira nível de aninhamento no
+ * JSON — o que é conveniente, não coincidência: o tradutor vê as ações de documento agrupadas.
+ * Código sem frase escrita cai no formatador genérico, que continua legível em qualquer idioma
+ * porque só reordena o próprio identificador.
+ */
+import { i18n } from '@/i18n';
 import type { DocumentTrackingFilters, TrackingListStatus } from '@/types/document-tracking';
 
+const NS = 'tracking';
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return i18n.t(`${NS}:${key}`, params ?? {});
+}
+
 export const TRACKING_CATEGORY_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'upload', label: 'Upload' },
-  { value: 'analysis', label: 'Análise' },
-  { value: 'edit', label: 'Edição' },
-  { value: 'download', label: 'Download' },
-  { value: 'preview', label: 'Preview' },
-  { value: 'access', label: 'Acesso' },
-  { value: 'error', label: 'Erros' },
+  { value: 'all', labelKey: 'tracking:filterOption.category.all' },
+  { value: 'upload', labelKey: 'tracking:filterOption.category.upload' },
+  { value: 'analysis', labelKey: 'tracking:filterOption.category.analysis' },
+  { value: 'edit', labelKey: 'tracking:filterOption.category.edit' },
+  { value: 'download', labelKey: 'tracking:filterOption.category.download' },
+  { value: 'preview', labelKey: 'tracking:filterOption.category.preview' },
+  { value: 'access', labelKey: 'tracking:filterOption.category.access' },
+  { value: 'error', labelKey: 'tracking:filterOption.category.error' },
 ] as const;
 
 export const TRACKING_SEVERITY_OPTIONS = [
-  { value: '', label: 'Todas' },
-  { value: 'info', label: 'Info' },
-  { value: 'warning', label: 'Aviso' },
-  { value: 'error', label: 'Erro' },
-  { value: 'critical', label: 'Crítico' },
+  { value: '', labelKey: 'tracking:filterOption.severity.all' },
+  { value: 'info', labelKey: 'tracking:filterOption.severity.info' },
+  { value: 'warning', labelKey: 'tracking:filterOption.severity.warning' },
+  { value: 'error', labelKey: 'tracking:filterOption.severity.error' },
+  { value: 'critical', labelKey: 'tracking:filterOption.severity.critical' },
 ] as const;
 
 export const TRACKING_STATUS_OPTIONS = [
-  { value: '', label: 'Todos' },
-  { value: 'success', label: 'Sucesso' },
-  { value: 'failed', label: 'Falha' },
-  { value: 'denied', label: 'Negado' },
-  { value: 'pending', label: 'Pendente' },
+  { value: '', labelKey: 'tracking:filterOption.status.all' },
+  { value: 'success', labelKey: 'tracking:filterOption.status.success' },
+  { value: 'failed', labelKey: 'tracking:filterOption.status.failed' },
+  { value: 'denied', labelKey: 'tracking:filterOption.status.denied' },
+  { value: 'pending', labelKey: 'tracking:filterOption.status.pending' },
 ] as const;
 
 export const TRACKING_ACTION_GROUP_OPTIONS = [
-  { value: '', label: 'Todos' },
-  { value: 'lifecycle', label: 'Ciclo de vida' },
-  { value: 'preview', label: 'Preview' },
-  { value: 'download', label: 'Download' },
-  { value: 'access', label: 'Acesso' },
-  { value: 'storage', label: 'Storage' },
-  { value: 'explorer', label: 'Explorador' },
-  { value: 'governance', label: 'Governança' },
+  { value: '', labelKey: 'tracking:filterOption.actionGroup.all' },
+  { value: 'lifecycle', labelKey: 'tracking:filterOption.actionGroup.lifecycle' },
+  { value: 'preview', labelKey: 'tracking:filterOption.actionGroup.preview' },
+  { value: 'download', labelKey: 'tracking:filterOption.actionGroup.download' },
+  { value: 'access', labelKey: 'tracking:filterOption.actionGroup.access' },
+  { value: 'storage', labelKey: 'tracking:filterOption.actionGroup.storage' },
+  { value: 'explorer', labelKey: 'tracking:filterOption.actionGroup.explorer' },
+  { value: 'governance', labelKey: 'tracking:filterOption.actionGroup.governance' },
 ] as const;
-
-const ACTION_LABELS: Record<string, string> = {
-  'document.upload_started': 'Upload iniciado',
-  'document.upload_completed': 'Upload concluído',
-  'document.analysis_started': 'Análise iniciada',
-  'document.analysis_completed': 'Análise concluída',
-  'document.review_confirmed': 'Revisão confirmada',
-  'document.preview_viewed': 'Preview visualizado',
-  'document.preview_denied': 'Preview negado',
-  'document.preview_failed': 'Falha no preview',
-  'document.viewer_opened': 'Viewer aberto',
-  'document.viewer_closed': 'Viewer fechado',
-  'document.print_attempt_blocked': 'Impressão bloqueada',
-  'document.download_attempted': 'Download tentado',
-  'document.downloaded': 'Download realizado',
-  'document.download_denied': 'Download negado',
-  'document.download_failed': 'Falha no download',
-  'document.metadata_updated': 'Metadados atualizados',
-  'document.moved': 'Documento movido de categoria',
-  'document.share_created': 'Compartilhamento criado',
-  'document.share_revoked': 'Compartilhamento revogado',
-  'document.external_share_created': 'Compartilhamento externo criado',
-  'document.external_share_invite_opened': 'Convite externo aberto',
-  'document.external_share_accepted': 'Convite externo aceito',
-  'document.external_share_viewed': 'Documento externo visualizado',
-  'document.external_share_downloaded': 'Download externo realizado',
-  'document.external_share_revoked': 'Compartilhamento externo revogado',
-  'document.external_share_expired': 'Compartilhamento externo expirado',
-  'document.external_share_denied': 'Acesso externo negado',
-  'document.signature_request_created': 'Solicitação de assinatura criada',
-  'document.signature_internal_assigned': 'Assinatura atribuída a usuário interno',
-  'document.signature_internal_opened': 'Assinatura interna aberta',
-  'document.signature_external_invite_created': 'Convite externo de assinatura criado',
-  'document.signature_external_opened': 'Assinatura externa aberta',
-  'document.signature_link_opened': 'Link de assinatura aberto',
-  'document.signature_preview_viewed': 'Preview para assinatura visualizado',
-  'document.signature_viewed': 'Documento para assinatura visualizado',
-  'document.signature_consent_checked': 'Aceite de assinatura registrado',
-  'document.signature_completed': 'Assinatura eletrônica concluída',
-  'document.signature_declined': 'Assinatura recusada',
-  'document.signature_request_cancelled': 'Solicitação de assinatura revogada',
-  'document.signature_downloaded': 'PDF assinado baixado',
-  'document.signed_pdf_generated': 'PDF assinado gerado',
-  'document.signature_verification_opened': 'Validação de assinatura aberta',
-  'document.shared_viewed': 'Documento compartilhado visualizado',
-  'document.shared_downloaded': 'Download de documento compartilhado',
-  'document.share_denied': 'Compartilhamento negado',
-  'document.version_created': 'Nova versão criada',
-  'document.trash_moved': 'Movido para lixeira',
-  'document.trash_restored': 'Restaurado da lixeira',
-  'document.deactivated': 'Desativado após lixeira',
-  'document.reactivated': 'Reativado',
-  'document.permanent_deleted': 'Excluído permanentemente',
-  'document.trash_purge_failed': 'Falha na purga de storage',
-  'access.document_denied': 'Acesso negado',
-  'file_explorer.folder_opened': 'Pasta aberta',
-  'file_explorer.search_performed': 'Busca realizada',
-  'file_explorer.filter_applied': 'Filtro aplicado',
-  'file_explorer.details_opened': 'Detalhes abertos',
-};
-
-const STATUS_LABELS: Record<TrackingListStatus, string> = {
-  success: 'Sucesso',
-  failed: 'Falha',
-  denied: 'Negado',
-  pending: 'Pendente',
-};
 
 export function buildTrackingEventsQuery(filters: DocumentTrackingFilters): Record<string, string> {
   const params: Record<string, string> = {};
@@ -124,35 +82,33 @@ export function buildTrackingEventsQuery(filters: DocumentTrackingFilters): Reco
   return params;
 }
 
+/** Traço em vez de vazio: a célula da tabela precisa ocupar altura mesmo sem dado. */
+const EMPTY_VALUE = '—';
+
 export function formatTrackingAction(action: string): string {
-  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const key = `${NS}:actionLabel.${action}`;
+  if (i18n.isInitialized && i18n.exists(key)) return i18n.t(key);
   return action
     .replace(/^document\./, '')
-    .replace(/^access\./, 'Acesso: ')
-    .replace(/^file_explorer\./, 'Explorador: ')
+    .replace(/^access\./, t('actionFallback.accessPrefix'))
+    .replace(/^file_explorer\./, t('actionFallback.explorerPrefix'))
     .replace(/[._]/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-const SEVERITY_LABELS: Record<string, string> = {
-  debug: 'Debug',
-  info: 'Info',
-  warning: 'Aviso',
-  error: 'Erro',
-  critical: 'Crítico',
-};
-
 export function formatTrackingSeverity(severity: string): string {
-  return SEVERITY_LABELS[severity] ?? severity;
+  const key = `${NS}:severityLabel.${severity}`;
+  return i18n.isInitialized && i18n.exists(key) ? i18n.t(key) : severity;
 }
 
 export function formatTrackingStatus(status?: TrackingListStatus): string {
-  if (!status) return '—';
-  return STATUS_LABELS[status] ?? status;
+  if (!status) return EMPTY_VALUE;
+  const key = `${NS}:statusLabel.${status}`;
+  return i18n.isInitialized && i18n.exists(key) ? i18n.t(key) : status;
 }
 
 export function formatSessionOrigin(sessionHash?: string): string {
-  if (!sessionHash) return '—';
+  if (!sessionHash) return EMPTY_VALUE;
   return `${sessionHash.slice(0, 8)}…`;
 }
 
@@ -169,14 +125,26 @@ export type SecurityContextDisplay = {
 function formatDeviceTypeLabel(deviceType?: unknown): string {
   switch (deviceType) {
     case 'mobile':
-      return 'Mobile';
+      return t('deviceType.mobile');
     case 'tablet':
-      return 'Tablet';
+      return t('deviceType.tablet');
     case 'desktop':
-      return 'Desktop';
+      return t('deviceType.desktop');
     default:
-      return 'Desconhecido';
+      return t('deviceType.unknown');
   }
+}
+
+/**
+ * O par navegador/sistema é frase, não concatenação.
+ *
+ * Era `[browser, os].join(' em ')`. A preposição é do português, e a ordem não é universal — em
+ * inglês o natural é "Chrome on macOS", e há idioma onde o sistema vem antes. Com os dois como
+ * parâmetro de uma frase única, o tradutor decide a ordem e a ligação.
+ */
+function formatDeviceSummary(browser?: string, os?: string): string {
+  if (browser && os) return t('securityContext.browserOnOs', { browser, os });
+  return browser ?? os ?? '';
 }
 
 export function formatSecurityContextDisplay(
@@ -190,25 +158,29 @@ export function formatSecurityContextDisplay(
   const summary =
     typeof securityContext.userAgent === 'string'
       ? securityContext.userAgent
-      : [browser, os].filter(Boolean).join(' em ');
+      : formatDeviceSummary(browser, os);
 
   const city = typeof securityContext.city === 'string' ? securityContext.city : undefined;
   const region = typeof securityContext.region === 'string' ? securityContext.region : undefined;
   const country = typeof securityContext.country === 'string' ? securityContext.country : undefined;
   const locationParts = [city, region, country].filter(Boolean);
   const ipLabel =
-    typeof securityContext.ipAddressMasked === 'string' ? securityContext.ipAddressMasked : '—';
+    typeof securityContext.ipAddressMasked === 'string'
+      ? securityContext.ipAddressMasked
+      : EMPTY_VALUE;
+  /* `'rede local'` e `'1:…'` são valores gravados pelo servidor, não texto de tela — comparar
+     com eles continua sendo comparação de dado, e não muda com o idioma da interface. */
   const isLocalNetwork =
     securityContext.isLocalNetwork === true || ipLabel === 'rede local' || ipLabel === '1:…';
 
   return {
-    deviceLabel: summary || '—',
+    deviceLabel: summary || EMPTY_VALUE,
     deviceTypeLabel: formatDeviceTypeLabel(securityContext.deviceType),
     locationLabel: isLocalNetwork
-      ? 'Rede local'
+      ? t('securityContext.localNetwork')
       : locationParts.length
         ? locationParts.join(', ')
-        : '—',
+        : EMPTY_VALUE,
     ipLabel,
     sessionLabel: formatSessionOrigin(
       typeof securityContext.sessionIdHash === 'string' ? securityContext.sessionIdHash : undefined,

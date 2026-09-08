@@ -11,30 +11,34 @@ import type { TourAccess, TourStep } from './tourTypes';
  * A ordem conta uma história: onde o documento entra, como ele se organiza, o
  * que se faz com ele, e só então quem pode o quê. Governança no fim de
  * propósito — antes disso a pessoa ainda não tem com o que se importar.
+ *
+ * O roteiro é constante de módulo, então guarda `titleKey` e `bodyKey`: o cartão resolve as
+ * frases com o `t` da tela, e trocar de idioma com o tour aberto reescreve o passo em que a
+ * pessoa está, em vez de deixá-la no idioma de quando o módulo carregou.
  */
 export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'boas-vindas',
-    title: 'Onde fica cada coisa',
-    body: 'Dois minutos percorrendo o essencial do DOQYN. Dá para sair a qualquer momento. O tour volta pelo ? na barra de cima.',
+    titleKey: 'tour:step.boas-vindas.title',
+    bodyKey: 'tour:step.boas-vindas.body',
   },
   {
     id: 'biblioteca',
-    title: 'Biblioteca',
-    body: 'Todo documento que entra no DOQYN mora aqui. É a tela em que você navega, busca e abre. O resto do menu são recortes dela.',
+    titleKey: 'tour:step.biblioteca.title',
+    bodyKey: 'tour:step.biblioteca.body',
     route: '/biblioteca',
     target: ['[data-tour="nav:/biblioteca"]'],
   },
   {
     id: 'enviar',
-    title: 'Enviar documento',
-    body: 'Por aqui, ou arrastando o arquivo para qualquer ponto da tela. A IA lê o documento, reconhece o que ele é e propõe nome, classe e metadados antes de você confirmar.',
+    titleKey: 'tour:step.enviar.title',
+    bodyKey: 'tour:step.enviar.body',
     target: ['[data-tour="new-button"]'],
   },
   {
     id: 'classes',
-    title: 'As pastas são classes',
-    body: 'Cada pasta é uma classe de documento: contrato, nota fiscal, procuração. O documento cai na classe porque a IA reconheceu o que ele é, não porque alguém o arrastou até lá.',
+    titleKey: 'tour:step.classes.title',
+    bodyKey: 'tour:step.classes.body',
     route: '/biblioteca',
     target: [
       '[data-testid="explorer-folder-grid"]',
@@ -44,57 +48,57 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: 'assinar',
-    title: 'Para assinar',
-    body: 'O que espera a sua assinatura fica separado do resto. Você assina dentro do DOQYN, e quem é de fora assina por um link, sem precisar de conta.',
+    titleKey: 'tour:step.assinar.title',
+    bodyKey: 'tour:step.assinar.body',
     target: ['[data-tour="nav:/biblioteca/assinaturas"]'],
   },
   {
     id: 'pedidos',
-    title: 'Pedidos',
-    body: 'Quando falta um documento, você pede em vez de esperar. O pedido acompanha quem já enviou e quem ainda não, e vira documento na Biblioteca assim que chega.',
+    titleKey: 'tour:step.pedidos.title',
+    bodyKey: 'tour:step.pedidos.body',
     target: ['[data-tour="nav:/pedidos"]'],
   },
   {
     id: 'usuarios',
-    title: 'Usuários e grupos',
-    body: 'Quem entra na organização e em que grupo cai. O grupo é o que a governança enxerga: o acesso se dá ao grupo, nunca à pessoa solta.',
+    titleKey: 'tour:step.usuarios.title',
+    bodyKey: 'tour:step.usuarios.body',
     route: '/users',
     target: ['.page-shell__body'],
     visible: (access: TourAccess) => access.canManageUsers,
   },
   {
     id: 'regras',
-    title: 'Regras de acesso',
-    body: 'É aqui que o acesso é escrito: ligue um grupo a uma classe e escolha os verbos (ver, baixar, enviar). Baixar aceita o meio-termo de pedir aprovação; os outros são sim ou não.',
+    titleKey: 'tour:step.regras.title',
+    bodyKey: 'tour:step.regras.body',
     route: '/rules',
     target: ['.page-shell__body'],
     visible: (access: TourAccess) => access.canAccessRules,
   },
   {
     id: 'matriz',
-    title: 'Matriz',
-    body: 'A leitura do que as regras produziram: por pessoa, quem alcança cada documento; por grupo, o que cada um recebe, verbo a verbo. A matriz não altera nada: ela existe para conferir antes de descobrir pelo caminho errado.',
+    titleKey: 'tour:step.matriz.title',
+    bodyKey: 'tour:step.matriz.body',
     route: '/matriz',
     target: ['.matrix-grid', '.page-shell__body'],
   },
   {
     id: 'ia',
-    title: 'O quanto a IA decide',
-    body: 'A política de envio e leitura automática vale para tudo que entra: até onde a IA classifica sozinha e quando ela devolve o documento para revisão humana.',
+    titleKey: 'tour:step.ia.title',
+    bodyKey: 'tour:step.ia.body',
     route: '/settings?section=organizacao',
     target: ['#upload', '.page-shell__body'],
     visible: (access: TourAccess) => access.governsOrganization,
   },
   {
     id: 'auditoria',
-    title: 'Auditoria',
-    body: 'Toda ação sobre um documento vira registro: quem viu, quem baixou, quem assinou, quando. É o que sustenta a palavra do sistema quando alguém pergunta depois.',
+    titleKey: 'tour:step.auditoria.title',
+    bodyKey: 'tour:step.auditoria.body',
     target: ['[data-tour="nav:/audit"]'],
   },
   {
     id: 'ajuda',
-    title: 'O tour mora aqui',
-    body: 'Sempre que precisar, este ? traz o passeio de volta, do começo e na tela em que você estiver.',
+    titleKey: 'tour:step.ajuda.title',
+    bodyKey: 'tour:step.ajuda.body',
     target: ['[data-tour="help"]'],
   },
 ];
