@@ -1,5 +1,4 @@
 {
-  "deleteWord": "EXCLUIR",
   "removeFromGroup": {
     "title": "Remover membro do grupo?",
     "description": "{{memberName}} perderá acesso às categorias liberadas para o grupo {{groupName}}. Esta ação pode ser revertida arrastando o membro de volta.",

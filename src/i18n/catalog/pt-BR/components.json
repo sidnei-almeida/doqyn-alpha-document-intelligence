@@ -20,7 +20,6 @@
     "proximoMes": "Próximo mês"
   },
   "confirmProvider": {
-    "digite": "Digite",
     "typeToConfirm": "Digite <word>{{word}}</word> para confirmar:"
   },
   "countrySelect": {

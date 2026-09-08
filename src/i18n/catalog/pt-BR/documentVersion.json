@@ -3,7 +3,6 @@
     "aVersaoAnteriorPermanece": "A versão anterior permanece no histórico.",
     "concluir": "Concluir",
     "confirmVersion": "Confirmar {{version}}",
-    "confirmar": "Confirmar",
     "fechar": "Fechar",
     "tentarNovamente": "Tentar novamente"
   },
@@ -27,7 +26,6 @@
   },
   "newVersionAnalyzingPanel": {
     "analisandoNovaVersao": "Analisando nova versão",
-    "comparandoCom": "Comparando com",
     "comparingWith": "Comparando com {{current}} para preparar {{next}}."
   },
   "newVersionReviewStep": {
