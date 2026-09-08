@@ -1,4 +1,5 @@
 import { authFetch } from '@/auth/apiAuth';
+import { parseApiError } from '@/lib/apiErrors';
 
 export type NotificationStatus = 'unread' | 'read' | 'dismissed';
 
@@ -43,8 +44,9 @@ export type NotificationsResponse = {
 };
 
 async function parseError(response: Response): Promise<Error> {
-  const body = (await response.json().catch(() => null)) as { message?: string } | null;
-  return new Error(body?.message ?? `HTTP ${response.status}`);
+  /* Mantém o nome local, mas devolve `ApiError`: o `code` sobrevive até a tela,
+     que é quem sabe traduzi-lo. */
+  return parseApiError(response);
 }
 
 export async function listNotifications(params?: {

@@ -1,5 +1,6 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
+import { parseApiError } from '@/lib/apiErrors';
 
 /**
  * Um pedido esperando decisão, na forma que o servidor devolve.
@@ -115,8 +116,7 @@ export async function decideApprovalRequest(
   );
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? 'Não foi possível registrar a decisão.');
+    throw await parseApiError(response, 'Não foi possível registrar a decisão.');
   }
 }
 

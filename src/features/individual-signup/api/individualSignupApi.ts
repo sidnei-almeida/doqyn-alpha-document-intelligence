@@ -1,4 +1,5 @@
 import { getAuthBasePath } from '@/auth/authConfig';
+import { parseApiError } from '@/lib/apiErrors';
 
 export type IndividualSignupInput = {
   firstName: string;
@@ -49,7 +50,7 @@ export async function submitIndividualSignup(
   };
 
   if (!response.ok) {
-    throw new Error(data.message ?? 'Não foi possível criar seu acesso.');
+    throw await parseApiError(response, 'Não foi possível criar seu acesso.');
   }
 
   return data;

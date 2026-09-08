@@ -1,6 +1,7 @@
 import { authFetch } from '@/auth/apiAuth';
 import { parseDocumentApiError } from '@/features/documents/api/documentsApi.errors';
 import type { DocumentSignatureSummary } from '@/types/document-library';
+import { parseApiError } from '@/lib/apiErrors';
 
 export type SignaturePortalPayload = {
   signatureRequestId: string;
@@ -112,8 +113,7 @@ export async function createDocumentSignatureRequest(
 export async function fetchPublicSignatureVerification(verificationCode: string) {
   const response = await fetch(`/api/verify/signature/${encodeURIComponent(verificationCode)}`);
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? 'Assinatura não encontrada.');
+    throw await parseApiError(response, 'Assinatura não encontrada.');
   }
   return response.json();
 }

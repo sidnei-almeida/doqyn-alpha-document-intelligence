@@ -1,4 +1,5 @@
 import { authFetch } from '@/auth/apiAuth';
+import { parseApiError } from '@/lib/apiErrors';
 
 export type MetadataFieldPatch = {
   key: string;
@@ -52,8 +53,9 @@ export type MetadataUpdateResponse = {
 };
 
 async function parseError(response: Response): Promise<Error> {
-  const body = (await response.json().catch(() => null)) as { message?: string } | null;
-  return new Error(body?.message ?? `HTTP ${response.status}`);
+  /* Mantém o nome local, mas devolve `ApiError`: o `code` sobrevive até a tela,
+     que é quem sabe traduzi-lo. */
+  return parseApiError(response);
 }
 
 export async function getDocumentMetadataSheet(documentId: string): Promise<DocumentMetadataSheet> {
@@ -94,8 +96,7 @@ export async function renameDocument(
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? 'Não foi possível renomear o documento.');
+    throw await parseApiError(response, 'Não foi possível renomear o documento.');
   }
 
   return (await response.json()) as RenameDocumentResponse;

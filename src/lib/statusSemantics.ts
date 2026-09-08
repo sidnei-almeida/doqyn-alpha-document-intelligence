@@ -2,13 +2,7 @@ import type { DocumentStatus } from '@/types/document';
 import { DOCUMENT_STATUSES } from '@/lib/constants';
 import { STATUS_LABELS as RULES_MEMBER_STATUS_LABELS } from '@/utils/rulesHelpers';
 
-export type StatusSemantic =
-  | 'success'
-  | 'info'
-  | 'warning'
-  | 'danger'
-  | 'pending'
-  | 'neutral';
+export type StatusSemantic = 'success' | 'info' | 'warning' | 'danger' | 'pending' | 'neutral';
 
 export type StatusBadgeConfig = {
   label: string;

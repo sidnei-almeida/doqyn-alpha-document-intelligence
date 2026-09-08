@@ -1,5 +1,6 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { ProfileMe } from '../types';
+import { parseApiError } from '@/lib/apiErrors';
 
 export {
   validateProfileAvatarFile,
@@ -17,8 +18,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
-    throw new Error(error.message ?? `HTTP ${response.status}`);
+    throw await parseApiError(response);
   }
 
   return response.json();
@@ -40,8 +40,7 @@ export async function uploadProfileAvatar(file: File): Promise<ProfileMe> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Falha no upload do avatar.' }));
-    throw new Error(error.message ?? `HTTP ${response.status}`);
+    throw await parseApiError(response);
   }
 
   const data = (await response.json()) as { profile: ProfileMe };

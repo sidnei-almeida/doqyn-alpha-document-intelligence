@@ -1,4 +1,5 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { parseApiError } from './apiErrors';
 import { serializeQueryParams } from './queryParams';
 
 const API_BASE = '/api';
@@ -11,8 +12,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
-    throw new Error(error.message ?? `HTTP ${response.status}`);
+    /* `ApiError` em vez de `Error`: o `code` que o servidor manda é o que se traduz, e
+       descartá-lo aqui obrigava cada tela a reescrever a frase do servidor por cima. */
+    throw await parseApiError(response);
   }
 
   return response.json();
@@ -54,7 +56,9 @@ export const api = {
   audit: {
     list: (params?: Record<string, string>) => {
       const query = serializeQueryParams(params);
-      return request<{ events: unknown[]; total: number; nextCursor?: string | null }>(`/audit${query}`);
+      return request<{ events: unknown[]; total: number; nextCursor?: string | null }>(
+        `/audit${query}`,
+      );
     },
     overview: () =>
       request<{

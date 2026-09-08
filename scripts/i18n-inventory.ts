@@ -258,7 +258,8 @@ function collect(filePath: string): Finding[] {
       /* Separador solto — `·`, `—`, `/` entre elementos — é desenho, não texto. */
       if (isProbablyProse(node.text)) record(node, node.text, 'user', 'texto em JSX');
     } else if (ts.isTemplateExpression(node)) {
-      const literal = node.head.text + node.templateSpans.map((span) => span.literal.text).join(' ');
+      const literal =
+        node.head.text + node.templateSpans.map((span) => span.literal.text).join(' ');
       if (isProbablyProse(literal)) {
         /* Template com interpolação é o que o codemod da Fase 6 não sabe converter sozinho:
            vira mensagem ICU escrita à mão. Marcar agora evita descobrir depois. */
@@ -330,7 +331,9 @@ function main() {
   console.log('');
   console.log('Inventário de strings — i18n Fase 0');
   console.log('─'.repeat(74));
-  console.log(`${'área'.padEnd(34)}${pad('usuário', 9)}${pad('ambíguo', 9)}${pad('técnico', 9)}${pad('migrar', 9)}`);
+  console.log(
+    `${'área'.padEnd(34)}${pad('usuário', 9)}${pad('ambíguo', 9)}${pad('técnico', 9)}${pad('migrar', 9)}`,
+  );
   console.log('─'.repeat(74));
   for (const row of rows) {
     if (row.migrate === 0) continue;

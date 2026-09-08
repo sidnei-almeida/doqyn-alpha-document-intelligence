@@ -1,9 +1,4 @@
-import {
-  formatCnpj,
-  formatTaxId,
-  normalizeTaxId,
-  type TaxIdKind,
-} from './identifiers/taxId';
+import { formatCnpj, formatTaxId, normalizeTaxId, type TaxIdKind } from './identifiers/taxId';
 import { formatWhatsapp } from './identifiers/whatsapp';
 
 export const PASSWORD_REVIEW_LABEL = 'Senha definida (não exibida por segurança)';

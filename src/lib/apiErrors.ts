@@ -63,7 +63,9 @@ export function parseApiErrorBody(
   fallbackMessage = 'Não foi possível concluir a ação agora. Tente novamente.',
 ): ParsedApiError {
   const body = (data && typeof data === 'object' ? data : {}) as ErrorBody;
-  const code = extractCode(body) ?? (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
+  const code =
+    extractCode(body) ??
+    (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
   const message = extractMessage(body, fallbackMessage);
 
   return {
@@ -96,7 +98,13 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 export function shouldLogoutForError(code: string): boolean {
-  return ['INVALID_SESSION', 'SESSION_EXPIRED', 'AUTH_REQUIRED', 'NO_SESSION', 'UNAUTHORIZED'].includes(code);
+  return [
+    'INVALID_SESSION',
+    'SESSION_EXPIRED',
+    'AUTH_REQUIRED',
+    'NO_SESSION',
+    'UNAUTHORIZED',
+  ].includes(code);
 }
 
 export function shouldRedirectToLogin(code: string): boolean {

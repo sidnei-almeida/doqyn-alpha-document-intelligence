@@ -25,6 +25,7 @@
 import i18next, { type i18n as I18nInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import ptCommon from './catalog/pt-BR/common.json';
+import ptErrors from './catalog/pt-BR/errors.json';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, applyLocale, resolveInitialLocale } from './locales';
 import type { SupportedLocale } from './locales';
 
@@ -32,6 +33,15 @@ import type { SupportedLocale } from './locales';
 const catalogLoaders = import.meta.glob<{ default: Record<string, unknown> }>('./catalog/*/*.json');
 
 const DEFAULT_NAMESPACE = 'common';
+
+/**
+ * `errors` viaja junto com `common` em vez de sob demanda.
+ *
+ * Erro aparece em qualquer tela e, quase sempre, quando algo já está indo mal — não é hora de
+ * depender de um `import()` que pode ser exatamente o que a rede acabou de derrubar. São 234
+ * frases curtas; o custo de tê-las sempre é menor que o de não tê-las na hora errada.
+ */
+const ERRORS_NAMESPACE = 'errors';
 
 /**
  * Namespace que não existe naquele idioma devolve objeto vazio em vez de erro. É o caso normal
@@ -73,12 +83,12 @@ export function initI18n(): I18nInstance {
       fallbackLng: DEFAULT_LOCALE,
       supportedLngs: SUPPORTED_LOCALES,
       defaultNS: DEFAULT_NAMESPACE,
-      ns: [DEFAULT_NAMESPACE],
+      ns: [DEFAULT_NAMESPACE, ERRORS_NAMESPACE],
       /* `common` já vem embutido; o backend cuida do resto. Sem isto o i18next
          ignoraria os recursos estáticos assim que um backend existe. */
       partialBundledLanguages: true,
       resources: {
-        [DEFAULT_LOCALE]: { [DEFAULT_NAMESPACE]: ptCommon },
+        [DEFAULT_LOCALE]: { [DEFAULT_NAMESPACE]: ptCommon, [ERRORS_NAMESPACE]: ptErrors },
       },
       interpolation: { escapeValue: false },
       /* Suspense desligado de propósito: o provider fica acima do roteador, e uma suspensão
