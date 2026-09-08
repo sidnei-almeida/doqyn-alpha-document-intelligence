@@ -6,7 +6,20 @@ import {
   parsePhoneNumberFromString,
 } from 'libphonenumber-js/min';
 import type { CountryCode } from 'libphonenumber-js/min';
+import { i18n } from '@/i18n';
+import { DEFAULT_LOCALE } from '@/i18n/locales';
 import { formatCnpj, formatCpf, isCompleteTaxId, normalizeTaxId } from './taxId';
+
+/**
+ * O idioma em que o `Intl` deve escrever nome de país e ordenar a lista.
+ *
+ * Antes era `pt-BR` cravado no parâmetro padrão, e nenhum chamador passava outra coisa: o
+ * cadastro em inglês listaria "Alemanha" e ordenaria por A de Alemanha. O parâmetro continua
+ * existindo para quem precisar de um idioma específico — o resto pergunta ao i18n.
+ */
+function activeLocale(): string {
+  return i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE;
+}
 
 export type { CountryCode };
 
@@ -44,8 +57,14 @@ function normalizeGenericTaxId(value: string): string {
 export type TaxIdSpec = {
   /** Valor enviado como `taxIdType` — o backend só valida o mapeamento para BR. */
   type: string;
-  label: string;
-  placeholder: string;
+  /** Chave do rótulo: a spec é constante de módulo e não pode congelar a frase. */
+  labelKey: string;
+  /**
+   * Chave do placeholder. No Brasil ele é máscara (`000.000.000-00`), e nenhum tradutor a
+   * altera — mas passa pelo catálogo do mesmo jeito, para a spec ter uma forma só. Fora do
+   * Brasil é frase de verdade, porque o campo é livre.
+   */
+  placeholderKey: string;
   /** Máscara aplicada enquanto se digita. */
   format: (value: string) => string;
   isComplete: (value: string) => boolean;
@@ -56,16 +75,16 @@ export type TaxIdSpec = {
 const BR_TAX_ID_SPECS: Record<PersonType, TaxIdSpec> = {
   individual: {
     type: 'cpf',
-    label: 'CPF',
-    placeholder: '000.000.000-00',
+    labelKey: 'common:taxId.cpfLabel',
+    placeholderKey: 'common:taxId.cpfPlaceholder',
     format: (value) => formatCpf(normalizeTaxId(value)),
     isComplete: (value) => isCompleteTaxId(value, 'CPF'),
     toApiValue: (value) => normalizeTaxId(value),
   },
   company: {
     type: 'cnpj',
-    label: 'CNPJ',
-    placeholder: '00.000.000/0000-00',
+    labelKey: 'common:taxId.cnpjLabel',
+    placeholderKey: 'common:taxId.cnpjPlaceholder',
     format: (value) => formatCnpj(normalizeTaxId(value)),
     isComplete: (value) => isCompleteTaxId(value, 'CNPJ'),
     toApiValue: (value) => normalizeTaxId(value),
@@ -74,8 +93,8 @@ const BR_TAX_ID_SPECS: Record<PersonType, TaxIdSpec> = {
 
 const GENERIC_TAX_ID_SPEC: TaxIdSpec = {
   type: 'tax_id',
-  label: 'Documento fiscal',
-  placeholder: 'Documento de identificação fiscal',
+  labelKey: 'common:taxId.genericLabel',
+  placeholderKey: 'common:taxId.genericPlaceholder',
   format: (value) => normalizeGenericTaxId(value),
   isComplete: (value) => {
     const normalized = normalizeGenericTaxId(value);
@@ -99,7 +118,7 @@ export function getTaxIdSpec(country: CountryCode, personType: PersonType): TaxI
  * validar o campo `country` — assim os dois lados não divergem sobre o que é um país válido.
  * Os nomes saem do `Intl.DisplayNames`, sem catálogo próprio para manter.
  */
-export function listCountries(locale = 'pt-BR'): CountryOption[] {
+export function listCountries(locale = activeLocale()): CountryOption[] {
   const displayNames = new Intl.DisplayNames([locale], { type: 'region' });
 
   const options = getCountries().map((code) => ({
@@ -128,7 +147,7 @@ export function listCountries(locale = 'pt-BR'): CountryOption[] {
  * teve o país escolhido. Deixar estourar derrubava a tela de revisão inteira por causa de um
  * rótulo; devolver o código cru mostra algo útil e segue.
  */
-export function getCountryName(country: CountryCode, locale = 'pt-BR'): string {
+export function getCountryName(country: CountryCode, locale = activeLocale()): string {
   if (!country) return '';
   try {
     return new Intl.DisplayNames([locale], { type: 'region' }).of(country) ?? country;

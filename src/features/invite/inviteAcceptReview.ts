@@ -1,10 +1,13 @@
+/** Ver `companySignupReview.ts`: validação resolve no envio, revisão recebe o `t` do memo. */
+import type { TFunction } from 'i18next';
+import { i18n } from '@/i18n';
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
 import { toWhatsappApiValue } from '../../lib/identifiers';
 import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
   formatPhone,
-  PASSWORD_REVIEW_LABEL,
+  PASSWORD_REVIEW_LABEL_KEY,
   safeDisplayValue,
 } from '../../lib/reviewDisplay';
 
@@ -32,10 +35,10 @@ export type AcceptInviteReviewOptions = {
 
 function validatePasswordStrength(password: string): string | null {
   if (password.length < 8) {
-    return 'A senha deve ter pelo menos 8 caracteres.';
+    return i18n.t('auth:signupValidation.passwordTooShort');
   }
   if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
-    return 'Senha fraca. Use letras e números com pelo menos 8 caracteres.';
+    return i18n.t('auth:signupValidation.passwordWeak');
   }
   return null;
 }
@@ -49,7 +52,7 @@ export function validateAcceptInviteForm(
   field?: 'acceptedTerms' | 'informationDeclaration' | 'consent';
 } {
   if (!values.firstName.trim() || !values.lastName.trim()) {
-    return { valid: false, error: 'Informe nome e sobrenome.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.nameRequired') };
   }
 
   if (options.requiresPassword) {
@@ -58,26 +61,26 @@ export function validateAcceptInviteForm(
       return { valid: false, error: passwordError };
     }
     if (values.password !== values.confirmPassword) {
-      return { valid: false, error: 'As senhas não conferem.' };
+      return { valid: false, error: i18n.t('auth:signupValidation.passwordMismatch') };
     }
   }
 
   if (options.requiresWhatsapp && !values.whatsapp.trim()) {
-    return { valid: false, error: 'Informe um WhatsApp válido.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.whatsappRequired') };
   }
 
   if (!values.jobTitle.trim()) {
-    return { valid: false, error: 'Informe o cargo ou função.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.jobTitleRequired') };
   }
 
   if (!values.departmentText.trim()) {
-    return { valid: false, error: 'Informe o setor.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.departmentRequired') };
   }
 
   if (!values.acceptedTerms) {
     return {
       valid: false,
-      error: 'É necessário aceitar os Termos e Condições de Uso para continuar.',
+      error: i18n.t('auth:signupValidation.acceptTerms'),
       field: 'acceptedTerms',
     };
   }
@@ -85,7 +88,7 @@ export function validateAcceptInviteForm(
   if (!values.informationDeclaration) {
     return {
       valid: false,
-      error: 'É necessário confirmar que as informações fornecidas são verdadeiras.',
+      error: i18n.t('auth:signupValidation.informationDeclaration'),
       field: 'informationDeclaration',
     };
   }
@@ -93,7 +96,7 @@ export function validateAcceptInviteForm(
   if (!values.consent) {
     return {
       valid: false,
-      error: 'É necessário aceitar o consentimento de notificações operacionais.',
+      error: i18n.t('auth:signupValidation.notificationsConsent'),
       field: 'consent',
     };
   }
@@ -122,50 +125,65 @@ export function buildAcceptInvitePayload(
 export function buildAcceptInviteReviewSections(
   values: AcceptInviteFormValues,
   options: AcceptInviteReviewOptions,
+  t: TFunction,
 ): ReviewSection[] {
   return [
     {
-      title: 'Empresa',
-      fields: [
-        { label: 'Empresa', value: safeDisplayValue(options.tenantDisplayName) },
-        ...(options.tenantTaxIdMasked ? [{ label: 'CNPJ', value: options.tenantTaxIdMasked }] : []),
-      ],
-    },
-    {
-      title: 'Seus dados',
-      fields: [
-        { label: 'Nome', value: safeDisplayValue(values.firstName) },
-        { label: 'Sobrenome', value: safeDisplayValue(values.lastName) },
-        { label: 'E-mail', value: safeDisplayValue(options.email) },
-        ...(options.requiresPassword ? [{ label: PASSWORD_REVIEW_LABEL, value: '••••••••' }] : []),
-        ...(options.requiresWhatsapp
-          ? [{ label: 'WhatsApp', value: formatPhone(values.whatsapp) }]
-          : []),
-        { label: 'Cargo ou função', value: safeDisplayValue(values.jobTitle) },
-        { label: 'Setor informado', value: safeDisplayValue(values.departmentText) },
-      ],
-    },
-    {
-      title: 'Confirmações',
+      title: t('auth:review.section.company'),
       fields: [
         {
-          label: 'Termos de uso',
-          value: formatBooleanConsent(values.acceptedTerms, 'Aceito', 'Não aceito'),
+          label: t('auth:review.field.company'),
+          value: safeDisplayValue(options.tenantDisplayName),
         },
+        ...(options.tenantTaxIdMasked
+          ? [{ label: t('auth:review.field.taxIdCnpj'), value: options.tenantTaxIdMasked }]
+          : []),
+      ],
+    },
+    {
+      title: t('auth:review.section.yourData'),
+      fields: [
+        { label: t('auth:review.field.firstName'), value: safeDisplayValue(values.firstName) },
+        { label: t('auth:review.field.lastName'), value: safeDisplayValue(values.lastName) },
+        { label: t('auth:review.field.email'), value: safeDisplayValue(options.email) },
+        ...(options.requiresPassword
+          ? [{ label: t(PASSWORD_REVIEW_LABEL_KEY), value: '••••••••' }]
+          : []),
+        ...(options.requiresWhatsapp
+          ? [{ label: t('auth:review.field.whatsapp'), value: formatPhone(values.whatsapp) }]
+          : []),
+        { label: t('auth:review.field.jobTitle'), value: safeDisplayValue(values.jobTitle) },
         {
-          label: 'Declaração de veracidade',
+          label: t('auth:review.field.department'),
+          value: safeDisplayValue(values.departmentText),
+        },
+      ],
+    },
+    {
+      title: t('auth:review.section.confirmations'),
+      fields: [
+        {
+          label: t('auth:review.field.terms'),
           value: formatBooleanConsent(
-            values.informationDeclaration,
-            'Informações declaradas como verdadeiras',
-            'Declaração não confirmada',
+            values.acceptedTerms,
+            t('auth:review.value.termsAccepted'),
+            t('auth:review.value.termsRejected'),
           ),
         },
         {
-          label: 'Notificações operacionais',
+          label: t('auth:review.field.informationDeclaration'),
+          value: formatBooleanConsent(
+            values.informationDeclaration,
+            t('auth:review.value.informationDeclarationAccepted'),
+            t('auth:review.value.informationDeclarationRejected'),
+          ),
+        },
+        {
+          label: t('auth:review.field.operationalNotifications'),
           value: formatBooleanConsent(
             values.consent,
-            'Aceito receber notificações operacionais',
-            'Não aceitei notificações operacionais',
+            t('auth:review.value.operationalNotificationsAccepted'),
+            t('auth:review.value.operationalNotificationsRejected'),
           ),
         },
       ],
@@ -173,8 +191,8 @@ export function buildAcceptInviteReviewSections(
   ];
 }
 
-export const ACCEPT_INVITE_REVIEW_COPY = {
-  title: 'Revisar aceite do convite',
-  description: 'Confira os dados antes de concluir o cadastro e vincular seu acesso à empresa.',
-  confirmLabel: 'Aceitar convite',
-};
+export const ACCEPT_INVITE_REVIEW_COPY_KEYS = {
+  title: 'auth:acceptInviteReview.title',
+  description: 'auth:acceptInviteReview.description',
+  confirmLabel: 'auth:acceptInviteReview.confirmLabel',
+} as const;

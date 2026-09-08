@@ -1,3 +1,6 @@
+/** Ver `companySignupReview.ts`: validação resolve no envio, revisão recebe o `t` do memo. */
+import type { TFunction } from 'i18next';
+import { i18n } from '@/i18n';
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
 import {
   getCountryName,
@@ -9,7 +12,7 @@ import { DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatDocumentForReview,
   formatPhone,
-  PASSWORD_REVIEW_LABEL,
+  PASSWORD_REVIEW_LABEL_KEY,
   safeDisplayValue,
 } from '../../lib/reviewDisplay';
 
@@ -40,13 +43,13 @@ export function validateIndividualSignupForm(values: IndividualSignupFormValues)
   if (!values.acceptedTerms) {
     return {
       valid: false,
-      error: 'É necessário aceitar os Termos e Condições de Uso para continuar.',
+      error: i18n.t('auth:signupValidation.acceptTerms'),
       field: 'acceptedTerms',
     };
   }
 
   if (!values.fromAuthenticatedSession && values.password !== values.confirmPassword) {
-    return { valid: false, error: 'As senhas não conferem.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.passwordMismatch') };
   }
 
   return { valid: true };
@@ -83,21 +86,22 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
 
 export function buildIndividualSignupReviewSections(
   values: IndividualSignupFormValues,
+  t: TFunction,
 ): ReviewSection[] {
   return [
     {
-      title: 'Dados pessoais',
+      title: t('auth:review.section.personalData'),
       fields: [
         {
-          label: 'Nome completo',
+          label: t('auth:review.field.fullName'),
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
-        { label: 'Nome de usuário', value: safeDisplayValue(values.username) },
-        { label: 'E-mail', value: safeDisplayValue(values.email) },
-        { label: 'País', value: getCountryName(values.country) },
-        { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
+        { label: t('auth:review.field.username'), value: safeDisplayValue(values.username) },
+        { label: t('auth:review.field.email'), value: safeDisplayValue(values.email) },
+        { label: t('auth:review.field.country'), value: getCountryName(values.country) },
+        { label: t('auth:review.field.whatsapp'), value: formatPhone(values.whatsapp) },
         {
-          label: getTaxIdSpec(values.country, 'individual').label,
+          label: t(getTaxIdSpec(values.country, 'individual').labelKey),
           value:
             values.country === 'BR'
               ? formatDocumentForReview(values.taxId, 'CPF')
@@ -106,13 +110,13 @@ export function buildIndividualSignupReviewSections(
       ],
     },
     {
-      title: 'Confirmações',
+      title: t('auth:review.section.confirmations'),
       fields: [
         {
-          label: 'Termos de uso',
+          label: t('auth:review.field.terms'),
           value: values.acceptedTerms
-            ? `Aceito em relação à versão ${DOQYN_TERMS_VERSION}`
-            : 'Não aceito',
+            ? t('auth:review.value.termsAcceptedVersion', { version: DOQYN_TERMS_VERSION })
+            : t('auth:review.value.termsRejected'),
         },
       ],
     },
@@ -120,17 +124,18 @@ export function buildIndividualSignupReviewSections(
       ? []
       : [
           {
-            title: 'Segurança',
-            fields: [{ label: 'Senha', value: PASSWORD_REVIEW_LABEL }],
+            title: t('auth:review.section.security'),
+            fields: [
+              { label: t('auth:review.field.password'), value: t(PASSWORD_REVIEW_LABEL_KEY) },
+            ],
           },
         ]),
   ];
 }
 
-export const INDIVIDUAL_SIGNUP_REVIEW_COPY = {
-  title: 'Revisar cadastro',
-  description: 'Confira os dados antes de criar seu acesso como pessoa física no DOQYN.',
-  attentionMessage:
-    'Verifique principalmente CPF, e-mail e WhatsApp. Informações incorretas podem atrasar seu acesso.',
-  confirmLabel: 'Confirmar e cadastrar',
+export const INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS = {
+  title: 'auth:individualSignupReview.title',
+  description: 'auth:individualSignupReview.description',
+  attentionMessage: 'auth:individualSignupReview.attentionMessage',
+  confirmLabel: 'auth:individualSignupReview.confirmLabel',
 } as const;

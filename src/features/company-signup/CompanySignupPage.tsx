@@ -21,7 +21,7 @@ import { submitCompanySignup } from './api/companySignupApi';
 import {
   buildCompanySignupPayload,
   buildCompanySignupReviewSections,
-  COMPANY_SIGNUP_REVIEW_COPY,
+  COMPANY_SIGNUP_REVIEW_COPY_KEYS,
   validateCompanySignupForm,
   type CompanySignupFormValues,
 } from './companySignupReview';
@@ -113,7 +113,10 @@ export function CompanySignupPage() {
     ],
   );
 
-  const reviewSections = useMemo(() => buildCompanySignupReviewSections(formValues), [formValues]);
+  const reviewSections = useMemo(
+    () => buildCompanySignupReviewSections(formValues, t),
+    [formValues, t],
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,7 +225,7 @@ export function CompanySignupPage() {
             id="taxId"
             country={country}
             personType="company"
-            label={getTaxIdSpec(country, 'company').label}
+            label={t(getTaxIdSpec(country, 'company').labelKey)}
             value={taxId}
             onChange={setTaxId}
             required
@@ -353,12 +356,12 @@ export function CompanySignupPage() {
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={COMPANY_SIGNUP_REVIEW_COPY.title}
-        description={COMPANY_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={COMPANY_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.title)}
+        description={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.description)}
+        attentionMessage={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.attentionMessage)}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={COMPANY_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.confirmLabel)}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}

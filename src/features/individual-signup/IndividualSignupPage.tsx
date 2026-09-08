@@ -20,7 +20,7 @@ import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
-  INDIVIDUAL_SIGNUP_REVIEW_COPY,
+  INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS,
   validateIndividualSignupForm,
   type IndividualSignupFormValues,
 } from './individualSignupReview';
@@ -112,8 +112,8 @@ export function IndividualSignupPage() {
   );
 
   const reviewSections = useMemo(
-    () => buildIndividualSignupReviewSections(formValues),
-    [formValues],
+    () => buildIndividualSignupReviewSections(formValues, t),
+    [formValues, t],
   );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -262,7 +262,7 @@ export function IndividualSignupPage() {
             id="taxId"
             country={country}
             personType="individual"
-            label={getTaxIdSpec(country, 'individual').label}
+            label={t(getTaxIdSpec(country, 'individual').labelKey)}
             value={taxId}
             onChange={setTaxId}
             required
@@ -323,12 +323,12 @@ export function IndividualSignupPage() {
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-        description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.title)}
+        description={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.description)}
+        attentionMessage={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.attentionMessage)}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.confirmLabel)}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}

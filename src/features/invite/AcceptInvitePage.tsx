@@ -11,7 +11,7 @@ import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ApiError } from '@/lib/apiErrors';
 import { inviteApi, type InvitePreview } from './api/inviteApi';
 import {
-  ACCEPT_INVITE_REVIEW_COPY,
+  ACCEPT_INVITE_REVIEW_COPY_KEYS,
   buildAcceptInvitePayload,
   buildAcceptInviteReviewSections,
   validateAcceptInviteForm,
@@ -154,8 +154,8 @@ export function AcceptInvitePage() {
   }, [pageState]);
 
   const reviewSections = useMemo(
-    () => (reviewOptions ? buildAcceptInviteReviewSections(formValues, reviewOptions) : []),
-    [formValues, reviewOptions],
+    () => (reviewOptions ? buildAcceptInviteReviewSections(formValues, reviewOptions, t) : []),
+    [formValues, reviewOptions, t],
   );
 
   function handleSubmit(event: React.FormEvent) {
@@ -416,11 +416,11 @@ export function AcceptInvitePage() {
 
           <ReviewBeforeSubmitDialog
             open={reviewOpen}
-            title={ACCEPT_INVITE_REVIEW_COPY.title}
-            description={ACCEPT_INVITE_REVIEW_COPY.description}
+            title={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.title)}
+            description={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.description)}
             sections={reviewSections}
             submitting={submitting}
-            confirmLabel={ACCEPT_INVITE_REVIEW_COPY.confirmLabel}
+            confirmLabel={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.confirmLabel)}
             onCancel={() => {
               if (!submitting) setReviewOpen(false);
             }}

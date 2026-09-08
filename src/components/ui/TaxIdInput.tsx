@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFormattedInput } from '@/hooks/useFormattedInput';
 import { getTaxIdSpec, type CountryCode, type PersonType, type TaxIdSpec } from '@/lib/identifiers';
 import { Input, type InputProps } from './Input';
@@ -19,6 +20,8 @@ export function TaxIdInput({
   error,
   ...props
 }: TaxIdInputProps) {
+  const { t } = useTranslation('common');
+
   const spec: TaxIdSpec = useMemo(() => getTaxIdSpec(country, personType), [country, personType]);
 
   const format = useCallback((raw: string) => spec.format(raw), [spec]);
@@ -30,7 +33,9 @@ export function TaxIdInput({
   });
 
   const incomplete = value.length > 0 && !spec.isComplete(value);
-  const validationError = incomplete ? `${spec.label} incompleto.` : undefined;
+  const validationError = incomplete
+    ? t('common:taxId.incomplete', { label: t(spec.labelKey) })
+    : undefined;
 
   return (
     <Input
@@ -39,7 +44,7 @@ export function TaxIdInput({
       // Fora do BR o documento pode ter letras (NIF/CIF espanhol, VAT europeu).
       inputMode={country === 'BR' ? 'numeric' : 'text'}
       autoComplete="off"
-      placeholder={props.placeholder ?? spec.placeholder}
+      placeholder={props.placeholder ?? t(spec.placeholderKey)}
       error={error ?? validationError}
     />
   );

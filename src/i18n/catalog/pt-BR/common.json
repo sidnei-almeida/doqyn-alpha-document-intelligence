@@ -73,5 +73,14 @@
     "empty": "Nada por aqui",
     "error": "Não foi possível carregar",
     "loading": "Carregando…"
+  },
+  "taxId": {
+    "cnpjLabel": "CNPJ",
+    "cnpjPlaceholder": "00.000.000/0000-00",
+    "cpfLabel": "CPF",
+    "cpfPlaceholder": "000.000.000-00",
+    "genericLabel": "Documento fiscal",
+    "genericPlaceholder": "Documento de identificação fiscal",
+    "incomplete": "{{label}} incompleto."
   }
 }

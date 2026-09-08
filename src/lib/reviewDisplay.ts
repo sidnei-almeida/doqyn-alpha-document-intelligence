@@ -1,7 +1,11 @@
 import { formatCnpj, formatTaxId, normalizeTaxId, type TaxIdKind } from './identifiers/taxId';
 import { formatWhatsapp } from './identifiers/whatsapp';
 
-export const PASSWORD_REVIEW_LABEL = 'Senha definida (não exibida por segurança)';
+/**
+ * Chave, não frase: este módulo é importado no topo de três telas de cadastro, e resolver aqui
+ * congelaria o idioma no carregamento. Quem monta a revisão resolve com o `t` da tela.
+ */
+export const PASSWORD_REVIEW_LABEL_KEY = 'auth:review.value.passwordDefined';
 
 export function safeDisplayValue(value: string | undefined | null): string {
   return value?.trim() ? value.trim() : '—';
