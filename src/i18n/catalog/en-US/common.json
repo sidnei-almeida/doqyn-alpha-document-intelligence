@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "retry": "Try again"
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "Nothing here",
+    "error": "Could not load"
+  },
+  "locale": {
+    "label": "Language",
+    "description": "Interface language. It does not change the language of your documents.",
+    "descriptionWithDrafts": "Interface language. English and Spanish are still being translated and cannot be selected yet.",
+    "inPreparation": "In preparation"
+  },
+  "documents": {
+    "empty": "No documents",
+    "count_one": "{{count}} document",
+    "count_other": "{{count}} documents"
+  }
+}

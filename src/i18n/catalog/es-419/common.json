@@ -1,0 +1,29 @@
+{
+  "actions": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "back": "Volver",
+    "next": "Continuar",
+    "search": "Buscar",
+    "retry": "Reintentar"
+  },
+  "state": {
+    "loading": "Cargando…",
+    "empty": "Nada por aquí",
+    "error": "No se pudo cargar"
+  },
+  "locale": {
+    "label": "Idioma",
+    "description": "Idioma de la interfaz. No cambia el idioma de sus documentos.",
+    "descriptionWithDrafts": "Idioma de la interfaz. El inglés y el español están en traducción y aún no pueden elegirse.",
+    "inPreparation": "En preparación"
+  },
+  "documents": {
+    "empty": "Ningún documento",
+    "count_one": "{{count}} documento",
+    "count_other": "{{count}} documentos"
+  }
+}
