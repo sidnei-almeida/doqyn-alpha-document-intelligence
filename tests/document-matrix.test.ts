@@ -73,7 +73,7 @@ describe('metadados saíram da matriz e viraram ficha do documento', () => {
 
     assert.match(drawer, /DocumentExpiryEditor/);
     // Dois caminhos, porque são dois momentos: o menu do arquivo e o painel de detalhes aberto.
-    assert.match(menu, /label="Metadados"/);
+    assert.match(menu, /\.metadados/);
     assert.match(details, /Editar metadados/);
   });
 

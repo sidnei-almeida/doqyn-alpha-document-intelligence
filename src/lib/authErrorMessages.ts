@@ -9,7 +9,8 @@
  * O que sobrou aqui é a lógica que um catálogo não expressa: quais códigos preferem a mensagem
  * do servidor, qual erro carrega um motivo digitado por outra pessoa, e que ação oferecer.
  */
-import { i18n } from '@/i18n';
+import { i18n, initI18n } from '@/i18n';
+import ptErrors from '@/i18n/catalog/pt-BR/errors.json';
 
 export type ApiErrorDetails = Record<string, unknown>;
 
@@ -29,9 +30,39 @@ export type ApiErrorDetails = Record<string, unknown>;
  */
 const PASSTHROUGH_CODES = new Set(['VALIDATION_ERROR', 'NOT_FOUND', 'FORBIDDEN']);
 
+/** Última rede, quando nem o código nem o servidor disseram nada. */
+const GENERIC_FAILURE = 'Não foi possível concluir a ação agora. Tente novamente.';
+
+/**
+ * Garante que o i18n existe antes de perguntar ao catálogo.
+ *
+ * Quem monta a árvore React chama `initI18n` pelo provider, mas esta função também é chamada de
+ * fora dele — de um teste, de um script, de um `catch` que roda antes do primeiro render. Numa
+ * instância não inicializada, `i18n.exists` devolve `false` para tudo, e toda mensagem de erro
+ * virava a frase genérica. `initI18n` é idempotente, então chamar aqui não custa nada.
+ */
+const FALLBACK_ERRORS = ptErrors as Record<string, string>;
+
+/**
+ * A frase do catálogo, com o `pt-BR` embutido como rede.
+ *
+ * O caminho normal é o i18next, que resolve no idioma ativo. Mas ele não está disponível em
+ * todo lugar de onde esta função é chamada: um teste em Node, um script, ou um `catch` que
+ * dispara antes do primeiro render encontram a instância ainda não inicializada — e, com um
+ * backend registrado, a inicialização do i18next é adiada para o próximo tick, então `t()`
+ * chamado cedo demais devolve `undefined`.
+ *
+ * Ler o JSON embutido nesse caso não é duplicação: é o mesmo arquivo que o i18next carrega
+ * como recurso estático. O que muda é só não depender do momento.
+ */
 function catalogPhrase(code: string): string | null {
+  initI18n();
   const key = `errors:${code}`;
-  return i18n.exists(key) ? i18n.t(key) : null;
+  if (i18n.isInitialized && i18n.exists(key)) {
+    const phrase = i18n.t(key);
+    if (typeof phrase === 'string' && phrase !== key) return phrase;
+  }
+  return FALLBACK_ERRORS[code] ?? null;
 }
 
 export function getFriendlyAuthErrorMessage(
@@ -53,10 +84,10 @@ export function getFriendlyAuthErrorMessage(
   const server = fallbackMessage?.trim();
 
   if (PASSTHROUGH_CODES.has(code)) {
-    return server || phrase || i18n.t('common:state.error');
+    return server || phrase || GENERIC_FAILURE;
   }
 
-  return phrase ?? server ?? i18n.t('common:state.error');
+  return phrase ?? server ?? GENERIC_FAILURE;
 }
 
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {

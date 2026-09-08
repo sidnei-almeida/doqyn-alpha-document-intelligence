@@ -171,7 +171,7 @@ describe('dashboard overview UI', () => {
   it('DashboardPage renderiza cards, período e estados', () => {
     assert.match(pageSource, /buildOverviewMetrics|OverviewSummaryStrip/);
     assert.match(periodSource, /7 dias|30 dias|90 dias/);
-    assert.match(pageSource, /Carregando visão geral/);
+    assert.match(pageSource, /\.carregandoVisaoGeral/);
     assert.match(pageSource, /Não foi possível carregar a visão geral/);
     assert.match(documentsPanelSource, /Nenhum documento enviado ainda/);
   });
@@ -186,7 +186,7 @@ describe('dashboard overview UI', () => {
     assert.match(pageSource, /data\.mode === 'full'/);
     assert.match(pageSource, /OverviewQuickAccessPanel/);
     assert.match(pageSource, /canManageGovernance=\{isAdmin\}/);
-    assert.match(governanceSource, /Governança documental/);
+    assert.match(governanceSource, /\.governancaDocumental/);
     assert.match(activityPanelSource, /Atividade recente/);
   });
 
@@ -199,7 +199,7 @@ describe('dashboard overview UI', () => {
     // A etiqueta "restrito" deixou de ser variante de badge preenchido e virou marca de status
     // com a palavra — o mesmo tratamento que "OK" e "Atenção" já tinham.
     assert.match(healthCard, /const restricted = !ok && !canManage/);
-    assert.match(healthCard, /Restrito/);
+    assert.match(healthCard, /\.restrito/);
     assert.match(healthCard, /Configuração gerenciada pelo administrador/);
     assert.match(healthCard, /Categorias ativas no ambiente/);
   });

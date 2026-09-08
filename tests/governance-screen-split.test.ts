@@ -55,7 +55,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   it('/users (UsersPage) expõe grupos no modal Editar acesso', () => {
     const source = readSrc('features/users/UsersPage.tsx');
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('title="Grupos"'));
+    assert.ok(sections.includes('.grupos'));
     assert.ok(source.includes('updateDocumentGroups'));
     assert.ok(source.includes('listDocumentGroups'));
     assert.equal(sections.includes('Grupos de acesso (auth-service)'), false);

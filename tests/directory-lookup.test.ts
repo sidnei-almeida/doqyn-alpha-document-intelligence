@@ -159,7 +159,7 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     // Era o rótulo que mentia: o campo sempre aceitou apelido, e dizia "e-mail".
     assert.ok(field.includes("label = 'Nome de usuário de quem é de fora daqui'"));
     assert.ok(field.includes('placeholder="joao.silva"'));
-    assert.ok(sig.includes('label="Nome de usuário de quem vai assinar"'));
+    assert.ok(sig.includes('.nomeDeUsuarioDe'));
     assert.ok(req.includes('label="Nome de usuário de quem vai enviar"'));
 
     // O e-mail continua aceito: é ele que leva a quem **não** tem conta, e recebe por link.

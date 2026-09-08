@@ -33,7 +33,7 @@ describe('atalho do tracking para o documento', () => {
   it('a gaveta do evento também oferece abrir o documento', () => {
     const drawer = readRepoFile('src/features/tracking/components/TrackingEventLogDetail.tsx');
 
-    assert.match(drawer, /Abrir documento/);
+    assert.match(drawer, /\.abrirDocumento/);
     assert.match(drawer, /\/biblioteca\?preview=/);
   });
 

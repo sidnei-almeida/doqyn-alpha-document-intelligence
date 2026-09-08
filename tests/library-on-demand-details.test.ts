@@ -54,7 +54,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
   it('menu de contexto da pasta tem ver informações', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('onShowFolderInfo'));
-    assert.match(menu, /label="Ver informações"/);
+    assert.match(menu, /\.verInformacoes/);
   });
 
   it('menu de contexto do arquivo tem ver detalhes', () => {
