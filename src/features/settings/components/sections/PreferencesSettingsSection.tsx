@@ -10,14 +10,24 @@ import {
 } from '@/features/library/utils/libraryDefaultView';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
-import type { Theme } from '@/lib/theme';
+import { THEMES, THEME_ICONS, THEME_LABELS, THEME_HINTS } from '@/lib/theme';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 
-const THEME_OPTIONS: Array<{ value: Theme; label: string; icon: string }> = [
-  { value: 'light', label: 'Claro', icon: 'light_mode' },
-  { value: 'dark', label: 'Escuro', icon: 'dark_mode' },
-];
+/**
+ * Os temas vêm de `src/lib/theme.ts`, não de uma cópia local.
+ *
+ * Havia aqui uma lista própria com dois itens, e o `standard` — que é o tema em que todo
+ * mundo começa — não estava nela. Quem nunca trocou de tema abria esta tela e via os dois
+ * botões apagados, sem nenhum marcado: o controle dizia que a pessoa não tinha tema, quando
+ * na verdade tinha o padrão. Lista duplicada diverge; esta lê a fonte.
+ */
+const THEME_OPTIONS = THEMES.map((value) => ({
+  value,
+  label: THEME_LABELS[value],
+  icon: THEME_ICONS[value],
+  hint: THEME_HINTS[value],
+}));
 
 const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: string }> = [
   { value: 'grid', label: 'Grade', icon: 'grid_view' },
@@ -87,7 +97,7 @@ export function PreferencesSettingsSection() {
         />
         <SettingsRow
           label="Tema"
-          description="Alterna entre modo claro e escuro. Salvo neste navegador."
+          description="Padrão, claro ou escuro. Salvo neste navegador."
           control={
             <div
               className="settings-segmented-control"
@@ -102,6 +112,7 @@ export function PreferencesSettingsSection() {
                     type="button"
                     role="radio"
                     aria-checked={active}
+                    title={option.hint}
                     onClick={() => setTheme(option.value)}
                     className={cn(
                       'settings-segmented-control__item',
