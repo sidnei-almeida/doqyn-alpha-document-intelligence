@@ -8,6 +8,7 @@ import { ExplorerFileListScope } from '../context/ExplorerActionsContext';
 import { DocumentFilesGrid } from './files/DocumentFilesGrid';
 import { DocumentFileRow } from './files/DocumentFileRow';
 import { formatDate } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerRootHomeProps = {
   folders: LibraryFolder[];
@@ -36,6 +37,8 @@ export function ExplorerRootHome({
   onFolderInfo,
   onUploadClick,
 }: ExplorerRootHomeProps) {
+  const { t } = useTranslation('library');
+
   const isEmpty =
     folders.length === 0 && recentDocuments.length === 0 && uncategorizedDocuments.length === 0;
 
@@ -64,7 +67,10 @@ export function ExplorerRootHome({
       />
 
       {uncategorizedDocuments.length > 0 && (
-        <ExplorerHomeSection title="Sem categoria" data-testid="explorer-uncategorized-list">
+        <ExplorerHomeSection
+          title={t('explorerRootHome.semCategoria')}
+          data-testid="explorer-uncategorized-list"
+        >
           <ExplorerFileListScope orderedIds={uncategorizedOrderedIds}>
             {viewMode === 'grid' ? (
               <DocumentFilesGrid

@@ -13,6 +13,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem } from '@/types/document-library';
+import { useTranslation } from 'react-i18next';
 
 type CurrentDocumentSummaryCardProps = {
   document: DocumentListItem;
@@ -27,13 +28,15 @@ export function CurrentDocumentSummaryCard({
   fileSizeLabel,
   compact = false,
 }: CurrentDocumentSummaryCardProps) {
+  const { t } = useTranslation('documentVersion');
+
   const name = documentDisplayName(document);
   const versionId = resolveDocumentVersionId(document);
 
   if (compact) {
     return (
       <DrawerSection
-        label="Documento atual"
+        label={t('currentDocumentSummaryCard.documentoAtual')}
         aside={<VersionBadge version={currentVersionLabel} isCurrent size="xs" />}
         className="border-t-0 pt-0"
         data-testid="update-version-current-summary"
@@ -65,18 +68,31 @@ export function CurrentDocumentSummaryCard({
             </BadgeGroup>
             <dl className="mt-3">
               <DrawerField
-                label="Categoria"
+                label={t('currentDocumentSummaryCard.categoria')}
                 value={document.categoryName ?? document.documentType ?? '—'}
               />
               <DrawerField
-                label="Proprietário"
+                label={t('currentDocumentSummaryCard.proprietario')}
                 value={document.createdBy?.displayName ?? document.ownerName ?? '—'}
               />
-              <DrawerField label="Atualizado" value={formatDate(document.updatedAt)} mono />
+              <DrawerField
+                label={t('currentDocumentSummaryCard.atualizado')}
+                value={formatDate(document.updatedAt)}
+                mono
+              />
               {document.processingStatus && (
-                <DrawerField label="Processamento" value={document.processingStatus} />
+                <DrawerField
+                  label={t('currentDocumentSummaryCard.processamento')}
+                  value={document.processingStatus}
+                />
               )}
-              {fileSizeLabel && <DrawerField label="Tamanho" value={fileSizeLabel} mono />}
+              {fileSizeLabel && (
+                <DrawerField
+                  label={t('currentDocumentSummaryCard.tamanho')}
+                  value={fileSizeLabel}
+                  mono
+                />
+              )}
             </dl>
           </div>
         </div>
@@ -89,7 +105,9 @@ export function CurrentDocumentSummaryCard({
       className="rounded-xl border border-doqyn-border-subtle bg-doqyn-bg/40 p-4"
       data-testid="update-version-current-summary"
     >
-      <p className="mb-3 text-[12px] font-medium text-doqyn-text">Documento atual</p>
+      <p className="mb-3 text-[12px] font-medium text-doqyn-text">
+        {t('currentDocumentSummaryCard.documentoAtual2')}
+      </p>
       <div className="flex gap-4">
         <div className="relative w-[160px] shrink-0">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border border-doqyn-border-subtle bg-doqyn-thumbnail-chrome [&_img]:object-contain [&_img]:object-top">
@@ -114,31 +132,31 @@ export function CurrentDocumentSummaryCard({
           </BadgeGroup>
           <dl className="grid gap-1 text-[12px] sm:grid-cols-2">
             <div>
-              <dt className="text-doqyn-muted">Categoria</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.categoria2')}</dt>
               <dd className="text-doqyn-text">
                 {document.categoryName ?? document.documentType ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-doqyn-muted">Proprietário</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.proprietario2')}</dt>
               <dd className="text-doqyn-text">
                 {document.createdBy?.displayName ?? document.ownerName ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-doqyn-muted">Criado</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.criado')}</dt>
               <dd className="text-doqyn-text">{formatDate(document.createdAt)}</dd>
             </div>
             <div>
-              <dt className="text-doqyn-muted">Atualizado</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.atualizado2')}</dt>
               <dd className="text-doqyn-text">{formatDate(document.updatedAt)}</dd>
             </div>
             <div>
-              <dt className="text-doqyn-muted">Processamento</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.processamento2')}</dt>
               <dd className="text-doqyn-text">{document.processingStatus ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-doqyn-muted">Tipo / tamanho</dt>
+              <dt className="text-doqyn-muted">{t('currentDocumentSummaryCard.tipoTamanho')}</dt>
               <dd className="text-doqyn-text">
                 {name.split('.').pop()?.toUpperCase() ?? 'PDF'}
                 {fileSizeLabel ? ` · ${fileSizeLabel}` : ''}

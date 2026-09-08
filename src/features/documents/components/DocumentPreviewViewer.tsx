@@ -3,6 +3,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { resolveViewerComponent } from '../viewer/viewerRegistry';
 import { usePreviewManifest } from '../viewer/usePreviewManifest';
+import { useTranslation } from 'react-i18next';
 
 type DocumentPreviewViewerProps = {
   documentId: string;
@@ -20,6 +21,8 @@ export function DocumentPreviewViewer({
   className,
   variant = 'standalone',
 }: DocumentPreviewViewerProps) {
+  const { t } = useTranslation('documents');
+
   const isEmbedded = variant === 'embedded';
   const manifestQuery = usePreviewManifest({
     documentId,
@@ -38,7 +41,8 @@ export function DocumentPreviewViewer({
       >
         <div className="flex items-center gap-2 text-sm text-doqyn-muted">
           <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-          Carregando preview...
+
+          {t('documentPreviewViewer.carregandoPreview')}
         </div>
       </section>
     );
@@ -53,7 +57,7 @@ export function DocumentPreviewViewer({
           className,
         )}
       >
-        Não foi possível carregar o preview.
+        {t('documentPreviewViewer.naoFoiPossivelCarregar')}
       </section>
     );
   }
@@ -68,7 +72,7 @@ export function DocumentPreviewViewer({
         isEmbedded ? 'h-full min-h-0' : 'min-h-[70vh] rounded-lg border border-doqyn-border',
         className,
       )}
-      aria-label="Visualização do documento"
+      aria-label={t('documentPreviewViewer.visualizacaoDoDocumento')}
     >
       <ViewerComponent manifest={manifest} className="h-full min-h-0" />
     </section>

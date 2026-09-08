@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { getFolderAccentColor } from '../utils/folderColors';
 import type { LibraryFolder } from '../types/library';
 import type { LibraryOverview } from './detailsPanelTypes';
+import { useTranslation } from 'react-i18next';
 
 type LibraryInfoPopoverProps = {
   overview: LibraryOverview;
@@ -12,6 +13,8 @@ type LibraryInfoPopoverProps = {
 
 /** Conteúdo do popover de informações da Biblioteca ou pasta atual. */
 export function LibraryInfoPopover({ overview, folder }: LibraryInfoPopoverProps) {
+  const { t } = useTranslation('library');
+
   const accentColor = folder ? getFolderAccentColor(folder.name) : undefined;
   const title = folder?.name ?? overview.title;
   const description = folder?.description ?? overview.description;
@@ -36,27 +39,29 @@ export function LibraryInfoPopover({ overview, folder }: LibraryInfoPopoverProps
 
       <dl className="mt-4 space-y-2 border-t border-doqyn-border-subtle pt-3 text-[12px]">
         <div className="flex justify-between gap-4">
-          <dt className="text-doqyn-subtle">Tipo</dt>
+          <dt className="text-doqyn-subtle">{t('libraryInfoPopover.tipo')}</dt>
           <dd className="text-right tabular-nums text-doqyn-text">
             {folder ? 'Categoria inteligente' : 'Biblioteca'}
           </dd>
         </div>
         {!folder && folderCount > 0 && (
           <div className="flex justify-between gap-4">
-            <dt className="text-doqyn-subtle">Pastas</dt>
+            <dt className="text-doqyn-subtle">{t('libraryInfoPopover.pastas')}</dt>
             <dd className="text-right tabular-nums text-doqyn-text">{folderCount}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4">
-          <dt className="text-doqyn-subtle">Arquivos</dt>
+          <dt className="text-doqyn-subtle">{t('libraryInfoPopover.arquivos')}</dt>
           <dd className="text-right tabular-nums text-doqyn-text">
             {fileCount} {fileCount === 1 ? 'arquivo' : 'arquivos'}
           </dd>
         </div>
         {folder && (
           <div className="flex justify-between gap-4">
-            <dt className="text-doqyn-subtle">Governança</dt>
-            <dd className="text-right tabular-nums text-doqyn-text">Pasta de governança</dd>
+            <dt className="text-doqyn-subtle">{t('libraryInfoPopover.governanca')}</dt>
+            <dd className="text-right tabular-nums text-doqyn-text">
+              {t('libraryInfoPopover.pastaDeGovernanca')}
+            </dd>
           </div>
         )}
       </dl>
@@ -67,7 +72,8 @@ export function LibraryInfoPopover({ overview, folder }: LibraryInfoPopoverProps
           className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-doqyn-muted hover:text-doqyn-text hover:underline"
         >
           <Icon name="balance" size={ICON_SIZE.sm} />
-          Ver regras desta categoria
+
+          {t('libraryInfoPopover.verRegrasDestaCategoria')}
         </Link>
       )}
     </div>

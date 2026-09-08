@@ -124,7 +124,14 @@ function analyze(filePath: string, namespace: string) {
    * de idioma sem recarregar a página.
    */
   function markHook(node: ts.Node) {
+    /* Sobe até a função **mais externa**, não a mais próxima.
+     *
+     * A primeira versão parava na primeira função com corpo em bloco — e num literal dentro de
+     * um `.map()` ou de um `onClick`, essa função é o callback. O hook acabava dentro dele, o
+     * que o React proíbe e o lint acusa. Quem renderiza é o componente, e o componente é a
+     * função mais externa que contém o literal. */
     let current: ts.Node | undefined = node;
+    let outermost: number | null = null;
     while (current) {
       const body =
         ts.isFunctionDeclaration(current) ||
@@ -133,11 +140,11 @@ function analyze(filePath: string, namespace: string) {
           ? current.body
           : undefined;
       if (body && ts.isBlock(body)) {
-        hookPositions.add(body.getStart(sourceFile) + 1);
-        return;
+        outermost = body.getStart(sourceFile) + 1;
       }
       current = current.parent;
     }
+    if (outermost !== null) hookPositions.add(outermost);
   }
 
   function walk(node: ts.Node) {

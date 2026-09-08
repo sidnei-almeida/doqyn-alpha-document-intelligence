@@ -1,6 +1,7 @@
 import { ToolbarSelect } from '@/components/ui/ToolbarSelect';
 import type { LibraryTypeFilter } from '../types/library';
 import { TYPE_FILTER_OPTIONS } from '../utils/libraryFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 type TypeFilterMenuProps = {
   value: LibraryTypeFilter;
@@ -8,10 +9,12 @@ type TypeFilterMenuProps = {
 };
 
 export function TypeFilterMenu({ value, onChange }: TypeFilterMenuProps) {
+  const { t } = useTranslation('library');
+
   return (
     <ToolbarSelect
       icon="draft"
-      label="Filtrar por tipo"
+      label={t('typeFilterMenu.filtrarPorTipo')}
       value={value}
       defaultValue=""
       options={TYPE_FILTER_OPTIONS}

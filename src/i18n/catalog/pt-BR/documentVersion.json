@@ -1,0 +1,71 @@
+{
+  "confirmNewVersionActions": {
+    "aVersaoAnteriorPermanece": "A versão anterior permanece no histórico.",
+    "concluir": "Concluir",
+    "confirmar": "Confirmar",
+    "fechar": "Fechar",
+    "tentarNovamente": "Tentar novamente"
+  },
+  "currentDocumentSummaryCard": {
+    "atualizado": "Atualizado",
+    "atualizado2": "Atualizado",
+    "categoria": "Categoria",
+    "categoria2": "Categoria",
+    "criado": "Criado",
+    "documentoAtual": "Documento atual",
+    "documentoAtual2": "Documento atual",
+    "processamento": "Processamento",
+    "processamento2": "Processamento",
+    "proprietario": "Proprietário",
+    "proprietario2": "Proprietário",
+    "tamanho": "Tamanho",
+    "tipoTamanho": "Tipo / tamanho"
+  },
+  "currentMetadataPanel": {
+    "metadadosAtuais": "Metadados atuais"
+  },
+  "newVersionAnalyzingPanel": {
+    "analisandoNovaVersao": "Analisando nova versão",
+    "comparandoCom": "Comparando com",
+    "comparingWith": "Comparando com {{current}} para preparar {{next}}."
+  },
+  "newVersionReviewStep": {
+    "categoria": "Categoria",
+    "nomeSugerido": "Nome sugerido",
+    "revisaoDaNovaVersao": "Revisão da nova versão",
+    "reviseiOsMetadadosExtraidos": "Revisei os metadados extraídos e confirmo que a nova versão pode ser criada.",
+    "status": "Status",
+    "versao": "Versão"
+  },
+  "newVersionUploadDropzone": {
+    "arrastePdfOuImagem": "Arraste PDF ou imagem, ou clique para selecionar",
+    "enviarNovaVersao": "Enviar nova versão",
+    "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · até",
+    "prontoParaAnalise": "· pronto para análise",
+    "removerArquivoSelecionado": "Remover arquivo selecionado"
+  },
+  "updateDocumentVersionDrawer": {
+    "atualizarDocumento": "Atualizar documento",
+    "atualizarDocumento2": "Atualizar documento",
+    "carregandoDocumentoEHistorico": "Carregando documento e histórico de versões…",
+    "fecharAtualizacaoDeVersao": "Fechar atualização de versão",
+    "naoFoiPossivelContinuar": "Não foi possível continuar",
+    "novaVersaoCriada": "Nova versão criada",
+    "oDocumentoFoiAtualizado": "O documento foi atualizado para"
+  },
+  "updateDocumentVersionHeader": {
+    "atualizarDocumento": "Atualizar documento",
+    "fecharAtualizacaoDeVersao": "Fechar atualização de versão"
+  },
+  "versionComparisonPanel": {
+    "atual": "Atual",
+    "changed": "alterado",
+    "compararVersoes": "Comparar versões",
+    "nova": "Nova"
+  },
+  "versionHistorySummary": {
+    "historicoDeVersoes": "Histórico de versões",
+    "proxima": "próxima",
+    "versoes": "Versões"
+  }
+}

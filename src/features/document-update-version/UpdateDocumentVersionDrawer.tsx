@@ -26,6 +26,7 @@ import type {
 import { metadataRecordToDisplayFields } from './utils/documentMetadataDisplay';
 import { invalidateDocumentUpdateQueries } from './utils/invalidateDocumentUpdateQueries';
 import { buildVersionComparisonRows } from './utils/versionComparison';
+import { useTranslation } from 'react-i18next';
 
 type UpdateDocumentVersionDrawerProps = {
   documentId: string | null;
@@ -38,6 +39,8 @@ export function UpdateDocumentVersionDrawer({
   onClose,
   onSuccess,
 }: UpdateDocumentVersionDrawerProps) {
+  const { t } = useTranslation('documentVersion');
+
   const queryClient = useQueryClient();
   const { tenant } = useAuth();
   const abortRef = useRef<AbortController | null>(null);
@@ -260,7 +263,7 @@ export function UpdateDocumentVersionDrawer({
 
   return (
     <WorkspaceSideDrawer
-      title="Atualizar documento"
+      title={t('updateDocumentVersionDrawer.atualizarDocumento')}
       onClose={handleClose}
       testId="update-version-drawer"
       overlayTestId="update-version-drawer-overlay"
@@ -278,12 +281,14 @@ export function UpdateDocumentVersionDrawer({
           />
         ) : (
           <div className="flex shrink-0 items-center justify-between border-b border-doqyn-border-subtle px-4 py-3">
-            <p className="register-label text-doqyn-subtle">Atualizar documento</p>
+            <p className="register-label text-doqyn-subtle">
+              {t('updateDocumentVersionDrawer.atualizarDocumento2')}
+            </p>
             <button
               type="button"
               onClick={handleClose}
               className="explorer-icon-btn shrink-0"
-              aria-label="Fechar atualização de versão"
+              aria-label={t('updateDocumentVersionDrawer.fecharAtualizacaoDeVersao')}
               data-testid="update-version-drawer-close"
             >
               <Icon name="close" size={ICON_SIZE.sm} />
@@ -295,14 +300,16 @@ export function UpdateDocumentVersionDrawer({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {phase === 'loading' && (
           <p className="px-5 py-8 text-center text-caption text-doqyn-muted">
-            Carregando documento e histórico de versões…
+            {t('updateDocumentVersionDrawer.carregandoDocumentoEHistorico')}
           </p>
         )}
 
         {phase === 'error' && (
           <div className="px-5 py-4">
             <div className="notice-rule border-l-doqyn-danger py-1">
-              <p className="text-label font-medium text-doqyn-danger">Não foi possível continuar</p>
+              <p className="text-label font-medium text-doqyn-danger">
+                {t('updateDocumentVersionDrawer.naoFoiPossivelContinuar')}
+              </p>
               <p className="mt-1 text-caption text-doqyn-muted">
                 {errorMessage ?? 'Erro desconhecido.'}
               </p>
@@ -316,9 +323,11 @@ export function UpdateDocumentVersionDrawer({
               className="notice-rule border-l-doqyn-success py-1"
               data-testid="update-version-success"
             >
-              <p className="text-label font-medium text-doqyn-success">Nova versão criada</p>
+              <p className="text-label font-medium text-doqyn-success">
+                {t('updateDocumentVersionDrawer.novaVersaoCriada')}
+              </p>
               <p className="mt-1 text-caption text-doqyn-muted">
-                O documento foi atualizado para{' '}
+                {t('updateDocumentVersionDrawer.oDocumentoFoiAtualizado')}{' '}
                 <span className="font-mono text-micro tabular-nums text-doqyn-text">
                   {successResult.versionLabel}
                 </span>

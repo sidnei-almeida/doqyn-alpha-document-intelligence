@@ -19,8 +19,11 @@ import { buildOverviewMetrics } from '@/features/dashboard/utils/buildOverviewMe
 import type { DashboardPeriodKey } from '@/types/dashboard-overview';
 import type { DocumentListItem } from '@/types/document-library';
 import { LeadDetail } from '@/components/ui/LeadDetail';
+import { useTranslation } from 'react-i18next';
 
 export function DashboardPage() {
+  const { t } = useTranslation('documents');
+
   const navigate = useNavigate();
   const [period, setPeriod] = useState<DashboardPeriodKey>('30d');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -38,7 +41,8 @@ export function DashboardPage() {
       <div className="flex flex-1 items-center justify-center">
         <div className="flex items-center gap-2 text-caption text-doqyn-muted">
           <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-          Carregando visão geral
+
+          {t('dashboardPage.carregandoVisaoGeral')}
         </div>
       </div>
     );
@@ -47,9 +51,9 @@ export function DashboardPage() {
   if (isError || !data) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-        <p className="text-label text-doqyn-text">Não foi possível carregar a visão geral</p>
+        <p className="text-label text-doqyn-text">{t('dashboardPage.naoFoiPossivelCarregar')}</p>
         <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()}>
-          Tentar novamente
+          {t('dashboardPage.tentarNovamente')}
         </Button>
       </div>
     );
@@ -61,7 +65,7 @@ export function DashboardPage() {
   return (
     <PageShell
       eyebrow="Visão geral"
-      title="Painel de controle"
+      title={t('dashboardPage.painelDeControle')}
       description={
         <LeadDetail
           lead={`Panorama de ${data.tenant.displayName}`}
@@ -88,7 +92,7 @@ export function DashboardPage() {
       <div className="overview-insights-grid grid items-start gap-x-8 gap-y-8 lg:grid-cols-2 xl:grid-cols-12">
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
-            title="Por status"
+            title={t('dashboardPage.porStatus')}
             subtitle="Onde os documentos pararam"
             items={data.documentsByStatus.map((item) => ({
               label: item.label,
@@ -99,7 +103,7 @@ export function DashboardPage() {
         </div>
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
-            title="Por categoria"
+            title={t('dashboardPage.porCategoria')}
             subtitle="Como o acervo se divide"
             items={data.documentsByCategory.map((item) => ({
               label: item.categoryName,

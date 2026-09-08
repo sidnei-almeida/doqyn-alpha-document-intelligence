@@ -8,6 +8,7 @@ import { useUploadQueueContext } from '@/features/upload/uploadQueueContext';
 import type { UploadContext } from '@/features/upload/types';
 import { SidebarTooltip } from '@/components/layout/SidebarTooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type NewButtonMenuProps = {
   uploadContext?: UploadContext;
@@ -19,6 +20,8 @@ type NewButtonMenuProps = {
  * Botão "+ Novo" — CTA principal da sidebar (índigo premium) e menu de criação.
  */
 export function NewButtonMenu({ uploadContext, className, collapsed = false }: NewButtonMenuProps) {
+  const { t } = useTranslation('library');
+
   const { startUploadFromFiles } = useUploadQueueContext();
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -52,7 +55,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
       <Icon name="add" size={ICON_SIZE.md} className="sidebar-new-button__glyph" aria-hidden />
       {!collapsed && (
         <>
-          <span className="sidebar-new-button__label">Enviar documento</span>
+          <span className="sidebar-new-button__label">{t('newButtonMenu.enviarDocumento')}</span>
           <Icon
             name="keyboard_arrow_down"
             size={ICON_SIZE.sm}
@@ -87,7 +90,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
         tabIndex={-1}
       />
 
-      <SidebarTooltip label="Novo" collapsed={collapsed}>
+      <SidebarTooltip label={t('newButtonMenu.novo')} collapsed={collapsed}>
         {trigger}
       </SidebarTooltip>
 
@@ -97,7 +100,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
         onClose={() => setOpen(false)}
         placement={collapsed ? 'right-start' : 'bottom-start'}
         role="menu"
-        aria-label="Criar novo"
+        aria-label={t('newButtonMenu.criarNovo')}
         className="sidebar-new-menu w-[15.5rem]"
       >
         {/* Pasta da Biblioteca é categoria de governança — não há duas coisas.
@@ -115,7 +118,8 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
             size={ICON_SIZE.md}
             className="sidebar-new-menu__item-icon"
           />
-          Nova categoria
+
+          {t('newButtonMenu.novaCategoria')}
         </Link>
         <button
           type="button"
@@ -125,7 +129,8 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
           data-testid="new-upload-file"
         >
           <Icon name="upload_file" size={ICON_SIZE.md} className="sidebar-new-menu__item-icon" />
-          Upload de arquivo
+
+          {t('newButtonMenu.uploadDeArquivo')}
         </button>
         <button
           type="button"
@@ -139,7 +144,8 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
             size={ICON_SIZE.md}
             className="sidebar-new-menu__item-icon"
           />
-          Upload de pasta
+
+          {t('newButtonMenu.uploadDePasta')}
         </button>
         {/* Pedir um documento a alguém é isto, e não tem nada a ver com pedir acesso — os nomes
             se pareciam, e o destino errado não dava erro nenhum: abria o onboarding para quem já
@@ -152,7 +158,8 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
           data-testid="new-request-document"
         >
           <Icon name="inbox" size={ICON_SIZE.md} className="sidebar-new-menu__item-icon--muted" />
-          Solicitar documento
+
+          {t('newButtonMenu.solicitarDocumento')}
         </Link>
       </AnchoredPopover>
     </div>

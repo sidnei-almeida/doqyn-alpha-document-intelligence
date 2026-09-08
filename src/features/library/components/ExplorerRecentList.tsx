@@ -6,6 +6,7 @@ import { ExplorerHomeSection } from './ExplorerHomeSection';
 import { RecentEmptyState } from './RecentEmptyState';
 import { DocumentFileRow } from './files/DocumentFileRow';
 import { DocumentFilesGrid } from './files/DocumentFilesGrid';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerRecentListProps = {
   documents: DocumentListItem[];
@@ -21,12 +22,14 @@ export function ExplorerRecentList({
   totalCount,
   onUploadClick,
 }: ExplorerRecentListProps) {
+  const { t } = useTranslation('library');
+
   const showMoreLink = totalCount != null && totalCount > documents.length;
   const orderedIds = documents.map((doc) => doc.documentId);
 
   return (
     <ExplorerHomeSection
-      title="Recentes"
+      title={t('explorerRecentList.recentes')}
       data-testid="explorer-recent-list"
       action={
         showMoreLink ? (
@@ -34,7 +37,7 @@ export function ExplorerRecentList({
             to="/biblioteca/recentes"
             className="shrink-0 text-[12px] font-medium text-doqyn-accent-active hover:underline"
           >
-            Ver todos
+            {t('explorerRecentList.verTodos')}
           </Link>
         ) : undefined
       }

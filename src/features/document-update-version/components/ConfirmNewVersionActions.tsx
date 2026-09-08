@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type ConfirmNewVersionActionsProps = {
   phase: 'ready' | 'review' | 'analyzing' | 'confirming' | 'success' | 'error';
@@ -19,12 +20,15 @@ export function ConfirmNewVersionActions({
   onClose,
   onRetry,
 }: ConfirmNewVersionActionsProps) {
+  const { t } = useTranslation('documentVersion');
+
   if (phase === 'success') {
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button type="button" variant="primary" onClick={onClose}>
           <Icon name="check" size={ICON_SIZE.sm} />
-          Concluir
+
+          {t('confirmNewVersionActions.concluir')}
         </Button>
       </div>
     );
@@ -34,11 +38,11 @@ export function ConfirmNewVersionActions({
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onClose}>
-          Fechar
+          {t('confirmNewVersionActions.fechar')}
         </Button>
         {onRetry && (
           <Button type="button" variant="primary" onClick={onRetry}>
-            Tentar novamente
+            {t('confirmNewVersionActions.tentarNovamente')}
           </Button>
         )}
       </div>
@@ -50,7 +54,9 @@ export function ConfirmNewVersionActions({
       {/* A promessa aparecia três vezes na mesma gaveta — no rótulo do bloco,
           dentro da área de arrastar e aqui. Fica só neste rodapé, que é onde a
           decisão acontece. */}
-      <p className="text-caption text-doqyn-muted">A versão anterior permanece no histórico.</p>
+      <p className="text-caption text-doqyn-muted">
+        {t('confirmNewVersionActions.aVersaoAnteriorPermanece')}
+      </p>
       <div className="flex flex-wrap items-center justify-end gap-2">
         {phase === 'review' && onConfirm && (
           <Button
@@ -61,7 +67,7 @@ export function ConfirmNewVersionActions({
             data-testid="update-version-confirm-button"
           >
             <Icon name="upload" size={ICON_SIZE.sm} />
-            Confirmar {nextVersionLabel}
+            {t('confirmNewVersionActions.confirmar')} {nextVersionLabel}
           </Button>
         )}
         {(phase === 'analyzing' || phase === 'confirming') && (

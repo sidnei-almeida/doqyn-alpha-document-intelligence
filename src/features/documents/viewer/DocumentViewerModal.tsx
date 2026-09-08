@@ -12,6 +12,7 @@ import { DocumentViewerDetailsPanel } from '../components/DocumentViewerDetailsP
 import { DocumentViewerShell } from './DocumentViewerShell';
 import { usePreviewManifest } from './usePreviewManifest';
 import { resolveViewerComponent, type ViewerActions } from './viewerRegistry';
+import { useTranslation } from 'react-i18next';
 
 export type DocumentViewerModalProps = {
   open: boolean;
@@ -37,6 +38,7 @@ export function DocumentViewerModal({
   onClose,
   onUpdateDocument,
 }: DocumentViewerModalProps) {
+  const { t } = useTranslation('documents');
   const navigate = useNavigate();
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -314,7 +316,7 @@ export function DocumentViewerModal({
     if (isLoading || manifestQuery.isLoading) {
       return (
         <div className="viewer-canvas flex h-full items-center justify-center text-sm text-doqyn-muted">
-          Carregando preview do documento...
+          {t('documentViewerModal.carregandoPreviewDoDocumento')}
         </div>
       );
     }
@@ -332,9 +334,7 @@ export function DocumentViewerModal({
     if (!data.permissions.canPreview) {
       return (
         <div className="viewer-canvas flex h-full items-center justify-center px-6 text-center">
-          <p className="text-sm text-doqyn-muted">
-            Você não tem permissão para visualizar este documento.
-          </p>
+          <p className="text-sm text-doqyn-muted">{t('documentViewerModal.voceNaoTemPermissao')}</p>
         </div>
       );
     }
@@ -342,7 +342,9 @@ export function DocumentViewerModal({
     if (!activeVersionId) {
       return (
         <div className="viewer-canvas flex h-full items-center justify-center px-6 text-center">
-          <p className="text-sm text-doqyn-muted">Versão não disponível para visualização.</p>
+          <p className="text-sm text-doqyn-muted">
+            {t('documentViewerModal.versaoNaoDisponivelPara')}
+          </p>
         </div>
       );
     }
@@ -360,7 +362,7 @@ export function DocumentViewerModal({
     if (!manifest || !ViewerComponent) {
       return (
         <div className="viewer-canvas flex h-full items-center justify-center px-6 text-center">
-          <p className="text-sm text-doqyn-muted">Preview indisponível.</p>
+          <p className="text-sm text-doqyn-muted">{t('documentViewerModal.previewIndisponivel')}</p>
         </div>
       );
     }
@@ -369,7 +371,7 @@ export function DocumentViewerModal({
       <div className="doqyn-secure-viewer flex h-full min-h-0 flex-col">
         {showProtectedNoticeResolved && (
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-            Visualização protegida. Download indisponível para seu perfil.
+            {t('documentViewerModal.visualizacaoProtegidaDownloadIndisponivel')}
           </p>
         )}
         <ViewerComponent

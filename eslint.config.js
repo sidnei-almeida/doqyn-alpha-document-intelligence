@@ -71,6 +71,10 @@ export default tseslint.config(
       'src/features/signature/**/*.tsx',
       'src/features/external-share/**/*.tsx',
       'src/features/sharing/**/*.tsx',
+      // 6.4 — núcleo do uso diário
+      'src/features/library/**/*.tsx',
+      'src/features/documents/**/*.tsx',
+      'src/features/document-update-version/**/*.tsx',
     ],
     plugins: { i18next },
     rules: {

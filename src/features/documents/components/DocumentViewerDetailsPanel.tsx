@@ -1,6 +1,7 @@
 import { Select } from '@/components/ui/Select';
 import type { DocumentDetailResponse, DocumentVersionSummary } from '@/types/document-library';
 import { DocumentDetailsSections } from './DocumentDetailsShared';
+import { useTranslation } from 'react-i18next';
 
 type DocumentViewerDetailsPanelProps = {
   data: DocumentDetailResponse;
@@ -17,11 +18,13 @@ export function DocumentViewerDetailsPanel({
   displayName,
   onSelectVersion,
 }: DocumentViewerDetailsPanelProps) {
+  const { t } = useTranslation('documents');
+
   const versionSlot =
     data.versions.length > 1 ? (
       <Select
         id="viewer-document-version"
-        label="Versão"
+        label={t('documentViewerDetailsPanel.versao')}
         value={activeVersionId ?? ''}
         onChange={(event) => onSelectVersion(event.target.value)}
         options={data.versions.map((version) => ({
@@ -31,7 +34,7 @@ export function DocumentViewerDetailsPanel({
       />
     ) : activeVersion?.versionLabel ? (
       <div>
-        <p className="text-[11px] text-doqyn-muted">Versão</p>
+        <p className="text-[11px] text-doqyn-muted">{t('documentViewerDetailsPanel.versao2')}</p>
         <p className="text-[12px] text-doqyn-text">{activeVersion.versionLabel}</p>
       </div>
     ) : null;

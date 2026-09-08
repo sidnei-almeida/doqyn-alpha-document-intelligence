@@ -11,6 +11,7 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Peças comuns dos dois fluxos que mandam um documento para fora — compartilhar e
@@ -197,6 +198,8 @@ export function AudiencePicker({
   doqynLabel?: string;
   externalLabel: string;
 }) {
+  const { t } = useTranslation('documents');
+
   return (
     <SegmentedTextToggle
       value={value}
@@ -208,7 +211,7 @@ export function AudiencePicker({
         ...(doqynLabel ? [{ value: 'doqyn' as RecipientAudience, label: doqynLabel }] : []),
         { value: 'external' as RecipientAudience, label: externalLabel },
       ]}
-      aria-label="Tipo de destinatário"
+      aria-label={t('recipientFlow.tipoDeDestinatario')}
     />
   );
 }
@@ -239,6 +242,8 @@ export function InternalRecipientPicker({
    */
   emptyAction?: ReactNode;
 }) {
+  const { t } = useTranslation('documents');
+
   if (selected) {
     return (
       <div className="recipient-chosen">
@@ -248,7 +253,7 @@ export function InternalRecipientPicker({
           <p className="type-caption truncate text-doqyn-muted">{selected.email}</p>
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={() => onSelect(null)}>
-          Trocar
+          {t('recipientFlow.trocar')}
         </Button>
       </div>
     );
@@ -258,15 +263,15 @@ export function InternalRecipientPicker({
     <div className="flex flex-col gap-3">
       <Input
         variant="rule"
-        label="Buscar pessoa"
+        label={t('recipientFlow.buscarPessoa')}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Nome ou e-mail"
+        placeholder={t('recipientFlow.nomeOuEMail')}
         autoComplete="off"
       />
       <div className="recipient-candidates">
         {loading ? (
-          <p className="type-caption px-1 py-2 text-doqyn-muted">Buscando…</p>
+          <p className="type-caption px-1 py-2 text-doqyn-muted">{t('recipientFlow.buscando')}</p>
         ) : candidates.length === 0 ? (
           <p className="type-caption px-1 py-2 text-doqyn-muted">{emptyLabel}</p>
         ) : (
@@ -276,11 +281,13 @@ export function InternalRecipientPicker({
                   primeira que não veio do histórico — sem ele, a lista pareceria uma ordem
                   arbitrária, que é justamente o que ela deixou de ser. */}
               {index === 0 && candidate.frequent ? (
-                <p className="type-eyebrow px-1 pt-1 uppercase text-doqyn-subtle">Frequentes</p>
+                <p className="type-eyebrow px-1 pt-1 uppercase text-doqyn-subtle">
+                  {t('recipientFlow.frequentes')}
+                </p>
               ) : null}
               {!candidate.frequent && candidates[index - 1]?.frequent ? (
                 <p className="type-eyebrow px-1 pt-3 uppercase text-doqyn-subtle">
-                  Todo mundo da empresa
+                  {t('recipientFlow.todoMundoDaEmpresa')}
                 </p>
               ) : null}
               <button
@@ -319,6 +326,8 @@ export function ExternalRecipientFields({
   requireName: boolean;
   phoneError?: string;
 }) {
+  const { t } = useTranslation('documents');
+
   return (
     <div className="recipient-fields">
       <Input
@@ -326,13 +335,13 @@ export function ExternalRecipientFields({
         label={requireName ? 'Nome' : 'Nome (opcional)'}
         value={value.name}
         onChange={(event) => onChange({ ...value, name: event.target.value })}
-        placeholder="Como a pessoa assina"
+        placeholder={t('recipientFlow.comoAPessoaAssina')}
         autoComplete="off"
       />
       <Input
         variant="rule"
         type="email"
-        label="E-mail"
+        label={t('recipientFlow.eMail')}
         value={value.email}
         onChange={(event) => onChange({ ...value, email: event.target.value })}
         placeholder="pessoa@empresa.com.br"
@@ -340,7 +349,7 @@ export function ExternalRecipientFields({
       />
       <WhatsappInput
         variant="rule"
-        label="Telefone (opcional)"
+        label={t('recipientFlow.telefoneOpcional')}
         value={value.phone}
         onChange={(next) => onChange({ ...value, phone: next })}
         placeholder={WHATSAPP_PLACEHOLDER}
@@ -348,10 +357,10 @@ export function ExternalRecipientFields({
       />
       <Input
         variant="rule"
-        label="Organização (opcional)"
+        label={t('recipientFlow.organizacaoOpcional')}
         value={value.organizationName}
         onChange={(event) => onChange({ ...value, organizationName: event.target.value })}
-        placeholder="Onde a pessoa trabalha"
+        placeholder={t('recipientFlow.ondeAPessoaTrabalha')}
         autoComplete="off"
       />
     </div>
@@ -385,15 +394,17 @@ export function ConditionsStep({
   messageLabel?: string;
   messagePlaceholder?: string;
 }) {
+  const { t } = useTranslation('documents');
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <DateField
           variant="rule"
-          label="Válido até"
+          label={t('recipientFlow.validoAte')}
           value={expiresAt}
           onChange={onExpiresAtChange}
-          placeholder="Escolher data"
+          placeholder={t('recipientFlow.escolherData')}
         />
         {expiresHint ? <p className="type-caption text-doqyn-subtle">{expiresHint}</p> : null}
       </div>

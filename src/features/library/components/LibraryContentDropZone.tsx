@@ -4,6 +4,7 @@ import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 function dragEventHasFiles(event: React.DragEvent): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
@@ -28,6 +29,8 @@ export function LibraryContentDropZone({
   onBackgroundContextMenu,
   onBackgroundClick,
 }: LibraryContentDropZoneProps) {
+  const { t } = useTranslation('library');
+
   const [nativeDragging, setNativeDragging] = useState(false);
   const depthRef = useRef(0);
   const { setNodeRef, isOver } = useDroppable({ id: 'library-content-drop' });
@@ -91,9 +94,11 @@ export function LibraryContentDropZone({
             <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-doqyn-border-subtle bg-doqyn-card text-doqyn-muted">
               <Icon name="cloud_upload" size={ICON_SIZE.md} />
             </span>
-            <p className="text-[15px] font-medium text-doqyn-text">Solte para enviar</p>
+            <p className="text-[15px] font-medium text-doqyn-text">
+              {t('libraryContentDropZone.solteParaEnviar')}
+            </p>
             <p className="max-w-xs text-[12px] text-doqyn-muted">
-              Os arquivos entram na fila de upload com análise e revisão.
+              {t('libraryContentDropZone.osArquivosEntramNa')}
             </p>
           </div>
         </div>

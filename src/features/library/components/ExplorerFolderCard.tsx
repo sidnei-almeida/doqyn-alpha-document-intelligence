@@ -9,6 +9,7 @@ import { getFolderAccentColor } from '../utils/folderColors';
 import type { LibraryFolder } from '../types/library';
 import { ExplorerActionsContext } from '../context/explorerActionsContext';
 import { useSelectableItemRef } from '../hooks/useSelectableItemRef';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerFolderCardProps = {
   folder: LibraryFolder;
@@ -26,6 +27,8 @@ export function ExplorerFolderCard({
   onContextMenu,
   onShowInfo,
 }: ExplorerFolderCardProps) {
+  const { t } = useTranslation('library');
+
   const explorerActions = useContext(ExplorerActionsContext);
   const isSelected = explorerActions?.isFolderSelected(folder.id) ?? false;
   const selectableRef = useSelectableItemRef(folder.id, 'folder');
@@ -90,7 +93,7 @@ export function ExplorerFolderCard({
       </div>
 
       {onShowInfo && (
-        <Tooltip label="Informações">
+        <Tooltip label={t('explorerFolderCard.informacoes')}>
           <button
             type="button"
             className="explorer-icon-btn workspace-action-btn absolute right-9 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"

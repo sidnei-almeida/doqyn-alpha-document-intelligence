@@ -1,0 +1,99 @@
+{
+  "dashboardPage": {
+    "carregandoVisaoGeral": "Carregando visão geral",
+    "naoFoiPossivelCarregar": "Não foi possível carregar a visão geral",
+    "painelDeControle": "Painel de controle",
+    "porCategoria": "Por categoria",
+    "porStatus": "Por status",
+    "tentarNovamente": "Tentar novamente"
+  },
+  "documentDetailsShared": {
+    "atualizado": "Atualizado",
+    "carregandoFicha": "Carregando ficha…",
+    "categoria": "Categoria",
+    "criado": "Criado",
+    "documento": "Documento",
+    "enviadoPor": "Enviado por",
+    "ficha": "Ficha",
+    "preview": "Preview",
+    "proprietario": "Proprietário",
+    "ultimaAtualizacaoPor": "Última atualização por",
+    "vencimento": "Vencimento"
+  },
+  "documentPreviewViewer": {
+    "carregandoPreview": "Carregando preview...",
+    "naoFoiPossivelCarregar": "Não foi possível carregar o preview.",
+    "visualizacaoDoDocumento": "Visualização do documento"
+  },
+  "documentThumbnail": {
+    "preparandoVisualizacao": "Preparando visualização",
+    "visualizacaoNaoDisponivel": "Visualização não disponível"
+  },
+  "documentViewerDetailsPanel": {
+    "versao": "Versão",
+    "versao2": "Versão"
+  },
+  "documentViewerModal": {
+    "carregandoPreviewDoDocumento": "Carregando preview do documento...",
+    "previewIndisponivel": "Preview indisponível.",
+    "versaoNaoDisponivelPara": "Versão não disponível para visualização.",
+    "visualizacaoProtegidaDownloadIndisponivel": "Visualização protegida. Download indisponível para seu perfil.",
+    "voceNaoTemPermissao": "Você não tem permissão para visualizar este documento."
+  },
+  "documentViewerToolbar": {
+    "atualizarDocumento": "Atualizar documento",
+    "atualizarPreview": "Atualizar preview",
+    "aumentarZoom": "Aumentar zoom",
+    "baixarOriginal": "Baixar original",
+    "carregandoDocumento": "Carregando documento…",
+    "diminuirZoom": "Diminuir zoom",
+    "fecharVisualizacaoDoDocumento": "Fechar visualização do documento",
+    "largura": "Largura",
+    "pagina": "Página",
+    "paginaAnterior": "Página anterior",
+    "proximaPagina": "Próxima página",
+    "verTracking": "Ver tracking"
+  },
+  "imageViewer": {
+    "carregandoImagem": "Carregando imagem…",
+    "dimensions": "{{width}} × {{height}}px",
+    "girar90": "Girar 90°",
+    "metadadosDeImagemIndisponiveis": "Metadados de imagem indisponíveis."
+  },
+  "pdfPagesViewer": {
+    "esteDocumentoEGrande": "Este documento é grande. Algumas páginas serão carregadas sob demanda.",
+    "naoFoiPossivelCarregar": "Não foi possível carregar a página",
+    "nenhumaPaginaDisponivelPara": "Nenhuma página disponível para visualização.",
+    "previewEmProcessamento": "Preview em processamento…"
+  },
+  "recipientFlow": {
+    "buscando": "Buscando…",
+    "buscarPessoa": "Buscar pessoa",
+    "comoAPessoaAssina": "Como a pessoa assina",
+    "eMail": "E-mail",
+    "escolherData": "Escolher data",
+    "frequentes": "Frequentes",
+    "nomeOuEMail": "Nome ou e-mail",
+    "ondeAPessoaTrabalha": "Onde a pessoa trabalha",
+    "organizacaoOpcional": "Organização (opcional)",
+    "telefoneOpcional": "Telefone (opcional)",
+    "tipoDeDestinatario": "Tipo de destinatário",
+    "todoMundoDaEmpresa": "Todo mundo da empresa",
+    "trocar": "Trocar",
+    "validoAte": "Válido até"
+  },
+  "transferOwnershipModal": {
+    "cancelar": "Cancelar",
+    "exMudancaDeResponsavel": "Ex.: mudança de responsável pela pasta",
+    "motivoOpcional": "Motivo (opcional)",
+    "novoProprietario": "Novo proprietário",
+    "proprietarioAtual": "Proprietário atual",
+    "transferir": "Transferir",
+    "transferirPropriedade": "Transferir propriedade"
+  },
+  "unsupportedViewer": {
+    "baixarOriginal": "Baixar original",
+    "esteTipoDeArquivo": "Este tipo de arquivo ainda não possui visualização integrada.",
+    "tipoDetectado": "Tipo detectado:"
+  }
+}

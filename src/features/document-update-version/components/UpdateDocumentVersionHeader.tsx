@@ -3,6 +3,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentListItem } from '@/types/document-library';
+import { useTranslation } from 'react-i18next';
 
 type UpdateDocumentVersionHeaderProps = {
   documentItem: DocumentListItem;
@@ -17,6 +18,8 @@ export function UpdateDocumentVersionHeader({
   nextVersionLabel,
   onClose,
 }: UpdateDocumentVersionHeaderProps) {
+  const { t } = useTranslation('documentVersion');
+
   const name = documentItem.currentFileName ?? documentItem.displayName;
 
   return (
@@ -24,7 +27,9 @@ export function UpdateDocumentVersionHeader({
       <div className="min-w-0 flex-1">
         {/* O eyebrow era acento: acento significa interativo, e um rótulo de
             seção não é clicável. */}
-        <p className="register-label text-doqyn-subtle">Atualizar documento</p>
+        <p className="register-label text-doqyn-subtle">
+          {t('updateDocumentVersionHeader.atualizarDocumento')}
+        </p>
         <TruncatedText
           as="h2"
           id="update-document-version-title"
@@ -37,7 +42,7 @@ export function UpdateDocumentVersionHeader({
         </p>
       </div>
       <IconButton
-        label="Fechar atualização de versão"
+        label={t('updateDocumentVersionHeader.fecharAtualizacaoDeVersao')}
         onClick={onClose}
         data-testid="update-version-drawer-close"
       >

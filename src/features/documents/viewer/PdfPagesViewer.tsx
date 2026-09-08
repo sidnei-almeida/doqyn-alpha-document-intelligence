@@ -8,6 +8,7 @@ import type { PreviewManifestPage } from '@/types/preview-manifest';
 import { usePreviewAsset } from './usePreviewAsset';
 import type { ViewerComponentProps } from './viewerRegistry';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
@@ -25,6 +26,8 @@ function ManifestPageImage({
   previewUrl: string;
   onLoadError?: (pageNumber: number) => void;
 }) {
+  const { t } = useTranslation('documents');
+
   const { objectUrl, state } = usePreviewAsset(previewUrl, true);
   const displayWidth = Math.max(1, Math.round(page.width * scale));
 
@@ -71,7 +74,7 @@ function ManifestPageImage({
         >
           <Icon name="broken_image" size={ICON_SIZE.md} className="text-doqyn-subtle" />
           <p className="text-caption text-doqyn-muted">
-            Não foi possível carregar a página {page.page}.
+            {t('pdfPagesViewer.naoFoiPossivelCarregar')} {page.page}.
           </p>
         </div>
       )}
@@ -139,6 +142,8 @@ export function PdfPagesViewer({
   onToolbarStateChange,
   onRegisterActions,
 }: ViewerComponentProps) {
+  const { t } = useTranslation('documents');
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [scale, setScale] = useState(1);
@@ -277,7 +282,9 @@ export function PdfPagesViewer({
   if (manifest.status === 'processing') {
     return (
       <div className={cn('viewer-canvas flex h-full items-center justify-center', className)}>
-        <p className="text-caption text-doqyn-muted">Preview em processamento…</p>
+        <p className="text-caption text-doqyn-muted">
+          {t('pdfPagesViewer.previewEmProcessamento')}
+        </p>
       </div>
     );
   }
@@ -290,7 +297,7 @@ export function PdfPagesViewer({
           className,
         )}
       >
-        <EmptyHint bare>Nenhuma página disponível para visualização.</EmptyHint>
+        <EmptyHint bare>{t('pdfPagesViewer.nenhumaPaginaDisponivelPara')}</EmptyHint>
       </div>
     );
   }
@@ -332,7 +339,7 @@ export function PdfPagesViewer({
           <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6">
             {useLazyRender && (
               <p className="notice-rule py-0.5 text-caption text-doqyn-muted">
-                Este documento é grande. Algumas páginas serão carregadas sob demanda.
+                {t('pdfPagesViewer.esteDocumentoEGrande')}
               </p>
             )}
 

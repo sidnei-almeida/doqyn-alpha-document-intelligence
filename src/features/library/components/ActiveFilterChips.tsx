@@ -10,6 +10,7 @@ import {
   TYPE_FILTER_OPTIONS,
   resolveSortOptionLabel,
 } from '../utils/libraryFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 type ActiveFilterChipsProps = {
   state: LibraryRouteState;
@@ -51,6 +52,8 @@ export function ActiveFilterChips({
   folderName,
   filterCapabilities,
 }: ActiveFilterChipsProps) {
+  const { t } = useTranslation('library');
+
   const caps = filterCapabilities ?? {
     status: true,
     type: true,
@@ -135,7 +138,7 @@ export function ActiveFilterChips({
       className="flex flex-wrap items-center gap-2"
       data-testid="library-active-filter-chips"
       role="group"
-      aria-label="Filtros ativos"
+      aria-label={t('activeFilterChips.filtrosAtivos')}
     >
       {chips.map((chip) => (
         <RemovableChip key={chip.key} label={chip.label} onRemove={chip.onRemove} />
@@ -145,7 +148,7 @@ export function ActiveFilterChips({
         className="text-[12px] font-medium text-doqyn-accent-active hover:underline"
         onClick={onClearAll}
       >
-        Limpar filtros
+        {t('activeFilterChips.limparFiltros')}
       </button>
     </div>
   );

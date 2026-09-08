@@ -3,6 +3,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
 import { useDocumentIsFavorite } from '../../hooks/useDocumentIsFavorite';
+import { useTranslation } from 'react-i18next';
 
 type DocumentFavoriteBadgeProps = {
   document: DocumentListItem;
@@ -22,6 +23,8 @@ export function DocumentFavoriteBadge({
   variant = 'inline',
   className,
 }: DocumentFavoriteBadgeProps) {
+  const { t } = useTranslation('library');
+
   const isFavorite = useDocumentIsFavorite(document);
   if (!isFavorite) return null;
 
@@ -32,7 +35,7 @@ export function DocumentFavoriteBadge({
           'document-favorite-badge pointer-events-none absolute bottom-1.5 left-1.5 z-10',
           className,
         )}
-        title="Favorito"
+        title={t('documentFavoriteBadge.favorito')}
         aria-hidden
       >
         <Icon name="star" filled size={ICON_SIZE.xs} />
@@ -46,7 +49,7 @@ export function DocumentFavoriteBadge({
       filled
       size={ICON_SIZE.xs}
       className={cn('shrink-0 text-doqyn-text', className)}
-      aria-label="Favorito"
+      aria-label={t('documentFavoriteBadge.favorito2')}
     />
   );
 }

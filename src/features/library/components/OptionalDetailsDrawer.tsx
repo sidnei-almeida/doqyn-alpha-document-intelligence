@@ -23,6 +23,7 @@ import {
   DocumentStandardFicha,
   DocumentSystemDetails,
 } from '@/features/documents/components/DocumentDetailsShared';
+import { useTranslation } from 'react-i18next';
 
 type OptionalDetailsDrawerProps = {
   selection: LibrarySelection;
@@ -59,6 +60,8 @@ function FileDetailsBody({
   onTransferOwnership?: (doc: DocumentListItem) => void;
   onEditMetadata?: (doc: DocumentListItem) => void;
 }) {
+  const { t } = useTranslation('library');
+
   const name = doc.currentFileName ?? doc.displayName;
   const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
   const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
@@ -117,12 +120,14 @@ function FileDetailsBody({
             onClick={() => onPreview(doc)}
           >
             <Icon name="visibility" size={ICON_SIZE.sm} />
-            Visualizar
+
+            {t('optionalDetailsDrawer.visualizar')}
           </Button>
           {canDownload && (
             <Button type="button" size="sm" variant="secondary" onClick={() => onDownload(doc)}>
               <Icon name="download" size={ICON_SIZE.sm} />
-              Baixar
+
+              {t('optionalDetailsDrawer.baixar')}
             </Button>
           )}
           {canTracking && (
@@ -131,7 +136,8 @@ function FileDetailsBody({
               className={buttonVariants({ variant: 'ghost', size: 'sm' })}
             >
               <Icon name="history" size={ICON_SIZE.sm} />
-              Tracking
+
+              {t('optionalDetailsDrawer.tracking')}
             </Link>
           )}
           {canUpdate && onUpdateDocument && (
@@ -142,7 +148,8 @@ function FileDetailsBody({
               onClick={() => onUpdateDocument(doc)}
             >
               <Icon name="upload" size={ICON_SIZE.sm} />
-              Atualizar documento
+
+              {t('optionalDetailsDrawer.atualizarDocumento')}
             </Button>
           )}
           {canTransferOwnership && (
@@ -153,18 +160,16 @@ function FileDetailsBody({
               onClick={() => onTransferOwnership?.(doc)}
             >
               <Icon name="person" size={ICON_SIZE.sm} />
-              Transferir propriedade
+
+              {t('optionalDetailsDrawer.transferirPropriedade')}
             </Button>
           )}
         </div>
 
-        <DocumentSystemDetails
-          document={detail?.document ?? doc}
-          searchMeta={detail?.searchMeta}
-        />
+        <DocumentSystemDetails document={detail?.document ?? doc} searchMeta={detail?.searchMeta} />
 
         <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
-          <DocumentDetailField label="Versão">
+          <DocumentDetailField label={t('optionalDetailsDrawer.versao')}>
             <VersionBadge
               version={doc.currentVersionLabel ?? doc.versionLabel ?? `v${doc.version}`}
               isCurrent
@@ -173,7 +178,9 @@ function FileDetailsBody({
         </dl>
 
         {detailLoading ? (
-          <p className="py-2 text-micro text-doqyn-muted">Carregando ficha…</p>
+          <p className="py-2 text-micro text-doqyn-muted">
+            {t('optionalDetailsDrawer.carregandoFicha')}
+          </p>
         ) : (
           <div className="py-2">
             {/* Corrigir um campo errado não precisa de versão nova do arquivo: atualizar o
@@ -182,7 +189,8 @@ function FileDetailsBody({
               <div className="mb-1.5 flex justify-end">
                 <Button type="button" size="sm" variant="ghost" onClick={() => onEditMetadata(doc)}>
                   <Icon name="edit_note" size={ICON_SIZE.sm} />
-                  Editar metadados
+
+                  {t('optionalDetailsDrawer.editarMetadados')}
                 </Button>
               </div>
             )}
@@ -191,7 +199,9 @@ function FileDetailsBody({
         )}
 
         <div className="border-t border-doqyn-border-subtle py-3">
-          <p className="mb-2 text-eyebrow uppercase text-doqyn-muted">Assinatura</p>
+          <p className="mb-2 text-eyebrow uppercase text-doqyn-muted">
+            {t('optionalDetailsDrawer.assinatura')}
+          </p>
           <p className="text-caption leading-relaxed text-doqyn-subtle">
             {signatureDetailSummaryText(doc.signatureSummary)}
           </p>
@@ -203,7 +213,7 @@ function FileDetailsBody({
                 variant="secondary"
                 onClick={() => onViewSignatures(doc)}
               >
-                Ver assinaturas
+                {t('optionalDetailsDrawer.verAssinaturas')}
               </Button>
             ) : null}
             {canDownloadSignedPdf ? (
@@ -214,7 +224,7 @@ function FileDetailsBody({
                 onClick={() => onDownloadSignedPdf?.(doc)}
                 data-testid="details-download-signed-pdf"
               >
-                Baixar PDF assinado
+                {t('optionalDetailsDrawer.baixarPdfAssinado')}
               </Button>
             ) : null}
             {verificationCode ? (
@@ -222,7 +232,7 @@ function FileDetailsBody({
                 to={`/verify/signature/${encodeURIComponent(verificationCode)}`}
                 className={buttonVariants({ variant: 'ghost', size: 'sm' })}
               >
-                Abrir validador
+                {t('optionalDetailsDrawer.abrirValidador')}
               </Link>
             ) : null}
           </div>
@@ -231,7 +241,7 @@ function FileDetailsBody({
 
       <div className="flex min-h-0 flex-1 flex-col border-t border-doqyn-border-subtle pt-3">
         <p className="mb-2 shrink-0 text-eyebrow uppercase text-doqyn-muted">
-          Histórico de versões
+          {t('optionalDetailsDrawer.historicoDeVersoes')}
         </p>
         <DocumentVersionHistoryPanel
           document={doc}
@@ -246,6 +256,8 @@ function FileDetailsBody({
 }
 
 function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
+  const { t } = useTranslation('library');
+
   const accent = getFolderAccentColor(folder.name);
   return (
     <div className="space-y-4">
@@ -264,11 +276,11 @@ function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
       </div>
       <dl className="space-y-2 border-t border-doqyn-border-subtle pt-3 text-caption">
         <div className="flex justify-between gap-4">
-          <dt className="text-doqyn-subtle">Tipo</dt>
-          <dd className="text-doqyn-text">Categoria inteligente</dd>
+          <dt className="text-doqyn-subtle">{t('optionalDetailsDrawer.tipo')}</dt>
+          <dd className="text-doqyn-text">{t('optionalDetailsDrawer.categoriaInteligente')}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-doqyn-subtle">Arquivos</dt>
+          <dt className="text-doqyn-subtle">{t('optionalDetailsDrawer.arquivos')}</dt>
           <dd className="text-doqyn-text">
             {folder.documentCount} {folder.documentCount === 1 ? 'arquivo' : 'arquivos'}
           </dd>
@@ -278,7 +290,7 @@ function FolderDetailsBody({ folder }: { folder: LibraryFolder }) {
         to="/rules"
         className="inline-flex items-center gap-1.5 text-caption text-doqyn-muted hover:text-doqyn-text hover:underline"
       >
-        Ver regras desta categoria
+        {t('optionalDetailsDrawer.verRegrasDestaCategoria')}
       </Link>
     </div>
   );

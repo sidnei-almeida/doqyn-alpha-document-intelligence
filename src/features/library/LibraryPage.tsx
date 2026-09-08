@@ -66,12 +66,15 @@ import { downloadSignatureRequestSignedPdf } from '@/features/signature/api/sign
 import { signedPdfDownloadName } from '@/features/signature/utils/signatureSummaryDisplay';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Biblioteca — File Explorer com pastas inteligentes (categorias de governança).
  * Raiz: pastas em destaque. Dentro da pasta: arquivos como protagonistas.
  */
 export function LibraryPage() {
+  const { t } = useTranslation('library');
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -636,7 +639,7 @@ export function LibraryPage() {
         className="explorer-root-home flex flex-col gap-8 pb-6"
         data-testid="explorer-root-loading"
         aria-busy="true"
-        aria-label="Carregando biblioteca"
+        aria-label={t('libraryPage.carregandoBiblioteca')}
       >
         <div className="space-y-3">
           <div className="skeleton-line h-4 w-16 rounded bg-doqyn-card" />
@@ -668,8 +671,8 @@ export function LibraryPage() {
     mainContent = (
       <EmptyFolderState
         hasActiveFilters={false}
-        title="Esta pasta ainda está vazia"
-        description="Envie um documento para o DOQYN analisar e classificar nesta categoria."
+        title={t('libraryPage.estaPastaAindaEsta')}
+        description={t('libraryPage.envieUmDocumentoPara')}
         showUploadActions
         uploadButtonLabel="Enviar documento"
         onClearFilters={clearFilters}
@@ -810,7 +813,7 @@ export function LibraryPage() {
               />
               {isError && (
                 <p className="mt-3 text-[12px] text-doqyn-danger">
-                  Não foi possível carregar os documentos agora.
+                  {t('libraryPage.naoFoiPossivelCarregar')}
                 </p>
               )}
             </div>
@@ -923,12 +926,12 @@ export function LibraryPage() {
 
         <PromptDialog
           open={Boolean(renameFolder)}
-          title="Renomear categoria"
-          description="O nome novo vale para a pasta e para todos os documentos que já estão dentro dela."
-          label="Nome da categoria"
+          title={t('libraryPage.renomearCategoria')}
+          description={t('libraryPage.oNomeNovoVale')}
+          label={t('libraryPage.nomeDaCategoria')}
           initialValue={renameFolder?.name ?? ''}
           multiline={false}
-          confirmLabel="Renomear"
+          confirmLabel={t('libraryPage.renomear')}
           saving={renameCategory.isPending}
           onClose={() => setRenameFolder(null)}
           onConfirm={(name) => {

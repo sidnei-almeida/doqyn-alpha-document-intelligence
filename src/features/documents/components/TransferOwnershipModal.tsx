@@ -10,6 +10,7 @@ import { useCompanyMembers } from '@/features/users/hooks/useCompanyMembers';
 import { useAuth } from '@/auth/useAuth';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
+import { useTranslation } from 'react-i18next';
 
 type TransferOwnershipModalProps = {
   open: boolean;
@@ -33,6 +34,8 @@ function memberUserId(member: { id: string; authUserId?: string }): string {
 }
 
 export function TransferOwnershipModal({ open, document, onClose }: TransferOwnershipModalProps) {
+  const { t } = useTranslation('documents');
+
   const { tenant } = useAuth();
   const queryClient = useQueryClient();
   const membersQuery = useCompanyMembers(tenant?.tenantId ?? '');
@@ -81,7 +84,7 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
     <Modal
       open
       onClose={onClose}
-      title="Transferir propriedade"
+      title={t('transferOwnershipModal.transferirPropriedade')}
       subtitle={documentName}
       size="sm"
       // Destino e motivo já escolhidos: clicar fora não descarta em silêncio.
@@ -94,21 +97,21 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
             onClick={onClose}
             disabled={transferMutation.isPending}
           >
-            Cancelar
+            {t('transferOwnershipModal.cancelar')}
           </Button>
           <Button
             type="button"
             onClick={() => void transferMutation.mutate()}
             disabled={!selectedUserId || transferMutation.isPending}
           >
-            Transferir
+            {t('transferOwnershipModal.transferir')}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-bg/40 px-3 py-2 text-sm">
-          <p className="text-doqyn-muted">Proprietário atual</p>
+          <p className="text-doqyn-muted">{t('transferOwnershipModal.proprietarioAtual')}</p>
           <p className="font-medium text-doqyn-text">
             {document.ownerName ?? document.createdBy?.displayName ?? '—'}
           </p>
@@ -116,7 +119,7 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
 
         <Select
           id="transfer-ownership-target"
-          label="Novo proprietário"
+          label={t('transferOwnershipModal.novoProprietario')}
           value={selectedUserId}
           onChange={(event) => setSelectedUserId(event.target.value)}
           options={[
@@ -131,10 +134,10 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
 
         <Input
           id="transfer-ownership-reason"
-          label="Motivo (opcional)"
+          label={t('transferOwnershipModal.motivoOpcional')}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
-          placeholder="Ex.: mudança de responsável pela pasta"
+          placeholder={t('transferOwnershipModal.exMudancaDeResponsavel')}
           disabled={transferMutation.isPending}
         />
       </div>

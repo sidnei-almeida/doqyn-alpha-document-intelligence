@@ -13,6 +13,7 @@ import {
   TYPE_FILTER_OPTIONS,
   encodeSortOptionValue,
 } from '../utils/libraryFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerFilterChipsProps = {
   state: LibraryRouteState;
@@ -95,6 +96,8 @@ function FilterChip({ label, value, options, onChange, defaultValue = '' }: Filt
 
 /** Chips de filtro minimalistas na home da Biblioteca. */
 export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChipsProps) {
+  const { t } = useTranslation('library');
+
   const sortValue = encodeSortOptionValue(state.sort, state.direction);
 
   return (
@@ -106,34 +109,34 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
       className="flex w-full flex-wrap items-center gap-x-7 gap-y-2"
       data-testid="explorer-filter-chips"
       role="group"
-      aria-label="Filtros da biblioteca"
+      aria-label={t('explorerFilterChips.filtrosDaBiblioteca')}
     >
       <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-        Filtrar
+        {t('explorerFilterChips.filtrar')}
       </span>
       <FilterChip
-        label="Filtrar por status"
+        label={t('explorerFilterChips.filtrarPorStatus')}
         value={state.status}
         defaultValue=""
         options={STATUS_FILTER_OPTIONS}
         onChange={(status) => onStateChange({ status })}
       />
       <FilterChip
-        label="Filtrar por tipo"
+        label={t('explorerFilterChips.filtrarPorTipo')}
         value={state.type}
         defaultValue=""
         options={TYPE_FILTER_OPTIONS}
         onChange={(type) => onStateChange({ type: type as LibraryRouteState['type'] })}
       />
       <FilterChip
-        label="Filtrar por período"
+        label={t('explorerFilterChips.filtrarPorPeriodo')}
         value={state.period}
         defaultValue=""
         options={PERIOD_FILTER_OPTIONS}
         onChange={(period) => onStateChange({ period: period as LibraryRouteState['period'] })}
       />
       <FilterChip
-        label="Filtrar por proprietário"
+        label={t('explorerFilterChips.filtrarPorProprietario')}
         value={state.owner}
         defaultValue=""
         options={OWNER_FILTER_OPTIONS}
@@ -141,10 +144,10 @@ export function ExplorerFilterChips({ state, onStateChange }: ExplorerFilterChip
       />
       <span className="ml-auto flex items-center gap-3">
         <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-          Ordenar
+          {t('explorerFilterChips.ordenar')}
         </span>
         <FilterChip
-          label="Ordenar por"
+          label={t('explorerFilterChips.ordenarPor')}
           value={sortValue}
           defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
           options={SORT_FILTER_OPTIONS.map((option) => ({

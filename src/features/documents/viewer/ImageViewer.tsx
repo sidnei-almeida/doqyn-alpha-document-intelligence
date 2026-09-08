@@ -5,6 +5,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { cn } from '@/lib/utils';
 import { usePreviewAsset } from './usePreviewAsset';
 import type { ViewerComponentProps } from './viewerRegistry';
+import { useTranslation } from 'react-i18next';
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 4;
@@ -16,6 +17,8 @@ export function ImageViewer({
   onToolbarStateChange,
   onRegisterActions,
 }: ViewerComponentProps) {
+  const { t } = useTranslation('documents');
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -109,7 +112,9 @@ export function ImageViewer({
           className,
         )}
       >
-        <p className="text-caption text-doqyn-muted">Metadados de imagem indisponíveis.</p>
+        <p className="text-caption text-doqyn-muted">
+          {t('imageViewer.metadadosDeImagemIndisponiveis')}
+        </p>
       </div>
     );
   }
@@ -146,10 +151,10 @@ export function ImageViewer({
       {/* Dimensão é registro: monoespaçada, sem caixa em volta. */}
       <div className="absolute left-4 top-3 z-10 flex items-center gap-1.5">
         <span className="rounded-[2px] bg-doqyn-bg/85 px-1.5 py-0.5 font-mono text-micro tabular-nums text-doqyn-subtle">
-          {imageMeta.width} × {imageMeta.height}px
+          {t('imageViewer.dimensions', { width: imageMeta.width, height: imageMeta.height })}
         </span>
         <IconButton
-          label="Girar 90°"
+          label={t('imageViewer.girar90')}
           className="bg-doqyn-bg/80"
           onClick={() => setRotation((r) => (r + 90) % 360)}
         >
@@ -161,7 +166,8 @@ export function ImageViewer({
         {state === 'loading' && (
           <div className="flex items-center gap-2 text-caption text-doqyn-muted">
             <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
-            Carregando imagem…
+
+            {t('imageViewer.carregandoImagem')}
           </div>
         )}
         {state === 'ready' && objectUrl && (
