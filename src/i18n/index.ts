@@ -94,6 +94,17 @@ export function initI18n(): I18nInstance {
           `[i18n] chave ausente: ${namespace}:${key} (${languages.join(', ')}) — caiu no ${DEFAULT_LOCALE}`,
         );
       },
+      /**
+       * Só chega aqui a chave que falta em **todos** os catálogos, inclusive no português —
+       * ou seja, um erro de código, não um buraco de tradução. O buraco de tradução, que é o
+       * estado normal durante a migração, o `fallbackLng` já resolve mostrando o português.
+       *
+       * Em desenvolvimento marca com cantoneiras para ser impossível não ver na tela. Em
+       * produção devolve a chave mesmo: um texto inventado a partir do último segmento
+       * pareceria funcionando e esconderia o defeito. O que impede isso de chegar em produção
+       * é o portão de CI da Fase 13, não uma maquiagem aqui.
+       */
+      parseMissingKeyHandler: (key) => (import.meta.env.DEV ? `⟦${key}⟧` : key),
     });
 
   applyLocale(locale);

@@ -19,7 +19,7 @@ export function AccountSettingsSection() {
       <section className="settings-block">
         <SettingsSectionHeader
           title="Preferências"
-          description="Tema e visualização da Biblioteca."
+          description="Idioma, tema e visualização da Biblioteca."
           className="settings-block__header"
         />
         <PreferencesSettingsSection />
