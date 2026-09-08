@@ -29,8 +29,30 @@ import ptErrors from './catalog/pt-BR/errors.json';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, applyLocale, resolveInitialLocale } from './locales';
 import type { SupportedLocale } from './locales';
 
-/** O Vite resolve isto em build: um chunk por arquivo de catálogo. */
-const catalogLoaders = import.meta.glob<{ default: Record<string, unknown> }>('./catalog/*/*.json');
+type CatalogLoader = () => Promise<{ default: Record<string, unknown> }>;
+
+/**
+ * Os carregadores por demanda, buscados só quando alguém pede um namespace.
+ *
+ * O `import()` é dinâmico e a falha é esperada: `./catalogLoaders` usa `import.meta.glob`, que
+ * só existe no Vite. Em Node — testes, scripts — ele rejeita, o mapa fica vazio, e o i18n segue
+ * com o `pt-BR` embutido. Sem isso, importar qualquer coisa que toque o i18n derrubava o
+ * processo inteiro, e o erro não mencionava tradução em lugar nenhum.
+ */
+let catalogLoaders: Record<string, CatalogLoader> | null = null;
+
+async function resolveCatalogLoaders(): Promise<Record<string, CatalogLoader>> {
+  if (catalogLoaders) return catalogLoaders;
+  try {
+    const module = (await import('./catalogLoaders')) as {
+      catalogLoaders: Record<string, CatalogLoader>;
+    };
+    catalogLoaders = module.catalogLoaders;
+  } catch {
+    catalogLoaders = {};
+  }
+  return catalogLoaders;
+}
 
 const DEFAULT_NAMESPACE = 'common';
 
@@ -56,14 +78,16 @@ const lazyCatalogBackend = {
     namespace: string,
     callback: (error: Error | null, data: Record<string, unknown> | false) => void,
   ) {
-    const loader = catalogLoaders[`./catalog/${language}/${namespace}.json`];
-    if (!loader) {
-      callback(null, {});
-      return;
-    }
-    loader()
-      .then((module) => callback(null, module.default))
-      .catch((error: unknown) => callback(error as Error, false));
+    void resolveCatalogLoaders().then((loaders) => {
+      const loader = loaders[`./catalog/${language}/${namespace}.json`];
+      if (!loader) {
+        callback(null, {});
+        return;
+      }
+      loader()
+        .then((module) => callback(null, module.default))
+        .catch((error: unknown) => callback(error as Error, false));
+    });
   },
 };
 
