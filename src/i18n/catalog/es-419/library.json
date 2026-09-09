@@ -1,0 +1,340 @@
+{
+  "activeFilterChips": {
+    "busca": "Búsqueda: {{query}}",
+    "emPasta": "En: {{folderName}}",
+    "filtrosAtivos": "Filtros activos",
+    "limparFiltros": "Limpiar filtros",
+    "removerFiltro": "Quitar el filtro {{label}}",
+    "todaABiblioteca": "Toda la biblioteca"
+  },
+  "bulkSelectionToolbar": {
+    "baixar": "Descargar",
+    "excluir": "Eliminar",
+    "limparSelecao": "Limpiar selección",
+    "mover": "Mover",
+    "recuperar": "Recuperar",
+    "restaurar": "Restaurar",
+    "visualizar": "Ver"
+  },
+  "collections": {
+    "root": {
+      "label": "Biblioteca",
+      "description": "Todos los documentos y espacios de este espacio de trabajo.",
+      "emptyTitle": "Esta biblioteca todavía está vacía",
+      "emptyDescription": "Sube tu primer documento para que DOQYN lo analice, lo clasifique y lo prepare para revisión."
+    },
+    "compartilhados": {
+      "label": "Compartidos conmigo",
+      "description": "Documentos subidos por otras personas a los que tienes acceso.",
+      "emptyTitle": "Nada compartido contigo todavía",
+      "emptyDescription": "Cuando alguien comparta un documento contigo, aparecerá aquí."
+    },
+    "paraAssinar": {
+      "label": "Para firmar",
+      "description": "Documentos que esperan tu firma electrónica.",
+      "emptyTitle": "Ningún documento pendiente de firma.",
+      "emptyDescription": "Cuando alguien solicite tu firma, la solicitud aparecerá aquí."
+    },
+    "recentes": {
+      "label": "Recientes",
+      "description": "Los documentos actualizados más recientemente en este espacio de trabajo.",
+      "emptyTitle": "Ninguna actividad reciente",
+      "emptyDescription": "Los documentos actualizados en los últimos días aparecen aquí."
+    },
+    "favoritos": {
+      "label": "Favoritos",
+      "description": "Tus documentos marcados con estrella, para acceso rápido.",
+      "emptyTitle": "Ningún documento favorito",
+      "emptyDescription": "Marca documentos con estrella para encontrarlos rápido."
+    },
+    "lixeira": {
+      "label": "Papelera",
+      "description": "Restaura antes del plazo; después pasan a Desactivados.",
+      "emptyTitle": "La papelera está vacía",
+      "emptyDescription": "Los documentos eliminados aparecen aquí durante el período de retención."
+    },
+    "desativados": {
+      "label": "Desactivados",
+      "description": "Documentos desactivados después del plazo en la papelera. Solo los administradores pueden recuperarlos.",
+      "emptyTitle": "Ningún documento desactivado",
+      "emptyDescription": "Cuando termina el plazo de la papelera, los documentos pasan aquí sin borrarse físicamente."
+    }
+  },
+  "contextInfoButton": {
+    "informacoes": "Información",
+    "informacoes2": "Información",
+    "informacoes3": "Información"
+  },
+  "documentFavoriteBadge": {
+    "favorito": "Favorito",
+    "favorito2": "Favorito"
+  },
+  "documentMetadataDrawer": {
+    "fecharMetadados": "Cerrar metadatos",
+    "metadados": "Metadatos",
+    "metadadosDoDocumento": "Metadatos del documento"
+  },
+  "documentNameField": {
+    "asVersoesAnterioresContinuam": "Las versiones anteriores conservan el nombre que tenían.",
+    "nomeDoDocumento": "Nombre del documento",
+    "nomeDoDocumento2": "Nombre del documento"
+  },
+  "documentVersionHistoryPanel": {
+    "atual": "· actual",
+    "carregandoHistoricoDeVersoes": "Cargando el historial de versiones...",
+    "current": "actual",
+    "naoFoiPossivelCarregar": "No se pudo cargar el historial.",
+    "tentarNovamente": "Intentar de nuevo",
+    "versao": "versión",
+    "visualizarEstaVersao": "Ver esta versión"
+  },
+  "emptyFolderState": {
+    "ajusteABuscaOu": "Ajusta la búsqueda o los filtros para ampliar los resultados.",
+    "limparFiltros": "Limpiar filtros",
+    "nenhumDocumentoParaOs": "Ningún documento para los filtros actuales",
+    "voceTambemPodeArrastar": "También puedes arrastrar archivos a esta ventana."
+  },
+  "explorerContextMenu": {
+    "abrir": "Abrir",
+    "atualizar": "Actualizar",
+    "atualizarDocumento": "Actualizar documento",
+    "baixar": "Descargar",
+    "baixarPdfAssinado": "Descargar PDF firmado",
+    "compartilhar": "Compartir",
+    "enviarDocumento": "Subir documento",
+    "enviarDocumentoNestaPasta": "Subir un documento a esta carpeta",
+    "excluirCategoria": "Eliminar categoría",
+    "menuDeContexto": "Menú contextual",
+    "metadados": "Metadatos",
+    "mover": "Mover",
+    "moverParaLixeira": "Mover a la papelera",
+    "novaCategoria": "Nueva categoría",
+    "recuperar": "Recuperar",
+    "renomearCategoria": "Renombrar categoría",
+    "restaurar": "Restaurar",
+    "solicitarAssinatura": "Solicitar firma",
+    "verAssinaturas": "Ver firmas",
+    "verDetalhes": "Ver detalles",
+    "verInformacoes": "Ver información",
+    "verRegras": "Ver reglas",
+    "verRegrasDestaCategoria": "Ver las reglas de esta categoría",
+    "verTracking": "Ver rastreo",
+    "visualizar": "Ver"
+  },
+  "explorerFileQuickActions": {
+    "baixar": "Descargar",
+    "baixar2": "Descargar",
+    "detalhes": "Detalles",
+    "detalhes2": "Detalles",
+    "maisOpcoes": "Más opciones",
+    "maisOpcoes2": "Más opciones",
+    "visualizar": "Ver",
+    "visualizar2": "Ver"
+  },
+  "explorerFilterChips": {
+    "filtrar": "Filtrar",
+    "filtrarPorPeriodo": "Filtrar por período",
+    "filtrarPorProprietario": "Filtrar por propietario",
+    "filtrarPorStatus": "Filtrar por estado",
+    "filtrarPorTipo": "Filtrar por tipo",
+    "filtrosDaBiblioteca": "Filtros de la biblioteca",
+    "ordenar": "Ordenar",
+    "ordenarPor": "Ordenar por"
+  },
+  "explorerFolderCard": {
+    "informacoes": "Información"
+  },
+  "explorerFolderFiles": {
+    "acoes": "Acciones",
+    "arquivosDaPasta": "Archivos de la carpeta",
+    "carregandoDocumentos": "Cargando documentos",
+    "modificado": "Modificado",
+    "nome": "Nombre",
+    "status": "Estado"
+  },
+  "explorerFolderGrid": {
+    "crieCategoriasEm": "Crea categorías en",
+    "nenhumaPastaInteligenteConfigurada": "Ninguna carpeta inteligente configurada",
+    "paraOrganizarDocumentosPor": "para organizar documentos por la clasificación de la IA.",
+    "pastasInteligentes": "Carpetas inteligentes",
+    "pastasInteligentes2": "Carpetas inteligentes",
+    "regras": "Reglas"
+  },
+  "explorerRecentList": {
+    "recentes": "Recientes",
+    "verTodos": "Ver todos"
+  },
+  "explorerRootEmpty": {
+    "aBibliotecaComecaNo": "La biblioteca empieza con el primer documento",
+    "asPastasInteligentesSaem": "Las carpetas inteligentes salen de tus categorías. Ajústalas en",
+    "enviePelaBarraLateral": "Sube desde la barra lateral, o arrastra archivos a esta ventana. Cada uno se lee, se clasifica y se guarda en la carpeta que indique su clasificación.",
+    "regras": "Reglas"
+  },
+  "explorerRootHome": {
+    "semCategoria": "Sin categoría"
+  },
+  "fileTable": {
+    "acoes": "Acciones",
+    "arquivosDaBiblioteca": "Archivos de la Biblioteca",
+    "atualizado": "Actualizado",
+    "itemCount_one": "{{count}} elemento",
+    "itemCount_many": "{{count}} elementos",
+    "itemCount_other": "{{count}} elementos",
+    "nome": "Nombre",
+    "proprietario": "Propietario",
+    "status": "Estado",
+    "tags": "Etiquetas"
+  },
+  "filterFallback": {
+    "status": "Estado",
+    "type": "Tipo",
+    "period": "Período",
+    "owner": "Propietario"
+  },
+  "filterMenu": {
+    "filtrarPorStatus": "Filtrar por estado"
+  },
+  "filterOption": {
+    "status": {
+      "all": "Todos los estados",
+      "active": "Activo",
+      "processed": "Procesado",
+      "analyzing": "En análisis",
+      "pending_review": "Requiere revisión",
+      "archived": "Archivado"
+    },
+    "type": {
+      "all": "Todos los tipos",
+      "pdf": "PDF",
+      "image": "Imagen",
+      "other": "Otros"
+    },
+    "period": {
+      "all": "Cualquier fecha",
+      "today": "Hoy",
+      "7d": "Últimos 7 días",
+      "30d": "Últimos 30 días",
+      "month": "Este mes"
+    },
+    "owner": {
+      "all": "Todos",
+      "me": "Yo",
+      "others": "Otros usuarios"
+    },
+    "sort": {
+      "updatedAtDesc": "Más recientes",
+      "updatedAtAsc": "Más antiguos",
+      "nameAsc": "Nombre A–Z",
+      "nameDesc": "Nombre Z–A",
+      "category": "Categoría",
+      "status": "Estado",
+      "owner": "Propietario",
+      "fallback": "Orden"
+    }
+  },
+  "itemAction": {
+    "abrir": "Abrir",
+    "visualizar": "Ver",
+    "moverParaPasta": "Mover a carpeta",
+    "compartilhar": "Compartir",
+    "solicitarAssinatura": "Solicitar firma",
+    "baixar": "Descargar",
+    "historicoDeVersoes": "Historial de versiones",
+    "moverParaLixeira": "Mover a la papelera"
+  },
+  "libraryBreadcrumbs": {
+    "biblioteca": "Biblioteca",
+    "localizacaoNaBiblioteca": "Ubicación en la Biblioteca"
+  },
+  "libraryContentDropZone": {
+    "osArquivosEntramNa": "Los archivos entran en la cola de subida con análisis y revisión.",
+    "solteParaEnviar": "Suelta para subir"
+  },
+  "libraryInfoPopover": {
+    "arquivos": "Archivos",
+    "governanca": "Gobernanza",
+    "pastaDeGovernanca": "Carpeta de gobernanza",
+    "pastas": "Carpetas",
+    "tipo": "Tipo",
+    "verRegrasDestaCategoria": "Ver las reglas de esta categoría"
+  },
+  "libraryPage": {
+    "carregandoBiblioteca": "Cargando la biblioteca",
+    "envieUmDocumentoPara": "Sube un documento para que DOQYN lo analice y lo clasifique en esta categoría.",
+    "estaPastaAindaEsta": "Esta carpeta todavía está vacía",
+    "naoFoiPossivelCarregar": "No se pudieron cargar los documentos ahora.",
+    "nomeDaCategoria": "Nombre de la categoría",
+    "oNomeNovoVale": "El nombre nuevo vale para la carpeta y para todos los documentos que ya están dentro.",
+    "renomear": "Renombrar",
+    "renomearCategoria": "Renombrar categoría"
+  },
+  "moveDocumentModal": {
+    "atual": "Actual",
+    "buscarCategoria": "Buscar categoría…",
+    "buscarCategoria2": "Buscar categoría",
+    "cancelar": "Cancelar",
+    "categoriaAtual": "Categoría actual",
+    "nenhumaCategoriaDisponivel": "Ninguna categoría disponible.",
+    "nenhumaCategoriaEncontrada": "No se encontró ninguna categoría.",
+    "oDocumentoJaEsta": "El documento ya está en esta categoría."
+  },
+  "newButtonMenu": {
+    "criarNovo": "Crear nuevo",
+    "enviarDocumento": "Subir documento",
+    "novaCategoria": "Nueva categoría",
+    "novo": "Nuevo",
+    "solicitarDocumento": "Solicitar documento",
+    "uploadDeArquivo": "Subir un archivo",
+    "uploadDePasta": "Subir una carpeta"
+  },
+  "optionalDetailsDrawer": {
+    "abrirValidador": "Abrir validador",
+    "arquivos": "Archivos",
+    "assinatura": "Firma",
+    "atualizarDocumento": "Actualizar documento",
+    "baixar": "Descargar",
+    "baixarPdfAssinado": "Descargar PDF firmado",
+    "carregandoFicha": "Cargando la ficha…",
+    "categoriaInteligente": "Categoría inteligente",
+    "editarMetadados": "Editar metadatos",
+    "historicoDeVersoes": "Historial de versiones",
+    "tipo": "Tipo",
+    "tracking": "Rastreo",
+    "transferirPropriedade": "Transferir la propiedad",
+    "verAssinaturas": "Ver firmas",
+    "verRegrasDestaCategoria": "Ver las reglas de esta categoría",
+    "versao": "Versión",
+    "visualizar": "Ver"
+  },
+  "ownerFilterMenu": {
+    "filtrarPorProprietario": "Filtrar por propietario"
+  },
+  "periodFilterMenu": {
+    "filtrarPorDataDe": "Filtrar por fecha de modificación"
+  },
+  "recentEmptyState": {
+    "enviarDocumento": "Subir documento",
+    "envieUmDocumentoPara": "Sube un documento para empezar.",
+    "nenhumArquivoRecente": "Ningún archivo reciente"
+  },
+  "searchScopeHint": {
+    "buscandoEm": "Buscando en",
+    "buscandoEmTodaA": "Buscando en toda la biblioteca",
+    "buscarEmTodaA": "Buscar en toda la Biblioteca"
+  },
+  "sortMenu": {
+    "ordenarPor": "Ordenar por"
+  },
+  "toast": {
+    "falhaRecuperarDocumento": "No se pudo recuperar el documento.",
+    "falhaAtualizarFavoritos": "No se pudieron actualizar los favoritos. Inténtalo de nuevo.",
+    "jaNestaCategoria": "Los documentos ya están en esta categoría.",
+    "falhaMoverLixeira": "No se pudo mover a la papelera.",
+    "falhaRestaurarDocumento": "No se pudo restaurar el documento.",
+    "configuracoesLixeiraSalvas": "Configuración de la papelera actualizada.",
+    "falhaSalvarConfiguracoes": "No se pudo guardar la configuración."
+  },
+  "typeFilterMenu": {
+    "filtrarPorTipo": "Filtrar por tipo"
+  }
+}
