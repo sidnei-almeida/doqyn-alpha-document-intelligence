@@ -1,0 +1,13 @@
+{
+  "crossTenantRecipientField": {
+    "comQuemVoceJa": "Con quién ya intercambiaste",
+    "haMaisGenteCom": "Hay más gente con ese comienzo de nombre de usuario. Escribe más letras para acotar."
+  },
+  "partnerContactList": {
+    "contasComQuemVoce": "Cuentas con las que ya intercambiaste documentos ("
+  },
+  "toast": {
+    "contatoSalvo": "Contacto guardado.",
+    "contatoRemovido": "Contacto quitado de la lista. El historial de intercambios sigue registrado."
+  }
+}

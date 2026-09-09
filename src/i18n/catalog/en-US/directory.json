@@ -1,0 +1,13 @@
+{
+  "crossTenantRecipientField": {
+    "comQuemVoceJa": "Who you have already exchanged with",
+    "haMaisGenteCom": "More people start their username that way. Type more letters to narrow it down."
+  },
+  "partnerContactList": {
+    "contasComQuemVoce": "Accounts you have already exchanged documents with ("
+  },
+  "toast": {
+    "contatoSalvo": "Contact saved.",
+    "contatoRemovido": "Contact removed from the list. The exchange history stays on record."
+  }
+}

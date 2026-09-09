@@ -1,0 +1,21 @@
+{
+  "documentExpiryEditor": {
+    "adicionarCampoForaDa": "Agregar un campo fuera de la regla",
+    "campoForaDaRegra": "Campo fuera de la regla",
+    "carregandoFichaDeMetadados": "Cargando la ficha de metadatos…",
+    "chaveDoCampo": "Clave del campo",
+    "chaveExNumeroApolice": "clave (ej.: numero_poliza)",
+    "missingRequiredInCategory_one": "{{count}} campo obligatorio de «{{category}}» sin completar.",
+    "missingRequiredInCategory_many": "{{count}} campos obligatorios de «{{category}}» sin completar.",
+    "missingRequiredInCategory_other": "{{count}} campos obligatorios de «{{category}}» sin completar.",
+    "missingRequired_one": "{{count}} campo obligatorio sin completar.",
+    "missingRequired_many": "{{count}} campos obligatorios sin completar.",
+    "missingRequired_other": "{{count}} campos obligatorios sin completar.",
+    "naoFoiPossivelCarregar": "No se pudieron cargar los metadatos de este documento.",
+    "remover": "Quitar",
+    "rotuloDoCampo": "Etiqueta del campo",
+    "rotuloExibido": "etiqueta mostrada",
+    "valorDoCampo": "Valor del campo",
+    "voceNaoTemPermissao": "No tienes permiso para editar los metadatos de este documento."
+  }
+}

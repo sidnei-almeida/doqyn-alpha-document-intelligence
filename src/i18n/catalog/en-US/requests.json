@@ -1,0 +1,31 @@
+{
+  "documentRequestsPage": {
+    "documentosQueVocePediu": "Documents you asked someone for, and the ones they asked you for.",
+    "emptyReceivedDescription": "When someone asks you for a document, it shows up here.",
+    "emptyReceivedTitle": "Nobody has asked you for anything",
+    "emptySentDescription": "Ask someone for a document and follow it from here.",
+    "emptySentTitle": "You have not asked for anything yet",
+    "pedidos": "Requests",
+    "pedirDocumento": "Request document",
+    "tabReceived": "Asked of you",
+    "tabSent": "You asked"
+  },
+  "requestDocumentModal": {
+    "cancelar": "Cancel",
+    "categoriaDeDestino": "Destination category",
+    "comprovanteDeResidenciaAtualizado": "Up-to-date proof of address",
+    "contaDeLuzOu": "Electricity or water bill from the last 90 days.",
+    "deQuem": "From whom",
+    "detalhesOpcional": "Details (optional)",
+    "eAquiQueO": "This is where the document will land. Whoever uploads it cannot change that choice.",
+    "nomeDeUsuarioDe": "Username of the person who will upload",
+    "oQueVoceEsta": "What you are asking for",
+    "pedidoPara": "Request for",
+    "pedirUmDocumento": "Request a document",
+    "prazoOpcional": "Deadline (optional)",
+    "send": "Request",
+    "sending": "Sending…",
+    "subtitleExternal": "The document stays in the uploader's collection, and you get read access once they accept.",
+    "subtitleInternal": "Whoever receives it uploads through the usual flow, and the document lands in the category you choose."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "notificationList": {
+    "carregandoNotificacoes": "Cargando notificaciones…",
+    "dispensar": "Descartar",
+    "documentosEnviadosVersoesNovas": "Los documentos subidos, las versiones nuevas, las solicitudes de firma, las comparticiones y los vencimientos aparecen en esta bandeja.",
+    "marcarComoLida": "Marcar como leída",
+    "nadaPorAqui": "Nada por aquí"
+  },
+  "notificationsBell": {
+    "marcarTudoComoLido": "Marcar todo como leído",
+    "notificacoes": "Notificaciones",
+    "notificacoes2": "Notificaciones",
+    "verTodas": "Ver todas"
+  },
+  "notificationsPage": {
+    "documentosEnviadosVersoesNovas": "Documentos subidos, versiones nuevas, solicitudes de firma, comparticiones y vencimientos.",
+    "filtrarNotificacoes": "Filtrar notificaciones",
+    "marcarTudoComoLido": "Marcar todo como leído",
+    "notificacoes": "Notificaciones"
+  },
+  "toast": {
+    "falhaAtualizar": "No se pudo actualizar la notificación. Inténtalo de nuevo.",
+    "falhaMarcarLidas": "No se pudieron marcar las notificaciones como leídas."
+  }
+}

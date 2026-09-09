@@ -1,0 +1,26 @@
+{
+  "login": {
+    "continuarComGoogle": "Continuar con Google",
+    "continuarComMicrosoft": "Continuar con Microsoft",
+    "criarAcesso": "Crear acceso",
+    "eMail": "Correo electrónico",
+    "entrarNoSistema": "Entrar",
+    "esqueciMinhaSenha": "Olvidé mi contraseña",
+    "lembrarAcesso": "Recordar acceso",
+    "naoTemAcessoAinda": "¿Todavía no tienes acceso?",
+    "or": "o",
+    "senha": "Contraseña"
+  },
+  "onboardingPage": {
+    "comoVoceQuerComecar": "¿Cómo quieres empezar en DOQYN?",
+    "suaContaFoiAutenticada": "Tu cuenta fue autenticada. Falta elegir cómo se configurará tu acceso."
+  },
+  "termsPage": {
+    "ambienteCorporativoSeguro": "Espacio de trabajo corporativo seguro",
+    "leiaAtentamenteAntesDe": "Lee con atención antes de crear una cuenta, registrar una empresa o solicitar acceso a una organización.",
+    "termosECondicoesDe": "Términos y Condiciones de Uso de DOQYN",
+    "versao": "Versión",
+    "vigencia": "Vigencia",
+    "voltar": "Volver"
+  }
+}

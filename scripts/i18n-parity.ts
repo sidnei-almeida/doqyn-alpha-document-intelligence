@@ -103,19 +103,27 @@ function main(): void {
     const categorias = categoriasDe(locale);
     const problemas: Problema[] = [];
     let traduzidas = 0;
-    let totalReferencia = 0;
+    let totalAlvo = 0;
     let identicas = 0;
     const semArquivo: string[] = [];
     const porNamespace: Array<[string, number, number]> = [];
 
     for (const namespace of namespaces) {
       const referencia = load(REFERENCE, namespace)!;
-      totalReferencia += referencia.length;
+
+      /* Quantas chaves este namespace precisa ter no idioma-alvo: as que não são plural, mais
+         uma por categoria de plural de cada família. */
+      const familiasRef = new Set(
+        referencia.map((leaf) => pluralBase(leaf.key)?.base).filter((b): b is string => !!b),
+      );
+      const simplesRef = referencia.filter((leaf) => !pluralBase(leaf.key)).length;
+      const esperadoNoAlvo = simplesRef + familiasRef.size * categorias.length;
+      totalAlvo += esperadoNoAlvo;
 
       const alvo = load(locale, namespace);
       if (!alvo) {
         if (referencia.length > 0) semArquivo.push(namespace);
-        porNamespace.push([namespace, 0, referencia.length]);
+        porNamespace.push([namespace, 0, esperadoNoAlvo]);
         continue;
       }
 
@@ -203,15 +211,23 @@ function main(): void {
       }
 
       traduzidas += presentes;
-      porNamespace.push([namespace, presentes, referencia.length]);
+      porNamespace.push([namespace, presentes, esperadoNoAlvo]);
     }
 
     const bloqueantes = problemas.filter((p) => p.tipo !== 'faltando' && p.tipo !== 'plural');
     if (bloqueantes.length) falhou = true;
 
-    const pct = totalReferencia ? Math.round((traduzidas / totalReferencia) * 100) : 100;
+    /**
+     * O total é o do idioma-alvo, não o do português.
+     *
+     * O espanhol tem uma categoria de plural que o português não tem, então escrever tudo o que
+     * ele precisa dá 1.929 chaves contra 1.909 de referência — e a conta ingênua imprimia 101%,
+     * que lê como defeito justamente quando está tudo certo. O denominador certo é quantas
+     * chaves *aquele* idioma precisa ter.
+     */
+    const pct = totalAlvo ? Math.round((traduzidas / totalAlvo) * 100) : 100;
     console.log('');
-    console.log(`${locale} — ${traduzidas}/${totalReferencia} chaves (${pct}%)`);
+    console.log(`${locale} — ${traduzidas}/${totalAlvo} chaves (${pct}%)`);
     console.log('─'.repeat(74));
     console.log(`categorias de plural       ${categorias.join(', ')}`);
     console.log(`namespaces sem arquivo     ${semArquivo.length}`);

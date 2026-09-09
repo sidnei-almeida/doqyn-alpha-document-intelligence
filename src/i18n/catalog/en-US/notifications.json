@@ -1,0 +1,25 @@
+{
+  "notificationList": {
+    "carregandoNotificacoes": "Loading notifications…",
+    "dispensar": "Dismiss",
+    "documentosEnviadosVersoesNovas": "Uploaded documents, new versions, signature requests, shares and expiry dates show up in this inbox.",
+    "marcarComoLida": "Mark as read",
+    "nadaPorAqui": "Nothing here"
+  },
+  "notificationsBell": {
+    "marcarTudoComoLido": "Mark everything as read",
+    "notificacoes": "Notifications",
+    "notificacoes2": "Notifications",
+    "verTodas": "See all"
+  },
+  "notificationsPage": {
+    "documentosEnviadosVersoesNovas": "Uploaded documents, new versions, signature requests, shares and expiry dates.",
+    "filtrarNotificacoes": "Filter notifications",
+    "marcarTudoComoLido": "Mark everything as read",
+    "notificacoes": "Notifications"
+  },
+  "toast": {
+    "falhaAtualizar": "Could not update the notification. Try again.",
+    "falhaMarcarLidas": "Could not mark the notifications as read."
+  }
+}

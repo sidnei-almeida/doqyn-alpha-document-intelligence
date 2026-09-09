@@ -1,0 +1,30 @@
+{
+  "addContactField": {
+    "adicionarContatoPeloNome": "Agregar contacto por nombre de usuario",
+    "ninguemComEsseNome": "Nadie con ese nombre de usuario. A quien no tiene cuenta DOQYN se le invita por enlace, al enviar el documento.",
+    "salvar": "Guardar"
+  },
+  "contactCard": {
+    "deFora": "De fuera",
+    "salvo": "Guardado"
+  },
+  "contactsPage": {
+    "aListaCresceSozinha": "La lista crece sola conforme compartes, pides firmas y solicitas documentos. Para adelantar, guarda a alguien por nombre de usuario en el campo de arriba.",
+    "carregandoContatos": "Cargando contactos",
+    "comQuemVoceTroca": "Con quién intercambias documentos, del más activo al menos.",
+    "contatos": "Contactos",
+    "daSuaEmpresa": "De tu empresa",
+    "deForaDaqui": "De fuera",
+    "irParaABiblioteca": "Ir a la Biblioteca",
+    "nenhumContatoAinda": "Ningún contacto todavía"
+  },
+  "pickDocumentDialog": {
+    "buscarDocumento": "Buscar documento",
+    "carregando": "Cargando…",
+    "noDocuments": "Todavía no tienes documentos.",
+    "noMatch": "Ningún documento con ese nombre.",
+    "nomeDoArquivo": "Nombre del archivo",
+    "shareWhich": "¿Qué documento compartir?",
+    "signWhich": "¿Qué documento firmar?"
+  }
+}
