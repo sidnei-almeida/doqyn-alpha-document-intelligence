@@ -1,0 +1,24 @@
+{
+  "externalSharePortalPage": {
+    "abrindoOConvite": "Opening the invitation…",
+    "acceptAndOpen": "Accept and open document",
+    "acessoAte": "Access until",
+    "aguardandoAceite": "Awaiting acceptance",
+    "categoria": "Category",
+    "codigo": "Code",
+    "compartilhadoEm": "Shared on",
+    "compartilhouEsteDocumentoCom": "shared this document with you on",
+    "conviteDeAcesso": "Access invitation",
+    "conviteIndisponivel": "Invitation unavailable",
+    "esteLinkNaoAbre": "This link no longer opens",
+    "invitedByTenant": "{{name}} invited you to access a document in {{tenant}}.",
+    "oAcessoValeSo": "The access is valid for this document only, is recorded under your email, and can be ended at any time by whoever shared it.",
+    "opening": "Opening…",
+    "pecaUmNovoLink": "Ask whoever shared the document with you for a new link.",
+    "sharedByTenant": "{{name}} shared a document with you through {{tenant}}.",
+    "versao": "Version"
+  },
+  "guestDocumentViewer": {
+    "visualizacaoProtegidaDownloadIndisponivel": "Protected view. Download is not available with this invitation."
+  }
+}

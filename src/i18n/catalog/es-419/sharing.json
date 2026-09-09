@@ -1,0 +1,32 @@
+{
+  "inboundSharesStrip": {
+    "aceitar": "Aceptar",
+    "aguardandoSeuAceite": "Esperando tu aceptación",
+    "documentosDeForaAguardando": "Documentos de fuera esperando una decisión",
+    "fromOutside_one": "{{count}} documento de fuera",
+    "fromOutside_many": "{{count}} documentos de fuera",
+    "fromOutside_other": "{{count}} documentos de fuera",
+    "recusar": "Rechazar"
+  },
+  "permissions": {
+    "canDownload": "puede descargar",
+    "readOnly": "solo lectura",
+    "readOnlyLong": "solamente lectura"
+  },
+  "shareDocumentModal": {
+    "compartilharDocumento": "Compartir documento",
+    "deForaDaqui": "· de fuera",
+    "enquantoOAcessoExistir": ". Mientras el acceso exista, este enlace puede copiarse de nuevo aquí en la lista.",
+    "naoEDaquiBuscar": "¿No es de aquí? Buscar por nombre de usuario",
+    "oConviteValeAte": "La invitación vale hasta",
+    "quemTemAcesso": "Quién tiene acceso",
+    "quemTemAcesso2": "Quién tiene acceso",
+    "trocar": "Cambiar"
+  },
+  "toast": {
+    "conviteExternoCriado": "Invitación externa creada.",
+    "acessoExternoRevogado": "Acceso externo revocado.",
+    "novoLinkGerado": "Nuevo enlace de invitación generado.",
+    "compartilhamentoRevogado": "Compartición revocada."
+  }
+}

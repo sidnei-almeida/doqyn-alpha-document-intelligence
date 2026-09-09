@@ -1,0 +1,24 @@
+{
+  "externalSharePortalPage": {
+    "abrindoOConvite": "Abriendo la invitación…",
+    "acceptAndOpen": "Aceptar y abrir documento",
+    "acessoAte": "Acceso hasta",
+    "aguardandoAceite": "Esperando aceptación",
+    "categoria": "Categoría",
+    "codigo": "Código",
+    "compartilhadoEm": "Compartido el",
+    "compartilhouEsteDocumentoCom": "compartió este documento contigo el",
+    "conviteDeAcesso": "Invitación de acceso",
+    "conviteIndisponivel": "Invitación no disponible",
+    "esteLinkNaoAbre": "Este enlace ya no abre",
+    "invitedByTenant": "{{name}} te invitó a acceder a un documento en {{tenant}}.",
+    "oAcessoValeSo": "El acceso vale solo para este documento, queda registrado a nombre de tu correo y puede terminarse en cualquier momento por quien lo compartió.",
+    "opening": "Abriendo…",
+    "pecaUmNovoLink": "Pide un nuevo enlace a quien compartió el documento contigo.",
+    "sharedByTenant": "{{name}} compartió un documento contigo a través de {{tenant}}.",
+    "versao": "Versión"
+  },
+  "guestDocumentViewer": {
+    "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible en esta invitación."
+  }
+}
