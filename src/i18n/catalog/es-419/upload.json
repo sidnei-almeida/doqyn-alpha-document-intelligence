@@ -1,0 +1,64 @@
+{
+  "categoryQuickPicker": {
+    "carregandoCategorias": "Cargando categorías…",
+    "categorias": "Categorías",
+    "filtrarCategorias": "Filtrar categorías",
+    "filtrarCategorias2": "Filtrar categorías",
+    "nenhumaCategoriaComEsse": "Ninguna categoría con ese nombre.",
+    "nenhumaCategoriaConfiguradaCrie": "Ninguna categoría configurada. Crea una en Reglas antes de clasificar a mano."
+  },
+  "quickFieldsEditor": {
+    "camposDoDocumento": "Campos del documento",
+    "carregandoCamposDaCategoria": "Cargando los campos de la categoría…",
+    "empty": "—",
+    "estaCategoriaNaoTem": "Esta categoría no tiene campos configurados. El documento se guarda igual.",
+    "fill": "Completar",
+    "missingRequired_one": "{{count}} obligatorio en blanco",
+    "missingRequired_many": "{{count}} obligatorios en blanco",
+    "missingRequired_other": "{{count}} obligatorios en blanco",
+    "oQueVoceDigitar": "Lo que escribas entra como carga manual en el rastro de auditoría.",
+    "valorExtraidoPelaIa": "Valor extraído por la IA"
+  },
+  "reviewDrawer": {
+    "aCategoriaFinalSeguira": ". La categoría final seguirá el análisis de la IA.",
+    "aIaClassificouComo": "La IA lo clasificó como:",
+    "aIaSugeriu": "La IA sugirió",
+    "aguardandoRevisao": "esperando revisión",
+    "categoria": "Categoría",
+    "changeCategory": "Cambiar",
+    "closePicker": "Cerrar",
+    "confiancaDaClassificacao": "Confianza de la clasificación",
+    "confirmSave": "Revisé los datos extraídos y confirmo que se guarde este documento.",
+    "confirmSaveButton": "Confirmar y guardar",
+    "confirmSubmit": "Revisé los datos extraídos y confirmo el envío de este documento para aprobación.",
+    "deixarParaDepois": "Dejar para después",
+    "fecharRevisao": "Cerrar revisión",
+    "masVoceEstaEnviando": ", pero estás subiendo a",
+    "nomeFinal": "Nombre final",
+    "pastaAtual": "Carpeta actual:",
+    "preferenciasDeUpload": "Preferencias de subida",
+    "preferenciasDeUpload2": "Preferencias de subida",
+    "submitForApprovalButton": "Enviar para aprobación",
+    "tipoDeDocumento": "Tipo de documento",
+    "umAdministradorRevisaraOs": "Un administrador revisará los metadatos en Auditoría antes de publicar en la Biblioteca."
+  },
+  "uploadDropOverlay": {
+    "aIaAnalisaraClassificara": "La IA analizará, clasificará y preparará el documento para revisión antes de guardarlo en la Biblioteca.",
+    "solteParaEnviarAo": "Suelta para subir a DOQYN"
+  },
+  "uploadQueueDrawer": {
+    "autoAcceptIn": "Automático en {{seconds}} s",
+    "collapseQueue": "Contraer cola",
+    "expandQueue": "Expandir cola",
+    "filaDeUpload": "Cola de subida",
+    "itemProgress": "Progreso de {{fileName}}",
+    "limpar": "Limpiar",
+    "pausar": "Pausar",
+    "preferenciasDeUpload": "Preferencias de subida",
+    "preferenciasDeUpload2": "Preferencias de subida",
+    "processedOf": "{{done}}/{{total}} procesados",
+    "removerDaFila": "Quitar de la cola",
+    "revisar": "Revisar",
+    "tentarNovamente": "Intentar de nuevo"
+  }
+}

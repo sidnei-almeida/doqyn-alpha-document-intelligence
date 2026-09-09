@@ -1,0 +1,99 @@
+{
+  "dashboardPage": {
+    "carregandoVisaoGeral": "Loading overview",
+    "naoFoiPossivelCarregar": "Could not load the overview",
+    "painelDeControle": "Control panel",
+    "porCategoria": "By category",
+    "porStatus": "By status",
+    "tentarNovamente": "Try again"
+  },
+  "documentDetailsShared": {
+    "atualizado": "Updated",
+    "carregandoFicha": "Loading details…",
+    "categoria": "Category",
+    "criado": "Created",
+    "documento": "Document",
+    "enviadoPor": "Uploaded by",
+    "ficha": "Details",
+    "preview": "Preview",
+    "proprietario": "Owner",
+    "ultimaAtualizacaoPor": "Last updated by",
+    "vencimento": "Expiry date"
+  },
+  "documentPreviewViewer": {
+    "carregandoPreview": "Loading preview...",
+    "naoFoiPossivelCarregar": "Could not load the preview.",
+    "visualizacaoDoDocumento": "Document view"
+  },
+  "documentThumbnail": {
+    "preparandoVisualizacao": "Preparing preview",
+    "visualizacaoNaoDisponivel": "Preview not available"
+  },
+  "documentViewerDetailsPanel": {
+    "versao": "Version",
+    "versao2": "Version"
+  },
+  "documentViewerModal": {
+    "carregandoPreviewDoDocumento": "Loading the document preview...",
+    "previewIndisponivel": "Preview unavailable.",
+    "versaoNaoDisponivelPara": "This version is not available for viewing.",
+    "visualizacaoProtegidaDownloadIndisponivel": "Protected view. Download is not available for your profile.",
+    "voceNaoTemPermissao": "You do not have permission to view this document."
+  },
+  "documentViewerToolbar": {
+    "atualizarDocumento": "Update document",
+    "atualizarPreview": "Refresh preview",
+    "aumentarZoom": "Zoom in",
+    "baixarOriginal": "Download original",
+    "carregandoDocumento": "Loading document…",
+    "diminuirZoom": "Zoom out",
+    "fecharVisualizacaoDoDocumento": "Close document view",
+    "largura": "Width",
+    "pagina": "Page",
+    "paginaAnterior": "Previous page",
+    "proximaPagina": "Next page",
+    "verTracking": "View tracking"
+  },
+  "imageViewer": {
+    "carregandoImagem": "Loading image…",
+    "dimensions": "{{width}} × {{height}}px",
+    "girar90": "Rotate 90°",
+    "metadadosDeImagemIndisponiveis": "Image metadata unavailable."
+  },
+  "pdfPagesViewer": {
+    "esteDocumentoEGrande": "This document is large. Some pages will be loaded on demand.",
+    "naoFoiPossivelCarregar": "Could not load the page",
+    "nenhumaPaginaDisponivelPara": "No page available for viewing.",
+    "previewEmProcessamento": "Preview being processed…"
+  },
+  "recipientFlow": {
+    "buscando": "Searching…",
+    "buscarPessoa": "Search for a person",
+    "comoAPessoaAssina": "How the person signs",
+    "eMail": "Email",
+    "escolherData": "Choose a date",
+    "frequentes": "Frequent",
+    "nomeOuEMail": "Name or email",
+    "ondeAPessoaTrabalha": "Where the person works",
+    "organizacaoOpcional": "Organization (optional)",
+    "telefoneOpcional": "Phone (optional)",
+    "tipoDeDestinatario": "Recipient type",
+    "todoMundoDaEmpresa": "Everyone at the company",
+    "trocar": "Change",
+    "validoAte": "Valid until"
+  },
+  "transferOwnershipModal": {
+    "cancelar": "Cancel",
+    "exMudancaDeResponsavel": "e.g. change of person responsible for the folder",
+    "motivoOpcional": "Reason (optional)",
+    "novoProprietario": "New owner",
+    "proprietarioAtual": "Current owner",
+    "transferir": "Transfer",
+    "transferirPropriedade": "Transfer ownership"
+  },
+  "unsupportedViewer": {
+    "baixarOriginal": "Download original",
+    "esteTipoDeArquivo": "This file type does not have a built-in viewer yet.",
+    "tipoDetectado": "Detected type:"
+  }
+}

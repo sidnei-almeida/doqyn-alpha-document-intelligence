@@ -1,0 +1,77 @@
+{
+  "confirmNewVersionActions": {
+    "aVersaoAnteriorPermanece": "La versión anterior queda en el historial.",
+    "concluir": "Concluir",
+    "confirmVersion": "Confirmar {{version}}",
+    "fechar": "Cerrar",
+    "tentarNovamente": "Intentar de nuevo"
+  },
+  "currentDocumentSummaryCard": {
+    "atualizado": "Actualizado",
+    "atualizado2": "Actualizado",
+    "categoria": "Categoría",
+    "categoria2": "Categoría",
+    "criado": "Creado",
+    "documentoAtual": "Documento actual",
+    "documentoAtual2": "Documento actual",
+    "processamento": "Procesamiento",
+    "processamento2": "Procesamiento",
+    "proprietario": "Propietario",
+    "proprietario2": "Propietario",
+    "tamanho": "Tamaño",
+    "tipoTamanho": "Tipo / tamaño"
+  },
+  "currentMetadataPanel": {
+    "metadadosAtuais": "Metadatos actuales"
+  },
+  "detailsField": {
+    "validade": "Fecha de vencimiento",
+    "validadeNaoDeterminada": "No determinada",
+    "validadeInferidaHint": "Inferida (firma/emisión + plazo)",
+    "titulo": "Título",
+    "dataDeAssinatura": "Fecha de firma"
+  },
+  "newVersionAnalyzingPanel": {
+    "analisandoNovaVersao": "Analizando la nueva versión",
+    "comparingWith": "Comparando con {{current}} para preparar {{next}}."
+  },
+  "newVersionReviewStep": {
+    "categoria": "Categoría",
+    "nomeSugerido": "Nombre sugerido",
+    "revisaoDaNovaVersao": "Revisión de la nueva versión",
+    "reviseiOsMetadadosExtraidos": "Revisé los metadatos extraídos y confirmo que la nueva versión puede crearse.",
+    "status": "Estado",
+    "versao": "Versión"
+  },
+  "newVersionUploadDropzone": {
+    "arrastePdfOuImagem": "Arrastra un PDF o una imagen, o haz clic para seleccionar",
+    "enviarNovaVersao": "Subir nueva versión",
+    "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · hasta",
+    "prontoParaAnalise": "· listo para el análisis",
+    "removerArquivoSelecionado": "Quitar el archivo seleccionado"
+  },
+  "updateDocumentVersionDrawer": {
+    "atualizarDocumento": "Actualizar documento",
+    "atualizarDocumento2": "Actualizar documento",
+    "carregandoDocumentoEHistorico": "Cargando el documento y el historial de versiones…",
+    "fecharAtualizacaoDeVersao": "Cerrar la actualización de versión",
+    "naoFoiPossivelContinuar": "No se pudo continuar",
+    "novaVersaoCriada": "Nueva versión creada",
+    "oDocumentoFoiAtualizado": "El documento fue actualizado a"
+  },
+  "updateDocumentVersionHeader": {
+    "atualizarDocumento": "Actualizar documento",
+    "fecharAtualizacaoDeVersao": "Cerrar la actualización de versión"
+  },
+  "versionComparisonPanel": {
+    "atual": "Actual",
+    "changed": "modificado",
+    "compararVersoes": "Comparar versiones",
+    "nova": "Nueva"
+  },
+  "versionHistorySummary": {
+    "historicoDeVersoes": "Historial de versiones",
+    "proxima": "próxima",
+    "versoes": "Versiones"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "categoryQuickPicker": {
+    "carregandoCategorias": "Loading categories…",
+    "categorias": "Categories",
+    "filtrarCategorias": "Filter categories",
+    "filtrarCategorias2": "Filter categories",
+    "nenhumaCategoriaComEsse": "No category with that name.",
+    "nenhumaCategoriaConfiguradaCrie": "No categories set up. Create one under Rules before classifying by hand."
+  },
+  "quickFieldsEditor": {
+    "camposDoDocumento": "Document fields",
+    "carregandoCamposDaCategoria": "Loading the category fields…",
+    "empty": "—",
+    "estaCategoriaNaoTem": "This category has no fields set up. The document saves anyway.",
+    "fill": "Fill in",
+    "missingRequired_one": "{{count}} required field blank",
+    "missingRequired_other": "{{count}} required fields blank",
+    "oQueVoceDigitar": "What you type is recorded in the audit trail as manual entry.",
+    "valorExtraidoPelaIa": "Value extracted by AI"
+  },
+  "reviewDrawer": {
+    "aCategoriaFinalSeguira": ". The final category will follow the AI analysis.",
+    "aIaClassificouComo": "The AI classified it as:",
+    "aIaSugeriu": "The AI suggested",
+    "aguardandoRevisao": "awaiting review",
+    "categoria": "Category",
+    "changeCategory": "Change",
+    "closePicker": "Close",
+    "confiancaDaClassificacao": "Classification confidence",
+    "confirmSave": "I have reviewed the extracted data and confirm saving this document.",
+    "confirmSaveButton": "Confirm and save",
+    "confirmSubmit": "I have reviewed the extracted data and confirm submitting this document for approval.",
+    "deixarParaDepois": "Leave for later",
+    "fecharRevisao": "Close review",
+    "masVoceEstaEnviando": ", but you are uploading to",
+    "nomeFinal": "Final name",
+    "pastaAtual": "Current folder:",
+    "preferenciasDeUpload": "Upload preferences",
+    "preferenciasDeUpload2": "Upload preferences",
+    "submitForApprovalButton": "Submit for approval",
+    "tipoDeDocumento": "Document type",
+    "umAdministradorRevisaraOs": "An administrator will review the metadata under Audit before publishing to the Library."
+  },
+  "uploadDropOverlay": {
+    "aIaAnalisaraClassificara": "The AI will analyze, classify and prepare the document for review before saving it to the Library.",
+    "solteParaEnviarAo": "Drop to upload to DOQYN"
+  },
+  "uploadQueueDrawer": {
+    "autoAcceptIn": "Automatic in {{seconds}}s",
+    "collapseQueue": "Collapse queue",
+    "expandQueue": "Expand queue",
+    "filaDeUpload": "Upload queue",
+    "itemProgress": "Progress of {{fileName}}",
+    "limpar": "Clear",
+    "pausar": "Pause",
+    "preferenciasDeUpload": "Upload preferences",
+    "preferenciasDeUpload2": "Upload preferences",
+    "processedOf": "{{done}}/{{total}} processed",
+    "removerDaFila": "Remove from queue",
+    "revisar": "Review",
+    "tentarNovamente": "Try again"
+  }
+}
