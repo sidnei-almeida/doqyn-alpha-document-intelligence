@@ -431,7 +431,8 @@ describe('document electronic signature — fase 1', () => {
     const statusUtils = read('server/services/signatures/signatureRequestStatus.ts');
     const service = read('server/services/signatures/documentSignatureService.ts');
     const confirmMessages = read('src/components/confirm/confirmMessages.ts');
-    const tracking = read('src/features/tracking/utils/trackingDisplay.ts');
+    // A frase do evento saiu do código para o catálogo na extração de i18n.
+    const tracking = read('src/i18n/catalog/pt-BR/tracking.json');
     const audit = read('server/audit/documentAuditTypes.ts');
     assert.ok(cancelApi.includes('cancelDocumentSignatureRequest'));
     assert.ok(nestedCancelApi.includes('expectedDocumentId'));
@@ -444,7 +445,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(service.includes("status: 'cancelled'"));
     assert.ok(service.includes('signatureTokenHash: null'));
     assert.ok(confirmMessages.includes('buildRevokeSignatureRequestConfirm'));
-    assert.ok(tracking.includes('document.signature_request_cancelled'));
+    assert.ok(JSON.parse(tracking).actionLabel.document.signature_request_cancelled);
     assert.ok(audit.includes('document.signature_request_cancelled'));
   });
 });

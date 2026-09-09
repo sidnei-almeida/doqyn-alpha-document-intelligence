@@ -316,10 +316,12 @@ describe('document trash — frontend lixeira e desativados', () => {
   });
 
   it('tracking display traduz eventos de lixeira e desativados', () => {
-    const display = read('src/features/tracking/utils/trackingDisplay.ts');
-    assert.ok(display.includes('document.trash_moved'));
-    assert.ok(display.includes('document.reactivated'));
-    assert.ok(display.includes('document.deactivated'));
+    // As frases saíram do código para o catálogo na extração de i18n; é lá que se prova que a
+    // ação tem rótulo.
+    const acoes = JSON.parse(read('src/i18n/catalog/pt-BR/tracking.json')).actionLabel.document;
+    assert.ok(acoes.trash_moved);
+    assert.ok(acoes.reactivated);
+    assert.ok(acoes.deactivated);
   });
 
   it('collections inclui desativados e lixeira sem filtro archived', () => {

@@ -21,6 +21,7 @@
     "i18n:error-codes": "tsx scripts/i18n-error-codes.ts",
     "i18n:check": "tsx scripts/i18n-check.ts",
     "i18n:audit": "tsx scripts/i18n-audit.ts",
+    "i18n:gate-ts": "tsx scripts/i18n-inventory.ts --gate-ts",
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"api/**/*.ts\" \"server/**/*.ts\"",

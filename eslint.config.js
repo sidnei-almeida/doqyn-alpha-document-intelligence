@@ -95,6 +95,12 @@ export default tseslint.config(
       'src/features/dashboard/**/*.tsx',
       'src/features/tour/**/*.tsx',
       'src/pages/**/*.tsx',
+      /* Só `.tsx`, e de propósito. `mode: 'jsx-text-only'` não enxerga arquivo sem JSX, então
+         acrescentar `.ts` aqui seria um portão que promete e não cobra; e o único modo que os
+         enxerga, `mode: 'all'`, acusa 939 literais neste repositório, quase todos identificador
+         — chave de React Query, caminho de rota, comparação com união de tipos, a própria chave
+         de catálogo. Quem guarda os `.ts` é `npm run i18n:gate-ts`, que usa o classificador do
+         inventário e hoje reporta zero. */
     ],
     plugins: { i18next },
     rules: {

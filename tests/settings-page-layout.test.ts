@@ -63,7 +63,7 @@ describe('SettingsPage layout', () => {
     assert.ok(sections.includes("scope: 'organization'"));
     assert.ok(nav.includes('SETTINGS_NAV_ITEMS') || nav.includes('items'));
 
-    const ids = [...sections.matchAll(/id: '([a-z-]+)',\n\s+label:/g)].map((m) => m[1]);
+    const ids = [...sections.matchAll(/id: '([a-z-]+)',\n\s+labelKey:/g)].map((m) => m[1]);
     assert.deepEqual(ids, ['conta', 'organizacao']);
   });
 

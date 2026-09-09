@@ -6,7 +6,8 @@ import {
   validateCompanySignupForm,
 } from '../src/features/company-signup/companySignupReview';
 import { DOQYN_TERMS_VERSION } from '../src/legal/terms';
-import { PASSWORD_REVIEW_LABEL } from '../src/lib/reviewDisplay';
+import { PASSWORD_REVIEW_LABEL_KEY } from '../src/lib/reviewDisplay';
+import { echoT } from './helpers/i18nForTests.ts';
 
 const validForm = {
   companyName: 'Alpha Consultoria',
@@ -32,11 +33,13 @@ describe('company signup review flow', () => {
   });
 
   it('seções de revisão mostram versão dos termos', () => {
-    const sections = buildCompanySignupReviewSections(validForm);
+    /* `t` de eco: o que este teste verifica é a estrutura — que a versão dos termos chega
+       interpolada e que a seção de senha aparece — e não a frase, que é assunto do catálogo. */
+    const sections = buildCompanySignupReviewSections(validForm, echoT as never);
     const serialized = JSON.stringify(sections);
 
     assert.equal(serialized.includes(DOQYN_TERMS_VERSION), true);
-    assert.equal(serialized.includes(PASSWORD_REVIEW_LABEL), true);
+    assert.equal(serialized.includes(PASSWORD_REVIEW_LABEL_KEY), true);
   });
 
   it('payload de envio inclui aceite e versão', () => {

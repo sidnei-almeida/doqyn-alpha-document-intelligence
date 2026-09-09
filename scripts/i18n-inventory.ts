@@ -18,6 +18,7 @@
  * Uso:
  *   npm run i18n:inventory            resumo por área
  *   npm run i18n:inventory -- --csv   linha a linha, para triagem
+ *   npm run i18n:gate-ts              portão: falha se sobrar frase de usuário em `src/**\/*.ts`
  *
  * Grava `.planning/i18n-baseline.json`, que é o marco zero contra o qual o progresso das
  * ondas da Fase 6 se mede.
@@ -307,8 +308,53 @@ function areaOf(file: string): string {
   return parts[0] ?? file;
 }
 
+/**
+ * O portão dos arquivos `.ts`, e por que ele não é uma regra de lint.
+ *
+ * O caminho óbvio seria estender `i18next/no-literal-string` para `.ts`, ao lado das pastas já
+ * promovidas a `error`. Não funciona: aquela configuração roda em `mode: 'jsx-text-only'`, e num
+ * arquivo sem JSX ela não acusa nada — estender o glob seria um portão que promete e não cobra.
+ * O único modo que enxerga `.ts` é `mode: 'all'`, e medido sobre este repositório ele acusa 939
+ * literais, quase todos identificador: chave de React Query, caminho de rota, comparação com
+ * união de tipos, a própria chave de catálogo. Domar isso exigiria uma lista de exceção que
+ * envelhece pior do que o problema que resolve.
+ *
+ * O classificador deste inventário já faz essa distinção — é a razão de ele existir — e depois
+ * da extração ele reporta zero. Então o portão é ele: sai 1 se alguma frase de usuário voltar a
+ * um `.ts` de `src/`, e imprime onde, para o conserto ser imediato.
+ */
+function gateTs(findings: Finding[]): number {
+  const pendentes = findings.filter(
+    (finding) =>
+      finding.classification === 'user' &&
+      finding.file.startsWith('src/') &&
+      finding.file.endsWith('.ts'),
+  );
+
+  console.log('');
+  console.log('Portão de strings em .ts');
+  console.log('─'.repeat(74));
+  if (!pendentes.length) {
+    console.log('nenhuma frase de usuário em src/**/*.ts');
+    console.log('─'.repeat(74));
+    console.log('');
+    console.log('OK.');
+    return 0;
+  }
+
+  console.log(`${pendentes.length} frase(s) de usuário fora do catálogo:`);
+  for (const pendente of pendentes) {
+    console.log(`  ${pendente.file}:${pendente.line}  ${pendente.reason}  "${pendente.text}"`);
+  }
+  console.log('─'.repeat(74));
+  console.log('');
+  console.log('FALHOU.');
+  return 1;
+}
+
 function main() {
   const emitCsv = process.argv.includes('--csv');
+  const gate = process.argv.includes('--gate-ts');
 
   const files = [
     ...globSync('src/**/*.{ts,tsx}', { cwd: ROOT }),
@@ -319,6 +365,11 @@ function main() {
     .map((file) => resolve(ROOT, file));
 
   const findings = files.flatMap(collect);
+
+  if (gate) {
+    process.exitCode = gateTs(findings);
+    return;
+  }
 
   if (emitCsv) {
     console.log('file,line,classification,reason,text');

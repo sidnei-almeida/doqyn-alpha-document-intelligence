@@ -98,8 +98,10 @@ describe('document move — tracking', () => {
   });
 
   it('tracking display inclui document.moved', () => {
-    const display = read('src/features/tracking/utils/trackingDisplay.ts');
-    assert.ok(display.includes("'document.moved'"));
+    // A frase do evento saiu do código e foi para o catálogo na extração de i18n. O que este
+    // teste sempre verificou — que existe rótulo para esta ação — agora se prova lá.
+    const catalog = read('src/i18n/catalog/pt-BR/tracking.json');
+    assert.ok(JSON.parse(catalog).actionLabel.document.moved);
   });
 });
 
