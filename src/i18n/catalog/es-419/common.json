@@ -1,30 +1,98 @@
 {
   "actions": {
+    "back": "Volver",
     "cancel": "Cancelar",
-    "save": "Guardar",
     "close": "Cerrar",
     "confirm": "Confirmar",
     "delete": "Eliminar",
-    "back": "Volver",
-    "next": "Continuar",
-    "search": "Buscar",
-    "retry": "Reintentar"
+    "next": "Siguiente",
+    "retry": "Intentar de nuevo",
+    "save": "Guardar",
+    "search": "Buscar"
   },
-  "state": {
-    "loading": "Cargando…",
-    "empty": "Nada por aquí",
-    "error": "No se pudo cargar"
+  "authErrorAction": {
+    "verFormasDeAcesso": "Ver formas de acceso",
+    "confirmarEmail": "Confirmar correo"
   },
-  "locale": {
-    "label": "Idioma",
-    "description": "Idioma de la interfaz. No cambia el idioma de sus documentos.",
-    "descriptionWithDrafts": "Idioma de la interfaz. El inglés y el español están en traducción y aún no pueden elegirse.",
-    "inPreparation": "En preparación",
-    "saveFailed": "No se pudo guardar el idioma. Volvió al anterior; inténtelo de nuevo."
+  "documentStatus": {
+    "active": "Activo",
+    "analyzing": "En análisis",
+    "available": "Disponible",
+    "needsReview": "Requiere revisión",
+    "pendingAnalysis": "Esperando análisis",
+    "pendingReview": "Esperando revisión",
+    "processed": "Procesado",
+    "reviewRequired": "Revisión necesaria",
+    "updateProcessed": "Actualización procesada",
+    "updated": "Actualizado"
   },
   "documents": {
-    "empty": "Ningún documento",
     "count_one": "{{count}} documento",
-    "count_other": "{{count}} documentos"
+    "count_many": "{{count}} documentos",
+    "count_other": "{{count}} documentos",
+    "empty": "Ningún documento"
+  },
+  "locale": {
+    "description": "Idioma de la interfaz. No cambia el idioma de tus documentos.",
+    "descriptionWithDrafts": "Idioma de la interfaz. El inglés y el español están en traducción y todavía no pueden elegirse.",
+    "enUS": "Inglés",
+    "es419": "Español",
+    "inPreparation": "En preparación",
+    "label": "Idioma",
+    "ptBR": "Portugués",
+    "saveFailed": "No se pudo guardar el idioma. Volvió al anterior; inténtalo de nuevo."
+  },
+  "memberStatus": {
+    "active": "Activo",
+    "blocked": "Bloqueado",
+    "invited": "Invitado",
+    "pending": "Pendiente",
+    "rejected": "Rechazado"
+  },
+  "nav": {
+    "assinaturas": "Para firmar",
+    "audit": "Auditoría",
+    "biblioteca": "Biblioteca",
+    "compartilhados": "Compartidos conmigo",
+    "contatos": "Contactos",
+    "dashboard": "Vista general",
+    "desativados": "Desactivados",
+    "favoritos": "Favoritos",
+    "lixeira": "Papelera",
+    "matriz": "Matriz de acceso",
+    "pedidos": "Solicitudes",
+    "recentes": "Recientes",
+    "rules": "Reglas",
+    "settings": "Configuración",
+    "tracking": "Rastreo",
+    "users": "Usuarios"
+  },
+  "processingStep": {
+    "analysisDescription": "Verificación y validación inicial",
+    "analysisLabel": "Análisis del documento",
+    "metadataDescription": "Extracción de la información relevante",
+    "metadataLabel": "Clasificación y metadatos",
+    "readyDescription": "Documento listo para consultar",
+    "readyLabel": "Disponible con trazabilidad",
+    "uploadDescription": "Documento registrado de forma segura",
+    "uploadLabel": "Subida recibida"
+  },
+  "state": {
+    "empty": "Nada por aquí",
+    "error": "No se pudo cargar",
+    "loading": "Cargando…"
+  },
+  "taxId": {
+    "cnpjLabel": "CNPJ",
+    "cnpjPlaceholder": "00.000.000/0000-00",
+    "cpfLabel": "CPF",
+    "cpfPlaceholder": "000.000.000-00",
+    "genericLabel": "Documento fiscal",
+    "genericPlaceholder": "Número de identificación fiscal",
+    "incomplete": "{{label}} incompleto."
+  },
+  "tenantVocabulary": {
+    "scopeSectionLabelBusiness": "Organización",
+    "scopeSectionLabelIndividual": "Mi acervo"
   }
 }

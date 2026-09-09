@@ -1,30 +1,97 @@
 {
   "actions": {
+    "back": "Back",
     "cancel": "Cancel",
-    "save": "Save",
     "close": "Close",
     "confirm": "Confirm",
     "delete": "Delete",
-    "back": "Back",
     "next": "Next",
-    "search": "Search",
-    "retry": "Try again"
+    "retry": "Try again",
+    "save": "Save",
+    "search": "Search"
   },
-  "state": {
-    "loading": "Loading…",
-    "empty": "Nothing here",
-    "error": "Could not load"
+  "authErrorAction": {
+    "verFormasDeAcesso": "See ways to get access",
+    "confirmarEmail": "Confirm email"
   },
-  "locale": {
-    "label": "Language",
-    "description": "Interface language. It does not change the language of your documents.",
-    "descriptionWithDrafts": "Interface language. English and Spanish are still being translated and cannot be selected yet.",
-    "inPreparation": "In preparation",
-    "saveFailed": "Could not save the language. It was reverted; try again."
+  "documentStatus": {
+    "active": "Active",
+    "analyzing": "Analyzing",
+    "available": "Available",
+    "needsReview": "Needs review",
+    "pendingAnalysis": "Awaiting analysis",
+    "pendingReview": "Awaiting review",
+    "processed": "Processed",
+    "reviewRequired": "Review required",
+    "updateProcessed": "Update processed",
+    "updated": "Updated"
   },
   "documents": {
-    "empty": "No documents",
     "count_one": "{{count}} document",
-    "count_other": "{{count}} documents"
+    "count_other": "{{count}} documents",
+    "empty": "No documents"
+  },
+  "locale": {
+    "description": "Interface language. It does not change the language of your documents.",
+    "descriptionWithDrafts": "Interface language. English and Spanish are still being translated and cannot be selected yet.",
+    "enUS": "English",
+    "es419": "Spanish",
+    "inPreparation": "In preparation",
+    "label": "Language",
+    "ptBR": "Portuguese",
+    "saveFailed": "Could not save the language. It was reverted; try again."
+  },
+  "memberStatus": {
+    "active": "Active",
+    "blocked": "Blocked",
+    "invited": "Invited",
+    "pending": "Pending",
+    "rejected": "Rejected"
+  },
+  "nav": {
+    "assinaturas": "To sign",
+    "audit": "Audit",
+    "biblioteca": "Library",
+    "compartilhados": "Shared with me",
+    "contatos": "Contacts",
+    "dashboard": "Overview",
+    "desativados": "Deactivated",
+    "favoritos": "Favorites",
+    "lixeira": "Trash",
+    "matriz": "Access matrix",
+    "pedidos": "Requests",
+    "recentes": "Recent",
+    "rules": "Rules",
+    "settings": "Settings",
+    "tracking": "Tracking",
+    "users": "Users"
+  },
+  "processingStep": {
+    "analysisDescription": "Initial checks and validation",
+    "analysisLabel": "Document analysis",
+    "metadataDescription": "Extraction of the relevant information",
+    "metadataLabel": "Classification and metadata",
+    "readyDescription": "Document ready to consult",
+    "readyLabel": "Available with full traceability",
+    "uploadDescription": "Document securely recorded",
+    "uploadLabel": "Upload received"
+  },
+  "state": {
+    "empty": "Nothing here",
+    "error": "Could not load",
+    "loading": "Loading…"
+  },
+  "taxId": {
+    "cnpjLabel": "CNPJ",
+    "cnpjPlaceholder": "00.000.000/0000-00",
+    "cpfLabel": "CPF",
+    "cpfPlaceholder": "000.000.000-00",
+    "genericLabel": "Tax ID",
+    "genericPlaceholder": "Tax identification number",
+    "incomplete": "{{label}} is incomplete."
+  },
+  "tenantVocabulary": {
+    "scopeSectionLabelBusiness": "Organization",
+    "scopeSectionLabelIndividual": "My collection"
   }
 }
