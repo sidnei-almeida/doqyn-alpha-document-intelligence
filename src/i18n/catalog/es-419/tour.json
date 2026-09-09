@@ -1,0 +1,56 @@
+{
+  "step": {
+    "boas-vindas": {
+      "title": "Dónde está cada cosa",
+      "body": "Dos minutos recorriendo lo esencial de DOQYN. Puedes salir en cualquier momento. El recorrido vuelve por el ? de la barra de arriba."
+    },
+    "biblioteca": {
+      "title": "Biblioteca",
+      "body": "Todo documento que entra en DOQYN vive aquí. Es la pantalla en la que navegas, buscas y abres. El resto del menú son recortes de ella."
+    },
+    "enviar": {
+      "title": "Subir documento",
+      "body": "Por aquí, o arrastrando el archivo a cualquier punto de la pantalla. La IA lee el documento, reconoce qué es y propone nombre, clase y metadatos antes de que confirmes."
+    },
+    "classes": {
+      "title": "Las carpetas son clases",
+      "body": "Cada carpeta es una clase de documento: contrato, factura, poder. El documento cae en la clase porque la IA reconoció qué es, no porque alguien lo arrastró hasta ahí."
+    },
+    "assinar": {
+      "title": "Para firmar",
+      "body": "Lo que espera tu firma queda separado del resto. Tú firmas dentro de DOQYN, y quien es de fuera firma por un enlace, sin necesidad de cuenta."
+    },
+    "pedidos": {
+      "title": "Solicitudes",
+      "body": "Cuando falta un documento, lo pides en vez de esperar. La solicitud sigue a quien ya envió y a quien todavía no, y se convierte en documento en la Biblioteca apenas llega."
+    },
+    "usuarios": {
+      "title": "Usuarios y grupos",
+      "body": "Quién entra en la organización y en qué grupo cae. El grupo es lo que la gobernanza ve: el acceso se da al grupo, nunca a la persona suelta."
+    },
+    "regras": {
+      "title": "Reglas de acceso",
+      "body": "Aquí se escribe el acceso: conecta un grupo a una clase y elige los verbos (ver, descargar, subir). Descargar acepta el término medio de pedir aprobación; los otros son sí o no."
+    },
+    "matriz": {
+      "title": "Matriz de acceso",
+      "body": "La lectura de lo que las reglas produjeron: por persona, quién alcanza cada documento; por grupo, qué recibe cada uno, verbo por verbo. La matriz no altera nada: existe para comprobar antes de descubrirlo por el camino equivocado."
+    },
+    "ia": {
+      "title": "Cuánto decide la IA",
+      "body": "La política de subida y lectura automática vale para todo lo que entra: hasta dónde la IA clasifica sola y cuándo devuelve el documento para revisión humana."
+    },
+    "auditoria": {
+      "title": "Auditoría",
+      "body": "Toda acción sobre un documento se convierte en registro: quién lo vio, quién lo descargó, quién lo firmó, cuándo. Es lo que sostiene la palabra del sistema cuando alguien pregunta después."
+    },
+    "ajuda": {
+      "title": "El recorrido vive aquí",
+      "body": "Siempre que lo necesites, este ? trae el paseo de vuelta, desde el principio y en la pantalla en la que estés."
+    }
+  },
+  "tourCard": {
+    "fecharOTour": "Cerrar el recorrido",
+    "voltar": "Volver"
+  }
+}

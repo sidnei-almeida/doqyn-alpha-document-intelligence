@@ -1,0 +1,86 @@
+{
+  "accessFormSections": {
+    "defineOQueA": "Define lo que la persona administra. Es uno solo, y no se acumulan.",
+    "eACaixaDo": "Es la bandeja de la campana. No se apaga.",
+    "grupos": "Grupos",
+    "nenhumGrupoCriadoAinda": "Ningún grupo creado todavía.",
+    "noApp": "En la app",
+    "notificacoes": "Notificaciones",
+    "oQueAvisar": "Qué avisar",
+    "osAvisosSaemDo": "Los avisos salen del acceso: solo llega lo que la persona ya alcanza por los grupos, o lo que es de ella.",
+    "osMesmosGruposDe": "Los mismos grupos de Reglas. Son ellos los que deciden qué categorías alcanza la persona.",
+    "papelNaPlataforma": "Rol en la plataforma",
+    "porOnde": "Por dónde",
+    "semGrupoAPessoa": "Sin grupo, la persona no alcanza ninguna categoría. Crea uno en Reglas y vuelve aquí."
+  },
+  "blockAccessDialog": {
+    "asSessoesAtivasNesta": "Las sesiones activas en esta empresa serán revocadas.",
+    "bloquearAcessoAEmpresa": "¿Bloquear el acceso a la empresa?",
+    "cancelar": "Cancelar",
+    "eMail": "Correo electrónico",
+    "empresa": "Empresa",
+    "esteUsuarioPerderaO": "Este usuario perderá el acceso a esta empresa. Su cuenta no se borrará y los accesos en otras empresas no se verán afectados.",
+    "exAcessoSuspensoTemporariamente": "Ej.: acceso suspendido temporalmente",
+    "motivoDoBloqueioOpcional": "Motivo del bloqueo (opcional)",
+    "statusAtual": "Estado actual",
+    "usuario": "Usuario"
+  },
+  "editAccessDialog": {
+    "cancelar": "Cancelar",
+    "editarAcesso": "Editar acceso"
+  },
+  "inviteMemberDialog": {
+    "cancelar": "Cancelar",
+    "concluir": "Concluir",
+    "copieOLinkAcima": "Copia el enlace de arriba y envíalo por otro canal.",
+    "depoisDissoElePara": ". Después de eso deja de abrir, y hay que invitar de nuevo.",
+    "eMail": "Correo electrónico",
+    "linkDoConvite": "Enlace de la invitación",
+    "nomeOpcional": "Nombre (opcional)",
+    "oEMailNao": "El correo no fue enviado.",
+    "semNenhumGrupoA": "Sin ningún grupo, la persona entra pero no alcanza documento alguno. El acceso se da al grupo, nunca a la persona suelta.",
+    "sobrenomeOpcional": "Apellido (opcional)",
+    "valeAte": "Válido hasta"
+  },
+  "legacyAuthRole": {
+    "admin": "Administrador del sistema",
+    "manager": "Administrador de la empresa",
+    "user": "Usuario",
+    "viewer": "Visualizador"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Administrador de la empresa",
+      "description": "Gestiona los usuarios, grupos y reglas de la empresa."
+    },
+    "individual_admin": {
+      "label": "Administrador de la cuenta",
+      "description": "Gestiona el acceso y los documentos de la cuenta individual."
+    },
+    "user": {
+      "label": "Usuario",
+      "description": "Accede a los documentos y recursos habilitados."
+    },
+    "unknownDescription": "Rol de la plataforma."
+  },
+  "unblockAccessDialog": {
+    "bloqueado": "Bloqueado",
+    "cancelar": "Cancelar",
+    "desbloquearAcessoAEmpresa": "¿Desbloquear el acceso a la empresa?",
+    "eMail": "Correo electrónico",
+    "empresa": "Empresa",
+    "oUsuarioVoltaraA": "El usuario volverá a tener acceso a esta empresa. Otras empresas no se verán afectadas.",
+    "statusAtual": "Estado actual",
+    "usuario": "Usuario"
+  },
+  "userManagementRoute": {
+    "verificandoPermissoes": "Verificando permisos..."
+  },
+  "usersPage": {
+    "buscarPorNomeOu": "Buscar por nombre o correo",
+    "buscarUsuario": "Buscar usuario",
+    "convidar": "Invitar",
+    "filtrarPorStatus": "Filtrar por estado",
+    "usuarios": "Usuarios"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "auditEventDetailsDialog": {
+    "ator": "Actor",
+    "dataHora": "Date/time",
+    "descricao": "Description",
+    "detalhesDoEvento": "Event details",
+    "documento": "Document",
+    "fechar": "Close",
+    "metadados": "Metadata",
+    "origem": "Source",
+    "requestId": "Request ID",
+    "severidade": "Severity"
+  },
+  "auditEventsList": {
+    "ajusteABuscaOu": "Adjust the search or wait for new actions in the system.",
+    "carregandoEventos": "Loading events",
+    "nenhumEventoEncontrado": "No event found",
+    "verDetalhesDoEvento": "View event details"
+  },
+  "auditFilters": {
+    "acaoUsuarioDocumento": "Action, user, document...",
+    "ate": "To",
+    "buscar": "Search",
+    "de": "From",
+    "exDocumentCreated": "e.g. document.created",
+    "fim": "End",
+    "inicio": "Start",
+    "severidade": "Severity",
+    "tipoDeEvento": "Event type"
+  },
+  "auditPage": {
+    "acessoRestrito": "Restricted access",
+    "acompanheAprovacoesAcoesAdministrativas": "Follow approvals, administrative actions and the system's event history.",
+    "apenasAdministradoresPodemConsultar": "Only administrators can view pending items and approve requests.",
+    "auditoria": "Audit",
+    "eventosDeBloqueioRejeicao": "Blocking, rejection, denied-permission and sensitive-action events recorded in the workspace.",
+    "exibindoEventosDoDocumento": "Showing events for the document",
+    "fimDoHistorico": "End of the history",
+    "naoFoiPossivelCarregar": "Could not load pending items",
+    "naoFoiPossivelCarregar2": "Could not load events.",
+    "tenteAtualizarAPagina": "Try reloading the page or check your connection."
+  },
+  "auditSummaryStrip": {
+    "resumoDaAuditoria": "Audit summary"
+  },
+  "error": {
+    "falhaCarregarPendencias": "Could not load the pending items."
+  },
+  "pendingApprovalReviewDialog": {
+    "arquivo": "File",
+    "cancelar": "Cancel",
+    "categoria": "Category",
+    "categoriaSugerida": "Suggested category",
+    "compartilharCom": "Share with",
+    "data": "Date",
+    "documento": "Document",
+    "eMail": "Email",
+    "oQueSeraConcedido": "What will be granted",
+    "organizacao": "Organization",
+    "osMetadadosForamExtraidos": "The metadata was extracted automatically by the AI. On approval, the document will be published to the Library on the requester's behalf.",
+    "pendente": "Pending",
+    "rejeitar": "Reject",
+    "revisarSolicitacao": "Review request",
+    "solicitante": "Requester",
+    "status": "Status"
+  },
+  "pendingApprovalsList": {
+    "enviosDownloadsECompartilhamentos": "Uploads, downloads and shares that need approval will show up here.",
+    "naoHaPendenciasNo": "Nothing pending right now",
+    "pendente": "Pending"
+  },
+  "rejectApprovalDialog": {
+    "cancelar": "Cancel",
+    "confirmarRejeicao": "Confirm rejection",
+    "descrevaOMotivoPara": "Describe the reason for the requester...",
+    "motivoDaRejeicao": "Reason for rejection",
+    "rejeitarSolicitacao": "Reject request"
+  },
+  "toast": {
+    "solicitacaoRejeitada": "Request rejected."
+  }
+}

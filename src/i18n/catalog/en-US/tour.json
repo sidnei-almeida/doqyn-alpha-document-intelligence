@@ -1,0 +1,56 @@
+{
+  "step": {
+    "boas-vindas": {
+      "title": "Where everything lives",
+      "body": "Two minutes through the essentials of DOQYN. You can leave at any point. The tour comes back from the ? in the top bar."
+    },
+    "biblioteca": {
+      "title": "Library",
+      "body": "Every document that enters DOQYN lives here. This is the screen where you browse, search and open. The rest of the menu is just slices of it."
+    },
+    "enviar": {
+      "title": "Upload a document",
+      "body": "From here, or by dragging the file anywhere on the screen. The AI reads the document, recognizes what it is, and proposes a name, a class and metadata before you confirm."
+    },
+    "classes": {
+      "title": "Folders are classes",
+      "body": "Each folder is a class of document: contract, invoice, power of attorney. The document lands in the class because the AI recognized what it is, not because someone dragged it there."
+    },
+    "assinar": {
+      "title": "To sign",
+      "body": "Whatever is waiting for your signature is kept apart from the rest. You sign inside DOQYN, and people from outside sign through a link, with no account needed."
+    },
+    "pedidos": {
+      "title": "Requests",
+      "body": "When a document is missing, you ask for it instead of waiting. The request tracks who has already sent theirs and who has not, and becomes a document in the Library as soon as it arrives."
+    },
+    "usuarios": {
+      "title": "Users and groups",
+      "body": "Who joins the organization and which group they land in. The group is what governance sees: access is granted to the group, never to a person on their own."
+    },
+    "regras": {
+      "title": "Access rules",
+      "body": "This is where access is written: connect a group to a class and choose the verbs (view, download, upload). Download allows the middle ground of requiring approval; the others are yes or no."
+    },
+    "matriz": {
+      "title": "Access matrix",
+      "body": "The reading of what the rules produced: by person, who reaches each document; by group, what each one gets, verb by verb. The matrix changes nothing — it exists so you can check before finding out the hard way."
+    },
+    "ia": {
+      "title": "How much the AI decides",
+      "body": "The upload and automatic-reading policy applies to everything that comes in: how far the AI classifies on its own, and when it hands the document back for human review."
+    },
+    "auditoria": {
+      "title": "Audit",
+      "body": "Every action on a document becomes a record: who viewed it, who downloaded it, who signed it, and when. It is what backs the system's word when someone asks later."
+    },
+    "ajuda": {
+      "title": "The tour lives here",
+      "body": "Whenever you need it, this ? brings the walkthrough back, from the start and on whatever screen you are on."
+    }
+  },
+  "tourCard": {
+    "fecharOTour": "Close the tour",
+    "voltar": "Back"
+  }
+}

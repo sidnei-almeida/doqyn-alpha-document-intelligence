@@ -1,0 +1,76 @@
+{
+  "metric": {
+    "documentsLabel": "Documentos",
+    "documentsSubtext": "+{{count}} en los últimos {{days}} días",
+    "analysisLabel": "En análisis",
+    "analysisSubtext": "procesamiento en curso",
+    "reviewLabel": "Esperando revisión",
+    "reviewSubtext": "confirmación manual",
+    "processedLabel": "Procesados",
+    "processedSubtext_one": "{{count}} vista previa lista",
+    "processedSubtext_many": "{{count}} vistas previas listas",
+    "processedSubtext_other": "{{count}} vistas previas listas",
+    "errorsLabel": "Errores",
+    "errorsSubtext_one": "{{count}} documento afectado",
+    "errorsSubtext_many": "{{count}} documentos afectados",
+    "errorsSubtext_other": "{{count}} documentos afectados",
+    "eventsLabel": "Eventos",
+    "eventsSubtext": "{{views}} · {{downloads}}",
+    "previewCount_one": "{{count}} vista previa",
+    "previewCount_many": "{{count}} vistas previas",
+    "previewCount_other": "{{count}} vistas previas",
+    "downloadCount_one": "{{count}} descarga",
+    "downloadCount_many": "{{count}} descargas",
+    "downloadCount_other": "{{count}} descargas"
+  },
+  "overviewEnvironmentHealthCard": {
+    "atencao": "Atención",
+    "bucket": "Bucket",
+    "categorias": "Categorías",
+    "regrasDeIa": "Reglas de IA",
+    "restrito": "Restringido",
+    "saudeDoAmbiente": "Salud del espacio de trabajo",
+    "storage": "Almacenamiento"
+  },
+  "overviewGovernancePanel": {
+    "acesso": "Acceso",
+    "categorias": "Categorías",
+    "extracao": "Extracción",
+    "governancaDocumental": "Gobernanza documental",
+    "grupos": "Grupos",
+    "pendencias": "Pendientes",
+    "usuarios": "Usuarios"
+  },
+  "overviewHeaderActions": {
+    "irParaBiblioteca": "Ir a la Biblioteca"
+  },
+  "overviewPeriodSelector": {
+    "periodoDoPainel": "Período del panel"
+  },
+  "overviewQuickAccessPanel": {
+    "acessoRapido": "Acceso rápido"
+  },
+  "overviewRecentActivityPanel": {
+    "atividadeRecente": "Actividad reciente",
+    "cadaAberturaDownloadE": "Cada apertura, descarga y subida entra aquí apenas ocurre.",
+    "nenhumaAtividadeNoPeriodo": "Ninguna actividad en el período"
+  },
+  "overviewRecentDocumentsPanel": {
+    "documentosRecentes": "Documentos recientes",
+    "nenhumDocumentoEnviadoAinda": "Ningún documento subido todavía",
+    "oPrimeiroEnvioComeca": "La primera subida empieza a contar las métricas y la actividad de este panel.",
+    "tracking": "Rastreo",
+    "visualizar": "Ver"
+  },
+  "overviewStoragePanel": {
+    "downloads": "Descargas",
+    "nenhumErroRecenteNo": "Ningún error reciente en el período.",
+    "originais": "Originales",
+    "previews": "Vistas previas",
+    "storageEErrosRecentes": "Almacenamiento y errores recientes",
+    "tamanhoTotal": "Tamaño total"
+  },
+  "overviewSummaryStrip": {
+    "resumoDoPeriodo": "Resumen del período"
+  }
+}

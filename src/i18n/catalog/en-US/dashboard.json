@@ -1,0 +1,72 @@
+{
+  "metric": {
+    "documentsLabel": "Documents",
+    "documentsSubtext": "+{{count}} in the last {{days}} days",
+    "analysisLabel": "Analyzing",
+    "analysisSubtext": "processing under way",
+    "reviewLabel": "Awaiting review",
+    "reviewSubtext": "manual confirmation",
+    "processedLabel": "Processed",
+    "processedSubtext_one": "{{count}} preview ready",
+    "processedSubtext_other": "{{count}} previews ready",
+    "errorsLabel": "Errors",
+    "errorsSubtext_one": "{{count}} document affected",
+    "errorsSubtext_other": "{{count}} documents affected",
+    "eventsLabel": "Events",
+    "eventsSubtext": "{{views}} · {{downloads}}",
+    "previewCount_one": "{{count}} preview",
+    "previewCount_other": "{{count}} previews",
+    "downloadCount_one": "{{count}} download",
+    "downloadCount_other": "{{count}} downloads"
+  },
+  "overviewEnvironmentHealthCard": {
+    "atencao": "Attention",
+    "bucket": "Bucket",
+    "categorias": "Categories",
+    "regrasDeIa": "AI rules",
+    "restrito": "Restricted",
+    "saudeDoAmbiente": "Workspace health",
+    "storage": "Storage"
+  },
+  "overviewGovernancePanel": {
+    "acesso": "Access",
+    "categorias": "Categories",
+    "extracao": "Extraction",
+    "governancaDocumental": "Document governance",
+    "grupos": "Groups",
+    "pendencias": "Pending items",
+    "usuarios": "Users"
+  },
+  "overviewHeaderActions": {
+    "irParaBiblioteca": "Go to the Library"
+  },
+  "overviewPeriodSelector": {
+    "periodoDoPainel": "Dashboard period"
+  },
+  "overviewQuickAccessPanel": {
+    "acessoRapido": "Quick access"
+  },
+  "overviewRecentActivityPanel": {
+    "atividadeRecente": "Recent activity",
+    "cadaAberturaDownloadE": "Every open, download and upload lands here as soon as it happens.",
+    "nenhumaAtividadeNoPeriodo": "No activity in the period"
+  },
+  "overviewRecentDocumentsPanel": {
+    "documentosRecentes": "Recent documents",
+    "nenhumDocumentoEnviadoAinda": "No document uploaded yet",
+    "oPrimeiroEnvioComeca": "The first upload starts counting the metrics and the activity on this dashboard.",
+    "tracking": "Tracking",
+    "visualizar": "View"
+  },
+  "overviewStoragePanel": {
+    "downloads": "Downloads",
+    "nenhumErroRecenteNo": "No recent error in the period.",
+    "originais": "Originals",
+    "previews": "Previews",
+    "storageEErrosRecentes": "Storage and recent errors",
+    "tamanhoTotal": "Total size"
+  },
+  "overviewSummaryStrip": {
+    "resumoDoPeriodo": "Summary for the period"
+  }
+}

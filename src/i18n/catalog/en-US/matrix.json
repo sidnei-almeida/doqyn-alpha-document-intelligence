@@ -1,0 +1,38 @@
+{
+  "accessMatrixTable": {
+    "ajusteABuscaOu": "Adjust the search or the category to see the matrix.",
+    "celulaVaziaSemAcesso": "empty cell = no access",
+    "compartilharCom": "Share with",
+    "documento": "Document",
+    "esteAcessoVemDa": "This access comes from the rule. Open Rules",
+    "nenhumDocumentoNestaSelecao": "No document in this selection",
+    "origem": "Source",
+    "pode": "Can",
+    "revogarCompartilhamento": "Revoke share",
+    "semAcessoAEste": "No access to this document."
+  },
+  "groupAccessMatrixTable": {
+    "concederOuRemoverEm": "Grant or remove under Rules",
+    "documento": "Document",
+    "memberCount_one": "{{count}} person",
+    "memberCount_other": "{{count}} people",
+    "nenhumDocumentoNestaSelecao": "No document in this selection",
+    "nenhumGrupoConfigurado": "No group set up"
+  },
+  "matrixPage": {
+    "buscarNaMatriz": "Search the matrix",
+    "buscarNaMatriz2": "Search the matrix",
+    "categoria": "Category",
+    "documentCount_one": "{{count}} document",
+    "documentCount_other": "{{count}} documents",
+    "filtrarPorCategoria": "Filter by category",
+    "groupAxis_one": "{{count}} group",
+    "groupAxis_other": "{{count}} groups",
+    "lenteDaMatriz": "Matrix lens",
+    "matrizDeDocumentos": "Document matrix",
+    "montandoAMatriz": "Building the matrix",
+    "naoFoiPossivelMontar": "Could not build the matrix",
+    "peopleAxis_one": "{{count}} person",
+    "peopleAxis_other": "{{count}} people"
+  }
+}

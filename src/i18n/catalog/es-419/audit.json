@@ -1,0 +1,82 @@
+{
+  "auditEventDetailsDialog": {
+    "ator": "Actor",
+    "dataHora": "Fecha/hora",
+    "descricao": "Descripción",
+    "detalhesDoEvento": "Detalles del evento",
+    "documento": "Documento",
+    "fechar": "Cerrar",
+    "metadados": "Metadatos",
+    "origem": "Origen",
+    "requestId": "Request ID",
+    "severidade": "Severidad"
+  },
+  "auditEventsList": {
+    "ajusteABuscaOu": "Ajusta la búsqueda o espera nuevas acciones en el sistema.",
+    "carregandoEventos": "Cargando eventos",
+    "nenhumEventoEncontrado": "Ningún evento encontrado",
+    "verDetalhesDoEvento": "Ver los detalles del evento"
+  },
+  "auditFilters": {
+    "acaoUsuarioDocumento": "Acción, usuario, documento...",
+    "ate": "Hasta",
+    "buscar": "Buscar",
+    "de": "Desde",
+    "exDocumentCreated": "Ej.: document.created",
+    "fim": "Fin",
+    "inicio": "Inicio",
+    "severidade": "Severidad",
+    "tipoDeEvento": "Tipo de evento"
+  },
+  "auditPage": {
+    "acessoRestrito": "Acceso restringido",
+    "acompanheAprovacoesAcoesAdministrativas": "Sigue las aprobaciones, las acciones administrativas y el historial de eventos del sistema.",
+    "apenasAdministradoresPodemConsultar": "Solo los administradores pueden consultar pendientes y aprobar solicitudes.",
+    "auditoria": "Auditoría",
+    "eventosDeBloqueioRejeicao": "Eventos de bloqueo, rechazo, permiso denegado y acciones sensibles registrados en el espacio de trabajo.",
+    "exibindoEventosDoDocumento": "Mostrando los eventos del documento",
+    "fimDoHistorico": "Fin del historial",
+    "naoFoiPossivelCarregar": "No se pudieron cargar los pendientes",
+    "naoFoiPossivelCarregar2": "No se pudieron cargar los eventos.",
+    "tenteAtualizarAPagina": "Intenta recargar la página o revisa tu conexión."
+  },
+  "auditSummaryStrip": {
+    "resumoDaAuditoria": "Resumen de la auditoría"
+  },
+  "error": {
+    "falhaCarregarPendencias": "No se pudieron cargar los pendientes."
+  },
+  "pendingApprovalReviewDialog": {
+    "arquivo": "Archivo",
+    "cancelar": "Cancelar",
+    "categoria": "Categoría",
+    "categoriaSugerida": "Categoría sugerida",
+    "compartilharCom": "Compartir con",
+    "data": "Fecha",
+    "documento": "Documento",
+    "eMail": "Correo electrónico",
+    "oQueSeraConcedido": "Lo que se concederá",
+    "organizacao": "Organización",
+    "osMetadadosForamExtraidos": "Los metadatos fueron extraídos automáticamente por la IA. Al aprobar, el documento se publicará en la Biblioteca a nombre del solicitante.",
+    "pendente": "Pendiente",
+    "rejeitar": "Rechazar",
+    "revisarSolicitacao": "Revisar solicitud",
+    "solicitante": "Solicitante",
+    "status": "Estado"
+  },
+  "pendingApprovalsList": {
+    "enviosDownloadsECompartilhamentos": "Las subidas, descargas y comparticiones que dependen de aprobación aparecerán aquí.",
+    "naoHaPendenciasNo": "No hay pendientes en este momento",
+    "pendente": "Pendiente"
+  },
+  "rejectApprovalDialog": {
+    "cancelar": "Cancelar",
+    "confirmarRejeicao": "Confirmar el rechazo",
+    "descrevaOMotivoPara": "Describe el motivo para el solicitante...",
+    "motivoDaRejeicao": "Motivo del rechazo",
+    "rejeitarSolicitacao": "Rechazar solicitud"
+  },
+  "toast": {
+    "solicitacaoRejeitada": "Solicitud rechazada."
+  }
+}

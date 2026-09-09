@@ -1,0 +1,86 @@
+{
+  "accessFormSections": {
+    "defineOQueA": "Sets what the person administers. There is only one, and they do not stack.",
+    "eACaixaDo": "This is the bell's inbox. It cannot be turned off.",
+    "grupos": "Groups",
+    "nenhumGrupoCriadoAinda": "No group created yet.",
+    "noApp": "In the app",
+    "notificacoes": "Notifications",
+    "oQueAvisar": "What to notify about",
+    "osAvisosSaemDo": "Notices follow access: only what the person already reaches through their groups, or what is theirs, gets through.",
+    "osMesmosGruposDe": "The same groups as in Rules. They are what decide which categories the person reaches.",
+    "papelNaPlataforma": "Platform role",
+    "porOnde": "Through where",
+    "semGrupoAPessoa": "With no group, the person reaches no category at all. Create one under Rules and come back here."
+  },
+  "blockAccessDialog": {
+    "asSessoesAtivasNesta": "Active sessions in this company will be revoked.",
+    "bloquearAcessoAEmpresa": "Block access to the company?",
+    "cancelar": "Cancel",
+    "eMail": "Email",
+    "empresa": "Company",
+    "esteUsuarioPerderaO": "This user will lose access to this company. Their account will not be deleted, and access in other companies is not affected.",
+    "exAcessoSuspensoTemporariamente": "e.g. access temporarily suspended",
+    "motivoDoBloqueioOpcional": "Reason for blocking (optional)",
+    "statusAtual": "Current status",
+    "usuario": "User"
+  },
+  "editAccessDialog": {
+    "cancelar": "Cancel",
+    "editarAcesso": "Edit access"
+  },
+  "inviteMemberDialog": {
+    "cancelar": "Cancel",
+    "concluir": "Finish",
+    "copieOLinkAcima": "Copy the link above and send it through another channel.",
+    "depoisDissoElePara": ". After that it stops opening, and a new invitation is needed.",
+    "eMail": "Email",
+    "linkDoConvite": "Invitation link",
+    "nomeOpcional": "First name (optional)",
+    "oEMailNao": "The email was not sent.",
+    "semNenhumGrupoA": "With no group, the person gets in but reaches no document. Access is granted to the group, never to a person on their own.",
+    "sobrenomeOpcional": "Last name (optional)",
+    "valeAte": "Valid until"
+  },
+  "legacyAuthRole": {
+    "admin": "System administrator",
+    "manager": "Company administrator",
+    "user": "User",
+    "viewer": "Viewer"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Company administrator",
+      "description": "Manages the company's users, groups and rules."
+    },
+    "individual_admin": {
+      "label": "Account administrator",
+      "description": "Manages access and documents for the individual account."
+    },
+    "user": {
+      "label": "User",
+      "description": "Accesses the documents and features they are granted."
+    },
+    "unknownDescription": "Platform role."
+  },
+  "unblockAccessDialog": {
+    "bloqueado": "Blocked",
+    "cancelar": "Cancel",
+    "desbloquearAcessoAEmpresa": "Unblock access to the company?",
+    "eMail": "Email",
+    "empresa": "Company",
+    "oUsuarioVoltaraA": "The user will have access to this company again. Other companies are not affected.",
+    "statusAtual": "Current status",
+    "usuario": "User"
+  },
+  "userManagementRoute": {
+    "verificandoPermissoes": "Checking permissions..."
+  },
+  "usersPage": {
+    "buscarPorNomeOu": "Search by name or email",
+    "buscarUsuario": "Search user",
+    "convidar": "Invite",
+    "filtrarPorStatus": "Filter by status",
+    "usuarios": "Users"
+  }
+}
