@@ -1,0 +1,106 @@
+{
+  "appErrorBoundary": {
+    "recarregar": "Recargar",
+    "recarregueAPaginaPara": "Recarga la página para continuar. Si el problema persiste, contacta al soporte."
+  },
+  "authBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "authShell": {
+    "ambienteCorporativoSeguro": "Espacio de trabajo corporativo seguro"
+  },
+  "authSplitShell": {
+    "ambienteCorporativoSeguro": "Espacio de trabajo corporativo seguro",
+    "doqyn": "Doqyn"
+  },
+  "calendarPanel": {
+    "hoje": "Hoy",
+    "limpar": "Limpiar",
+    "mesAnterior": "Mes anterior",
+    "proximoMes": "Mes siguiente"
+  },
+  "confirmProvider": {
+    "typeToConfirm": "Escribe <word>{{word}}</word> para confirmar:"
+  },
+  "countrySelect": {
+    "buscarPais": "Buscar país",
+    "nenhumPaisEncontrado": "No se encontró ningún país."
+  },
+  "filterBar": {
+    "limparFiltros": "Limpiar filtros"
+  },
+  "globalSearchCommand": {
+    "buscarDocumentos": "Buscar documentos",
+    "buscarDocumentos2": "Buscar documentos",
+    "limparBusca": "Limpiar búsqueda"
+  },
+  "headerUserMenu": {
+    "configuracoes": "Configuración",
+    "conta": "Cuenta",
+    "menuDoUsuario": "Menú del usuario",
+    "sair": "Salir"
+  },
+  "helpMenu": {
+    "ajuda": "Ayuda",
+    "ajuda2": "Ayuda",
+    "centralDeAjuda": "Centro de ayuda",
+    "ondeFicaCadaCoisa": "Dónde está cada cosa, en 2 min",
+    "verOTour": "Ver el recorrido"
+  },
+  "input": {
+    "hidePassword": "Ocultar contraseña",
+    "showPassword": "Mostrar contraseña"
+  },
+  "modal": {
+    "fechar": "Cerrar"
+  },
+  "routeLoadingFallback": {
+    "carregandoModulo": "Cargando módulo",
+    "carregandoModulo2": "Cargando módulo..."
+  },
+  "sidebar": {
+    "administracao": "Administración"
+  },
+  "sidebarBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "sidebarEdgeToggle": {
+    "collapse": "Contraer barra lateral (Ctrl + \\)",
+    "expand": "Expandir barra lateral (Ctrl + \\)"
+  },
+  "sidebarUsage": {
+    "armazenamento": "Almacenamiento",
+    "armazenamentoUsado": "Almacenamiento usado",
+    "documentCount_one": "{{count}} documento",
+    "documentCount_many": "{{count}} documentos",
+    "documentCount_other": "{{count}} documentos",
+    "ofQuota": "de {{quota}}",
+    "percentUsed": "{{percent}} usado"
+  },
+  "tableRowActionsMenu": {
+    "acoesDaLinha": "Acciones de la fila"
+  },
+  "termsAcceptanceCheckbox": {
+    "doDoqyn": "de DOQYN.",
+    "eDeclaroCienciaDa": "y declaro conocer la",
+    "liEAceitoOs": "Leí y acepto los",
+    "politicaDePrivacidade": "Política de Privacidad",
+    "termosECondicoesDe": "Términos y Condiciones de Uso"
+  },
+  "theme": {
+    "darkHint": "Carcasa casi negra, panel grafito",
+    "darkLabel": "Oscuro",
+    "lightHint": "Carcasa gris claro, panel de papel",
+    "lightLabel": "Claro",
+    "standardHint": "Carcasa grafito, panel de papel",
+    "standardLabel": "Estándar",
+    "toggleAriaLabel": "Tema: {{current}}. Cambiar a {{next}}.",
+    "toggleTitle": "Tema: {{current}}. {{hint}}. Haz clic para {{next}}."
+  },
+  "uploadDropzone": {
+    "arrasteODocumentoOu": "Arrastra el documento aquí o haz clic para seleccionar"
+  },
+  "versionBadge": {
+    "versaoAtual": "Versión actual"
+  }
+}

@@ -25,8 +25,20 @@ function t(key: string, params?: Record<string, unknown>): string {
   return i18n.t(`${NS}:${key}`, params ?? {});
 }
 
-/** A palavra que a pessoa digita para liberar uma ação irreversível. */
-export const CONFIRM_DELETE_WORD = 'EXCLUIR';
+/**
+ * A palavra que a pessoa digita para liberar uma ação irreversível.
+ *
+ * Precisa vir do catálogo, e o motivo só aparece traduzindo: numa interface em inglês, o
+ * diálogo mandava digitar `EXCLUIR`. O ponto de digitar uma palavra é a fricção deliberada de
+ * ler o que se está prestes a fazer — uma palavra em idioma estrangeiro troca essa fricção por
+ * cópia mecânica, que é o contrário do que o portão existe para provocar.
+ *
+ * Resolve na chamada, e não no import, porque é constante de módulo: `DELETE` em inglês,
+ * `ELIMINAR` em espanhol, e o diálogo compara contra o que ele mesmo mostrou.
+ */
+export function confirmDeleteWord(): string {
+  return t('deleteWord');
+}
 
 export function buildRemoveFromGroupConfirm(memberName: string, groupName: string) {
   return {
@@ -57,7 +69,7 @@ export function buildDeleteCategoryConfirm(categoryName: string) {
     title: t('deleteCategory.title'),
     description: t('deleteCategory.description', { categoryName }),
     confirmLabel: t('deleteCategory.confirmLabel'),
-    confirmationText: CONFIRM_DELETE_WORD,
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }
@@ -76,7 +88,7 @@ export function buildDeleteGroupConfirm(groupName: string, memberCount: number) 
     title: t('deleteGroup.title'),
     description: t('deleteGroup.description', { groupName, count: memberCount }),
     confirmLabel: t('deleteGroup.confirmLabel'),
-    confirmationText: CONFIRM_DELETE_WORD,
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }
@@ -86,7 +98,7 @@ export function buildRejectApprovalConfirm(name: string) {
     title: t('rejectApproval.title'),
     description: t('rejectApproval.description', { name }),
     confirmLabel: t('rejectApproval.confirmLabel'),
-    confirmationText: CONFIRM_DELETE_WORD,
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }

@@ -41,7 +41,8 @@ const TARGETS = ['en-US', 'es-419'];
  * Sem esta lista o aviso de "idêntica ao original" apontaria para dezenas de acertos, e um aviso
  * que aponta sobretudo para acertos deixa de ser lido.
  */
-const IDENTICAS_ESPERADAS = /^(DOQYN|PDF|WhatsApp|E-mail|Email|CPF|CNPJ|NIF|VAT|Preview|OK|—|\{\{[\w.]+\}\}|[\d\s.,:/+()%-]+)$/i;
+const IDENTICAS_ESPERADAS =
+  /^(DOQYN|PDF|WhatsApp|E-mail|Email|CPF|CNPJ|NIF|VAT|Preview|OK|—|\{\{[\w.]+\}\}|[\d\s.,:/+()%-]+)$/i;
 
 type Leaf = { key: string; value: string };
 
@@ -61,7 +62,10 @@ function load(locale: string, namespace: string): Leaf[] | null {
 
 /** `{{count}}` e `{{version}}`, ordenados, para comparar conjuntos e não posições. */
 function params(phrase: string): string {
-  return [...phrase.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)].map((m) => m[1]!).sort().join(',');
+  return [...phrase.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)]
+    .map((m) => m[1]!)
+    .sort()
+    .join(',');
 }
 
 const SUFIXOS = ['zero', 'one', 'two', 'few', 'many', 'other'];
@@ -158,7 +162,16 @@ function main(): void {
             continue;
           }
           presentes += 1;
-          const modeloRef = mapaRef.get(`${base}_other`) ?? mapaRef.get(`${base}_one`);
+          /**
+           * O modelo é a **mesma** categoria no português, e só depois o `_other`.
+           *
+           * Comparar todo mundo contra `_other` acusava tradução correta: o singular do próprio
+           * `pt-BR` escreve "Este documento" e "1 membro" por extenso, sem `{{count}}`, e é assim
+           * que o inglês e o espanhol também devem escrever. O `_other` só entra como modelo para
+           * categoria que o português não tem — o `many` do espanhol.
+           */
+          const modeloRef =
+            mapaRef.get(chave) ?? mapaRef.get(`${base}_other`) ?? mapaRef.get(`${base}_one`);
           if (modeloRef && params(modeloRef) !== params(traduzida)) {
             problemas.push({
               tipo: 'parâmetro',
@@ -202,11 +215,21 @@ function main(): void {
     console.log('─'.repeat(74));
     console.log(`categorias de plural       ${categorias.join(', ')}`);
     console.log(`namespaces sem arquivo     ${semArquivo.length}`);
-    console.log(`chaves faltando            ${problemas.filter((p) => p.tipo === 'faltando').length}`);
-    console.log(`plurais faltando           ${problemas.filter((p) => p.tipo === 'plural').length}`);
-    console.log(`ERRO parâmetro divergente  ${problemas.filter((p) => p.tipo === 'parâmetro').length}`);
-    console.log(`ERRO chave sobrando        ${problemas.filter((p) => p.tipo === 'sobrando').length}`);
-    console.log(`ERRO plural a mais         ${problemas.filter((p) => p.tipo === 'plural a mais').length}`);
+    console.log(
+      `chaves faltando            ${problemas.filter((p) => p.tipo === 'faltando').length}`,
+    );
+    console.log(
+      `plurais faltando           ${problemas.filter((p) => p.tipo === 'plural').length}`,
+    );
+    console.log(
+      `ERRO parâmetro divergente  ${problemas.filter((p) => p.tipo === 'parâmetro').length}`,
+    );
+    console.log(
+      `ERRO chave sobrando        ${problemas.filter((p) => p.tipo === 'sobrando').length}`,
+    );
+    console.log(
+      `ERRO plural a mais         ${problemas.filter((p) => p.tipo === 'plural a mais').length}`,
+    );
     console.log(`aviso frase igual ao pt-BR ${identicas}`);
     console.log('─'.repeat(74));
 

@@ -1,4 +1,27 @@
 {
+  "deleteCategory": {
+    "title": "Excluir categoria?",
+    "description": "A categoria \"{{categoryName}}\" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria, e nenhum documento é apagado.",
+    "confirmLabel": "Excluir categoria"
+  },
+  "deleteGroup": {
+    "title": "Excluir grupo?",
+    "description_one": "O grupo \"{{groupName}}\" será removido. 1 membro perderá as permissões associadas a este grupo, e as categorias vinculadas serão atualizadas.",
+    "description_other": "O grupo \"{{groupName}}\" será removido. {{count}} membros perderão as permissões associadas a este grupo, e as categorias vinculadas serão atualizadas.",
+    "confirmLabel": "Excluir grupo"
+  },
+  "deleteWord": "EXCLUIR",
+  "moveToTrash": {
+    "title": "Mover para a lixeira?",
+    "description_one": "Este documento será movido para a lixeira. Você poderá restaurar durante o período de retenção; depois o documento será desativado.",
+    "description_other": "{{count}} documentos serão movidos para a lixeira. Você poderá restaurar durante o período de retenção; depois eles serão desativados.",
+    "confirmLabel": "Mover para lixeira"
+  },
+  "rejectApproval": {
+    "title": "Recusar solicitação?",
+    "description": "{{name}} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente: será necessário enviar um novo convite.",
+    "confirmLabel": "Recusar"
+  },
   "removeFromGroup": {
     "title": "Remover membro do grupo?",
     "description": "{{memberName}} perderá acesso às categorias liberadas para o grupo {{groupName}}. Esta ação pode ser revertida arrastando o membro de volta.",
@@ -9,42 +32,20 @@
     "description": "Todos os membros do grupo {{groupName}} perderão acesso à categoria {{categoryName}}.",
     "confirmLabel": "Remover acesso"
   },
-  "deleteCategory": {
-    "title": "Excluir categoria?",
-    "description": "A categoria \"{{categoryName}}\" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria, e nenhum documento é apagado.",
-    "confirmLabel": "Excluir categoria"
-  },
-  "moveToTrash": {
-    "title": "Mover para a lixeira?",
-    "description_one": "Este documento será movido para a lixeira. Você poderá restaurar durante o período de retenção; depois o documento será desativado.",
-    "description_other": "{{count}} documentos serão movidos para a lixeira. Você poderá restaurar durante o período de retenção; depois eles serão desativados.",
-    "confirmLabel": "Mover para lixeira"
-  },
-  "deleteGroup": {
-    "title": "Excluir grupo?",
-    "description_one": "O grupo \"{{groupName}}\" será removido. 1 membro perderá as permissões associadas a este grupo, e as categorias vinculadas serão atualizadas.",
-    "description_other": "O grupo \"{{groupName}}\" será removido. {{count}} membros perderão as permissões associadas a este grupo, e as categorias vinculadas serão atualizadas.",
-    "confirmLabel": "Excluir grupo"
-  },
-  "rejectApproval": {
-    "title": "Recusar solicitação?",
-    "description": "{{name}} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente: será necessário enviar um novo convite.",
-    "confirmLabel": "Recusar"
-  },
   "removeMember": {
     "title": "Remover membro da empresa?",
     "description": "{{name}} perderá todo o acesso a documentos e grupos imediatamente. Esta ação é irreversível sem um novo convite.",
     "confirmLabel": "Remover membro"
-  },
-  "suspendMember": {
-    "title": "Suspender acesso?",
-    "description": "{{name}} não poderá acessar documentos até que o acesso seja reativado por um administrador.",
-    "confirmLabel": "Suspender"
   },
   "revokeSignatureRequest": {
     "title": "Revogar solicitação?",
     "description": "O convite de assinatura para {{signerName}} será cancelado e o link deixará de funcionar.",
     "confirmLabel": "Revogar",
     "unnamedSigner": "o signatário"
+  },
+  "suspendMember": {
+    "title": "Suspender acesso?",
+    "description": "{{name}} não poderá acessar documentos até que o acesso seja reativado por um administrador.",
+    "confirmLabel": "Suspender"
   }
 }

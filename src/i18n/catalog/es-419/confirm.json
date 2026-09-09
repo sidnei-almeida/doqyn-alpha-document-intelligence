@@ -1,0 +1,53 @@
+{
+  "deleteCategory": {
+    "title": "¿Eliminar la categoría?",
+    "description": "La categoría «{{categoryName}}» y sus reglas serán removidas. Todos los documentos que están en ella pasan a Sin categoría, y no se borra ningún documento.",
+    "confirmLabel": "Eliminar categoría"
+  },
+  "deleteGroup": {
+    "title": "¿Eliminar el grupo?",
+    "description_one": "El grupo «{{groupName}}» será removido. 1 miembro perderá los permisos asociados a este grupo, y las categorías vinculadas serán actualizadas.",
+    "description_many": "El grupo «{{groupName}}» será removido. {{count}} miembros perderán los permisos asociados a este grupo, y las categorías vinculadas serán actualizadas.",
+    "description_other": "El grupo «{{groupName}}» será removido. {{count}} miembros perderán los permisos asociados a este grupo, y las categorías vinculadas serán actualizadas.",
+    "confirmLabel": "Eliminar grupo"
+  },
+  "deleteWord": "ELIMINAR",
+  "moveToTrash": {
+    "title": "¿Mover a la papelera?",
+    "description_one": "Este documento se moverá a la papelera. Podrás restaurarlo durante el período de retención; después será desactivado.",
+    "description_many": "{{count}} documentos se moverán a la papelera. Podrás restaurarlos durante el período de retención; después serán desactivados.",
+    "description_other": "{{count}} documentos se moverán a la papelera. Podrás restaurarlos durante el período de retención; después serán desactivados.",
+    "confirmLabel": "Mover a la papelera"
+  },
+  "rejectApproval": {
+    "title": "¿Rechazar la solicitud?",
+    "description": "{{name}} no tendrá acceso a la empresa. Esta acción no puede deshacerse automáticamente: habrá que enviar una nueva invitación.",
+    "confirmLabel": "Rechazar"
+  },
+  "removeFromGroup": {
+    "title": "¿Quitar al miembro del grupo?",
+    "description": "{{memberName}} perderá acceso a las categorías habilitadas para el grupo {{groupName}}. Esta acción puede revertirse arrastrando al miembro de vuelta.",
+    "confirmLabel": "Quitar del grupo"
+  },
+  "removeGroupFromCategory": {
+    "title": "¿Quitar el acceso del grupo?",
+    "description": "Todos los miembros del grupo {{groupName}} perderán acceso a la categoría {{categoryName}}.",
+    "confirmLabel": "Quitar acceso"
+  },
+  "removeMember": {
+    "title": "¿Quitar al miembro de la empresa?",
+    "description": "{{name}} perderá todo el acceso a documentos y grupos de inmediato. Esta acción es irreversible sin una nueva invitación.",
+    "confirmLabel": "Quitar miembro"
+  },
+  "revokeSignatureRequest": {
+    "title": "¿Revocar la solicitud?",
+    "description": "La invitación de firma para {{signerName}} será cancelada y el enlace dejará de funcionar.",
+    "confirmLabel": "Revocar",
+    "unnamedSigner": "el firmante"
+  },
+  "suspendMember": {
+    "title": "¿Suspender el acceso?",
+    "description": "{{name}} no podrá acceder a los documentos hasta que un administrador reactive el acceso.",
+    "confirmLabel": "Suspender"
+  }
+}
