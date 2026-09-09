@@ -1,0 +1,143 @@
+{
+  "accessBoard": {
+    "desfazer": "Undo",
+    "dispensar": "Dismiss",
+    "grupos": "Groups",
+    "gruposDaEmpresa": "Company groups"
+  },
+  "accessMatrixView": {
+    "categoria": "Category",
+    "ordemDosPontos": "Order of the dots",
+    "verBaixarEnviar": "view · download · upload"
+  },
+  "categoryLane": {
+    "camposDaAnalise": "Analysis fields",
+    "detalhesDaCategoria": "Category details",
+    "outOfReach": "out of reach",
+    "previewReach_one": "{{count}} person can see it",
+    "previewReach_other": "{{count}} people can see it"
+  },
+  "categoryModal": {
+    "cancelar": "Cancel",
+    "contratosNotasFiscais": "Contracts, Invoices…",
+    "criarCategoria": "Create category",
+    "depoisDeCriadaVoce": "Once created, you connect the groups that can see its documents.",
+    "nomeDaCategoria": "Category name",
+    "novaCategoria": "New category"
+  },
+  "error": {
+    "categoriaNaoEncontrada": "Category not found."
+  },
+  "expiryAlertConfigSection": {
+    "alertasDeVencimento": "Expiry alerts",
+    "ativarAlertasDeVencimento": "Turn on expiry alerts",
+    "avisaQuemTemAcesso": "Notifies anyone with access to this category through the rules map when a document is close to expiring. The document owner is always notified.",
+    "avisarComAntecedenciaDe": "Notify this many days in advance",
+    "continuarAvisandoDepoisDe": "Keep notifying after expiry (use negative numbers above, e.g. -7)",
+    "marcarGruposLimitaO": "Selecting groups limits the notice to them. A group without permission to see the category in the rules map gets nothing, even if selected here.",
+    "nenhumGrupoDocumentalCadastrado": "No document group registered. Without groups, only the document owner is notified.",
+    "nenhumGrupoMarcadoTodos": "No group selected: every group with read access to this category will be notified.",
+    "restringirAGruposOpcional": "Restrict to groups (optional)",
+    "umAvisoPorMarco": "One notice per milestone. Use 0 to notify on the expiry date itself."
+  },
+  "extractionConfigDrawer": {
+    "abaixoDissoAExtracao": "Below this, the extraction goes to review instead of standing on its own.",
+    "aliasesSeparadosPorVirgula": "Aliases (comma separated)",
+    "analise": "Analysis",
+    "ativa": "Active",
+    "campo": "Field",
+    "camposDaAnalise": "Analysis fields",
+    "camposExtraidos": "Extracted fields",
+    "cancelar": "Cancel",
+    "chaveExParteReceptora": "Key (e.g. receiving_party)",
+    "comoODocumentoE": "How the document is named on arrival, and from what confidence the extraction stands without review.",
+    "confiancaMinima": "Minimum confidence",
+    "descricao": "Description",
+    "ePorEstesTermos": "These are the terms by which the analysis recognizes a document as belonging to this category.",
+    "nomeSugerido": "Suggested name",
+    "obrigatorio": "Required",
+    "reconhecimento": "Recognition",
+    "regraAtivaParaAnalise": "Rule active for analysis",
+    "removerCampo": "Remove field",
+    "rotulo": "Label",
+    "separePorVirgula": "Separate with commas",
+    "separePorVirgula2": "Separate with commas",
+    "termosAEvitar": "Terms to avoid",
+    "termosQueIdentificamEste": "Terms that identify this document",
+    "useCampoParaVariaveis": "Use {field} for variables"
+  },
+  "governanceDetailDialog": {
+    "accesses": "reaches",
+    "camposDaAnalise": "Analysis fields",
+    "categoriasConectadas": "Connected categories",
+    "conectarCategoria": "Connect category",
+    "conexaoPendenteSalveO": "Connection pending. Save the map to apply it on the server.",
+    "desativarCategoria": "Deactivate category",
+    "desativarGrupo": "Deactivate group",
+    "desconectar": "Disconnect",
+    "descricao": "Description",
+    "descricao2": "Description",
+    "gerenciarEmUsuarios": "manage under Users",
+    "gruposComAcesso": "Groups with access",
+    "nenhumGrupoConectado": "No group connected.",
+    "nenhumaCategoriaConectada": "No category connected.",
+    "nome": "Name",
+    "nome2": "Name",
+    "pessoasNoGrupo": "People in the group",
+    "salvarAlteracoes": "Save changes",
+    "salvarPermissoes": "Save permissions"
+  },
+  "governanceScoreboard": {
+    "cobertura": "Coverage",
+    "coberturaDaGovernanca": "Governance coverage",
+    "colocarPessoas": "Add people",
+    "criarGrupo": "Create group",
+    "governancaIncompleta": "Governance incomplete",
+    "peopleReached": "<count>{{reached}}</count> of {{total}} people reach at least one category through a group. Administrators see everything.",
+    "stepsDone": "{{done}} of {{total}}",
+    "trilhaDaGovernanca": "Governance track"
+  },
+  "groupModal": {
+    "asPessoasEntramNo": "People join the group from the Users screen.",
+    "cancelar": "Cancel",
+    "criarGrupo": "Create group",
+    "juridicoFinanceiro": "Legal, Finance…",
+    "nomeDoGrupo": "Group name",
+    "novoGrupo": "New group"
+  },
+  "permissionPopover": {
+    "detalhes": "Details",
+    "em": "· in “",
+    "removerAcessoDoGrupo": "Remove the group's access"
+  },
+  "rulesPage": {
+    "carregandoGovernancaDocumental": "Loading document governance…",
+    "naoFoiPossivelCarregar": "Could not load the rules right now.",
+    "nenhumaCategoriaDeDocumentos": "No document category yet.",
+    "novaCategoria": "New category",
+    "novaCategoria2": "New category",
+    "novoGrupo": "New group",
+    "regrasDeAcesso": "Access rules",
+    "regrasDeAcesso2": "Access rules",
+    "tentarNovamente": "Try again",
+    "verifiqueSuaConexaoE": "Check your connection and try again."
+  },
+  "rulesRoute": {
+    "verificandoPermissoes": "Checking permissions..."
+  },
+  "simulateAccessBar": {
+    "sairDaSimulacao": "Exit the simulation",
+    "vendoComo": "Viewing as",
+    "verComo": "View as"
+  },
+  "toast": {
+    "grupoCriado": "Group created.",
+    "grupoDesativado": "Group deactivated.",
+    "grupoAtualizado": "Group updated.",
+    "permissoesAtualizadas": "Permissions updated.",
+    "categoriaAtualizada": "Category updated.",
+    "categoriaCriada": "Category created.",
+    "categoriaDesativada": "Category deactivated.",
+    "configuracaoSalva": "Setting saved."
+  }
+}

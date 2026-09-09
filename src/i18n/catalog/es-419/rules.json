@@ -1,0 +1,144 @@
+{
+  "accessBoard": {
+    "desfazer": "Deshacer",
+    "dispensar": "Descartar",
+    "grupos": "Grupos",
+    "gruposDaEmpresa": "Grupos de la empresa"
+  },
+  "accessMatrixView": {
+    "categoria": "Categoría",
+    "ordemDosPontos": "Orden de los puntos",
+    "verBaixarEnviar": "ver · descargar · subir"
+  },
+  "categoryLane": {
+    "camposDaAnalise": "Campos del análisis",
+    "detalhesDaCategoria": "Detalles de la categoría",
+    "outOfReach": "fuera del alcance",
+    "previewReach_one": "{{count}} persona lo ve",
+    "previewReach_many": "{{count}} personas lo ven",
+    "previewReach_other": "{{count}} personas lo ven"
+  },
+  "categoryModal": {
+    "cancelar": "Cancelar",
+    "contratosNotasFiscais": "Contratos, Facturas…",
+    "criarCategoria": "Crear categoría",
+    "depoisDeCriadaVoce": "Una vez creada, conectas los grupos que ven sus documentos.",
+    "nomeDaCategoria": "Nombre de la categoría",
+    "novaCategoria": "Nueva categoría"
+  },
+  "error": {
+    "categoriaNaoEncontrada": "Categoría no encontrada."
+  },
+  "expiryAlertConfigSection": {
+    "alertasDeVencimento": "Alertas de vencimiento",
+    "ativarAlertasDeVencimento": "Activar alertas de vencimiento",
+    "avisaQuemTemAcesso": "Avisa a quien tiene acceso a esta categoría por el mapa de reglas cuando un documento está por vencer. Al dueño del documento siempre se le avisa.",
+    "avisarComAntecedenciaDe": "Avisar con esta anticipación (días)",
+    "continuarAvisandoDepoisDe": "Seguir avisando después del vencimiento (usa números negativos arriba, ej.: -7)",
+    "marcarGruposLimitaO": "Marcar grupos limita el aviso a ellos. Un grupo sin permiso de ver la categoría en el mapa de reglas no recibe nada, aunque esté marcado aquí.",
+    "nenhumGrupoDocumentalCadastrado": "Ningún grupo documental registrado. Sin grupos, solo se avisa al dueño del documento.",
+    "nenhumGrupoMarcadoTodos": "Ningún grupo marcado: se avisará a todos los grupos con acceso de lectura a esta categoría.",
+    "restringirAGruposOpcional": "Restringir a grupos (opcional)",
+    "umAvisoPorMarco": "Un aviso por hito. Usa 0 para avisar el mismo día del vencimiento."
+  },
+  "extractionConfigDrawer": {
+    "abaixoDissoAExtracao": "Por debajo de eso, la extracción va a revisión en lugar de valer por sí sola.",
+    "aliasesSeparadosPorVirgula": "Alias (separados por coma)",
+    "analise": "Análisis",
+    "ativa": "Activa",
+    "campo": "Campo",
+    "camposDaAnalise": "Campos del análisis",
+    "camposExtraidos": "Campos extraídos",
+    "cancelar": "Cancelar",
+    "chaveExParteReceptora": "Clave (ej.: parte_receptora)",
+    "comoODocumentoE": "Cómo se nombra el documento al entrar, y a partir de qué confianza la extracción vale sin revisión.",
+    "confiancaMinima": "Confianza mínima",
+    "descricao": "Descripción",
+    "ePorEstesTermos": "Es por estos términos que el análisis reconoce un documento como de esta categoría.",
+    "nomeSugerido": "Nombre sugerido",
+    "obrigatorio": "Obligatorio",
+    "reconhecimento": "Reconocimiento",
+    "regraAtivaParaAnalise": "Regla activa para el análisis",
+    "removerCampo": "Quitar campo",
+    "rotulo": "Etiqueta",
+    "separePorVirgula": "Separa con comas",
+    "separePorVirgula2": "Separa con comas",
+    "termosAEvitar": "Términos a evitar",
+    "termosQueIdentificamEste": "Términos que identifican este documento",
+    "useCampoParaVariaveis": "Usa {campo} para variables"
+  },
+  "governanceDetailDialog": {
+    "accesses": "alcanza",
+    "camposDaAnalise": "Campos del análisis",
+    "categoriasConectadas": "Categorías conectadas",
+    "conectarCategoria": "Conectar categoría",
+    "conexaoPendenteSalveO": "Conexión pendiente. Guarda el mapa para aplicarla en el servidor.",
+    "desativarCategoria": "Desactivar categoría",
+    "desativarGrupo": "Desactivar grupo",
+    "desconectar": "Desconectar",
+    "descricao": "Descripción",
+    "descricao2": "Descripción",
+    "gerenciarEmUsuarios": "gestionar en Usuarios",
+    "gruposComAcesso": "Grupos con acceso",
+    "nenhumGrupoConectado": "Ningún grupo conectado.",
+    "nenhumaCategoriaConectada": "Ninguna categoría conectada.",
+    "nome": "Nombre",
+    "nome2": "Nombre",
+    "pessoasNoGrupo": "Personas en el grupo",
+    "salvarAlteracoes": "Guardar cambios",
+    "salvarPermissoes": "Guardar permisos"
+  },
+  "governanceScoreboard": {
+    "cobertura": "Cobertura",
+    "coberturaDaGovernanca": "Cobertura de la gobernanza",
+    "colocarPessoas": "Agregar personas",
+    "criarGrupo": "Crear grupo",
+    "governancaIncompleta": "Gobernanza incompleta",
+    "peopleReached": "<count>{{reached}}</count> de {{total}} personas alcanzan al menos una categoría por grupo. Los administradores ven todo.",
+    "stepsDone": "{{done}} de {{total}}",
+    "trilhaDaGovernanca": "Ruta de la gobernanza"
+  },
+  "groupModal": {
+    "asPessoasEntramNo": "Las personas entran al grupo desde la pantalla de Usuarios.",
+    "cancelar": "Cancelar",
+    "criarGrupo": "Crear grupo",
+    "juridicoFinanceiro": "Legal, Finanzas…",
+    "nomeDoGrupo": "Nombre del grupo",
+    "novoGrupo": "Nuevo grupo"
+  },
+  "permissionPopover": {
+    "detalhes": "Detalles",
+    "em": "· en «",
+    "removerAcessoDoGrupo": "Quitar el acceso del grupo"
+  },
+  "rulesPage": {
+    "carregandoGovernancaDocumental": "Cargando la gobernanza documental…",
+    "naoFoiPossivelCarregar": "No se pudieron cargar las reglas ahora.",
+    "nenhumaCategoriaDeDocumentos": "Ninguna categoría de documentos todavía.",
+    "novaCategoria": "Nueva categoría",
+    "novaCategoria2": "Nueva categoría",
+    "novoGrupo": "Nuevo grupo",
+    "regrasDeAcesso": "Reglas de acceso",
+    "regrasDeAcesso2": "Reglas de acceso",
+    "tentarNovamente": "Intentar de nuevo",
+    "verifiqueSuaConexaoE": "Revisa tu conexión e inténtalo de nuevo."
+  },
+  "rulesRoute": {
+    "verificandoPermissoes": "Verificando permisos..."
+  },
+  "simulateAccessBar": {
+    "sairDaSimulacao": "Salir de la simulación",
+    "vendoComo": "Viendo como",
+    "verComo": "Ver como"
+  },
+  "toast": {
+    "grupoCriado": "Grupo creado.",
+    "grupoDesativado": "Grupo desactivado.",
+    "grupoAtualizado": "Grupo actualizado.",
+    "permissoesAtualizadas": "Permisos actualizados.",
+    "categoriaAtualizada": "Categoría actualizada.",
+    "categoriaCriada": "Categoría creada.",
+    "categoriaDesativada": "Categoría desactivada.",
+    "configuracaoSalva": "Configuración guardada."
+  }
+}
