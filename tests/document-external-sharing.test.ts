@@ -246,7 +246,7 @@ describe('document external sharing — UI', () => {
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
     // As ações viraram itens de menu da própria linha do convite, em vez de badges soltos.
-    assert.ok(modal.includes('Revogar'));
+    assert.ok(modal.includes("shareDocumentModal.revoke'"));
     assert.ok(modal.includes('revokeExternalShare'));
     assert.ok(modal.includes('regenerateExternalShare'));
     assert.ok(api.includes('regenerate-invite'));

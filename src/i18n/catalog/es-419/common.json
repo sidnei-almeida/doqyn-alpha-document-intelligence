@@ -94,5 +94,68 @@
   "tenantVocabulary": {
     "scopeSectionLabelBusiness": "Organización",
     "scopeSectionLabelIndividual": "Mi acervo"
+  },
+  "feedback": {
+    "genericFailure": "No fue posible completar la acción ahora. Inténtalo de nuevo.",
+    "requestFailed": "Error en la solicitud"
+  },
+  "accessGate": {
+    "notLinked": {
+      "title": "Acceso pendiente",
+      "message": "Tu usuario aún no está vinculado a un espacio de trabajo activo en DOQYN. Pide una invitación al administrador de la empresa."
+    },
+    "pending": {
+      "title": "Esperando aprobación",
+      "message": "Tu acceso a esta empresa aún no fue aprobado. Quien administra la empresa puede resolverlo."
+    },
+    "blocked": {
+      "title": "Acceso bloqueado",
+      "message": "Tu acceso a este espacio de trabajo fue bloqueado."
+    },
+    "rejected": {
+      "title": "Acceso rechazado",
+      "message": "Tu acceso a este espacio de trabajo fue rechazado. Volver requiere una nueva invitación de quien administra la empresa."
+    },
+    "removed": {
+      "title": "Acceso eliminado",
+      "message": "Ya no formas parte de este espacio de trabajo en DOQYN. Volver requiere una nueva invitación de quien administra la empresa."
+    },
+    "noMembership": {
+      "title": "Sin acceso activo",
+      "message": "Tu cuenta aún no tiene acceso activo a ningún espacio de trabajo en DOQYN."
+    },
+    "subtitle": "Acceso a la plataforma",
+    "email": "Correo electrónico",
+    "workspace": "Espacio de trabajo",
+    "status": "Estado",
+    "logout": "Cerrar sesión",
+    "checking": "Verificando acceso…",
+    "authFailed": "No fue posible autenticarte."
+  },
+  "signatureStatus": {
+    "pending": "Firma pendiente",
+    "signed": "Firmado",
+    "declined": "Rechazado",
+    "expired": "Vencido",
+    "cancelled": "Cancelado"
+  },
+  "signatureSummary": {
+    "withCount": "{{label}} · {{n}}",
+    "partial": "Parcial · {{n}}",
+    "signers": "Firmaron: {{names}}.",
+    "pending_one": "{{count}} pendiente.",
+    "pending_many": "{{count}} pendientes.",
+    "pending_other": "{{count}} pendientes.",
+    "clickForDetails": "Haz clic para ver los detalles.",
+    "none": "No se solicitó ninguna firma.",
+    "signedCount_one": "{{count}} firma: {{names}}.",
+    "signedCount_many": "{{count}} firmas: {{names}}.",
+    "signedCount_other": "{{count}} firmas: {{names}}.",
+    "pendingFor": "Firma pendiente de {{name}}.",
+    "signedAt": "Firmado electrónicamente el {{date}}.",
+    "inProgress": "Firma en curso.",
+    "fileBase": "documento",
+    "fileSigned": "{{base}}-firmado.pdf",
+    "fileSignedCode": "{{base}}-firmado-{{code}}.pdf"
   }
 }

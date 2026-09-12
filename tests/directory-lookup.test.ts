@@ -143,7 +143,7 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     // que aquele caminho existia, nem que a busca era por apelido.
     assert.ok(flow.includes("'internal' | 'doqyn' | 'external'"));
     for (const modal of [share, sig]) {
-      assert.ok(modal.includes('doqynLabel="Outra conta DOQYN"'));
+      assert.ok(modal.includes(".audienceDoqyn')"));
       assert.ok(modal.includes("audience === 'doqyn'"));
       // E o campo não é mais repetido embaixo da busca de colegas: duas cópias fariam a pessoa
       // escolher entre elas sem saber a diferença.

@@ -8,6 +8,7 @@ import {
   GuestRegisterRow,
   GuestSeal,
 } from '@/features/guest-portal/GuestPortalShell';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type VerificationResult = {
@@ -24,9 +25,7 @@ type VerificationResult = {
 };
 
 function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  return formatDate(iso, { dateStyle: 'short', timeStyle: 'short' }) || iso;
 }
 
 function HashRow({ label, value }: { label: string; value: string }) {
@@ -58,7 +57,9 @@ export function SignatureVerificationPage() {
         const data = await fetchPublicSignatureVerification(verificationCode);
         if (!cancelled) setResult(data as VerificationResult);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Validação indisponível.');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t('signatureVerificationPage.unavailable'));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -66,11 +67,11 @@ export function SignatureVerificationPage() {
     return () => {
       cancelled = true;
     };
-  }, [verificationCode]);
+  }, [verificationCode, t]);
 
   if (loading) {
     return (
-      <GuestPortalShell subtitle="Validação de assinatura">
+      <GuestPortalShell subtitle={t('signatureVerificationPage.subtitle')}>
         <div className="guest-state" data-testid="signature-verification">
           <Icon
             name="progress_activity"
@@ -88,15 +89,17 @@ export function SignatureVerificationPage() {
   if (error || !result) {
     return (
       <GuestPortalShell
-        subtitle="Validação de assinatura"
-        footNote="A validação é pública: qualquer pessoa com o código pode conferir a assinatura."
+        subtitle={t('signatureVerificationPage.subtitle')}
+        footNote={t('signatureVerificationPage.footNote')}
       >
         <section className="guest-card guest-card--narrow" data-testid="signature-verification">
           <p className="register-label text-doqyn-subtle">
             {t('signatureVerificationPage.codigoNaoConfere')}
           </p>
           <h1 className="guest-title">{t('signatureVerificationPage.nenhumaAssinaturaComEste')}</h1>
-          <p className="type-body mt-3 text-doqyn-muted">{error ?? 'Assinatura não encontrada.'}</p>
+          <p className="type-body mt-3 text-doqyn-muted">
+            {error ?? t('signatureVerificationPage.notFound')}
+          </p>
           {verificationCode ? <p className="verify-code mt-6">{verificationCode}</p> : null}
           <p className="type-caption mt-6 text-doqyn-subtle">
             {t('signatureVerificationPage.confiraOCodigoImpresso')}
@@ -110,9 +113,15 @@ export function SignatureVerificationPage() {
 
   return (
     <GuestPortalShell
-      subtitle="Validação de assinatura"
-      headerAside={<GuestSeal>{valid ? 'Assinatura válida' : 'Assinatura inválida'}</GuestSeal>}
-      footNote="A validação é pública: qualquer pessoa com o código pode conferir a assinatura."
+      subtitle={t('signatureVerificationPage.subtitle')}
+      headerAside={
+        <GuestSeal>
+          {valid
+            ? t('signatureVerificationPage.sealValid')
+            : t('signatureVerificationPage.sealInvalid')}
+        </GuestSeal>
+      }
+      footNote={t('signatureVerificationPage.footNote')}
     >
       <section className="guest-card" data-testid="signature-verification">
         <p className="register-label text-doqyn-subtle">
@@ -123,12 +132,17 @@ export function SignatureVerificationPage() {
           <Icon name={valid ? 'verified' : 'gpp_maybe'} size={28} aria-hidden />
           <div className="min-w-0">
             <h1 className="guest-title">
-              {valid ? 'Esta assinatura é válida' : 'Esta assinatura não está válida'}
+              {valid
+                ? t('signatureVerificationPage.verdictValid')
+                : t('signatureVerificationPage.verdictInvalid')}
             </h1>
             <p className="type-body mt-1 text-doqyn-muted">
               {valid
-                ? `Assinada por ${result.signerNameMasked} em ${formatDateTime(result.signedAt)}.`
-                : 'O registro existe, mas foi invalidado ou cancelado depois de emitido.'}
+                ? t('signatureVerificationPage.signedByAt', {
+                    signer: result.signerNameMasked,
+                    date: formatDateTime(result.signedAt),
+                  })
+                : t('signatureVerificationPage.invalidatedDetail')}
             </p>
           </div>
         </div>
@@ -151,7 +165,11 @@ export function SignatureVerificationPage() {
           <GuestRegisterRow label={t('signatureVerificationPage.metodo')} value={result.method} />
           <GuestRegisterRow
             label={t('signatureVerificationPage.integridade')}
-            value={result.integrityStatus === 'ok' ? 'Conferida' : 'Invalidada'}
+            value={
+              result.integrityStatus === 'ok'
+                ? t('signatureVerificationPage.integrityOk')
+                : t('signatureVerificationPage.integrityInvalid')
+            }
             tone={result.integrityStatus === 'ok' ? 'default' : 'warning'}
           />
         </dl>

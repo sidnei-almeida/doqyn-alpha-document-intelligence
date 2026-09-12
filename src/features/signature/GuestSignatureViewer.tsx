@@ -20,12 +20,10 @@ type GuestSignatureViewerProps = {
   isDownloading?: boolean;
 };
 
-function viewerTypeBadge(viewerType: string | undefined): string | null {
-  if (viewerType === 'pdf_pages') return 'PDF';
-  if (viewerType === 'image') return 'Imagem';
-  if (viewerType === 'unsupported') return 'Sem preview';
-  return null;
-}
+const VIEWER_TYPE_BADGE_KEYS: Record<string, string> = {
+  image: 'shared.imageBadge',
+  unsupported: 'shared.noPreviewBadge',
+};
 
 export function GuestSignatureViewer({
   manifest,
@@ -49,10 +47,11 @@ export function GuestSignatureViewer({
   const ViewerComponent = useMemo(() => resolveViewerComponent(manifest), [manifest]);
   const isPdfViewer = manifest.viewerType === 'pdf_pages';
 
+  const badgeKey = manifest.viewerType ? VIEWER_TYPE_BADGE_KEYS[manifest.viewerType] : undefined;
   const subtitleParts = [
-    payload.versionLabel ? `Versão ${payload.versionLabel}` : '',
+    payload.versionLabel ? t('shared.versionLabel', { version: payload.versionLabel }) : '',
     payload.issuerName,
-    viewerTypeBadge(manifest.viewerType),
+    manifest.viewerType === 'pdf_pages' ? 'PDF' : badgeKey ? t(badgeKey) : null,
   ].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
 
@@ -66,7 +65,10 @@ export function GuestSignatureViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('shared.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {

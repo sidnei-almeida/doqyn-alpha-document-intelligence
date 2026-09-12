@@ -47,23 +47,14 @@ function mapRequestStatusToSummaryStatus(status: string): DocumentSignatureSumma
   return 'none';
 }
 
-function requestStatusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-    case 'partially_signed':
-      return 'Pendente';
-    case 'signed':
-      return 'Assinado';
-    case 'declined':
-      return 'Recusado';
-    case 'expired':
-      return 'Expirado';
-    case 'cancelled':
-      return 'Cancelado';
-    default:
-      return status;
-  }
-}
+const REQUEST_STATUS_KEYS: Record<string, string> = {
+  pending: 'documentSignaturesDrawer.status.pending',
+  partially_signed: 'documentSignaturesDrawer.status.pending',
+  signed: 'common:signatureStatus.signed',
+  declined: 'common:signatureStatus.declined',
+  expired: 'common:signatureStatus.expired',
+  cancelled: 'common:signatureStatus.cancelled',
+};
 
 function SignatureRequestCard({
   entry,
@@ -86,6 +77,7 @@ function SignatureRequestCard({
 
   const signer = entry.signers[0];
   const verificationCode = entry.signature?.verificationCode;
+  const statusKey = REQUEST_STATUS_KEYS[entry.status];
 
   return (
     <section className="rounded-[4px] border border-doqyn-border-subtle p-4">
@@ -93,7 +85,7 @@ function SignatureRequestCard({
         <Badge
           variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
         >
-          {requestStatusLabel(entry.status)}
+          {statusKey ? t(statusKey) : entry.status}
         </Badge>
         {verificationCode ? (
           <span className="font-mono text-micro text-doqyn-subtle">{verificationCode}</span>
@@ -254,7 +246,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar PDF assinado.');
+      setError(err instanceof Error ? err.message : t('shared.downloadSignedFailed'));
     } finally {
       setDownloadingSigned(null);
     }
@@ -268,18 +260,21 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       const url = URL.createObjectURL(blob);
       const anchor = window.document.createElement('a');
       anchor.href = url;
-      anchor.download = `evidencias-${signatureRequestId}.json`;
+      anchor.download = t('documentSignaturesDrawer.evidenceFileName', { id: signatureRequestId });
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar evidências.');
+      setError(
+        err instanceof Error ? err.message : t('documentSignaturesDrawer.downloadEvidenceFailed'),
+      );
     } finally {
       setDownloadingEvidence(null);
     }
   };
 
   const handleRevoke = async (entry: DocumentSignatureRequestEntry) => {
-    const signerName = entry.signers[0]?.name ?? 'signatário';
+    // Sem nome, a confirmação usa a própria frase de signatário sem nome.
+    const signerName = entry.signers[0]?.name ?? '';
     const confirmed = await confirm(buildRevokeSignatureRequestConfirm(signerName));
     if (!confirmed) return;
 
@@ -287,7 +282,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
     setError(null);
     try {
       await cancelDocumentSignatureRequest(document.documentId, entry.signatureRequestId);
-      toast.success('Solicitação de assinatura revogada.');
+      toast.success(t('documentSignaturesDrawer.revoked'));
       await refetch();
       await invalidateSignatureQueries(queryClient, tenant?.tenantId ?? user?.companyId);
     } catch (err) {
@@ -297,12 +292,12 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
           err.code === 'SIGNATURE_REQUEST_NOT_CANCELLABLE' ||
           err.message.toLowerCase().includes('not found'))
       ) {
-        toast.message('Esta solicitação já não está mais disponível. Atualizando lista…');
+        toast.message(t('documentSignaturesDrawer.alreadyGone'));
         await refetch();
         await invalidateSignatureQueries(queryClient, tenant?.tenantId ?? user?.companyId);
         return;
       }
-      setError(err instanceof Error ? err.message : 'Falha ao revogar solicitação.');
+      setError(err instanceof Error ? err.message : t('documentSignaturesDrawer.revokeFailed'));
     } finally {
       setRevokingId(null);
     }
@@ -315,7 +310,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       testId="document-signatures-drawer"
       overlayTestId="document-signatures-drawer-overlay"
       closeTestId="document-signatures-drawer-close"
-      closeAriaLabel="Fechar painel de assinaturas"
+      closeAriaLabel={t('documentSignaturesDrawer.closeAria')}
       zIndexClass="z-[90]"
       bodyClassName="py-4"
     >

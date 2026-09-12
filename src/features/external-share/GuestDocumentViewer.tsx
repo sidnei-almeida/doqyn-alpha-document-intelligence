@@ -19,12 +19,10 @@ type GuestDocumentViewerProps = {
   isDownloading: boolean;
 };
 
-function viewerTypeBadge(viewerType: string | undefined): string | null {
-  if (viewerType === 'pdf_pages') return 'PDF';
-  if (viewerType === 'image') return 'Imagem';
-  if (viewerType === 'unsupported') return 'Sem preview';
-  return null;
-}
+const VIEWER_TYPE_BADGE_KEYS: Record<string, string> = {
+  image: 'guestDocumentViewer.imageBadge',
+  unsupported: 'guestDocumentViewer.noPreviewBadge',
+};
 
 export function GuestDocumentViewer({
   manifest,
@@ -51,9 +49,15 @@ export function GuestDocumentViewer({
   const displayName = payload.document.displayName;
   const subtitleParts = [
     payload.document.categoryName,
-    payload.document.versionLabel ? `Versão ${payload.document.versionLabel}` : '',
+    payload.document.versionLabel
+      ? t('guestDocumentViewer.versionLabel', { version: payload.document.versionLabel })
+      : '',
     payload.ownerTenantName,
-    viewerTypeBadge(manifest.viewerType),
+    manifest.viewerType === 'pdf_pages'
+      ? 'PDF'
+      : manifest.viewerType && VIEWER_TYPE_BADGE_KEYS[manifest.viewerType]
+        ? t(VIEWER_TYPE_BADGE_KEYS[manifest.viewerType]!)
+        : null,
   ].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
 
@@ -69,7 +73,10 @@ export function GuestDocumentViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('guestDocumentViewer.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {

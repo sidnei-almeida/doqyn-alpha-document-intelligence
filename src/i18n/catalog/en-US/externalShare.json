@@ -7,7 +7,6 @@
     "categoria": "Category",
     "codigo": "Code",
     "compartilhadoEm": "Shared on",
-    "compartilhouEsteDocumentoCom": "shared this document with you on",
     "conviteDeAcesso": "Access invitation",
     "conviteIndisponivel": "Invitation unavailable",
     "esteLinkNaoAbre": "This link no longer opens",
@@ -16,9 +15,25 @@
     "opening": "Opening…",
     "pecaUmNovoLink": "Ask whoever shared the document with you for a new link.",
     "sharedByTenant": "{{name}} shared a document with you through {{tenant}}.",
-    "versao": "Version"
+    "versao": "Version",
+    "meta": {
+      "title": "Shared document · DOQYN",
+      "description": "Securely access a shared document on DOQYN."
+    },
+    "invalidLink": "Invalid link.",
+    "openFailed": "Couldn't open this shared document.",
+    "acceptFailed": "Couldn't accept this invitation.",
+    "downloadFileName": "document",
+    "subtitle": "Secure document access",
+    "footNote": "Access is limited to this document. Whoever shared it can revoke the link at any time.",
+    "noCategory": "No category",
+    "sharedWithYouIn": "{{name}} shared this document with you in {{tenant}}."
   },
   "guestDocumentViewer": {
-    "visualizacaoProtegidaDownloadIndisponivel": "Protected view. Download is not available with this invitation."
+    "visualizacaoProtegidaDownloadIndisponivel": "Protected view. Download is not available with this invitation.",
+    "versionLabel": "Version {{version}}",
+    "pageOf": "Page {{current}} of {{total}}",
+    "imageBadge": "Image",
+    "noPreviewBadge": "No preview"
   }
 }

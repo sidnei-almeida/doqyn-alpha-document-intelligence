@@ -11,6 +11,7 @@
  */
 import { i18n, initI18n } from '@/i18n';
 import ptErrors from '@/i18n/catalog/pt-BR/errors.json';
+import ptCommon from '@/i18n/catalog/pt-BR/common.json';
 
 export type ApiErrorDetails = Record<string, unknown>;
 
@@ -30,8 +31,23 @@ export type ApiErrorDetails = Record<string, unknown>;
  */
 const PASSTHROUGH_CODES = new Set(['VALIDATION_ERROR', 'NOT_FOUND', 'FORBIDDEN']);
 
-/** Última rede, quando nem o código nem o servidor disseram nada. */
-const GENERIC_FAILURE = 'Não foi possível concluir a ação agora. Tente novamente.';
+const FALLBACK_COMMON = ptCommon as { feedback: { genericFailure: string } };
+
+/**
+ * Última rede, quando nem o código nem o servidor disseram nada.
+ *
+ * Função, e não constante: a constante congelava a frase no idioma do momento em que o módulo
+ * carregou — sempre português, porque o módulo carrega antes de a sessão dizer o idioma.
+ */
+export function genericFailureMessage(): string {
+  initI18n();
+  const key = 'common:feedback.genericFailure';
+  if (i18n.isInitialized && i18n.exists(key)) {
+    const phrase = i18n.t(key);
+    if (typeof phrase === 'string' && phrase !== key) return phrase;
+  }
+  return FALLBACK_COMMON.feedback.genericFailure;
+}
 
 /**
  * Garante que o i18n existe antes de perguntar ao catálogo.
@@ -84,10 +100,10 @@ export function getFriendlyAuthErrorMessage(
   const server = fallbackMessage?.trim();
 
   if (PASSTHROUGH_CODES.has(code)) {
-    return server || phrase || GENERIC_FAILURE;
+    return server || phrase || genericFailureMessage();
   }
 
-  return phrase ?? server ?? GENERIC_FAILURE;
+  return phrase ?? server ?? genericFailureMessage();
 }
 
 /**

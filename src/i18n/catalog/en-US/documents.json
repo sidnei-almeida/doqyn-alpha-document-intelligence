@@ -80,7 +80,36 @@
     "tipoDeDestinatario": "Recipient type",
     "todoMundoDaEmpresa": "Everyone at the company",
     "trocar": "Change",
-    "validoAte": "Valid until"
+    "validoAte": "Valid until",
+    "steps": {
+      "conditions": "Conditions",
+      "confirm": "Confirm"
+    },
+    "audienceInternal": "From your company",
+    "audienceDoqyn": "Another DOQYN account",
+    "audienceExternal": "External guest",
+    "noMatch": "No one found with that name or email.",
+    "invalidPhone": "Enter a valid phone number with country code, e.g. +1 555 123 4567.",
+    "copyLink": "Copy link",
+    "yes": "Yes",
+    "no": "No",
+    "summaryDocument": "Document",
+    "summaryValidUntil": "Valid until",
+    "summaryMessage": "Message",
+    "describe": {
+      "internal": "{{name}} (your workspace)",
+      "doqyn": "{{name}} (another DOQYN account)",
+      "external": "{{name}} (external guest)"
+    },
+    "name": "Name",
+    "nameOptional": "Name (optional)",
+    "emailPlaceholder": "person@company.com",
+    "messageOptional": "Message (optional)",
+    "guestLink": "Guest link",
+    "copy": "Copy",
+    "copied": "Copied",
+    "sending": "Sending…",
+    "continue": "Continue"
   },
   "transferOwnershipModal": {
     "cancelar": "Cancel",

@@ -39,7 +39,7 @@ export function InternalSignatureViewer({
   const isPdfViewer = manifest.viewerType === 'pdf_pages';
 
   const subtitleParts = [
-    payload.versionLabel ? `Versão ${payload.versionLabel}` : '',
+    payload.versionLabel ? t('shared.versionLabel', { version: payload.versionLabel }) : '',
     payload.issuerName,
   ].filter(Boolean);
 
@@ -53,7 +53,10 @@ export function InternalSignatureViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('shared.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {

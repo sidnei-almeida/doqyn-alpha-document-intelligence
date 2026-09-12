@@ -15,7 +15,16 @@
     "signatario": "Signatário",
     "solicitadoEm": "Solicitado em",
     "solicitadoPor": "Solicitado por",
-    "tentarNovamente": "Tentar novamente"
+    "tentarNovamente": "Tentar novamente",
+    "status": {
+      "pending": "Pendente"
+    },
+    "downloadEvidenceFailed": "Falha ao baixar evidências.",
+    "evidenceFileName": "evidencias-{{id}}.json",
+    "revoked": "Solicitação de assinatura revogada.",
+    "alreadyGone": "Esta solicitação já não está mais disponível. Atualizando lista…",
+    "revokeFailed": "Falha ao revogar solicitação.",
+    "closeAria": "Fechar painel de assinaturas"
   },
   "guestSignatureViewer": {
     "visualizacaoProtegidaLeiaO": "Visualização protegida. Leia o documento antes de assinar."
@@ -40,7 +49,10 @@
     "validarAssinatura": "Validar assinatura",
     "voltar": "Voltar",
     "voltarParaParaAssinar": "Voltar para Para assinar",
-    "voltarParaParaAssinar2": "Voltar para Para assinar"
+    "voltarParaParaAssinar2": "Voltar para Para assinar",
+    "invalidRequest": "Solicitação inválida.",
+    "requestUnavailable": "Solicitação indisponível.",
+    "previewErrorSuffix": "{{message}} Você ainda pode prosseguir com a assinatura após confirmar o aceite."
   },
   "internalSignatureViewer": {
     "visualizacaoProtegidaParaAssinatura": "Visualização protegida para assinatura interna."
@@ -48,16 +60,46 @@
   "requestSignatureModal": {
     "assinaturasDesteDocumento": "Assinaturas deste documento",
     "assinaturasDesteDocumento2": "Assinaturas deste documento",
-    "enquantoASolicitacaoEstiver": ". Enquanto a solicitação estiver aberta,\n                este link pode ser copiado de novo na lista abaixo.",
     "linkDoPortalDe": "Link do portal de assinatura",
     "naoEDaquiBuscar": "Não é daqui? Buscar por nome de usuário",
     "nomeDeUsuarioDe": "Nome de usuário de quem vai assinar",
-    "recebeuASolicitacaoE": "recebeu a solicitação e vê o documento em “Para assinar”.",
     "solicitarAssinatura": "Solicitar assinatura",
-    "valeAte": "Vale até"
+    "steps": {
+      "signer": "Quem assina"
+    },
+    "status": {
+      "pending": "aguardando",
+      "partiallySigned": "parcial",
+      "signed": "assinado",
+      "declined": "recusado",
+      "expired": "expirado",
+      "cancelled": "cancelado"
+    },
+    "createFailed": "Não foi possível criar a solicitação.",
+    "cancelledTitle": "Solicitação cancelada",
+    "cancelledMessage": "O signatário perdeu o acesso.",
+    "cancelFailed": "Não foi possível cancelar a solicitação.",
+    "signerFallback": "Signatário",
+    "rowRequested": "{{email}} · pedido em {{createdAt}}",
+    "rowRequestedExpires": "{{email}} · pedido em {{createdAt}} · expira {{expiresAt}}",
+    "submit": "Criar solicitação",
+    "emptyRequests": "Nenhuma solicitação ainda.",
+    "crossTenantHint": "Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo.",
+    "fallbackInvite": "Convidar por link",
+    "expiresHint": "Passado o prazo, a solicitação expira e o documento não pode mais ser assinado por ela.",
+    "toggleDownloadLabel": "Permitir baixar o PDF assinado",
+    "toggleDownloadDescription": "Quem assinou pode guardar uma cópia com o carimbo de assinatura.",
+    "messagePlaceholder": "O que a pessoa precisa saber antes de assinar.",
+    "summary": {
+      "signer": "Quem assina",
+      "downloadAfter": "Baixar após assinar"
+    },
+    "noteInternal": "A pessoa passa a ver o documento em “{{section}}”.",
+    "noteExternal": "O link do portal é gerado agora e fica disponível para copiar enquanto a solicitação estiver aberta.",
+    "issuedValidUntil": "Vale até {{date}}. Enquanto a solicitação estiver aberta, este link pode ser copiado de novo na lista abaixo.",
+    "internalDone": "{{name}} recebeu a solicitação e vê o documento em “{{section}}”."
   },
   "signaturePortalPage": {
-    "aSolicitacaoEDa": "A solicitação é da versão",
     "abrindoASolicitacao": "Abrindo a solicitação…",
     "abrindoODocumento": "Abrindo o documento…",
     "aoAssinar": "Ao assinar",
@@ -74,7 +116,6 @@
     "documentoCarregado": "Documento carregado",
     "eMail": "E-mail",
     "esteLinkNaoAbre": "Este link não abre mais",
-    "oDocumentoJaTem": "; o documento já tem versão mais\n                  nova.",
     "oPdfRecebeO": "O PDF recebe o carimbo da assinatura e um código de verificação público.",
     "oQueVoceVai": "O que você vai assinar",
     "pecaUmaNovaSolicitacao": "Peça uma nova solicitação a quem pediu a sua assinatura.",
@@ -85,7 +126,30 @@
     "solicitadoPor": "Solicitado por",
     "validarEstaAssinatura": "Validar esta assinatura",
     "versao": "Versão",
-    "voltar": "Voltar"
+    "voltar": "Voltar",
+    "steps": {
+      "read": "Ler o documento",
+      "declare": "Declarar o aceite",
+      "sign": "Assinar"
+    },
+    "meta": {
+      "title": "Assinatura · DOQYN",
+      "description": "Assine documentos com segurança e rastreabilidade no DOQYN.",
+      "titleDocument": "Assinar: {{document}} · DOQYN",
+      "titleDocumentVersion": "Assinar: {{document}} · {{version}} · DOQYN",
+      "descriptionIssuer": "{{issuer}} solicitou sua assinatura neste documento."
+    },
+    "invalidLink": "Link inválido.",
+    "invalidInvite": "Convite inválido.",
+    "subtitle": "Assinatura eletrônica",
+    "footNoteSigned": "A assinatura fica registrada com data, hora e evidências técnicas de auditoria.",
+    "footNotePending": "Ao assinar, seu aceite é registrado com data, hora e evidências técnicas de auditoria.",
+    "previewErrorSuffix": "{{message}} Você ainda pode assinar depois de declarar o aceite.",
+    "staleVersion": "A solicitação é da versão {{version}}; o documento já tem versão mais nova.",
+    "factDownloadAllowed": "Você poderá baixar o PDF assinado nesta mesma tela.",
+    "factDownloadHeld": "O documento assinado fica com quem solicitou a assinatura.",
+    "downloading": "Baixando…",
+    "downloadSignedPdf": "Baixar PDF assinado"
   },
   "signatureVerificationPage": {
     "asImpressoesDigitaisAbaixo": "As impressões digitais abaixo identificam o arquivo. Confira-as contra o documento que\n            você tem em mãos para saber se é exatamente o mesmo que foi assinado.",
@@ -100,13 +164,49 @@
     "nenhumaAssinaturaComEste": "Nenhuma assinatura com este código",
     "sha256DoAssinado": "SHA-256 do assinado",
     "sha256DoOriginal": "SHA-256 do original",
-    "signatario": "Signatário"
+    "signatario": "Signatário",
+    "subtitle": "Validação de assinatura",
+    "footNote": "A validação é pública: qualquer pessoa com o código pode conferir a assinatura.",
+    "unavailable": "Validação indisponível.",
+    "notFound": "Assinatura não encontrada.",
+    "sealValid": "Assinatura válida",
+    "sealInvalid": "Assinatura inválida",
+    "verdictValid": "Esta assinatura é válida",
+    "verdictInvalid": "Esta assinatura não está válida",
+    "signedByAt": "Assinada por {{signer}} em {{date}}.",
+    "invalidatedDetail": "O registro existe, mas foi invalidado ou cancelado depois de emitido.",
+    "integrityOk": "Conferida",
+    "integrityInvalid": "Invalidada"
   },
   "signaturesAssignedPanel": {
     "abrirEAssinar": "Abrir e assinar",
     "nadaAguardandoSuaAssinatura": "Nada aguardando sua assinatura",
     "naoFoiPossivelCarregar": "Não foi possível carregar as assinaturas pendentes.",
     "quandoAlguemPedirSua": "Quando alguém pedir sua assinatura, o documento aparece aqui.",
-    "solicitadoPor": "Solicitado por"
+    "requestedBy": "Solicitado por {{name}}",
+    "requestedByVersion": "Solicitado por {{name}} · v{{version}}",
+    "expires": "{{requestedAt}} · expira {{expiresAt}}"
+  },
+  "shared": {
+    "previewNotAllowed": "Visualização não permitida para esta solicitação.",
+    "previewUnavailable": "Não foi possível gerar a visualização deste documento. Você ainda pode prosseguir com a assinatura após ler os dados abaixo.",
+    "previewLoadFailed": "Não foi possível carregar o preview do documento.",
+    "signFailed": "Falha ao assinar.",
+    "downloadSignedFailed": "Falha ao baixar PDF assinado.",
+    "signedFileName": "documento-assinado.pdf",
+    "documentFallback": "Documento",
+    "versionLabel": "Versão {{version}}",
+    "pageOf": "Página {{current}} de {{total}}",
+    "imageBadge": "Imagem",
+    "noPreviewBadge": "Sem preview",
+    "review": {
+      "document": "Documento",
+      "name": "Nome",
+      "version": "Versão",
+      "requester": "Solicitante",
+      "signer": "Signatário",
+      "email": "E-mail",
+      "attention": "Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
+    }
   }
 }

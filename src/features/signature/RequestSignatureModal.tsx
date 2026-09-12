@@ -41,8 +41,11 @@ import {
 import { invalidateSignatureQueries } from './utils/invalidateSignatureQueries';
 import { useTranslation } from 'react-i18next';
 
-const STEPS = ['Quem assina', 'Condições', 'Confirmar'];
-const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
+const STEP_KEYS = [
+  'requestSignatureModal.steps.signer',
+  'documents:recipientFlow.steps.conditions',
+  'documents:recipientFlow.steps.confirm',
+];
 
 type RequestSignatureModalProps = {
   open: boolean;
@@ -61,24 +64,14 @@ type RequestSignatureModalProps = {
   onCreated?: () => void;
 };
 
-function requestStatusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-      return 'aguardando';
-    case 'partially_signed':
-      return 'parcial';
-    case 'signed':
-      return 'assinado';
-    case 'declined':
-      return 'recusado';
-    case 'expired':
-      return 'expirado';
-    case 'cancelled':
-      return 'cancelado';
-    default:
-      return status;
-  }
-}
+const REQUEST_STATUS_KEYS: Record<string, string> = {
+  pending: 'requestSignatureModal.status.pending',
+  partially_signed: 'requestSignatureModal.status.partiallySigned',
+  signed: 'requestSignatureModal.status.signed',
+  declined: 'requestSignatureModal.status.declined',
+  expired: 'requestSignatureModal.status.expired',
+  cancelled: 'requestSignatureModal.status.cancelled',
+};
 
 export function RequestSignatureModal({
   open,
@@ -87,11 +80,13 @@ export function RequestSignatureModal({
   onClose,
   onCreated,
 }: RequestSignatureModalProps) {
-  const { t } = useTranslation('signature');
+  // `documents` junto: as etapas e rótulos comuns aos dois fluxos de envio moram lá.
+  const { t } = useTranslation(['signature', 'documents']);
 
+  const steps = STEP_KEYS.map((key) => t(key));
   const documentId = document?.id ?? null;
   const queryClient = useQueryClient();
-  const flow = useStepFlow(STEPS.length, open);
+  const flow = useStepFlow(steps.length, open);
   const { tenant } = useAuth();
   /**
    * Em PF não há colega para assinar: o tenant tem um usuário só, e pedir assinatura a si mesmo
@@ -174,7 +169,7 @@ export function RequestSignatureModal({
         expiresAt: expirationDateToIso(expiresAt),
         permissions: { canDownloadAfterSign },
       }),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível criar a solicitação.'),
+    onError: (error) => showApiErrorToast(error, t('requestSignatureModal.createFailed')),
     onSettled: invalidate,
   });
 
@@ -184,10 +179,10 @@ export function RequestSignatureModal({
     onSuccess: () =>
       showAppToast({
         type: 'success',
-        title: 'Solicitação cancelada',
-        message: 'O signatário perdeu o acesso.',
+        title: t('requestSignatureModal.cancelledTitle'),
+        message: t('requestSignatureModal.cancelledMessage'),
       }),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível cancelar a solicitação.'),
+    onError: (error) => showApiErrorToast(error, t('requestSignatureModal.cancelFailed')),
     onSettled: invalidate,
   });
 
@@ -221,7 +216,9 @@ export function RequestSignatureModal({
   }, [open]);
 
   const phoneError =
-    external.phone && !isCompleteWhatsapp(external.phone) ? INVALID_PHONE_MESSAGE : undefined;
+    external.phone && !isCompleteWhatsapp(external.phone)
+      ? t('documents:recipientFlow.invalidPhone')
+      : undefined;
 
   const canAdvance = useMemo(() => {
     if (flow.step === 0) {
@@ -262,18 +259,30 @@ export function RequestSignatureModal({
     const signer = request.signers[0];
     const portalUrl = (request as { portalUrl?: string | null }).portalUrl ?? null;
     const open = request.status === 'pending' || request.status === 'partially_signed';
+    const statusKey = REQUEST_STATUS_KEYS[request.status];
+    const email = signer?.emailMasked ?? '—';
     return {
       id: request.signatureRequestId,
-      primary: signer?.name ?? 'Signatário',
-      secondary: `${signer?.emailMasked ?? '—'} · pedido em ${formatDateTime(request.createdAt)}${
-        request.expiresAt ? ` · expira ${formatDateTime(request.expiresAt)}` : ''
-      }`,
-      status: { label: requestStatusLabel(request.status), tone: statusTone(request.status) },
+      primary: signer?.name ?? t('requestSignatureModal.signerFallback'),
+      secondary: request.expiresAt
+        ? t('requestSignatureModal.rowRequestedExpires', {
+            email,
+            createdAt: formatDateTime(request.createdAt),
+            expiresAt: formatDateTime(request.expiresAt),
+          })
+        : t('requestSignatureModal.rowRequested', {
+            email,
+            createdAt: formatDateTime(request.createdAt),
+          }),
+      status: {
+        label: statusKey ? t(statusKey) : request.status,
+        tone: statusTone(request.status),
+      },
       actions: [
         ...(portalUrl && open
           ? [
               {
-                label: 'Copiar link',
+                label: t('documents:recipientFlow.copyLink'),
                 onClick: () => void navigator.clipboard.writeText(portalUrl),
               },
             ]
@@ -281,7 +290,7 @@ export function RequestSignatureModal({
         ...(open
           ? [
               {
-                label: 'Cancelar',
+                label: t('common:actions.cancel'),
                 tone: 'danger' as const,
                 disabled: cancelRequest.isPending,
                 onClick: () => cancelRequest.mutate(request.signatureRequestId),
@@ -312,17 +321,17 @@ export function RequestSignatureModal({
       }
       toolbar={
         finished ? undefined : (
-          <StepTrack steps={STEPS} current={flow.step} onSelect={flow.setStep} />
+          <StepTrack steps={steps} current={flow.step} onSelect={flow.setStep} />
         )
       }
       footer={
         finished ? null : (
           <FlowFooter
             step={flow.step}
-            stepCount={STEPS.length}
+            stepCount={steps.length}
             canAdvance={canAdvance}
             submitting={createRequest.isPending}
-            submitLabel="Criar solicitação"
+            submitLabel={t('requestSignatureModal.submit')}
             onBack={flow.back}
             onNext={flow.next}
             onSubmit={() => void handleSubmit()}
@@ -337,18 +346,22 @@ export function RequestSignatureModal({
             <>
               <IssuedLink url={issuedUrl} label={t('requestSignatureModal.linkDoPortalDe')} />
               <p className="type-caption text-doqyn-muted">
-                {t('requestSignatureModal.valeAte')} {formatExpirationDate(expiresAt)}
-                {t('requestSignatureModal.enquantoASolicitacaoEstiver')}
+                {t('requestSignatureModal.issuedValidUntil', {
+                  date: formatExpirationDate(expiresAt),
+                })}
               </p>
             </>
           ) : (
             <p className="type-body text-doqyn-text">
-              {recipient.label} {t('requestSignatureModal.recebeuASolicitacaoE')}
+              {t('requestSignatureModal.internalDone', {
+                name: recipient.label,
+                section: t('common:nav.assinaturas'),
+              })}
             </p>
           )}
           <AccessList
             title={t('requestSignatureModal.assinaturasDesteDocumento')}
-            emptyLabel="Nenhuma solicitação ainda."
+            emptyLabel={t('requestSignatureModal.emptyRequests')}
             rows={accessRows}
           />
         </div>
@@ -359,9 +372,11 @@ export function RequestSignatureModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
-                doqynLabel="Outra conta DOQYN"
-                externalLabel="Convidado externo"
+                internalLabel={
+                  hasInternalAudience ? t('documents:recipientFlow.audienceInternal') : undefined
+                }
+                doqynLabel={t('documents:recipientFlow.audienceDoqyn')}
+                externalLabel={t('documents:recipientFlow.audienceExternal')}
               />
               {audience === 'doqyn' ? (
                 /* Aba própria, e não um rodapé da busca de colegas — ver o mesmo comentário em
@@ -370,13 +385,13 @@ export function RequestSignatureModal({
                    acervo, então aqui não há aceite a esperar. */
                 <CrossTenantRecipientField
                   label={t('requestSignatureModal.nomeDeUsuarioDe')}
-                  idleHint="Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo."
+                  idleHint={t('requestSignatureModal.crossTenantHint')}
                   onPick={setCrossTenantSigner}
                   onFallbackToLink={(email) => {
                     setAudience('external');
                     setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
                   }}
-                  fallbackLabel="Convidar por link"
+                  fallbackLabel={t('requestSignatureModal.fallbackInvite')}
                 />
               ) : audience === 'internal' ? (
                 <InternalRecipientPicker
@@ -391,7 +406,7 @@ export function RequestSignatureModal({
                   }))}
                   selected={internalPick}
                   onSelect={setInternalPick}
-                  emptyLabel="Ninguém encontrado com esse nome ou e-mail."
+                  emptyLabel={t('documents:recipientFlow.noMatch')}
                   emptyAction={
                     <Button
                       type="button"
@@ -413,7 +428,7 @@ export function RequestSignatureModal({
               )}
               <AccessList
                 title={t('requestSignatureModal.assinaturasDesteDocumento2')}
-                emptyLabel="Nenhuma solicitação ainda."
+                emptyLabel={t('requestSignatureModal.emptyRequests')}
                 rows={accessRows}
               />
             </div>
@@ -423,39 +438,58 @@ export function RequestSignatureModal({
             <ConditionsStep
               expiresAt={expiresAt}
               onExpiresAtChange={setExpiresAt}
-              expiresHint="Passado o prazo, a solicitação expira e o documento não pode mais ser assinado por ela."
+              expiresHint={t('requestSignatureModal.expiresHint')}
               toggles={[
                 {
                   id: 'download-after-sign',
-                  label: 'Permitir baixar o PDF assinado',
-                  description: 'Quem assinou pode guardar uma cópia com o carimbo de assinatura.',
+                  label: t('requestSignatureModal.toggleDownloadLabel'),
+                  description: t('requestSignatureModal.toggleDownloadDescription'),
                   checked: canDownloadAfterSign,
                   onChange: setCanDownloadAfterSign,
                 },
               ]}
               message={message}
               onMessageChange={setMessage}
-              messagePlaceholder="O que a pessoa precisa saber antes de assinar."
+              messagePlaceholder={t('requestSignatureModal.messagePlaceholder')}
             />
           ) : null}
 
           {flow.step === 2 ? (
             <SummaryStep
               rows={[
-                { label: 'Documento', value: document.currentFileName || document.displayName },
+                {
+                  label: t('shared.review.document'),
+                  value: document.currentFileName || document.displayName,
+                },
                 // Três origens, três rótulos: dizer "convidado externo" para uma conta DOQYN de
                 // outra empresa nomeia certo a pessoa e errado o caminho dela.
-                { label: 'Quem assina', value: describeRecipient(recipient) },
-                { label: 'Baixar após assinar', value: canDownloadAfterSign ? 'Sim' : 'Não' },
-                { label: 'Válido até', value: formatExpirationDate(expiresAt) },
-                { label: 'Mensagem', value: message.trim() || '—' },
+                {
+                  label: t('requestSignatureModal.summary.signer'),
+                  value: describeRecipient(recipient),
+                },
+                {
+                  label: t('requestSignatureModal.summary.downloadAfter'),
+                  value: canDownloadAfterSign
+                    ? t('documents:recipientFlow.yes')
+                    : t('documents:recipientFlow.no'),
+                },
+                {
+                  label: t('documents:recipientFlow.summaryValidUntil'),
+                  value: formatExpirationDate(expiresAt),
+                },
+                {
+                  label: t('documents:recipientFlow.summaryMessage'),
+                  value: message.trim() || '—',
+                },
               ]}
               note={
                 // "Para assinar" só lista o que está no tenant de quem abre a lista, então quem é
                 // de outra empresa nunca acha o pedido por lá: o link é o caminho dela também.
                 recipient.audience === 'internal'
-                  ? 'A pessoa passa a ver o documento em “Para assinar”.'
-                  : 'O link do portal é gerado agora e fica disponível para copiar enquanto a solicitação estiver aberta.'
+                  ? t('requestSignatureModal.noteInternal', {
+                      section: t('common:nav.assinaturas'),
+                    })
+                  : t('requestSignatureModal.noteExternal')
               }
             />
           ) : null}

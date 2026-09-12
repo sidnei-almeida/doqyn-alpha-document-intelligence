@@ -15,7 +15,16 @@
     "signatario": "Firmante",
     "solicitadoEm": "Solicitado el",
     "solicitadoPor": "Solicitado por",
-    "tentarNovamente": "Intentar de nuevo"
+    "tentarNovamente": "Intentar de nuevo",
+    "status": {
+      "pending": "Pendiente"
+    },
+    "downloadEvidenceFailed": "No fue posible descargar las evidencias.",
+    "evidenceFileName": "evidencias-{{id}}.json",
+    "revoked": "Solicitud de firma revocada.",
+    "alreadyGone": "Esta solicitud ya no está disponible. Actualizando la lista…",
+    "revokeFailed": "No fue posible revocar la solicitud.",
+    "closeAria": "Cerrar panel de firmas"
   },
   "guestSignatureViewer": {
     "visualizacaoProtegidaLeiaO": "Vista protegida. Lee el documento antes de firmar."
@@ -40,7 +49,10 @@
     "validarAssinatura": "Validar firma",
     "voltar": "Volver",
     "voltarParaParaAssinar": "Volver a «Para firmar»",
-    "voltarParaParaAssinar2": "Volver a «Para firmar»"
+    "voltarParaParaAssinar2": "Volver a «Para firmar»",
+    "invalidRequest": "Solicitud no válida.",
+    "requestUnavailable": "Solicitud no disponible.",
+    "previewErrorSuffix": "{{message}} Aún puedes continuar con la firma después de confirmar la aceptación."
   },
   "internalSignatureViewer": {
     "visualizacaoProtegidaParaAssinatura": "Vista protegida para firma interna."
@@ -48,16 +60,46 @@
   "requestSignatureModal": {
     "assinaturasDesteDocumento": "Firmas de este documento",
     "assinaturasDesteDocumento2": "Firmas de este documento",
-    "enquantoASolicitacaoEstiver": ". Mientras la solicitud esté abierta, este enlace puede copiarse de nuevo en la lista de abajo.",
     "linkDoPortalDe": "Enlace del portal de firma",
     "naoEDaquiBuscar": "¿No es de aquí? Buscar por nombre de usuario",
     "nomeDeUsuarioDe": "Nombre de usuario de quien va a firmar",
-    "recebeuASolicitacaoE": "recibió la solicitud y ve el documento en «Para firmar».",
     "solicitarAssinatura": "Solicitar firma",
-    "valeAte": "Válido hasta"
+    "steps": {
+      "signer": "Firmante"
+    },
+    "status": {
+      "pending": "pendiente",
+      "partiallySigned": "parcial",
+      "signed": "firmado",
+      "declined": "rechazado",
+      "expired": "vencido",
+      "cancelled": "cancelado"
+    },
+    "createFailed": "No fue posible crear la solicitud.",
+    "cancelledTitle": "Solicitud cancelada",
+    "cancelledMessage": "El firmante perdió el acceso.",
+    "cancelFailed": "No fue posible cancelar la solicitud.",
+    "signerFallback": "Firmante",
+    "rowRequested": "{{email}} · solicitado el {{createdAt}}",
+    "rowRequestedExpires": "{{email}} · solicitado el {{createdAt}} · vence el {{expiresAt}}",
+    "submit": "Crear solicitud",
+    "emptyRequests": "Aún no hay solicitudes.",
+    "crossTenantHint": "Quien tiene cuenta DOQYN se encuentra por su nombre de usuario; el correo completo también funciona. Firma desde su propia página, sin entrar en tus documentos.",
+    "fallbackInvite": "Invitar por enlace",
+    "expiresHint": "Pasado el plazo, la solicitud vence y el documento ya no puede firmarse a través de ella.",
+    "toggleDownloadLabel": "Permitir descargar el PDF firmado",
+    "toggleDownloadDescription": "Quien firmó puede guardar una copia con el sello de firma.",
+    "messagePlaceholder": "Lo que la persona necesita saber antes de firmar.",
+    "summary": {
+      "signer": "Firmante",
+      "downloadAfter": "Descargar después de firmar"
+    },
+    "noteInternal": "La persona pasará a ver el documento en «{{section}}».",
+    "noteExternal": "El enlace del portal se genera ahora y queda disponible para copiar mientras la solicitud esté abierta.",
+    "issuedValidUntil": "Válido hasta {{date}}. Mientras la solicitud esté abierta, este enlace puede copiarse de nuevo en la lista de abajo.",
+    "internalDone": "{{name}} recibió la solicitud y ve el documento en «{{section}}»."
   },
   "signaturePortalPage": {
-    "aSolicitacaoEDa": "La solicitud es de la versión",
     "abrindoASolicitacao": "Abriendo la solicitud…",
     "abrindoODocumento": "Abriendo el documento…",
     "aoAssinar": "Al firmar",
@@ -74,7 +116,6 @@
     "documentoCarregado": "Documento cargado",
     "eMail": "Correo electrónico",
     "esteLinkNaoAbre": "Este enlace ya no abre",
-    "oDocumentoJaTem": "; el documento ya tiene una versión más nueva.",
     "oPdfRecebeO": "El PDF recibe el sello de la firma y un código de verificación público.",
     "oQueVoceVai": "Lo que vas a firmar",
     "pecaUmaNovaSolicitacao": "Pide una nueva solicitud a quien pidió tu firma.",
@@ -85,7 +126,30 @@
     "solicitadoPor": "Solicitado por",
     "validarEstaAssinatura": "Validar esta firma",
     "versao": "Versión",
-    "voltar": "Volver"
+    "voltar": "Volver",
+    "steps": {
+      "read": "Leer el documento",
+      "declare": "Declarar la aceptación",
+      "sign": "Firmar"
+    },
+    "meta": {
+      "title": "Firma · DOQYN",
+      "description": "Firma documentos con seguridad y trazabilidad en DOQYN.",
+      "titleDocument": "Firmar: {{document}} · DOQYN",
+      "titleDocumentVersion": "Firmar: {{document}} · {{version}} · DOQYN",
+      "descriptionIssuer": "{{issuer}} solicitó tu firma en este documento."
+    },
+    "invalidLink": "Enlace no válido.",
+    "invalidInvite": "Invitación no válida.",
+    "subtitle": "Firma electrónica",
+    "footNoteSigned": "La firma queda registrada con fecha, hora y evidencias técnicas de auditoría.",
+    "footNotePending": "Al firmar, tu aceptación queda registrada con fecha, hora y evidencias técnicas de auditoría.",
+    "previewErrorSuffix": "{{message}} Aún puedes firmar después de declarar la aceptación.",
+    "staleVersion": "La solicitud es de la versión {{version}}; el documento ya tiene una versión más nueva.",
+    "factDownloadAllowed": "Podrás descargar el PDF firmado en esta misma pantalla.",
+    "factDownloadHeld": "El documento firmado queda con quien solicitó la firma.",
+    "downloading": "Descargando…",
+    "downloadSignedPdf": "Descargar PDF firmado"
   },
   "signatureVerificationPage": {
     "asImpressoesDigitaisAbaixo": "Las huellas digitales de abajo identifican el archivo. Compáralas con el documento que tienes en mano para saber si es exactamente el mismo que se firmó.",
@@ -100,13 +164,49 @@
     "nenhumaAssinaturaComEste": "Ninguna firma con este código",
     "sha256DoAssinado": "SHA-256 del firmado",
     "sha256DoOriginal": "SHA-256 del original",
-    "signatario": "Firmante"
+    "signatario": "Firmante",
+    "subtitle": "Validación de firma",
+    "footNote": "La validación es pública: cualquier persona con el código puede verificar la firma.",
+    "unavailable": "Validación no disponible.",
+    "notFound": "Firma no encontrada.",
+    "sealValid": "Firma válida",
+    "sealInvalid": "Firma no válida",
+    "verdictValid": "Esta firma es válida",
+    "verdictInvalid": "Esta firma no es válida",
+    "signedByAt": "Firmada por {{signer}} el {{date}}.",
+    "invalidatedDetail": "El registro existe, pero fue invalidado o cancelado después de emitido.",
+    "integrityOk": "Verificada",
+    "integrityInvalid": "Invalidada"
   },
   "signaturesAssignedPanel": {
     "abrirEAssinar": "Abrir y firmar",
     "nadaAguardandoSuaAssinatura": "Nada esperando tu firma",
     "naoFoiPossivelCarregar": "No se pudieron cargar las firmas pendientes.",
     "quandoAlguemPedirSua": "Cuando alguien pida tu firma, el documento aparece aquí.",
-    "solicitadoPor": "Solicitado por"
+    "requestedBy": "Solicitado por {{name}}",
+    "requestedByVersion": "Solicitado por {{name}} · v{{version}}",
+    "expires": "{{requestedAt}} · vence el {{expiresAt}}"
+  },
+  "shared": {
+    "previewNotAllowed": "La visualización no está permitida para esta solicitud.",
+    "previewUnavailable": "No fue posible generar la vista previa de este documento. Aún puedes continuar con la firma después de leer los datos de abajo.",
+    "previewLoadFailed": "No fue posible cargar la vista previa del documento.",
+    "signFailed": "No fue posible firmar.",
+    "downloadSignedFailed": "No fue posible descargar el PDF firmado.",
+    "signedFileName": "documento-firmado.pdf",
+    "documentFallback": "Documento",
+    "versionLabel": "Versión {{version}}",
+    "pageOf": "Página {{current}} de {{total}}",
+    "imageBadge": "Imagen",
+    "noPreviewBadge": "Sin vista previa",
+    "review": {
+      "document": "Documento",
+      "name": "Nombre",
+      "version": "Versión",
+      "requester": "Solicitante",
+      "signer": "Firmante",
+      "email": "Correo electrónico",
+      "attention": "Esta acción es definitiva. El documento se firmará electrónicamente con registro de auditoría."
+    }
   }
 }

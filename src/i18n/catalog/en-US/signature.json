@@ -15,7 +15,16 @@
     "signatario": "Signer",
     "solicitadoEm": "Requested on",
     "solicitadoPor": "Requested by",
-    "tentarNovamente": "Try again"
+    "tentarNovamente": "Try again",
+    "status": {
+      "pending": "Pending"
+    },
+    "downloadEvidenceFailed": "Couldn't download the evidence.",
+    "evidenceFileName": "evidence-{{id}}.json",
+    "revoked": "Signature request revoked.",
+    "alreadyGone": "This request is no longer available. Refreshing the list…",
+    "revokeFailed": "Couldn't revoke the request.",
+    "closeAria": "Close signatures panel"
   },
   "guestSignatureViewer": {
     "visualizacaoProtegidaLeiaO": "Protected view. Read the document before signing."
@@ -40,7 +49,10 @@
     "validarAssinatura": "Validate signature",
     "voltar": "Back",
     "voltarParaParaAssinar": "Back to “To sign”",
-    "voltarParaParaAssinar2": "Back to “To sign”"
+    "voltarParaParaAssinar2": "Back to “To sign”",
+    "invalidRequest": "Invalid request.",
+    "requestUnavailable": "Request unavailable.",
+    "previewErrorSuffix": "{{message}} You can still go ahead and sign after confirming your acceptance."
   },
   "internalSignatureViewer": {
     "visualizacaoProtegidaParaAssinatura": "Protected view for internal signing."
@@ -48,16 +60,46 @@
   "requestSignatureModal": {
     "assinaturasDesteDocumento": "Signatures on this document",
     "assinaturasDesteDocumento2": "Signatures on this document",
-    "enquantoASolicitacaoEstiver": ". While the request is open, this link can be copied again from the list below.",
     "linkDoPortalDe": "Signature portal link",
     "naoEDaquiBuscar": "Not from here? Search by username",
     "nomeDeUsuarioDe": "Username of the person who will sign",
-    "recebeuASolicitacaoE": "received the request and sees the document under “To sign”.",
     "solicitarAssinatura": "Request signature",
-    "valeAte": "Valid until"
+    "steps": {
+      "signer": "Signer"
+    },
+    "status": {
+      "pending": "pending",
+      "partiallySigned": "partial",
+      "signed": "signed",
+      "declined": "declined",
+      "expired": "expired",
+      "cancelled": "cancelled"
+    },
+    "createFailed": "Couldn't create the request.",
+    "cancelledTitle": "Request cancelled",
+    "cancelledMessage": "The signer no longer has access.",
+    "cancelFailed": "Couldn't cancel the request.",
+    "signerFallback": "Signer",
+    "rowRequested": "{{email}} · requested {{createdAt}}",
+    "rowRequestedExpires": "{{email}} · requested {{createdAt}} · expires {{expiresAt}}",
+    "submit": "Create request",
+    "emptyRequests": "No requests yet.",
+    "crossTenantHint": "People with a DOQYN account are found by username; their full email works too. They sign on their own page, without entering your documents.",
+    "fallbackInvite": "Invite by link",
+    "expiresHint": "After the deadline, the request expires and the document can no longer be signed through it.",
+    "toggleDownloadLabel": "Allow downloading the signed PDF",
+    "toggleDownloadDescription": "The signer can keep a copy with the signature stamp.",
+    "messagePlaceholder": "What the signer needs to know before signing.",
+    "summary": {
+      "signer": "Signer",
+      "downloadAfter": "Download after signing"
+    },
+    "noteInternal": "The person will see the document under “{{section}}”.",
+    "noteExternal": "The portal link is generated now and stays available to copy while the request is open.",
+    "issuedValidUntil": "Valid until {{date}}. While the request is open, this link can be copied again from the list below.",
+    "internalDone": "{{name}} received the request and sees the document under “{{section}}”."
   },
   "signaturePortalPage": {
-    "aSolicitacaoEDa": "The request is for version",
     "abrindoASolicitacao": "Opening the request…",
     "abrindoODocumento": "Opening the document…",
     "aoAssinar": "When you sign",
@@ -74,7 +116,6 @@
     "documentoCarregado": "Document loaded",
     "eMail": "Email",
     "esteLinkNaoAbre": "This link no longer opens",
-    "oDocumentoJaTem": "; the document already has a newer version.",
     "oPdfRecebeO": "The PDF gets the signature stamp and a public verification code.",
     "oQueVoceVai": "What you are about to sign",
     "pecaUmaNovaSolicitacao": "Ask whoever requested your signature for a new request.",
@@ -85,7 +126,30 @@
     "solicitadoPor": "Requested by",
     "validarEstaAssinatura": "Validate this signature",
     "versao": "Version",
-    "voltar": "Back"
+    "voltar": "Back",
+    "steps": {
+      "read": "Read the document",
+      "declare": "Accept the terms",
+      "sign": "Sign"
+    },
+    "meta": {
+      "title": "Signature · DOQYN",
+      "description": "Sign documents securely, with a full audit trail, on DOQYN.",
+      "titleDocument": "Sign: {{document}} · DOQYN",
+      "titleDocumentVersion": "Sign: {{document}} · {{version}} · DOQYN",
+      "descriptionIssuer": "{{issuer}} requested your signature on this document."
+    },
+    "invalidLink": "Invalid link.",
+    "invalidInvite": "Invalid invitation.",
+    "subtitle": "Electronic signature",
+    "footNoteSigned": "The signature is recorded with date, time and technical audit evidence.",
+    "footNotePending": "When you sign, your acceptance is recorded with date, time and technical audit evidence.",
+    "previewErrorSuffix": "{{message}} You can still sign after accepting the terms.",
+    "staleVersion": "This request is for version {{version}}; the document already has a newer version.",
+    "factDownloadAllowed": "You'll be able to download the signed PDF on this same screen.",
+    "factDownloadHeld": "The signed document stays with whoever requested the signature.",
+    "downloading": "Downloading…",
+    "downloadSignedPdf": "Download signed PDF"
   },
   "signatureVerificationPage": {
     "asImpressoesDigitaisAbaixo": "The fingerprints below identify the file. Check them against the document you have in hand to know whether it is exactly the one that was signed.",
@@ -100,13 +164,49 @@
     "nenhumaAssinaturaComEste": "No signature with this code",
     "sha256DoAssinado": "SHA-256 of the signed file",
     "sha256DoOriginal": "SHA-256 of the original",
-    "signatario": "Signer"
+    "signatario": "Signer",
+    "subtitle": "Signature verification",
+    "footNote": "Verification is public: anyone with the code can check the signature.",
+    "unavailable": "Verification unavailable.",
+    "notFound": "Signature not found.",
+    "sealValid": "Valid signature",
+    "sealInvalid": "Invalid signature",
+    "verdictValid": "This signature is valid",
+    "verdictInvalid": "This signature is not valid",
+    "signedByAt": "Signed by {{signer}} on {{date}}.",
+    "invalidatedDetail": "The record exists, but it was invalidated or cancelled after it was issued.",
+    "integrityOk": "Verified",
+    "integrityInvalid": "Invalidated"
   },
   "signaturesAssignedPanel": {
     "abrirEAssinar": "Open and sign",
     "nadaAguardandoSuaAssinatura": "Nothing awaiting your signature",
     "naoFoiPossivelCarregar": "Could not load the pending signatures.",
     "quandoAlguemPedirSua": "When someone requests your signature, the document appears here.",
-    "solicitadoPor": "Requested by"
+    "requestedBy": "Requested by {{name}}",
+    "requestedByVersion": "Requested by {{name}} · v{{version}}",
+    "expires": "{{requestedAt}} · expires {{expiresAt}}"
+  },
+  "shared": {
+    "previewNotAllowed": "Viewing isn't allowed for this request.",
+    "previewUnavailable": "We couldn't generate a preview of this document. You can still go ahead and sign after reading the details below.",
+    "previewLoadFailed": "Couldn't load the document preview.",
+    "signFailed": "Signing failed.",
+    "downloadSignedFailed": "Couldn't download the signed PDF.",
+    "signedFileName": "signed-document.pdf",
+    "documentFallback": "Document",
+    "versionLabel": "Version {{version}}",
+    "pageOf": "Page {{current}} of {{total}}",
+    "imageBadge": "Image",
+    "noPreviewBadge": "No preview",
+    "review": {
+      "document": "Document",
+      "name": "Name",
+      "version": "Version",
+      "requester": "Requested by",
+      "signer": "Signer",
+      "email": "Email",
+      "attention": "This action is final. The document will be signed electronically and recorded in the audit trail."
+    }
   }
 }

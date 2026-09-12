@@ -80,7 +80,36 @@
     "tipoDeDestinatario": "Tipo de destinatário",
     "todoMundoDaEmpresa": "Todo mundo da empresa",
     "trocar": "Trocar",
-    "validoAte": "Válido até"
+    "validoAte": "Válido até",
+    "steps": {
+      "conditions": "Condições",
+      "confirm": "Confirmar"
+    },
+    "audienceInternal": "Da sua empresa",
+    "audienceDoqyn": "Outra conta DOQYN",
+    "audienceExternal": "Convidado externo",
+    "noMatch": "Ninguém encontrado com esse nome ou e-mail.",
+    "invalidPhone": "Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.",
+    "copyLink": "Copiar link",
+    "yes": "Sim",
+    "no": "Não",
+    "summaryDocument": "Documento",
+    "summaryValidUntil": "Válido até",
+    "summaryMessage": "Mensagem",
+    "describe": {
+      "internal": "{{name}} (daqui)",
+      "doqyn": "{{name}} (outra conta DOQYN)",
+      "external": "{{name}} (convidado externo)"
+    },
+    "name": "Nome",
+    "nameOptional": "Nome (opcional)",
+    "emailPlaceholder": "pessoa@empresa.com.br",
+    "messageOptional": "Mensagem (opcional)",
+    "guestLink": "Link do convidado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "sending": "Enviando…",
+    "continue": "Continuar"
   },
   "transferOwnershipModal": {
     "cancelar": "Cancelar",

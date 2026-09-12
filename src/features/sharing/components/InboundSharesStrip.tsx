@@ -2,12 +2,11 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useInboundShareDecision, useInboundShares } from '../hooks/useInboundShares';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 function formatReceivedAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(iso, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**

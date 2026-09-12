@@ -22,6 +22,7 @@ import { InternalSignatureViewer } from '@/features/signature/InternalSignatureV
 import { triggerBlobDownload } from '@/features/library/api/libraryApi';
 import { invalidateSignatureQueries } from '@/features/signature/utils/invalidateSignatureQueries';
 import { publishSignatureCompleted } from '@/features/signature/utils/signatureCompletionSync';
+import { formatDateTime } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type PreviewState =
@@ -29,16 +30,6 @@ type PreviewState =
   | { kind: 'ready'; manifest: DocumentPreviewManifest }
   | { kind: 'unavailable'; message: string }
   | { kind: 'error'; message: string };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function PreviewLoadingPanel() {
   const { t } = useTranslation('signature');
@@ -95,7 +86,7 @@ export function InternalSignaturePage() {
 
   useEffect(() => {
     if (!signatureRequestId) {
-      setError('Solicitação inválida.');
+      setError(t('internalSignaturePage.invalidRequest'));
       setLoading(false);
       return;
     }
@@ -115,7 +106,7 @@ export function InternalSignaturePage() {
         if (!data.permissions.canView) {
           setPreview({
             kind: 'unavailable',
-            message: 'Visualização não permitida para esta solicitação.',
+            message: t('shared.previewNotAllowed'),
           });
           return;
         }
@@ -130,21 +121,20 @@ export function InternalSignaturePage() {
           } else {
             setPreview({
               kind: 'unavailable',
-              message:
-                'Não foi possível gerar a visualização deste documento. Você ainda pode prosseguir com a assinatura após ler os dados abaixo.',
+              message: t('shared.previewUnavailable'),
             });
           }
         } catch (previewError) {
           if (cancelled) return;
           const message =
-            previewError instanceof Error
-              ? previewError.message
-              : 'Não foi possível carregar o preview do documento.';
+            previewError instanceof Error ? previewError.message : t('shared.previewLoadFailed');
           setPreview({ kind: 'error', message });
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Solicitação indisponível.');
+          setError(
+            err instanceof Error ? err.message : t('internalSignaturePage.requestUnavailable'),
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -155,7 +145,7 @@ export function InternalSignaturePage() {
     return () => {
       cancelled = true;
     };
-  }, [signatureRequestId]);
+  }, [signatureRequestId, t]);
 
   const previewAttempted = preview.kind !== 'loading';
   const canSubmit =
@@ -187,7 +177,7 @@ export function InternalSignaturePage() {
       setCompleted(true);
       setConfirmOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao assinar.');
+      setError(err instanceof Error ? err.message : t('shared.signFailed'));
     } finally {
       setSigning(false);
     }
@@ -198,9 +188,9 @@ export function InternalSignaturePage() {
     setDownloading(true);
     try {
       const blob = await downloadSignatureRequestSignedPdf(signatureRequestId);
-      triggerBlobDownload(blob, payload.documentName || 'documento-assinado.pdf');
+      triggerBlobDownload(blob, payload.documentName || t('shared.signedFileName'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar PDF assinado.');
+      setError(err instanceof Error ? err.message : t('shared.downloadSignedFailed'));
     } finally {
       setDownloading(false);
     }
@@ -305,7 +295,7 @@ export function InternalSignaturePage() {
         ) : null}
         {preview.kind === 'error' ? (
           <PreviewUnavailablePanel
-            message={`${preview.message} Você ainda pode prosseguir com a assinatura após confirmar o aceite.`}
+            message={t('internalSignaturePage.previewErrorSuffix', { message: preview.message })}
           />
         ) : null}
       </section>
@@ -313,7 +303,7 @@ export function InternalSignaturePage() {
       <aside className="w-full shrink-0 space-y-4 lg:w-80">
         <section className="rounded-xl border border-doqyn-border bg-doqyn-surface p-4 sm:p-5">
           <TruncatedText as="h2" className="text-h2">
-            {payload?.documentName ?? 'Documento'}
+            {payload?.documentName ?? t('shared.documentFallback')}
           </TruncatedText>
           <div className="mt-2 flex flex-wrap gap-2">
             {payload?.versionLabel ? (
@@ -374,15 +364,15 @@ export function InternalSignaturePage() {
         description={t('internalSignaturePage.reviseOsDadosAntes')}
         sections={[
           {
-            title: 'Documento',
+            title: t('shared.review.document'),
             fields: [
-              { label: 'Nome', value: payload?.documentName ?? '' },
-              { label: 'Versão', value: payload?.versionLabel ?? '—' },
-              { label: 'Solicitante', value: payload?.issuerName ?? '' },
+              { label: t('shared.review.name'), value: payload?.documentName ?? '' },
+              { label: t('shared.review.version'), value: payload?.versionLabel ?? '—' },
+              { label: t('shared.review.requester'), value: payload?.issuerName ?? '' },
             ],
           },
         ]}
-        attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
+        attentionMessage={t('shared.review.attention')}
         submitting={signing}
         confirmLabel={t('internalSignaturePage.confirmarAssinatura2')}
         cancelLabel={t('internalSignaturePage.voltar')}

@@ -48,14 +48,14 @@ export function useExternalShareMutations(documentId: string | null) {
     onSuccess: () => {
       toast.success(i18n.t('sharing:toast.conviteExternoCriado'));
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível criar o convite externo.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.createExternalFailed')),
     onSettled: invalidate,
   });
 
   const revokeExternalShare = useMutation({
     mutationFn: (shareId: string) => revokeDocumentExternalShare(documentId!, shareId),
     onSuccess: () => toast.success(i18n.t('sharing:toast.acessoExternoRevogado')),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível revogar o acesso externo.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.revokeExternalFailed')),
     onSettled: invalidate,
   });
 
@@ -64,7 +64,7 @@ export function useExternalShareMutations(documentId: string | null) {
     onSuccess: () => {
       toast.success(i18n.t('sharing:toast.novoLinkGerado'));
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível renovar o convite externo.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.regenerateExternalFailed')),
     onSettled: invalidate,
   });
 

@@ -14,6 +14,7 @@ import { clearSessionScopedCaches } from '@/auth/clearSessionScopedCaches';
 import { buildSessionFingerprintFromAuth } from '@/auth/sessionFingerprint';
 import { queryClient } from '@/app/queryClient';
 import { refetchTenantScopedQueries } from '@/features/tenant/tenantLiveSync';
+import { i18n } from '@/i18n';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/acesso',
@@ -202,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (err instanceof ApiError) {
         setError(err.friendlyMessage);
       } else {
-        setError(err instanceof Error ? err.message : 'Falha ao autenticar.');
+        setError(err instanceof Error ? err.message : i18n.t('common:accessGate.authFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -390,7 +391,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-doqyn-bg text-sm text-doqyn-muted">
-        Verificando acesso...
+        {i18n.t('common:accessGate.checking')}
       </div>
     );
   }

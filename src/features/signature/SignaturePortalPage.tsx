@@ -25,6 +25,7 @@ import {
   GuestRegisterRow,
   GuestSeal,
 } from '@/features/guest-portal/GuestPortalShell';
+import { formatDateTime } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type PreviewState =
@@ -32,16 +33,6 @@ type PreviewState =
   | { kind: 'ready'; manifest: DocumentPreviewManifest }
   | { kind: 'unavailable'; message: string }
   | { kind: 'error'; message: string };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function PreviewLoadingPanel() {
   const { t } = useTranslation('signature');
@@ -77,10 +68,12 @@ function SignSteps({
   declared: boolean;
   signed: boolean;
 }) {
+  const { t } = useTranslation('signature');
+
   const steps = [
-    { label: 'Ler o documento', done: read },
-    { label: 'Declarar o aceite', done: declared },
-    { label: 'Assinar', done: signed },
+    { id: 'read', label: t('signaturePortalPage.steps.read'), done: read },
+    { id: 'declare', label: t('signaturePortalPage.steps.declare'), done: declared },
+    { id: 'sign', label: t('signaturePortalPage.steps.sign'), done: signed },
   ];
   const current = steps.findIndex((step) => !step.done);
 
@@ -88,7 +81,7 @@ function SignSteps({
     <ol className="sign-steps">
       {steps.map((step, index) => (
         <li
-          key={step.label}
+          key={step.id}
           className="sign-steps__item"
           data-state={step.done ? 'done' : index === current ? 'current' : 'todo'}
         >
@@ -122,26 +115,30 @@ export function SignaturePortalPage() {
   const pageMeta = useMemo(() => {
     if (!payload) {
       return {
-        title: 'Assinatura · DOQYN',
-        description: 'Assine documentos com segurança e rastreabilidade no DOQYN.',
+        title: t('signaturePortalPage.meta.title'),
+        description: t('signaturePortalPage.meta.description'),
         imagePath: '/og/portal-card-sign.png',
       };
     }
 
-    const versionSuffix = payload.versionLabel ? ` · ${payload.versionLabel}` : '';
     return {
-      title: `Assinar: ${payload.documentName}${versionSuffix} · DOQYN`,
-      description: `${payload.issuerName} solicitou sua assinatura neste documento.`,
+      title: payload.versionLabel
+        ? t('signaturePortalPage.meta.titleDocumentVersion', {
+            document: payload.documentName,
+            version: payload.versionLabel,
+          })
+        : t('signaturePortalPage.meta.titleDocument', { document: payload.documentName }),
+      description: t('signaturePortalPage.meta.descriptionIssuer', { issuer: payload.issuerName }),
       // Ver a nota do portal de compartilhamento: o cartão é de marca, o documento não sai daqui.
       imagePath: '/og/portal-card-sign.png',
     };
-  }, [payload]);
+  }, [payload, t]);
 
   useGuestPortalPageMeta(pageMeta);
 
   useEffect(() => {
     if (!token) {
-      setError('Link inválido.');
+      setError(t('signaturePortalPage.invalidLink'));
       setLoading(false);
       return;
     }
@@ -161,7 +158,7 @@ export function SignaturePortalPage() {
         if (!data.permissions.canView) {
           setPreview({
             kind: 'unavailable',
-            message: 'Visualização não permitida para esta solicitação.',
+            message: t('shared.previewNotAllowed'),
           });
           return;
         }
@@ -174,21 +171,18 @@ export function SignaturePortalPage() {
           } else {
             setPreview({
               kind: 'unavailable',
-              message:
-                'Não foi possível gerar a visualização deste documento. Você ainda pode prosseguir com a assinatura após ler os dados abaixo.',
+              message: t('shared.previewUnavailable'),
             });
           }
         } catch (previewError) {
           if (cancelled) return;
           const message =
-            previewError instanceof Error
-              ? previewError.message
-              : 'Não foi possível carregar o preview do documento.';
+            previewError instanceof Error ? previewError.message : t('shared.previewLoadFailed');
           setPreview({ kind: 'error', message });
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Convite inválido.');
+          setError(err instanceof Error ? err.message : t('signaturePortalPage.invalidInvite'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -199,7 +193,7 @@ export function SignaturePortalPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const previewAttempted = preview.kind !== 'loading';
   const canSubmit =
@@ -209,10 +203,7 @@ export function SignaturePortalPage() {
     !signing &&
     payload?.status === 'pending';
 
-  const expiresLabel = useMemo(() => {
-    if (!payload?.expiresAt) return null;
-    return formatDateTime(payload.expiresAt);
-  }, [payload?.expiresAt]);
+  const expiresLabel = payload?.expiresAt ? formatDateTime(payload.expiresAt) : null;
 
   const handleSign = async () => {
     if (!canSubmit) return;
@@ -233,7 +224,7 @@ export function SignaturePortalPage() {
       setCompleted(true);
       setConfirmOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao assinar.');
+      setError(err instanceof Error ? err.message : t('shared.signFailed'));
     } finally {
       setSigning(false);
     }
@@ -247,11 +238,11 @@ export function SignaturePortalPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = payload.documentName || 'documento-assinado.pdf';
+      anchor.download = payload.documentName || t('shared.signedFileName');
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar PDF assinado.');
+      setError(err instanceof Error ? err.message : t('shared.downloadSignedFailed'));
     } finally {
       setDownloading(false);
     }
@@ -259,7 +250,7 @@ export function SignaturePortalPage() {
 
   if (loading) {
     return (
-      <GuestPortalShell subtitle="Assinatura eletrônica">
+      <GuestPortalShell subtitle={t('signaturePortalPage.subtitle')}>
         <div className="guest-state" data-testid="signature-portal">
           <Icon
             name="progress_activity"
@@ -276,7 +267,7 @@ export function SignaturePortalPage() {
 
   if (error && !payload) {
     return (
-      <GuestPortalShell subtitle="Assinatura eletrônica">
+      <GuestPortalShell subtitle={t('signaturePortalPage.subtitle')}>
         <section className="guest-card guest-card--narrow" data-testid="signature-portal">
           <p className="register-label text-doqyn-subtle">
             {t('signaturePortalPage.solicitacaoIndisponivel')}
@@ -294,9 +285,9 @@ export function SignaturePortalPage() {
   if (completed) {
     return (
       <GuestPortalShell
-        subtitle="Assinatura eletrônica"
+        subtitle={t('signaturePortalPage.subtitle')}
         headerAside={<GuestSeal>{t('signaturePortalPage.assinado')}</GuestSeal>}
-        footNote="A assinatura fica registrada com data, hora e evidências técnicas de auditoria."
+        footNote={t('signaturePortalPage.footNoteSigned')}
       >
         <section className="guest-card guest-card--narrow" data-testid="signature-portal-success">
           <p className="register-label text-doqyn-subtle">
@@ -334,7 +325,9 @@ export function SignaturePortalPage() {
                 onClick={() => void handleDownloadSigned()}
                 data-testid="signature-download-signed"
               >
-                {downloading ? 'Baixando…' : 'Baixar PDF assinado'}
+                {downloading
+                  ? t('signaturePortalPage.downloading')
+                  : t('signaturePortalPage.downloadSignedPdf')}
               </Button>
             </div>
           ) : null}
@@ -346,7 +339,7 @@ export function SignaturePortalPage() {
   return (
     <>
       <GuestPortalShell
-        subtitle="Assinatura eletrônica"
+        subtitle={t('signaturePortalPage.subtitle')}
         layout="work"
         headerAside={
           <>
@@ -357,7 +350,7 @@ export function SignaturePortalPage() {
             <GuestSeal>{t('signaturePortalPage.assinaturaPendente')}</GuestSeal>
           </>
         }
-        footNote="Ao assinar, seu aceite é registrado com data, hora e evidências técnicas de auditoria."
+        footNote={t('signaturePortalPage.footNotePending')}
       >
         <div className="sign-layout" data-testid="signature-portal">
           <section className="sign-layout__sheet">
@@ -375,7 +368,7 @@ export function SignaturePortalPage() {
             ) : null}
             {preview.kind === 'error' ? (
               <PreviewUnavailablePanel
-                message={`${preview.message} Você ainda pode assinar depois de declarar o aceite.`}
+                message={t('signaturePortalPage.previewErrorSuffix', { message: preview.message })}
               />
             ) : null}
           </section>
@@ -386,7 +379,7 @@ export function SignaturePortalPage() {
                 {t('signaturePortalPage.oQueVoceVai')}
               </p>
               <TruncatedText as="h2" className="guest-title guest-title--sm mt-1.5">
-                {payload?.documentName ?? 'Documento'}
+                {payload?.documentName ?? t('shared.documentFallback')}
               </TruncatedText>
               <dl className="guest-register">
                 {payload?.versionLabel ? (
@@ -413,8 +406,7 @@ export function SignaturePortalPage() {
               </dl>
               {payload?.isVersionStale && payload.versionLabel ? (
                 <p className="type-caption mt-3 text-doqyn-warning">
-                  {t('signaturePortalPage.aSolicitacaoEDa')} {payload.versionLabel}
-                  {t('signaturePortalPage.oDocumentoJaTem')}
+                  {t('signaturePortalPage.staleVersion', { version: payload.versionLabel })}
                 </p>
               ) : null}
               {payload?.message ? (
@@ -442,8 +434,8 @@ export function SignaturePortalPage() {
                 <li>{t('signaturePortalPage.dataHoraEEvidencias')}</li>
                 <li>
                   {payload?.permissions.canDownloadAfterSign
-                    ? 'Você poderá baixar o PDF assinado nesta mesma tela.'
-                    : 'O documento assinado fica com quem solicitou a assinatura.'}
+                    ? t('signaturePortalPage.factDownloadAllowed')
+                    : t('signaturePortalPage.factDownloadHeld')}
                 </li>
               </ul>
             </div>
@@ -469,22 +461,22 @@ export function SignaturePortalPage() {
         description={t('signaturePortalPage.reviseOsDadosAntes')}
         sections={[
           {
-            title: 'Documento',
+            title: t('shared.review.document'),
             fields: [
-              { label: 'Nome', value: payload?.documentName ?? '' },
-              { label: 'Versão', value: payload?.versionLabel ?? '—' },
-              { label: 'Solicitante', value: payload?.issuerName ?? '' },
+              { label: t('shared.review.name'), value: payload?.documentName ?? '' },
+              { label: t('shared.review.version'), value: payload?.versionLabel ?? '—' },
+              { label: t('shared.review.requester'), value: payload?.issuerName ?? '' },
             ],
           },
           {
-            title: 'Signatário',
+            title: t('shared.review.signer'),
             fields: [
-              { label: 'Nome', value: payload?.signer.name ?? '' },
-              { label: 'E-mail', value: payload?.signer.emailMasked ?? '' },
+              { label: t('shared.review.name'), value: payload?.signer.name ?? '' },
+              { label: t('shared.review.email'), value: payload?.signer.emailMasked ?? '' },
             ],
           },
         ]}
-        attentionMessage="Esta ação é definitiva. O documento será assinado eletronicamente com registro de auditoria."
+        attentionMessage={t('shared.review.attention')}
         submitting={signing}
         confirmLabel={t('signaturePortalPage.confirmarAssinatura2')}
         cancelLabel={t('signaturePortalPage.voltar')}

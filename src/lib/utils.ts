@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
+import { i18n } from '@/i18n';
+import { DEFAULT_LOCALE } from '@/i18n/locales';
 
 /**
  * Os degraus da escala tipográfica do DOQYN, declarados para o `tailwind-merge`.
@@ -26,13 +28,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function activeLocale(): string {
+  return i18n.language || DEFAULT_LOCALE;
+}
+
 /**
  * Composição manual em vez de deixar o Intl montar a frase: em pt-BR o formato
  * `month: 'short'` devolve "16 de ago de 2026", e os "de" ocupam espaço numa
  * coluna de tabela sem acrescentar informação.
+ *
+ * Só o português precisa disso. Inglês e espanhol já saem enxutos do Intl — `Aug 16, 2026`,
+ * `16 ago 2026` —, e compor à mão neles trocaria a ordem que o leitor espera.
  */
-function dateParts(date: string | Date) {
-  const parts = new Intl.DateTimeFormat('pt-BR', {
+function dateParts(date: string | Date, locale: string) {
+  const parts = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -63,7 +72,15 @@ function dateParts(date: string | Date) {
  * vigência, data de assinatura.
  */
 export function formatDate(date: string | Date): string {
-  const { day, month, year } = dateParts(date);
+  const locale = activeLocale();
+  if (!locale.startsWith('pt')) {
+    return new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(date));
+  }
+  const { day, month, year } = dateParts(date, locale);
   return `${day} ${month} ${year}`;
 }
 
@@ -75,7 +92,17 @@ export function formatDate(date: string | Date): string {
  * e empurra para fora da coluna o que de fato importa.
  */
 export function formatDateTime(date: string | Date): string {
-  const { day, month, year, hour, minute } = dateParts(date);
+  const locale = activeLocale();
+  if (!locale.startsWith('pt')) {
+    return new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(date));
+  }
+  const { day, month, year, hour, minute } = dateParts(date, locale);
   return `${day} ${month} ${year}, ${hour}:${minute}`;
 }
 

@@ -6,35 +6,21 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AssignedSignatureRequestItem } from '@/features/signature/api/signatureApi';
 import { useAssignedSignatureRequests } from '@/features/signature/hooks/useAssignedSignatureRequests';
+import { formatDateTime as formatDateTimeForLocale } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTimeForLocale(iso);
 }
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-      return 'Pendente';
-    case 'signed':
-      return 'Assinado';
-    case 'declined':
-      return 'Recusado';
-    case 'expired':
-      return 'Expirado';
-    case 'cancelled':
-      return 'Cancelado';
-    default:
-      return status;
-  }
-}
+const STATUS_KEYS: Record<string, string> = {
+  pending: 'documentSignaturesDrawer.status.pending',
+  signed: 'common:signatureStatus.signed',
+  declined: 'common:signatureStatus.declined',
+  expired: 'common:signatureStatus.expired',
+  cancelled: 'common:signatureStatus.cancelled',
+};
 
 function statusVariant(status: string): 'pending' | 'success' | 'danger' | 'warning' | 'info' {
   switch (status) {
@@ -125,17 +111,27 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
           <div className="min-w-0">
             <p className="truncate text-label font-medium text-doqyn-text">{item.documentName}</p>
             <p className="mt-1 text-caption text-doqyn-muted">
-              {t('signaturesAssignedPanel.solicitadoPor')} {item.requestedBy}
-              {item.versionLabel ? ` · v${item.versionLabel}` : ''}
+              {item.versionLabel
+                ? t('signaturesAssignedPanel.requestedByVersion', {
+                    name: item.requestedBy,
+                    version: item.versionLabel,
+                  })
+                : t('signaturesAssignedPanel.requestedBy', { name: item.requestedBy })}
             </p>
             <p className="mt-0.5 font-mono text-micro tabular-nums text-doqyn-subtle">
-              {formatDateTime(item.requestedAt)}
-              {item.expiresAt ? ` · expira ${formatDateTime(item.expiresAt)}` : ''}
+              {item.expiresAt
+                ? t('signaturesAssignedPanel.expires', {
+                    requestedAt: formatDateTime(item.requestedAt),
+                    expiresAt: formatDateTime(item.expiresAt),
+                  })
+                : formatDateTime(item.requestedAt)}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant={statusVariant(item.signerStatus)}>
-              {statusLabel(item.signerStatus)}
+              {STATUS_KEYS[item.signerStatus]
+                ? t(STATUS_KEYS[item.signerStatus]!)
+                : item.signerStatus}
             </Badge>
             {item.canSign ? (
               <Button

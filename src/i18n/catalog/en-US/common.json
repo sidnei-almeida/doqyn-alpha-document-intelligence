@@ -93,5 +93,66 @@
   "tenantVocabulary": {
     "scopeSectionLabelBusiness": "Organization",
     "scopeSectionLabelIndividual": "My collection"
+  },
+  "feedback": {
+    "genericFailure": "We couldn't complete that right now. Please try again.",
+    "requestFailed": "Request failed"
+  },
+  "accessGate": {
+    "notLinked": {
+      "title": "Access pending",
+      "message": "Your user isn't linked to an active DOQYN workspace yet. Ask your company administrator for an invitation."
+    },
+    "pending": {
+      "title": "Awaiting approval",
+      "message": "Your access to this company hasn't been approved yet. The company administrator can take care of it."
+    },
+    "blocked": {
+      "title": "Access blocked",
+      "message": "Your access to this workspace has been blocked."
+    },
+    "rejected": {
+      "title": "Access declined",
+      "message": "Your access to this workspace was declined. Getting back in takes a new invitation from the company administrator."
+    },
+    "removed": {
+      "title": "Access removed",
+      "message": "You're no longer part of this DOQYN workspace. Getting back in takes a new invitation from the company administrator."
+    },
+    "noMembership": {
+      "title": "No active access",
+      "message": "Your account doesn't have active access to any DOQYN workspace yet."
+    },
+    "subtitle": "Platform access",
+    "email": "Email",
+    "workspace": "Workspace",
+    "status": "Status",
+    "logout": "Sign out",
+    "checking": "Checking access…",
+    "authFailed": "Authentication failed."
+  },
+  "signatureStatus": {
+    "pending": "Signature pending",
+    "signed": "Signed",
+    "declined": "Declined",
+    "expired": "Expired",
+    "cancelled": "Cancelled"
+  },
+  "signatureSummary": {
+    "withCount": "{{label}} · {{n}}",
+    "partial": "Partial · {{n}}",
+    "signers": "Signed by: {{names}}.",
+    "pending_one": "{{count}} pending.",
+    "pending_other": "{{count}} pending.",
+    "clickForDetails": "Click for details.",
+    "none": "No signature requested.",
+    "signedCount_one": "{{count}} signature: {{names}}.",
+    "signedCount_other": "{{count}} signatures: {{names}}.",
+    "pendingFor": "Signature pending for {{name}}.",
+    "signedAt": "Electronically signed on {{date}}.",
+    "inProgress": "Signature in progress.",
+    "fileBase": "document",
+    "fileSigned": "{{base}}-signed.pdf",
+    "fileSignedCode": "{{base}}-signed-{{code}}.pdf"
   }
 }

@@ -7,7 +7,6 @@
     "categoria": "Categoría",
     "codigo": "Código",
     "compartilhadoEm": "Compartido el",
-    "compartilhouEsteDocumentoCom": "compartió este documento contigo el",
     "conviteDeAcesso": "Invitación de acceso",
     "conviteIndisponivel": "Invitación no disponible",
     "esteLinkNaoAbre": "Este enlace ya no abre",
@@ -16,9 +15,25 @@
     "opening": "Abriendo…",
     "pecaUmNovoLink": "Pide un nuevo enlace a quien compartió el documento contigo.",
     "sharedByTenant": "{{name}} compartió un documento contigo a través de {{tenant}}.",
-    "versao": "Versión"
+    "versao": "Versión",
+    "meta": {
+      "title": "Documento compartido · DOQYN",
+      "description": "Accede de forma segura a un documento compartido en DOQYN."
+    },
+    "invalidLink": "Enlace no válido.",
+    "openFailed": "No fue posible abrir este documento compartido.",
+    "acceptFailed": "No fue posible aceptar esta invitación.",
+    "downloadFileName": "documento",
+    "subtitle": "Acceso seguro a documento",
+    "footNote": "Acceso limitado a este documento. Quien lo compartió puede revocar el enlace en cualquier momento.",
+    "noCategory": "Sin categoría",
+    "sharedWithYouIn": "{{name}} compartió este documento contigo en {{tenant}}."
   },
   "guestDocumentViewer": {
-    "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible en esta invitación."
+    "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible en esta invitación.",
+    "versionLabel": "Versión {{version}}",
+    "pageOf": "Página {{current}} de {{total}}",
+    "imageBadge": "Imagen",
+    "noPreviewBadge": "Sin vista previa"
   }
 }

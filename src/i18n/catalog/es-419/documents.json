@@ -80,7 +80,36 @@
     "tipoDeDestinatario": "Tipo de destinatario",
     "todoMundoDaEmpresa": "Todos en la empresa",
     "trocar": "Cambiar",
-    "validoAte": "Válido hasta"
+    "validoAte": "Válido hasta",
+    "steps": {
+      "conditions": "Condiciones",
+      "confirm": "Confirmar"
+    },
+    "audienceInternal": "De tu empresa",
+    "audienceDoqyn": "Otra cuenta DOQYN",
+    "audienceExternal": "Invitado externo",
+    "noMatch": "No se encontró a nadie con ese nombre o correo.",
+    "invalidPhone": "Ingresa un teléfono válido con código de país, por ejemplo +52 55 1234 5678.",
+    "copyLink": "Copiar enlace",
+    "yes": "Sí",
+    "no": "No",
+    "summaryDocument": "Documento",
+    "summaryValidUntil": "Válido hasta",
+    "summaryMessage": "Mensaje",
+    "describe": {
+      "internal": "{{name}} (de aquí)",
+      "doqyn": "{{name}} (otra cuenta DOQYN)",
+      "external": "{{name}} (invitado externo)"
+    },
+    "name": "Nombre",
+    "nameOptional": "Nombre (opcional)",
+    "emailPlaceholder": "persona@empresa.com",
+    "messageOptional": "Mensaje (opcional)",
+    "guestLink": "Enlace del invitado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "sending": "Enviando…",
+    "continue": "Continuar"
   },
   "transferOwnershipModal": {
     "cancelar": "Cancelar",

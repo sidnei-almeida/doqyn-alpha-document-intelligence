@@ -41,8 +41,11 @@ import {
 } from '../hooks/useExternalShareMutations';
 import { useTranslation } from 'react-i18next';
 
-const STEPS = ['Quem recebe', 'Condições', 'Confirmar'];
-const INVALID_PHONE_MESSAGE = 'Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.';
+const STEP_KEYS = [
+  'shareDocumentModal.steps.recipient',
+  'documents:recipientFlow.steps.conditions',
+  'documents:recipientFlow.steps.confirm',
+];
 
 type ShareDocumentModalProps = {
   open: boolean;
@@ -59,20 +62,12 @@ type ShareDocumentModalProps = {
   onClose: () => void;
 };
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'active':
-      return 'ativo';
-    case 'pending':
-      return 'pendente';
-    case 'revoked':
-      return 'revogado';
-    case 'expired':
-      return 'expirado';
-    default:
-      return status;
-  }
-}
+const STATUS_KEYS: Record<string, string> = {
+  active: 'shareDocumentModal.status.active',
+  pending: 'shareDocumentModal.status.pending',
+  revoked: 'shareDocumentModal.status.revoked',
+  expired: 'shareDocumentModal.status.expired',
+};
 
 export function ShareDocumentModal({
   open,
@@ -80,10 +75,12 @@ export function ShareDocumentModal({
   initialRecipient,
   onClose,
 }: ShareDocumentModalProps) {
-  const { t } = useTranslation('sharing');
+  // `documents` junto: as etapas e rótulos comuns aos dois fluxos de envio moram lá.
+  const { t } = useTranslation(['sharing', 'documents']);
 
+  const steps = STEP_KEYS.map((key) => t(key));
   const documentId = document?.id ?? null;
-  const flow = useStepFlow(STEPS.length, open);
+  const flow = useStepFlow(steps.length, open);
   const { tenant } = useAuth();
   /**
    * Em PF não há "alguém daqui": o tenant tem um usuário só. A aba interna some, e o passo
@@ -153,7 +150,9 @@ export function ShareDocumentModal({
   }, [hasInternalAudience, audience, defaultAudience]);
 
   const phoneError =
-    external.phone && !isCompleteWhatsapp(external.phone) ? INVALID_PHONE_MESSAGE : undefined;
+    external.phone && !isCompleteWhatsapp(external.phone)
+      ? t('documents:recipientFlow.invalidPhone')
+      : undefined;
 
   /** Quem recebe, pela aba e por mais nada — ver `resolveRecipient`. */
   const recipient = useMemo(
@@ -225,15 +224,15 @@ export function ShareDocumentModal({
       // "outra conta" em vez de supor uma empresa.
       status:
         share.inboundStatus === 'pending'
-          ? { label: 'aguardando aceite', tone: 'pending' as const }
+          ? { label: t('shareDocumentModal.inbound.pending'), tone: 'pending' as const }
           : share.inboundStatus === 'declined'
-            ? { label: 'recusado', tone: 'closed' as const }
+            ? { label: t('shareDocumentModal.inbound.declined'), tone: 'closed' as const }
             : share.inboundStatus === 'accepted'
-              ? { label: 'outra conta', tone: 'active' as const }
-              : { label: 'daqui', tone: 'active' as const },
+              ? { label: t('shareDocumentModal.inbound.accepted'), tone: 'active' as const }
+              : { label: t('shareDocumentModal.inbound.local'), tone: 'active' as const },
       actions: [
         {
-          label: 'Revogar',
+          label: t('shareDocumentModal.revoke'),
           tone: 'danger' as const,
           disabled: revokeShare.isPending,
           onClick: () => revokeShare.mutate(share.shareId),
@@ -243,21 +242,28 @@ export function ShareDocumentModal({
     ...(externalShares.data?.shares ?? []).map((share) => ({
       id: share.shareId,
       primary: share.recipientName?.trim() || share.recipientEmail,
-      secondary: `${share.recipientEmail} · expira ${formatDateTime(share.expiresAt)} · ${t(
-        share.permissions.canDownload ? 'permissions.canDownload' : 'permissions.readOnly',
-      )}`,
-      status: { label: statusLabel(share.status), tone: statusTone(share.status) },
+      secondary: t('shareDocumentModal.rowExternal', {
+        email: share.recipientEmail,
+        date: formatDateTime(share.expiresAt),
+        permission: t(
+          share.permissions.canDownload ? 'permissions.canDownload' : 'permissions.readOnly',
+        ),
+      }),
+      status: {
+        label: STATUS_KEYS[share.status] ? t(STATUS_KEYS[share.status]!) : share.status,
+        tone: statusTone(share.status),
+      },
       actions: [
         ...(share.inviteUrl
           ? [
               {
-                label: 'Copiar link',
+                label: t('documents:recipientFlow.copyLink'),
                 onClick: () => void navigator.clipboard.writeText(share.inviteUrl!),
               },
             ]
           : []),
         {
-          label: 'Novo link',
+          label: t('shareDocumentModal.newLink'),
           disabled: regenerateExternalShare.isPending,
           onClick: () =>
             regenerateExternalShare.mutate(share.shareId, {
@@ -265,7 +271,7 @@ export function ShareDocumentModal({
             }),
         },
         {
-          label: 'Revogar',
+          label: t('shareDocumentModal.revoke'),
           tone: 'danger' as const,
           disabled: revokeExternalShare.isPending || share.status === 'revoked',
           onClick: () => revokeExternalShare.mutate(share.shareId),
@@ -290,15 +296,15 @@ export function ShareDocumentModal({
           {document.versionLabel ? ` · ${document.versionLabel}` : ''}
         </span>
       }
-      toolbar={<StepTrack steps={STEPS} current={flow.step} onSelect={flow.setStep} />}
+      toolbar={<StepTrack steps={steps} current={flow.step} onSelect={flow.setStep} />}
       footer={
         issuedUrl ? null : (
           <FlowFooter
             step={flow.step}
-            stepCount={STEPS.length}
+            stepCount={steps.length}
             canAdvance={canAdvance}
             submitting={submitting}
-            submitLabel="Compartilhar"
+            submitLabel={t('shareDocumentModal.submit')}
             onBack={flow.back}
             onNext={flow.next}
             onSubmit={() => void handleSubmit()}
@@ -311,12 +317,11 @@ export function ShareDocumentModal({
         <div className="flex flex-col gap-5">
           <IssuedLink url={issuedUrl} />
           <p className="type-caption text-doqyn-muted">
-            {t('shareDocumentModal.oConviteValeAte')} {formatExpirationDate(expiresAt)}
-            {t('shareDocumentModal.enquantoOAcessoExistir')}
+            {t('shareDocumentModal.issuedValidUntil', { date: formatExpirationDate(expiresAt) })}
           </p>
           <AccessList
             title={t('shareDocumentModal.quemTemAcesso')}
-            emptyLabel="Ninguém ainda."
+            emptyLabel={t('shareDocumentModal.emptyAccess')}
             rows={accessRows}
           />
         </div>
@@ -327,17 +332,20 @@ export function ShareDocumentModal({
               <AudiencePicker
                 value={audience}
                 onChange={setAudience}
-                internalLabel={hasInternalAudience ? 'Da sua empresa' : undefined}
-                doqynLabel="Outra conta DOQYN"
-                externalLabel="Convidado externo"
+                internalLabel={
+                  hasInternalAudience ? t('documents:recipientFlow.audienceInternal') : undefined
+                }
+                doqynLabel={t('documents:recipientFlow.audienceDoqyn')}
+                externalLabel={t('documents:recipientFlow.audienceExternal')}
               />
               {recipient.doqyn ? (
                 <div className="recipient-chosen">
                   <div className="min-w-0">
                     <p className="type-body truncate text-doqyn-text">{recipient.doqyn.name}</p>
                     <p className="type-caption truncate text-doqyn-muted">
-                      {recipient.doqyn.email ?? `@${recipient.doqyn.username}`}{' '}
-                      {t('shareDocumentModal.deForaDaqui')}
+                      {t('shareDocumentModal.chosenOutside', {
+                        contact: recipient.doqyn.email ?? `@${recipient.doqyn.username}`,
+                      })}
                     </p>
                   </div>
                   <Button
@@ -362,7 +370,7 @@ export function ShareDocumentModal({
                     setAudience('external');
                     setExternal({ ...EMPTY_EXTERNAL_RECIPIENT, email });
                   }}
-                  fallbackLabel="Enviar por link com prazo"
+                  fallbackLabel={t('shareDocumentModal.fallbackLink')}
                 />
               ) : audience === 'internal' ? (
                 <InternalRecipientPicker
@@ -379,7 +387,7 @@ export function ShareDocumentModal({
                     }))}
                   selected={internalPick}
                   onSelect={setInternalPick}
-                  emptyLabel="Ninguém encontrado com esse nome ou e-mail."
+                  emptyLabel={t('documents:recipientFlow.noMatch')}
                   emptyAction={
                     /* A saída para quem não está na empresa, sempre visível — não só quando a
                        busca volta vazia. Agora ela leva à aba, em vez de repetir o campo aqui:
@@ -405,7 +413,7 @@ export function ShareDocumentModal({
               )}
               <AccessList
                 title={t('shareDocumentModal.quemTemAcesso2')}
-                emptyLabel="Ninguém ainda."
+                emptyLabel={t('shareDocumentModal.emptyAccess')}
                 rows={accessRows}
               />
             </div>
@@ -417,45 +425,62 @@ export function ShareDocumentModal({
               onExpiresAtChange={setExpiresAt}
               expiresHint={
                 audience === 'doqyn'
-                  ? 'Fora daqui o acesso tem prazo: passado ele, a concessão fecha sozinha.'
+                  ? t('shareDocumentModal.expiresHint.doqyn')
                   : audience === 'internal'
-                    ? 'Acesso de quem é daqui não expira: vale enquanto não for revogado.'
-                    : 'Passado o prazo, o link para de abrir sozinho.'
+                    ? t('shareDocumentModal.expiresHint.internal')
+                    : t('shareDocumentModal.expiresHint.external')
               }
               toggles={[
                 {
                   id: 'download',
-                  label: 'Permitir baixar o arquivo',
-                  description: 'Sem isto, o documento só pode ser lido na tela.',
+                  label: t('shareDocumentModal.toggleDownloadLabel'),
+                  description: t('shareDocumentModal.toggleDownloadDescription'),
                   checked: canDownload,
                   onChange: setCanDownload,
                 },
               ]}
               message={message}
               onMessageChange={setMessage}
-              messagePlaceholder="Contexto para quem vai receber."
+              messagePlaceholder={t('shareDocumentModal.messagePlaceholder')}
             />
           ) : null}
 
           {flow.step === 2 ? (
             <SummaryStep
               rows={[
-                { label: 'Documento', value: document.currentFileName || document.displayName },
+                {
+                  label: t('documents:recipientFlow.summaryDocument'),
+                  value: document.currentFileName || document.displayName,
+                },
                 // Pela aba, e não pela presença do `crossTenantPick`: escolher alguém do DOQYN,
                 // trocar para "Convidado externo" e digitar outro e-mail deixava a confirmação
                 // anunciando o primeiro. É a última linha que se lê antes de enviar.
-                { label: 'Quem recebe', value: describeRecipient(recipient) },
-                { label: 'Pode baixar', value: canDownload ? 'Sim' : 'Não' },
                 {
-                  label: 'Válido até',
-                  value: audience === 'internal' ? 'Sem prazo' : formatExpirationDate(expiresAt),
+                  label: t('shareDocumentModal.summaryRecipient'),
+                  value: describeRecipient(recipient),
                 },
-                { label: 'Mensagem', value: message.trim() || '—' },
+                {
+                  label: t('shareDocumentModal.summaryCanDownload'),
+                  value: canDownload
+                    ? t('documents:recipientFlow.yes')
+                    : t('documents:recipientFlow.no'),
+                },
+                {
+                  label: t('documents:recipientFlow.summaryValidUntil'),
+                  value:
+                    audience === 'internal'
+                      ? t('shareDocumentModal.noDeadline')
+                      : formatExpirationDate(expiresAt),
+                },
+                {
+                  label: t('documents:recipientFlow.summaryMessage'),
+                  value: message.trim() || '—',
+                },
               ]}
               note={
                 audience === 'external'
-                  ? 'O link é gerado agora e fica disponível para copiar enquanto o acesso existir.'
-                  : 'A pessoa passa a ver o documento na Biblioteca dela.'
+                  ? t('shareDocumentModal.noteExternal')
+                  : t('shareDocumentModal.noteInternal')
               }
             />
           ) : null}

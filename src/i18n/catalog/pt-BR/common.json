@@ -93,5 +93,66 @@
   "tenantVocabulary": {
     "scopeSectionLabelBusiness": "Organização",
     "scopeSectionLabelIndividual": "Meu acervo"
+  },
+  "feedback": {
+    "genericFailure": "Não foi possível concluir a ação agora. Tente novamente.",
+    "requestFailed": "Erro na requisição"
+  },
+  "accessGate": {
+    "notLinked": {
+      "title": "Acesso pendente",
+      "message": "Seu usuário ainda não está vinculado a um cliente ativo no DOQYN. Peça um convite ao administrador da empresa."
+    },
+    "pending": {
+      "title": "Aguardando liberação",
+      "message": "Seu acesso a esta empresa ainda não foi liberado. Quem administra a empresa resolve isso."
+    },
+    "blocked": {
+      "title": "Acesso bloqueado",
+      "message": "Seu acesso a este ambiente foi bloqueado."
+    },
+    "rejected": {
+      "title": "Acesso recusado",
+      "message": "Seu acesso a este ambiente foi recusado. Voltar depende de um convite novo de quem administra a empresa."
+    },
+    "removed": {
+      "title": "Acesso removido",
+      "message": "Você não faz mais parte deste ambiente no DOQYN. Voltar depende de um convite novo de quem administra a empresa."
+    },
+    "noMembership": {
+      "title": "Sem acesso ativo",
+      "message": "Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN."
+    },
+    "subtitle": "Acesso à plataforma",
+    "email": "E-mail",
+    "workspace": "Cliente",
+    "status": "Status",
+    "logout": "Sair",
+    "checking": "Verificando acesso…",
+    "authFailed": "Falha ao autenticar."
+  },
+  "signatureStatus": {
+    "pending": "Assinatura pendente",
+    "signed": "Assinado",
+    "declined": "Recusado",
+    "expired": "Expirado",
+    "cancelled": "Cancelado"
+  },
+  "signatureSummary": {
+    "withCount": "{{label}} · {{n}}",
+    "partial": "Parcial · {{n}}",
+    "signers": "Assinaram: {{names}}.",
+    "pending_one": "{{count}} pendente.",
+    "pending_other": "{{count}} pendentes.",
+    "clickForDetails": "Clique para ver detalhes.",
+    "none": "Nenhuma assinatura solicitada.",
+    "signedCount_one": "{{count}} assinatura: {{names}}.",
+    "signedCount_other": "{{count}} assinaturas: {{names}}.",
+    "pendingFor": "Assinatura pendente para {{name}}.",
+    "signedAt": "Assinado eletronicamente em {{date}}.",
+    "inProgress": "Assinatura em andamento.",
+    "fileBase": "documento",
+    "fileSigned": "{{base}}-assinado.pdf",
+    "fileSignedCode": "{{base}}-assinado-{{code}}.pdf"
   }
 }

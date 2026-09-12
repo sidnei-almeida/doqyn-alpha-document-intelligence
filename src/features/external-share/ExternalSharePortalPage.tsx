@@ -19,6 +19,7 @@ import {
 } from '@/features/sharing/api/externalShareApi';
 import { GuestDocumentViewer } from './GuestDocumentViewer';
 import { useGuestPortalPageMeta } from '@/features/guest-portal/useGuestPortalPageMeta';
+import { formatDateTime } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type PortalState =
@@ -32,13 +33,7 @@ type PortalState =
     };
 
 function formatShareDate(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 function InviteLoadingState() {
@@ -104,14 +99,16 @@ function PendingInvitePanel({
       </TruncatedText>
 
       <p className="type-body mt-2 text-doqyn-muted">
-        {payload.sharedByName} {t('externalSharePortalPage.compartilhouEsteDocumentoCom')}{' '}
-        {payload.ownerTenantName}.
+        {t('externalSharePortalPage.sharedWithYouIn', {
+          name: payload.sharedByName,
+          tenant: payload.ownerTenantName,
+        })}
       </p>
 
       <dl className="guest-register">
         <GuestRegisterRow
           label={t('externalSharePortalPage.categoria')}
-          value={payload.document.categoryName || 'Sem categoria'}
+          value={payload.document.categoryName || t('externalSharePortalPage.noCategory')}
         />
         {payload.document.versionLabel ? (
           <GuestRegisterRow
@@ -164,8 +161,8 @@ export function ExternalSharePortalPage() {
   const pageMeta = useMemo(() => {
     if (portal.kind !== 'ready') {
       return {
-        title: 'Compartilhamento · DOQYN',
-        description: 'Acesse um documento compartilhado com segurança no DOQYN.',
+        title: t('externalSharePortalPage.meta.title'),
+        description: t('externalSharePortalPage.meta.description'),
         imagePath: '/og/portal-card-share.png',
       };
     }
@@ -191,13 +188,13 @@ export function ExternalSharePortalPage() {
       // colado.
       imagePath: '/og/portal-card-share.png',
     };
-  }, [portal]);
+  }, [portal, t]);
 
   useGuestPortalPageMeta(pageMeta);
 
   useEffect(() => {
     if (!token) {
-      setPortal({ kind: 'error', message: 'Link inválido.' });
+      setPortal({ kind: 'error', message: t('externalSharePortalPage.invalidLink') });
       return;
     }
 
@@ -217,7 +214,7 @@ export function ExternalSharePortalPage() {
       } catch (error) {
         if (cancelled) return;
         const message =
-          error instanceof Error ? error.message : 'Não foi possível abrir este compartilhamento.';
+          error instanceof Error ? error.message : t('externalSharePortalPage.openFailed');
         const code =
           typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
         setPortal({ kind: 'error', message, code });
@@ -228,7 +225,7 @@ export function ExternalSharePortalPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const expiresLabel = useMemo(() => {
     if (portal.kind !== 'ready' || !portal.payload.expiresAt) return null;
@@ -245,7 +242,7 @@ export function ExternalSharePortalPage() {
       setPortal({ kind: 'ready', payload, manifest });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Não foi possível aceitar este convite.';
+        error instanceof Error ? error.message : t('externalSharePortalPage.acceptFailed');
       const code =
         typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
       setPortal({ kind: 'error', message, code });
@@ -266,7 +263,8 @@ export function ExternalSharePortalPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = portal.payload.document.displayName || 'documento';
+      anchor.download =
+        portal.payload.document.displayName || t('externalSharePortalPage.downloadFileName');
       anchor.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -295,13 +293,13 @@ export function ExternalSharePortalPage() {
   return (
     <div data-testid="external-share-portal">
       <GuestPortalShell
-        subtitle="Acesso seguro a documento"
+        subtitle={t('externalSharePortalPage.subtitle')}
         headerAside={
           portal.kind === 'ready' && isPendingInvite ? (
             <GuestSeal>{t('externalSharePortalPage.aguardandoAceite')}</GuestSeal>
           ) : null
         }
-        footNote="Acesso limitado a este documento. O link pode ser revogado a qualquer momento por quem compartilhou."
+        footNote={t('externalSharePortalPage.footNote')}
       >
         {portal.kind === 'loading' ? <InviteLoadingState /> : null}
         {portal.kind === 'error' ? (

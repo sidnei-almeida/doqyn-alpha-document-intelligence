@@ -1,4 +1,4 @@
-import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
+import { genericFailureMessage, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 
 export type ApiErrorDetails = Record<string, unknown>;
 
@@ -60,7 +60,7 @@ function extractMessage(data: ErrorBody, fallback: string): string {
 export function parseApiErrorBody(
   status: number,
   data: unknown,
-  fallbackMessage = 'Não foi possível concluir a ação agora. Tente novamente.',
+  fallbackMessage = genericFailureMessage(),
 ): ParsedApiError {
   const body = (data && typeof data === 'object' ? data : {}) as ErrorBody;
   const code =

@@ -11,6 +11,8 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import { cn } from '@/lib/utils';
+import { i18n } from '@/i18n';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -118,13 +120,9 @@ export function resolveRecipient(
  * outro. Descrever o que se sabe é melhor que supor uma empresa.
  */
 export function describeRecipient(recipient: ResolvedRecipient): string {
-  const origin =
-    recipient.audience === 'internal'
-      ? 'daqui'
-      : recipient.audience === 'doqyn'
-        ? 'outra conta DOQYN'
-        : 'convidado externo';
-  return `${recipient.label} (${origin})`;
+  return i18n.t(`documents:recipientFlow.describe.${recipient.audience}`, {
+    name: recipient.label,
+  });
 }
 
 /** Data em `yyyy-mm-dd`: o prazo é dia, não hora — o link fecha no fim do dia escolhido. */
@@ -332,7 +330,7 @@ export function ExternalRecipientFields({
     <div className="recipient-fields">
       <Input
         variant="rule"
-        label={requireName ? 'Nome' : 'Nome (opcional)'}
+        label={requireName ? t('recipientFlow.name') : t('recipientFlow.nameOptional')}
         value={value.name}
         onChange={(event) => onChange({ ...value, name: event.target.value })}
         placeholder={t('recipientFlow.comoAPessoaAssina')}
@@ -344,7 +342,7 @@ export function ExternalRecipientFields({
         label={t('recipientFlow.eMail')}
         value={value.email}
         onChange={(event) => onChange({ ...value, email: event.target.value })}
-        placeholder="pessoa@empresa.com.br"
+        placeholder={t('recipientFlow.emailPlaceholder')}
         autoComplete="off"
       />
       <WhatsappInput
@@ -376,7 +374,7 @@ export function ConditionsStep({
   toggles,
   message,
   onMessageChange,
-  messageLabel = 'Mensagem (opcional)',
+  messageLabel,
   messagePlaceholder,
 }: {
   expiresAt: string;
@@ -425,7 +423,7 @@ export function ConditionsStep({
 
       <Textarea
         variant="rule"
-        label={messageLabel}
+        label={messageLabel ?? t('recipientFlow.messageOptional')}
         value={message}
         onChange={(event) => onMessageChange(event.target.value)}
         placeholder={messagePlaceholder}
@@ -530,7 +528,8 @@ export function AccessList({
 
 /* ── Link emitido ─────────────────────────────────────────────────────── */
 
-export function IssuedLink({ url, label = 'Link do convidado' }: { url: string; label?: string }) {
+export function IssuedLink({ url, label }: { url: string; label?: string }) {
+  const { t } = useTranslation('documents');
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -554,12 +553,12 @@ export function IssuedLink({ url, label = 'Link do convidado' }: { url: string; 
 
   return (
     <div className="recipient-link">
-      <p className="register-label text-doqyn-subtle">{label}</p>
+      <p className="register-label text-doqyn-subtle">{label ?? t('recipientFlow.guestLink')}</p>
       <div className="recipient-link__row">
         <code className="recipient-link__value">{url}</code>
         <Button type="button" variant="secondary" size="sm" onClick={() => void handleCopy()}>
           <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} aria-hidden />
-          {copied ? 'Copiado' : 'Copiar'}
+          {copied ? t('recipientFlow.copied') : t('recipientFlow.copy')}
         </Button>
       </div>
     </div>
@@ -589,11 +588,12 @@ export function FlowFooter({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('documents');
   const isLast = step === stepCount - 1;
   return (
     <>
       <Button type="button" variant="ghost" size="sm" onClick={step === 0 ? onCancel : onBack}>
-        {step === 0 ? 'Cancelar' : 'Voltar'}
+        {step === 0 ? t('common:actions.cancel') : t('common:actions.back')}
       </Button>
       <Button
         type="button"
@@ -601,7 +601,11 @@ export function FlowFooter({
         disabled={!canAdvance || submitting}
         onClick={isLast ? onSubmit : onNext}
       >
-        {isLast ? (submitting ? 'Enviando…' : submitLabel) : 'Continuar'}
+        {isLast
+          ? submitting
+            ? t('recipientFlow.sending')
+            : submitLabel
+          : t('recipientFlow.continue')}
       </Button>
     </>
   );
@@ -633,15 +637,18 @@ export function statusTone(status: string): 'active' | 'pending' | 'closed' {
 
 export function formatDateTime(value?: string | null): string {
   if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDate(value) || '—';
 }
 
-/** Data em `yyyy-mm-dd` para leitura humana, sem passar por fuso. */
+/**
+ * Data em `yyyy-mm-dd` para leitura humana, sem passar por fuso.
+ *
+ * Monta a data no fuso local em vez de ler a string como UTC: `new Date('2026-09-12')` é meia-noite
+ * em Greenwich, e a oeste dela vira dia 11.
+ */
 export function formatExpirationDate(value: string): string {
-  const [year, month, day] = value.split('-');
-  return year && month && day ? `${day}/${month}/${year}` : '—';
+  const [year, month, day] = value.split('-').map(Number);
+  return year && month && day ? formatDate(new Date(year, month - 1, day)) || '—' : '—';
 }
 
 export function cnJoin(...values: Array<string | false | null | undefined>): string {

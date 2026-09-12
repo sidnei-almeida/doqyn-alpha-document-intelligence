@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import { ApiError, isApiError } from '@/lib/apiErrors';
-import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
+import { genericFailureMessage, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { sanitizeToastText } from '@/shared/feedback/appFeedbackSanitize';
 
 export type AppToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
@@ -54,10 +54,7 @@ export function showAppToast(input: AppToastInput): string | number {
   }
 }
 
-export function showApiErrorToast(
-  error: unknown,
-  fallbackMessage = 'Não foi possível concluir a ação agora. Tente novamente.',
-): void {
+export function showApiErrorToast(error: unknown, fallbackMessage?: string): void {
   if (isApiError(error)) {
     /**
      * Pedir aprovação não é falhar.
@@ -91,7 +88,7 @@ export function showApiErrorToast(
     return;
   }
 
-  showAppToast({ type: 'error', title: fallbackMessage });
+  showAppToast({ type: 'error', title: fallbackMessage ?? genericFailureMessage() });
 }
 
 export function dismissAppToast(id?: string | number): void {

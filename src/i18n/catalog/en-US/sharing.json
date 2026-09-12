@@ -14,18 +14,61 @@
   },
   "shareDocumentModal": {
     "compartilharDocumento": "Share document",
-    "deForaDaqui": "· from outside",
-    "enquantoOAcessoExistir": ". While the access exists, this link can be copied again here in the list.",
     "naoEDaquiBuscar": "Not from here? Search by username",
-    "oConviteValeAte": "The invitation is valid until",
     "quemTemAcesso": "Who has access",
     "quemTemAcesso2": "Who has access",
-    "trocar": "Change"
+    "trocar": "Change",
+    "steps": {
+      "recipient": "Recipient"
+    },
+    "status": {
+      "active": "active",
+      "pending": "pending",
+      "revoked": "revoked",
+      "expired": "expired"
+    },
+    "inbound": {
+      "pending": "awaiting acceptance",
+      "declined": "declined",
+      "accepted": "another account",
+      "local": "internal"
+    },
+    "rowExternal": "{{email}} · expires {{date}} · {{permission}}",
+    "revoke": "Revoke",
+    "newLink": "New link",
+    "submit": "Share",
+    "emptyAccess": "No one yet.",
+    "issuedValidUntil": "The invitation is valid until {{date}}. While access remains, this link can be copied again from this list.",
+    "chosenOutside": "{{contact}} · from outside",
+    "fallbackLink": "Send a link with a deadline",
+    "expiresHint": {
+      "doqyn": "Outside your workspace, access has a deadline: once it passes, access closes on its own.",
+      "internal": "Access for people in your workspace doesn't expire: it lasts until it's revoked.",
+      "external": "Once the deadline passes, the link stops opening on its own."
+    },
+    "toggleDownloadLabel": "Allow downloading the file",
+    "toggleDownloadDescription": "Without this, the document can only be read on screen.",
+    "messagePlaceholder": "Context for the recipient.",
+    "summaryRecipient": "Recipient",
+    "summaryCanDownload": "Can download",
+    "noDeadline": "No deadline",
+    "noteExternal": "The link is generated now and stays available to copy while access remains.",
+    "noteInternal": "The person will see the document in their Library."
   },
   "toast": {
     "conviteExternoCriado": "External invitation created.",
     "acessoExternoRevogado": "External access revoked.",
     "novoLinkGerado": "New invitation link generated.",
-    "compartilhamentoRevogado": "Share revoked."
+    "compartilhamentoRevogado": "Share revoked.",
+    "createExternalFailed": "Couldn't create the external invitation.",
+    "revokeExternalFailed": "Couldn't revoke external access.",
+    "regenerateExternalFailed": "Couldn't renew the external invitation.",
+    "inboundAccepted": "Document accepted. It now appears under {{section}}.",
+    "inboundDeclined": "Document declined.",
+    "decisionFailed": "Couldn't record your decision.",
+    "sentPendingAcceptance": "Sent. The person needs to accept before seeing the document.",
+    "documentShared": "Document shared.",
+    "shareFailed": "Couldn't share the document.",
+    "revokeShareFailed": "Couldn't revoke the share."
   }
 }
