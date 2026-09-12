@@ -1,9 +1,11 @@
+import { commonPhrase } from '@/i18n/commonPhrase';
 import {
   ALLOWED_FILE_EXTENSIONS,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
   MAX_FILES_PER_BATCH,
-  UPLOAD_ERROR_MESSAGES,
+  UPLOAD_ERROR_KEYS,
 } from '../uploadConstants';
 
 export type FileValidationResult = { valid: true; files: File[] } | { valid: false; error: string };
@@ -29,16 +31,22 @@ export function validateUploadFiles(incoming: File[], existingCount = 0): FileVa
   const total = existingCount + incoming.length;
 
   if (total > MAX_FILES_PER_BATCH) {
-    return { valid: false, error: UPLOAD_ERROR_MESSAGES.tooManyFiles };
+    return {
+      valid: false,
+      error: commonPhrase(UPLOAD_ERROR_KEYS.tooManyFiles, { count: MAX_FILES_PER_BATCH }),
+    };
   }
 
   for (const file of incoming) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      return { valid: false, error: UPLOAD_ERROR_MESSAGES.fileTooLarge };
+      return {
+        valid: false,
+        error: commonPhrase(UPLOAD_ERROR_KEYS.fileTooLarge, { size: MAX_FILE_SIZE_MB }),
+      };
     }
 
     if (!isAllowedType(file)) {
-      return { valid: false, error: UPLOAD_ERROR_MESSAGES.unsupportedFormat };
+      return { valid: false, error: commonPhrase(UPLOAD_ERROR_KEYS.unsupportedFormat) };
     }
   }
 

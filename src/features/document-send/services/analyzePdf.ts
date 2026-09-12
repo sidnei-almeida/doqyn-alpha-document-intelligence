@@ -178,7 +178,7 @@ async function requestStagingUploadUrl(
   if (!response.ok || !payload?.uploadUrl || !payload.jobId) {
     const workflowError = parseWorkflowErrorPayload(
       payload as WorkflowErrorApiResponse | null,
-      'Erro ao preparar upload do documento',
+      i18n.t('documentSend:analysisError.prepareUploadFailed'),
     );
     throw new AnalyzePdfRequestError(workflowError);
   }
@@ -209,7 +209,7 @@ async function putFileToStagingUploadUrl(
             message: i18n.t('documentSend:analysisError.uploadStorageMessage'),
           },
         },
-        'Falha ao enviar o documento para o storage.',
+        i18n.t('documentSend:analysisError.storageFailed'),
       ),
     );
   }
@@ -319,7 +319,10 @@ function mapToExtractedMetadata(
     jobId: response.jobId,
     originalFileName: response.originalFileName,
     suggestedName: response.recommendedFileName ?? '—',
-    documentType: classification.className ?? extraction?.documentType ?? 'Indefinido',
+    documentType:
+      classification.className ??
+      extraction?.documentType ??
+      i18n.t('documentSend:documentTypeUnknown'),
     supplier,
     documentDate,
     value,
@@ -443,10 +446,10 @@ async function pollAnalysisJobResult(
             code: payload.errorCode ?? 'ANALYSIS_FAILED',
             category: 'ai',
             title: i18n.t('documentSend:analysisError.falhaNaAnaliseTitle'),
-            message: payload.errorMessage ?? 'Falha na análise do documento.',
+            message: payload.errorMessage ?? i18n.t('documentSend:analysisError.analysisFailed'),
           },
         },
-        'Falha na análise do documento.',
+        i18n.t('documentSend:analysisError.analysisFailed'),
       );
       throw new AnalyzePdfRequestError(workflowError);
     }
@@ -472,7 +475,7 @@ async function pollAnalysisJobResult(
               message: i18n.t('documentSend:analysisError.resultadoIndisponivelMessage'),
             },
           },
-          'Análise concluída sem resultado disponível.',
+          i18n.t('documentSend:analysisError.noResult'),
         ),
       );
     }
@@ -556,7 +559,10 @@ export async function analyzePdf(
     if (!response.ok) {
       const errorPayload: WorkflowErrorApiResponse | null =
         payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
-      const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+      const workflowError = parseWorkflowErrorPayload(
+        errorPayload,
+        i18n.t('documentSend:analysisError.analyzeFailed'),
+      );
       workflowError.requestId = workflowError.requestId ?? requestId;
       workflowError.endpoint = endpoint;
       throw new AnalyzePdfRequestError(workflowError);
@@ -621,7 +627,10 @@ export async function analyzePdf(
   if (!response.ok) {
     const errorPayload: WorkflowErrorApiResponse | null =
       payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
-    const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+    const workflowError = parseWorkflowErrorPayload(
+      errorPayload,
+      i18n.t('documentSend:analysisError.analyzeFailed'),
+    );
     workflowError.requestId = workflowError.requestId ?? requestId;
     workflowError.endpoint = endpoint;
     throw new AnalyzePdfRequestError(workflowError);

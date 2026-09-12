@@ -11,7 +11,12 @@
     "respostaInvalidaSalvar": "Respuesta inválida al guardar el documento.",
     "respostaInvalidaAprovacao": "Respuesta inválida al enviar el documento para aprobación.",
     "respostaInvalidaAtualizar": "Respuesta inválida al actualizar el documento.",
-    "naoFoiPossivelAnalisarTitle": "No se pudo analizar el documento"
+    "naoFoiPossivelAnalisarTitle": "No se pudo analizar el documento",
+    "prepareUploadFailed": "Error al preparar la carga del documento",
+    "storageFailed": "No se pudo enviar el documento al almacenamiento.",
+    "analysisFailed": "Falló el análisis del documento.",
+    "noResult": "El análisis terminó sin resultado disponible.",
+    "analyzeFailed": "Error al analizar el documento"
   },
   "documentNamingSection": {
     "digiteONomeFinal": "Escribe el nombre final del archivo",
@@ -83,6 +88,46 @@
     "sugestoesDaIa": "Sugerencias de la IA",
     "sugestoesDaIa2": "Sugerencias de la IA",
     "uploadEmLote": "Subida en lote",
-    "uploadEmLote2": "Subida en lote"
+    "uploadEmLote2": "Subida en lote",
+    "autoSummary": "Auto · {{seconds}} s"
+  },
+  "confidenceBadge": {
+    "high": "Alta confianza",
+    "review": "Revisar",
+    "low": "Requiere revisión"
+  },
+  "namingMode": {
+    "aiSuggested": {
+      "label": "Nombre sugerido por la IA",
+      "description": "Patrón recomendado con los metadatos extraídos."
+    },
+    "original": {
+      "label": "Nombre original de la carga",
+      "description": "Mantiene el archivo como se subió (saneado)."
+    },
+    "manual": {
+      "label": "Nombre manual",
+      "description": "Escribe el nombre final que quieres."
+    }
+  },
+  "namingPolicy": {
+    "label": {
+      "original": "Mantener nombre original",
+      "aiSuggested": "Usar nombre sugerido por la IA",
+      "askEachFile": "Preguntar en cada archivo",
+      "manualRequired": "Nombre manual obligatorio"
+    },
+    "description": {
+      "original": "Mantiene el archivo como se subió (saneado).",
+      "aiSuggested": "Aplica el nombre estandarizado sugerido por el análisis.",
+      "askEachFile": "Muestra la elección de nombre en la revisión de cada archivo.",
+      "manualRequired": "Exige escribir el nombre final antes de confirmar."
+    }
+  },
+  "documentTypeUnknown": "Indefinido",
+  "confirmError": {
+    "saveFailed": "No se pudo guardar el documento.",
+    "approvalFailed": "No se pudo enviar el documento para aprobación.",
+    "updateFailed": "No se pudo actualizar el documento."
   }
 }

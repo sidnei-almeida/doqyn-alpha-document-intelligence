@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n';
+import { commonPhrase } from '@/i18n/commonPhrase';
 import type {
   WorkflowErrorApiResponse,
   WorkflowErrorBody,
@@ -15,6 +16,7 @@ const SENSITIVE_PATTERNS = [
   /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g,
 ];
 
+/** Só vai para o log de diagnóstico (`buildWorkflowErrorLogDetails`), nunca para a tela. */
 export const WORKFLOW_ERROR_CATEGORY_LABELS: Record<WorkflowErrorCategory, string> = {
   configuration: 'Configuração',
   authentication: 'Autenticação',
@@ -41,7 +43,7 @@ function fallbackError(message: string, code?: string): WorkflowErrorDisplay {
     category: 'unexpected',
     title: i18n.t('documentSend:analysisError.naoFoiPossivelAnalisarTitle'),
     message: safeMessage,
-    suggestion: 'Tente novamente. Se o problema persistir, contate o suporte.',
+    suggestion: commonPhrase('workflowError.retrySuggestion'),
     toastMessage: safeMessage,
   };
 }
@@ -77,7 +79,7 @@ export function parseWorkflowErrorPayload(
 
 export function buildWorkflowToastMessage(error: WorkflowErrorBody): string {
   if (error.code === 'DOCUMENT_RULES_NOT_CONFIGURED' || error.code === 'RULES_NOT_SEEDED') {
-    return 'Configuração documental incompleta. Cadastre classes e regras antes de analisar documentos.';
+    return commonPhrase('workflowError.rulesNotConfigured');
   }
 
   return sanitizeText(error.message);

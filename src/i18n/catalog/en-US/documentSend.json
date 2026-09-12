@@ -11,7 +11,12 @@
     "respostaInvalidaSalvar": "Invalid response while saving the document.",
     "respostaInvalidaAprovacao": "Invalid response while submitting the document for approval.",
     "respostaInvalidaAtualizar": "Invalid response while updating the document.",
-    "naoFoiPossivelAnalisarTitle": "Could not analyze the document"
+    "naoFoiPossivelAnalisarTitle": "Could not analyze the document",
+    "prepareUploadFailed": "Error preparing the document upload",
+    "storageFailed": "Couldn't send the document to storage.",
+    "analysisFailed": "The document analysis failed.",
+    "noResult": "Analysis finished with no result available.",
+    "analyzeFailed": "Error analyzing document"
   },
   "documentNamingSection": {
     "digiteONomeFinal": "Type the final file name",
@@ -81,6 +86,46 @@
     "sugestoesDaIa": "AI suggestions",
     "sugestoesDaIa2": "AI suggestions",
     "uploadEmLote": "Batch upload",
-    "uploadEmLote2": "Batch upload"
+    "uploadEmLote2": "Batch upload",
+    "autoSummary": "Auto · {{seconds}}s"
+  },
+  "confidenceBadge": {
+    "high": "High confidence",
+    "review": "Review",
+    "low": "Needs review"
+  },
+  "namingMode": {
+    "aiSuggested": {
+      "label": "AI-suggested name",
+      "description": "Recommended pattern using the extracted metadata."
+    },
+    "original": {
+      "label": "Original upload name",
+      "description": "Keeps the file as uploaded (sanitized)."
+    },
+    "manual": {
+      "label": "Manual name",
+      "description": "Type the final name you want."
+    }
+  },
+  "namingPolicy": {
+    "label": {
+      "original": "Keep original name",
+      "aiSuggested": "Use AI-suggested name",
+      "askEachFile": "Ask for each file",
+      "manualRequired": "Manual name required"
+    },
+    "description": {
+      "original": "Keeps the file as uploaded (sanitized).",
+      "aiSuggested": "Applies the standardized name suggested by the analysis.",
+      "askEachFile": "Shows the naming choice when reviewing each file.",
+      "manualRequired": "Requires typing the final name before confirming."
+    }
+  },
+  "documentTypeUnknown": "Undefined",
+  "confirmError": {
+    "saveFailed": "Couldn't save the document.",
+    "approvalFailed": "Couldn't send the document for approval.",
+    "updateFailed": "Couldn't update the document."
   }
 }

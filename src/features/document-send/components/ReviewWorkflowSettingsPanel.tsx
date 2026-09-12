@@ -12,9 +12,8 @@ import {
   clampAutoDelaySeconds,
 } from '../uploadConstants';
 import {
-  getReviewSettingsSummaryLabel,
-  NAMING_POLICY_DESCRIPTIONS,
-  NAMING_POLICY_LABELS,
+  NAMING_POLICY_DESCRIPTION_KEYS,
+  NAMING_POLICY_LABEL_KEYS,
 } from '../utils/reviewWorkflowSettings';
 import { useTranslation } from 'react-i18next';
 
@@ -119,16 +118,18 @@ function NamingPolicyOptions({
           label={
             compact ? (
               <span className="settings-choice-item__inline">
-                <span className="settings-choice-item__label">{NAMING_POLICY_LABELS[policy]}</span>
+                <span className="settings-choice-item__label">
+                  {t(NAMING_POLICY_LABEL_KEYS[policy])}
+                </span>
                 <span className="settings-choice-item__sep" aria-hidden>
                   —
                 </span>
                 <span className="settings-choice-item__hint">
-                  {NAMING_POLICY_DESCRIPTIONS[policy]}
+                  {t(NAMING_POLICY_DESCRIPTION_KEYS[policy])}
                 </span>
               </span>
             ) : (
-              NAMING_POLICY_LABELS[policy]
+              t(NAMING_POLICY_LABEL_KEYS[policy])
             )
           }
           wrapperClassName={cn(
@@ -350,7 +351,9 @@ export function ReviewWorkflowSettingsPanel({
 
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const summary = getReviewSettingsSummaryLabel(settings);
+  const summary = settings.autoReviewEnabled
+    ? t('reviewWorkflowSettingsPanel.autoSummary', { seconds: settings.autoAcceptDelaySeconds })
+    : null;
 
   const patch = (partial: Partial<WorkflowReviewSettings>) => {
     if (disabled) return;

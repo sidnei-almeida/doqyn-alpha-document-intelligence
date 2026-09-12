@@ -177,6 +177,17 @@
       "ahead_other": "{{count}} documentos adelante",
       "ahead_many": "{{count}} documentos adelante",
       "withEstimate": "{{position}} · {{wait}}"
+    },
+    "missingJobId": "Falta el identificador del análisis. Vuelve a subir el documento.",
+    "missingCategory": "Falta la clasificación. Elige una categoría para guardar este documento.",
+    "validation": {
+      "tooManyFiles": "Selecciona hasta {{count}} documentos a la vez en esta versión.",
+      "fileTooLarge": "El archivo supera el límite de {{size}} MB.",
+      "unsupportedFormat": "Sube un PDF o una imagen (JPG, PNG o WebP) en este paso."
     }
+  },
+  "workflowError": {
+    "retrySuggestion": "Inténtalo de nuevo. Si el problema persiste, contacta al soporte.",
+    "rulesNotConfigured": "La configuración documental está incompleta. Registra clases y reglas antes de analizar documentos."
   }
 }

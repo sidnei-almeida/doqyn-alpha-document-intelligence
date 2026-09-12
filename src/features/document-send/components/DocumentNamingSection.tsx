@@ -16,21 +16,22 @@ interface DocumentNamingSectionProps {
   className?: string;
 }
 
-const MODES: Array<{ id: DocumentNamingMode; label: string; description: string }> = [
+/** Chaves do namespace `documentSend`; a tela traduz. */
+const MODES: Array<{ id: DocumentNamingMode; labelKey: string; descriptionKey: string }> = [
   {
     id: 'ai_suggested',
-    label: 'Nome sugerido pela IA',
-    description: 'Padrão recomendado com metadados extraídos.',
+    labelKey: 'namingMode.aiSuggested.label',
+    descriptionKey: 'namingMode.aiSuggested.description',
   },
   {
     id: 'original',
-    label: 'Nome original do upload',
-    description: 'Mantém o arquivo como enviado (sanitizado).',
+    labelKey: 'namingMode.original.label',
+    descriptionKey: 'namingMode.original.description',
   },
   {
     id: 'manual',
-    label: 'Nome manual',
-    description: 'Digite o nome final desejado.',
+    labelKey: 'namingMode.manual.label',
+    descriptionKey: 'namingMode.manual.description',
   },
 ];
 
@@ -109,8 +110,8 @@ export function DocumentNamingSection({
                 checked={effectiveMode === mode.id}
                 disabled={disabled}
                 onChange={() => setMode(mode.id)}
-                label={mode.label}
-                description={mode.description}
+                label={t(mode.labelKey)}
+                description={t(mode.descriptionKey)}
                 wrapperClassName={cn(
                   'rounded-md border px-3 py-2 transition-colors',
                   effectiveMode === mode.id

@@ -26,11 +26,11 @@ export const AUTO_MODE_STORAGE_KEY = 'doqyn.upload.autoMode';
 
 export const BULK_NEXT_ITEM_DELAY_MS = 1200;
 
-export const UPLOAD_ERROR_MESSAGES = {
-  tooManyFiles: 'Selecione até 20 documentos por vez nesta versão.',
-  fileTooLarge: 'O arquivo excede o limite de 15MB.',
-  unsupportedFormat: 'Envie PDF ou imagem (JPG, PNG ou WebP) nesta etapa.',
-  requiresReview: 'Este documento será enviado para revisão manual.',
+/** Chaves de `common`: a validação roda na casca, pela fila de upload, e em teste Node. */
+export const UPLOAD_ERROR_KEYS = {
+  tooManyFiles: 'uploadQueue.validation.tooManyFiles',
+  fileTooLarge: 'uploadQueue.validation.fileTooLarge',
+  unsupportedFormat: 'uploadQueue.validation.unsupportedFormat',
 } as const;
 
 export function clampAutoDelaySeconds(value: number): number {

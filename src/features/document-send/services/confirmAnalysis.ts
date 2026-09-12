@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
@@ -81,10 +82,11 @@ export async function confirmAnalysis(
     | null;
 
   if (!response.ok) {
-    const message =
-      data && 'message' in data && data.message
-        ? data.message
-        : 'Não foi possível salvar o documento.';
+    const serverMessage = (data && 'message' in data && data.message) || undefined;
+    const code = (data && 'code' in data && data.code) || undefined;
+    const message = code
+      ? getFriendlyAuthErrorMessage(code, serverMessage)
+      : (serverMessage ?? i18n.t('documentSend:confirmError.saveFailed'));
     throw new Error(message);
   }
 
@@ -142,10 +144,11 @@ export async function submitUploadForApproval(
     | null;
 
   if (!response.ok) {
-    const message =
-      data && 'message' in data && data.message
-        ? data.message
-        : 'Não foi possível enviar o documento para aprovação.';
+    const serverMessage = (data && 'message' in data && data.message) || undefined;
+    const code = (data && 'code' in data && data.code) || undefined;
+    const message = code
+      ? getFriendlyAuthErrorMessage(code, serverMessage)
+      : (serverMessage ?? i18n.t('documentSend:confirmError.approvalFailed'));
     throw new Error(message);
   }
 

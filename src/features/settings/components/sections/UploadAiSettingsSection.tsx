@@ -1,5 +1,5 @@
 import { ReviewWorkflowSettingsPanel } from '@/features/document-send/components/ReviewWorkflowSettingsPanel';
-import { NAMING_POLICY_LABELS } from '@/features/document-send/utils/reviewWorkflowSettings';
+import { NAMING_POLICY_LABEL_KEYS } from '@/features/document-send/utils/reviewWorkflowSettings';
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
 import { Icon } from '@/components/ui/Icon';
 import { SettingsSectionBody } from '../SettingsSectionBody';
@@ -19,7 +19,7 @@ export function UploadAiSettingsSection({
   canManage,
   dirty,
 }: UploadAiSettingsSectionProps) {
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['settings', 'documentSend']);
 
   return (
     <SettingsSectionBody id="upload">
@@ -50,7 +50,7 @@ export function UploadAiSettingsSection({
             ·
           </span>
           <span className="settings-summary-bar__chip">
-            {NAMING_POLICY_LABELS[draft.defaultNamingPolicy]}
+            {t(NAMING_POLICY_LABEL_KEYS[draft.defaultNamingPolicy])}
           </span>
         </div>
       </div>

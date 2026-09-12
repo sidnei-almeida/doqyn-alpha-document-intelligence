@@ -1,4 +1,5 @@
 import type { AnalyzePdfResponse } from './analyzePdf';
+import { commonPhrase } from '@/i18n/commonPhrase';
 
 /**
  * Estrutura mínima aceita por confirmAnalysisSchema quando a IA retorna
@@ -39,7 +40,7 @@ export function validateConfirmableAnalysis(
   fallback?: { manualClassId?: string; documentRequestId?: string },
 ): string | null {
   if (!payload.jobId?.trim()) {
-    return 'Identificador da análise ausente. Refaça o upload do documento.';
+    return commonPhrase('uploadQueue.missingJobId');
   }
 
   const hasCategory =
@@ -49,7 +50,7 @@ export function validateConfirmableAnalysis(
     Boolean(fallback?.documentRequestId?.trim());
 
   if (!hasCategory) {
-    return 'Classificação ausente. Escolha uma categoria para salvar este documento.';
+    return commonPhrase('uploadQueue.missingCategory');
   }
 
   return null;

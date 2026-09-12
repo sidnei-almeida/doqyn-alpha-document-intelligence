@@ -173,6 +173,17 @@
       "ahead_one": "{{count}} document ahead",
       "ahead_other": "{{count}} documents ahead",
       "withEstimate": "{{position}} · {{wait}}"
+    },
+    "missingJobId": "Analysis identifier missing. Upload the document again.",
+    "missingCategory": "Classification missing. Choose a category to save this document.",
+    "validation": {
+      "tooManyFiles": "Select up to {{count}} documents at a time in this version.",
+      "fileTooLarge": "The file exceeds the {{size}}MB limit.",
+      "unsupportedFormat": "Upload a PDF or an image (JPG, PNG or WebP) at this step."
     }
+  },
+  "workflowError": {
+    "retrySuggestion": "Try again. If the problem persists, contact support.",
+    "rulesNotConfigured": "Document setup is incomplete. Register classes and rules before analyzing documents."
   }
 }
