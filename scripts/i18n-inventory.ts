@@ -57,12 +57,83 @@ const USER_TEXT_PROPS = new Set([
   'helperText',
   'confirmLabel',
   'cancelLabel',
+  /* Achados pela auditoria de 09/09: apareciam em tela e não estavam na lista, então a
+     extração nunca os alcançou. `eyebrow` é a linha acima do título de página; `footNote`, a
+     nota de rodapé do cartão; `submitLabel` e `emptyTitle`/`emptyDescription` falam por si. */
+  'eyebrow',
+  'footNote',
+  'submitLabel',
+  'emptyTitle',
+  'emptyDescription',
   'aria-label',
   'alt',
 ]);
 
 /** Props que parecem texto e são identificador. */
 const TECHNICAL_PROPS = new Set([
+  /* Atributo de SVG: `d`, `fill` e `stroke` carregam coordenada e cor, nunca frase. Entraram
+     quando o classificador passou a enxergar atributo de JSX de verdade, e sem eles a fila de
+     ambíguos encheu de path de ícone. */
+  'd',
+  'fill',
+  'stroke',
+  'strokeWidth',
+  'strokeLinecap',
+  'strokeLinejoin',
+  'opacity',
+  'viewBox',
+  'x',
+  'y',
+  'cx',
+  'cy',
+  'r',
+  'rx',
+  'ry',
+  'x1',
+  'x2',
+  'y1',
+  'y2',
+  'points',
+  'transform',
+  'offset',
+  'stopColor',
+  /* Dica do navegador e variações de `className`. */
+  'autoComplete',
+  'autoCapitalize',
+  'autoCorrect',
+  'spellCheck',
+  'inputMode',
+  'enterKeyHint',
+  'bodyClassName',
+  'wrapperClassName',
+  'containerClassName',
+  'contentClassName',
+  'itemClassName',
+  'iconClassName',
+  'triggerClassName',
+  'panelClassName',
+  'headerClassName',
+  'placement',
+  'align',
+  'side',
+  'scope',
+  'variant',
+  'tone',
+  'size',
+  'icon',
+  'iconName',
+  'testId',
+  'data-testid',
+  'data-tour',
+  'width',
+  'height',
+  'titleId',
+  'zIndexClass',
+  'aria-live',
+  'aria-haspopup',
+  'aria-controls',
+  'aria-describedby',
+  'aria-labelledby',
   'className',
   'class',
   'id',
@@ -227,8 +298,24 @@ function classify(node: ts.Node, text: string): { classification: Classification
     }
   }
 
-  if (ts.isJsxAttribute(parent.parent ?? parent)) {
-    const attribute = (ts.isJsxAttribute(parent) ? parent : parent.parent) as ts.JsxAttribute;
+  /**
+   * `subtitle="…"` é o pai direto; `subtitle={"…"}` é o avô.
+   *
+   * A condição era `isJsxAttribute(parent.parent ?? parent)`, e o `??` nunca caía no segundo
+   * ramo: quando o literal é o valor direto do atributo, `parent` já é o `JsxAttribute` e
+   * `parent.parent` é o `JsxAttributes` — não nulo, e não um atributo. O ramo inteiro falhava, e
+   * toda string em atributo de JSX caía em "literal solto". Foi assim que `subtitle="Para quem
+   * guarda documentos próprios, sem empresa."` ficou fora da contagem de texto de usuário, numa
+   * pasta marcada `error`: contada como ambígua, nunca extraída, e visível em português numa
+   * tela em inglês.
+   */
+  const atributoJsx = ts.isJsxAttribute(parent)
+    ? parent
+    : parent.parent && ts.isJsxAttribute(parent.parent)
+      ? parent.parent
+      : null;
+  if (atributoJsx) {
+    const attribute = atributoJsx;
     const attributeName = attribute.name.getText();
     if (TECHNICAL_PROPS.has(attributeName)) {
       return { classification: 'technical', reason: `prop técnica ${attributeName}` };

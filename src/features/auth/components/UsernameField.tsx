@@ -122,7 +122,7 @@ export function UsernameField({
           setTouched(true);
           onChange(normalizeUsernameInput(event.target.value));
         }}
-        placeholder="joao.silva"
+        placeholder={t('usernameField.placeholder')}
         autoComplete="off"
         required
       />

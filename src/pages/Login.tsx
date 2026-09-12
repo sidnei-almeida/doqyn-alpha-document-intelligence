@@ -92,7 +92,7 @@ export function Login() {
         setError(err.friendlyMessage);
         return;
       }
-      setError('Não foi possível concluir a ação agora. Tente novamente.');
+      setError(t('login.falhaGenerica'));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,7 +146,7 @@ export function Login() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="voce@empresa.com"
+          placeholder={t('login.emailPlaceholder')}
           autoComplete="email"
           required
         />
@@ -205,7 +205,7 @@ export function Login() {
           disabled={isSubmitting || !email.trim() || !password}
           className={cn(AUTH_PRIMARY_BUTTON, 'mt-1 w-full')}
         >
-          {isSubmitting ? 'Entrando...' : 'Entrar'}
+          {isSubmitting ? t('login.entrando') : t('login.entrar')}
         </button>
       </form>
 

@@ -50,7 +50,10 @@ export function AccessChoicePage({
 
   return (
     <>
-      <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
+      <AuthHeading
+        title={title ?? t('accessChoicePage.comoVoceQuerComecar')}
+        description={description}
+      />
 
       <div className="border-t border-doqyn-border-subtle">
         {/* Entrar numa empresa que já usa o DOQYN não é mais um caminho daqui: quem já está
@@ -60,13 +63,13 @@ export function AccessChoicePage({
           to="/criar-empresa"
           index={1}
           title={t('accessChoicePage.cadastrarMinhaEmpresa')}
-          subtitle="Para abrir um ambiente novo para a sua empresa."
+          subtitle={t('accessChoicePage.subtitleEmpresa')}
         />
         <AccessOption
           to="/criar-acesso-cpf"
           index={2}
           title={t('accessChoicePage.acessarComoPessoaFisica')}
-          subtitle="Para quem guarda documentos próprios, sem empresa."
+          subtitle={t('accessChoicePage.subtitlePessoaFisica')}
         />
       </div>
 

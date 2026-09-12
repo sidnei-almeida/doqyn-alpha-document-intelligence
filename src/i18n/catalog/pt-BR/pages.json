@@ -9,7 +9,11 @@
     "lembrarAcesso": "Lembrar acesso",
     "naoTemAcessoAinda": "Não tem acesso ainda?",
     "or": "ou",
-    "senha": "Senha"
+    "senha": "Senha",
+    "entrar": "Entrar",
+    "entrando": "Entrando...",
+    "falhaGenerica": "Não foi possível concluir a ação agora. Tente novamente.",
+    "emailPlaceholder": "voce@empresa.com"
   },
   "onboardingPage": {
     "comoVoceQuerComecar": "Como você quer começar no DOQYN?",

@@ -9,7 +9,11 @@
     "lembrarAcesso": "Remember me",
     "naoTemAcessoAinda": "No access yet?",
     "or": "or",
-    "senha": "Password"
+    "senha": "Password",
+    "entrar": "Sign in",
+    "entrando": "Signing in...",
+    "falhaGenerica": "Could not complete the action right now. Try again.",
+    "emailPlaceholder": "you@company.com"
   },
   "onboardingPage": {
     "comoVoceQuerComecar": "How do you want to start in DOQYN?",
