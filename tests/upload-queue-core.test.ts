@@ -140,7 +140,7 @@ describe('uploadQueueCore', () => {
       metadata: makeMetadata(),
       rawAnalysis: makeAnalysis(),
     });
-    assert.ok(blockers.some((entry) => entry.includes('autenticado')));
+    assert.ok(blockers.includes('not_authenticated'));
   });
 
   it('clampAutoDelaySeconds permite 0', () => {

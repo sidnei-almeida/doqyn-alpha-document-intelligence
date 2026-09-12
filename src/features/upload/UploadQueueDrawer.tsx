@@ -21,16 +21,16 @@ import { UploadScanThumb } from './components/UploadScanThumb';
 import { UploadScanStack } from './components/UploadScanStack';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
-  queued: 'Na fila',
-  analyzing: 'Analisando com IA…',
-  review: 'Aguardando revisão',
-  confirming: 'Salvando na Biblioteca…',
-  awaiting_approval: 'Aguardando aprovação do admin',
-  ai_paused: 'IA indisponível. Tente novamente',
-  still_running: 'Análise em andamento no servidor',
-  done: 'Salvo na Biblioteca',
-  error: 'Erro',
+const STATUS_KEYS: Record<UploadQueueItemStatus, string> = {
+  queued: 'uploadQueueDrawer.status.queued',
+  analyzing: 'uploadQueueDrawer.status.analyzing',
+  review: 'uploadQueueDrawer.status.review',
+  confirming: 'uploadQueueDrawer.status.confirming',
+  awaiting_approval: 'uploadQueueDrawer.status.awaitingApproval',
+  ai_paused: 'uploadQueueDrawer.status.aiPaused',
+  still_running: 'uploadQueueDrawer.status.stillRunning',
+  done: 'uploadQueueDrawer.status.done',
+  error: 'uploadQueueDrawer.status.error',
 };
 
 function QueueRow({
@@ -58,24 +58,34 @@ function QueueRow({
       const classe = (
         item.savedCategoryName ?? item.analysis?.raw.classification.className
       )?.trim();
+      const size = formatFileSize(item.fileSize);
       return classe
-        ? `Salvo em ${classe} · ${formatFileSize(item.fileSize)}`
-        : `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
+        ? t('uploadQueueDrawer.savedIn', { category: classe, size })
+        : t('uploadQueueDrawer.savedLibrary', { size });
     }
     if (item.status === 'awaiting_approval') {
-      return `Enviado para aprovação · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.sentForApproval', { size: formatFileSize(item.fileSize) });
     }
     if (autoCountdown !== null) {
-      return `Salvando automaticamente em ${autoCountdown}s · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.autoSaving', {
+        seconds: autoCountdown,
+        size: formatFileSize(item.fileSize),
+      });
     }
     // Onde ele está na fila vale mais que "Analisando com IA…", que é igual para quem está sendo
     // processado agora e para quem é o número 400.
     const waitLabel = formatQueueWaitLabel(item.queueStatus);
     if (waitLabel && (item.status === 'analyzing' || item.status === 'queued')) {
-      return `${waitLabel} · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.withSize', {
+        label: waitLabel,
+        size: formatFileSize(item.fileSize),
+      });
     }
-    return `${STATUS_LABELS[item.status]} · ${formatFileSize(item.fileSize)}`;
-  }, [item, autoCountdown]);
+    return t('uploadQueueDrawer.withSize', {
+      label: t(STATUS_KEYS[item.status]),
+      size: formatFileSize(item.fileSize),
+    });
+  }, [item, autoCountdown, t]);
 
   const showProgress = isUploadInProgress(item.status);
   const progress = uploadStatusProgress(item.status);
@@ -231,21 +241,24 @@ export function UploadQueueDrawer() {
 
   const headline = (() => {
     if (pendingCount > 0 && reviewCount > 0) {
-      return `${reviewCount} ${reviewCount === 1 ? 'arquivo aguardando revisão' : 'arquivos aguardando revisão'}`;
+      return t('uploadQueueDrawer.headline.review', { count: reviewCount });
     }
     if (pendingCount > 0) {
-      return `${pendingCount} ${pendingCount === 1 ? 'arquivo em processamento' : 'arquivos em processamento'}`;
+      return t('uploadQueueDrawer.headline.processing', { count: pendingCount });
     }
     if (savedCount > 0 && approvalCount > 0) {
-      return `${savedCount - approvalCount} salvos · ${approvalCount} aguardando aprovação`;
+      return t('uploadQueueDrawer.headline.savedAndApproval', {
+        saved: savedCount - approvalCount,
+        approval: approvalCount,
+      });
     }
     if (savedCount > 0) {
-      return `${savedCount} ${savedCount === 1 ? 'documento processado' : 'documentos processados'}`;
+      return t('uploadQueueDrawer.headline.processed', { count: savedCount });
     }
     if (errorCount > 0) {
-      return `${errorCount} ${errorCount === 1 ? 'upload com erro' : 'uploads com erro'}`;
+      return t('uploadQueueDrawer.headline.errors', { count: errorCount });
     }
-    return 'Fila de upload';
+    return t('uploadQueueDrawer.filaDeUpload');
   })();
 
   return (

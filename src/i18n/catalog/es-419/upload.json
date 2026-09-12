@@ -40,7 +40,21 @@
     "preferenciasDeUpload2": "Preferencias de subida",
     "submitForApprovalButton": "Enviar para aprobación",
     "tipoDeDocumento": "Tipo de documento",
-    "umAdministradorRevisaraOs": "Un administrador revisará los metadatos en Auditoría antes de publicar en la Biblioteca."
+    "umAdministradorRevisaraOs": "Un administrador revisará los metadatos en Auditoría antes de publicar en la Biblioteca.",
+    "title": {
+      "requiresReview": "Revisión necesaria",
+      "confirm": "Confirmar análisis"
+    },
+    "category": {
+      "fromRequest": "Definida por la solicitud",
+      "unclassified": "La IA no pudo clasificarlo"
+    },
+    "categoryHint": {
+      "fromRequest": "La eligió quien solicitó el documento. No se puede cambiar aquí.",
+      "manual": "La elegiste tú. La elección de la IA queda registrada en la auditoría.",
+      "ai": "Sugerida por el análisis automático.",
+      "pick": "Elige la categoría para guardar este documento."
+    }
   },
   "uploadDropOverlay": {
     "aIaAnalisaraClassificara": "La IA analizará, clasificará y preparará el documento para revisión antes de guardarlo en la Biblioteca.",
@@ -59,6 +73,48 @@
     "processedOf": "{{done}}/{{total}} procesados",
     "removerDaFila": "Quitar de la cola",
     "revisar": "Revisar",
-    "tentarNovamente": "Intentar de nuevo"
-  }
+    "tentarNovamente": "Intentar de nuevo",
+    "status": {
+      "queued": "En cola",
+      "analyzing": "Analizando con IA…",
+      "review": "Esperando revisión",
+      "confirming": "Guardando en la Biblioteca…",
+      "awaitingApproval": "Esperando aprobación del admin",
+      "aiPaused": "IA no disponible. Inténtalo de nuevo",
+      "stillRunning": "Análisis en curso en el servidor",
+      "done": "Guardado en la Biblioteca",
+      "error": "Error"
+    },
+    "savedIn": "Guardado en {{category}} · {{size}}",
+    "savedLibrary": "Guardado en la Biblioteca · {{size}}",
+    "sentForApproval": "Enviado para aprobación · {{size}}",
+    "autoSaving": "Guardando automáticamente en {{seconds}} s · {{size}}",
+    "withSize": "{{label}} · {{size}}",
+    "headline": {
+      "review_one": "{{count}} archivo esperando revisión",
+      "review_other": "{{count}} archivos esperando revisión",
+      "review_many": "{{count}} archivos esperando revisión",
+      "processing_one": "{{count}} archivo en proceso",
+      "processing_other": "{{count}} archivos en proceso",
+      "processing_many": "{{count}} archivos en proceso",
+      "savedAndApproval": "{{saved}} guardados · {{approval}} esperando aprobación",
+      "processed_one": "{{count}} documento procesado",
+      "processed_other": "{{count}} documentos procesados",
+      "processed_many": "{{count}} documentos procesados",
+      "errors_one": "{{count}} carga con error",
+      "errors_other": "{{count}} cargas con error",
+      "errors_many": "{{count}} cargas con error"
+    }
+  },
+  "provider": {
+    "savedIn": "Guardado en {{category}}.",
+    "openFolder": "Abrir carpeta",
+    "invalidName": "Ingresa un nombre válido para el archivo.",
+    "sentForApproval": "\"{{name}}\" enviado para aprobación. Un administrador lo revisará en Auditoría.",
+    "saveFailed": "No se pudo guardar el documento.",
+    "fileUnavailable": "Archivo no disponible. Inténtalo de nuevo.",
+    "reviewReady": "Análisis completado. Revisa y confirma para guardar en la Biblioteca.",
+    "analyzeFailed": "Error al analizar el documento."
+  },
+  "policySaveFailed": "No se pudo guardar la política."
 }

@@ -155,5 +155,24 @@
     "fileBase": "documento",
     "fileSigned": "{{base}}-assinado.pdf",
     "fileSignedCode": "{{base}}-assinado-{{code}}.pdf"
+  },
+  "uploadQueue": {
+    "stillRunning": "A análise continua no servidor. O documento aparece na Biblioteca assim que terminar, e não precisa reenviar.",
+    "pollFailure": "Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado. Confira na Biblioteca antes de reenviar.",
+    "groqDailyLimit": "Cota diária de tokens do modelo Groq esgotada. Aguarde o reset (~1h) ou altere GROQ_MODEL para openai/gpt-oss-20b.",
+    "contextLimit": "O documento é grande demais para o modelo atual. Reduza o tamanho do PDF ou ajuste PDF_ANALYSIS_MAX_INPUT_CHARS.",
+    "timeout": "A análise automática demorou demais e foi interrompida. Tente novamente.",
+    "rateLimit": "Limite temporário da Groq atingido. Aguarde alguns minutos e tente novamente.",
+    "failed": "A análise do documento falhou.",
+    "notCompleted": "A análise não foi concluída.",
+    "wait": {
+      "lessThanMinute": "menos de 1 min",
+      "minutes": "~{{count}} min",
+      "hours": "~{{count}} h",
+      "yourTurn": "Na vez · {{wait}}",
+      "ahead_one": "{{count}} documento na frente",
+      "ahead_other": "{{count}} documentos na frente",
+      "withEstimate": "{{position}} · {{wait}}"
+    }
   }
 }

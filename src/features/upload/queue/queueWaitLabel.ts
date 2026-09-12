@@ -1,4 +1,5 @@
 import type { AnalysisQueueStatus } from '@/features/document-send/services/analyzePdf';
+import { commonPhrase } from '@/i18n/commonPhrase';
 
 /**
  * Texto curto de espera para o item na tela.
@@ -8,11 +9,11 @@ import type { AnalysisQueueStatus } from '@/features/document-send/services/anal
  * Aqui ele vê a diferença entre "é a sua vez" e "tem 400 na frente".
  */
 export function formatWaitSeconds(seconds: number): string {
-  if (seconds < 60) return 'menos de 1 min';
+  if (seconds < 60) return commonPhrase('uploadQueue.wait.lessThanMinute');
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `~${minutes} min`;
-  const hours = Math.round(seconds / 3_600);
-  return hours <= 1 ? '~1 h' : `~${hours} h`;
+  if (minutes < 60) return commonPhrase('uploadQueue.wait.minutes', { count: minutes });
+  const hours = Math.max(1, Math.round(seconds / 3_600));
+  return commonPhrase('uploadQueue.wait.hours', { count: hours });
 }
 
 /** `null` quando não há nada de útil a dizer — aí a tela mantém o texto de status normal. */
@@ -25,10 +26,16 @@ export function formatQueueWaitLabel(queueStatus: AnalysisQueueStatus | undefine
 
   // Posição zero é a vez dele: falar em "0 na frente" só confunde.
   if (position === undefined || position <= 0) {
-    return estimate ? `Na vez · ${formatWaitSeconds(estimate)}` : null;
+    return estimate
+      ? commonPhrase('uploadQueue.wait.yourTurn', { wait: formatWaitSeconds(estimate) })
+      : null;
   }
 
-  const positionLabel =
-    position === 1 ? '1 documento na frente' : `${position} documentos na frente`;
-  return estimate ? `${positionLabel} · ${formatWaitSeconds(estimate)}` : positionLabel;
+  const positionLabel = commonPhrase('uploadQueue.wait.ahead', { count: position });
+  return estimate
+    ? commonPhrase('uploadQueue.wait.withEstimate', {
+        position: positionLabel,
+        wait: formatWaitSeconds(estimate),
+      })
+    : positionLabel;
 }

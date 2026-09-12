@@ -155,5 +155,24 @@
     "fileBase": "document",
     "fileSigned": "{{base}}-signed.pdf",
     "fileSignedCode": "{{base}}-signed-{{code}}.pdf"
+  },
+  "uploadQueue": {
+    "stillRunning": "The analysis continues on the server. The document shows up in the Library when it's done, with no need to upload it again.",
+    "pollFailure": "We lost contact with the server during the analysis. The document may have been processed. Check the Library before uploading again.",
+    "groqDailyLimit": "The Groq model's daily token quota is exhausted. Wait for the reset (~1h) or change GROQ_MODEL to openai/gpt-oss-20b.",
+    "contextLimit": "The document is too large for the current model. Reduce the PDF size or adjust PDF_ANALYSIS_MAX_INPUT_CHARS.",
+    "timeout": "The automatic analysis took too long and was stopped. Try again.",
+    "rateLimit": "Temporary Groq limit reached. Wait a few minutes and try again.",
+    "failed": "The document analysis failed.",
+    "notCompleted": "The analysis wasn't completed.",
+    "wait": {
+      "lessThanMinute": "less than 1 min",
+      "minutes": "~{{count}} min",
+      "hours": "~{{count}} h",
+      "yourTurn": "Your turn · {{wait}}",
+      "ahead_one": "{{count}} document ahead",
+      "ahead_other": "{{count}} documents ahead",
+      "withEstimate": "{{position}} · {{wait}}"
+    }
   }
 }

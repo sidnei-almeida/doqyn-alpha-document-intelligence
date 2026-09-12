@@ -144,10 +144,10 @@ export function ReviewDrawer() {
     <WorkspaceSideDrawer
       title={
         requiresReview
-          ? 'Revisão necessária'
+          ? t('reviewDrawer.title.requiresReview')
           : isDocumentAdmin
-            ? 'Confirmar análise'
-            : 'Enviar para aprovação'
+            ? t('reviewDrawer.title.confirm')
+            : t('reviewDrawer.submitForApprovalButton')
       }
       onClose={closeReview}
       testId="upload-review-drawer"
@@ -159,10 +159,10 @@ export function ReviewDrawer() {
           <div className="min-w-0 flex-1">
             <p className="text-eyebrow uppercase text-doqyn-primary">
               {requiresReview
-                ? 'Revisão necessária'
+                ? t('reviewDrawer.title.requiresReview')
                 : isDocumentAdmin
-                  ? 'Confirmar análise'
-                  : 'Enviar para aprovação'}
+                  ? t('reviewDrawer.title.confirm')
+                  : t('reviewDrawer.submitForApprovalButton')}
             </p>
             <TruncatedText as="h2" className="mt-0.5 text-body font-semibold text-doqyn-text">
               {item.fileName}
@@ -216,18 +216,18 @@ export function ReviewDrawer() {
               </p>
               <p className="mt-0.5 text-body font-medium text-doqyn-text">
                 {fulfillsRequest
-                  ? (item.context?.categoryName ?? 'Definida pelo pedido')
+                  ? (item.context?.categoryName ?? t('reviewDrawer.category.fromRequest'))
                   : (manualCategory?.name ??
-                    (aiClassId ? aiClassName : 'A IA não conseguiu classificar'))}
+                    (aiClassId ? aiClassName : t('reviewDrawer.category.unclassified')))}
               </p>
               <p className="mt-0.5 text-micro text-doqyn-muted">
                 {fulfillsRequest
-                  ? 'Escolhida por quem pediu o documento. Não é possível alterar aqui.'
+                  ? t('reviewDrawer.categoryHint.fromRequest')
                   : manualCategory
-                    ? 'Escolhida por você. A IA fica registrada na auditoria.'
+                    ? t('reviewDrawer.categoryHint.manual')
                     : aiClassId
-                      ? 'Sugerida pela análise automática.'
-                      : 'Escolha a categoria para salvar este documento.'}
+                      ? t('reviewDrawer.categoryHint.ai')
+                      : t('reviewDrawer.categoryHint.pick')}
               </p>
             </div>
 

@@ -39,7 +39,21 @@
     "preferenciasDeUpload2": "Upload preferences",
     "submitForApprovalButton": "Submit for approval",
     "tipoDeDocumento": "Document type",
-    "umAdministradorRevisaraOs": "An administrator will review the metadata under Audit before publishing to the Library."
+    "umAdministradorRevisaraOs": "An administrator will review the metadata under Audit before publishing to the Library.",
+    "title": {
+      "requiresReview": "Review required",
+      "confirm": "Confirm analysis"
+    },
+    "category": {
+      "fromRequest": "Set by the request",
+      "unclassified": "The AI couldn't classify it"
+    },
+    "categoryHint": {
+      "fromRequest": "Chosen by whoever requested the document. It can't be changed here.",
+      "manual": "Chosen by you. The AI's choice stays in the audit log.",
+      "ai": "Suggested by the automatic analysis.",
+      "pick": "Choose the category to save this document."
+    }
   },
   "uploadDropOverlay": {
     "aIaAnalisaraClassificara": "The AI will analyze, classify and prepare the document for review before saving it to the Library.",
@@ -58,6 +72,44 @@
     "processedOf": "{{done}}/{{total}} processed",
     "removerDaFila": "Remove from queue",
     "revisar": "Review",
-    "tentarNovamente": "Try again"
-  }
+    "tentarNovamente": "Try again",
+    "status": {
+      "queued": "Queued",
+      "analyzing": "Analyzing with AI…",
+      "review": "Awaiting review",
+      "confirming": "Saving to the Library…",
+      "awaitingApproval": "Awaiting admin approval",
+      "aiPaused": "AI unavailable. Try again",
+      "stillRunning": "Analysis in progress on the server",
+      "done": "Saved to the Library",
+      "error": "Error"
+    },
+    "savedIn": "Saved in {{category}} · {{size}}",
+    "savedLibrary": "Saved to the Library · {{size}}",
+    "sentForApproval": "Sent for approval · {{size}}",
+    "autoSaving": "Saving automatically in {{seconds}}s · {{size}}",
+    "withSize": "{{label}} · {{size}}",
+    "headline": {
+      "review_one": "{{count}} file awaiting review",
+      "review_other": "{{count}} files awaiting review",
+      "processing_one": "{{count}} file processing",
+      "processing_other": "{{count}} files processing",
+      "savedAndApproval": "{{saved}} saved · {{approval}} awaiting approval",
+      "processed_one": "{{count}} document processed",
+      "processed_other": "{{count}} documents processed",
+      "errors_one": "{{count}} upload failed",
+      "errors_other": "{{count}} uploads failed"
+    }
+  },
+  "provider": {
+    "savedIn": "Saved in {{category}}.",
+    "openFolder": "Open folder",
+    "invalidName": "Enter a valid name for the file.",
+    "sentForApproval": "\"{{name}}\" sent for approval. An administrator will review it in Audit.",
+    "saveFailed": "Couldn't save the document.",
+    "fileUnavailable": "File unavailable. Try again.",
+    "reviewReady": "Analysis complete. Review and confirm to save to the Library.",
+    "analyzeFailed": "Error analyzing the document."
+  },
+  "policySaveFailed": "Couldn't save the policy."
 }

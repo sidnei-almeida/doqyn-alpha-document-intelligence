@@ -226,7 +226,7 @@ describe('provider da fila — integração com contratos existentes', () => {
 
   it('open_review estaciona o arquivo e segue com o lote', () => {
     const provider = readSrc('features/upload/UploadQueueProvider.tsx');
-    assert.ok(provider.includes("toast.info('Análise concluída"));
+    assert.ok(provider.includes("toast.info(i18n.t('upload:provider.reviewReady')"));
 
     // O que segue o lote: os dois desvios que estacionam o arquivo chamam tryPumpQueue antes de
     // sair. Sem isso, um documento em revisão trava todos os outros até alguém abrir a tela.
@@ -300,8 +300,8 @@ describe('provider da fila — integração com contratos existentes', () => {
     const drawer = readSrc('features/upload/UploadQueueDrawer.tsx');
     assert.equal(drawer.includes('Uploads concluídos'), false);
     assert.ok(drawer.includes('countSubmittedItems'));
-    assert.ok(drawer.includes('Aguardando revisão'));
-    assert.ok(drawer.includes('Salvo na Biblioteca'));
+    assert.ok(drawer.includes('uploadQueueDrawer.status.review'));
+    assert.ok(drawer.includes('uploadQueueDrawer.savedLibrary'));
     assert.ok(drawer.includes('uploadStatusProgress'));
     assert.ok(drawer.includes('role="progressbar"'));
   });
