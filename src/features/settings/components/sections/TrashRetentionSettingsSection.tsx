@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
 import type { RetentionDraft } from '../../hooks/useOrganizationSettings';
+import { i18n } from '@/i18n';
 import { useTranslation } from 'react-i18next';
 
 const RETENTION_DAYS_MIN = 1;
@@ -22,10 +23,9 @@ function clampRetentionDays(value: number): number {
 
 function retentionPreview(mode: 'days' | 'manual', days: number): string {
   if (mode === 'manual') {
-    return 'Arquivos excluídos permanecem na lixeira até desativação manual ou ação do job de retenção.';
+    return i18n.t('settings:trashRetentionSettingsSection.previewManual');
   }
-  const label = days === 1 ? '1 dia' : `${days} dias`;
-  return `Após ${label} na lixeira, o documento é desativado (não excluído do storage). Administradores podem recuperá-lo em Desativados.`;
+  return i18n.t('settings:trashRetentionSettingsSection.previewDays', { count: days });
 }
 
 /** Bloco de leitura/edição. Quem salva é a barra da tela — aqui não há botão. */

@@ -14,6 +14,28 @@
     "rotuloDoCampo": "Rótulo do campo",
     "rotuloExibido": "rótulo exibido",
     "valorDoCampo": "Valor do campo",
-    "voceNaoTemPermissao": "Você não tem permissão para editar os metadados deste documento."
+    "voceNaoTemPermissao": "Você não tem permissão para editar os metadados deste documento.",
+    "renameFailed": "Não foi possível renomear o documento.",
+    "source": {
+      "missing": "Faltando",
+      "manual": "Manual",
+      "extracted": "Extraído"
+    },
+    "notice": {
+      "noDate": "Sem data de vencimento gravada. Enquanto o campo estiver vazio, nenhum alerta desta categoria dispara para este documento.",
+      "expiredDays_one": "Vencido há {{count}} dia.",
+      "expiredDays_other": "Vencido há {{count}} dias.",
+      "today": "Vence hoje.",
+      "inDays_one": "Vence em {{count}} dia.",
+      "inDays_other": "Vence em {{count}} dias."
+    },
+    "validityLabel": "Data de vencimento",
+    "noChanges": "Nenhuma alteração para salvar.",
+    "savedWithAlerts": "Metadados salvos. Os alertas da categoria passam a valer para este documento.",
+    "saved": "Metadados salvos.",
+    "saveFailed": "Não foi possível salvar os metadados.",
+    "notProvided": "Não informado",
+    "saving": "Salvando…",
+    "saveMetadata": "Salvar metadados"
   }
 }

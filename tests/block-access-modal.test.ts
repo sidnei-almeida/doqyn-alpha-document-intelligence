@@ -17,9 +17,9 @@ describe('bloqueio de acesso na tela /users', () => {
     assert.ok(page.includes('BlockAccessDialog'));
     assert.ok(page.includes('UnblockAccessDialog'));
     assert.ok(page.includes("usersPage.actions.blockAccess'"));
-    assert.ok(page.includes('Desbloquear acesso'));
-    assert.ok(page.includes('Acesso bloqueado com sucesso.'));
-    assert.ok(page.includes('Acesso desbloqueado com sucesso.'));
+    assert.ok(page.includes("usersPage.actions.unblockAccess'"));
+    assert.ok(page.includes("usersPage.toast.blocked'"));
+    assert.ok(page.includes("usersPage.toast.unblocked'"));
     assert.ok(!page.includes("toast.success('Usuário bloqueado.')"));
   });
 

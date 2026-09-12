@@ -34,7 +34,6 @@
  * - O front só esconde: todo endpoint de configuração de tenant nasce com 403 no servidor.
  */
 export const SETTINGS_UI_PATTERN = {
-  pageEyebrow: 'Configurações',
   contentMaxWidth: '46rem',
   blockGap: '1.75rem',
   sectionBodyGap: '1rem',

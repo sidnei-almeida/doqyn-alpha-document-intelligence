@@ -86,7 +86,7 @@ export function useOrganizationSettings({
       showAppToast({
         type: 'success',
         title: i18n.t('settings:toast.salvo'),
-        message: i18n.t('settings:toast.salvoMessage', { scope: vocabulary.wholeScope }),
+        message: i18n.t(`settings:toast.salvoMessage.${vocabulary.variant}`),
       });
     } catch (error) {
       showAppToast({

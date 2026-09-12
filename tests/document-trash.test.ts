@@ -301,7 +301,7 @@ describe('document trash — frontend lixeira e desativados', () => {
     // Quem não administra lê e não altera.
     assert.ok(company.includes('governsOrganization'));
     assert.ok(retention.includes('settings-retention-preview'));
-    assert.ok(retention.includes('desativado'));
+    assert.ok(retention.includes('trashRetentionSettingsSection.preview'));
     // O estado sujo subiu para `OrganizationSection`, que é quem tem a barra de salvar: a
     // seção de retenção divide o mesmo botão com as preferências de envio.
     assert.ok(company.includes('dirty'));

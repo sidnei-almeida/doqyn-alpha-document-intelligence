@@ -14,6 +14,28 @@
     "rotuloDoCampo": "Field label",
     "rotuloExibido": "displayed label",
     "valorDoCampo": "Field value",
-    "voceNaoTemPermissao": "You do not have permission to edit this document's metadata."
+    "voceNaoTemPermissao": "You do not have permission to edit this document's metadata.",
+    "renameFailed": "Couldn't rename the document.",
+    "source": {
+      "missing": "Missing",
+      "manual": "Manual",
+      "extracted": "Extracted"
+    },
+    "notice": {
+      "noDate": "No expiry date saved. While the field is empty, no alert from this category fires for this document.",
+      "expiredDays_one": "Expired {{count}} day ago.",
+      "expiredDays_other": "Expired {{count}} days ago.",
+      "today": "Expires today.",
+      "inDays_one": "Expires in {{count}} day.",
+      "inDays_other": "Expires in {{count}} days."
+    },
+    "validityLabel": "Expiry date",
+    "noChanges": "No changes to save.",
+    "savedWithAlerts": "Metadata saved. The category's alerts now apply to this document.",
+    "saved": "Metadata saved.",
+    "saveFailed": "Couldn't save the metadata.",
+    "notProvided": "Not provided",
+    "saving": "Saving…",
+    "saveMetadata": "Save metadata"
   }
 }

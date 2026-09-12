@@ -4,22 +4,49 @@
     "dispensar": "Dismiss",
     "documentosEnviadosVersoesNovas": "Uploaded documents, new versions, signature requests, shares and expiry dates show up in this inbox.",
     "marcarComoLida": "Mark as read",
-    "nadaPorAqui": "Nothing here"
+    "nadaPorAqui": "Nothing here",
+    "type": {
+      "document_expiring": "expiry",
+      "document_created": "new document",
+      "document_updated": "new version",
+      "signature_required": "signature",
+      "document_shared": "shared",
+      "access": "access",
+      "approval": "approval",
+      "request": "request",
+      "inbound": "external"
+    },
+    "moment": {
+      "now": "now",
+      "minutes": "{{n}} min ago",
+      "hours": "{{n}} h ago"
+    }
   },
   "notificationsBell": {
     "marcarTudoComoLido": "Mark everything as read",
     "notificacoes": "Notifications",
     "notificacoes2": "Notifications",
-    "verTodas": "See all"
+    "verTodas": "See all",
+    "aria": "Notifications",
+    "ariaUnread_one": "Notifications ({{count}} unread)",
+    "ariaUnread_other": "Notifications ({{count}} unread)"
   },
   "notificationsPage": {
     "documentosEnviadosVersoesNovas": "Uploaded documents, new versions, signature requests, shares and expiry dates.",
     "filtrarNotificacoes": "Filter notifications",
     "marcarTudoComoLido": "Mark everything as read",
-    "notificacoes": "Notifications"
+    "notificacoes": "Notifications",
+    "filters": {
+      "unread": "Unread",
+      "all": "All",
+      "dismissed": "Dismissed"
+    },
+    "eyebrow": "Inbox"
   },
   "toast": {
     "falhaAtualizar": "Could not update the notification. Try again.",
-    "falhaMarcarLidas": "Could not mark the notifications as read."
+    "falhaMarcarLidas": "Could not mark the notifications as read.",
+    "markedRead_one": "{{count}} notification marked as read.",
+    "markedRead_other": "{{count}} notifications marked as read."
   }
 }

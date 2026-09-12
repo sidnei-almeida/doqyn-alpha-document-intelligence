@@ -60,14 +60,14 @@ export function ProfileSettingsSection() {
       await refreshUser();
       showAppToast({
         type: 'success',
-        title: 'Identidade salva',
-        message: 'Seu nome já aparece assim no app.',
+        title: t('profileSettingsSection.identitySaved'),
+        message: t('profileSettingsSection.identitySavedMessage'),
       });
     } catch (error) {
       showAppToast({
         type: 'error',
-        title: 'Não foi possível salvar',
-        message: error instanceof Error ? error.message : 'Tente novamente.',
+        title: t('profileSettingsSection.saveFailed'),
+        message: error instanceof Error ? error.message : t('profileSettingsSection.tryAgain'),
       });
     } finally {
       setSaving(false);
@@ -95,7 +95,9 @@ export function ProfileSettingsSection() {
       setPreviewUrl(null);
     } catch (error) {
       setPreviewUrl(null);
-      setLocalError(error instanceof Error ? error.message : 'Não foi possível enviar a foto.');
+      setLocalError(
+        error instanceof Error ? error.message : t('profileSettingsSection.photoUploadFailed'),
+      );
     }
   }
 
@@ -106,7 +108,9 @@ export function ProfileSettingsSection() {
       await refreshUser();
       setPreviewUrl(null);
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : 'Não foi possível remover a foto.');
+      setLocalError(
+        error instanceof Error ? error.message : t('profileSettingsSection.photoRemoveFailed'),
+      );
     }
   }
 
@@ -241,7 +245,7 @@ export function ProfileSettingsSection() {
           disabled={!dirty || saving}
           onClick={() => void handleSaveIdentity()}
         >
-          {saving ? 'Salvando…' : 'Salvar identidade'}
+          {saving ? t('profileSettingsSection.saving') : t('profileSettingsSection.saveIdentity')}
         </Button>
       </div>
     </SettingsSectionBody>

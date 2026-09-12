@@ -27,6 +27,8 @@ export function OrganizationSection() {
     isCompanyAdmin,
   });
   const vocabulary = tenantVocabulary(tenant?.tenantType);
+  // Frase inteira por tipo de tenant: o escopo muda de gênero e de posição conforme o idioma.
+  const scopeVariant = vocabulary.variant;
   const canAccessRules = canAccessRulesPage(hasAnyRole);
   const { upload, trashRetention, dirty, saving, save, discard } = useOrganizationSettings({
     governs,
@@ -40,7 +42,7 @@ export function OrganizationSection() {
       <section className="settings-block">
         <SettingsSectionHeader
           title={t('organizationSection.envioEIa')}
-          description={`Vale para ${vocabulary.wholeScope}: quando a IA renomeia o arquivo e quando o envio para para revisão.`}
+          description={t(`organizationSection.uploadAiDescription.${scopeVariant}`)}
           className="settings-block__header"
         />
         <UploadAiSettingsSection
@@ -57,7 +59,7 @@ export function OrganizationSection() {
       <section className="settings-block">
         <SettingsSectionHeader
           title={t('organizationSection.armazenamento')}
-          description={`O que os documentos ${vocabulary.ofScope} já ocupam.`}
+          description={t(`organizationSection.storageDescription.${scopeVariant}`)}
           className="settings-block__header"
         />
         <StorageUsageSection />
@@ -92,21 +94,19 @@ export function OrganizationSection() {
             entries={[
               {
                 icon: 'balance',
-                title: 'Regras e governança',
-                description:
-                  'Políticas de classificação, fluxos de aprovação e mapeamento entre categorias e grupos.',
+                title: t('organizationSection.rulesTitle'),
+                description: t('organizationSection.rulesDescription'),
                 href: '/rules',
-                linkLabel: 'Abrir Regras',
+                linkLabel: t('organizationSection.openRules'),
               },
               ...(isCompanyAdmin
                 ? [
                     {
                       icon: 'group',
-                      title: 'Grupos de acesso',
-                      description:
-                        'Grupos vinculados às regras de visibilidade e permissões por área.',
+                      title: t('organizationSection.groupsTitle'),
+                      description: t('organizationSection.groupsDescription'),
                       href: '/users',
-                      linkLabel: 'Gerenciar usuários',
+                      linkLabel: t('organizationSection.manageUsers'),
                     },
                   ]
                 : []),

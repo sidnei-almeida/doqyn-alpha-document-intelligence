@@ -21,9 +21,9 @@ export function SettingsSaveBar({
   saving = false,
   onSave,
   onDiscard,
-  saveLabel = 'Salvar configurações',
-  discardLabel = 'Descartar',
-  dirtyLabel = 'Alterações não salvas',
+  saveLabel,
+  discardLabel,
+  dirtyLabel,
   className,
   inset = false,
 }: SettingsSaveBarProps) {
@@ -42,7 +42,7 @@ export function SettingsSaveBar({
         )}
         aria-live="polite"
       >
-        {dirty ? dirtyLabel : 'Tudo salvo'}
+        {dirty ? (dirtyLabel ?? t('settingsSaveBar.unsaved')) : t('settingsSaveBar.allSaved')}
       </p>
       <div className="settings-save-bar__actions">
         {onDiscard ? (
@@ -53,11 +53,11 @@ export function SettingsSaveBar({
             disabled={!dirty || saving}
             onClick={onDiscard}
           >
-            {discardLabel}
+            {discardLabel ?? t('settingsSaveBar.discard')}
           </Button>
         ) : null}
         <Button type="button" size="sm" disabled={!dirty || saving} onClick={onSave}>
-          {saving ? 'Salvando…' : saveLabel}
+          {saving ? t('settingsSaveBar.saving') : (saveLabel ?? t('settingsSaveBar.save'))}
         </Button>
       </div>
     </div>

@@ -4,22 +4,51 @@
     "dispensar": "Descartar",
     "documentosEnviadosVersoesNovas": "Los documentos subidos, las versiones nuevas, las solicitudes de firma, las comparticiones y los vencimientos aparecen en esta bandeja.",
     "marcarComoLida": "Marcar como leída",
-    "nadaPorAqui": "Nada por aquí"
+    "nadaPorAqui": "Nada por aquí",
+    "type": {
+      "document_expiring": "vencimiento",
+      "document_created": "nuevo documento",
+      "document_updated": "nueva versión",
+      "signature_required": "firma",
+      "document_shared": "compartido",
+      "access": "acceso",
+      "approval": "aprobación",
+      "request": "solicitud",
+      "inbound": "externo"
+    },
+    "moment": {
+      "now": "ahora",
+      "minutes": "hace {{n}} min",
+      "hours": "hace {{n}} h"
+    }
   },
   "notificationsBell": {
     "marcarTudoComoLido": "Marcar todo como leído",
     "notificacoes": "Notificaciones",
     "notificacoes2": "Notificaciones",
-    "verTodas": "Ver todas"
+    "verTodas": "Ver todas",
+    "aria": "Notificaciones",
+    "ariaUnread_one": "Notificaciones ({{count}} sin leer)",
+    "ariaUnread_many": "Notificaciones ({{count}} sin leer)",
+    "ariaUnread_other": "Notificaciones ({{count}} sin leer)"
   },
   "notificationsPage": {
     "documentosEnviadosVersoesNovas": "Documentos subidos, versiones nuevas, solicitudes de firma, comparticiones y vencimientos.",
     "filtrarNotificacoes": "Filtrar notificaciones",
     "marcarTudoComoLido": "Marcar todo como leído",
-    "notificacoes": "Notificaciones"
+    "notificacoes": "Notificaciones",
+    "filters": {
+      "unread": "No leídas",
+      "all": "Todas",
+      "dismissed": "Descartadas"
+    },
+    "eyebrow": "Bandeja"
   },
   "toast": {
     "falhaAtualizar": "No se pudo actualizar la notificación. Inténtalo de nuevo.",
-    "falhaMarcarLidas": "No se pudieron marcar las notificaciones como leídas."
+    "falhaMarcarLidas": "No se pudieron marcar las notificaciones como leídas.",
+    "markedRead_one": "{{count}} notificación marcada como leída.",
+    "markedRead_many": "{{count}} notificaciones marcadas como leídas.",
+    "markedRead_other": "{{count}} notificaciones marcadas como leídas."
   }
 }

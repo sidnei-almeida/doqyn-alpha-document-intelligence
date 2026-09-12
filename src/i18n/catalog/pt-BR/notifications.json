@@ -4,22 +4,49 @@
     "dispensar": "Dispensar",
     "documentosEnviadosVersoesNovas": "Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos aparecem nesta caixa.",
     "marcarComoLida": "Marcar como lida",
-    "nadaPorAqui": "Nada por aqui"
+    "nadaPorAqui": "Nada por aqui",
+    "type": {
+      "document_expiring": "vencimento",
+      "document_created": "novo documento",
+      "document_updated": "nova versão",
+      "signature_required": "assinatura",
+      "document_shared": "compartilhado",
+      "access": "acesso",
+      "approval": "aprovação",
+      "request": "pedido",
+      "inbound": "de fora"
+    },
+    "moment": {
+      "now": "agora",
+      "minutes": "há {{n}} min",
+      "hours": "há {{n}} h"
+    }
   },
   "notificationsBell": {
     "marcarTudoComoLido": "Marcar tudo como lido",
     "notificacoes": "Notificações",
     "notificacoes2": "Notificações",
-    "verTodas": "Ver todas"
+    "verTodas": "Ver todas",
+    "aria": "Notificações",
+    "ariaUnread_one": "Notificações ({{count}} não lida)",
+    "ariaUnread_other": "Notificações ({{count}} não lidas)"
   },
   "notificationsPage": {
     "documentosEnviadosVersoesNovas": "Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos.",
     "filtrarNotificacoes": "Filtrar notificações",
     "marcarTudoComoLido": "Marcar tudo como lido",
-    "notificacoes": "Notificações"
+    "notificacoes": "Notificações",
+    "filters": {
+      "unread": "Não lidas",
+      "all": "Todas",
+      "dismissed": "Dispensadas"
+    },
+    "eyebrow": "Caixa"
   },
   "toast": {
     "falhaAtualizar": "Não foi possível atualizar a notificação. Tente novamente.",
-    "falhaMarcarLidas": "Não foi possível marcar as notificações como lidas."
+    "falhaMarcarLidas": "Não foi possível marcar as notificações como lidas.",
+    "markedRead_one": "{{count}} notificação marcada como lida.",
+    "markedRead_other": "{{count}} notificações marcadas como lidas."
   }
 }

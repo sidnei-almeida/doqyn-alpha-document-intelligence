@@ -29,9 +29,9 @@ const THEME_OPTIONS = THEMES.map((value) => ({
   icon: THEME_ICONS[value],
 }));
 
-const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; label: string; icon: string }> = [
-  { value: 'grid', label: 'Grade', icon: 'grid_view' },
-  { value: 'list', label: 'Lista', icon: 'view_list' },
+const VIEW_OPTIONS: Array<{ value: LibraryDefaultView; labelKey: string; icon: string }> = [
+  { value: 'grid', labelKey: 'preferencesSettingsSection.view.grid', icon: 'grid_view' },
+  { value: 'list', labelKey: 'preferencesSettingsSection.view.list', icon: 'view_list' },
 ];
 
 export function PreferencesSettingsSection() {
@@ -158,7 +158,7 @@ export function PreferencesSettingsSection() {
                     )}
                   >
                     <Icon name={option.icon} size={ICON_SIZE.xs} aria-hidden />
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 );
               })}

@@ -10,7 +10,6 @@ import {
   visibleSettingsNavItems,
   type SettingsSectionId,
 } from './settingsSections';
-import { SETTINGS_UI_PATTERN } from './settingsUiPattern';
 
 function SettingsSectionPanel({ section }: { section: SettingsSectionId }) {
   switch (section) {
@@ -30,7 +29,7 @@ export function SettingsPage() {
 
   return (
     <PageShell
-      eyebrow={SETTINGS_UI_PATTERN.pageEyebrow}
+      eyebrow={t('settingsPage.eyebrow')}
       title={t(meta.labelKey)}
       description={t(meta.descriptionKey)}
       className="settings-page-shell"

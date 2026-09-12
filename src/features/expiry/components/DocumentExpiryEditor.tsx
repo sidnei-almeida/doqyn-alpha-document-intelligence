@@ -14,6 +14,7 @@ import {
   type MetadataFieldPatch,
   type MetadataSheetRow,
 } from '../api/expiryApi';
+import { i18n } from '@/i18n';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -72,9 +73,16 @@ function sourceLabel(row: MetadataSheetRow): {
   label: string;
   variant: 'success' | 'info' | 'warning' | 'neutral';
 } {
-  if (!row.filled) return { label: 'Faltando', variant: row.required ? 'warning' : 'neutral' };
-  if (row.source === 'manual') return { label: 'Manual', variant: 'success' };
-  return { label: 'Extraído', variant: 'info' };
+  if (!row.filled) {
+    return {
+      label: i18n.t('expiry:documentExpiryEditor.source.missing'),
+      variant: row.required ? 'warning' : 'neutral',
+    };
+  }
+  if (row.source === 'manual') {
+    return { label: i18n.t('expiry:documentExpiryEditor.source.manual'), variant: 'success' };
+  }
+  return { label: i18n.t('expiry:documentExpiryEditor.source.extracted'), variant: 'info' };
 }
 
 /**
@@ -88,15 +96,23 @@ function expiryNotice(
     if (!sheet.expiryAlerts?.enabled) return null;
     return {
       variant: 'warning',
-      text: 'Sem data de vencimento gravada. Enquanto o campo estiver vazio, nenhum alerta desta categoria dispara para este documento.',
+      text: i18n.t('expiry:documentExpiryEditor.notice.noDate'),
     };
   }
 
   const days = sheet.daysRemaining;
-  if (days < 0) return { variant: 'danger', text: `Vencido há ${Math.abs(days)} dia(s).` };
-  if (days === 0) return { variant: 'danger', text: 'Vence hoje.' };
-  if (days <= 30) return { variant: 'warning', text: `Vence em ${days} dia(s).` };
-  return { variant: 'info', text: `Vence em ${days} dia(s).` };
+  if (days < 0) {
+    return {
+      variant: 'danger',
+      text: i18n.t('expiry:documentExpiryEditor.notice.expiredDays', { count: Math.abs(days) }),
+    };
+  }
+  if (days === 0) {
+    return { variant: 'danger', text: i18n.t('expiry:documentExpiryEditor.notice.today') };
+  }
+  const text = i18n.t('expiry:documentExpiryEditor.notice.inDays', { count: days });
+  if (days <= 30) return { variant: 'warning', text };
+  return { variant: 'info', text };
 }
 
 /* Atenção e erro pedem decisão, então mantêm preenchimento; "vence em 2480
@@ -146,7 +162,7 @@ export function DocumentExpiryEditor({
 
     const validityRow: MetadataSheetRow = {
       key: VALIDITY_KEY,
-      label: 'Data de vencimento',
+      label: t('documentExpiryEditor.validityLabel'),
       type: 'date',
       required: false,
       value: sheet.validityDate ?? currentValidityDate ?? null,
@@ -155,7 +171,7 @@ export function DocumentExpiryEditor({
       isValidity: true,
     };
     return [validityRow, ...sheet.rows];
-  }, [sheet, currentValidityDate]);
+  }, [sheet, currentValidityDate, t]);
 
   const initialValues = useMemo(() => {
     const map: Record<string, string> = {};
@@ -194,14 +210,14 @@ export function DocumentExpiryEditor({
         });
       }
 
-      if (fields.length === 0) throw new Error('Nenhuma alteração para salvar.');
+      if (fields.length === 0) throw new Error(t('documentExpiryEditor.noChanges'));
       return updateDocumentMetadata(documentId, fields);
     },
     onSuccess: (result) => {
       toast.success(
         result.validityDate
-          ? 'Metadados salvos. Os alertas da categoria passam a valer para este documento.'
-          : 'Metadados salvos.',
+          ? t('documentExpiryEditor.savedWithAlerts')
+          : t('documentExpiryEditor.saved'),
       );
       setDrafts({});
       setExtraFields([]);
@@ -218,7 +234,7 @@ export function DocumentExpiryEditor({
       toast.error(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Não foi possível salvar os metadados.',
+          : t('documentExpiryEditor.saveFailed'),
       );
     },
   });
@@ -300,7 +316,7 @@ export function DocumentExpiryEditor({
                     variant="rule"
                     rows={3}
                     aria-label={row.label}
-                    placeholder={row.description ?? 'Não informado'}
+                    placeholder={row.description ?? t('documentExpiryEditor.notProvided')}
                     value={value}
                     onChange={(event) =>
                       setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
@@ -320,7 +336,7 @@ export function DocumentExpiryEditor({
                     variant="rule"
                     aria-label={row.label}
                     type={row.type === 'number' ? 'number' : 'text'}
-                    placeholder={row.description ?? 'Não informado'}
+                    placeholder={row.description ?? t('documentExpiryEditor.notProvided')}
                     value={value}
                     onChange={(event) =>
                       setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
@@ -429,7 +445,9 @@ export function DocumentExpiryEditor({
               onClick={() => save.mutate()}
               disabled={!isDirty || save.isPending}
             >
-              {save.isPending ? 'Salvando…' : 'Salvar metadados'}
+              {save.isPending
+                ? t('documentExpiryEditor.saving')
+                : t('documentExpiryEditor.saveMetadata')}
             </Button>
           </div>
         </>

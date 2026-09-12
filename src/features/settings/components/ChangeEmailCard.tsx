@@ -5,7 +5,6 @@ import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CodeInput } from '@/features/email-verification/components/CodeInput';
-import { plural } from '@/lib/plural';
 import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import {
   emailChangeApi,
@@ -34,8 +33,8 @@ export function ChangeEmailCard() {
   // Sugerir um endereço corporativo a quem tem conta pessoal é oferecer um exemplo que não
   // se parece com o caso de uso dela.
   const emailPlaceholder = isIndividualTenant(tenant?.tenantType)
-    ? 'voce@exemplo.com'
-    : 'voce@suaempresa.com.br';
+    ? t('changeEmailCard.placeholderIndividual')
+    : t('changeEmailCard.placeholderBusiness');
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -172,8 +171,8 @@ export function ChangeEmailCard() {
           {typeof attemptsLeft === 'number' && (confirmMutation.isError || blocked) ? (
             <p className="settings-section-note">
               {blocked
-                ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-                : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
+                ? t('changeEmailCard.codeBlocked')
+                : t('changeEmailCard.attemptsLeft', { count: attemptsLeft })}
             </p>
           ) : null}
 
@@ -196,10 +195,10 @@ export function ChangeEmailCard() {
               disabled={resendMutation.isPending || cooldown > 0}
             >
               {cooldown > 0
-                ? `Reenviar em ${cooldown}s`
+                ? t('changeEmailCard.resendIn', { seconds: cooldown })
                 : resendMutation.isPending
-                  ? 'Reenviando…'
-                  : 'Reenviar código'}
+                  ? t('changeEmailCard.resending')
+                  : t('changeEmailCard.resend')}
             </Button>
             <Button
               type="button"
@@ -208,7 +207,9 @@ export function ChangeEmailCard() {
               onClick={() => confirmMutation.mutate(code)}
               disabled={code.length !== 6 || confirmMutation.isPending || blocked}
             >
-              {confirmMutation.isPending ? 'Confirmando…' : 'Confirmar troca'}
+              {confirmMutation.isPending
+                ? t('changeEmailCard.confirming')
+                : t('changeEmailCard.confirmChange')}
             </Button>
           </>
         ) : (
@@ -219,7 +220,9 @@ export function ChangeEmailCard() {
             onClick={() => requestMutation.mutate()}
             disabled={requestMutation.isPending || !newEmail || !password}
           >
-            {requestMutation.isPending ? 'Enviando…' : 'Solicitar troca de e-mail'}
+            {requestMutation.isPending
+              ? t('changeEmailCard.sending')
+              : t('changeEmailCard.requestChange')}
           </Button>
         )}
       </div>

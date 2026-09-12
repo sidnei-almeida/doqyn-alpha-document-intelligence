@@ -1,5 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
 import { parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
 
 export type MetadataFieldPatch = {
   key: string;
@@ -96,7 +97,7 @@ export async function renameDocument(
   });
 
   if (!response.ok) {
-    throw await parseApiError(response, 'Não foi possível renomear o documento.');
+    throw await parseApiError(response, i18n.t('expiry:documentExpiryEditor.renameFailed'));
   }
 
   return (await response.json()) as RenameDocumentResponse;

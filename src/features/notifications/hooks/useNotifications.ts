@@ -54,11 +54,7 @@ export function useNotifications(options?: { status?: NotificationStatus; limit?
     onSuccess: (result) => {
       invalidate();
       if (result.updated > 0) {
-        toast.success(
-          result.updated === 1
-            ? '1 notificação marcada como lida.'
-            : `${result.updated} notificações marcadas como lidas.`,
-        );
+        toast.success(i18n.t('notifications:toast.markedRead', { count: result.updated }));
       }
     },
     onError: () => toast.error(i18n.t('notifications:toast.falhaMarcarLidas')),

@@ -32,11 +32,19 @@ export function UploadAiSettingsSection({
       <div className="settings-summary-bar" role="status" aria-live="polite">
         <div className="settings-summary-bar__label">
           <Icon name="tune" size={14} aria-hidden />
-          <span>{canManage ? `Resumo ${dirty ? 'do rascunho' : 'atual'}` : 'Em vigor'}</span>
+          <span>
+            {canManage
+              ? dirty
+                ? t('uploadAiSettingsSection.summaryDraft')
+                : t('uploadAiSettingsSection.summaryCurrent')
+              : t('uploadAiSettingsSection.inEffect')}
+          </span>
         </div>
         <div className="settings-summary-bar__values">
           <span className="settings-summary-bar__chip">
-            {draft.autoReviewEnabled ? `Auto ${draft.autoAcceptDelaySeconds}s` : 'Revisão manual'}
+            {draft.autoReviewEnabled
+              ? t('uploadAiSettingsSection.autoDelay', { seconds: draft.autoAcceptDelaySeconds })
+              : t('uploadAiSettingsSection.manualReview')}
           </span>
           <span className="settings-summary-bar__separator" aria-hidden>
             ·

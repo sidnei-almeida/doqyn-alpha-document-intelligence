@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { changePassword, ChangePasswordError } from '@/features/settings/api/changePasswordApi';
+import { i18n } from '@/i18n';
 import { useTranslation } from 'react-i18next';
 
 const EMPTY_FORM = {
@@ -27,17 +28,17 @@ function getPasswordRequirements(password: string): PasswordRequirement[] {
   return [
     {
       id: 'length',
-      label: 'Mínimo de 8 caracteres',
+      label: i18n.t('settings:changePasswordForm.req.length'),
       met: password.length >= 8,
     },
     {
       id: 'letters',
-      label: 'Contém letras',
+      label: i18n.t('settings:changePasswordForm.req.letters'),
       met: /[A-Za-zÀ-ÿ]/.test(password),
     },
     {
       id: 'numbers',
-      label: 'Contém números',
+      label: i18n.t('settings:changePasswordForm.req.numbers'),
       met: /\d/.test(password),
     },
   ];
@@ -50,11 +51,17 @@ function getPasswordStrength(
   level: 'empty' | 'weak' | 'medium' | 'strong';
   label: string;
 } {
-  if (!password) return { level: 'empty', label: 'Digite a nova senha' };
+  if (!password) {
+    return { level: 'empty', label: i18n.t('settings:changePasswordForm.strength.empty') };
+  }
   const metCount = requirements.filter((item) => item.met).length;
-  if (metCount <= 1) return { level: 'weak', label: 'Fraca' };
-  if (metCount === 2) return { level: 'medium', label: 'Média' };
-  return { level: 'strong', label: 'Forte' };
+  if (metCount <= 1) {
+    return { level: 'weak', label: i18n.t('settings:changePasswordForm.strength.weak') };
+  }
+  if (metCount === 2) {
+    return { level: 'medium', label: i18n.t('settings:changePasswordForm.strength.medium') };
+  }
+  return { level: 'strong', label: i18n.t('settings:changePasswordForm.strength.strong') };
 }
 
 export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
@@ -79,15 +86,15 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
     setFieldErrors({});
 
     if (!form.currentPassword.trim()) {
-      setFieldErrors({ currentPassword: 'Informe a senha atual.' });
+      setFieldErrors({ currentPassword: t('changePasswordForm.currentRequired') });
       return;
     }
     if (form.newPassword.length < 8) {
-      setFieldErrors({ newPassword: 'A nova senha deve ter pelo menos 8 caracteres.' });
+      setFieldErrors({ newPassword: t('changePasswordForm.tooShort') });
       return;
     }
     if (form.newPassword !== form.confirmPassword) {
-      setFieldErrors({ confirmPassword: 'A confirmação não confere com a nova senha.' });
+      setFieldErrors({ confirmPassword: t('changePasswordForm.mismatch') });
       return;
     }
 
@@ -100,15 +107,17 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       });
 
       setForm(EMPTY_FORM);
-      toast.success(result.message ?? 'Senha alterada com sucesso.');
+      // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+      void result;
+      toast.success(t('changePasswordForm.changed'));
     } catch (error) {
       if (error instanceof ChangePasswordError) {
         if (error.status === 401) {
-          toast.error('Sessão expirada. Faça login novamente.');
+          toast.error(t('changePasswordForm.sessionExpired'));
           return;
         }
         if (error.code === 'INVALID_CURRENT_PASSWORD') {
-          setFieldErrors({ currentPassword: 'Senha atual incorreta.' });
+          setFieldErrors({ currentPassword: t('changePasswordForm.wrongCurrent') });
           return;
         }
         if (error.code === 'WEAK_PASSWORD') {
@@ -120,13 +129,13 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
           return;
         }
         if (error.code === 'VALIDATION_ERROR') {
-          setFieldErrors({ confirmPassword: 'A confirmação não confere com a nova senha.' });
+          setFieldErrors({ confirmPassword: t('changePasswordForm.mismatch') });
           return;
         }
         toast.error(error.message);
         return;
       }
-      toast.error('Não foi possível alterar a senha. Tente novamente.');
+      toast.error(t('changePasswordForm.changeFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -223,7 +232,7 @@ export function ChangePasswordForm({ className }: ChangePasswordFormProps) {
       />
       <div className="settings-block__action settings-block__action--end">
         <Button type="submit" variant="secondary" size="sm" disabled={submitting}>
-          {submitting ? 'Salvando…' : 'Alterar senha'}
+          {submitting ? t('changePasswordForm.saving') : t('changePasswordForm.submit')}
         </Button>
       </div>
     </form>

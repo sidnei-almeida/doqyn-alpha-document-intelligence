@@ -92,7 +92,9 @@ export function StorageUsageSection() {
       )}
 
       <p className="settings-storage__meta">
-        {percentLabel ? `${percentLabel} do espaço usado` : 'Sem teto de armazenamento definido.'}
+        {percentLabel
+          ? t('storageUsageSection.percentUsed', { percent: percentLabel })
+          : t('storageUsageSection.noQuota')}
       </p>
 
       {/* Originais e previews separados porque a pergunta seguinte é sempre a mesma: por que

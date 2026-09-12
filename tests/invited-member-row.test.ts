@@ -29,7 +29,7 @@ describe('convidado aparece antes de existir conta', () => {
     // Sumir com o vencido faria o convite desaparecer sem aviso, e quem administra concluiria
     // que a pessoa entrou.
     assert.ok(page.includes("usersPage.inviteExpired'"));
-    assert.ok(page.includes('Convite válido até'));
+    assert.ok(page.includes("usersPage.inviteValidUntil'"));
   });
 
   it('revogar é a única ação sobre um convite', () => {

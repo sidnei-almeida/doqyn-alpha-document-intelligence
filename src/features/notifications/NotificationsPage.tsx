@@ -7,10 +7,10 @@ import { useNotifications } from './hooks/useNotifications';
 import type { NotificationStatus } from './api/notificationsApi';
 import { useTranslation } from 'react-i18next';
 
-const FILTERS: Array<{ value: NotificationStatus | 'all'; label: string }> = [
-  { value: 'unread', label: 'Não lidas' },
-  { value: 'all', label: 'Todas' },
-  { value: 'dismissed', label: 'Dispensadas' },
+const FILTERS: Array<{ value: NotificationStatus | 'all'; labelKey: string }> = [
+  { value: 'unread', labelKey: 'notificationsPage.filters.unread' },
+  { value: 'all', labelKey: 'notificationsPage.filters.all' },
+  { value: 'dismissed', labelKey: 'notificationsPage.filters.dismissed' },
 ];
 
 export function NotificationsPage() {
@@ -25,7 +25,7 @@ export function NotificationsPage() {
 
   return (
     <PageShell
-      eyebrow="Caixa"
+      eyebrow={t('notificationsPage.eyebrow')}
       title={t('notificationsPage.notificacoes')}
       description={t('notificationsPage.documentosEnviadosVersoesNovas')}
       actions={
@@ -38,7 +38,7 @@ export function NotificationsPage() {
     >
       <SegmentedTextToggle
         aria-label={t('notificationsPage.filtrarNotificacoes')}
-        options={FILTERS}
+        options={FILTERS.map((filter) => ({ value: filter.value, label: t(filter.labelKey) }))}
         value={filter}
         onChange={setFilter}
       />

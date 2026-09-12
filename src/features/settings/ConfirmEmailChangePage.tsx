@@ -31,8 +31,8 @@ export function ConfirmEmailChangePage() {
       if (!token) {
         setPageState({
           kind: 'error',
-          title: 'Link inválido',
-          message: 'O link de confirmação está incompleto.',
+          title: t('confirmEmailChangePage.invalidLinkTitle'),
+          message: t('confirmEmailChangePage.incompleteLink'),
         });
         return;
       }
@@ -49,7 +49,7 @@ export function ConfirmEmailChangePage() {
         if (cancelled) return;
         setPageState({
           kind: 'error',
-          title: 'Não foi possível validar o link',
+          title: t('confirmEmailChangePage.validateFailedTitle'),
           message: getEmailChangeErrorMessage(error),
         });
       }
@@ -59,21 +59,23 @@ export function ConfirmEmailChangePage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   async function handleConfirm() {
     if (!token) return;
     setSubmitting(true);
     try {
-      const result = await emailChangeApi.confirm(token);
-      toast.success(result.message);
-      setPageState({ kind: 'success', message: result.message });
+      await emailChangeApi.confirm(token);
+      // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+      const message = t('confirmEmailChangePage.success');
+      toast.success(message);
+      setPageState({ kind: 'success', message });
       window.setTimeout(() => navigate('/login', { replace: true }), 2500);
     } catch (error) {
       const code = error instanceof ApiError ? error.code : undefined;
       setPageState({
         kind: 'error',
-        title: 'Confirmação não concluída',
+        title: t('confirmEmailChangePage.notCompletedTitle'),
         message: getEmailChangeErrorMessage(error),
       });
       if (code) {
@@ -112,7 +114,9 @@ export function ConfirmEmailChangePage() {
                 </p>
               </div>
               <Button className="w-full" onClick={() => void handleConfirm()} disabled={submitting}>
-                {submitting ? 'Confirmando…' : 'Confirmar alteração'}
+                {submitting
+                  ? t('confirmEmailChangePage.confirming')
+                  : t('confirmEmailChangePage.confirmChange')}
               </Button>
             </div>
           ) : null}

@@ -5,6 +5,8 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { AppNotification, NotificationType } from '../api/notificationsApi';
+import { i18n } from '@/i18n';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 export type NotificationListProps = {
@@ -38,21 +40,21 @@ const TYPE_ICON: Record<NotificationType, string> = {
   inbound_share_declined: 'block',
 };
 
-const TYPE_LABEL: Record<NotificationType, string> = {
-  document_expiring: 'vencimento',
-  document_created: 'novo documento',
-  document_updated: 'nova versão',
-  signature_required: 'assinatura',
-  document_shared: 'compartilhado',
-  access_approved: 'acesso',
-  access_rejected: 'acesso',
-  approval_requested: 'aprovação',
-  approval_decided: 'aprovação',
-  document_requested: 'pedido',
-  document_request_fulfilled: 'pedido',
-  inbound_share_received: 'de fora',
-  inbound_share_accepted: 'de fora',
-  inbound_share_declined: 'de fora',
+const TYPE_LABEL_KEYS: Record<NotificationType, string> = {
+  document_expiring: 'notificationList.type.document_expiring',
+  document_created: 'notificationList.type.document_created',
+  document_updated: 'notificationList.type.document_updated',
+  signature_required: 'notificationList.type.signature_required',
+  document_shared: 'notificationList.type.document_shared',
+  access_approved: 'notificationList.type.access',
+  access_rejected: 'notificationList.type.access',
+  approval_requested: 'notificationList.type.approval',
+  approval_decided: 'notificationList.type.approval',
+  document_requested: 'notificationList.type.request',
+  document_request_fulfilled: 'notificationList.type.request',
+  inbound_share_received: 'notificationList.type.inbound',
+  inbound_share_accepted: 'notificationList.type.inbound',
+  inbound_share_declined: 'notificationList.type.inbound',
 };
 
 /**
@@ -116,10 +118,12 @@ function formatMoment(iso: string): string {
   if (Number.isNaN(date.getTime())) return '—';
 
   const minutes = Math.round((Date.now() - date.getTime()) / 60_000);
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return `há ${minutes} min`;
-  if (minutes < 60 * 24) return `há ${Math.round(minutes / 60)} h`;
-  return date.toLocaleDateString('pt-BR');
+  if (minutes < 1) return i18n.t('notifications:notificationList.moment.now');
+  if (minutes < 60) return i18n.t('notifications:notificationList.moment.minutes', { n: minutes });
+  if (minutes < 60 * 24) {
+    return i18n.t('notifications:notificationList.moment.hours', { n: Math.round(minutes / 60) });
+  }
+  return formatDate(date);
 }
 
 export function NotificationList({
@@ -178,7 +182,7 @@ export function NotificationList({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="register-label text-doqyn-subtle">
-                  {TYPE_LABEL[notification.type]}
+                  {t(TYPE_LABEL_KEYS[notification.type])}
                 </span>
                 <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
                   {formatMoment(notification.createdAt)}

@@ -30,7 +30,11 @@ export function NotificationsBell({ className }: { className?: string }) {
         ref={anchorRef}
         type="button"
         className={className}
-        aria-label={unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : 'Notificações'}
+        aria-label={
+          unreadCount > 0
+            ? t('notificationsBell.ariaUnread', { count: unreadCount })
+            : t('notificationsBell.aria')
+        }
         onClick={() => setOpen((value) => !value)}
       >
         <span className="relative inline-flex">

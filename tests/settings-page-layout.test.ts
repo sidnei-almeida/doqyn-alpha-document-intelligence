@@ -19,7 +19,7 @@ describe('SettingsPage layout', () => {
     assert.ok(page.includes('PageShell'));
     assert.ok(page.includes('SettingsLayout'));
     assert.ok(page.includes('settings-page'));
-    assert.ok(page.includes('SETTINGS_UI_PATTERN.pageEyebrow'));
+    assert.ok(page.includes("settingsPage.eyebrow'"));
     assert.ok(page.includes('meta.label'));
     assert.ok(layout.includes('settings-shell'));
     assert.ok(layout.includes('settings-content-panel'));
