@@ -51,6 +51,8 @@
   },
   "tourCard": {
     "fecharOTour": "Close the tour",
-    "voltar": "Back"
+    "voltar": "Back",
+    "skip": "Skip",
+    "finish": "Finish"
   }
 }

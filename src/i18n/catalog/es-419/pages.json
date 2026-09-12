@@ -25,6 +25,25 @@
     "termosECondicoesDe": "Términos y Condiciones de Uso de DOQYN",
     "versao": "Versión",
     "vigencia": "Vigencia",
-    "voltar": "Volver"
+    "voltar": "Volver",
+    "subtitle": "Términos y Condiciones"
+  },
+  "loginFeedback": {
+    "title": {
+      "invalidCredentials": "Credenciales no válidas",
+      "userDisabled": "Cuenta desactivada",
+      "membershipPending": "Esperando aprobación",
+      "membershipBlocked": "Acceso bloqueado",
+      "membershipRejected": "Solicitud rechazada",
+      "noActiveMembership": "Sin espacio de trabajo activo",
+      "sessionExpired": "Sesión expirada",
+      "oauthEmailNotVerified": "Correo no verificado por el proveedor",
+      "oauthUnavailable": "Inicio de sesión social no disponible"
+    }
+  },
+  "oauthCallback": {
+    "completing": "Completando la autenticación…",
+    "failed": "No fue posible completar el inicio de sesión social.",
+    "sessionFailed": "No fue posible validar la sesión. Redirigiendo…"
   }
 }

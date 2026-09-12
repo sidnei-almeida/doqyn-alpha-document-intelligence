@@ -5,6 +5,7 @@ import { AuthBrandLogo } from '@/components/brand';
 import { useAuth } from '@/features/auth/useAuth';
 import { clearSessionScopedCaches } from '@/auth/clearSessionScopedCaches';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { i18n } from '@/i18n';
 
 function resolveDestination(input: {
   status: string | null;
@@ -43,15 +44,14 @@ export function OAuthCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { refreshUser, isAuthenticated, accessGate, isLoading } = useAuth();
-  const [message, setMessage] = useState('Concluindo autenticação...');
+  const [message, setMessage] = useState(() => i18n.t('pages:oauthCallback.completing'));
 
   useEffect(() => {
     const status = searchParams.get('status');
 
     if (status === 'error') {
       const code = searchParams.get('code') ?? 'OAUTH_CALLBACK_FAILED';
-      const oauthMessage =
-        searchParams.get('message') ?? 'Não foi possível concluir o login social.';
+      const oauthMessage = searchParams.get('message') ?? i18n.t('pages:oauthCallback.failed');
       navigate(
         `/login?oauthCode=${encodeURIComponent(code)}&oauthMessage=${encodeURIComponent(oauthMessage)}`,
         {
@@ -63,7 +63,7 @@ export function OAuthCallbackPage() {
 
     clearSessionScopedCaches();
     void refreshUser().catch(() => {
-      setMessage('Não foi possível validar a sessão. Redirecionando...');
+      setMessage(i18n.t('pages:oauthCallback.sessionFailed'));
       navigate('/login', { replace: true });
     });
   }, [navigate, refreshUser, searchParams]);

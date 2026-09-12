@@ -1,5 +1,6 @@
 import { getAuthBasePath } from '@/auth/authConfig';
 import { parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
 
 export type CompanySignupInput = {
   companyName: string;
@@ -48,7 +49,7 @@ export async function submitCompanySignup(
   };
 
   if (!response.ok) {
-    throw await parseApiError(response, 'Não foi possível cadastrar a empresa.');
+    throw await parseApiError(response, i18n.t('auth:companySignupPage.apiFailed'));
   }
 
   return data;

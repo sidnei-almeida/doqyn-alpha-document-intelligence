@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 import { cloneAccessFormState, isAccessFormDirty } from '../src/features/users/accessFormState.js';
 import {
   ASSIGNABLE_PLATFORM_ROLES,
-  PLATFORM_ROLE_LABELS,
+  PLATFORM_ROLE_PRIORITY,
 } from '../src/features/users/platformRoleLabels.js';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
@@ -58,15 +58,17 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(dialog.includes('EditAccessDialog'));
     assert.ok(dialog.includes('PlatformRolesSection'));
     assert.ok(dialog.includes('isAccessFormDirty'));
-    assert.ok(dialog.includes('Descartar alterações'));
+    assert.ok(dialog.includes("editAccessDialog.discard.title'"));
     assert.ok(sections.includes("from '@/components/ui/Checkbox'"));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
 
   it('roles exibem labels amigáveis mantendo valores internos', () => {
-    assert.equal(PLATFORM_ROLE_LABELS.company_admin.label, 'Administrador da empresa');
-    assert.equal(PLATFORM_ROLE_LABELS.individual_admin.label, 'Administrador da conta');
-    assert.equal(PLATFORM_ROLE_LABELS.user.label, 'Usuário');
+    // O rótulo mora no catálogo; o teste confere a frase de referência, em pt-BR.
+    const ptUsers = JSON.parse(readSrc('i18n/catalog/pt-BR/users.json'));
+    assert.equal(ptUsers.platformRole.company_admin.label, 'Administrador da empresa');
+    assert.equal(ptUsers.platformRole.individual_admin.label, 'Administrador da conta');
+    assert.equal(ptUsers.platformRole.user.label, 'Usuário');
     const chips = readSrc('components/ui/PlatformRoleChips.tsx');
     assert.ok(chips.includes('getPlatformRoleLabel'));
     assert.ok(chips.includes('{label}'));
@@ -78,7 +80,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
     // O papel global foi eliminado do produto. A tela de usuários não oferece rótulo, checkbox nem
     // aviso para ele — se voltar a existir um papel de plataforma atribuível por sessão humana,
     // este teste quebra antes de a UI voltar a prometê-lo.
-    const platformRoleKeys = Object.keys(PLATFORM_ROLE_LABELS);
+    const platformRoleKeys = [...PLATFORM_ROLE_PRIORITY];
     assert.deepEqual(platformRoleKeys.sort(), ['company_admin', 'individual_admin', 'user']);
     assert.deepEqual(ASSIGNABLE_PLATFORM_ROLES, ['company_admin', 'user']);
 

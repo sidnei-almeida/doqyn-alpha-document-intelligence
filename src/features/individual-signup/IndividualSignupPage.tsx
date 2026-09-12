@@ -129,7 +129,7 @@ export function IndividualSignupPage() {
     // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
     // silêncio que este campo existe para acabar.
     if (!usernameAvailable) {
-      setError('Escolha um nome de usuário disponível para continuar.');
+      setError(t('signup.usernameUnavailable'));
       return;
     }
 
@@ -140,7 +140,7 @@ export function IndividualSignupPage() {
       if (validation.field === 'acceptedTerms') {
         setTermsError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -150,7 +150,7 @@ export function IndividualSignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.termsRequired'));
       }
       return;
     }
@@ -168,7 +168,8 @@ export function IndividualSignupPage() {
       // devolveria a pessoa ao login sem explicar por quê.
       if (result.emailVerificationRequired && result.verificationTicket) {
         storeVerificationTicket(result.verificationTicket);
-        toast.success(result.message ?? 'Conta criada. Confirme seu e-mail para entrar.');
+        // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+        toast.success(t('individualSignupPage.createdVerify'));
         navigate('/confirmar-cadastro', {
           replace: true,
           state: { ticket: result.verificationTicket },
@@ -176,11 +177,11 @@ export function IndividualSignupPage() {
         return;
       }
 
-      toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
+      toast.success(t('individualSignupPage.created'));
       await refreshUser();
       navigate('/biblioteca', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
+      const message = err instanceof Error ? err.message : t('individualSignupPage.failed');
       setError(message);
       showApiErrorToast(err, message);
     } finally {

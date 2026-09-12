@@ -27,9 +27,6 @@ import {
 } from './companySignupReview';
 import { useTranslation } from 'react-i18next';
 
-const COMPANY_AUTHORIZATION_TEXT =
-  'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
-
 export function CompanySignupPage() {
   const { t } = useTranslation('auth');
 
@@ -131,7 +128,7 @@ export function CompanySignupPage() {
     // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
     // silêncio que este campo existe para acabar.
     if (!usernameAvailable) {
-      setError('Escolha um nome de usuário disponível para continuar.');
+      setError(t('signup.usernameUnavailable'));
       return;
     }
 
@@ -146,7 +143,7 @@ export function CompanySignupPage() {
       if (validation.field === 'companyAuthorization') {
         setAuthorizationError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -156,7 +153,7 @@ export function CompanySignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.termsRequired'));
       }
       return;
     }
@@ -174,7 +171,8 @@ export function CompanySignupPage() {
       // devolveria a pessoa ao login sem explicar por quê.
       if (result.emailVerificationRequired && result.verificationTicket) {
         storeVerificationTicket(result.verificationTicket);
-        toast.success(result.message ?? 'Empresa criada. Confirme seu e-mail para entrar.');
+        // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+        toast.success(t('companySignupPage.createdVerify'));
         navigate('/confirmar-cadastro', {
           replace: true,
           state: { ticket: result.verificationTicket },
@@ -182,11 +180,11 @@ export function CompanySignupPage() {
         return;
       }
 
-      toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
+      toast.success(t('companySignupPage.created'));
       await refreshUser();
       navigate('/biblioteca', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao cadastrar empresa.';
+      const message = err instanceof Error ? err.message : t('companySignupPage.failed');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -327,7 +325,7 @@ export function CompanySignupPage() {
             wrapperClassName="border-0 bg-transparent px-0 py-1"
             label={
               <span className="text-sm leading-relaxed text-doqyn-muted">
-                {COMPANY_AUTHORIZATION_TEXT}
+                {t('companySignupPage.authorizationText')}
               </span>
             }
             description={

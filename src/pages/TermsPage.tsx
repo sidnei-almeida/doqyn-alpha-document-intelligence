@@ -33,7 +33,7 @@ export function TermsPage() {
             variant="horizontal"
             align="center"
             showSubtitle
-            subtitle="Termos e Condições"
+            subtitle={t('termsPage.subtitle')}
           />
         </div>
 

@@ -19,9 +19,6 @@ import {
 } from './inviteAcceptReview';
 import { useTranslation } from 'react-i18next';
 
-const CONSENT_TEXT =
-  'Aceito receber notificações operacionais do DOQYN por e-mail e WhatsApp relacionadas a documentos, aprovações, assinaturas, atualizações de acesso e comunicações necessárias ao uso da plataforma.';
-
 type PageState =
   | { kind: 'loading' }
   | { kind: 'ready'; invite: InvitePreview }
@@ -80,8 +77,8 @@ export function AcceptInvitePage() {
       if (!token) {
         setPageState({
           kind: 'error',
-          title: 'Convite inválido',
-          message: 'O link de convite está incompleto.',
+          title: t('acceptInvitePage.invalidTitle'),
+          message: t('acceptInvitePage.incompleteLink'),
         });
         return;
       }
@@ -97,9 +94,11 @@ export function AcceptInvitePage() {
         const code = error instanceof ApiError ? error.code : undefined;
         setPageState({
           kind: 'error',
-          title: mapInviteErrorTitle(code),
+          title: t(inviteErrorTitleKey(code)),
           message:
-            error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
+            error instanceof ApiError
+              ? error.friendlyMessage
+              : t('acceptInvitePage.unavailableMessage'),
           code,
         });
       }
@@ -109,7 +108,7 @@ export function AcceptInvitePage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const formValues = useMemo<AcceptInviteFormValues>(
     () => ({
@@ -173,7 +172,7 @@ export function AcceptInvitePage() {
       if (validation.field === 'informationDeclaration') {
         setDeclarationError(validation.error ?? null);
       }
-      toast.error(validation.error ?? 'Revise os campos do formulário.');
+      toast.error(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -190,14 +189,16 @@ export function AcceptInvitePage() {
         buildAcceptInvitePayload(formValues, reviewOptions),
       );
       setReviewOpen(false);
-      setPageState({ kind: 'success', message: result.message });
-      toast.success(result.message);
+      // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+      const message = t('acceptInvitePage.accepted');
+      setPageState({ kind: 'success', message });
+      toast.success(message);
       if (result.sessionEstablished) {
         navigate('/', { replace: true });
       }
     } catch (error) {
       const message =
-        error instanceof ApiError ? error.friendlyMessage : 'Não foi possível aceitar o convite.';
+        error instanceof ApiError ? error.friendlyMessage : t('acceptInvitePage.acceptFailed');
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -396,7 +397,9 @@ export function AcceptInvitePage() {
                 required
                 wrapperClassName="border-0 bg-transparent px-0 py-1"
                 label={
-                  <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
+                  <span className="text-sm leading-relaxed text-doqyn-muted">
+                    {t('acceptInvitePage.consentText')}
+                  </span>
                 }
               />
             </div>
@@ -435,17 +438,17 @@ export function AcceptInvitePage() {
   );
 }
 
-function mapInviteErrorTitle(code?: string): string {
+function inviteErrorTitleKey(code?: string): string {
   switch (code) {
     case 'INVITE_EXPIRED':
-      return 'Convite expirado';
+      return 'acceptInvitePage.errorTitle.expired';
     case 'INVITE_REVOKED':
-      return 'Convite revogado';
+      return 'acceptInvitePage.errorTitle.revoked';
     case 'INVITE_ALREADY_USED':
-      return 'Convite já utilizado';
+      return 'acceptInvitePage.errorTitle.used';
     case 'MEMBER_ALREADY_EXISTS':
-      return 'Acesso já existente';
+      return 'acceptInvitePage.errorTitle.memberExists';
     default:
-      return 'Convite indisponível';
+      return 'acceptInvitePage.errorTitle.unavailable';
   }
 }

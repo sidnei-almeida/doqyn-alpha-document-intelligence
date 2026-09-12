@@ -25,6 +25,25 @@
     "termosECondicoesDe": "DOQYN Terms and Conditions of Use",
     "versao": "Version",
     "vigencia": "Effective from",
-    "voltar": "Back"
+    "voltar": "Back",
+    "subtitle": "Terms and Conditions"
+  },
+  "loginFeedback": {
+    "title": {
+      "invalidCredentials": "Invalid credentials",
+      "userDisabled": "Account deactivated",
+      "membershipPending": "Awaiting approval",
+      "membershipBlocked": "Access blocked",
+      "membershipRejected": "Request rejected",
+      "noActiveMembership": "No active workspace",
+      "sessionExpired": "Session expired",
+      "oauthEmailNotVerified": "Email not verified by the provider",
+      "oauthUnavailable": "Social sign-in unavailable"
+    }
+  },
+  "oauthCallback": {
+    "completing": "Completing sign-in…",
+    "failed": "Couldn't complete social sign-in.",
+    "sessionFailed": "Couldn't validate the session. Redirecting…"
   }
 }

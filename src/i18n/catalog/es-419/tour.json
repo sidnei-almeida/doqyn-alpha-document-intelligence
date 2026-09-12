@@ -51,6 +51,8 @@
   },
   "tourCard": {
     "fecharOTour": "Cerrar el recorrido",
-    "voltar": "Volver"
+    "voltar": "Volver",
+    "skip": "Omitir",
+    "finish": "Finalizar"
   }
 }

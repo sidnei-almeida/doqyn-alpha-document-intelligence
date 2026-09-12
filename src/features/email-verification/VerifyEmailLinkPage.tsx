@@ -35,7 +35,7 @@ export function VerifyEmailLinkPage() {
         await emailVerificationApi.confirmToken(token);
         clearVerificationTicket();
         setState('done');
-        toast.success('E-mail confirmado.');
+        toast.success(t('verifyEmailLinkPage.confirmed'));
       } catch (err) {
         setError(getEmailVerificationErrorMessage(err));
         setState('failed');
@@ -52,10 +52,7 @@ export function VerifyEmailLinkPage() {
       <>
         <AuthHeading
           title={t('verifyEmailLinkPage.naoFoiPossivelConfirmar')}
-          description={
-            error ??
-            'Este link não vale mais. Entre com seu e-mail e senha para receber um código novo.'
-          }
+          description={error ?? t('verifyEmailLinkPage.linkExpired')}
         />
         <Link to="/login" className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}>
           {t('verifyEmailLinkPage.irParaOLogin')}

@@ -1,6 +1,7 @@
 import { getAuthBasePath } from '@/auth/authConfig';
 import { authServiceJson } from '@/auth/authServiceClient';
 import { ApiError, parseApiError } from '@/lib/apiErrors';
+import { genericFailureMessage } from '@/lib/authErrorMessages';
 import type { PlatformRole } from '@/features/users/api/usersApi';
 
 export type InvitePreview = {
@@ -111,5 +112,5 @@ export function getInviteErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Não foi possível concluir a operação.';
+  return genericFailureMessage();
 }

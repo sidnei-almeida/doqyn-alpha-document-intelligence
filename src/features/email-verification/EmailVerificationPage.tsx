@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { AUTH_PRIMARY_BUTTON } from '@/features/auth/components/authControls';
-import { plural } from '@/lib/plural';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/apiErrors';
 import { CodeInput } from './components/CodeInput';
@@ -67,7 +66,7 @@ export function EmailVerificationPage() {
       // esta aba esperava. Não há o que digitar aqui.
       if (next.verified) {
         clearVerificationTicket();
-        toast.success('E-mail confirmado. Faça login para entrar.');
+        toast.success(t('emailVerificationPage.confirmedSignIn'));
         navigate('/login', { replace: true });
       }
     } catch {
@@ -103,7 +102,7 @@ export function EmailVerificationPage() {
     try {
       await emailVerificationApi.confirmCode(ticket, value);
       clearVerificationTicket();
-      toast.success('E-mail confirmado. Faça login para entrar.');
+      toast.success(t('emailVerificationPage.confirmedSignIn'));
       navigate('/login', { replace: true });
     } catch (err) {
       setCode('');
@@ -160,8 +159,8 @@ export function EmailVerificationPage() {
         title={t('emailVerificationPage.confirmeSeuEMail')}
         description={
           status?.email
-            ? `Enviamos um código de 6 dígitos para ${status.email}. Digite-o abaixo, ou use o link do mesmo e-mail, se estiver no aparelho onde o abriu.`
-            : 'Enviamos um código de 6 dígitos para o endereço do seu cadastro.'
+            ? t('emailVerificationPage.descriptionWithEmail', { email: status.email })
+            : t('emailVerificationPage.description')
         }
       />
 
@@ -190,8 +189,8 @@ export function EmailVerificationPage() {
         {typeof attemptsLeft === 'number' && (error !== null || blocked) ? (
           <p className="text-caption text-doqyn-muted">
             {blocked
-              ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-              : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
+              ? t('emailVerificationPage.codeBlocked')
+              : t('emailVerificationPage.attemptsLeft', { count: attemptsLeft })}
           </p>
         ) : null}
 
@@ -219,10 +218,10 @@ export function EmailVerificationPage() {
           className="self-start text-caption text-doqyn-action underline-offset-4 hover:underline disabled:text-doqyn-disabled disabled:no-underline"
         >
           {cooldown > 0
-            ? `Reenviar código em ${cooldown}s`
+            ? t('emailVerificationPage.resendIn', { seconds: cooldown })
             : resending
-              ? 'Reenviando…'
-              : 'Reenviar código'}
+              ? t('emailVerificationPage.resending')
+              : t('emailVerificationPage.resend')}
         </button>
       </div>
 

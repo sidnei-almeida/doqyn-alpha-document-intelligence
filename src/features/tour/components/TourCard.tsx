@@ -98,7 +98,7 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
           onClick={onSkip}
           className="explorer-interactive text-caption text-doqyn-subtle transition-colors hover:text-doqyn-text"
         >
-          {isLast ? 'Fechar' : 'Pular'}
+          {isLast ? t('common:actions.close') : t('tourCard.skip')}
         </button>
 
         <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={onNext} autoFocus>
-            {isLast ? 'Concluir' : 'Avançar'}
+            {isLast ? t('tourCard.finish') : t('common:actions.next')}
             {!isLast && <Icon name="arrow_forward" size={ICON_SIZE.xs} />}
           </Button>
         </div>

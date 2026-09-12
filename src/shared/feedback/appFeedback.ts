@@ -73,7 +73,7 @@ export function showApiErrorToast(error: unknown, fallbackMessage?: string): voi
       title: error.friendlyMessage,
       message:
         import.meta.env.DEV && error.requestId
-          ? `Código: ${error.code} · requestId: ${error.requestId}`
+          ? `code: ${error.code} · requestId: ${error.requestId}`
           : undefined,
     });
     return;

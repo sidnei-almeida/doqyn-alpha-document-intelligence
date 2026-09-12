@@ -1,5 +1,6 @@
 import { getAuthBasePath } from '@/auth/authConfig';
 import { ApiError, parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
 
 export type EmailVerificationStatus = {
   ok: boolean;
@@ -83,5 +84,5 @@ export function getEmailVerificationErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Não foi possível concluir a confirmação.';
+  return i18n.t('auth:emailVerification.confirmFailed');
 }
