@@ -105,7 +105,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
 
     const dialog = readSrc('features/users/components/EditAccessDialog.tsx');
     assert.ok(dialog.includes('disabled={!dirty || saving}'));
-    assert.ok(dialog.includes('Alterações não salvas'));
+    assert.ok(dialog.includes("editAccessDialog.unsaved'"));
   });
 
   it('grupos vazios mostram empty state com CTA para Regras', () => {
