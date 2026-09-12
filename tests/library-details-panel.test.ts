@@ -54,7 +54,7 @@ describe('painel de detalhes da Biblioteca', () => {
     assert.ok(shell.includes('max-w-xl'));
     assert.ok(source.includes('library-details-drawer'));
     assert.ok(source.includes('WorkspaceSideDrawer'));
-    assert.ok(source.includes('Fechar painel de detalhes'));
+    assert.ok(source.includes('.closeDetails'));
     assert.equal(source.includes('lg:flex'), false);
     assert.equal(source.includes('library-details-panel'), false);
     assert.ok(shell.includes('fixed inset-0'));

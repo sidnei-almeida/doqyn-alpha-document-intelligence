@@ -29,7 +29,8 @@
   "documents": {
     "count_one": "{{count}} documento",
     "count_other": "{{count}} documentos",
-    "empty": "Nenhum documento"
+    "empty": "Nenhum documento",
+    "noFolder": "Sem pasta"
   },
   "locale": {
     "description": "Idioma da interface. Não muda o idioma dos seus documentos.",

@@ -30,7 +30,8 @@
     "count_one": "{{count}} documento",
     "count_many": "{{count}} documentos",
     "count_other": "{{count}} documentos",
-    "empty": "Ningún documento"
+    "empty": "Ningún documento",
+    "noFolder": "Sin carpeta"
   },
   "locale": {
     "description": "Idioma de la interfaz. No cambia el idioma de tus documentos.",

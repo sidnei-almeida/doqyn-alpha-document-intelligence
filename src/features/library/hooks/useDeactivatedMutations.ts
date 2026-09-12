@@ -25,11 +25,7 @@ export function useDeactivatedMutations() {
           }))
         : batchReactivateDocuments(documentIds),
     onSuccess: (result) => {
-      toast.success(
-        result.succeeded === 1
-          ? 'Documento recuperado.'
-          : `${result.succeeded} documentos recuperados.`,
-      );
+      toast.success(i18n.t('library:toast.recovered', { count: result.succeeded }));
     },
     onError: () => toast.error(i18n.t('library:toast.falhaRecuperarDocumento')),
     onSettled: invalidate,

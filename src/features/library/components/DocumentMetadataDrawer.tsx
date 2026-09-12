@@ -46,7 +46,7 @@ export function DocumentMetadataDrawer({
               {fileName}
             </TruncatedText>
             <p className="mt-1 text-caption text-doqyn-muted">
-              {document.categoryName ?? 'Sem categoria'}
+              {document.categoryName ?? t('explorerRootHome.semCategoria')}
             </p>
           </div>
           <IconButton label={t('documentMetadataDrawer.fecharMetadados')} onClick={onClose}>

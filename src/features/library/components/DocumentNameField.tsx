@@ -35,7 +35,7 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
     mutationFn: (nextName: string) => renameDocument(documentId, nextName),
     onSuccess: async (result) => {
       setDraft(result.fileName);
-      showAppToast({ type: 'success', title: 'Nome atualizado.' });
+      showAppToast({ type: 'success', title: t('documentNameField.updated') });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['documents'] }),
         queryClient.invalidateQueries({ queryKey: ['document-detail', documentId] }),
@@ -76,7 +76,7 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
             />
           </label>
           <Button type="submit" variant="secondary" size="sm" disabled={!canSave}>
-            {mutation.isPending ? 'Salvando…' : 'Renomear'}
+            {mutation.isPending ? t('documentNameField.saving') : t('documentNameField.rename')}
           </Button>
         </form>
       ) : (

@@ -48,7 +48,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('onShowContextInfo'));
     assert.ok(menu.includes('.verInformacoes'));
-    assert.ok(menu.includes('Ver informações da pasta atual'));
+    assert.ok(menu.includes('.infoCurrentFolder'));
   });
 
   it('menu de contexto da pasta tem ver informações', () => {
@@ -75,7 +75,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
     // Escape passou a consultar a pilha de camadas: só a do topo fecha, senão fechar um
     // popover fecharia a gaveta atrás dele junto.
     assert.ok(shell.includes("event.key !== 'Escape' || !isTopLayer()"));
-    assert.ok(drawer.includes('Fechar painel de detalhes'));
+    assert.ok(drawer.includes('.closeDetails'));
     assert.ok(drawer.includes('canPreview'));
     assert.ok(drawer.includes('/tracking?documentId='));
   });

@@ -29,7 +29,8 @@
   "documents": {
     "count_one": "{{count}} document",
     "count_other": "{{count}} documents",
-    "empty": "No documents"
+    "empty": "No documents",
+    "noFolder": "No folder"
   },
   "locale": {
     "description": "Interface language. It does not change the language of your documents.",

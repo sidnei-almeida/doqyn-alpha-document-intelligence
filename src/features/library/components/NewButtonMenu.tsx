@@ -45,7 +45,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
       onClick={() => setOpen((value) => !value)}
       aria-haspopup="menu"
       aria-expanded={open}
-      aria-label={collapsed ? 'Novo' : undefined}
+      aria-label={collapsed ? t('newButtonMenu.novo') : undefined}
       className={cn('sidebar-new-button', collapsed && 'sidebar-new-button--collapsed')}
       data-testid="new-button"
     >

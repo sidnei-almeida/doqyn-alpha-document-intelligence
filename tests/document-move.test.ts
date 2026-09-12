@@ -110,7 +110,7 @@ describe('document move — frontend', () => {
     const modal = read('src/features/library/components/MoveDocumentModal.tsx');
     assert.ok(modal.includes('move-document-modal'));
     assert.ok(modal.includes('.categoriaAtual'));
-    assert.ok(modal.includes('Mover para'));
+    assert.ok(modal.includes('moveDocumentModal.moveTo'));
     assert.ok(modal.includes('.buscarCategoria2'));
   });
 
@@ -131,7 +131,7 @@ describe('document move — frontend', () => {
   it('toolbar desabilita Mover com pasta selecionada', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
     assert.ok(toolbar.includes('drive_file_move'));
-    assert.ok(toolbar.includes('Selecione apenas documentos para mover'));
+    assert.ok(toolbar.includes('.onlyDocumentsMove'));
     assert.ok(toolbar.includes('hasFolderSelection'));
   });
 

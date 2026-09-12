@@ -51,8 +51,8 @@ export function DocumentVersionHistoryPanel({
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
       <p className="mb-2 shrink-0 text-[12px] text-doqyn-muted">
-        {data.versionCount} {t('documentVersionHistoryPanel.versao')}
-        {data.versionCount === 1 ? '' : 'ões'} {t('documentVersionHistoryPanel.atual')}{' '}
+        {t('documentVersionHistoryPanel.versionCount', { count: data.versionCount })}{' '}
+        {t('documentVersionHistoryPanel.atual')}{' '}
         <span className="font-medium text-doqyn-text">{data.currentVersionLabel}</span>
       </p>
 

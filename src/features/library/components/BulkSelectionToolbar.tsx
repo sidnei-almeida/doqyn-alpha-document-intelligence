@@ -56,21 +56,21 @@ export function BulkSelectionToolbar({
   const canTrashAny = selectedDocs.some((doc) => doc.permissions?.canUpdate !== false);
   const deleteDisabled = hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny;
   const deleteTooltip = hasFolderSelection
-    ? 'Pastas e categorias não podem ser excluídas. Selecione apenas documentos.'
+    ? t('bulkSelectionToolbar.tooltip.foldersCantDelete')
     : !canTrashAny
-      ? 'Você não tem permissão para excluir os documentos selecionados.'
+      ? t('bulkSelectionToolbar.tooltip.noDeletePermission')
       : undefined;
   const archiveView = isTrashView || isDeactivatedView;
   const moveDisabled =
     hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny || archiveView;
   const moveTooltip = hasFolderSelection
-    ? 'Selecione apenas documentos para mover.'
+    ? t('bulkSelectionToolbar.tooltip.onlyDocumentsMove')
     : isTrashView
-      ? 'Documentos na lixeira não podem ser movidos.'
+      ? t('bulkSelectionToolbar.tooltip.trashCantMove')
       : isDeactivatedView
-        ? 'Documentos desativados não podem ser movidos.'
+        ? t('bulkSelectionToolbar.tooltip.deactivatedCantMove')
         : !canTrashAny
-          ? 'Você não tem permissão para mover os documentos selecionados.'
+          ? t('bulkSelectionToolbar.tooltip.noMovePermission')
           : undefined;
 
   return (

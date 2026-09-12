@@ -79,8 +79,8 @@ describe('document favorites — frontend', () => {
 
     assert.ok(fileRow.includes('star'));
     assert.ok(fileRow.includes('stopPropagation'));
-    assert.ok(menu.includes('Adicionar aos favoritos'));
-    assert.ok(menu.includes('Remover dos favoritos'));
+    assert.ok(menu.includes("'favorites.add'"));
+    assert.ok(menu.includes("'favorites.remove'"));
     assert.ok(quickActions.includes('toggleStar'));
     assert.ok(libraryView.includes('useFavoriteDocuments'));
     assert.ok(libraryView.includes("collection.id === 'favoritos'"));

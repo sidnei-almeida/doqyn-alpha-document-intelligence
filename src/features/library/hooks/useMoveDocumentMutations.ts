@@ -42,14 +42,15 @@ export function useMoveDocumentMutations() {
         toast.info(i18n.t('library:toast.jaNestaCategoria'));
       } else {
         toast.success(
-          result.moved === 1
-            ? `Documento movido para ${result.targetCategoryName}.`
-            : `${result.moved} documentos movidos para ${result.targetCategoryName}.`,
+          i18n.t('library:toast.moved', {
+            count: result.moved,
+            category: result.targetCategoryName,
+          }),
         );
       }
     },
     onError: (error) => {
-      showApiErrorToast(error, 'Não foi possível mover o documento.');
+      showApiErrorToast(error, i18n.t('library:toast.falhaMover'));
     },
     onSettled: invalidate,
   });

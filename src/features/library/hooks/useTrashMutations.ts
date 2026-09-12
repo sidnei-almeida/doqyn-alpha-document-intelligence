@@ -36,11 +36,7 @@ export function useTrashMutations() {
       if (result.failed > 0) {
         toast.warning(`${result.succeeded} movido(s), ${result.failed} falha(s).`);
       } else {
-        toast.success(
-          result.succeeded === 1
-            ? 'Documento movido para a lixeira.'
-            : `${result.succeeded} documentos movidos para a lixeira.`,
-        );
+        toast.success(i18n.t('library:toast.trashed', { count: result.succeeded }));
       }
     },
     onError: () => toast.error(i18n.t('library:toast.falhaMoverLixeira')),
@@ -57,11 +53,7 @@ export function useTrashMutations() {
           }))
         : batchRestoreDocuments(documentIds),
     onSuccess: (result) => {
-      toast.success(
-        result.succeeded === 1
-          ? 'Documento restaurado.'
-          : `${result.succeeded} documentos restaurados.`,
-      );
+      toast.success(i18n.t('library:toast.restored', { count: result.succeeded }));
     },
     onError: () => toast.error(i18n.t('library:toast.falhaRestaurarDocumento')),
     onSettled: invalidate,

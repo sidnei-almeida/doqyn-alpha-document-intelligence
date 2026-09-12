@@ -14,7 +14,15 @@
     "mover": "Mover",
     "recuperar": "Recuperar",
     "restaurar": "Restaurar",
-    "visualizar": "Ver"
+    "visualizar": "Ver",
+    "tooltip": {
+      "foldersCantDelete": "Las carpetas y categorías no se pueden eliminar. Selecciona solo documentos.",
+      "noDeletePermission": "No tienes permiso para eliminar los documentos seleccionados.",
+      "onlyDocumentsMove": "Selecciona solo documentos para mover.",
+      "trashCantMove": "Los documentos en la papelera no se pueden mover.",
+      "deactivatedCantMove": "Los documentos desactivados no se pueden mover.",
+      "noMovePermission": "No tienes permiso para mover los documentos seleccionados."
+    }
   },
   "collections": {
     "root": {
@@ -77,7 +85,10 @@
   "documentNameField": {
     "asVersoesAnterioresContinuam": "Las versiones anteriores conservan el nombre que tenían.",
     "nomeDoDocumento": "Nombre del documento",
-    "nomeDoDocumento2": "Nombre del documento"
+    "nomeDoDocumento2": "Nombre del documento",
+    "updated": "Nombre actualizado.",
+    "saving": "Guardando…",
+    "rename": "Renombrar"
   },
   "documentVersionHistoryPanel": {
     "atual": "· actual",
@@ -85,14 +96,19 @@
     "current": "actual",
     "naoFoiPossivelCarregar": "No se pudo cargar el historial.",
     "tentarNovamente": "Intentar de nuevo",
-    "versao": "versión",
-    "visualizarEstaVersao": "Ver esta versión"
+    "visualizarEstaVersao": "Ver esta versión",
+    "versionCount_one": "{{count}} versión",
+    "versionCount_other": "{{count}} versiones",
+    "versionCount_many": "{{count}} versiones"
   },
   "emptyFolderState": {
     "ajusteABuscaOu": "Ajusta la búsqueda o los filtros para ampliar los resultados.",
     "limparFiltros": "Limpiar filtros",
     "nenhumDocumentoParaOs": "Ningún documento para los filtros actuales",
-    "voceTambemPodeArrastar": "También puedes arrastrar archivos a esta ventana."
+    "voceTambemPodeArrastar": "También puedes arrastrar archivos a esta ventana.",
+    "title": "Esta carpeta aún está vacía",
+    "description": "Sube un documento para que DOQYN lo analice y clasifique.",
+    "upload": "Subir documento"
   },
   "explorerContextMenu": {
     "abrir": "Abrir",
@@ -119,7 +135,17 @@
     "verRegras": "Ver reglas",
     "verRegrasDestaCategoria": "Ver las reglas de esta categoría",
     "verTracking": "Ver rastreo",
-    "visualizar": "Ver"
+    "visualizar": "Ver",
+    "infoCurrentFolder": "Ver información de la carpeta actual",
+    "downloadNeedsApproval": "Descargar este documento requiere la aprobación del administrador.",
+    "shareReceived": "No puedes compartir un documento que recibiste compartido.",
+    "shareNeedsApproval": "Compartir este documento requiere la aprobación del administrador.",
+    "noSharePermission": "No tienes permiso para compartir este documento.",
+    "noMovePermission": "No tienes permiso para mover este documento.",
+    "inTrashCantMove": "Este documento está en la Papelera y no se puede mover.",
+    "deactivatedCantMove": "Este documento está desactivado y no se puede mover.",
+    "archivedNoMetadata": "Un documento archivado no tiene ficha editable.",
+    "editMetadataHint": "Revisar y corregir los campos de este documento"
   },
   "explorerFileQuickActions": {
     "baixar": "Descargar",
@@ -142,7 +168,9 @@
     "ordenarPor": "Ordenar por"
   },
   "explorerFolderCard": {
-    "informacoes": "Información"
+    "informacoes": "Información",
+    "open": "Abrir carpeta {{name}}",
+    "info": "Información de {{name}}"
   },
   "explorerFolderFiles": {
     "acoes": "Acciones",
@@ -171,7 +199,8 @@
     "regras": "Reglas"
   },
   "explorerRootHome": {
-    "semCategoria": "Sin categoría"
+    "semCategoria": "Sin categoría",
+    "noFolderMeta": "Sin carpeta · {{date}}"
   },
   "fileTable": {
     "acoes": "Acciones",
@@ -183,7 +212,8 @@
     "nome": "Nombre",
     "proprietario": "Propietario",
     "status": "Estado",
-    "tags": "Etiquetas"
+    "tags": "Etiquetas",
+    "title": "Archivos"
   },
   "filterFallback": {
     "status": "Estado",
@@ -256,7 +286,9 @@
     "pastaDeGovernanca": "Carpeta de gobernanza",
     "pastas": "Carpetas",
     "tipo": "Tipo",
-    "verRegrasDestaCategoria": "Ver las reglas de esta categoría"
+    "verRegrasDestaCategoria": "Ver las reglas de esta categoría",
+    "smartCategory": "Categoría inteligente",
+    "library": "Biblioteca"
   },
   "libraryPage": {
     "carregandoBiblioteca": "Cargando la biblioteca",
@@ -266,7 +298,31 @@
     "nomeDaCategoria": "Nombre de la categoría",
     "oNomeNovoVale": "El nombre nuevo vale para la carpeta y para todos los documentos que ya están dentro.",
     "renomear": "Renombrar",
-    "renomearCategoria": "Renombrar categoría"
+    "renomearCategoria": "Renombrar categoría",
+    "searchResults": "Resultados de la búsqueda",
+    "folderFallback": "Carpeta",
+    "folderFallbackLower": "carpeta",
+    "title": "Biblioteca",
+    "searchDescription_one": "{{count}} documento encontrado para “{{query}}”",
+    "searchDescription_other": "{{count}} documentos encontrados para “{{query}}”",
+    "searchDescription_many": "{{count}} documentos encontrados para “{{query}}”",
+    "folderDescription": "Documentos que la IA clasificó en esta categoría.",
+    "rootDescription": "Documentos y categorías de este espacio",
+    "renamedTitle": "Categoría renombrada",
+    "renamedMessage": "Ahora se llama {{name}}.",
+    "renameFailed": "No se pudo renombrar la categoría.",
+    "deletedTitle": "Categoría eliminada",
+    "deletedMoved_one": "{{count}} documento pasó a Sin categoría.",
+    "deletedMoved_other": "{{count}} documentos pasaron a Sin categoría.",
+    "deletedMoved_many": "{{count}} documentos pasaron a Sin categoría.",
+    "deletedEmpty": "La categoría estaba vacía.",
+    "deleteFailed": "No se pudo eliminar la categoría.",
+    "downloadFailed": "No se pudo descargar el documento.",
+    "signedPdfUnavailable": "El PDF firmado no está disponible para este documento.",
+    "signedPdfFailed": "No se pudo descargar el PDF firmado.",
+    "noDocumentsFound": "No se encontraron documentos",
+    "adjustFilters": "Prueba ajustar los filtros o buscar otro término.",
+    "filesIn": "Archivos en {{folder}}"
   },
   "moveDocumentModal": {
     "atual": "Actual",
@@ -276,7 +332,14 @@
     "categoriaAtual": "Categoría actual",
     "nenhumaCategoriaDisponivel": "Ninguna categoría disponible.",
     "nenhumaCategoriaEncontrada": "No se encontró ninguna categoría.",
-    "oDocumentoJaEsta": "El documento ya está en esta categoría."
+    "oDocumentoJaEsta": "El documento ya está en esta categoría.",
+    "title_one": "Mover documento",
+    "title_other": "Mover {{count}} documentos",
+    "title_many": "Mover {{count}} documentos",
+    "subtitleMany": "Los documentos seleccionados se reclasificarán en la categoría elegida.",
+    "subtitleOne": "Elige una nueva categoría para este documento. El archivo y el historial se conservan.",
+    "moveTo": "Mover a {{category}}",
+    "move": "Mover"
   },
   "newButtonMenu": {
     "criarNovo": "Crear nuevo",
@@ -304,7 +367,10 @@
     "verAssinaturas": "Ver firmas",
     "verRegrasDestaCategoria": "Ver las reglas de esta categoría",
     "versao": "Versión",
-    "visualizar": "Ver"
+    "visualizar": "Ver",
+    "fileDetails": "Detalles del archivo",
+    "folderDetails": "Detalles de la carpeta",
+    "closeDetails": "Cerrar panel de detalles"
   },
   "ownerFilterMenu": {
     "filtrarPorProprietario": "Filtrar por propietario"
@@ -332,9 +398,46 @@
     "falhaMoverLixeira": "No se pudo mover a la papelera.",
     "falhaRestaurarDocumento": "No se pudo restaurar el documento.",
     "configuracoesLixeiraSalvas": "Configuración de la papelera actualizada.",
-    "falhaSalvarConfiguracoes": "No se pudo guardar la configuración."
+    "falhaSalvarConfiguracoes": "No se pudo guardar la configuración.",
+    "recovered_one": "Documento recuperado.",
+    "recovered_other": "{{count}} documentos recuperados.",
+    "recovered_many": "{{count}} documentos recuperados.",
+    "moved_one": "Documento movido a {{category}}.",
+    "moved_other": "{{count}} documentos movidos a {{category}}.",
+    "moved_many": "{{count}} documentos movidos a {{category}}.",
+    "falhaMover": "No se pudo mover el documento.",
+    "trashed_one": "Documento movido a la papelera.",
+    "trashed_other": "{{count}} documentos movidos a la papelera.",
+    "trashed_many": "{{count}} documentos movidos a la papelera.",
+    "restored_one": "Documento restaurado.",
+    "restored_other": "{{count}} documentos restaurados.",
+    "restored_many": "{{count}} documentos restaurados."
   },
   "typeFilterMenu": {
     "filtrarPorTipo": "Filtrar por tipo"
+  },
+  "favorites": {
+    "add": "Agregar a favoritos",
+    "remove": "Quitar de favoritos"
+  },
+  "item": {
+    "menu": "Menú de {{name}}",
+    "actions": "Acciones de {{name}}"
+  },
+  "viewMode": {
+    "grid": "Vista de cuadrícula",
+    "list": "Vista de lista",
+    "shortGrid": "cuadrícula",
+    "shortList": "lista"
+  },
+  "viewModeToggle": {
+    "label": "{{current}}. Cambiar a {{next}}.",
+    "tooltip": "{{current}}. Haz clic para {{next}}"
+  },
+  "explorerToolbarActions": {
+    "refresh": "Actualizar biblioteca"
+  },
+  "documentSignatureBadge": {
+    "view": "Ver firmas"
   }
 }

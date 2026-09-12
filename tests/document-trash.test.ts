@@ -240,7 +240,7 @@ describe('document trash — frontend lixeira e desativados', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
     assert.ok(toolbar.includes('selectedFolderCount'));
     assert.ok(toolbar.includes('hasFolderSelection'));
-    assert.ok(toolbar.includes('Pastas e categorias não podem ser excluídas'));
+    assert.ok(toolbar.includes('.foldersCantDelete'));
     assert.ok(toolbar.includes('isTrashView'));
   });
 

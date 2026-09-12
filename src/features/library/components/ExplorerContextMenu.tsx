@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import type { DocumentListItem } from '@/types/document-library';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { VIEW_MODE_ICONS, VIEW_MODE_LABELS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
+import { VIEW_MODE_ICONS, VIEW_MODE_LABEL_KEYS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
 import { useTranslation } from 'react-i18next';
 
 export type ExplorerContextMenuState =
@@ -213,7 +213,11 @@ export function ExplorerContextMenu({
             onClick={() => run(onRefresh)}
           />
           <MenuItem
-            label={state.scope === 'folder' ? 'Ver informações da pasta atual' : 'Ver informações'}
+            label={
+              state.scope === 'folder'
+                ? t('explorerContextMenu.infoCurrentFolder')
+                : t('explorerContextMenu.verInformacoes')
+            }
             icon="info"
             onClick={() => run(() => onShowContextInfo?.())}
           />
@@ -224,7 +228,7 @@ export function ExplorerContextMenu({
           {VIEW_MODE_ORDER.map((mode) => (
             <MenuItem
               key={mode}
-              label={VIEW_MODE_LABELS[mode]}
+              label={t(VIEW_MODE_LABEL_KEYS[mode])}
               icon={VIEW_MODE_ICONS[mode]}
               onClick={() => run(() => onViewModeChange(mode))}
               disabled={viewMode === mode}
@@ -335,14 +339,14 @@ export function ExplorerContextMenu({
                   disabled={!canDownload}
                   title={
                     downloadNeedsApproval
-                      ? 'Baixar este documento depende de aprovação do administrador.'
+                      ? t('explorerContextMenu.downloadNeedsApproval')
                       : undefined
                   }
                   onClick={() => run(() => onDownloadFile?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                  label={t(isFavorite ? 'favorites.remove' : 'favorites.add')}
                   icon="star"
                   onClick={() => run(() => onToggleFavorite?.(doc))}
                 />
@@ -374,11 +378,11 @@ export function ExplorerContextMenu({
                   disabled={!canOpenShare}
                   title={
                     doc.permissions?.sharedViaGrant
-                      ? 'Você não pode compartilhar um documento recebido por compartilhamento.'
+                      ? t('explorerContextMenu.shareReceived')
                       : shareNeedsApproval
-                        ? 'Compartilhar este documento depende de aprovação do administrador.'
+                        ? t('explorerContextMenu.shareNeedsApproval')
                         : !doc.permissions?.canShare
-                          ? 'Você não tem permissão para compartilhar este documento.'
+                          ? t('explorerContextMenu.noSharePermission')
                           : undefined
                   }
                   onClick={() => run(() => onShareFile?.(doc))}
@@ -413,11 +417,11 @@ export function ExplorerContextMenu({
                   disabled={!canMove}
                   title={
                     !canUpdate
-                      ? 'Você não tem permissão para mover este documento.'
+                      ? t('explorerContextMenu.noMovePermission')
                       : isTrashView
-                        ? 'Este documento está na Lixeira e não pode ser movido.'
+                        ? t('explorerContextMenu.inTrashCantMove')
                         : isDeactivatedView
-                          ? 'Este documento está desativado e não pode ser movido.'
+                          ? t('explorerContextMenu.deactivatedCantMove')
                           : undefined
                   }
                   onClick={() => run(() => onMoveFile?.(doc))}
@@ -429,8 +433,8 @@ export function ExplorerContextMenu({
                   disabled={!onEditMetadataFile || archiveView}
                   title={
                     archiveView
-                      ? 'Documento arquivado não tem ficha editável.'
-                      : 'Conferir e corrigir os campos deste documento'
+                      ? t('explorerContextMenu.archivedNoMetadata')
+                      : t('explorerContextMenu.editMetadataHint')
                   }
                   onClick={() => run(() => onEditMetadataFile?.(doc))}
                 />

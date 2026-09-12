@@ -24,7 +24,7 @@ describe('home da Biblioteca (raiz)', () => {
     const page = readSrc('features/library/LibraryPage.tsx');
     const header = readSrc('features/library/components/ExplorerPageHeader.tsx');
     assert.ok(page.includes('ExplorerPageHeader'));
-    assert.ok(page.includes("'Biblioteca'"));
+    assert.ok(page.includes("t('libraryPage.title')"));
     assert.ok(
       page.includes('showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}'),
     );

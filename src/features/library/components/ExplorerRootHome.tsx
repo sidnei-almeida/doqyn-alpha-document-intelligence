@@ -75,7 +75,9 @@ export function ExplorerRootHome({
             {viewMode === 'grid' ? (
               <DocumentFilesGrid
                 documents={uncategorizedDocuments}
-                metaForDocument={(doc) => `Sem pasta · ${formatDate(doc.updatedAt)}`}
+                metaForDocument={(doc) =>
+                  t('explorerRootHome.noFolderMeta', { date: formatDate(doc.updatedAt) })
+                }
                 testId="explorer-uncategorized-grid"
               />
             ) : (
@@ -84,7 +86,7 @@ export function ExplorerRootHome({
                   <DocumentFileRow
                     key={doc.documentId}
                     document={doc}
-                    meta={`Sem pasta · ${formatDate(doc.updatedAt)}`}
+                    meta={t('explorerRootHome.noFolderMeta', { date: formatDate(doc.updatedAt) })}
                     layout="compact"
                   />
                 ))}

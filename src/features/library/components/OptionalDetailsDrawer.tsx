@@ -309,9 +309,13 @@ export function OptionalDetailsDrawer({
   onTransferOwnership,
   onEditMetadata,
 }: OptionalDetailsDrawerProps) {
+  const { t } = useTranslation('library');
   if (!selection) return null;
 
-  const title = selection.kind === 'file' ? 'Detalhes do arquivo' : 'Detalhes da pasta';
+  const title =
+    selection.kind === 'file'
+      ? t('optionalDetailsDrawer.fileDetails')
+      : t('optionalDetailsDrawer.folderDetails');
 
   return (
     <WorkspaceSideDrawer
@@ -320,7 +324,7 @@ export function OptionalDetailsDrawer({
       testId="library-details-drawer"
       overlayTestId="library-details-drawer-overlay"
       closeTestId="library-details-drawer-close"
-      closeAriaLabel="Fechar painel de detalhes"
+      closeAriaLabel={t('optionalDetailsDrawer.closeDetails')}
       scrollable={selection.kind !== 'file'}
       bodyClassName={selection.kind === 'file' ? 'flex flex-col overflow-hidden' : undefined}
     >

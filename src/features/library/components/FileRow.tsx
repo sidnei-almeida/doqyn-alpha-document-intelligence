@@ -12,6 +12,7 @@ import { useSelectableItemRef } from '../hooks/useSelectableItemRef';
 import { handleExplorerItemKeyDown } from '../utils/explorerItemKeyboard';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { FileTypeIcon } from '@/components/ui/FileTypeIcon';
+import { useTranslation } from 'react-i18next';
 
 type FileRowProps = {
   document: DocumentListItem;
@@ -30,6 +31,7 @@ function ownerName(doc: DocumentListItem): string {
 
 /** Linha de arquivo — clique seleciona, duplo clique abre viewer. */
 export function FileRow({ document: doc, compact = false, variant = 'default' }: FileRowProps) {
+  const { t } = useTranslation('library');
   const { isFileSelected, isStarred, interactFile, openFile, openFileContextMenu, toggleStar } =
     useExplorerFileActions();
 
@@ -115,7 +117,7 @@ export function FileRow({ document: doc, compact = false, variant = 'default' }:
                 'explorer-icon-btn shrink-0 sm:opacity-0 sm:group-hover:opacity-100',
                 starred && 'text-doqyn-warning opacity-100',
               )}
-              aria-label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+              aria-label={t(starred ? 'favorites.remove' : 'favorites.add')}
               aria-pressed={starred}
             >
               <Icon name="star" filled={starred} size={ICON_SIZE.sm} />
@@ -132,7 +134,7 @@ export function FileRow({ document: doc, compact = false, variant = 'default' }:
           <button
             type="button"
             className="explorer-icon-btn shrink-0 opacity-0 group-hover:opacity-100 sm:opacity-0"
-            aria-label={`Ações de ${name}`}
+            aria-label={t('item.actions', { name })}
             onClick={(event) => {
               event.stopPropagation();
               const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
@@ -208,7 +210,7 @@ export function FileRow({ document: doc, compact = false, variant = 'default' }:
         <button
           type="button"
           className="explorer-icon-btn shrink-0 opacity-0 group-hover:opacity-100"
-          aria-label={`Ações de ${name}`}
+          aria-label={t('item.actions', { name })}
           onClick={(event) => {
             event.stopPropagation();
             const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();

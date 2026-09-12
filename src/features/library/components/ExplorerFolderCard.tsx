@@ -74,7 +74,7 @@ export function ExplorerFolderCard({
         isSelected && 'explorer-item-selected explorer-selected',
       )}
       aria-selected={isSelected}
-      aria-label={`Abrir pasta ${folder.name}`}
+      aria-label={t('explorerFolderCard.open', { name: folder.name })}
     >
       <span className="flex h-6 w-6 shrink-0 items-center justify-center">
         <Icon
@@ -97,7 +97,7 @@ export function ExplorerFolderCard({
           <button
             type="button"
             className="explorer-icon-btn workspace-action-btn absolute right-9 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
-            aria-label={`Informações de ${folder.name}`}
+            aria-label={t('explorerFolderCard.info', { name: folder.name })}
             data-no-marquee-select
             data-testid="explorer-folder-info-button"
             onClick={(event) => {
@@ -113,7 +113,7 @@ export function ExplorerFolderCard({
       <button
         type="button"
         className="explorer-icon-btn workspace-action-btn absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
-        aria-label={`Menu de ${folder.name}`}
+        aria-label={t('item.menu', { name: folder.name })}
         data-no-marquee-select
         onClick={(event) => {
           event.stopPropagation();

@@ -14,7 +14,15 @@
     "mover": "Move",
     "recuperar": "Recover",
     "restaurar": "Restore",
-    "visualizar": "View"
+    "visualizar": "View",
+    "tooltip": {
+      "foldersCantDelete": "Folders and categories can't be deleted. Select documents only.",
+      "noDeletePermission": "You don't have permission to delete the selected documents.",
+      "onlyDocumentsMove": "Select documents only to move.",
+      "trashCantMove": "Documents in the trash can't be moved.",
+      "deactivatedCantMove": "Deactivated documents can't be moved.",
+      "noMovePermission": "You don't have permission to move the selected documents."
+    }
   },
   "collections": {
     "root": {
@@ -77,7 +85,10 @@
   "documentNameField": {
     "asVersoesAnterioresContinuam": "Earlier versions keep the name they had.",
     "nomeDoDocumento": "Document name",
-    "nomeDoDocumento2": "Document name"
+    "nomeDoDocumento2": "Document name",
+    "updated": "Name updated.",
+    "saving": "Saving…",
+    "rename": "Rename"
   },
   "documentVersionHistoryPanel": {
     "atual": "· current",
@@ -85,14 +96,18 @@
     "current": "current",
     "naoFoiPossivelCarregar": "Could not load the history.",
     "tentarNovamente": "Try again",
-    "versao": "version",
-    "visualizarEstaVersao": "View this version"
+    "visualizarEstaVersao": "View this version",
+    "versionCount_one": "{{count}} version",
+    "versionCount_other": "{{count}} versions"
   },
   "emptyFolderState": {
     "ajusteABuscaOu": "Adjust the search or the filters to widen the results.",
     "limparFiltros": "Clear filters",
     "nenhumDocumentoParaOs": "No document matches the current filters",
-    "voceTambemPodeArrastar": "You can also drag files into this window."
+    "voceTambemPodeArrastar": "You can also drag files into this window.",
+    "title": "This folder is still empty",
+    "description": "Upload a document for DOQYN to analyze and classify.",
+    "upload": "Upload document"
   },
   "explorerContextMenu": {
     "abrir": "Open",
@@ -119,7 +134,17 @@
     "verRegras": "View rules",
     "verRegrasDestaCategoria": "View this category's rules",
     "verTracking": "View tracking",
-    "visualizar": "View"
+    "visualizar": "View",
+    "infoCurrentFolder": "View current folder info",
+    "downloadNeedsApproval": "Downloading this document requires administrator approval.",
+    "shareReceived": "You can't share a document that was shared with you.",
+    "shareNeedsApproval": "Sharing this document requires administrator approval.",
+    "noSharePermission": "You don't have permission to share this document.",
+    "noMovePermission": "You don't have permission to move this document.",
+    "inTrashCantMove": "This document is in the Trash and can't be moved.",
+    "deactivatedCantMove": "This document is deactivated and can't be moved.",
+    "archivedNoMetadata": "Archived documents have no editable record.",
+    "editMetadataHint": "Review and fix this document's fields"
   },
   "explorerFileQuickActions": {
     "baixar": "Download",
@@ -142,7 +167,9 @@
     "ordenarPor": "Sort by"
   },
   "explorerFolderCard": {
-    "informacoes": "Information"
+    "informacoes": "Information",
+    "open": "Open folder {{name}}",
+    "info": "{{name}} info"
   },
   "explorerFolderFiles": {
     "acoes": "Actions",
@@ -171,7 +198,8 @@
     "regras": "Rules"
   },
   "explorerRootHome": {
-    "semCategoria": "Uncategorized"
+    "semCategoria": "Uncategorized",
+    "noFolderMeta": "No folder · {{date}}"
   },
   "fileTable": {
     "acoes": "Actions",
@@ -182,7 +210,8 @@
     "nome": "Name",
     "proprietario": "Owner",
     "status": "Status",
-    "tags": "Tags"
+    "tags": "Tags",
+    "title": "Files"
   },
   "filterFallback": {
     "status": "Status",
@@ -255,7 +284,9 @@
     "pastaDeGovernanca": "Governance folder",
     "pastas": "Folders",
     "tipo": "Type",
-    "verRegrasDestaCategoria": "View this category's rules"
+    "verRegrasDestaCategoria": "View this category's rules",
+    "smartCategory": "Smart category",
+    "library": "Library"
   },
   "libraryPage": {
     "carregandoBiblioteca": "Loading library",
@@ -265,7 +296,29 @@
     "nomeDaCategoria": "Category name",
     "oNomeNovoVale": "The new name applies to the folder and to every document already inside it.",
     "renomear": "Rename",
-    "renomearCategoria": "Rename category"
+    "renomearCategoria": "Rename category",
+    "searchResults": "Search results",
+    "folderFallback": "Folder",
+    "folderFallbackLower": "folder",
+    "title": "Library",
+    "searchDescription_one": "{{count}} document found for “{{query}}”",
+    "searchDescription_other": "{{count}} documents found for “{{query}}”",
+    "folderDescription": "Documents the AI classified into this category.",
+    "rootDescription": "Documents and categories in this workspace",
+    "renamedTitle": "Category renamed",
+    "renamedMessage": "It's now called {{name}}.",
+    "renameFailed": "Couldn't rename the category.",
+    "deletedTitle": "Category deleted",
+    "deletedMoved_one": "{{count}} document moved to Uncategorized.",
+    "deletedMoved_other": "{{count}} documents moved to Uncategorized.",
+    "deletedEmpty": "The category was empty.",
+    "deleteFailed": "Couldn't delete the category.",
+    "downloadFailed": "Couldn't download the document.",
+    "signedPdfUnavailable": "Signed PDF isn't available for this document.",
+    "signedPdfFailed": "Couldn't download the signed PDF.",
+    "noDocumentsFound": "No documents found",
+    "adjustFilters": "Try adjusting the filters or searching for another term.",
+    "filesIn": "Files in {{folder}}"
   },
   "moveDocumentModal": {
     "atual": "Current",
@@ -275,7 +328,13 @@
     "categoriaAtual": "Current category",
     "nenhumaCategoriaDisponivel": "No category available.",
     "nenhumaCategoriaEncontrada": "No category found.",
-    "oDocumentoJaEsta": "The document is already in this category."
+    "oDocumentoJaEsta": "The document is already in this category.",
+    "title_one": "Move document",
+    "title_other": "Move {{count}} documents",
+    "subtitleMany": "The selected documents will be reclassified into the chosen category.",
+    "subtitleOne": "Choose a new category for this document. The file and its history are kept.",
+    "moveTo": "Move to {{category}}",
+    "move": "Move"
   },
   "newButtonMenu": {
     "criarNovo": "Create new",
@@ -303,7 +362,10 @@
     "verAssinaturas": "View signatures",
     "verRegrasDestaCategoria": "View this category's rules",
     "versao": "Version",
-    "visualizar": "View"
+    "visualizar": "View",
+    "fileDetails": "File details",
+    "folderDetails": "Folder details",
+    "closeDetails": "Close details panel"
   },
   "ownerFilterMenu": {
     "filtrarPorProprietario": "Filter by owner"
@@ -331,9 +393,42 @@
     "falhaMoverLixeira": "Could not move to the trash.",
     "falhaRestaurarDocumento": "Could not restore the document.",
     "configuracoesLixeiraSalvas": "Trash settings updated.",
-    "falhaSalvarConfiguracoes": "Could not save the settings."
+    "falhaSalvarConfiguracoes": "Could not save the settings.",
+    "recovered_one": "Document recovered.",
+    "recovered_other": "{{count}} documents recovered.",
+    "moved_one": "Document moved to {{category}}.",
+    "moved_other": "{{count}} documents moved to {{category}}.",
+    "falhaMover": "Couldn't move the document.",
+    "trashed_one": "Document moved to the trash.",
+    "trashed_other": "{{count}} documents moved to the trash.",
+    "restored_one": "Document restored.",
+    "restored_other": "{{count}} documents restored."
   },
   "typeFilterMenu": {
     "filtrarPorTipo": "Filter by type"
+  },
+  "favorites": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
+  },
+  "item": {
+    "menu": "{{name}} menu",
+    "actions": "{{name}} actions"
+  },
+  "viewMode": {
+    "grid": "Grid view",
+    "list": "List view",
+    "shortGrid": "grid",
+    "shortList": "list"
+  },
+  "viewModeToggle": {
+    "label": "{{current}}. Switch to {{next}}.",
+    "tooltip": "{{current}}. Click for {{next}}"
+  },
+  "explorerToolbarActions": {
+    "refresh": "Refresh library"
+  },
+  "documentSignatureBadge": {
+    "view": "View signatures"
   }
 }

@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useTranslation } from 'react-i18next';
 import type { DocumentSignatureSummary } from '@/types/document-library';
 import {
   normalizeSignatureSummary,
@@ -23,6 +24,7 @@ export function DocumentSignatureBadge({
   size = 'xs',
   onClick,
 }: DocumentSignatureBadgeProps) {
+  const { t } = useTranslation('library');
   if (!signatureSummaryHasActivity(summary)) return null;
 
   const normalized = normalizeSignatureSummary(summary);
@@ -56,7 +58,7 @@ export function DocumentSignatureBadge({
   }
 
   return (
-    <Tooltip label={tooltip ?? 'Ver assinaturas'}>
+    <Tooltip label={tooltip ?? t('documentSignatureBadge.view')}>
       <button
         type="button"
         className="inline-flex max-w-full border-0 bg-transparent p-0"
@@ -66,7 +68,7 @@ export function DocumentSignatureBadge({
           onClick?.();
         }}
         data-testid="document-signature-badge-button"
-        aria-label={tooltip ?? 'Ver assinaturas'}
+        aria-label={tooltip ?? t('documentSignatureBadge.view')}
       >
         {badge}
       </button>

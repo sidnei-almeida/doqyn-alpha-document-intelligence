@@ -42,7 +42,7 @@ describe('visualização dentro da pasta', () => {
 
   it('empty state da pasta fala o vocabulário comum, sem pictograma', () => {
     const empty = readSrc('features/library/components/EmptyFolderState.tsx');
-    assert.ok(empty.includes('Enviar documento'));
+    assert.ok(empty.includes("t('emptyFolderState.upload')"));
     assert.ok(empty.includes('library-empty-state'));
     /**
      * A proibição anterior — não usar `EmptyState` — nasceu quando ele era um bloco preenchido de

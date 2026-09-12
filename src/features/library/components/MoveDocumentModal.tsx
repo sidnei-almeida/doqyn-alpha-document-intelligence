@@ -82,7 +82,7 @@ export function MoveDocumentModal({
 
   if (!open) return null;
 
-  const title = documents.length > 1 ? `Mover ${documents.length} documentos` : 'Mover documento';
+  const title = t('moveDocumentModal.title', { count: documents.length });
 
   const canSubmit =
     Boolean(selectedId) && !isSubmitting && !isSameAsCurrent && activeCategories.length > 0;
@@ -94,8 +94,8 @@ export function MoveDocumentModal({
       title={title}
       subtitle={
         documents.length > 1
-          ? 'Os documentos selecionados serão reclassificados para a categoria escolhida.'
-          : 'Escolha uma nova categoria para este documento. O arquivo e o histórico serão preservados.'
+          ? t('moveDocumentModal.subtitleMany')
+          : t('moveDocumentModal.subtitleOne')
       }
       size="sm"
       footer={
@@ -108,7 +108,9 @@ export function MoveDocumentModal({
             onClick={() => selectedId && onConfirm(selectedId)}
             disabled={!canSubmit}
           >
-            {selectedCategory ? `Mover para ${selectedCategory.name}` : 'Mover'}
+            {selectedCategory
+              ? t('moveDocumentModal.moveTo', { category: selectedCategory.name })
+              : t('moveDocumentModal.move')}
           </Button>
         </>
       }

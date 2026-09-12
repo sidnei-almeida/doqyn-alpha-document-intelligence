@@ -40,11 +40,11 @@ export function ExplorerFileQuickActions({
       data-testid="explorer-file-quick-actions"
       data-no-marquee-select
     >
-      <Tooltip label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}>
+      <Tooltip label={t(starred ? 'favorites.remove' : 'favorites.add')}>
         <button
           type="button"
           className={cn('explorer-icon-btn h-7 w-7', starred && 'text-doqyn-warning')}
-          aria-label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          aria-label={t(starred ? 'favorites.remove' : 'favorites.add')}
           aria-pressed={starred}
           onClick={(event) => {
             event.stopPropagation();

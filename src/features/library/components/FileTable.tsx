@@ -13,8 +13,9 @@ const HEADER_CELL =
   'px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-doqyn-subtle';
 
 /** Lista administrativa — usada em busca/coleções virtuais fora da pasta. */
-export function FileTable({ documents, title = 'Arquivos' }: FileTableProps) {
+export function FileTable({ documents, title: titleProp }: FileTableProps) {
   const { t } = useTranslation('library');
+  const title = titleProp ?? t('fileTable.title');
 
   const orderedIds = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
 

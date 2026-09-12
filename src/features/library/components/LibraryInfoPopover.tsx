@@ -41,7 +41,7 @@ export function LibraryInfoPopover({ overview, folder }: LibraryInfoPopoverProps
         <div className="flex justify-between gap-4">
           <dt className="text-doqyn-subtle">{t('libraryInfoPopover.tipo')}</dt>
           <dd className="text-right tabular-nums text-doqyn-text">
-            {folder ? 'Categoria inteligente' : 'Biblioteca'}
+            {folder ? t('libraryInfoPopover.smartCategory') : t('libraryInfoPopover.library')}
           </dd>
         </div>
         {!folder && folderCount > 0 && (
