@@ -3,19 +3,49 @@
     "desfazer": "Undo",
     "dispensar": "Dismiss",
     "grupos": "Groups",
-    "gruposDaEmpresa": "Company groups"
+    "gruposDaEmpresa": "Company groups",
+    "verb": {
+      "view": "view",
+      "download": "download",
+      "upload": "upload"
+    },
+    "state": {
+      "deny": "off",
+      "allow": "allowed",
+      "require": "now requires approval"
+    },
+    "toggled": "{{group}}: {{verb}} {{state}}.",
+    "removed": "{{group}} was removed from {{category}}.",
+    "reached_one": "{{group}} reaches {{category}}: {{count}} more person can see it.",
+    "reached_other": "{{group}} reaches {{category}}: {{count}} more people can see it.",
+    "reachedEmpty": "{{group}} reaches {{category}}, but the group has no people yet.",
+    "focusHint": "Groups that don't reach {{category}} yet are highlighted.",
+    "dragHint": "Drag a group to the category it should reach.",
+    "laneEmpty": "No one reaches this category, only administrators."
   },
   "accessMatrixView": {
     "categoria": "Category",
     "ordemDosPontos": "Order of the dots",
-    "verBaixarEnviar": "view · download · upload"
+    "verBaixarEnviar": "view · download · upload",
+    "clickToEdit": "Click a cell to edit"
   },
   "categoryLane": {
     "camposDaAnalise": "Analysis fields",
     "detalhesDaCategoria": "Category details",
     "outOfReach": "out of reach",
     "previewReach_one": "{{count}} person can see it",
-    "previewReach_other": "{{count}} people can see it"
+    "previewReach_other": "{{count}} people can see it",
+    "options": "{{category}} options",
+    "peopleReach_one": "person reaches",
+    "peopleReach_other": "people reach",
+    "groupsConnected_one": "connected group",
+    "groupsConnected_other": "connected groups",
+    "coverage": "{{percent}}% of the company's people reach this category",
+    "reach": {
+      "reached": "reached",
+      "emptyGroups": "no people",
+      "unreached": "no one"
+    }
   },
   "categoryModal": {
     "cancelar": "Cancel",
@@ -23,7 +53,8 @@
     "criarCategoria": "Create category",
     "depoisDeCriadaVoce": "Once created, you connect the groups that can see its documents.",
     "nomeDaCategoria": "Category name",
-    "novaCategoria": "New category"
+    "novaCategoria": "New category",
+    "subtitle": "A category is a Library folder seen through governance."
   },
   "error": {
     "categoriaNaoEncontrada": "Category not found."
@@ -64,7 +95,15 @@
     "separePorVirgula2": "Separate with commas",
     "termosAEvitar": "Terms to avoid",
     "termosQueIdentificamEste": "Terms that identify this document",
-    "useCampoParaVariaveis": "Use {field} for variables"
+    "useCampoParaVariaveis": "Use {field} for variables",
+    "fieldType": {
+      "string": "Text",
+      "date": "Date",
+      "number": "Number",
+      "currency": "Currency",
+      "boolean": "Yes/No"
+    },
+    "saving": "Saving…"
   },
   "governanceDetailDialog": {
     "accesses": "reaches",
@@ -85,7 +124,19 @@
     "nome2": "Name",
     "pessoasNoGrupo": "People in the group",
     "salvarAlteracoes": "Save changes",
-    "salvarPermissoes": "Save permissions"
+    "salvarPermissoes": "Save permissions",
+    "title": {
+      "category": "Document category",
+      "group": "Document group",
+      "connection": "Access rule"
+    },
+    "fallback": {
+      "category": "Category",
+      "group": "Group",
+      "connection": "Connection"
+    },
+    "disconnectAria": "Disconnect category {{category}} from group {{group}}",
+    "noDescription": "No description."
   },
   "governanceScoreboard": {
     "cobertura": "Coverage",
@@ -95,7 +146,21 @@
     "governancaIncompleta": "Governance incomplete",
     "peopleReached": "<count>{{reached}}</count> of {{total}} people reach at least one category through a group. Administrators see everything.",
     "stepsDone": "{{done}} of {{total}}",
-    "trilhaDaGovernanca": "Governance track"
+    "trilhaDaGovernanca": "Governance track",
+    "coverageAria": "{{percent}}% of people reach at least one category",
+    "step": {
+      "groups_one": "{{count}} group created",
+      "groups_other": "{{count}} groups created",
+      "people_one": "{{done}} of {{count}} person in groups",
+      "people_other": "{{done}} of {{count}} people in groups",
+      "categories_one": "{{done}} of {{count}} category connected",
+      "categories_other": "{{done}} of {{count}} categories connected"
+    },
+    "hint": {
+      "groups": "Create the first group. Groups are what receive access.",
+      "people": "An empty group reaches no one. Add people in Users.",
+      "categories": "Drag a group onto the lane of the category it should reach."
+    }
   },
   "groupModal": {
     "asPessoasEntramNo": "People join the group from the Users screen.",
@@ -103,12 +168,19 @@
     "criarGrupo": "Create group",
     "juridicoFinanceiro": "Legal, Finance…",
     "nomeDoGrupo": "Group name",
-    "novoGrupo": "New group"
+    "novoGrupo": "New group",
+    "subtitle": "A group is what connects people to document categories."
   },
   "permissionPopover": {
     "detalhes": "Details",
     "em": "· in “",
-    "removerAcessoDoGrupo": "Remove the group's access"
+    "removerAcessoDoGrupo": "Remove the group's access",
+    "hint": {
+      "view": "shown in the library and the viewer",
+      "download": "download of the original file",
+      "upload": "contribute new documents",
+      "share": "send the document to someone else"
+    }
   },
   "rulesPage": {
     "carregandoGovernancaDocumental": "Loading document governance…",
@@ -120,7 +192,15 @@
     "regrasDeAcesso": "Access rules",
     "regrasDeAcesso2": "Access rules",
     "tentarNovamente": "Try again",
-    "verifiqueSuaConexaoE": "Check your connection and try again."
+    "verifiqueSuaConexaoE": "Check your connection and try again.",
+    "eyebrow": "Governance",
+    "descriptionGroups": "Connect groups of people to document categories.",
+    "descriptionGroupsReady": "Anyone outside a connected group can't see the category's documents.",
+    "descriptionCategories": "Categories and what the AI extracts from each one.",
+    "tabAccess": "Access",
+    "tabMatrix": "Matrix",
+    "emptyGroups": "Create a category to start organizing access by group.",
+    "emptyCategories": "Create a category to tell the AI what to extract from each document."
   },
   "rulesRoute": {
     "verificandoPermissoes": "Checking permissions..."
@@ -128,7 +208,11 @@
   "simulateAccessBar": {
     "sairDaSimulacao": "Exit the simulation",
     "vendoComo": "Viewing as",
-    "verComo": "View as"
+    "verComo": "View as",
+    "nobody": "No one (admin view)",
+    "memberAdmin": "manages the company: sees every category.",
+    "memberNoGroups": "isn't in any group; only sees what they uploaded.",
+    "memberGroups": "is in {{groups}}."
   },
   "toast": {
     "grupoCriado": "Group created.",
@@ -139,5 +223,80 @@
     "categoriaCriada": "Category created.",
     "categoriaDesativada": "Category deactivated.",
     "configuracaoSalva": "Setting saved."
+  },
+  "toastError": {
+    "createGroup": "Couldn't create the group.",
+    "deactivateGroup": "Couldn't deactivate the group.",
+    "updateGroup": "Couldn't update the group.",
+    "updatePermissions": "Couldn't update permissions.",
+    "updateCategory": "Couldn't update the category.",
+    "createCategory": "Couldn't create the category.",
+    "deactivateCategory": "Couldn't deactivate the category.",
+    "saveConfig": "Couldn't save the configuration."
+  },
+  "groupPalettePicker": {
+    "label": "Group color"
+  },
+  "groupPalette": {
+    "ardosia": "Slate",
+    "azul": "Blue",
+    "indigo": "Indigo",
+    "violeta": "Violet",
+    "magenta": "Magenta",
+    "carmim": "Crimson",
+    "telha": "Terracotta",
+    "ambar": "Amber",
+    "oliva": "Olive",
+    "musgo": "Moss",
+    "esmeralda": "Emerald",
+    "turquesa": "Turquoise"
+  },
+  "permission": {
+    "short": {
+      "view": "View",
+      "download": "Download",
+      "upload": "Edit",
+      "share": "Share",
+      "manage": "Manage"
+    },
+    "label": {
+      "view": "View",
+      "download": "Download",
+      "upload": "Edit",
+      "share": "Share",
+      "manage": "Manage"
+    },
+    "hint": {
+      "view": "Opens this category's documents in the viewer.",
+      "download": "Allows downloading the original file.",
+      "upload": "Can upload new versions, edit metadata and archive documents in this category.",
+      "share": "Can share documents with third parties.",
+      "manage": "Administrative access: metadata, audit and settings."
+    },
+    "state": {
+      "allow": "allowed",
+      "require": "requires approval"
+    },
+    "none": "No access",
+    "ariaLabel": "{{group}} permissions in {{category}}"
+  },
+  "permissionVerbs": {
+    "view": {
+      "label": "View documents",
+      "short": "view"
+    },
+    "download": {
+      "label": "Download",
+      "short": "download"
+    },
+    "upload": {
+      "label": "Upload",
+      "short": "upload"
+    },
+    "withState": "{{verb}}: {{state}}"
+  },
+  "groupToken": {
+    "ariaInCategory": "{{group}} in {{category}}: open options, or drag to move",
+    "ariaPool": "{{group}}: drag to grant access"
   }
 }

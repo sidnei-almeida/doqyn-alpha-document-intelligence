@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { GROUP_PALETTE } from '@shared/groupPalette';
 import type { GovernancePermissionValue } from '@shared/governancePermissions';
 import type {
@@ -37,10 +38,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    const serverMessage = typeof data?.message === 'string' ? data.message : undefined;
     const message =
-      typeof data?.message === 'string'
-        ? data.message
-        : 'Não foi possível concluir a operação. Tente novamente.';
+      typeof data?.code === 'string'
+        ? getFriendlyAuthErrorMessage(data.code, serverMessage)
+        : (serverMessage ?? i18n.t('common:feedback.genericFailure'));
     throw new RulesApiError(message, response.status, data?.code);
   }
 

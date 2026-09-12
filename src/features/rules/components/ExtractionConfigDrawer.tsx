@@ -44,12 +44,12 @@ interface ExtractionConfigDrawerProps {
 
 const FORM_ID = 'campos-da-analise';
 
-const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-  string: 'Texto',
-  date: 'Data',
-  number: 'Número',
-  currency: 'Moeda',
-  boolean: 'Sim/Não',
+const FIELD_TYPE_KEYS: Record<FieldType, string> = {
+  string: 'extractionConfigDrawer.fieldType.string',
+  date: 'extractionConfigDrawer.fieldType.date',
+  number: 'extractionConfigDrawer.fieldType.number',
+  currency: 'extractionConfigDrawer.fieldType.currency',
+  boolean: 'extractionConfigDrawer.fieldType.boolean',
 };
 
 function tagsFromString(value: string): string[] {
@@ -144,7 +144,7 @@ export function ExtractionConfigDrawer({
             {t('extractionConfigDrawer.cancelar')}
           </Button>
           <Button type="submit" form={FORM_ID} disabled={saving || !namingTemplate.trim()}>
-            {saving ? 'Salvando…' : 'Salvar'}
+            {saving ? t('extractionConfigDrawer.saving') : t('common:actions.save')}
           </Button>
         </>
       }
@@ -275,9 +275,9 @@ export function ExtractionConfigDrawer({
                     variant="rule"
                     value={field.type}
                     onChange={(e) => updateField(index, { type: e.target.value as FieldType })}
-                    options={ALLOWED_FIELD_TYPES.map((t) => ({
-                      value: t,
-                      label: FIELD_TYPE_LABELS[t],
+                    options={ALLOWED_FIELD_TYPES.map((type) => ({
+                      value: type,
+                      label: t(FIELD_TYPE_KEYS[type]),
                     }))}
                     className="min-w-[7.5rem] flex-1"
                   />

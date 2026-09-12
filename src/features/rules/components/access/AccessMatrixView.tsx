@@ -17,6 +17,7 @@ type MatrixCellProps = {
 };
 
 function MatrixCell({ category, group, memberCount, disabled, onChange }: MatrixCellProps) {
+  const { t } = useTranslation('rules');
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const permissions = getCategoryGroupPermissions(category, group.id);
@@ -29,7 +30,7 @@ function MatrixCell({ category, group, memberCount, disabled, onChange }: Matrix
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        aria-label={`Permissões de ${group.name} em ${category.name}`}
+        aria-label={t('permission.ariaLabel', { group: group.name, category: category.name })}
         className="matrix-cell"
         data-connected={connected}
       >
@@ -137,7 +138,7 @@ export function AccessMatrixView({
           {t('accessMatrixView.ordemDosPontos')}
         </span>{' '}
         {t('accessMatrixView.verBaixarEnviar')}
-        {isAdmin ? '. Clique numa célula para editar' : ''}
+        {isAdmin ? `. ${t('accessMatrixView.clickToEdit')}` : ''}
       </p>
     </div>
   );

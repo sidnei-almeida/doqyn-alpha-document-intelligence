@@ -83,7 +83,7 @@ export function RulesPage() {
     deleteCategory,
     saveExtractionRule,
     getRuleForClass,
-  } = useRules(user?.name ?? 'Usuário');
+  } = useRules();
 
   const simulatedMember = useMemo(
     () => members.find((member) => member.id === simulatedMemberId) ?? null,
@@ -101,12 +101,10 @@ export function RulesPage() {
   if (error) {
     return (
       <PageShell
-        eyebrow="Governança"
+        eyebrow={t('rulesPage.eyebrow')}
         title={t('rulesPage.regrasDeAcesso')}
         description={
-          showGroups
-            ? 'Conecte grupos de pessoas às categorias de documentos.'
-            : 'Categorias e o que a IA extrai de cada uma.'
+          showGroups ? t('rulesPage.descriptionGroups') : t('rulesPage.descriptionCategories')
         }
       >
         <EmptyState
@@ -125,12 +123,10 @@ export function RulesPage() {
 
   return (
     <PageShell
-      eyebrow="Governança"
+      eyebrow={t('rulesPage.eyebrow')}
       title={t('rulesPage.regrasDeAcesso2')}
       description={
-        showGroups
-          ? 'Quem não está num grupo conectado não vê os documentos da categoria.'
-          : 'Categorias e o que a IA extrai de cada uma.'
+        showGroups ? t('rulesPage.descriptionGroupsReady') : t('rulesPage.descriptionCategories')
       }
       actions={
         isAdmin ? (
@@ -172,8 +168,8 @@ export function RulesPage() {
       {showGroups ? (
         <Tabs
           tabs={[
-            { id: 'acessos', label: 'Acessos' },
-            { id: 'matriz', label: 'Matriz' },
+            { id: 'acessos', label: t('rulesPage.tabAccess') },
+            { id: 'matriz', label: t('rulesPage.tabMatrix') },
           ]}
           activeTab={activeTab}
           onChange={(id) => setActiveTab(id as RulesTab)}
@@ -186,11 +182,7 @@ export function RulesPage() {
           <EmptyState
             stretch
             title={t('rulesPage.nenhumaCategoriaDeDocumentos')}
-            description={
-              showGroups
-                ? 'Crie uma categoria para começar a organizar o acesso por grupos.'
-                : 'Crie uma categoria para dizer à IA o que extrair de cada documento.'
-            }
+            description={showGroups ? t('rulesPage.emptyGroups') : t('rulesPage.emptyCategories')}
             action={
               isAdmin ? (
                 <Button type="button" onClick={() => setCategoryModalOpen(true)}>

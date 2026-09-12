@@ -11,9 +11,12 @@ import { Textarea } from '@/components/ui/Textarea';
 import { cn } from '@/lib/utils';
 import type { DocumentCategory, Group } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
-import { PERMISSION_LABELS, readGroupClassPermissions } from '../../utils/groupClassPermissions';
+import {
+  PERMISSION_LABEL_KEYS,
+  readGroupClassPermissions,
+} from '../../utils/groupClassPermissions';
 import { EMPTY_CONNECTION_PERMISSIONS } from '../../utils/governanceConnections';
-import { PERMISSION_HINTS } from '../../utils/governanceMapUi';
+import { PERMISSION_HINT_KEYS } from '../../utils/governanceMapUi';
 import { GovernancePermissionBadges } from './GovernancePermissionBadges';
 import { CategoryIcon } from '../categoryIcons';
 import { EmptyHint } from '@/components/ui/EmptyHint';
@@ -64,7 +67,9 @@ type GovernanceDetailDialogProps = {
   onStartConnectMode?: (groupId: string) => void;
 };
 
-const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS) as Array<keyof DocumentAccessPermissions>;
+const PERMISSION_KEYS = Object.keys(PERMISSION_LABEL_KEYS) as Array<
+  keyof DocumentAccessPermissions
+>;
 
 /** `upload` e `manage` são os nomes persistidos de `update` e `audit` — o verbo é quem decide. */
 const DOMAIN_VERB: Record<keyof DocumentAccessPermissions, string> = {
@@ -193,20 +198,20 @@ export function GovernanceDetailDialog({
 
   const title =
     selection.type === 'category'
-      ? 'Categoria documental'
+      ? t('governanceDetailDialog.title.category')
       : selection.type === 'group'
-        ? 'Grupo documental'
-        : 'Regra de acesso';
+        ? t('governanceDetailDialog.title.group')
+        : t('governanceDetailDialog.title.connection');
 
   // O que a ficha descreve — a mesma linha de contexto dos outros diálogos.
   const detailSubtitle =
     selection.type === 'category'
-      ? (category?.name ?? 'Categoria')
+      ? (category?.name ?? t('governanceDetailDialog.fallback.category'))
       : selection.type === 'group'
-        ? (group?.name ?? 'Grupo')
+        ? (group?.name ?? t('governanceDetailDialog.fallback.group'))
         : category && group
           ? `${category.name} · ${group.name}`
-          : 'Conexão';
+          : t('governanceDetailDialog.fallback.connection');
 
   const renderActions = () => (
     <div className="governance-detail-dialog__actions">
@@ -258,7 +263,10 @@ export function GovernanceDetailDialog({
               size="sm"
               className="text-doqyn-danger"
               disabled={saving}
-              aria-label={`Desconectar categoria ${category.name} do grupo ${group.name}`}
+              aria-label={t('governanceDetailDialog.disconnectAria', {
+                category: category.name,
+                group: group.name,
+              })}
               onClick={async () => {
                 setSaving(true);
                 try {
@@ -340,7 +348,9 @@ export function GovernanceDetailDialog({
                 </label>
               </>
             ) : (
-              <p className="text-sm text-doqyn-muted">{category.description || 'Sem descrição.'}</p>
+              <p className="text-sm text-doqyn-muted">
+                {category.description || t('governanceDetailDialog.noDescription')}
+              </p>
             )}
             <div>
               <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-doqyn-muted">
@@ -402,7 +412,9 @@ export function GovernanceDetailDialog({
             ) : (
               <>
                 <p className="font-medium text-doqyn-text">{group.name}</p>
-                <p className="text-sm text-doqyn-muted">{group.description || 'Sem descrição.'}</p>
+                <p className="text-sm text-doqyn-muted">
+                  {group.description || t('governanceDetailDialog.noDescription')}
+                </p>
               </>
             )}
             <div className="governance-fact">
@@ -484,7 +496,7 @@ export function GovernanceDetailDialog({
                       onChange={(event) =>
                         setPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
                       }
-                      label={PERMISSION_LABELS[key]}
+                      label={t(PERMISSION_LABEL_KEYS[key])}
                       wrapperClassName={cn(
                         'flex-row-reverse justify-between rounded-lg border border-doqyn-border px-3 py-2',
                         !isAdmin && 'opacity-70',
@@ -503,10 +515,12 @@ export function GovernanceDetailDialog({
                           }))
                         }
                       >
-                        {state === 'require' ? 'pedindo aprovação' : 'liberado'}
+                        {t(`permission.state.${state === 'require' ? 'require' : 'allow'}`)}
                       </button>
                     )}
-                    <p className="px-1 text-[10px] text-doqyn-subtle">{PERMISSION_HINTS[key]}</p>
+                    <p className="px-1 text-[10px] text-doqyn-subtle">
+                      {t(PERMISSION_HINT_KEYS[key])}
+                    </p>
                   </div>
                 );
               })}

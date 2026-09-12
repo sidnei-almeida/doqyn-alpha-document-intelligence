@@ -4,7 +4,6 @@ import { useAuth } from '@/auth/useAuth';
 import { toast } from 'sonner';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
 import type {
-  AuditEvent,
   CompanyMember,
   DocumentCategory,
   DocumentExtractionRule,
@@ -12,7 +11,7 @@ import type {
   Group,
   GroupColor,
 } from '@/types/rules';
-import { computeGroupMemberCounts, generateId } from '@/utils/rulesHelpers';
+import { computeGroupMemberCounts } from '@/utils/rulesHelpers';
 import {
   createDocumentGroup,
   createDocumentClass,
@@ -101,7 +100,7 @@ function enrichCategoriesFromMatrix(
   });
 }
 
-export function useRules(actorName: string) {
+export function useRules() {
   const { tenant } = useAuth();
   const queryClient = useQueryClient();
   const tenantId = tenant?.tenantId;
@@ -110,24 +109,8 @@ export function useRules(actorName: string) {
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [rules, setRules] = useState<DocumentExtractionRule[]>([]);
-  const [, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const addAuditEvent = useCallback(
-    (action: string, target: string) => {
-      const event: AuditEvent = {
-        id: generateId('aud'),
-        companyId: members[0]?.companyId ?? '',
-        action,
-        actor: actorName,
-        target,
-        createdAt: new Date().toISOString(),
-      };
-      setAuditEvents((prev) => [event, ...prev]);
-    },
-    [actorName, members],
-  );
 
   const reload = useCallback(async () => {
     if (!tenantId) {
@@ -150,7 +133,7 @@ export function useRules(actorName: string) {
       setRules(rawRules.map(toExtractionRule));
     } catch (err) {
       console.error('Falha ao carregar regras:', err);
-      setError('Não foi possível carregar as regras agora.');
+      setError(i18n.t('rules:rulesPage.naoFoiPossivelCarregar'));
     } finally {
       setLoading(false);
     }
@@ -171,53 +154,42 @@ export function useRules(actorName: string) {
     [groups, members],
   );
 
-  const createGroup = useCallback(
-    async (name: string, color: GroupColor) => {
-      try {
-        const created = await createDocumentGroup({ name, color });
-        const mapped = mapApiGroup(created);
-        setGroups((prev) => [...prev, mapped]);
-        addAuditEvent(`${actorName} criou o grupo ${name.trim()}`, name.trim());
-        toast.success(i18n.t('rules:toast.grupoCriado'));
-      } catch (err) {
-        handleApiError(err, 'Não foi possível criar o grupo.');
-      }
-    },
-    [actorName, addAuditEvent],
-  );
+  const createGroup = useCallback(async (name: string, color: GroupColor) => {
+    try {
+      const created = await createDocumentGroup({ name, color });
+      const mapped = mapApiGroup(created);
+      setGroups((prev) => [...prev, mapped]);
+      toast.success(i18n.t('rules:toast.grupoCriado'));
+    } catch (err) {
+      handleApiError(err, i18n.t('rules:toastError.createGroup'));
+    }
+  }, []);
 
-  const deleteGroup = useCallback(
-    async (groupId: string) => {
-      const group = groups.find((g) => g.id === groupId);
-      try {
-        await deactivateDocumentGroup(groupId);
-        setGroups((prev) => prev.filter((g) => g.id !== groupId));
-        setCategories((prev) =>
-          prev.map((cat) => ({
-            ...cat,
-            documentGroupIds: cat.documentGroupIds.filter((id) => id !== groupId),
-            notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
-            permissions: cat.permissions
-              ? {
-                  view: cat.permissions.view.filter((id) => id !== groupId),
-                  download: cat.permissions.download.filter((id) => id !== groupId),
-                  update: cat.permissions.update.filter((id) => id !== groupId),
-                  audit: cat.permissions.audit.filter((id) => id !== groupId),
-                  share: cat.permissions.share.filter((id) => id !== groupId),
-                }
-              : undefined,
-          })),
-        );
-        if (group) {
-          addAuditEvent(`${actorName} desativou o grupo ${group.name}`, group.name);
-        }
-        toast.success(i18n.t('rules:toast.grupoDesativado'));
-      } catch (err) {
-        handleApiError(err, 'Não foi possível desativar o grupo.');
-      }
-    },
-    [actorName, addAuditEvent, groups],
-  );
+  const deleteGroup = useCallback(async (groupId: string) => {
+    try {
+      await deactivateDocumentGroup(groupId);
+      setGroups((prev) => prev.filter((g) => g.id !== groupId));
+      setCategories((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          documentGroupIds: cat.documentGroupIds.filter((id) => id !== groupId),
+          notifyGroupIds: cat.notifyGroupIds.filter((id) => id !== groupId),
+          permissions: cat.permissions
+            ? {
+                view: cat.permissions.view.filter((id) => id !== groupId),
+                download: cat.permissions.download.filter((id) => id !== groupId),
+                update: cat.permissions.update.filter((id) => id !== groupId),
+                audit: cat.permissions.audit.filter((id) => id !== groupId),
+                share: cat.permissions.share.filter((id) => id !== groupId),
+              }
+            : undefined,
+        })),
+      );
+      toast.success(i18n.t('rules:toast.grupoDesativado'));
+    } catch (err) {
+      handleApiError(err, i18n.t('rules:toastError.deactivateGroup'));
+    }
+  }, []);
 
   const updateGroup = useCallback(
     async (groupId: string, input: { name: string; description?: string; color?: string }) => {
@@ -231,7 +203,7 @@ export function useRules(actorName: string) {
         setGroups((prev) => prev.map((group) => (group.id === groupId ? mapped : group)));
         toast.success(i18n.t('rules:toast.grupoAtualizado'));
       } catch (err) {
-        handleApiError(err, 'Não foi possível atualizar o grupo.');
+        handleApiError(err, i18n.t('rules:toastError.updateGroup'));
       }
     },
     [],
@@ -249,7 +221,7 @@ export function useRules(actorName: string) {
         await invalidateLibraryQueries(queryClient, tenantId);
         toast.success(i18n.t('rules:toast.permissoesAtualizadas'));
       } catch (err) {
-        handleApiError(err, 'Não foi possível atualizar permissões.');
+        handleApiError(err, i18n.t('rules:toastError.updatePermissions'));
       }
     },
     [queryClient, tenantId],
@@ -266,48 +238,37 @@ export function useRules(actorName: string) {
         setCategories(filterActiveCategories(enrichCategoriesFromMatrix(rawClasses, matrix)));
         toast.success(i18n.t('rules:toast.categoriaAtualizada'));
       } catch (err) {
-        handleApiError(err, 'Não foi possível atualizar a categoria.');
+        handleApiError(err, i18n.t('rules:toastError.updateCategory'));
       }
     },
     [],
   );
 
-  const createCategory = useCallback(
-    async (name: string) => {
-      const trimmed = name.trim();
-      if (!trimmed) return;
+  const createCategory = useCallback(async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
 
-      try {
-        const created = await createDocumentClass({ name: trimmed });
-        const mapped = mapApiDocumentClass(created);
-        setCategories((prev) => [...prev, mapped]);
-        const refreshedRules = await getDocumentRules();
-        setRules(refreshedRules.map(toExtractionRule));
-        addAuditEvent(`${actorName} criou a categoria ${trimmed}`, trimmed);
-        toast.success(i18n.t('rules:toast.categoriaCriada'));
-      } catch (err) {
-        handleApiError(err, 'Não foi possível criar a categoria.');
-      }
-    },
-    [actorName, addAuditEvent],
-  );
+    try {
+      const created = await createDocumentClass({ name: trimmed });
+      const mapped = mapApiDocumentClass(created);
+      setCategories((prev) => [...prev, mapped]);
+      const refreshedRules = await getDocumentRules();
+      setRules(refreshedRules.map(toExtractionRule));
+      toast.success(i18n.t('rules:toast.categoriaCriada'));
+    } catch (err) {
+      handleApiError(err, i18n.t('rules:toastError.createCategory'));
+    }
+  }, []);
 
-  const deleteCategory = useCallback(
-    async (categoryId: string) => {
-      const category = categories.find((c) => c.id === categoryId);
-      try {
-        await toggleDocumentClass(categoryId);
-        setCategories((prev) => prev.filter((c) => c.id !== categoryId));
-        if (category) {
-          addAuditEvent(`${actorName} desativou a categoria ${category.name}`, category.name);
-        }
-        toast.success(i18n.t('rules:toast.categoriaDesativada'));
-      } catch (err) {
-        handleApiError(err, 'Não foi possível desativar a categoria.');
-      }
-    },
-    [actorName, addAuditEvent, categories],
-  );
+  const deleteCategory = useCallback(async (categoryId: string) => {
+    try {
+      await toggleDocumentClass(categoryId);
+      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+      toast.success(i18n.t('rules:toast.categoriaDesativada'));
+    } catch (err) {
+      handleApiError(err, i18n.t('rules:toastError.deactivateCategory'));
+    }
+  }, []);
 
   const saveExtractionRule = useCallback(
     async (
@@ -370,18 +331,14 @@ export function useRules(actorName: string) {
           ),
         );
 
-        addAuditEvent(
-          `${actorName} atualizou configuração de extração`,
-          categories.find((c) => c.id === classId)?.name ?? classId,
-        );
         toast.success(i18n.t('rules:toast.configuracaoSalva'));
         return savedRule;
       } catch (err) {
-        handleApiError(err, 'Não foi possível salvar a configuração.');
+        handleApiError(err, i18n.t('rules:toastError.saveConfig'));
         return null;
       }
     },
-    [actorName, addAuditEvent, categories, rules],
+    [rules],
   );
 
   const getRuleForClass = useCallback(

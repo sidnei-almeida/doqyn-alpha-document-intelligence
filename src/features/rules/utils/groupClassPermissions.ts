@@ -2,13 +2,14 @@ import type { GovernancePermissionValue } from '@shared/governancePermissions';
 import type { DocumentCategory } from '@/types/rules';
 import type { DocumentAccessPermissions } from '../api/rulesApi';
 
-export const PERMISSION_LABELS: Record<keyof DocumentAccessPermissions, string> = {
-  view: 'Visualizar',
-  download: 'Baixar',
-  /** Ver `PERMISSION_HINTS.upload`: desde D-24 este flag concede enviar + editar + arquivar. */
-  upload: 'Alterar',
-  share: 'Compartilhar',
-  manage: 'Gerenciar',
+/** Chaves do namespace `rules`; a tela traduz. */
+export const PERMISSION_LABEL_KEYS: Record<keyof DocumentAccessPermissions, string> = {
+  view: 'permission.label.view',
+  download: 'permission.label.download',
+  /** Ver `PERMISSION_HINT_KEYS.upload`: desde D-24 este flag concede enviar + editar + arquivar. */
+  upload: 'permission.label.upload',
+  share: 'permission.label.share',
+  manage: 'permission.label.manage',
 };
 
 /**

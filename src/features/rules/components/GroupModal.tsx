@@ -39,7 +39,7 @@ export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
       open={open}
       onClose={onClose}
       title={t('groupModal.novoGrupo')}
-      subtitle="Grupo é o que conecta pessoas a categorias de documentos."
+      subtitle={t('groupModal.subtitle')}
       dismissOnOverlay={false}
       footer={
         <>

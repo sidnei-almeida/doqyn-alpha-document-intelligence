@@ -33,7 +33,7 @@ export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
       open={open}
       onClose={onClose}
       title={t('categoryModal.novaCategoria')}
-      subtitle="Categoria é a pasta da Biblioteca vista pela governança."
+      subtitle={t('categoryModal.subtitle')}
       dismissOnOverlay={false}
       footer={
         <>

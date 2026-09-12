@@ -37,7 +37,7 @@ export function GovernanceScoreboard({
         <div
           className="gov-meter"
           role="img"
-          aria-label={`${percent}% das pessoas alcançam alguma categoria`}
+          aria-label={t('governanceScoreboard.coverageAria', { percent })}
         >
           <span className="gov-meter__fill" style={{ width: `${percent}%` }} />
         </div>
@@ -54,6 +54,22 @@ export function GovernanceScoreboard({
 
   const doneCount = progress.steps.filter((step) => step.done).length;
   const firstOpenId = progress.steps.find((step) => !step.done)?.id ?? null;
+
+  const stepLabel = (id: GovernanceStepId) => {
+    if (id === 'groups') {
+      return t('governanceScoreboard.step.groups', { count: progress.groupCount });
+    }
+    if (id === 'people') {
+      return t('governanceScoreboard.step.people', {
+        done: progress.peopleInGroups,
+        count: progress.totalPeople,
+      });
+    }
+    return t('governanceScoreboard.step.categories', {
+      done: progress.connectedCategoryCount,
+      count: progress.categoryCount,
+    });
+  };
 
   return (
     <section className="gov-board" aria-label={t('governanceScoreboard.trilhaDaGovernanca')}>
@@ -82,8 +98,10 @@ export function GovernanceScoreboard({
             <span className="gov-trail__mark" aria-hidden>
               {step.done ? <Icon name="check" size={ICON_SIZE.xs} /> : null}
             </span>
-            <span className="gov-trail__label">{step.label}</span>
-            {step.hint ? <span className="gov-trail__hint">{step.hint}</span> : null}
+            <span className="gov-trail__label">{stepLabel(step.id)}</span>
+            {step.done ? null : (
+              <span className="gov-trail__hint">{t(`governanceScoreboard.hint.${step.id}`)}</span>
+            )}
             {step.id === firstOpenId && isAdmin ? (
               <StepAction id={step.id} onCreateGroup={onCreateGroup} />
             ) : null}

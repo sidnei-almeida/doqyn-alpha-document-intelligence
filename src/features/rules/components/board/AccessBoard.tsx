@@ -74,16 +74,16 @@ export type AccessBoardProps = {
  * cabeçalho da faixa responde antes de soltar: mostra para quanto o número de pessoas vai.
  */
 /** O quadro diz o efeito, não o campo: o aviso precisa nomear o meio-termo. */
-const VERB_LABEL: Record<PermissionVerb, string> = {
-  view: 'ver',
-  download: 'baixar',
-  upload: 'enviar',
+const VERB_KEY: Record<PermissionVerb, string> = {
+  view: 'accessBoard.verb.view',
+  download: 'accessBoard.verb.download',
+  upload: 'accessBoard.verb.upload',
 };
 
-const STATE_LABEL: Record<GovernancePermissionState, string> = {
-  deny: 'desligado',
-  allow: 'liberado',
-  require: 'passa a pedir aprovação',
+const STATE_KEY: Record<GovernancePermissionState, string> = {
+  deny: 'accessBoard.state.deny',
+  allow: 'accessBoard.state.allow',
+  require: 'accessBoard.state.require',
 };
 
 export function AccessBoard({
@@ -176,7 +176,7 @@ export function AccessBoard({
         category,
         group,
         EMPTY_CONNECTION_PERMISSIONS,
-        `${group.name} saiu de ${category.name}.`,
+        t('accessBoard.removed', { group: group.name, category: category.name }),
       );
       return;
     }
@@ -195,8 +195,8 @@ export function AccessBoard({
       group,
       VIEW_ONLY,
       gained > 0
-        ? `${group.name} alcança ${category.name}: mais ${gained} ${gained === 1 ? 'pessoa vê' : 'pessoas veem'}.`
-        : `${group.name} alcança ${category.name}, mas o grupo ainda não tem pessoas.`,
+        ? t('accessBoard.reached', { group: group.name, category: category.name, count: gained })
+        : t('accessBoard.reachedEmpty', { group: group.name, category: category.name }),
     );
   }
 
@@ -223,8 +223,8 @@ export function AccessBoard({
             <p className="register-label text-doqyn-subtle">{t('accessBoard.grupos')}</p>
             <p className="type-caption text-doqyn-subtle">
               {focusedCategory
-                ? `Quem ainda não alcança ${focusedCategory.name} aparece aceso.`
-                : 'Arraste um grupo para a categoria que ele deve alcançar.'}
+                ? t('accessBoard.focusHint', { category: focusedCategory.name })
+                : t('accessBoard.dragHint')}
             </p>
             <div className="access-board__rail-list">
               {groups.map((group) => {
@@ -281,9 +281,7 @@ export function AccessBoard({
                       : undefined
                   }
                   emptyLabel={
-                    showGroups && connected.length === 0
-                      ? 'Ninguém alcança esta categoria, só administradores.'
-                      : ''
+                    showGroups && connected.length === 0 ? t('accessBoard.laneEmpty') : ''
                   }
                 >
                   {connected.map((group) => {
@@ -301,7 +299,11 @@ export function AccessBoard({
                             category,
                             group,
                             { ...permissions, [verb]: next },
-                            `${group.name}: ${VERB_LABEL[verb]} ${STATE_LABEL[toPermissionState(next)]}.`,
+                            t('accessBoard.toggled', {
+                              group: group.name,
+                              verb: t(VERB_KEY[verb]),
+                              state: t(STATE_KEY[toPermissionState(next)]),
+                            }),
                           )
                         }
                         onChangePermissions={async (next) => {
@@ -317,7 +319,10 @@ export function AccessBoard({
                             category,
                             group,
                             EMPTY_CONNECTION_PERMISSIONS,
-                            `${group.name} saiu de ${category.name}.`,
+                            t('accessBoard.removed', {
+                              group: group.name,
+                              category: category.name,
+                            }),
                           );
                         }}
                         onOpenGroupDetails={() => onOpenGroupDetails(group.id)}

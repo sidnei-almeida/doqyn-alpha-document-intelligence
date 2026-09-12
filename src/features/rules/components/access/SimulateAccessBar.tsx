@@ -27,7 +27,7 @@ export function SimulateAccessSelect({
       defaultValue=""
       onChange={onChange}
       options={[
-        { value: '', label: 'Ninguém (visão de admin)' },
+        { value: '', label: t('simulateAccessBar.nobody') },
         ...members.map((member) => ({ value: member.id, label: member.name })),
       ]}
     />

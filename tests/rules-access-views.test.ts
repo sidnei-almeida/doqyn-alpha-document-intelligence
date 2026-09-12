@@ -7,7 +7,6 @@ import {
   countPeopleWhoSee,
   getCategoryGroupPermissions,
   listConnectedGroups,
-  permissionSummaryLabel,
   simulateMemberAccess,
 } from '../src/features/rules/components/access/accessModel.js';
 import type { CompanyMember, DocumentCategory, Group } from '../src/types/rules.js';
@@ -74,7 +73,6 @@ describe('accessModel — permissões derivadas das regras', () => {
     assert.equal(perms.view, true);
     assert.equal(perms.download, true);
     assert.equal(perms.upload, false);
-    assert.equal(permissionSummaryLabel(perms), 'pode baixar');
   });
 
   it('lista apenas grupos com alguma permissão ativa', () => {
@@ -110,7 +108,8 @@ describe('accessModel — simulador "Ver como" (espelha o backend)', () => {
   it('membro de grupo conectado vê com o motivo', () => {
     const result = simulateMemberAccess(makeMember('member', ['g_juridico']), category, groups);
     assert.equal(result.sees, true);
-    assert.match(result.reason, /Grupo g_juridico/);
+    assert.ok(result.sees && result.via === 'group');
+    assert.match(result.groupName ?? '', /Grupo g_juridico/);
   });
 
   it('membro sem grupo conectado não vê (regra desconectada revoga)', () => {

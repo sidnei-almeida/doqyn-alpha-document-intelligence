@@ -47,7 +47,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
   it('/rules (RulesPage) não gerencia membros (feito em Usuários)', () => {
     const source = readSrc('features/rules/RulesPage.tsx');
-    assert.ok(source.includes('Conecte grupos de pessoas às categorias'));
+    assert.ok(source.includes("t('rulesPage.descriptionGroups')"));
     assert.equal(source.includes('pendingApprovals'), false);
     assert.equal(source.includes('approveMember'), false);
   });

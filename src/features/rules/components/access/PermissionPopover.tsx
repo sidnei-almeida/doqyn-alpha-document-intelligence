@@ -16,19 +16,30 @@ type PermissionRow = {
   key: 'view' | 'download' | 'upload' | 'share';
   /** Verbo do domínio — `upload` é o nome persistido de `update`. */
   verb: string;
-  label: string;
-  hint: string;
+  /** Chaves do namespace `rules`. */
+  labelKey: string;
+  hintKey: string;
 };
 
 const PERMISSION_ROWS: PermissionRow[] = [
   {
     key: 'view',
     verb: 'view',
-    label: 'Ver documentos',
-    hint: 'aparecem na biblioteca e no viewer',
+    labelKey: 'permissionVerbs.view.label',
+    hintKey: 'permissionPopover.hint.view',
   },
-  { key: 'download', verb: 'download', label: 'Baixar', hint: 'download do arquivo original' },
-  { key: 'upload', verb: 'update', label: 'Enviar', hint: 'contribuir com novos documentos' },
+  {
+    key: 'download',
+    verb: 'download',
+    labelKey: 'permissionVerbs.download.label',
+    hintKey: 'permissionPopover.hint.download',
+  },
+  {
+    key: 'upload',
+    verb: 'update',
+    labelKey: 'permissionVerbs.upload.label',
+    hintKey: 'permissionPopover.hint.upload',
+  },
   /**
    * Compartilhar fica no cartão, não na régua.
    *
@@ -36,7 +47,12 @@ const PERMISSION_ROWS: PermissionRow[] = [
    * transformaria em legenda. Aqui há espaço para o rótulo e para o meio-termo, que é justamente o
    * caso que originou o pedido — Gestão compartilha direto, Comercial compartilha pedindo.
    */
-  { key: 'share', verb: 'share', label: 'Compartilhar', hint: 'enviar o documento a outra pessoa' },
+  {
+    key: 'share',
+    verb: 'share',
+    labelKey: 'permission.short.share',
+    hintKey: 'permissionPopover.hint.share',
+  },
 ];
 
 type PermissionPopoverProps = {
@@ -105,7 +121,7 @@ export function PermissionPopover({
           void apply(row.key, fromPermissionState(nextState));
         }}
       >
-        {state === 'require' ? 'pedindo aprovação' : 'liberado'}
+        {t(`permission.state.${state === 'require' ? 'require' : 'allow'}`)}
       </button>
     );
   };
@@ -127,7 +143,7 @@ export function PermissionPopover({
       onClose={onClose}
       placement="bottom-start"
       className="w-72 p-2"
-      aria-label={`Permissões de ${group.name} em ${categoryName}`}
+      aria-label={t('permission.ariaLabel', { group: group.name, category: categoryName })}
     >
       <div className="flex items-center gap-2.5 border-b border-doqyn-border-subtle px-2.5 pb-2.5 pt-1.5">
         <div className="min-w-0 flex-1">
@@ -167,8 +183,8 @@ export function PermissionPopover({
               onChange={(event) => void apply(row.key, event.target.checked)}
             />
             <span className="min-w-0 flex-1">
-              <span className="type-body block text-doqyn-text">{row.label}</span>
-              <span className="type-caption block text-doqyn-subtle">{row.hint}</span>
+              <span className="type-body block text-doqyn-text">{t(row.labelKey)}</span>
+              <span className="type-caption block text-doqyn-subtle">{t(row.hintKey)}</span>
             </span>
             {renderStateSwitch(row)}
           </label>
