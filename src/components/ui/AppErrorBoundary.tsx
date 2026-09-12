@@ -49,7 +49,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
         <div className="w-full max-w-md rounded-xl border border-doqyn-border bg-doqyn-surface p-6 text-center">
           <Icon name="error_outline" size={ICON_SIZE.nav} className="mx-auto text-doqyn-muted" />
           <h1 className="mt-4 text-base font-semibold text-doqyn-text">
-            {this.props.fallbackTitle ?? 'Algo inesperado aconteceu'}
+            {this.props.fallbackTitle ?? i18n.t('components:appErrorBoundary.title')}
           </h1>
           <p className="mt-2 text-sm text-doqyn-muted">
             {i18n.t('components:appErrorBoundary.recarregueAPaginaPara')}

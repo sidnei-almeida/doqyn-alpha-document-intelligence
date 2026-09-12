@@ -5,6 +5,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type WorkspaceSideDrawerProps = {
   open?: boolean;
@@ -43,7 +44,7 @@ export function WorkspaceSideDrawer({
   ariaLabel,
   testId,
   closeTestId,
-  closeAriaLabel = 'Fechar',
+  closeAriaLabel: closeAriaLabelProp,
   overlayTestId,
   zIndexClass = 'z-[85]',
   maxWidthClass = 'max-w-xl',
@@ -55,6 +56,8 @@ export function WorkspaceSideDrawer({
   bodyClassName,
   children,
 }: WorkspaceSideDrawerProps) {
+  const { t } = useTranslation('common');
+  const closeAriaLabel = closeAriaLabelProp ?? t('actions.close');
   const isTopLayer = useOverlayLayer(open);
   const handleKeyDown = useStableCallback((event: KeyboardEvent) => {
     // Só a camada do topo responde: um modal aberto por cima fecha primeiro.

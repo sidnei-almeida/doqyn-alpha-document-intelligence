@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
+import { useTranslation } from 'react-i18next';
 
 export interface SelectProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -42,6 +43,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslation('components');
     const [open, setOpen] = useState(false);
     const [anchorWidth, setAnchorWidth] = useState<number>();
     const anchorRef = useRef<HTMLButtonElement>(null);
@@ -96,7 +98,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
           aria-haspopup="listbox"
           {...props}
         >
-          <span className="min-w-0 truncate">{selectedLabel ?? 'Selecionar'}</span>
+          <span className="min-w-0 truncate">{selectedLabel ?? t('select.placeholder')}</span>
           <Icon
             name="expand_more"
             size={isRule ? ICON_SIZE.xs : ICON_SIZE.sm}

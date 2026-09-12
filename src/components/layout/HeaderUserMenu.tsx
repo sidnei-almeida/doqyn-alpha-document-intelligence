@@ -20,7 +20,7 @@ export function HeaderUserMenu() {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
 
-  const displayName = user?.name?.trim() || user?.email || 'Usuário';
+  const displayName = user?.name?.trim() || user?.email || t('userFallback');
   const orgLabel = tenant?.displayName || user?.companyName;
   const primaryRole = resolvePrimaryPlatformRole(roles);
 

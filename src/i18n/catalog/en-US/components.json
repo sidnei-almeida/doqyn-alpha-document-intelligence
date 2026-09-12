@@ -1,7 +1,8 @@
 {
   "appErrorBoundary": {
     "recarregar": "Reload",
-    "recarregueAPaginaPara": "Reload the page to continue. If the problem persists, contact support."
+    "recarregueAPaginaPara": "Reload the page to continue. If the problem persists, contact support.",
+    "title": "Something unexpected happened"
   },
   "authBrandLogo": {
     "doqyn": "Doqyn"
@@ -20,11 +21,14 @@
     "proximoMes": "Next month"
   },
   "confirmProvider": {
-    "typeToConfirm": "Type <word>{{word}}</word> to confirm:"
+    "typeToConfirm": "Type <word>{{word}}</word> to confirm:",
+    "typeExactly": "Type {{word}} exactly to continue."
   },
   "countrySelect": {
     "buscarPais": "Search country",
-    "nenhumPaisEncontrado": "No country found."
+    "nenhumPaisEncontrado": "No country found.",
+    "selecionarPais": "Select country",
+    "pais": "Country"
   },
   "filterBar": {
     "limparFiltros": "Clear filters"
@@ -74,7 +78,9 @@
     "documentCount_one": "{{count}} document",
     "documentCount_other": "{{count}} documents",
     "ofQuota": "of {{quota}}",
-    "percentUsed": "{{percent}} used"
+    "percentUsed": "{{percent}} used",
+    "tooltip": "Storage · {{used}}",
+    "tooltipWithQuota": "Storage · {{used}} of {{quota}} ({{percent}})"
   },
   "tableRowActionsMenu": {
     "acoesDaLinha": "Row actions"
@@ -84,7 +90,8 @@
     "eDeclaroCienciaDa": "and acknowledge the",
     "liEAceitoOs": "I have read and accept the",
     "politicaDePrivacidade": "Privacy Policy",
-    "termosECondicoesDe": "Terms and Conditions of Use"
+    "termosECondicoesDe": "Terms and Conditions of Use",
+    "helper": "We recommend reading the terms before continuing."
   },
   "theme": {
     "darkHint": "Almost-black shell, graphite panel",
@@ -97,9 +104,45 @@
     "toggleTitle": "Theme: {{current}}. {{hint}}. Click for {{next}}."
   },
   "uploadDropzone": {
-    "arrasteODocumentoOu": "Drag the document here or click to select"
+    "arrasteODocumentoOu": "Drag the document here or click to select",
+    "formats": "PDF, Word, Excel or images",
+    "maxSize": "up to {{size}}"
   },
   "versionBadge": {
     "versaoAtual": "Current version"
+  },
+  "userFallback": "User",
+  "workspaceRefreshButton": {
+    "label": "Refresh"
+  },
+  "dataTable": {
+    "empty": "No records found"
+  },
+  "dateField": {
+    "placeholder": "Pick a date",
+    "calendar": "Calendar"
+  },
+  "inlineErrorHint": {
+    "message": "Couldn't load the data."
+  },
+  "progress": {
+    "label": "Progress"
+  },
+  "promptDialog": {
+    "required": "This field is required.",
+    "wait": "Please wait…"
+  },
+  "reviewBeforeSubmitDialog": {
+    "confirm": "Confirm and send",
+    "submitting": "Sending…"
+  },
+  "select": {
+    "placeholder": "Select"
+  },
+  "skeletonList": {
+    "loading": "Loading"
+  },
+  "whatsappInput": {
+    "incomplete": "Incomplete WhatsApp number."
   }
 }

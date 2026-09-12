@@ -1,4 +1,4 @@
-import type { CompanyMember, DocumentCategory, Group, MemberStatus, UserRole } from '@/types/rules';
+import type { CompanyMember, DocumentCategory, Group } from '@/types/rules';
 
 export function getIconForCategoryName(name: string): import('@/types/rules').DocumentIcon {
   const lower = name.toLowerCase().trim();
@@ -64,20 +64,6 @@ export function computeGroupMemberCounts(
 
   return counts;
 }
-
-export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: 'Administrador',
-  manager: 'Gestor',
-  member: 'Membro',
-  auditor: 'Auditor',
-};
-
-export const STATUS_LABELS: Record<MemberStatus, string> = {
-  active: 'Ativo',
-  pending: 'Pendente',
-  blocked: 'Bloqueado',
-  rejected: 'Rejeitado',
-};
 
 /**
  * Estilo de uma cor da paleta de grupos. O tom vive em variável de tema

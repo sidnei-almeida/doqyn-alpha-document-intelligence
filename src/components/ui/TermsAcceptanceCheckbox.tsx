@@ -22,12 +22,13 @@ export function TermsAcceptanceCheckbox({
   termsHref = DOQYN_TERMS_ROUTE,
   privacyHref = DOQYN_PRIVACY_ROUTE,
   label,
-  helperText = 'Recomendamos que você leia os termos antes de continuar.',
+  helperText: helperTextProp,
   required,
   wrapperClassName,
   ...props
 }: TermsAcceptanceCheckboxProps) {
   const { t } = useTranslation('components');
+  const helperText = helperTextProp ?? t('termsAcceptanceCheckbox.helper');
 
   const showPrivacy = Boolean(privacyHref);
 

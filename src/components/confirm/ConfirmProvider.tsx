@@ -23,7 +23,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
      carregado quando alguém mandar excluir algo, o diálogo abre mostrando a chave em vez da
      pergunta — e é justamente o diálogo em que ler antes de responder importa. O provider
      monta com a casca, muito antes de existir clique. */
-  useTranslation(['confirm', 'components']);
+  const { t } = useTranslation(['confirm', 'components']);
 
   const [state, setState] = useState<ConfirmState>(defaultState);
   const [typedText, setTypedText] = useState('');
@@ -76,7 +76,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         footer={
           <>
             <Button type="button" variant="ghost" onClick={() => close(false)}>
-              {state.cancelLabel ?? 'Cancelar'}
+              {state.cancelLabel ?? t('common:actions.cancel')}
             </Button>
             <Button
               type="button"
@@ -84,7 +84,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               disabled={!textMatches}
               onClick={() => close(true)}
             >
-              {state.confirmLabel ?? 'Confirmar'}
+              {state.confirmLabel ?? t('common:actions.confirm')}
             </Button>
           </>
         }
@@ -123,7 +123,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               placeholder={state.confirmationText}
               autoComplete="off"
               error={
-                textoDivergente ? `Digite exatamente ${palavraEsperada} para liberar.` : undefined
+                textoDivergente
+                  ? t('components:confirmProvider.typeExactly', { word: palavraEsperada })
+                  : undefined
               }
             />
           </div>

@@ -48,8 +48,12 @@ export function SidebarUsage({ collapsed }: SidebarUsageProps) {
   const percentLabel = ratio === null ? null : formatStoragePercent(ratio);
 
   const fullLabel = quotaLabel
-    ? `Armazenamento · ${usedLabel} de ${quotaLabel} (${percentLabel})`
-    : `Armazenamento · ${usedLabel}`;
+    ? t('sidebarUsage.tooltipWithQuota', {
+        used: usedLabel,
+        quota: quotaLabel,
+        percent: percentLabel,
+      })
+    : t('sidebarUsage.tooltip', { used: usedLabel });
 
   if (collapsed) {
     return (

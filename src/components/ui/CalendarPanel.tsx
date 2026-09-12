@@ -6,21 +6,13 @@ import { cn } from '@/lib/utils';
 import { parseIsoDate, toIsoDate } from '@/lib/dateValue';
 import { useTranslation } from 'react-i18next';
 
-const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-const MONTHS = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
-];
+/** 4 de janeiro de 1970 caiu num domingo: dali, sete dias seguidos dão a semana na ordem da grade. */
+function weekdayNames(locale: string): string[] {
+  const format = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+  return Array.from({ length: 7 }, (_, index) =>
+    format.format(new Date(Date.UTC(1970, 0, 4 + index))).replace(/\.$/, ''),
+  );
+}
 
 type CalendarPanelProps = {
   /** Data escolhida em `yyyy-mm-dd`. */
@@ -39,7 +31,10 @@ type CalendarPanelProps = {
  * e o dia escolhido por preenchimento de acento — cheio só onde houve decisão.
  */
 export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPanelProps) {
-  const { t } = useTranslation('components');
+  const { t, i18n } = useTranslation('components');
+  const locale = i18n.language;
+  const weekdays = useMemo(() => weekdayNames(locale), [locale]);
+  const monthFormat = useMemo(() => new Intl.DateTimeFormat(locale, { month: 'long' }), [locale]);
 
   const selected = parseIsoDate(value);
   const today = new Date();
@@ -80,7 +75,7 @@ export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPa
           <Icon name="chevron_left" size={ICON_SIZE.sm} />
         </IconButton>
         <span className="type-label font-medium capitalize text-doqyn-text">
-          {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
+          {monthFormat.format(cursor)} {cursor.getFullYear()}
         </span>
         <IconButton label={t('calendarPanel.proximoMes')} onClick={() => shiftMonth(1)}>
           <Icon name="chevron_right" size={ICON_SIZE.sm} />
@@ -88,8 +83,8 @@ export function CalendarPanel({ value, onSelect, onClear, min, max }: CalendarPa
       </div>
 
       <div className="grid grid-cols-7 border-b border-doqyn-border-subtle pb-1.5">
-        {WEEKDAYS.map((weekday) => (
-          <span key={weekday} className="register-label text-center text-doqyn-subtle">
+        {weekdays.map((weekday, index) => (
+          <span key={index} className="register-label text-center text-doqyn-subtle">
             {weekday}
           </span>
         ))}

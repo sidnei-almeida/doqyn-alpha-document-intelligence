@@ -95,7 +95,10 @@ export function UploadDropzone({
         {t('uploadDropzone.arrasteODocumentoOu')}
       </p>
       <p className="mt-1 text-xs text-doqyn-muted">
-        <LeadDetail lead="PDF, Word, Excel ou imagens" detail="até 25 MB" />
+        <LeadDetail
+          lead={t('uploadDropzone.formats')}
+          detail={t('uploadDropzone.maxSize', { size: '25 MB' })}
+        />
       </p>
     </label>
   );

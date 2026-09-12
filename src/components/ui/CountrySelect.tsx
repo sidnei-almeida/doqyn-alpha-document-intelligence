@@ -88,7 +88,9 @@ export function CountrySelect({
         aria-haspopup="listbox"
       >
         <span className="min-w-0 truncate">
-          {selected ? `${selected.name} (+${selected.callingCode})` : 'Selecionar país'}
+          {selected
+            ? `${selected.name} (+${selected.callingCode})`
+            : t('countrySelect.selecionarPais')}
         </span>
         <Icon
           name="expand_more"
@@ -109,7 +111,7 @@ export function CountrySelect({
         }}
         placement="bottom-start"
         role="listbox"
-        aria-label={label ?? 'País'}
+        aria-label={label ?? t('countrySelect.pais')}
         className="max-w-[min(24rem,calc(100vw-1rem))] py-1"
         panelStyle={anchorWidth ? { minWidth: anchorWidth } : undefined}
       >
