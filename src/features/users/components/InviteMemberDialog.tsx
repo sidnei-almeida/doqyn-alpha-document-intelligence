@@ -11,6 +11,7 @@ import {
   PlatformRolesSection,
   type DocumentGroupOption,
 } from './AccessFormSections';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type InviteResult = {
@@ -29,10 +30,10 @@ type InviteResult = {
  * O código vem do auth-service e nomeia a causa; traduzir aqui evita mostrar `email_disabled`
  * para quem precisa decidir se manda o link pelo WhatsApp ou pede para alguém ligar o envio.
  */
-const EMAIL_SKIP_REASON: Record<string, string> = {
-  email_disabled: 'O envio de e-mail está desligado neste ambiente.',
-  smtp_not_configured: 'Nenhum provedor de e-mail está configurado.',
-  send_failed: 'O provedor recusou a entrega.',
+const EMAIL_SKIP_REASON_KEYS: Record<string, string> = {
+  email_disabled: 'inviteMemberDialog.skipReason.emailDisabled',
+  smtp_not_configured: 'inviteMemberDialog.skipReason.smtpNotConfigured',
+  send_failed: 'inviteMemberDialog.skipReason.sendFailed',
 };
 
 type InviteMemberDialogProps = {
@@ -50,9 +51,7 @@ type InviteMemberDialogProps = {
 };
 
 function formatExpiry(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(iso, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**
@@ -99,7 +98,7 @@ export function InviteMemberDialog({
       setCreated(result);
       onInvited();
     } catch (error) {
-      showApiErrorToast(error, 'Não foi possível criar o convite.');
+      showApiErrorToast(error, t('inviteMemberDialog.createFailed'));
     }
   };
 
@@ -114,8 +113,8 @@ export function InviteMemberDialog({
     } catch {
       showAppToast({
         type: 'error',
-        title: 'Não foi possível copiar',
-        message: 'Selecione o link e copie manualmente.',
+        title: t('inviteMemberDialog.copyFailedTitle'),
+        message: t('inviteMemberDialog.copyFailedMessage'),
       });
     }
   };
@@ -124,13 +123,13 @@ export function InviteMemberDialog({
     <Modal
       open
       onClose={onClose}
-      title={created ? 'Convite criado' : 'Convidar para a empresa'}
+      title={created ? t('inviteMemberDialog.titleCreated') : t('inviteMemberDialog.titleNew')}
       subtitle={
         created
           ? created.emailSent
-            ? 'O convite foi enviado por e-mail. Este link é o mesmo, se quiser mandar por outro canal.'
-            : 'Envie este link para a pessoa. Ele funciona uma vez só.'
-          : 'A pessoa recebe um link, preenche os próprios dados e entra direto.'
+            ? t('inviteMemberDialog.subtitleEmailed')
+            : t('inviteMemberDialog.subtitleLinkOnly')
+          : t('inviteMemberDialog.subtitleNew')
       }
       size="lg"
       // Há dado digitado em jogo antes de criar, e o link depois: clicar fora não pode
@@ -147,7 +146,7 @@ export function InviteMemberDialog({
               {t('inviteMemberDialog.cancelar')}
             </Button>
             <Button type="button" onClick={() => void submit()} disabled={!canSubmit}>
-              {saving ? 'Criando…' : 'Criar convite'}
+              {saving ? t('inviteMemberDialog.creating') : t('inviteMemberDialog.create')}
             </Button>
           </>
         )
@@ -165,14 +164,13 @@ export function InviteMemberDialog({
               </code>
               <Button type="button" variant="secondary" size="sm" onClick={() => void copy()}>
                 <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} />
-                {copied ? 'Copiado' : 'Copiar'}
+                {copied ? t('inviteMemberDialog.copied') : t('inviteMemberDialog.copy')}
               </Button>
             </div>
           </div>
 
           <p className="type-caption text-doqyn-muted">
-            {t('inviteMemberDialog.valeAte')} {formatExpiry(created.expiresAt)}
-            {t('inviteMemberDialog.depoisDissoElePara')}
+            {t('inviteMemberDialog.validUntilNotice', { date: formatExpiry(created.expiresAt) })}
           </p>
 
           {/* O aviso é do tamanho da consequência: o convite existe, mas ninguém foi avisado.
@@ -182,7 +180,9 @@ export function InviteMemberDialog({
               <span className="font-medium text-doqyn-text">
                 {t('inviteMemberDialog.oEMailNao')}
               </span>{' '}
-              {EMAIL_SKIP_REASON[created.emailSkipReason ?? ''] ?? 'A entrega não foi confirmada.'}{' '}
+              {EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']
+                ? t(EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']!)
+                : t('inviteMemberDialog.skipReason.unknown')}{' '}
               {t('inviteMemberDialog.copieOLinkAcima')}
             </p>
           ) : null}
@@ -201,7 +201,7 @@ export function InviteMemberDialog({
             label={t('inviteMemberDialog.eMail')}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="pessoa@exemplo.com"
+            placeholder={t('inviteMemberDialog.emailPlaceholder')}
             autoComplete="off"
             autoFocus
           />

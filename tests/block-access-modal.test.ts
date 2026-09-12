@@ -16,7 +16,7 @@ describe('bloqueio de acesso na tela /users', () => {
     const page = readSrc('features/users/UsersPage.tsx');
     assert.ok(page.includes('BlockAccessDialog'));
     assert.ok(page.includes('UnblockAccessDialog'));
-    assert.ok(page.includes('Bloquear acesso'));
+    assert.ok(page.includes("usersPage.actions.blockAccess'"));
     assert.ok(page.includes('Desbloquear acesso'));
     assert.ok(page.includes('Acesso bloqueado com sucesso.'));
     assert.ok(page.includes('Acesso desbloqueado com sucesso.'));

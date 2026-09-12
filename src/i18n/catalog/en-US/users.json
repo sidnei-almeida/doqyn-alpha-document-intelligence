@@ -11,7 +11,25 @@
     "osMesmosGruposDe": "The same groups as in Rules. They are what decide which categories the person reaches.",
     "papelNaPlataforma": "Platform role",
     "porOnde": "Through where",
-    "semGrupoAPessoa": "With no group, the person reaches no category at all. Create one under Rules and come back here."
+    "semGrupoAPessoa": "With no group, the person reaches no category at all. Create one under Rules and come back here.",
+    "openRules": "Open Rules",
+    "peopleCount_one": "{{count}} person",
+    "peopleCount_other": "{{count}} people",
+    "groupFallbackDescription": "Governance document group",
+    "events": {
+      "documentCreated": "New document in the category",
+      "documentUpdated": "New version of a document",
+      "documentRequiresSignature": "Signature requested from this person",
+      "documentShared": "Document shared with them",
+      "accessApproved": "Access approved",
+      "accessRejected": "Access declined"
+    },
+    "channels": {
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "emailReason": "No email server configured yet.",
+      "whatsappReason": "No WhatsApp integration configured yet."
+    }
   },
   "blockAccessDialog": {
     "asSessoesAtivasNesta": "Active sessions in this company will be revoked.",
@@ -23,24 +41,53 @@
     "exAcessoSuspensoTemporariamente": "e.g. access temporarily suspended",
     "motivoDoBloqueioOpcional": "Reason for blocking (optional)",
     "statusAtual": "Current status",
-    "usuario": "User"
+    "usuario": "User",
+    "blocking": "Blocking…",
+    "confirm": "Block access"
   },
   "editAccessDialog": {
     "cancelar": "Cancel",
-    "editarAcesso": "Edit access"
+    "editarAcesso": "Edit access",
+    "discard": {
+      "title": "Discard changes?",
+      "description": "Unsaved access changes will be lost.",
+      "confirm": "Discard",
+      "cancel": "Keep editing"
+    },
+    "unsaved": "Unsaved changes",
+    "noChanges": "No pending changes",
+    "saving": "Saving…"
   },
   "inviteMemberDialog": {
     "cancelar": "Cancel",
     "concluir": "Finish",
     "copieOLinkAcima": "Copy the link above and send it through another channel.",
-    "depoisDissoElePara": ". After that it stops opening, and a new invitation is needed.",
     "eMail": "Email",
     "linkDoConvite": "Invitation link",
     "nomeOpcional": "First name (optional)",
     "oEMailNao": "The email was not sent.",
     "semNenhumGrupoA": "With no group, the person gets in but reaches no document. Access is granted to the group, never to a person on their own.",
     "sobrenomeOpcional": "Last name (optional)",
-    "valeAte": "Valid until"
+    "skipReason": {
+      "emailDisabled": "Email sending is turned off in this workspace.",
+      "smtpNotConfigured": "No email provider is configured.",
+      "sendFailed": "The provider rejected the delivery.",
+      "unknown": "Delivery wasn't confirmed."
+    },
+    "createFailed": "Couldn't create the invitation.",
+    "copyFailedTitle": "Couldn't copy",
+    "copyFailedMessage": "Select the link and copy it manually.",
+    "titleCreated": "Invitation created",
+    "titleNew": "Invite to the company",
+    "subtitleEmailed": "The invitation was sent by email. This is the same link, if you'd like to send it another way.",
+    "subtitleLinkOnly": "Send this link to the person. It only works once.",
+    "subtitleNew": "The person gets a link, fills in their own details and goes straight in.",
+    "creating": "Creating…",
+    "create": "Create invitation",
+    "copied": "Copied",
+    "copy": "Copy",
+    "validUntilNotice": "Valid until {{date}}. After that it stops opening, and a new invitation is needed.",
+    "emailPlaceholder": "person@example.com"
   },
   "legacyAuthRole": {
     "admin": "System administrator",
@@ -71,7 +118,9 @@
     "empresa": "Company",
     "oUsuarioVoltaraA": "The user will have access to this company again. Other companies are not affected.",
     "statusAtual": "Current status",
-    "usuario": "User"
+    "usuario": "User",
+    "unblocking": "Unblocking…",
+    "confirm": "Unblock access"
   },
   "userManagementRoute": {
     "verificandoPermissoes": "Checking permissions..."
@@ -81,6 +130,56 @@
     "buscarUsuario": "Search user",
     "convidar": "Invite",
     "filtrarPorStatus": "Filter by status",
-    "usuarios": "Users"
+    "usuarios": "Users",
+    "statusFilter": {
+      "all": "All"
+    },
+    "tenantFallback": "your company",
+    "inviteNoLink": "The invitation was created, but the service didn't return the link.",
+    "groupsWarning": "The invitation is valid, but the groups couldn't be saved. Set access in Rules once the person joins.",
+    "toast": {
+      "blocked": "Access blocked.",
+      "unblocked": "Access unblocked.",
+      "accessUpdated": "Access updated.",
+      "inviteRevoked": "Invitation revoked."
+    },
+    "memberNotSelected": "No member selected.",
+    "inviteExpired": "Invitation expired",
+    "inviteValidUntil": "Invitation valid until {{date}}",
+    "eyebrow": "Administration",
+    "description": "Invite people and manage access for {{tenant}}.",
+    "userCount_one": "{{count}} user",
+    "userCount_other": "{{count}} users",
+    "loadFailed": "Couldn't load the company's users.",
+    "empty": {
+      "error": "Couldn't load users",
+      "loading": "Loading users",
+      "none": "No users yet",
+      "status": {
+        "active": "No active users",
+        "invited": "No invited users",
+        "pending": "No pending users",
+        "blocked": "No blocked users",
+        "rejected": "No rejected users"
+      },
+      "descriptionAll": "No one has access to the company yet.",
+      "descriptionFiltered": "Change the filter to see the other records."
+    },
+    "sparseMessage": "That's all for this selection",
+    "sparseDescription": "Change the status filter to see the other records.",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "status": "Status",
+      "roles": "Roles",
+      "groups": "Groups"
+    },
+    "departmentTooltip": "Department given in the request",
+    "actions": {
+      "editAccess": "Edit access",
+      "blockAccess": "Block access",
+      "unblockAccess": "Unblock access",
+      "revokeInvite": "Revoke invitation"
+    }
   }
 }

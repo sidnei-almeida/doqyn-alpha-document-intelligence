@@ -28,13 +28,13 @@ describe('convidado aparece antes de existir conta', () => {
     const page = read('src/features/users/UsersPage.tsx');
     // Sumir com o vencido faria o convite desaparecer sem aviso, e quem administra concluiria
     // que a pessoa entrou.
-    assert.ok(page.includes('Convite vencido'));
+    assert.ok(page.includes("usersPage.inviteExpired'"));
     assert.ok(page.includes('Convite válido até'));
   });
 
   it('revogar é a única ação sobre um convite', () => {
     const page = read('src/features/users/UsersPage.tsx');
-    assert.ok(page.includes('Revogar convite'));
+    assert.ok(page.includes("usersPage.actions.revokeInvite'"));
     assert.ok(page.includes("hidden: member.status !== 'invited'"));
   });
 });

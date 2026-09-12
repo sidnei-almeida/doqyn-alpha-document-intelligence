@@ -137,7 +137,7 @@ export function DocumentGroupsSection({
         <GroupsEmptyState
           title={t('accessFormSections.nenhumGrupoCriadoAinda')}
           description={t('accessFormSections.semGrupoAPessoa')}
-          ctaLabel="Abrir Regras"
+          ctaLabel={t('accessFormSections.openRules')}
           ctaHref="/rules"
         />
       ) : (
@@ -160,11 +160,13 @@ export function DocumentGroupsSection({
                     <span className="flex items-baseline justify-between gap-3">
                       <span className="min-w-0 truncate">{group.name}</span>
                       <span className="shrink-0 font-mono text-micro tabular-nums text-doqyn-subtle">
-                        {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'}
+                        {t('accessFormSections.peopleCount', { count: memberCount })}
                       </span>
                     </span>
                   }
-                  description={group.description?.trim() || 'Grupo documental de governança'}
+                  description={
+                    group.description?.trim() || t('accessFormSections.groupFallbackDescription')
+                  }
                   wrapperClassName="w-full"
                 />
               </div>
@@ -177,13 +179,13 @@ export function DocumentGroupsSection({
 }
 
 /** O que avisar. Um evento por linha, com o nome do fato, não do campo. */
-const EVENT_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
-  ['documentCreated', 'Documento novo na categoria'],
-  ['documentUpdated', 'Versão nova de um documento'],
-  ['documentRequiresSignature', 'Assinatura pedida a esta pessoa'],
-  ['documentShared', 'Documento compartilhado com ela'],
-  ['accessApproved', 'Acesso aprovado'],
-  ['accessRejected', 'Acesso recusado'],
+const EVENT_OPTIONS: Array<keyof NotificationPreferencesDto> = [
+  'documentCreated',
+  'documentUpdated',
+  'documentRequiresSignature',
+  'documentShared',
+  'accessApproved',
+  'accessRejected',
 ];
 
 /**
@@ -196,12 +198,20 @@ const EVENT_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
  */
 const CHANNEL_OPTIONS: Array<{
   key: keyof NotificationPreferencesDto | 'inApp';
-  label: string;
-  reason?: string;
+  labelKey?: string;
+  reasonKey?: string;
 }> = [
-  { key: 'inApp', label: 'No app' },
-  { key: 'email', label: 'E-mail', reason: 'Sem servidor de e-mail configurado ainda.' },
-  { key: 'whatsapp', label: 'WhatsApp', reason: 'Sem integração de WhatsApp configurada ainda.' },
+  { key: 'inApp' },
+  {
+    key: 'email',
+    labelKey: 'accessFormSections.channels.email',
+    reasonKey: 'accessFormSections.channels.emailReason',
+  },
+  {
+    key: 'whatsapp',
+    labelKey: 'accessFormSections.channels.whatsapp',
+    reasonKey: 'accessFormSections.channels.whatsappReason',
+  },
 ];
 
 export function NotificationsSection({
@@ -222,12 +232,12 @@ export function NotificationsSection({
         <div>
           <p className="text-caption text-doqyn-subtle">{t('accessFormSections.oQueAvisar')}</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {EVENT_OPTIONS.map(([key, label]) => (
+            {EVENT_OPTIONS.map((key) => (
               <Checkbox
                 key={key}
                 checked={value[key]}
                 onChange={(event) => onChange({ ...value, [key]: event.target.checked })}
-                label={label}
+                label={t(`accessFormSections.events.${key}`)}
               />
             ))}
           </div>
@@ -255,8 +265,8 @@ export function NotificationsSection({
                   key={channel.key}
                   checked={value[channel.key]}
                   onChange={(event) => onChange({ ...value, [channel.key]: event.target.checked })}
-                  label={channel.label}
-                  description={channel.reason}
+                  label={channel.labelKey ? t(channel.labelKey) : channel.key}
+                  description={channel.reasonKey ? t(channel.reasonKey) : undefined}
                 />
               );
             })}

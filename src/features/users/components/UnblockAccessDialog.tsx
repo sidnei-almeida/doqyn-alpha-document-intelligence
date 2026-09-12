@@ -36,7 +36,7 @@ export function UnblockAccessDialog({
             {t('unblockAccessDialog.cancelar')}
           </Button>
           <Button onClick={onConfirm} disabled={unblocking}>
-            {unblocking ? 'Desbloqueando…' : 'Desbloquear acesso'}
+            {unblocking ? t('unblockAccessDialog.unblocking') : t('unblockAccessDialog.confirm')}
           </Button>
         </>
       }

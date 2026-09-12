@@ -6,12 +6,12 @@ import { Textarea } from '@/components/ui/Textarea';
 import type { CompanyMemberDto, MemberStatus } from '../api/usersApi';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_LABELS: Record<MemberStatus, string> = {
-  invited: 'Convidado',
-  active: 'Ativo',
-  pending: 'Pendente',
-  blocked: 'Bloqueado',
-  rejected: 'Rejeitado',
+const STATUS_KEYS: Record<MemberStatus, string> = {
+  invited: 'common:memberStatus.invited',
+  active: 'common:memberStatus.active',
+  pending: 'common:memberStatus.pending',
+  blocked: 'common:memberStatus.blocked',
+  rejected: 'common:memberStatus.rejected',
 };
 
 type BlockAccessDialogProps = {
@@ -54,7 +54,7 @@ export function BlockAccessDialog({
             onClick={() => onConfirm(reason.trim() || undefined)}
             disabled={blocking}
           >
-            {blocking ? 'Bloqueando…' : 'Bloquear acesso'}
+            {blocking ? t('blockAccessDialog.blocking') : t('blockAccessDialog.confirm')}
           </Button>
         </>
       }
@@ -79,7 +79,7 @@ export function BlockAccessDialog({
             <dt className="text-doqyn-muted">{t('blockAccessDialog.statusAtual')}</dt>
             <dd>
               <Badge variant={member.status === 'active' ? 'success' : 'warning'}>
-                {STATUS_LABELS[member.status]}
+                {t(STATUS_KEYS[member.status])}
               </Badge>
             </dd>
           </div>

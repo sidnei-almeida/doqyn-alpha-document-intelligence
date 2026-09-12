@@ -1,4 +1,5 @@
 import { authFetch, getFetchCredentials } from '@/auth/apiAuth';
+import { genericFailureMessage, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import { doqynUsersApi } from './doqynUsersApi';
 
 const API_BASE = '/api';
@@ -102,8 +103,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message =
-      typeof data?.message === 'string' ? data.message : 'Não foi possível concluir a operação.';
+    // A frase sai do catálogo pelo `code`; o `message` do servidor é português e existe para log.
+    const code = typeof data?.code === 'string' ? data.code : undefined;
+    const serverMessage = typeof data?.message === 'string' ? data.message : undefined;
+    const message = code
+      ? getFriendlyAuthErrorMessage(code, serverMessage)
+      : (serverMessage ?? genericFailureMessage());
     throw new Error(message);
   }
 

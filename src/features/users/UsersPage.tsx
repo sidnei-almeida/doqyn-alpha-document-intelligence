@@ -28,15 +28,28 @@ import { UnblockAccessDialog } from './components/UnblockAccessDialog';
 import { invalidateUserManagementQueries } from './userManagementQueries';
 import { useCompanyMembers } from './hooks/useCompanyMembers';
 import { tenantLiveSyncQueryOptions } from '@/features/tenant/tenantLiveSync';
+import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_FILTER_LABELS: Record<MemberStatus | 'all', string> = {
-  all: 'Todos',
-  active: 'Ativo',
-  invited: 'Convidado',
-  pending: 'Pendente',
-  blocked: 'Bloqueado',
-  rejected: 'Rejeitado',
+const STATUS_FILTER_KEYS: Record<MemberStatus | 'all', string> = {
+  all: 'usersPage.statusFilter.all',
+  active: 'common:memberStatus.active',
+  invited: 'common:memberStatus.invited',
+  pending: 'common:memberStatus.pending',
+  blocked: 'common:memberStatus.blocked',
+  rejected: 'common:memberStatus.rejected',
+};
+
+/**
+ * Frase inteira por status, e não "Nenhum usuário" + rótulo em minúscula: o rótulo concorda em
+ * gênero e posição com o substantivo, e isso muda de um idioma para outro.
+ */
+const EMPTY_STATUS_KEYS: Record<MemberStatus, string> = {
+  active: 'usersPage.empty.status.active',
+  invited: 'usersPage.empty.status.invited',
+  pending: 'usersPage.empty.status.pending',
+  blocked: 'usersPage.empty.status.blocked',
+  rejected: 'usersPage.empty.status.rejected',
 };
 
 function memberDisplayName(member: CompanyMemberDto): string {
@@ -68,7 +81,7 @@ export function UsersPage() {
   const queryClient = useQueryClient();
   const sessionTenantId = tenant?.tenantId ?? user?.companyId ?? '';
   const tenantDisplayName =
-    tenant?.displayName ?? user?.companyName ?? sessionTenantId ?? 'sua empresa';
+    tenant?.displayName ?? user?.companyName ?? sessionTenantId ?? t('usersPage.tenantFallback');
 
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
   const [inviting, setInviting] = useState(false);
@@ -134,7 +147,7 @@ export function UsersPage() {
         companyId: sessionTenantId || undefined,
       });
       if (!('inviteLink' in result) || !result.inviteLink) {
-        throw new Error('O convite foi criado, mas o serviço não devolveu o link.');
+        throw new Error(t('usersPage.inviteNoLink'));
       }
 
       // Nesta ordem, e não na inversa: o convite é o que pode ser recusado (e-mail duplicado,
@@ -154,8 +167,7 @@ export function UsersPage() {
             companyId: sessionTenantId || undefined,
           });
         } catch {
-          groupsWarning =
-            'O convite vale, mas não foi possível guardar os grupos. Defina o acesso em Regras depois que a pessoa entrar.';
+          groupsWarning = t('usersPage.groupsWarning');
         }
       }
 
@@ -178,7 +190,7 @@ export function UsersPage() {
     mutationFn: ({ memberId, reason }: { memberId: string; reason?: string }) =>
       usersApi.block(memberId, undefined, reason),
     onSuccess: async () => {
-      showAppToast({ type: 'success', title: 'Acesso bloqueado com sucesso.' });
+      showAppToast({ type: 'success', title: t('usersPage.toast.blocked') });
       setBlockingMember(null);
       await invalidate();
     },
@@ -188,7 +200,7 @@ export function UsersPage() {
   const activateMutation = useMutation({
     mutationFn: (memberId: string) => usersApi.activate(memberId),
     onSuccess: async () => {
-      showAppToast({ type: 'success', title: 'Acesso desbloqueado com sucesso.' });
+      showAppToast({ type: 'success', title: t('usersPage.toast.unblocked') });
       setUnblockingMember(null);
       await invalidate();
     },
@@ -197,7 +209,7 @@ export function UsersPage() {
 
   const updateAccessMutation = useMutation({
     mutationFn: async (form: AccessFormState) => {
-      if (!editingMember) throw new Error('Membro não selecionado.');
+      if (!editingMember) throw new Error(t('usersPage.memberNotSelected'));
       await usersApi.updateAccess(editingMember.id, {
         platformRoles: form.platformRoles,
         accessGroupIds: editingMember.accessGroupIds,
@@ -206,7 +218,7 @@ export function UsersPage() {
       await usersApi.updateDocumentGroups(editingMember.id, form.documentGroupIds);
     },
     onSuccess: async () => {
-      showAppToast({ type: 'success', title: 'Acesso atualizado.' });
+      showAppToast({ type: 'success', title: t('usersPage.toast.accessUpdated') });
       setEditingMember(null);
       setEditAccessBaseline(null);
       await invalidate();
@@ -217,7 +229,7 @@ export function UsersPage() {
   const revokeInviteMutation = useMutation({
     mutationFn: (inviteId: string) => usersApi.revokeInvite(inviteId),
     onSuccess: async () => {
-      showAppToast({ type: 'success', title: 'Convite revogado.' });
+      showAppToast({ type: 'success', title: t('usersPage.toast.inviteRevoked') });
       await invalidate();
       await queryClient.invalidateQueries({ queryKey: ['pending-invites', sessionTenantId] });
     },
@@ -256,11 +268,11 @@ export function UsersPage() {
       requestedAccess: {
         reason:
           new Date(invite.expiresAt).getTime() < agora
-            ? 'Convite vencido'
-            : `Convite válido até ${new Date(invite.expiresAt).toLocaleDateString('pt-BR')}`,
+            ? t('usersPage.inviteExpired')
+            : t('usersPage.inviteValidUntil', { date: formatDate(invite.expiresAt) }),
       },
     }));
-  }, [invitesQuery.data, sessionTenantId]);
+  }, [invitesQuery.data, sessionTenantId, t]);
 
   const members = useMemo(() => {
     const list = [...invitedRows, ...(membersQuery.data?.members ?? [])];
@@ -292,9 +304,9 @@ export function UsersPage() {
 
   return (
     <PageShell
-      eyebrow="Administração"
+      eyebrow={t('usersPage.eyebrow')}
       title={t('usersPage.usuarios')}
-      description={`Convide pessoas e gerencie acessos de ${tenantDisplayName}.`}
+      description={t('usersPage.description', { tenant: tenantDisplayName })}
       actions={
         <Button type="button" onClick={() => setInviting(true)}>
           <Icon name="person_add" size={ICON_SIZE.xs} />
@@ -326,20 +338,20 @@ export function UsersPage() {
           value={statusFilter}
           options={(['all', 'active', 'invited', 'blocked', 'rejected'] as const).map((status) => ({
             value: status,
-            label: STATUS_FILTER_LABELS[status],
+            label: t(STATUS_FILTER_KEYS[status]),
           }))}
           onChange={setStatusFilter}
           aria-label={t('usersPage.filtrarPorStatus')}
         />
 
         <span className="ml-auto pb-2 font-mono text-micro tabular-nums text-doqyn-subtle">
-          {members.length} {members.length === 1 ? 'usuário' : 'usuários'}
+          {t('usersPage.userCount', { count: members.length })}
         </span>
       </div>
 
       {membersQuery.isError ? (
         <InlineErrorHint
-          message="Não foi possível carregar os usuários da empresa."
+          message={t('usersPage.loadFailed')}
           onRetry={() => void membersQuery.refetch()}
           className="mb-4"
         />
@@ -352,44 +364,44 @@ export function UsersPage() {
         keyExtractor={(member) => member.id}
         emptyMessage={
           membersQuery.isError
-            ? 'Não foi possível carregar os usuários'
+            ? t('usersPage.empty.error')
             : membersQuery.isLoading
-              ? 'Carregando usuários'
+              ? t('usersPage.empty.loading')
               : statusFilter === 'all'
-                ? 'Nenhum usuário ainda'
-                : `Nenhum usuário ${STATUS_FILTER_LABELS[statusFilter].toLowerCase()}`
+                ? t('usersPage.empty.none')
+                : t(EMPTY_STATUS_KEYS[statusFilter])
         }
         emptyDescription={
           statusFilter === 'all'
-            ? 'Ninguém com acesso à empresa por enquanto.'
-            : 'Troque o filtro para ver os outros registros.'
+            ? t('usersPage.empty.descriptionAll')
+            : t('usersPage.empty.descriptionFiltered')
         }
-        sparseMessage="Só isto nesta seleção"
-        sparseDescription="Troque o filtro de status para ver os outros registros."
+        sparseMessage={t('usersPage.sparseMessage')}
+        sparseDescription={t('usersPage.sparseDescription')}
         columns={[
           {
             key: 'name',
-            header: 'Nome',
+            header: t('usersPage.columns.name'),
             render: (member) => <span className="font-medium">{memberDisplayName(member)}</span>,
           },
           {
             key: 'email',
-            header: 'E-mail',
+            header: t('usersPage.columns.email'),
             render: (member) => <span className="text-doqyn-muted">{member.email}</span>,
           },
           {
             key: 'status',
-            header: 'Status',
+            header: t('usersPage.columns.status'),
             render: (member) => <MemberStatusBadge status={member.status} />,
           },
           {
             key: 'roles',
-            header: 'Roles',
+            header: t('usersPage.columns.roles'),
             render: (member) => <PlatformRoleChips roles={member.platformRoles} />,
           },
           {
             key: 'groups',
-            header: 'Grupos',
+            header: t('usersPage.columns.groups'),
             render: (member) => (
               <span className="meta-text">
                 {/* No convite ainda não há grupo aplicado — a intenção só vira vínculo quando a
@@ -399,7 +411,7 @@ export function UsersPage() {
                   <span className="text-doqyn-muted">{member.requestedAccess?.reason ?? '—'}</span>
                 ) : member.status === 'pending' && member.requestedAccess?.departmentText ? (
                   <Tooltip
-                    label={member.requestedAccess.reason ?? 'Departamento informado na solicitação'}
+                    label={member.requestedAccess.reason ?? t('usersPage.departmentTooltip')}
                   >
                     <span className="text-doqyn-muted">
                       {member.requestedAccess.departmentText}
@@ -424,18 +436,18 @@ export function UsersPage() {
               <TableRowActionsMenu
                 actions={[
                   {
-                    label: 'Editar acesso',
+                    label: t('usersPage.actions.editAccess'),
                     onClick: () => openEditAccess(member),
                     hidden: member.status !== 'active' && member.status !== 'blocked',
                   },
                   {
-                    label: 'Bloquear acesso',
+                    label: t('usersPage.actions.blockAccess'),
                     onClick: () => setBlockingMember(member),
                     tone: 'danger',
                     hidden: member.status !== 'active',
                   },
                   {
-                    label: 'Desbloquear acesso',
+                    label: t('usersPage.actions.unblockAccess'),
                     onClick: () => setUnblockingMember(member),
                     hidden: member.status !== 'blocked',
                   },
@@ -443,7 +455,7 @@ export function UsersPage() {
                     // Revogar é a única ação possível sobre um convite: o link só existiu em
                     // texto no instante da criação, então não há como copiá-lo de novo. Para
                     // reenviar, convida-se outra vez — e o convite novo mata o anterior.
-                    label: 'Revogar convite',
+                    label: t('usersPage.actions.revokeInvite'),
                     onClick: () => revokeInviteMutation.mutate(member.id),
                     tone: 'danger',
                     hidden: member.status !== 'invited',

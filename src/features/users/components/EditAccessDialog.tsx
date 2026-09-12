@@ -49,10 +49,10 @@ export function EditAccessDialog({
   const requestClose = async () => {
     if (dirty) {
       const shouldDiscard = await confirm({
-        title: 'Descartar alterações?',
-        description: 'As alterações de acesso não salvas serão perdidas.',
-        confirmLabel: 'Descartar',
-        cancelLabel: 'Continuar editando',
+        title: t('editAccessDialog.discard.title'),
+        description: t('editAccessDialog.discard.description'),
+        confirmLabel: t('editAccessDialog.discard.confirm'),
+        cancelLabel: t('editAccessDialog.discard.cancel'),
         variant: 'warning',
       });
       if (!shouldDiscard) return;
@@ -72,7 +72,7 @@ export function EditAccessDialog({
       footer={
         <>
           <p className="mr-auto text-caption text-doqyn-subtle">
-            {dirty ? 'Alterações não salvas' : 'Nenhuma alteração pendente'}
+            {dirty ? t('editAccessDialog.unsaved') : t('editAccessDialog.noChanges')}
           </p>
           <Button
             type="button"
@@ -83,7 +83,7 @@ export function EditAccessDialog({
             {t('editAccessDialog.cancelar')}
           </Button>
           <Button type="button" onClick={() => onSave(form)} disabled={!dirty || saving}>
-            {saving ? 'Salvando…' : 'Salvar'}
+            {saving ? t('editAccessDialog.saving') : t('common:actions.save')}
           </Button>
         </>
       }

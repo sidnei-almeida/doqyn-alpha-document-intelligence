@@ -59,7 +59,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
     assert.ok(source.includes('updateDocumentGroups'));
     assert.ok(source.includes('listDocumentGroups'));
     assert.equal(sections.includes('Grupos de acesso (auth-service)'), false);
-    assert.ok(source.includes("header: 'Grupos'"));
+    assert.ok(source.includes("header: t('usersPage.columns.groups')"));
   });
 
   it('splitUserAccessPayload separa auth-service e grupos documentais', () => {
