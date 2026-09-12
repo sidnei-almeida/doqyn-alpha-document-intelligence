@@ -5,7 +5,11 @@ import { IconButton } from '@/components/ui/IconButton';
 import { DataTable } from '@/components/ui/DataTable';
 import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
+import {
+  AUDIT_ACTION_LABEL_KEYS,
+  AUDIT_SEVERITY_LABEL_KEYS,
+  AUDIT_SOURCE_LABEL_KEYS,
+} from '@/types/audit';
 import { AuditEmptyState } from './AuditEmptyState';
 import { SkeletonList } from '@/components/ui/SkeletonList';
 import { useTranslation } from 'react-i18next';
@@ -65,18 +69,20 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
         },
         {
           key: 'actor',
-          header: 'Ator',
+          header: t('auditEventsList.columns.actor'),
           render: (event) => (
-            <span className="text-doqyn-text">{event.actorName ?? 'Sistema'}</span>
+            <span className="text-doqyn-text">{event.actorName ?? t('systemActor')}</span>
           ),
         },
         {
           key: 'action',
-          header: 'Ação',
+          header: t('auditEventsList.columns.action'),
           render: (event) => (
             <div className="min-w-0">
               <p className="truncate font-medium text-doqyn-text">
-                {AUDIT_ACTION_LABELS[event.action] ?? event.action}
+                {AUDIT_ACTION_LABEL_KEYS[event.action]
+                  ? t(AUDIT_ACTION_LABEL_KEYS[event.action])
+                  : event.action}
               </p>
               <p className="meta-text truncate">{event.description}</p>
             </div>
@@ -84,7 +90,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
         },
         {
           key: 'entity',
-          header: 'Entidade',
+          header: t('auditEventsList.columns.entity'),
           // O id inteiro comia um quarto da linha e ninguém o lê por extenso:
           // o prefixo basta para reconhecer, e o resto abre nos detalhes.
           render: (event) => (
@@ -98,20 +104,22 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
         },
         {
           key: 'severity',
-          header: 'Severidade',
+          header: t('auditEventsList.columns.severity'),
           className: 'w-[132px]',
           render: (event) => (
             <Badge variant={SEVERITY_VARIANTS[event.severity]} dot>
-              {AUDIT_SEVERITY_LABELS[event.severity]}
+              {t(AUDIT_SEVERITY_LABEL_KEYS[event.severity])}
             </Badge>
           ),
         },
         {
           key: 'source',
-          header: 'Origem',
+          header: t('auditEventsList.columns.source'),
           render: (event) => (
             <span className="register-label text-doqyn-subtle">
-              {AUDIT_SOURCE_LABELS[event.source] ?? event.source}
+              {AUDIT_SOURCE_LABEL_KEYS[event.source]
+                ? t(AUDIT_SOURCE_LABEL_KEYS[event.source])
+                : event.source}
             </span>
           ),
         },

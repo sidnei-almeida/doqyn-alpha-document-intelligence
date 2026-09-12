@@ -4,7 +4,7 @@ import { DateField } from '@/components/ui/DateField';
 import { Select } from '@/components/ui/Select';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { AuditEventFilters, AuditSeverity } from '@/types/audit';
-import { AUDIT_SEVERITY_LABELS } from '@/types/audit';
+import { AUDIT_SEVERITY_LABEL_KEYS } from '@/types/audit';
 import { useTranslation } from 'react-i18next';
 
 export type AuditFiltersMode = 'full' | 'security' | 'overview';
@@ -14,14 +14,6 @@ type AuditFiltersProps = {
   onChange: (filters: AuditEventFilters) => void;
   mode?: AuditFiltersMode;
 };
-
-const severityOptions: Array<{ value: AuditSeverity | ''; label: string }> = [
-  { value: '', label: 'Todas severidades' },
-  ...Object.entries(AUDIT_SEVERITY_LABELS).map(([value, label]) => ({
-    value: value as AuditSeverity,
-    label,
-  })),
-];
 
 /**
  * Ajuste de vista, não formulário: cada campo é uma régua com o rótulo de
@@ -45,6 +37,13 @@ export function AuditFilters({ filters, onChange, mode = 'full' }: AuditFiltersP
 
   const showEventType = mode === 'full';
   const showSeverity = mode === 'full' || mode === 'security';
+  const severityOptions: Array<{ value: AuditSeverity | ''; label: string }> = [
+    { value: '', label: t('auditFilters.allSeverities') },
+    ...(Object.keys(AUDIT_SEVERITY_LABEL_KEYS) as AuditSeverity[]).map((value) => ({
+      value,
+      label: t(AUDIT_SEVERITY_LABEL_KEYS[value]),
+    })),
+  ];
 
   return (
     <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-5">

@@ -56,14 +56,14 @@ export function AuditPage() {
     () => [
       {
         id: 'pending',
-        label: 'Pendências',
+        label: t('auditPage.tabs.pending'),
         badge: isAdmin ? overview.pendingCount : undefined,
       },
-      { id: 'events', label: 'Eventos' },
-      { id: 'security', label: 'Segurança' },
-      { id: 'all', label: 'Todos' },
+      { id: 'events', label: t('auditPage.tabs.events') },
+      { id: 'security', label: t('auditPage.tabs.security') },
+      { id: 'all', label: t('auditPage.tabs.all') },
     ],
-    [isAdmin, overview.pendingCount],
+    [isAdmin, overview.pendingCount, t],
   );
 
   const showEventFilters =
@@ -86,17 +86,14 @@ export function AuditPage() {
 
   return (
     <PageShell
-      eyebrow="Governança"
+      eyebrow={t('auditPage.eyebrow')}
       title={t('auditPage.auditoria')}
       description={t('auditPage.acompanheAprovacoesAcoesAdministrativas')}
       bodyClassName="min-h-0"
     >
       <div className="shrink-0">
         {overviewError ? (
-          <InlineErrorHint
-            message="Não foi possível carregar o resumo da auditoria."
-            className="mb-4"
-          />
+          <InlineErrorHint message={t('auditPage.overviewError')} className="mb-4" />
         ) : null}
         <AuditSummaryStrip
           overview={overview}
@@ -170,8 +167,10 @@ export function AuditPage() {
                 <span />
               )}
               <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
-                {eventsTotal} {eventsTotal === 1 ? 'evento' : 'eventos'}
-                {events.length < eventsTotal ? ` · exibindo ${events.length}` : ''}
+                {t('auditPage.eventsCount', { count: eventsTotal })}
+                {events.length < eventsTotal
+                  ? ` · ${t('auditPage.showing', { count: events.length })}`
+                  : ''}
               </span>
             </div>
 
@@ -189,7 +188,7 @@ export function AuditPage() {
                   onClick={loadMoreEvents}
                   disabled={eventsFetchingMore}
                 >
-                  {eventsFetchingMore ? 'Carregando...' : 'Carregar mais'}
+                  {eventsFetchingMore ? t('auditPage.loadingMore') : t('auditPage.loadMore')}
                 </Button>
               </div>
             )}

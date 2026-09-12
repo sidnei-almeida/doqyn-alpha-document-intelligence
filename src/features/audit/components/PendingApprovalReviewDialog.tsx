@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn, formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
+import { PENDING_TYPE_LABEL_KEYS } from '../api/pendingApprovalsApi';
 import { useTranslation } from 'react-i18next';
 
 type PendingApprovalReviewDialogProps = {
@@ -59,7 +59,7 @@ export function PendingApprovalReviewDialog({
       open
       onClose={onClose}
       title={t('pendingApprovalReviewDialog.revisarSolicitacao')}
-      subtitle={PENDING_TYPE_LABELS[item.type]}
+      subtitle={t(PENDING_TYPE_LABEL_KEYS[item.type])}
       size="lg"
       footer={
         isAdmin ? (
@@ -76,7 +76,9 @@ export function PendingApprovalReviewDialog({
               {t('pendingApprovalReviewDialog.rejeitar')}
             </Button>
             <Button type="button" onClick={() => onApprove(item)} disabled={saving}>
-              {item.type === 'document_upload' ? 'Aprovar documento' : 'Aprovar'}
+              {item.type === 'document_upload'
+                ? t('pendingApprovalReviewDialog.approveDocument')
+                : t('pendingApprovalReviewDialog.approve')}
             </Button>
           </>
         ) : undefined
@@ -152,15 +154,17 @@ export function PendingApprovalReviewDialog({
                     {t('pendingApprovalReviewDialog.oQueSeraConcedido')}
                   </p>
                   <p className="mt-0.5 text-sm text-doqyn-text">
-                    {item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'}
+                    {item.grants?.canDownload
+                      ? t('pendingApprovalReviewDialog.grantViewDownload')
+                      : t('pendingApprovalReviewDialog.grantViewOnly')}
                   </p>
                 </div>
               </>
             )}
             <p className="text-xs text-doqyn-muted">
               {item.type === 'document_share'
-                ? 'Ao aprovar, o documento é compartilhado com essa pessoa em nome do solicitante.'
-                : 'Ao aprovar, o solicitante fica liberado para baixar este documento por sete dias.'}
+                ? t('pendingApprovalReviewDialog.shareHint')
+                : t('pendingApprovalReviewDialog.downloadHint')}
             </p>
           </div>
         )}

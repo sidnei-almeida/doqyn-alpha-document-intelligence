@@ -3,7 +3,11 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import { AUDIT_ACTION_LABELS, AUDIT_SEVERITY_LABELS, AUDIT_SOURCE_LABELS } from '@/types/audit';
+import {
+  AUDIT_ACTION_LABEL_KEYS,
+  AUDIT_SEVERITY_LABEL_KEYS,
+  AUDIT_SOURCE_LABEL_KEYS,
+} from '@/types/audit';
 import { sanitizeAuditMetadataForDisplay } from '../utils/auditDisplay';
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +37,11 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
       open
       onClose={onClose}
       title={t('auditEventDetailsDialog.detalhesDoEvento')}
-      subtitle={AUDIT_ACTION_LABELS[event.action] ?? event.action}
+      subtitle={
+        AUDIT_ACTION_LABEL_KEYS[event.action]
+          ? t(AUDIT_ACTION_LABEL_KEYS[event.action])
+          : event.action
+      }
       size="lg"
       footer={
         <Button type="button" variant="secondary" onClick={onClose}>
@@ -45,7 +53,7 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-doqyn-muted">{t('auditEventDetailsDialog.ator')}</p>
-            <p className="text-doqyn-text">{event.actorName ?? 'Sistema'}</p>
+            <p className="text-doqyn-text">{event.actorName ?? t('systemActor')}</p>
           </div>
           <div>
             <p className="text-xs text-doqyn-muted">{t('auditEventDetailsDialog.dataHora')}</p>
@@ -54,12 +62,12 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
           <div>
             <p className="text-xs text-doqyn-muted">{t('auditEventDetailsDialog.severidade')}</p>
             <Badge variant={SEVERITY_VARIANTS[event.severity]} className="mt-1">
-              {AUDIT_SEVERITY_LABELS[event.severity]}
+              {t(AUDIT_SEVERITY_LABEL_KEYS[event.severity])}
             </Badge>
           </div>
           <div>
             <p className="text-xs text-doqyn-muted">{t('auditEventDetailsDialog.origem')}</p>
-            <p className="text-doqyn-text">{AUDIT_SOURCE_LABELS[event.source]}</p>
+            <p className="text-doqyn-text">{t(AUDIT_SOURCE_LABEL_KEYS[event.source])}</p>
           </div>
           {event.requestId && (
             <div className="col-span-2">

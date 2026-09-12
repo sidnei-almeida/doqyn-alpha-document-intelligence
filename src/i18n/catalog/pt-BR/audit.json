@@ -15,7 +15,14 @@
     "ajusteABuscaOu": "Ajuste a busca ou aguarde novas ações no sistema.",
     "carregandoEventos": "Carregando eventos",
     "nenhumEventoEncontrado": "Nenhum evento encontrado",
-    "verDetalhesDoEvento": "Ver detalhes do evento"
+    "verDetalhesDoEvento": "Ver detalhes do evento",
+    "columns": {
+      "actor": "Ator",
+      "action": "Ação",
+      "entity": "Entidade",
+      "severity": "Severidade",
+      "source": "Origem"
+    }
   },
   "auditFilters": {
     "acaoUsuarioDocumento": "Ação, usuário, documento...",
@@ -26,7 +33,8 @@
     "fim": "Fim",
     "inicio": "Início",
     "severidade": "Severidade",
-    "tipoDeEvento": "Tipo de evento"
+    "tipoDeEvento": "Tipo de evento",
+    "allSeverities": "Todas severidades"
   },
   "auditPage": {
     "acessoRestrito": "Acesso restrito",
@@ -38,13 +46,31 @@
     "fimDoHistorico": "Fim do histórico",
     "naoFoiPossivelCarregar": "Não foi possível carregar pendências",
     "naoFoiPossivelCarregar2": "Não foi possível carregar eventos.",
-    "tenteAtualizarAPagina": "Tente atualizar a página ou verifique sua conexão."
+    "tenteAtualizarAPagina": "Tente atualizar a página ou verifique sua conexão.",
+    "eyebrow": "Governança",
+    "tabs": {
+      "pending": "Pendências",
+      "events": "Eventos",
+      "security": "Segurança",
+      "all": "Todos"
+    },
+    "overviewError": "Não foi possível carregar o resumo da auditoria.",
+    "eventsCount_one": "{{count}} evento",
+    "eventsCount_other": "{{count}} eventos",
+    "showing": "exibindo {{count}}",
+    "loadingMore": "Carregando...",
+    "loadMore": "Carregar mais"
   },
   "auditSummaryStrip": {
-    "resumoDaAuditoria": "Resumo da auditoria"
+    "resumoDaAuditoria": "Resumo da auditoria",
+    "pending": "Pendências",
+    "todayEvents": "Eventos hoje",
+    "criticalEvents": "Ações críticas",
+    "openList": "{{label}}: {{value}}. Abrir lista."
   },
   "error": {
-    "falhaCarregarPendencias": "Não foi possível carregar as pendências."
+    "falhaCarregarPendencias": "Não foi possível carregar as pendências.",
+    "decisionFailed": "Não foi possível registrar a decisão."
   },
   "pendingApprovalReviewDialog": {
     "arquivo": "Arquivo",
@@ -62,21 +88,93 @@
     "rejeitar": "Rejeitar",
     "revisarSolicitacao": "Revisar solicitação",
     "solicitante": "Solicitante",
-    "status": "Status"
+    "status": "Status",
+    "approveDocument": "Aprovar documento",
+    "approve": "Aprovar",
+    "grantViewDownload": "Ver e baixar",
+    "grantViewOnly": "Somente ver",
+    "shareHint": "Ao aprovar, o documento é compartilhado com essa pessoa em nome do solicitante.",
+    "downloadHint": "Ao aprovar, o solicitante fica liberado para baixar este documento por sete dias."
   },
   "pendingApprovalsList": {
     "enviosDownloadsECompartilhamentos": "Envios, downloads e compartilhamentos que dependem de aprovação aparecerão aqui.",
     "naoHaPendenciasNo": "Não há pendências no momento",
-    "pendente": "Pendente"
+    "pendente": "Pendente",
+    "sparseMessage": "Só isto na fila",
+    "sparseDescription": "Novas solicitações aparecem aqui assim que chegarem.",
+    "columns": {
+      "requester": "Solicitante",
+      "organization": "Organização",
+      "type": "Tipo",
+      "date": "Data",
+      "status": "Status"
+    },
+    "actions": {
+      "review": "Revisar",
+      "approve": "Aprovar",
+      "reject": "Rejeitar",
+      "openUsers": "Abrir em Usuários"
+    }
   },
   "rejectApprovalDialog": {
     "cancelar": "Cancelar",
     "confirmarRejeicao": "Confirmar rejeição",
     "descrevaOMotivoPara": "Descreva o motivo para o solicitante...",
     "motivoDaRejeicao": "Motivo da rejeição",
-    "rejeitarSolicitacao": "Rejeitar solicitação"
+    "rejeitarSolicitacao": "Rejeitar solicitação",
+    "reasonRequired": "Informe o motivo da rejeição."
   },
   "toast": {
-    "solicitacaoRejeitada": "Solicitação rejeitada."
+    "solicitacaoRejeitada": "Solicitação rejeitada.",
+    "approved": {
+      "documentUpload": "Documento aprovado e disponível na Biblioteca.",
+      "documentDownload": "Download liberado para o solicitante.",
+      "documentShare": "Compartilhamento aprovado e concedido.",
+      "default": "Pedido aprovado."
+    },
+    "actionFailed": "Não foi possível concluir a ação.",
+    "approveFailed": "Não foi possível aprovar o pedido."
+  },
+  "action": {
+    "documentUploaded": "Documento enviado",
+    "versionCreated": "Nova versão criada",
+    "documentReviewed": "Documento revisado",
+    "permissionGranted": "Permissão concedida",
+    "ruleApplied": "Regra aplicada",
+    "documentViewed": "Documento visualizado",
+    "documentCreated": "Documento criado",
+    "documentVersionCreated": "Versão criada",
+    "documentClassified": "Documento classificado",
+    "metadataExtracted": "Metadados extraídos",
+    "metadataConfirmed": "Análise confirmada",
+    "reviewConfirmed": "Revisão confirmada",
+    "reviewRequired": "Revisão necessária",
+    "userAccessRequested": "Solicitação de acesso",
+    "userInvited": "Usuário convidado",
+    "userCreated": "Usuário criado",
+    "userApproved": "Acesso aprovado",
+    "userRejected": "Acesso rejeitado",
+    "userBlocked": "Usuário bloqueado",
+    "userActivated": "Usuário reativado",
+    "userAccessUpdated": "Acesso atualizado",
+    "notificationPreferencesUpdated": "Preferências atualizadas"
+  },
+  "severity": {
+    "info": "Informação",
+    "success": "Sucesso",
+    "warning": "Atenção",
+    "error": "Erro",
+    "critical": "Crítico"
+  },
+  "source": {
+    "document": "Documentos",
+    "user": "Usuários",
+    "system": "Sistema"
+  },
+  "systemActor": "Sistema",
+  "pendingType": {
+    "documentUpload": "Envio de documento",
+    "documentDownload": "Download de documento",
+    "documentShare": "Compartilhamento de documento"
   }
 }

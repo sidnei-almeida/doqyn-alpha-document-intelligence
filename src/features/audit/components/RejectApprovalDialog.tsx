@@ -38,7 +38,7 @@ export function RejectApprovalDialog({
   const handleConfirm = () => {
     const trimmed = reason.trim();
     if (!trimmed) {
-      setError('Informe o motivo da rejeição.');
+      setError(t('rejectApprovalDialog.reasonRequired'));
       return;
     }
     onConfirm(item, trimmed);

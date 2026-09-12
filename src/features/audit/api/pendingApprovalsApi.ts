@@ -117,12 +117,13 @@ export async function decideApprovalRequest(
   );
 
   if (!response.ok) {
-    throw await parseApiError(response, 'Não foi possível registrar a decisão.');
+    throw await parseApiError(response, i18n.t('audit:error.decisionFailed'));
   }
 }
 
-export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = {
-  document_upload: 'Envio de documento',
-  document_download: 'Download de documento',
-  document_share: 'Compartilhamento de documento',
+/** Chaves do namespace `audit`; a tela traduz. */
+export const PENDING_TYPE_LABEL_KEYS: Record<PendingApprovalItem['type'], string> = {
+  document_upload: 'audit:pendingType.documentUpload',
+  document_download: 'audit:pendingType.documentDownload',
+  document_share: 'audit:pendingType.documentShare',
 };

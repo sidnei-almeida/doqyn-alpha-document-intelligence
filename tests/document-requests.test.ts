@@ -348,6 +348,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
 
     assert.ok(query.includes('function readSharePermissions'));
     assert.ok(dialog.includes('.oQueSeraConcedido'));
-    assert.ok(dialog.includes("item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'"));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewDownload')"));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewOnly')"));
   });
 });
