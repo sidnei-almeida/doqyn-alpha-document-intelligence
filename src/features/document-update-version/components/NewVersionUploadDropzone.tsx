@@ -38,12 +38,12 @@ export function NewVersionUploadDropzone({
   const handleFile = useCallback(
     (file: File) => {
       if (!isAllowedAnalysisFile(file)) {
-        onValidationError('Envie PDF ou imagem (JPG, PNG ou WebP) para criar uma nova versão.');
+        onValidationError(t('newVersionUploadDropzone.tipoInvalido'));
         return;
       }
       onFileSelected(file);
     },
-    [onFileSelected, onValidationError],
+    [onFileSelected, onValidationError, t],
   );
 
   const openPicker = () => {

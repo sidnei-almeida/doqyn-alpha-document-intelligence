@@ -1,6 +1,6 @@
 import type { AnalyzePdfResponse } from '@/features/document-send/services/analyzePdf';
 import type { DocumentDetailResponse } from '@/types/document-library';
-import type { VersionComparisonRow } from '../types';
+import type { VersionComparisonLabelKey, VersionComparisonRow } from '../types';
 import {
   analysisMetadataToDisplayFields,
   metadataRecordToDisplayFields,
@@ -11,9 +11,13 @@ function normalizeCompareValue(value: string): string {
   return value.trim().toLowerCase();
 }
 
+/**
+ * As quatro linhas fixas levam chave, e não frase: este módulo roda em teste Node, longe do
+ * i18n, e a tela é que traduz. As linhas de metadado levam o rótulo que veio da extração.
+ */
 function buildRow(
   key: string,
-  label: string,
+  label: { label: string } | { labelKey: VersionComparisonLabelKey },
   currentValue: string,
   newValue: string,
 ): VersionComparisonRow {
@@ -21,7 +25,7 @@ function buildRow(
     normalizeCompareValue(currentValue) !== normalizeCompareValue(newValue) &&
     currentValue !== '—' &&
     newValue !== '—';
-  return { key, label, currentValue, newValue, changed };
+  return { key, ...label, currentValue, newValue, changed };
 }
 
 export function buildVersionComparisonRows(input: {
@@ -46,10 +50,25 @@ export function buildVersionComparisonRows(input: {
     )?.value ?? '—';
 
   const rows: VersionComparisonRow[] = [
-    buildRow('name', 'Nome', currentName, newName),
-    buildRow('category', 'Categoria', currentCategory, newCategory),
-    buildRow('version', 'Versão', currentVersion, input.nextVersionLabel),
-    buildRow('summary', 'Resumo', currentSummary, newSummary),
+    buildRow('name', { labelKey: 'versionComparisonPanel.linhas.name' }, currentName, newName),
+    buildRow(
+      'category',
+      { labelKey: 'versionComparisonPanel.linhas.category' },
+      currentCategory,
+      newCategory,
+    ),
+    buildRow(
+      'version',
+      { labelKey: 'versionComparisonPanel.linhas.version' },
+      currentVersion,
+      input.nextVersionLabel,
+    ),
+    buildRow(
+      'summary',
+      { labelKey: 'versionComparisonPanel.linhas.summary' },
+      currentSummary,
+      newSummary,
+    ),
   ];
 
   const currentFields = metadataRecordToDisplayFields(input.detail.metadata);
@@ -65,7 +84,7 @@ export function buildVersionComparisonRows(input: {
     rows.push(
       buildRow(
         `metadata:${matchKey}`,
-        currentField.label,
+        { label: currentField.label },
         currentField.value,
         newField?.value ?? '—',
       ),
@@ -76,7 +95,7 @@ export function buildVersionComparisonRows(input: {
   for (const newField of newFieldMap.values()) {
     if (/resumo|summary/i.test(newField.key)) continue;
     const matchKey = canonicalizeMetadataKey(newField.key, newField.label);
-    rows.push(buildRow(`metadata:${matchKey}`, newField.label, '—', newField.value));
+    rows.push(buildRow(`metadata:${matchKey}`, { label: newField.label }, '—', newField.value));
   }
 
   return rows;

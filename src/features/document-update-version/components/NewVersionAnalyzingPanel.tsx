@@ -14,10 +14,10 @@ type NewVersionAnalyzingPanelProps = {
 };
 
 const ANALYSIS_STEPS = [
-  { id: 'ocr', label: 'Extraindo texto do PDF' },
-  { id: 'classify', label: 'Classificando documento' },
-  { id: 'metadata', label: 'Extraindo metadados' },
-  { id: 'compare', label: 'Comparando com versão atual' },
+  { id: 'ocr', labelKey: 'newVersionAnalyzingPanel.steps.ocr' },
+  { id: 'classify', labelKey: 'newVersionAnalyzingPanel.steps.classify' },
+  { id: 'metadata', labelKey: 'newVersionAnalyzingPanel.steps.metadata' },
+  { id: 'compare', labelKey: 'newVersionAnalyzingPanel.steps.compare' },
 ] as const;
 
 export function NewVersionAnalyzingPanel({
@@ -81,7 +81,7 @@ export function NewVersionAnalyzingPanel({
               size={ICON_SIZE.xs}
               className={cn(index === 0 && 'animate-spin text-doqyn-primary')}
             />
-            <span>{step.label}</span>
+            <span>{t(step.labelKey)}</span>
           </li>
         ))}
       </ul>

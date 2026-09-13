@@ -4,7 +4,9 @@
     "concluir": "Finish",
     "confirmVersion": "Confirm {{version}}",
     "fechar": "Close",
-    "tentarNovamente": "Try again"
+    "tentarNovamente": "Try again",
+    "analisando": "Analyzing...",
+    "criando": "Creating {{version}}..."
   },
   "currentDocumentSummaryCard": {
     "atualizado": "Updated",
@@ -33,7 +35,13 @@
   },
   "newVersionAnalyzingPanel": {
     "analisandoNovaVersao": "Analyzing the new version",
-    "comparingWith": "Comparing with {{current}} to prepare {{next}}."
+    "comparingWith": "Comparing with {{current}} to prepare {{next}}.",
+    "steps": {
+      "ocr": "Extracting text from the PDF",
+      "classify": "Classifying document",
+      "metadata": "Extracting metadata",
+      "compare": "Comparing with the current version"
+    }
   },
   "newVersionReviewStep": {
     "categoria": "Category",
@@ -48,7 +56,8 @@
     "enviarNovaVersao": "Upload new version",
     "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · up to",
     "prontoParaAnalise": "· ready for analysis",
-    "removerArquivoSelecionado": "Remove selected file"
+    "removerArquivoSelecionado": "Remove selected file",
+    "tipoInvalido": "Upload a PDF or image (JPG, PNG, or WebP) to create a new version."
   },
   "updateDocumentVersionDrawer": {
     "atualizarDocumento": "Update document",
@@ -57,17 +66,31 @@
     "fecharAtualizacaoDeVersao": "Close version update",
     "naoFoiPossivelContinuar": "Could not continue",
     "novaVersaoCriada": "New version created",
-    "oDocumentoFoiAtualizado": "The document was updated to"
+    "oDocumentoFoiAtualizado": "The document was updated to",
+    "erroCarregar": "Could not load the document data.",
+    "semPermissao": "You do not have permission to update this document.",
+    "erroAnalisar": "Could not analyze the uploaded file.",
+    "confirmeRevisao": "Confirm the metadata review before continuing.",
+    "versaoCriada": "New version {{version}} created.",
+    "erroCriar": "Could not create the new version.",
+    "erroDesconhecido": "Unknown error."
   },
   "updateDocumentVersionHeader": {
     "atualizarDocumento": "Update document",
-    "fecharAtualizacaoDeVersao": "Close version update"
+    "fecharAtualizacaoDeVersao": "Close version update",
+    "novaVersaoDe": "New version of {{name}}"
   },
   "versionComparisonPanel": {
     "atual": "Current",
     "changed": "changed",
     "compararVersoes": "Compare versions",
-    "nova": "New"
+    "nova": "New",
+    "linhas": {
+      "name": "Name",
+      "category": "Category",
+      "version": "Version",
+      "summary": "Summary"
+    }
   },
   "versionHistorySummary": {
     "historicoDeVersoes": "Version history",

@@ -124,12 +124,12 @@ export function UpdateDocumentVersionDrawer({
     }
     if (detailQuery.isError || versionsQuery.isError || !detail) {
       setPhase('error');
-      setErrorMessage('Não foi possível carregar os dados do documento.');
+      setErrorMessage(t('updateDocumentVersionDrawer.erroCarregar'));
       return;
     }
     if (!canUpdate) {
       setPhase('error');
-      setErrorMessage('Você não tem permissão para atualizar este documento.');
+      setErrorMessage(t('updateDocumentVersionDrawer.semPermissao'));
       return;
     }
     if (phase === 'loading' || phase === 'error') {
@@ -143,6 +143,7 @@ export function UpdateDocumentVersionDrawer({
     detailQuery.isLoading,
     documentId,
     phase,
+    t,
     versionsQuery.isError,
     versionsQuery.isLoading,
   ]);
@@ -185,13 +186,13 @@ export function UpdateDocumentVersionDrawer({
       } catch (error) {
         if (controller.signal.aborted) return;
         const message =
-          error instanceof Error ? error.message : 'Não foi possível analisar o arquivo enviado.';
+          error instanceof Error ? error.message : t('updateDocumentVersionDrawer.erroAnalisar');
         setErrorMessage(message);
         setPhase('error');
         toast.error(message);
       }
     },
-    [detail, documentId],
+    [detail, documentId, t],
   );
 
   const handleFileSelected = useCallback(
@@ -206,7 +207,7 @@ export function UpdateDocumentVersionDrawer({
 
     const requiresReview = analysis.metadata.analysisStatus === 'requires_review';
     if (requiresReview && !reviewChecked) {
-      toast.error('Confirme a revisão dos metadados antes de continuar.');
+      toast.error(t('updateDocumentVersionDrawer.confirmeRevisao'));
       return;
     }
 
@@ -237,10 +238,12 @@ export function UpdateDocumentVersionDrawer({
       setPhase('success');
       await invalidateDocumentUpdateQueries(queryClient, tenant?.tenantId, documentId);
       onSuccess?.(success);
-      toast.success(`Nova versão ${result.versionLabel} criada com sucesso.`);
+      toast.success(
+        t('updateDocumentVersionDrawer.versaoCriada', { version: result.versionLabel }),
+      );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Não foi possível criar a nova versão.';
+        error instanceof Error ? error.message : t('updateDocumentVersionDrawer.erroCriar');
       setErrorMessage(message);
       setPhase('error');
       toast.error(message);
@@ -253,6 +256,7 @@ export function UpdateDocumentVersionDrawer({
     onSuccess,
     queryClient,
     reviewChecked,
+    t,
     tenant?.tenantId,
   ]);
 
@@ -311,7 +315,7 @@ export function UpdateDocumentVersionDrawer({
                 {t('updateDocumentVersionDrawer.naoFoiPossivelContinuar')}
               </p>
               <p className="mt-1 text-caption text-doqyn-muted">
-                {errorMessage ?? 'Erro desconhecido.'}
+                {errorMessage ?? t('updateDocumentVersionDrawer.erroDesconhecido')}
               </p>
             </div>
           </div>

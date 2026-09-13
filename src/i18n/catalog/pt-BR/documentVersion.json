@@ -4,7 +4,9 @@
     "concluir": "Concluir",
     "confirmVersion": "Confirmar {{version}}",
     "fechar": "Fechar",
-    "tentarNovamente": "Tentar novamente"
+    "tentarNovamente": "Tentar novamente",
+    "analisando": "Analisando...",
+    "criando": "Criando {{version}}..."
   },
   "currentDocumentSummaryCard": {
     "atualizado": "Atualizado",
@@ -33,7 +35,13 @@
   },
   "newVersionAnalyzingPanel": {
     "analisandoNovaVersao": "Analisando nova versão",
-    "comparingWith": "Comparando com {{current}} para preparar {{next}}."
+    "comparingWith": "Comparando com {{current}} para preparar {{next}}.",
+    "steps": {
+      "ocr": "Extraindo texto do PDF",
+      "classify": "Classificando documento",
+      "metadata": "Extraindo metadados",
+      "compare": "Comparando com versão atual"
+    }
   },
   "newVersionReviewStep": {
     "categoria": "Categoria",
@@ -48,7 +56,8 @@
     "enviarNovaVersao": "Enviar nova versão",
     "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · até",
     "prontoParaAnalise": "· pronto para análise",
-    "removerArquivoSelecionado": "Remover arquivo selecionado"
+    "removerArquivoSelecionado": "Remover arquivo selecionado",
+    "tipoInvalido": "Envie PDF ou imagem (JPG, PNG ou WebP) para criar uma nova versão."
   },
   "updateDocumentVersionDrawer": {
     "atualizarDocumento": "Atualizar documento",
@@ -57,17 +66,31 @@
     "fecharAtualizacaoDeVersao": "Fechar atualização de versão",
     "naoFoiPossivelContinuar": "Não foi possível continuar",
     "novaVersaoCriada": "Nova versão criada",
-    "oDocumentoFoiAtualizado": "O documento foi atualizado para"
+    "oDocumentoFoiAtualizado": "O documento foi atualizado para",
+    "erroCarregar": "Não foi possível carregar os dados do documento.",
+    "semPermissao": "Você não tem permissão para atualizar este documento.",
+    "erroAnalisar": "Não foi possível analisar o arquivo enviado.",
+    "confirmeRevisao": "Confirme a revisão dos metadados antes de continuar.",
+    "versaoCriada": "Nova versão {{version}} criada com sucesso.",
+    "erroCriar": "Não foi possível criar a nova versão.",
+    "erroDesconhecido": "Erro desconhecido."
   },
   "updateDocumentVersionHeader": {
     "atualizarDocumento": "Atualizar documento",
-    "fecharAtualizacaoDeVersao": "Fechar atualização de versão"
+    "fecharAtualizacaoDeVersao": "Fechar atualização de versão",
+    "novaVersaoDe": "Nova versão de {{name}}"
   },
   "versionComparisonPanel": {
     "atual": "Atual",
     "changed": "alterado",
     "compararVersoes": "Comparar versões",
-    "nova": "Nova"
+    "nova": "Nova",
+    "linhas": {
+      "name": "Nome",
+      "category": "Categoria",
+      "version": "Versão",
+      "summary": "Resumo"
+    }
   },
   "versionHistorySummary": {
     "historicoDeVersoes": "Histórico de versões",

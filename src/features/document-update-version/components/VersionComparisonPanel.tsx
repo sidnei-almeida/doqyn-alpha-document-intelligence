@@ -41,7 +41,9 @@ export function VersionComparisonPanel({
             data-changed={row.changed ? 'true' : 'false'}
           >
             <div className="flex items-center gap-2">
-              <p className="text-[11px] font-medium text-doqyn-text">{row.label}</p>
+              <p className="text-[11px] font-medium text-doqyn-text">
+                {row.labelKey ? t(row.labelKey) : row.label}
+              </p>
               {row.changed && (
                 <span className="text-[9px] uppercase tracking-wide text-doqyn-warning">
                   {t('versionComparisonPanel.changed')}

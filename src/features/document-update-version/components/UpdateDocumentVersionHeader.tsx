@@ -35,7 +35,7 @@ export function UpdateDocumentVersionHeader({
           id="update-document-version-title"
           className="type-h2 mt-1 text-doqyn-text"
         >
-          {`Nova versão de ${name}`}
+          {t('updateDocumentVersionHeader.novaVersaoDe', { name })}
         </TruncatedText>
         <p className="mt-1 font-mono text-micro tabular-nums text-doqyn-subtle">
           {currentVersionLabel} → {nextVersionLabel}

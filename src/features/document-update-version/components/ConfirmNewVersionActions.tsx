@@ -73,7 +73,9 @@ export function ConfirmNewVersionActions({
         {(phase === 'analyzing' || phase === 'confirming') && (
           <Button type="button" variant="primary" disabled>
             <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
-            {phase === 'analyzing' ? 'Analisando...' : `Criando ${nextVersionLabel}...`}
+            {phase === 'analyzing'
+              ? t('confirmNewVersionActions.analisando')
+              : t('confirmNewVersionActions.criando', { version: nextVersionLabel })}
           </Button>
         )}
       </div>
