@@ -1,5 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
 import { i18n } from '@/i18n';
+import { categoryDisplayName } from '@/features/documents/utils/categoryDisplay';
 import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 
 export type DocumentAccessOrigin = 'owner' | 'admin' | 'governance' | 'share';
@@ -94,5 +95,12 @@ export async function fetchAccessMatrix(params: {
   query.set('limit', String(params.limit ?? 25));
 
   const response = await authFetch(`/api/documents/matrix/access?${query.toString()}`);
-  return parseJson<AccessMatrix>(response);
+  const matrix = await parseJson<AccessMatrix>(response);
+  return {
+    ...matrix,
+    documents: matrix.documents.map((doc) => ({
+      ...doc,
+      categoryName: categoryDisplayName(doc.categoryName, { id: doc.categoryId }),
+    })),
+  };
 }

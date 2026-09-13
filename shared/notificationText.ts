@@ -8,6 +8,8 @@
  * O que a pessoa escreveu (mensagem de compartilhamento, motivo de recusa) entra como está: é
  * conteúdo, não frase do produto.
  */
+import { isUncategorizedCategory } from './systemCategory.js';
+
 export type NotificationParams = Record<string, string | number | boolean>;
 
 export type NotificationTextDeps = {
@@ -64,11 +66,16 @@ export function renderNotificationText(
       };
     }
 
-    case 'document_created':
+    case 'document_created': {
+      // A classe de sistema chega com o nome gravado em português: é o mesmo fato que não ter
+      // categoria, e a frase sem categoria já existe nos três idiomas.
+      const categoryName = text(params, 'categoryName');
+      const hasCategory = categoryName && !isUncategorizedCategory({ name: categoryName });
       return {
-        title: t(key(text(params, 'categoryName') ? 'title' : 'titleNoCategory'), params),
+        title: t(key(hasCategory ? 'title' : 'titleNoCategory'), params),
         body: text(params, 'actorName') ? t(key('body'), params) : undefined,
       };
+    }
 
     case 'document_updated':
       return {

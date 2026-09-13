@@ -1,3 +1,4 @@
+import { isUncategorizedCategory } from '../../../shared/systemCategory.js';
 import type { MongoNotification } from '../../db/types.js';
 import { getServerT, normalizeServerLocale, renderNotificationText } from '../../i18n/index.js';
 import {
@@ -85,7 +86,12 @@ export function buildNotificationEmail(
   const title = (rendered?.title ?? notification.title).trim();
   const body = (rendered ? rendered.body : notification.body)?.trim();
   const documentName = notification.documentName?.trim();
-  const categoryName = notification.categoryName?.trim();
+  // A classe de sistema é gravada com o nome em português; no e-mail sai no idioma de quem recebe.
+  const storedCategoryName = notification.categoryName?.trim();
+  const categoryName =
+    storedCategoryName && isUncategorizedCategory({ name: storedCategoryName })
+      ? t('notification.uncategorized')
+      : storedCategoryName;
   const actorName = notification.actorName?.trim();
 
   // O destino é o documento quando existe; a caixa de avisos quando o fato não tem documento.

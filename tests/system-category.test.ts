@@ -41,4 +41,15 @@ describe('classe de sistema "Sem categoria"', () => {
     assert.match(api, /map\(withCategoryDisplayName\)/);
     assert.equal(api.match(/categoryDisplayName\(/g)?.length, 2);
   });
+
+  it('portal do convidado, avisos, painel e matriz também trocam no fetch', () => {
+    for (const rel of [
+      'src/features/sharing/api/externalShareApi.ts',
+      'src/features/notifications/api/notificationsApi.ts',
+      'src/features/dashboard/api/dashboardApi.ts',
+      'src/features/matrix/api/matrixApi.ts',
+    ]) {
+      assert.match(read(rel), /categoryDisplayName\(/, rel);
+    }
+  });
 });

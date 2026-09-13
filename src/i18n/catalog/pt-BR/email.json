@@ -37,6 +37,7 @@
     },
     "preferencesHint": "Prefere não receber avisos por e-mail? Ajuste as preferências de notificação no app.",
     "footNote": "Você recebeu este e-mail porque acompanha este documento no DOQYN, ou porque o aviso é dirigido à sua conta.",
-    "footNoteAccount": "Você recebeu este e-mail porque o aviso é dirigido à sua conta no DOQYN."
+    "footNoteAccount": "Você recebeu este e-mail porque o aviso é dirigido à sua conta no DOQYN.",
+    "uncategorized": "Sem categoria"
   }
 }

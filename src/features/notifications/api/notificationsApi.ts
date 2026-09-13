@@ -1,5 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
 import { parseApiError } from '@/lib/apiErrors';
+import { categoryDisplayName } from '@/features/documents/utils/categoryDisplay';
 
 export type NotificationStatus = 'unread' | 'read' | 'dismissed';
 
@@ -52,6 +53,12 @@ async function parseError(response: Response): Promise<Error> {
   return parseApiError(response);
 }
 
+/** O servidor grava o nome da classe de sistema em português; a tela mostra no idioma dela. */
+function withDisplayCategory(notification: AppNotification): AppNotification {
+  if (!notification.categoryName) return notification;
+  return { ...notification, categoryName: categoryDisplayName(notification.categoryName) };
+}
+
 export async function listNotifications(params?: {
   status?: NotificationStatus;
   limit?: number;
@@ -63,7 +70,8 @@ export async function listNotifications(params?: {
   const suffix = query.toString() ? `?${query.toString()}` : '';
   const response = await authFetch(`/api/notifications${suffix}`);
   if (!response.ok) throw await parseError(response);
-  return (await response.json()) as NotificationsResponse;
+  const data = (await response.json()) as NotificationsResponse;
+  return { ...data, items: data.items.map(withDisplayCategory) };
 }
 
 export async function updateNotification(
@@ -76,7 +84,8 @@ export async function updateNotification(
     body: JSON.stringify({ status }),
   });
   if (!response.ok) throw await parseError(response);
-  return (await response.json()) as { notification: AppNotification };
+  const data = (await response.json()) as { notification: AppNotification };
+  return { notification: withDisplayCategory(data.notification) };
 }
 
 export async function markAllNotificationsRead(): Promise<{ updated: number }> {

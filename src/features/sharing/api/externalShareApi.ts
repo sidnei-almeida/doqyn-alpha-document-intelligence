@@ -1,5 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
 import { parseDocumentApiError } from '@/features/documents/api/documentsApi.errors';
+import { categoryDisplayName } from '@/features/documents/utils/categoryDisplay';
 
 export type ExternalDocumentShareEntry = {
   shareId: string;
@@ -126,7 +127,14 @@ export async function fetchExternalSharePortal(token: string): Promise<ExternalS
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }
-  return response.json() as Promise<ExternalSharePortalPayload>;
+  const payload = (await response.json()) as ExternalSharePortalPayload;
+  return {
+    ...payload,
+    document: {
+      ...payload.document,
+      categoryName: categoryDisplayName(payload.document.categoryName) ?? '',
+    },
+  };
 }
 
 export async function acceptExternalShareInvite(token: string): Promise<{

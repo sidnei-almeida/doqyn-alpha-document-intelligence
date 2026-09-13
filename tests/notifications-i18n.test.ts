@@ -92,6 +92,40 @@ describe('texto de notificação in-app', () => {
     );
   });
 
+  it('a classe de sistema, gravada em português, sai como "sem categoria" no idioma de quem lê', () => {
+    const params = { documentName: 'MSA', categoryName: 'Sem categoria' };
+    assert.equal(
+      renderNotificationText('en-US', 'document_created', params)?.title,
+      'MSA was added without a category',
+    );
+    assert.equal(
+      renderNotificationText('en-US', 'document_created', { ...params, categoryName: 'Legal' })
+        ?.title,
+      'MSA was added to Legal',
+    );
+
+    const email = buildNotificationEmail(
+      {
+        _id: 'ntf_2',
+        tenantId: 't',
+        companyId: 't',
+        type: 'document_shared',
+        userId: 'u',
+        eventKey: 'share',
+        title: 'Ana compartilhou MSA',
+        documentId: 'doc_1',
+        documentName: 'MSA',
+        categoryName: 'Sem categoria',
+        status: 'unread',
+        createdAt: new Date(),
+      } as MongoNotification,
+      'https://app.doqyn.com',
+      'en-US',
+    );
+    assert.match(email.text, /Category: Uncategorized/);
+    assert.equal(email.text.includes('Sem categoria'), false);
+  });
+
   it('o build de produção leva os catálogos que o servidor importa', () => {
     assert.ok(read('scripts/build-server.mjs').includes("'src/i18n/catalog'"));
     for (const dockerfile of ['docker/Dockerfile.api', 'docker/Dockerfile.worker']) {

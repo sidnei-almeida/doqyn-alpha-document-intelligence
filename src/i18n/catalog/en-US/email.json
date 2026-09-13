@@ -37,6 +37,7 @@
     },
     "preferencesHint": "Rather not get notices by email? Adjust your notification preferences in the app.",
     "footNote": "You received this email because you follow this document on DOQYN, or because the notice is addressed to your account.",
-    "footNoteAccount": "You received this email because the notice is addressed to your DOQYN account."
+    "footNoteAccount": "You received this email because the notice is addressed to your DOQYN account.",
+    "uncategorized": "Uncategorized"
   }
 }
