@@ -190,5 +190,8 @@
     "retrySuggestion": "Inténtalo de nuevo. Si el problema persiste, contacta al soporte.",
     "rulesNotConfigured": "La configuración documental está incompleta. Registra clases y reglas antes de analizar documentos."
   },
-  "uncategorized": "Sin categoría"
+  "uncategorized": "Sin categoría",
+  "toaster": {
+    "region": "Avisos"
+  }
 }

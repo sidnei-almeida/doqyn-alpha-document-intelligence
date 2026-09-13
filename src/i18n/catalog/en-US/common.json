@@ -186,5 +186,8 @@
     "retrySuggestion": "Try again. If the problem persists, contact support.",
     "rulesNotConfigured": "Document setup is incomplete. Register classes and rules before analyzing documents."
   },
-  "uncategorized": "Uncategorized"
+  "uncategorized": "Uncategorized",
+  "toaster": {
+    "region": "Notifications"
+  }
 }
