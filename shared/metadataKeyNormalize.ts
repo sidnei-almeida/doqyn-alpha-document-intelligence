@@ -45,6 +45,49 @@ export const CANONICAL_METADATA_LABELS: Record<string, string> = {
 };
 
 /**
+ * Os rótulos canônicos em inglês e espanhol, pelo rótulo em português.
+ *
+ * A chave continua em português — é identificador gravado no banco, e traduzi-la invalidaria todo
+ * metadado já salvo. Só o que a pessoa lê muda. Rótulo sem entrada aqui fica em português.
+ */
+const CANONICAL_LABEL_TRANSLATIONS: Record<string, readonly [en: string, es: string]> = {
+  'Partes envolvidas': ['Parties involved', 'Partes involucradas'],
+  'Data de referência': ['Reference date', 'Fecha de referencia'],
+  'Parte reveladora': ['Disclosing party', 'Parte reveladora'],
+  'Parte receptora': ['Receiving party', 'Parte receptora'],
+  'Data de assinatura': ['Signature date', 'Fecha de firma'],
+  'Data do documento': ['Document date', 'Fecha del documento'],
+  Validade: ['Expiry date', 'Fecha de vencimiento'],
+  'Data de emissão': ['Issue date', 'Fecha de emisión'],
+  'Início da vigência': ['Term start', 'Inicio de vigencia'],
+  'Fim da vigência': ['Term end', 'Fin de vigencia'],
+  'Prazo de vigência': ['Term', 'Plazo de vigencia'],
+  Tipo: ['Type', 'Tipo'],
+  Título: ['Title', 'Título'],
+  Partes: ['Parties', 'Partes'],
+  'CPF/CNPJ da parte receptora': ['Receiving party CPF/CNPJ', 'CPF/CNPJ de la parte receptora'],
+  Resumo: ['Summary', 'Resumen'],
+  Cláusulas: ['Clauses', 'Cláusulas'],
+  Sensibilidade: ['Sensitivity', 'Sensibilidad'],
+  Categoria: ['Category', 'Categoría'],
+  'Nome sugerido (IA)': ['Suggested name (AI)', 'Nombre sugerido (IA)'],
+  Fornecedor: ['Supplier', 'Proveedor'],
+  Beneficiário: ['Beneficiary', 'Beneficiario'],
+  Pagador: ['Payer', 'Pagador'],
+  Cliente: ['Customer', 'Cliente'],
+  Titular: ['Holder', 'Titular'],
+};
+
+function localizeCanonicalLabel(label: string, locale?: string | null): string {
+  const primary = locale?.split('-')[0]?.toLowerCase();
+  const translated = CANONICAL_LABEL_TRANSLATIONS[label];
+  if (!translated) return label;
+  if (primary === 'en') return translated[0];
+  if (primary === 'es') return translated[1];
+  return label;
+}
+
+/**
  * Ordem da ficha no painel Detalhes (viewer).
  * Validade absoluta/inferida é tratada à parte (não listar data_validade aqui se o builder unificar).
  */
@@ -180,11 +223,20 @@ function humanizeCanonicalKey(key: string): string {
     .replace(/^\w/, (char) => char.toUpperCase());
 }
 
-/** Label estável para UI: preferir mapa canônico; senão label limpo; senão humanize. */
-export function resolveMetadataLabel(key: string, label?: string | null): string {
+/**
+ * Label estável para UI: preferir mapa canônico; senão label limpo; senão humanize.
+ *
+ * `locale` só vale para rótulo canônico: o rótulo que o tenant escreveu é dado dele e fica como
+ * está. O servidor chama sem `locale` e grava o rótulo em português, como sempre.
+ */
+export function resolveMetadataLabel(
+  key: string,
+  label?: string | null,
+  locale?: string | null,
+): string {
   const canonical = canonicalizeMetadataKey(key, label);
   if (CANONICAL_METADATA_LABELS[canonical]) {
-    return CANONICAL_METADATA_LABELS[canonical];
+    return localizeCanonicalLabel(CANONICAL_METADATA_LABELS[canonical], locale);
   }
   const trimmed = label?.trim();
   if (trimmed) {

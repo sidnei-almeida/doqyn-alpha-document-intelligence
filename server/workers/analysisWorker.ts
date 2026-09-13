@@ -54,10 +54,7 @@ async function loadJobBuffer(payload: AnalysisQueueJobPayload): Promise<Buffer> 
   });
 }
 
-async function runAnalysisForPayload(
-  payload: AnalysisQueueJobPayload,
-  buffer: Buffer,
-) {
+async function runAnalysisForPayload(payload: AnalysisQueueJobPayload, buffer: Buffer) {
   const requestContext = {
     requestId: payload.requestId,
     batchId: payload.batchId,
@@ -91,6 +88,7 @@ async function runAnalysisForPayload(
     ownerUserId: payload.ownerUserId,
     jobId: payload.jobId,
     requestContext,
+    outputLocale: payload.outputLocale,
   });
 }
 
@@ -268,7 +266,9 @@ export function startInProcessAnalysisWorker(): void {
 export async function runAnalysisWorkerLoop(): Promise<void> {
   const worker = startAnalysisWorker(processAnalysisJob);
   if (!worker) {
-    throw new Error('Fila de análise indisponível — configure REDIS_URL e ANALYSIS_SYNC_FALLBACK=false');
+    throw new Error(
+      'Fila de análise indisponível — configure REDIS_URL e ANALYSIS_SYNC_FALLBACK=false',
+    );
   }
 
   worker.on('failed', (job, error) => {

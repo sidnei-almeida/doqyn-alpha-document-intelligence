@@ -21,7 +21,14 @@ export async function extractMetadataWithRule(input: {
   const requiredFieldKeys = input.selectedClass.fields.filter((f) => f.required).map((f) => f.key);
 
   try {
-    const { prompt } = buildCompactExtractorPrompt(input.chunks, input.selectedClass);
+    // O idioma viaja no contexto da análise (ver `AnalysisProviderContext`).
+    const language = input.context as
+      | (GroqPromptContext & import('../utils/detectDocumentLanguage.js').DocumentLanguageContext)
+      | undefined;
+    const { prompt } = buildCompactExtractorPrompt(input.chunks, input.selectedClass, {
+      documentLanguage: language?.documentLanguage,
+      outputLocale: language?.outputLocale,
+    });
     const answer = await completeJsonPromptWithUsage(prompt, {
       context: {
         ...input.context,
@@ -56,6 +63,7 @@ export async function extractMetadataWithRule(input: {
       parsed,
       input.selectedClass,
       input.chunks.map((chunk) => chunk.text).join('\n'),
+      { documentLanguage: language?.documentLanguage },
     );
 
     /**

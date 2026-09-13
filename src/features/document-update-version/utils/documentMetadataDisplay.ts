@@ -87,7 +87,7 @@ export function metadataRecordToDisplayFields(
 
     byCanonical.set(canonicalKey, {
       key: canonicalKey,
-      label: resolveMetadataLabel(canonicalKey, rawLabel),
+      label: resolveMetadataLabel(canonicalKey, rawLabel, i18n.language),
       value: formatted,
     });
   }
@@ -198,7 +198,7 @@ export function buildStandardDetailsFields(input: {
     if (!name) continue;
     fields.push({
       key: roleKey,
-      label: resolveMetadataLabel(roleKey),
+      label: resolveMetadataLabel(roleKey, null, i18n.language),
       value: name,
     });
     used.add(roleKey);
@@ -230,7 +230,7 @@ export function buildStandardDetailsFields(input: {
     if (formatted === '—') continue;
     fields.push({
       key,
-      label: resolveMetadataLabel(key),
+      label: resolveMetadataLabel(key, null, i18n.language),
       value: formatted,
     });
     used.add(key);
@@ -269,7 +269,7 @@ export function analysisMetadataToDisplayFields(
 
     byCanonical.set(canonicalKey, {
       key: canonicalKey,
-      label: resolveMetadataLabel(canonicalKey, field.label),
+      label: resolveMetadataLabel(canonicalKey, field.label, i18n.language),
       value: formatted,
     });
   }

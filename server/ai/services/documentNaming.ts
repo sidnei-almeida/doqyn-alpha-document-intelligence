@@ -29,6 +29,13 @@ const CATEGORY_SLUG_PREFIXES = [
   'rh',
 ];
 
+/**
+ * Sufixo societário de fora do Brasil. Teste à parte do brasileiro, e não uma alternativa a mais na
+ * mesma expressão, para que nome português não mude de resultado por causa de sufixo que ele não usa.
+ */
+const FOREIGN_COMPANY_SUFFIX =
+  /\b(?:LLP|CORP|CORPORATION|LTD|LIMITED|PLC|GMBH|S\.L|S\.R\.L|SRL|S\.A\.S|C\.V)\b\.?/i;
+
 const GENERIC_TITLE_PATTERNS = [
   /acordo\s+de\s+confidencialidade/i,
   /nao\s+concorrenc/i,
@@ -70,6 +77,7 @@ function looksLikeProperName(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length < 3) return false;
   if (/\b(LTDA|LTDA\.|S\.A\.|SA|ME|EPP|EIRELI|INC|LLC)\b/i.test(trimmed)) return true;
+  if (FOREIGN_COMPANY_SUFFIX.test(trimmed)) return true;
   if (
     /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)+$/.test(trimmed)
   ) {
@@ -195,11 +203,21 @@ function normalizeVersion(version: string): string {
   return cleaned ? cleaned.replace('.', '_') : '1';
 }
 
-function stripCategorySlugPrefix(name: string): string {
+/**
+ * Tira do começo do nome o prefixo que é só a pasta.
+ *
+ * A lista fixa conhece as pastas do seed em português; a classe do tenant pode se chamar "Legal" ou
+ * "Contratos Internacionales". O slug do nome da própria classe entra junto, e é o que cobre o resto.
+ */
+function stripCategorySlugPrefix(name: string, className?: string): string {
   let result = name;
   for (const slug of CATEGORY_SLUG_PREFIXES) {
     const pattern = new RegExp(`^${slug}_`, 'i');
     result = result.replace(pattern, '');
+  }
+  const classSlug = className ? sanitizeFileNameSegment(className, '') : '';
+  if (classSlug && result.toLowerCase().startsWith(`${classSlug.toLowerCase()}_`)) {
+    result = result.slice(classSlug.length + 1);
   }
   return result;
 }
@@ -228,6 +246,13 @@ const BARE_TYPE_TOKENS = new Set([
   'proposta',
   'politica',
   'acordo',
+  'contract',
+  'agreement',
+  'document',
+  'invoice',
+  'acuerdo',
+  'convenio',
+  'factura',
 ]);
 
 const TEMPLATE_CONNECTOR_SEGMENTS = new Set(['e']);
@@ -518,6 +543,18 @@ const GENERIC_SUBJECT_TOKENS = new Set([
   'titular',
   'nao informado',
   'nao identificado',
+  'document',
+  'documents',
+  'file',
+  'company',
+  'customer',
+  'client',
+  'supplier',
+  'vendor',
+  'party',
+  'parties',
+  'proveedor',
+  'contratista',
 ]);
 
 function buildNameFromRoles(roles: DocumentNamingRoles | undefined): string | null {
@@ -600,7 +637,7 @@ export function generateRecommendedFileName(input: {
       version: input.version,
     });
 
-  name = stripCategorySlugPrefix(name);
+  name = stripCategorySlugPrefix(name, input.selectedClass.name);
 
   const disambiguated = buildDisambiguatedBaseName(input.selectedClass, metadata);
   const templateIsWeak = !name || isGenericGeneratedName(name, input.selectedClass, metadata);

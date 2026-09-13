@@ -141,6 +141,7 @@ export const confirmAnalysisSchema = z.object({
     pageCount: z.number().optional(),
     charCount: z.number(),
     truncated: z.boolean(),
+    detectedLanguage: z.enum(['pt', 'en', 'es', 'und']).optional(),
   }),
   classification: classificationSchema,
   extraction: extractionSchema,
@@ -501,6 +502,9 @@ export async function confirmAnalysisPersistence(input: {
       className: docClass.name,
       title: buildDocumentTitle(docClass.name, versionMetadata),
       currentFileName: resolvedNames.finalFileName,
+      ...(data.textExtraction.detectedLanguage && data.textExtraction.detectedLanguage !== 'und'
+        ? { detectedLanguage: data.textExtraction.detectedLanguage }
+        : {}),
       status: 'active',
       processingStatus: needsReview ? 'processed_with_review' : 'processed',
       access: {

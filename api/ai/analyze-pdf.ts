@@ -139,6 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 batchId: ctx.batchId,
                 itemId: ctx.itemId,
                 jobKind: 'initial',
+                outputLocale: user.locale,
               })
             : await enqueuePdfAnalysisJob({
                 tenantId: companyId,
@@ -151,6 +152,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 batchId: ctx.batchId,
                 itemId: ctx.itemId,
                 jobKind: 'initial',
+                outputLocale: user.locale,
               });
 
         logger.info('analyze-pdf enfileirado', {
@@ -194,6 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       companyId,
       ownerUserId: user.id,
       jobId: ingress.jobId,
+      outputLocale: user.locale,
       requestContext: {
         requestId: ctx.requestId,
         batchId: ctx.batchId,

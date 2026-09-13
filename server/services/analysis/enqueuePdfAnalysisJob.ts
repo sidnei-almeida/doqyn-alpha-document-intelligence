@@ -29,6 +29,8 @@ export async function enqueuePdfAnalysisJob(input: {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /** Idioma de quem enviou, para o worker escrever resumo e nome nele. */
+  outputLocale?: string;
 }): Promise<AnalysisEnqueueResponse> {
   if (!isAsyncPdfAnalysisAvailable()) {
     throw new ServiceError(
@@ -82,6 +84,7 @@ export async function enqueuePdfAnalysisJob(input: {
       jobKind: input.jobKind ?? 'initial',
       documentId: input.documentId,
       membershipId: input.membershipId,
+      outputLocale: input.outputLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao enfileirar análise.';
@@ -110,6 +113,8 @@ export async function enqueuePdfAnalysisJobFromStaging(input: {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /** Idioma de quem enviou, para o worker escrever resumo e nome nele. */
+  outputLocale?: string;
 }): Promise<AnalysisEnqueueResponse> {
   if (!isAsyncPdfAnalysisAvailable()) {
     throw new ServiceError(
@@ -170,6 +175,7 @@ export async function enqueuePdfAnalysisJobFromStaging(input: {
       jobKind: input.jobKind ?? 'initial',
       documentId: input.documentId,
       membershipId: input.membershipId,
+      outputLocale: input.outputLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao enfileirar análise.';

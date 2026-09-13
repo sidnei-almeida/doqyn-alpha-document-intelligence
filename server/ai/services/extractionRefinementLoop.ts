@@ -210,7 +210,10 @@ export async function refineExtraction(input: {
   extractionChunks: RetrievedChunk[];
   selectedClass: DocumentClassRule;
   classification: ClassificationResult;
-  context: GroqPromptContext & { jobId: string; companyId: string };
+  context: GroqPromptContext & {
+    jobId: string;
+    companyId: string;
+  } & import('../utils/detectDocumentLanguage.js').DocumentLanguageContext;
   budget?: TokenBudget;
   deps?: Partial<RefinementDeps>;
 }): Promise<RefinedExtraction> {
@@ -225,6 +228,8 @@ export async function refineExtraction(input: {
       jobId: input.context.jobId,
       companyId: input.context.companyId,
       database: input.context.database,
+      documentLanguage: input.context.documentLanguage,
+      outputLocale: input.context.outputLocale,
     },
   });
 

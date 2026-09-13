@@ -98,6 +98,14 @@ export async function classifyDocumentWithRules(input: {
   const { prompt, compactChunks, compactClasses } = buildCompactClassifierPrompt(
     input.chunks,
     input.classes,
+    {
+      documentLanguage: (
+        input.context as
+          | (ClassifierContext &
+              import('../utils/detectDocumentLanguage.js').DocumentLanguageContext)
+          | undefined
+      )?.documentLanguage,
+    },
   );
   const selectedChunksCount = compactChunks.length;
   const totalContextChars = compactChunks.reduce((sum, chunk) => sum + chunk.text.length, 0);

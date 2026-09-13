@@ -675,6 +675,11 @@ export type MongoDocument = {
   className: string;
   title: string;
   currentFileName: string;
+  /**
+   * Idioma do texto do documento, detectado na análise (não é o idioma da interface). Serve para
+   * marcar conteúdo com `lang` e para a extração ler data na convenção certa. Ausente: desconhecido.
+   */
+  detectedLanguage?: 'pt' | 'en' | 'es';
   status: 'active' | 'archived';
   lifecycleStatus?: DocumentLifecycleStatus;
   processingStatus: 'processed' | 'requires_review' | 'processed_with_review' | 'pending';

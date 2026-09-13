@@ -174,18 +174,12 @@ function triageDerivableExpiry(input: {
 }): TriageFinding[] {
   const targets = input.selectedClass.fields.filter(
     (field) =>
-      field.type === 'date' &&
-      isEndDateFieldName(field) &&
-      isEmptyValue(input.metadata[field.key]),
+      field.type === 'date' && isEndDateFieldName(field) && isEmptyValue(input.metadata[field.key]),
   );
   if (targets.length === 0) return [];
 
   const anchor = input.selectedClass.fields
-    .filter(
-      (field) =>
-        field.type === 'date' &&
-        isAnchorFieldName(field),
-    )
+    .filter((field) => field.type === 'date' && isAnchorFieldName(field))
     .map((field) => ({ key: field.key, iso: readIsoValue(input.metadata[field.key]) }))
     .find((candidate): candidate is { key: string; iso: string } => candidate.iso !== null);
   if (!anchor) return [];
@@ -240,7 +234,18 @@ function triageNamingRoles(input: {
         symptom: 'tipo_igual_a_classe',
         detail: `repetiu o nome da pasta ("${tipo}") em vez de dizer o tipo`,
       });
-    } else if (['documento', 'arquivo', 'anexo'].includes(normalizeForCompare(tipo))) {
+    } else if (
+      [
+        'documento',
+        'arquivo',
+        'anexo',
+        'document',
+        'file',
+        'attachment',
+        'archivo',
+        'adjunto',
+      ].includes(normalizeForCompare(tipo))
+    ) {
       findings.push({
         key: 'naming.tipo',
         label: 'Tipo do documento',
