@@ -21,7 +21,7 @@
     "i18n:error-codes": "tsx scripts/i18n-error-codes.ts",
     "i18n:check": "tsx scripts/i18n-check.ts",
     "i18n:audit": "tsx scripts/i18n-audit.ts",
-    "i18n:gate-ts": "tsx scripts/i18n-inventory.ts --gate-ts",
+    "i18n:gate": "node scripts/i18n-literals.mjs --gate src",
     "i18n:parity": "tsx scripts/i18n-parity.ts",
     "typecheck": "tsc -b",
     "preview": "vite preview",
