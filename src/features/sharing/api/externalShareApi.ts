@@ -51,6 +51,8 @@ export async function createDocumentExternalShare(
     permissions?: { canView?: boolean; canDownload?: boolean };
     expiresAt?: string;
     message?: string;
+    /** Idioma do portal do convidado; ausente, o portal segue o navegador de quem abre. */
+    recipientLocale?: string;
   },
 ): Promise<{
   shareId: string;

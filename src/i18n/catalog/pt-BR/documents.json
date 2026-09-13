@@ -137,7 +137,9 @@
     "copy": "Copiar",
     "copied": "Copiado",
     "sending": "Enviando…",
-    "continue": "Continuar"
+    "continue": "Continuar",
+    "recipientLocale": "Idioma do convite",
+    "recipientLocaleAuto": "O do navegador de quem abrir"
   },
   "transferOwnershipModal": {
     "cancelar": "Cancelar",

@@ -11,8 +11,10 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import { cn } from '@/lib/utils';
+import { Select } from '@/components/ui/Select';
 import { i18n } from '@/i18n';
 import { formatDate } from '@/i18n/formats';
+import { EXPOSED_LOCALES, LOCALES, normalizeLocale, type SupportedLocale } from '@/i18n/locales';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -313,18 +315,37 @@ export function InternalRecipientPicker({
   );
 }
 
+/**
+ * Idiomas que quem envia pode escolher para o convidado: os já oferecidos, e o que a tela está
+ * mostrando — quem abriu o app em inglês por `?lang=` para conferir a tradução precisa conseguir
+ * mandar um convite em inglês. Idioma em preparo não aparece para mais ninguém (P9).
+ */
+function recipientLocaleOptions(uiLocale: string): SupportedLocale[] {
+  return LOCALES.map((locale) => locale.code).filter(
+    (code) => EXPOSED_LOCALES.includes(code) || code === uiLocale,
+  );
+}
+
 export function ExternalRecipientFields({
   value,
   onChange,
   requireName,
   phoneError,
+  recipientLocale,
+  onRecipientLocaleChange,
 }: {
   value: ExternalRecipientDraft;
   onChange: (value: ExternalRecipientDraft) => void;
   requireName: boolean;
   phoneError?: string;
+  /** `''` = sem escolha: o portal segue o navegador de quem abre. */
+  recipientLocale?: string;
+  onRecipientLocaleChange?: (value: string) => void;
 }) {
-  const { t } = useTranslation('documents');
+  const { t, i18n: translation } = useTranslation('documents');
+  const localeChoices = recipientLocaleOptions(normalizeLocale(translation.language) ?? '');
+  // Com um idioma só, "navegador de quem abre" e esse idioma dão no mesmo: escolher não muda nada.
+  const showLocale = Boolean(onRecipientLocaleChange) && localeChoices.length > 1;
 
   return (
     <div className="recipient-fields">
@@ -361,6 +382,21 @@ export function ExternalRecipientFields({
         placeholder={t('recipientFlow.ondeAPessoaTrabalha')}
         autoComplete="off"
       />
+      {showLocale ? (
+        <Select
+          variant="rule"
+          label={t('recipientFlow.recipientLocale')}
+          value={recipientLocale ?? ''}
+          onChange={(event) => onRecipientLocaleChange?.(event.target.value)}
+          options={[
+            { value: '', label: t('recipientFlow.recipientLocaleAuto') },
+            ...LOCALES.filter((locale) => localeChoices.includes(locale.code)).map((locale) => ({
+              value: locale.code,
+              label: locale.nativeName,
+            })),
+          ]}
+        />
+      ) : null}
     </div>
   );
 }

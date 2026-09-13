@@ -22,6 +22,7 @@ import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { getTenantById } from '../tenantsService.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { parseRecipientLocale, withRecipientLocaleQuery } from '../../i18n/index.js';
 import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
@@ -128,8 +129,15 @@ export function buildExternalShareInvitePath(token: string): string {
   return `/guest/share/${encodeURIComponent(token)}`;
 }
 
-export function buildExternalShareInviteUrl(token: string, origin?: string): string {
-  return `${resolvePublicAppBaseUrl(origin)}${buildExternalShareInvitePath(token)}`;
+export function buildExternalShareInviteUrl(
+  token: string,
+  origin?: string,
+  recipientLocale?: string | null,
+): string {
+  return withRecipientLocaleQuery(
+    `${resolvePublicAppBaseUrl(origin)}${buildExternalShareInvitePath(token)}`,
+    recipientLocale,
+  );
 }
 
 export async function findExternalShareGrantByToken(
@@ -240,8 +248,9 @@ function serializeExternalShareGrant(
     sharedByNameSnapshot: grant.sharedByNameSnapshot ?? null,
     message: grant.message ?? null,
     /** Só existe com EXTERNAL_LINK_ENCRYPTION_KEY configurada; sem ela, o link some após a criação. */
+    recipientLocale: grant.recipientLocale ?? null,
     inviteUrl: recoveredToken
-      ? buildExternalShareInviteUrl(recoveredToken, options?.inviteOrigin)
+      ? buildExternalShareInviteUrl(recoveredToken, options?.inviteOrigin, grant.recipientLocale)
       : null,
   };
 }
@@ -259,9 +268,11 @@ export async function createDocumentExternalShareGrant(
     permissions?: Partial<ExternalDocumentSharePermissions>;
     expiresAt?: string;
     message?: string;
+    recipientLocale?: string;
     inviteOrigin?: string;
   },
 ) {
+  const recipientLocale = parseRecipientLocale(input.recipientLocale);
   const config = resolveExternalSharingConfig();
   if (!config.externalSharingEnabled) {
     throw new ServiceError(
@@ -319,6 +330,7 @@ export async function createDocumentExternalShareGrant(
           ...phoneFields,
           permissions,
           message: input.message?.trim() || null,
+          recipientLocale,
           status: 'pending',
           inviteTokenHash,
           inviteTokenEncrypted: encryptLinkToken(inviteToken),
@@ -342,7 +354,7 @@ export async function createDocumentExternalShareGrant(
       updated: true,
       inviteToken,
       invitePath: buildExternalShareInvitePath(inviteToken),
-      inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin),
+      inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin, recipientLocale),
       currentVersionId: doc.currentVersionId,
     };
   }
@@ -365,6 +377,7 @@ export async function createDocumentExternalShareGrant(
     message: input.message?.trim() || null,
     inviteTokenHash,
     inviteTokenEncrypted: encryptLinkToken(inviteToken),
+    recipientLocale,
     inviteExpiresAt,
     acceptedAt: null,
     lastAccessAt: null,
@@ -389,7 +402,7 @@ export async function createDocumentExternalShareGrant(
     updated: false,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin),
+    inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin, recipientLocale),
     currentVersionId: doc.currentVersionId,
   };
 }
@@ -527,7 +540,7 @@ export async function regenerateDocumentExternalShareGrant(
     status: 'pending' as const,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input?.inviteOrigin),
+    inviteUrl: buildExternalShareInviteUrl(inviteToken, input?.inviteOrigin, grant.recipientLocale),
     currentVersionId: doc.currentVersionId,
   };
 }

@@ -78,6 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   canDownloadAfterSign?: boolean;
                 })
               : undefined,
+          recipientLocale:
+            typeof body.recipientLocale === 'string' ? body.recipientLocale : undefined,
         },
         resolveOrigin(req),
       );

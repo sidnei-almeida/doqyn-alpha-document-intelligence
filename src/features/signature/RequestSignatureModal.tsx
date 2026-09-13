@@ -111,6 +111,7 @@ export function RequestSignatureModal({
   const [message, setMessage] = useState('');
   const [issuedUrl, setIssuedUrl] = useState<string | null>(null);
   const [internalDone, setInternalDone] = useState(false);
+  const [recipientLocale, setRecipientLocale] = useState('');
 
   /** Quem assina, pela aba e por mais nada — ver `resolveRecipient`. */
   const recipient = useMemo(
@@ -168,6 +169,8 @@ export function RequestSignatureModal({
         message: message.trim() || undefined,
         expiresAt: expirationDateToIso(expiresAt),
         permissions: { canDownloadAfterSign },
+        // Só o convidado sem conta escolhe idioma aqui; quem tem conta lê no idioma do perfil.
+        recipientLocale: (recipient.external && recipientLocale) || undefined,
       }),
     onError: (error) => showApiErrorToast(error, t('requestSignatureModal.createFailed')),
     onSettled: invalidate,
@@ -199,6 +202,7 @@ export function RequestSignatureModal({
     setMessage('');
     setIssuedUrl(null);
     setInternalDone(false);
+    setRecipientLocale('');
   }, [open, defaultAudience]);
 
   /** A sessão pode chegar depois da montagem — ver o mesmo guard em `ShareDocumentModal`. */
@@ -424,6 +428,8 @@ export function RequestSignatureModal({
                   onChange={setExternal}
                   requireName
                   phoneError={phoneError}
+                  recipientLocale={recipientLocale}
+                  onRecipientLocaleChange={setRecipientLocale}
                 />
               )}
               <AccessList

@@ -52,7 +52,11 @@ import {
   hashSignaturePortalToken,
 } from './signatureTokens.js';
 import { generateSignedPdf, signatureConsentText } from './signaturePdfService.js';
-import { normalizeServerLocale } from '../../i18n/index.js';
+import {
+  normalizeServerLocale,
+  parseRecipientLocale,
+  withRecipientLocaleQuery,
+} from '../../i18n/index.js';
 import { promoteSignedPdfToDocumentVersion } from './promoteSignedPdfToDocumentVersion.js';
 import {
   resolveInternalSignerForTenant,
@@ -118,8 +122,15 @@ export function buildSignaturePortalPath(token: string): string {
   return `/guest/sign/${encodeURIComponent(token)}`;
 }
 
-export function buildSignaturePortalUrl(token: string, origin?: string): string {
-  return `${resolvePublicAppBaseUrl(origin)}${buildSignaturePortalPath(token)}`;
+export function buildSignaturePortalUrl(
+  token: string,
+  origin?: string,
+  recipientLocale?: string | null,
+): string {
+  return withRecipientLocaleQuery(
+    `${resolvePublicAppBaseUrl(origin)}${buildSignaturePortalPath(token)}`,
+    recipientLocale,
+  );
 }
 
 export function buildSignatureVerificationPath(code: string): string {
@@ -445,7 +456,10 @@ export function serializeSignatureRequest(
      * Só sai preenchido para convidado externo e com EXTERNAL_LINK_ENCRYPTION_KEY configurada —
      * sem a chave, o link do portal continua aparecendo uma vez só, na criação.
      */
-    portalUrl: recoveredToken ? buildSignaturePortalUrl(recoveredToken, options?.origin) : null,
+    recipientLocale: request.recipientLocale ?? null,
+    portalUrl: recoveredToken
+      ? buildSignaturePortalUrl(recoveredToken, options?.origin, request.recipientLocale)
+      : null,
   };
 }
 
@@ -463,6 +477,7 @@ export async function createDocumentSignatureRequest(
     message?: string;
     expiresAt?: string;
     permissions?: Partial<DocumentSignaturePermissions>;
+    recipientLocale?: string;
   },
   origin?: string,
 ) {
@@ -545,6 +560,8 @@ export async function createDocumentSignatureRequest(
     permissions,
     signatureTokenHash,
     signatureTokenEncrypted: portalToken ? encryptLinkToken(portalToken) : null,
+    // Só quem entra pelo link tem o que escolher: colega da casa lê no idioma do próprio perfil.
+    recipientLocale: portalToken ? parseRecipientLocale(input.recipientLocale) : null,
     message: input.message?.trim() || null,
     expiresAt,
     signers: [

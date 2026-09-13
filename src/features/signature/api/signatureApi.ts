@@ -109,6 +109,8 @@ export async function createDocumentSignatureRequest(
     message?: string;
     expiresAt?: string;
     permissions?: { canDownloadAfterSign?: boolean };
+    /** Idioma do portal de assinatura; ausente, o portal segue o navegador de quem abre. */
+    recipientLocale?: string;
   },
 ) {
   const response = await authFetch(

@@ -88,6 +88,23 @@ function isKnownLanguageTag(tag: string): boolean {
   return primary === 'pt' || primary === 'en' || primary === 'es';
 }
 
+/**
+ * O idioma que quem criou o link escolheu para o convidado, ou `null` quando não escolheu.
+ *
+ * `null` não é pt-BR: sem escolha, o portal segue a cadeia normal (navegador de quem abre).
+ * Valor desconhecido também vira `null` — gravar o fallback faria parecer que alguém escolheu.
+ */
+export function parseRecipientLocale(value: unknown): ServerLocale | null {
+  if (typeof value !== 'string' || !value.trim() || !isKnownLanguageTag(value)) return null;
+  return normalizeServerLocale(value);
+}
+
+/** `?lang=` do link de convidado — é o degrau que o portal e o robô do cartão leem primeiro. */
+export function withRecipientLocaleQuery(url: string, locale: string | null | undefined): string {
+  const parsed = parseRecipientLocale(locale);
+  return parsed ? `${url}?lang=${encodeURIComponent(parsed)}` : url;
+}
+
 type LocaleSource = {
   query?: Record<string, string | string[] | undefined>;
   headers?: Record<string, string | string[] | undefined>;

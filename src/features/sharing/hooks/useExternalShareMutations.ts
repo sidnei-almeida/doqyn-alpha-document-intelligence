@@ -35,6 +35,7 @@ export function useExternalShareMutations(documentId: string | null) {
       canDownload?: boolean;
       expiresAt?: string;
       message?: string;
+      recipientLocale?: string;
     }) =>
       createDocumentExternalShare(documentId!, {
         recipientEmail: input.recipientEmail,
@@ -44,6 +45,7 @@ export function useExternalShareMutations(documentId: string | null) {
         permissions: { canView: true, canDownload: input.canDownload === true },
         expiresAt: input.expiresAt,
         message: input.message,
+        recipientLocale: input.recipientLocale,
       }),
     onSuccess: () => {
       toast.success(i18n.t('sharing:toast.conviteExternoCriado'));

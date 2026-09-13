@@ -110,6 +110,7 @@ export function ShareDocumentModal({
   const [canDownload, setCanDownload] = useState(false);
   const [message, setMessage] = useState('');
   const [issuedUrl, setIssuedUrl] = useState<string | null>(null);
+  const [recipientLocale, setRecipientLocale] = useState('');
 
   const internalShares = useDocumentShares(documentId, open);
   const externalShares = useDocumentExternalShares(documentId, open);
@@ -139,6 +140,7 @@ export function ShareDocumentModal({
     setCanDownload(false);
     setMessage('');
     setIssuedUrl(null);
+    setRecipientLocale('');
   }, [open, defaultAudience]);
 
   /**
@@ -210,6 +212,7 @@ export function ShareDocumentModal({
       canDownload,
       expiresAt: expirationDateToIso(expiresAt),
       message: message.trim() || undefined,
+      recipientLocale: recipientLocale || undefined,
     });
     setIssuedUrl(result.inviteUrl);
   };
@@ -409,6 +412,8 @@ export function ShareDocumentModal({
                   onChange={setExternal}
                   requireName={false}
                   phoneError={phoneError}
+                  recipientLocale={recipientLocale}
+                  onRecipientLocaleChange={setRecipientLocale}
                 />
               )}
               <AccessList

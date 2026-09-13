@@ -1195,6 +1195,8 @@ export type MongoExternalDocumentShareGrant = {
   inviteTokenHash: string;
   /** Cópia reversível do token, para o dono poder copiar o link de novo. Ver linkTokenCipher. */
   inviteTokenEncrypted?: string | null;
+  /** Idioma escolhido por quem compartilhou; vai no link como `?lang=`. Ausente = navegador. */
+  recipientLocale?: string | null;
   inviteExpiresAt: Date;
   acceptedAt?: Date | null;
   lastAccessAt?: Date | null;
@@ -1270,6 +1272,8 @@ export type MongoDocumentSignatureRequest = {
   signatureTokenHash?: string | null;
   /** Cópia reversível do token do portal, para recopiar o link. Ver linkTokenCipher. */
   signatureTokenEncrypted?: string | null;
+  /** Idioma escolhido por quem pediu; vai no link do portal como `?lang=`. Ausente = navegador. */
+  recipientLocale?: string | null;
   expiresAt?: Date | null;
   message?: string | null;
   createdAt: Date;
