@@ -54,11 +54,12 @@ export function PickDocumentDialog({
       title={t(
         verb === 'compartilhar' ? 'pickDocumentDialog.shareWhich' : 'pickDocumentDialog.signWhich',
       )}
-      subtitle={
+      subtitle={t(
         verb === 'compartilhar'
-          ? `Escolha o documento que vai para ${recipientName}.`
-          : `Escolha o documento que ${recipientName} vai assinar.`
-      }
+          ? 'pickDocumentDialog.shareSubtitle'
+          : 'pickDocumentDialog.signSubtitle',
+        { name: recipientName },
+      )}
       size="md"
     >
       <div className="flex flex-col gap-3">

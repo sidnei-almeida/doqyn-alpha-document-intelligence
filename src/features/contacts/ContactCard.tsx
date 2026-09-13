@@ -56,24 +56,24 @@ export function ContactCard({
         <TableRowActionsMenu
           actions={[
             {
-              label: 'Compartilhar documento…',
+              label: t('contactCard.acoes.compartilhar'),
               onClick: () => onAction('share', contact),
               hidden: semEndereco,
             },
             {
-              label: 'Solicitar assinatura…',
+              label: t('contactCard.acoes.assinatura'),
               onClick: () => onAction('signature', contact),
               hidden: semEndereco,
             },
             {
-              label: 'Pedir documento…',
+              label: t('contactCard.acoes.pedir'),
               onClick: () => onAction('request', contact),
               hidden: semEndereco,
             },
             {
               // "Remover da lista", e não "excluir": o histórico de trocas continua registrado, e
               // é ele que responde auditoria. O rótulo promete exatamente o que acontece.
-              label: 'Remover da lista',
+              label: t('contactCard.acoes.remover'),
               onClick: () => onAction('hide', contact),
               tone: 'danger',
             },
@@ -89,7 +89,7 @@ export function ContactCard({
           <p className="truncate font-mono text-micro text-doqyn-muted">@{contact.username}</p>
         ) : null}
         <p className="truncate text-micro text-doqyn-subtle">
-          {contact.email ?? 'sem e-mail nesta troca'}
+          {contact.email ?? t('contactCard.semEmail')}
         </p>
       </div>
 
@@ -106,7 +106,7 @@ export function ContactCard({
         {/* Salvo e nunca acionado não tem data de troca. "0 trocas · última hoje" seria mentira
             sobre a única coisa que a linha afirma. */}
         {contact.interactions === 0
-          ? 'salvo à mão · nenhuma troca ainda'
+          ? t('contactCard.salvoSemTroca')
           : formatContactMeta(contact.interactions, contact.lastInteractionAt)}
       </p>
     </article>

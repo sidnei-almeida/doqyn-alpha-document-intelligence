@@ -129,12 +129,12 @@ export function ContactsPage() {
   const createMutation = useMutation({
     mutationFn: createDocumentRequest,
     onSuccess: () => {
-      toast.success('Pedido enviado.');
+      toast.success(t('contactsPage.pedidoEnviado'));
       closeAll();
       void queryClient.invalidateQueries({ queryKey: ['document-requests'] });
       void queryClient.invalidateQueries({ queryKey: ['frequent-contacts'] });
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível enviar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('contactsPage.erroPedido')),
   });
 
   // `?? []` cria um array novo a cada render, e um `useMemo` que depende dele nunca reaproveita
@@ -146,7 +146,7 @@ export function ContactsPage() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="register-label text-doqyn-subtle">BIBLIOTECA</p>
+        <p className="register-label text-doqyn-subtle">{t('common:nav.biblioteca')}</p>
         <h1 className="type-display text-doqyn-text">{t('contactsPage.contatos')}</h1>
         <p className="type-body text-doqyn-muted">{t('contactsPage.comQuemVoceTroca')}</p>
       </header>
@@ -171,13 +171,13 @@ export function ContactsPage() {
         <>
           <ContactSection
             title={t('contactsPage.daSuaEmpresa')}
-            hint="Compartilhar com essas pessoas vale na hora, sem aceite."
+            hint={t('contactsPage.hintInterno')}
             contacts={internos}
             onAction={handleAction}
           />
           <ContactSection
             title={t('contactsPage.deForaDaqui')}
-            hint="O documento continua no acervo de quem envia, e o acesso depende de aceite."
+            hint={t('contactsPage.hintExterno')}
             contacts={externos}
             onAction={handleAction}
           />

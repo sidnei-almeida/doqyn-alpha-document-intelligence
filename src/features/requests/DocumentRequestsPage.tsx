@@ -160,7 +160,7 @@ export function DocumentRequestsPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="register-label text-doqyn-subtle">BIBLIOTECA</p>
+          <p className="register-label text-doqyn-subtle">{t('common:nav.biblioteca')}</p>
           <h1 className="type-display text-doqyn-text">{t('documentRequestsPage.pedidos')}</h1>
           <p className="type-body text-doqyn-muted">
             {t('documentRequestsPage.documentosQueVocePediu')}
