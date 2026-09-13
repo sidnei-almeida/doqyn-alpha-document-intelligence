@@ -20,9 +20,9 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
   return (
     <OverviewPanelShell
       title={t('overviewGovernancePanel.governancaDocumental')}
-      subtitle="Categorias, regras e acesso do ambiente"
+      subtitle={t('overviewGovernancePanel.subtitle')}
       titleId="overview-governance-title"
-      actionLabel="Abrir mapa de regras"
+      actionLabel={t('overviewGovernancePanel.openRulesMap')}
       onAction={() => navigate('/rules')}
       data-testid="overview-governance"
     >
@@ -69,7 +69,7 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
           <OverviewPanelStat
             label={t('overviewGovernancePanel.pendencias')}
             value={governance.usersPending}
-            hint="usuários aguardando"
+            hint={t('overviewGovernancePanel.usersWaiting')}
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>

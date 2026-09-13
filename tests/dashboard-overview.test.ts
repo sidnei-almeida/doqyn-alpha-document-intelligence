@@ -200,8 +200,8 @@ describe('dashboard overview UI', () => {
     // com a palavra — o mesmo tratamento que "OK" e "Atenção" já tinham.
     assert.match(healthCard, /const restricted = !ok && !canManage/);
     assert.match(healthCard, /\.restrito/);
-    assert.match(healthCard, /Configuração gerenciada pelo administrador/);
-    assert.match(healthCard, /Categorias ativas no ambiente/);
+    assert.match(healthCard, /overviewEnvironmentHealthCard\.managedByAdmin/);
+    assert.match(healthCard, /overviewEnvironmentHealthCard\.categoriesOk/);
   });
 
   it('DashboardPage não exibe objectKey ou URL R2', () => {

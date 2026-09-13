@@ -26,7 +26,18 @@
     "regrasDeIa": "AI rules",
     "restrito": "Restricted",
     "saudeDoAmbiente": "Workspace health",
-    "storage": "Storage"
+    "storage": "Storage",
+    "managedByAdmin": "Setting managed by the administrator",
+    "subtitle": "Operational health",
+    "storageOk": "Storage configured",
+    "storageMissing": "Unavailable in this environment. Contact support",
+    "categoriesOk": "Active categories in this environment",
+    "categoriesAction": "Create or activate categories",
+    "awaitingAdmin": "Awaiting setup by the administrator",
+    "rulesAction": "Rules",
+    "extractionOk": "Extraction configured in this environment",
+    "extractionAction": "Activate analysis rules",
+    "uploadAiAction": "Upload and AI"
   },
   "overviewGovernancePanel": {
     "acesso": "Access",
@@ -35,7 +46,10 @@
     "governancaDocumental": "Document governance",
     "grupos": "Groups",
     "pendencias": "Pending items",
-    "usuarios": "Users"
+    "usuarios": "Users",
+    "subtitle": "Categories, rules and access in this environment",
+    "openRulesMap": "Open rules map",
+    "usersWaiting": "users waiting"
   },
   "overviewHeaderActions": {
     "irParaBiblioteca": "Go to the Library"
@@ -44,19 +58,52 @@
     "periodoDoPainel": "Dashboard period"
   },
   "overviewQuickAccessPanel": {
-    "acessoRapido": "Quick access"
+    "acessoRapido": "Quick access",
+    "subtitle": "Governance and settings in one click",
+    "links": {
+      "rules": {
+        "label": "Rules and categories",
+        "description": "Access and extraction map"
+      },
+      "users": {
+        "label": "Users and groups",
+        "description": "Members and permissions"
+      },
+      "uploadAi": {
+        "label": "Upload and AI",
+        "description": "Review and naming"
+      },
+      "settings": {
+        "label": "Account settings",
+        "description": "Profile, theme and security"
+      },
+      "preferences": {
+        "label": "Preferences",
+        "description": "Theme and experience"
+      },
+      "account": {
+        "label": "My account",
+        "description": "Profile and identity"
+      }
+    }
   },
   "overviewRecentActivityPanel": {
     "atividadeRecente": "Recent activity",
     "cadaAberturaDownloadE": "Every open, download and upload lands here as soon as it happens.",
-    "nenhumaAtividadeNoPeriodo": "No activity in the period"
+    "nenhumaAtividadeNoPeriodo": "No activity in the period",
+    "userFallback": "User",
+    "subtitle": "Views, downloads and tracking",
+    "viewTracking": "View tracking"
   },
   "overviewRecentDocumentsPanel": {
     "documentosRecentes": "Recent documents",
     "nenhumDocumentoEnviadoAinda": "No document uploaded yet",
     "oPrimeiroEnvioComeca": "The first upload starts counting the metrics and the activity on this dashboard.",
     "tracking": "Tracking",
-    "visualizar": "View"
+    "visualizar": "View",
+    "documentFallback": "Document",
+    "subtitle": "Latest uploads and updates in this environment",
+    "viewAll": "View all"
   },
   "overviewStoragePanel": {
     "downloads": "Downloads",
@@ -64,7 +111,11 @@
     "originais": "Originals",
     "previews": "Previews",
     "storageEErrosRecentes": "Storage and recent errors",
-    "tamanhoTotal": "Total size"
+    "tamanhoTotal": "Total size",
+    "documentFallback": "Document",
+    "subtitle": "File usage and incidents in the period",
+    "openTracking": "Open tracking",
+    "inPeriod": "in the period"
   },
   "overviewSummaryStrip": {
     "resumoDoPeriodo": "Summary for the period"

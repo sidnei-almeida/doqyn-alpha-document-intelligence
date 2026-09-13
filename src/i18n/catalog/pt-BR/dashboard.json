@@ -26,7 +26,18 @@
     "regrasDeIa": "Regras de IA",
     "restrito": "Restrito",
     "saudeDoAmbiente": "Saúde do ambiente",
-    "storage": "Storage"
+    "storage": "Storage",
+    "managedByAdmin": "Configuração gerenciada pelo administrador",
+    "subtitle": "Integridade operacional",
+    "storageOk": "Armazenamento configurado",
+    "storageMissing": "Indisponível no ambiente. Contate o suporte",
+    "categoriesOk": "Categorias ativas no ambiente",
+    "categoriesAction": "Crie ou ative categorias",
+    "awaitingAdmin": "Aguardando configuração pelo administrador",
+    "rulesAction": "Regras",
+    "extractionOk": "Extração configurada no ambiente",
+    "extractionAction": "Ative regras de análise",
+    "uploadAiAction": "Upload e IA"
   },
   "overviewGovernancePanel": {
     "acesso": "Acesso",
@@ -35,7 +46,10 @@
     "governancaDocumental": "Governança documental",
     "grupos": "Grupos",
     "pendencias": "Pendências",
-    "usuarios": "Usuários"
+    "usuarios": "Usuários",
+    "subtitle": "Categorias, regras e acesso do ambiente",
+    "openRulesMap": "Abrir mapa de regras",
+    "usersWaiting": "usuários aguardando"
   },
   "overviewHeaderActions": {
     "irParaBiblioteca": "Ir para Biblioteca"
@@ -44,19 +58,52 @@
     "periodoDoPainel": "Período do painel"
   },
   "overviewQuickAccessPanel": {
-    "acessoRapido": "Acesso rápido"
+    "acessoRapido": "Acesso rápido",
+    "subtitle": "Governança e configurações em um clique",
+    "links": {
+      "rules": {
+        "label": "Regras e categorias",
+        "description": "Mapa de acesso e extração"
+      },
+      "users": {
+        "label": "Usuários e grupos",
+        "description": "Membros e permissões"
+      },
+      "uploadAi": {
+        "label": "Upload e IA",
+        "description": "Revisão e nomeação"
+      },
+      "settings": {
+        "label": "Configurações da conta",
+        "description": "Perfil, tema e segurança"
+      },
+      "preferences": {
+        "label": "Preferências",
+        "description": "Tema e experiência"
+      },
+      "account": {
+        "label": "Minha conta",
+        "description": "Perfil e identidade"
+      }
+    }
   },
   "overviewRecentActivityPanel": {
     "atividadeRecente": "Atividade recente",
     "cadaAberturaDownloadE": "Cada abertura, download e envio entra aqui assim que acontece.",
-    "nenhumaAtividadeNoPeriodo": "Nenhuma atividade no período"
+    "nenhumaAtividadeNoPeriodo": "Nenhuma atividade no período",
+    "userFallback": "Usuário",
+    "subtitle": "Visualizações, downloads e rastreio",
+    "viewTracking": "Ver tracking"
   },
   "overviewRecentDocumentsPanel": {
     "documentosRecentes": "Documentos recentes",
     "nenhumDocumentoEnviadoAinda": "Nenhum documento enviado ainda",
     "oPrimeiroEnvioComeca": "O primeiro envio começa a contar as métricas e a atividade deste painel.",
     "tracking": "Tracking",
-    "visualizar": "Visualizar"
+    "visualizar": "Visualizar",
+    "documentFallback": "Documento",
+    "subtitle": "Últimos envios e atualizações do ambiente",
+    "viewAll": "Ver todos"
   },
   "overviewStoragePanel": {
     "downloads": "Downloads",
@@ -64,7 +111,11 @@
     "originais": "Originais",
     "previews": "Previews",
     "storageEErrosRecentes": "Storage e erros recentes",
-    "tamanhoTotal": "Tamanho total"
+    "tamanhoTotal": "Tamanho total",
+    "documentFallback": "Documento",
+    "subtitle": "Uso de arquivos e incidentes no período",
+    "openTracking": "Abrir tracking",
+    "inPeriod": "no período"
   },
   "overviewSummaryStrip": {
     "resumoDoPeriodo": "Resumo do período"

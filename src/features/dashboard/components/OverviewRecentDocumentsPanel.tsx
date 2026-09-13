@@ -24,7 +24,8 @@ type RecentDocumentRowProps = {
 export function RecentDocumentRow({ doc, onOpen, onTrack }: RecentDocumentRowProps) {
   const { t } = useTranslation('dashboard');
 
-  const fileName = doc.currentFileName ?? doc.displayName ?? 'Documento';
+  const fileName =
+    doc.currentFileName ?? doc.displayName ?? t('overviewRecentDocumentsPanel.documentFallback');
   const meta = `${doc.categoryName ?? doc.documentType ?? '—'} · ${doc.createdBy?.displayName ?? doc.ownerName ?? '—'}`;
 
   return (
@@ -100,9 +101,9 @@ export function OverviewRecentDocumentsPanel({
   return (
     <OverviewPanelShell
       title={t('overviewRecentDocumentsPanel.documentosRecentes')}
-      subtitle="Últimos envios e atualizações do ambiente"
+      subtitle={t('overviewRecentDocumentsPanel.subtitle')}
       titleId="overview-recent-documents-title"
-      actionLabel="Ver todos"
+      actionLabel={t('overviewRecentDocumentsPanel.viewAll')}
       onAction={() => navigate('/biblioteca')}
       bodyClassName="flex-1"
       data-testid="overview-recent-documents"

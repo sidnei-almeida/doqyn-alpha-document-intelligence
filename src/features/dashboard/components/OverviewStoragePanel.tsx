@@ -32,7 +32,9 @@ export function OverviewStoragePanel({
       <ul className="scrollbar-thin max-h-24 space-y-1.5 overflow-y-auto pr-1">
         {recentErrors.map((error) => (
           <li key={error.id}>
-            <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
+            <span className="font-medium text-doqyn-text">
+              {error.documentName ?? t('overviewStoragePanel.documentFallback')}
+            </span>
             <span className="text-doqyn-danger"> · {error.message}</span>
           </li>
         ))}
@@ -44,9 +46,9 @@ export function OverviewStoragePanel({
   return (
     <OverviewPanelShell
       title={t('overviewStoragePanel.storageEErrosRecentes')}
-      subtitle="Uso de arquivos e incidentes no período"
+      subtitle={t('overviewStoragePanel.subtitle')}
       titleId="overview-storage-title"
-      actionLabel="Abrir tracking"
+      actionLabel={t('overviewStoragePanel.openTracking')}
       onAction={() => navigate('/tracking')}
       data-testid="overview-storage"
     >
@@ -89,7 +91,7 @@ export function OverviewStoragePanel({
                 {downloadsInPeriod}
               </span>
             }
-            hint="no período"
+            hint={t('overviewStoragePanel.inPeriod')}
             onClick={() => navigate('/tracking')}
           />
         </OverviewPanelStatCell>
