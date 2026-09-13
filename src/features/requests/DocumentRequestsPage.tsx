@@ -17,7 +17,7 @@ import {
   cancelDocumentRequest,
   createDocumentRequest,
   listDocumentRequests,
-  REQUEST_STATUS_LABEL,
+  REQUEST_STATUS_LABEL_KEYS,
   type DocumentRequestDirection,
   type DocumentRequestItem,
 } from './api/documentRequestsApi';
@@ -130,22 +130,22 @@ export function DocumentRequestsPage() {
   const createMutation = useMutation({
     mutationFn: createDocumentRequest,
     onSuccess: async () => {
-      toast.success('Pedido enviado.');
+      toast.success(t('documentRequestsPage.created'));
       setModalOpen(false);
       // Quem acabou de pedir quer ver o que pediu, não o que lhe pediram.
       setDirection('sent');
       await invalidate();
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível enviar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('documentRequestsPage.createFailed')),
   });
 
   const cancelMutation = useMutation({
     mutationFn: cancelDocumentRequest,
     onSuccess: async () => {
-      toast.success('Pedido cancelado.');
+      toast.success(t('documentRequestsPage.cancelled'));
       await invalidate();
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível cancelar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('documentRequestsPage.cancelFailed')),
   });
 
   const items = requestsQuery.data ?? [];
@@ -212,7 +212,7 @@ export function DocumentRequestsPage() {
         columns={[
           {
             key: 'title',
-            header: 'Pedido',
+            header: t('documentRequestsPage.columns.title'),
             render: (item) => (
               <div className="min-w-0">
                 <TruncatedText as="p" className="font-medium text-doqyn-text">
@@ -224,7 +224,9 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'party',
-            header: received ? 'Quem pediu' : 'De quem',
+            header: received
+              ? t('documentRequestsPage.columns.requestedBy')
+              : t('documentRequestsPage.columns.requestedFrom'),
             render: (item) => {
               const party = received ? item.requestedBy : item.requestedFrom;
               return (
@@ -248,7 +250,7 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'category',
-            header: 'Categoria',
+            header: t('documentRequestsPage.columns.category'),
             render: (item) =>
               item.categoryName || item.categoryId ? (
                 <span className="text-doqyn-muted">{item.categoryName ?? item.categoryId}</span>
@@ -260,7 +262,7 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'dueAt',
-            header: 'Prazo',
+            header: t('documentRequestsPage.columns.dueAt'),
             className: 'w-[168px]',
             render: (item) => (
               <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -270,11 +272,11 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'status',
-            header: 'Status',
+            header: t('documentRequestsPage.columns.status'),
             className: 'w-[116px]',
             render: (item) => (
               <Badge variant={STATUS_VARIANT[item.status]} dot>
-                {REQUEST_STATUS_LABEL[item.status]}
+                {t(REQUEST_STATUS_LABEL_KEYS[item.status])}
               </Badge>
             ),
           },
@@ -287,18 +289,18 @@ export function DocumentRequestsPage() {
               const actions: TableRowAction[] = [
                 {
                   // Só quem recebeu o pedido cumpre, e só enquanto ele está aberto.
-                  label: 'Enviar documento',
+                  label: t('documentRequestsPage.actions.upload'),
                   onClick: () => pickFileFor(item),
                   hidden: !received || item.status !== 'pending',
                 },
                 {
-                  label: 'Abrir documento',
+                  label: t('documentRequestsPage.actions.open'),
                   onClick: () => navigate(fulfilledDocumentPath(documentId ?? '')),
                   hidden: !documentId,
                 },
                 {
                   // Cancelar é de quem pediu, e só enquanto ninguém enviou.
-                  label: 'Cancelar pedido',
+                  label: t('documentRequestsPage.actions.cancel'),
                   tone: 'danger',
                   onClick: () => cancelMutation.mutate(item._id),
                   hidden: received || item.status !== 'pending',

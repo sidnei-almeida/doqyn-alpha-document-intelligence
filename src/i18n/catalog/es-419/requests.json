@@ -8,7 +8,24 @@
     "pedidos": "Solicitudes",
     "pedirDocumento": "Solicitar documento",
     "tabReceived": "Te pidieron",
-    "tabSent": "Pediste"
+    "tabSent": "Pediste",
+    "created": "Solicitud enviada.",
+    "createFailed": "No se pudo enviar la solicitud.",
+    "cancelled": "Solicitud cancelada.",
+    "cancelFailed": "No se pudo cancelar la solicitud.",
+    "columns": {
+      "title": "Solicitud",
+      "requestedBy": "Quién pidió",
+      "requestedFrom": "De quién",
+      "category": "Categoría",
+      "dueAt": "Plazo",
+      "status": "Estado"
+    },
+    "actions": {
+      "upload": "Subir documento",
+      "open": "Abrir documento",
+      "cancel": "Cancelar solicitud"
+    }
   },
   "requestDocumentModal": {
     "cancelar": "Cancelar",
@@ -26,6 +43,20 @@
     "send": "Solicitar",
     "sending": "Enviando…",
     "subtitleExternal": "El documento queda en el acervo de quien lo suba, y tú recibes acceso de lectura después de que acepte.",
-    "subtitleInternal": "Quien lo reciba lo sube por el flujo de siempre, y el documento cae en la categoría que elijas."
-  }
+    "subtitleInternal": "Quien lo reciba lo sube por el flujo de siempre, y el documento cae en la categoría que elijas.",
+    "scope": {
+      "internal": "Alguien de la empresa",
+      "external": "Alguien de afuera"
+    },
+    "externalIdleHint": "Necesita tener cuenta DOQYN, y se encuentra por el nombre de usuario. El correo completo también sirve.",
+    "selectPerson": "Selecciona una persona",
+    "selectCategory": "Selecciona una categoría"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "fulfilled": "Atendido",
+    "cancelled": "Cancelado",
+    "expired": "Vencido"
+  },
+  "actionFailed": "No se pudo completar la acción."
 }

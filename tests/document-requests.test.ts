@@ -267,7 +267,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const provider = read('src/features/upload/UploadQueueProvider.tsx');
     const client = read('src/features/document-send/services/confirmAnalysis.ts');
 
-    assert.ok(page.includes("label: 'Enviar documento'"));
+    assert.ok(page.includes("label: t('documentRequestsPage.actions.upload')"));
     assert.ok(types.includes('documentRequestId?: string'));
     assert.ok(provider.includes('documentRequestId: item.context?.documentRequestId'));
     // Vale para os dois caminhos: confirmação direta e envio para aprovação.

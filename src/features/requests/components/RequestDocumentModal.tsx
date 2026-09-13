@@ -168,8 +168,8 @@ export function RequestDocumentModal({
           <div className="flex gap-1 border-b border-doqyn-border-subtle">
             {(
               [
-                ['internal', 'Alguém da empresa'],
-                ['external', 'De fora daqui'],
+                ['internal', 'requestDocumentModal.scope.internal'],
+                ['external', 'requestDocumentModal.scope.external'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -183,7 +183,7 @@ export function RequestDocumentModal({
                     : 'text-doqyn-muted hover:text-doqyn-text',
                 )}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
@@ -194,7 +194,7 @@ export function RequestDocumentModal({
             <CrossTenantRecipientField
               initialEmail={initialTarget?.scope === 'external' ? initialTarget.email : undefined}
               label={t('requestDocumentModal.nomeDeUsuarioDe')}
-              idleHint="Precisa ter conta DOQYN, e é pelo nome de usuário que se acha. O e-mail inteiro também resolve."
+              idleHint={t('requestDocumentModal.externalIdleHint')}
               /* Sem caminho de link aqui: pedir um documento exige uma conta que possa enviá-lo, e
                  o link com token serve para receber, não para mandar. */
               onPick={(recipient) => {
@@ -220,7 +220,7 @@ export function RequestDocumentModal({
             value={requestedFromUserId}
             onChange={(event) => setRequestedFromUserId(event.target.value)}
             options={[
-              { value: '', label: 'Selecione uma pessoa' },
+              { value: '', label: t('requestDocumentModal.selectPerson') },
               ...people.map((person) => ({
                 value: person.userId,
                 // Sem travessão: o nome já separa do e-mail, e o traço só rouba largura da linha.
@@ -245,7 +245,7 @@ export function RequestDocumentModal({
               value={categoryId}
               onChange={(event) => setCategoryId(event.target.value)}
               options={[
-                { value: '', label: 'Selecione uma categoria' },
+                { value: '', label: t('requestDocumentModal.selectCategory') },
                 ...categories.map((category) => ({ value: category.id, label: category.name })),
               ]}
             />

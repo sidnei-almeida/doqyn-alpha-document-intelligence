@@ -8,7 +8,24 @@
     "pedidos": "Requests",
     "pedirDocumento": "Request document",
     "tabReceived": "Asked of you",
-    "tabSent": "You asked"
+    "tabSent": "You asked",
+    "created": "Request sent.",
+    "createFailed": "Couldn't send the request.",
+    "cancelled": "Request cancelled.",
+    "cancelFailed": "Couldn't cancel the request.",
+    "columns": {
+      "title": "Request",
+      "requestedBy": "Requested by",
+      "requestedFrom": "From",
+      "category": "Category",
+      "dueAt": "Due date",
+      "status": "Status"
+    },
+    "actions": {
+      "upload": "Upload document",
+      "open": "Open document",
+      "cancel": "Cancel request"
+    }
   },
   "requestDocumentModal": {
     "cancelar": "Cancel",
@@ -26,6 +43,20 @@
     "send": "Request",
     "sending": "Sending…",
     "subtitleExternal": "The document stays in the uploader's collection, and you get read access once they accept.",
-    "subtitleInternal": "Whoever receives it uploads through the usual flow, and the document lands in the category you choose."
-  }
+    "subtitleInternal": "Whoever receives it uploads through the usual flow, and the document lands in the category you choose.",
+    "scope": {
+      "internal": "Someone in the company",
+      "external": "Someone outside"
+    },
+    "externalIdleHint": "They need a DOQYN account, and are found by username. The full email works too.",
+    "selectPerson": "Select a person",
+    "selectCategory": "Select a category"
+  },
+  "status": {
+    "pending": "Pending",
+    "fulfilled": "Fulfilled",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "actionFailed": "Couldn't complete the action."
 }
