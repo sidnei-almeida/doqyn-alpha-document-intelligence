@@ -10,6 +10,7 @@ import {
   shouldEmitAccessDeniedFromError,
 } from '../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
+import { buildContentDisposition } from '../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
 
@@ -83,15 +84,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       req,
     );
 
-    const safeName = file.fileName.replace(/[^\w.\- ()áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/g, '_');
-    const contentDisposition =
-      disposition === 'inline'
-        ? `inline; filename="${safeName}"`
-        : `attachment; filename="${safeName}"`;
-
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
-    res.setHeader('Content-Disposition', contentDisposition);
+    res.setHeader(
+      'Content-Disposition',
+      buildContentDisposition(disposition === 'inline' ? 'inline' : 'attachment', file.fileName),
+    );
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 

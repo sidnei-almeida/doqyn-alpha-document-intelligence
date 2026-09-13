@@ -69,7 +69,7 @@ describe('nome a partir dos papéis entendidos pela IA', () => {
     });
 
     assert.ok(name.endsWith('.png'), `deveria terminar em .png: ${name}`);
-    assert.match(name, /^ATESTADO_MEDICO/, name);
+    assert.match(name, /^ATESTADO_MÉDICO/, name);
   });
 
   it('usa o tipo do documento, não o nome da pasta', () => {
@@ -151,8 +151,8 @@ describe('o tipo lido vence a pasta escolhida', () => {
       },
     });
 
-    assert.match(name, /^PROCURACAO_/, name);
-    assert.match(name, /OTAVIO/, name);
+    assert.match(name, /^PROCURAÇÃO_/, name);
+    assert.match(name, /OTÁVIO/, name);
     assert.ok(!name.startsWith('NDA'), `não deveria virar NDA: ${name}`);
   });
 
@@ -166,6 +166,6 @@ describe('o tipo lido vence a pasta escolhida', () => {
     });
 
     // Tipo sozinho não distingue dois documentos; aqui o caminho antigo assume.
-    assert.ok(!name.startsWith('PROCURACAO_2026'), name);
+    assert.ok(!name.startsWith('PROCURAÇÃO_2026'), name);
   });
 });

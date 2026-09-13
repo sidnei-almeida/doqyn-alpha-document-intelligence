@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readDocumentPreviewImageAsset } from '../../server/services/documentPreviewManifestService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
+import { buildContentDisposition } from '../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { setPreviewAssetCacheHeaders } from '../../server/utils/previewCacheHeaders.js';
 
@@ -37,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
-    res.setHeader('Content-Disposition', `inline; filename="${file.fileName.replace(/"/g, '')}"`);
+    res.setHeader('Content-Disposition', buildContentDisposition('inline', file.fileName));
     const sizeKey = size ?? 'default';
     setPreviewAssetCacheHeaders(res, `"${documentId}:${versionId}:image:${sizeKey}"`, {
       immutable: sizeKey === 'small',

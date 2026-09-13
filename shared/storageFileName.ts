@@ -15,7 +15,9 @@ export type ResolvedStorageFileNames = {
   originalFileName: string;
   aiSuggestedFileName: string;
   selectedFileName?: string;
+  /** Nome de exibição (vira `currentFileName`), com acento. */
   finalFileName: string;
+  /** Chave do objeto no storage: o mesmo nome, só em ASCII. */
   storageFileName: string;
   previewStorageFileName: string;
 };
@@ -47,6 +49,26 @@ export function sanitizeFileNameSegment(value: string, fallback: string): string
     .trim()
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_');
+
+  return normalized || fallback;
+}
+
+/**
+ * O mesmo corte, para o nome que a pessoa lê.
+ *
+ * Tira separador, pontuação e o que não é letra nem número — mas letra é letra em qualquer
+ * escrita: `Adquisición`, `Prestação` e `Müller` ficam como estão. Quem precisa de ASCII é a chave
+ * do objeto no storage, e ela sai deste nome por `sanitizeFileNameSegment`.
+ */
+export function sanitizeDisplayFileNameSegment(value: string, fallback: string): string {
+  const normalized = value
+    .normalize('NFC')
+    .replace(/[/\\;]/g, '')
+    .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .normalize('NFC');
 
   return normalized || fallback;
 }
@@ -115,10 +137,31 @@ export function isInvalidGenericStorageFileName(fileName: string): boolean {
   return INVALID_GENERIC_STORAGE_NAMES.has(fileName.toLowerCase());
 }
 
+type SanitizeFileNameOptions = { stripSensitive?: boolean; extension?: string };
+
+/** Chave de objeto: só ASCII. Ver `sanitizeDisplayFileName` para o nome mostrado. */
 export function sanitizeStorageFileName(
   name: string,
   fallback: string,
-  options?: { stripSensitive?: boolean; extension?: string },
+  options?: SanitizeFileNameOptions,
+): string {
+  return sanitizeFileNameWith(sanitizeFileNameSegment, name, fallback, options);
+}
+
+/** Nome de exibição: mesmas regras da chave, com acento e escrita não latina preservados. */
+export function sanitizeDisplayFileName(
+  name: string,
+  fallback: string,
+  options?: SanitizeFileNameOptions,
+): string {
+  return sanitizeFileNameWith(sanitizeDisplayFileNameSegment, name, fallback, options);
+}
+
+function sanitizeFileNameWith(
+  sanitizeSegment: (value: string, fallback: string) => string,
+  name: string,
+  fallback: string,
+  options?: SanitizeFileNameOptions,
 ): string {
   const ext = options?.extension ?? extensionFromFileName(name) ?? extensionFromFileName(fallback);
   const working = stripEmailFromFileName(name);
@@ -128,7 +171,7 @@ export function sanitizeStorageFileName(
     return fallback;
   }
 
-  const base = sanitizeFileNameSegment(withoutExt, '');
+  const base = sanitizeSegment(withoutExt, '');
   if (!base) {
     return fallback;
   }
@@ -156,17 +199,13 @@ export function resolveStorageFileNames(
 ): ResolvedStorageFileNames {
   const namingMode = input.namingMode ?? 'ai_suggested';
   const extension = extensionFromFileName(input.originalFileName);
-  const fallback = buildStorageFileNameFallback(
-    input.documentId,
-    input.versionLabel,
-    extension,
-  );
+  const fallback = buildStorageFileNameFallback(input.documentId, input.versionLabel, extension);
 
   const aiSuggestedFileName = input.aiSuggestedFileName?.trim()
-    ? sanitizeStorageFileName(input.aiSuggestedFileName, fallback, { extension })
+    ? sanitizeDisplayFileName(input.aiSuggestedFileName, fallback, { extension })
     : '';
 
-  const originalSanitized = sanitizeStorageFileName(input.originalFileName, fallback, {
+  const originalSanitized = sanitizeDisplayFileName(input.originalFileName, fallback, {
     extension,
   });
 
@@ -178,7 +217,7 @@ export function resolveStorageFileNames(
   switch (namingMode) {
     case 'original':
       finalFileName = explicitFinal
-        ? sanitizeStorageFileName(explicitFinal, fallback, { extension })
+        ? sanitizeDisplayFileName(explicitFinal, fallback, { extension })
         : originalSanitized;
       break;
     case 'manual': {
@@ -186,14 +225,14 @@ export function resolveStorageFileNames(
       if (!manual?.trim()) {
         throw new Error('Nome manual inválido.');
       }
-      selectedFileName = sanitizeStorageFileName(manual, fallback, { extension });
+      selectedFileName = sanitizeDisplayFileName(manual, fallback, { extension });
       finalFileName = selectedFileName;
       break;
     }
     case 'ai_suggested':
     default:
       if (explicitFinal) {
-        finalFileName = sanitizeStorageFileName(explicitFinal, fallback, { extension });
+        finalFileName = sanitizeDisplayFileName(explicitFinal, fallback, { extension });
       } else if (aiSuggestedFileName) {
         finalFileName = aiSuggestedFileName;
       } else {
@@ -202,7 +241,9 @@ export function resolveStorageFileNames(
       break;
   }
 
-  const storageFileName = finalFileName;
+  // O nome que a pessoa lê guarda o acento; a chave do objeto não. Nome sem nada em ASCII
+  // (`合同.pdf`) cai no fallback só no storage — na tela continua como veio.
+  const storageFileName = sanitizeStorageFileName(finalFileName, fallback, { extension });
   const previewStorageFileName = buildPreviewStorageFileName(storageFileName);
 
   return {
