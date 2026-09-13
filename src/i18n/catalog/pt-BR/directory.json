@@ -1,13 +1,37 @@
 {
   "crossTenantRecipientField": {
     "comQuemVoceJa": "Com quem você já trocou",
-    "haMaisGenteCom": "Há mais gente com esse começo de nome de usuário. Digite mais letras para estreitar."
+    "haMaisGenteCom": "Há mais gente com esse começo de nome de usuário. Digite mais letras para estreitar.",
+    "label": "Nome de usuário de quem é de fora daqui",
+    "idleHint": "Quem tem conta DOQYN é achado pelo nome de usuário. O e-mail inteiro também resolve, e é o caminho de quem não tem conta.",
+    "fallbackLink": "Enviar por link",
+    "procurando": "Procurando…",
+    "erroConsulta": "Não foi possível consultar agora.",
+    "ninguemComPrefixo": "Ninguém com esse começo de nome de usuário.",
+    "seuEmail": "Esse é o seu e-mail.",
+    "ehDaqui": "{{name}} é daqui. Use a busca acima.",
+    "usaDoqyn": "{{name}} usa o DOQYN. O documento continua seu, e ela precisa aceitar antes de ver.",
+    "escolher": "Escolher {{name}}",
+    "semConta": "Esse e-mail não tem conta DOQYN."
   },
   "partnerContactList": {
-    "contasComQuemVoce": "Contas com quem você já trocou documentos ("
+    "contasComQuemVoce": "Contas com quem você já trocou documentos ({{total}})"
   },
   "toast": {
     "contatoSalvo": "Contato salvo.",
-    "contatoRemovido": "Contato removido da lista. O histórico de trocas continua registrado."
+    "contatoRemovido": "Contato removido da lista. O histórico de trocas continua registrado.",
+    "erroSalvar": "Não foi possível salvar o contato.",
+    "erroRemover": "Não foi possível remover o contato.",
+    "erroDesfazer": "Não foi possível desfazer."
+  },
+  "contactMeta": {
+    "trocas_one": "{{count}} troca",
+    "trocas_other": "{{count}} trocas",
+    "ultimaHoje": "{{trocas}} · última hoje",
+    "ultimaOntem": "{{trocas}} · última ontem",
+    "ultimaDias_one": "{{trocas}} · última há {{count}} dia",
+    "ultimaDias_other": "{{trocas}} · última há {{count}} dias",
+    "ultimaMeses_one": "{{trocas}} · última há {{count}} mês",
+    "ultimaMeses_other": "{{trocas}} · última há {{count}} meses"
   }
 }

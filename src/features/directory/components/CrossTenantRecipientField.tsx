@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { looksLikeEmail, useDirectoryLookup } from '../hooks/useDirectoryLookup';
 import { useDirectorySearch } from '../hooks/useDirectorySearch';
 import { useFrequentContacts } from '../hooks/useFrequentContacts';
-import { ContactRow, formatContactMeta } from './ContactRow';
+import { ContactRow, useFormatContactMeta } from './ContactRow';
 import { PartnerContactList } from './PartnerContactList';
 import { useTranslation } from 'react-i18next';
 
@@ -36,12 +36,12 @@ type Resolution =
   | { tone: 'ok'; text: string };
 
 export function CrossTenantRecipientField({
-  label = 'Nome de usuário de quem é de fora daqui',
-  idleHint = 'Quem tem conta DOQYN é achado pelo nome de usuário. O e-mail inteiro também resolve, e é o caminho de quem não tem conta.',
+  label,
+  idleHint,
   initialEmail,
   onPick,
   onFallbackToLink,
-  fallbackLabel = 'Enviar por link',
+  fallbackLabel,
   disabled,
 }: {
   label?: string;
@@ -68,6 +68,9 @@ export function CrossTenantRecipientField({
   disabled?: boolean;
 }) {
   const { t } = useTranslation('directory');
+  const formatContactMeta = useFormatContactMeta();
+  const fieldLabel = label ?? t('crossTenantRecipientField.label');
+  const hint = idleHint ?? t('crossTenantRecipientField.idleHint');
 
   const [email, setEmail] = useState(initialEmail ?? '');
   const normalized = email.trim().toLowerCase();
@@ -132,49 +135,52 @@ export function CrossTenantRecipientField({
      * do auth-service não carrega; o vazio genérico já diz a verdade.
      */
     if (prefixTooShort) {
-      resolution = { tone: 'muted', text: idleHint };
+      resolution = { tone: 'muted', text: hint };
     } else if (search.isLoading) {
-      resolution = { tone: 'muted', text: 'Procurando…' };
+      resolution = { tone: 'muted', text: t('crossTenantRecipientField.procurando') };
     } else if (search.isError) {
-      resolution = { tone: 'warn', text: 'Não foi possível consultar agora.' };
+      resolution = { tone: 'warn', text: t('crossTenantRecipientField.erroConsulta') };
     } else if (hits.length === 0 && !mostrarFrequentes) {
-      resolution = { tone: 'warn', text: 'Ninguém com esse começo de nome de usuário.' };
+      resolution = { tone: 'warn', text: t('crossTenantRecipientField.ninguemComPrefixo') };
     } else {
-      resolution = { tone: 'muted', text: idleHint };
+      resolution = { tone: 'muted', text: hint };
     }
   } else if (lookup.isLoading) {
-    resolution = { tone: 'muted', text: 'Procurando…' };
+    resolution = { tone: 'muted', text: t('crossTenantRecipientField.procurando') };
   } else if (lookup.isError || !lookup.data) {
-    resolution = { tone: 'warn', text: 'Não foi possível consultar agora.' };
+    resolution = { tone: 'warn', text: t('crossTenantRecipientField.erroConsulta') };
   } else if (lookup.data.kind === 'self') {
-    resolution = { tone: 'warn', text: 'Esse é o seu e-mail.' };
+    resolution = { tone: 'warn', text: t('crossTenantRecipientField.seuEmail') };
   } else if (lookup.data.kind === 'tenant_member') {
     // Achou em casa: o caminho certo é o campo de cima, e dizer isso evita o envio pendente
     // desnecessário para quem já é colega.
     resolution = {
       tone: 'warn',
-      text: `${lookup.data.user.name} é daqui. Use a busca acima.`,
+      text: t('crossTenantRecipientField.ehDaqui', { name: lookup.data.user.name }),
     };
   } else if (lookup.data.kind === 'doqyn_user') {
     const { name } = lookup.data.user;
-    resolution = {
-      tone: 'ok',
-      text: `${name} usa o DOQYN. O documento continua seu, e ela precisa aceitar antes de ver.`,
+    resolution = { tone: 'ok', text: t('crossTenantRecipientField.usaDoqyn', { name }) };
+    action = {
+      label: t('crossTenantRecipientField.escolher', { name }),
+      run: () => onPick({ email: normalized, name }),
     };
-    action = { label: `Escolher ${name}`, run: () => onPick({ email: normalized, name }) };
   } else {
     // Sem conta, ou com conta e o envio entre empresas desligado: a resposta é a mesma de
     // propósito, para que "tem conta aqui" não se descubra de graça.
-    resolution = { tone: 'warn', text: 'Esse e-mail não tem conta DOQYN.' };
+    resolution = { tone: 'warn', text: t('crossTenantRecipientField.semConta') };
     if (onFallbackToLink) {
-      action = { label: fallbackLabel, run: () => onFallbackToLink(normalized) };
+      action = {
+        label: fallbackLabel ?? t('crossTenantRecipientField.fallbackLink'),
+        run: () => onFallbackToLink(normalized),
+      };
     }
   }
 
   return (
     <div className="flex flex-col gap-2">
       <Input
-        label={label}
+        label={fieldLabel}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         placeholder="joao.silva"

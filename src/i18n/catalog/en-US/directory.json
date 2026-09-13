@@ -1,13 +1,37 @@
 {
   "crossTenantRecipientField": {
     "comQuemVoceJa": "Who you have already exchanged with",
-    "haMaisGenteCom": "More people start their username that way. Type more letters to narrow it down."
+    "haMaisGenteCom": "More people start their username that way. Type more letters to narrow it down.",
+    "label": "Username of someone outside your organization",
+    "idleHint": "People with a DOQYN account are found by username. The full email also works, and it is the way to reach people without an account.",
+    "fallbackLink": "Send by link",
+    "procurando": "Searching…",
+    "erroConsulta": "Could not look this up right now.",
+    "ninguemComPrefixo": "No one has a username starting that way.",
+    "seuEmail": "That is your own email.",
+    "ehDaqui": "{{name}} is in your organization. Use the search above.",
+    "usaDoqyn": "{{name}} uses DOQYN. The document stays yours, and they need to accept before viewing it.",
+    "escolher": "Choose {{name}}",
+    "semConta": "That email has no DOQYN account."
   },
   "partnerContactList": {
-    "contasComQuemVoce": "Accounts you have already exchanged documents with ("
+    "contasComQuemVoce": "Accounts you have already exchanged documents with ({{total}})"
   },
   "toast": {
     "contatoSalvo": "Contact saved.",
-    "contatoRemovido": "Contact removed from the list. The exchange history stays on record."
+    "contatoRemovido": "Contact removed from the list. The exchange history stays on record.",
+    "erroSalvar": "Could not save the contact.",
+    "erroRemover": "Could not remove the contact.",
+    "erroDesfazer": "Could not undo."
+  },
+  "contactMeta": {
+    "trocas_one": "{{count}} exchange",
+    "trocas_other": "{{count}} exchanges",
+    "ultimaHoje": "{{trocas}} · last today",
+    "ultimaOntem": "{{trocas}} · last yesterday",
+    "ultimaDias_one": "{{trocas}} · last {{count}} day ago",
+    "ultimaDias_other": "{{trocas}} · last {{count}} days ago",
+    "ultimaMeses_one": "{{trocas}} · last {{count}} month ago",
+    "ultimaMeses_other": "{{trocas}} · last {{count}} months ago"
   }
 }

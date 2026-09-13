@@ -1,13 +1,40 @@
 {
   "crossTenantRecipientField": {
     "comQuemVoceJa": "Con quién ya intercambiaste",
-    "haMaisGenteCom": "Hay más gente con ese comienzo de nombre de usuario. Escribe más letras para acotar."
+    "haMaisGenteCom": "Hay más gente con ese comienzo de nombre de usuario. Escribe más letras para acotar.",
+    "label": "Nombre de usuario de alguien de fuera de aquí",
+    "idleHint": "Quien tiene cuenta DOQYN se encuentra por nombre de usuario. El correo completo también sirve, y es el camino para quien no tiene cuenta.",
+    "fallbackLink": "Enviar por enlace",
+    "procurando": "Buscando…",
+    "erroConsulta": "No se pudo consultar ahora.",
+    "ninguemComPrefixo": "Nadie tiene un nombre de usuario que empiece así.",
+    "seuEmail": "Ese es tu correo.",
+    "ehDaqui": "{{name}} es de aquí. Usa la búsqueda de arriba.",
+    "usaDoqyn": "{{name}} usa DOQYN. El documento sigue siendo tuyo, y tiene que aceptar antes de verlo.",
+    "escolher": "Elegir a {{name}}",
+    "semConta": "Ese correo no tiene cuenta DOQYN."
   },
   "partnerContactList": {
-    "contasComQuemVoce": "Cuentas con las que ya intercambiaste documentos ("
+    "contasComQuemVoce": "Cuentas con las que ya intercambiaste documentos ({{total}})"
   },
   "toast": {
     "contatoSalvo": "Contacto guardado.",
-    "contatoRemovido": "Contacto quitado de la lista. El historial de intercambios sigue registrado."
+    "contatoRemovido": "Contacto quitado de la lista. El historial de intercambios sigue registrado.",
+    "erroSalvar": "No se pudo guardar el contacto.",
+    "erroRemover": "No se pudo quitar el contacto.",
+    "erroDesfazer": "No se pudo deshacer."
+  },
+  "contactMeta": {
+    "trocas_one": "{{count}} intercambio",
+    "trocas_other": "{{count}} intercambios",
+    "trocas_many": "{{count}} intercambios",
+    "ultimaHoje": "{{trocas}} · último hoy",
+    "ultimaOntem": "{{trocas}} · último ayer",
+    "ultimaDias_one": "{{trocas}} · último hace {{count}} día",
+    "ultimaDias_other": "{{trocas}} · último hace {{count}} días",
+    "ultimaDias_many": "{{trocas}} · último hace {{count}} días",
+    "ultimaMeses_one": "{{trocas}} · último hace {{count}} mes",
+    "ultimaMeses_other": "{{trocas}} · último hace {{count}} meses",
+    "ultimaMeses_many": "{{trocas}} · último hace {{count}} meses"
   }
 }

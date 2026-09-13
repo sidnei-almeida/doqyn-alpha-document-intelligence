@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/Badge';
 import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
 import { UserAvatar } from '@/components/ui/UserAvatar';
-import { formatContactMeta } from '@/features/directory/components/ContactRow';
+import { useFormatContactMeta } from '@/features/directory/components/ContactRow';
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +32,7 @@ export function ContactCard({
   onAction: (action: ContactAction, contact: FrequentContact) => void;
 }) {
   const { t } = useTranslation('contacts');
+  const formatContactMeta = useFormatContactMeta();
 
   // Nem toda origem registra o e-mail. Sem ele não há para onde mandar o que quer que seja, e uma
   // ação ativa ofereceria um caminho que falha no envio.
