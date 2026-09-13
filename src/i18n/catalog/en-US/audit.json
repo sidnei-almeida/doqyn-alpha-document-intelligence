@@ -21,7 +21,8 @@
       "action": "Action",
       "entity": "Entity",
       "severity": "Severity",
-      "source": "Source"
+      "source": "Source",
+      "createdAt": "Date/time"
     }
   },
   "auditFilters": {

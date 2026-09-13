@@ -22,7 +22,9 @@
       "trashCantMove": "Documents in the trash can't be moved.",
       "deactivatedCantMove": "Deactivated documents can't be moved.",
       "noMovePermission": "You don't have permission to move the selected documents."
-    }
+    },
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected"
   },
   "collections": {
     "root": {

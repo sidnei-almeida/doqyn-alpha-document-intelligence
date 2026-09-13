@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { isUncategorizedCategory } from '@shared/systemCategory';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import type { DocumentListItem } from '@/types/document-library';
@@ -134,8 +135,7 @@ export function ExplorerContextMenu({
    * não descobrir isso depois de clicar.
    */
   const folder = state?.kind === 'folder' ? state.folder : null;
-  const isUncategorized =
-    folder?.slug === 'sem-categoria' || folder?.name === 'Sem categoria' || false;
+  const isUncategorized = folder ? isUncategorizedCategory(folder) : false;
 
   useEffect(() => {
     if (!state) return;

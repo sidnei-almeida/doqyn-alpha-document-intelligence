@@ -22,7 +22,9 @@
       "trashCantMove": "Documentos na lixeira não podem ser movidos.",
       "deactivatedCantMove": "Documentos desativados não podem ser movidos.",
       "noMovePermission": "Você não tem permissão para mover os documentos selecionados."
-    }
+    },
+    "selected_one": "{{count}} selecionado",
+    "selected_other": "{{count}} selecionados"
   },
   "collections": {
     "root": {

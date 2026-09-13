@@ -80,7 +80,7 @@ export function BulkSelectionToolbar({
     >
       <div className="flex items-center gap-2.5">
         <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-accent-active">
-          {selectedCount} {selectedCount === 1 ? 'selecionado' : 'selecionados'}
+          {t('bulkSelectionToolbar.selected', { count: selectedCount })}
         </span>
         <IconButton label={t('bulkSelectionToolbar.limparSelecao')} onClick={onClear}>
           <Icon name="close" size={ICON_SIZE.xs} />

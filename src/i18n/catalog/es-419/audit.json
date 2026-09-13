@@ -21,7 +21,8 @@
       "action": "Acción",
       "entity": "Entidad",
       "severity": "Severidad",
-      "source": "Origen"
+      "source": "Origen",
+      "createdAt": "Fecha/hora"
     }
   },
   "auditFilters": {

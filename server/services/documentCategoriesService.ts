@@ -1,4 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import {
+  UNCATEGORIZED_CATEGORY_NAME,
+  UNCATEGORIZED_CATEGORY_SLUG,
+} from '../../shared/systemCategory.js';
 import type { MongoDocumentCategory } from '../db/types.js';
 import { ensureDefaultExtractionRule } from './documentDefaultExtractionRule.js';
 import { ServiceError } from '../utils/serviceErrors.js';
@@ -417,9 +421,8 @@ export async function countGroupsWithAccessToCategory(
   });
 }
 
-/** Slug da pasta onde cai o documento que a IA não soube classificar. */
-export const UNCATEGORIZED_CATEGORY_SLUG = 'sem-categoria';
-export const UNCATEGORIZED_CATEGORY_NAME = 'Sem categoria';
+// Slug e nome da pasta de sistema moram em `shared/systemCategory.ts`: o front os reconhece para
+// mostrar o nome no idioma de quem lê.
 
 /**
  * Garante a categoria "Sem categoria" do tenant e devolve o id dela.

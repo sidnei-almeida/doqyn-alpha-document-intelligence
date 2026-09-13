@@ -22,7 +22,10 @@
       "trashCantMove": "Los documentos en la papelera no se pueden mover.",
       "deactivatedCantMove": "Los documentos desactivados no se pueden mover.",
       "noMovePermission": "No tienes permiso para mover los documentos seleccionados."
-    }
+    },
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "selected_many": "{{count}} seleccionados"
   },
   "collections": {
     "root": {

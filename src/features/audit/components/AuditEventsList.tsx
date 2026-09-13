@@ -56,7 +56,7 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
       columns={[
         {
           key: 'createdAt',
-          header: 'Data/hora',
+          header: t('auditEventsList.columns.createdAt'),
           className: 'w-[168px]',
           render: (event) => (
             <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
