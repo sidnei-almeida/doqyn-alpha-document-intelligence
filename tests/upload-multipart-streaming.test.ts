@@ -76,6 +76,20 @@ describe('upload multipart em streaming — Passo 6 do plano de escala', () => {
     assert.equal(result.file?.buffer.equals(content), true);
   });
 
+  it('lê o nome do arquivo em UTF-8, como o navegador manda', async () => {
+    // Com o padrão latin-1 do busboy, `técnico` chegava como `tÃ©cnico`.
+    const body = buildMultipartBody({
+      file: { name: 'file', filename: 'desenho_técnico_Łódź.pdf', content: Buffer.from('%PDF') },
+    });
+
+    const result = await parseMultipart(
+      fakeRequest(body, `multipart/form-data; boundary=${BOUNDARY}`),
+      { maxFileBytes: 1024 * 1024 },
+    );
+
+    assert.equal(result.file?.filename, 'desenho_técnico_Łódź.pdf');
+  });
+
   it('rejeita com 413 quando o arquivo passa do teto', async () => {
     const content = Buffer.alloc(4096, 0x41);
     const body = buildMultipartBody({
