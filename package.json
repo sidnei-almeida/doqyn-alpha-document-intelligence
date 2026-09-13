@@ -23,6 +23,7 @@
     "i18n:audit": "tsx scripts/i18n-audit.ts",
     "i18n:gate": "node scripts/i18n-literals.mjs --gate src",
     "i18n:parity": "tsx scripts/i18n-parity.ts",
+    "i18n:stale": "tsx scripts/i18n-stale.ts",
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"api/**/*.ts\" \"server/**/*.ts\"",
