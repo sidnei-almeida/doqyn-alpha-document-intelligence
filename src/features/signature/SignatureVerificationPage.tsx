@@ -140,7 +140,8 @@ export function SignatureVerificationPage() {
               {valid
                 ? t('signatureVerificationPage.signedByAt', {
                     signer: result.signerNameMasked,
-                    date: formatDateTime(result.signedAt),
+                    // A frase termina em ponto, e a hora em espanhol já termina em "p.m.".
+                    date: formatDateTime(result.signedAt).replace(/\.$/, ''),
                   })
                 : t('signatureVerificationPage.invalidatedDetail')}
             </p>
