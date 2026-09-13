@@ -5,6 +5,8 @@ import { describe, it } from 'node:test';
 import { renderNotificationText } from '../server/i18n/index.ts';
 import { compactNotificationParams } from '../shared/notificationText.ts';
 import { expiryNotificationTitle } from '../server/services/expiry/documentExpiryAlertService.ts';
+import { buildNotificationEmail } from '../server/services/notifications/emailTemplate.ts';
+import type { MongoNotification } from '../server/db/types.ts';
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 
@@ -95,6 +97,50 @@ describe('texto de notificação in-app', () => {
     for (const dockerfile of ['docker/Dockerfile.api', 'docker/Dockerfile.worker']) {
       assert.ok(read(dockerfile).includes('COPY src/i18n/catalog ./src/i18n/catalog'), dockerfile);
     }
+  });
+
+  it('o e-mail sai no idioma de quem recebe, remontado dos valores', () => {
+    const notification = {
+      _id: 'ntf_1',
+      tenantId: 't',
+      companyId: 't',
+      type: 'document_expiring',
+      userId: 'u',
+      eventKey: 'd:7',
+      title: 'Contrato vence em 3 dias',
+      params: { documentName: 'Contrato', daysRemaining: 3 },
+      documentId: 'doc_1',
+      documentName: 'Contrato',
+      categoryName: 'Jurídico',
+      expiry: { offsetDays: 7, validityDate: new Date(), daysRemaining: 3 },
+      status: 'unread',
+      createdAt: new Date(),
+    } as MongoNotification;
+
+    const en = buildNotificationEmail(notification, 'https://app.doqyn.com', 'en-US');
+    assert.equal(en.subject, 'Contrato expires in 3 days — Contrato');
+    assert.match(en.html, /<html lang="en-US">/);
+    assert.match(en.html, /Open document/);
+    assert.match(en.text, /Category: Jurídico/);
+
+    const es = buildNotificationEmail(notification, 'https://app.doqyn.com', 'es-MX');
+    assert.match(es.html, /¿Prefieres no recibir avisos por correo\?/);
+    assert.match(es.text, /Vence en 3 días/);
+
+    // Sem idioma conhecido, e notificação antiga sem valores: o texto gravado, em pt-BR.
+    const legado = buildNotificationEmail(
+      { ...notification, params: undefined },
+      'https://app.doqyn.com',
+    );
+    assert.equal(legado.subject, 'Contrato vence em 3 dias — Contrato');
+    assert.match(legado.html, /Abrir documento/);
+  });
+
+  it('o drenador pergunta o idioma e não segura o aviso quando o auth não responde', () => {
+    const drain = read('server/services/notifications/emailOutboxDrain.ts');
+    assert.match(drain, /fetchUserLocalesByIds/);
+    assert.match(drain, /idiomas\.get\(linha\.userId\)/);
+    assert.match(drain, /catch \(error\)[\s\S]*return new Map\(\)/);
   });
 
   it('quem emite passa valores, não frase pronta', () => {

@@ -8,6 +8,7 @@ import {
   isEmailChannelEnabled,
 } from '../../config/emailConfig.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { fetchUserLocalesByIds } from '../../integrations/doqynAuthInternalClient.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { logger } from '../../utils/logger.js';
 import { buildNotificationEmail } from './emailTemplate.js';
@@ -65,6 +66,23 @@ async function buildEmailLookup(tenantIds: string[]): Promise<Map<string, string
 }
 
 /**
+ * O idioma de cada destinatário da rodada, numa pergunta só ao auth-service.
+ *
+ * Falhar aqui não segura o aviso: sem resposta, o e-mail sai no idioma padrão. Um aviso em
+ * português para quem lê espanhol é ruim; um aviso que não chega é pior.
+ */
+async function buildLocaleLookup(userIds: string[]): Promise<Map<string, string>> {
+  try {
+    return await fetchUserLocalesByIds([...new Set(userIds)]);
+  } catch (error) {
+    logger.warn('idioma dos destinatários indisponível; e-mail sai no idioma padrão', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return new Map();
+  }
+}
+
+/**
  * Uma passada pelo outbox. Devolve o que aconteceu, para quem chama poder registrar.
  *
  * Cada linha é travada por `findOneAndUpdate` antes do envio: duas instâncias da API drenando ao
@@ -98,6 +116,7 @@ export async function drainEmailOutbox(): Promise<{
   if (pendentes.length === 0) return { sent: 0, failed: 0, retried: 0, throttled: 0 };
 
   const emails = await buildEmailLookup(pendentes.map((linha) => linha.tenantId));
+  const idiomas = await buildLocaleLookup(pendentes.map((linha) => linha.userId));
   const baseUrl = resolvePublicAppBaseUrl();
   let sent = 0;
   let failed = 0;
@@ -174,7 +193,11 @@ export async function drainEmailOutbox(): Promise<{
       continue;
     }
 
-    const { subject, html, text } = buildNotificationEmail(notificacao, baseUrl);
+    const { subject, html, text } = buildNotificationEmail(
+      notificacao,
+      baseUrl,
+      idiomas.get(linha.userId),
+    );
     const resultado = await sendEmailViaResend({
       to: destino,
       subject,

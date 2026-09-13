@@ -202,7 +202,12 @@ function main() {
    * afogariam os poucos verdadeiros. Quem garante a cobertura desse namespace é o
    * `i18n:check`, que compara a lista de códigos do servidor com o catálogo.
    */
-  const DINAMICOS = new Set(['errors']);
+  const DINAMICOS = new Set([
+    'errors',
+    /* Lido só pelo servidor (`server/services/notifications/emailTemplate.ts`), que esta
+       auditoria não varre. */
+    'email',
+  ]);
 
   /**
    * Subárvore consultada por chave montada em runtime, dentro de um namespace que no resto é
@@ -221,6 +226,8 @@ function main() {
     /* `getPlatformRoleMeta` monta `users:platformRole.<slug>.label` a partir do papel que o
        auth-service devolve — mesma natureza, chave que é dado. */
     'users:platformRole.',
+    /* `shared/notificationText.ts` monta `inApp.<type>.<variante>` pelo tipo gravado. */
+    'notifications:inApp.',
   ];
 
   for (const [ns, chaves] of porNamespace) {

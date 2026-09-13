@@ -5,6 +5,9 @@ import esAuditEvents from '../../src/i18n/catalog/es-419/auditEvents.json' with 
 import ptNotifications from '../../src/i18n/catalog/pt-BR/notifications.json' with { type: 'json' };
 import enNotifications from '../../src/i18n/catalog/en-US/notifications.json' with { type: 'json' };
 import esNotifications from '../../src/i18n/catalog/es-419/notifications.json' with { type: 'json' };
+import ptEmail from '../../src/i18n/catalog/pt-BR/email.json' with { type: 'json' };
+import enEmail from '../../src/i18n/catalog/en-US/email.json' with { type: 'json' };
+import esEmail from '../../src/i18n/catalog/es-419/email.json' with { type: 'json' };
 import {
   renderNotificationText as renderNotificationTextWith,
   type NotificationParams,
@@ -26,10 +29,12 @@ export type ServerLocale = (typeof SERVER_LOCALES)[number];
 export const SERVER_DEFAULT_LOCALE: ServerLocale = 'pt-BR';
 
 const RESOURCES = {
-  'pt-BR': { auditEvents: ptAuditEvents, notifications: ptNotifications },
-  'en-US': { auditEvents: enAuditEvents, notifications: enNotifications },
-  'es-419': { auditEvents: esAuditEvents, notifications: esNotifications },
+  'pt-BR': { auditEvents: ptAuditEvents, notifications: ptNotifications, email: ptEmail },
+  'en-US': { auditEvents: enAuditEvents, notifications: enNotifications, email: enEmail },
+  'es-419': { auditEvents: esAuditEvents, notifications: esNotifications, email: esEmail },
 };
+
+export type ServerNamespace = keyof (typeof RESOURCES)['pt-BR'];
 
 const instance = i18next.createInstance();
 void instance.init({
@@ -37,7 +42,7 @@ void instance.init({
   lng: SERVER_DEFAULT_LOCALE,
   fallbackLng: SERVER_DEFAULT_LOCALE,
   supportedLngs: [...SERVER_LOCALES],
-  ns: ['auditEvents', 'notifications'],
+  ns: ['auditEvents', 'notifications', 'email'],
   defaultNS: 'auditEvents',
   interpolation: { escapeValue: false },
   initAsync: false,
@@ -73,6 +78,15 @@ export function renderAuditText(
   const key = `${action}.${kind}`;
   if (!instance.exists(key, { lng: SERVER_DEFAULT_LOCALE })) return undefined;
   return String(instance.t(key, { ...(params ?? {}), lng: normalizeServerLocale(locale) }));
+}
+
+/** Um `t` preso ao idioma e ao namespace — para quem monta texto inteiro, como o e-mail. */
+export function getServerT(
+  locale: string | null | undefined,
+  ns: ServerNamespace,
+): (key: string, values?: Record<string, unknown>) => string {
+  const t = instance.getFixedT(normalizeServerLocale(locale), ns);
+  return (key, values) => String(t(key, values ?? {}));
 }
 
 /**
