@@ -21,14 +21,15 @@ const PERMISSION_COLUMNS: Array<{
     AccessMatrixGroupCell,
     'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare'
   >;
-  label: string;
+  /** Chave do namespace `matrix`. */
+  labelKey: string;
   icon: string;
 }> = [
-  { key: 'canView', label: 'Ver', icon: 'visibility' },
-  { key: 'canDownload', label: 'Baixar', icon: 'download' },
-  { key: 'canUpdate', label: 'Alterar', icon: 'edit' },
-  { key: 'canAudit', label: 'Auditar', icon: 'fact_check' },
-  { key: 'canShare', label: 'Compartilhar', icon: 'share' },
+  { key: 'canView', labelKey: 'verb.canView', icon: 'visibility' },
+  { key: 'canDownload', labelKey: 'verb.canDownload', icon: 'download' },
+  { key: 'canUpdate', labelKey: 'verb.canUpdate', icon: 'edit' },
+  { key: 'canAudit', labelKey: 'verb.canAudit', icon: 'fact_check' },
+  { key: 'canShare', labelKey: 'verb.canShare', icon: 'share' },
 ];
 
 function EmptyNotice({ icon, title, hint }: { icon: string; title: string; hint?: string }) {
@@ -61,7 +62,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
       <EmptyNotice
         icon="groups"
         title={t('groupAccessMatrixTable.nenhumGrupoConfigurado')}
-        hint="Crie grupos em Regras para governar o acesso por equipe em vez de pessoa a pessoa."
+        hint={t('groupAccessMatrixTable.noGroupsHint')}
       />
     );
   }
@@ -71,7 +72,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
       <EmptyNotice
         icon="grid_off"
         title={t('groupAccessMatrixTable.nenhumDocumentoNestaSelecao')}
-        hint="Ajuste a busca ou a categoria para ver a matriz."
+        hint={t('accessMatrixTable.ajusteABuscaOu')}
       />
     );
   }
@@ -128,7 +129,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                         hoverColumn === columnKey && 'matrix-col-active',
                       )}
                     >
-                      <Tooltip label={`${column.label} · ${group.name}`}>
+                      <Tooltip label={`${t(column.labelKey)} · ${group.name}`}>
                         <span className="flex justify-center text-doqyn-subtle">
                           <Icon name={column.icon} size={ICON_SIZE.xs} />
                         </span>
@@ -148,7 +149,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                     {document.fileName}
                   </TruncatedText>
                   <p className="mt-1 text-caption text-doqyn-muted">
-                    {document.categoryName ?? 'Sem categoria'}
+                    {document.categoryName ?? t('noCategory')}
                     {document.ownerName && ` · ${document.ownerName}`}
                   </p>
                 </td>
@@ -175,7 +176,12 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
                             'mx-auto flex h-5 w-5 items-center justify-center',
                             granted ? 'text-doqyn-text' : 'text-doqyn-subtle/60',
                           )}
-                          aria-label={`${column.label}: ${granted ? 'permitido' : 'não permitido'}`}
+                          aria-label={t(
+                            granted
+                              ? 'groupAccessMatrixTable.granted'
+                              : 'groupAccessMatrixTable.denied',
+                            { verb: t(column.labelKey) },
+                          )}
                         >
                           {granted ? (
                             <Icon name="check" size={ICON_SIZE.xs} />
@@ -201,7 +207,7 @@ export function GroupAccessMatrixTable({ matrix }: { matrix: AccessMatrix }) {
               className="flex items-center gap-1.5 text-caption text-doqyn-muted"
             >
               <Icon name={column.icon} size={ICON_SIZE.xs} className="text-doqyn-subtle" />
-              {column.label}
+              {t(column.labelKey)}
             </span>
           ))}
         </span>

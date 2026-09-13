@@ -27,11 +27,11 @@ import { useTranslation } from 'react-i18next';
  * volta a significar uma coisa só. O acento fica reservado ao compartilhamento — a única origem
  * que se pode conceder e revogar daqui, e portanto a única interativa.
  */
-const ORIGIN_LABEL: Record<DocumentAccessOrigin, string> = {
-  owner: 'Dono',
-  admin: 'Administrador',
-  governance: 'Regra da categoria',
-  share: 'Compartilhado',
+const ORIGIN_LABEL_KEY: Record<DocumentAccessOrigin, string> = {
+  owner: 'origin.owner',
+  admin: 'origin.admin',
+  governance: 'origin.governance',
+  share: 'origin.share',
 };
 
 const ORIGIN_ICON: Record<DocumentAccessOrigin, string> = {
@@ -55,13 +55,14 @@ function initialsOf(name: string): string {
 
 const VERB_ROWS: Array<{
   key: 'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare';
-  label: string;
+  /** Chave do namespace `matrix`. */
+  labelKey: string;
 }> = [
-  { key: 'canView', label: 'Ver' },
-  { key: 'canDownload', label: 'Baixar' },
-  { key: 'canUpdate', label: 'Alterar' },
-  { key: 'canAudit', label: 'Auditar' },
-  { key: 'canShare', label: 'Compartilhar' },
+  { key: 'canView', labelKey: 'verb.canView' },
+  { key: 'canDownload', labelKey: 'verb.canDownload' },
+  { key: 'canUpdate', labelKey: 'verb.canUpdate' },
+  { key: 'canAudit', labelKey: 'verb.canAudit' },
+  { key: 'canShare', labelKey: 'verb.canShare' },
 ];
 
 /**
@@ -135,7 +136,7 @@ function AccessCell({
         onFocus={() => setOpen(true)}
         onBlur={scheduleClose}
         disabled={isBusy}
-        aria-label={`${member.name}: ${origin ? ORIGIN_LABEL[origin] : 'sem acesso'}`}
+        aria-label={`${member.name}: ${origin ? t(ORIGIN_LABEL_KEY[origin]) : t('noAccess')}`}
         aria-expanded={open}
         className={cn(
           'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
@@ -161,7 +162,7 @@ function AccessCell({
         onClose={() => setOpen(false)}
         placement="bottom-start"
         className="w-64"
-        aria-label={`Acesso de ${member.name}`}
+        aria-label={t('accessMatrixTable.accessOf', { name: member.name })}
       >
         <div className="p-3" onMouseEnter={clearTimer} onMouseLeave={scheduleClose}>
           <p className="text-label font-medium text-doqyn-text">{member.name}</p>
@@ -181,7 +182,7 @@ function AccessCell({
                       size={ICON_SIZE.xs}
                       className="shrink-0 text-doqyn-subtle"
                     />
-                    {ORIGIN_LABEL[entry]}
+                    {t(ORIGIN_LABEL_KEY[entry])}
                     {entry === 'governance' && cell.viaGroupIds.length > 0 && (
                       <span className="truncate text-doqyn-subtle">
                         (
@@ -220,7 +221,7 @@ function AccessCell({
                       ) : (
                         <span className="w-4 shrink-0 text-center leading-none">·</span>
                       )}
-                      {verb.label}
+                      {t(verb.labelKey)}
                     </p>
                   );
                 })}
@@ -361,7 +362,7 @@ export function AccessMatrixTable({
                     {document.fileName}
                   </TruncatedText>
                   <p className="mt-1 flex items-center gap-1.5 text-caption text-doqyn-muted">
-                    <span>{document.categoryName ?? 'Sem categoria'}</span>
+                    <span>{document.categoryName ?? t('noCategory')}</span>
                     {document.ownerName && <span>· {document.ownerName}</span>}
                     {document.externalShareCount > 0 && (
                       <Tooltip label={`${document.externalShareCount} link(s) externo(s) ativo(s)`}>
@@ -411,7 +412,7 @@ export function AccessMatrixTable({
         {ORIGIN_PRIORITY.map((origin) => (
           <span key={origin} className="flex items-center gap-1.5 text-caption text-doqyn-muted">
             <Icon name={ORIGIN_ICON[origin]} size={ICON_SIZE.xs} className={ORIGIN_INK[origin]} />
-            {ORIGIN_LABEL[origin]}
+            {t(ORIGIN_LABEL_KEY[origin])}
           </span>
         ))}
         <span className="font-mono text-micro text-doqyn-subtle">

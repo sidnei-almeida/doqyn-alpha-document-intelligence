@@ -1,4 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
+import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 
 export type DocumentAccessOrigin = 'owner' | 'admin' | 'governance' | 'share';
 
@@ -62,12 +64,20 @@ export type AccessMatrix = {
 };
 
 async function parseJson<T>(response: Response): Promise<T> {
-  const data = (await response.json().catch(() => null)) as T | { message?: string } | null;
+  const data = (await response.json().catch(() => null)) as
+    | T
+    | { message?: string; code?: string }
+    | null;
   if (!response.ok) {
+    const body = (data && typeof data === 'object' ? data : {}) as {
+      message?: unknown;
+      code?: unknown;
+    };
+    const serverMessage = body.message ? String(body.message) : undefined;
     const message =
-      data && typeof data === 'object' && 'message' in data && data.message
-        ? String(data.message)
-        : 'Não foi possível carregar a matriz.';
+      typeof body.code === 'string'
+        ? getFriendlyAuthErrorMessage(body.code, serverMessage)
+        : (serverMessage ?? i18n.t('matrix:loadFailed'));
     throw new Error(message);
   }
   return data as T;

@@ -27,16 +27,17 @@ import { useTranslation } from 'react-i18next';
  */
 type MatrixTab = 'people' | 'groups';
 
-const LENSES: Array<{ key: MatrixTab; label: string; description: string }> = [
+/** Chaves do namespace `matrix`; a tela traduz. */
+const LENSES: Array<{ key: MatrixTab; labelKey: string; descriptionKey: string }> = [
   {
     key: 'people',
-    label: 'Por pessoa',
-    description: 'Quem lê cada documento, e de onde vem o acesso.',
+    labelKey: 'matrixPage.lens.people.label',
+    descriptionKey: 'matrixPage.lens.people.description',
   },
   {
     key: 'groups',
-    label: 'Por grupo',
-    description: 'O que a regra concede a cada grupo, verbo a verbo.',
+    labelKey: 'matrixPage.lens.groups.label',
+    descriptionKey: 'matrixPage.lens.groups.description',
   },
 ];
 
@@ -55,7 +56,8 @@ function CategoryFilter({
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const isActive = value !== '';
-  const label = options.find((option) => option.value === value)?.label ?? 'Todas as categorias';
+  const label =
+    options.find((option) => option.value === value)?.label ?? t('matrixPage.allCategories');
 
   return (
     <div className="relative">
@@ -132,7 +134,7 @@ export function MatrixPage() {
         permissions: { canView: true, canDownload: true },
       }),
     onSuccess: () => {
-      toast.success('Compartilhamento criado.');
+      toast.success(t('matrixPage.shareCreated'));
       void queryClient.invalidateQueries({ queryKey: ['matrix-access'] });
     },
     onError: (error: Error) => toast.error(error.message),
@@ -143,7 +145,7 @@ export function MatrixPage() {
     mutationFn: (input: { documentId: string; shareId: string }) =>
       revokeDocumentShare(input.documentId, input.shareId),
     onSuccess: () => {
-      toast.success('Compartilhamento revogado.');
+      toast.success(t('matrixPage.shareRevoked'));
       void queryClient.invalidateQueries({ queryKey: ['matrix-access'] });
     },
     onError: (error: Error) => toast.error(error.message),
@@ -160,13 +162,13 @@ export function MatrixPage() {
 
   return (
     <PageShell
-      eyebrow="Governança"
+      eyebrow={t('matrixPage.eyebrow')}
       title={t('matrixPage.matrizDeDocumentos')}
-      description={activeLens.description}
+      description={t(activeLens.descriptionKey)}
       actions={
         <SegmentedTextToggle
           value={tab}
-          options={LENSES.map((lens) => ({ value: lens.key, label: lens.label }))}
+          options={LENSES.map((lens) => ({ value: lens.key, label: t(lens.labelKey) }))}
           onChange={setTab}
           aria-label={t('matrixPage.lenteDaMatriz')}
         />
@@ -193,7 +195,7 @@ export function MatrixPage() {
           value={categoryId}
           onChange={setCategoryId}
           options={[
-            { value: '', label: 'Todas as categorias' },
+            { value: '', label: t('matrixPage.allCategories') },
             ...categories.map((category) => ({ value: category.id, label: category.name })),
           ]}
         />

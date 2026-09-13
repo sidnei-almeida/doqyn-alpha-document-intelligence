@@ -9,7 +9,8 @@
     "origem": "Origem",
     "pode": "Pode",
     "revogarCompartilhamento": "Revogar compartilhamento",
-    "semAcessoAEste": "Sem acesso a este documento."
+    "semAcessoAEste": "Sem acesso a este documento.",
+    "accessOf": "Acesso de {{name}}"
   },
   "groupAccessMatrixTable": {
     "concederOuRemoverEm": "Conceder ou remover em Regras",
@@ -17,7 +18,10 @@
     "memberCount_one": "{{count}} pessoa",
     "memberCount_other": "{{count}} pessoas",
     "nenhumDocumentoNestaSelecao": "Nenhum documento nesta seleção",
-    "nenhumGrupoConfigurado": "Nenhum grupo configurado"
+    "nenhumGrupoConfigurado": "Nenhum grupo configurado",
+    "noGroupsHint": "Crie grupos em Regras para governar o acesso por equipe em vez de pessoa a pessoa.",
+    "granted": "{{verb}}: permitido",
+    "denied": "{{verb}}: não permitido"
   },
   "matrixPage": {
     "buscarNaMatriz": "Buscar na matriz",
@@ -33,6 +37,36 @@
     "montandoAMatriz": "Montando a matriz",
     "naoFoiPossivelMontar": "Não foi possível montar a matriz",
     "peopleAxis_one": "{{count}} pessoa",
-    "peopleAxis_other": "{{count}} pessoas"
-  }
+    "peopleAxis_other": "{{count}} pessoas",
+    "eyebrow": "Governança",
+    "lens": {
+      "people": {
+        "label": "Por pessoa",
+        "description": "Quem lê cada documento, e de onde vem o acesso."
+      },
+      "groups": {
+        "label": "Por grupo",
+        "description": "O que a regra concede a cada grupo, verbo a verbo."
+      }
+    },
+    "allCategories": "Todas as categorias",
+    "shareCreated": "Compartilhamento criado.",
+    "shareRevoked": "Compartilhamento revogado."
+  },
+  "origin": {
+    "owner": "Dono",
+    "admin": "Administrador",
+    "governance": "Regra da categoria",
+    "share": "Compartilhado"
+  },
+  "verb": {
+    "canView": "Ver",
+    "canDownload": "Baixar",
+    "canUpdate": "Alterar",
+    "canAudit": "Auditar",
+    "canShare": "Compartilhar"
+  },
+  "noAccess": "sem acesso",
+  "noCategory": "Sem categoria",
+  "loadFailed": "Não foi possível carregar a matriz."
 }
