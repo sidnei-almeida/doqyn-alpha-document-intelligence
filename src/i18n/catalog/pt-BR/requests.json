@@ -25,7 +25,8 @@
       "upload": "Enviar documento",
       "open": "Abrir documento",
       "cancel": "Cancelar pedido"
-    }
+    },
+    "foraDoAcervo": "fora do seu acervo"
   },
   "requestDocumentModal": {
     "cancelar": "Cancelar",

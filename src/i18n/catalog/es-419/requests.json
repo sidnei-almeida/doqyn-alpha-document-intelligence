@@ -25,7 +25,8 @@
       "upload": "Subir documento",
       "open": "Abrir documento",
       "cancel": "Cancelar solicitud"
-    }
+    },
+    "foraDoAcervo": "fuera de tu acervo"
   },
   "requestDocumentModal": {
     "cancelar": "Cancelar",

@@ -36,6 +36,7 @@
     "saveFailed": "Couldn't save the metadata.",
     "notProvided": "Not provided",
     "saving": "Saving…",
-    "saveMetadata": "Save metadata"
+    "saveMetadata": "Save metadata",
+    "placeholderValor": "value"
   }
 }

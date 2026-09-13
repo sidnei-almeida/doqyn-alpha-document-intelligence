@@ -45,7 +45,7 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
           <OverviewPanelStat
             label={t('overviewGovernancePanel.extracao')}
             value={governance.activeExtractionRules}
-            hint="regras ativas"
+            hint={t('overviewGovernancePanel.hintRegrasAtivas')}
             onClick={() => navigate('/settings?section=upload-ia')}
           />
         </OverviewPanelStatCell>
@@ -53,7 +53,7 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
           <OverviewPanelStat
             label={t('overviewGovernancePanel.acesso')}
             value={governance.activeAccessRules}
-            hint="regras ativas"
+            hint={t('overviewGovernancePanel.hintRegrasAtivas')}
             onClick={() => navigate('/rules')}
           />
         </OverviewPanelStatCell>
@@ -61,7 +61,7 @@ export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelP
           <OverviewPanelStat
             label={t('overviewGovernancePanel.usuarios')}
             value={governance.usersActive}
-            hint="ativos"
+            hint={t('overviewGovernancePanel.hintAtivos')}
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>

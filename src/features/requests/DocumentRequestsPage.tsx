@@ -257,7 +257,7 @@ export function DocumentRequestsPage() {
               ) : (
                 // Pedido para fora não tem categoria: o documento nasce e mora no acervo de quem
                 // envia, e nenhuma categoria daqui o alcança.
-                <span className="text-doqyn-subtle">fora do seu acervo</span>
+                <span className="text-doqyn-subtle">{t('documentRequestsPage.foraDoAcervo')}</span>
               ),
           },
           {

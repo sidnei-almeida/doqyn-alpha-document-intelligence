@@ -412,7 +412,7 @@ export function DocumentExpiryEditor({
                     <Input
                       variant="rule"
                       aria-label={t('documentExpiryEditor.valorDoCampo')}
-                      placeholder="valor"
+                      placeholder={t('documentExpiryEditor.placeholderValor')}
                       value={field.value}
                       onChange={(event) =>
                         setExtraFields((prev) =>

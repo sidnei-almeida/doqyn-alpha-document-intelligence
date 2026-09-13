@@ -47,7 +47,8 @@
   },
   "documentViewerDetailsPanel": {
     "versao": "Versión",
-    "versao2": "Versión"
+    "versao2": "Versión",
+    "semNome": "sin nombre"
   },
   "documentViewerModal": {
     "carregandoPreviewDoDocumento": "Cargando la vista previa del documento...",

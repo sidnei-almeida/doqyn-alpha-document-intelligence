@@ -53,7 +53,9 @@
     "usuarios": "Usuarios",
     "subtitle": "Categorías, reglas y acceso del entorno",
     "openRulesMap": "Abrir mapa de reglas",
-    "usersWaiting": "usuarios esperando"
+    "usersWaiting": "usuarios esperando",
+    "hintRegrasAtivas": "reglas activas",
+    "hintAtivos": "activos"
   },
   "overviewHeaderActions": {
     "irParaBiblioteca": "Ir a la Biblioteca"
@@ -119,7 +121,10 @@
     "documentFallback": "Documento",
     "subtitle": "Uso de archivos e incidentes en el período",
     "openTracking": "Abrir tracking",
-    "inPeriod": "en el período"
+    "inPeriod": "en el período",
+    "hintArquivos": "archivos",
+    "hintGerados": "generados",
+    "hintNoBucket": "en el bucket"
   },
   "overviewSummaryStrip": {
     "resumoDoPeriodo": "Resumen del período"

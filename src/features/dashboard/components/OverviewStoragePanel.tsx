@@ -57,7 +57,7 @@ export function OverviewStoragePanel({
           <OverviewPanelStat
             label={t('overviewStoragePanel.originais')}
             value={storage.originalFiles}
-            hint="arquivos"
+            hint={t('overviewStoragePanel.hintArquivos')}
             onClick={() => navigate('/biblioteca')}
           />
         </OverviewPanelStatCell>
@@ -65,7 +65,7 @@ export function OverviewStoragePanel({
           <OverviewPanelStat
             label={t('overviewStoragePanel.previews')}
             value={storage.previewFiles}
-            hint="gerados"
+            hint={t('overviewStoragePanel.hintGerados')}
             onClick={() => navigate('/biblioteca')}
           />
         </OverviewPanelStatCell>
@@ -73,7 +73,7 @@ export function OverviewStoragePanel({
           <OverviewPanelStat
             label={t('overviewStoragePanel.tamanhoTotal')}
             value={formatStorageBytes(storage.totalSizeBytes)}
-            hint="no bucket"
+            hint={t('overviewStoragePanel.hintNoBucket')}
             valueClassName="text-h1 leading-tight"
           />
         </OverviewPanelStatCell>

@@ -45,7 +45,8 @@
   },
   "documentViewerDetailsPanel": {
     "versao": "Version",
-    "versao2": "Version"
+    "versao2": "Version",
+    "semNome": "untitled"
   },
   "documentViewerModal": {
     "carregandoPreviewDoDocumento": "Loading the document preview...",

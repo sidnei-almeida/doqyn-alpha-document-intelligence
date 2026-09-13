@@ -25,7 +25,8 @@
       "upload": "Upload document",
       "open": "Open document",
       "cancel": "Cancel request"
-    }
+    },
+    "foraDoAcervo": "outside your collection"
   },
   "requestDocumentModal": {
     "cancelar": "Cancel",

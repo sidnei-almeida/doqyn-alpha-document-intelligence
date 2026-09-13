@@ -40,6 +40,7 @@
     "saveFailed": "No fue posible guardar los metadatos.",
     "notProvided": "No informado",
     "saving": "Guardando…",
-    "saveMetadata": "Guardar metadatos"
+    "saveMetadata": "Guardar metadatos",
+    "placeholderValor": "valor"
   }
 }

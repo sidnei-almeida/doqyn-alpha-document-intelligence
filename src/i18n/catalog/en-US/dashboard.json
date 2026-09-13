@@ -49,7 +49,9 @@
     "usuarios": "Users",
     "subtitle": "Categories, rules and access in this environment",
     "openRulesMap": "Open rules map",
-    "usersWaiting": "users waiting"
+    "usersWaiting": "users waiting",
+    "hintRegrasAtivas": "active rules",
+    "hintAtivos": "active"
   },
   "overviewHeaderActions": {
     "irParaBiblioteca": "Go to the Library"
@@ -115,7 +117,10 @@
     "documentFallback": "Document",
     "subtitle": "File usage and incidents in the period",
     "openTracking": "Open tracking",
-    "inPeriod": "in the period"
+    "inPeriod": "in the period",
+    "hintArquivos": "files",
+    "hintGerados": "generated",
+    "hintNoBucket": "in the bucket"
   },
   "overviewSummaryStrip": {
     "resumoDoPeriodo": "Summary for the period"

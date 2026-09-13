@@ -36,6 +36,7 @@
     "saveFailed": "Não foi possível salvar os metadados.",
     "notProvided": "Não informado",
     "saving": "Salvando…",
-    "saveMetadata": "Salvar metadados"
+    "saveMetadata": "Salvar metadados",
+    "placeholderValor": "valor"
   }
 }
