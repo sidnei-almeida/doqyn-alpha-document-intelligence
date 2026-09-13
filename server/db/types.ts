@@ -466,8 +466,17 @@ export type MongoNotification = {
    * do membro mais a decisão.
    */
   eventKey: string;
+  /**
+   * Texto pronto, no idioma padrão do servidor. É o que o e-mail usa e o que a tela mostra quando
+   * a notificação não tem `params` (gravada antes do catálogo).
+   */
   title: string;
   body?: string;
+  /**
+   * Os valores que montam título e corpo pelo catálogo `notifications:inApp.<type>` — a tela relê
+   * no idioma de quem abre. Ver `shared/notificationText.ts`.
+   */
+  params?: Record<string, string | number | boolean>;
   documentId?: string;
   documentName?: string;
   categoryId?: string;

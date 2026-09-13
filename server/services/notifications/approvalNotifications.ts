@@ -1,4 +1,5 @@
 import type { MongoApprovalRequest } from '../../db/types.js';
+import { compactNotificationParams } from '../../../shared/notificationText.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
 
@@ -20,17 +21,17 @@ async function safely(what: string, run: () => Promise<unknown>): Promise<void> 
   }
 }
 
-const KIND_LABEL: Record<MongoApprovalRequest['kind'], string> = {
-  document_upload: 'Envio de documento',
-  document_download: 'Download de documento',
-  document_share: 'Compartilhamento de documento',
-};
-
-function subjectLine(request: MongoApprovalRequest): string {
-  const subject = request.subject.documentName ?? KIND_LABEL[request.kind];
-  // Compartilhar tem um segundo lado, e ele é o que o administrador precisa ver para decidir:
-  // liberar o documento para Ana é uma decisão, para um fornecedor é outra.
-  return request.subject.memberName ? `${subject} → ${request.subject.memberName}` : subject;
+/**
+ * O assunto do pedido: o documento, ou o tipo de pedido quando não há documento, e o outro lado
+ * quando é compartilhamento — liberar o documento para Ana é uma decisão, para um fornecedor é
+ * outra. A linha é montada em `shared/notificationText.ts`.
+ */
+function subjectParams(request: MongoApprovalRequest) {
+  return {
+    kind: request.kind,
+    documentName: request.subject.documentName,
+    memberName: request.subject.memberName,
+  };
 }
 
 /** Avisa quem pode decidir que há trabalho na fila. */
@@ -43,8 +44,10 @@ export async function notifyApprovalRequested(request: MongoApprovalRequest): Pr
       recipients: request.decidableBy,
       // Um pedido, um aviso por pessoa. Reprocessar não enche a caixa de quem decide.
       eventKey: request._id,
-      title: `${request.requestedBy.name} pediu aprovação`,
-      body: subjectLine(request),
+      params: compactNotificationParams({
+        actorName: request.requestedBy.name,
+        ...subjectParams(request),
+      }),
       documentId: request.subject.documentId,
       documentName: request.subject.documentName,
       categoryId: request.subject.categoryId,
@@ -75,8 +78,11 @@ export async function notifyApprovalDecided(
       type: 'approval_decided',
       recipients: [request.requestedBy.userId],
       eventKey: `${request._id}:${request.status}`,
-      title: approved ? 'Seu pedido foi aprovado' : 'Seu pedido foi recusado',
-      body: request.reason ? `${subjectLine(request)} — ${request.reason}` : subjectLine(request),
+      params: compactNotificationParams({
+        approved,
+        reason: request.reason,
+        ...subjectParams(request),
+      }),
       documentId: request.subject.documentId,
       documentName: request.subject.documentName,
       categoryId: request.subject.categoryId,

@@ -14,7 +14,8 @@
       "access": "acesso",
       "approval": "aprovação",
       "request": "pedido",
-      "inbound": "de fora"
+      "inbound": "de fora",
+      "member": "equipe"
     },
     "moment": {
       "now": "agora",
@@ -48,5 +49,76 @@
     "falhaMarcarLidas": "Não foi possível marcar as notificações como lidas.",
     "markedRead_one": "{{count}} notificação marcada como lida.",
     "markedRead_other": "{{count}} notificações marcadas como lidas."
+  },
+  "inApp": {
+    "document_expiring": {
+      "today": "{{documentName}} vence hoje",
+      "upcoming_one": "{{documentName}} vence em {{count}} dia",
+      "upcoming_other": "{{documentName}} vence em {{count}} dias",
+      "overdue_one": "{{documentName}} venceu há {{count}} dia",
+      "overdue_other": "{{documentName}} venceu há {{count}} dias"
+    },
+    "document_created": {
+      "title": "{{documentName}} entrou em {{categoryName}}",
+      "titleNoCategory": "{{documentName}} entrou sem categoria",
+      "body": "Enviado por {{actorName}}."
+    },
+    "document_updated": {
+      "title": "{{documentName}} ganhou uma versão nova",
+      "body": "Atualizado por {{actorName}}."
+    },
+    "signature_required": {
+      "title": "{{actorName}} pediu sua assinatura em {{documentName}}",
+      "titleDeadline": "{{actorName}} pediu sua assinatura em {{documentName}} até {{deadline}}",
+      "titleNoActor": "Alguém pediu sua assinatura em {{documentName}}",
+      "titleNoActorDeadline": "Alguém pediu sua assinatura em {{documentName}} até {{deadline}}"
+    },
+    "document_shared": {
+      "title": "{{actorName}} compartilhou {{documentName}} com você",
+      "titleNoActor": "Alguém compartilhou {{documentName}} com você",
+      "bodyDownload": "Você pode ver e baixar.",
+      "bodyViewOnly": "Você pode ver, sem baixar."
+    },
+    "access_approved": {
+      "title": "Seu acesso a {{tenantName}} foi aprovado",
+      "titleNoTenant": "Seu acesso a esta organização foi aprovado"
+    },
+    "access_rejected": {
+      "title": "Seu acesso a {{tenantName}} foi recusado",
+      "titleNoTenant": "Seu acesso a esta organização foi recusado"
+    },
+    "approvalKind": {
+      "document_upload": "Envio de documento",
+      "document_download": "Download de documento",
+      "document_share": "Compartilhamento de documento"
+    },
+    "approval_requested": {
+      "title": "{{actorName}} pediu aprovação"
+    },
+    "approval_decided": {
+      "titleApproved": "Seu pedido foi aprovado",
+      "titleRejected": "Seu pedido foi recusado"
+    },
+    "member_joined": {
+      "title": "{{memberName}} entrou na empresa"
+    },
+    "inbound_share_received": {
+      "title": "{{originTenantName}} quer compartilhar um documento"
+    },
+    "inbound_share_accepted": {
+      "title": "{{recipientName}} aceitou o documento"
+    },
+    "inbound_share_declined": {
+      "title": "{{recipientName}} recusou o documento"
+    },
+    "document_requested": {
+      "title": "{{requesterName}} pediu um documento",
+      "bodyDue": "{{requestTitle}} · até {{dueDate}}"
+    },
+    "document_request_fulfilled": {
+      "title": "Seu pedido foi atendido",
+      "body": "{{senderName}} enviou {{documentName}}.",
+      "bodyCrossTenant": "{{senderName}} enviou {{documentName}}. Aceite para ver."
+    }
   }
 }

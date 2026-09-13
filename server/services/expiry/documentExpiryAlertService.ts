@@ -8,6 +8,7 @@ import type {
   MongoDocumentGroupMember,
   MongoNotification,
 } from '../../db/types.js';
+import { renderNotificationText, SERVER_DEFAULT_LOCALE } from '../../i18n/index.js';
 import { listActiveTenantMemberUserIds } from '../tenantMembersService.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import {
@@ -301,6 +302,7 @@ export function buildPendingExpiryNotifications(input: {
         // O marco faz parte da identidade do fato: cada antecedência avisa uma vez.
         eventKey: `${document._id}:${offsetDays}`,
         title: expiryNotificationTitle(documentName, daysRemaining),
+        params: { documentName, daysRemaining },
         documentId: document._id,
         documentName,
         categoryId: document.classId,
@@ -320,14 +322,18 @@ export function buildPendingExpiryNotifications(input: {
   return { pending, documentsWithoutRecipients };
 }
 
-/** O título carrega o prazo porque é o que o sino mostra sem abrir. */
+/**
+ * O título carrega o prazo porque é o que o sino mostra sem abrir.
+ *
+ * Cópia pronta no idioma padrão; a tela relê `params` no idioma de quem abre.
+ */
 export function expiryNotificationTitle(documentName: string, daysRemaining: number): string {
-  if (daysRemaining < 0) {
-    const days = Math.abs(daysRemaining);
-    return `${documentName} venceu há ${days} ${days === 1 ? 'dia' : 'dias'}`;
-  }
-  if (daysRemaining === 0) return `${documentName} vence hoje`;
-  return `${documentName} vence em ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'}`;
+  return (
+    renderNotificationText(SERVER_DEFAULT_LOCALE, 'document_expiring', {
+      documentName,
+      daysRemaining,
+    })?.title ?? documentName
+  );
 }
 
 /**

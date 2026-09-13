@@ -1,4 +1,5 @@
 import type { MongoDocumentRequest } from '../../db/types.js';
+import { compactNotificationParams } from '../../../shared/notificationText.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
 import { findActiveTenantIdsForUser } from '../tenantMemberRepository.js';
@@ -21,18 +22,16 @@ async function safely(what: string, run: () => Promise<unknown>): Promise<void> 
   }
 }
 
-function formatDueDate(value: Date | undefined): string | null {
-  if (!value) return null;
-  return value.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-}
-
 /** Avisa quem vai enviar que há um documento sendo pedido a ele. */
 export async function notifyDocumentRequested(request: MongoDocumentRequest): Promise<void> {
-  const due = formatDueDate(request.dueAt);
-  const title = request.crossTenant
-    ? `${request.crossTenant.requesterTenantName} pediu um documento`
-    : `${request.requestedBy.name} pediu um documento`;
-  const body = due ? `${request.title} · até ${due}` : request.title;
+  const params = compactNotificationParams({
+    requesterName: request.crossTenant
+      ? request.crossTenant.requesterTenantName
+      : request.requestedBy.name,
+    requestTitle: request.title,
+    // Data de calendário em UTC; o formato do idioma é aplicado na leitura.
+    dueDate: request.dueAt ? new Date(request.dueAt).toISOString().slice(0, 10) : undefined,
+  });
 
   /**
    * O aviso é gravado na caixa de quem vai enviar, e ela vive no tenant dele.
@@ -54,8 +53,7 @@ export async function notifyDocumentRequested(request: MongoDocumentRequest): Pr
         recipients: [request.requestedFrom.userId],
         // Um pedido, um aviso por caixa. Reprocessar não enche a de quem vai enviar.
         eventKey: `${request._id}:${tenantId}`,
-        title,
-        body,
+        params,
         categoryId: request.categoryId,
         categoryName: request.categoryName,
         actorUserId: request.requestedBy.userId,
@@ -93,10 +91,11 @@ export async function notifyDocumentRequestFulfilled(
       recipients: [request.requestedBy.userId],
       // A chave é o documento, não o pedido: um pedido reaberto e atendido de novo é fato novo.
       eventKey: `${request._id}:${request.fulfilledDocumentId ?? documentName}`,
-      title: 'Seu pedido foi atendido',
-      body: crossTenant
-        ? `${request.requestedFrom.name} enviou ${documentName}. Aceite para ver.`
-        : `${request.requestedFrom.name} enviou ${documentName}.`,
+      params: compactNotificationParams({
+        senderName: request.requestedFrom.name,
+        documentName,
+        crossTenant,
+      }),
       ...(crossTenant ? {} : { documentId: request.fulfilledDocumentId }),
       documentName,
       categoryId: request.categoryId,

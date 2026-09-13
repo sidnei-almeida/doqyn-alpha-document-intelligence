@@ -17,13 +17,16 @@ export type NotificationType =
   | 'document_request_fulfilled'
   | 'inbound_share_received'
   | 'inbound_share_accepted'
-  | 'inbound_share_declined';
+  | 'inbound_share_declined'
+  | 'member_joined';
 
 export type AppNotification = {
   id: string;
   type: NotificationType;
+  /** Texto gravado — o que se mostra quando a notificação não tem `params`. */
   title: string;
   body?: string;
+  params?: Record<string, string | number | boolean>;
   documentId?: string;
   documentName?: string;
   categoryName?: string;

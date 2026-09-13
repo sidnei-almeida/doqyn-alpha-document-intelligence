@@ -14,7 +14,8 @@
       "access": "access",
       "approval": "approval",
       "request": "request",
-      "inbound": "external"
+      "inbound": "external",
+      "member": "team"
     },
     "moment": {
       "now": "now",
@@ -48,5 +49,76 @@
     "falhaMarcarLidas": "Could not mark the notifications as read.",
     "markedRead_one": "{{count}} notification marked as read.",
     "markedRead_other": "{{count}} notifications marked as read."
+  },
+  "inApp": {
+    "document_expiring": {
+      "today": "{{documentName}} expires today",
+      "upcoming_one": "{{documentName}} expires in {{count}} day",
+      "upcoming_other": "{{documentName}} expires in {{count}} days",
+      "overdue_one": "{{documentName}} expired {{count}} day ago",
+      "overdue_other": "{{documentName}} expired {{count}} days ago"
+    },
+    "document_created": {
+      "title": "{{documentName}} was added to {{categoryName}}",
+      "titleNoCategory": "{{documentName}} was added without a category",
+      "body": "Uploaded by {{actorName}}."
+    },
+    "document_updated": {
+      "title": "{{documentName}} has a new version",
+      "body": "Updated by {{actorName}}."
+    },
+    "signature_required": {
+      "title": "{{actorName}} requested your signature on {{documentName}}",
+      "titleDeadline": "{{actorName}} requested your signature on {{documentName}} by {{deadline}}",
+      "titleNoActor": "Someone requested your signature on {{documentName}}",
+      "titleNoActorDeadline": "Someone requested your signature on {{documentName}} by {{deadline}}"
+    },
+    "document_shared": {
+      "title": "{{actorName}} shared {{documentName}} with you",
+      "titleNoActor": "Someone shared {{documentName}} with you",
+      "bodyDownload": "You can view and download it.",
+      "bodyViewOnly": "You can view it, but not download it."
+    },
+    "access_approved": {
+      "title": "Your access to {{tenantName}} was approved",
+      "titleNoTenant": "Your access to this organization was approved"
+    },
+    "access_rejected": {
+      "title": "Your access to {{tenantName}} was declined",
+      "titleNoTenant": "Your access to this organization was declined"
+    },
+    "approvalKind": {
+      "document_upload": "Document upload",
+      "document_download": "Document download",
+      "document_share": "Document sharing"
+    },
+    "approval_requested": {
+      "title": "{{actorName}} requested approval"
+    },
+    "approval_decided": {
+      "titleApproved": "Your request was approved",
+      "titleRejected": "Your request was declined"
+    },
+    "member_joined": {
+      "title": "{{memberName}} joined the company"
+    },
+    "inbound_share_received": {
+      "title": "{{originTenantName}} wants to share a document"
+    },
+    "inbound_share_accepted": {
+      "title": "{{recipientName}} accepted the document"
+    },
+    "inbound_share_declined": {
+      "title": "{{recipientName}} declined the document"
+    },
+    "document_requested": {
+      "title": "{{requesterName}} requested a document",
+      "bodyDue": "{{requestTitle}} · due {{dueDate}}"
+    },
+    "document_request_fulfilled": {
+      "title": "Your request was fulfilled",
+      "body": "{{senderName}} sent {{documentName}}.",
+      "bodyCrossTenant": "{{senderName}} sent {{documentName}}. Accept it to view."
+    }
   }
 }

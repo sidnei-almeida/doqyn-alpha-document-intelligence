@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import type { AppNotification, NotificationType } from '../api/notificationsApi';
 import { i18n } from '@/i18n';
 import { formatDate } from '@/i18n/formats';
+import { renderNotificationText, type NotificationText } from '@shared/notificationText';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 export type NotificationListProps = {
@@ -38,6 +40,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   inbound_share_received: 'inbox',
   inbound_share_accepted: 'check_circle',
   inbound_share_declined: 'block',
+  member_joined: 'person_add',
 };
 
 const TYPE_LABEL_KEYS: Record<NotificationType, string> = {
@@ -55,7 +58,25 @@ const TYPE_LABEL_KEYS: Record<NotificationType, string> = {
   inbound_share_received: 'notificationList.type.inbound',
   inbound_share_accepted: 'notificationList.type.inbound',
   inbound_share_declined: 'notificationList.type.inbound',
+  member_joined: 'notificationList.type.member',
 };
+
+/**
+ * Título e corpo no idioma de quem lê.
+ *
+ * Notificação com `params` se remonta pelo catálogo; a gravada antes dele não tem `params` e
+ * mostra o texto que ficou salvo.
+ */
+function notificationText(t: TFunction, notification: AppNotification): NotificationText {
+  const stored = { title: notification.title, body: notification.body };
+  if (!notification.params) return stored;
+  return (
+    renderNotificationText(notification.type, notification.params, {
+      t: (key, values) => String(t(key, values)),
+      formatCalendarDate: (value) => formatDate(value),
+    }) ?? stored
+  );
+}
 
 /**
  * Urgência sai dos dias restantes, não do marco configurado: o que importa para quem lê é quanto
@@ -157,6 +178,7 @@ export function NotificationList({
       {notifications.map((notification) => {
         const daysRemaining = notification.expiry?.daysRemaining;
         const target = targetFor(notification);
+        const { title, body } = notificationText(t, notification);
 
         return (
           <li
@@ -206,7 +228,7 @@ export function NotificationList({
                     if (notification.status === 'unread') onMarkRead(notification.id);
                   }}
                 >
-                  {notification.title}
+                  {title}
                 </Link>
               ) : (
                 <p
@@ -215,18 +237,18 @@ export function NotificationList({
                     compact ? 'truncate' : 'mt-1 break-words',
                   )}
                 >
-                  {notification.title}
+                  {title}
                 </p>
               )}
 
-              {notification.body ? (
+              {body ? (
                 <p
                   className={cn(
                     'text-caption text-doqyn-muted',
                     compact ? 'truncate' : 'mt-0.5 break-words',
                   )}
                 >
-                  {notification.body}
+                  {body}
                 </p>
               ) : null}
             </div>

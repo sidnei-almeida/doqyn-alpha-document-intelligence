@@ -60,6 +60,14 @@ function copyRuntimeAssets() {
     mkdirSync(join(DIST, 'server/preview'), { recursive: true });
     cpSync(previewAssetsSrc, previewAssetsDest, { recursive: true });
   }
+
+  // `server/i18n` importa os catálogos do front com `with { type: 'json' }`, e o esbuild mantém
+  // esse import no arquivo compilado em vez de embuti-lo. Sem a cópia, `dist/server/i18n/index.js`
+  // não carrega — e com ele a API inteira, que grava trilha de auditoria por esse módulo.
+  const catalogSrc = join(ROOT, 'src/i18n/catalog');
+  if (existsSync(catalogSrc)) {
+    cpSync(catalogSrc, join(DIST, 'src/i18n/catalog'), { recursive: true });
+  }
 }
 
 function main() {

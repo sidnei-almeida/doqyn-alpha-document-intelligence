@@ -2,6 +2,14 @@ import i18next from 'i18next';
 import ptAuditEvents from '../../src/i18n/catalog/pt-BR/auditEvents.json' with { type: 'json' };
 import enAuditEvents from '../../src/i18n/catalog/en-US/auditEvents.json' with { type: 'json' };
 import esAuditEvents from '../../src/i18n/catalog/es-419/auditEvents.json' with { type: 'json' };
+import ptNotifications from '../../src/i18n/catalog/pt-BR/notifications.json' with { type: 'json' };
+import enNotifications from '../../src/i18n/catalog/en-US/notifications.json' with { type: 'json' };
+import esNotifications from '../../src/i18n/catalog/es-419/notifications.json' with { type: 'json' };
+import {
+  renderNotificationText as renderNotificationTextWith,
+  type NotificationParams,
+  type NotificationText,
+} from '../../shared/notificationText.js';
 import { foldSearchText } from '../utils/documentListQuery.js';
 
 /**
@@ -18,9 +26,9 @@ export type ServerLocale = (typeof SERVER_LOCALES)[number];
 export const SERVER_DEFAULT_LOCALE: ServerLocale = 'pt-BR';
 
 const RESOURCES = {
-  'pt-BR': { auditEvents: ptAuditEvents },
-  'en-US': { auditEvents: enAuditEvents },
-  'es-419': { auditEvents: esAuditEvents },
+  'pt-BR': { auditEvents: ptAuditEvents, notifications: ptNotifications },
+  'en-US': { auditEvents: enAuditEvents, notifications: enNotifications },
+  'es-419': { auditEvents: esAuditEvents, notifications: esNotifications },
 };
 
 const instance = i18next.createInstance();
@@ -29,7 +37,7 @@ void instance.init({
   lng: SERVER_DEFAULT_LOCALE,
   fallbackLng: SERVER_DEFAULT_LOCALE,
   supportedLngs: [...SERVER_LOCALES],
-  ns: ['auditEvents'],
+  ns: ['auditEvents', 'notifications'],
   defaultNS: 'auditEvents',
   interpolation: { escapeValue: false },
   initAsync: false,
@@ -65,6 +73,35 @@ export function renderAuditText(
   const key = `${action}.${kind}`;
   if (!instance.exists(key, { lng: SERVER_DEFAULT_LOCALE })) return undefined;
   return String(instance.t(key, { ...(params ?? {}), lng: normalizeServerLocale(locale) }));
+}
+
+/**
+ * Título e corpo de uma notificação in-app, no idioma pedido.
+ *
+ * A montagem é a mesma que a tela usa (`shared/notificationText.ts`); aqui só se fornece o `t` e o
+ * formato de data do idioma.
+ */
+export function renderNotificationText(
+  locale: string | null | undefined,
+  type: string,
+  params: NotificationParams,
+): NotificationText | undefined {
+  const lng = normalizeServerLocale(locale);
+  const t = instance.getFixedT(lng, 'notifications');
+  const dateFormat = new Intl.DateTimeFormat(lng, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+  return renderNotificationTextWith(type, params, {
+    t: (key, values) => String(t(key, values ?? {})),
+    formatCalendarDate: (value) => {
+      const date = new Date(`${value}T00:00:00Z`);
+      return Number.isNaN(date.getTime()) ? value : dateFormat.format(date);
+    },
+  });
 }
 
 let searchIndex: Array<{ action: string; texts: string[] }> | null = null;

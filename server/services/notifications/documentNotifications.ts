@@ -1,3 +1,4 @@
+import { compactNotificationParams } from '../../../shared/notificationText.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
 import { resolveCategoryAudience } from './notificationRecipients.js';
@@ -20,11 +21,12 @@ async function safely(what: string, run: () => Promise<unknown>): Promise<void> 
   }
 }
 
-function formatDate(value: Date | string | undefined): string | null {
+/** Data de calendário `yyyy-mm-dd` em UTC; o formato do idioma é aplicado na leitura. */
+function calendarDate(value: Date | string | undefined): string | null {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  return date.toISOString().slice(0, 10);
 }
 
 type DocumentEventInput = {
@@ -54,8 +56,11 @@ export async function notifyDocumentCreated(input: DocumentEventInput): Promise<
       type: 'document_created',
       recipients,
       eventKey: input.eventKey,
-      title: `${input.documentName} entrou em ${input.categoryName ?? 'Sem categoria'}`,
-      body: input.actorName ? `Enviado por ${input.actorName}.` : undefined,
+      params: compactNotificationParams({
+        documentName: input.documentName,
+        categoryName: input.categoryName,
+        actorName: input.actorName,
+      }),
       documentId: input.documentId,
       documentName: input.documentName,
       categoryId: input.categoryId,
@@ -80,8 +85,10 @@ export async function notifyDocumentUpdated(input: DocumentEventInput): Promise<
       type: 'document_updated',
       recipients,
       eventKey: input.eventKey,
-      title: `${input.documentName} ganhou uma versão nova`,
-      body: input.actorName ? `Atualizado por ${input.actorName}.` : undefined,
+      params: compactNotificationParams({
+        documentName: input.documentName,
+        actorName: input.actorName,
+      }),
       documentId: input.documentId,
       documentName: input.documentName,
       categoryId: input.categoryId,
@@ -111,17 +118,17 @@ export async function notifySignatureRequested(input: {
   if (!input.signerUserId) return;
 
   await safely('signature_required', async () => {
-    const deadline = formatDate(input.expiresAt);
-
     return emitNotifications({
       tenantId: input.tenantId,
       type: 'signature_required',
       recipients: [input.signerUserId as string],
       eventKey: input.signatureRequestId,
       // O prazo entra no título porque é o que decide a ordem de quem tem várias pendências.
-      title: deadline
-        ? `${input.actorName ?? 'Alguém'} pediu sua assinatura em ${input.documentName} até ${deadline}`
-        : `${input.actorName ?? 'Alguém'} pediu sua assinatura em ${input.documentName}`,
+      params: compactNotificationParams({
+        actorName: input.actorName,
+        documentName: input.documentName,
+        deadline: calendarDate(input.expiresAt),
+      }),
       documentId: input.documentId,
       documentName: input.documentName,
       actorUserId: input.actorUserId,
@@ -147,12 +154,12 @@ export async function notifyDocumentShared(input: {
       type: 'document_shared',
       recipients: [input.recipientUserId],
       eventKey: input.shareId,
-      title: `${input.actorName ?? 'Alguém'} compartilhou ${input.documentName} com você`,
-      // O que a pessoa pode fazer é parte do aviso: "compartilhou" sem isso não diz se ela pode
-      // baixar ou só ler na tela.
-      body:
-        input.message?.trim() ||
-        (input.canDownload ? 'Você pode ver e baixar.' : 'Você pode ver, sem baixar.'),
+      params: compactNotificationParams({
+        actorName: input.actorName,
+        documentName: input.documentName,
+        message: input.message,
+        canDownload: input.canDownload === true,
+      }),
       documentId: input.documentId,
       documentName: input.documentName,
       actorUserId: input.actorUserId,
@@ -180,10 +187,10 @@ export async function notifyAccessDecision(input: {
       recipients: [input.memberUserId as string],
       // A decisão entra na chave: aprovar depois de rejeitar precisa avisar de novo.
       eventKey: `${input.memberId}:${input.approved ? 'approved' : 'rejected'}`,
-      title: input.approved
-        ? `Seu acesso a ${input.tenantName ?? 'esta organização'} foi aprovado`
-        : `Seu acesso a ${input.tenantName ?? 'esta organização'} foi recusado`,
-      body: input.approved ? undefined : input.reason?.trim() || undefined,
+      params: compactNotificationParams({
+        tenantName: input.tenantName,
+        reason: input.approved ? undefined : input.reason,
+      }),
       actorUserId: input.actorUserId,
       actorName: input.actorName,
     }),

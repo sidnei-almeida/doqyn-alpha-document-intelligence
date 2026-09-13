@@ -7,6 +7,8 @@ import type {
   NotificationType,
 } from '../../db/notificationTypes.js';
 import type { MongoNotification } from '../../db/types.js';
+import { renderNotificationText, SERVER_DEFAULT_LOCALE } from '../../i18n/index.js';
+import type { NotificationParams } from '../../../shared/notificationText.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { logger } from '../../utils/logger.js';
 import { recordNotificationDeliveries } from './notificationDelivery.js';
@@ -35,8 +37,8 @@ export type EmitNotificationInput = {
   recipients: Iterable<string>;
   /** Identidade do fato dentro do tipo. Ver `MongoNotification.eventKey`. */
   eventKey: string;
-  title: string;
-  body?: string;
+  /** Valores do texto. Título e corpo saem do catálogo — ver `shared/notificationText.ts`. */
+  params: NotificationParams;
   documentId?: string;
   documentName?: string;
   categoryId?: string;
@@ -84,6 +86,14 @@ export async function emitNotifications(
   );
   if (recipients.length === 0) return result;
 
+  /**
+   * A cópia pronta sai no idioma padrão, uma vez por evento: o idioma de cada destinatário mora no
+   * auth-service, e a tela não depende dela — relê `params` no idioma de quem abre. Quem usa a cópia
+   * é o e-mail, que passa a resolver o idioma por destinatário na Fase 9.
+   */
+  const text = renderNotificationText(SERVER_DEFAULT_LOCALE, input.type, input.params);
+  if (!text) throw new Error(`notification type without text: ${input.type}`);
+
   const preferencesByUser = await loadNotificationPreferences(input.tenantId, recipients);
   const channelsByUserId = new Map<string, NotificationChannel[]>();
   const now = new Date();
@@ -104,8 +114,9 @@ export async function emitNotifications(
       type: input.type,
       userId,
       eventKey: input.eventKey,
-      title: input.title,
-      body: input.body,
+      title: text.title,
+      body: text.body || undefined,
+      params: input.params,
       documentId: input.documentId,
       documentName: input.documentName,
       categoryId: input.categoryId,
@@ -181,6 +192,7 @@ export type NotificationListItem = {
   type: NotificationType;
   title: string;
   body?: string;
+  params?: NotificationParams;
   documentId?: string;
   documentName?: string;
   categoryName?: string;
@@ -200,6 +212,7 @@ function serializeNotification(notification: MongoNotification): NotificationLis
     type: notification.type,
     title: notification.title,
     body: notification.body,
+    params: notification.params,
     documentId: notification.documentId,
     documentName: notification.documentName,
     categoryName: notification.categoryName,
