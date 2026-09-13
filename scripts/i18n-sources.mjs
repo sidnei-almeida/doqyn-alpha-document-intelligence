@@ -103,3 +103,33 @@ export function translationStatus(locale, recorded, root = CATALOG_ROOT) {
   const orphan = Object.keys(recorded).filter((id) => !current.has(id));
   return { stale, unrecorded, orphan, current };
 }
+
+/**
+ * Chaves do português que faltam num idioma, com plural pelas categorias *daquele* idioma.
+ *
+ * É a conta de "faltando" do `i18n:parity`, reduzida ao que decide se um idioma pode ser exposto:
+ * o espanhol precisa de `_many`, que o português não tem, e o inglês não precisa.
+ */
+export function missingTranslations(locale, root = CATALOG_ROOT) {
+  const categories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories ?? [
+    'one',
+    'other',
+  ];
+  const missing = [];
+  for (const namespace of listNamespaces(root)) {
+    const reference = loadCatalog(REFERENCE, namespace, root);
+    const target = loadCatalog(locale, namespace, root);
+    const families = new Set();
+    for (const key of reference.keys()) {
+      const plural = key.match(/^(.*)_(zero|one|two|few|many|other)$/);
+      if (plural) families.add(plural[1]);
+      else if (!target.has(key)) missing.push(`${namespace}:${key}`);
+    }
+    for (const base of families) {
+      for (const category of categories) {
+        if (!target.has(`${base}_${category}`)) missing.push(`${namespace}:${base}_${category}`);
+      }
+    }
+  }
+  return missing;
+}

@@ -4,14 +4,16 @@
  * `status: 'ready'` é o que aparece no seletor. `status: 'draft'` existe no código, carrega
  * catálogo e pode ser testado por `?lang=`, mas ninguém o encontra sozinho — é o princípio P9
  * do plano: um idioma pela metade parece produto abandonado, enquanto um idioma ausente
- * parece produto que ainda não chegou. Promover é trocar uma palavra aqui.
+ * parece produto que ainda não chegou. O estado mora em `shared/localeExposure.ts`, que o
+ * servidor também lê; promover é mexer lá, e o teste de liberação cobra os portões.
  *
  * Idioma da interface não é o mesmo que país. Um brasileiro pode preferir o app em inglês sem
  * deixar de ter CPF, e é por isso que esta lista não consulta nada da conta além da preferência
  * declarada.
  */
+import { LOCALE_RELEASE, type LocaleCode } from '@shared/localeExposure';
 
-export type SupportedLocale = 'pt-BR' | 'en-US' | 'es-419';
+export type SupportedLocale = LocaleCode;
 
 export type LocaleStatus = 'ready' | 'draft';
 
@@ -37,21 +39,21 @@ export const LOCALES: LocaleDefinition[] = [
     nativeName: 'Português (Brasil)',
     labelKey: 'common:locale.ptBR',
     short: 'PT',
-    status: 'ready',
+    status: LOCALE_RELEASE['pt-BR'].status,
   },
   {
     code: 'en-US',
     nativeName: 'English (US)',
     labelKey: 'common:locale.enUS',
     short: 'EN',
-    status: 'draft',
+    status: LOCALE_RELEASE['en-US'].status,
   },
   {
     code: 'es-419',
     nativeName: 'Español (Latinoamérica)',
     labelKey: 'common:locale.es419',
     short: 'ES',
-    status: 'draft',
+    status: LOCALE_RELEASE['es-419'].status,
   },
 ];
 

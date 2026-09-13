@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { PDFDocument } from 'pdf-lib';
 import { resolveRequestLocale } from '../server/i18n/index.ts';
+import { isExposedLocale } from '../shared/localeExposure.ts';
 import { renderOgPortalHtml } from '../server/og/renderOgPortalHtml.ts';
 import {
   generateSignedPdf,
@@ -21,9 +22,11 @@ describe('idioma da requisição sem sessão', () => {
       'en-US',
     );
     assert.equal(resolveRequestLocale({ headers: { 'accept-language': 'es' } }, 'pt-BR'), 'pt-BR');
+    // Do cabeçalho só sai idioma exposto (Fase 12): espanhol em preparo não é escolhido pelo
+    // navegador, e a resposta cai no padrão.
     assert.equal(
       resolveRequestLocale({ headers: { 'accept-language': 'fr-FR, es-MX;q=0.8' } }),
-      'es-419',
+      isExposedLocale('es-419') ? 'es-419' : 'pt-BR',
     );
     assert.equal(resolveRequestLocale({ query: { lang: 'klingon' } }), 'pt-BR');
     assert.equal(resolveRequestLocale({}), 'pt-BR');

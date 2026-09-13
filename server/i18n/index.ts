@@ -19,6 +19,7 @@ import {
   type NotificationParams,
   type NotificationText,
 } from '../../shared/notificationText.js';
+import { isExposedLocale } from '../../shared/localeExposure.js';
 import { foldSearchText } from '../utils/documentListQuery.js';
 
 /**
@@ -98,7 +99,9 @@ type LocaleSource = {
  *
  * Ordem: `?lang=` (o front manda o idioma que está mostrando), o idioma do perfil quando há
  * sessão, e só então `Accept-Language` — que é o idioma do navegador, não a escolha feita no app.
- * No cabeçalho vale o primeiro idioma que sabemos falar: `fr, es;q=0.8` responde em espanhol.
+ * No cabeçalho vale o primeiro idioma que sabemos falar **e que já está exposto**
+ * (`shared/localeExposure.ts`): o robô que busca o cartão do link num celular em espanhol não
+ * pode puxar um catálogo em preparo. `?lang=` e perfil são escolha explícita e aceitam qualquer um.
  */
 export function resolveRequestLocale(
   req: LocaleSource,
@@ -113,7 +116,9 @@ export function resolveRequestLocale(
   const value = Array.isArray(header) ? header[0] : header;
   for (const part of (value ?? '').split(',')) {
     const tag = part.split(';')[0]?.trim() ?? '';
-    if (tag && isKnownLanguageTag(tag)) return normalizeServerLocale(tag);
+    if (!tag || !isKnownLanguageTag(tag)) continue;
+    const locale = normalizeServerLocale(tag);
+    if (isExposedLocale(locale)) return locale;
   }
   return SERVER_DEFAULT_LOCALE;
 }
