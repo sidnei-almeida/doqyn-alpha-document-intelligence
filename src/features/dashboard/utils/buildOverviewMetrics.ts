@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { formatNumber } from '@/i18n/formats';
 import type { DashboardOverviewResponse, DashboardPeriodKey } from '@/types/dashboard-overview';
 
 export type OverviewMetric = {
@@ -96,5 +97,6 @@ export function formatStorageBytes(bytes: number): string {
     value /= 1024;
     unit += 1;
   }
-  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+  const digits = value >= 10 || unit === 0 ? 0 : 1;
+  return `${formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${units[unit]}`;
 }

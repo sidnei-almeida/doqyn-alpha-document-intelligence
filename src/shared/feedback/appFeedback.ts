@@ -30,10 +30,29 @@ export const TOAST_DURATIONS: Record<AppToastType, number> = {
   loading: 60000,
 };
 
+/**
+ * O tempo de leitura acompanha o texto, e não só o tipo.
+ *
+ * A mesma frase em espanhol é ~25% mais longa que em português, e um erro de duas linhas somia
+ * antes de ser lido. O tempo do tipo continua sendo o piso; o texto longo estende até um teto,
+ * para o aviso não virar modal. Carregando não entra: ele fecha quando a operação termina.
+ */
+const TOAST_READING_BASE_MS = 1500;
+const TOAST_READING_MS_PER_CHAR = 55;
+const TOAST_READING_CEILING_MS = 15000;
+
+export function toastDuration(type: AppToastType, text: string): number {
+  const floor = TOAST_DURATIONS[type];
+  if (type === 'loading') return floor;
+  const reading = TOAST_READING_BASE_MS + text.length * TOAST_READING_MS_PER_CHAR;
+  return Math.max(floor, Math.min(reading, TOAST_READING_CEILING_MS));
+}
+
 export function showAppToast(input: AppToastInput): string | number {
   const title = sanitizeToastText(input.title);
   const description = input.message ? sanitizeToastText(input.message) : undefined;
-  const duration = input.duration ?? TOAST_DURATIONS[input.type];
+  const duration =
+    input.duration ?? toastDuration(input.type, description ? `${title} ${description}` : title);
   const action = input.action
     ? { label: input.action.label, onClick: input.action.onClick }
     : undefined;

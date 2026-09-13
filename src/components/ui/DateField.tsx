@@ -86,7 +86,8 @@ export function DateField({
           parsed ? 'text-doqyn-text' : 'text-doqyn-subtle',
         )}
       >
-        {parsed ? formatDate(parsed) : placeholder}
+        {/* A string, e não o `Date` local: `yyyy-mm-dd` é data de calendário e não passa por fuso. */}
+        {parsed ? formatDate(value.slice(0, 10)) : placeholder}
       </span>
       <Icon name="calendar_today" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
     </button>

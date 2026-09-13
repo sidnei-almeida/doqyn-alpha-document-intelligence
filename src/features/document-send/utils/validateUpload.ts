@@ -1,4 +1,5 @@
 import { commonPhrase } from '@/i18n/commonPhrase';
+import { formatNumber } from '@/i18n/formats';
 import {
   ALLOWED_FILE_EXTENSIONS,
   ALLOWED_FILE_TYPES,
@@ -53,9 +54,10 @@ export function validateUploadFiles(incoming: File[], existingCount = 0): FileVa
   return { valid: true, files: incoming };
 }
 
+/** Casas fixas como antes; o separador decimal é o do idioma (`toFixed` só escreve ponto). */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${formatNumber(bytes / 1024, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} KB`;
   }
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  return `${formatNumber(bytes / 1024 / 1024, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MB`;
 }

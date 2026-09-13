@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n';
+import { formatDateTime } from '@/i18n/formats';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/workflowError';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
@@ -247,17 +248,12 @@ export function isAnalysisStillRunningError(error: unknown): error is AnalysisSt
   return error instanceof AnalysisStillRunningError;
 }
 
-function formatNow(): string {
-  const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
 function mapApiLogs(logs: ApiProcessingLogItem[]): ProcessingLogItem[] {
   return logs.map((log, index) => ({
     id: `log-${index + 1}`,
     title: log.title,
     description: log.description,
-    time: log.status === 'done' ? formatNow() : '',
+    time: log.status === 'done' ? formatDateTime(new Date()) : '',
     status: log.status,
   }));
 }

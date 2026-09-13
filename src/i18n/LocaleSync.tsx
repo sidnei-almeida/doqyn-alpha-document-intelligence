@@ -16,11 +16,18 @@ import { useEffect } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { i18n } from './index';
 import { normalizeLocale } from './locales';
+import { setProfileTimeZone } from './timeZone';
 import { rememberLocale } from './useLocale';
 
 export function LocaleSync() {
   const { user } = useAuth();
   const profileLocale = normalizeLocale(user?.locale);
+
+  /* O fuso é gravado no render, e não num efeito: é estado de módulo lido por quem formata
+     data, sem assinatura de React. Num efeito, os irmãos abaixo já teriam pintado as datas no
+     fuso do navegador, e nada os faria pintar de novo. `LocaleSync` vem antes de `children` em
+     `providers.tsx`, então roda primeiro no mesmo passe. A chamada é idempotente. */
+  setProfileTimeZone(user?.timeZone);
 
   useEffect(() => {
     if (!profileLocale) return;

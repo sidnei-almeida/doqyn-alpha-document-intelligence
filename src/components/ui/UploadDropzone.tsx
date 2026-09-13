@@ -1,3 +1,4 @@
+import { formatNumber } from '@/i18n/formats';
 import { cn } from '@/lib/utils';
 import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { Icon } from '@/components/ui/Icon';
@@ -54,7 +55,13 @@ export function UploadDropzone({
           </div>
           <div>
             <p className="text-sm font-medium text-doqyn-text">{selectedFile.name}</p>
-            <p className="text-xs text-doqyn-muted">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+            <p className="text-xs text-doqyn-muted">
+              {formatNumber(selectedFile.size / 1024, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}{' '}
+              KB
+            </p>
           </div>
         </div>
         {onClear && (

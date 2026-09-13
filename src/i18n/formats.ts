@@ -5,15 +5,14 @@
  * cobra um pacote por locale. O que ele não faz sozinho é lembrar qual idioma está ativo — é
  * só isso que este módulo acrescenta.
  *
- * **Este é o ponto de entrada da Fase 4.** Hoje o app tem 35 pontos com `'pt-BR'` cravado
- * (datas, `localeCompare`, bytes); eles migram para cá um a um. Enquanto isso, código novo já
- * deve usar estas funções em vez de escrever o locale à mão.
+ * Código novo usa estas funções em vez de escrever o locale à mão.
  *
- * O fuso ainda vem do navegador. A Fase 2 traz `AuthUser.timeZone`, e é ele que passará a
- * mandar — hoje um evento de auditoria muda de dia conforme quem o abre.
+ * O fuso é o do perfil (`timeZone.ts`): instante é lido nele, data de calendário em UTC. Quem
+ * passa `timeZone` nas opções continua mandando.
  */
 import { i18n } from './index';
 import { DEFAULT_LOCALE } from './locales';
+import { resolveDateInput } from './timeZone';
 
 function activeLocale(): string {
   return i18n.language || DEFAULT_LOCALE;
@@ -51,8 +50,11 @@ export function formatDate(
   value: Date | string | number,
   options: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' },
 ): string {
-  const date = toDate(value);
-  return date ? dateTimeFormat(options).format(date) : '';
+  const resolved = resolveDateInput(value);
+  if (!resolved) return '';
+  const withZone =
+    options.timeZone || !resolved.timeZone ? options : { ...options, timeZone: resolved.timeZone };
+  return dateTimeFormat(withZone).format(resolved.date);
 }
 
 export function formatDateTime(value: Date | string | number): string {
