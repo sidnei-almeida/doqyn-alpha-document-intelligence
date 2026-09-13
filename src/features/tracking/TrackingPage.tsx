@@ -69,7 +69,7 @@ export function TrackingPage() {
 
   return (
     <PageShell
-      eyebrow="Rastreabilidade"
+      eyebrow={t('trackingPage.eyebrow')}
       title={t('trackingPage.trackingDocumental')}
       description={t('trackingPage.investigueQuemAcessouVisualizou')}
       actions={
@@ -93,7 +93,7 @@ export function TrackingPage() {
             {t('trackingPage.carregandoEventos')}
           </p>
         ) : isError ? (
-          <InlineErrorHint message="Não foi possível carregar o tracking documental." />
+          <InlineErrorHint message={t('trackingPage.loadError')} />
         ) : (
           <TrackingEventsTable
             items={items}
@@ -129,7 +129,7 @@ export function TrackingPage() {
               hasMore ? (
                 <div className="flex justify-center">
                   <Button variant="secondary" onClick={() => loadMore()} disabled={isFetchingMore}>
-                    {isFetchingMore ? 'Carregando...' : 'Carregar mais'}
+                    {isFetchingMore ? t('trackingPage.loadingMore') : t('trackingPage.loadMore')}
                   </Button>
                 </div>
               ) : undefined

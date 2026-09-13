@@ -149,10 +149,37 @@
     "metadados": "Metadata",
     "request": "Request",
     "sessao": "Session",
-    "verTimelineDoDocumento": "View the document timeline"
+    "verTimelineDoDocumento": "View the document timeline",
+    "security": {
+      "device": "Device",
+      "type": "Type",
+      "location": "Approximate location",
+      "time": "Time",
+      "origin": "Origin",
+      "externalGuest": "External guest",
+      "permission": "Permission",
+      "reason": "Reason"
+    }
   },
   "trackingEventsTable": {
-    "nenhumEventoDocumentalEncontrado": "No document event found for the selected filters."
+    "nenhumEventoDocumentalEncontrado": "No document event found for the selected filters.",
+    "emptyDescription": "Adjust the filters or widen the period to see more activity.",
+    "sparseMessage": "No other events for the current filters",
+    "sparseDescription": "Try widening the period or removing filters to see more records.",
+    "columns": {
+      "occurredAt": "Date/time",
+      "action": "Action",
+      "document": "Document",
+      "actor": "User",
+      "origin": "Origin",
+      "session": "Session",
+      "request": "Request",
+      "duration": "Duration",
+      "status": "Result",
+      "severity": "Severity"
+    },
+    "changesCount_one": "{{count}} change",
+    "changesCount_other": "{{count}} changes"
   },
   "trackingFilters": {
     "acao": "Action",
@@ -173,12 +200,23 @@
     "carregandoEventos": "Loading events…",
     "investigueQuemAcessouVisualizou": "Investigate who accessed, viewed, downloaded or changed documents, with full traceability and sanitized data.",
     "limparFiltros": "Clear filters",
-    "trackingDocumental": "Document tracking"
+    "trackingDocumental": "Document tracking",
+    "eyebrow": "Traceability",
+    "loadError": "Couldn't load document tracking.",
+    "loadingMore": "Loading...",
+    "loadMore": "Load more"
   },
   "trackingRoute": {
     "verificandoPermissoes": "Checking permissions..."
   },
   "trackingSummaryStrip": {
-    "resumoDoTracking": "Tracking summary"
+    "resumoDoTracking": "Tracking summary",
+    "totalEvents": "Events",
+    "previews": "Previews",
+    "downloads": "Downloads",
+    "accessDenied": "Access denied",
+    "errors": "Errors",
+    "uniqueDocuments": "Documents",
+    "uniqueActors": "Active users"
   }
 }

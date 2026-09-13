@@ -126,17 +126,28 @@ export function TrackingEventLogDetail({
           </p>
           <dl className="grid gap-x-8 gap-y-1 text-caption sm:grid-cols-2 xl:grid-cols-3">
             {[
-              ['Dispositivo', security.deviceLabel],
-              ['Tipo', security.deviceTypeLabel],
-              ['Local aproximado', security.locationLabel],
+              [t('trackingEventLogDetail.security.device'), security.deviceLabel],
+              [t('trackingEventLogDetail.security.type'), security.deviceTypeLabel],
+              [t('trackingEventLogDetail.security.location'), security.locationLabel],
               ['IP', security.ipLabel],
-              ['Horário', formatDateTime(event.occurredAt)],
-              security.isExternalGuest ? ['Origem', 'Convidado externo'] : null,
+              [t('trackingEventLogDetail.security.time'), formatDateTime(event.occurredAt)],
+              security.isExternalGuest
+                ? [
+                    t('trackingEventLogDetail.security.origin'),
+                    t('trackingEventLogDetail.security.externalGuest'),
+                  ]
+                : null,
               'permissionResult' in rawSecurity && rawSecurity.permissionResult != null
-                ? ['Permissão', String(rawSecurity.permissionResult)]
+                ? [
+                    t('trackingEventLogDetail.security.permission'),
+                    String(rawSecurity.permissionResult),
+                  ]
                 : null,
               'permissionReason' in rawSecurity && rawSecurity.permissionReason != null
-                ? ['Motivo', String(rawSecurity.permissionReason)]
+                ? [
+                    t('trackingEventLogDetail.security.reason'),
+                    String(rawSecurity.permissionReason),
+                  ]
                 : null,
             ]
               .filter((row): row is [string, string] => Array.isArray(row))

@@ -149,10 +149,38 @@
     "metadados": "Metadatos",
     "request": "Request",
     "sessao": "Sesión",
-    "verTimelineDoDocumento": "Ver la línea de tiempo del documento"
+    "verTimelineDoDocumento": "Ver la línea de tiempo del documento",
+    "security": {
+      "device": "Dispositivo",
+      "type": "Tipo",
+      "location": "Ubicación aproximada",
+      "time": "Hora",
+      "origin": "Origen",
+      "externalGuest": "Invitado externo",
+      "permission": "Permiso",
+      "reason": "Motivo"
+    }
   },
   "trackingEventsTable": {
-    "nenhumEventoDocumentalEncontrado": "Ningún evento documental encontrado para los filtros seleccionados."
+    "nenhumEventoDocumentalEncontrado": "Ningún evento documental encontrado para los filtros seleccionados.",
+    "emptyDescription": "Ajusta los filtros o amplía el período para ver más actividad.",
+    "sparseMessage": "Ningún otro evento para los filtros actuales",
+    "sparseDescription": "Prueba ampliar el período o quitar filtros para ver más registros.",
+    "columns": {
+      "occurredAt": "Fecha/hora",
+      "action": "Acción",
+      "document": "Documento",
+      "actor": "Usuario",
+      "origin": "Origen",
+      "session": "Sesión",
+      "request": "Request",
+      "duration": "Duración",
+      "status": "Resultado",
+      "severity": "Severidad"
+    },
+    "changesCount_one": "{{count}} cambio",
+    "changesCount_other": "{{count}} cambios",
+    "changesCount_many": "{{count}} cambios"
   },
   "trackingFilters": {
     "acao": "Acción",
@@ -173,12 +201,23 @@
     "carregandoEventos": "Cargando eventos…",
     "investigueQuemAcessouVisualizou": "Investiga quién accedió, visualizó, descargó o alteró documentos, con trazabilidad completa y datos saneados.",
     "limparFiltros": "Limpiar filtros",
-    "trackingDocumental": "Rastreo documental"
+    "trackingDocumental": "Rastreo documental",
+    "eyebrow": "Trazabilidad",
+    "loadError": "No se pudo cargar el tracking documental.",
+    "loadingMore": "Cargando...",
+    "loadMore": "Cargar más"
   },
   "trackingRoute": {
     "verificandoPermissoes": "Verificando permisos..."
   },
   "trackingSummaryStrip": {
-    "resumoDoTracking": "Resumen del rastreo"
+    "resumoDoTracking": "Resumen del rastreo",
+    "totalEvents": "Eventos",
+    "previews": "Vistas previas",
+    "downloads": "Descargas",
+    "accessDenied": "Acceso denegado",
+    "errors": "Errores",
+    "uniqueDocuments": "Documentos",
+    "uniqueActors": "Usuarios activos"
   }
 }

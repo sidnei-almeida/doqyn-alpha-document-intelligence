@@ -136,7 +136,7 @@ describe('tracking securityContext', () => {
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(drawer.includes('formatSecurityContextDisplay'));
     assert.ok(drawer.includes('.contextoDeAcesso'));
-    assert.ok(drawer.includes('Local aproximado'));
+    assert.ok(drawer.includes('trackingEventLogDetail.security.location'));
     assert.ok(display.includes('ipAddressMasked'));
     assert.equal(drawer.includes('user-agent bruto'), false);
   });
