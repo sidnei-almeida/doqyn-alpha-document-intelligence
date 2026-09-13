@@ -39,22 +39,33 @@ const TYPES_WITH_ACTION = new Set<MongoNotification['type']>([
 type Translate = ReturnType<typeof getServerT>;
 
 /**
- * O prazo em palavras, e a cor que ele merece.
+ * A data de validade, e a cor que ela merece.
  *
- * Vermelho só quando já venceu — âmbar na semana final. O resto fica em cinza: pintar tudo de
- * urgente é o mesmo que não pintar nada.
+ * O título já diz quantos dias faltam; repetir o prazo aqui dobrava a frase. A linha dá o que o
+ * título não tem — o dia — e guarda a cor: vermelho quando venceu ou vence hoje, âmbar na semana
+ * final. O resto fica em cinza: pintar tudo de urgente é o mesmo que não pintar nada.
  */
-function expiryLine(t: Translate, daysRemaining: number): { text: string; color: string } {
+function expiryLine(
+  t: Translate,
+  lang: string,
+  expiry: NonNullable<MongoNotification['expiry']>,
+): { text: string; color: string } | null {
+  const validity = new Date(expiry.validityDate);
+  if (Number.isNaN(validity.getTime())) return null;
+  // Data de calendário: em UTC, senão o Brasil lê o dia anterior.
+  const date = new Intl.DateTimeFormat(lang, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(validity);
+  const { daysRemaining } = expiry;
   if (daysRemaining < 0) {
-    return {
-      text: t('notification.expiry.overdue', { count: Math.abs(daysRemaining) }),
-      color: '#b3261e',
-    };
+    return { text: t('notification.expiry.expiredOn', { date }), color: '#b3261e' };
   }
-  if (daysRemaining === 0) return { text: t('notification.expiry.today'), color: '#b3261e' };
   return {
-    text: t('notification.expiry.upcoming', { count: daysRemaining }),
-    color: daysRemaining <= 7 ? '#8a5a00' : EMAIL_COLORS.muted,
+    text: t('notification.expiry.validUntil', { date }),
+    color: daysRemaining === 0 ? '#b3261e' : daysRemaining <= 7 ? '#8a5a00' : EMAIL_COLORS.muted,
   };
 }
 
@@ -84,7 +95,7 @@ export function buildNotificationEmail(
       `${appBaseUrl}/library?preview=${encodeURIComponent(notification.documentId)}`
     : `${appBaseUrl}/notifications`;
 
-  const expiry = notification.expiry ? expiryLine(t, notification.expiry.daysRemaining) : null;
+  const expiry = notification.expiry ? expiryLine(t, lang, notification.expiry) : null;
 
   const details = [
     documentName ? { label: t('notification.row.document'), value: documentName } : null,
@@ -122,12 +133,14 @@ export function buildNotificationEmail(
       ),
       emailFine(escapeHtml(t('notification.preferencesHint'))),
     ],
-    footNote: t('notification.footNote'),
+    // "Acompanha este documento" num aviso sem documento dizia algo que não aconteceu.
+    footNote: t(notification.documentId ? 'notification.footNote' : 'notification.footNoteAccount'),
   });
 
   return {
     // O assunto carrega o fato inteiro: muita gente decide se abre sem passar da caixa de entrada.
-    subject: documentName ? `${title} — ${documentName}` : title,
+    // Quase todo título já nomeia o documento; acrescentar de novo só alongava o assunto.
+    subject: documentName && !title.includes(documentName) ? `${title} — ${documentName}` : title,
     html,
     text: textLines.join('\n'),
   };

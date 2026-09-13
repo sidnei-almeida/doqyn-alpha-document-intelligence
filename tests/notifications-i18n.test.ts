@@ -118,21 +118,22 @@ describe('texto de notificação in-app', () => {
     } as MongoNotification;
 
     const en = buildNotificationEmail(notification, 'https://app.doqyn.com', 'en-US');
-    assert.equal(en.subject, 'Contrato expires in 3 days — Contrato');
+    assert.equal(en.subject, 'Contrato expires in 3 days');
     assert.match(en.html, /<html lang="en-US">/);
     assert.match(en.html, /Open document/);
     assert.match(en.text, /Category: Jurídico/);
 
     const es = buildNotificationEmail(notification, 'https://app.doqyn.com', 'es-MX');
     assert.match(es.html, /¿Prefieres no recibir avisos por correo\?/);
-    assert.match(es.text, /Vence en 3 días/);
+    assert.match(es.text, /Contrato vence en 3 días/);
+    assert.match(es.text, /Válido hasta el \d{2}\/\d{2}\/\d{4}/);
 
     // Sem idioma conhecido, e notificação antiga sem valores: o texto gravado, em pt-BR.
     const legado = buildNotificationEmail(
       { ...notification, params: undefined },
       'https://app.doqyn.com',
     );
-    assert.equal(legado.subject, 'Contrato vence em 3 dias — Contrato');
+    assert.equal(legado.subject, 'Contrato vence em 3 dias');
     assert.match(legado.html, /Abrir documento/);
   });
 

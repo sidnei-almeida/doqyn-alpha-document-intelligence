@@ -32,15 +32,11 @@
       "actor": "Por"
     },
     "expiry": {
-      "today": "Vence hoy",
-      "upcoming_one": "Vence en {{count}} día",
-      "upcoming_other": "Vence en {{count}} días",
-      "upcoming_many": "Vence en {{count}} días",
-      "overdue_one": "Venció hace {{count}} día",
-      "overdue_other": "Venció hace {{count}} días",
-      "overdue_many": "Venció hace {{count}} días"
+      "validUntil": "Válido hasta el {{date}}",
+      "expiredOn": "Venció el {{date}}"
     },
     "preferencesHint": "¿Prefieres no recibir avisos por correo? Ajusta tus preferencias de notificación en la app.",
-    "footNote": "Recibiste este correo porque sigues este documento en DOQYN, o porque el aviso está dirigido a tu cuenta."
+    "footNote": "Recibiste este correo porque sigues este documento en DOQYN, o porque el aviso está dirigido a tu cuenta.",
+    "footNoteAccount": "Recibiste este correo porque el aviso está dirigido a tu cuenta de DOQYN."
   }
 }

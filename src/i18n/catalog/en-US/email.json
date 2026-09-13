@@ -32,13 +32,11 @@
       "actor": "By"
     },
     "expiry": {
-      "today": "Expires today",
-      "upcoming_one": "Expires in {{count}} day",
-      "upcoming_other": "Expires in {{count}} days",
-      "overdue_one": "Expired {{count}} day ago",
-      "overdue_other": "Expired {{count}} days ago"
+      "validUntil": "Valid until {{date}}",
+      "expiredOn": "Expired on {{date}}"
     },
     "preferencesHint": "Rather not get notices by email? Adjust your notification preferences in the app.",
-    "footNote": "You received this email because you follow this document on DOQYN, or because the notice is addressed to your account."
+    "footNote": "You received this email because you follow this document on DOQYN, or because the notice is addressed to your account.",
+    "footNoteAccount": "You received this email because the notice is addressed to your DOQYN account."
   }
 }
