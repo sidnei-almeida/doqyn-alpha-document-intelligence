@@ -1,0 +1,35 @@
+{
+  "title": {
+    "sign": "Document to sign · DOQYN",
+    "share": "Shared document · DOQYN"
+  },
+  "description": {
+    "sign": "Someone requested your signature on a document. Open the link to view and sign.",
+    "share": "A document was shared with you. Open the link to access it."
+  },
+  "unavailable": {
+    "titleSign": "Signature unavailable · DOQYN",
+    "titleShare": "Share unavailable · DOQYN",
+    "descriptionSign": "This signature link is no longer available.",
+    "descriptionShare": "This sharing link is no longer available.",
+    "cta": "Try to open",
+    "status": "Unavailable"
+  },
+  "status": {
+    "shareWaiting": "Awaiting acceptance",
+    "shareActive": "Shared document",
+    "signPending": "Signature pending"
+  },
+  "cta": {
+    "shareAccept": "Accept and open",
+    "shareOpen": "Open document",
+    "sign": "Open and sign"
+  },
+  "page": {
+    "eyebrowSign": "Signature request",
+    "eyebrowShareVia": "Shared via {{tenant}}",
+    "eyebrowShare": "Secure sharing",
+    "documentFallback": "Document",
+    "footer": "Secure, intelligent and traceable business document management."
+  }
+}

@@ -51,7 +51,8 @@ import {
   generateVerificationCode,
   hashSignaturePortalToken,
 } from './signatureTokens.js';
-import { SIGNATURE_CONSENT_TEXT, generateSignedPdf } from './signaturePdfService.js';
+import { generateSignedPdf, signatureConsentText } from './signaturePdfService.js';
+import { normalizeServerLocale } from '../../i18n/index.js';
 import { promoteSignedPdfToDocumentVersion } from './promoteSignedPdfToDocumentVersion.js';
 import {
   resolveInternalSignerForTenant,
@@ -747,11 +748,13 @@ export async function getInternalSignatureSigningPayload(
   ctx: DocumentRequestContext,
   user: AuthUser,
   signatureRequestId: string,
+  locale?: string | null,
 ) {
   const request = await requireAssignedInternalSignatureRequest(ctx, user, signatureRequestId, {
     requireOpen: true,
     requireCanView: true,
   });
+  const consentLocale = normalizeServerLocale(locale ?? user.locale);
   const { doc, version } = await loadSignatureRequestDocumentContext(request);
   const signer = getPrimarySigner(request);
   const versionLabel = version.versionLabel ?? doc.currentVersionLabel ?? null;
@@ -769,14 +772,22 @@ export async function getInternalSignatureSigningPayload(
     permissions: request.permissions,
     expiresAt: request.expiresAt?.toISOString() ?? null,
     message: request.message ?? null,
-    consentText: SIGNATURE_CONSENT_TEXT,
+    consentText: signatureConsentText(consentLocale),
+    consentLocale,
     status: request.status,
     signerType: 'internal_user' as const,
   };
 }
 
-export async function getSignaturePortalPayload(token: string) {
+/**
+ * O que o portal mostra a quem vai assinar.
+ *
+ * A declaração sai no idioma pedido e volta com o nome dele (`consentLocale`): o portal devolve
+ * esse nome ao assinar, e é por ele que o certificado imprime a mesma frase que a pessoa aceitou.
+ */
+export async function getSignaturePortalPayload(token: string, locale?: string | null) {
   const request = await requireSignaturePortalRequest(token, { requireOpen: true });
+  const consentLocale = normalizeServerLocale(locale);
   const { doc, version } = await loadSignatureRequestDocumentContext(request);
   const signer = request.signers[0];
   const versionLabel = version.versionLabel ?? doc.currentVersionLabel ?? null;
@@ -794,7 +805,8 @@ export async function getSignaturePortalPayload(token: string) {
     permissions: request.permissions,
     expiresAt: request.expiresAt?.toISOString() ?? null,
     message: request.message ?? null,
-    consentText: SIGNATURE_CONSENT_TEXT,
+    consentText: signatureConsentText(consentLocale),
+    consentLocale,
     status: request.status,
   };
 }
@@ -803,6 +815,8 @@ export async function completeDocumentSignature(input: {
   token?: string;
   signatureRequestId?: string;
   consentAccepted: boolean;
+  /** Idioma da declaração que a pessoa viu — o `consentLocale` do payload, devolvido pelo portal. */
+  consentLocale?: string | null;
   req?: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] };
   authUser?: AuthUser;
   origin?: string;
@@ -892,6 +906,7 @@ export async function completeDocumentSignature(input: {
   }));
 
   const signedAt = new Date();
+  const consentLocale = normalizeServerLocale(input.consentLocale ?? input.authUser?.locale);
   const signatureId = randomUUID();
   const verificationCode = generateVerificationCode();
   const verificationUrl = buildSignatureVerificationUrl(verificationCode, input.origin);
@@ -918,6 +933,7 @@ export async function completeDocumentSignature(input: {
     issuerOrganizationName: request.requestedByNameSnapshot ?? undefined,
     previousStamps,
     completedSignatureCount,
+    locale: consentLocale,
   });
 
   const storageScope = await resolveTenantStorageScopeById(
@@ -999,7 +1015,8 @@ export async function completeDocumentSignature(input: {
     organizationName: signer.organizationName ?? null,
     status: 'signed',
     signedAt,
-    consentText: SIGNATURE_CONSENT_TEXT,
+    consentText: signatureConsentText(consentLocale),
+    consentLocale,
     authMethod: isExternal ? 'signature_token' : 'logged_in_session',
     securityContext,
     originalDocumentHashSha256: pdfResult.originalDocumentHashSha256,

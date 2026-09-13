@@ -165,7 +165,7 @@ export function InternalSignaturePage() {
     setSigning(true);
     setError(null);
     try {
-      const result = await signDocumentViaRequest(signatureRequestId, true);
+      const result = await signDocumentViaRequest(signatureRequestId, true, payload?.consentLocale);
       if (payload) {
         publishSignatureCompleted({
           documentId: payload.documentId,

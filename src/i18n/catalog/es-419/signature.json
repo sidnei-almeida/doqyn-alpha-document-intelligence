@@ -176,7 +176,8 @@
     "signedByAt": "Firmada por {{signer}} el {{date}}.",
     "invalidatedDetail": "El registro existe, pero fue invalidado o cancelado después de emitido.",
     "integrityOk": "Verificada",
-    "integrityInvalid": "Invalidada"
+    "integrityInvalid": "Invalidada",
+    "methodDoqyn": "Firma electrónica DOQYN"
   },
   "signaturesAssignedPanel": {
     "abrirEAssinar": "Abrir y firmar",

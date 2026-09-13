@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { resolveRequestLocale } from '../../../server/i18n/index.js';
 import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAuditContext.js';
 import { getInternalSignatureSigningPayload } from '../../../server/services/signatures/documentSignatureService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
@@ -31,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auth.ctx,
       auth.user,
       signatureRequestId,
+      resolveRequestLocale(req, auth.user.locale),
     );
     const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
     await emitTrackingEvent(

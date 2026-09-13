@@ -35,13 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
-  const body = req.body as { consentAccepted?: boolean };
+  const body = req.body as { consentAccepted?: boolean; consentLocale?: string };
   const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
 
   try {
     const result = await completeDocumentSignature({
       signatureRequestId,
       consentAccepted: body.consentAccepted === true,
+      consentLocale: body.consentLocale,
       authUser: auth.user,
       req,
       origin: resolveOrigin(req),

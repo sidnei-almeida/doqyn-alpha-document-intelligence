@@ -8,6 +8,12 @@ import esNotifications from '../../src/i18n/catalog/es-419/notifications.json' w
 import ptEmail from '../../src/i18n/catalog/pt-BR/email.json' with { type: 'json' };
 import enEmail from '../../src/i18n/catalog/en-US/email.json' with { type: 'json' };
 import esEmail from '../../src/i18n/catalog/es-419/email.json' with { type: 'json' };
+import ptSignaturePdf from '../../src/i18n/catalog/pt-BR/signaturePdf.json' with { type: 'json' };
+import enSignaturePdf from '../../src/i18n/catalog/en-US/signaturePdf.json' with { type: 'json' };
+import esSignaturePdf from '../../src/i18n/catalog/es-419/signaturePdf.json' with { type: 'json' };
+import ptOg from '../../src/i18n/catalog/pt-BR/og.json' with { type: 'json' };
+import enOg from '../../src/i18n/catalog/en-US/og.json' with { type: 'json' };
+import esOg from '../../src/i18n/catalog/es-419/og.json' with { type: 'json' };
 import {
   renderNotificationText as renderNotificationTextWith,
   type NotificationParams,
@@ -29,9 +35,27 @@ export type ServerLocale = (typeof SERVER_LOCALES)[number];
 export const SERVER_DEFAULT_LOCALE: ServerLocale = 'pt-BR';
 
 const RESOURCES = {
-  'pt-BR': { auditEvents: ptAuditEvents, notifications: ptNotifications, email: ptEmail },
-  'en-US': { auditEvents: enAuditEvents, notifications: enNotifications, email: enEmail },
-  'es-419': { auditEvents: esAuditEvents, notifications: esNotifications, email: esEmail },
+  'pt-BR': {
+    auditEvents: ptAuditEvents,
+    notifications: ptNotifications,
+    email: ptEmail,
+    signaturePdf: ptSignaturePdf,
+    og: ptOg,
+  },
+  'en-US': {
+    auditEvents: enAuditEvents,
+    notifications: enNotifications,
+    email: enEmail,
+    signaturePdf: enSignaturePdf,
+    og: enOg,
+  },
+  'es-419': {
+    auditEvents: esAuditEvents,
+    notifications: esNotifications,
+    email: esEmail,
+    signaturePdf: esSignaturePdf,
+    og: esOg,
+  },
 };
 
 export type ServerNamespace = keyof (typeof RESOURCES)['pt-BR'];
@@ -42,7 +66,7 @@ void instance.init({
   lng: SERVER_DEFAULT_LOCALE,
   fallbackLng: SERVER_DEFAULT_LOCALE,
   supportedLngs: [...SERVER_LOCALES],
-  ns: ['auditEvents', 'notifications', 'email'],
+  ns: ['auditEvents', 'notifications', 'email', 'signaturePdf', 'og'],
   defaultNS: 'auditEvents',
   interpolation: { escapeValue: false },
   initAsync: false,
@@ -55,6 +79,42 @@ export function normalizeServerLocale(value: string | null | undefined): ServerL
   const primary = tag.split('-')[0]?.toLowerCase();
   if (primary === 'en') return 'en-US';
   if (primary === 'es') return 'es-419';
+  return SERVER_DEFAULT_LOCALE;
+}
+
+function isKnownLanguageTag(tag: string): boolean {
+  const primary = tag.trim().replace('_', '-').split('-')[0]?.toLowerCase();
+  return primary === 'pt' || primary === 'en' || primary === 'es';
+}
+
+type LocaleSource = {
+  query?: Record<string, string | string[] | undefined>;
+  headers?: Record<string, string | string[] | undefined>;
+};
+
+/**
+ * O idioma de uma requisição que o servidor responde com texto — portal sem sessão, cartão do
+ * link, payload de assinatura.
+ *
+ * Ordem: `?lang=` (o front manda o idioma que está mostrando), o idioma do perfil quando há
+ * sessão, e só então `Accept-Language` — que é o idioma do navegador, não a escolha feita no app.
+ * No cabeçalho vale o primeiro idioma que sabemos falar: `fr, es;q=0.8` responde em espanhol.
+ */
+export function resolveRequestLocale(
+  req: LocaleSource,
+  profileLocale?: string | null,
+): ServerLocale {
+  const lang = req.query?.lang;
+  const explicit = Array.isArray(lang) ? lang[0] : lang;
+  if (explicit && isKnownLanguageTag(explicit)) return normalizeServerLocale(explicit);
+  if (profileLocale) return normalizeServerLocale(profileLocale);
+
+  const header = req.headers?.['accept-language'];
+  const value = Array.isArray(header) ? header[0] : header;
+  for (const part of (value ?? '').split(',')) {
+    const tag = part.split(';')[0]?.trim() ?? '';
+    if (tag && isKnownLanguageTag(tag)) return normalizeServerLocale(tag);
+  }
   return SERVER_DEFAULT_LOCALE;
 }
 

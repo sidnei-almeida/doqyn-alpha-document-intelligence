@@ -162,7 +162,11 @@ export function SignatureVerificationPage() {
             label={t('signatureVerificationPage.assinadoEm')}
             value={formatDateTime(result.signedAt)}
           />
-          <GuestRegisterRow label={t('signatureVerificationPage.metodo')} value={result.method} />
+          {/* O servidor manda o método em pt-BR, como está gravado na evidência; só existe um. */}
+          <GuestRegisterRow
+            label={t('signatureVerificationPage.metodo')}
+            value={t('signatureVerificationPage.methodDoqyn')}
+          />
           <GuestRegisterRow
             label={t('signatureVerificationPage.integridade')}
             value={

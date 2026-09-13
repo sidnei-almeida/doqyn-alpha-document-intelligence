@@ -30,7 +30,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ message: 'token é obrigatório.', code: 'MISSING_TOKEN' });
   }
 
-  const body = req.body as { action?: string; consentAccepted?: boolean; reason?: string };
+  const body = req.body as {
+    action?: string;
+    consentAccepted?: boolean;
+    consentLocale?: string;
+    reason?: string;
+  };
 
   try {
     const request = await findSignatureRequestByToken(token);
@@ -56,6 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await completeDocumentSignature({
       token,
       consentAccepted,
+      consentLocale: body.consentLocale,
       req,
       origin: resolveOrigin(req),
     });

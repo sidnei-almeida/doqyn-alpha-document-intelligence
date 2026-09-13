@@ -1,0 +1,39 @@
+{
+  "certificate": {
+    "heading": "Certificado de firma electrónica",
+    "pageTitle": "Certificado de Firma Electrónica",
+    "signedBy": "Firmado por {{name}} · {{date}} BRT"
+  },
+  "label": {
+    "signer": "Firmante",
+    "email": "Correo",
+    "phone": "Teléfono",
+    "organization": "Organización",
+    "requestedBy": "Solicitado por",
+    "dateTime": "Fecha y hora",
+    "ip": "IP",
+    "location": "Ubicación aproximada",
+    "browser": "Navegador",
+    "system": "Sistema",
+    "device": "Dispositivo",
+    "method": "Método"
+  },
+  "methodValue": "Firma electrónica DOQYN",
+  "identifiersHeading": "Identificadores e integridad",
+  "technical": {
+    "document": "Documento",
+    "version": "Versión",
+    "request": "Solicitud",
+    "signature": "Firma",
+    "originalHash": "SHA-256 del original"
+  },
+  "consentHeading": "Declaración de aceptación",
+  "consentText": "Declaro que leí el documento presentado y acepto firmarlo electrónicamente a través de la plataforma DOQYN. Soy consciente de que mi firma quedará vinculada a este documento con fecha, hora y evidencias técnicas de auditoría.",
+  "priorSignatures_one": "Este documento ya tenía {{count}} firma anterior.",
+  "priorSignatures_other": "Este documento ya tenía {{count}} firmas anteriores.",
+  "priorSignatures_many": "Este documento ya tenía {{count}} firmas anteriores.",
+  "validateAt": "Verifica esta firma en",
+  "stamp": {
+    "signedAt": "Firmado el {{date}}"
+  }
+}

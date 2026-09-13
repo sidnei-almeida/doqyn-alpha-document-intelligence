@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { resolveRequestLocale } from '../../../server/i18n/index.js';
 import {
   buildExternalSignatureAuditContext,
   buildSignatureTrackingMetadata,
@@ -22,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const payload = await getSignaturePortalPayload(token);
+      const payload = await getSignaturePortalPayload(token, resolveRequestLocale(req));
       const request = await findSignatureRequestByToken(token);
       if (request) {
         const auditCtx = buildExternalSignatureAuditContext(request);

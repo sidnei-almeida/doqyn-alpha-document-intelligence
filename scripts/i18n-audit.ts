@@ -204,9 +204,11 @@ function main() {
    */
   const DINAMICOS = new Set([
     'errors',
-    /* Lido só pelo servidor (`server/services/notifications/emailTemplate.ts`), que esta
-       auditoria não varre. */
+    /* Lidos só pelo servidor — e-mail de aviso, certificado de assinatura e cartão do link —,
+       que esta auditoria não varre. */
     'email',
+    'signaturePdf',
+    'og',
   ]);
 
   /**

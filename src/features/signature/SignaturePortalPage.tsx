@@ -210,7 +210,7 @@ export function SignaturePortalPage() {
     setSigning(true);
     setError(null);
     try {
-      const result = await signDocumentViaPortal(token, true);
+      const result = await signDocumentViaPortal(token, true, payload?.consentLocale);
       if (payload) {
         publishSignatureCompleted({
           documentId: payload.documentId,

@@ -1294,6 +1294,8 @@ export type MongoDocumentSignature = {
   status: DocumentSignatureStatus;
   signedAt: Date;
   consentText: string;
+  /** Idioma em que `consentText` foi lido e aceito. Ausente nas assinaturas anteriores: pt-BR. */
+  consentLocale?: string;
   authMethod: 'logged_in_session' | 'external_share_token' | 'signature_token' | 'manual_dev';
   securityContext?: Record<string, unknown>;
   originalDocumentHashSha256: string;

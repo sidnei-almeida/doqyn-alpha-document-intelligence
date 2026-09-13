@@ -176,7 +176,8 @@
     "signedByAt": "Signed by {{signer}} on {{date}}.",
     "invalidatedDetail": "The record exists, but it was invalidated or cancelled after it was issued.",
     "integrityOk": "Verified",
-    "integrityInvalid": "Invalidated"
+    "integrityInvalid": "Invalidated",
+    "methodDoqyn": "DOQYN electronic signature"
   },
   "signaturesAssignedPanel": {
     "abrirEAssinar": "Open and sign",
