@@ -2,6 +2,7 @@ import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoVersionMetadataField } from '../db/types.js';
 import {
   buildDocumentSearchOrClause,
+  documentListSortCollation,
   buildDocumentTypeClause,
   resolveDocumentListSort,
 } from '../utils/documentListQuery.js';
@@ -212,9 +213,10 @@ export async function listDocuments(filters: {
 
   const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
   const { field, direction } = resolveDocumentListSort(filters.sort, filters.direction);
+  const collation = documentListSortCollation(field);
 
   const docs = await documents
-    .find(query)
+    .find(query, collation ? { collation } : undefined)
     .sort({ [field]: direction })
     .limit(limit)
     .toArray();

@@ -4,11 +4,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import {
+  buildAccentInsensitivePattern,
   buildDocumentSearchOrClause,
   buildDocumentTypeClause,
+  documentListSortCollation,
   escapeRegexLiteral,
   resolveDocumentListSort,
 } from '../server/utils/documentListQuery.js';
+import { TEXT_SORT_COLLATION, compareNames } from '../server/utils/textCollation.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -56,6 +59,43 @@ describe('documentListQuery (backend)', () => {
       field: 'updatedAt',
       direction: -1,
     });
+  });
+
+  it('busca acha com e sem acento, nos dois sentidos e nos três idiomas', () => {
+    const matches = (term: string, text: string) =>
+      new RegExp(buildAccentInsensitivePattern(term), 'i').test(text);
+
+    assert.ok(matches('sao', 'Contrato São Paulo'));
+    assert.ok(matches('São', 'contrato sao paulo'));
+    assert.ok(matches('conceicao', 'Maria da Conceição'));
+    assert.ok(matches('adquisicion', 'Contrato de Adquisición'));
+    assert.ok(matches('ANO', 'Balanço do año'));
+    assert.equal(matches('sao', 'Contrato Sé'), false);
+    // Metacaractere continua literal depois da expansão.
+    assert.ok(matches('a+b', 'x A+B y'));
+    assert.equal(matches('a+b', 'aab'), false);
+
+    const [first] = buildDocumentSearchOrClause('são');
+    assert.equal(Object.values(first)[0].$regex, buildAccentInsensitivePattern('sao'));
+  });
+
+  it('collation só em ordenação de texto, e a mesma dos índices', () => {
+    assert.equal(documentListSortCollation('currentFileName'), TEXT_SORT_COLLATION);
+    assert.equal(documentListSortCollation('className'), TEXT_SORT_COLLATION);
+    assert.equal(documentListSortCollation('updatedAt'), undefined);
+    assert.equal(documentListSortCollation('status'), undefined);
+    assert.equal(documentListSortCollation('ownerUserId'), undefined);
+  });
+
+  it('lista curta ordena sem olhar acento, caixa ou dígito como texto', () => {
+    const names = ['Zebra', 'ávila', 'Contrato 10', 'Avenida', 'Contrato 2'];
+    assert.deepEqual([...names].sort(compareNames), [
+      'Avenida',
+      'ávila',
+      'Contrato 2',
+      'Contrato 10',
+      'Zebra',
+    ]);
   });
 });
 

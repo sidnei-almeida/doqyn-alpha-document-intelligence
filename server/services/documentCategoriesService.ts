@@ -5,6 +5,7 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import { getDb } from '../db/mongoClient.js';
 import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { slugifyName } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { isDocumentGroupId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -50,12 +51,17 @@ export function serializeDocumentCategory(category: MongoDocumentCategory) {
 
 export async function listDocumentCategories(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const categories = await collections.documentCategories
+  const categories = (await collections.documentCategories
     .find(scope)
-    .sort({ sortOrder: 1, name: 1 })
-    .toArray();
+    .toArray()) as MongoDocumentCategory[];
 
-  return (categories as MongoDocumentCategory[]).map(serializeDocumentCategory);
+  // `sortOrder` ausente vem primeiro, como o Mongo fazia ao ordenar `null` antes de número.
+  const order = (category: MongoDocumentCategory) => category.sortOrder ?? Number.NEGATIVE_INFINITY;
+  return categories
+    .sort((a, b) =>
+      order(a) !== order(b) ? (order(a) < order(b) ? -1 : 1) : compareNames(a.name, b.name),
+    )
+    .map(serializeDocumentCategory);
 }
 
 export async function createDocumentCategory(
