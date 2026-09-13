@@ -93,9 +93,9 @@ describe('idioma escolhido para o convidado', () => {
     }
   });
 
-  it('o seletor só oferece idioma já exposto, mais o que a tela está mostrando', () => {
+  it('o seletor oferece todos os idiomas, inclusive os em preparo', () => {
     const flow = read('src/features/documents/recipients/RecipientFlow.tsx');
-    assert.match(flow, /EXPOSED_LOCALES\.includes\(code\) \|\| code === uiLocale/);
-    assert.match(flow, /localeChoices\.length > 1/);
+    assert.match(flow, /\.\.\.LOCALES\.map\(\(locale\) => \(\{/);
+    assert.equal(flow.includes('EXPOSED_LOCALES'), false);
   });
 });
