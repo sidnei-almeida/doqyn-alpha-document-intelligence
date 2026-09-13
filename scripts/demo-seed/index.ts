@@ -15,6 +15,7 @@ async function main() {
 
   console.log('Demo seed Mongo concluído:');
   console.log(`  Manifest: ${manifestPath}`);
+  console.log(`  Idioma (do manifest): ${result.locale}`);
   console.log(`  Tenant operador (login admin): ${result.devTenantId}`);
   console.log(`  Operadores sincronizados: ${result.devOperatorEmails.join(', ')}`);
   console.log(`  Tenants provisionados: ${result.provisionedTenants.length}`);

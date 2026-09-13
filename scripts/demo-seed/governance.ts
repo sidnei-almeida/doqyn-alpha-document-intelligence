@@ -8,10 +8,8 @@ import type {
 import { buildClassRuleOwnershipFilter } from '../../server/tenancy/documentOwnership.js';
 import { resolveTenantStorageContextFromIds } from '../../server/tenancy/tenantStorage.js';
 import {
-  SEED_GOVERNANCE_ACCESS_RULES,
-  SEED_GOVERNANCE_CATEGORIES,
-  SEED_GOVERNANCE_EXTRACTION_RULES,
-  SEED_GOVERNANCE_GROUPS,
+  buildSeedGovernance,
+  type GovernanceSeedLocale,
 } from '../../server/db/seed/documentGovernanceSeed.js';
 
 export function applyBusinessGovernanceOwnership<T extends Record<string, unknown>>(
@@ -73,12 +71,16 @@ export type TenantGovernanceSeed = {
   extractionRules: MongoDocumentExtractionRule[];
 };
 
-export function buildGovernanceSeedForTenant(tenantId: string): TenantGovernanceSeed {
+export function buildGovernanceSeedForTenant(
+  tenantId: string,
+  locale: GovernanceSeedLocale = 'pt-BR',
+): TenantGovernanceSeed {
+  const seed = buildSeedGovernance(locale);
   return {
-    categories: remapTenantGovernance(SEED_GOVERNANCE_CATEGORIES, tenantId),
-    groups: remapTenantGovernance(SEED_GOVERNANCE_GROUPS, tenantId),
-    accessRules: remapTenantGovernance(SEED_GOVERNANCE_ACCESS_RULES, tenantId),
-    extractionRules: remapTenantGovernance(SEED_GOVERNANCE_EXTRACTION_RULES, tenantId),
+    categories: remapTenantGovernance(seed.categories, tenantId),
+    groups: remapTenantGovernance(seed.groups, tenantId),
+    accessRules: remapTenantGovernance(seed.accessRules, tenantId),
+    extractionRules: remapTenantGovernance(seed.extractionRules, tenantId),
   };
 }
 
@@ -149,7 +151,9 @@ export function countSeedRowsMatchingPipelineFilter(
       }
 
       if (key === '$or' && Array.isArray(value)) {
-        return value.some((option) => matchesOwnershipClause(row, option as Record<string, unknown>));
+        return value.some((option) =>
+          matchesOwnershipClause(row, option as Record<string, unknown>),
+        );
       }
 
       return row[key] === value;

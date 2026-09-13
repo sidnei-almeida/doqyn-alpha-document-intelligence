@@ -54,6 +54,8 @@ export type DemoSeedManifest = {
   version: typeof DEMO_MANIFEST_VERSION;
   source: 'dev_seed_demo';
   generatedAt: string;
+  /** Idioma em que o auth semeou pessoas e empresas; ausente em manifesto antigo = pt-BR. */
+  locale?: string;
   authServiceRoot: string;
   companies: DemoSeedManifestCompany[];
   globalAdmin: DemoSeedManifestGlobalAdmin;
