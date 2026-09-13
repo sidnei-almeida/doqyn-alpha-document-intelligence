@@ -1,0 +1,74 @@
+# Guardas de internacionalização (Fase 13 do .planning/I18N-PLANO.md).
+#
+# O estado internacional se degrada calado: frase nova em português sem par, tradução que ficou
+# para trás, texto solto na tela, código de erro sem frase. Nada disso quebra o build nem o tsc.
+# Este fluxo transforma cada um num PR vermelho.
+#
+# Fica de fora, de propósito, até ter linha de base limpa:
+# - `npm run lint` (21 erros anteriores ao i18n);
+# - `npm test` inteiro (trava e tem falhas conhecidas — ver .planning/RETOMAR-I18N.md). Aqui roda
+#   só a suíte de i18n, que está verde.
+name: i18n
+
+on:
+  pull_request:
+  push:
+    branches: [master, 'feat/**']
+
+concurrency:
+  group: i18n-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guardas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Tipos do front
+        run: npx tsc -p tsconfig.app.json --noEmit
+
+      - name: Tipos do servidor
+        run: npx tsc -p tsconfig.server.json --noEmit
+
+      - name: Código de erro e chave sem par (i18n:check)
+        run: npm run i18n:check
+
+      - name: Chave usada que não resolve (i18n:audit)
+        run: npm run i18n:audit
+
+      - name: Paridade entre catálogos (i18n:parity)
+        run: npm run i18n:parity
+
+      - name: Texto solto na interface (i18n:gate)
+        run: npm run i18n:gate
+
+      - name: Tradução desatualizada (i18n:stale)
+        run: npm run i18n:stale
+
+      - name: Testes de i18n
+        env:
+          MONGODB_DATABASE: doqyn_test
+        run: >-
+          npx tsx --test
+          tests/audit-events-i18n.test.ts
+          tests/demo-seed-locale.test.ts
+          tests/guest-portal-og.test.ts
+          tests/i18n-locale-release.test.ts
+          tests/i18n-stale.test.ts
+          tests/i18n-time-zone.test.ts
+          tests/legacy-routes.test.ts
+          tests/notifications-i18n.test.ts
+          tests/recipient-locale.test.ts
+          tests/signature-og-i18n.test.ts
+          tests/system-category.test.ts
+          tests/terms-locale.test.ts
