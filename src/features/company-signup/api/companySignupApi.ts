@@ -16,6 +16,8 @@ export type CompanySignupInput = {
   whatsapp: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /** Idioma em que os termos foram lidos. Ver `acceptedTermsLocale` em `src/legal/terms.ts`. */
+  acceptedTermsLocale?: string;
   /** Ver `individualSignupApi.ts`: ausentes no cadastro a partir de sessão existente. */
   email?: string;
   password?: string;

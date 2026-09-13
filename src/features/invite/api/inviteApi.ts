@@ -86,6 +86,7 @@ export const inviteApi = {
       informationDeclaration: true;
       acceptedTerms: true;
       acceptedTermsVersion: string;
+      acceptedTermsLocale?: string;
     },
   ) =>
     publicAuthJson<{

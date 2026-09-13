@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import { i18n } from '@/i18n';
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
 import { toWhatsappApiValue } from '../../lib/identifiers';
-import { DOQYN_TERMS_VERSION } from '../../legal/terms';
+import { acceptedTermsLocale, DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
   formatPhone,
@@ -119,6 +119,7 @@ export function buildAcceptInvitePayload(
     informationDeclaration: true as const,
     acceptedTerms: true as const,
     acceptedTermsVersion: DOQYN_TERMS_VERSION,
+    acceptedTermsLocale: acceptedTermsLocale(),
   };
 }
 

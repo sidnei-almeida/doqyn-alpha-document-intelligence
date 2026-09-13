@@ -8,7 +8,21 @@
  * da tela. Ele exige revisão de quem responde por ele em cada jurisdição, e um arquivo separado é
  * o que torna esse portão visível — quem traduzir `pages.json` não arrasta os termos junto.
  */
+import { i18n } from '@/i18n';
+import { DEFAULT_LOCALE, normalizeLocale, type SupportedLocale } from '@/i18n/locales';
+
 export const DOQYN_TERMS_VERSION = 'v1.0-dev';
+
+/**
+ * Em que idioma a pessoa leu os termos que está aceitando — vai junto da versão.
+ *
+ * Termos traduzidos não são o mesmo documento: a redação muda por jurisdição, e provar
+ * consentimento exige saber qual texto foi lido, não só qual número ele tinha. O idioma é o da
+ * tela no instante do envio, que é o mesmo em que `/terms` e a caixa de aceite foram mostrados.
+ */
+export function acceptedTermsLocale(): SupportedLocale {
+  return normalizeLocale(i18n.language) ?? DEFAULT_LOCALE;
+}
 export const DOQYN_TERMS_EFFECTIVE_DATE = '2026-07-02';
 export const DOQYN_TERMS_ROUTE = '/terms';
 

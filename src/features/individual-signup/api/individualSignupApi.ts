@@ -15,6 +15,8 @@ export type IndividualSignupInput = {
   taxId: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /** Idioma em que os termos foram lidos. Ver `acceptedTermsLocale` em `src/legal/terms.ts`. */
+  acceptedTermsLocale?: string;
   /**
    * Ausentes quando o cadastro parte de uma sessão que já existe (login social sem espaço de
    * trabalho): nesse caso a identidade vem da sessão e não há senha a definir.

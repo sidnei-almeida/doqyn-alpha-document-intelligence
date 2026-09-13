@@ -8,7 +8,7 @@ import {
   toPhoneApiValue,
   type CountryCode,
 } from '../../lib/identifiers';
-import { DOQYN_TERMS_VERSION } from '../../legal/terms';
+import { acceptedTermsLocale, DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatDocumentForReview,
   formatPhone,
@@ -68,6 +68,7 @@ export function buildIndividualSignupPayload(values: IndividualSignupFormValues)
     taxId: taxIdSpec.toApiValue(values.taxId),
     acceptedTerms: true as const,
     acceptedTermsVersion: DOQYN_TERMS_VERSION,
+    acceptedTermsLocale: acceptedTermsLocale(),
   };
 
   // Com sessão, o servidor tira identidade e senha da própria sessão — mandar e-mail aqui

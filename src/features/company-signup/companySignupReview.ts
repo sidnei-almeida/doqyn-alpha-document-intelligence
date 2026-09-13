@@ -15,7 +15,7 @@ import {
   toPhoneApiValue,
   type CountryCode,
 } from '../../lib/identifiers';
-import { DOQYN_TERMS_VERSION } from '../../legal/terms';
+import { acceptedTermsLocale, DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
   formatDocumentForReview,
@@ -84,6 +84,7 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
     whatsapp: toPhoneApiValue(values.country, values.whatsapp),
     acceptedTerms: true as const,
     acceptedTermsVersion: DOQYN_TERMS_VERSION,
+    acceptedTermsLocale: acceptedTermsLocale(),
   };
 
   if (values.fromAuthenticatedSession) {
