@@ -34,7 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.external_share_accepted',
-          description: 'Convite de compartilhamento externo aceito.',
           documentId: access.grant.documentId,
           metadata: sanitizeAuditMetadata(
             buildExternalShareTrackingMetadata(access.grant, { source: 'guest_portal' }),
@@ -53,7 +52,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'document.external_share_denied',
-            description: 'Acesso externo negado.',
             documentId: access.grant.documentId,
             status: 'denied',
             metadata: sanitizeAuditMetadata(

@@ -5,11 +5,8 @@ import { IconButton } from '@/components/ui/IconButton';
 import { DataTable } from '@/components/ui/DataTable';
 import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import {
-  AUDIT_ACTION_LABEL_KEYS,
-  AUDIT_SEVERITY_LABEL_KEYS,
-  AUDIT_SOURCE_LABEL_KEYS,
-} from '@/types/audit';
+import { AUDIT_SEVERITY_LABEL_KEYS, AUDIT_SOURCE_LABEL_KEYS } from '@/types/audit';
+import { auditEventDescription, auditEventLabel } from '../utils/auditEventText';
 import { AuditEmptyState } from './AuditEmptyState';
 import { SkeletonList } from '@/components/ui/SkeletonList';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +26,7 @@ type AuditEventsListProps = {
 };
 
 export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsListProps) {
-  const { t } = useTranslation('audit');
+  const { t } = useTranslation(['audit', 'auditEvents']);
 
   if (loading) {
     return (
@@ -80,11 +77,9 @@ export function AuditEventsList({ events, loading, onOpenDetails }: AuditEventsL
           render: (event) => (
             <div className="min-w-0">
               <p className="truncate font-medium text-doqyn-text">
-                {AUDIT_ACTION_LABEL_KEYS[event.action]
-                  ? t(AUDIT_ACTION_LABEL_KEYS[event.action])
-                  : event.action}
+                {auditEventLabel(t, event.action, event.action)}
               </p>
-              <p className="meta-text truncate">{event.description}</p>
+              <p className="meta-text truncate">{auditEventDescription(t, event)}</p>
             </div>
           ),
         },

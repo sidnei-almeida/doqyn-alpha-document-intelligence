@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.trash_moved',
-          description: 'Documento movido para a lixeira (lote).',
+          params: { context: 'batch' },
           documentId: row.documentId,
           metadata: sanitizeAuditMetadata({ source: 'api', batch: true }),
         },

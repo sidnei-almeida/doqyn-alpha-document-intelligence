@@ -38,7 +38,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     auditCtx,
     {
       action: 'document.download_attempted',
-      description: 'Tentativa de download do documento.',
       documentId,
       versionId,
       metadata: sanitizeAuditMetadata({ disposition, source: 'api' }),
@@ -66,7 +65,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.downloaded',
-        description: 'Download do documento realizado.',
         documentId,
         versionId,
         target: {
@@ -115,7 +113,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       await emitDocumentFailureEvent(auditCtx, req, {
         action: 'document.download_failed',
-        description: 'Falha ao baixar o documento.',
         documentId,
         versionId,
         error,

@@ -37,6 +37,8 @@ export interface AuditEvent {
   actorName?: string;
   action: AuditAction;
   description: string;
+  /** Presente só em evento gravado pelo catálogo `auditEvents`. */
+  params?: Record<string, string | number | boolean>;
   area?: string;
   result?: AuditResult;
   severity: AuditSeverity;

@@ -33,7 +33,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildExternalSignatureAuditContext(request),
         {
           action: 'document.signature_downloaded',
-          description: 'PDF assinado baixado pelo signatário.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(

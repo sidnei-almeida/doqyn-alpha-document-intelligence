@@ -87,7 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'document.share_created',
-            description: 'Documento compartilhado com usuário.',
             documentId,
             versionId: result.currentVersionId,
             metadata: sanitizeAuditMetadata({

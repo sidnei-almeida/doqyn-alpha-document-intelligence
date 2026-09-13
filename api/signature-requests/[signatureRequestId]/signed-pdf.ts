@@ -24,7 +24,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   try {
@@ -39,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.signature_downloaded',
-        description: 'PDF assinado baixado por usuário interno.',
+        params: { context: 'internal' },
         documentId: file.request.documentId,
         versionId: file.request.versionId,
         metadata: sanitizeAuditMetadata(

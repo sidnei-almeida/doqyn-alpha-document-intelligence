@@ -60,7 +60,7 @@ export function buildFilenameUpdatedAuditEvent(input: {
 
   return {
     action: 'document.filename_updated',
-    description: 'Nome do arquivo atualizado na confirmação.',
+    params: { context: 'confirmation' },
     documentId: input.documentId,
     versionId: input.versionId,
     target: {

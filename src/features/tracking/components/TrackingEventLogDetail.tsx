@@ -7,6 +7,7 @@ import {
   sanitizeTrackingMetadata,
 } from '../utils/trackingDisplay';
 import { useTranslation } from 'react-i18next';
+import { auditEventDescription, auditEventLabel } from '@/features/audit/utils/auditEventText';
 
 type TrackingEventLogDetailProps = {
   event: DocumentTrackingDetail | null;
@@ -53,7 +54,7 @@ export function TrackingEventLogDetail({
   onFilterByUser,
   onFilterByRequestId,
 }: TrackingEventLogDetailProps) {
-  const { t } = useTranslation('tracking');
+  const { t } = useTranslation(['tracking', 'auditEvents']);
 
   const navigate = useNavigate();
 
@@ -77,6 +78,8 @@ export function TrackingEventLogDetail({
   const securityContext = event.securityContext ?? event.security;
   const security = formatSecurityContextDisplay(securityContext, event.occurredAt);
   const rawSecurity = securityContext ? sanitizeTrackingMetadata(securityContext) : {};
+  const description = auditEventDescription(t, event);
+  const label = auditEventLabel(t, event.action, event.summary);
 
   return (
     <div
@@ -115,8 +118,8 @@ export function TrackingEventLogDetail({
         ) : null}
       </div>
 
-      {event.description && event.description !== event.summary ? (
-        <p className="text-caption text-doqyn-muted">{event.description}</p>
+      {description && description !== label ? (
+        <p className="text-caption text-doqyn-muted">{description}</p>
       ) : null}
 
       {security ? (

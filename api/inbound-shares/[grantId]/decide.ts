@@ -49,10 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       buildDocumentAuditContext(auth.ctx, auth.user),
       {
         action: decision === 'accept' ? 'inbound_share.accepted' : 'inbound_share.declined',
-        description:
-          decision === 'accept'
-            ? `Aceitou o documento "${item.documentName}" de ${item.originTenantName}`
-            : `Recusou o documento "${item.documentName}" de ${item.originTenantName}`,
+        params: { documentName: item.documentName, originTenantName: item.originTenantName },
         documentId: item.documentId,
         metadata: sanitizeAuditMetadata({
           grantId: item.grantId,

@@ -30,7 +30,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'document.signature_external_opened',
-            description: 'Solicitação de assinatura externa aberta.',
             documentId: request.documentId,
             versionId: request.versionId,
             metadata: sanitizeAuditMetadata(

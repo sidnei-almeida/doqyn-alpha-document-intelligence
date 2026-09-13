@@ -65,7 +65,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       buildDocumentAuditContext(auth.ctx, auth.user),
       {
         action: 'document.metadata.manually_edited',
-        description: 'Metadados editados manualmente.',
         documentId,
         versionId: result.versionId,
         metadata: {

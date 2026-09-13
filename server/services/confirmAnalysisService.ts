@@ -417,10 +417,6 @@ export async function confirmAnalysisPersistence(input: {
     ? 'document.metadata.reviewed_confirmed'
     : 'document.metadata.confirmed';
 
-  const auditDescription = needsReview
-    ? 'Documento salvo após revisão manual dos metadados extraídos.'
-    : 'Documento criado a partir da análise automática confirmada pelo usuário.';
-
   let resolvedNames;
   try {
     resolvedNames = resolveStorageFileNames({
@@ -701,7 +697,7 @@ export async function confirmAnalysisPersistence(input: {
   const auditEvents: DocumentAuditEventInput[] = [
     {
       action: 'document.review_confirmed',
-      description: auditDescription,
+      params: needsReview ? { context: 'manualReview' } : {},
       documentId,
       versionId,
       analysisJobId: jobId,
@@ -728,7 +724,6 @@ export async function confirmAnalysisPersistence(input: {
     },
     {
       action: 'document.version_created',
-      description: 'Nova versão do documento criada.',
       documentId,
       versionId,
       target: documentTarget,
@@ -751,7 +746,6 @@ export async function confirmAnalysisPersistence(input: {
   if (versionStorage.primary.status === 'stored') {
     auditEvents.push({
       action: 'document.storage_promoted',
-      description: 'Arquivo promovido ao storage definitivo.',
       documentId,
       versionId,
       target: documentTarget,
@@ -772,7 +766,6 @@ export async function confirmAnalysisPersistence(input: {
   if (previewResult.slot.status === 'ready') {
     auditEvents.push({
       action: 'document.preview_generated',
-      description: 'Preview do documento gerado com sucesso.',
       documentId,
       versionId,
       target: documentTarget,
@@ -789,7 +782,7 @@ export async function confirmAnalysisPersistence(input: {
   } else if (previewResult.slot.status === 'failed') {
     auditEvents.push({
       action: 'document.preview_failed',
-      description: 'Falha ao gerar preview do documento.',
+      params: { context: 'generation' },
       documentId,
       versionId,
       result: 'error',
@@ -866,7 +859,6 @@ export async function confirmAnalysisPersistence(input: {
         await createDocumentAuditLogs(auditCtx, [
           {
             action: 'document_request.fulfilled',
-            description: 'Requisição de documento atendida.',
             documentId,
             versionId,
             target: documentTarget,

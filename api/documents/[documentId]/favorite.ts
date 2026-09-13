@@ -39,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.favorite_added',
-          description: 'Documento adicionado aos favoritos.',
           documentId,
           metadata: sanitizeAuditMetadata({ source: 'api' }),
         },
@@ -56,7 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.favorite_removed',
-          description: 'Documento removido dos favoritos.',
           documentId,
           metadata: sanitizeAuditMetadata({ source: 'api' }),
         },

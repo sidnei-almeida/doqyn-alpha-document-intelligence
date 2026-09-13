@@ -21,17 +21,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   try {
-    const payload = await getInternalSignatureSigningPayload(auth.ctx, auth.user, signatureRequestId);
+    const payload = await getInternalSignatureSigningPayload(
+      auth.ctx,
+      auth.user,
+      signatureRequestId,
+    );
     const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
     await emitTrackingEvent(
       auditCtx,
       {
         action: 'document.signature_internal_opened',
-        description: 'Solicitação de assinatura interna aberta.',
         documentId: payload.documentId,
         versionId: payload.versionId,
         metadata: sanitizeAuditMetadata({

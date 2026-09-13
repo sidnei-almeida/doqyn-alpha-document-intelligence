@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.reactivated',
-          description: 'Documento reativado da seção Desativados (lote).',
+          params: { context: 'batch' },
           documentId: row.documentId,
           metadata: sanitizeAuditMetadata({ source: 'api', batch: true }),
         },

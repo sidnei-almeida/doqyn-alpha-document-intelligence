@@ -39,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.share_revoked',
-        description: 'Compartilhamento revogado.',
         documentId,
         versionId: result.currentVersionId,
         metadata: sanitizeAuditMetadata({

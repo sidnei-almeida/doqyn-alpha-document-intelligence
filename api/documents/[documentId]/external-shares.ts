@@ -103,7 +103,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'document.external_share_created',
-            description: 'Compartilhamento externo criado.',
             documentId,
             versionId: result.currentVersionId,
             metadata: sanitizeAuditMetadata({

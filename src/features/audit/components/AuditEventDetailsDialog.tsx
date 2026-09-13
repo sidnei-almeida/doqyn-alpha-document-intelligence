@@ -3,12 +3,9 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { formatDateTime } from '@/lib/utils';
 import type { AuditEvent } from '@/types/audit';
-import {
-  AUDIT_ACTION_LABEL_KEYS,
-  AUDIT_SEVERITY_LABEL_KEYS,
-  AUDIT_SOURCE_LABEL_KEYS,
-} from '@/types/audit';
+import { AUDIT_SEVERITY_LABEL_KEYS, AUDIT_SOURCE_LABEL_KEYS } from '@/types/audit';
 import { sanitizeAuditMetadataForDisplay } from '../utils/auditDisplay';
+import { auditEventDescription, auditEventLabel } from '../utils/auditEventText';
 import { useTranslation } from 'react-i18next';
 
 const SEVERITY_VARIANTS = {
@@ -26,7 +23,7 @@ type AuditEventDetailsDialogProps = {
 };
 
 export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDetailsDialogProps) {
-  const { t } = useTranslation('audit');
+  const { t } = useTranslation(['audit', 'auditEvents']);
 
   if (!open || !event) return null;
 
@@ -37,11 +34,7 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
       open
       onClose={onClose}
       title={t('auditEventDetailsDialog.detalhesDoEvento')}
-      subtitle={
-        AUDIT_ACTION_LABEL_KEYS[event.action]
-          ? t(AUDIT_ACTION_LABEL_KEYS[event.action])
-          : event.action
-      }
+      subtitle={auditEventLabel(t, event.action, event.action)}
       size="lg"
       footer={
         <Button type="button" variant="secondary" onClick={onClose}>
@@ -85,7 +78,7 @@ export function AuditEventDetailsDialog({ open, event, onClose }: AuditEventDeta
 
         <div>
           <p className="text-xs text-doqyn-muted">{t('auditEventDetailsDialog.descricao')}</p>
-          <p className="text-doqyn-text">{event.description}</p>
+          <p className="text-doqyn-text">{auditEventDescription(t, event)}</p>
         </div>
 
         {Object.keys(safeMetadata).length > 0 && (

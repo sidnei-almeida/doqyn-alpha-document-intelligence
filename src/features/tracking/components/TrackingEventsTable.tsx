@@ -11,6 +11,7 @@ import {
   formatTrackingStatus,
 } from '../utils/trackingDisplay';
 import { TrackingDocumentCell } from './TrackingDocumentCell';
+import { auditEventLabel } from '@/features/audit/utils/auditEventText';
 import { useTranslation } from 'react-i18next';
 
 const SEVERITY_VARIANTS = {
@@ -58,7 +59,7 @@ export function TrackingEventsTable({
   sparseAction,
   footer,
 }: TrackingEventsTableProps) {
-  const { t } = useTranslation('tracking');
+  const { t } = useTranslation(['tracking', 'auditEvents']);
 
   return (
     <DataTable
@@ -93,7 +94,9 @@ export function TrackingEventsTable({
           header: t('trackingEventsTable.columns.action'),
           render: (item) => (
             <div className="min-w-[180px] leading-tight">
-              <p className="font-medium text-doqyn-text">{item.summary}</p>
+              <p className="font-medium text-doqyn-text">
+                {auditEventLabel(t, item.action, item.summary)}
+              </p>
               <p className="font-mono text-micro text-doqyn-subtle">{item.action}</p>
               {item.changesCount ? (
                 <p className="register-label mt-0.5 text-doqyn-subtle">

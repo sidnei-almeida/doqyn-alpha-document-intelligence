@@ -21,14 +21,8 @@ import {
 } from '../../utils/documentMutationFields.js';
 import { buildDocumentListItems } from '../documentListItems.js';
 import { escapeRegexLiteral } from '../../utils/documentListQuery.js';
-import {
-  attachFavoriteFlags,
-  lookupFavoriteFlags,
-} from '../favorites/documentFavoritesService.js';
-import {
-  computeTrashExpiresAt,
-  getTrashRetentionSettings,
-} from './trashRetentionSettings.js';
+import { attachFavoriteFlags, lookupFavoriteFlags } from '../favorites/documentFavoritesService.js';
+import { computeTrashExpiresAt, getTrashRetentionSettings } from './trashRetentionSettings.js';
 import { listActiveTenants } from '../tenantsService.js';
 import { emitTrackingEvent } from '../tracking/trackingService.js';
 import { sanitizeAuditMetadata } from '../../utils/sanitizeAuditMetadata.js';
@@ -51,9 +45,7 @@ const DEACTIVATED_DOCUMENT_FILTER = {
   deactivatedAt: { $ne: null, $exists: true },
 };
 
-export type TrashDocumentListItem = Awaited<
-  ReturnType<typeof buildDocumentListItems>
->[number] & {
+export type TrashDocumentListItem = Awaited<ReturnType<typeof buildDocumentListItems>>[number] & {
   deletedAt?: string;
   deletedBy?: string | null;
   deletedReason?: string | null;
@@ -229,11 +221,7 @@ export async function listTrashDocuments(
 
   const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 200);
 
-  const docs = await documents
-    .find(query)
-    .sort({ deletedAt: -1 })
-    .limit(limit)
-    .toArray();
+  const docs = await documents.find(query).sort({ deletedAt: -1 }).limit(limit).toArray();
 
   const { memberGroupIds, governanceIndex } = await loadDocumentAccessContext({
     tenantId: ctx.tenantId,
@@ -426,11 +414,7 @@ export async function reactivateDocument(
   const { doc } = await loadDocumentOrThrow(documentId, ctx);
 
   if (!isDeactivatedDocument(doc)) {
-    throw new ServiceError(
-      'Documento não está desativado.',
-      'DOCUMENT_NOT_DEACTIVATED',
-      409,
-    );
+    throw new ServiceError('Documento não está desativado.', 'DOCUMENT_NOT_DEACTIVATED', 409);
   }
 
   const now = new Date();
@@ -532,9 +516,7 @@ export async function batchMoveDocumentsToTrash(
   documentIds: string[],
   reason?: string,
 ) {
-  return runBatch(documentIds, (documentId) =>
-    moveDocumentToTrash(ctx, user, documentId, reason),
-  );
+  return runBatch(documentIds, (documentId) => moveDocumentToTrash(ctx, user, documentId, reason));
 }
 
 export async function batchRestoreDocumentsFromTrash(
@@ -542,9 +524,7 @@ export async function batchRestoreDocumentsFromTrash(
   user: AuthUser,
   documentIds: string[],
 ) {
-  return runBatch(documentIds, (documentId) =>
-    restoreDocumentFromTrash(ctx, user, documentId),
-  );
+  return runBatch(documentIds, (documentId) => restoreDocumentFromTrash(ctx, user, documentId));
 }
 
 export async function batchReactivateDocuments(
@@ -560,9 +540,7 @@ export async function batchPermanentlyDeleteDocuments(
   user: AuthUser,
   documentIds: string[],
 ) {
-  return runBatch(documentIds, (documentId) =>
-    permanentlyDeleteDocument(ctx, user, documentId),
-  );
+  return runBatch(documentIds, (documentId) => permanentlyDeleteDocument(ctx, user, documentId));
 }
 
 async function deactivateTrashDocument(
@@ -660,7 +638,6 @@ export async function deactivateExpiredTrashDocuments(input: {
         };
         await emitTrackingEvent(auditCtx, {
           action: 'document.deactivated',
-          description: 'Documento desativado após expiração do prazo na lixeira.',
           documentId: String(typed._id),
           metadata: sanitizeAuditMetadata({
             source: 'trash_retention_job',
@@ -704,8 +681,4 @@ export async function purgeExpiredTrashDocuments(input: {
   };
 }
 
-export {
-  ACTIVE_DOCUMENT_FILTER,
-  TRASH_DOCUMENT_FILTER,
-  DEACTIVATED_DOCUMENT_FILTER,
-};
+export { ACTIVE_DOCUMENT_FILTER, TRASH_DOCUMENT_FILTER, DEACTIVATED_DOCUMENT_FILTER };

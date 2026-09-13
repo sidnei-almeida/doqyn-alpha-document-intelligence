@@ -199,7 +199,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.version_analysis_completed',
-        description: 'Análise de nova versão concluída.',
         documentId,
         analysisJobId: result.jobId,
         result: result.status === 'completed' ? 'success' : 'warning',

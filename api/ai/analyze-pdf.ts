@@ -93,7 +93,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.analysis_started',
-        description: 'Análise de PDF iniciada.',
         target: {
           type: 'analysis_job',
           id: ingress.jobId ?? ctx.requestId,
@@ -247,10 +246,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: analysisAction,
-        description:
-          analysisAction === 'document.analysis_completed'
-            ? 'Análise de PDF concluída.'
-            : 'Falha na análise de PDF.',
         analysisJobId: result.jobId,
         result: analysisAction === 'document.analysis_completed' ? 'success' : 'error',
         target: {
@@ -309,7 +304,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.analysis_failed',
-          description: 'Falha na análise de PDF.',
           result: 'error',
           target: {
             type: 'analysis_job',

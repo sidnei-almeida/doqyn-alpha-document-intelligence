@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await emitTrackingEvent(auditCtx, {
       action: 'document.ownership_transferred',
-      description: `Propriedade transferida para ${result.newOwnerName}.`,
+      params: { ownerName: result.newOwnerName },
       documentId,
       metadata: sanitizeAuditMetadata({
         source: 'api',
@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.ownership_transferred',
-        description: `Propriedade transferida para ${result.newOwnerName}.`,
+        params: { ownerName: result.newOwnerName },
         documentId,
         metadata: sanitizeAuditMetadata({
           source: 'api',

@@ -62,7 +62,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.moved',
-          description: `Documento movido para ${result.newCategoryName ?? 'nova categoria'}.`,
+          params: result.newCategoryName
+            ? { categoryName: result.newCategoryName }
+            : { context: 'unknownTarget' },
           documentId,
           versionId: result.currentVersionId,
           metadata: sanitizeAuditMetadata({

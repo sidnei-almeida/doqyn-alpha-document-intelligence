@@ -52,7 +52,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.preview_viewed',
-          description: 'Preview do documento visualizado.',
           documentId,
           versionId,
           target: {
@@ -96,7 +95,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       await emitDocumentFailureEvent(auditCtx, req, {
         action: 'document.preview_failed',
-        description: 'Falha ao servir preview do documento.',
         documentId,
         versionId,
         error,

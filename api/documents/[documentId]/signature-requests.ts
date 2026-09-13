@@ -86,7 +86,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_request_created',
-          description: 'Solicitação de assinatura eletrônica criada.',
           documentId,
           versionId: result.request.versionId,
           metadata: sanitizeAuditMetadata({
@@ -105,10 +104,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             result.signerType === 'internal_user'
               ? 'document.signature_internal_assigned'
               : 'document.signature_external_invite_created',
-          description:
-            result.signerType === 'internal_user'
-              ? 'Assinatura atribuída a usuário interno.'
-              : 'Convite externo de assinatura criado.',
           documentId,
           versionId: result.request.versionId,
           metadata: sanitizeAuditMetadata({

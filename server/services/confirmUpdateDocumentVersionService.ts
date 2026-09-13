@@ -460,7 +460,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   const auditEvents: DocumentAuditEventInput[] = [
     {
       action: 'document.review_confirmed',
-      description: `Nova versão ${versionLabel} confirmada após análise.`,
+      params: { context: 'newVersion', versionLabel },
       documentId,
       versionId,
       analysisJobId: jobId,
@@ -483,7 +483,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     },
     {
       action: 'document.version_created',
-      description: `Versão ${versionLabel} criada para documento existente.`,
+      params: { context: 'existing', versionLabel },
       documentId,
       versionId,
       target: documentTarget,
@@ -507,7 +507,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   if (versionStorage.primary.status === 'stored') {
     auditEvents.push({
       action: 'document.storage_promoted',
-      description: 'Arquivo da nova versão promovido ao storage definitivo.',
+      params: { context: 'newVersion' },
       documentId,
       versionId,
       target: documentTarget,
@@ -528,7 +528,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   if (previewResult.slot.status === 'ready') {
     auditEvents.push({
       action: 'document.preview_generated',
-      description: 'Preview da nova versão gerado com sucesso.',
+      params: { context: 'newVersion' },
       documentId,
       versionId,
       target: documentTarget,

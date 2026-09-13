@@ -34,7 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.external_share_viewed',
-          description: 'Documento compartilhado externamente visualizado.',
           documentId: access.grant.documentId,
           versionId: detail.versionId,
           metadata: sanitizeAuditMetadata(

@@ -1,10 +1,14 @@
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoAuditLog } from '../db/types.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilterFromContext, withTenantFieldsFromContext } from '../tenancy/tenantQuery.js';
+import {
+  tenantScopeFilterFromContext,
+  withTenantFieldsFromContext,
+} from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { escapeRegexLiteral } from '../utils/documentListQuery.js';
+import { findAuditActionsMatching } from '../i18n/index.js';
 
 export type AuditEventSeverity = 'info' | 'success' | 'warning' | 'error' | 'critical';
 
@@ -16,6 +20,8 @@ export type AuditEventDto = {
   actorName?: string;
   action: string;
   description: string;
+  /** Presente só em evento gravado pelo catálogo `auditEvents`: a tela relê a frase por eles. */
+  params?: Record<string, string | number | boolean>;
   area?: string;
   result?: string;
   severity: AuditEventSeverity;
@@ -55,10 +61,7 @@ export const SECURITY_ACTION_PATTERNS = [
 
 const USER_AUDIT_PREFIXES = ['USER_', 'KEYCLOAK_', 'NOTIFICATION_'];
 
-export function resolveAuditSeverity(
-  action: string,
-  result?: string | null,
-): AuditEventSeverity {
+export function resolveAuditSeverity(action: string, result?: string | null): AuditEventSeverity {
   const normalizedAction = action.toLowerCase();
   const normalizedResult = result?.toLowerCase();
 
@@ -96,6 +99,7 @@ function mapAuditLog(event: MongoAuditLog): AuditEventDto {
     actorName: event.actor?.name,
     action: event.action,
     description: event.description,
+    ...(event.params ? { params: event.params } : {}),
     area: area ?? (event.documentId ? 'Documentos' : 'Administração'),
     result,
     severity: resolveAuditSeverity(event.action, result),
@@ -110,8 +114,11 @@ function mapAuditLog(event: MongoAuditLog): AuditEventDto {
 function buildTextSearch(query: Record<string, unknown>, q?: string) {
   if (!q?.trim()) return;
   const regex = { $regex: escapeRegexLiteral(q), $options: 'i' };
+  const matchingActions = findAuditActionsMatching(q);
   query.$or = [
     { description: regex },
+    // A frase está gravada no idioma de quem agiu; pela ação, o termo acha nos três idiomas.
+    ...(matchingActions.length ? [{ action: { $in: matchingActions } }] : []),
     { action: regex },
     { 'actor.name': regex },
     { 'actor.userId': regex },
@@ -231,12 +238,16 @@ export async function listAuditEvents(filters: {
   }
 
   const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
-  const events = await auditLogs.find(query).sort({ createdAt: -1 }).limit(limit + 1).toArray();
+  const events = await auditLogs
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
+    .toArray();
   const hasMore = events.length > limit;
   const page = hasMore ? events.slice(0, limit) : events;
   const total = await auditLogs.countDocuments(query);
   const mapped = page.map((event) => mapAuditLog(event as MongoAuditLog));
-  const nextCursor = hasMore ? mapped[mapped.length - 1]?.createdAt ?? null : null;
+  const nextCursor = hasMore ? (mapped[mapped.length - 1]?.createdAt ?? null) : null;
 
   return { events: mapped, total, nextCursor };
 }

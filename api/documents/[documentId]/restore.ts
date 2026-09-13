@@ -39,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.trash_restored',
-        description: 'Documento restaurado da lixeira.',
         documentId,
         metadata: sanitizeAuditMetadata({ source: 'api' }),
       },

@@ -4,9 +4,11 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
 import { useTranslation } from 'react-i18next';
+import { auditEventLabel } from '@/features/audit/utils/auditEventText';
 
 type TrackingEvent = {
   id: string;
+  action: string;
   actorName?: string;
   label: string;
   documentName?: string;
@@ -18,8 +20,14 @@ type TrackingEvent = {
  * A bolinha desenhava uma linha do tempo que ninguém percorre — o que se lê
  * aqui é registro de acesso, e registro tem coluna de data em monoespaçado.
  */
-export function ActivityLogRow({ actorName, label, documentName, occurredAt }: TrackingEvent) {
-  const { t } = useTranslation('dashboard');
+export function ActivityLogRow({
+  action,
+  actorName,
+  label,
+  documentName,
+  occurredAt,
+}: TrackingEvent) {
+  const { t } = useTranslation(['dashboard', 'auditEvents']);
 
   return (
     <article className="overview-row py-2.5 pl-4 pr-1">
@@ -28,7 +36,9 @@ export function ActivityLogRow({ actorName, label, documentName, occurredAt }: T
           <span className="font-medium">
             {actorName ?? t('overviewRecentActivityPanel.userFallback')}
           </span>{' '}
-          <span className="text-doqyn-muted">{label.toLowerCase()}</span>
+          <span className="text-doqyn-muted">
+            {auditEventLabel(t, action, label).toLowerCase()}
+          </span>
         </p>
         <time className="overview-timestamp shrink-0 whitespace-nowrap">
           {formatDateTime(occurredAt)}

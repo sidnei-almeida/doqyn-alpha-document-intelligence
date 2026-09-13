@@ -42,7 +42,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_consent_checked',
-          description: 'Aceite de assinatura registrado.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(
@@ -67,7 +66,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_completed',
-          description: 'Assinatura eletrônica concluída.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(
@@ -85,7 +83,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signed_pdf_generated',
-          description: 'PDF assinado gerado.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(

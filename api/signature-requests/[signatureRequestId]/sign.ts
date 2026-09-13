@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAuditContext.js';
-import { completeDocumentSignature, getDocumentSignatureRequest } from '../../../server/services/signatures/documentSignatureService.js';
+import {
+  completeDocumentSignature,
+  getDocumentSignatureRequest,
+} from '../../../server/services/signatures/documentSignatureService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
@@ -27,7 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   const body = req.body as { consentAccepted?: boolean };
@@ -48,7 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.signature_completed',
-        description: 'Assinatura eletrônica concluída.',
         documentId: request.documentId,
         versionId: request.versionId,
         metadata: sanitizeAuditMetadata({

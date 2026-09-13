@@ -34,7 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.external_share_downloaded',
-          description: 'Download externo do documento compartilhado.',
           documentId: access.grant.documentId,
           metadata: sanitizeAuditMetadata(
             buildExternalShareTrackingMetadata(access.grant, {
@@ -50,7 +49,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.setHeader('Content-Type', file.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.fileName)}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(file.fileName)}"`,
+    );
     res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).send(file.buffer);
   } catch (error) {

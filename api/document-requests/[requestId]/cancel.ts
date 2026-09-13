@@ -26,7 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       buildDocumentAuditContext(auth.ctx, auth.user),
       {
         action: 'document_request.cancelled',
-        description: 'Requisição de documento cancelada.',
         metadata: sanitizeAuditMetadata({
           requestId: request._id,
           requestedFromUserId: request.requestedFrom.userId,

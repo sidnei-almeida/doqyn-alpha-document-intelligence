@@ -853,7 +853,18 @@ export type MongoAuditLog = {
     | 'document.metadata.reviewed_confirmed'
     | 'document.review.required'
     | string;
+  /**
+   * A frase no idioma de quem agiu, no momento do evento — o registro literal, e o que a cadeia de
+   * integridade assina. Não foi renomeada para `descriptionSnapshot`: o hash v3 lê este campo, e
+   * trocá-lo de nome invalidaria a verificação de todo evento já gravado.
+   */
   description: string;
+  /**
+   * Os valores da frase, para relê-la em outro idioma. Só existe em evento gravado pelo catálogo
+   * `auditEvents`; evento antigo não tem, e a tela mostra a `description`. Fica fora do hash: a
+   * frase assinada é a gravada, e isto é o que permite apresentá-la.
+   */
+  params?: Record<string, string | number | boolean>;
   area?: string;
   result?: 'success' | 'warning' | 'error' | 'info' | string;
   metadata: Record<string, unknown>;

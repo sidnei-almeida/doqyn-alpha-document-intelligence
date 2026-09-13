@@ -54,6 +54,8 @@
     { "file": "src/features/upload/services/startUploadFromFiles.ts", "text": "`upload-{} -{} `", "reason": "id técnico" },
     { "file": "src/features/documents/preview/thumbnailObjectUrlCache.ts", "text": "`document-thumbnail:{} :{} :{} :{} `", "reason": "chave de cache" },
     { "file": "src/features/documents/preview/thumbnailObjectUrlCache.ts", "text": "`document-thumbnail:{} :`", "reason": "chave de cache" },
+    { "file": "src/features/audit/utils/auditEventText.ts", "text": "`auditEvents:{} .label`", "reason": "chave de catálogo montada pela ação" },
+    { "file": "src/features/audit/utils/auditEventText.ts", "text": "`auditEvents:{} .description`", "reason": "chave de catálogo montada pela ação" },
     { "file": "src/features/tracking/components/TrackingFilters.tsx", "text": "req_...", "reason": "placeholder com formato de identificador técnico" },
     { "file": "src/features/tracking/components/TrackingFilters.tsx", "text": "userId", "reason": "placeholder com nome de identificador técnico" },
     { "file": "src/shared/feedback/appFeedback.ts", "text": "`code: {} · requestId: {} `", "reason": "diagnóstico só em desenvolvimento" },

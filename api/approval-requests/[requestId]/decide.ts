@@ -107,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.share_created',
-          description: 'Documento compartilhado após aprovação.',
+          params: { context: 'approval' },
           documentId: share.documentId,
           versionId: share.currentVersionId,
           metadata: sanitizeAuditMetadata({
@@ -128,7 +128,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       {
         action:
           body.decision === 'approved' ? 'approval.request_approved' : 'approval.request_rejected',
-        description: body.decision === 'approved' ? 'Pedido aprovado.' : 'Pedido recusado.',
         documentId: decided.subject.documentId,
         metadata: {
           requestId: decided._id,
