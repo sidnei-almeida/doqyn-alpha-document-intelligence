@@ -27,7 +27,7 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isLibrary = location.pathname.startsWith('/biblioteca');
+  const isLibrary = location.pathname.startsWith('/library');
   const [value, setValue] = useState(() => (isLibrary ? (searchParams.get('q') ?? '') : ''));
   const debouncedValue = useDebouncedValue(value, 400);
   /**
@@ -82,7 +82,7 @@ export function GlobalSearchCommand({ isFetching = false }: GlobalSearchCommandP
       }
       const params = new URLSearchParams();
       if (trimmed) params.set('q', trimmed);
-      navigate(`/biblioteca${params.toString() ? `?${params}` : ''}`);
+      navigate(`/library${params.toString() ? `?${params}` : ''}`);
     },
     [isLibrary, navigate, setSearchParams],
   );

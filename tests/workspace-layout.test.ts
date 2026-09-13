@@ -36,7 +36,7 @@ describe('layout do workspace', () => {
     assert.ok(search.includes('Ctrl'));
     assert.ok(search.includes('isMacPlatform'));
     assert.ok(search.includes('metaKey') && search.includes('ctrlKey'));
-    assert.ok(search.includes('navigate(`/biblioteca'));
+    assert.ok(search.includes('navigate(`/library'));
   });
 
   it('TopBar reaproveita sessão atual (usuário e tenant)', () => {

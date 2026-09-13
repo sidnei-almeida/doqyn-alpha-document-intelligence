@@ -29,7 +29,7 @@ function resolveDestination(input: {
     const safeReturn =
       input.returnUrl && input.returnUrl.startsWith('/') && !input.returnUrl.startsWith('//')
         ? input.returnUrl
-        : '/biblioteca';
+        : '/library';
     return safeReturn;
   }
 

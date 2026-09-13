@@ -222,7 +222,7 @@ export function TrackingEventLogDetail({
             <LinkAction
               label={t('trackingEventLogDetail.abrirDocumento')}
               onClick={() =>
-                navigate(`/biblioteca?preview=${encodeURIComponent(event.document.documentId!)}`)
+                navigate(`/library?preview=${encodeURIComponent(event.document.documentId!)}`)
               }
             />
           </>

@@ -170,7 +170,7 @@ export function IndividualSignupPage() {
         storeVerificationTicket(result.verificationTicket);
         // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
         toast.success(t('individualSignupPage.createdVerify'));
-        navigate('/confirmar-cadastro', {
+        navigate('/verify-email', {
           replace: true,
           state: { ticket: result.verificationTicket },
         });
@@ -179,7 +179,7 @@ export function IndividualSignupPage() {
 
       toast.success(t('individualSignupPage.created'));
       await refreshUser();
-      navigate('/biblioteca', { replace: true });
+      navigate('/library', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : t('individualSignupPage.failed');
       setError(message);
@@ -313,7 +313,7 @@ export function IndividualSignupPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
+          <Link to="/access" className={AUTH_QUIET_BUTTON}>
             {t('individualSignupPage.voltar')}
           </Link>
           <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>

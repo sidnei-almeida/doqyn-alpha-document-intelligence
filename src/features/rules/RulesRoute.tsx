@@ -18,7 +18,7 @@ export function RulesRoute() {
   }
 
   if (!canAccessRulesPage(hasAnyRole)) {
-    return <Navigate to="/biblioteca" replace />;
+    return <Navigate to="/library" replace />;
   }
 
   return <RulesPage />;

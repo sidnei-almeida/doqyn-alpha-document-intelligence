@@ -40,14 +40,14 @@ export function buildOverviewMetrics(
         count: summary.documentsUploadedInPeriod,
         days: periodDays,
       }),
-      path: '/biblioteca',
+      path: '/library',
     },
     {
       key: 'analysis',
       label: t('dashboard:metric.analysisLabel'),
       value: summary.documentsInAnalysis,
       subtext: t('dashboard:metric.analysisSubtext'),
-      path: '/biblioteca?status=analyzing',
+      path: '/library?status=analyzing',
       tone: summary.documentsInAnalysis > 0 ? 'attention' : 'default',
     },
     {
@@ -55,7 +55,7 @@ export function buildOverviewMetrics(
       label: t('dashboard:metric.reviewLabel'),
       value: summary.documentsAwaitingReview,
       subtext: t('dashboard:metric.reviewSubtext'),
-      path: '/biblioteca?status=pending_review',
+      path: '/library?status=pending_review',
       tone: summary.documentsAwaitingReview > 0 ? 'attention' : 'default',
     },
     {
@@ -63,7 +63,7 @@ export function buildOverviewMetrics(
       label: t('dashboard:metric.processedLabel'),
       value: summary.documentsProcessed,
       subtext: t('dashboard:metric.processedSubtext', { count: summary.previewReady }),
-      path: '/biblioteca?status=processed',
+      path: '/library?status=processed',
     },
     {
       key: 'errors',

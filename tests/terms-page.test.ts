@@ -11,7 +11,7 @@ import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 describe('terms page content', () => {
   it('expõe rota, versão e seções principais', () => {
-    assert.equal(DOQYN_TERMS_ROUTE, '/termos');
+    assert.equal(DOQYN_TERMS_ROUTE, '/terms');
     assert.equal(DOQYN_TERMS_VERSION, 'v1.0-dev');
     assert.equal(DOQYN_TERMS_EFFECTIVE_DATE, '2026-07-02');
     assert.ok(TERMS_SECTIONS.length >= 10);

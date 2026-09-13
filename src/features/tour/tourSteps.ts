@@ -26,8 +26,8 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'biblioteca',
     titleKey: 'tour:step.biblioteca.title',
     bodyKey: 'tour:step.biblioteca.body',
-    route: '/biblioteca',
-    target: ['[data-tour="nav:/biblioteca"]'],
+    route: '/library',
+    target: ['[data-tour="nav:/library"]'],
   },
   {
     id: 'enviar',
@@ -39,7 +39,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'classes',
     titleKey: 'tour:step.classes.title',
     bodyKey: 'tour:step.classes.body',
-    route: '/biblioteca',
+    route: '/library',
     target: [
       '[data-testid="explorer-folder-grid"]',
       '[data-testid="explorer-folder-grid-empty"]',
@@ -50,13 +50,13 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'assinar',
     titleKey: 'tour:step.assinar.title',
     bodyKey: 'tour:step.assinar.body',
-    target: ['[data-tour="nav:/biblioteca/assinaturas"]'],
+    target: ['[data-tour="nav:/library/signatures"]'],
   },
   {
     id: 'pedidos',
     titleKey: 'tour:step.pedidos.title',
     bodyKey: 'tour:step.pedidos.body',
-    target: ['[data-tour="nav:/pedidos"]'],
+    target: ['[data-tour="nav:/requests"]'],
   },
   {
     id: 'usuarios',
@@ -78,7 +78,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'matriz',
     titleKey: 'tour:step.matriz.title',
     bodyKey: 'tour:step.matriz.body',
-    route: '/matriz',
+    route: '/access-matrix',
     target: ['.matrix-grid', '.page-shell__body'],
   },
   {

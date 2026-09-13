@@ -162,7 +162,7 @@ export function ContactsPage() {
           title={t('contactsPage.nenhumContatoAinda')}
           description={t('contactsPage.aListaCresceSozinha')}
           action={
-            <Button type="button" size="sm" onClick={() => navigate('/biblioteca')}>
+            <Button type="button" size="sm" onClick={() => navigate('/library')}>
               {t('contactsPage.irParaABiblioteca')}
             </Button>
           }

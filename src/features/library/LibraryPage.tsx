@@ -134,7 +134,7 @@ export function LibraryPage() {
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
-      navigate('/biblioteca', { replace: true });
+      navigate('/library', { replace: true });
     }
   }, [isDeactivatedView, canManageDeactivated, navigate]);
   const {
@@ -317,7 +317,7 @@ export function LibraryPage() {
           : segment.key === 'collection'
             ? () => {
                 clearSelection();
-                navigate(`/biblioteca/${collection.slug}`);
+                navigate(`/library/${collection.slug}`);
               }
             : undefined,
     }));
@@ -352,7 +352,7 @@ export function LibraryPage() {
     if (explorer.isRootCollection) {
       update({ space: '' });
     } else {
-      navigate('/biblioteca');
+      navigate('/library');
     }
   }, [clearSelection, explorer.isRootCollection, navigate, update]);
 

@@ -126,9 +126,7 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
 
     // A ficha recusaria o acesso: o aceite é o que ainda não aconteceu.
     assert.ok(
-      list.includes(
-        "if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados'",
-      ),
+      list.includes("if (notification.type === 'inbound_share_received') return '/library/shared'"),
     );
   });
 });

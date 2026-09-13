@@ -22,7 +22,7 @@ const VALID_OWNERS: LibraryOwnerFilter[] = ['', 'me', 'others'];
 const VALID_SCOPES: LibrarySearchScope[] = ['', 'all'];
 
 /**
- * Estado da Biblioteca vive na URL: coleção no path (/biblioteca/:collection)
+ * Estado da Biblioteca vive na URL: coleção no path (/library/:collection)
  * e filtros em query para deep-link e refresh previsível.
  */
 export function useLibraryRouteState() {

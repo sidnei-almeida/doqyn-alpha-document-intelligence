@@ -28,11 +28,11 @@ import { useTranslation } from 'react-i18next';
  * Onde o documento que cumpriu o pedido de fato aparece.
  *
  * Quem pediu chega nele pela concessão criada no cumprimento, e a listagem principal da Biblioteca
- * não carrega concessões — só "Compartilhados comigo" carrega. Apontar para `/biblioteca` abriria
+ * não carrega concessões — só "Compartilhados comigo" carrega. Apontar para `/library` abriria
  * uma lista sem o item.
  */
 function fulfilledDocumentPath(documentId: string): string {
-  return `/biblioteca/compartilhados?documentId=${encodeURIComponent(documentId)}`;
+  return `/library/shared?documentId=${encodeURIComponent(documentId)}`;
 }
 
 const STATUS_VARIANT: Record<DocumentRequestItem['status'], 'pending' | 'success' | 'neutral'> = {
@@ -67,10 +67,10 @@ export function DocumentRequestsPage() {
    * novo, e a lista viraria refém do endereço.
    */
   useEffect(() => {
-    if (searchParams.get('novo') !== '1') return;
+    if (searchParams.get('new') !== '1') return;
     setModalOpen(true);
     const next = new URLSearchParams(searchParams);
-    next.delete('novo');
+    next.delete('new');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 

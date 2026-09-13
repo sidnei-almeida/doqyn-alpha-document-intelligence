@@ -98,7 +98,7 @@ export function Sidebar({ className }: SidebarProps) {
           <SidebarNavItem
             item={{
               labelKey: 'common:nav.biblioteca',
-              path: '/biblioteca',
+              path: '/library',
               icon: 'folder',
               end: true,
             }}

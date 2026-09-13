@@ -58,7 +58,7 @@ export function OverviewStoragePanel({
             label={t('overviewStoragePanel.originais')}
             value={storage.originalFiles}
             hint={t('overviewStoragePanel.hintArquivos')}
-            onClick={() => navigate('/biblioteca')}
+            onClick={() => navigate('/library')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
@@ -66,7 +66,7 @@ export function OverviewStoragePanel({
             label={t('overviewStoragePanel.previews')}
             value={storage.previewFiles}
             hint={t('overviewStoragePanel.hintGerados')}
-            onClick={() => navigate('/biblioteca')}
+            onClick={() => navigate('/library')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>

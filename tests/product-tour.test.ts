@@ -19,13 +19,15 @@ function read(relativePath: string): string {
  * fica sabendo. Este mapa é o contrato que faltava.
  */
 const SELECTOR_SOURCES: Record<string, string[]> = {
-  '[data-tour="nav:/biblioteca"]': ['src/components/layout/SidebarNavItem.tsx'],
-  '[data-tour="nav:/biblioteca/assinaturas"]': ['src/components/layout/SidebarNavItem.tsx'],
-  '[data-tour="nav:/pedidos"]': ['src/components/layout/SidebarNavItem.tsx'],
+  '[data-tour="nav:/library"]': ['src/components/layout/SidebarNavItem.tsx'],
+  '[data-tour="nav:/library/signatures"]': ['src/components/layout/SidebarNavItem.tsx'],
+  '[data-tour="nav:/requests"]': ['src/components/layout/SidebarNavItem.tsx'],
   '[data-tour="nav:/audit"]': ['src/components/layout/SidebarNavItem.tsx'],
   '[data-tour="new-button"]': ['src/features/library/components/NewButtonMenu.tsx'],
   '[data-tour="help"]': ['src/components/layout/HelpMenu.tsx'],
-  '[data-testid="explorer-folder-grid"]': ['src/features/library/components/ExplorerFolderGrid.tsx'],
+  '[data-testid="explorer-folder-grid"]': [
+    'src/features/library/components/ExplorerFolderGrid.tsx',
+  ],
   '[data-testid="explorer-folder-grid-empty"]': [
     'src/features/library/components/ExplorerFolderGrid.tsx',
   ],
@@ -40,7 +42,7 @@ function literalFor(selector: string): string {
   const dataAttr = /^\[data-(tour|testid)="(.+)"\]$/.exec(selector);
   if (dataAttr) {
     const [, kind, value] = dataAttr;
-    // `nav:/pedidos` é montado por template no SidebarNavItem; ali basta provar
+    // `nav:/requests` é montado por template no SidebarNavItem; ali basta provar
     // que o atributo nasce do próprio caminho do item.
     if (value!.startsWith('nav:')) return 'data-tour={`nav:${item.path}`}';
     return `data-${kind}="${value}"`;

@@ -17,7 +17,7 @@ export function UserManagementRoute() {
   }
 
   if (!hasAnyRole(['company_admin'])) {
-    return <Navigate to="/biblioteca" replace />;
+    return <Navigate to="/library" replace />;
   }
 
   return <UsersPage />;

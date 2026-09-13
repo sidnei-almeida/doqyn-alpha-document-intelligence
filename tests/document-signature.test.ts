@@ -561,7 +561,7 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     const hook = read('src/features/signature/hooks/useAssignedSignatureRequests.ts');
     const page = read('src/features/library/LibraryPage.tsx');
     assert.ok(collections.includes('para-assinar'));
-    assert.ok(collections.includes("slug: 'assinaturas'"));
+    assert.ok(collections.includes("slug: 'signatures'"));
     assert.ok(constants.includes('nav.assinaturas'));
     assert.ok(panel.includes('signatures-assigned-list'));
     assert.ok(hook.includes('fetchAssignedSignatureRequests'));
@@ -578,7 +578,7 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     assert.ok(internal.includes('signDocumentViaRequest'));
     assert.ok(viewer.includes('fetchInternalSignaturePreviewAssetBlob'));
     assert.ok(api.includes('/api/signature-requests/assigned-to-me'));
-    assert.ok(routes.includes('/assinaturas/:signatureRequestId'));
+    assert.ok(routes.includes('/signatures/:signatureRequestId'));
   });
 
   it('portal externo permanece isolado sem sidebar', () => {

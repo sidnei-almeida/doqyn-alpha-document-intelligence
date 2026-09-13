@@ -64,7 +64,7 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const from =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/biblioteca';
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/library';
 
   const errorActions = errorCode ? getAuthErrorActions(errorCode) : [];
 
@@ -83,7 +83,7 @@ export function Login() {
       const ticket = extractVerificationTicket(err);
       if (ticket) {
         storeVerificationTicket(ticket);
-        navigate('/confirmar-cadastro', { replace: true, state: { ticket } });
+        navigate('/verify-email', { replace: true, state: { ticket } });
         return;
       }
 
@@ -212,7 +212,7 @@ export function Login() {
       <AuthFooterLink>
         {t('login.naoTemAcessoAinda')}{' '}
         <Link
-          to="/acesso"
+          to="/access"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
           {t('login.criarAcesso')}

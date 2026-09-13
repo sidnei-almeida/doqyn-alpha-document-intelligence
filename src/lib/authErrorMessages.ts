@@ -118,13 +118,11 @@ export function getAuthErrorActions(code: string): Array<{ label: string; href: 
 
   switch (code) {
     case 'NO_ACTIVE_MEMBERSHIP':
-      // `/acesso` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
+      // `/access` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
       // pessoal. Entrar numa empresa que já existe não está lá: depende de convite.
-      return [{ label: i18n.t('common:authErrorAction.verFormasDeAcesso'), href: '/acesso' }];
+      return [{ label: i18n.t('common:authErrorAction.verFormasDeAcesso'), href: '/access' }];
     case 'EMAIL_NOT_VERIFIED':
-      return [
-        { label: i18n.t('common:authErrorAction.confirmarEmail'), href: '/confirmar-cadastro' },
-      ];
+      return [{ label: i18n.t('common:authErrorAction.confirmarEmail'), href: '/verify-email' }];
     case 'MEMBERSHIP_REJECTED':
     case 'MEMBERSHIP_REMOVED':
       // Sem ação: voltar depende de um convite novo, que sai das mãos de quem administra a

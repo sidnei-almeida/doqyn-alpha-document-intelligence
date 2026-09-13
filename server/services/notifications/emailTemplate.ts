@@ -91,8 +91,10 @@ export function buildNotificationEmail(
 
   // O destino é o documento quando existe; a caixa de avisos quando o fato não tem documento.
   const target = notification.documentId
-    ? `${appBaseUrl}/biblioteca?documento=${encodeURIComponent(notification.documentId)}`
-    : `${appBaseUrl}/notificacoes`;
+    ? // `preview` é o parâmetro que a Biblioteca lê para abrir o documento. O link levava
+      // `documento`, que ninguém lia: o e-mail abria a lista, e não o documento do aviso.
+      `${appBaseUrl}/library?preview=${encodeURIComponent(notification.documentId)}`
+    : `${appBaseUrl}/notifications`;
 
   const expiry = notification.expiry ? expiryLine(notification.expiry.daysRemaining) : null;
 

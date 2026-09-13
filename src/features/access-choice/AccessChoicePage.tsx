@@ -60,13 +60,13 @@ export function AccessChoicePage({
             dentro convida, e o convite chega por link. Oferecer um pedido que ninguém mais
             aprova seria mandar a pessoa para uma fila que não existe. */}
         <AccessOption
-          to="/criar-empresa"
+          to="/signup/company"
           index={1}
           title={t('accessChoicePage.cadastrarMinhaEmpresa')}
           subtitle={t('accessChoicePage.subtitleEmpresa')}
         />
         <AccessOption
-          to="/criar-acesso-cpf"
+          to="/signup/individual"
           index={2}
           title={t('accessChoicePage.acessarComoPessoaFisica')}
           subtitle={t('accessChoicePage.subtitlePessoaFisica')}

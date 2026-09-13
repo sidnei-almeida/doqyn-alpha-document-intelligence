@@ -77,40 +77,40 @@ function expiryTone(daysRemaining: number): string {
 function targetFor(notification: AppNotification): string | null {
   // Um pedido ainda sem documento é o caso normal: enquanto ninguém envia, não há arquivo. O aviso
   // leva à lista de pedidos, que é onde a pessoa faz alguma coisa a respeito.
-  if (notification.type === 'document_requested') return '/pedidos';
+  if (notification.type === 'document_requested') return '/requests';
 
   /**
    * O que chegou de fora ainda não é documento do acervo: o aviso leva à fila de aceite, não ao
    * documento. Mandar para a ficha daria um link que a autorização recusa — o aceite é justamente
    * o que ainda não aconteceu.
    */
-  if (notification.type === 'inbound_share_received') return '/biblioteca/compartilhados';
+  if (notification.type === 'inbound_share_received') return '/library/shared';
 
   // Pedido atendido de outra empresa vem sem `documentId` de propósito: o documento espera aceite,
   // e o link tem de levar à decisão, não a uma ficha que a autorização recusa.
   if (notification.type === 'document_request_fulfilled' && !notification.documentId) {
-    return '/biblioteca/compartilhados';
+    return '/library/shared';
   }
 
   if (!notification.documentId) return null;
   const query = `?documentId=${encodeURIComponent(notification.documentId)}`;
 
-  if (notification.type === 'document_shared') return `/biblioteca/compartilhados${query}`;
+  if (notification.type === 'document_shared') return `/library/shared${query}`;
   // Quem pediu alcança o documento pela concessão criada no cumprimento, não pela governança da
-  // categoria — e a listagem principal não carrega grants. Mandar para `/biblioteca` cairia na
+  // categoria — e a listagem principal não carrega grants. Mandar para `/library` cairia na
   // mesma lista sem o item que este aviso acabou de anunciar.
   if (notification.type === 'document_request_fulfilled') {
-    return `/biblioteca/compartilhados${query}`;
+    return `/library/shared${query}`;
   }
-  if (notification.type === 'signature_required') return `/biblioteca/assinaturas${query}`;
+  if (notification.type === 'signature_required') return `/library/signatures${query}`;
   // Aceito ou recusado, quem lê é quem enviou — e o documento é dele, na própria Biblioteca.
   if (
     notification.type === 'inbound_share_accepted' ||
     notification.type === 'inbound_share_declined'
   ) {
-    return `/biblioteca${query}`;
+    return `/library${query}`;
   }
-  return `/biblioteca${query}`;
+  return `/library${query}`;
 }
 
 function formatMoment(iso: string): string {

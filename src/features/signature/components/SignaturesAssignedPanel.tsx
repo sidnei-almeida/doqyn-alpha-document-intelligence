@@ -138,7 +138,7 @@ export function SignaturesAssignedPanel({ search = '' }: SignaturesAssignedPanel
                 type="button"
                 size="sm"
                 onClick={() =>
-                  navigate(`/assinaturas/${encodeURIComponent(item.signatureRequestId)}`)
+                  navigate(`/signatures/${encodeURIComponent(item.signatureRequestId)}`)
                 }
                 data-testid={`signature-assigned-open-${item.signatureRequestId}`}
               >

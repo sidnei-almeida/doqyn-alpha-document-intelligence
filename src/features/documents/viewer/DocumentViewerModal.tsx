@@ -267,7 +267,7 @@ export function DocumentViewerModal({
       onUpdateDocument(documentId);
       return;
     }
-    navigate(`/biblioteca?updateVersion=${encodeURIComponent(documentId)}`);
+    navigate(`/library?updateVersion=${encodeURIComponent(documentId)}`);
   }, [documentId, navigate, onUpdateDocument]);
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {

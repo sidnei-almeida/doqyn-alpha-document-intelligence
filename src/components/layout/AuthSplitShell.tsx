@@ -18,19 +18,19 @@ import { useTranslation } from 'react-i18next';
  */
 const COLUMN_WIDTH: Record<string, string> = {
   '/login': 'max-w-[368px]',
-  '/acesso': 'max-w-[452px]',
-  '/criar-empresa': 'max-w-[520px]',
-  '/criar-acesso-cpf': 'max-w-[520px]',
+  '/access': 'max-w-[452px]',
+  '/signup/company': 'max-w-[520px]',
+  '/signup/individual': 'max-w-[520px]',
 };
 
 /**
  * Rotas com parâmetro na URL, que não casam por igualdade.
  *
- * O convite é `/convite/:token`, então `COLUMN_WIDTH[pathname]` nunca acha — e a tela caía na
+ * O convite é `/invite/:token`, então `COLUMN_WIDTH[pathname]` nunca acha — e a tela caía na
  * largura de 452px, estreita demais para um formulário que pede nome, senha, WhatsApp, cargo e
  * setor. Mesma medida dos outros cadastros, pelo mesmo motivo.
  */
-const COLUMN_WIDTH_BY_PREFIX: Array<[string, string]> = [['/convite/', 'max-w-[520px]']];
+const COLUMN_WIDTH_BY_PREFIX: Array<[string, string]> = [['/invite/', 'max-w-[520px]']];
 
 function resolveColumnWidth(pathname: string): string {
   const exact = COLUMN_WIDTH[pathname];

@@ -79,7 +79,7 @@ export function TermsPage() {
 
           <footer className="border-t border-doqyn-border-subtle pt-6">
             <Link
-              to="/acesso"
+              to="/access"
               className="inline-flex items-center gap-2 text-sm font-medium text-doqyn-text transition-colors hover:text-doqyn-primary"
             >
               <Icon name="arrow_back" size={ICON_SIZE.sm} />

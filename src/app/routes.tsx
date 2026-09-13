@@ -3,6 +3,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Login } from '@/pages/Login';
 import { ProtectedRoute, PublicRoute } from '@/features/auth/ProtectedRoute';
 import { AuthSplitShell } from '@/components/layout/AuthSplitShell';
+import { LegacyRedirect } from './LegacyRedirect';
+import { LEGACY_ROUTE_ROOTS } from './legacyRoutes';
 import {
   AcceptInviteRoute,
   AccessChoiceRoute,
@@ -40,7 +42,7 @@ export const router = createBrowserRouter([
   // A página desenha a própria casca (logo, tema), então fica fora da antessala. A rota faltava:
   // o auth-service já mandava este endereço no e-mail de troca, e quem clicava caía no curinga e
   // era jogado na biblioteca sem que a troca acontecesse.
-  { path: '/confirmar-email/:token', element: <ConfirmEmailChangeRoute /> },
+  { path: '/confirm-email-change/:token', element: <ConfirmEmailChangeRoute /> },
   // A antessala é rota de layout: o painel do documento fica montado enquanto a
   // pessoa circula entre entrar, escolher como começar e se cadastrar. Só a
   // coluna do formulário transiciona.
@@ -48,44 +50,44 @@ export const router = createBrowserRouter([
     element: <AuthSplitShell />,
     children: [
       { element: <PublicRoute />, children: [{ path: '/login', element: <Login /> }] },
-      { path: '/acesso', element: <AccessChoiceRoute /> },
+      { path: '/access', element: <AccessChoiceRoute /> },
       // Quem chega por convite entra pela mesma porta que todo mundo: mesma casca, mesmo
       // painel lendo um documento ao lado. Era a única entrada que montava a própria tela.
-      { path: '/convite/:token', element: <AcceptInviteRoute /> },
-      { path: '/criar-empresa', element: <CompanySignupRoute /> },
-      { path: '/criar-acesso-cpf', element: <IndividualSignupRoute /> },
+      { path: '/invite/:token', element: <AcceptInviteRoute /> },
+      { path: '/signup/company', element: <CompanySignupRoute /> },
+      { path: '/signup/individual', element: <IndividualSignupRoute /> },
       // Confirmação de e-mail. Fica na antessala, e fora do `PublicRoute`, de propósito: quem
       // chega aqui não tem sessão (o login recusou) e não pode ser mandado para a biblioteca por
       // um guarda que só sabe perguntar se já está logado.
-      { path: '/confirmar-cadastro', element: <EmailVerificationRoute /> },
-      { path: '/verificar-email/:token', element: <VerifyEmailLinkRoute /> },
+      { path: '/verify-email', element: <EmailVerificationRoute /> },
+      { path: '/verify-email/:token', element: <VerifyEmailLinkRoute /> },
       { path: '/onboarding', element: <OnboardingRoute /> },
     ],
   },
   { path: '/sso/callback', element: <OAuthCallbackRoute /> },
-  { path: '/termos', element: <TermsRoute /> },
+  { path: '/terms', element: <TermsRoute /> },
   {
     element: <ProtectedRoute />,
     children: [
       {
         element: <AppLayout />,
         children: [
-          { path: '/biblioteca', element: <LibraryRoute /> },
+          { path: '/library', element: <LibraryRoute /> },
           // Views da Biblioteca (compartilhados, recentes, favoritos, lixeira, desativados)
-          { path: '/biblioteca/:collection', element: <LibraryRoute /> },
-          // Fora de `/biblioteca/:collection` de propósito: aquela rota lista documentos, e um
+          { path: '/library/:collection', element: <LibraryRoute /> },
+          // Fora de `/library/:collection` de propósito: aquela rota lista documentos, e um
           // pedido só vira documento quando alguém envia.
-          { path: '/pedidos', element: <DocumentRequestsRoute /> },
-          // Fora de `/biblioteca/:collection` pelo mesmo motivo dos pedidos: aquela rota lista
+          { path: '/requests', element: <DocumentRequestsRoute /> },
+          // Fora de `/library/:collection` pelo mesmo motivo dos pedidos: aquela rota lista
           // documentos, e um contato não é um.
-          { path: '/contatos', element: <ContactsRoute /> },
-          { path: '/assinaturas/:signatureRequestId', element: <InternalSignatureRoute /> },
+          { path: '/contacts', element: <ContactsRoute /> },
+          { path: '/signatures/:signatureRequestId', element: <InternalSignatureRoute /> },
           { path: '/dashboard', element: <DashboardRoute /> },
           { path: '/rules', element: <RulesRoute /> },
-          { path: '/matriz', element: <MatrixRoute /> },
-          { path: '/notificacoes', element: <NotificationsRoute /> },
+          { path: '/access-matrix', element: <MatrixRoute /> },
+          { path: '/notifications', element: <NotificationsRoute /> },
           { path: '/users', element: <UserManagementRouteLazy /> },
-          { path: '/documents', element: <Navigate to="/biblioteca" replace /> },
+          { path: '/documents', element: <Navigate to="/library" replace /> },
           { path: '/audit', element: <AuditRoute /> },
           { path: '/tracking', element: <TrackingRoute /> },
           { path: '/settings', element: <SettingsRoute /> },
@@ -93,6 +95,9 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/', element: <Navigate to="/biblioteca" replace /> },
-  { path: '*', element: <Navigate to="/biblioteca" replace /> },
+  // Endereços antigos em português. Fora de toda casca e de todo guarda: o redirect acontece
+  // primeiro, e quem decide sessão é a rota nova. Ver `legacyRoutes.ts`.
+  ...LEGACY_ROUTE_ROOTS.map((root) => ({ path: `/${root}/*`, element: <LegacyRedirect /> })),
+  { path: '/', element: <Navigate to="/library" replace /> },
+  { path: '*', element: <Navigate to="/library" replace /> },
 ]);

@@ -34,7 +34,7 @@ export function ExplorerRecentList({
       action={
         showMoreLink ? (
           <Link
-            to="/biblioteca/recentes"
+            to="/library/recent"
             className="shrink-0 text-[12px] font-medium text-doqyn-accent-active hover:underline"
           >
             {t('explorerRecentList.verTodos')}

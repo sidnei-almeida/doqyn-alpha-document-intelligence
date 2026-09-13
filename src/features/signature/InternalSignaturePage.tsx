@@ -224,7 +224,7 @@ export function InternalSignaturePage() {
           {t('internalSignaturePage.assinaturaIndisponivel')}
         </h1>
         <p className="mt-2 text-sm text-doqyn-subtle">{error}</p>
-        <Button type="button" className="mt-6" onClick={() => navigate('/biblioteca/assinaturas')}>
+        <Button type="button" className="mt-6" onClick={() => navigate('/library/signatures')}>
           {t('internalSignaturePage.voltarParaParaAssinar')}
         </Button>
       </div>
@@ -272,7 +272,7 @@ export function InternalSignaturePage() {
           type="button"
           variant="ghost"
           className="mt-3 w-full"
-          onClick={() => navigate('/biblioteca/assinaturas')}
+          onClick={() => navigate('/library/signatures')}
         >
           {t('internalSignaturePage.voltarParaParaAssinar2')}
         </Button>

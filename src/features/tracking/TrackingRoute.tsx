@@ -18,7 +18,7 @@ export function TrackingRoute() {
   }
 
   if (!canViewDocumentTracking(roles, user?.role, membership?.status)) {
-    return <Navigate to="/biblioteca" replace />;
+    return <Navigate to="/library" replace />;
   }
 
   return <TrackingPage />;

@@ -104,7 +104,7 @@ export function OverviewRecentDocumentsPanel({
       subtitle={t('overviewRecentDocumentsPanel.subtitle')}
       titleId="overview-recent-documents-title"
       actionLabel={t('overviewRecentDocumentsPanel.viewAll')}
-      onAction={() => navigate('/biblioteca')}
+      onAction={() => navigate('/library')}
       bodyClassName="flex-1"
       data-testid="overview-recent-documents"
     >

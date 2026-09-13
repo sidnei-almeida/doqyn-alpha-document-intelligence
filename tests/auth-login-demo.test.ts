@@ -12,9 +12,9 @@ function readSrc(relativePath: string): string {
 }
 
 describe('login demo e robustez de auth', () => {
-  it('LoginPage redireciona para /biblioteca após login', () => {
+  it('LoginPage redireciona para /library após login', () => {
     const login = readSrc('pages/Login.tsx');
-    assert.ok(login.includes("|| '/biblioteca'"));
+    assert.ok(login.includes("|| '/library'"));
     assert.equal(login.includes("|| '/upload'"), false);
   });
 
@@ -65,7 +65,7 @@ describe('login demo e robustez de auth', () => {
 
   it('PublicRoute redireciona autenticado para biblioteca', () => {
     const route = readSrc('features/auth/ProtectedRoute.tsx');
-    assert.ok(route.includes('Navigate to="/biblioteca"'));
+    assert.ok(route.includes('Navigate to="/library"'));
   });
 });
 

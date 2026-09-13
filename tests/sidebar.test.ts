@@ -12,7 +12,6 @@ function readSrc(relativePath: string): string {
 }
 
 describe('sidebar DOQYN', () => {
-
   it('seção Administração usa headers discretos', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
     const sidebar = readSrc('components/layout/Sidebar.tsx');
@@ -24,7 +23,7 @@ describe('sidebar DOQYN', () => {
     const source = readSrc('components/layout/Sidebar.tsx');
     const collapsed = readSrc('components/layout/useSidebarCollapsed.ts');
     assert.ok(source.includes('.biblioteca'));
-    assert.ok(source.includes('/biblioteca'));
+    assert.ok(source.includes('/library'));
     assert.ok(source.includes('NewButtonMenu'));
     assert.ok(source.includes('useSidebarCollapsed'));
     // O botão de colapsar saiu para `SidebarEdgeToggle`, que vive na borda entre sidebar e

@@ -37,7 +37,7 @@ export function PublicRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/biblioteca" replace />;
+    return <Navigate to="/library" replace />;
   }
 
   return <Outlet />;

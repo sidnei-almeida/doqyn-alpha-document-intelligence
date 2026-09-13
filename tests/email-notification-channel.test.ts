@@ -58,11 +58,11 @@ describe('o e-mail do aviso', () => {
       notificacao({ documentId: 'doc_1', documentName: 'Contrato.pdf' }),
       'https://app.doqyn.com',
     );
-    assert.match(comDoc.html, /documento=doc_1/);
+    assert.match(comDoc.html, /\/library\?preview=doc_1/);
     assert.match(comDoc.subject, /Contrato\.pdf/);
 
     const semDoc = buildNotificationEmail(notificacao(), 'https://app.doqyn.com');
-    assert.match(semDoc.html, /\/notificacoes/);
+    assert.match(semDoc.html, /\/notifications/);
   });
 
   it('escapa o que veio do usuário, senão o nome do arquivo vira marcação', () => {

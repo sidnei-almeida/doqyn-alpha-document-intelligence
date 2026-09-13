@@ -161,7 +161,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           action: folderTargetId
             ? {
                 label: i18n.t('upload:provider.openFolder'),
-                onClick: () => navigate(`/biblioteca?space=${encodeURIComponent(folderTargetId)}`),
+                onClick: () => navigate(`/library?space=${encodeURIComponent(folderTargetId)}`),
               }
             : undefined,
         });

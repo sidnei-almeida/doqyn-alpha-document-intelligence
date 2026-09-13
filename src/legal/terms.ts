@@ -10,10 +10,10 @@
  */
 export const DOQYN_TERMS_VERSION = 'v1.0-dev';
 export const DOQYN_TERMS_EFFECTIVE_DATE = '2026-07-02';
-export const DOQYN_TERMS_ROUTE = '/termos';
+export const DOQYN_TERMS_ROUTE = '/terms';
 
 export const DOQYN_PRIVACY_VERSION = 'v1.0-dev';
-export const DOQYN_PRIVACY_ROUTE = '/privacidade';
+export const DOQYN_PRIVACY_ROUTE = '/privacy';
 
 export const TERMS_LEGAL_NOTICE_KEY = 'legal:notice';
 

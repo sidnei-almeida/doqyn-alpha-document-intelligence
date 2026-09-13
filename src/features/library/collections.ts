@@ -12,6 +12,9 @@ export type LibraryCollectionId =
 /**
  * A coleção é dado de roteamento, não texto de tela.
  *
+ * O `slug` é o segmento da URL, em inglês como o resto das rotas; o `id` continua o identificador
+ * interno de sempre. O slug antigo em português redireciona (`src/app/legacyRoutes.ts`).
+ *
  * Mesma separação de `src/lib/constants.ts`: o que fica aqui é o identificador, o slug da URL e
  * a decisão de mostrar pastas. As quatro frases — rótulo, descrição e o par de estado vazio —
  * moram em `library.json` sob `collections.<id>`, e quem renderiza resolve com `t`. Resolver
@@ -40,7 +43,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   compartilhados: {
     id: 'compartilhados',
-    slug: 'compartilhados',
+    slug: 'shared',
     labelKey: 'library:collections.compartilhados.label',
     descriptionKey: 'library:collections.compartilhados.description',
     emptyTitleKey: 'library:collections.compartilhados.emptyTitle',
@@ -49,7 +52,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   'para-assinar': {
     id: 'para-assinar',
-    slug: 'assinaturas',
+    slug: 'signatures',
     labelKey: 'library:collections.paraAssinar.label',
     descriptionKey: 'library:collections.paraAssinar.description',
     emptyTitleKey: 'library:collections.paraAssinar.emptyTitle',
@@ -58,7 +61,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   recentes: {
     id: 'recentes',
-    slug: 'recentes',
+    slug: 'recent',
     labelKey: 'library:collections.recentes.label',
     descriptionKey: 'library:collections.recentes.description',
     emptyTitleKey: 'library:collections.recentes.emptyTitle',
@@ -67,7 +70,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   favoritos: {
     id: 'favoritos',
-    slug: 'favoritos',
+    slug: 'favorites',
     labelKey: 'library:collections.favoritos.label',
     descriptionKey: 'library:collections.favoritos.description',
     emptyTitleKey: 'library:collections.favoritos.emptyTitle',
@@ -76,7 +79,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   lixeira: {
     id: 'lixeira',
-    slug: 'lixeira',
+    slug: 'trash',
     labelKey: 'library:collections.lixeira.label',
     descriptionKey: 'library:collections.lixeira.description',
     emptyTitleKey: 'library:collections.lixeira.emptyTitle',
@@ -85,7 +88,7 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   },
   desativados: {
     id: 'desativados',
-    slug: 'desativados',
+    slug: 'deactivated',
     labelKey: 'library:collections.desativados.label',
     descriptionKey: 'library:collections.desativados.description',
     emptyTitleKey: 'library:collections.desativados.emptyTitle',

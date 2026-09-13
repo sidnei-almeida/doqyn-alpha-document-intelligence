@@ -151,7 +151,7 @@ export function NewButtonMenu({ uploadContext, className, collapsed = false }: N
             se pareciam, e o destino errado não dava erro nenhum: abria o onboarding para quem já
             estava dentro. */}
         <Link
-          to="/pedidos?novo=1"
+          to="/requests?new=1"
           role="menuitem"
           className="sidebar-new-menu__item"
           onClick={() => setOpen(false)}

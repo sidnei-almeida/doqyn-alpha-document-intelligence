@@ -22,7 +22,7 @@ describe('fluxo dedicado de atualização de versão', () => {
   it('DocumentViewerModal redireciona para biblioteca?updateVersion quando sem callback', () => {
     const modal = readSrc('features/documents/viewer/DocumentViewerModal.tsx');
     assert.ok(modal.includes('onUpdateDocument'));
-    assert.ok(modal.includes('/biblioteca?updateVersion='));
+    assert.ok(modal.includes('/library?updateVersion='));
     assert.equal(modal.includes('/upload?documentId='), false);
   });
 

@@ -9,7 +9,7 @@ import { clearVerificationTicket } from './verificationTicket';
 import { useTranslation } from 'react-i18next';
 
 /**
- * O caminho do link do e-mail: `/verificar-email/:token`.
+ * O caminho do link do e-mail: `/verify-email/:token`.
  *
  * Confirma sozinha ao abrir, sem botão. O clique no e-mail já foi a intenção — pedir um segundo
  * clique aqui só adicionaria um passo entre a pessoa e a conta dela. Não pede sessão nem ticket:

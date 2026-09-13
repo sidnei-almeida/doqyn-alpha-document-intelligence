@@ -40,7 +40,7 @@ export function TrackingDocumentCell({
         // Investigar um evento quase sempre termina em "deixa eu ver esse documento". Sem o
         // atalho, o caminho era copiar o nome e procurar na Biblioteca.
         <Link
-          to={`/biblioteca?preview=${encodeURIComponent(documentId)}`}
+          to={`/library?preview=${encodeURIComponent(documentId)}`}
           // A linha inteira abre o detalhe no lugar; o nome continua sendo
           // atalho para o documento, e não pode disparar as duas coisas.
           onClick={(clickEvent) => clickEvent.stopPropagation()}

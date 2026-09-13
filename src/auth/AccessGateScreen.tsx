@@ -48,11 +48,11 @@ const GATE_ACTIONS: Partial<
     Array<{ labelKey: string; href: string; variant?: 'primary' | 'secondary' }>
   >
 > = {
-  /* `/acesso` apresenta os caminhos que a pessoa percorre sozinha — cadastrar uma empresa ou
+  /* `/access` apresenta os caminhos que a pessoa percorre sozinha — cadastrar uma empresa ou
      abrir conta pessoal. Entrar numa empresa que já existe não está entre eles: depende de
      alguém de dentro convidar, e o convite chega por link. */
   no_membership: [
-    { labelKey: 'authErrorAction.verFormasDeAcesso', href: '/acesso', variant: 'primary' },
+    { labelKey: 'authErrorAction.verFormasDeAcesso', href: '/access', variant: 'primary' },
   ],
   /* Recusado e removido não ganham botão. Voltar depende de um convite novo, que sai das mãos de
      quem administra a empresa — mandar a pessoa para uma tela onde ela não resolve nada seria

@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import {
-  CANONICAL_VALIDITY_KEY,
-  canonicalizeMetadataKey,
-} from '../shared/metadataKeyNormalize.js';
+import { CANONICAL_VALIDITY_KEY, canonicalizeMetadataKey } from '../shared/metadataKeyNormalize.js';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
@@ -98,14 +95,14 @@ describe('vencimentos — configuração na regra da categoria', () => {
 });
 
 // A caixa de vencimentos foi absorvida pelas notificações em `e95fa66` ("o sino deixa de ser só
-// de vencimento"): a rota `/vencimentos` virou `/notificacoes`, e `ExpiryAlertsBell` virou
+// de vencimento"): a rota `/vencimentos` virou `/notifications`, e `ExpiryAlertsBell` virou
 // `NotificationsBell`. As garantias abaixo são as mesmas de antes, apuradas no lugar novo.
 describe('vencimentos — caixa de alertas, dentro das notificações', () => {
   it('a rota da página está registrada', () => {
     const routes = read('src/app/routes.tsx');
     const lazy = read('src/app/lazyRoutes.tsx');
 
-    assert.ok(routes.includes("path: '/notificacoes'"));
+    assert.ok(routes.includes("path: '/notifications'"));
     assert.ok(lazy.includes('NotificationsRoute'));
     assert.ok(lazy.includes('@/features/notifications/NotificationsPage'));
   });

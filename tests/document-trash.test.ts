@@ -327,7 +327,7 @@ describe('document trash — frontend lixeira e desativados', () => {
   it('collections inclui desativados e lixeira sem filtro archived', () => {
     const collections = read('src/features/library/collections.ts');
     assert.ok(collections.includes("'desativados'"));
-    assert.ok(collections.includes("slug: 'desativados'"));
+    assert.ok(collections.includes("slug: 'deactivated'"));
     const lixeiraBlock = collections.slice(
       collections.indexOf("case 'lixeira'"),
       collections.indexOf('default:'),
@@ -362,7 +362,7 @@ describe('document trash — frontend lixeira e desativados', () => {
       constants.match(/export const NAV_ITEMS_LIBRARY_VIEWS = \[[\s\S]*?\] as const;/)?.[0] ?? '';
     const adminBlock =
       constants.match(/export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/)?.[0] ?? '';
-    assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
+    assert.ok(adminBlock.includes("path: '/library/deactivated'"));
     assert.ok(adminBlock.includes('adminOnly: true'));
     assert.ok(adminBlock.includes('nav.desativados'));
     assert.ok(!libraryViewsBlock.includes('Desativados'));

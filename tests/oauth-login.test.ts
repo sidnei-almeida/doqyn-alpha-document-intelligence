@@ -30,7 +30,7 @@ describe('OAuth login frontend', () => {
     const source = readSrc('pages/OAuthCallbackPage.tsx');
     assert.ok(source.includes('refreshUser'));
     assert.ok(source.includes('/onboarding'));
-    assert.ok(source.includes('/biblioteca'));
+    assert.ok(source.includes('/library'));
     assert.equal(source.includes("'/upload'"), false);
   });
 
@@ -38,8 +38,8 @@ describe('OAuth login frontend', () => {
     const source = readSrc('pages/OnboardingPage.tsx');
     const access = readSrc('features/access-choice/AccessChoicePage.tsx');
     assert.ok(source.includes('OnboardingPage'));
-    assert.ok(access.includes('/criar-acesso-cpf'));
-    assert.ok(access.includes('/criar-empresa'));
+    assert.ok(access.includes('/signup/individual'));
+    assert.ok(access.includes('/signup/company'));
     // Entrar numa empresa que já existe depende de convite, não de um pedido em fila.
     assert.equal(access.includes('/solicitar-acesso'), false);
   });

@@ -51,35 +51,35 @@ export const PROCESSING_STEPS = [
 ];
 
 export const NAV_ITEMS_PRIMARY = [
-  { labelKey: 'common:nav.biblioteca', path: '/biblioteca', icon: 'folder' },
+  { labelKey: 'common:nav.biblioteca', path: '/library', icon: 'folder' },
 ] as const;
 
 /** Views da Biblioteca — recortes sobre a listagem real (listDocuments). */
 export const NAV_ITEMS_LIBRARY_VIEWS = [
   {
     labelKey: 'common:nav.compartilhados',
-    path: '/biblioteca/compartilhados',
+    path: '/library/shared',
     icon: 'folder_shared',
   },
-  { labelKey: 'common:nav.assinaturas', path: '/biblioteca/assinaturas', icon: 'draw' },
-  { labelKey: 'common:nav.pedidos', path: '/pedidos', icon: 'assignment' },
-  { labelKey: 'common:nav.contatos', path: '/contatos', icon: 'group' },
-  { labelKey: 'common:nav.recentes', path: '/biblioteca/recentes', icon: 'history' },
-  { labelKey: 'common:nav.favoritos', path: '/biblioteca/favoritos', icon: 'star' },
-  { labelKey: 'common:nav.lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
+  { labelKey: 'common:nav.assinaturas', path: '/library/signatures', icon: 'draw' },
+  { labelKey: 'common:nav.pedidos', path: '/requests', icon: 'assignment' },
+  { labelKey: 'common:nav.contatos', path: '/contacts', icon: 'group' },
+  { labelKey: 'common:nav.recentes', path: '/library/recent', icon: 'history' },
+  { labelKey: 'common:nav.favoritos', path: '/library/favorites', icon: 'star' },
+  { labelKey: 'common:nav.lixeira', path: '/library/trash', icon: 'delete' },
 ] as const;
 
 export const NAV_ITEMS_ADMIN = [
   { labelKey: 'common:nav.dashboard', path: '/dashboard', icon: 'dashboard' },
   { labelKey: 'common:nav.rules', path: '/rules', icon: 'account_tree', governanceOnly: true },
   // Aberta para dono também: cada um enxerga a fatia dele, e é o servidor que decide o recorte.
-  { labelKey: 'common:nav.matriz', path: '/matriz', icon: 'grid_on' },
+  { labelKey: 'common:nav.matriz', path: '/access-matrix', icon: 'grid_on' },
   { labelKey: 'common:nav.users', path: '/users', icon: 'group', managerOnly: true },
   { labelKey: 'common:nav.audit', path: '/audit', icon: 'shield' },
   { labelKey: 'common:nav.tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
   {
     labelKey: 'common:nav.desativados',
-    path: '/biblioteca/desativados',
+    path: '/library/deactivated',
     icon: 'block',
     adminOnly: true,
   },

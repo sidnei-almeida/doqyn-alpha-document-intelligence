@@ -17,10 +17,10 @@ import { refetchTenantScopedQueries } from '@/features/tenant/tenantLiveSync';
 import { i18n } from '@/i18n';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
-  '/acesso',
-  '/convite',
-  '/criar-empresa',
-  '/criar-acesso-cpf',
+  '/access',
+  '/invite',
+  '/signup/company',
+  '/signup/individual',
   '/onboarding',
 ];
 

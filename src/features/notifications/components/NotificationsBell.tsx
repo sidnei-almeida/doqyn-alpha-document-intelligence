@@ -97,7 +97,7 @@ export function NotificationsBell({ className }: { className?: string }) {
             type="button"
             onClick={() => {
               setOpen(false);
-              void navigate('/notificacoes');
+              void navigate('/notifications');
             }}
             className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
           >

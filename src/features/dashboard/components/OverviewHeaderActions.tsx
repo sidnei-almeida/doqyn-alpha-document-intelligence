@@ -24,7 +24,7 @@ export function OverviewHeaderActions({ period, onPeriodChange }: OverviewHeader
         variant="secondary"
         size="sm"
         className="h-9"
-        onClick={() => navigate('/biblioteca')}
+        onClick={() => navigate('/library')}
       >
         <Icon name="local_library" size={ICON_SIZE.xs} />
 

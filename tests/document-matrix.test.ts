@@ -60,8 +60,8 @@ describe('registro das rotas da matriz', () => {
   });
 
   it('a seção está no menu e na rota do app', () => {
-    assert.match(readRepoFile('src/lib/constants.ts'), /path: '\/matriz'/);
-    assert.match(readRepoFile('src/app/routes.tsx'), /path: '\/matriz'/);
+    assert.match(readRepoFile('src/lib/constants.ts'), /path: '\/access-matrix'/);
+    assert.match(readRepoFile('src/app/routes.tsx'), /path: '\/access-matrix'/);
   });
 });
 

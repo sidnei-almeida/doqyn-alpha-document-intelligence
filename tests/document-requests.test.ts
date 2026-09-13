@@ -189,7 +189,7 @@ describe('requisitar documento — aviso e tela', () => {
     const list = read('src/features/notifications/components/NotificationList.tsx');
 
     // Enquanto ninguém envia não há arquivo, e o `documentId` ausente devolveria `null`.
-    assert.ok(list.includes("if (notification.type === 'document_requested') return '/pedidos'"));
+    assert.ok(list.includes("if (notification.type === 'document_requested') return '/requests'"));
   });
 
   it('um fato, um aviso', () => {
@@ -206,10 +206,10 @@ describe('requisitar documento — aviso e tela', () => {
     const routes = read('src/app/routes.tsx');
     const nav = read('src/lib/constants.ts');
 
-    // `/biblioteca/:collection` lista documentos, e um pedido só vira documento quando alguém
+    // `/library/:collection` lista documentos, e um pedido só vira documento quando alguém
     // envia — entrar lá como coleção obrigaria a mentir para `DocumentListItem`.
-    assert.ok(routes.includes("path: '/pedidos'"));
-    assert.ok(nav.includes("path: '/pedidos'"));
+    assert.ok(routes.includes("path: '/requests'"));
+    assert.ok(nav.includes("path: '/requests'"));
   });
 
   it('a pessoa é identificada pelo id do auth, não pelo da associação', () => {
@@ -323,7 +323,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     // A listagem principal não carrega concessões; só "Compartilhados comigo" carrega.
     assert.ok(list.includes("notification.type === 'document_request_fulfilled'"));
     assert.ok(page.includes('function fulfilledDocumentPath'));
-    assert.ok(page.includes('/biblioteca/compartilhados?documentId='));
+    assert.ok(page.includes('/library/shared?documentId='));
   });
 
   it('o prazo é ancorado em UTC, senão as duas telas discordam por um dia', () => {
