@@ -58,8 +58,6 @@
     "visualizacaoProtegidaParaAssinatura": "Protected view for internal signing."
   },
   "requestSignatureModal": {
-    "assinaturasDesteDocumento": "Signatures on this document",
-    "assinaturasDesteDocumento2": "Signatures on this document",
     "linkDoPortalDe": "Signature portal link",
     "naoEDaquiBuscar": "Not from here? Search by username",
     "nomeDeUsuarioDe": "Username of the person who will sign",
@@ -83,7 +81,6 @@
     "rowRequested": "{{email}} · requested {{createdAt}}",
     "rowRequestedExpires": "{{email}} · requested {{createdAt}} · expires {{expiresAt}}",
     "submit": "Create request",
-    "emptyRequests": "No requests yet.",
     "crossTenantHint": "People with a DOQYN account are found by username; their full email works too. They sign on their own page, without entering your documents.",
     "fallbackInvite": "Invite by link",
     "expiresHint": "After the deadline, the request expires and the document can no longer be signed through it.",
@@ -97,7 +94,9 @@
     "noteInternal": "The person will see the document under “{{section}}”.",
     "noteExternal": "The portal link is generated now and stays available to copy while the request is open.",
     "issuedValidUntil": "Valid until {{date}}. While the request is open, this link can be copied again from the list below.",
-    "internalDone": "{{name}} received the request and sees the document under “{{section}}”."
+    "internalDone": "{{name}} received the request and sees the document under “{{section}}”.",
+    "pendingTitle": "Awaiting signature",
+    "pendingEmpty": "Nothing awaiting signature."
   },
   "signaturePortalPage": {
     "abrindoASolicitacao": "Opening the request…",

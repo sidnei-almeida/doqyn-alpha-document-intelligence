@@ -58,8 +58,6 @@
     "visualizacaoProtegidaParaAssinatura": "Visualização protegida para assinatura interna."
   },
   "requestSignatureModal": {
-    "assinaturasDesteDocumento": "Assinaturas deste documento",
-    "assinaturasDesteDocumento2": "Assinaturas deste documento",
     "linkDoPortalDe": "Link do portal de assinatura",
     "naoEDaquiBuscar": "Não é daqui? Buscar por nome de usuário",
     "nomeDeUsuarioDe": "Nome de usuário de quem vai assinar",
@@ -83,7 +81,6 @@
     "rowRequested": "{{email}} · pedido em {{createdAt}}",
     "rowRequestedExpires": "{{email}} · pedido em {{createdAt}} · expira {{expiresAt}}",
     "submit": "Criar solicitação",
-    "emptyRequests": "Nenhuma solicitação ainda.",
     "crossTenantHint": "Quem tem conta DOQYN é achado pelo nome de usuário; o e-mail inteiro também resolve. Ela assina pela página própria, sem entrar no seu acervo.",
     "fallbackInvite": "Convidar por link",
     "expiresHint": "Passado o prazo, a solicitação expira e o documento não pode mais ser assinado por ela.",
@@ -97,7 +94,9 @@
     "noteInternal": "A pessoa passa a ver o documento em “{{section}}”.",
     "noteExternal": "O link do portal é gerado agora e fica disponível para copiar enquanto a solicitação estiver aberta.",
     "issuedValidUntil": "Vale até {{date}}. Enquanto a solicitação estiver aberta, este link pode ser copiado de novo na lista abaixo.",
-    "internalDone": "{{name}} recebeu a solicitação e vê o documento em “{{section}}”."
+    "internalDone": "{{name}} recebeu a solicitação e vê o documento em “{{section}}”.",
+    "pendingTitle": "Aguardando assinatura",
+    "pendingEmpty": "Nada aguardando assinatura."
   },
   "signaturePortalPage": {
     "abrindoASolicitacao": "Abrindo a solicitação…",

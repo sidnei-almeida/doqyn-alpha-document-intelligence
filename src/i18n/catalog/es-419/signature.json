@@ -58,8 +58,6 @@
     "visualizacaoProtegidaParaAssinatura": "Vista protegida para firma interna."
   },
   "requestSignatureModal": {
-    "assinaturasDesteDocumento": "Firmas de este documento",
-    "assinaturasDesteDocumento2": "Firmas de este documento",
     "linkDoPortalDe": "Enlace del portal de firma",
     "naoEDaquiBuscar": "¿No es de aquí? Buscar por nombre de usuario",
     "nomeDeUsuarioDe": "Nombre de usuario de quien va a firmar",
@@ -83,7 +81,6 @@
     "rowRequested": "{{email}} · solicitado el {{createdAt}}",
     "rowRequestedExpires": "{{email}} · solicitado el {{createdAt}} · vence el {{expiresAt}}",
     "submit": "Crear solicitud",
-    "emptyRequests": "Aún no hay solicitudes.",
     "crossTenantHint": "Quien tiene cuenta DOQYN se encuentra por su nombre de usuario; el correo completo también funciona. Firma desde su propia página, sin entrar en tus documentos.",
     "fallbackInvite": "Invitar por enlace",
     "expiresHint": "Pasado el plazo, la solicitud vence y el documento ya no puede firmarse a través de ella.",
@@ -97,7 +94,9 @@
     "noteInternal": "La persona pasará a ver el documento en «{{section}}».",
     "noteExternal": "El enlace del portal se genera ahora y queda disponible para copiar mientras la solicitud esté abierta.",
     "issuedValidUntil": "Válido hasta {{date}}. Mientras la solicitud esté abierta, este enlace puede copiarse de nuevo en la lista de abajo.",
-    "internalDone": "{{name}} recibió la solicitud y ve el documento en «{{section}}»."
+    "internalDone": "{{name}} recibió la solicitud y ve el documento en «{{section}}».",
+    "pendingTitle": "Esperando firma",
+    "pendingEmpty": "Nada pendiente de firma."
   },
   "signaturePortalPage": {
     "abrindoASolicitacao": "Abriendo la solicitud…",

@@ -259,10 +259,19 @@ export function RequestSignatureModal({
     setInternalDone(true);
   };
 
-  const accessRows = (requests.data?.items ?? []).map((request) => {
+  /**
+   * Só o que ainda espera assinatura.
+   *
+   * Assinado, recusado, vencido ou cancelado já tem lugar próprio em "Ver assinaturas". Repetir
+   * aqui poluía o formulário e deixava as assinaturas em três lugares.
+   */
+  const pendingRequests = (requests.data?.items ?? []).filter(
+    (request) => request.status === 'pending' || request.status === 'partially_signed',
+  );
+
+  const accessRows = pendingRequests.map((request) => {
     const signer = request.signers[0];
     const portalUrl = (request as { portalUrl?: string | null }).portalUrl ?? null;
-    const open = request.status === 'pending' || request.status === 'partially_signed';
     const statusKey = REQUEST_STATUS_KEYS[request.status];
     const email = signer?.emailMasked ?? '—';
     return {
@@ -283,7 +292,7 @@ export function RequestSignatureModal({
         tone: statusTone(request.status),
       },
       actions: [
-        ...(portalUrl && open
+        ...(portalUrl
           ? [
               {
                 label: t('documents:recipientFlow.copyLink'),
@@ -291,16 +300,12 @@ export function RequestSignatureModal({
               },
             ]
           : []),
-        ...(open
-          ? [
-              {
-                label: t('common:actions.cancel'),
-                tone: 'danger' as const,
-                disabled: cancelRequest.isPending,
-                onClick: () => cancelRequest.mutate(request.signatureRequestId),
-              },
-            ]
-          : []),
+        {
+          label: t('common:actions.cancel'),
+          tone: 'danger' as const,
+          disabled: cancelRequest.isPending,
+          onClick: () => cancelRequest.mutate(request.signatureRequestId),
+        },
       ],
     };
   });
@@ -364,8 +369,8 @@ export function RequestSignatureModal({
             </p>
           )}
           <AccessList
-            title={t('requestSignatureModal.assinaturasDesteDocumento')}
-            emptyLabel={t('requestSignatureModal.emptyRequests')}
+            title={t('requestSignatureModal.pendingTitle')}
+            emptyLabel={t('requestSignatureModal.pendingEmpty')}
             rows={accessRows}
           />
         </div>
@@ -433,8 +438,8 @@ export function RequestSignatureModal({
                 />
               )}
               <AccessList
-                title={t('requestSignatureModal.assinaturasDesteDocumento2')}
-                emptyLabel={t('requestSignatureModal.emptyRequests')}
+                title={t('requestSignatureModal.pendingTitle')}
+                emptyLabel={t('requestSignatureModal.pendingEmpty')}
                 rows={accessRows}
               />
             </div>
