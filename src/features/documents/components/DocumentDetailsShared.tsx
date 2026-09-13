@@ -5,6 +5,7 @@ import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem, DocumentSearchMeta } from '@/types/document-library';
 import { buildStandardDetailsFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
 import { getPreviewStatusLabel } from '../utils/previewErrors';
+import { i18n } from '@/i18n';
 import { useTranslation } from 'react-i18next';
 
 type DetailFieldProps = {
@@ -84,9 +85,11 @@ function validityHint(validityDate: string): string | undefined {
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   const days = Math.round((startOfDay(target) - startOfDay(new Date())) / 86_400_000);
 
-  if (days < 0) return `Vencido há ${Math.abs(days)} dia(s).`;
-  if (days === 0) return 'Vence hoje.';
-  return `Vence em ${days} dia(s).`;
+  if (days < 0) {
+    return i18n.t('documents:documentDetailsShared.validity.expired', { count: Math.abs(days) });
+  }
+  if (days === 0) return i18n.t('documents:documentDetailsShared.validity.today');
+  return i18n.t('documents:documentDetailsShared.validity.inDays', { count: days });
 }
 
 type DocumentSystemDetailsProps = {
@@ -185,7 +188,11 @@ export function DocumentDetailsSections({
 }: DocumentDetailsSectionsProps) {
   const { t } = useTranslation('documents');
 
-  const name = displayName ?? document.currentFileName ?? document.displayName ?? 'Documento';
+  const name =
+    displayName ??
+    document.currentFileName ??
+    document.displayName ??
+    t('documentDetailsShared.documento');
 
   return (
     <div className="flex flex-col gap-3">

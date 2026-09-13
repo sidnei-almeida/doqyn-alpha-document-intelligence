@@ -41,7 +41,7 @@ describe('secure preview permissions', () => {
 
   it('modal bloqueia Ctrl+P sem canDownload', () => {
     assert.match(modalSource, /handlePrintShortcut/);
-    assert.match(modalSource, /impressão deste documento não está disponível/i);
+    assert.match(modalSource, /documentViewerModal\.printUnavailable/);
     assert.match(modalSource, /doqyn-secure-viewer/);
   });
 

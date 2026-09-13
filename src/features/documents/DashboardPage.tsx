@@ -67,12 +67,12 @@ export function DashboardPage() {
 
   return (
     <PageShell
-      eyebrow="Visão geral"
+      eyebrow={t('dashboardPage.eyebrow')}
       title={t('dashboardPage.painelDeControle')}
       description={
         <LeadDetail
-          lead={`Panorama de ${data.tenant.displayName}`}
-          detail="documentos, atividade e governança"
+          lead={t('dashboardPage.panoramaOf', { name: data.tenant.displayName })}
+          detail={t('dashboardPage.panoramaDetail')}
         />
       }
       actions={<OverviewHeaderActions period={period} onPeriodChange={setPeriod} />}
@@ -96,23 +96,23 @@ export function DashboardPage() {
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
             title={t('dashboardPage.porStatus')}
-            subtitle="Onde os documentos pararam"
+            subtitle={t('dashboardPage.byStatusSubtitle')}
             items={data.documentsByStatus.map((item) => ({
               label: item.label,
               count: item.count,
             }))}
-            emptyLabel="Nenhum documento no período."
+            emptyLabel={t('dashboardPage.byStatusEmpty')}
           />
         </div>
         <div className="lg:col-span-1 xl:col-span-3">
           <OverviewDistributionPanel
             title={t('dashboardPage.porCategoria')}
-            subtitle="Como o acervo se divide"
+            subtitle={t('dashboardPage.byCategorySubtitle')}
             items={data.documentsByCategory.map((item) => ({
               label: item.categoryName,
               count: item.count,
             }))}
-            emptyLabel="Nenhuma categoria com documentos."
+            emptyLabel={t('dashboardPage.byCategoryEmpty')}
           />
         </div>
         <div className="lg:col-span-1 xl:col-span-3">

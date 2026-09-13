@@ -5,7 +5,14 @@
     "painelDeControle": "Control panel",
     "porCategoria": "By category",
     "porStatus": "By status",
-    "tentarNovamente": "Try again"
+    "tentarNovamente": "Try again",
+    "eyebrow": "Overview",
+    "panoramaOf": "Overview of {{name}}",
+    "panoramaDetail": "documents, activity and governance",
+    "byStatusSubtitle": "Where documents stopped",
+    "byStatusEmpty": "No documents in this period.",
+    "byCategorySubtitle": "How the collection is split",
+    "byCategoryEmpty": "No categories with documents."
   },
   "documentDetailsShared": {
     "atualizado": "Updated",
@@ -18,7 +25,14 @@
     "preview": "Preview",
     "proprietario": "Owner",
     "ultimaAtualizacaoPor": "Last updated by",
-    "vencimento": "Expiry date"
+    "vencimento": "Expiry date",
+    "validity": {
+      "expired_one": "Expired {{count}} day ago.",
+      "expired_other": "Expired {{count}} days ago.",
+      "today": "Expires today.",
+      "inDays_one": "Expires in {{count}} day.",
+      "inDays_other": "Expires in {{count}} days."
+    }
   },
   "documentPreviewViewer": {
     "carregandoPreview": "Loading preview...",
@@ -38,7 +52,14 @@
     "previewIndisponivel": "Preview unavailable.",
     "versaoNaoDisponivelPara": "This version is not available for viewing.",
     "visualizacaoProtegidaDownloadIndisponivel": "Protected view. Download is not available for your profile.",
-    "voceNaoTemPermissao": "You do not have permission to view this document."
+    "voceNaoTemPermissao": "You do not have permission to view this document.",
+    "typeImage": "Image",
+    "printUnavailable": "Printing this document isn't available for your profile.",
+    "loadDocumentFailed": "Couldn't load the document.",
+    "downloadFailed": "Couldn't download the document.",
+    "manifestFailed": "Couldn't load the preview manifest.",
+    "versionLabel": "Version {{version}}",
+    "pageOf": "Page {{current}} of {{total}}"
   },
   "documentViewerToolbar": {
     "atualizarDocumento": "Update document",
@@ -52,7 +73,9 @@
     "pagina": "Page",
     "paginaAnterior": "Previous page",
     "proximaPagina": "Next page",
-    "verTracking": "View tracking"
+    "verTracking": "View tracking",
+    "hideDetails": "Hide details",
+    "showDetails": "View details"
   },
   "imageViewer": {
     "carregandoImagem": "Loading image…",
@@ -64,7 +87,11 @@
     "esteDocumentoEGrande": "This document is large. Some pages will be loaded on demand.",
     "naoFoiPossivelCarregar": "Could not load the page",
     "nenhumaPaginaDisponivelPara": "No page available for viewing.",
-    "previewEmProcessamento": "Preview being processed…"
+    "previewEmProcessamento": "Preview being processed…",
+    "pageAlt": "Page {{page}}",
+    "thumbAlt": "Page {{page}} thumbnail",
+    "hideThumbnails": "Hide thumbnails",
+    "showThumbnails": "Show thumbnails"
   },
   "recipientFlow": {
     "buscando": "Searching…",
@@ -118,11 +145,31 @@
     "novoProprietario": "New owner",
     "proprietarioAtual": "Current owner",
     "transferir": "Transfer",
-    "transferirPropriedade": "Transfer ownership"
+    "transferirPropriedade": "Transfer ownership",
+    "selectOwner": "Select the new owner.",
+    "transferred": "Ownership transferred to {{name}}.",
+    "transferFailed": "Couldn't transfer ownership.",
+    "selectUser": "Select a user"
   },
   "unsupportedViewer": {
     "baixarOriginal": "Download original",
     "esteTipoDeArquivo": "This file type does not have a built-in viewer yet.",
     "tipoDetectado": "Detected type:"
+  },
+  "previewError": {
+    "notReady": "The preview isn't available for this document yet.",
+    "failed": "Couldn't generate the preview for this document.",
+    "notFound": "Preview not found for this document.",
+    "accessDenied": "You don't have permission to view this document.",
+    "documentNotFound": "Document not found.",
+    "sessionExpired": "Your session has expired. Sign in again.",
+    "loadFailed": "Couldn't load the preview right now."
+  },
+  "previewStatus": {
+    "ready": "Preview available",
+    "failed": "Preview failed",
+    "skipped": "Preview pending",
+    "missing": "No preview",
+    "unavailable": "Preview unavailable"
   }
 }

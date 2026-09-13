@@ -54,7 +54,7 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
   const transferMutation = useMutation({
     mutationFn: async () => {
       if (!document || !selectedUserId) {
-        throw new Error('Selecione o novo proprietário.');
+        throw new Error(t('transferOwnershipModal.selectOwner'));
       }
       return transferDocumentOwnership(document.documentId, {
         newOwnerUserId: selectedUserId,
@@ -64,7 +64,7 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
     onSuccess: (response) => {
       showAppToast({
         type: 'success',
-        title: `Propriedade transferida para ${response.result.newOwnerName}.`,
+        title: t('transferOwnershipModal.transferred', { name: response.result.newOwnerName }),
       });
       void invalidateLibraryQueries(queryClient, tenant?.tenantId);
       setSelectedUserId('');
@@ -72,13 +72,14 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
       onClose();
     },
     onError: (error) => {
-      showApiErrorToast(error, 'Não foi possível transferir a propriedade.');
+      showApiErrorToast(error, t('transferOwnershipModal.transferFailed'));
     },
   });
 
   if (!open || !document) return null;
 
-  const documentName = document.currentFileName ?? document.displayName ?? 'Documento';
+  const documentName =
+    document.currentFileName ?? document.displayName ?? t('documentDetailsShared.documento');
 
   return (
     <Modal
@@ -123,7 +124,7 @@ export function TransferOwnershipModal({ open, document, onClose }: TransferOwne
           value={selectedUserId}
           onChange={(event) => setSelectedUserId(event.target.value)}
           options={[
-            { value: '', label: 'Selecione um usuário' },
+            { value: '', label: t('transferOwnershipModal.selectUser') },
             ...eligibleMembers.map((member) => ({
               value: memberUserId(member),
               label: memberDisplayName(member),

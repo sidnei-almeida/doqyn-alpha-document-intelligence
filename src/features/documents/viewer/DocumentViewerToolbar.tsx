@@ -172,7 +172,11 @@ export function DocumentViewerToolbar({
           {actions.length > 0 && onToggleDetails && <ToolDivider />}
           {onToggleDetails && (
             <IconButton
-              label={showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
+              label={
+                showDetails
+                  ? t('documentViewerToolbar.hideDetails')
+                  : t('documentViewerToolbar.showDetails')
+              }
               aria-pressed={showDetails}
               onClick={onToggleDetails}
               className={cn(showDetails && 'bg-doqyn-surface-hover text-doqyn-primary')}

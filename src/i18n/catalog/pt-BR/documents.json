@@ -5,7 +5,14 @@
     "painelDeControle": "Painel de controle",
     "porCategoria": "Por categoria",
     "porStatus": "Por status",
-    "tentarNovamente": "Tentar novamente"
+    "tentarNovamente": "Tentar novamente",
+    "eyebrow": "Visão geral",
+    "panoramaOf": "Panorama de {{name}}",
+    "panoramaDetail": "documentos, atividade e governança",
+    "byStatusSubtitle": "Onde os documentos pararam",
+    "byStatusEmpty": "Nenhum documento no período.",
+    "byCategorySubtitle": "Como o acervo se divide",
+    "byCategoryEmpty": "Nenhuma categoria com documentos."
   },
   "documentDetailsShared": {
     "atualizado": "Atualizado",
@@ -18,7 +25,14 @@
     "preview": "Preview",
     "proprietario": "Proprietário",
     "ultimaAtualizacaoPor": "Última atualização por",
-    "vencimento": "Vencimento"
+    "vencimento": "Vencimento",
+    "validity": {
+      "expired_one": "Vencido há {{count}} dia.",
+      "expired_other": "Vencido há {{count}} dias.",
+      "today": "Vence hoje.",
+      "inDays_one": "Vence em {{count}} dia.",
+      "inDays_other": "Vence em {{count}} dias."
+    }
   },
   "documentPreviewViewer": {
     "carregandoPreview": "Carregando preview...",
@@ -38,7 +52,14 @@
     "previewIndisponivel": "Preview indisponível.",
     "versaoNaoDisponivelPara": "Versão não disponível para visualização.",
     "visualizacaoProtegidaDownloadIndisponivel": "Visualização protegida. Download indisponível para seu perfil.",
-    "voceNaoTemPermissao": "Você não tem permissão para visualizar este documento."
+    "voceNaoTemPermissao": "Você não tem permissão para visualizar este documento.",
+    "typeImage": "Imagem",
+    "printUnavailable": "A impressão deste documento não está disponível para seu perfil.",
+    "loadDocumentFailed": "Não foi possível carregar o documento.",
+    "downloadFailed": "Não foi possível baixar o documento.",
+    "manifestFailed": "Não foi possível carregar o manifest de preview.",
+    "versionLabel": "Versão {{version}}",
+    "pageOf": "Página {{current}} de {{total}}"
   },
   "documentViewerToolbar": {
     "atualizarDocumento": "Atualizar documento",
@@ -52,7 +73,9 @@
     "pagina": "Página",
     "paginaAnterior": "Página anterior",
     "proximaPagina": "Próxima página",
-    "verTracking": "Ver tracking"
+    "verTracking": "Ver tracking",
+    "hideDetails": "Ocultar detalhes",
+    "showDetails": "Ver detalhes"
   },
   "imageViewer": {
     "carregandoImagem": "Carregando imagem…",
@@ -64,7 +87,11 @@
     "esteDocumentoEGrande": "Este documento é grande. Algumas páginas serão carregadas sob demanda.",
     "naoFoiPossivelCarregar": "Não foi possível carregar a página",
     "nenhumaPaginaDisponivelPara": "Nenhuma página disponível para visualização.",
-    "previewEmProcessamento": "Preview em processamento…"
+    "previewEmProcessamento": "Preview em processamento…",
+    "pageAlt": "Página {{page}}",
+    "thumbAlt": "Miniatura página {{page}}",
+    "hideThumbnails": "Ocultar miniaturas",
+    "showThumbnails": "Mostrar miniaturas"
   },
   "recipientFlow": {
     "buscando": "Buscando…",
@@ -118,11 +145,31 @@
     "novoProprietario": "Novo proprietário",
     "proprietarioAtual": "Proprietário atual",
     "transferir": "Transferir",
-    "transferirPropriedade": "Transferir propriedade"
+    "transferirPropriedade": "Transferir propriedade",
+    "selectOwner": "Selecione o novo proprietário.",
+    "transferred": "Propriedade transferida para {{name}}.",
+    "transferFailed": "Não foi possível transferir a propriedade.",
+    "selectUser": "Selecione um usuário"
   },
   "unsupportedViewer": {
     "baixarOriginal": "Baixar original",
     "esteTipoDeArquivo": "Este tipo de arquivo ainda não possui visualização integrada.",
     "tipoDetectado": "Tipo detectado:"
+  },
+  "previewError": {
+    "notReady": "O preview ainda não está disponível para este documento.",
+    "failed": "Não foi possível gerar o preview deste documento.",
+    "notFound": "Preview não encontrado para este documento.",
+    "accessDenied": "Você não tem permissão para visualizar este documento.",
+    "documentNotFound": "Documento não encontrado.",
+    "sessionExpired": "Sua sessão expirou. Faça login novamente.",
+    "loadFailed": "Não foi possível carregar o preview agora."
+  },
+  "previewStatus": {
+    "ready": "Preview disponível",
+    "failed": "Falha no preview",
+    "skipped": "Preview pendente",
+    "missing": "Sem preview",
+    "unavailable": "Preview indisponível"
   }
 }

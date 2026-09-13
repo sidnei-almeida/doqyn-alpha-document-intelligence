@@ -5,7 +5,14 @@
     "painelDeControle": "Panel de control",
     "porCategoria": "Por categoría",
     "porStatus": "Por estado",
-    "tentarNovamente": "Intentar de nuevo"
+    "tentarNovamente": "Intentar de nuevo",
+    "eyebrow": "Resumen",
+    "panoramaOf": "Panorama de {{name}}",
+    "panoramaDetail": "documentos, actividad y gobernanza",
+    "byStatusSubtitle": "Dónde se detuvieron los documentos",
+    "byStatusEmpty": "No hay documentos en el período.",
+    "byCategorySubtitle": "Cómo se divide el acervo",
+    "byCategoryEmpty": "Ninguna categoría con documentos."
   },
   "documentDetailsShared": {
     "atualizado": "Actualizado",
@@ -18,7 +25,16 @@
     "preview": "Vista previa",
     "proprietario": "Propietario",
     "ultimaAtualizacaoPor": "Última actualización por",
-    "vencimento": "Fecha de vencimiento"
+    "vencimento": "Fecha de vencimiento",
+    "validity": {
+      "expired_one": "Venció hace {{count}} día.",
+      "expired_other": "Venció hace {{count}} días.",
+      "expired_many": "Venció hace {{count}} días.",
+      "today": "Vence hoy.",
+      "inDays_one": "Vence en {{count}} día.",
+      "inDays_other": "Vence en {{count}} días.",
+      "inDays_many": "Vence en {{count}} días."
+    }
   },
   "documentPreviewViewer": {
     "carregandoPreview": "Cargando la vista previa...",
@@ -38,7 +54,14 @@
     "previewIndisponivel": "Vista previa no disponible.",
     "versaoNaoDisponivelPara": "Esta versión no está disponible para visualizar.",
     "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible para tu perfil.",
-    "voceNaoTemPermissao": "No tienes permiso para ver este documento."
+    "voceNaoTemPermissao": "No tienes permiso para ver este documento.",
+    "typeImage": "Imagen",
+    "printUnavailable": "La impresión de este documento no está disponible para tu perfil.",
+    "loadDocumentFailed": "No se pudo cargar el documento.",
+    "downloadFailed": "No se pudo descargar el documento.",
+    "manifestFailed": "No se pudo cargar el manifiesto de vista previa.",
+    "versionLabel": "Versión {{version}}",
+    "pageOf": "Página {{current}} de {{total}}"
   },
   "documentViewerToolbar": {
     "atualizarDocumento": "Actualizar documento",
@@ -52,7 +75,9 @@
     "pagina": "Página",
     "paginaAnterior": "Página anterior",
     "proximaPagina": "Página siguiente",
-    "verTracking": "Ver rastreo"
+    "verTracking": "Ver rastreo",
+    "hideDetails": "Ocultar detalles",
+    "showDetails": "Ver detalles"
   },
   "imageViewer": {
     "carregandoImagem": "Cargando imagen…",
@@ -64,7 +89,11 @@
     "esteDocumentoEGrande": "Este documento es grande. Algunas páginas se cargarán a demanda.",
     "naoFoiPossivelCarregar": "No se pudo cargar la página",
     "nenhumaPaginaDisponivelPara": "Ninguna página disponible para visualizar.",
-    "previewEmProcessamento": "Vista previa en proceso…"
+    "previewEmProcessamento": "Vista previa en proceso…",
+    "pageAlt": "Página {{page}}",
+    "thumbAlt": "Miniatura de la página {{page}}",
+    "hideThumbnails": "Ocultar miniaturas",
+    "showThumbnails": "Mostrar miniaturas"
   },
   "recipientFlow": {
     "buscando": "Buscando…",
@@ -118,11 +147,31 @@
     "novoProprietario": "Nuevo propietario",
     "proprietarioAtual": "Propietario actual",
     "transferir": "Transferir",
-    "transferirPropriedade": "Transferir la propiedad"
+    "transferirPropriedade": "Transferir la propiedad",
+    "selectOwner": "Selecciona el nuevo propietario.",
+    "transferred": "Propiedad transferida a {{name}}.",
+    "transferFailed": "No se pudo transferir la propiedad.",
+    "selectUser": "Selecciona un usuario"
   },
   "unsupportedViewer": {
     "baixarOriginal": "Descargar original",
     "esteTipoDeArquivo": "Este tipo de archivo todavía no tiene visor integrado.",
     "tipoDetectado": "Tipo detectado:"
+  },
+  "previewError": {
+    "notReady": "La vista previa aún no está disponible para este documento.",
+    "failed": "No se pudo generar la vista previa de este documento.",
+    "notFound": "No se encontró la vista previa de este documento.",
+    "accessDenied": "No tienes permiso para ver este documento.",
+    "documentNotFound": "Documento no encontrado.",
+    "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "loadFailed": "No se pudo cargar la vista previa ahora."
+  },
+  "previewStatus": {
+    "ready": "Vista previa disponible",
+    "failed": "Falló la vista previa",
+    "skipped": "Vista previa pendiente",
+    "missing": "Sin vista previa",
+    "unavailable": "Vista previa no disponible"
   }
 }

@@ -5,6 +5,7 @@ import { emitClientTrackingEvent } from '@/features/tracking/api/trackingClientE
 import type { DocumentVersionSummary } from '@/types/document-library';
 import { fetchDocumentDownloadBlob, triggerBlobDownload } from '../api/documentsApi.blobs';
 import { getPreviewErrorMessage, getPreviewStatusLabel } from '../utils/previewErrors';
+import { i18n } from '@/i18n';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { useDocumentDetail } from '../hooks/useDocuments';
 import { DocumentApiError } from '../api/documentsApi.errors';
@@ -25,8 +26,8 @@ export type DocumentViewerModalProps = {
 
 function viewerTypeBadge(viewerType: string | undefined): string | null {
   if (viewerType === 'pdf_pages') return 'PDF';
-  if (viewerType === 'image') return 'Imagem';
-  if (viewerType === 'unsupported') return 'Sem preview';
+  if (viewerType === 'image') return i18n.t('documents:documentViewerModal.typeImage');
+  if (viewerType === 'unsupported') return i18n.t('documents:previewStatus.missing');
   return null;
 }
 
@@ -85,7 +86,7 @@ export function DocumentViewerModal({
     activeVersion?.finalFileName ??
     data?.document.currentFileName ??
     data?.document.displayName ??
-    'Documento';
+    t('documentDetailsShared.documento');
 
   const canPreview = Boolean(data?.permissions.canPreview && activeVersionId);
 
@@ -157,7 +158,7 @@ export function DocumentViewerModal({
     const handlePrintShortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
         event.preventDefault();
-        toast.info('A impressão deste documento não está disponível para seu perfil.');
+        toast.info(t('documentViewerModal.printUnavailable'));
         if (documentId) {
           emitClientTrackingEvent({
             action: 'document.print_attempt_blocked',
@@ -177,7 +178,7 @@ export function DocumentViewerModal({
     if (!error) return null;
     if (error instanceof DocumentApiError) return getPreviewErrorMessage(error);
     if (error instanceof Error) return error.message;
-    return 'Não foi possível carregar o documento.';
+    return t('documentViewerModal.loadDocumentFailed');
   }, [error]);
 
   const manifestErrorMessage = useMemo(() => {
@@ -186,7 +187,7 @@ export function DocumentViewerModal({
       return getPreviewErrorMessage(manifestQuery.error);
     }
     if (manifestQuery.error instanceof Error) return manifestQuery.error.message;
-    return 'Não foi possível carregar o preview.';
+    return t('documentPreviewViewer.naoFoiPossivelCarregar');
   }, [manifestQuery.error]);
 
   // Falha ao abrir também é história: a trilha precisa mostrar que houve
@@ -243,7 +244,7 @@ export function DocumentViewerModal({
       });
       triggerBlobDownload(blob, fileName);
     } catch (downloadError) {
-      showApiErrorToast(downloadError, 'Não foi possível baixar o documento.');
+      showApiErrorToast(downloadError, t('documentViewerModal.downloadFailed'));
     } finally {
       setIsDownloading(false);
     }
@@ -283,7 +284,7 @@ export function DocumentViewerModal({
   const typeBadge = viewerTypeBadge(manifest?.viewerType);
   const subtitleParts = [
     categoryLabel,
-    versionLabel ? `Versão ${versionLabel}` : '',
+    versionLabel ? t('documentViewerModal.versionLabel', { version: versionLabel }) : '',
     previewStatusLabel,
     typeBadge,
   ].filter(Boolean);
@@ -291,7 +292,10 @@ export function DocumentViewerModal({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('documentViewerModal.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const permissions = manifest?.permissions
@@ -325,7 +329,7 @@ export function DocumentViewerModal({
       return (
         <div className="viewer-canvas flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-sm text-doqyn-danger">
-            {detailErrorMessage ?? 'Não foi possível carregar o documento.'}
+            {detailErrorMessage ?? t('documentViewerModal.loadDocumentFailed')}
           </p>
         </div>
       );
@@ -353,7 +357,7 @@ export function DocumentViewerModal({
       return (
         <div className="viewer-canvas flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-sm text-doqyn-danger">
-            {manifestErrorMessage ?? 'Não foi possível carregar o manifest de preview.'}
+            {manifestErrorMessage ?? t('documentViewerModal.manifestFailed')}
           </p>
         </div>
       );

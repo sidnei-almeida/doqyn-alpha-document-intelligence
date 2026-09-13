@@ -56,7 +56,7 @@ function ManifestPageImage({
       {state === 'ready' && objectUrl && (
         <img
           src={objectUrl}
-          alt={`Página ${page.page}`}
+          alt={t('pdfPagesViewer.pageAlt', { page: page.page })}
           width={displayWidth}
           className="viewer-page-surface viewer-page-image block h-auto max-w-full"
           decoding="async"
@@ -91,6 +91,7 @@ function ThumbnailButton({
   isActive: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation('documents');
   const { objectUrl, state } = usePreviewAsset(page.thumbnailUrl, true);
 
   return (
@@ -118,7 +119,7 @@ function ThumbnailButton({
         {state === 'ready' && objectUrl && (
           <img
             src={objectUrl}
-            alt={`Miniatura página ${page.page}`}
+            alt={t('pdfPagesViewer.thumbAlt', { page: page.page })}
             className="max-h-full max-w-full object-contain"
             draggable={false}
           />
@@ -323,7 +324,11 @@ export function PdfPagesViewer({
         {canShowThumbnails && (
           <div className="absolute left-3 top-3 z-10 hidden sm:block">
             <IconButton
-              label={showThumbnails ? 'Ocultar miniaturas' : 'Mostrar miniaturas'}
+              label={
+                showThumbnails
+                  ? t('pdfPagesViewer.hideThumbnails')
+                  : t('pdfPagesViewer.showThumbnails')
+              }
               onClick={() => setShowThumbnails((current) => !current)}
               className="bg-doqyn-bg/80"
             >

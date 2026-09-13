@@ -1,13 +1,35 @@
-const PREVIEW_ERROR_MESSAGES: Record<string, string> = {
-  PREVIEW_NOT_READY: 'O preview ainda não está disponível para este documento.',
-  PREVIEW_FAILED: 'Não foi possível gerar o preview deste documento.',
-  PREVIEW_NOT_FOUND: 'Preview não encontrado para este documento.',
-  DOCUMENT_ACCESS_DENIED: 'Você não tem permissão para visualizar este documento.',
-  DOCUMENT_NOT_FOUND: 'Documento não encontrado.',
-  DOCUMENT_FORBIDDEN: 'Você não tem permissão para visualizar este documento.',
-  SESSION_EXPIRED: 'Sua sessão expirou. Faça login novamente.',
-  UNAUTHORIZED: 'Sua sessão expirou. Faça login novamente.',
+import { i18n } from '@/i18n';
+import ptDocuments from '@/i18n/catalog/pt-BR/documents.json';
+
+type PreviewErrorKey = keyof typeof ptDocuments.previewError;
+type PreviewStatusKey = keyof typeof ptDocuments.previewStatus;
+
+const PREVIEW_ERROR_KEYS: Record<string, PreviewErrorKey> = {
+  PREVIEW_NOT_READY: 'notReady',
+  PREVIEW_FAILED: 'failed',
+  PREVIEW_NOT_FOUND: 'notFound',
+  DOCUMENT_ACCESS_DENIED: 'accessDenied',
+  DOCUMENT_NOT_FOUND: 'documentNotFound',
+  DOCUMENT_FORBIDDEN: 'accessDenied',
+  SESSION_EXPIRED: 'sessionExpired',
+  UNAUTHORIZED: 'sessionExpired',
 };
+
+/**
+ * A frase no idioma ativo, com o `pt-BR` embutido como rede.
+ *
+ * Roda também em teste Node, onde o catálogo `documents` não foi carregado — sem a rede, a
+ * mensagem viraria a chave crua. O JSON só entra no chunk de documentos, não na casca.
+ */
+function previewErrorPhrase(key: PreviewErrorKey): string {
+  const fullKey = `documents:previewError.${key}`;
+  return i18n.exists(fullKey) ? i18n.t(fullKey) : ptDocuments.previewError[key];
+}
+
+function previewStatusPhrase(key: PreviewStatusKey): string {
+  const fullKey = `documents:previewStatus.${key}`;
+  return i18n.exists(fullKey) ? i18n.t(fullKey) : ptDocuments.previewStatus[key];
+}
 
 function resolveErrorCode(error: unknown): string | undefined {
   if (!error || typeof error !== 'object') return undefined;
@@ -19,28 +41,28 @@ function resolveErrorCode(error: unknown): string | undefined {
 
 export function getPreviewErrorMessage(error: unknown): string {
   const code = resolveErrorCode(error);
-  if (code && PREVIEW_ERROR_MESSAGES[code]) {
-    return PREVIEW_ERROR_MESSAGES[code];
+  if (code && PREVIEW_ERROR_KEYS[code]) {
+    return previewErrorPhrase(PREVIEW_ERROR_KEYS[code]);
   }
 
   if (error instanceof Error && error.message) {
     return error.message;
   }
 
-  return 'Não foi possível carregar o preview agora.';
+  return previewErrorPhrase('loadFailed');
 }
 
 export function getPreviewStatusLabel(status?: string): string {
   switch (status) {
     case 'ready':
-      return 'Preview disponível';
+      return previewStatusPhrase('ready');
     case 'failed':
-      return 'Falha no preview';
+      return previewStatusPhrase('failed');
     case 'skipped':
-      return 'Preview pendente';
+      return previewStatusPhrase('skipped');
     case 'missing':
-      return 'Sem preview';
+      return previewStatusPhrase('missing');
     default:
-      return 'Preview indisponível';
+      return previewStatusPhrase('unavailable');
   }
 }
