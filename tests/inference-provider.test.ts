@@ -12,6 +12,7 @@ import {
   getGroqExtractorModel,
   getGroqModel,
   isGroqApiKeyConfigured,
+  stripGroqPathPrefix,
 } from '../server/ai/services/groqClient.js';
 
 const CHAVES = [
@@ -133,5 +134,23 @@ describe('o caminho Fireworks nasce inerte', () => {
     process.env.INFERENCE_PROVIDER = 'fireworks';
     process.env.FIREWORKS_BASE_URL = 'https://proxy.interno/v1';
     assert.equal(getInferenceConfig().baseURL, 'https://proxy.interno/v1');
+  });
+
+  it('o prefixo /openai/v1 da Groq sai do caminho antes de chegar ao Fireworks', () => {
+    const base = 'https://api.fireworks.ai/inference/v1';
+    // O SDK monta base + caminho da Groq; sem o corte, o Fireworks responde 404 a toda chamada.
+    assert.equal(
+      stripGroqPathPrefix(`${base}/openai/v1/chat/completions`, base),
+      'https://api.fireworks.ai/inference/v1/chat/completions',
+    );
+    assert.equal(
+      stripGroqPathPrefix('https://proxy.interno/v1/openai/v1/chat/completions', 'https://proxy.interno/v1/'),
+      'https://proxy.interno/v1/chat/completions',
+    );
+    assert.equal(
+      stripGroqPathPrefix('https://outro.host/openai/v1/chat/completions', base),
+      'https://outro.host/openai/v1/chat/completions',
+      'endereço fora da base não é tocado',
+    );
   });
 });

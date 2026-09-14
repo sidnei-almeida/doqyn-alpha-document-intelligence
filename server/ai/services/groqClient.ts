@@ -177,6 +177,27 @@ export function isGroqApiKeyConfigured(): boolean {
   return isInferenceConfigured();
 }
 
+/**
+ * O `groq-sdk` escreve o caminho da Groq por extenso — `/openai/v1/chat/completions` — e só deixa
+ * trocar o host. Com a base do Fireworks a chamada virava `/inference/v1/openai/v1/chat/completions`
+ * e voltava 404 em toda requisição: o caminho alternativo nasceu inerte e quebrado ao mesmo tempo, e
+ * só o pipeline de verdade mostrou, porque o teste com curl não passava pelo SDK. O prefixo
+ * `/openai/v1` é da Groq, não do formato OpenAI; fora dela ele sai antes de a requisição partir.
+ */
+export function stripGroqPathPrefix(url: string, baseURL: string): string {
+  const base = baseURL.replace(/\/+$/, '');
+  const groqPrefix = `${base}/openai/v1/`;
+  return url.startsWith(groqPrefix) ? `${base}/${url.slice(groqPrefix.length)}` : url;
+}
+
+function fetchWithoutGroqPrefix(baseURL: string): typeof fetch {
+  return (input, init) => {
+    if (typeof input === 'string') return fetch(stripGroqPathPrefix(input, baseURL), init);
+    if (input instanceof URL) return fetch(stripGroqPathPrefix(input.href, baseURL), init);
+    return fetch(input, init);
+  };
+}
+
 function getGroqClient(): Groq {
   const { apiKey, baseURL } = requireInferenceApiKey();
   const target = baseURL ?? 'groq-default';
@@ -185,7 +206,9 @@ function getGroqClient(): Groq {
   if (existing) return existing;
 
   // `baseURL` ausente deixa o SDK usar o endereço da Groq — o caminho antigo, byte a byte.
-  const client = new Groq(baseURL ? { apiKey, baseURL } : { apiKey });
+  const client = new Groq(
+    baseURL ? { apiKey, baseURL, fetch: fetchWithoutGroqPrefix(baseURL) } : { apiKey },
+  );
   clientsByTarget.set(target, client);
   return client;
 }
