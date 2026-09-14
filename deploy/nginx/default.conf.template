@@ -68,7 +68,8 @@ server {
   # qualquer subdomínio futuro que ainda não tenha certificado.
   add_header Strict-Transport-Security "max-age=15768000" always;
 
-  client_max_body_size 30m;
+  # Folga sobre os 50 MB do upload (MAX_UPLOAD_MB): o corpo multipart pesa mais que o arquivo.
+  client_max_body_size 60m;
   root /usr/share/nginx/html;
 
   # Rotas antigas em português → as novas, em inglês. 301 de verdade, e não redirect no app: há
