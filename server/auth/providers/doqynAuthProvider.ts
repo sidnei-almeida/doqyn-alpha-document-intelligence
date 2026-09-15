@@ -121,6 +121,18 @@ export function mapDoqynSessionToAuthUser(session: DoqynVerifiedSession): AuthUs
   };
 }
 
+/**
+ * Verificar a sessão está no caminho de toda requisição que perde o cache. Sem limite, um
+ * auth-service lento prende a requisição pelo timeout padrão do Node, que é de minutos. Estourado,
+ * o `fetch` lança e `requireAuth` responde 502 `AUTH_SERVICE_UNAVAILABLE` — nega, e rápido.
+ */
+const DEFAULT_VERIFY_TIMEOUT_MS = 5_000;
+
+function getDoqynAuthVerifyTimeoutMs(): number {
+  const parsed = Number(process.env.DOQYN_AUTH_VERIFY_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_VERIFY_TIMEOUT_MS;
+}
+
 export async function verifyDoqynAuthSession(
   req: VercelRequest,
 ): Promise<DoqynVerifiedSession | null> {
@@ -145,6 +157,7 @@ export async function verifyDoqynAuthSession(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ sessionToken }),
+    signal: AbortSignal.timeout(getDoqynAuthVerifyTimeoutMs()),
   });
 
   const data = (await response.json()) as {

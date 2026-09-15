@@ -123,7 +123,7 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
   const payload = job.data;
   const jobKind = payload.jobKind ?? 'initial';
   const startedAt = Date.now();
-  const slotAcquired = await tryAcquireTenantAnalysisSlot(payload.tenantId);
+  const slotAcquired = await tryAcquireTenantAnalysisSlot(payload.tenantId, payload.jobId);
 
   if (!slotAcquired) {
     await job.moveToDelayed(Date.now() + TENANT_SLOT_RETRY_DELAY_MS, job.token);
@@ -240,7 +240,7 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
 
     throw error;
   } finally {
-    await releaseTenantAnalysisSlot(payload.tenantId);
+    await releaseTenantAnalysisSlot(payload.tenantId, payload.jobId);
   }
 }
 
