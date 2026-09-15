@@ -167,6 +167,28 @@
     background: var(--color-surface-container);
   }
 
+  /* No escuro, a mesma ideia com a paleta grafite: a busca toma o tom do painel
+     de baixo, um degrau acima da casca. Transparente, ela afundava no fundo da
+     barra e só o texto dizia que ali havia um campo. */
+  [data-appearance='dark'] .topbar-search .search-command {
+    background: var(--bg-canvas);
+    border-color: transparent;
+  }
+
+  [data-appearance='dark'] .topbar-search .search-command:hover {
+    background: var(--bg-surface);
+  }
+
+  [data-appearance='dark'] .topbar-search .search-command:focus {
+    background: var(--bg-canvas);
+    border-color: transparent;
+    box-shadow: 0 0 0 1px var(--accent-active);
+  }
+
+  [data-appearance='dark'] .topbar-search kbd {
+    background: var(--bg-surface-2);
+  }
+
   :root:not([data-theme]) {
     color-scheme: dark;
   }
