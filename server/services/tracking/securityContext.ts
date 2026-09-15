@@ -37,21 +37,35 @@ function headerValue(headers: VercelRequest['headers'], name: string): string | 
   return typeof raw === 'string' ? raw : undefined;
 }
 
-/** Resolve IP do cliente com prioridade para proxies conhecidos. */
+/** Só com Cloudflare de fato na frente — hoje não há, e o cliente escreve esse header à vontade. */
+function trustsCloudflareHeaders(): boolean {
+  return process.env.TRUST_CLOUDFLARE?.trim().toLowerCase() === 'true';
+}
+
+/**
+ * Resolve IP do cliente pelo que o nosso proxy escreveu.
+ *
+ * Este IP vai para a evidência da assinatura e para a trilha de auditoria encadeada. Antes a ordem
+ * era `CF-Connecting-IP`, depois a entrada mais à esquerda do `X-Forwarded-For` — as duas escritas
+ * pelo cliente —, e o `X-Real-IP` que o nginx define a partir do socket vinha por último. Agora ele
+ * vem primeiro; do `X-Forwarded-For` vale a entrada da direita, a do último salto.
+ */
 export function resolveClientIp(
   req: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
 ): string | undefined {
-  const cfConnectingIp = headerValue(req.headers, 'cf-connecting-ip');
-  if (cfConnectingIp?.trim()) return cfConnectingIp.trim();
-
-  const forwarded = headerValue(req.headers, 'x-forwarded-for');
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+  if (trustsCloudflareHeaders()) {
+    const cfConnectingIp = headerValue(req.headers, 'cf-connecting-ip');
+    if (cfConnectingIp?.trim()) return cfConnectingIp.trim();
   }
 
   const realIp = headerValue(req.headers, 'x-real-ip');
   if (realIp?.trim()) return realIp.trim();
+
+  const forwarded = headerValue(req.headers, 'x-forwarded-for');
+  if (forwarded) {
+    const last = forwarded.split(',').at(-1)?.trim();
+    if (last) return last;
+  }
 
   return req.socket?.remoteAddress ?? undefined;
 }

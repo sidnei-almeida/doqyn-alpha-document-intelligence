@@ -56,12 +56,39 @@ describe('tracking securityContext', () => {
     assert.equal('ipAddress' in context, false);
   });
 
-  it('resolve IP com cf-connecting-ip e x-forwarded-for', () => {
-    const cfReq = {
-      headers: { 'cf-connecting-ip': '203.0.113.10', 'x-forwarded-for': '10.0.0.1' },
+  it('ignora cf-connecting-ip sem Cloudflare na frente e prefere o x-real-ip do nginx', () => {
+    const spoofed = {
+      headers: {
+        'cf-connecting-ip': '6.6.6.6',
+        'x-forwarded-for': '6.6.6.7, 203.0.113.20',
+        'x-real-ip': '203.0.113.10',
+      },
       socket: { remoteAddress: '127.0.0.1' },
     };
-    assert.equal(resolveClientIp(cfReq), '203.0.113.10');
+    assert.equal(resolveClientIp(spoofed), '203.0.113.10');
+  });
+
+  it('do x-forwarded-for vale a entrada do último salto, não a do cliente', () => {
+    const req = {
+      headers: { 'x-forwarded-for': '6.6.6.7, 203.0.113.20' },
+      socket: { remoteAddress: '127.0.0.1' },
+    };
+    assert.equal(resolveClientIp(req), '203.0.113.20');
+  });
+
+  it('cf-connecting-ip só vale com TRUST_CLOUDFLARE=true', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    process.env.TRUST_CLOUDFLARE = 'true';
+    try {
+      const cfReq = {
+        headers: { 'cf-connecting-ip': '203.0.113.10', 'x-real-ip': '10.0.0.1' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
+      assert.equal(resolveClientIp(cfReq), '203.0.113.10');
+    } finally {
+      if (previous === undefined) delete process.env.TRUST_CLOUDFLARE;
+      else process.env.TRUST_CLOUDFLARE = previous;
+    }
   });
 
   it('parseia user-agent em browser/os/deviceType sem UA bruto', () => {
