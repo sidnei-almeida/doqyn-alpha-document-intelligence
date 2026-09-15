@@ -10,6 +10,7 @@ import { hasActiveItem, uploadQueueReducer } from '../src/features/upload/queue/
 import { countParkedUploadItems } from '../src/features/upload/queue/uploadQueueCore';
 import type { UploadQueueItem } from '../src/features/upload/types';
 import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
+import { estimateAnalysisWaitSeconds } from '../server/services/analysis/analysisJobService.js';
 
 describe('texto de espera na tela', () => {
   it('traduz segundos em algo que o usuário entende', () => {
@@ -83,6 +84,47 @@ describe('recuo progressivo na consulta de status', () => {
     assert.equal(
       analysisPollDelayMs(1, () => 0.5),
       1_250,
+    );
+  });
+});
+
+describe('estimativa de espera pela duração, não pelo movimento', () => {
+  it('documento na vez espera o que falta da média — não minutos por a plataforma estar parada', () => {
+    assert.equal(
+      estimateAnalysisWaitSeconds({
+        status: 'processing',
+        ahead: 0,
+        averageDurationMs: 6_000,
+        concurrency: 6,
+        elapsedMs: 2_000,
+      }),
+      4,
+    );
+  });
+
+  it('passou da média, mostra 1 s em vez de número negativo', () => {
+    assert.equal(
+      estimateAnalysisWaitSeconds({
+        status: 'processing',
+        ahead: 0,
+        averageDurationMs: 6_000,
+        concurrency: 6,
+        elapsedMs: 30_000,
+      }),
+      1,
+    );
+  });
+
+  it('na fila, conta rodadas do worker em paralelo', () => {
+    // 5 na frente com 6 por vez: entra na primeira rodada, espera só a própria análise.
+    assert.equal(
+      estimateAnalysisWaitSeconds({ status: 'queued', ahead: 5, averageDurationMs: 6_000, concurrency: 6 }),
+      6,
+    );
+    // 13 na frente com 6 por vez: duas rodadas antes, a dele é a terceira.
+    assert.equal(
+      estimateAnalysisWaitSeconds({ status: 'queued', ahead: 13, averageDurationMs: 6_000, concurrency: 6 }),
+      18,
     );
   });
 });

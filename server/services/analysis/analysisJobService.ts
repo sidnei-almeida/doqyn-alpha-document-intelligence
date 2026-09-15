@@ -25,35 +25,89 @@ function buildPollUrl(jobId: string): string {
   return `/api/ai/jobs/${jobId}`;
 }
 
-/** Janela de conclusões usada para medir a vazão real da plataforma. */
-const THROUGHPUT_WINDOW_MS = 10 * 60_000;
+/** Quantas conclusões recentes entram na média de duração. */
+const DURATION_SAMPLE_SIZE = 20;
+/** Conclusão mais velha que isto não diz nada sobre a vazão de agora (provedor, carga, deploy). */
+const DURATION_SAMPLE_MAX_AGE_MS = 60 * 60_000;
 /**
- * A vazão é a mesma para todo mundo que consulta, e a consulta acontece a cada poucos segundos por
- * arquivo em voo. Sem este cache, cada arquivo pagaria duas contagens no Mongo por consulta.
+ * A duração média é a mesma para todo mundo que consulta, e a consulta acontece a cada segundo ou
+ * dois por arquivo em voo. Sem este cache, cada arquivo pagaria uma leitura no Mongo por consulta.
  */
-const THROUGHPUT_CACHE_MS = 15_000;
+const DURATION_CACHE_MS = 15_000;
 
-let throughputCache: { jobsPerMinute: number | null; expiresAt: number } | null = null;
+let durationCache: { averageMs: number | null; expiresAt: number } | null = null;
 
-async function measureJobsPerMinute(
+/**
+ * Quanto uma análise leva, do início no worker à conclusão.
+ *
+ * Antes a estimativa vinha de "conclusões nos últimos 10 minutos ÷ 10": isso mede quanto trabalho
+ * **chegou**, não quanto cada um **custa**. Com a plataforma quase parada — duas análises em dez
+ * minutos —, dava 0,2 por minuto e o documento que ia levar 3 s aparecia como "Na vez · ~5 min".
+ * Quanto menos movimento, pior o número; o contrário do que a tela precisa dizer.
+ */
+async function measureAverageJobDurationMs(
   collection: Collection<MongoAnalysisJob>,
   now: number,
 ): Promise<number | null> {
-  if (throughputCache && throughputCache.expiresAt > now) {
-    return throughputCache.jobsPerMinute;
+  if (durationCache && durationCache.expiresAt > now) {
+    return durationCache.averageMs;
   }
 
-  const since = new Date(now - THROUGHPUT_WINDOW_MS);
-  const completed = await collection.countDocuments({
-    status: { $in: ['completed', 'requires_review', 'ai_unavailable'] },
-    completedAt: { $gte: since },
-  });
+  const recent = await collection
+    .find(
+      {
+        status: { $in: ['completed', 'requires_review', 'ai_unavailable'] },
+        completedAt: { $gte: new Date(now - DURATION_SAMPLE_MAX_AGE_MS) },
+      },
+      { projection: { startedAt: 1, completedAt: 1 } },
+    )
+    .sort({ completedAt: -1 })
+    .limit(DURATION_SAMPLE_SIZE)
+    .toArray();
 
-  // Sem conclusão na janela não há vazão observada. `null` some com a estimativa na tela em vez de
+  const durations = recent
+    .map((job) =>
+      job.startedAt && job.completedAt
+        ? new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()
+        : NaN,
+    )
+    .filter((ms) => Number.isFinite(ms) && ms > 0);
+
+  // Sem conclusão recente não há duração observada. `null` some com a estimativa na tela em vez de
   // mostrar um número inventado.
-  const jobsPerMinute = completed > 0 ? completed / (THROUGHPUT_WINDOW_MS / 60_000) : null;
-  throughputCache = { jobsPerMinute, expiresAt: now + THROUGHPUT_CACHE_MS };
-  return jobsPerMinute;
+  const averageMs =
+    durations.length > 0 ? durations.reduce((sum, ms) => sum + ms, 0) / durations.length : null;
+  durationCache = { averageMs, expiresAt: now + DURATION_CACHE_MS };
+  return averageMs;
+}
+
+function readAnalysisConcurrency(): number {
+  // Mesma variável e mesmo padrão de `getAnalysisQueueConcurrencyGlobal`; lida aqui para o serviço de
+  // job não depender do módulo da fila.
+  const parsed = Number(process.env.ANALYSIS_QUEUE_CONCURRENCY_GLOBAL);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 10;
+}
+
+/**
+ * A espera, em segundos, a partir da duração média observada.
+ *
+ * Quem está sendo analisado espera o que falta da média. Quem está na fila espera as rodadas até a
+ * vez dele — o worker analisa `concurrency` documentos por vez — mais a própria análise.
+ */
+export function estimateAnalysisWaitSeconds(input: {
+  status: 'queued' | 'processing';
+  ahead: number;
+  averageDurationMs: number;
+  concurrency: number;
+  elapsedMs?: number;
+}): number {
+  const average = Math.max(input.averageDurationMs, 1);
+  if (input.status === 'processing') {
+    return Math.max(1, Math.round((average - (input.elapsedMs ?? 0)) / 1000));
+  }
+  const concurrency = Math.max(1, Math.floor(input.concurrency));
+  const rounds = Math.floor(Math.max(0, input.ahead) / concurrency) + 1;
+  return Math.max(1, Math.round((rounds * average) / 1000));
 }
 
 /**
@@ -83,13 +137,18 @@ async function buildQueueInsight(job: MongoAnalysisJob): Promise<{
           createdAt: { $lt: job.createdAt },
         });
 
-  const jobsPerMinute = await measureJobsPerMinute(collection, now);
-  if (!jobsPerMinute) {
+  const averageDurationMs = await measureAverageJobDurationMs(collection, now);
+  if (!averageDurationMs) {
     return { queuePosition: ahead, estimatedWaitSeconds: null };
   }
 
-  // O próprio documento entra na conta: ele também precisa ser analisado depois de chegar a vez.
-  const estimatedWaitSeconds = Math.max(1, Math.round(((ahead + 1) / jobsPerMinute) * 60));
+  const estimatedWaitSeconds = estimateAnalysisWaitSeconds({
+    status: job.status,
+    ahead,
+    averageDurationMs,
+    concurrency: readAnalysisConcurrency(),
+    elapsedMs: job.startedAt ? now - new Date(job.startedAt).getTime() : 0,
+  });
   return { queuePosition: ahead, estimatedWaitSeconds };
 }
 
