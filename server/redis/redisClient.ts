@@ -162,12 +162,18 @@ export async function redisIncrWithTtl(key: string, ttlSeconds: number): Promise
   const client = await getRedisClient();
   if (!client) return null;
 
-  const prefixed = prefixRedisKey(key);
-  const value = await client.incr(prefixed);
-  if (value === 1) {
-    await client.expire(prefixed, ttlSeconds);
+  // `null` é o sinal de "sem Redis" que cota e diretório usam para cair no fallback. Um erro no meio
+  // da conexão escapava daqui como exceção e derrubava o upload, em vez de abrir a cota.
+  try {
+    const prefixed = prefixRedisKey(key);
+    const value = await client.incr(prefixed);
+    if (value === 1) {
+      await client.expire(prefixed, ttlSeconds);
+    }
+    return value;
+  } catch {
+    return null;
   }
-  return value;
 }
 
 export async function closeRedis(): Promise<void> {
