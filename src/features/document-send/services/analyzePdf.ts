@@ -159,6 +159,26 @@ function resolveClientMimeType(file: File): string {
   return 'application/pdf';
 }
 
+/**
+ * SHA-256 do arquivo, calculado antes de enviar.
+ *
+ * Sem ele o servidor baixava o arquivo inteiro de volta do R2 só para descobrir este número, antes
+ * de pôr a análise na fila. O worker confere de novo quando baixa para analisar, então um valor
+ * errado não passa. Sem `crypto.subtle` (contexto sem HTTPS) devolve `undefined` e o servidor segue
+ * calculando do jeito antigo.
+ */
+async function computeFileSha256(file: File): Promise<string | undefined> {
+  if (!globalThis.crypto?.subtle) return undefined;
+  try {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join(
+      '',
+    );
+  } catch {
+    return undefined;
+  }
+}
+
 async function requestStagingUploadUrl(
   file: File,
   signal?: AbortSignal,
@@ -510,7 +530,12 @@ export async function analyzePdf(
   const startedAt = performance.now();
 
   if (isPresignedUploadEnabled()) {
-    const issued = await requestStagingUploadUrl(file, options?.signal);
+    // O hash corre junto com o pedido da URL: os dois são independentes, e somar os tempos seria
+    // pagar em série o que cabe em paralelo.
+    const [issued, sha256] = await Promise.all([
+      requestStagingUploadUrl(file, options?.signal),
+      computeFileSha256(file),
+    ]);
     await putFileToStagingUploadUrl(file, issued, options?.signal);
 
     const response = await authFetch(endpoint, {
@@ -522,6 +547,7 @@ export async function analyzePdf(
         originalFileName: file.name,
         mimeType: resolveClientMimeType(file),
         sizeBytes: file.size,
+        ...(sha256 ? { sha256 } : {}),
         ...(options?.documentId?.trim() ? { documentId: options.documentId.trim() } : {}),
       }),
       signal: options?.signal,

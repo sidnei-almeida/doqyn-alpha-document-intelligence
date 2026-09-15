@@ -108,6 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 originalFileName: ingress.originalFileName,
                 mimeType: ingress.mimeType,
                 fileSizeBytes: ingress.fileSize,
+                fileHash: ingress.fileHash,
                 storageScope,
                 requestId: ctx.requestId,
                 batchId: ctx.batchId,

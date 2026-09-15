@@ -2,6 +2,7 @@ import { lookup } from 'mime-types';
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import {
   assertAndHashAnalysisStaging,
+  headAnalysisStaging,
   loadAnalysisStagingBuffer,
 } from '../../storage/analysisStagingObject.js';
 import { getStorageConfig } from '../../storage/storageConfig.js';
@@ -85,14 +86,41 @@ export async function resolveAnalyzePdfIngress(
     );
   }
 
-  const { fileHash } = await assertAndHashAnalysisStaging({
-    tenantId: input.tenantId,
-    jobId: parsed.staging.jobId,
-    originalFileName,
-    mimeType,
-    expectedSizeBytes: fileSize,
-    storageScope: input.storageScope,
-  });
+  /**
+   * Com o hash vindo do navegador, basta conferir o tamanho.
+   *
+   * Recalcular aqui era baixar o arquivo inteiro do R2 antes do 202 — e o enfileiramento baixava de
+   * novo para calcular o mesmo número. Confiar no navegador não abre brecha: o worker confere o hash
+   * quando baixa para analisar, e um valor que não bate vira `STAGING_HASH_MISMATCH` no job, não
+   * documento. Sem `sha256` (cliente antigo), segue o caminho que baixa.
+   */
+  let fileHash: string;
+  if (parsed.staging.sha256) {
+    const head = await headAnalysisStaging({
+      tenantId: input.tenantId,
+      jobId: parsed.staging.jobId,
+      originalFileName,
+      mimeType,
+      storageScope: input.storageScope,
+    });
+    if (head.sizeBytes !== fileSize) {
+      throw new ServiceError(
+        'Tamanho do arquivo no storage não confere com o informado.',
+        'STAGING_SIZE_MISMATCH',
+        400,
+      );
+    }
+    fileHash = parsed.staging.sha256;
+  } else {
+    ({ fileHash } = await assertAndHashAnalysisStaging({
+      tenantId: input.tenantId,
+      jobId: parsed.staging.jobId,
+      originalFileName,
+      mimeType,
+      expectedSizeBytes: fileSize,
+      storageScope: input.storageScope,
+    }));
+  }
 
   let buffer: Buffer | undefined;
   if (input.loadBuffer) {

@@ -6,6 +6,12 @@
 # DNS interno Docker — necessário para balancear múltiplas réplicas (compose scale).
 resolver 127.0.0.11 valid=10s ipv6=off;
 
+# Tempo de cada requisição no log. Sem `rt=` a lentidão do upload era palpite: o formato padrão
+# da imagem não registra duração. `urt` é só a espera pela API ou pelo auth; a diferença para
+# `rt` é o cliente mandando o corpo ou recebendo a resposta.
+log_format doqyn_timed '$remote_addr - [$time_local] "$request" $status $body_bytes_sent '
+                       'rt=$request_time urt=$upstream_response_time "$http_user_agent"';
+
 upstream doqyn_api {
   zone doqyn_api 64k;
   least_conn;
@@ -57,6 +63,8 @@ server {
 
   ssl_certificate     /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/privkey.pem;
+
+  access_log /var/log/nginx/access.log doqyn_timed;
 
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers off;

@@ -28,6 +28,7 @@ import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
 import { getStorageProvider } from '../storage/index.js';
+import { enqueueStoragePromotionJob } from '../queues/storagePromotionQueue.js';
 import {
   enqueueScheduledDocumentPreview,
   scheduleDocumentPreviewForVersion,
@@ -51,6 +52,7 @@ import {
   mapVersionMetadata,
   persistConfirmedVersionFile,
   projectDocumentSearchMeta,
+  type StagingPromotionRequest,
 } from './confirm/confirmVersionShared.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
@@ -440,6 +442,7 @@ export async function confirmAnalysisPersistence(input: {
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
   let confirmedPdfBuffer: Buffer | null = null;
+  let stagingPromotion: StagingPromotionRequest | null = null;
 
   try {
     const persisted = await persistConfirmedVersionFile({
@@ -457,6 +460,7 @@ export async function confirmAnalysisPersistence(input: {
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
+    stagingPromotion = persisted.promotion;
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
@@ -618,10 +622,11 @@ export async function confirmAnalysisPersistence(input: {
     await documentVersions.insertOne(version);
     await processingJobs.insertOne(processingJob);
 
-    if (confirmedPdfBuffer) {
+    if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
+        primary: versionStorage.primary,
         documentId,
         versionId,
         versionLabel,
@@ -645,8 +650,33 @@ export async function confirmAnalysisPersistence(input: {
         requestId: input.requestId,
       });
     }
+
+    if (stagingPromotion) {
+      // Fora do caminho de quem espera: a versão já vale apontando para o provisório, e a cópia para
+      // a chave definitiva não pode segurar a resposta nem desfazer o documento se falhar.
+      await enqueueStoragePromotionJob({
+        tenantId,
+        ownerUserId,
+        documentId,
+        versionId,
+        bucket: stagingPromotion.bucket,
+        stagingKey: stagingPromotion.stagingKey,
+        destinationKey: stagingPromotion.destinationKey,
+        contentType: stagingPromotion.contentType,
+        requestId: input.requestId,
+      }).catch((error: unknown) => {
+        logger.warn('promoção do arquivo não enfileirada; a versão segue no provisório', {
+          requestId: input.requestId,
+          documentId,
+          versionId,
+          reason: error instanceof Error ? error.message : 'unknown',
+        });
+      });
+    }
   } catch (error) {
-    if (persistedObjectKey) {
+    // O provisório pertence ao job, não a esta tentativa: apagá-lo aqui tiraria o arquivo de outra
+    // confirmação do mesmo job que já tenha dado certo.
+    if (persistedObjectKey && !stagingPromotion) {
       await getStorageProvider()
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);

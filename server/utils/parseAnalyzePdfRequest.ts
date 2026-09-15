@@ -9,7 +9,11 @@ export type AnalyzePdfStagingRequest = {
   mimeType?: string;
   sizeBytes: number;
   documentId?: string;
+  /** SHA-256 calculado no navegador antes do envio. Ver `resolveAnalyzePdfIngress`. */
+  sha256?: string;
 };
+
+const SHA256_HEX = /^[a-f0-9]{64}$/;
 
 export type ParsedAnalyzePdfRequest =
   | {
@@ -57,6 +61,11 @@ function parseStagingBody(body: unknown): AnalyzePdfStagingRequest {
   const mimeType = typeof record.mimeType === 'string' ? record.mimeType.trim() : undefined;
   const documentId = typeof record.documentId === 'string' ? record.documentId.trim() : undefined;
 
+  const sha256 = typeof record.sha256 === 'string' ? record.sha256.trim().toLowerCase() : '';
+  if (sha256 && !SHA256_HEX.test(sha256)) {
+    throw new ServiceError('sha256 inválido.', 'INVALID_SHA256', 400);
+  }
+
   return {
     jobId,
     originalFileName,
@@ -64,6 +73,7 @@ function parseStagingBody(body: unknown): AnalyzePdfStagingRequest {
     mimeType,
     sizeBytes,
     documentId: documentId || undefined,
+    sha256: sha256 || undefined,
   };
 }
 

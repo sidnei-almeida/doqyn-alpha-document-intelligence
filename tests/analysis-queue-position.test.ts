@@ -62,27 +62,27 @@ describe('recuo progressivo na consulta de status', () => {
   it('começa rápido e cresce até o teto', () => {
     assert.equal(
       analysisPollDelayMs(1, () => 0),
-      2_000,
+      1_000,
     );
     assert.equal(
       analysisPollDelayMs(2, () => 0),
-      3_000,
+      1_500,
     );
     assert.equal(
       analysisPollDelayMs(3, () => 0),
-      4_500,
+      2_250,
     );
-    // Teto: consultar de 10 em 10 segundos numa espera longa já é bastante.
+    // Teto: com a análise em segundos, consultar de 5 em 5 numa espera longa já é bastante.
     assert.equal(
       analysisPollDelayMs(20, () => 0),
-      10_000,
+      5_000,
     );
   });
 
   it('dispersa para os arquivos em voo não perguntarem em uníssono', () => {
     assert.equal(
       analysisPollDelayMs(1, () => 0.5),
-      2_250,
+      1_250,
     );
   });
 });
