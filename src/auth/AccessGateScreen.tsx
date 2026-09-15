@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
@@ -110,12 +109,15 @@ export function AccessGateScreen({
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2">
+            {/* Âncora comum, e não `<Link>`: esta tela é renderizada pelo AuthProvider, acima do
+                RouterProvider. `<Link>` fora do roteador lança ao montar e derrubava a tela inteira
+                no AppErrorBoundary — toda conta sem vínculo via erro em vez do caminho de saída. */}
             {actions.map((action) => (
-              <Link key={action.href} to={action.href}>
+              <a key={action.href} href={action.href}>
                 <Button type="button" variant={action.variant ?? 'primary'} className="w-full">
                   {t(action.labelKey)}
                 </Button>
-              </Link>
+              </a>
             ))}
             <Button type="button" variant="secondary" className="w-full" onClick={onLogout}>
               {t('accessGate.logout')}

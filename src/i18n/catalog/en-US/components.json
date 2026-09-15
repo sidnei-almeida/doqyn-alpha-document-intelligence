@@ -1,9 +1,4 @@
 {
-  "appErrorBoundary": {
-    "recarregar": "Reload",
-    "recarregueAPaginaPara": "Reload the page to continue. If the problem persists, contact support.",
-    "title": "Something unexpected happened"
-  },
   "authBrandLogo": {
     "doqyn": "Doqyn"
   },

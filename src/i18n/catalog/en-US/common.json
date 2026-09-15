@@ -189,5 +189,10 @@
   "uncategorized": "Uncategorized",
   "toaster": {
     "region": "Notifications"
+  },
+  "appErrorBoundary": {
+    "title": "Something unexpected happened",
+    "message": "Reload the page to continue. If the problem persists, contact support.",
+    "reload": "Reload"
   }
 }

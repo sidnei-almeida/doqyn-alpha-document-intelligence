@@ -189,5 +189,10 @@
   "uncategorized": "Sem categoria",
   "toaster": {
     "region": "Avisos"
+  },
+  "appErrorBoundary": {
+    "title": "Algo inesperado aconteceu",
+    "message": "Recarregue a página para continuar. Se o problema persistir, entre em contato com o suporte.",
+    "reload": "Recarregar"
   }
 }

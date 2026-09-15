@@ -1,9 +1,4 @@
 {
-  "appErrorBoundary": {
-    "recarregar": "Recargar",
-    "recarregueAPaginaPara": "Recarga la página para continuar. Si el problema persiste, contacta al soporte.",
-    "title": "Ocurrió algo inesperado"
-  },
   "authBrandLogo": {
     "doqyn": "Doqyn"
   },
