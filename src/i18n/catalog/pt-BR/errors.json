@@ -272,5 +272,7 @@
   "USER_NOT_ACTIVE": "Esta conta não está ativa.",
   "USER_REQUIRED": "userId é obrigatório.",
   "VALIDATION_ERROR": "Revise os campos informados e tente novamente.",
-  "VERSION_NOT_FOUND": "Versão não encontrada."
+  "VERSION_NOT_FOUND": "Versão não encontrada.",
+  "INVALID_SHA256": "O identificador de integridade do arquivo é inválido. Envie o arquivo novamente.",
+  "ANALYSIS_ALREADY_CONFIRMED": "Esta análise já foi confirmada. O documento já está na Biblioteca."
 }

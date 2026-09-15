@@ -438,6 +438,28 @@ export async function confirmAnalysisPersistence(input: {
     throw error;
   }
 
+  /**
+   * O mesmo job não confirma duas vezes.
+   *
+   * Antes a segunda tentativa morria sozinha no storage, porque a primeira apagava o provisório.
+   * Com a cópia em segundo plano o provisório vive mais alguns minutos, e a repetição (duplo clique,
+   * rede que reenviou) criava documento e versão para só então esbarrar na chave do job — deixando
+   * os dois órfãos. A pergunta tem de vir antes de gravar qualquer coisa.
+   */
+  if (
+    data.jobId &&
+    (await input.ctx.collections.processingJobs.findOne({ _id: data.jobId } as Record<
+      string,
+      unknown
+    >))
+  ) {
+    throw new ConfirmAnalysisError(
+      'Esta análise já foi confirmada.',
+      'ANALYSIS_ALREADY_CONFIRMED',
+      409,
+    );
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;

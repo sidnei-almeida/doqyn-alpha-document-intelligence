@@ -224,6 +224,21 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     throw error;
   }
 
+  // O mesmo job não confirma duas vezes — ver o comentário em `confirmAnalysisPersistence`.
+  if (
+    data.jobId &&
+    (await input.ctx.collections.processingJobs.findOne({ _id: data.jobId } as Record<
+      string,
+      unknown
+    >))
+  ) {
+    throw new ConfirmAnalysisError(
+      'Esta análise já foi confirmada.',
+      'ANALYSIS_ALREADY_CONFIRMED',
+      409,
+    );
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;

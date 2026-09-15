@@ -272,5 +272,7 @@
   "USER_NOT_ACTIVE": "This account is not active.",
   "USER_REQUIRED": "userId is required.",
   "VALIDATION_ERROR": "Review the fields you entered and try again.",
-  "VERSION_NOT_FOUND": "Version not found."
+  "VERSION_NOT_FOUND": "Version not found.",
+  "INVALID_SHA256": "The file integrity identifier is invalid. Upload the file again.",
+  "ANALYSIS_ALREADY_CONFIRMED": "This analysis has already been confirmed. The document is already in the Library."
 }
