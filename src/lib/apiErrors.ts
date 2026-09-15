@@ -78,15 +78,24 @@ export function parseApiErrorBody(
   };
 }
 
+/**
+ * `body` é para quem já leu a resposta: o corpo de um `Response` só pode ser lido uma vez, e a
+ * segunda leitura falha calada. Os cadastros liam o JSON antes de checar `ok` e depois chamavam
+ * isto — o motivo que o auth devolvia ("CPF inválido (campo: taxId)") virava o genérico "Não foi
+ * possível criar seu acesso".
+ */
 export async function parseApiError(
   response: Response,
   fallbackMessage?: string,
+  body?: unknown,
 ): Promise<ApiError> {
-  let data: unknown = {};
-  try {
-    data = await response.json();
-  } catch {
-    // body vazio ou não-JSON
+  let data: unknown = body ?? {};
+  if (body === undefined) {
+    try {
+      data = await response.json();
+    } catch {
+      // body vazio ou não-JSON
+    }
   }
 
   const parsed = parseApiErrorBody(response.status, data, fallbackMessage);

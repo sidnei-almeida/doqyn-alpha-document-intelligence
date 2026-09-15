@@ -51,7 +51,7 @@ export async function submitCompanySignup(
   };
 
   if (!response.ok) {
-    throw await parseApiError(response, i18n.t('auth:companySignupPage.apiFailed'));
+    throw await parseApiError(response, i18n.t('auth:companySignupPage.apiFailed'), data);
   }
 
   return data;

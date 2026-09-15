@@ -53,7 +53,7 @@ export async function submitIndividualSignup(
   };
 
   if (!response.ok) {
-    throw await parseApiError(response, i18n.t('auth:individualSignupPage.apiFailed'));
+    throw await parseApiError(response, i18n.t('auth:individualSignupPage.apiFailed'), data);
   }
 
   return data;
