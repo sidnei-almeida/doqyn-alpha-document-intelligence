@@ -89,27 +89,6 @@
     "validUntilNotice": "Vale até {{date}}. Depois disso ele para de abrir, e é preciso convidar de novo.",
     "emailPlaceholder": "pessoa@exemplo.com"
   },
-  "legacyAuthRole": {
-    "admin": "Administrador do sistema",
-    "manager": "Administrador da empresa",
-    "user": "Usuário",
-    "viewer": "Visualizador"
-  },
-  "platformRole": {
-    "company_admin": {
-      "label": "Administrador da empresa",
-      "description": "Gerencia usuários, grupos e regras da empresa."
-    },
-    "individual_admin": {
-      "label": "Administrador da conta",
-      "description": "Gerencia acesso e documentos da conta individual."
-    },
-    "user": {
-      "label": "Usuário",
-      "description": "Acessa documentos e recursos liberados."
-    },
-    "unknownDescription": "Papel da plataforma."
-  },
   "unblockAccessDialog": {
     "bloqueado": "Bloqueado",
     "cancelar": "Cancelar",

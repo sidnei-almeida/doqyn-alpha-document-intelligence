@@ -194,5 +194,26 @@
     "title": "Something unexpected happened",
     "message": "Reload the page to continue. If the problem persists, contact support.",
     "reload": "Reload"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Company administrator",
+      "description": "Manages the company's users, groups and rules."
+    },
+    "individual_admin": {
+      "label": "Account administrator",
+      "description": "Manages access and documents for the individual account."
+    },
+    "user": {
+      "label": "User",
+      "description": "Accesses the documents and features they are granted."
+    },
+    "unknownDescription": "Platform role."
+  },
+  "legacyAuthRole": {
+    "admin": "System administrator",
+    "manager": "Company administrator",
+    "user": "User",
+    "viewer": "Viewer"
   }
 }

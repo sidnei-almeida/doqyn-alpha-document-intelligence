@@ -64,11 +64,11 @@ describe('modal Editar acesso — UX e dirty state', () => {
   });
 
   it('roles exibem labels amigáveis mantendo valores internos', () => {
-    // O rótulo mora no catálogo; o teste confere a frase de referência, em pt-BR.
-    const ptUsers = JSON.parse(readSrc('i18n/catalog/pt-BR/users.json'));
-    assert.equal(ptUsers.platformRole.company_admin.label, 'Administrador da empresa');
-    assert.equal(ptUsers.platformRole.individual_admin.label, 'Administrador da conta');
-    assert.equal(ptUsers.platformRole.user.label, 'Usuário');
+    // O rótulo mora em `common`, o catálogo embutido: cabeçalho e configurações não carregam `users`.
+    const ptCommon = JSON.parse(readSrc('i18n/catalog/pt-BR/common.json'));
+    assert.equal(ptCommon.platformRole.company_admin.label, 'Administrador da empresa');
+    assert.equal(ptCommon.platformRole.individual_admin.label, 'Administrador da conta');
+    assert.equal(ptCommon.platformRole.user.label, 'Usuário');
     const chips = readSrc('components/ui/PlatformRoleChips.tsx');
     assert.ok(chips.includes('getPlatformRoleLabel'));
     assert.ok(chips.includes('{label}'));

@@ -89,27 +89,6 @@
     "validUntilNotice": "Valid until {{date}}. After that it stops opening, and a new invitation is needed.",
     "emailPlaceholder": "person@example.com"
   },
-  "legacyAuthRole": {
-    "admin": "System administrator",
-    "manager": "Company administrator",
-    "user": "User",
-    "viewer": "Viewer"
-  },
-  "platformRole": {
-    "company_admin": {
-      "label": "Company administrator",
-      "description": "Manages the company's users, groups and rules."
-    },
-    "individual_admin": {
-      "label": "Account administrator",
-      "description": "Manages access and documents for the individual account."
-    },
-    "user": {
-      "label": "User",
-      "description": "Accesses the documents and features they are granted."
-    },
-    "unknownDescription": "Platform role."
-  },
   "unblockAccessDialog": {
     "bloqueado": "Blocked",
     "cancelar": "Cancel",

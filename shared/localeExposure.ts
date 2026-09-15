@@ -21,10 +21,15 @@ export type LocaleRelease = {
   qaPassedAt?: string;
 };
 
+/**
+ * en-US e es-419 promovidos em 15/09/2026 por decisão do dono do produto, com catálogo completo e
+ * `i18n:stale` limpo, mas **sem** o roteiro de QA manual rodado por inteiro: a data abaixo registra
+ * a liberação, não um QA feito. Texto estranho nesses idiomas é correção pontual, não regressão.
+ */
 export const LOCALE_RELEASE: Record<LocaleCode, LocaleRelease> = {
   'pt-BR': { status: 'ready' },
-  'en-US': { status: 'draft' },
-  'es-419': { status: 'draft' },
+  'en-US': { status: 'ready', qaPassedAt: '2026-09-15' },
+  'es-419': { status: 'ready', qaPassedAt: '2026-09-15' },
 };
 
 export function isExposedLocale(code: string): boolean {

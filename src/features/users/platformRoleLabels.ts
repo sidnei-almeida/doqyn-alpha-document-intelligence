@@ -19,11 +19,15 @@ export type PlatformRoleMeta = {
  * `getPlatformRoleMeta` resolve na chamada — roda dentro do render de quem lista usuários — e
  * cai no próprio slug quando o papel é desconhecido, que continua sendo a informação mais
  * honesta que existe naquele momento.
+ *
+ * As frases moram em `common`, o catálogo embutido: quem chama é o menu do cabeçalho e as
+ * configurações, que não carregam `users`, e com as chaves lá o perfil mostrava
+ * `platformRole.individual_admin.label` no lugar do papel.
  */
 const PLATFORM_ROLE_KEYS: Record<PlatformRole, string> = {
-  company_admin: 'users:platformRole.company_admin',
-  individual_admin: 'users:platformRole.individual_admin',
-  user: 'users:platformRole.user',
+  company_admin: 'common:platformRole.company_admin',
+  individual_admin: 'common:platformRole.individual_admin',
+  user: 'common:platformRole.user',
 };
 
 /** Ordem de prioridade para exibir o papel principal do usuário. */
@@ -32,7 +36,7 @@ export const PLATFORM_ROLE_PRIORITY: PlatformRole[] = ['company_admin', 'individ
 export function getPlatformRoleMeta(role: string): PlatformRoleMeta {
   const base = PLATFORM_ROLE_KEYS[role as PlatformRole];
   if (!base) {
-    return { label: role, description: i18n.t('users:platformRole.unknownDescription') };
+    return { label: role, description: i18n.t('common:platformRole.unknownDescription') };
   }
   return { label: i18n.t(`${base}.label`), description: i18n.t(`${base}.description`) };
 }
@@ -60,10 +64,10 @@ export function formatPlatformRolesList(roles: string[]): string {
 
 /** Labels para o papel legado do AuthUser (`admin`, `manager`, `user`, `viewer`). */
 const LEGACY_AUTH_ROLE_KEYS: Record<string, string> = {
-  admin: 'users:legacyAuthRole.admin',
-  manager: 'users:legacyAuthRole.manager',
-  user: 'users:legacyAuthRole.user',
-  viewer: 'users:legacyAuthRole.viewer',
+  admin: 'common:legacyAuthRole.admin',
+  manager: 'common:legacyAuthRole.manager',
+  user: 'common:legacyAuthRole.user',
+  viewer: 'common:legacyAuthRole.viewer',
 };
 
 export function getAuthRoleLabel(role: string): string {

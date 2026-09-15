@@ -194,5 +194,26 @@
     "title": "Algo inesperado aconteceu",
     "message": "Recarregue a página para continuar. Se o problema persistir, entre em contato com o suporte.",
     "reload": "Recarregar"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Administrador da empresa",
+      "description": "Gerencia usuários, grupos e regras da empresa."
+    },
+    "individual_admin": {
+      "label": "Administrador da conta",
+      "description": "Gerencia acesso e documentos da conta individual."
+    },
+    "user": {
+      "label": "Usuário",
+      "description": "Acessa documentos e recursos liberados."
+    },
+    "unknownDescription": "Papel da plataforma."
+  },
+  "legacyAuthRole": {
+    "admin": "Administrador do sistema",
+    "manager": "Administrador da empresa",
+    "user": "Usuário",
+    "viewer": "Visualizador"
   }
 }
