@@ -138,27 +138,32 @@
     color: var(--text-primary);
   }
 
-  /* A busca como folha branca é exclusividade do `standard`: ali ela é a única
-     coisa clara dentro da casca grafite, e o branco a faz par com o painel de
-     baixo. Nos outros dois temas a casca já é da mesma paleta do conteúdo, e um
-     campo branco no meio dela viraria um retalho. */
-  [data-appearance='standard'] .topbar-search .search-command {
+  /* A busca como folha branca, par com o painel de baixo. No `standard` ela é a
+     única coisa clara dentro da casca grafite; no claro a casca virou pedra, e o
+     cinza de `--color-surface-container` que a busca usava era praticamente o tom
+     da casca — o campo sumia. Branco sobre pedra devolve o destaque, com a mesma
+     lógica do painel. */
+  [data-appearance='standard'] .topbar-search .search-command,
+  [data-appearance='light'] .topbar-search .search-command {
     background: var(--color-background);
     border-color: transparent;
   }
 
-  [data-appearance='standard'] .topbar-search .search-command:hover {
+  [data-appearance='standard'] .topbar-search .search-command:hover,
+  [data-appearance='light'] .topbar-search .search-command:hover {
     background: var(--color-surface);
   }
 
-  [data-appearance='standard'] .topbar-search .search-command:focus {
+  [data-appearance='standard'] .topbar-search .search-command:focus,
+  [data-appearance='light'] .topbar-search .search-command:focus {
     background: var(--color-background);
     border-color: transparent;
     box-shadow: 0 0 0 1px var(--color-primary);
   }
 
   /* O marcador do atalho é branco no tema claro e sumiria dentro da folha. */
-  [data-appearance='standard'] .topbar-search kbd {
+  [data-appearance='standard'] .topbar-search kbd,
+  [data-appearance='light'] .topbar-search kbd {
     background: var(--color-surface-container);
   }
 
@@ -2426,14 +2431,20 @@
     --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
   }
 
-  /* Nestes dois não há poço: as camadas são a mesma superfície, e profundidade
-     falsa sobre tom igual só suja o recorte. O fio de acento faz o trabalho
-     sozinho, e a sombra é declarada nula em vez de removida para que o
-     `box-shadow` composto siga válido. */
-  [data-appearance='light'] .workspace-canvas,
+  /* Claro e escuro repetem o poço do `standard`, calibrado para o tom de cada
+     casca. No claro a sombra recua — pedra sobre papel já separa, e sombra funda
+     sujaria a folha; no escuro ela aprofunda, porque grafite sobre grafite só se
+     distingue pela luz que falta na quina. O anel é neutro nos dois: acento em
+     volta do painel inteiro lia como brilho, e verdigris é só para o que responde
+     a clique. */
+  [data-appearance='light'] .workspace-canvas {
+    --canvas-well-edge: rgba(17, 23, 27, 0.1);
+    --canvas-well-shadow: inset 0 2px 4px -3px rgba(17, 23, 27, 0.3);
+  }
+
   [data-appearance='dark'] .workspace-canvas {
-    --canvas-well-edge: var(--shell-edge);
-    --canvas-well-shadow: inset 0 0 0 0 transparent;
+    --canvas-well-edge: rgba(255, 255, 255, 0.06);
+    --canvas-well-shadow: inset 0 3px 6px -3px rgba(0, 0, 0, 0.6);
   }
 
   /* O canvas é o scroll da janela: tela que não administra o próprio scroll (como
@@ -4818,14 +4829,16 @@
     --canvas-well-shadow: inset 0 3px 5px -3px rgba(11, 14, 16, 0.45);
   }
 
-  /* Aqui o fio do recorte é neutro, e não o de acento que o workspace usa: lá o
-     painel é onde a pessoa trabalha e merece ser apontado; na antessala quem
-     manda é o formulário, e um fio verdigris contornando o painel inteiro
-     disputaria com ele. */
-  [data-appearance='light'] .auth-canvas,
+  /* Mesmo poço do painel de trabalho em cada tema: a antessala é a mesma casca
+     com a mesa de papel recortada dentro. */
+  [data-appearance='light'] .auth-canvas {
+    --canvas-well-edge: rgba(17, 23, 27, 0.1);
+    --canvas-well-shadow: inset 0 2px 4px -3px rgba(17, 23, 27, 0.3);
+  }
+
   [data-appearance='dark'] .auth-canvas {
-    --canvas-well-edge: var(--border-subtle);
-    --canvas-well-shadow: inset 0 0 0 0 transparent;
+    --canvas-well-edge: rgba(255, 255, 255, 0.06);
+    --canvas-well-shadow: inset 0 3px 6px -3px rgba(0, 0, 0, 0.6);
   }
 
   /* A mesa e o que a folha precisa para se separar dela. É a regra do kit
