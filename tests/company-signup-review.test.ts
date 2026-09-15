@@ -14,7 +14,7 @@ const validForm = {
   // O país entrou no formulário depois que o cadastro passou a validar documento e telefone por
   // país; a fixture ficou para trás e a revisão estourava no rótulo "País".
   country: 'BR',
-  taxId: '12.345.678/0001-99',
+  taxId: '11.222.333/0001-81',
   firstName: 'Maria',
   lastName: 'Santos',
   email: 'maria@alpha.com',
@@ -26,6 +26,19 @@ const validForm = {
 };
 
 describe('company signup review flow', () => {
+  it('aceita CNPJ numérico e alfanumérico com dígito certo', () => {
+    assert.equal(validateCompanySignupForm(validForm).valid, true);
+    assert.equal(
+      validateCompanySignupForm({ ...validForm, taxId: '12.ABC.345/01DE-35' }).valid,
+      true,
+    );
+  });
+
+  it('bloqueia CNPJ com dígito verificador errado antes de enviar', () => {
+    const result = validateCompanySignupForm({ ...validForm, taxId: '12.345.678/0001-99' });
+    assert.equal(result.valid, false);
+  });
+
   it('bloqueia sem aceite dos termos', () => {
     const result = validateCompanySignupForm({ ...validForm, acceptedTerms: false });
     assert.equal(result.valid, false);

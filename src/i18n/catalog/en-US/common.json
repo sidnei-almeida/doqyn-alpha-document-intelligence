@@ -89,7 +89,8 @@
     "cpfPlaceholder": "000.000.000-00",
     "genericLabel": "Tax ID",
     "genericPlaceholder": "Tax identification number",
-    "incomplete": "{{label}} is incomplete."
+    "incomplete": "{{label}} is incomplete.",
+    "invalid": "{{label}} is invalid. Check the number."
   },
   "tenantVocabulary": {
     "scopeSectionLabelBusiness": "Organization",

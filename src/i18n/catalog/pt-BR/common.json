@@ -89,7 +89,8 @@
     "cpfPlaceholder": "000.000.000-00",
     "genericLabel": "Documento fiscal",
     "genericPlaceholder": "Documento de identificação fiscal",
-    "incomplete": "{{label}} incompleto."
+    "incomplete": "{{label}} incompleto.",
+    "invalid": "{{label}} inválido. Confira os números."
   },
   "tenantVocabulary": {
     "scopeSectionLabelBusiness": "Organização",

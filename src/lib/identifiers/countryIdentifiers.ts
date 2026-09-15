@@ -8,7 +8,14 @@ import {
 import type { CountryCode } from 'libphonenumber-js/min';
 import { i18n } from '@/i18n';
 import { DEFAULT_LOCALE } from '@/i18n/locales';
-import { formatCnpj, formatCpf, isCompleteTaxId, normalizeTaxId } from './taxId';
+import {
+  formatCnpj,
+  formatCpf,
+  isCompleteTaxId,
+  isValidTaxId,
+  normalizeCnpj,
+  normalizeTaxId,
+} from './taxId';
 
 /**
  * O idioma em que o `Intl` deve escrever nome de país e ordenar a lista.
@@ -68,6 +75,8 @@ export type TaxIdSpec = {
   /** Máscara aplicada enquanto se digita. */
   format: (value: string) => string;
   isComplete: (value: string) => boolean;
+  /** Completo e com dígito verificador certo. Fora do BR, igual a `isComplete`. */
+  isValid: (value: string) => boolean;
   /** Valor enviado à API. */
   toApiValue: (value: string) => string;
 };
@@ -79,30 +88,34 @@ const BR_TAX_ID_SPECS: Record<PersonType, TaxIdSpec> = {
     placeholderKey: 'common:taxId.cpfPlaceholder',
     format: (value) => formatCpf(normalizeTaxId(value)),
     isComplete: (value) => isCompleteTaxId(value, 'CPF'),
+    isValid: (value) => isValidTaxId(value, 'CPF'),
     toApiValue: (value) => normalizeTaxId(value),
   },
   company: {
     type: 'cnpj',
     labelKey: 'common:taxId.cnpjLabel',
     placeholderKey: 'common:taxId.cnpjPlaceholder',
-    format: (value) => formatCnpj(normalizeTaxId(value)),
+    format: (value) => formatCnpj(value),
     isComplete: (value) => isCompleteTaxId(value, 'CNPJ'),
-    toApiValue: (value) => normalizeTaxId(value),
+    isValid: (value) => isValidTaxId(value, 'CNPJ'),
+    toApiValue: (value) => normalizeCnpj(value),
   },
 };
+
+function isCompleteGenericTaxId(value: string): boolean {
+  const normalized = normalizeGenericTaxId(value);
+  return (
+    normalized.length >= GENERIC_TAX_ID_MIN_LENGTH && normalized.length <= GENERIC_TAX_ID_MAX_LENGTH
+  );
+}
 
 const GENERIC_TAX_ID_SPEC: TaxIdSpec = {
   type: 'tax_id',
   labelKey: 'common:taxId.genericLabel',
   placeholderKey: 'common:taxId.genericPlaceholder',
   format: (value) => normalizeGenericTaxId(value),
-  isComplete: (value) => {
-    const normalized = normalizeGenericTaxId(value);
-    return (
-      normalized.length >= GENERIC_TAX_ID_MIN_LENGTH &&
-      normalized.length <= GENERIC_TAX_ID_MAX_LENGTH
-    );
-  },
+  isComplete: isCompleteGenericTaxId,
+  isValid: isCompleteGenericTaxId,
   toApiValue: (value) => normalizeGenericTaxId(value),
 };
 

@@ -67,6 +67,14 @@ export function validateCompanySignupForm(values: CompanySignupFormValues): {
     return { valid: false, error: i18n.t('auth:signupValidation.passwordMismatch') };
   }
 
+  const taxIdSpec = getTaxIdSpec(values.country, 'company');
+  if (!taxIdSpec.isValid(values.taxId)) {
+    return {
+      valid: false,
+      error: i18n.t('common:taxId.invalid', { label: i18n.t(taxIdSpec.labelKey) }),
+    };
+  }
+
   return { valid: true };
 }
 

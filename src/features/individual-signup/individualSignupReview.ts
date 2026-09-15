@@ -52,6 +52,14 @@ export function validateIndividualSignupForm(values: IndividualSignupFormValues)
     return { valid: false, error: i18n.t('auth:signupValidation.passwordMismatch') };
   }
 
+  const taxIdSpec = getTaxIdSpec(values.country, 'individual');
+  if (!taxIdSpec.isValid(values.taxId)) {
+    return {
+      valid: false,
+      error: i18n.t('common:taxId.invalid', { label: i18n.t(taxIdSpec.labelKey) }),
+    };
+  }
+
   return { valid: true };
 }
 

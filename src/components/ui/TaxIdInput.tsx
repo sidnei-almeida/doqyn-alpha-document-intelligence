@@ -32,17 +32,23 @@ export function TaxIdInput({
     format,
   });
 
-  const incomplete = value.length > 0 && !spec.isComplete(value);
-  const validationError = incomplete
-    ? t('common:taxId.incomplete', { label: t(spec.labelKey) })
-    : undefined;
+  const label = t(spec.labelKey);
+  const validationError =
+    value.length === 0
+      ? undefined
+      : !spec.isComplete(value)
+        ? t('common:taxId.incomplete', { label })
+        : !spec.isValid(value)
+          ? t('common:taxId.invalid', { label })
+          : undefined;
 
   return (
     <Input
       {...props}
       {...inputProps}
-      // Fora do BR o documento pode ter letras (NIF/CIF espanhol, VAT europeu).
-      inputMode={country === 'BR' ? 'numeric' : 'text'}
+      // Só o CPF é numérico. CNPJ alfanumérico e documentos de fora do BR (NIF/CIF espanhol,
+      // VAT europeu) têm letras.
+      inputMode={country === 'BR' && personType === 'individual' ? 'numeric' : 'text'}
       autoComplete="off"
       placeholder={props.placeholder ?? t(spec.placeholderKey)}
       error={error ?? validationError}

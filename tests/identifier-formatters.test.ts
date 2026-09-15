@@ -5,6 +5,7 @@ import {
   formatCpf,
   formatTaxId,
   isCompleteTaxId,
+  isValidTaxId,
   toTaxIdApiValue,
 } from '../src/lib/identifiers/taxId';
 import {
@@ -50,6 +51,30 @@ describe('identifier formatters', () => {
       assert.equal(isCompleteTaxId('123.456.789-01', 'CPF'), true);
       assert.equal(isCompleteTaxId('123.456.789-0', 'CPF'), false);
       assert.equal(isCompleteTaxId('11.222.333/0001-81', 'CNPJ'), true);
+    });
+  });
+
+  describe('dígito verificador', () => {
+    it('CPF: aceita o certo, recusa dígito errado e sequência repetida', () => {
+      assert.equal(isValidTaxId('123.456.789-09', 'CPF'), true);
+      assert.equal(isValidTaxId('529.982.247-25', 'CPF'), true);
+      assert.equal(isValidTaxId('123.456.789-00', 'CPF'), false);
+      assert.equal(isValidTaxId('111.111.111-11', 'CPF'), false);
+      assert.equal(isValidTaxId('123.456.789-0', 'CPF'), false);
+    });
+
+    it('CNPJ numérico e alfanumérico', () => {
+      assert.equal(isValidTaxId('11.222.333/0001-81', 'CNPJ'), true);
+      assert.equal(isValidTaxId('11.222.333/0001-80', 'CNPJ'), false);
+      assert.equal(isValidTaxId('00.000.000/0000-00', 'CNPJ'), false);
+      // Exemplo da Receita para o CNPJ alfanumérico.
+      assert.equal(isValidTaxId('12.ABC.345/01DE-35', 'CNPJ'), true);
+      assert.equal(isValidTaxId('12abc34501de35', 'CNPJ'), true);
+      assert.equal(isValidTaxId('12.ABC.345/01DE-36', 'CNPJ'), false);
+    });
+
+    it('CNPJ alfanumérico mantém letras na máscara', () => {
+      assert.equal(formatCnpj('12abc34501de35'), '12.ABC.345/01DE-35');
     });
   });
 
