@@ -1,6 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
 import {
-  assertCanManageCompany,
+  assertCanManageCompanyMembers,
   mapLegacyRoleFromPlatformRoles,
   resolveTargetCompanyId,
 } from '../auth/memberAuth.js';
@@ -242,7 +242,7 @@ export async function listGovernanceMembers(
   requestedTenantId?: string,
 ): Promise<GovernanceMemberRecord[]> {
   const tenantId = resolveTargetCompanyId(actor, requestedTenantId);
-  assertCanManageCompany(actor, tenantId);
+  assertCanManageCompanyMembers(actor, tenantId);
 
   const documentGroupMap = buildDocumentGroupMap(
     await listAllGroupMemberships(tenantId, { ownerUserId: actor.id }),
@@ -278,7 +278,7 @@ export async function resolveGovernanceMemberIdentity(
   tenantId: string,
   membershipId: string,
 ): Promise<{ userId: string; displayName: string; email: string }> {
-  assertCanManageCompany(actor, tenantId);
+  assertCanManageCompanyMembers(actor, tenantId);
 
   const detail = await callDoqynAuthAdmin<{ member: AuthMemberDetail }>(
     req,

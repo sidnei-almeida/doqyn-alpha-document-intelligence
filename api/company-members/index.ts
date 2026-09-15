@@ -8,6 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     return withAdminMongoApi(req, res, {
       endpoint: '/api/company-members',
+      access: 'user_management',
       handler: async ({ companyId, requestId, user }) => {
         if (!userCanManageUsers(user)) {
           return {

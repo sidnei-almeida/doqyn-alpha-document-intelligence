@@ -1,4 +1,5 @@
 import type { PlatformRole, MongoCompanyMember } from '../db/types.js';
+import { ServiceError } from '../utils/serviceErrors.js';
 import type { AuthUser } from './types.js';
 
 const COMPANY_ADMIN_ROLE: PlatformRole = 'company_admin';
@@ -62,6 +63,21 @@ export function assertCanManageCompany(user: AuthUser, targetTenantId: string): 
   const userTenantId = user.tenantId ?? user.companyId;
   if (userTenantId !== targetTenantId) {
     throw new Error('FORBIDDEN_COMPANY_SCOPE');
+  }
+}
+
+/**
+ * Gerir membro exige as duas coisas: ser do tenant e ser `company_admin` dele.
+ *
+ * `assertCanManageCompany` confere só o tenant, e era a única porta dos serviços de membros — o
+ * papel ficava a cargo do wrapper da rota. Uma rota montada com o wrapper que não conferia papel
+ * deixou qualquer membro se pôr em grupo de documentos. A checagem de papel mora aqui também, para
+ * que o serviço não dependa de a rota ter sido montada certo.
+ */
+export function assertCanManageCompanyMembers(user: AuthUser, targetTenantId: string): void {
+  const userTenantId = user.tenantId ?? user.companyId;
+  if (userTenantId !== targetTenantId || !userIsCompanyAdmin(user)) {
+    throw new ServiceError('Sem permissão para gerir membros desta empresa.', 'FORBIDDEN', 403);
   }
 }
 
