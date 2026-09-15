@@ -226,6 +226,20 @@ export function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Ar
         },
         { key: { tenantId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
         { key: { tenantId: 1, ownerUserId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+        /* Lixeira e desativados listam por tenant ordenando pela data, e a varredura de retenção
+           filtra por prazo vencido. Sem estes, as três leem todo documento do tenant. */
+        {
+          key: { tenantId: 1, deletedAt: -1 },
+          partialFilterExpression: { deletedAt: { $exists: true } },
+        },
+        {
+          key: { tenantId: 1, deactivatedAt: -1 },
+          partialFilterExpression: { deactivatedAt: { $exists: true } },
+        },
+        {
+          key: { tenantId: 1, trashExpiresAt: 1 },
+          partialFilterExpression: { trashExpiresAt: { $exists: true } },
+        },
       ],
     },
     {
