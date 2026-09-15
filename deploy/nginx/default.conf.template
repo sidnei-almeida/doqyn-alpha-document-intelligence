@@ -122,11 +122,16 @@ server {
     return 403;
   }
 
+  # X-Forwarded-For SOBRESCRITO com o endereço do socket, e não `$proxy_add_x_forwarded_for`: este
+  # anexa ao que o cliente mandou, e os serviços liam a entrada da esquerda — um header inventado por
+  # requisição trocava o IP e zerava os limites por IP do auth. Não há proxy nosso antes do nginx.
+  # CF-Connecting-IP apagado pelo mesmo motivo: sem Cloudflare na frente, quem manda é o cliente.
   location /api/ {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header CF-Connecting-IP "";
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header Connection "";
     proxy_read_timeout 120s;
@@ -137,7 +142,7 @@ server {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_pass http://doqyn_auth/auth/;
   }
@@ -146,7 +151,7 @@ server {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_pass http://doqyn_auth/oauth/;
   }
