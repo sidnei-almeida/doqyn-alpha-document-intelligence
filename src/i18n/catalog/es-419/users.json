@@ -88,7 +88,10 @@
     "copied": "Copiado",
     "copy": "Copiar",
     "validUntilNotice": "Válido hasta {{date}}. Después deja de abrir, y hay que invitar de nuevo.",
-    "emailPlaceholder": "persona@ejemplo.com"
+    "emailPlaceholder": "persona@ejemplo.com",
+    "subtitleEmailedNoLink": "La invitación se envió por correo. Solo sirve para quien la recibió.",
+    "subtitleNotSent": "La invitación se creó, pero el correo no salió.",
+    "inviteAgainLater": "Cuando el envío vuelva a funcionar, invita de nuevo: la invitación anterior se reemplaza."
   },
   "unblockAccessDialog": {
     "bloqueado": "Bloqueado",

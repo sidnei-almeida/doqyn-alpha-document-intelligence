@@ -18,7 +18,6 @@ import { i18n } from '@/i18n';
 
 const PUBLIC_UNAUTHENTICATED_PATHS = [
   '/access',
-  '/invite',
   '/signup/company',
   '/signup/individual',
   '/onboarding',
@@ -31,8 +30,12 @@ const PUBLIC_UNAUTHENTICATED_PATHS = [
  * mandado de volta ao formulário de login com o servidor já tendo registrado sucesso.
  * Continua no bypass do access gate abaixo, porque quem chega ali ainda pode não ter
  * membership.
+ *
+ * `/invite` segue a mesma lógica. Conta que já existe só aceita convite logada nela, então a
+ * página precisa da sessão para decidir entre o formulário, "entre para aceitar" e "troque de
+ * conta". E fica no bypass porque quem aceita pode ainda não ter empresa nenhuma.
  */
-const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/sso/callback'];
+const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/sso/callback', '/invite'];
 
 function applyPartialUserFromSessionError(
   err: SessionApiError,

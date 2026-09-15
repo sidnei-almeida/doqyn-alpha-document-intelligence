@@ -87,7 +87,10 @@
     "copied": "Copied",
     "copy": "Copy",
     "validUntilNotice": "Valid until {{date}}. After that it stops opening, and a new invitation is needed.",
-    "emailPlaceholder": "person@example.com"
+    "emailPlaceholder": "person@example.com",
+    "subtitleEmailedNoLink": "The invitation was sent by email. It only works for the person who received it.",
+    "subtitleNotSent": "The invitation was created, but the email did not go out.",
+    "inviteAgainLater": "Once sending works again, invite them again: the previous invitation is replaced."
   },
   "unblockAccessDialog": {
     "bloqueado": "Blocked",

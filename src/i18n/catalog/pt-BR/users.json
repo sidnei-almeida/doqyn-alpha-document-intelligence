@@ -87,7 +87,10 @@
     "copied": "Copiado",
     "copy": "Copiar",
     "validUntilNotice": "Vale até {{date}}. Depois disso ele para de abrir, e é preciso convidar de novo.",
-    "emailPlaceholder": "pessoa@exemplo.com"
+    "emailPlaceholder": "pessoa@exemplo.com",
+    "subtitleEmailedNoLink": "O convite foi enviado por e-mail. Ele vale só para quem recebeu.",
+    "subtitleNotSent": "O convite foi criado, mas o e-mail não saiu.",
+    "inviteAgainLater": "Quando o envio voltar, convide de novo: o convite anterior é substituído."
   },
   "unblockAccessDialog": {
     "bloqueado": "Bloqueado",

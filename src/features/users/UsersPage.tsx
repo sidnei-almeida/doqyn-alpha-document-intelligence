@@ -146,10 +146,6 @@ export function UsersPage() {
         accessGroupIds: [],
         companyId: sessionTenantId || undefined,
       });
-      if (!('inviteLink' in result) || !result.inviteLink) {
-        throw new Error(t('usersPage.inviteNoLink'));
-      }
-
       // Nesta ordem, e não na inversa: o convite é o que pode ser recusado (e-mail duplicado,
       // papel não concedível). Guardar a intenção antes deixaria registro para um convite que
       // nunca nasceu.

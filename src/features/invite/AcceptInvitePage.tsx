@@ -9,6 +9,7 @@ import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDial
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ApiError } from '@/lib/apiErrors';
+import { useAuth } from '@/features/auth/useAuth';
 import { inviteApi, type InvitePreview } from './api/inviteApi';
 import {
   ACCEPT_INVITE_REVIEW_COPY_KEYS,
@@ -54,6 +55,7 @@ export function AcceptInvitePage() {
 
   const { token = '' } = useParams();
   const navigate = useNavigate();
+  const { user, logout, refreshUser } = useAuth();
   const [pageState, setPageState] = useState<PageState>({ kind: 'loading' });
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -194,7 +196,10 @@ export function AcceptInvitePage() {
       setPageState({ kind: 'success', message });
       toast.success(message);
       if (result.sessionEstablished) {
-        navigate('/', { replace: true });
+        // A área logada decide pelo usuário carregado no provedor. Sem recarregar a sessão aqui,
+        // quem acabou de entrar seria mandado ao login com o cookie já válido.
+        await refreshUser();
+        navigate('/library', { replace: true });
       }
     } catch (error) {
       const message =
@@ -205,8 +210,61 @@ export function AcceptInvitePage() {
     }
   }
 
+  // Volta ao convite depois de entrar: o login lê `state.from`, e o OAuth leva o mesmo destino.
+  const returnToInvite = { from: { pathname: `/invite/${token}` } };
+
+  async function switchAccount() {
+    await logout();
+    navigate('/login', { replace: true, state: returnToInvite });
+  }
+
+  /**
+   * Conta que já existe só aceita convite logada nela — o token prova que o link foi aberto, não
+   * de quem é a conta. Sem sessão, a página pede para entrar; logado em outra conta, pede para
+   * trocar. O servidor recusa do mesmo jeito; isto é para a pessoa não preencher um formulário à toa.
+   */
+  const loginGate: 'login' | 'wrong_account' | null = (() => {
+    if (pageState.kind !== 'ready' || !pageState.invite.requiresLogin) return null;
+    if (!user?.email) return 'login';
+    const invited = pageState.invite.email.trim().toLowerCase();
+    return user.email.trim().toLowerCase() === invited ? null : 'wrong_account';
+  })();
+
   return (
     <>
+      {pageState.kind === 'ready' && loginGate === 'login' && (
+        <>
+          <AuthHeading
+            title={t('acceptInvitePage.loginRequiredTitle')}
+            description={t('acceptInvitePage.loginRequiredMessage', {
+              email: pageState.invite.email,
+              tenant: pageState.invite.tenantDisplayName,
+            })}
+          />
+          <Button
+            className="w-full"
+            onClick={() => navigate('/login', { state: returnToInvite })}
+          >
+            {t('acceptInvitePage.loginToAccept')}
+          </Button>
+        </>
+      )}
+
+      {pageState.kind === 'ready' && loginGate === 'wrong_account' && (
+        <>
+          <AuthHeading
+            title={t('acceptInvitePage.wrongAccountTitle')}
+            description={t('acceptInvitePage.wrongAccountMessage', {
+              current: user?.email ?? '',
+              invited: pageState.invite.email,
+            })}
+          />
+          <Button className="w-full" onClick={() => void switchAccount()}>
+            {t('acceptInvitePage.switchAccount')}
+          </Button>
+        </>
+      )}
+
       {pageState.kind === 'loading' && (
         <>
           <AuthHeading
@@ -244,7 +302,7 @@ export function AcceptInvitePage() {
         </>
       )}
 
-      {pageState.kind === 'ready' && (
+      {pageState.kind === 'ready' && loginGate === null && (
         <>
           <AuthHeading
             title={t('acceptInvitePage.invitedTo', { tenant: pageState.invite.tenantDisplayName })}
@@ -279,22 +337,25 @@ export function AcceptInvitePage() {
               title={t('acceptInvitePage.seusDados')}
               description={t('acceptInvitePage.informacoesDeContatoE')}
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label={t('acceptInvitePage.nome')}
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  autoComplete="given-name"
-                  required
-                />
-                <Input
-                  label={t('acceptInvitePage.sobrenome')}
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  autoComplete="family-name"
-                  required
-                />
-              </div>
+              {/* Nome só para conta nova. Conta existente aceita logada, e o nome é dela. */}
+              {pageState.invite.requiresAccountCreation ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label={t('acceptInvitePage.nome')}
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    autoComplete="given-name"
+                    required
+                  />
+                  <Input
+                    label={t('acceptInvitePage.sobrenome')}
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    autoComplete="family-name"
+                    required
+                  />
+                </div>
+              ) : null}
 
               {pageState.invite.requiresPassword ? (
                 <>
@@ -407,6 +468,7 @@ export function AcceptInvitePage() {
             <div className="flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 to="/login"
+                state={returnToInvite}
                 className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
               >
                 {t('acceptInvitePage.jaTenhoConta')}

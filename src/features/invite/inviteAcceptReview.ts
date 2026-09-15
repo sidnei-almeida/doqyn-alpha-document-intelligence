@@ -51,7 +51,11 @@ export function validateAcceptInviteForm(
   error?: string;
   field?: 'acceptedTerms' | 'informationDeclaration' | 'consent';
 } {
-  if (!values.firstName.trim() || !values.lastName.trim()) {
+  // Nome só se pede para conta nova. Conta existente aceita logada nela, e o nome é dela.
+  if (
+    options.requiresAccountCreation &&
+    (!values.firstName.trim() || !values.lastName.trim())
+  ) {
     return { valid: false, error: i18n.t('auth:signupValidation.nameRequired') };
   }
 
@@ -109,8 +113,9 @@ export function buildAcceptInvitePayload(
   options: AcceptInviteReviewOptions,
 ) {
   return {
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
+    ...(options.requiresAccountCreation
+      ? { firstName: values.firstName.trim(), lastName: values.lastName.trim() }
+      : {}),
     ...(options.requiresPassword ? { password: values.password } : {}),
     ...(options.requiresWhatsapp ? { whatsapp: toWhatsappApiValue(values.whatsapp) } : {}),
     jobTitle: values.jobTitle.trim(),
@@ -144,8 +149,15 @@ export function buildAcceptInviteReviewSections(
     {
       title: t('auth:review.section.yourData'),
       fields: [
-        { label: t('auth:review.field.firstName'), value: safeDisplayValue(values.firstName) },
-        { label: t('auth:review.field.lastName'), value: safeDisplayValue(values.lastName) },
+        ...(options.requiresAccountCreation
+          ? [
+              {
+                label: t('auth:review.field.firstName'),
+                value: safeDisplayValue(values.firstName),
+              },
+              { label: t('auth:review.field.lastName'), value: safeDisplayValue(values.lastName) },
+            ]
+          : []),
         { label: t('auth:review.field.email'), value: safeDisplayValue(options.email) },
         ...(options.requiresPassword
           ? [{ label: t(PASSWORD_REVIEW_LABEL_KEY), value: '••••••••' }]

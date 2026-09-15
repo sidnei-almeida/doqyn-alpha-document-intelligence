@@ -15,6 +15,8 @@ export type InvitePreview = {
   requiresAccountCreation: boolean;
   requiresPassword: boolean;
   requiresWhatsapp: boolean;
+  /** O e-mail já tem conta: o convite só é aceito por quem estiver logado nela. */
+  requiresLogin: boolean;
 };
 
 export type CreateInviteResponse = {
@@ -26,7 +28,11 @@ export type CreateInviteResponse = {
     expiresAt: string;
     status: string;
   };
-  inviteLink: string;
+  /**
+   * Só fora de produção. O link carrega o token, e o token é segredo de quem recebe o convite —
+   * em produção ele chega apenas pelo e-mail.
+   */
+  inviteLink?: string;
   inviteToken?: string;
   emailSent?: boolean;
   emailSkipReason?: string;

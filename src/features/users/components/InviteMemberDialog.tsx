@@ -15,7 +15,8 @@ import { formatDate } from '@/i18n/formats';
 import { useTranslation } from 'react-i18next';
 
 type InviteResult = {
-  inviteLink: string;
+  /** Ausente em produção: o token do convite chega só a quem foi convidado, pelo e-mail. */
+  inviteLink?: string;
   expiresAt: string;
   /** Falso quando o convite nasceu mas nada foi entregue. */
   emailSent: boolean;
@@ -62,9 +63,11 @@ function formatExpiry(iso: string): string {
  * Por isso papéis e grupos são escolhidos aqui — é o único momento em que alguém decide o que o
  * convidado alcança. Sem grupo, a conta nasce ativa e não enxerga documento nenhum.
  *
- * O diálogo tem dois estados, não dois passos: antes de criar é formulário, depois é o link.
- * O link **é** o produto da ação, então ele não pode passar num toast que some sozinho — quem
- * fechou sem copiar perdeu o convite, e o caminho de volta é revogar e convidar de novo.
+ * O diálogo tem dois estados, não dois passos: antes de criar é formulário, depois é o resultado.
+ *
+ * Em produção o resultado não traz link. O link carrega o token, e com o token em mãos quem
+ * convidou conseguia aceitar pelo convidado. Fora de produção o link aparece para permitir testar
+ * o fluxo sem provedor de e-mail.
  */
 export function InviteMemberDialog({
   documentGroups,
@@ -103,7 +106,7 @@ export function InviteMemberDialog({
   };
 
   const copy = async () => {
-    if (!created) return;
+    if (!created?.inviteLink) return;
     try {
       await navigator.clipboard.writeText(created.inviteLink);
       setCopied(true);
@@ -126,9 +129,13 @@ export function InviteMemberDialog({
       title={created ? t('inviteMemberDialog.titleCreated') : t('inviteMemberDialog.titleNew')}
       subtitle={
         created
-          ? created.emailSent
-            ? t('inviteMemberDialog.subtitleEmailed')
-            : t('inviteMemberDialog.subtitleLinkOnly')
+          ? created.inviteLink
+            ? created.emailSent
+              ? t('inviteMemberDialog.subtitleEmailed')
+              : t('inviteMemberDialog.subtitleLinkOnly')
+            : created.emailSent
+              ? t('inviteMemberDialog.subtitleEmailedNoLink')
+              : t('inviteMemberDialog.subtitleNotSent')
           : t('inviteMemberDialog.subtitleNew')
       }
       size="lg"
@@ -154,20 +161,22 @@ export function InviteMemberDialog({
     >
       {created ? (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <span className="register-label text-doqyn-subtle">
-              {t('inviteMemberDialog.linkDoConvite')}
-            </span>
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-[3px] border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 font-mono text-micro text-doqyn-text">
-                {created.inviteLink}
-              </code>
-              <Button type="button" variant="secondary" size="sm" onClick={() => void copy()}>
-                <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} />
-                {copied ? t('inviteMemberDialog.copied') : t('inviteMemberDialog.copy')}
-              </Button>
+          {created.inviteLink ? (
+            <div className="space-y-2">
+              <span className="register-label text-doqyn-subtle">
+                {t('inviteMemberDialog.linkDoConvite')}
+              </span>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-[3px] border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 font-mono text-micro text-doqyn-text">
+                  {created.inviteLink}
+                </code>
+                <Button type="button" variant="secondary" size="sm" onClick={() => void copy()}>
+                  <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} />
+                  {copied ? t('inviteMemberDialog.copied') : t('inviteMemberDialog.copy')}
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <p className="type-caption text-doqyn-muted">
             {t('inviteMemberDialog.validUntilNotice', { date: formatExpiry(created.expiresAt) })}
@@ -183,7 +192,9 @@ export function InviteMemberDialog({
               {EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']
                 ? t(EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']!)
                 : t('inviteMemberDialog.skipReason.unknown')}{' '}
-              {t('inviteMemberDialog.copieOLinkAcima')}
+              {created.inviteLink
+                ? t('inviteMemberDialog.copieOLinkAcima')
+                : t('inviteMemberDialog.inviteAgainLater')}
             </p>
           ) : null}
 
