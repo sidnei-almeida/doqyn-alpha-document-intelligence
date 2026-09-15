@@ -24,7 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = req.body as { reason?: string };
 
   try {
-    await declineDocumentSignature({ signatureRequestId, reason: body.reason });
+    await declineDocumentSignature({
+      signatureRequestId,
+      reason: body.reason,
+      authUser: auth.user,
+    });
     return res.status(200).json({ status: 'declined' });
   } catch (error) {
     if (isServiceError(error)) {

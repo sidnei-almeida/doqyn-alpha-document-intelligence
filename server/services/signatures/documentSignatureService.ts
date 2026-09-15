@@ -828,6 +828,83 @@ export async function getSignaturePortalPayload(token: string, locale?: string |
   };
 }
 
+/**
+ * Pela sessão só responde o signatário interno designado.
+ *
+ * Assinar e recusar pela sessão buscavam a solicitação só pelo id. Assinar conferia o usuário
+ * apenas quando o signatário era interno com id; recusar não conferia nada. Qualquer usuário logado
+ * que soubesse o id assinava por um convidado externo ou recusava a solicitação de outro tenant.
+ * Convidado externo responde pelo portal, com o token dele.
+ */
+export function assertSessionSigner(
+  signer: { signerType: string; userId?: string | null } | undefined,
+  authUser: AuthUser | undefined,
+): void {
+  if (!authUser) {
+    throw new ServiceError('Autenticação obrigatória.', 'UNAUTHORIZED', 401);
+  }
+  if (
+    !signer ||
+    signer.signerType !== 'internal_user' ||
+    !signer.userId ||
+    signer.userId !== authUser.id
+  ) {
+    throw new ServiceError('Usuário não autorizado a assinar.', 'SIGNATURE_FORBIDDEN', 403);
+  }
+}
+
+/** Teto de uma assinatura em curso: carimbar o PDF, gravar no R2 e promover a versão. */
+const SIGNING_LOCK_MS = 2 * 60_000;
+
+function signingLockFreeFilter(now: Date) {
+  return [
+    { signingLockedUntil: { $exists: false } },
+    { signingLockedUntil: null },
+    { signingLockedUntil: { $lte: now } },
+  ];
+}
+
+/**
+ * Uma assinatura por vez para a mesma solicitação.
+ *
+ * Entre a checagem "ainda pendente" e a gravação final ficam o PDF, o R2 e a promoção de versão.
+ * Dois envios simultâneos passavam os dois pela checagem e gravavam dois registros com códigos de
+ * verificação diferentes, e os artefatos no R2 podiam ficar de um e de outro. A trava é atômica e
+ * tem prazo: se o processo morrer no meio, ela vence sozinha e a pessoa pode tentar de novo.
+ */
+async function withSignatureSigningLock<T>(
+  request: MongoDocumentSignatureRequest,
+  fn: (request: MongoDocumentSignatureRequest) => Promise<T>,
+): Promise<T> {
+  const requests = await getSignatureRequestsCollection();
+  const now = new Date();
+  const lockedUntil = new Date(now.getTime() + SIGNING_LOCK_MS);
+  const claimed = await requests.findOneAndUpdate(
+    {
+      signatureRequestId: request.signatureRequestId,
+      'signers.0.status': 'pending',
+      $or: signingLockFreeFilter(now),
+    },
+    { $set: { signingLockedUntil: lockedUntil } },
+  );
+  if (!claimed) {
+    throw new ServiceError(
+      'Esta assinatura já está em andamento ou foi concluída.',
+      'SIGNATURE_IN_PROGRESS',
+      409,
+    );
+  }
+
+  try {
+    return await fn(claimed);
+  } finally {
+    await requests.updateOne(
+      { signatureRequestId: request.signatureRequestId, signingLockedUntil: lockedUntil },
+      { $unset: { signingLockedUntil: '' } },
+    );
+  }
+}
+
 export async function completeDocumentSignature(input: {
   token?: string;
   signatureRequestId?: string;
@@ -867,218 +944,215 @@ export async function completeDocumentSignature(input: {
     if (!request.permissions.canSign) {
       throw new ServiceError('Assinatura não permitida.', 'SIGNATURE_FORBIDDEN', 403);
     }
-  } else if (!input.authUser) {
-    throw new ServiceError('Autenticação obrigatória.', 'UNAUTHORIZED', 401);
-  } else if (
-    signer.signerType === 'internal_user' &&
-    signer.userId &&
-    signer.userId !== input.authUser.id
-  ) {
-    throw new ServiceError('Usuário não autorizado a assinar.', 'SIGNATURE_FORBIDDEN', 403);
+  } else {
+    assertSessionSigner(signer, input.authUser);
   }
 
-  const signatures = await getSignaturesCollection();
-  const existing = await signatures.findOne({ signatureRequestId: request.signatureRequestId });
-  if (existing) {
-    throw new ServiceError('Documento já assinado.', 'SIGNATURE_ALREADY_COMPLETED', 409);
-  }
+  return withSignatureSigningLock(request, async (request) => {
+    const signatures = await getSignaturesCollection();
+    const existing = await signatures.findOne({ signatureRequestId: request.signatureRequestId });
+    if (existing) {
+      throw new ServiceError('Documento já assinado.', 'SIGNATURE_ALREADY_COMPLETED', 409);
+    }
 
-  const collections = await getTenantCollections(request.tenantId);
-  const doc = await collections.documents.findOne({
-    _id: request.documentId,
-    ...ACTIVE_DOCUMENT_FILTER,
-  });
-  const version = await collections.documentVersions.findOne({
-    _id: request.versionId,
-    documentId: request.documentId,
-  });
-  if (!doc || !version) {
-    throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
-  }
+    const collections = await getTenantCollections(request.tenantId);
+    const doc = await collections.documents.findOne({
+      _id: request.documentId,
+      ...ACTIVE_DOCUMENT_FILTER,
+    });
+    const version = await collections.documentVersions.findOne({
+      _id: request.versionId,
+      documentId: request.documentId,
+    });
+    if (!doc || !version) {
+      throw new ServiceError('Documento não encontrado.', 'DOCUMENT_NOT_FOUND', 404);
+    }
 
-  const originalPdfBuffer = await readVersionPdfBuffer({
-    request,
-    version: version as MongoDocumentVersion,
-  });
+    const originalPdfBuffer = await readVersionPdfBuffer({
+      request,
+      version: version as MongoDocumentVersion,
+    });
 
-  const completedSignatureCount = await signatures.countDocuments({
-    documentId: request.documentId,
-    status: 'signed',
-  });
+    const completedSignatureCount = await signatures.countDocuments({
+      documentId: request.documentId,
+      status: 'signed',
+    });
 
-  const priorSignatures = await signatures
-    .find({
+    const priorSignatures = await signatures
+      .find({
+        documentId: request.documentId,
+        versionId: request.versionId,
+        status: 'signed',
+        signatureRequestId: { $ne: request.signatureRequestId },
+      })
+      .sort({ signedAt: 1 })
+      .toArray();
+
+    const previousStamps = priorSignatures.map((entry) => ({
+      signerName: entry.signerName,
+      signedAt: entry.signedAt,
+      verificationCode: entry.verificationCode,
+    }));
+
+    const signedAt = new Date();
+    const consentLocale = normalizeServerLocale(input.consentLocale ?? input.authUser?.locale);
+    const signatureId = randomUUID();
+    const verificationCode = generateVerificationCode();
+    const verificationUrl = buildSignatureVerificationUrl(verificationCode, input.origin);
+    const securityContext: TrackingSecurityContext = buildSecurityContext(input.req, {
+      isExternalGuest: isExternal,
+      authMethod: isExternal ? 'signature_token' : 'logged_in_session',
+    });
+
+    const pdfResult = await generateSignedPdf({
+      originalPdfBuffer,
+      documentName: doc.currentFileName || doc.title,
       documentId: request.documentId,
       versionId: request.versionId,
-      status: 'signed',
-      signatureRequestId: { $ne: request.signatureRequestId },
-    })
-    .sort({ signedAt: 1 })
-    .toArray();
+      signatureRequestId: request.signatureRequestId,
+      signatureId,
+      signerName: signer.name,
+      signerEmailMasked: maskEmail(signer.email) ?? '***',
+      signerPhoneMasked: signer.phoneMasked ?? undefined,
+      organizationName: signer.organizationName ?? undefined,
+      signedAt,
+      verificationCode,
+      verificationUrl,
+      securityContext,
+      issuerOrganizationName: request.requestedByNameSnapshot ?? undefined,
+      previousStamps,
+      completedSignatureCount,
+      locale: consentLocale,
+    });
 
-  const previousStamps = priorSignatures.map((entry) => ({
-    signerName: entry.signerName,
-    signedAt: entry.signedAt,
-    verificationCode: entry.verificationCode,
-  }));
-
-  const signedAt = new Date();
-  const consentLocale = normalizeServerLocale(input.consentLocale ?? input.authUser?.locale);
-  const signatureId = randomUUID();
-  const verificationCode = generateVerificationCode();
-  const verificationUrl = buildSignatureVerificationUrl(verificationCode, input.origin);
-  const securityContext: TrackingSecurityContext = buildSecurityContext(input.req, {
-    isExternalGuest: isExternal,
-    authMethod: isExternal ? 'signature_token' : 'logged_in_session',
-  });
-
-  const pdfResult = await generateSignedPdf({
-    originalPdfBuffer,
-    documentName: doc.currentFileName || doc.title,
-    documentId: request.documentId,
-    versionId: request.versionId,
-    signatureRequestId: request.signatureRequestId,
-    signatureId,
-    signerName: signer.name,
-    signerEmailMasked: maskEmail(signer.email) ?? '***',
-    signerPhoneMasked: signer.phoneMasked ?? undefined,
-    organizationName: signer.organizationName ?? undefined,
-    signedAt,
-    verificationCode,
-    verificationUrl,
-    securityContext,
-    issuerOrganizationName: request.requestedByNameSnapshot ?? undefined,
-    previousStamps,
-    completedSignatureCount,
-    locale: consentLocale,
-  });
-
-  const storageScope = await resolveTenantStorageScopeById(
-    request.tenantId,
-    request.documentTenantType,
-  );
-  const signedPdfKey = buildSignatureArtifactObjectKey({
-    documentId: request.documentId,
-    versionId: request.versionId,
-    signatureRequestId: request.signatureRequestId,
-    artifactName: 'signed.pdf',
-    keyPrefix: storageScope.keyPrefix,
-    basePrefix: storageScope.basePrefix,
-  });
-  const evidenceKey = buildSignatureArtifactObjectKey({
-    documentId: request.documentId,
-    versionId: request.versionId,
-    signatureRequestId: request.signatureRequestId,
-    artifactName: 'evidence.json',
-    keyPrefix: storageScope.keyPrefix,
-    basePrefix: storageScope.basePrefix,
-  });
-
-  const signedStored = await persistPreviewAsset({
-    tenantId: request.tenantId,
-    objectKey: signedPdfKey,
-    buffer: pdfResult.signedPdfBuffer,
-    contentType: 'application/pdf',
-    bucketAlias: version.storage?.primary?.bucketAlias ?? null,
-    storageScope,
-  });
-  const evidenceStored = await persistPreviewAsset({
-    tenantId: request.tenantId,
-    objectKey: evidenceKey,
-    buffer: Buffer.from(JSON.stringify(pdfResult.evidencePayload, null, 2), 'utf8'),
-    contentType: 'application/json',
-    bucketAlias: version.storage?.primary?.bucketAlias ?? null,
-    storageScope,
-  });
-  if (!signedStored || !evidenceStored) {
-    throw new ServiceError(
-      'Falha ao persistir artefatos de assinatura.',
-      'SIGNATURE_STORAGE_FAILED',
-      500,
+    const storageScope = await resolveTenantStorageScopeById(
+      request.tenantId,
+      request.documentTenantType,
     );
-  }
+    const signedPdfKey = buildSignatureArtifactObjectKey({
+      documentId: request.documentId,
+      versionId: request.versionId,
+      signatureRequestId: request.signatureRequestId,
+      artifactName: 'signed.pdf',
+      keyPrefix: storageScope.keyPrefix,
+      basePrefix: storageScope.basePrefix,
+    });
+    const evidenceKey = buildSignatureArtifactObjectKey({
+      documentId: request.documentId,
+      versionId: request.versionId,
+      signatureRequestId: request.signatureRequestId,
+      artifactName: 'evidence.json',
+      keyPrefix: storageScope.keyPrefix,
+      basePrefix: storageScope.basePrefix,
+    });
 
-  const promotedByUserId = input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
+    const signedStored = await persistPreviewAsset({
+      tenantId: request.tenantId,
+      objectKey: signedPdfKey,
+      buffer: pdfResult.signedPdfBuffer,
+      contentType: 'application/pdf',
+      bucketAlias: version.storage?.primary?.bucketAlias ?? null,
+      storageScope,
+    });
+    const evidenceStored = await persistPreviewAsset({
+      tenantId: request.tenantId,
+      objectKey: evidenceKey,
+      buffer: Buffer.from(JSON.stringify(pdfResult.evidencePayload, null, 2), 'utf8'),
+      contentType: 'application/json',
+      bucketAlias: version.storage?.primary?.bucketAlias ?? null,
+      storageScope,
+    });
+    if (!signedStored || !evidenceStored) {
+      throw new ServiceError(
+        'Falha ao persistir artefatos de assinatura.',
+        'SIGNATURE_STORAGE_FAILED',
+        500,
+      );
+    }
 
-  const promotedVersion = await promoteSignedPdfToDocumentVersion({
-    tenantId: request.tenantId,
-    documentId: request.documentId,
-    sourceVersion: version as MongoDocumentVersion,
-    doc: doc as MongoDocument,
-    signedPdfBuffer: pdfResult.signedPdfBuffer,
-    signedPdfHashSha256: pdfResult.signedPdfHashSha256,
-    signatureRequestId: request.signatureRequestId,
-    signatureId,
-    promotedByUserId,
-    storageScope,
-  });
+    const promotedByUserId = input.authUser?.id ?? signer.userId ?? request.requestedByUserId;
 
-  const signature: MongoDocumentSignature = {
-    _id: signatureId,
-    signatureId,
-    signatureRequestId: request.signatureRequestId,
-    documentId: request.documentId,
-    versionId: request.versionId,
-    signerId: signer.signerId,
-    signerType: signer.signerType,
-    signerUserId: signer.userId ?? input.authUser?.id ?? null,
-    signerName: signer.name,
-    signerEmailMasked: maskEmail(signer.email) ?? '***',
-    signerEmailHash: hashTrackingValue(signer.email, 'doqyn-signer-email-v1'),
-    signerPhoneMasked: signer.phoneMasked ?? null,
-    signerPhoneHash: signer.phoneNormalized
-      ? hashTrackingValue(signer.phoneNormalized, 'doqyn-signer-phone-v1')
-      : null,
-    organizationName: signer.organizationName ?? null,
-    status: 'signed',
-    signedAt,
-    consentText: signatureConsentText(consentLocale),
-    consentLocale,
-    authMethod: isExternal ? 'signature_token' : 'logged_in_session',
-    securityContext,
-    originalDocumentHashSha256: pdfResult.originalDocumentHashSha256,
-    signedPdfHashSha256: pdfResult.signedPdfHashSha256,
-    evidenceHashSha256: pdfResult.evidenceHashSha256,
-    signedPdfR2Key: signedPdfKey,
-    evidenceJsonR2Key: evidenceKey,
-    verificationCode,
-    verificationUrl,
-    promotedVersionId: promotedVersion.versionId,
-    createdAt: signedAt,
-  };
+    const promotedVersion = await promoteSignedPdfToDocumentVersion({
+      tenantId: request.tenantId,
+      documentId: request.documentId,
+      sourceVersion: version as MongoDocumentVersion,
+      doc: doc as MongoDocument,
+      signedPdfBuffer: pdfResult.signedPdfBuffer,
+      signedPdfHashSha256: pdfResult.signedPdfHashSha256,
+      signatureRequestId: request.signatureRequestId,
+      signatureId,
+      promotedByUserId,
+      storageScope,
+    });
 
-  await signatures.insertOne(signature);
+    const signature: MongoDocumentSignature = {
+      _id: signatureId,
+      signatureId,
+      signatureRequestId: request.signatureRequestId,
+      documentId: request.documentId,
+      versionId: request.versionId,
+      signerId: signer.signerId,
+      signerType: signer.signerType,
+      signerUserId: signer.userId ?? input.authUser?.id ?? null,
+      signerName: signer.name,
+      signerEmailMasked: maskEmail(signer.email) ?? '***',
+      signerEmailHash: hashTrackingValue(signer.email, 'doqyn-signer-email-v1'),
+      signerPhoneMasked: signer.phoneMasked ?? null,
+      signerPhoneHash: signer.phoneNormalized
+        ? hashTrackingValue(signer.phoneNormalized, 'doqyn-signer-phone-v1')
+        : null,
+      organizationName: signer.organizationName ?? null,
+      status: 'signed',
+      signedAt,
+      consentText: signatureConsentText(consentLocale),
+      consentLocale,
+      authMethod: isExternal ? 'signature_token' : 'logged_in_session',
+      securityContext,
+      originalDocumentHashSha256: pdfResult.originalDocumentHashSha256,
+      signedPdfHashSha256: pdfResult.signedPdfHashSha256,
+      evidenceHashSha256: pdfResult.evidenceHashSha256,
+      signedPdfR2Key: signedPdfKey,
+      evidenceJsonR2Key: evidenceKey,
+      verificationCode,
+      verificationUrl,
+      promotedVersionId: promotedVersion.versionId,
+      createdAt: signedAt,
+    };
 
-  const requests = await getSignatureRequestsCollection();
-  await requests.updateOne(
-    { signatureRequestId: request.signatureRequestId },
-    {
-      $set: {
-        status: 'signed',
-        completedAt: signedAt,
-        updatedAt: signedAt,
-        'signers.0.status': 'signed',
-        'signers.0.signedAt': signedAt,
+    await signatures.insertOne(signature);
+
+    const requests = await getSignatureRequestsCollection();
+    await requests.updateOne(
+      { signatureRequestId: request.signatureRequestId },
+      {
+        $set: {
+          status: 'signed',
+          completedAt: signedAt,
+          updatedAt: signedAt,
+          'signers.0.status': 'signed',
+          'signers.0.signedAt': signedAt,
+        },
       },
-    },
-  );
+    );
 
-  return {
-    signatureId,
-    verificationCode,
-    verificationUrl,
-    signedAt: signedAt.toISOString(),
-    canDownload: request.permissions.canDownloadAfterSign,
-    promotedVersionId: promotedVersion.versionId,
-    promotedVersionLabel: promotedVersion.versionLabel,
-    promotedFileName: promotedVersion.finalFileName,
-  };
+    return {
+      signatureId,
+      verificationCode,
+      verificationUrl,
+      signedAt: signedAt.toISOString(),
+      canDownload: request.permissions.canDownloadAfterSign,
+      promotedVersionId: promotedVersion.versionId,
+      promotedVersionLabel: promotedVersion.versionLabel,
+      promotedFileName: promotedVersion.finalFileName,
+    };
+  });
 }
 
 export async function declineDocumentSignature(input: {
   token?: string;
   signatureRequestId?: string;
   reason?: string;
+  authUser?: AuthUser;
 }) {
   let request: MongoDocumentSignatureRequest | null = null;
   if (input.token?.trim()) {
@@ -1090,11 +1164,20 @@ export async function declineDocumentSignature(input: {
   if (!request || !isSignatureRequestOpen(request)) {
     throw new ServiceError('Solicitação indisponível.', 'SIGNATURE_REQUEST_CLOSED', 403);
   }
+  if (!input.token?.trim()) {
+    assertSessionSigner(request.signers[0], input.authUser);
+  }
 
   const now = new Date();
   const requests = await getSignatureRequestsCollection();
-  await requests.updateOne(
-    { signatureRequestId: request.signatureRequestId },
+  // Só recusa quem ainda está pendente e sem assinatura em curso: sem esta condição, uma recusa
+  // chegando durante a assinatura marcava "recusado" um documento que terminava assinado.
+  const declined = await requests.updateOne(
+    {
+      signatureRequestId: request.signatureRequestId,
+      'signers.0.status': 'pending',
+      $or: signingLockFreeFilter(now),
+    },
     {
       $set: {
         status: 'declined',
@@ -1103,6 +1186,9 @@ export async function declineDocumentSignature(input: {
       },
     },
   );
+  if (declined.modifiedCount === 0) {
+    throw new ServiceError('Signatário já respondeu.', 'SIGNATURE_ALREADY_COMPLETED', 409);
+  }
 
   const collections = await getTenantCollections(request.tenantId);
   await collections.documents.updateOne(

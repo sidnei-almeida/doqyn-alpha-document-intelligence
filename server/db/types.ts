@@ -1281,6 +1281,8 @@ export type MongoDocumentSignatureRequest = {
   completedAt?: Date | null;
   cancelledAt?: Date | null;
   cancelledBy?: string | null;
+  /** Trava de assinatura em curso, com prazo. Ver `withSignatureSigningLock`. */
+  signingLockedUntil?: Date | null;
 };
 
 export type DocumentSignatureStatus = 'signed' | 'revoked' | 'invalidated';
