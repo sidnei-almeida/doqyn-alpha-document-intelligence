@@ -1,9 +1,8 @@
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoVersionMetadataField } from '../db/types.js';
 import {
-  buildDocumentSearchOrClause,
+  buildDocumentListQuery,
   documentListSortCollation,
-  buildDocumentTypeClause,
   resolveDocumentListSort,
 } from '../utils/documentListQuery.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
@@ -154,62 +153,7 @@ export async function listDocuments(filters: {
   const { documents, storage } = await getTenantCollections(tenantId, {
     userId: filters.ownerUserId,
   });
-  const query: Record<string, unknown> = {
-    ...tenantScopeFilterFromContext(storage),
-    deletedAt: { $in: [null, undefined] },
-    permanentlyDeletedAt: { $in: [null, undefined] },
-    deactivatedAt: { $in: [null, undefined] },
-  };
-  if (filters.status) query.status = filters.status;
-  if (filters.processingStatus) {
-    if (filters.processingStatus === 'processed') {
-      query.processingStatus = { $in: ['processed', 'processed_with_review'] };
-    } else {
-      query.processingStatus = filters.processingStatus;
-    }
-  }
-  if (filters.area) query.area = filters.area;
-  if (filters.categoryId) query.classId = filters.categoryId;
-
-  if (filters.excludeArchived === true || filters.excludeArchived === 'true') {
-    if (!filters.status) {
-      query.status = { $ne: 'archived' };
-    }
-  }
-
-  if (filters.owner === 'me' && filters.ownerUserId) {
-    query.ownerUserId = filters.ownerUserId;
-  } else if (filters.owner === 'others' && filters.ownerUserId) {
-    query.ownerUserId = { $ne: filters.ownerUserId };
-  }
-
-  const andClauses: Record<string, unknown>[] = [];
-
-  if (filters.search?.trim()) {
-    andClauses.push({ $or: buildDocumentSearchOrClause(filters.search) });
-  }
-
-  if (filters.type) {
-    const typeClause = buildDocumentTypeClause(filters.type);
-    if (typeClause) andClauses.push(typeClause);
-  }
-
-  if (andClauses.length === 1) {
-    Object.assign(query, andClauses[0]);
-  } else if (andClauses.length > 1) {
-    query.$and = andClauses;
-  }
-
-  if (filters.from?.trim() || filters.to?.trim()) {
-    const updatedAt: Record<string, Date> = {};
-    if (filters.from?.trim()) {
-      updatedAt.$gte = new Date(filters.from.trim());
-    }
-    if (filters.to?.trim()) {
-      updatedAt.$lte = new Date(filters.to.trim());
-    }
-    query.updatedAt = updatedAt;
-  }
+  const query = buildDocumentListQuery(tenantScopeFilterFromContext(storage), filters);
 
   const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
   const { field, direction } = resolveDocumentListSort(filters.sort, filters.direction);

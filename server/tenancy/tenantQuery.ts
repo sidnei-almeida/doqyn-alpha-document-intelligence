@@ -14,13 +14,6 @@ export {
   applyClassRuleOwnershipOnInsert,
 };
 
-/** @deprecated Prefer buildDocumentOwnershipFilter com TenantStorageContext */
-export function tenantScopeFilter(tenantId: string): Record<string, unknown> {
-  return {
-    $or: [{ tenantId }, { companyId: tenantId }],
-  };
-}
-
 export function tenantScopeFilterFromContext(context: TenantStorageContext): Record<string, unknown> {
   return buildDocumentOwnershipFilter(context);
 }

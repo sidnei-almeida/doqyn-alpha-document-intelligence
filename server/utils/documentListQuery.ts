@@ -1,4 +1,5 @@
 import type { CollationOptions } from 'mongodb';
+import { addAndClause, scopedQuery } from './mongoQuery.js';
 import { TEXT_SORT_COLLATION } from './textCollation.js';
 
 /** Escapa termo de busca para regex seguro (evita ReDoS por metacaracteres). */
@@ -7,6 +8,81 @@ export function escapeRegexLiteral(input: string, maxLength = 120): string {
     .trim()
     .slice(0, maxLength)
     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export type DocumentListQueryFilters = {
+  status?: string;
+  processingStatus?: string;
+  area?: string;
+  categoryId?: string;
+  excludeArchived?: boolean | string;
+  owner?: string;
+  ownerUserId?: string;
+  search?: string;
+  type?: string;
+  from?: string;
+  to?: string;
+};
+
+/**
+ * Consulta da biblioteca. Função pura para que o escopo de tenant possa ser provado em teste.
+ *
+ * Com uma só condição de busca ou de tipo, ela ia para o topo com `Object.assign` — e o `$or` dela
+ * apagava o `$or` do escopo. A lista devolvia documentos de todos os tenants. O escopo agora vive em
+ * `$and` (ver `scopedQuery`) e toda condição composta entra ao lado dele.
+ */
+export function buildDocumentListQuery(
+  scope: Record<string, unknown>,
+  filters: DocumentListQueryFilters,
+): Record<string, unknown> {
+  const query: Record<string, unknown> = {
+    ...scopedQuery(scope),
+    deletedAt: { $in: [null, undefined] },
+    permanentlyDeletedAt: { $in: [null, undefined] },
+    deactivatedAt: { $in: [null, undefined] },
+  };
+  if (filters.status) query.status = filters.status;
+  if (filters.processingStatus) {
+    if (filters.processingStatus === 'processed') {
+      query.processingStatus = { $in: ['processed', 'processed_with_review'] };
+    } else {
+      query.processingStatus = filters.processingStatus;
+    }
+  }
+  if (filters.area) query.area = filters.area;
+  if (filters.categoryId) query.classId = filters.categoryId;
+
+  if (filters.excludeArchived === true || filters.excludeArchived === 'true') {
+    if (!filters.status) {
+      query.status = { $ne: 'archived' };
+    }
+  }
+
+  if (filters.owner === 'me' && filters.ownerUserId) {
+    query.ownerUserId = filters.ownerUserId;
+  } else if (filters.owner === 'others' && filters.ownerUserId) {
+    query.ownerUserId = { $ne: filters.ownerUserId };
+  }
+
+  if (filters.search?.trim()) {
+    addAndClause(query, { $or: buildDocumentSearchOrClause(filters.search) });
+  }
+  if (filters.type) {
+    addAndClause(query, buildDocumentTypeClause(filters.type));
+  }
+
+  if (filters.from?.trim() || filters.to?.trim()) {
+    const updatedAt: Record<string, Date> = {};
+    if (filters.from?.trim()) {
+      updatedAt.$gte = new Date(filters.from.trim());
+    }
+    if (filters.to?.trim()) {
+      updatedAt.$lte = new Date(filters.to.trim());
+    }
+    query.updatedAt = updatedAt;
+  }
+
+  return query;
 }
 
 export function foldSearchText(value: string): string {

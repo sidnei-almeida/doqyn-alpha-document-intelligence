@@ -8,6 +8,7 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { escapeRegexLiteral } from '../utils/documentListQuery.js';
+import { addAndClause, scopedQuery } from '../utils/mongoQuery.js';
 import { findAuditActionsMatching } from '../i18n/index.js';
 
 export type AuditEventSeverity = 'info' | 'success' | 'warning' | 'error' | 'critical';
@@ -111,19 +112,21 @@ function mapAuditLog(event: MongoAuditLog): AuditEventDto {
   };
 }
 
-function buildTextSearch(query: Record<string, unknown>, q?: string) {
-  if (!q?.trim()) return;
+function buildTextSearchClause(q?: string): Record<string, unknown> | null {
+  if (!q?.trim()) return null;
   const regex = { $regex: escapeRegexLiteral(q), $options: 'i' };
   const matchingActions = findAuditActionsMatching(q);
-  query.$or = [
-    { description: regex },
-    // A frase está gravada no idioma de quem agiu; pela ação, o termo acha nos três idiomas.
-    ...(matchingActions.length ? [{ action: { $in: matchingActions } }] : []),
-    { action: regex },
-    { 'actor.name': regex },
-    { 'actor.userId': regex },
-    { documentId: regex },
-  ];
+  return {
+    $or: [
+      { description: regex },
+      // A frase está gravada no idioma de quem agiu; pela ação, o termo acha nos três idiomas.
+      ...(matchingActions.length ? [{ action: { $in: matchingActions } }] : []),
+      { action: regex },
+      { 'actor.name': regex },
+      { 'actor.userId': regex },
+      { documentId: regex },
+    ],
+  };
 }
 
 function buildSeverityFilter(severity?: string): Record<string, unknown> | null {
@@ -162,6 +165,73 @@ function buildSeverityFilter(severity?: string): Record<string, unknown> | null 
   }
 }
 
+export type AuditEventsQueryFilters = {
+  documentId?: string;
+  q?: string;
+  type?: string;
+  severity?: string;
+  actorId?: string;
+  from?: string;
+  to?: string;
+  cursor?: string;
+  category?: 'security';
+};
+
+/**
+ * Consulta da central de auditoria. Pura para que o escopo possa ser provado em teste.
+ *
+ * A busca por texto gravava `query.$or` e apagava o `$or` do escopo de tenant: qualquer membro que
+ * digitasse um termo lia a trilha de todos os tenants. Escopo em `$and`, busca ao lado.
+ */
+export function buildAuditEventsQuery(
+  scope: Record<string, unknown>,
+  filters: AuditEventsQueryFilters,
+): Record<string, unknown> {
+  const query = scopedQuery(scope);
+
+  if (filters.documentId) query.documentId = filters.documentId;
+  if (filters.type?.trim()) query.action = filters.type.trim();
+  if (filters.actorId?.trim()) query['actor.userId'] = filters.actorId.trim();
+
+  if (filters.from || filters.to) {
+    const createdAt: Record<string, Date> = {};
+    if (filters.from) {
+      const fromDate = new Date(filters.from);
+      if (!Number.isNaN(fromDate.getTime())) createdAt.$gte = fromDate;
+    }
+    if (filters.to) {
+      const toDate = new Date(filters.to);
+      if (!Number.isNaN(toDate.getTime())) createdAt.$lte = toDate;
+    }
+    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
+  }
+
+  addAndClause(query, buildTextSearchClause(filters.q));
+
+  if (filters.category === 'security') {
+    addAndClause(query, {
+      action: {
+        $regex: SECURITY_ACTION_PATTERNS.join('|'),
+        $options: 'i',
+      },
+    });
+  }
+
+  addAndClause(query, buildSeverityFilter(filters.severity));
+
+  if (filters.cursor?.trim()) {
+    const cursorDate = new Date(filters.cursor);
+    if (!Number.isNaN(cursorDate.getTime())) {
+      query.createdAt = {
+        ...(typeof query.createdAt === 'object' && query.createdAt !== null ? query.createdAt : {}),
+        $lt: cursorDate,
+      };
+    }
+  }
+
+  return query;
+}
+
 export async function listAuditEvents(filters: {
   tenantId?: string;
   ownerUserId?: string;
@@ -189,53 +259,7 @@ export async function listAuditEvents(filters: {
   const { auditLogs, storage } = await getTenantCollections(tenantId, {
     userId: filters.ownerUserId,
   });
-  const query: Record<string, unknown> = { ...tenantScopeFilterFromContext(storage) };
-
-  if (filters.documentId) query.documentId = filters.documentId;
-  if (filters.type?.trim()) query.action = filters.type.trim();
-  if (filters.actorId?.trim()) query['actor.userId'] = filters.actorId.trim();
-
-  if (filters.from || filters.to) {
-    const createdAt: Record<string, Date> = {};
-    if (filters.from) {
-      const fromDate = new Date(filters.from);
-      if (!Number.isNaN(fromDate.getTime())) createdAt.$gte = fromDate;
-    }
-    if (filters.to) {
-      const toDate = new Date(filters.to);
-      if (!Number.isNaN(toDate.getTime())) createdAt.$lte = toDate;
-    }
-    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
-  }
-
-  buildTextSearch(query, filters.q);
-
-  if (filters.category === 'security') {
-    query.$and = [
-      ...(Array.isArray(query.$and) ? query.$and : []),
-      {
-        action: {
-          $regex: SECURITY_ACTION_PATTERNS.join('|'),
-          $options: 'i',
-        },
-      },
-    ];
-  }
-
-  const severityFilter = buildSeverityFilter(filters.severity);
-  if (severityFilter) {
-    query.$and = [...(Array.isArray(query.$and) ? query.$and : []), severityFilter];
-  }
-
-  if (filters.cursor?.trim()) {
-    const cursorDate = new Date(filters.cursor);
-    if (!Number.isNaN(cursorDate.getTime())) {
-      query.createdAt = {
-        ...(typeof query.createdAt === 'object' && query.createdAt !== null ? query.createdAt : {}),
-        $lt: cursorDate,
-      };
-    }
-  }
+  const query = buildAuditEventsQuery(tenantScopeFilterFromContext(storage), filters);
 
   const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
   const events = await auditLogs

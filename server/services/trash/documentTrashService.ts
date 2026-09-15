@@ -20,7 +20,12 @@ import {
   resolveDocumentActorIdentity,
 } from '../../utils/documentMutationFields.js';
 import { buildDocumentListItems } from '../documentListItems.js';
-import { escapeRegexLiteral } from '../../utils/documentListQuery.js';
+import {
+  DEACTIVATED_DOCUMENT_FILTER,
+  TRASH_DOCUMENT_FILTER,
+  buildDeactivatedListQuery,
+  buildTrashListQuery,
+} from './trashListQueries.js';
 import { attachFavoriteFlags, lookupFavoriteFlags } from '../favorites/documentFavoritesService.js';
 import { computeTrashExpiresAt, getTrashRetentionSettings } from './trashRetentionSettings.js';
 import { listActiveTenants } from '../tenantsService.js';
@@ -34,16 +39,6 @@ const ACTIVE_DOCUMENT_FILTER = {
   deactivatedAt: { $in: [null, undefined] },
 };
 
-const TRASH_DOCUMENT_FILTER = {
-  deletedAt: { $ne: null, $exists: true },
-  permanentlyDeletedAt: { $in: [null, undefined] },
-  deactivatedAt: { $in: [null, undefined] },
-};
-
-const DEACTIVATED_DOCUMENT_FILTER = {
-  lifecycleStatus: 'deactivated',
-  deactivatedAt: { $ne: null, $exists: true },
-};
 
 export type TrashDocumentListItem = Awaited<ReturnType<typeof buildDocumentListItems>>[number] & {
   deletedAt?: string;
@@ -205,19 +200,7 @@ export async function listTrashDocuments(
     membershipId: ctx.membershipId,
   });
 
-  const query: Record<string, unknown> = {
-    ...tenantScopeFilterFromContext(storage),
-    ...TRASH_DOCUMENT_FILTER,
-  };
-
-  if (filters?.search?.trim()) {
-    const term = escapeRegexLiteral(filters.search);
-    query.$or = [
-      { title: { $regex: term, $options: 'i' } },
-      { currentFileName: { $regex: term, $options: 'i' } },
-      { className: { $regex: term, $options: 'i' } },
-    ];
-  }
+  const query = buildTrashListQuery(tenantScopeFilterFromContext(storage), filters?.search);
 
   const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 200);
 
@@ -252,19 +235,7 @@ export async function listDeactivatedDocuments(
     membershipId: ctx.membershipId,
   });
 
-  const query: Record<string, unknown> = {
-    ...tenantScopeFilterFromContext(storage),
-    ...DEACTIVATED_DOCUMENT_FILTER,
-  };
-
-  if (filters?.search?.trim()) {
-    const term = escapeRegexLiteral(filters.search);
-    query.$or = [
-      { title: { $regex: term, $options: 'i' } },
-      { currentFileName: { $regex: term, $options: 'i' } },
-      { className: { $regex: term, $options: 'i' } },
-    ];
-  }
+  const query = buildDeactivatedListQuery(tenantScopeFilterFromContext(storage), filters?.search);
 
   const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 200);
 
